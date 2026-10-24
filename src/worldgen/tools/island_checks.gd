@@ -17,6 +17,10 @@ extends SceneTree
 #   --sketch-only  skip the tile checks
 #   --tiles-only   skip the sketch (island shape) checks
 #   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
+#   --bakelog=FILE the bake log; its line "gullies: N, dead ends: M" feeds the dead-end gully row
+#   --spawn-search=M list pads within M metres of the spawn that pass the spawn gate (nearest first)
+#   --probe=X,Z    print painted class, settled class and settled depth for the 32 m cells from X,Z 1.5 km toward +z
+#   --gullies=TEXT the same line pasted directly
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
 # Limits live in <world>/plan/island_checks.json (null = report only).
@@ -45,6 +49,9 @@ var _checks: int = 0
 var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
+var _gully_line: String = ""
+var _probe: Vector2 = Vector2(-1.0, -1.0)
+var _spawn_search_m: float = 0.0
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
 var _features: Dictionary = {}   # island id -> feature name of island_list.json
@@ -76,6 +83,15 @@ func _run() -> int:
 			_picture_dir = argument.trim_prefix("--picture=")
 		elif argument == "--fine":
 			_fine = true
+		elif argument.begins_with("--bakelog="):
+			_gully_line = _find_gully_line(FileAccess.get_file_as_string(argument.trim_prefix("--bakelog=")))
+		elif argument.begins_with("--spawn-search="):
+			_spawn_search_m = float(argument.trim_prefix("--spawn-search="))
+		elif argument.begins_with("--probe="):
+			var parts: PackedStringArray = argument.trim_prefix("--probe=").split(",")
+			_probe = Vector2(float(parts[0]), float(parts[1]))
+		elif argument.begins_with("--gullies="):
+			_gully_line = argument.trim_prefix("--gullies=")
 		elif argument == "--sketch-only":
 			do_tiles = false
 		elif argument == "--tiles-only":
@@ -409,6 +425,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 
 	_row("%s terrain mix" % title, ", ".join(mix), "report", "INFO")
 	_flat_share_check(title, cells, config)
+	_farmland_check(title, cells, config)
 	_range_row("%s summit height" % title, float(island["peak_m"]), config["summit_range_m"], "%.0f m%s" % [float(island["peak_m"]), (" (type %s)" % str(config["type"])) if config.has("type") else ""])
 
 	if config["band_table_check"]:
@@ -495,6 +512,53 @@ func _flat_share_check(title: String, cells: PackedInt32Array, config: Dictionar
 
 	var share: float = float(flat) / float(cells.size())
 	_bound_row("%s flat share (slope under %.0f deg)" % [title, flat_deg], share, config["flat_share_min"], false, "%.1f%% of land" % (share * 100.0))
+
+
+# Rolling farmland (Dave 24 Oct): land from the beach top up to farm_top_m.
+# Share farmable (slope at or under farm_slope_deg) and share rolling (over
+# flat_slope_deg, so valleys are real); null limits report only.
+func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary) -> void:
+	var farm_deg: float = float(config["farm_slope_deg"])
+	var flat_deg: float = float(config["flat_slope_deg"])
+	var top_m: float = float(config["farm_top_m"])
+	var low_m: float = float(config["beach_top_m"])
+	var zone: int = 0
+	var farmable: int = 0
+	var rolling: int = 0
+	var rocky: int = 0
+
+	for index in cells:
+		var column: int = index % _elevation.size_x
+		var row: int = _quot(index, _elevation.size_x)
+		var h: float = _cell_h(column, row)
+
+		if h <= low_m or h > top_m:
+			continue
+
+		var slope: float = _slope_deg(column, row)
+
+		# Cliff and canyon-apron cells are not farmland: leave them out of the zone (counted below).
+		if bool(config["farm_skip_rocky"]) and _terrain_class(column, row, slope, config["classes"], low_m) in ["canyon", "mountain"]:
+			rocky += 1
+			continue
+
+		zone += 1
+
+		if slope <= farm_deg:
+			farmable += 1
+
+			if slope > flat_deg:
+				rolling += 1
+
+	if zone == 0:
+		_row("%s farmland" % title, "no land between %.0f and %.0f m" % [low_m, top_m], "-", "INFO")
+		return
+
+	var farm_share: float = float(farmable) / float(zone)
+	var rolling_share: float = float(rolling) / float(zone)
+	_bound_row("%s farmable share (slope at or under %.0f deg, %.0f-%.0f m)" % [title, farm_deg, low_m, top_m], farm_share, config["farm_share_min"], false, "%.1f%% of %d cells (%d rocky cells left out)" % [farm_share * 100.0, zone, rocky])
+	_bound_row("%s rolling share (farmable but over %.0f deg)" % [title, flat_deg], rolling_share, config["rolling_share_min"], false, "%.1f%% of %d cells" % [rolling_share * 100.0, zone])
+	_bound_row("%s rolling share, too hilly for farmland" % title, rolling_share, config["rolling_share_max"], true, "%.1f%% (English look 35-55%%)" % (rolling_share * 100.0))
 
 
 # The island's land, ranked by height, against starter_islands.height_bands of
@@ -1209,6 +1273,59 @@ func _ray(origin: Vector2, bearing_deg: float, distances: Array, beach_top_m: fl
 
 # ---------------------------------------------------------------- tiles (baked files, read-only)
 
+# "gullies: N, dead ends: M" from the bake log (Sonny): dead-end gullies as a
+# share of all gullies, and per km2 of baked tiles.
+func _find_gully_line(text: String) -> String:
+	var gullies: int = 0
+	var dead: int = 0
+	var found: bool = false
+
+	# One line per tile in the bake log: add them all up.
+	for line in text.split("\n"):
+		if line.contains("gullies:") and line.contains("dead ends:"):
+			var numbers: PackedStringArray = PackedStringArray()
+			var digits: String = ""
+
+			for letter in line + " ":
+				if letter >= "0" and letter <= "9":
+					digits += letter
+				elif digits != "":
+					numbers.append(digits)
+					digits = ""
+
+			if numbers.size() >= 2:
+				gullies += int(numbers[0])
+				dead += int(numbers[1])
+				found = true
+
+	return "gullies: %d, dead ends: %d" % [gullies, dead] if found else ""
+
+
+func _gully_checks(area_km2: float, tile_limits: Dictionary) -> void:
+	if _gully_line == "":
+		_row("dead-end gullies", "no gully line (pass --bakelog=FILE or --gullies=\"gullies: N, dead ends: M\")", "-", "INFO")
+		return
+
+	var numbers: PackedStringArray = PackedStringArray()
+	var digits: String = ""
+
+	for letter in _gully_line + " ":
+		if letter >= "0" and letter <= "9":
+			digits += letter
+		elif digits != "":
+			numbers.append(digits)
+			digits = ""
+
+	if numbers.size() < 2:
+		_row("dead-end gullies", "cannot read: %s" % _gully_line, "-", "INFO")
+		return
+
+	var gullies: int = int(numbers[0])
+	var dead: int = int(numbers[1])
+	var share: float = float(dead) / float(maxi(gullies, 1))
+	_bound_row("dead-end gullies share (sink, not lake or sea, within 3 km)", share, tile_limits["gully_dead_end_max_share"], true, "%d of %d gullies, %.4f per km2" % [dead, gullies, float(dead) / maxf(area_km2, 0.001)])
+
+
 func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	var tile_limits: Dictionary = _limits["tiles"]
 	var tiles: Array = []
@@ -1226,6 +1343,7 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 		return
 
 	_seam_checks(settings, directory, tiles)
+	_gully_checks(float(tiles.size()) * pow(float(settings.tile_size_m) / 1000.0, 2.0), tile_limits)
 	_spawn_check(settings, world_dir, directory, tile_limits)
 	var stitched: Dictionary = _stitch(tiles, directory)
 
@@ -1242,6 +1360,9 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 		_river_checks(stitched, tile_limits, settled["grid"], settled["film"], "settled water, wet over %.2f m, film over %.3f m, 32 m map" % [float(tile_limits["river_wet_depth_m"]), float(tile_limits["river_film_depth_m"])], true)
 		_river_checks(stitched, tile_limits, stitched["water"], PackedByteArray(), "painted rivers, 32 m map", false)
 
+	if _probe.x >= 0.0:
+		_probe_column(stitched, settled, tiles, directory.get_base_dir() + "/water")
+
 	var fine: Dictionary = {}
 
 	fine = _stitch(tiles, directory, true)
@@ -1255,9 +1376,102 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	if _fine:
 		stitched = fine
 
+	_tile_farmland(stitched)
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
 
 	_tile_summits(world_dir, fine)
+
+
+# Farmable and rolling share per landmass on the baked 32 m maps (same zone and slopes as the sketch row).
+# Reports only; landmasses with fewer than farm_min_cells zone cells are skipped.
+func _tile_farmland(stitched: Dictionary) -> void:
+	var defaults: Dictionary = _limits["defaults"]
+	var farm_deg: float = float(defaults["farm_slope_deg"])
+	var flat_deg: float = float(defaults["flat_slope_deg"])
+	var low_m: float = float(defaults["beach_top_m"])
+	var top_m: float = float(defaults["farm_top_m"])
+	var width: int = stitched["width"]
+	var rows: int = stitched["rows"]
+	var spacing: float = stitched["spacing"]
+	var heights: PackedFloat32Array = stitched["heights"]
+	var landmass: PackedInt32Array = _label_landmasses(stitched)
+	var zone: Dictionary = {}
+	var farmable: Dictionary = {}
+	var rolling: Dictionary = {}
+	var origin: Dictionary = {}
+
+	for j in range(1, rows - 1):
+		for i in range(1, width - 1):
+			var index: int = j * width + i
+			var id: int = landmass[index]
+			var h: float = heights[index]
+
+			if id < 0 or h <= low_m or h > top_m or not _dry(stitched["water"][index], h):
+				continue
+
+			var dx: float = (heights[index + 1] - heights[index - 1]) / (2.0 * spacing)
+			var dz: float = (heights[index + width] - heights[index - width]) / (2.0 * spacing)
+			var slope: float = rad_to_deg(atan(sqrt(dx * dx + dz * dz)))
+			zone[id] = int(zone.get(id, 0)) + 1
+			origin[id] = Vector2(float(stitched["origin_x"]) + float(i) * spacing, float(stitched["origin_z"]) + float(j) * spacing) if not origin.has(id) else origin[id]
+
+			if slope <= farm_deg:
+				farmable[id] = int(farmable.get(id, 0)) + 1
+
+				if slope > flat_deg:
+					rolling[id] = int(rolling.get(id, 0)) + 1
+
+	for id in zone.keys():
+		if int(zone[id]) < 300:
+			continue
+
+		var farm_share: float = float(int(farmable.get(id, 0))) / float(zone[id])
+		var rolling_share: float = float(int(rolling.get(id, 0))) / float(zone[id])
+		_row("tile landmass near x %d z %d farmland (%.0f-%.0f m, slope at or under %.0f deg)" % [int((origin[id] as Vector2).x), int((origin[id] as Vector2).y), low_m, top_m, farm_deg], "%.1f%% farmable, %.1f%% rolling, %d cells of 32 m" % [farm_share * 100.0, rolling_share * 100.0, int(zone[id])], "report", "INFO")
+
+
+# Debug print for one river spot: the column of 32 m cells from _probe toward +z.
+func _probe_column(stitched: Dictionary, settled: Dictionary, tiles: Array, water_dir: String) -> void:
+	var width: int = stitched["width"]
+	var spacing: float = stitched["spacing"]
+	var heights: PackedFloat32Array = stitched["heights"]
+	var painted: PackedByteArray = stitched["water"]
+	var column: int = int(round((_probe.x - float(stitched["origin_x"])) / spacing))
+	var row: int = int(round((_probe.y - float(stitched["origin_z"])) / spacing))
+	var depths: Dictionary = {}
+
+	for tile in tiles:
+		var header: Dictionary = TileFileScript.read_header("%s/tile_%d_%d.tile" % [water_dir.get_base_dir() + "/tiles", tile.x, tile.y])
+		var side: int = int(header["header"]["samples"]) if header["ok"] else 0
+		depths[tile] = [side, WaterStoreScript.load_depth("%s/tile_%d_%d.water" % [water_dir, tile.x, tile.y], side) if side > 0 else PackedFloat32Array()]
+
+	print("== probe near x %d z %d (cell %d,%d): z, ground m, painted class, settled class, film, max settled depth m in the 32 m cell" % [int(_probe.x), int(_probe.y), column, row])
+
+	for step in range(48):
+		var j: int = row + step
+		var index: int = j * width + column
+		var best: float = 0.0
+		var per_tile: int = _quot(int((depths.values()[0] as Array)[0]) - 1, 4)
+		var tile_x: int = int(stitched["min_x"]) + _quot(column, per_tile)
+		var tile_z: int = int(stitched["min_z"]) + _quot(j, per_tile)
+		var entry: Array = depths.get(Vector2i(tile_x, tile_z), [0, PackedFloat32Array()])
+		var side: int = entry[0]
+		var depth: PackedFloat32Array = entry[1]
+
+		if side > 0 and not depth.is_empty():
+			var local_i: int = (column - (tile_x - int(stitched["min_x"])) * per_tile) * 4
+			var local_j: int = (j - (tile_z - int(stitched["min_z"])) * per_tile) * 4
+
+			for dj in range(4):
+				for di in range(4):
+					var k: int = (local_j + dj) * side + local_i + di
+
+					if k >= 0 and k < depth.size():
+						best = maxf(best, depth[k])
+
+		var settled_class: int = (settled["grid"] as PackedByteArray)[index] if not settled.is_empty() else -1
+		var film_flag: int = (settled["film"] as PackedByteArray)[index] if not settled.is_empty() else -1
+		print("  z %d | ground %.1f | painted %d | settled %d | film %d | depth %.3f" % [int(float(stitched["origin_z"]) + float(j) * spacing), heights[index], painted[index], settled_class, film_flag, best])
 
 
 func _seam_checks(settings, directory: String, tiles: Array) -> void:
@@ -1359,6 +1573,64 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 	_bound_row(title + " height range", high - low, tile_limits["spawn_range_m"], true, "%.2f m (%.2f to %.2f)" % [high - low, low, high])
 	_bound_row(title + " water samples", float(wet), tile_limits["spawn_max_water_cells"], true, "%d" % wet)
 
+	if _spawn_search_m > 0.0:
+		_spawn_candidates(heights, water, n, spacing, origin, spawn, ring, tile_limits)
+
+
+# Pads near the spawn that pass the same gate (slope, range, no water, above the beach top), nearest first, at least 300 m apart.
+func _spawn_candidates(heights: PackedFloat32Array, water: PackedByteArray, n: int, spacing: float, origin: Vector2, spawn: Vector2, ring: float, tile_limits: Dictionary) -> void:
+	var reach: int = int(ceil(ring / spacing))
+	var step: int = maxi(int(round(32.0 / spacing)), 1)
+	var found: Array = []
+	var span: int = int(ceil(_spawn_search_m / spacing))
+	var center_i: int = int(round((spawn.x - origin.x) / spacing))
+	var center_j: int = int(round((spawn.y - origin.y) / spacing))
+
+	for cj in range(center_j - span, center_j + span + 1, step):
+		for ci in range(center_i - span, center_i + span + 1, step):
+			var offset: Vector2 = Vector2(float(ci - center_i), float(cj - center_j)) * spacing
+
+			if offset.length() > _spawn_search_m or ci - reach < 0 or cj - reach < 0 or ci + reach + 1 >= n or cj + reach + 1 >= n:
+				continue
+
+			var low: float = INF
+			var high: float = -INF
+			var steepest: float = 0.0
+			var wet: int = 0
+
+			for dj in range(-reach, reach + 1):
+				for di in range(-reach, reach + 1):
+					if Vector2(di, dj).length() * spacing > ring:
+						continue
+
+					var k: int = (cj + dj) * n + ci + di
+					low = minf(low, heights[k])
+					high = maxf(high, heights[k])
+					wet += 1 if water[k] != 0 else 0
+					steepest = maxf(steepest, rad_to_deg(atan(absf(heights[k + 1] - heights[k]) / spacing)))
+					steepest = maxf(steepest, rad_to_deg(atan(absf(heights[k + n] - heights[k]) / spacing)))
+
+			if steepest <= float(tile_limits["spawn_max_slope_deg"]) and high - low <= float(tile_limits["spawn_range_m"]) and wet <= int(tile_limits["spawn_max_water_cells"]) and low >= 10.0:
+				found.append({"d": offset.length(), "x": spawn.x + offset.x, "z": spawn.y + offset.y, "slope": steepest, "h": low})
+
+	found.sort_custom(func(a, b): return a["d"] < b["d"])
+	var picked: Array = []
+
+	for candidate in found:
+		var apart: bool = true
+
+		for other in picked:
+			if Vector2(candidate["x"] - other["x"], candidate["z"] - other["z"]).length() < 300.0:
+				apart = false
+
+		if apart:
+			picked.append(candidate)
+
+		if picked.size() >= 5:
+			break
+
+	_row("spawn candidates within %.0f m (%d pads pass)" % [_spawn_search_m, found.size()], "; ".join(picked.map(func(c): return "x %d z %d (%.0f m away, %.1f deg, %.0f m high)" % [int(c["x"]), int(c["z"]), c["d"], c["slope"], c["h"]])) if not picked.is_empty() else "none", "-", "INFO")
+
 
 # The 32 m maps of all baked tiles side by side. Cells outside the baked area are 255 in `water`.
 func _stitch(tiles: Array, directory: String, fine: bool = false) -> Dictionary:
@@ -1426,6 +1698,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 	var bodies: int = 0
 	var ending_inland: int = 0
 	var natural_ends: int = 0
+	var heads: int = 0
 	var stopped: int = 0
 	var min_cells: int = int(tile_limits["river_min_cells"])
 	var gap_cells: int = int(ceil(float(tile_limits["river_gap_m"]) / spacing))
@@ -1438,6 +1711,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 		var stack: PackedInt32Array = PackedInt32Array([start])
 		seen[start] = 1
 		var river_cells: int = 0
+		var painted_cells: int = 0
 		var reaches: bool = false
 		var lowest: float = INF
 		var lowest_index: int = start
@@ -1448,6 +1722,9 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 
 			if grid[index] == 3:
 				river_cells += 1
+
+			if (stitched["water"] as PackedByteArray)[index] == 3:
+				painted_cells += 1
 
 			if map_heights[index] < lowest:
 				lowest = map_heights[index]
@@ -1487,7 +1764,11 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 			# Natural ends (Sonny's rule): the last cell is a lake, or the ground falls less than river_natural_drop_m over
 			# the next river_natural_look_m (a head hollow or basin), the ground continues with water or a thin film on the way,
 			# or it falls steeply (every one of the first 4 cells below the end drops more than river_steep_drop_m per 8 m: a fall where the water leaves as a film).
-			var natural: bool = grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
+			# A settled-only body (no painted river cell in it) has no catchment above the river start size: a head or pit, not a river end (Steve, 24 Oct).
+			if painted_cells == 0:
+				heads += 1
+
+			var natural: bool = painted_cells == 0 or grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
 			var real_end: bool = not natural
 
 			if real_end:
@@ -1498,7 +1779,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 			_row("river ends %s (%s) near x %d z %d" % ["inland" if real_end else "naturally", tag, int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
 				"%d river samples, lowest water at %.1f m; %s; drop %.1f m over %.0f m" % [river_cells, lowest, look["text"], float(look["drop_m"]), float(tile_limits["river_natural_look_m"])], "reaches sea", ("FAIL" if gate else "INFO") if real_end else "INFO")
 
-	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d do not touch the sea (old count), %d of those end naturally (lake, head hollow, or water continues), %d end inland" % [bodies, stopped, natural_ends, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
+	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d do not touch the sea (old count), %d of those end naturally (lake, head hollow, or water continues; %d settled-only heads with no painted river), %d end inland" % [bodies, stopped, natural_ends, heads, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
 
 
 # The settled water (tile_X_Z.water, the server's saved simulation) on the 32 m map: ocean from the painted

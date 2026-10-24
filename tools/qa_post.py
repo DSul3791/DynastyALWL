@@ -54,6 +54,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="qa_post_")   # a throwaway clone: your own branch and files are never touched
     try:
         for attempt in range(4):
+            os.chdir("/")   # never sit inside the folder we delete (a failed push used to break the retry)
             shutil.rmtree(tmp, ignore_errors=True)
             sh("git", "clone", "-q", "--depth", "1", "--branch", BRANCH, url, tmp)
             os.chdir(tmp)

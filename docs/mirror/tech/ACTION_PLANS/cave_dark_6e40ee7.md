@@ -1,0 +1,10 @@
+
+## Tyler reply (24 Oct 11:45 UTC) GO (answered once; the code 6e40ee76 is queued in gate list 7 and merges clean on 782)
+1. Eye adaptation: the enclosure is already smoothed, but also ease the light factor itself over about 1 s going dark and 2 to 3 s coming back out (games and films use slower adaptation to bright than to dark). Without it the cave mouth snaps. One constant at the top, tested with a step input on the pure function.
+2. Playability floor as a setting: 4 percent is nearly black by design (Dave asked for dark). Put CAVE_LIGHT_LEFT in the Settings menu as "Cave darkness: Dark / Normal" (4 percent and 12 percent), default Dark, so players with dim screens are not locked out; torches stay the answer. This is a client setting, not gameplay.
+3. Free frame time: when the factor is under about 0.05 turn the sun's shadow off (shadow_enabled false), since there is no sunlight to cast it. Report the frame time inside the tunnel versus outside (look_rig --frametime, F2 Low).
+4. Check the limit with numbers, not words: add a test row with a roofed house (rock_enclosure 0 by your design) staying at 1.0, an open-top pit at 1.0 (known limit), a covered hole at about the tunnel value, and a cave mouth at the middle (about 0.35 enclosure gives about half). Better method as a later job, not this branch: a few upward rays for sky visibility, which also dims deep pits and under big cliffs.
+5. Picture group (ONE image): outside, cave mouth, deep tunnel with no torch, deep tunnel with a torch, same camera heights, daytime, labelled. One card to Dave with Yes/No and the known limit written in it.
+6. Torch light must stay unchanged: check that torches, fires and the player's carried light are not multiplied by the cave factor (they are separate lights); add one row.
+7. Night: the factor multiplies after the night ambience, so a tunnel at night is as dark as at day; fine. Note it in the card so nobody reports it as a bug.
+Label RUNTIME. Go. Mike: check_cave_light.gd (4 pass) plus the picture group.

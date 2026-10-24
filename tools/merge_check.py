@@ -109,6 +109,10 @@ if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
         bad("look name: " + line)
 
+master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
+if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
+    print("WARNING:", master.stdout.strip())
+
 if problems:
     print("MERGE CHECK FAILED:")
     for p in problems:

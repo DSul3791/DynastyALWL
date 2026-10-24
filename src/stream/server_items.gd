@@ -222,6 +222,15 @@ var _skills_sent: Dictionary = {}   # peer -> the rows last sent
 var _skills_send_in: Dictionary = {}   # peer -> msec before which no skills message goes out
 var _last_practice: Dictionary = {}   # peer -> {skill: msec of its last counted success}
 var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
+var send_zone: Callable = Callable()        # (peer, biome id): tells the client which biome it stands in (protocol 76; ambience slots read it)
+var zone_at: Callable = Callable()          # (position Vector3) -> biome id from the tile biome map, -1 when unknown; set by the server scene
+var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
+var send_vent: Callable = Callable()        # (peer, Vector3): the nearest volcanic vent within VENT_RANGE_M, Vector3.INF when none (protocol 77; the volcano bed sits there)
+var vent_near: Callable = Callable()        # (position Vector3) -> Vector3 of the nearest vent top within VENT_RANGE_M, INF when none; set by the server scene
+var zone_samples: int = 0                   # biome lookups made, messages sent and microseconds spent (the report reads these)
+var zone_messages: int = 0
+var vent_messages: int = 0
+var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
 var send_warmth: Callable           # (peer, warmth percent 0..100)
@@ -363,6 +372,10 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		return
 
 	_peer_key[peer] = key
+	_zone_sent.erase(peer)
+	_zone_cand.erase(peer)
+	_zone_checked.erase(peer)
+	_vent_sent.erase(peer)
 
 	if not _inventories.has(key):
 		_inventories[key] = InventoryScript.new(table)
@@ -443,6 +456,11 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
+	_zone_sent.erase(peer)
+	_zone_cand.erase(peer)
+	_zone_pos.erase(peer)
+	_zone_checked.erase(peer)
+	_vent_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_off.erase(peer)
@@ -497,10 +515,82 @@ func report_position(peer: int, position: Vector3) -> void:
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
 		var now: int = Time.get_ticks_msec()
+		_note_zone(peer, position)
 
 		if now - int(_spot_saved_msec.get(peer, 0)) >= SAVE_SPOT_EVERY_MSEC:
 			_spot_saved_msec[peer] = now
 			_note_spot(peer, "online")
+
+
+const ZONE_EVERY_MSEC := 2000       # the biome under a player is read this often
+const VENT_RANGE_M := 1500.0           # the volcano bed is inaudible beyond this (batch2_slots.json max_distance_m)
+const VENT_MOVE_M := 1.0               # a vent anchor is sent again only when it moved by more than this (a different vent, or none)
+const ZONE_TELEPORT_M := 200.0       # a jump this far between two reads (teleport, respawn) is sent at once
+var _zone_sent: Dictionary = {}      # peer -> biome id the client was last told
+var _zone_cand: Dictionary = {}      # peer -> a new biome read once; sent when the next read agrees (about 4 s)
+var _zone_pos: Dictionary = {}       # peer -> position at the last read
+var _zone_checked: Dictionary = {}   # peer -> msec of the last read
+var _vent_sent: Dictionary = {}      # peer -> the vent anchor the client was last told (INF = none)
+
+
+# Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
+# a border). Reliable and ordered, so the client's last value is the server's last.
+func _note_zone(peer: int, position: Vector3) -> void:
+	if not zone_at.is_valid() or not send_zone.is_valid():
+		return
+
+	var now: int = int(zone_clock.call()) if zone_clock.is_valid() else Time.get_ticks_msec()
+
+	if _zone_checked.has(peer) and now - int(_zone_checked[peer]) < ZONE_EVERY_MSEC:
+		return
+
+	_zone_checked[peer] = now
+	_note_vent(peer, position)
+	var started: int = Time.get_ticks_usec()
+	var biome: int = int(zone_at.call(position))
+	zone_usec += Time.get_ticks_usec() - started
+	zone_samples += 1
+	var jumped: bool = _zone_pos.has(peer) and position.distance_to(_zone_pos[peer]) > ZONE_TELEPORT_M
+	_zone_pos[peer] = position
+
+	if biome < 0:
+		return
+
+	if not _zone_sent.has(peer) or jumped:
+		_send_zone(peer, biome)
+	elif biome == int(_zone_sent[peer]):
+		_zone_cand.erase(peer)
+	elif int(_zone_cand.get(peer, -2)) == biome:
+		_send_zone(peer, biome)
+	else:
+		_zone_cand[peer] = biome
+
+
+# The nearest volcanic vent within VENT_RANGE_M, on the zone's 2 s cadence: sent at login and whenever it changes (a different vent, or none in range).
+func _note_vent(peer: int, position: Vector3) -> void:
+	if not vent_near.is_valid() or not send_vent.is_valid():
+		return
+
+	var at: Vector3 = vent_near.call(position)
+	var known: bool = _vent_sent.has(peer)
+	var before: Vector3 = _vent_sent.get(peer, Vector3.INF)
+
+	if known and (at == before or (at.is_finite() and before.is_finite() and at.distance_to(before) <= VENT_MOVE_M)):
+		return
+
+	# At login nothing needs saying when there is no vent: the client starts with none.
+	_vent_sent[peer] = at
+
+	if known or at.is_finite():
+		vent_messages += 1
+		send_vent.call(peer, at)
+
+
+func _send_zone(peer: int, biome: int) -> void:
+	_zone_sent[peer] = biome
+	_zone_cand.erase(peer)
+	zone_messages += 1
+	send_zone.call(peer, biome)
 
 
 func inventory_of(peer: int):
@@ -796,6 +886,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_DUMP_WATER:
 		if admin_ok.is_valid() and admin_ok.call(peer) and dump_water.is_valid():
 			_say(peer, "Water dump: %s" % str(dump_water.call(at.x, at.z)))
+	elif kind == Net.ACT_LAND_TYPES:
+		if admin_ok.is_valid() and admin_ok.call(peer) and land_types.is_valid():
+			_say(peer, "Land types: %s" % str(land_types.call(at.x, at.z)))
 	elif kind == Net.ACT_RESET_EDITS:
 		if admin_ok.is_valid() and admin_ok.call(peer) and reset_terrain_edits.is_valid():
 			print("server: peer %d reset all terrain edits" % peer)
@@ -810,6 +903,7 @@ var ground_ready: Callable              # (x, z) -> bool: the ground there is in
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
+var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
@@ -6292,6 +6386,12 @@ func _craft_tick(spent: float) -> void:
 		for keep in recipe.get("keeps", []):
 			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
 
+		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
+		var wears_tool: String = str(recipe.get("wears_tool", ""))
+
+		if wears_tool != "" and not free_entry:
+			tools_ok = tools_ok and inv != null and _tool_slot(inv, wears_tool) >= 0
+
 		if not tools_ok:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
@@ -6300,6 +6400,10 @@ func _craft_tick(spent: float) -> void:
 			_gain_source = SRC_CRAFT
 			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
 			_gain_source = SRC_PICKUP
+
+			if wears_tool != "" and not free_entry:
+				_wear_tool(peer, inv, wears_tool, "craft")
+
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
 			head[1] = int(head[1]) - 1
 

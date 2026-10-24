@@ -187,6 +187,24 @@
    "color": "#a98f52",
    "size": 1.0
   },
+  "stone_hammer": {
+   "shape": "axe",
+   "color": "#7d7a74",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "hand_saw": {
+   "shape": "spade",
+   "color": "#8a8d93",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "stone_adze": {
+   "shape": "axe",
+   "color": "#7d7a74",
+   "size": 0.9,
+   "placeholder": true
+  },
   "stone_spade": {
    "shape": "spade",
    "color": "#7d7a74",

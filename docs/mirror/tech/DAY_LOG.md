@@ -15,3 +15,9 @@ Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop
 - 07:00 UTC 24 Oct Guru_003: build 780 merged (harvest-field 5100acbf).
 - 07:50 UTC 24 Oct Guru_003: build 781 merged (v30 bake, TERRAIN_VERSION 36).
 - 07:58 UTC 24 Oct Guru_003: build 782 merged (water seams).
+- 11:55 UTC 24 Oct Guru_003: build 783 merged (v31 bake, TERRAIN_VERSION 41).
+- 12:10 UTC 24 Oct Guru_003: build 784 merged (gates 6+7, 5 branches).
+- 12:35 UTC 24 Oct Guru_003: build 785 merged (biome lookup, protocol 76).
+- 13:15 UTC 24 Oct Guru_003: build 786 merged (vent anchor, protocol 77).
+- 13:25 UTC 24 Oct Guru_003: build 787 merged (rig-item, tools batch 1).
+- 13:30 UTC 24 Oct (Dave 13:24 UTC): MORNING MEETING, DEVSTOP for everyone except Mike's tests. No new branches, no new gate until the meeting.

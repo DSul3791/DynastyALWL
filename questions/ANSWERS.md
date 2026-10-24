@@ -1362,3 +1362,223 @@ Answered: 2026-10-24 02:50 UTC
 Answer: Yes, I think that’s great. I agree. I approve this plan.
 Answered: 2026-10-24 03:51 UTC
 
+## look-terrain-783 | Does the new land from spawn to the mountains look right? (build 787)
+Answer: Yes
+Answered: 2026-10-24 14:15 UTC
+
+## terrain-final-ideas | More rolling hills (27 to 30 percent of the land) for the final bake, plus mountain passes, as one terrain change?
+Answer: Yes
+Answered: 2026-10-24 14:15 UTC
+
+## look-caves-dark | Are caves and tunnels dark by day now? (build 784)
+Answer: No: No, I’m deep in a cave right now and I can still see without a torch
+Answered: 2026-10-24 14:19 UTC
+
+## look-caves-dark | Are caves and tunnels dark by day now? (build 784)
+Answer: No: No, I’m deep in a cave right now and I can still see without a torch
+Answered: 2026-10-24 14:20 UTC
+
+## look-trees-ferns | Do the trees, ferns and grass look better, and is there a softwood belt on the foothills? (build 779, 784)
+Answer: Yes
+Answered: 2026-10-24 14:20 UTC
+
+## look-sound-batch2 | Do the new ambience sounds sound right? (bird chorus, owl, frogs, crickets, surf, wind)
+Answer: No: No, I’m standing at the base of a mountain and all I can hear is a heavy heavy heavy rumbling in my ears, but I don’t think I’m near a waterfall. I don’t see any signs of big strong wind like the pollen is flowing by gently. It just sounds like a really big wind. Sounds like I’m in a wind storm.
+Answered: 2026-10-24 14:30 UTC
+
+## look-sound-batch2 | Do the new ambience sounds sound right? (bird chorus, owl, frogs, crickets, surf, wind)
+Answer: No: No, I’m standing at the base of a mountain and all I can hear is a heavy heavy heavy rumbling in my ears, but I don’t think I’m near a waterfall. I don’t see any signs of big strong wind like the pollen is flowing by gently. It just sounds like a really big wind. Sounds like I’m in a wind storm.
+Answered: 2026-10-24 14:30 UTC
+
+## rumble-300m | Should the volcano rumble play only above 300 m (high up), or also from the ground near the volcano?
+Answer: No: If it is an island that has a volcano and the volcano is active then it should rumble and you should be able to hear it and or feel it depending on how close it is to exploding all over the island
+Answered: 2026-10-24 14:31 UTC
+
+## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
+Answer: No: The hammers only purpose is to allow you to access blueprints to put down on the ground. So if you wanna put down the blueprint of a type of foundation, you have to pull out your hammer and right click and then it will give you a menu that allows you to go through all the blueprints.
+Answered: 2026-10-24 14:32 UTC
+
+## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
+Answer: No: The hammers only purpose is to allow you to access blueprints to put down on the ground. So if you wanna put down the blueprint of a type of foundation, you have to pull out your hammer and right click and then it will give you a menu that allows you to go through all the blueprints.
+Answered: 2026-10-24 14:32 UTC
+
+## tools-next-uses | What should the hammer and adze do first: real uses now (nails, smoothing logs), or build the anvil, tongs and bellows first?
+Answer: No: We have no need for an adze. And the hammer is solely used for picking blueprints when you have a hammer in your hand and your right click. It will give you a menu of blueprints that you can place and when you have a blueprint selected and your left click it will place the blueprint. The first item on the blueprint menu is going to be the repair function so if you select the repair function, your hammer becomes a repairing tool and you can click to repair stuff if you have what’s needed to repair it
+Answered: 2026-10-24 14:54 UTC
+
+## tools-next-uses | What should the hammer and adze do first: real uses now (nails, smoothing logs), or build the anvil, tongs and bellows first?
+Answer: No: We have no need for an adze. And the hammer is solely used for picking blueprints when you have a hammer in your hand and your right click. It will give you a menu of blueprints that you can place and when you have a blueprint selected and your left click it will place the blueprint. The first item on the blueprint menu is going to be the repair function so if you select the repair function, your hammer becomes a repairing tool and you can click to repair stuff if you have what’s needed to repair it
+Answered: 2026-10-24 14:54 UTC
+
+## fire-three-pieces | Does '3 types of wood' mean 3 pieces of that wood for a fire tier?
+Answer: Yes
+Answered: 2026-10-24 16:01 UTC
+
+## fire-small-cooks | Can food be cooked on the tiny survival fire (sticks)?
+Answer: Yes
+Answered: 2026-10-24 16:02 UTC
+
+## thatch-sources-go | Build the new thatch sources (thatching grass patches in all grassy areas, thatch from tree bark)?
+Answer: Yes
+Answered: 2026-10-24 16:02 UTC
+
+## bridge-ramp-cap | Cap a bridge ramp at 40 m long?
+Answer: No: No because whatever size we decide to make the ramps should allow people to flexibility of putting them on awkward terrain, or whatever they need so make the poles 5 m long from the bottom of the bridge floor and make the ramps go down to whatever that same height is
+Answered: 2026-10-24 16:04 UTC
+
+## hammer-adze-recipe | Make the stone hammer and stone adze cost 1 stone + 1 stick + 5 twine like the axe?
+Answer: No: Remove adze from the game. Make the first hammer made of wood and wood and twine. This is the weakest hammer although it does the exact same job. It just doesn’t last as long it has poor durability. The next step up would be stone and wood and twine and then it would be resource and Wood, like copper, bronze, iron, steel
+Answered: 2026-10-24 16:06 UTC
+
+## hammer-adze-recipe | Make the stone hammer and stone adze cost 1 stone + 1 stick + 5 twine like the axe?
+Answer: No: Remove adze from the game. Make the first hammer made of wood and wood and twine. This is the weakest hammer although it does the exact same job. It just doesn’t last as long it has poor durability. The next step up would be stone and wood and twine and then it would be resource and Wood, like copper, bronze, iron, steel
+Answered: 2026-10-24 16:06 UTC
+
+## wl-r1-first | Water land types: build R1 first (admin map of land types, no plant changes, plus the dam test)?
+Answer: Yes
+Answered: 2026-10-24 16:07 UTC
+
+## thatch-screen-first-room | Is the first room a cheap thatch screen wall (about 12 thatch, 4 twine, 6 sticks)?
+Answer: No: We don’t place rooms we only place pieces and eventually when players put a bunch of blueprints together and they’re happy with those they can save that group of blueprints and everything connected to it as a grand blueprint so I could use blueprints to build a house and save it and then I could just place the blueprint for that house. Also, if I like the house, or a building I can right click on my hammer, select the blueprint maker and then use the hammer on a building or structure, and it would immediately make a blueprint of that structure and save it asking me for a name and then I could place that blueprint anywhere in the world
+Answered: 2026-10-24 16:09 UTC
+
+## thatch-screen-first-room | Is the first room a cheap thatch screen wall (about 12 thatch, 4 twine, 6 sticks)?
+Answer: No: We don’t place rooms we only place pieces and eventually when players put a bunch of blueprints together and they’re happy with those they can save that group of blueprints and everything connected to it as a grand blueprint so I could use blueprints to build a house and save it and then I could just place the blueprint for that house. Also, if I like the house, or a building I can right click on my hammer, select the blueprint maker and then use the hammer on a building or structure, and it would immediately make a blueprint of that structure and save it asking me for a name and then I could place that blueprint anywhere in the world
+Answered: 2026-10-24 16:09 UTC
+
+## metal-ladder | Metal ladder: stone pick first, then bronze pick from the basic forge, iron needs a bronze pick; add copper, tin and bronze to the game?
+Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
+Answered: 2026-10-24 16:10 UTC
+
+## metal-ladder | Metal ladder: stone pick first, then bronze pick from the basic forge, iron needs a bronze pick; add copper, tin and bronze to the game?
+Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
+Answered: 2026-10-24 16:10 UTC
+
+## respawn-at-bed | Respawn at your own bed (per player), built right after the first hour work?
+Answer: Yes
+Answered: 2026-10-24 16:10 UTC
+
+## cooking-stations | Three cooking stations: tripod pot, clay hearth, oven (tier 1 in R2, the others R3)?
+Answer: Yes
+Answered: 2026-10-24 16:10 UTC
+
+## inner-voice-hints | Inner-voice hints: max 6 an hour, 12 words, never an order, admin can mute, one gentle up-front hint after 60 s of doing nothing?
+Answer: No: Yes, and no, the inner voice is going to have its own control panel in the settings for everyone and you could determine whether you have it on or off and whether it’s going to give you hints on and off and or if it’s going to give you inner dialogue on and off. The inner dialogue would be things like when your perception role is good and you realize you’re about to get attacked or there’s bad guys behind the door. Your inner voice might say well I feel like something bad is about to happen or it might make a funny joke about it or when you lay down and go to sleep it might say well that was a good day or at least we didn’t die. It’s got various uses.
+Answered: 2026-10-24 16:12 UTC
+
+## inner-voice-hints | Inner-voice hints: max 6 an hour, 12 words, never an order, admin can mute, one gentle up-front hint after 60 s of doing nothing?
+Answer: No: Yes, and no, the inner voice is going to have its own control panel in the settings for everyone and you could determine whether you have it on or off and whether it’s going to give you hints on and off and or if it’s going to give you inner dialogue on and off. The inner dialogue would be things like when your perception role is good and you realize you’re about to get attacked or there’s bad guys behind the door. Your inner voice might say well I feel like something bad is about to happen or it might make a funny joke about it or when you lay down and go to sleep it might say well that was a good day or at least we didn’t die. It’s got various uses.
+Answered: 2026-10-24 16:12 UTC
+
+## direct-on-blueprint | A direct piece placed on an unfinished blueprint waits until it is done; taking down a finished piece returns 50 percent?
+Answer: No: Taking down a blueprint returns 100%
+Answered: 2026-10-24 16:12 UTC
+
+## copper-tin-placement | Place copper and tin nuggets at runtime near gullies and rock faces, because the baked ground has none?
+Answer: No: Yes, but… 10 usually usually show up near running water and tin and copper should show up somehow according to where there might be actual tin and copper veins so if you run along the base of a mountain eventually you should find some tin and copper but if you do, that should tell you that there’s a vein in line somewhere up the mountain, so it would be a good spot to start digging a mine also if there are copper mines or tin mines, I don’t know if that’s a thing sometimes they should protrude from the ground so you can see them
+Answered: 2026-10-24 16:15 UTC
+
+## wl-window | Water land types: read the water over 30 game days so one storm does not rename land?
+Answer: Yes
+Answered: 2026-10-24 16:15 UTC
+
+## wl-farmland | Water land types: player-tilled farmland is exempt from wild succession (weeds only)?
+Answer: No: It shouldn’t be overnight. It should take a long long time so if the water let’s say gets re-rooted and flood the field, it starts the timer that starts slowly hurting the crops and let’s say it’s gonna take a week before it kills the crops. Then the farmer can go find what caused the flooding and fix it or they can dig ditches to run off the water, or they can build dams and ditches around their fields and once the water clears off, then that land will stop being under threat of change.
+Answered: 2026-10-24 16:17 UTC
+
+## wl-farmland | Water land types: player-tilled farmland is exempt from wild succession (weeds only)?
+Answer: No: It shouldn’t be overnight. It should take a long long time so if the water let’s say gets re-rooted and flood the field, it starts the timer that starts slowly hurting the crops and let’s say it’s gonna take a week before it kills the crops. Then the farmer can go find what caused the flooding and fix it or they can dig ditches to run off the water, or they can build dams and ditches around their fields and once the water clears off, then that land will stop being under threat of change.
+Answered: 2026-10-24 16:17 UTC
+
+## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
+Answer: Yes
+Answered: 2026-10-24 16:39 UTC
+
+## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
+## fire-lighting-rain | Does fire always light in dry weather (strike stones into dry plant-fibre tinder), and rain makes it slow or fail?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
+## new-player-switch | Start with nothing but ground items, hints on, plus an admin 'become a new player' switch for testing?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
+## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
+Answer: Yes
+Answered: 2026-10-24 16:41 UTC
+
+## rough-bed-rules | Rough bed: thatch + 4 sticks + 2 twine under any roof, better sleep, food and water at half rate asleep, never auto-wakes?
+Answer: Yes
+Answered: 2026-10-24 16:41 UTC
+
+## shore-net-first | Does fishing start with a shore net (20 twine + 4 stones), with trap, spear and rod later and no reflex minigame?
+Answer: Yes
+Answered: 2026-10-24 16:41 UTC
+
+## server-for-tests | Use your 24-hour Ubuntu game server (in its own Docker container) for Mike's tests, with limits that protect your two games?
+Answer: No: It has graphics capability. You should be using this to do all Testing.
+Answered: 2026-10-24 17:02 UTC
+
+## wl-bridges | Bridges: low plank bridges and fords can be washed out in floods, high stone bridges with piers survive?
+Answer: Yes
+Answered: 2026-10-24 17:03 UTC
+
+## wl-dead-trees | Water land types: dead trees stay visible 20 to 30 game days, then fall?
+Answer: Yes
+Answered: 2026-10-24 17:03 UTC
+
+## wl-tree-speed | Water land types: trees take 3 to 6 real days to die after the water changes (herbs half a day)?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
+## fish-species-list | Use this fish list (salmon and trout in rivers, herring to tuna in the sea)?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
+## fish-stock-schools | Keep fish as hidden stock with moving schools, not swimming creatures?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
+## fish-salmon-autumn | Make the salmon run autumn-only, trout the rest of the year?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
+## fish-shadows | Show dark fish shadows in clear shallow water as well as jumps?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
+## fish-sea-shore-only | Limit sea fishing to shore and shallows until boats exist?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
+## wl-soil-types | Water land types: swamp, marsh or bog chosen by soil and climate, not water alone?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
+## wl-lake-size | Water land types: still water of 4 or more cells (about 250 m2) counts as a lake in the label?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
+## wl-dam-strength | Dams: strength depends on material, thickness and bracing, and dirt erodes if water pours over the top?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
+## wl-dam-breach | Dams: a breach is slow with a warning (creak, chat line), never instant?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
+## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
+## wl-flood-plain | Water land types: a flood makes floodplain only, never swamp?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
+## look-new-tools | Can you craft the new tools? (build 787: stone hammer, hand saw, stone adze)
+Answer: No: If you use a hand on a log, it should chop the log up into blocks which are round logs that are shorter, and we use blocks on a chopping block to make firewood
+Answered: 2026-10-24 19:26 UTC
+

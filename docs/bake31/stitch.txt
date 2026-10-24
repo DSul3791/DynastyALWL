@@ -1,0 +1,32 @@
+
+seam (2, 3) | (3, 3): 8 edge cells changed
+seam (2, 3) | (2, 4): 0 edge cells changed
+seam (3, 3) | (4, 3): 0 edge cells changed
+seam (3, 3) | (3, 4): 35 edge cells changed
+seam (4, 3) | (4, 4): 0 edge cells changed
+seam (2, 4) | (3, 4): 0 edge cells changed
+seam (2, 4) | (2, 5): 0 edge cells changed
+seam (3, 4) | (4, 4): 43 edge cells changed
+seam (3, 4) | (3, 5): 17 edge cells changed
+seam (4, 4) | (4, 5): 93 edge cells changed
+seam (2, 5) | (3, 5): 0 edge cells changed
+seam (3, 5) | (4, 5): 25 edge cells changed
+seam (2, 3) | (3, 3): 0 edge cells changed
+seam (2, 3) | (2, 4): 0 edge cells changed
+seam (3, 3) | (4, 3): 0 edge cells changed
+seam (3, 3) | (3, 4): 0 edge cells changed
+seam (4, 3) | (4, 4): 0 edge cells changed
+seam (2, 4) | (3, 4): 0 edge cells changed
+seam (2, 4) | (2, 5): 0 edge cells changed
+seam (3, 4) | (4, 4): 0 edge cells changed
+seam (3, 4) | (3, 5): 0 edge cells changed
+seam (4, 4) | (4, 5): 0 edge cells changed
+seam (2, 5) | (3, 5): 0 edge cells changed
+seam (3, 5) | (4, 5): 0 edge cells changed
+saved tile (2, 3): 7189 wet cells
+saved tile (3, 3): 28663 wet cells
+saved tile (3, 4): 127995 wet cells
+saved tile (4, 4): 16278 wet cells
+saved tile (3, 5): 4441 wet cells
+saved tile (4, 5): 74374 wet cells
+stitch done: 9 tiles read, 221 edge cells changed in 6 tiles

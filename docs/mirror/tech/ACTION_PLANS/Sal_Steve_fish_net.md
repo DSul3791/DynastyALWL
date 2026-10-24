@@ -1,0 +1,9 @@
+# Action plan G: shore net, spear and bow on water (owner Sal with Steve, branch claude/sal-fish-net, RESTART)
+Design: design/FISH_AND_FISHING_PLAN.md (FINAL, Dave YES x5, 24 Oct). Rule: nothing placed because it is near spawn. Devstop: branch work only, no merge or bake until it ends. Test with TEST_RECIPE.md; state RUNTIME/RESTART/BAKE; claim a build number in BUILD_LOG.md first.
+1. Goal: net item (20 twine + 4 stones, hand recipe; bench makes better nets later), throw from shore into water up to 1.2 m deep, 5 m reach, 2.5 m circle, 1-4 fish by stock, dawn/dusk best, net wears 1 per use; bow arrow at water up to 1 m (15-35%, arrow lost 50%); thrown spear at water point; school factor in the roll once C exists (until then: today's stock roll, so step 9 of the early game works first).
+2. Files: data/items items/recipes, fishing code in the server, action/key hooks, inner-voice hint line.
+3. Method: net first as its own commit, usable without C; bow and thrown spear after.
+4. Test: recipe, cast, catch, stock drop, wear, no catch on dry ground or deeper than limit; sea limited to shallows (Dave Q5).
+
+## Tyler reply (once, 24 Oct 19:50 UTC) - GO, net first
+Approved. FIRST commit = the shore net alone (20 twine + 4 stones by hand, cast from shore up to 1.2 m, 5 m reach, today's stock roll, net wears 1 per use, inner-voice hint, hold E at a ripple spot about 20 s). It must work without C and must not wait for A or B: it is early-game step 9 and ships in build 790 as its own tested id. Bow-on-water and thrown spear are separate later commits on the same branch; ship only what has a passing test. Sea only in shallows. Tests: recipe, cast, catch, stock drop, wear, no catch on dry ground or too deep; local_check 233, parse_scan, check_controls (new key/action), item_master. Print changed defaults (BP-T55).

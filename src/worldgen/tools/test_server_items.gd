@@ -1937,6 +1937,57 @@ func _init() -> void:
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
 
+	# Tools batch 1: the hand saw turns a log into lumber by the balance row and wears; the hammer and adze recipes use live items.
+	var hs_dir: String = "user://test_server_items_handsaw"
+	DirAccess.make_dir_recursive_absolute(hs_dir)
+
+	for file in DirAccess.get_files_at(hs_dir):
+		DirAccess.remove_absolute(hs_dir + "/" + file)
+
+	var hs = make(hs_dir)
+	hs.send_craft_queue = func(_p, _e, _l): pass
+	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	hs.peer_connected_hello(1, "handsawkey01")
+	var by_hand: Dictionary = {}
+
+	for rn in hs.recipes.numbers():
+		if hs.recipes.recipe(rn)["id"] == "lumber_by_hand":
+			by_hand = hs.recipes.recipe(rn)
+
+	check(not by_hand.is_empty() and by_hand["gives"][1] == 2 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (2 lumber, 24 s)")
+	hs.give(1, hs.table.number_of("log"), 2)
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "no saw, no craft: the log stays")
+	var hs_inv = hs.inventory_of(1)
+	var bag_was: int = hs_inv.bag_from
+	hs_inv.bag_from = 0   # the saw goes on the hotbar, as an admin give would
+	hs_inv.add(hs.table.number_of("hand_saw"), 1)
+	hs_inv.bag_from = bag_was
+	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+
+	for n in 100:
+		hs._craft_tick(0.25)
+
+	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
+	check(saw_slot >= 0 and saw_slot < 10 and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+
+	for rid in ["stone_hammer", "stone_adze"]:
+		var rec: Dictionary = {}
+
+		for rn in hs.recipes.numbers():
+			if hs.recipes.recipe(rn)["id"] == rid:
+				rec = hs.recipes.recipe(rn)
+
+		var live: bool = not rec.is_empty() and rec["station"] == "workbench"
+
+		for row in rec.get("needs", []):
+			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
+
+		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made at a workbench from live items" % rid)
+
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
 	DirAccess.make_dir_recursive_absolute(qd)
@@ -2559,6 +2610,114 @@ func _init() -> void:
 
 	print("scatter within 48 m: spawn %d stones %d sticks; far %d things" % [near_stones, near_sticks, far_total])
 	check(far_total < near_stones + near_sticks, "far from spawn the scatter stays sparse (%d against %d)" % [far_total, near_stones + near_sticks])
+
+	# Zone (protocol 76): the biome under a player goes to the client at login, at once after a teleport or respawn, and after a change that reads the same
+	# twice running (about 4 s); nothing is sent while it stays the same. Bytes and sample cost are printed.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_zone")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_zone2")
+	var zi = make("user://test_server_items_zone")
+	var zone_sent: Array = []
+	var zone_now: Array = [0]
+	var biome_here: Array = [8]
+	zi.send_zone = func(peer, biome_id): zone_sent.append([peer, biome_id])
+	zi.zone_at = func(_pos): return biome_here[0]
+	zi.zone_clock = func(): return zone_now[0]
+	zi.peer_connected_hello(1, "zonepeer001")
+	zi.report_position(1, Vector3(100.0, 5.0, 100.0))
+	check(zone_sent == [[1, 8]], "login: the biome is sent on the first report (%s)" % str(zone_sent))
+	zone_now[0] = 1000
+	zi.report_position(1, Vector3(101.0, 5.0, 100.0))
+	zone_now[0] = 2000
+	zi.report_position(1, Vector3(102.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "standing in the same biome sends nothing more")
+	biome_here[0] = 13
+	zone_now[0] = 4000
+	zi.report_position(1, Vector3(103.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "a first read of a new biome is held back (no flicker on a border)")
+	biome_here[0] = 8
+	zone_now[0] = 6000
+	zi.report_position(1, Vector3(104.0, 5.0, 100.0))
+	biome_here[0] = 13
+	zone_now[0] = 8000
+	zi.report_position(1, Vector3(105.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "stepping back and forth over a border sends nothing")
+	zone_now[0] = 10000
+	zi.report_position(1, Vector3(106.0, 5.0, 100.0))
+	check(zone_sent.size() == 2 and zone_sent[1] == [1, 13], "the same new biome read twice running is sent (%s)" % str(zone_sent))
+	biome_here[0] = 3
+	zone_now[0] = 12000
+	zi.report_position(1, Vector3(5000.0, 5.0, 100.0))
+	check(zone_sent.size() == 3 and zone_sent[2] == [1, 3], "a teleport or respawn is sent at once")
+	zi.peer_left(1)
+	zi.peer_connected_hello(1, "zonepeer001")
+	zone_now[0] = 14000
+	zi.report_position(1, Vector3(5000.0, 5.0, 100.0))
+	check(zone_sent.size() == 4 and zone_sent[3] == [1, 3], "a returning player gets the zone again")
+	zone_now[0] = 14500
+	zi.report_position(1, Vector3(5001.0, 5.0, 100.0))
+	check(zi.zone_samples == 8 and zone_sent.size() == 4, "reports closer than 2 s apart read nothing")
+	biome_here[0] = -1
+	zone_now[0] = 17000
+	zi.report_position(1, Vector3(5002.0, 5.0, 100.0))
+	check(zone_sent.size() == 4, "an unknown biome (-1) sends nothing")
+	# One minute of a player walking over a border back and forth every 5 s: messages and bytes (a zone call is a reliable rpc with one int, about 12 bytes with its header).
+	var walker = make("user://test_server_items_zone2")
+	var walker_sent: Array = []
+	var walker_now: Array = [0]
+	var walker_biome: Array = [8]
+	walker.send_zone = func(peer, biome_id): walker_sent.append([peer, biome_id])
+	walker.zone_at = func(_pos): return walker_biome[0]
+	walker.zone_clock = func(): return walker_now[0]
+	walker.peer_connected_hello(2, "zonepeer002")
+
+	for second in range(60):
+		walker_now[0] = second * 1000
+		walker_biome[0] = 8 if floori(float(second) / 10.0) % 2 == 0 else 13
+		walker.report_position(2, Vector3(float(second) * 3.0, 5.0, 0.0))
+
+	print("zone: 60 s of a player crossing a border every 10 s: %d messages (about %d bytes per minute), %d lookups, %.1f microseconds each" % [walker_sent.size(), walker_sent.size() * 12, walker.zone_samples, float(walker.zone_usec) / maxf(float(walker.zone_samples), 1.0)])
+	check(walker_sent.size() <= 7 and walker.zone_samples <= 31, "a minute costs a handful of messages and at most one lookup per 2 s (%d messages, %d lookups)" % [walker_sent.size(), walker.zone_samples])
+
+	# Vent anchor (protocol 77): sent at login when a vent is in range, then only when the nearest vent changes; nothing for a player with no vent near.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_vent")
+	var vi = make("user://test_server_items_vent")
+	var vent_sent: Array = []
+	var vent_now: Array = [0]
+	var vent_here: Array = [Vector3.INF]
+	vi.send_zone = func(_peer, _biome_id): pass
+	vi.zone_at = func(_pos): return 8
+	vi.zone_clock = func(): return vent_now[0]
+	vi.send_vent = func(peer, at): vent_sent.append([peer, at])
+	vi.vent_near = func(_pos): return vent_here[0]
+	vi.peer_connected_hello(1, "ventpeer0001")
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.is_empty(), "no vent in range: nothing is sent at login (%s)" % str(vent_sent))
+	vent_now[0] = 2000
+	vent_here[0] = Vector3(900.0, 300.0, 100.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent == [[1, Vector3(900.0, 300.0, 100.0)]], "a vent comes in range: its anchor is sent (%s)" % str(vent_sent))
+	vent_now[0] = 4000
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 1, "the same vent sends nothing more")
+	vent_now[0] = 5000
+	vent_here[0] = Vector3(-700.0, 250.0, 0.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 1, "reads closer than 2 s apart look at nothing")
+	vent_now[0] = 6500
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 2 and vent_sent[1][1] == Vector3(-700.0, 250.0, 0.0), "a different nearest vent is sent")
+	vent_now[0] = 9000
+	vent_here[0] = Vector3.INF
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 3 and not (vent_sent[2][1] as Vector3).is_finite(), "walking out of range sends INF (the client drops the bed)")
+	vent_now[0] = 11500
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 3, "still none: nothing more")
+	vi.peer_connected_hello(1, "ventpeer0001")
+	vent_now[0] = 14000
+	vent_here[0] = Vector3(-700.0, 250.0, 0.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 4, "a returning player gets the vent again")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

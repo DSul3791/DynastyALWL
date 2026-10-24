@@ -190,6 +190,10 @@ func _build_display() -> void:
 		_c._apply_render_scale()
 		_c._save_display()
 		_c._report_display())
+	_button(display, "Cave darkness: Dark / Normal", func():
+		_c.display.cave_dark = not _c.display.cave_dark
+		_c._save_display()
+		note.text = "Cave darkness: %s (saved). Dark leaves 4%% of the daylight under rock, Normal 12%%." % ("Dark" if _c.display.cave_dark else "Normal"))
 	_button(display, "Crafting screen text size: change", func():
 		_c.display.text_index = (_c.display.text_index + 1) % _c.display.TEXT_SCALES.size()
 		_c.items.set_text_scale(_c.display.TEXT_SCALES[_c.display.text_index])
@@ -275,6 +279,9 @@ func _build_admin() -> void:
 
 		print(report)
 		note.text = "The server writes water_dump_X_Z.txt in its store; this client's view is in the game log and in user://water_client_X_Z.txt (Project > Open User Data Folder).")
+	_button(admin, "Land types here (a map of lake, river, marsh, swamp, bog)", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_LAND_TYPES, 0, 0, 0, _c.body.global_position)
+		note.text = "The server answers in chat and writes land_types_X_Z.txt in its store: a letter map of the 200 m box round you (L lake, R river, M marsh, S swamp, B bog, F floodplain, * spring in a catch basin, ! spring not in one).")
 	_button(admin, "Clear blocks (reload from the server)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""

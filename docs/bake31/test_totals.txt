@@ -1,0 +1,8 @@
+Code id 418df97b (TERRAIN_VERSION 41), v31 bake, 9 tiles.
+parse_scan: 375 files, 0 problems
+test_worldgen: 884 passed, 1 failed
+  caves 22, exposing ore 0, unknown ore 0, ore steering { near: 9, level: 3, blocked: 3, reached: 0 }
+  FAIL: some caves expose ore bodies (0)
+island_checks tiles table: 67 checks, 1 FAIL (seam (4,4) south to (4,5): height 1 of 1921 differ worst 0.10 m)
+stitch: 9 tiles read, 221 edge cells changed in 6 tiles
+bake 985 s (4 threads); settle 362 s (3 tiles at a time)

@@ -34,6 +34,7 @@ const MUFFLE_HZ := 1800.0               # low-pass on wind, weather and nature i
 const DROP_DB := {"Wind": -18.0, "Weather": -14.0, "Nature": -8.0}
 
 var enclosure: float = 0.0              # smoothed 0 to 1 (HUD)
+var rock_enclosure: float = 0.0         # the same, rock only (no building floor): drives the light (weather_look.gd), smoothed alike
 var drips_played: int = 0
 var interior_floor: float = 0.0        # a building sets this (interior_sounds.gd): enclosure never below it, no drips from it
 var forced: float = -1.0                # --cave=0..1 forces it (headless checks), -1 measures
@@ -111,6 +112,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 			_target = _measure(body)
 
 	enclosure = move_toward(enclosure, maxf(_target, interior_floor), EASE_PER_SEC * delta)
+	rock_enclosure = move_toward(rock_enclosure, _target, EASE_PER_SEC * delta)
 
 	if absf(enclosure - _applied) > 0.002 or _tier != _applied_tier:
 		_applied = enclosure

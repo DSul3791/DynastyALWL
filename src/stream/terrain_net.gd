@@ -19,6 +19,8 @@ extends Node
 #                                      so the server makes the ground ahead of and under them first
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   server -> client  flora_cut        a flora item was removed
+#   server -> client  vent             the nearest volcanic vent within 1500 m (x, y, z), or INF when none: the volcano rumble bed sits there
+#   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
@@ -29,7 +31,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 74
+const PROTOCOL_VERSION := 77
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -44,6 +46,8 @@ signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 signal flora_stripped_received(chunk: Vector2i, ids: PackedInt32Array)
+signal zone_received(biome_id: int)
+signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
@@ -143,6 +147,7 @@ const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the lo
 const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch; while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
+const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
@@ -209,6 +214,16 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
 	flora_stripped_received.emit(chunk, ids)
+
+
+@rpc("authority", "call_remote", "reliable")
+func zone(biome_id: int) -> void:
+	zone_received.emit(biome_id)
+
+
+@rpc("authority", "call_remote", "reliable")
+func vent(at: Vector3) -> void:
+	vent_received.emit(at)
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")

@@ -13,6 +13,19 @@ class Grid:
 	var water_class: PackedByteArray = PackedByteArray()
 
 
+class Springs:
+	var added: Array = []
+
+	func add_spring(x: int, z: int, q: float) -> void:
+		added.append([x, z, q])
+
+
+class Land:
+	var samples: int = 64
+	var spacing_m: float = 8.0
+	var heights: PackedFloat32Array = PackedFloat32Array()
+
+
 func check(ok: bool, what: String) -> void:
 	print("%s: %s" % ["pass" if ok else "FAIL", what])
 	failures += 0 if ok else 1
@@ -91,5 +104,50 @@ func _init() -> void:
 	check(int(on["cells"]) == 1 and is_equal_approx(film_depth[1], float(on_cfg["depth_m"])), "film on raises a river film with drainage")
 	check(is_equal_approx(film_depth[0], 0.0) and is_equal_approx(film_depth[2], 0.05) and is_equal_approx(film_depth[3], 0.05) and is_equal_approx(film_depth[4], 0.01) and is_equal_approx(film_depth[5], 0.5), "and leaves dry, undrained, lake, trace and deep cells alone")
 	check(is_equal_approx(float(on["volume_m3"]), (float(on_cfg["depth_m"]) - 0.05) * 64.0), "the added water is counted")
+	# Springs only at river heads (Dave 24 Oct 2026): a bump in the painted bed is no head; it snaps to the nearest head in reach or is dropped.
+	check(bool(rules.get("springs_at_heads", false)), "the rules ask for springs at heads")
+	var bed: Grid = Grid.new()
+	bed.heights.resize(121)
+	bed.water_class.resize(121)
+
+	for i in range(11):
+		bed.heights[5 * 11 + i] = 10.0 - float(i)       # a river falling west to east along row 5
+		bed.water_class[5 * 11 + i] = WaterSettler.RIVER
+
+	bed.heights[5 * 11 + 7] = 5.0                       # a bump: higher than its neighbours, not the top of the river
+	check(WaterSettler._is_top_in(bed, 11, 0, 5, 10), "the upstream end is a head within 10 cells")
+	check(not WaterSettler._is_top_in(bed, 11, 7, 5, 10), "a bump in the painted bed is not a head")
+	check(WaterSettler._nearest_head([Vector2i(0, 5), Vector2i(9, 9)], Vector2i(7, 5), 10) == Vector2i(9, 9), "a bump snaps to the nearest head in reach")
+	check(WaterSettler._nearest_head([Vector2i(0, 5)], Vector2i(7, 5), 5) == Vector2i(-1, -1), "and is dropped when no head is in reach")
 	print("water settle rules test: %d failures" % failures)
+	# Hollow springs (v7): a 3 m deep bowl 24 x 24 cells (about 37,000 m2) on a 10 m plateau, edge of the map lower so it is a true hollow.
+	var land: Land = Land.new()
+	land.heights.resize(64 * 64)
+	land.heights.fill(10.0)
+
+	for j in range(20, 44):
+		for i in range(20, 44):
+			land.heights[j * 64 + i] = 7.0
+
+	for e in range(64):
+		land.heights[e] = 1.0
+		land.heights[63 * 64 + e] = 1.0
+		land.heights[e * 64] = 1.0
+		land.heights[e * 64 + 63] = 1.0
+
+	# the rim of the plateau must be lower than the bowl lip somewhere for water to leave: a notch at i=32, j=10..20 at 9 m
+	for j in range(0, 20):
+		land.heights[j * 64 + 32] = 9.0
+
+	var sim: Springs = Springs.new()
+	var placed: Array = []
+	var no_flow: PackedFloat32Array = PackedFloat32Array()
+	check(WaterSettler._add_hollow_springs(sim, land, no_flow, 64, placed) == 1, "a 3 m bowl with no spring gets one inflow")
+	check(sim.added.size() == 1 and sim.added[0][2] == WaterSettler.catchment_flow(0.35), "its flow is the catchment flow (0.35 km2 without a flow map)")
+	check(sim.added.size() == 1 and sim.added[0][0] >= 20 and sim.added[0][0] < 44, "the inflow sits inside the bowl")
+	var sim2: Springs = Springs.new()
+	check(WaterSettler._add_hollow_springs(sim2, land, no_flow, 64, placed) == 0, "a bowl that already has a spring gets no second one")
+	land.heights.fill(10.0)
+	check(WaterSettler._add_hollow_springs(Springs.new(), land, no_flow, 64, []) == 0, "flat ground has no hollow")
+
 	quit(1 if failures > 0 else 0)

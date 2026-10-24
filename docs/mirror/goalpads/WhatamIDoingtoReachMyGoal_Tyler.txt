@@ -17,6 +17,16 @@ HANDED OFF
 (none)
 
 DONE
+- 13:05 UTC Steve rig-item and Sal tools-batch-1 plans answered GO; BP-T55 added; gate 8 = steve-rig-item a15eeecc + sal-tools-batch1 4ec83436 (clean on 786); no plan pending
+- 12:35 UTC build 786 (vent anchor, protocol 77) merged; ore fix 4f2d2497 proven, held for the final bake (waits on Dave's notes); no plan pending
+- 12:00 UTC build 785 (biome lookup, protocol 76) merged; gate 8 = steve-vent 4d0d68a8 (protocol 77) waits for local_check; ore fix 4f2d2497 goes in the final bake; no plan pending
+- 12:30 UTC builds 783 (v31 bake TV41) and 784 (gates 6+7, 5 branches) merged; cave-dark and biome-lookup plans answered; biome-lookup 7347ac36 waits for Mike's local_check (785); no plan pending
+- 10:58 UTC 8 AM handoff written (DAILY_HANDOFF.md top), LAPTOP_SETUP.md, BAKE_31_MERGE.md; goal2-c queued as gate 7
+- 10:25 UTC Sal item-master plan answered GO (aa7023df in gate 6); no plan pending; handoff at 11:00 UTC
+- 09:55 UTC checked: no plan pending; sonny-outlets (TV40) and kathleen-biome-fix trial clean; waiting on gate 6
+- 09:22 UTC checked: no plan pending, no new PASS; waiting on gate 6 (island-checks c88cc1a8, sound-batch2 018f30ed)
+- 08:50 UTC sound batch 2 plans (Kathleen, Steve) answered GO; gate list 6 = sal-island-checks c88cc1a8 + steve-sound-batch2 018f30ed; no plan pending; 11:00 UTC handoff next
+- 08:18 UTC Steve river seams plan answered GO; BP-T54 (every bake carries the island table) added; Sal goal 1 confirmed; gate list 6 = sal-island-checks c88cc1a8; no plan pending
 - 07:58 UTC builds 781 (v30 bake, TV36) and 782 (water seams) merged with Dave's steps; BAKE_30_MERGE.md; no plan pending
 - 07:15 UTC builds 779 (key-woods, goal2-b, tree-belts, slot-test-warning) and 780 (harvest-field) merged; no plan pending
 - 06:45 UTC checked: no plan pending, gate list 5 tips unchanged (ae925848, 2bf75e66, 1b1cd8a0, 21c5f838); waiting on Mike's PASS

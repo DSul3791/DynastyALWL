@@ -31,3 +31,28 @@ UPDATE 05:58 UTC 24 Oct (head 778), GATE LIST 5 (trial-merged clean in this orde
 UPDATE 06:05 UTC: gate list 5 item 4 = steve-slot-test-warning 21c5f838 (origin tip; coordinator said e41ba3d; one line, clean with items 1-3). Mike confirms local_check warnings are back to baseline.
 UPDATE 07:25 UTC 24 Oct (head 780), GATE LIST 6: kathleen-tree-belts 2426ceed (test_worldgen.gd +4 lines, test only; clean on 780, parse_scan 374 files 0 problems). Merge as build 781 when Mike or Sonny confirms test_worldgen passes (Sonny's terrain candidate needs it).
 UPDATE 08:10 UTC: gate list 6 adds sal-island-checks c88cc1a8 (checks tool only; clean on 782, parse_scan 375 files 0 problems).
+UPDATE 08:30 UTC: gate list 6 also queues steve-sound-batch2 018f30ed (final, replaces 8428f228; it already contains kathleen-sound-2 639c9dd1; use this one) (clean on 782; needs Steve's hookup and Mike's slot test before merge).
+UPDATE 09:30 UTC 24 Oct (head 782): new branches trial-merged clean (parse_scan 375 files 0 problems, merge_check clear): sonny-outlets 5a5745de (TERRAIN_VERSION 40: terrain candidate, needs Mike's bake and the island table per BP-T54 before merge), kathleen-biome-fix 804de331 (test_worldgen flora biome check, test only; same fix is already the tip of sonny-outlets). Gate list 6 unchanged: sal-island-checks c88cc1a8, steve-sound-batch2 018f30ed.
+UPDATE 10:00 UTC: gate list 6 adds sal-item-master aa7023d (final; replaces f297cede) (tool only, clean on 782, parse_scan 375 files 0 problems).
+UPDATE 10:40 UTC: GATE LIST 7: kathleen-goal2-c 538976f7 (RUNTIME, flora layout VERSION unchanged at 4; clean on 782 and together with sonny-outlets 418df97b; parse_scan 375 files 0 problems). Mike: merge test, pictures, frame time.
+UPDATE 11:25 UTC: gate list 6 adds steve-biome-lookup 7d0af899 (PROTOCOL 76, sits on sound-batch2 018f30ed; merge AFTER it; Mike runs test_server_items and test_slot_sounds). Trial of sound-batch2 + biome-lookup + outlets 418df97b + goal2-c together: see Tyler message.
+UPDATE 11:35 UTC: GATE LIST 7 adds project-thread-yttwff 40ba80de (final; replaces 6e40ee76) (cave light fix: weather_look.gd, cave_sounds.gd, tools/check_cave_light.gd; RUNTIME; clean with all pending branches, parse_scan 378 files 0 problems). Mike: check_cave_light.gd + one daytime tunnel picture. Known limit: open-top pits not dimmed.
+UPDATE 12:00 UTC: build 783 merged without it; sonny-outlets 4c355b99 (ore fix 2, tile_sites.gd only; clean on 783) is a CODE-ONLY step for the next build once Mike reruns test_worldgen; if cave sites live in tile files a sites-only rebuild may be needed (Mike says).
+UPDATE 12:20 UTC (head 784): steve-biome-lookup 7347ac36 (warning fixed; PROTOCOL 76) clean on 784; merge as 785 on Mike's PASS (local_check warnings stay 233).
+UPDATE 12:45 UTC: GATE LIST 8 (head 785): steve-vent 4d0d68a8 (final; replaces 0c27a813) (volcano vent anchor, PROTOCOL 77; 75 stays Sal's claim). Clean on 785. Mike: test_server_items, test_slot_sounds, local_check. Rumble plays only above 300 m player height (Kathleen decides).
+UPDATE 12:55 UTC: sonny-outlets 4f2d2497 (ore fix 3, placer only) goes into the FINAL bake, not merged alone; clean on 785.
+UPDATE 13:05 UTC: ore fix 3 PROVEN: sonny-outlets 4f2d2497 (test_worldgen 885 pass, 0 fail; caves exposing ore 3, reached 3, blocked 0). Goes into the FINAL bake build (code + tiles + docs/bakeNN/island_table.txt in one build, BP-T53/T54); Sonny lists what else belongs in it. Plan file: tech/BAKE_31_MERGE.md pattern, new file BAKE_FINAL_MERGE.md when the bake id arrives.
+UPDATE 13:10 UTC: FINAL BAKE list (Sonny + Sal): 1 ore fix 4f2d2497; 2 farmland tune and anything from Dave's look at 783-785 (waiting for his notes); 3 inland river ends: 0 on v31 (one INFO end at x71264 z75264, not on the list); 4 seam 0.10 m accepted. The final bake waits only on Dave's feedback; if he reports nothing terrain-related, bake with the ore fix alone.
+UPDATE 13:20 UTC (head 786): gate list 8 adds steve-rig-item a15eeecc (final) (rig tooling; Mike runs the two look_rig commands from the plan + local_check).
+UPDATE 13:40 UTC: gate list 8 adds sal-tools-batch1 4ec83436 (final; wears_tool field, recipe 159 lumber_by_hand) (3 tools + hoe alias; data only, RESTART).
+
+## Final-build checklist addition (24 Oct 13:50 UTC)
+- BUG-001 join-screen hang fixed (timeout + retry) and repro'd on a fresh clone after Pull. See BUG_LIST.md.
+
+## Next build queue (24 Oct 15:07 UTC, merge only after Dave ends the devstop)
+1. steve-ground-hang 9774c028 (BUG-001, Mike tested, ready) - merge first.
+2. vent 4d0d68a8 - ALREADY merged in build 786 (protocol 77). Nothing to do.
+3. steve-rig-item 0fe597e5 (look_rig defaults, shot_runner) - not yet merged; needs a PASS id from Mike.
+4. cave air + cave pollen - plans answered, not built yet; merge only tested ids.
+5. david3-rig-only e792d7c5 (tools/look_rig.sh only, identical to reviewed b2538698; syntax 5 pass 0 fail). Merge the TESTED id after Mike's Windows look_rig PASS (flora + item run). Linux flora already done by David3 (nvidia, 2.5 min).
+   -> PASS 24 Oct 19:35 UTC (Mike, Windows: --flora and --item exit 0, 2 pass 0 fail, run on b2538698). e792d7c5 has the identical look_rig.sh (diff 0 lines), so merge e792d7c5 in the next build, after the devstop ends. Linux horizon name tags: David3 to look later, not a blocker.

@@ -1,3 +1,15 @@
+# HANDOFF 24 Oct 11:00 UTC (8 AM ADT), Tyler. Dave worked all night; this is the state at 10:57 UTC. READ THIS, then your goals file.
+HEAD = build 782 on claude/generator-v2 (TERRAIN_VERSION 36 baked, v30b tiles + stitched water). Merged tonight: 775 (v28 bake), 776 (list 3, 8 branches), 777 (list 4, 5), 778 (v29b bake TV34, spawn gate PASS), 779 (key woods, goal2-b, tree belts flora VERSION 4, slot-test warning), 780 (harvest field), 781 (v30 bake TV36), 782 (water seams).
+PENDING, in merge order (all trial-merge clean on 782, parse_scan 376 files 0 problems; details in tech/MERGE_CHECK_NEXT3.md):
+1. Build 783 = sonny-outlets 418df97b (TV41) + claude/mike-bake-v31 (Mike baking) + docs/bake31/island_table.txt (BP-T54). Plan: tech/BAKE_31_MERGE.md. Dave's steps are in it (HUD must read ground v41).
+2. Gate list 6: sal-island-checks c88cc1a8, steve-sound-batch2 018f30ed (contains kathleen-sound-2), sal-item-master aa7023df. Needs Mike/laptop PASS (sound-batch2 needs test_slot_sounds + frame time + one listen).
+3. Gate list 7: kathleen-goal2-c 538976f7 (flora models; Mike: merge test, pictures, frame time).
+4. Not merged: steve-mike-batch 11e03851 (not in a PASS list), steve-river-settle cc17273f (a copy; fa7bdadc is in), kathleen-biome-fix 804de331 (test fix, its content is already the tip of sonny-outlets).
+OPEN PLANS: none unanswered (answered tonight: seam edge flow, gullies, tree belts, harvest field, goal2 batch B and C, key woods, river seams, sound batch 2 x2, item master). Still without a reply but built: Kathleen_ground_items, Sal_cost_table_open, Steve_sunny_button.
+KNOWN FLAWS for Dave: 3 inland river ends earlier (check the v31 table), test_worldgen old failure 'lakes only form above the minimum height' fixed in e8eb25fd.
+LAPTOP: Dave has an old laptop for tests; steps in tech/LAPTOP_SETUP.md (dxdiag spec check first). Bakes stay on Mike's PC.
+STANDING: rule BP-T54 (every bake carries the island table), BP-T53 (tiles via git), BP-T52 (one plan per class, answered once). Merge the TESTED id, not the branch name. Clouds checks (parse_scan, merge_check, check_controls, check_look_names, sound_check, item_master) are run by owners before Mike's gate.
+TO DO TODAY (Tyler): 20:00 ADT audit (tech/AUDITS/AUDIT_2026-10-24.md, 7 targets), pad steps 8, 10, 11, weekly design coverage review, mirror pads at 8 AM, re-arm the daily reminder.
 # TOMORROW EFFICIENCY PLAN (24 Oct; from tech/AUDITS/AUDIT_2026-10-23.md and the new tech/TEST_RECIPE.md). EVERY THREAD READS THIS FIRST AT 8 AM.
 | # | Change | Owner | Measurable target (checked 20:00 ADT) |
 |---|--------|-------|----------------------------------------|
