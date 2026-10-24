@@ -47,6 +47,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
 	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
+	_breach_outlets(fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -308,3 +309,64 @@ static func _probe(water, fill, flow, channels, land: PackedFloat32Array, sample
 		heights_line += " %.1f/%.1f" % [land[index], channels.bed[index]]
 
 	print(heights_line)
+
+
+# Every lake that holds water leaves by a channel. The lake's level and outlet come from the routing ground, which can differ
+# from the real ground (erosion, scree, ledges), so the outlet path may cross a crest higher than the water. Walk the outlet
+# path downstream and cut a channel whose bed falls from just under the lake level at `breach_fall_per_cell` until the real
+# ground is below it, three cells wide. Water then has a way out and the painted outlet is a river, not a dry ridge.
+static func _breach_outlets(fill, flow, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, lake_min_catchment: float, rules: Dictionary) -> void:
+	var drop: float = float(rules.get("breach_drop_m", 0.3))
+	var fall: float = float(rules.get("breach_fall_per_cell", 0.04))
+	var depth_m: float = float(rules.get("breach_water_m", 0.5))
+	var longest: int = int(rules.get("breach_max_cells", 80))
+
+	if fall < 0.0 or longest <= 0:
+		return
+
+	for lake in fill.lakes:
+		var at: int = int(lake["outlet"])
+
+		if at < 0 or flow.discharge[at] < lake_min_catchment:
+			continue
+
+		var level: float = float(lake["level"])
+
+		for step in range(longest):
+			if sea[at] == 1:
+				break
+
+			var target: float = level - drop - fall * float(step)
+
+			if land[at] < target - 0.5 and step > 0:
+				break
+
+			@warning_ignore("integer_division")
+			var row: int = at / samples
+			var column: int = at % samples
+
+			for dz in range(-1, 2):
+				for dc in range(-1, 2):
+					var r: int = row + dz
+					var c: int = column + dc
+
+					if r < 0 or c < 0 or r >= samples or c >= samples:
+						continue
+
+					var neighbor: int = r * samples + c
+					var wanted: float = target + (0.0 if dz == 0 and dc == 0 else 0.4)
+
+					if channels.bed[neighbor] > wanted:
+						channels.bed[neighbor] = wanted
+
+					var surface: float = wanted + depth_m
+
+					if is_nan(channels.surface[neighbor]) or channels.surface[neighbor] < surface:
+						channels.surface[neighbor] = surface
+
+			var next: int = fill.receiver[at]
+
+			if next < 0:
+				break
+
+			at = next
