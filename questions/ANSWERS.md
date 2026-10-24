@@ -1586,3 +1586,7 @@ Answered: 2026-10-24 19:26 UTC
 Answer: No: No, I am in land standing on a mountain. Amongst the reason I can still hear the ocean waves.
 Answered: 2026-10-24 22:15 UTC
 
+## sound-sliders | Please take a picture of Settings > Sound
+Answer: No: Nope, sound sliders are there I can see them working this test does nothing
+Answered: 2026-10-24 22:15 UTC
+
