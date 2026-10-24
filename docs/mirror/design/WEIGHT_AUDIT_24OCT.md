@@ -4,6 +4,8 @@ Dave: weights are over the top; a standard steel spade is about 3.8 kg. Real-wor
 
 Rules used: a kit and its placed form weigh what their ingredients weigh (never heavier than before); hand goods cut to realistic loads; spades set to your 3.8 kg standard for the medium steel and iron spade (small 2.4, large 5.0).
 
+Dave 20:57: real weights now, no fudging (game-logic carrying later); herbs and plants ultra light. Plant changes: thatch 0.1, bedding 0.1, straw 0.05, reed stems 0.05, roots 0.1, bulbs 0.05, bark 0.15, withies/vines/canes 0.03-0.05, stuffing 0.02, fodder 0.3. Four QA cards ask Dave for weights I cannot check (fantasy materials, big workshop pieces, wood/stone units, spade sizes).
+
 Kept on purpose: stone stays 1.0 kg (a hand stone is 0.5 to 1 kg, and boulders make stones by mass, so lowering it would multiply the stones in the world: tests show 7,700 instead of 4,600 per metre boulder); species logs 26/32/45 kg (shoulder carry); beams 12, lumber 4, bricks 2.7, cut stone block 25.
 
 ## Current and proposed (kg per item)
