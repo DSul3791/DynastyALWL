@@ -38,7 +38,6 @@ const PEAK_SEARCH_CELLS := 3
 const PEAK_FLOOD_LIMIT := 40000
 const RING_CELLS := 6
 const MATCH_RADIUS_M := 3000.0   # island_list.json is derived data; after a sketch change the peak may have moved
-const RIVER_GAP_CELLS := 2    # the 32 m map breaks thin rivers; bridge gaps up to 2 samples
 
 var _failures: int = 0
 var _checks: int = 0
@@ -1089,6 +1088,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 	var bodies: int = 0
 	var ending_inland: int = 0
 	var min_cells: int = int(tile_limits["river_min_cells"])
+	var gap_cells: int = int(ceil(float(tile_limits["river_gap_m"]) / spacing))
 
 	# Label connected water (lake 2, river 3, marsh 4), bridging small gaps, and see where each body ends.
 	for start in range(grid.size()):
@@ -1116,8 +1116,8 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 			var ci: int = index % width
 			var cj: int = index / width
 
-			for dj in range(-RIVER_GAP_CELLS, RIVER_GAP_CELLS + 1):
-				for di in range(-RIVER_GAP_CELLS, RIVER_GAP_CELLS + 1):
+			for dj in range(-gap_cells, gap_cells + 1):
+				for di in range(-gap_cells, gap_cells + 1):
 					if di == 0 and dj == 0:
 						continue
 
@@ -1143,10 +1143,56 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 
 		if not reaches:
 			ending_inland += 1
+			var descent: String = _descent(grid, map_heights, width, rows, lowest_index, spacing)
 			_row("river ends inland near x %d z %d" % [int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(lowest_index / width) * spacing)],
-				"%d river samples, lowest water at %.1f m" % [river_cells, lowest], "reaches sea", "FAIL")
+				"%d river samples, lowest water at %.1f m; %s" % [river_cells, lowest, descent], "reaches sea", "FAIL")
 
 	_row("rivers reach the sea (32 m map)", "%d river bodies, %d end inland" % [bodies, ending_inland], "0 inland", "FAIL" if ending_inland > 0 else "PASS")
+
+
+# From the lowest water cell of a river that stops inland, follow the steepest descent over the ground
+# (8-neighbour, 32 m cells): does the land keep falling to the sea (the river should have continued) or
+# does it end in a pit (a closed basin, so the terrain traps the water)?
+func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int, rows: int, start: int, spacing: float) -> String:
+	var index: int = start
+	var travelled: float = 0.0
+	var water_cells: int = 0
+
+	for step in range(2000):
+		var ci: int = index % width
+		var cj: int = index / width
+		var h: float = map_heights[index]
+
+		if h <= 0.0 or grid[index] == 1:
+			return "ground keeps falling to the sea after %.1f km (%d wet cells on the way): the river should continue" % [travelled / 1000.0, water_cells]
+
+		var best: int = -1
+		var best_h: float = h
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				var ni: int = ci + di
+				var nj: int = cj + dj
+
+				if (di == 0 and dj == 0) or ni < 0 or nj < 0 or ni >= width or nj >= rows or grid[nj * width + ni] == 255:
+					continue
+
+				var other_h: float = map_heights[nj * width + ni]
+
+				if other_h < best_h:
+					best_h = other_h
+					best = nj * width + ni
+
+		if best < 0:
+			return "ground stops falling at %.1f m after %.1f km: a closed basin (pit)" % [h, travelled / 1000.0]
+
+		travelled += spacing * (1.414 if best % width != ci and best / width != cj else 1.0)
+		index = best
+
+		if grid[index] >= 2 and grid[index] <= 4:
+			water_cells += 1
+
+	return "no end found in 2000 steps"
 
 
 # Walking routes on the baked tiles (Sonny's rule, Dave 24 Oct): 8-neighbour steps
