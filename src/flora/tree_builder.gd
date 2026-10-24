@@ -181,6 +181,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"succulent":
+			_succulent(str(entry["name"]), bark, rng, h, crown, trunk, far)
 		"cane_shrub":
 			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
 		"fern_rosette":
@@ -2977,3 +2979,47 @@ const CANE_SHRUBS := {
 	"tanglewort": {"fill": 18, "fill_r": 0.8, "canes": [15, 17], "segs": 5, "thorn_n": 2, "arch": 1.0, "reach": 1.4, "sprays": 8, "rate": 0.0, "cane": Color(0.25, 0.3, 0.15), "leaf": 0.5, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": true},
 	"sunsilver_vine": {"bloom_in": ["summer"], "fill": 14, "canes": [10, 12], "segs": 5, "thorn_n": 0, "arch": 0.8, "reach": 1.2, "sprays": 8, "rate": 0.15, "cluster": 0.05, "cane": Color(0.75, 0.78, 0.82), "leaf": 0.95, "fruit": Color(0.95, 0.85, 0.5), "unripe": Color(0.8, 0.8, 0.6), "flower": Color(1.0, 0.95, 0.7), "thorns": false},
 }
+
+
+# Cactus, aloe and prickly pear, family 6 of goal 1b (Kathleen, 24 Oct). Reference: saguaro-type cactus 1-5 m ribbed green column with up-curving arms; aloe 30-80 cm rosette of thick pointed grey-green leaves
+# with pale teeth; prickly pear 0.5-2 m stack of flat oval pads with red-purple fruit on the rims and yellow flowers.
+static func _succulent(kind: String, bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
+	match kind:
+		"aloe":
+			var leaf_color: Color = Color(0.45, 0.6, 0.45)
+
+			for k in range(7 if far else 14):
+				var a: float = TAU * float(k) / float(7 if far else 14) + rng.randf_range(-0.2, 0.2)
+				var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+				var ring: float = 1.0 if k % 2 == 0 else 0.7
+				var base: Vector3 = out * crown * 0.05
+				var mid: Vector3 = out * crown * 0.3 * ring + Vector3(0.0, h * 0.45 * ring, 0.0)
+				var tip: Vector3 = out * crown * 0.55 * ring + Vector3(0.0, h * 0.8 * ring, 0.0)
+				_branch(bark, base, mid, maxf(h * 0.05, 0.01), maxf(h * 0.035, 0.007), leaf_color * rng.randf_range(0.9, 1.1), 3)
+				_branch(bark, mid, tip, maxf(h * 0.035, 0.007), maxf(h * 0.004, 0.001), leaf_color.lightened(0.1), 3)
+		"prickly_pear":
+			var pad: Color = Color(0.35, 0.58, 0.3)
+			var pads: Array = [[Vector3(0.0, 0.18, 0.0), 0.0]]
+			var count: int = 5 if far else 10
+
+			for k in range(1, count):
+				var parent: Array = pads[rng.randi_range(0, pads.size() - 1)]
+				var at: Vector3 = parent[0] + Vector3(rng.randf_range(-0.5, 0.5) * crown * 0.5, h * rng.randf_range(0.18, 0.28), rng.randf_range(-0.5, 0.5) * crown * 0.5)
+				pads.append([at, float(k)])
+
+			for entry in pads:
+				var at: Vector3 = entry[0]
+				_bead(bark, at, Vector3(h * 0.17, h * 0.2, h * 0.04), pad * rng.randf_range(0.9, 1.1))
+
+				if not far and rng.randf() < 0.35:
+					_bead(bark, at + Vector3(h * 0.08, h * 0.2, 0.0), Vector3(h * 0.04, h * 0.05, h * 0.04), Color(0.75, 0.15, 0.3))
+		_:
+			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+
+			if not far and h > 1.5:
+				for side in [-1.0, 1.0]:
+					var y: float = h * rng.randf_range(0.35, 0.55)
+					var elbow: Vector3 = Vector3(side * crown * 0.35, y, 0.0)
+					var top: Vector3 = elbow + Vector3(0.0, h * rng.randf_range(0.25, 0.4), 0.0)
+					_branch(bark, Vector3(0.0, y, 0.0), elbow, maxf(trunk * 0.4, 0.04), maxf(trunk * 0.35, 0.035), Color(0.65, 0.85, 0.55), 5)
+					_branch(bark, elbow, top, maxf(trunk * 0.35, 0.035), maxf(trunk * 0.3, 0.03), Color(0.65, 0.85, 0.55), 5)

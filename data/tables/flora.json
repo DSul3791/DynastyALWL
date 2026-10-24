@@ -992,6 +992,7 @@
 			"display": "Cactus",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				1,
 				5
@@ -4080,6 +4081,7 @@
 			"display": "Aloe",
 			"kind": "plant",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.3,
 				0.8
@@ -4785,6 +4787,7 @@
 			"display": "Prickly pear",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.8,
 				2.5
