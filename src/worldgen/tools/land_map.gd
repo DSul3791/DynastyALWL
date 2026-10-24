@@ -6,7 +6,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/land_map.gd -- --tile=3,4 [--all] [--world=res://worlds/base_world] [--out=DIR] [--picture] [--run-hours=6] (dry start like the server, then run this many simulated hours instead of reading the saved water)
 #
 # Outputs in --out (default /mnt/project-files/water/land_map):
-#   springs_X_Z.csv   one row per spring the settler would place: cell, world x z, ground, metres below its ring, basin ok, spread cells,
+#   springs_X_Z.csv   one row per spring the settler would place: cell, world x z, ground, metres below its ring, basin ok, spread cells, kind (lake_pond / river_head / river_bump / plateau) and catchment km2,
 #                     and where it would slide to (world x z) when it fails. Sonny's failing-spring list.
 #   land_X_Z.txt      counts of each land type and of failing springs
 #   land_X_Z.png      the land types as colours (with --picture)
@@ -96,8 +96,9 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 	var started: int = Time.get_ticks_msec()
 	var dry_run: bool = run_hours > 0.0
 	var sim = WaterSettler.build(data, 3.0 if dry_run else 10.0, generator, not dry_run)       # the server: base 3 m3/s x10, dry start
+	var origins: Array = WaterSettler.last_kinds.duplicate()
 	var ground: PackedFloat32Array = sim.ground
-	var rows: PackedStringArray = PackedStringArray(["cell,i,j,world_x,world_z,ground_m,below_ring_m,basin_ok,fix_world_x,fix_world_z,spread_cells,spread_ok"])
+	var rows: PackedStringArray = PackedStringArray(["cell,i,j,world_x,world_z,ground_m,below_ring_m,basin_ok,fix_world_x,fix_world_z,spread_cells,spread_ok,kind,catchment_km2"])
 
 	# Saved settled water if there is one; otherwise the painted water the settler starts from.
 	var water_file: String = "%s/water/tile_%d_%d.water" % [world, tile.x, tile.y]
@@ -124,8 +125,12 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 	_wet_picture_near(depth, data, side, Vector2(53840.0, 68520.0), "%s/near_defect_%d_%d.png" % [out_dir, tile.x, tile.y])
 	var fail: int = 0
 	var spread_fail: int = 0
+	var flow: PackedFloat32Array = WaterSettler.flow_of(data, generator)
+
+	var spring_n: int = -1
 
 	for sp in sim.springs:
+		spring_n += 1
 		var k: int = int(sp[0])
 		var i: int = k % side
 		@warning_ignore("integer_division")
@@ -149,7 +154,9 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 		if have_settled and not spread_ok:
 			spread_fail += 1
 
-		rows.append("%d,%d,%d,%.0f,%.0f,%.2f,%.2f,%s,%s,%s,%d,%s" % [k, i, j, data.x0 + float(i) * data.spacing_m, data.z0 + float(j) * data.spacing_m, ground[k], float(report["below_m"]), "yes" if bool(report["ok"]) else "NO", fix_x, fix_z, spread, "yes" if spread_ok else "NO"])
+		var kind: String = (str(origins[spring_n]) if spring_n < origins.size() else "?") + "/" + _spring_kind(data, side, i, j)
+		var km2: float = (flow[k] * data.spacing_m * data.spacing_m / 1.0e6) if flow.size() == side * side else -1.0
+		rows.append("%d,%d,%d,%.0f,%.0f,%.2f,%.2f,%s,%s,%s,%d,%s,%s,%.3f" % [k, i, j, data.x0 + float(i) * data.spacing_m, data.z0 + float(j) * data.spacing_m, ground[k], float(report["below_m"]), "yes" if bool(report["ok"]) else "NO", fix_x, fix_z, spread, "yes" if spread_ok else "NO", kind, km2])
 
 	var csv: FileAccess = FileAccess.open("%s/springs_%d_%d.csv" % [out_dir, tile.x, tile.y], FileAccess.WRITE)
 	csv.store_string("\n".join(rows) + "\n")
@@ -243,3 +250,18 @@ func _wet_picture_near(depth: PackedFloat32Array, data, side: int, point: Vector
 			image.set_pixel(i, j, color)
 
 	image.save_png(path)
+
+
+# Where the settler put it: a lake (pond) cell, a river cell that is the highest river cell within HEAD_RADIUS (a real head),
+# a river cell that is only the highest in its 3 x 3 (a bump in the painted bed, _add_feeders), or open ground (plateau move).
+func _spring_kind(data, side: int, i: int, j: int) -> String:
+	var k: int = j * side + i
+	var cls: int = data.water_class[k]
+
+	if cls == 2:
+		return "lake_pond"
+
+	if cls != 3:
+		return "plateau"
+
+	return "river_head" if WaterSettler._is_top_in(data, side, i, j, WaterSettler.HEAD_RADIUS) else "river_bump"

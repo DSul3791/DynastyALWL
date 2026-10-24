@@ -91,5 +91,20 @@ func _init() -> void:
 	check(int(on["cells"]) == 1 and is_equal_approx(film_depth[1], float(on_cfg["depth_m"])), "film on raises a river film with drainage")
 	check(is_equal_approx(film_depth[0], 0.0) and is_equal_approx(film_depth[2], 0.05) and is_equal_approx(film_depth[3], 0.05) and is_equal_approx(film_depth[4], 0.01) and is_equal_approx(film_depth[5], 0.5), "and leaves dry, undrained, lake, trace and deep cells alone")
 	check(is_equal_approx(float(on["volume_m3"]), (float(on_cfg["depth_m"]) - 0.05) * 64.0), "the added water is counted")
+	# Springs only at river heads (Dave 24 Oct 2026): a bump in the painted bed is no head; it snaps to the nearest head in reach or is dropped.
+	check(bool(rules.get("springs_at_heads", false)), "the rules ask for springs at heads")
+	var bed: Grid = Grid.new()
+	bed.heights.resize(121)
+	bed.water_class.resize(121)
+
+	for i in range(11):
+		bed.heights[5 * 11 + i] = 10.0 - float(i)       # a river falling west to east along row 5
+		bed.water_class[5 * 11 + i] = WaterSettler.RIVER
+
+	bed.heights[5 * 11 + 7] = 5.0                       # a bump: higher than its neighbours, not the top of the river
+	check(WaterSettler._is_top_in(bed, 11, 0, 5, 10), "the upstream end is a head within 10 cells")
+	check(not WaterSettler._is_top_in(bed, 11, 7, 5, 10), "a bump in the painted bed is not a head")
+	check(WaterSettler._nearest_head([Vector2i(0, 5), Vector2i(9, 9)], Vector2i(7, 5), 10) == Vector2i(9, 9), "a bump snaps to the nearest head in reach")
+	check(WaterSettler._nearest_head([Vector2i(0, 5)], Vector2i(7, 5), 5) == Vector2i(-1, -1), "and is dropped when no head is in reach")
 	print("water settle rules test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

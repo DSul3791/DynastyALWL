@@ -14,7 +14,7 @@ const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the ba
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 4                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 5                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -58,7 +58,13 @@ static func _drawn_ground(data, generator) -> PackedFloat32Array:
 
 # A simulation started from the painted water with springs placed. `rate` is each
 # spring's flow in m3 per second.
+# Where each spring of the last build came from, in the order of sim.springs: "head" (_find_heads, moved to a plateau or pond middle),
+# "feeder_river" (a painted river cell that is the highest of its 3 x 3) or "feeder_pond" (a pond with an outlet). For the land map tool.
+static var last_kinds: Array = []
+
+
 static func build(data, rate: float, generator, seed_painted: bool = true):
+	last_kinds = []
 	var side: int = data.samples
 	var sim = WaterSim.new()
 	sim.setup(side, data.spacing_m, _drawn_ground(data, generator))
@@ -90,6 +96,11 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 			continue
 
 		var spot: Vector2i = _plateau_near(sim, head, side, data)
+
+		# Dave 24 Oct 2026: water sources start in a natural catch basin. A river head (no pond) keeps its spring ON the head, where the bake carves the basin;
+		# the plateau move put springs on open ground. Ponds keep their pond middle.
+		if bool(rules().get("springs_at_heads", false)) and _pond_near(data, head, side).x < 0:
+			spot = head
 		var duplicate: bool = false
 
 		# A big head pond has several "heads" around its edge: one spring per pond.
@@ -105,8 +116,9 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 		# POND_FULL_FLOW_M across, then in step with the diameter).
 		var factor: float = 1.0 if seed_painted and _pond_near(data, head, side).x < 0 else flow_factor(_pond_diameter_m(data, spot, side))
 		sim.add_spring(spot.x, spot.y, rate * factor)
+		last_kinds.append("head")
 
-	_add_feeders(sim, data, generator, side, placed, rate)
+	_add_feeders(sim, data, generator, side, placed, rate, heads)
 	sim.wake_all_wet()
 	return sim
 
@@ -114,7 +126,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 # A spring for every river head the pond springs do not serve (a tributary head near a bigger river is not the highest river cell in its 80 m, so
 # _find_heads skips it and the stretch below it stays dry). Its size follows the drainage area at the head: rate x (area / full_km2) ^ p, clamped.
 # Rule-based, row by row, so the same tile always gets the same springs. Does nothing without the tile's flow map or when disabled in the rules.
-static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: float) -> int:
+static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: float, heads: Array = []) -> int:
 	var cfg: Dictionary = rules().get("feeders", {})
 
 	if not bool(cfg.get("enabled", false)) or generator == null or str(generator.tiles_dir) == "":
@@ -148,10 +160,20 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 				if outlet_flow <= 0.0:
 					continue
 
+			# Dave 24 Oct 2026 (springs only at river heads): a river cell that is only the highest of its 3 x 3 (a bump in the painted bed) is no head.
+			# It snaps to the nearest real head within snap_cells, or the spring is dropped.
+			var at: Vector2i = Vector2i(i, j)
+
+			if kind == RIVER and bool(rules().get("springs_at_heads", false)) and not _is_top_in(data, side, i, j, HEAD_RADIUS):
+				at = _nearest_head(heads, at, int(cfg.get("snap_cells", 25)))
+
+				if at.x < 0:
+					continue
+
 			var served: bool = false
 
 			for other in placed:
-				if Vector2(i - other.x, j - other.y).length() < near:
+				if Vector2(at.x - other.x, at.y - other.y).length() < near:
 					served = true
 					break
 
@@ -160,8 +182,9 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 
 			var km2: float = outlet_flow * data.spacing_m * data.spacing_m / 1.0e6
 			var share: float = feeder_share(km2, cfg)
-			placed.append(Vector2i(i, j))
-			sim.add_spring(i, j, rate * share)
+			placed.append(at)
+			sim.add_spring(at.x, at.y, rate * share)
+			last_kinds.append("feeder_pond" if kind == LAKE else "feeder_river")
 			added += 1
 
 	return added
@@ -247,6 +270,42 @@ static func _is_top(data, side: int, i: int, j: int) -> bool:
 			var n: int = k + dj * side + di
 
 			if n != k and data.water_class[n] != 0 and (data.heights[n] > here or (data.heights[n] == here and n < k)):
+				return false
+
+	return true
+
+
+# The nearest of `heads` within `reach` cells of `from`; (-1, -1) when none.
+static func _nearest_head(heads: Array, from: Vector2i, reach: int) -> Vector2i:
+	var best: Vector2i = Vector2i(-1, -1)
+	var best_d: float = float(reach)
+
+	for head in heads:
+		var d: float = Vector2(head - from).length()
+
+		if d <= best_d:
+			best_d = d
+			best = head
+
+	return best
+
+
+# Whether the cell is the highest water cell within `radius` cells (the same test as _find_heads, for any cell).
+static func _is_top_in(data, side: int, i: int, j: int, radius: int) -> bool:
+	var k: int = j * side + i
+	var here: float = data.heights[k]
+
+	for dj in range(-radius, radius + 1):
+		for di in range(-radius, radius + 1):
+			var ni: int = i + di
+			var nj: int = j + dj
+
+			if ni < 0 or nj < 0 or ni >= side or nj >= side:
+				continue
+
+			var n: int = nj * side + ni
+
+			if n != k and data.water_class[n] == RIVER and (data.heights[n] > here or (data.heights[n] == here and n < k)):
 				return false
 
 	return true
