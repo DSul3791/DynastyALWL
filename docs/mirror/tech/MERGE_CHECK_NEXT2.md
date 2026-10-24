@@ -6,4 +6,5 @@ Merge in this order, one git merge --no-edit each, STOP and report on any confli
 4. origin/claude/sonny-checks (9f4d6d6b)
 5. origin/claude/kathleen-item-looks (b6350495, client only, looks.json families)
 6. origin/claude/sal-building-looks (82d4b40b, look names for Kathleen's pieces; already merged base 773)
+7. origin/claude/steve-stamp-items (5cb8995, RESTART; flora layout stamp in world_items.json, bare/picked marks from another layout cleared, with test; trial-merged clean by Tyler)
 Checks: parse_scan, merge_check, local_check (baseline 233), test_server_items, test_placement_rules, test_structure_look (new), validate_items 0 errors, check_controls. In game/rig, as ONE batch with the REQUEST template: rig --pieces basic_wall,chest (one row picture); items row for the first Kathleen families; island_checks table run on the current tiles (report the table). Report one PASS/FAIL line per branch.
