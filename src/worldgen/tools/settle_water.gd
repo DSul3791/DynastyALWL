@@ -99,6 +99,9 @@ func _init() -> void:
 		supplied += spring_rate * sim.dt
 		t += 1
 
+		if t in [1, 2, 5, 10, 20]:
+			print("  early tick %d: stored %.0f m3 (start %.0f), sea %.0f, dried %.0f, supplied %.0f, wet %d" % [t, sim.total_volume() * area_m2, start_volume, sim.sea_m3, sim.evaporated_m3, supplied, sim.wet_cells()])
+
 		if t % 50 == 0:
 			print("  tick %d: active %d, wet %d, moved %.0f m3, sea %.0f m3, dried %.0f m3, %d ms so far" % [t, sim.active_cells(), sim.wet_cells(), moved, sim.sea_m3, sim.evaporated_m3, Time.get_ticks_msec() - started])
 
