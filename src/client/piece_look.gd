@@ -16,6 +16,9 @@ static var _stone: StandardMaterial3D
 static var _tar: StandardMaterial3D
 static var _steel: StandardMaterial3D
 static var _log: StandardMaterial3D
+static var _thatch: StandardMaterial3D
+static var _clay: StandardMaterial3D
+static var _pot: StandardMaterial3D
 static var _meshes: Dictionary = {}      # shared log meshes by variant key, built once
 
 
@@ -113,6 +116,9 @@ static func _materials() -> void:
 	_steel.metallic = 0.7
 	_steel.roughness = 0.45
 	_log = _textured(Color(0.42, 0.29, 0.17), 1, 71, false)              # bark-brown round logs
+	_thatch = _textured(Color(0.72, 0.6, 0.3), 14, 83, false)            # straw bundles: many thin horizontal courses, golden
+	_clay = _blocks_material(Color(0.58, 0.36, 0.24), 1, 91, 0.3)        # fired clay: warm, mottled, no seams
+	_pot = _blocks_material(Color(0.1, 0.09, 0.085), 1, 97, 0.2)         # blackened clay or iron pot
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -482,4 +488,123 @@ static func brace(length: float = 2.0) -> Node3D:
 	timber.rotation = Vector3(PI * 0.25, 0.0, 0.0)
 	timber.position = Vector3(0.0, 0.08, 0.0)
 	root.add_child(timber)
+	return root
+
+
+# A stick or log rotated to run from `a` to `b` (a thin box; local to the piece).
+static func _rod(parent: Node3D, a: Vector3, b: Vector3, thick: float, material: StandardMaterial3D) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: BoxMesh = BoxMesh.new()
+	var length: float = a.distance_to(b)
+	shape.size = Vector3(thick, length, thick)
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = (a + b) * 0.5
+	var up: Vector3 = (b - a).normalized()
+	var axis: Vector3 = Vector3.UP.cross(up)
+
+	if axis.length() > 0.0001:
+		mesh.basis = Basis(axis.normalized(), Vector3.UP.angle_to(up))
+
+	parent.add_child(mesh)
+
+
+# A rough bed (Dave 24 Oct), 2 m by 0.9 m: a frame of four split logs on short feet, a thick mat of straw bundles with a dent where a body lies,
+# and a rolled-up straw pillow at the head. Walk-over height 0.35 m. About 20 triangles-boxes, one material each.
+static func rough_bed() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for z in [-0.4, 0.4]:
+		_box(root, Vector3(2.0, 0.12, 0.1), Vector3(0.0, 0.2, z), _log)
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 0.12, 0.9), Vector3(x, 0.2, 0.0), _log)
+
+	for x in [-0.9, 0.9]:
+		for z in [-0.4, 0.4]:
+			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.08, z), _frame)
+
+	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat
+	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(-0.5, 0.34, 0.0), _thatch)       # raised straw at the foot and
+	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(0.55, 0.34, 0.0), _thatch)        # the head, a dent between them
+	_box(root, Vector3(0.3, 0.14, 0.5), Vector3(0.75, 0.4, 0.0), _thatch)          # the rolled pillow
+	_box(root, Vector3(0.5, 0.04, 0.3), Vector3(-0.3, 0.33, 0.28), _thatch)        # a corner of straw folded back
+	_solid(root, Vector3(2.0, 0.35, 0.9), Vector3(0.0, 0.175, 0.0))
+	return root
+
+
+# A thatch wall piece (Dave 24 Oct: 20 twine, 50 thatch, 15 sticks), 2 m by 2.4 m, 0.25 m thick: a frame of sticks and rails filled with thick courses of straw bundles,
+# each course a little out of line with the next, bound with twine bands. Shaggy at the top edge.
+static func thatch_wall() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 2.4, 0.18), Vector3(x, 1.2, 0.0), _frame)
+
+	_box(root, Vector3(2.0, 0.1, 0.18), Vector3(0.0, 2.35, 0.0), _frame)
+
+	for k in 8:
+		var y: float = 0.15 + 0.3 * float(k)
+		var shift: float = 0.04 * float((k * 5) % 3 - 1)
+		_box(root, Vector3(1.9, 0.3, 0.25 + 0.02 * float(k % 2)), Vector3(shift, y, 0.0), _thatch)
+
+	for y in [0.6, 1.5]:
+		_box(root, Vector3(1.96, 0.03, 0.27), Vector3(0.0, y, 0.0), _frame)        # twine band, dark against the straw
+
+	for k in 5:
+		_box(root, Vector3(0.12, 0.2, 0.2), Vector3(-0.8 + 0.4 * float(k), 2.45, 0.0), _thatch)    # shaggy top edge
+
+	_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A tripod pot (cooking station tier 1, Dave 24 Oct): three sticks lashed at the top over the fire, a round blackened pot hanging on a chain, a ring of stones under it.
+static func tripod_pot() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var top: Vector3 = Vector3(0.0, 1.3, 0.0)
+
+	for k in 3:
+		var a: float = TAU * float(k) / 3.0 + 0.3
+		_rod(root, Vector3(cos(a) * 0.6, 0.0, sin(a) * 0.6), top + Vector3(cos(a) * 0.04, 0.0, sin(a) * 0.04), 0.06, _log)
+
+	_box(root, Vector3(0.12, 0.08, 0.12), Vector3(0.0, 1.3, 0.0), _frame)           # the lashing
+	_rod(root, Vector3(0.0, 1.26, 0.0), Vector3(0.0, 0.95, 0.0), 0.02, _pot)          # chain
+
+	var pot: MeshInstance3D = MeshInstance3D.new()
+	var bowl: SphereMesh = SphereMesh.new()
+	bowl.radius = 0.2
+	bowl.height = 0.34
+	bowl.radial_segments = 10
+	bowl.rings = 5
+	pot.mesh = bowl
+	pot.material_override = _pot
+	pot.position = Vector3(0.0, 0.78, 0.0)
+	root.add_child(pot)
+	_box(root, Vector3(0.34, 0.04, 0.34), Vector3(0.0, 0.93, 0.0), _pot)             # the rim
+
+	for k in 7:
+		var a: float = TAU * float(k) / 7.0
+		_box(root, Vector3(0.16, 0.1, 0.16), Vector3(cos(a) * 0.36, 0.05, sin(a) * 0.36), _stone)
+
+	_solid(root, Vector3(0.9, 0.6, 0.9), Vector3(0.0, 0.3, 0.0))
+	return root
+
+
+# A clay hearth (cooking station tier 2), 1.2 m by 0.9 m, 0.6 m high: a block of fired clay with a hollow on top for the fire, a low back wall,
+# and two forked posts holding a spit across the hollow.
+static func clay_hearth() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.2, 0.5, 0.9), Vector3(0.0, 0.25, 0.0), _clay)
+	_box(root, Vector3(0.8, 0.1, 0.5), Vector3(0.0, 0.5, 0.0), _tar)                # the soot-black hollow, flush with the top
+	_box(root, Vector3(1.2, 0.35, 0.12), Vector3(0.0, 0.68, -0.39), _clay)          # back wall
+
+	for x in [-0.5, 0.5]:
+		_box(root, Vector3(0.08, 0.5, 0.08), Vector3(x, 0.75, 0.2), _frame)
+
+	_rod(root, Vector3(-0.58, 0.98, 0.2), Vector3(0.58, 0.98, 0.2), 0.035, _frame)      # the spit
+	_solid(root, Vector3(1.2, 0.6, 0.9), Vector3(0.0, 0.3, 0.0))
 	return root
