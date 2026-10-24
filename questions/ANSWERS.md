@@ -1394,3 +1394,7 @@ Answered: 2026-10-24 14:30 UTC
 Answer: No: If it is an island that has a volcano and the volcano is active then it should rumble and you should be able to hear it and or feel it depending on how close it is to exploding all over the island
 Answered: 2026-10-24 14:31 UTC
 
+## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
+Answer: No: The hammers only purpose is to allow you to access blueprints to put down on the ground. So if you wanna put down the blueprint of a type of foundation, you have to pull out your hammer and right click and then it will give you a menu that allows you to go through all the blueprints.
+Answered: 2026-10-24 14:32 UTC
+
