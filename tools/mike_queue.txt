@@ -6,6 +6,8 @@
 branch steve-worn-attach
 branch steve-smoke-row
 branch steve-river-settle
+branch kathleen-sound-1
+branch steve-sound-slots
 branch kathleen-item-looks
 branch kathleen-flora-gaps
 branch kathleen-building-looks
@@ -17,6 +19,7 @@ test test_tunnel_watch
 test test_worn_sync
 test test_water_flow
 test test_water_settle_rules
+test test_slot_sounds
 test validate_items
 rig frametime Low | --frametime 20 --quality 0 --name frametime_low
 rig item looks (all showroom rows) | --showroom all --name showroom_all
