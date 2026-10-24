@@ -8,7 +8,7 @@ One container `dynasty-testbox`: Godot 4.7.2 + Voxel Tools 1.7 (+ the water core
 **A. One-time folders and code**
 1. `sudo mkdir -p /data/godot/projects/dynasty /data/godot/box/ssh /data/godot/box/out /data/godot/box/claude && sudo chown -R 1500:1500 /data/godot/projects/dynasty /data/godot/box`
 2. `git clone https://github.com/DSul3791/DynastyALWL.git ~/dynasty-src && cd ~/dynasty-src && git checkout claude/docker-test-box && cd tools/docker` (only to get the box files; the working checkout is made in step 7)
-3. `cp box_settings.json /data/godot/box/claude/settings.json` (what Claude in the box may do; it cannot read your key and cannot push to main)
+3. `sudo cp box_settings.json /data/godot/box/claude/settings.json && sudo chown 1500:1500 /data/godot/box/claude/settings.json` (what Claude in the box may do; it cannot read your key and cannot push to main). The folders under /data/godot/box belong to user 1500 (the box user), so your own user needs sudo to write there. If `docker` says permission denied, put `sudo` in front of every `docker` command, or run `sudo usermod -aG docker dave` and log in again.
 
 **B. GPU (NVIDIA GTX 1050 Ti)**
 4. On the host: `nvidia-smi` (must show the card and a driver). If missing: `sudo ubuntu-drivers install` then reboot (not while players are on).
