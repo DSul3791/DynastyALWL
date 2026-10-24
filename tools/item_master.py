@@ -73,7 +73,8 @@ def build():
            "| future | exists in data, not yet reachable |", "",
            "## Counts",
            "| What | Count |", "|---|---|",
-           "| live items (items.json minus retired) | %d |" % len(live),
+           "| items in items.json (validate_items 'core', must equal) | %d |" % len(items),
+           "| live items (minus retired) | %d |" % len(live),
            "| retired items (own section) | %d |" % len(retired)]
     out += ["| gap: %s | %d |" % kv for kv in sorted(gaps.items())]
     out += ["| design names matched / missing | %d / %d |" % (len(covered), len(missing)), ""]
