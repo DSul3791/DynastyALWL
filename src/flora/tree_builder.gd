@@ -181,6 +181,10 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"fern_rosette":
+			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
+		"reed_stand":
+			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), bark, leaves, rng, h, crown, far)
 		"grass_tuft":
 			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
@@ -2085,9 +2089,9 @@ static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 
 
 # One arching frond card strip: rises, then droops.
-static func _frond(leaves: Acc, rng: RandomNumberGenerator, top: Vector3, out: Vector3, length: float, rise: float, segments: int, half_width: float) -> void:
+static func _frond(leaves: Acc, rng: RandomNumberGenerator, top: Vector3, out: Vector3, length: float, rise: float, segments: int, half_width: float, tint: Color = Color.WHITE) -> void:
 	var shade: float = rng.randf_range(0.8, 1.05)
-	var color: Color = Color(shade, shade, shade, 0.5)
+	var color: Color = Color(shade * tint.r, shade * tint.g, shade * tint.b, 0.5)
 
 	for s in range(segments):
 		var t0: float = float(s) / float(segments)
@@ -2876,3 +2880,75 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				elif not far:
 					for b in range(4):
 						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03, 0.0) + out * crown * 0.02 * float(b % 2), Vector3(h * 0.012, h * 0.022, h * 0.012), color * rng.randf_range(0.9, 1.1))
+
+
+# Ferns and mosses, family 3 of goal 1b (Kathleen, 24 Oct). Reference: bracken/common fern 50-120 cm, a rosette of arching fronds; moss cushions 3-10 cm of tiny green domes with thin spore stalks.
+# The fantasy ones keep a tint on the same frond card (hushfern deep blue-green, whisperfern pale silver-green, echo moss silver-blue).
+const FERN_LOOKS := {
+	"fern": {"kind": "fronds", "fronds": 9, "length": 1.0, "rise": 0.9, "width": 0.2, "tint": Color(1.0, 1.0, 1.0)},
+	"hushfern": {"kind": "fronds", "fronds": 8, "length": 1.1, "rise": 0.5, "width": 0.18, "tint": Color(0.6, 0.85, 0.95)},
+	"whisperfern": {"kind": "fronds", "fronds": 11, "length": 0.95, "rise": 1.2, "width": 0.14, "tint": Color(0.85, 1.0, 0.9)},
+	"staunchmoss": {"kind": "moss", "domes": 16, "color": Color(0.28, 0.5, 0.2), "stalk": Color(0.55, 0.5, 0.3)},
+	"echo_moss": {"kind": "moss", "domes": 14, "color": Color(0.5, 0.68, 0.72), "stalk": Color(0.8, 0.9, 0.95)},
+}
+
+
+static func _fern_rosette(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	if str(look["kind"]) == "moss":
+		var color: Color = look["color"]
+
+		for k in range(6 if far else int(look["domes"])):
+			var a: float = rng.randf() * TAU
+			var r: float = sqrt(rng.randf()) * crown * 0.9
+			var size: float = maxf(h, 0.04) * rng.randf_range(0.5, 1.0)
+			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), color * rng.randf_range(0.85, 1.15))
+
+		if not far:
+			for k in range(5):
+				var a: float = rng.randf() * TAU
+				var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.0, 0.6)
+				_branch(bark, base, base + Vector3(0.0, h * 1.6, 0.0), maxf(h * 0.03, 0.001), maxf(h * 0.02, 0.0008), look["stalk"], 3)
+		return
+
+	var fronds: int = 5 if far else int(look["fronds"])
+
+	for k in range(fronds):
+		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.25, 0.25)
+		_frond(leaves, rng, Vector3(0.0, h * 0.25, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 2.0, h * 0.9) * float(look["length"]) * rng.randf_range(0.8, 1.1), float(look["rise"]) * rng.randf_range(0.7, 1.1), 1 if far else 2, float(look["width"]), look["tint"])
+
+
+# Reeds, family 4 of goal 1b. Reference: common reed 1.5-3 m stiff stems with leaves along them and a purple-brown feathery plume on top; the fantasy ones swap the plume.
+const REED_LOOKS := {
+	"reeds": {"stems": 12, "head": "plume", "head_color": Color(0.55, 0.42, 0.5), "stem": Color(0.62, 0.62, 0.34), "lean": 0.25},
+	"wispbloom": {"stems": 8, "head": "wisp", "head_color": Color(0.65, 0.98, 0.9), "stem": Color(0.45, 0.65, 0.5), "lean": 0.3},
+	"tideglass_weed": {"stems": 10, "head": "none", "head_color": Color(0.5, 0.85, 0.8), "stem": Color(0.45, 0.8, 0.75), "lean": 0.5},
+	"riverbraid": {"stems": 9, "head": "none", "head_color": Color(0.4, 0.62, 0.55), "stem": Color(0.38, 0.6, 0.5), "lean": 0.55},
+	"stormreed": {"stems": 8, "head": "plume", "head_color": Color(0.5, 0.48, 0.62), "stem": Color(0.5, 0.5, 0.55), "lean": 0.1},
+	"tidecrown": {"stems": 6, "head": "crown", "head_color": Color(0.92, 0.95, 0.98), "stem": Color(0.5, 0.65, 0.5), "lean": 0.2},
+}
+
+
+static func _reed_stand(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	_grass(leaves, rng, h * 0.8, crown, 2 if far else 3)
+	var head: String = str(look["head"])
+	var color: Color = look["head_color"]
+
+	for k in range(4 if far else int(look["stems"])):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = out * crown * rng.randf_range(0.0, 0.4)
+		var tip: Vector3 = base + out * h * float(look["lean"]) * rng.randf_range(0.2, 1.0) + Vector3(0.0, h * rng.randf_range(0.85, 1.0), 0.0)
+		var mid: Vector3 = base.lerp(tip, 0.5) + out * h * 0.04
+		_branch(bark, base, mid, maxf(h * 0.008, 0.004), maxf(h * 0.006, 0.003), look["stem"], 3)
+		_branch(bark, mid, tip, maxf(h * 0.006, 0.003), maxf(h * 0.004, 0.002), look["stem"], 3)
+
+		match head:
+			"plume":
+				_bead(bark, tip, Vector3(h * 0.03, h * 0.1, h * 0.03), color * rng.randf_range(0.9, 1.1))
+			"wisp":
+				for b in range(2 if far else 4):
+					_bead(bark, tip + Vector3(0.0, float(b) * h * 0.04, 0.0) + out * h * 0.02 * float(b), Vector3(h * 0.025, h * 0.04, h * 0.025) * (1.0 - 0.2 * float(b)), color)
+			"crown":
+				for b in range(3 if far else 6):
+					var pa: float = TAU * float(b) / 6.0
+					_bead(bark, tip + Vector3(cos(pa), 0.0, sin(pa)) * h * 0.03, Vector3(h * 0.03, h * 0.01, h * 0.015), color)

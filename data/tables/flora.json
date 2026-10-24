@@ -1038,6 +1038,7 @@
 			"display": "Fern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.5,
 				1.2
@@ -1154,6 +1155,7 @@
 			"display": "Reeds",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.5,
 				3
@@ -4883,6 +4885,7 @@
 			"display": "Staunchmoss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.03,
 				0.1
@@ -5055,6 +5058,7 @@
 			"display": "Wispbloom",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.4,
 				1.0
@@ -5291,6 +5295,7 @@
 			"display": "Hushfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.3,
 				0.9
@@ -5585,6 +5590,7 @@
 			"display": "Tideglass weed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.3,
 				0.8
@@ -5876,6 +5882,7 @@
 			"display": "Riverbraid",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.8,
 				1.6
@@ -6109,6 +6116,7 @@
 			"display": "Whisperfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.4,
 				1.0
@@ -6340,6 +6348,7 @@
 			"display": "Stormreed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.2,
 				2.4
@@ -6507,6 +6516,7 @@
 			"display": "Echo moss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.02,
 				0.06
@@ -7202,6 +7212,7 @@
 			"display": "Tidecrown",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.2,
 				0.5
