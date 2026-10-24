@@ -1569,6 +1569,17 @@ func _say_logout() -> void:
 		multiplayer.poll()
 
 
+# Esc > Admin > Go to spawn: set the body down above the spawn point the way a respawn does (it waits for the ground there).
+func go_to_spawn() -> void:
+	if body == null or not world.has("spawn"):
+		return
+
+	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, 28.0, 0.0)
+	body.velocity = Vector3.ZERO
+	_was_waiting = true
+	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
 func _on_died(cause: String, spawn_point: Vector3) -> void:
 	if body == null:
 		return
