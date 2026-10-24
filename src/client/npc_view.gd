@@ -13,11 +13,14 @@ const SIT := 2
 const SLEEP := 3
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
+const WornSync := preload("res://src/client/worn_sync.gd")
+const OUTFITS_PATH := "res://data/npcs/outfits.json"
 const FULL_M := 15.0
 const HALF_M := 40.0
 const QUARTER_M := 70.0
 
 var roster: Dictionary = {}      # id -> {name, role, outfit}
+var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
 
 
@@ -122,6 +125,15 @@ func _process(delta: float) -> void:
 		var player: AnimationPlayer = ragdoll.animation_player
 		player.speed_scale = clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
 		var distance: float = eye.distance_to(node.global_position)
+		body["far_t"] = float(body.get("far_t", randf())) - delta
+
+		if float(body["far_t"]) <= 0.0:
+			# One look a second: dress the body for its distance (far bodies skip the detail parts; a few metres of hysteresis).
+			body["far_t"] = 1.0
+			var far: bool = WornSync.far_after(distance, bool(body.get("far", false)))
+			body["far"] = far
+			WornSync.apply(ragdoll, _worn_of(str(roster.get(id, {}).get("outfit", ""))), far)
+
 		var every: int = 1 if distance <= FULL_M else (2 if distance <= HALF_M else (4 if distance <= QUARTER_M else 0))
 		body["owed"] = float(body.get("owed", 0.0)) + delta
 
@@ -130,6 +142,15 @@ func _process(delta: float) -> void:
 			body["owed"] = 0.0
 		elif every == 0:
 			body["owed"] = 0.0
+
+
+# The worn items of an outfit name (data/npcs/outfits.json), read once.
+func _worn_of(outfit: String) -> Array:
+	if _outfits.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(OUTFITS_PATH))
+		_outfits = parsed if typeof(parsed) == TYPE_DICTIONARY else {"": []}
+
+	return WornSync.known_ids(_outfits.get(outfit, []))
 
 
 func _make_body(id: String) -> Node3D:
@@ -146,6 +167,7 @@ func _make_body(id: String) -> Node3D:
 	var shade: float = 1.0 + (float(h & 255) / 255.0 - 0.5) * 0.35
 	var skin: Color = Color(0.78, 0.62, 0.5).lerp(Color(0.5, 0.36, 0.28), float((h >> 8) & 255) / 255.0 * 0.6)
 	ragdoll.dress(skin, Color(coat.r * shade, coat.g * shade, coat.b * shade), Color(trousers.r * shade, trousers.g * shade, trousers.b * shade))
+	WornSync.apply(ragdoll, _worn_of(outfit), false)
 	ragdoll.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	ragdoll.play("idle")
 	# The furniture they use goes with them (shown by state): a chair under a sitter, a bed under a sleeper. The markers are on the

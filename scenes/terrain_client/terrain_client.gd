@@ -85,6 +85,7 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const WornSync := preload("res://src/client/worn_sync.gd")
 const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
@@ -2648,6 +2649,7 @@ func _dress_avatar() -> void:
 			shoes = tint
 
 	_avatar.dress(Color(0.78, 0.62, 0.5), coat, trousers, shoes)
+	WornSync.apply(_avatar, WornSync.ids_of(items.worn, items.table), false)   # Kathleen's worn pieces on the bones (the own avatar shows in third person only, so no first-person clipping)
 
 
 func _make_avatar() -> Node3D:
