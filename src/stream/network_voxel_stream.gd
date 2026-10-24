@@ -49,6 +49,8 @@ var _closing: bool = false
 var zeroed_blocks: int = 0
 var _refused_key: Vector4i = Vector4i(0, 0, 0, -1)   # the last block refused (damaged, zeroed, not ready): _load asks again
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
+var drop_blocks_left: int = 0           # test only (--drop-ground-blocks N): the first N blocks the engine asks for always fail, as a refused block does, so the join hang can be forced
+var _dropped: Dictionary = {}         # Vector4i -> true: the blocks dropped for that test
 var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
 var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
 var watch_on: bool = false            # headless --fly check: note when the column under watch_xz loads
@@ -117,6 +119,9 @@ func column_loaded(x: float, z: float) -> bool:
 
 
 func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	if _drop_for_test(Vector4i(block.x, block.y, block.z, lod)):
+		return RESULT_ERROR
+
 	var found: int = _load_inner(out_buffer, block, lod)
 
 	# A block that arrived damaged, zeroed or "not ready" is asked for again right here (up to 3 tries in all), so the
@@ -141,6 +146,18 @@ func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 		_note_column(block, lod)
 
 	return found
+
+
+func _drop_for_test(key: Vector4i) -> bool:
+	_mutex.lock()
+
+	if not _dropped.has(key) and drop_blocks_left > 0:
+		drop_blocks_left -= 1
+		_dropped[key] = true
+
+	var dropped: bool = _dropped.has(key)
+	_mutex.unlock()
+	return dropped
 
 
 func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:

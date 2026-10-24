@@ -37,6 +37,7 @@ extends Node
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
+const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
@@ -197,6 +198,9 @@ var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
+var _drop_ground_blocks: int = 0                  # test only (--drop-ground-blocks=N): the first N blocks asked for fail for good, so the join hang can be forced
+var _ground_watchdog = GroundWatchdogScript.new()  # restarts the stream when the ground does not come (see ground_watchdog.gd)
+var _ground_giving_up: bool = false
 var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
@@ -518,6 +522,8 @@ func _ready() -> void:
 			test_fly_alt = float(argument.trim_prefix("--flyalt="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
+		elif argument.begins_with("--drop-ground-blocks="):
+			_drop_ground_blocks = int(argument.trim_prefix("--drop-ground-blocks="))
 		elif argument == "--clear-cache":
 			clear_cache = true
 		elif argument.begins_with("--quality="):
@@ -748,7 +754,7 @@ func _update_connect_window() -> void:
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
-		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on." % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since])
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else ""])
 		return
 
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
@@ -934,6 +940,7 @@ func _welcome_body(info: Dictionary) -> void:
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 	stream = StreamScript.new()
 	stream.cache = cache
+	stream.drop_blocks_left = _drop_ground_blocks
 	link = BlockLinkScript.new()
 	link.stream = stream
 	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
@@ -2344,6 +2351,40 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	print("Terrain client: the tile files changed on the server; reloaded the ground and plants")
 
 
+# The join hang (Dave, build 787): the ground never came and nothing was left to ask for. Start a new stream so everything is asked for again; the cache and
+# the starter ground stay as they are. Six tries, then the window says so and names the logs.
+func _run_ground_watchdog() -> void:
+	if connected_msec <= 0 or stream == null or _ground_giving_up:
+		return
+
+	var action: String = _ground_watchdog.step(Time.get_ticks_msec(), waiting_for_ground, stream.pending())
+
+	if action == "":
+		return
+
+	var line: String = "JOIN: ground %s, try %d of %d: loads %d, received %d, timeouts %d, bad %d, zeroed %d, pending %d, player %s" % [action, _ground_watchdog.tries, _ground_watchdog.MAX_TRIES, stream.loads, stream.blocks_received, stream.timeouts, stream.bad_blocks, stream.zeroed_blocks, stream.pending(), str(body.global_position) if body != null else "?"]
+	_telemetry.event(line)
+	print("Terrain client: " + line)
+
+	if action == "retry":
+		_restream_ground()
+		return
+
+	_ground_giving_up = true
+
+	if _connect_window != null:
+		_connect_window.fail("The ground did not arrive", "The server welcomed this game, but the ground under you did not load after %d tries.\n\nPlease quit, press Play again, and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % _ground_watchdog.tries, func(): _finish(1))
+
+
+func _restream_ground() -> void:
+	stream.close()
+	stream = StreamScript.new()
+	stream.cache = cache
+	stream.link = link
+	link.stream = stream
+	terrain.stream = stream
+
+
 func _reload_ground() -> void:
 	cache.clear_all()
 	stream.close()
@@ -3338,6 +3379,8 @@ func _process(delta: float) -> void:
 		_tunnel_step()
 
 	_update_pit_shadow()
+
+	_run_ground_watchdog()
 
 	if _connect_window != null:
 		_update_connect_window()

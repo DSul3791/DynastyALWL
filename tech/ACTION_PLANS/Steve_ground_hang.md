@@ -32,3 +32,10 @@ Approved to build as a bug fix despite the devstop. One branch, claude/steve-gro
 3. Add the rig flag `--drop-ground-blocks N` (test only, off by default, not in the normal launcher) so Mike can force the hang. Prove BOTH ways in the test: without the fix it hangs, with the fix it opens within about 15 s.
 4. Tests: headless stub test, parse_scan, local_check (baseline 233, no new warnings), check_controls. Print any changed defaults (BP-T55). No pictures in the branch.
 5. Push, post the id. I merge the tested id only after Mike's PASS on a fresh clone after Pull (5 starts, all open). Goes into the next build with the final bake checklist.
+
+## Built (Steve, 24 Oct, after Tyler's GO)
+- src/client/ground_watchdog.gd: the retry rules as one small class (idle 8 s, every 10 s, 6 tries; a busy stream with no ground after 60 s is retried every 30 s). Never clears the cache.
+- terrain_client.gd: `_run_ground_watchdog` (every frame while connected), `_restream_ground` (new stream, same cache and link), window line "Ground is slow: asking the server again (try n of 6)", failure screen after the 6th try naming telemetry_client.log and ground_mismatch.log, telemetry line "JOIN: ground retry ..." with loads, received, timeouts, bad, zeroed, pending, player position.
+- Test flag `--drop-ground-blocks=N` (client command line, off by default, not in the launcher): the first N blocks the engine asks for fail for good (nearest first, so the one under the player). Without the fix the join window hangs; with it the ground opens at about 8 s. Mike: `godot --path . res://scenes/terrain_client/terrain_client.tscn -- --server=... --drop-ground-blocks=40` with the watchdog, then compare by checking out the commit before.
+- src/worldgen/tools/test_ground_watchdog.gd (headless, prints "Test done: N pass, N fail"): hangs without the fix (120 s), opens within 15 s with it, normal join never triggers, a stubborn ground gives up after 6 tries within 80 s.
+- No defaults changed. Not run in Godot here; parse_scan 0 problems, check_controls run.
