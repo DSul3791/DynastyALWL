@@ -98,7 +98,7 @@ func _init() -> void:
 	var cell: Vector2i = items._fish_cell(Vector3(5.0, 10.0, 5.0))
 	var most: int = 0
 
-	for round in 12:
+	for _haul in 12:
 		items._last_fish.clear()
 		var before_fish: int = fish_count(items)
 		var before_stock: int = items.fish_stock(cell)
