@@ -44,3 +44,8 @@ Note: Thatching grass: 10 thatch per pick, patches in all grassy areas. Bark of 
 Note: Nothing is placed near spawn on purpose; the spawn point is picked near resources later.
 Note: Recommendation: Yes, because nothing gives thatch today and the first shelter needs 50.
 [check]
+
+## bridge-ramp-cap | Cap a bridge ramp at 40 m long?
+Note: Bridge ramps and supports reach into the ground, so steep banks make longer ramps. Past 40 m the ghost says 'ramp too long'.
+Note: Recommendation: Yes, 40 m, because a 1 in 6 ramp over a 6 m bank is 36 m and anything longer is a different structure.
+[check]
