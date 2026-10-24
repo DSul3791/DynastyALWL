@@ -22,12 +22,6 @@ Note: 2. Esc > Settings > Sound test > Batch 2: press once per group; each group
 Note: 3. Listen with headphones. Yes if they sound natural. No: name the group that is wrong.
 [test]
 
-## look-trees-ferns | Do the trees, ferns and grass look better, and is there a softwood belt on the foothills? (build 779, 784)
-Note: 1. Pull build 787.
-Note: 2. Look at a hardwood forest, then walk up a slope: softwoods (pine, spruce) should take over on the foothills and slopes, hardwoods on fertile flat ground.
-Note: 3. Yes if the belt looks right. No: write where (F3) and what is wrong.
-[test]
-
 ## look-new-tools | Can you craft the new tools? (build 787: stone hammer, hand saw, stone adze)
 Note: 1. Pull build 787.
 Note: 2. At a workbench craft a stone hammer, a hand saw and a stone adze.
