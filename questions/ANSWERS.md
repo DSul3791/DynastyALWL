@@ -1554,3 +1554,7 @@ Answered: 2026-10-24 17:05 UTC
 Answer: Yes
 Answered: 2026-10-24 17:05 UTC
 
+## wl-soil-types | Water land types: swamp, marsh or bog chosen by soil and climate, not water alone?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
