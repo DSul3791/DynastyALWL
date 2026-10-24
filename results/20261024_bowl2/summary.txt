@@ -1,0 +1,1 @@
+commit 2c2cc8af server GPU; bowl 1 re-render wait 240 s settle 60 s; aerial at 53698,130,68481 yaw 138
