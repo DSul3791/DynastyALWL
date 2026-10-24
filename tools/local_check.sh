@@ -3,6 +3,7 @@
 #   tools/local_check.sh                  addons load, item validator, warnings against tools/warning_baseline.txt
 #   tools/local_check.sh test_a test_b    also runs src/worldgen/tools/test_a.gd, test_b.gd (name without .gd)
 #   CHANGE_LABEL=RUNTIME tools/local_check.sh   fails if the changes touch heavier paths than the label (BP-T31 secret-bake guard)
+#   (bake changes also print the island check table's FAIL lines; ISLAND_GATE=1 makes them block)
 #   tools/local_check.sh --update-baseline   rewrite tools/warning_baseline.txt from the current warnings (Technical Director only)
 # Needs Git bash. Uses the tools/godot shim (GODOT_EXE overrides the editor exe). Close the game first.
 cd "$(dirname "$0")/.." || exit 2
@@ -43,6 +44,13 @@ if [ -n "$CHANGE_LABEL" ] && [ "$(rank "$CLASS")" -gt "$(rank "$CHANGE_LABEL")" 
 	fail "labelled $CHANGE_LABEL but the changes are $CLASS:"; echo "$BAKE_FILES$RESTART_FILES" | grep -v '^$' | head -8 | sed 's/^/  /'
 else
 	pass "change class $CLASS$([ -n "$CHANGE_LABEL" ] && echo " (label $CHANGE_LABEL ok)")"
+fi
+
+# Bake changes: print the island check table's FAIL lines (numbers first, then a picture). The gate blocks only with ISLAND_GATE=1.
+if [ "$CLASS" = "BAKE" ] || [ -n "$ISLAND_GATE" ]; then
+	IC=$(timeout 900 godot --headless --path . --script res://src/worldgen/tools/island_checks.gd 2>&1); ICRC=$?
+	echo "$IC" | grep "^CHECK .*| FAIL$" | cut -c1-200 | head -12 | sed 's/^/  /'
+	if [ $ICRC -eq 0 ]; then pass "island checks: $(echo "$IC" | tail -1)"; elif [ -n "$ISLAND_GATE" ]; then fail "island checks: $(echo "$IC" | tail -1)"; else echo "NOTE  island checks: $(echo "$IC" | tail -1) (not blocking; ISLAND_GATE=1 blocks)"; fi
 fi
 
 CUR=$(mktemp)
