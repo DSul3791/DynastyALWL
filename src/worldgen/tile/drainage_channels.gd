@@ -32,6 +32,7 @@ var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
 var _centre_surface: PackedFloat32Array = PackedFloat32Array()
+var _canyon: PackedFloat32Array = PackedFloat32Array()        # 0..1 canyon strength on centre cells (valleys give way to canyons)
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
@@ -118,7 +119,9 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 
 	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
+	_canyons(h, fill, flow, size, cell_m, rules)
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
 
 
@@ -250,7 +253,7 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 
 		var q: float = sqrt(flow.discharge[index])
 		# Brooks get no valley, big rivers a full one; the cut is capped so a river beside a mountain does not eat it.
-		var strength: float = smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index])
+		var strength: float = smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index]) * (1.0 - _canyon[index])
 		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, float(rules.get("valley_cut_max_m", 15.0)))
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var rim_m: float = minf(radius_widths * width_m, max_radius_m)
@@ -282,6 +285,91 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
 				var weight: float = (1.0 - smoothstep(0.5, 1.0, distance / rim_m)) * strength
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
+				cut[neighbor] = minf(cut[neighbor], carved)
+
+	bed = cut
+
+
+# Stage 3b2: canyons and ravines. Where a river with a big catchment crosses high ground and a slowly varying place noise
+# says so (about 40% of its length), steep walls close in on it: the floor stands just above the water and the walls rise at
+# `canyon_wall_slope` out to the rim, up to `canyon_cut_max_m` deep. Between canyon reaches the river keeps its valley. The cut
+# is graded to the river's own water level, so water still runs downhill through it; everything is world-position based
+# (no tile seams). Data: canyon_start_km2, canyon_cut_max_m, canyon_wall_slope, canyon_rim_max_m, canyon_noise_from,
+# canyon_min_ground_m (only ground above this height gets canyons).
+func _canyon_map(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules: Dictionary) -> void:
+	_canyon.resize(size * size)
+	_canyon.fill(0.0)
+	var start_km2: float = float(rules.get("canyon_start_km2", 0.0))
+
+	if start_km2 <= 0.0:
+		return
+
+	var noise_from: float = float(rules.get("canyon_noise_from", 0.15))
+	var min_ground: float = float(rules.get("canyon_min_ground_m", 60.0))
+
+	for index in fill.order:
+		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]) or h[index] < min_ground:
+			continue
+
+		var strength: float = smoothstep(start_km2, start_km2 * 6.0, flow.discharge[index])
+		strength *= smoothstep(noise_from, noise_from + 0.25, _swing_noise(index, size, cell_m, 250.0, 4421))
+		strength *= smoothstep(min_ground, min_ground * 3.0, h[index])
+		_canyon[index] = strength
+
+
+func _canyons(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules: Dictionary) -> void:
+	var start_km2: float = float(rules.get("canyon_start_km2", 0.0))
+
+	if start_km2 <= 0.0:
+		return
+
+	var cut_max: float = float(rules.get("canyon_cut_max_m", 70.0))
+	var wall_slope: float = float(rules.get("canyon_wall_slope", 0.5))
+	var rim_max: float = float(rules.get("canyon_rim_max_m", 220.0))
+	var min_ground: float = float(rules.get("canyon_min_ground_m", 60.0))
+	var cut: PackedFloat32Array = bed.duplicate()
+
+	for index in fill.order:
+		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]) or h[index] < min_ground:
+			continue
+
+		var strength: float = _canyon[index]
+
+		if strength < 0.05:
+			continue
+
+		var q: float = sqrt(flow.discharge[index])
+		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
+		var half_m: float = 0.5 * width_m
+		var depth_cap: float = minf(cut_max, 12.0 + 6.0 * q) * strength
+		var rim_m: float = minf(half_m + depth_cap / wall_slope, rim_max)
+		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+		var reach: int = int(ceil(rim_m / cell_m))
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > rim_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = floor_level + wall_slope * maxf(distance - half_m, 0.0)
+				var weight: float = 1.0 - smoothstep(0.7, 1.0, distance / rim_m)
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - depth_cap)
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
