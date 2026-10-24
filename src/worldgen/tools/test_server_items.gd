@@ -675,6 +675,45 @@ func _init() -> void:
 	check(digs.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "a grade stroke cuts ground above the A-B ramp (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	m.ground_height = Callable()
 
+	# The admin showroom: the rows of showroom.json become real world items, filled by upsert, never saved or cleared as drops.
+	m.ground_height = func(_x, _z): return 10.0
+	var show_origin: Vector3 = Vector3(2000.0, 10.0, 2000.0)
+	var show_of = func() -> Array:
+		var found: Array = []
+
+		for k in m._items:
+			if m._items[k].has("showroom"):
+				found.append(k)
+
+		return found
+	var show_rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/showroom.json"))
+	var show_want: int = 0
+
+	for row in show_rows["rows"]:
+		for entry in row.get("items", []):
+			if m.table.number_of(str(entry[0])) > 0:
+				show_want += 1
+
+	m.action(1, Net.ACT_SHOWROOM, 0, 0, 0, show_origin)
+	check(show_want > 0 and show_of.call().size() == show_want, "the showroom fill places every row item as a real world item (%d of %d)" % [show_of.call().size(), show_want])
+	m.action(1, Net.ACT_SHOWROOM, 0, 0, 0, show_origin)
+	check(show_of.call().size() == show_want, "filling again does not duplicate them")
+	var show_first: int = show_of.call()[0]
+	var show_peer_was: Vector3 = m._peer_pos[1]
+	m.report_position(1, m._items[show_first]["pos"])
+	m.action(1, Net.ACT_PICKUP, show_first, 0, 0, Vector3.ZERO)
+	check(not m._items.has(show_first) and show_of.call().size() == show_want - 1, "a showroom item can be picked up")
+	m.action(1, Net.ACT_SHOWROOM, 0, 0, 0, show_origin)
+	check(show_of.call().size() == show_want, "the next fill puts back only what was taken")
+	check(m.clear_dropped(show_origin, 200.0) == 0 and show_of.call().size() == show_want, "clearing dropped items leaves the showroom alone")
+	m.action(1, Net.ACT_SHOWROOM, 1, 0, 0, show_origin)
+	check(show_of.call().size() == show_want, "respawn clears and fills again")
+	m.ground_height = Callable()
+	m.report_position(1, show_peer_was)
+
+	for k in show_of.call():
+		m._items.erase(k)
+
 	# Dig under trees (job 85): the tree falls when what holds it up is thin enough, by species class.
 	var species: Array = ["beech", 0.4]
 	var share: Array = [0.5]
