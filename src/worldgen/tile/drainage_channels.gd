@@ -24,7 +24,8 @@ const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
-const HEAD_BASIN_M := 0.5            # a river head's bed stands at least this far under the ring of cells 3 cells out
+const HEAD_BASIN_M := 0.5            # a river head's bed stands at least this far under the lowest of its eight neighbours
+const HEAD_BASIN_MAX_CUT_M := 1.0    # and is never lowered by more than this for it
 const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
 const STEEP_VALLEY_SHARE := 0.8
@@ -632,17 +633,18 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
-	_log_head_basins(fill, flow, size, cell_m, threshold, has_up, edge)
+	_carve_head_basins(fill, flow, size, threshold, has_up, edge, cell_m)
 
 
-# Dave 24 Oct: water sources start in natural catch basins. Counts river heads (first channel cell, no channel upstream)
-# whose bed is not at least HEAD_BASIN_M below the second-lowest cell of the ring 3 cells out; prints the total and the
-# failures (with DRAINAGE_BREACH_LOG=1 every failing head's world position). Log only, no change to the ground.
-func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, has_up: PackedByteArray, edge: int) -> void:
+# Dave 24 Oct: water sources start in natural catch basins. A river head (first channel cell, no channel upstream) is
+# lowered until its bed stands HEAD_BASIN_M under the lowest of its eight neighbours (the lip its water has to climb to
+# leave), by at most HEAD_BASIN_MAX_CUT_M. The settler puts springs on heads, so every spring is a hollow the water fills
+# before it spills. Prints how many heads there were, how many already stood in a basin, and how many were carved.
+func _carve_head_basins(fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float) -> void:
 	var heads: int = 0
-	var failing: int = 0
+	var already: int = 0
+	var carved: int = 0
 	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
-	var ring: int = 3
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold or has_up[index] == 1:
@@ -655,45 +657,31 @@ func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, ha
 		if row < edge or column < edge or row >= size - edge or column >= size - edge:
 			continue
 
-		var around: Array = []
+		var lip: float = INF
 
-		for dz in range(-ring, ring + 1, ring):
-			for dc in range(-ring, ring + 1, ring):
+		for dz in range(-1, 2):
+			for dc in range(-1, 2):
 				if dz != 0 or dc != 0:
-					around.append(bed[(row + dz) * size + column + dc])
+					lip = minf(lip, bed[(row + dz) * size + column + dc])
 
-		around.sort()
-		var median: float = float(around[1])   # second-lowest ring cell: one outlet is allowed
 		heads += 1
+		var wanted: float = maxf(lip - HEAD_BASIN_M, bed[index] - HEAD_BASIN_MAX_CUT_M)
 
-		if bed[index] > median - HEAD_BASIN_M:
-			failing += 1
+		if bed[index] <= lip - HEAD_BASIN_M:
+			already += 1
+			continue
 
-			if verbose:
-				print("  head not in a basin: world %d,%d bed %.1f ring second-lowest %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), bed[index], median])
+		carved += 1
+		var before: float = bed[index]
+		bed[index] = wanted
 
-	print("  heads: %d river heads, %d not in a catch basin (bed less than %.1f m under the second-lowest ring cell)" % [heads, failing, HEAD_BASIN_M])
+		if is_nan(surface[index]) or surface[index] < bed[index]:
+			surface[index] = bed[index] + 0.1
 
+		if verbose:
+			print("  head basin: world %d,%d bed %.1f lip %.1f lowered to %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), before, lip, wanted])
 
-# Steepest rise per metre between a cell and its eight neighbours.
-func _ground_slope(h: PackedFloat32Array, index: int, size: int, cell_m: float) -> float:
-	@warning_ignore("integer_division")
-	var row: int = index / size
-	var column: int = index % size
-	var steepest: float = 0.0
-
-	for dz in range(-1, 2):
-		for dc in range(-1, 2):
-			var nr: int = row + dz
-			var nc: int = column + dc
-
-			if (dz == 0 and dc == 0) or nr < 0 or nr >= size or nc < 0 or nc >= size:
-				continue
-
-			var run: float = sqrt(float(dz * dz + dc * dc)) * cell_m
-			steepest = maxf(steepest, absf(h[nr * size + nc] - h[index]) / run)
-
-	return steepest
+	print("  heads: %d river heads, %d already in a catch basin, %d carved to HEAD_BASIN_M under the lip" % [heads, already, carved])
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
