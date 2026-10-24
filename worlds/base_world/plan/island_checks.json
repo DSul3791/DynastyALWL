@@ -4,6 +4,7 @@
 	"defaults": {
 		"min_area_km2": 5.0,
 		"sector_count": 8,
+		"summit_plateau_max_m": null,
 		"flat_slope_deg": 5.0,
 		"flat_share_min": null,
 		"band_table_check": false,
@@ -38,6 +39,8 @@
 		"spawn_range_m": 1.5,
 		"spawn_max_water_cells": 0,
 		"river_min_cells": 30,
+		"summit_search_m": 3000,
+		"summit_flat_m": 5.0,
 		"route_easy_deg": 25.0,
 		"route_hard_deg": 45.0,
 		"route_easy_min_km2": 1.0,

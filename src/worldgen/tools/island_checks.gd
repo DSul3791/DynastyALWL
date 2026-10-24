@@ -16,7 +16,7 @@ extends SceneTree
 #   --all          every island of at least min_area_km2, not only those listed in the limits file
 #   --sketch-only  skip the tile checks
 #   --tiles-only   skip the sketch (island shape) checks
-#   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks)
+#   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
 # Limits live in <world>/plan/island_checks.json (null = report only).
@@ -466,7 +466,7 @@ const SECTION_HARD := Color(0.80, 0.22, 0.18)
 # One row of sections, one panel per bearing: the coast at the left, the peak at the right (the profile
 # read back from the peak outward), every panel on the same scales. Fill colour is the local slope:
 # green under the easy limit (25 deg), orange up to the hard limit (45 deg), red above it.
-func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String) -> void:
+func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String, step_m: float = RAY_STEP_M, suffix: String = "") -> void:
 	var limit_m: float = 1000.0
 	var tallest: float = ceil(peak_m / 100.0) * 100.0
 
@@ -509,7 +509,7 @@ func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String) 
 
 			for x in range(PANEL_W):
 				var inland: float = float(x) / float(PANEL_W - 1) * limit_m
-				var at: float = (coast - inland) / RAY_STEP_M
+				var at: float = (coast - inland) / step_m
 
 				if at < 0.0:
 					break
@@ -517,7 +517,7 @@ func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String) 
 				var index: int = clampi(int(round(at)), 0, count - 1)
 				var h: float = maxf(samples[index], 0.0)
 				var neighbor: float = samples[clampi(index + 1, 0, count - 1)]
-				var local: float = absf(neighbor - samples[index]) / RAY_STEP_M
+				var local: float = absf(neighbor - samples[index]) / step_m
 				var color: Color = SECTION_FLAT if local <= easy else (SECTION_EASY if local <= hard else SECTION_HARD)
 				var column_top: int = top + PANEL_H - 1 - int(h / tallest * float(PANEL_H - 1))
 				image.fill_rect(Rect2i(left + x, column_top, 1, top + PANEL_H - column_top), color)
@@ -529,7 +529,7 @@ func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String) 
 	_text(image, MARGIN, unit_y, "%d" % island_id, ink, 3)
 	_text(image, MARGIN + 60, unit_y, "%dm" % int(tallest), ink, 3)
 	_text(image, MARGIN + 200, unit_y, "%dkm" % int(limit_m / 1000.0), ink, 3)
-	var path: String = "%s/island_%d_bearings.png" % [_picture_dir, island_id]
+	var path: String = "%s/island_%d_bearings%s.png" % [_picture_dir, island_id, suffix]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_picture_dir) if _picture_dir.begins_with("res://") else _picture_dir)
 	var saved: int = image.save_png(path)
 	_row("%s picture" % title, path if saved == OK else "cannot save %s" % path, "6 bearing sections, grid 1 km x 200 m, colour = slope", "PASS" if saved == OK else "FAIL")
@@ -547,6 +547,126 @@ func _text(image: Image, x: int, y: int, text: String, color: Color, scale: int)
 					image.fill_rect(Rect2i(cursor + (bit % 3) * scale, y + (bit / 3) * scale, scale, scale), color)
 
 		cursor += 4 * scale
+
+
+# Sections of the baked tile (8 m maps) from the island's real summit.
+func _tile_pictures(world_dir: String, fine: Dictionary) -> void:
+	var listed: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/island_list.json"))
+
+	if typeof(listed) != TYPE_DICTIONARY:
+		return
+
+	var tile_limits: Dictionary = _limits["tiles"]
+	var spacing: float = fine["spacing"]
+	var width: int = fine["width"]
+	var rows: int = fine["rows"]
+	var heights: PackedFloat32Array = fine["heights"]
+	var waters: PackedByteArray = fine["water"]
+
+	for entry in listed["islands"]:
+		var island_id: int = int(entry["id"])
+
+		if not (_limits.get("islands", {}) as Dictionary).has(str(island_id)):
+			continue
+
+		var config: Dictionary = _config_for(island_id)
+		var title: String = "island %d tile" % island_id
+		var around_i: int = int(round((float(entry["peak_x_m"]) - float(fine["origin_x"])) / spacing))
+		var around_j: int = int(round((float(entry["peak_z_m"]) - float(fine["origin_z"])) / spacing))
+		var reach: int = int(round(float(tile_limits["summit_search_m"]) / spacing))
+		var best: float = -INF
+		var best_index: int = -1
+
+		for dj in range(-reach, reach + 1):
+			for di in range(-reach, reach + 1):
+				var i: int = around_i + di
+				var j: int = around_j + dj
+
+				if i < 0 or j < 0 or i >= width or j >= rows or waters[j * width + i] == 255:
+					continue
+
+				if heights[j * width + i] > best:
+					best = heights[j * width + i]
+					best_index = j * width + i
+
+		if best_index < 0:
+			_row("%s summit" % title, "island %d is not in the baked tiles" % island_id, "-", "INFO")
+			continue
+
+		var peak_xz: Vector2 = Vector2(float(fine["origin_x"]) + float(best_index % width) * spacing, float(fine["origin_z"]) + float(best_index / width) * spacing)
+
+		# Summit plateau: the connected ground within summit_flat_m of the top (its widest side).
+		var window: Dictionary = {best_index: true}
+		var stack: PackedInt32Array = PackedInt32Array([best_index])
+		var low_i: int = best_index % width
+		var high_i: int = low_i
+		var low_j: int = best_index / width
+		var high_j: int = low_j
+
+		while not stack.is_empty() and window.size() < 400000:
+			var index: int = stack[stack.size() - 1]
+			stack.remove_at(stack.size() - 1)
+			var ci: int = index % width
+			var cj: int = index / width
+
+			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var ni: int = ci + offset.x
+				var nj: int = cj + offset.y
+
+				if ni < 0 or nj < 0 or ni >= width or nj >= rows:
+					continue
+
+				var other: int = nj * width + ni
+
+				if window.has(other) or heights[other] < best - float(tile_limits["summit_flat_m"]):
+					continue
+
+				window[other] = true
+				stack.append(other)
+				low_i = mini(low_i, ni)
+				high_i = maxi(high_i, ni)
+				low_j = mini(low_j, nj)
+				high_j = maxi(high_j, nj)
+
+		var across: float = float(maxi(high_i - low_i, high_j - low_j) + 1) * spacing
+		_bound_row("%s summit plateau (within %.0f m of the top)" % [title, float(tile_limits["summit_flat_m"])], across, config["summit_plateau_max_m"], true,
+			"top %.0f m at x %d z %d, flat area %.0f m across (%d cells)" % [best, int(peak_xz.x), int(peak_xz.y), across, window.size()])
+
+		var drawn: Array = []
+
+		for bearing in BEARINGS_DEG:
+			drawn.append({"deg": float(bearing), "ray": _ray_fine(fine, peak_xz, float(bearing))})
+
+		_draw_sections(island_id, drawn, best, title, spacing, "_tile")
+
+
+# Walks from the summit outward over the 8 m heights until the sea or the edge of the baked area.
+func _ray_fine(fine: Dictionary, origin: Vector2, bearing_deg: float) -> Dictionary:
+	var spacing: float = fine["spacing"]
+	var direction: Vector2 = Vector2(sin(deg_to_rad(bearing_deg)), -cos(deg_to_rad(bearing_deg)))
+	var samples: PackedFloat32Array = PackedFloat32Array()
+	var distance: float = 0.0
+	var coast_m: float = -1.0
+
+	while distance <= RAY_MAX_M:
+		var point: Vector2 = origin + direction * distance
+		var column: int = int(floor((point.x - float(fine["origin_x"])) / spacing))
+		var row: int = int(floor((point.y - float(fine["origin_z"])) / spacing))
+
+		if column < 0 or row < 0 or column >= int(fine["width"]) or row >= int(fine["rows"]) or fine["water"][row * int(fine["width"]) + column] == 255:
+			coast_m = distance
+			break
+
+		var h: float = fine["heights"][row * int(fine["width"]) + column]
+		samples.append(h)
+
+		if h <= 0.0 and distance > 0.0:
+			coast_m = distance
+			break
+
+		distance += spacing
+
+	return {"coast_m": coast_m, "samples": samples}
 
 
 # ---------------------------------------------------------------- sketch helpers
@@ -768,16 +888,24 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
 	_river_checks(stitched, tile_limits)
 
-	if _fine:
-		stitched = _stitch(tiles, directory, true)
+	var fine: Dictionary = {}
 
-		if not stitched["ok"]:
+	if _fine or _picture_dir != "":
+		fine = _stitch(tiles, directory, true)
+
+		if not fine["ok"]:
 			return
 
-		stitched["origin_x"] = float(stitched["min_x"] * settings.tile_size_m)
-		stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
+		fine["origin_x"] = float(fine["min_x"] * settings.tile_size_m)
+		fine["origin_z"] = float(fine["min_z"] * settings.tile_size_m)
+
+	if _fine:
+		stitched = fine
 
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
+
+	if _picture_dir != "":
+		_tile_pictures(world_dir, fine)
 
 
 func _seam_checks(settings, directory: String, tiles: Array) -> void:
