@@ -164,3 +164,8 @@ Note: Recommendation: Yes because it takes about 10 seconds, is physical and nev
 Note: Stand at a ripple spot at the water edge, hold E about 20 s, get 1 to 3 small fish.
 Note: Recommendation: Yes because it is simple and obvious for the first hour.
 [check]
+
+## rough-bed-rules | Rough bed: thatch + 4 sticks + 2 twine under any roof, better sleep, food and water at half rate asleep, never auto-wakes?
+Note: A roofed room hides the sleeper. The Rested bonus from decoration comes later.
+Note: Recommendation: Yes because it makes home worth building and gives a safe one-hour break.
+[check]
