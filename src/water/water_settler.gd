@@ -13,8 +13,9 @@ const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground n
 const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the base spring flow
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
+const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 6                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 7                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -143,8 +144,57 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 		last_kinds.append("head")
 
 	_add_feeders(sim, data, generator, side, placed, rate, heads)
+	_add_hollow_springs(sim, data, flow_all, side, placed)
 	sim.wake_all_wet()
 	return sim
+
+
+# Hollow springs (v7, Sonny 24 Oct 2026: otherwise a bowl with no river stays dry). Every natural hollow or carved bowl of min_depth_m and min_area_m2 or more
+# that holds no spring gets an inflow at its deepest cell: catchment_flow of the biggest drainage on its cells (0.35 km2 without a flow map).
+static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, placed: Array) -> int:
+	var cfg: Dictionary = rules().get("hollow_springs", {})
+
+	if not bool(cfg.get("enabled", false)):
+		return 0
+
+	var step: int = int(cfg.get("step", 2))
+	var added: int = 0
+
+	for hollow in HollowFinder.find(data, step, float(cfg.get("min_depth_m", 1.5))):
+		if float(hollow["area_m2"]) < float(cfg.get("min_area_m2", 5000.0)):
+			continue
+
+		var coarse: int = hollow["side"]
+		var members: Dictionary = {}
+		var km2: float = 0.35
+
+		if not flow.is_empty():
+			km2 = 0.0
+
+		for k in hollow["cells"]:
+			members[k] = true
+
+			if not flow.is_empty():
+				km2 = maxf(km2, flow[(k / coarse) * step * side + (k % coarse) * step] * data.spacing_m * data.spacing_m / 1.0e6)
+
+		var served: bool = false
+
+		for other in placed:
+			if members.has((other.y / step) * coarse + other.x / step):
+				served = true
+				break
+
+		if served:
+			continue
+
+		var deepest: int = hollow["cell"]
+		var at: Vector2i = Vector2i(deepest % side, deepest / side)
+		placed.append(at)
+		sim.add_spring(at.x, at.y, catchment_flow(km2))
+		last_kinds.append("hollow")
+		added += 1
+
+	return added
 
 
 # A spring for every river head the pond springs do not serve (a tributary head near a bigger river is not the highest river cell in its 80 m, so
