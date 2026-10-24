@@ -31,4 +31,4 @@ UPDATE 05:58 UTC 24 Oct (head 778), GATE LIST 5 (trial-merged clean in this orde
 UPDATE 06:05 UTC: gate list 5 item 4 = steve-slot-test-warning 21c5f838 (origin tip; coordinator said e41ba3d; one line, clean with items 1-3). Mike confirms local_check warnings are back to baseline.
 UPDATE 07:25 UTC 24 Oct (head 780), GATE LIST 6: kathleen-tree-belts 2426ceed (test_worldgen.gd +4 lines, test only; clean on 780, parse_scan 374 files 0 problems). Merge as build 781 when Mike or Sonny confirms test_worldgen passes (Sonny's terrain candidate needs it).
 UPDATE 08:10 UTC: gate list 6 adds sal-island-checks c88cc1a8 (checks tool only; clean on 782, parse_scan 375 files 0 problems).
-UPDATE 08:30 UTC: gate list 6 also queues steve-sound-batch2 8428f228 (it already contains kathleen-sound-2 639c9dd1; use this one) (clean on 782; needs Steve's hookup and Mike's slot test before merge).
+UPDATE 08:30 UTC: gate list 6 also queues steve-sound-batch2 018f30ed (final, replaces 8428f228; it already contains kathleen-sound-2 639c9dd1; use this one) (clean on 782; needs Steve's hookup and Mike's slot test before merge).
