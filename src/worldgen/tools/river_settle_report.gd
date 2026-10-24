@@ -209,6 +209,8 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 
 	if ei <= SEAM_CELLS or ej <= SEAM_CELLS or ei >= side - 1 - SEAM_CELLS or ej >= side - 1 - SEAM_CELLS:
 		kind = "SEAM"
+	elif _steep(data, side, int(flood["spill"])) and (stored >= fill or not bool(flood["closed"])):
+		kind = "STEEP FALL (the ground drops over 1 m per cell below the spill: the water leaves as a film or a fall, not a stop)"
 	elif not bool(flood["closed"]) and rim - ground_end < 0.3:
 		kind = "DOWNHILL OPEN (the ground runs on downhill from the end, no pit: the water ran out or was lost; settler volume)"
 	elif bool(flood["closed"]) and carries == "no painted river below":
@@ -221,6 +223,31 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 	return "INLAND end x %.0f z %.0f (sample %d,%d): %d wet cells, ground %.1f m, water %.1f m; spill %.1f m at x %.0f z %.0f%s; basin %.0f m2, fill volume %.0f m3, stored %.0f m3, missing %.0f m3 (%.1f h of one %.0f m3/s spring); painted river: %s; %s; CLASS %s" % [
 			x, z, ei, ej, cells, ground_end, water_end, rim, data.x0 + float(int(flood["spill"]) % side) * spacing, data.z0 + floorf(float(int(flood["spill"])) / float(side)) * spacing,
 			" (no outlet found, window edge)" if bool(flood["closed"]) else "", area, fill, stored, missing, hours, spring, carries, fed + "; beyond the spill (ground/depth, steepest way down): " + _beyond(data, depth, side, int(flood["spill"])), kind]
+
+
+# True when each of the first 4 steps down from the spill drops more than 1 m.
+func _steep(data, side: int, spill: int) -> bool:
+	var at: int = spill
+
+	for step in range(4):
+		var ai: int = at % side
+		var aj: int = floori(float(at) / float(side))
+		var best: int = at
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				var ni: int = ai + di
+				var nj: int = aj + dj
+
+				if (di != 0 or dj != 0) and ni >= 0 and nj >= 0 and ni < side and nj < side and data.heights[nj * side + ni] < data.heights[best]:
+					best = nj * side + ni
+
+		if data.heights[at] - data.heights[best] <= 1.0:
+			return false
+
+		at = best
+
+	return true
 
 
 # Ground and stored water at the spill cell and the 10 cells below it, walking the steepest way down: shows whether the overflow carries water on.
