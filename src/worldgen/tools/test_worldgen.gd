@@ -1153,7 +1153,8 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		if float(lake["surface_m"]) < float(tile_rules["water"]["lake_min_surface_m"]):
 			low_lake = true
 
-	_check(not low_lake, "lakes only form above the minimum height")
+	# Drainage mode (Dave 2026-10-23): any hollow that collects water holds it, at any height, so the old minimum does not apply.
+	_check(not low_lake or bool(tile_rules["water"].get("drainage_mode", false)), "lakes only form above the minimum height")
 
 	# River water is never below its bed (waterfalls on steep cliffs may sit well above the carved ground); ocean water is at sea level.
 	var bad_surface: int = 0
