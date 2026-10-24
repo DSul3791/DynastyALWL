@@ -32,7 +32,7 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse(id) if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose(id) if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
+			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse(id) if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose(id) if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer(id) if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3, "quad": node.has_meta("quad")}
@@ -150,8 +150,8 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 	var mesh: SphereMesh = SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	mesh.radial_segments = 8
-	mesh.rings = 4
+	mesh.radial_segments = 8 if radius >= 0.05 else 5      # tiny balls (eyes, nostrils, tail tips) need few facets
+	mesh.rings = 4 if radius >= 0.05 else 2
 	mesh.material = _material(color)
 	var inst: MeshInstance3D = MeshInstance3D.new()
 	inst.mesh = mesh
@@ -376,6 +376,28 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	if bool(spec.get("mane", false)):
 		_box(head, Vector3(hd * 0.06, nk * 0.6, hd * 0.25), Vector3(0.0, nk * 0.55, -nk * 0.4), dark, Vector3(0.7, 0.0, 0.0))
 
+	# Goal 2 batch A details, all children of existing nodes (names and animation unchanged): nostrils, then per species marks.
+	_ball(head, hd * 0.045, Vector3(1.0, 0.7, 0.7), top + Vector3(hd * 0.08, -hd * 0.1, -hd * 0.45 * snout - hd * 0.28 * snout), Color(0.04, 0.03, 0.03))
+	_ball(head, hd * 0.045, Vector3(1.0, 0.7, 0.7), top + Vector3(-hd * 0.08, -hd * 0.1, -hd * 0.45 * snout - hd * 0.28 * snout), Color(0.04, 0.03, 0.03))
+
+	if bool(spec.get("blaze", false)):
+		_box(head, Vector3(hd * 0.1, hd * 0.05, hd * 0.8), top + Vector3(0.0, hd * 0.14, -hd * 0.3), pale, Vector3(-0.15, 0.0, 0.0))      # a white stripe down the face
+
+	if bool(spec.get("bell", false)):
+		_ball(head, hd * 0.12, Vector3(0.6, 1.8, 0.6), top + Vector3(0.0, -hd * 0.55, hd * 0.12), dark)      # the moose's dangling bell under the throat
+
+	if bool(spec.get("tines", false)):
+		# A deer's antlers: a main beam sweeping up and back from each side with three tines.
+		for side in [-1.0, 1.0]:
+			var beam: Vector3 = top + Vector3(side * hd * 0.22, hd * 0.3, hd * 0.12)
+			_box(head, Vector3(hd * 0.05, hd * 0.9, hd * 0.05), beam + Vector3(side * hd * 0.1, hd * 0.4, hd * 0.2), Color(0.76, 0.7, 0.58), Vector3(0.45, 0.0, side * -0.25))
+
+			for tine in 3:
+				_box(head, Vector3(hd * 0.035, hd * 0.3, hd * 0.035), beam + Vector3(side * hd * (0.12 + 0.05 * float(tine)), hd * (0.25 + 0.22 * float(tine)), hd * (0.12 + 0.08 * float(tine))), Color(0.76, 0.7, 0.58), Vector3(-0.3, 0.0, side * 0.5))
+
+	if bool(spec.get("rump", false)):
+		_ball(rig, rb * 0.6, Vector3(0.8, 0.9, 0.5), Vector3(0.0, leg_h + rb * 0.4, half * 0.5 + rb * 0.8), pale)      # the pale rump patch
+
 	var tail: Node3D = Node3D.new()
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, leg_h + rb * 0.7, half * 0.9)
@@ -384,6 +406,9 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	if bool(spec.get("bushy", false)):
 		_ball(tail, rb * 1.1, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -rb * 0.2, rb * 1.4), coat, Vector3(0.5, 0.0, 0.0))
 		_ball(tail, rb * 0.7, Vector3(0.8, 0.8, 1.4), Vector3(0.0, -rb * 0.7, rb * 2.8), Color(0.92, 0.9, 0.86), Vector3(0.5, 0.0, 0.0))
+	elif bool(spec.get("long_tail", false)):
+		_box(tail, Vector3(rb * 0.3, leg_h * 0.95, rb * 0.2), Vector3(0.0, -leg_h * 0.45, rb * 0.2), dark, Vector3(0.12, 0.0, 0.0))      # a horse's tail hangs nearly to the hocks
+		_box(tail, Vector3(rb * 0.2, leg_h * 0.5, rb * 0.15), Vector3(rb * 0.12, -leg_h * 0.62, rb * 0.28), dark, Vector3(0.18, 0.0, 0.1))
 	else:
 		_box(tail, Vector3(rb * 0.12, leg_h * 0.5, rb * 0.12), Vector3(0.0, -leg_h * 0.22, rb * 0.1), dark, Vector3(0.1, 0.0, 0.0))
 
@@ -464,31 +489,15 @@ func _make_fox() -> Node3D:
 func _make_horse(id: int) -> Node3D:
 	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
 	var pick: Array = coats[id % coats.size()]
-	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.75, "head": 0.55, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false})
+	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.75, "head": 0.55, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.
 func _make_moose(id: int) -> Node3D:
-	return _make_quad({"leg_h": 1.15, "rb": 0.5, "len": 1.4, "neck": 0.8, "head": 0.65, "snout": 1.2, "coat": Color(0.2, 0.14, 0.1), "dark": Color(0.12, 0.09, 0.07), "pale": Color(0.4, 0.33, 0.27), "hump": true, "socks": true, "antlers": id % 2 == 0, "pale_belly": false})
+	return _make_quad({"leg_h": 1.15, "rb": 0.5, "len": 1.4, "neck": 0.8, "head": 0.65, "snout": 1.2, "coat": Color(0.2, 0.14, 0.1), "dark": Color(0.12, 0.09, 0.07), "pale": Color(0.4, 0.33, 0.27), "hump": true, "socks": true, "antlers": id % 2 == 0, "pale_belly": false, "bell": true})
 
 
-# A deer for now (placeholder until Art): tan body, neck and head, four thin legs, short antlers. About 1.5 m long, 1.2 m to the back.
-func _make_deer() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var rig: Node3D = Node3D.new()
-	rig.name = "Rig"
-	root.add_child(rig)
-	var coat: Color = Color(0.52, 0.38, 0.24)
-	_ball(rig, 0.3, Vector3(0.85, 0.85, 1.9), Vector3(0.0, 0.85, 0.0), coat)
-	_box(rig, Vector3(0.14, 0.5, 0.16), Vector3(0.0, 1.15, -0.55), coat, Vector3(-0.5, 0.0, 0.0))
-	_ball(rig, 0.11, Vector3(0.8, 0.8, 1.4), Vector3(0.0, 1.38, -0.75), coat)
-	_ball(rig, 0.05, Vector3.ONE, Vector3(0.0, 0.9, 0.55), Color(0.9, 0.86, 0.8))
-
-	for lx in [-0.12, 0.12]:
-		for lz in [-0.38, 0.4]:
-			_box(rig, Vector3(0.06, 0.62, 0.06), Vector3(lx, 0.31, lz), Color(0.4, 0.3, 0.2))
-
-	for side in [-1.0, 1.0]:
-		_box(rig, Vector3(0.025, 0.28, 0.025), Vector3(side * 0.07, 1.55, -0.75), Color(0.75, 0.7, 0.6), Vector3(0.0, 0.0, side * -0.4))
-
-	return root
+# A deer (goal 2 batch A, Kathleen): the shared four-legged build, so it walks, grazes and watches like the others. About 1.5 m long, 1.2 m to the back, tan coat, pale belly and rump,
+# a stag's branched antlers on every second one (by id).
+func _make_deer(id: int = 0) -> Node3D:
+	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.5, "head": 0.32, "snout": 1.1, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})
