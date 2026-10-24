@@ -1478,3 +1478,7 @@ Answered: 2026-10-24 16:12 UTC
 Answer: No: Yes, but… 10 usually usually show up near running water and tin and copper should show up somehow according to where there might be actual tin and copper veins so if you run along the base of a mountain eventually you should find some tin and copper but if you do, that should tell you that there’s a vein in line somewhere up the mountain, so it would be a good spot to start digging a mine also if there are copper mines or tin mines, I don’t know if that’s a thing sometimes they should protrude from the ground so you can see them
 Answered: 2026-10-24 16:15 UTC
 
+## wl-window | Water land types: read the water over 30 game days so one storm does not rename land?
+Answer: Yes
+Answered: 2026-10-24 16:15 UTC
+
