@@ -337,50 +337,10 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 
 		var level: float = float(lake["level"])
 		var first: int = at
-		var lowered: float = 0.0
-		var length: int = 0
-
-		for step in range(longest):
-			if sea[at] == 1:
-				break
-
-			var target: float = level - drop - fall * float(step)
-
-			if land[at] < target - 0.5 and step > 0:
-				break
-
-			@warning_ignore("integer_division")
-			var row: int = at / samples
-			var column: int = at % samples
-
-			for dz in range(-1, 2):
-				for dc in range(-1, 2):
-					var r: int = row + dz
-					var c: int = column + dc
-
-					if r < 0 or c < 0 or r >= samples or c >= samples:
-						continue
-
-					var neighbor: int = r * samples + c
-					var wanted: float = target + (0.0 if dz == 0 and dc == 0 else 0.4)
-
-					if channels.bed[neighbor] > wanted:
-						lowered = maxf(lowered, channels.bed[neighbor] - wanted)
-						channels.bed[neighbor] = wanted
-						cells_cut += 1
-
-					var surface: float = wanted + depth_m
-
-					if is_nan(channels.surface[neighbor]) or channels.surface[neighbor] < surface:
-						channels.surface[neighbor] = surface
-
-			length += 1
-			var next: int = fill.receiver[at]
-
-			if next < 0:
-				break
-
-			at = next
+		var cut: Dictionary = _cut_outlet_path(at, level, fill, channels, land, sea, samples, drop, fall, depth_m, longest)
+		var lowered: float = float(cut["lowered"])
+		var length: int = int(cut["length"])
+		cells_cut += int(cut["cells"])
 
 		breached += 1
 		deepest_cut = maxf(deepest_cut, lowered)
@@ -390,3 +350,98 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 			print("  breach: lake level %.1f m, outlet world %d,%d, %d cells, deepest cut %.1f m" % [level, (first % samples + water._origin_sx) * 8, (first / samples + water._origin_sz) * 8, length, lowered])
 
 	print("  breach: %d lakes, %d cells cut, deepest cut %.1f m" % [breached, cells_cut, deepest_cut])
+
+	# Hollows in the real ground that the routing never saw as lakes (erosion and valley carving made them): a river-fed pit
+	# with no lower side. Dave: ponds are never placed, so cut a way out along the routing path, below the pit floor.
+	var pits: int = 0
+	var pit_cells: int = 0
+	var pit_cut: float = 0.0
+	var ring: int = 3
+	var pit_min_rim: float = float(rules.get("pit_min_rim_m", 1.0))
+
+	for row in range(ring, samples - ring):
+		for column in range(ring, samples - ring):
+			var index: int = row * samples + column
+
+			if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment:
+				continue
+
+			var floor_m: float = channels.bed[index]
+			var rim: float = INF
+			var is_pit: bool = true
+
+			for dz in range(-ring, ring + 1, ring):
+				for dc in range(-ring, ring + 1, ring):
+					if dz == 0 and dc == 0:
+						continue
+
+					var around: int = (row + dz) * samples + column + dc
+					rim = minf(rim, channels.bed[around])
+
+					if sea[around] == 1 or channels.bed[around] < floor_m + 0.02:
+						is_pit = false
+
+			if not is_pit or rim - floor_m < pit_min_rim:
+				continue
+
+			var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest)
+			pits += 1
+			pit_cells += int(pit_cut_result["cells"])
+			pit_cut = maxf(pit_cut, float(pit_cut_result["lowered"]))
+
+			if verbose:
+				print("  pit: floor %.1f m rim %.1f m at world %d,%d, %d cells, deepest cut %.1f m" % [floor_m, rim, (column + water._origin_sx) * 8, (row + water._origin_sz) * 8, int(pit_cut_result["cells"]), float(pit_cut_result["lowered"])])
+
+	print("  pits: %d drained, %d cells cut, deepest cut %.1f m" % [pits, pit_cells, pit_cut])
+
+
+# Walks the routing receivers downstream from `at` and cuts a three-cell-wide channel whose bed starts just under `level`
+# and falls `fall` per cell until the real ground is lower than the channel or the sea is reached.
+static func _cut_outlet_path(at: int, level: float, fill, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, drop: float, fall: float, depth_m: float, longest: int) -> Dictionary:
+	var lowered: float = 0.0
+	var length: int = 0
+	var cells_cut: int = 0
+
+	for step in range(longest):
+		if sea[at] == 1:
+			break
+
+		var target: float = level - drop - fall * float(step)
+
+		if land[at] < target - 0.5 and step > 0:
+			break
+
+		@warning_ignore("integer_division")
+		var row: int = at / samples
+		var column: int = at % samples
+
+		for dz in range(-1, 2):
+			for dc in range(-1, 2):
+				var r: int = row + dz
+				var c: int = column + dc
+
+				if r < 0 or c < 0 or r >= samples or c >= samples:
+					continue
+
+				var neighbor: int = r * samples + c
+				var wanted: float = target + (0.0 if dz == 0 and dc == 0 else 0.4)
+
+				if channels.bed[neighbor] > wanted:
+					lowered = maxf(lowered, channels.bed[neighbor] - wanted)
+					channels.bed[neighbor] = wanted
+					cells_cut += 1
+
+				var surface: float = wanted + depth_m
+
+				if is_nan(channels.surface[neighbor]) or channels.surface[neighbor] < surface:
+					channels.surface[neighbor] = surface
+
+		length += 1
+		var next: int = fill.receiver[at]
+
+		if next < 0:
+			break
+
+		at = next
+
+	return {"lowered": lowered, "length": length, "cells": cells_cut}
