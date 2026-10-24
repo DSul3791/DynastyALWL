@@ -1501,7 +1501,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	_check(thin_roof == 0, "cave passages stay under the ground away from entrances (%d too shallow)" % thin_roof)
 	_check(bad_links == 0, "cave segments join real nodes with known types")
 	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
-	print("  caves %d, exposing ore %d, unknown ore %d" % [sites.caves.size(), exposed, unknown_ore])
+	print("  caves %d, exposing ore %d, unknown ore %d, ore steering %s" % [sites.caves.size(), exposed, unknown_ore, str(sites.ore_report)])
 	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
 	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
