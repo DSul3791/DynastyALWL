@@ -15,7 +15,7 @@ const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 8                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 9                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -145,6 +145,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 	_add_feeders(sim, data, generator, side, placed, rate, heads)
 	_add_hollow_springs(sim, data, flow_all, side, placed)
+	_add_edge_inflows(sim, data, flow_all, side, placed)
 	sim.wake_all_wet()
 	return sim
 
@@ -193,6 +194,48 @@ static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, 
 		sim.add_spring(at.x, at.y, catchment_flow(km2))
 		last_kinds.append("hollow")
 		added += 1
+
+	return added
+
+
+# Edge inflows (v9): a painted river that runs into the tile over its edge from the next tile (its top is outside this tile, so no head here) gets a
+# spring on the edge cell, sized like a head from the drainage on that cell. A river cell on the outer row or column counts when the ground a cell inside
+# is lower; one spring per river (none if a spring is within near_cells already).
+static func _add_edge_inflows(sim, data, flow: PackedFloat32Array, side: int, placed: Array) -> int:
+	var cfg: Dictionary = rules().get("edge_inflows", {})
+
+	if not bool(cfg.get("enabled", false)) or flow.size() != side * side:
+		return 0
+
+	var near: float = float(rules().get("feeders", {}).get("near_cells", 30))
+	var added: int = 0
+
+	for n in range(side):
+		for edge in [Vector2i(n, 0), Vector2i(n, side - 1), Vector2i(0, n), Vector2i(side - 1, n)]:
+			var k: int = edge.y * side + edge.x
+
+			if data.water_class[k] != RIVER or flow[k] <= 0.0:
+				continue
+
+			var inward: Vector2i = Vector2i(signi(side / 2 - edge.x) if edge.x == 0 or edge.x == side - 1 else 0, signi(side / 2 - edge.y) if edge.y == 0 or edge.y == side - 1 else 0)
+
+			if data.heights[(edge.y + inward.y) * side + edge.x + inward.x] >= data.heights[k]:
+				continue
+
+			var served: bool = false
+
+			for other in placed:
+				if Vector2(edge.x - other.x, edge.y - other.y).length() < near:
+					served = true
+					break
+
+			if served:
+				continue
+
+			placed.append(edge)
+			sim.add_spring(edge.x, edge.y, catchment_flow(flow[k] * data.spacing_m * data.spacing_m / 1.0e6))
+			last_kinds.append("edge")
+			added += 1
 
 	return added
 
