@@ -1454,3 +1454,7 @@ Answered: 2026-10-24 16:10 UTC
 Answer: No: There really is no stone pick. It’s actually just the stone ax so you can use the stone ax to break rock it will just take a long time and it will break down your stone ax. Then once we can get some resources and material we can start to make copper ax. I don’t know if it makes sense to make a copper pickax and then we can do bronze and then we can do iron.
 Answered: 2026-10-24 16:10 UTC
 
+## respawn-at-bed | Respawn at your own bed (per player), built right after the first hour work?
+Answer: Yes
+Answered: 2026-10-24 16:10 UTC
+
