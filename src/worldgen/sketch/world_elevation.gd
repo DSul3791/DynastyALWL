@@ -332,6 +332,19 @@ func _shape_shelf_coasts(sketch: Dictionary) -> void:
 
 				var index: int = index_of(cc, cr)
 				var cap: float = 6.0 + scale_m * pow(d_m / 3500.0, exponent) * (1.0 + 0.2 * _value(_ridged, index))
+				var row_abs: float = absf(cell_center_m(cc, cr).y) / float(settings.tile_size_m)
+				var shore: Dictionary = rules.get("shelves", {}).get("climate_shores", {})
+
+				if not shore.is_empty():
+					# Hot latitudes: a long gentle sand apron. Polar latitudes: a steep rocky shore that climbs straight from the sea.
+					var sand: float = 1.0 - _smooth(clampf((row_abs - float(shore.get("hot_row", 2.0))) / 1.0, 0.0, 1.0))
+					var rock: float = _smooth(clampf((row_abs - float(shore.get("polar_row", 7.0))) / 1.0, 0.0, 1.0))
+					var apron: float = _smooth(clampf(d_m / float(shore.get("sand_width_m", 1500.0)), 0.0, 1.0))
+					cap *= lerpf(1.0, lerpf(float(shore.get("sand_cap_scale", 0.35)), 1.0, apron), sand)
+					var cliff: float = rock * float(shore.get("cliff_m", 70.0)) * _smooth(clampf(d_m / float(shore.get("cliff_run_m", 150.0)), 0.0, 1.0))
+					cap += cliff
+					heights[index] = lerpf(heights[index], maxf(heights[index], cliff) if rock > 0.0 else heights[index], weight * rock)
+
 				heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
 
 

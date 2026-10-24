@@ -122,6 +122,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
 	_canyons(h, fill, flow, size, cell_m, rules)
+	_gullies(h, fill, flow, size, cell_m, rules)
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
 
 
@@ -242,21 +243,36 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 	var radius_widths: float = float(rules.get("valley_radius_widths", 6.0))
 	var side_slope: float = float(rules.get("valley_side_slope", 0.08))
 	var max_radius_m: float = float(rules.get("valley_max_radius_m", 300.0))
+	# Farmland (English rolling hills): low ground gets wide, shallow valleys that start on smaller streams and rise gently
+	# (about 6 degrees), with rolling hills left between them. Hill and mountain ground keeps the steeper valleys above.
+	var farm_from: float = float(rules.get("farm_height_from_m", 120.0))
+	var farm_to: float = float(rules.get("farm_height_to_m", 250.0))
+	var farm_start: float = float(rules.get("farm_valley_start_km2", start_km2))
+	var farm_gate: float = minf(start_km2, farm_start)
 	var cut: PackedFloat32Array = bed.duplicate()
 
 	for index in fill.order:
-		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]):
+		if flow.discharge[index] < farm_gate or is_nan(_centre_surface[index]):
 			continue
 
-		if smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index]) < 0.02:
+		var farm: float = 1.0 - smoothstep(farm_from, farm_to, h[index])
+		var start_here: float = lerpf(start_km2, farm_start, farm)
+
+		if flow.discharge[index] < start_here:
+			continue
+
+		if smoothstep(start_here, start_here * 8.0, flow.discharge[index]) < 0.02:
 			continue
 
 		var q: float = sqrt(flow.discharge[index])
 		# Brooks get no valley, big rivers a full one; the cut is capped so a river beside a mountain does not eat it.
-		var strength: float = smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index]) * (1.0 - _canyon[index])
-		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, float(rules.get("valley_cut_max_m", 15.0)))
+		var strength: float = smoothstep(start_here, start_here * 8.0, flow.discharge[index]) * (1.0 - _canyon[index])
+		var cut_cap: float = lerpf(float(rules.get("valley_cut_max_m", 15.0)), float(rules.get("farm_valley_cut_max_m", 25.0)), farm)
+		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, cut_cap)
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
-		var rim_m: float = minf(radius_widths * width_m, max_radius_m)
+		var rim_cap: float = lerpf(max_radius_m, float(rules.get("farm_valley_max_radius_m", max_radius_m)), farm)
+		var rim_m: float = minf(lerpf(radius_widths, float(rules.get("farm_valley_radius_widths", radius_widths)), farm) * width_m, rim_cap)
+		var side_here: float = lerpf(side_slope, float(rules.get("farm_valley_side_slope", side_slope)), farm)
 		var half_m: float = 0.5 * width_m
 		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
 		var reach: int = int(ceil(rim_m / cell_m))
@@ -282,7 +298,7 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 					continue
 
 				var neighbor: int = nr * size + nc
-				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
+				var wanted: float = floor_level + side_here * maxf(distance - half_m, 0.0)
 				var weight: float = (1.0 - smoothstep(0.5, 1.0, distance / rim_m)) * strength
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
 				cut[neighbor] = minf(cut[neighbor], carved)
@@ -373,6 +389,135 @@ func _canyons(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
+
+
+# Stage 3b3: gullies. Streams too small to hold a river (below the river threshold) still cut V-shaped gullies into slopes on
+# their way to the sea. Driven by the same catchment network as the valleys, so they run downhill to the rivers, not free
+# noise. Depth is one smooth curve of the catchment (Hack's law style: grows with sqrt of the area), times how soft the ground
+# is at that height, times a slope ramp (none on flat ground, full on steep). The bed is cut from the ground itself, not
+# graded to a water level, so there is no water in them. Data: gully_start_km2 (0 = off), gully_end_km2 (valleys take over),
+# gully_depth_m_per_sqrt_q, gully_max_m, gully_wall_slope, gully_slope_from/to (rise per run), gully_softness_by_height.
+func _gullies(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules: Dictionary) -> void:
+	var start_km2: float = float(rules.get("gully_start_km2", 0.0))
+
+	if start_km2 <= 0.0:
+		return
+
+	var end_km2: float = float(rules.get("gully_end_km2", 1.2))
+	var per_sqrt_q: float = float(rules.get("gully_depth_m_per_sqrt_q", 12.0))
+	var cut_max: float = float(rules.get("gully_max_m", 10.0))
+	var wall_slope: float = float(rules.get("gully_wall_slope", 0.55))
+	var slope_from: float = float(rules.get("gully_slope_from", 0.105))
+	var slope_to: float = float(rules.get("gully_slope_to", 0.176))
+	var softness: Array = rules.get("gully_softness_by_height", [[0.0, 1.3], [150.0, 1.1], [400.0, 0.8], [800.0, 0.5], [1200.0, 0.35]])
+	var cut: PackedFloat32Array = bed.duplicate()
+
+	for index in fill.order:
+		var q_km2: float = flow.discharge[index]
+
+		if q_km2 < start_km2 or q_km2 >= end_km2 * 2.0:
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < 1 or column < 1 or row >= size - 1 or column >= size - 1:
+			continue
+
+		var steepest: float = 0.0
+
+		for dz in range(-1, 2):
+			for dc in range(-1, 2):
+				if dz == 0 and dc == 0:
+					continue
+
+				var rise: float = absf(h[index] - h[(row + dz) * size + column + dc]) / (cell_m * (1.41421 if dz != 0 and dc != 0 else 1.0))
+				steepest = maxf(steepest, rise)
+
+		var ramp: float = smoothstep(slope_from, slope_to, steepest)
+		var strength: float = smoothstep(start_km2, start_km2 * 2.5, q_km2) * (1.0 - smoothstep(end_km2, end_km2 * 2.0, q_km2)) * ramp
+
+		if strength < 0.05:
+			continue
+
+		var depth: float = minf(per_sqrt_q * sqrt(q_km2), cut_max) * _band_value(softness, h[index]) * strength
+		var half_m: float = maxf(cell_m * 0.75, 6.0)
+		var rim_m: float = half_m + depth / wall_slope
+		var reach: int = int(ceil(rim_m / cell_m))
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > rim_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = h[index] - depth + wall_slope * maxf(distance - half_m, 0.0)
+				var weight: float = 1.0 - smoothstep(0.7, 1.0, distance / rim_m)
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - depth)
+				cut[neighbor] = minf(cut[neighbor], carved)
+
+	bed = cut
+	_log_gullies(h, fill, flow, size, cell_m, start_km2, end_km2)
+
+
+# The count line the island checks read ("gullies: N, dead ends: M"): a gully cell is one cut at least 1.5 m below the
+# ground on a stream of start..end km2; it is a dead end if following the water downhill for up to 3 km ends inland on
+# dry ground (no receiver, above the sea, not in a lake, not near the frame edge).
+func _log_gullies(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, start_km2: float, end_km2: float) -> void:
+	var gullies: int = 0
+	var dead: int = 0
+	var steps: int = int(3000.0 / cell_m)
+
+	for index in range(size * size):
+		if flow.discharge[index] < start_km2 or flow.discharge[index] >= end_km2 or h[index] - bed[index] < 1.5:
+			continue
+
+		gullies += 1
+		var at: int = index
+
+		for step in range(steps):
+			var next: int = fill.receiver[at]
+
+			if next < 0:
+				@warning_ignore("integer_division")
+				var r: int = at / size
+				var c: int = at % size
+				var inland: bool = h[at] > 0.5 and fill.lake_id[at] == 0 and mini(mini(r, c), mini(size - 1 - r, size - 1 - c)) > 5
+				dead += 1 if inland else 0
+				break
+
+			at = next
+
+	print("  gullies: %d, dead ends: %d" % [gullies, dead])
+
+
+# Linear lookup in a [[x, value], ...] table, clamped at both ends.
+static func _band_value(table: Array, x: float) -> float:
+	if table.is_empty():
+		return 1.0
+
+	if x <= float(table[0][0]):
+		return float(table[0][1])
+
+	for i in range(1, table.size()):
+		if x <= float(table[i][0]):
+			var t: float = (x - float(table[i - 1][0])) / maxf(float(table[i][0]) - float(table[i - 1][0]), 0.001)
+			return lerpf(float(table[i - 1][1]), float(table[i][1]), t)
+
+	return float(table[table.size() - 1][1])
 
 
 # Stage 3c: river heads. A real stream begins in a hollow (headward erosion cuts an amphitheatre into the slope), not on a
