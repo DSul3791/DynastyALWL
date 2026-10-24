@@ -35,11 +35,6 @@ Note: Empties the pack, turns hints on, drops admin powers so Mike can time the 
 Note: Recommendation: Yes because we cannot test the first hour any other way.
 [check]
 
-## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
-Priority: 2
-Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
-[check]
-
 ## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
 Priority: 5
 Note: The water step must be fixed before a burst can be simulated safely.
