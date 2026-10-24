@@ -1501,6 +1501,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	_check(thin_roof == 0, "cave passages stay under the ground away from entrances (%d too shallow)" % thin_roof)
 	_check(bad_links == 0, "cave segments join real nodes with known types")
 	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
+	print("  caves %d, exposing ore %d, unknown ore %d" % [sites.caves.size(), exposed, unknown_ore])
 	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
 	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
@@ -2089,12 +2090,15 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 
 		if p.x < origin.x or p.z < origin.y or p.x >= origin.x + placer.chunk_m or p.z >= origin.y + placer.chunk_m:
 			ok_place = false
+			print("  flora outside chunk: item %d at %.1f,%.1f" % [ids[n], p.x, p.z])
 
 		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or item["per_biome"][data.biome[k]] <= 0.0:
 			ok_place = false
+			print("  flora ground/biome: item %d at %.1f,%.1f,%.1f ground %.2f biome %d" % [ids[n], p.x, p.y, p.z, generator.surface_height(p.x, p.z), data.biome[k]])
 
 		if data.water_class[k] != 0 and (item["water_mask"] & (1 << data.water_class[k])) == 0:
 			ok_place = false
+			print("  flora water class: item %d at %.1f,%.1f water class %d" % [ids[n], p.x, p.z, data.water_class[k]])
 
 	_check(ids.size() > 500 and trees > 20, "a land chunk holds trees and plants (%d items, %d trees)" % [ids.size(), trees])
 	_check(ok_place, "flora sits on the ground inside its chunk, in a biome and water class it allows")
