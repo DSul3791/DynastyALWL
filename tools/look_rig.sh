@@ -53,14 +53,16 @@ KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "
 if [ -n "$ITEM" ]; then
   NUM=$(python - "$ITEM" <<'PYEOF'
 import json,sys
-d=json.load(open('data/items/items.json',encoding='utf-8'))
 def find(o,k):
     if isinstance(o,dict):
         if k in o and isinstance(o[k],dict) and 'number' in o[k]: return o[k]['number']
         for v in o.values():
             r=find(v,k)
             if r is not None: return r
-r=find(d,sys.argv[1])
+r=None
+for f in ('items','gathered'):
+    r=find(json.load(open('data/items/%s.json'%f,encoding='utf-8')),sys.argv[1])
+    if r is not None: break
 print(r if r is not None else "")
 PYEOF
 )
