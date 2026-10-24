@@ -63,3 +63,8 @@ Note: Recommendation: Give the hammer and adze their first real uses now (placin
 Note: Some items still use simple models. Kathleen upgrades families in order (animals, tools, fire, chests, trees, grass, ferns done or in progress).
 Note: Recommendation: Yes, accept them for now; the art goal is already ordered, and fixing shapes one by one would stop terrain work.
 [check]
+
+## terrain-final-ideas | More rolling hills (27 to 30 percent of the land) for the final bake, plus mountain passes, as one terrain change?
+Note: The final bake is the last terrain build for now; every terrain change makes you Reset edits and Clear blocks again. Other climates are separate islands.
+Note: Recommendation: Yes: one final bake with the ore fix, 27 to 30 percent rolling hills and passes, because you only have to reset once. Other climate islands come later as a separate bake.
+[check]
