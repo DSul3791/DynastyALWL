@@ -728,7 +728,7 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", "")) == "fire" else _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -754,7 +754,7 @@ func _update_blueprint() -> void:
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water"
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
 	_blueprint_ok = _blueprint_ok and not blocked
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 

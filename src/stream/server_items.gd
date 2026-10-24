@@ -87,7 +87,8 @@ const STRUCTURES_PATH := "res://data/items/structures.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
-const TRIPOD_FIRE_M := 2.5               # a tripod pot cooks only with a lit fire this close
+const POT_ATTACH_M := 2.0                # a campfire pot snaps onto a small fire this close to where it is put
+const POT_ON_FIRE_M := 0.3               # a pot and a fire this close are one: the pot hangs over that fire (nothing is stored; position is the link)
 const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the campfire; cooking.json fire_tiers)
 const FIRE_STATE_BONFIRE := 41
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
@@ -2214,6 +2215,11 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	var chunk_fires: int = 0
 
+	for id in _items:   # a pot with no fire under it takes a new fire laid beside it
+		if _is_pot(_items[id]) and (_items[id]["pos"] as Vector3).distance_to(spot) <= POT_ATTACH_M and _fire_under_pot(_items[id]["pos"]) < 0:
+			spot = _items[id]["pos"]
+			break
+
 	for id in _items:
 		if _items[id].has("fire"):
 			if _items[id]["pos"].distance_to(spot) < _fire_gap_m:
@@ -2221,7 +2227,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)):
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):
 			return
 
 	if chunk_fires >= _fires_per_chunk:
@@ -2364,6 +2370,7 @@ func _showroom_retry(delta: float) -> void:
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
 func _fires(delta: float) -> void:
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	_refresh_pots()
 
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
@@ -2615,7 +2622,7 @@ func _load_world_items() -> void:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
-			entry["struct"] = {"kind": str(row[9]), "yaw": float(row[7])}
+			entry["struct"] = {"kind": _kind_now(str(row[9])), "yaw": float(row[7])}
 
 			if row.size() > 10 and int(row[10]) > 0:
 				entry["struct"]["uid"] = int(row[10])
@@ -2660,6 +2667,8 @@ func _load_world_items() -> void:
 
 		_items[_next_id] = entry
 		_next_id += 1
+
+	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
 
 
 # The parsed dictionary, or null when there is no file or it cannot be used (then it is kept as .bad).
@@ -3635,10 +3644,77 @@ func _fire_best_state(fire: Dictionary) -> int:
 	var need: int = int(_cooking.get("min_pieces", 3))
 
 	for cls in ["log", "firewood"]:
+		if cls == "log" and bool(fire.get("pot", false)):
+			continue   # a campfire pot hangs over this fire: it never grows past the firewood stage
+
 		if _fire_class_pieces(cls, float(wood[cls])) >= need:
 			return int(_cooking["fire_tiers"][cls]["state"])
 
 	return FIRE_STATE_SURVIVAL
+
+
+# A structure kind as it is called now (old saves keep their old name: the tripod pot is the campfire pot).
+func _kind_now(kind: String) -> String:
+	if _structures.has(kind):
+		return kind
+
+	for name in _structures:
+		if (_structures[name].get("legacy_kinds", []) as Array).has(kind):
+			return str(name)
+
+	return kind
+
+
+func _is_pot(it: Dictionary) -> bool:
+	return it.has("struct") and str(_structures.get(str(it["struct"]["kind"]), {}).get("attach_to", "")) == "fire"
+
+
+# The fire a pot at this spot hangs over, or -1.
+func _fire_under_pot(pos: Vector3) -> int:
+	for id in _items:
+		if _items[id].has("fire") and (_items[id]["pos"] as Vector3).distance_to(pos) <= POT_ON_FIRE_M:
+			return id
+
+	return -1
+
+
+# Sets fire["pot"] (not saved: the pot's position is the whole link) on every fire. A fire whose pot is gone gets its tier back;
+# a fire that was a bonfire when a pot arrived steps down to the firewood stage.
+func _refresh_pots() -> void:
+	var pots: Array = []
+
+	for id in _items:
+		if _is_pot(_items[id]):
+			pots.append(_items[id]["pos"])
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("fire"):
+			continue
+
+		var fire: Dictionary = it["fire"]
+		var hung: bool = false
+
+		for at in pots:
+			if (at as Vector3).distance_to(it["pos"]) <= POT_ON_FIRE_M:
+				hung = true
+				break
+
+		fire["pot"] = hung
+
+		if not fire_is_lit(int(fire["state"])):
+			continue
+
+		var best: int = _fire_best_state(fire)
+		var state: int = int(fire["state"])
+
+		if hung and state == FIRE_STATE_BONFIRE:
+			fire["state"] = best
+			_lit_valid = false
+		elif not hung and state != FIRE_STATE_BONFIRE and _fire_tier_of_state(best) > _fire_tier_of_state(state):
+			fire["state"] = best
+			_lit_valid = false
 
 
 func _fire_class_of_state(state: int) -> String:
@@ -3840,6 +3916,14 @@ func _structure_of_kit(kit_id: String) -> Dictionary:
 
 
 func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary) -> void:
+	var attaching: bool = str(def.get("attach_to", "")) == "fire"
+
+	if attaching:
+		spot = _snap_to_fire(peer, spot)
+
+		if is_nan(spot.y):
+			return
+
 	var here_chunk: Vector2i = _chunk_of(spot)
 	var of_kind: int = 0
 
@@ -3852,7 +3936,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on:
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")):
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
@@ -3874,6 +3958,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_next_id += 1
 	_add_roof(entry)
 
+	if attaching:
+		_refresh_pots()   # the fire under it takes the firewood cap now
+
 	if def.has("support"):
 		entry["struct"]["born"] = _now_game_s()
 		_rebuild_supports()
@@ -3885,6 +3972,35 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
 
 	_dirty = true
+
+
+# A campfire pot goes onto the nearest small fire (laid, lit or burnt out; never a bonfire) within POT_ATTACH_M of where it was put and
+# takes that fire's spot. Returns the fire's spot, or a NAN y after telling the player why it cannot go there.
+func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
+	var best: int = -1
+	var best_d: float = POT_ATTACH_M
+
+	for id in _items:
+		if _items[id].has("fire") and (_items[id]["pos"] as Vector3).distance_to(spot) <= best_d:
+			best = id
+			best_d = (_items[id]["pos"] as Vector3).distance_to(spot)
+
+	if best < 0:
+		_say(peer, "The campfire pot hangs over a small fire. Lay a fire first.")
+		return Vector3(spot.x, NAN, spot.z)
+
+	var at: Vector3 = _items[best]["pos"]
+
+	if int(_items[best]["fire"]["state"]) == FIRE_STATE_BONFIRE:
+		_say(peer, "That fire is too big for a pot. Let it burn down first.")
+		return Vector3(spot.x, NAN, spot.z)
+
+	for id in _items:
+		if _is_pot(_items[id]) and (_items[id]["pos"] as Vector3).distance_to(at) <= POT_ON_FIRE_M:
+			_say(peer, "That fire already has a pot.")
+			return Vector3(spot.x, NAN, spot.z)
+
+	return at
 
 
 # The structure's roof joins the cover index (both ends do the same on seeing the structure).
@@ -3953,6 +4069,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	if str(def.get("attach_to", "")) == "fire":
+		_refresh_pots()   # the fire keeps burning and gets its tiers back
 
 	if def.has("support"):
 		_rebuild_supports()
@@ -6039,8 +6158,8 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 			continue
 
 		if station_level_of(it, def, station) >= level:
-			if station == "tripod_pot" and not _lit_fire_within(it["pos"], TRIPOD_FIRE_M):
-				continue   # the pot hangs over a fire: with no lit fire beside it nothing cooks (and nothing is lost)
+			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_within(it["pos"], POT_ON_FIRE_M):
+				continue   # the pot hangs over its fire: with that fire out nothing cooks, the craft waits where it is and nothing is lost
 
 			return true
 

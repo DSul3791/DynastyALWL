@@ -2959,19 +2959,19 @@
 			"stack": 1,
 			"look_alikes": []
 		},
-		"tripod_pot_kit": {
+		"campfire_pot_kit": {
 			"number": 254,
-			"name": "Tripod pot",
-			"description": "Three long sticks, a chain and a clay pot. Hang it over a fire to cook stews and teas.",
+			"name": "Campfire pot",
+			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 10,
 			"look_alikes": []
 		},
-		"tripod_pot": {
+		"campfire_pot": {
 			"number": 255,
-			"name": "Tripod pot",
-			"description": "A tripod pot. Cook stews and teas here beside a lit fire.",
+			"name": "Campfire pot",
+			"description": "A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []

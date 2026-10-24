@@ -1766,7 +1766,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21:
+		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -2197,8 +2197,8 @@ func station_near(station: String, level: int = 1) -> bool:
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
-			if station == "tripod_pot" and not _lit_fire_near(_world[id]["pos"], 2.5):
-				continue   # the pot cooks only with a lit fire beside it
+			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
+				continue   # the pot cooks only while the fire it hangs over is lit
 
 			return true
 
