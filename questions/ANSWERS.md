@@ -1578,3 +1578,7 @@ Answered: 2026-10-24 17:06 UTC
 Answer: Yes
 Answered: 2026-10-24 17:06 UTC
 
+## look-new-tools | Can you craft the new tools? (build 787: stone hammer, hand saw, stone adze)
+Answer: No: If you use a hand on a log, it should chop the log up into blocks which are round logs that are shorter, and we use blocks on a chopping block to make firewood
+Answered: 2026-10-24 19:26 UTC
+
