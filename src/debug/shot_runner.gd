@@ -760,6 +760,10 @@ func _run_view(now: int) -> void:
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s_%s.png" % [dir, shots[_index]["name"], view["name"]]
 	image.save_png(path)
+
+	if not flora_names.is_empty():
+		_print_flora_row()   # the drawn pieces and vertex counts at this distance (near, mid, far models)
+
 	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
 	_view_i += 1
 	_view_msec = 0
@@ -767,8 +771,8 @@ func _run_view(now: int) -> void:
 
 # Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
 func _print_flora_row() -> void:
-	var p: Vector3 = client.body.global_position
-	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor((p.z - 2.4) / client.flora.chunk_m)))
+	var p: Vector3 = _subject if _subject_set else client.body.global_position - Vector3(0.0, 0.0, 2.4)   # the row's own spot: the camera of a --views picture may stand far off
+	var here: Vector2i = Vector2i(int(floor(p.x / client.flora.chunk_m)), int(floor(p.z / client.flora.chunk_m)))
 	var entry: Dictionary = client.flora._chunks.get(here, {})
 
 	if entry.is_empty():
@@ -793,7 +797,7 @@ func _print_flora_row() -> void:
 
 				var first: Transform3D = mmi.multimesh.get_instance_transform(0)
 				var cam: Vector3 = client.camera.global_position
-				print("shot runner: flora piece: kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
+				print("shot runner: flora piece: %s tier %s kind %s verts %d aabb %s instance0 at %s scale %s camera %s in tree %s range_end %.0f" % [str(mmi.get_meta("species", "")), str(mmi.get_meta("tier", -1)), str(mmi.get_meta("kind", -1)), verts, str(mesh.get_aabb()), str(first.origin), str(first.basis.get_scale()), str(cam), str(mmi.is_visible_in_tree()), mmi.visibility_range_end])
 
 	print("shot runner: flora row: chunk %s items %d level %d ground %s visible %s pieces %d instances %d setup_done %s" % [str(here), (entry["items"]["ids"] as PackedInt32Array).size(), int(entry["level"]), str(entry.get("ground")), ("no node" if node == null else str(node.visible)), pieces, instances, str(client.flora._setup_done)])
 
