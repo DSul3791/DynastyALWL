@@ -5,7 +5,6 @@ import json, sys
 
 out, item, count, x, y, z = sys.argv[1], sys.argv[2], int(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6])
 dist = float(sys.argv[7]) if len(sys.argv) > 7 else 1.0
-data = json.load(open("data/items/items.json", encoding="utf-8"))
 
 
 def find(o, k):
@@ -18,7 +17,11 @@ def find(o, k):
                 return r
 
 
-number = find(data, item)
+number = None
+for table in ("items", "gathered"):
+    number = find(json.load(open("data/items/%s.json" % table, encoding="utf-8")), item)
+    if number is not None:
+        break
 if number is None:
     sys.exit("no such item: " + item)
 json.dump({"version": 1, "next_id": 1000, "boulders": {}, "picked": {}, "taken": [], "items": [[int(number), count, x, y, z - dist, 99999.0]]}, open(out, "w"))
