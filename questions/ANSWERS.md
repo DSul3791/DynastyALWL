@@ -1526,3 +1526,7 @@ Answered: 2026-10-24 17:02 UTC
 Answer: Yes
 Answered: 2026-10-24 17:03 UTC
 
+## wl-dead-trees | Water land types: dead trees stay visible 20 to 30 game days, then fall?
+Answer: Yes
+Answered: 2026-10-24 17:03 UTC
+
