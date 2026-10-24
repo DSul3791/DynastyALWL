@@ -35,12 +35,6 @@ Note: Empties the pack, turns hints on, drops admin powers so Mike can time the 
 Note: Recommendation: Yes because we cannot test the first hour any other way.
 [check]
 
-## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
-Priority: 1
-Note: New players start with the direct way.
-Note: Recommendation: Yes because direct pieces suit a first shelter and need no protocol change.
-[check]
-
 ## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
 Priority: 2
 Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
