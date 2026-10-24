@@ -1,0 +1,1 @@
+tile 3,4 bake 6f4801e8, branch claude/david3-bake-6f4801e8. 10 lakes planned (24.5 ha); settled: class-lake bodies >=0.5 ha: 1 (0.5 ha); any water >=1 m deep bodies >=0.5 ha: 18 (33.8 ha, rivers included); river window z75053-75780: 225 wet pieces, main body 3958 cells
