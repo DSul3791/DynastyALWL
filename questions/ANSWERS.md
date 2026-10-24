@@ -1510,3 +1510,7 @@ Answered: 2026-10-24 16:40 UTC
 Answer: Yes
 Answered: 2026-10-24 16:41 UTC
 
+## rough-bed-rules | Rough bed: thatch + 4 sticks + 2 twine under any roof, better sleep, food and water at half rate asleep, never auto-wakes?
+Answer: Yes
+Answered: 2026-10-24 16:41 UTC
+
