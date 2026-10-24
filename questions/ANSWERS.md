@@ -1550,3 +1550,7 @@ Answered: 2026-10-24 17:04 UTC
 Answer: Yes
 Answered: 2026-10-24 17:05 UTC
 
+## fish-sea-shore-only | Limit sea fishing to shore and shallows until boats exist?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
