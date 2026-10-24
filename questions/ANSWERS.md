@@ -1430,3 +1430,7 @@ Answered: 2026-10-24 16:04 UTC
 Answer: No: Remove adze from the game. Make the first hammer made of wood and wood and twine. This is the weakest hammer although it does the exact same job. It just doesn’t last as long it has poor durability. The next step up would be stone and wood and twine and then it would be resource and Wood, like copper, bronze, iron, steel
 Answered: 2026-10-24 16:06 UTC
 
+## hammer-adze-recipe | Make the stone hammer and stone adze cost 1 stone + 1 stick + 5 twine like the axe?
+Answer: No: Remove adze from the game. Make the first hammer made of wood and wood and twine. This is the weakest hammer although it does the exact same job. It just doesn’t last as long it has poor durability. The next step up would be stone and wood and twine and then it would be resource and Wood, like copper, bronze, iron, steel
+Answered: 2026-10-24 16:06 UTC
+
