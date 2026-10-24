@@ -139,6 +139,16 @@ func _init() -> void:
 
 	var weights: Dictionary = _read("weights.json")
 
+	for gid in gathered_file.get("items", {}):   # gathered materials stack without limit, so every one needs a real weight
+		var gweighed: bool = weights.get("by_id", {}).has(gid)
+
+		for gsuffix in weights.get("by_suffix", {}):
+			gweighed = gweighed or String(gid).ends_with(String(gsuffix))
+
+		if not gweighed:
+			fail("weights.json: stackable gathered item '%s' has no weight (by_id or by_suffix); stacks have no cap now, weight is the limit" % gid)
+
+
 	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
 	var wood_file: Dictionary = _read("wood_species.json")
 
@@ -237,6 +247,13 @@ func _init() -> void:
 
 			if not weighed:
 				fail("weights.json: '%s' has no weight (by_id or by_suffix); the default is not a real weight" % id)
+
+		# No stack caps (Dave 24 Oct): weight is the only limit, so a stackable item must have a real weight and tools, kits, structures, containers, clothing, gear and weapons must not stack.
+		if int(item.get("stack", 1)) == 1 and not bool(item.get("unstackable", false)) and not bool(item.get("retired", false)):
+			fail("items.json: '%s' has stack 1 but is not marked \"unstackable\": true" % id)
+
+		if ["tool", "weapon", "placeable", "structure", "container", "clothing", "gear"].has(String(item.get("kind", ""))) and not bool(item.get("unstackable", false)):
+			fail("items.json: '%s' is a %s and must be \"unstackable\": true" % [id, item.get("kind", "")])
 
 		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
 			fail("items.json: '%s' has durability but no repair materials" % id)

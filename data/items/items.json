@@ -58,6 +58,7 @@
 			"tool_class": "axe",
 			"tier": 1,
 			"stack": 1,
+			"unstackable": true,
 			"chop": 1.0,
 			"dig": 1.0,
 			"durability": 900,
@@ -83,6 +84,7 @@
 			"weapon_class": "spear",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"damage": 8.0,
 			"throw_damage": 6.0,
 			"durability": 450,
@@ -105,6 +107,7 @@
 			"description": "Stones and sticks ready to lay a fire where you stand.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 8
 		},
@@ -116,6 +119,7 @@
 			"weapon_class": "spear",
 			"tier": 1,
 			"stack": 1,
+			"unstackable": true,
 			"damage": 6.0,
 			"throw_damage": 5.0,
 			"durability": 300,
@@ -136,6 +140,7 @@
 			"tool_class": "knife",
 			"tier": 1,
 			"stack": 1,
+			"unstackable": true,
 			"cut": 1.0,
 			"durability": 540,
 			"look_alikes": [],
@@ -160,6 +165,7 @@
 			"offhand": true,
 			"tier": 1,
 			"stack": 1,
+			"unstackable": true,
 			"light_m": 9.0,
 			"look_alikes": [],
 			"value": 6
@@ -236,6 +242,7 @@
 			"kind": "tool",
 			"tool_class": "spade",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"durability": 2025,
 			"repair": [
@@ -252,6 +259,7 @@
 			"description": "Sticks, leaves and twine for a small shelter with a roof.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -261,6 +269,7 @@
 			"description": "A small shelter. Its roof keeps rain off.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"chest_kit": {
@@ -269,6 +278,7 @@
 			"description": "Sticks and twine woven into a storage chest, ready to set down.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 25
 		},
@@ -278,6 +288,7 @@
 			"description": "A woven chest for storing things.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"slots": 12,
 			"material": "wicker",
@@ -289,6 +300,7 @@
 			"description": "Retired: the chopping block itself is now the carried item (Dave 2026-10-22).",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 20,
 			"retired": true
@@ -299,6 +311,7 @@
 			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 20
 		},
@@ -336,6 +349,7 @@
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 60
 		},
@@ -345,6 +359,7 @@
 			"description": "A plank chest for storing more things.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"slots": 20,
 			"material": "planks",
@@ -379,6 +394,7 @@
 			"material": "iron",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 9000,
 			"look_alikes": [],
 			"repair": [
@@ -404,6 +420,7 @@
 			"material": "steel",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 22500,
 			"look_alikes": [],
 			"repair": [
@@ -466,6 +483,7 @@
 			"description": "A bowl hollowed from a bolt of wood. Carries a little water.",
 			"kind": "container",
 			"stack": 1,
+			"unstackable": true,
 			"capacity_ml": 300,
 			"look_alikes": [],
 			"value": 3
@@ -476,6 +494,7 @@
 			"description": "A fired pot of clay. Holds three litres of water.",
 			"kind": "container",
 			"stack": 1,
+			"unstackable": true,
 			"capacity_ml": 3000,
 			"look_alikes": [],
 			"value": 3
@@ -486,6 +505,7 @@
 			"description": "A wooden bucket bound with cord. Holds eight litres of water.",
 			"kind": "container",
 			"stack": 1,
+			"unstackable": true,
 			"capacity_ml": 8000,
 			"look_alikes": [],
 			"value": 3
@@ -496,6 +516,7 @@
 			"description": "A skin bag sewn shut. Holds a day's drink and little weight.",
 			"kind": "container",
 			"stack": 1,
+			"unstackable": true,
 			"capacity_ml": 1500,
 			"future": true,
 			"look_alikes": [],
@@ -529,6 +550,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 4050,
 			"repair": [
 				[
@@ -552,6 +574,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 20250,
 			"repair": [
 				[
@@ -577,6 +600,7 @@
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 40500,
 			"repair": [
 				[
@@ -610,6 +634,7 @@
 			"kind": "tool",
 			"tool_class": "needle",
 			"stack": 1,
+			"unstackable": true,
 			"durability": 270,
 			"repair": [
 				[
@@ -627,6 +652,7 @@
 			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
 			"kind": "gear",
 			"stack": 1,
+			"unstackable": true,
 			"value": 40,
 			"future": true,
 			"look_alikes": [],
@@ -667,6 +693,7 @@
 			"description": "A fallen traveller and the pack they carried.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"rotten_food": {
@@ -723,6 +750,7 @@
 			"slot": "legs",
 			"warmth": 0.05,
 			"stack": 1,
+			"unstackable": true,
 			"value": 5,
 			"look_alikes": []
 		},
@@ -734,6 +762,7 @@
 			"slot": "body",
 			"warmth": 0.12,
 			"stack": 1,
+			"unstackable": true,
 			"value": 5,
 			"look_alikes": []
 		},
@@ -745,6 +774,7 @@
 			"slot": "feet",
 			"warmth": 0.04,
 			"stack": 1,
+			"unstackable": true,
 			"value": 5,
 			"look_alikes": []
 		},
@@ -756,6 +786,7 @@
 			"slot": "body",
 			"warmth": 0.3,
 			"stack": 1,
+			"unstackable": true,
 			"future": true,
 			"value": 25,
 			"look_alikes": []
@@ -768,6 +799,7 @@
 			"slot": "feet",
 			"warmth": 0.15,
 			"stack": 1,
+			"unstackable": true,
 			"future": true,
 			"value": 20,
 			"look_alikes": []
@@ -780,6 +812,7 @@
 			"slot": "head",
 			"warmth": 0.1,
 			"stack": 1,
+			"unstackable": true,
 			"future": true,
 			"value": 15,
 			"look_alikes": []
@@ -792,6 +825,7 @@
 			"slot": "hands",
 			"warmth": 0.08,
 			"stack": 1,
+			"unstackable": true,
 			"future": true,
 			"value": 12,
 			"look_alikes": []
@@ -804,6 +838,7 @@
 			"slot": "legs",
 			"warmth": 0.12,
 			"stack": 1,
+			"unstackable": true,
 			"future": true,
 			"value": 18,
 			"look_alikes": []
@@ -864,6 +899,7 @@
 			"description": "Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 30,
 			"look_alikes": []
 		},
@@ -873,6 +909,7 @@
 			"description": "A camp bench. Stand near it to make the things that need a work table.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"fishing_rod": {
@@ -889,6 +926,7 @@
 				]
 			],
 			"stack": 1,
+			"unstackable": true,
 			"value": 10,
 			"look_alikes": []
 		},
@@ -988,6 +1026,7 @@
 			"description": "Pegs and a crossbar to hang tools and stretch hides. Set it beside a camp bench.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 20,
 			"look_alikes": []
 		},
@@ -997,6 +1036,7 @@
 			"description": "A tool rack. Beside a camp bench it raises the bench a level.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"vice_kit": {
@@ -1005,6 +1045,7 @@
 			"description": "Two jaws of hardwood that hold work still. Set it beside a camp bench.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 25,
 			"look_alikes": []
 		},
@@ -1014,6 +1055,7 @@
 			"description": "A wooden vice. Beside a camp bench it raises the bench a level.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"log_workbench_kit": {
@@ -1022,6 +1064,7 @@
 			"description": "A heavy log bench with its own rack and vice, ready to set down.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 35,
 			"look_alikes": []
 		},
@@ -1031,6 +1074,7 @@
 			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"stone_forge_kit": {
@@ -1039,6 +1083,7 @@
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 120,
 			"look_alikes": []
 		},
@@ -1048,6 +1093,7 @@
 			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"blacksmithy_kit": {
@@ -1056,6 +1102,7 @@
 			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 600,
 			"look_alikes": []
 		},
@@ -1065,6 +1112,7 @@
 			"description": "A dressed stone forge with a stepped hood and iron straps.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"carcass": {
@@ -1073,6 +1121,7 @@
 			"description": "A freshly killed animal. Work it with a knife for meat, hide and bones.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"large_forge_kit": {
@@ -1081,6 +1130,7 @@
 			"description": "A big arched forge with a riveted iron frame, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 900,
 			"look_alikes": []
 		},
@@ -1090,6 +1140,7 @@
 			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"master_forge_kit": {
@@ -1098,6 +1149,7 @@
 			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 3000,
 			"look_alikes": []
 		},
@@ -1107,6 +1159,7 @@
 			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"log_oak": {
@@ -1115,6 +1168,7 @@
 			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "oak",
 			"look_alikes": [],
@@ -1149,6 +1203,7 @@
 			"description": "A full-size beech log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "beech",
 			"look_alikes": [],
@@ -1186,6 +1241,7 @@
 			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "birch",
 			"look_alikes": [],
@@ -1220,6 +1276,7 @@
 			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "scots_pine",
 			"look_alikes": [],
@@ -1254,6 +1311,7 @@
 			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "spruce",
 			"look_alikes": [],
@@ -1288,6 +1346,7 @@
 			"description": "A full-size alder log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "alder",
 			"look_alikes": [],
@@ -1325,6 +1384,7 @@
 			"description": "A full-size willow log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "willow",
 			"look_alikes": [],
@@ -1362,6 +1422,7 @@
 			"description": "A full-size coconut palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "coconut_palm",
 			"look_alikes": [],
@@ -1399,6 +1460,7 @@
 			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "tropical_hardwood",
 			"look_alikes": [],
@@ -1433,6 +1495,7 @@
 			"description": "A full-size acacia log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "acacia",
 			"look_alikes": [],
@@ -1470,6 +1533,7 @@
 			"description": "A full-size mangrove log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "mangrove",
 			"look_alikes": [],
@@ -1507,6 +1571,7 @@
 			"description": "A full-size rowan log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "rowan",
 			"look_alikes": [],
@@ -1544,6 +1609,7 @@
 			"description": "A full-size crab apple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "wild_apple",
 			"look_alikes": [],
@@ -1581,6 +1647,7 @@
 			"description": "A full-size wild pear log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "wild_pear",
 			"look_alikes": [],
@@ -1618,6 +1685,7 @@
 			"description": "A full-size wild cherry log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "wild_cherry",
 			"look_alikes": [],
@@ -1655,6 +1723,7 @@
 			"description": "A full-size sweet chestnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "sweet_chestnut",
 			"look_alikes": [],
@@ -1692,6 +1761,7 @@
 			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "walnut",
 			"look_alikes": [],
@@ -1726,6 +1796,7 @@
 			"description": "A full-size date palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "date_palm",
 			"look_alikes": [],
@@ -1763,6 +1834,7 @@
 			"description": "A full-size mirrorbark log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "mirrorbark",
 			"look_alikes": [],
@@ -1800,6 +1872,7 @@
 			"description": "A full-size wardpine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "wardpine",
 			"look_alikes": [],
@@ -1837,6 +1910,7 @@
 			"description": "A full-size hearthwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "hearthwood",
 			"look_alikes": [],
@@ -1874,6 +1948,7 @@
 			"description": "A full-size everember log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "everember",
 			"look_alikes": [],
@@ -1911,6 +1986,7 @@
 			"description": "A full-size witness tree log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "witness_tree",
 			"look_alikes": [],
@@ -1948,6 +2024,7 @@
 			"description": "A full-size balsam fir log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "balsam_fir",
 			"look_alikes": [],
@@ -1985,6 +2062,7 @@
 			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"carry": "shoulder",
 			"species": "maple",
 			"look_alikes": [],
@@ -2172,6 +2250,7 @@
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -2181,6 +2260,7 @@
 			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 22; sits on a 1 m grid, turns in quarter circles."
@@ -2191,6 +2271,7 @@
 			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -2200,6 +2281,7 @@
 			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 23; sits on a 1 m grid, turns in quarter circles."
@@ -2210,6 +2292,7 @@
 			"description": "A plank roof on four posts, to set over walls and floors.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 40
 		},
@@ -2219,6 +2302,7 @@
 			"description": "A plank roof on four posts, to set over walls and floors.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 24; sits on a 1 m grid, turns in quarter circles."
@@ -2229,6 +2313,7 @@
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 40
 		},
@@ -2238,6 +2323,7 @@
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "stone",
 			"note": "Building piece: row state 25."
@@ -2248,6 +2334,7 @@
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -2257,6 +2344,7 @@
 			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 26; sits on a 1 m grid, turns in quarter circles."
@@ -2267,6 +2355,7 @@
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -2276,6 +2365,7 @@
 			"description": "A plank wall with an opening at chest height to see through.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 27; sits on a 1 m grid, turns in quarter circles."
@@ -2286,6 +2376,7 @@
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 8
 		},
@@ -2295,6 +2386,7 @@
 			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "wood",
 			"note": "Bracing support."
@@ -2305,6 +2397,7 @@
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 40
 		},
@@ -2314,6 +2407,7 @@
 			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "wood",
 			"note": "Bracing support."
@@ -2351,6 +2445,7 @@
 			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 35
 		},
@@ -2360,6 +2455,7 @@
 			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "wood",
 			"note": "Building piece: row state 31."
@@ -2371,6 +2467,7 @@
 			"kind": "tool",
 			"tool_class": "spade",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"durability": 3037,
 			"repair": [
@@ -2390,6 +2487,7 @@
 			"kind": "tool",
 			"tool_class": "spade",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"durability": 4050,
 			"repair": [
@@ -2411,6 +2509,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 6075,
 			"repair": [
 				[
@@ -2435,6 +2534,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 8100,
 			"repair": [
 				[
@@ -2459,6 +2559,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 30375,
 			"repair": [
 				[
@@ -2485,6 +2586,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 40500,
 			"repair": [
 				[
@@ -2511,6 +2613,7 @@
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 60750,
 			"repair": [
 				[
@@ -2537,6 +2640,7 @@
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 81000,
 			"repair": [
 				[
@@ -2561,6 +2665,7 @@
 			"kind": "tool",
 			"tool_class": "hoe",
 			"stack": 1,
+			"unstackable": true,
 			"durability": 2025,
 			"repair": [
 				[
@@ -2580,6 +2685,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 4050,
 			"repair": [
 				[
@@ -2603,6 +2709,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 20250,
 			"repair": [
 				[
@@ -2628,6 +2735,7 @@
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 40500,
 			"repair": [
 				[
@@ -2650,6 +2758,7 @@
 			"description": "Trodden ground, a metre of path.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"material": "earth",
 			"note": "Hoe path: row state 32; no kit, cannot be picked up."
@@ -2769,6 +2878,7 @@
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"kind": "material",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 120
 		},
@@ -2778,6 +2888,7 @@
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 400,
 			"look_alikes": []
 		},
@@ -2787,6 +2898,7 @@
 			"description": "A water-driven sawmill. Stand near it to saw logs into lumber.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"woodworking_table_kit": {
@@ -2795,6 +2907,7 @@
 			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"value": 150,
 			"look_alikes": []
 		},
@@ -2804,6 +2917,7 @@
 			"description": "A woodworking table. Stand near it to plane lumber into fine boards.",
 			"kind": "structure",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": []
 		},
 		"rock_pile": {
@@ -2812,6 +2926,7 @@
 			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
 			"kind": "placeable",
 			"stack": 1,
+			"unstackable": true,
 			"look_alikes": [],
 			"value": 45
 		},
@@ -2824,6 +2939,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 4350,
 			"repair": [
 				[
@@ -2847,6 +2963,7 @@
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 2500,
 			"repair": [
 				[
@@ -2870,6 +2987,7 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
+			"unstackable": true,
 			"durability": 3400,
 			"repair": [
 				[

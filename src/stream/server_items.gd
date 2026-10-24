@@ -2428,6 +2428,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 	if want >= PILE_MIN:
 		want = mini(want, wanted if wanted > 0 else int(table.entry(table.id_of(int(it["number"]))).get("pile", {}).get("handful", PILE_HANDFUL)))
 
+	want = mini(want, table.COUNT_MAX)   # one action moves at most a full stack's worth; the rest stays on the ground
 	var fits: int = _fit(peer, inv, int(it["number"]), want)
 
 	if fits == 0:

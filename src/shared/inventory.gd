@@ -192,5 +192,5 @@ func to_json_array() -> Array:
 func from_json_array(data: Array) -> void:
 	for i in mini(SLOTS, data.size()):
 		numbers[i] = int(data[i][0])
-		counts[i] = int(data[i][1])
+		counts[i] = clampi(int(data[i][1]), 0, 65535)   # a hand-edited or out-of-range count is pulled into the u16 range
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0

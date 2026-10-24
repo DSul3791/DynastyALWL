@@ -1549,7 +1549,7 @@ func _refresh_chest() -> void:
 			var button: Button = pair[0][i]
 			var source = pair[1]
 			var number: int = source.numbers[i]
-			button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), source.counts[i]]
+			button.text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(source.counts[i])]
 			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
@@ -3130,6 +3130,11 @@ func _item_label(number: int) -> String:
 	return item_name
 
 
+# A slot count: whole up to 9,999, then thousands with one decimal (12.3k).
+func _count_text(n: int) -> String:
+	return str(n) if n < 10000 else "%.1fk" % (float(n) / 1000.0)
+
+
 func _freshness_word(f: float) -> String:
 	return "fresh" if f > 0.6 else ("going off" if f > 0.25 else "nearly rotten")
 
@@ -3141,7 +3146,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	var entry: Dictionary = table.entry(table.id_of(number))
 	var item_name: String = _item_label(number)
 
-	var text: String = "%s x%d\n%s, stacks to %d" % [item_name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+	var text: String = "%s x%d\n%s, %s" % [item_name, count, str(entry.get("kind", "item")), "does not stack" if table.stack_of(number) <= 1 else "stacks without limit (weight is your limit)"]
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
@@ -3305,7 +3310,7 @@ func _refresh() -> void:
 	for i in inventory.SLOTS:
 		var button: Button = _buttons[i]
 		var number: int = inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
+		button.text = "" if number == 0 else "%s\nx%s" % [_item_label(number), _count_text(inventory.counts[i])]
 		var bar: ColorRect = button.get_node("Condition")
 		var is_worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
 		var perishable: bool = number != 0 and table.shelf_units(number) > 0

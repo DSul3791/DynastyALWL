@@ -183,7 +183,7 @@ func _init() -> void:
 	for k in items._items:
 		rig_count += int(items._items[k]["count"])
 
-	check(items.world_item_count() == 1 and rig_count == rig_held and rig_held >= 6, "a dropped pile of stones lies as one item (%d items, %d of %d stones)" % [items.world_item_count(), rig_count, rig_held])
+	check(items.world_item_count() == 1 and rig_count == 20 and rig_held >= 6, "a dropped pile of stones lies as one item (%d items, %d of %d stones)" % [items.world_item_count(), rig_count, rig_held])
 	check(not world_sent.is_empty() and world_sent[0][1].size() == 1 and int(world_sent[0][1][0][2]) == rig_count, "and the player is told about it with its count")
 	items.inventory_of(7).remove(stone, items.inventory_of(7).count_of(stone) - rig_before)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
@@ -556,6 +556,30 @@ func _init() -> void:
 			fires_left += 1
 
 	check(fires_left == 0, "a dead fire is cleared away")
+
+	# No stack caps (Dave 24 Oct): weight is the limit, stone stacks without a cap, tools and kits stay one per slot.
+	var capless: Variant = load("res://src/shared/inventory.gd").new(f.table)
+	var big_stone: int = f.table.number_of("stone")
+	check(f.table.stack_of(big_stone) == ItemTableScript.COUNT_MAX, "stone stacks to the count maximum (%d)" % f.table.stack_of(big_stone))
+	check(f.table.stack_of(f.table.number_of("steel_spade")) == 1 and f.table.stack_of(f.table.number_of("workbench_kit")) == 1, "a shovel and a kit stay one per slot")
+	var left_over: int = capless.add(big_stone, 70000)
+	check(capless.count_of(big_stone) == 70000 and left_over == 0 and capless.counts[capless.numbers.find(big_stone)] == 65535, "70,000 stones fill one slot and spill the rest into a second")
+	capless.from_json_array([[big_stone, 99999999, 0]])
+	check(capless.counts[0] == 65535, "an out-of-range count in a save is clamped on load")
+
+	var fibre_n: int = items.table.number_of("plant_fibre")
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	items.drop_in_world(fibre_n, 90000, Vector3(100.0, 5.0, 100.0))
+	var fibre_pile: int = -1
+
+	for k in items._items:
+		if int(items._items[k]["number"]) == fibre_n and not items._items[k].has("fire"):
+			fibre_pile = k
+
+	var fibre_before: int = items.inventory_of(7).count_of(fibre_n)
+	items.action(7, Net.ACT_PICKUP, fibre_pile, 0, 90000, Vector3.ZERO)
+	check(items.inventory_of(7).count_of(fibre_n) - fibre_before <= ItemTableScript.COUNT_MAX and items._items.has(fibre_pile), "one pickup moves at most 65,535 and the rest stays on the ground")
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
 	# Mining rock with the axe.
 	var m = make("user://test_server_items_e")
@@ -2383,14 +2407,16 @@ func _init() -> void:
 
 	for slot_n in range(bx.inventory_of(1).SLOTS):
 		if bx.inventory_of(1).numbers[slot_n] == box_stone:
-			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 20, Vector3.ZERO)
+			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 40, Vector3.ZERO)
+
+	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 10, Vector3.ZERO)
 	check(box.count_of(box_stone) == 40 and bx.inventory_of(1).count_of(box_stone) == in_pack - 40, "a put past the 40 kg limit puts what fits (%d in the chest, %d left in the pack)" % [box.count_of(box_stone), bx.inventory_of(1).count_of(box_stone)])
 	check(box_rejects == [2], "the stack that no longer fits is refused as too heavy (%s)" % str(box_rejects))
 	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 5, Vector3.ZERO)
 	check(box.count_of(box_stone) == 40 and box_rejects == [2, 2], "a full chest takes no more and refuses it as too heavy (%s)" % str(box_rejects))
 	bx.give(1, box_stone, 500)
 	var before_take: int = bx.inventory_of(1).count_of(box_stone)
-	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 20, Vector3.ZERO)
+	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 40, Vector3.ZERO)
 	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 40, "a take into a pack at its weight cap moves nothing and loses nothing")
 
 	# Skill hooks (job 70): factor 1.0 changes nothing; a stub skill of 2.0 doubles yield and halves craft time.
