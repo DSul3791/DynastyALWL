@@ -86,8 +86,7 @@ func _init() -> void:
 
 	var supplied: float = 0.0
 	var supplied_at_check: float = 0.0
-	var area_m2: float = sim.spacing_m * sim.spacing_m
-	var start_volume: float = sim.total_volume() * area_m2      # the painted lakes and rivers the settle starts from are already stored
+	var start_volume: float = sim.total_volume()      # m3 already (WaterSim.total_volume multiplies by the cell area); the painted lakes and rivers the settle starts from are already stored
 	var last_volume: float = start_volume
 	var quiet: int = 0
 	var t: int = 0
@@ -100,7 +99,7 @@ func _init() -> void:
 		t += 1
 
 		if t in [1, 2, 5, 10, 20]:
-			print("  early tick %d: stored %.0f m3 (start %.0f), sea %.0f, dried %.0f, supplied %.0f, wet %d" % [t, sim.total_volume() * area_m2, start_volume, sim.sea_m3, sim.evaporated_m3, supplied, sim.wet_cells()])
+			print("  early tick %d: stored %.0f m3 (start %.0f), sea %.0f, dried %.0f, supplied %.0f, wet %d" % [t, sim.total_volume(), start_volume, sim.sea_m3, sim.evaporated_m3, supplied, sim.wet_cells()])
 
 		if t % 50 == 0:
 			print("  tick %d: active %d, wet %d, moved %.0f m3, sea %.0f m3, dried %.0f m3, %d ms so far" % [t, sim.active_cells(), sim.wet_cells(), moved, sim.sea_m3, sim.evaporated_m3, Time.get_ticks_msec() - started])
@@ -108,7 +107,7 @@ func _init() -> void:
 		if t >= min_ticks and t % every == 0:
 			# Steady = in this block the stored water changed by less than `tolerance` of what the springs poured in (the rest left by the sea, the edge or drying).
 			# Measured against the supply, not the total stored: the painted lakes hold 60 times what the springs bring and would always look steady.
-			var volume: float = sim.total_volume() * area_m2
+			var volume: float = sim.total_volume()
 			var poured: float = maxf(supplied - supplied_at_check, 1.0)
 			print("  block at tick %d: stored %.0f m3 (%+.0f), poured %.0f m3, to sea/edge %.0f m3 so far, dried %.0f m3 so far" % [t, volume, volume - last_volume, poured, sim.sea_m3, sim.evaporated_m3])
 			quiet = quiet + 1 if absf(volume - last_volume) <= tolerance * poured else 0
@@ -123,7 +122,7 @@ func _init() -> void:
 			why = "max ticks" if max_ticks > min_ticks else why
 			break
 
-	var stored: float = sim.total_volume() * area_m2
+	var stored: float = sim.total_volume()
 	print("settle done after %d ticks (%s): started with %.0f m3, springs supplied %.0f m3, stored now %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3" % [t, why, start_volume, supplied, stored, sim.sea_m3, sim.evaporated_m3, start_volume + supplied - stored - sim.sea_m3 - sim.evaporated_m3])
 
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
