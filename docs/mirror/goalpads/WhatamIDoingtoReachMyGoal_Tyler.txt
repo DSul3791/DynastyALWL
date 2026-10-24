@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 04:25 UTC plan GOs: smoke/frametime, sound slots; tyler-bake28 refreshed (river-settle 1f51ac07); wild rose chain (no-rose-berries + rose-petals + flora-gaps) trial-merged clean; gate list 3 updated; rose_hips kept
 - 03:45 UTC step 9: tech/DESIGN_COVERAGE.md written (every DESIGN_IDEAS section with owner, status, next goal; gaps marked 'none yet')
 - 03:40 UTC step 6 and 7: LESSONS line for builds 771-774 written; BP-C23, BP-T33, BP-T50 marked superseded/amended. Build 774 merged (6 branches), BAKE_28_MERGE.md ready, waiting on Mike's v28 bake and Sal's table PASS.
 - 03:10 UTC plan GO replies: Kathleen flora gaps, Steve river settle, Kathleen worn clothing, Steve worn attach (no plan pending); merge list 3 written (2 conflicts flagged to Steve); steve-stamp-items added to list 2

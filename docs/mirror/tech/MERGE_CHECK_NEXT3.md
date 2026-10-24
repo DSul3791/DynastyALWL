@@ -15,3 +15,8 @@ UPDATE 03:55 UTC additions for the next gate (trial-merged clean by Tyler where 
 UPDATE 03:58 UTC: use sal-building-looks a63a3933 (NOT 60a0aedb, which has a parse error and NOT 82d4b40b, which had 1 new warning). Fixed head: test_look_table 26 looks, 0 failures, 0 new warnings per Sal. Tyler trial merge on head 774: see result in thread.
 
 UPDATE 04:10 UTC: add origin/claude/steve-no-rose-berries 82b0bd5 (Dave: wild rose has no berries; data/yields) right AFTER kathleen-flora-gaps (it also fixes the wild rose model/yields; if both touch flora.json keep both changes). steve-river-settle d6113617 is superseded by a newer head; Tyler refreshes claude/tyler-bake28 when Steve gives the hash.
+
+UPDATE 04:15 UTC: claude/tyler-bake28 refreshed to 62a94575 with steve-river-settle 1f51ac07 (stop-rule fix) and the current generator-v2. merge_check clear, parse_scan clear.
+WILD ROSE (coordinator 02:52): merge ONLY steve-no-rose-berries 82b0bd5 plus kathleen-flora-gaps d23ec760; SKIP sal-no-rose-berries 1174dd9; Sal will push a one-line petals branch on top of Steve's and send the hash. Tests for that gate: validate_items 0 errors, test_server_items (harvest/drop rows), parse_scan; in game or rig: E on a wild rose gives NO berries and NO sticks (Steve's empty by_species row), petals only after Sal's branch.
+
+UPDATE 04:20 UTC: add origin/claude/sal-rose-petals 8bd7f9cc right after steve-no-rose-berries (one line: harvest_yield wild_rose -> rose_petals 12; spring/summer). Trial-merged clean with kathleen-flora-gaps + steve-no-rose-berries. Ignore sal-no-rose-berries 1174dd9. DECISION: KEEP the unused rose_hips item (item ids are never deleted: saved inventories, recipes and old worlds may still reference it); mark it unobtainable in data if needed.
