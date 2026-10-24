@@ -37,7 +37,7 @@ for i in items:
         continue
     if not m and i["kind"] in ("tool", "clothing", "structure", "placeable", "weapon", "container", "gear") and not i.get("future"):
         gap.append("no recipe")
-    if i.get("value") is None:
+    if i.get("value") is None and i["kind"] != "structure":   # placed structures are not traded; their kits carry the price
         gap.append("no value")
     if i["kind"] == "material" and not u and not i.get("future"):
         gap.append("not used")
