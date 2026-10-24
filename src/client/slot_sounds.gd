@@ -51,12 +51,18 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 
 
 # The shore net's server lines name the cue (the server sends text, no sound event): "net_cast" when the net goes out, "net_haul" when it comes in.
-static func net_cue(text: String) -> String:
-	if text.begins_with("You spread the net"):
-		return "net_cast"
+const NET_CAST_LINES := ["You spread the net"]                          # prefixes of the server lines (fishing.json net.say_start; server_items._net_haul for the haul text)
+const NET_HAUL_LINES := ["You haul in", "The net comes up empty"]       # net.say_nothing
 
-	if text.begins_with("You haul in") or text.begins_with("The net comes up empty"):
-		return "net_haul"
+
+static func net_cue(text: String) -> String:
+	for line in NET_CAST_LINES:
+		if text.begins_with(line):
+			return "net_cast"
+
+	for line in NET_HAUL_LINES:
+		if text.begins_with(line):
+			return "net_haul"
 
 	return ""
 
