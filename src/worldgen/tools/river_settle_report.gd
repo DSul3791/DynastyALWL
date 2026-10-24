@@ -13,6 +13,8 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
+const WaterSettler := preload("res://src/water/water_settler.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
 const DEFAULT_WORLD_DIR := "res://worlds/base_world"
 const WET_M := 0.12             # settled water counts as water from this depth (the sim's WET_M)
@@ -21,6 +23,9 @@ const SEAM_CELLS := 3           # an end this close to the tile edge is a seam c
 const CONTINUES_SEARCH := 40    # samples searched below the end for painted river that the water does not reach
 
 var world_dir: String = DEFAULT_WORLD_DIR
+var _spring_cells: PackedInt32Array = PackedInt32Array()   # where the settler puts springs for this tile (src/water/water_settler.gd build)
+var _spring_rates: PackedFloat32Array = PackedFloat32Array()
+var _flow: PackedFloat32Array = PackedFloat32Array()        # the tile file's flow map: drained cells per sample (rivers only), decoded
 
 
 func _init() -> void:
@@ -71,6 +76,19 @@ func _init() -> void:
 		return
 
 	var spacing: float = data.spacing_m
+	var sim = WaterSettler.build(data, spring, generator)
+
+	for sp in sim.springs:
+		_spring_cells.append(int(sp[0]))
+		_spring_rates.append(float(sp[1]))
+
+	var tile_path: String = "%s/tiles/tile_%d_%d.tile" % [world_dir, tile.x, tile.y]
+	var head: Dictionary = TileFileScript.read_header(tile_path)
+
+	if bool(head.get("ok", false)):
+		_flow = TileFileScript.decode_flow(TileFileScript.read_section(tile_path, head["table"], "flow")["raw"])
+
+	print("settler places %d springs on tile %d,%d; flow map %s" % [_spring_cells.size(), tile.x, tile.y, "read" if not _flow.is_empty() else "NOT read"])
 	var body: PackedInt32Array = PackedInt32Array()
 	body.resize(side * side)
 	body.fill(-1)
@@ -180,6 +198,7 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 	var missing: float = maxf(fill - stored, 0.0)
 	var hours: float = missing / maxf(spring, 0.001) / 3600.0
 	var carries: String = _continues(data, side, ei, ej)
+	var fed: String = _fed(data, side, spacing, members)
 	var kind: String = ""
 
 	if ei <= SEAM_CELLS or ej <= SEAM_CELLS or ei >= side - 1 - SEAM_CELLS or ej >= side - 1 - SEAM_CELLS:
@@ -193,9 +212,35 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 	else:
 		kind = "FULL BUT STOPPED (spill %.1f m above the end, water level %.1f vs rim %.1f: check the spill cell)" % [rim - ground_end, water_end, rim]
 
-	return "INLAND end x %.0f z %.0f (sample %d,%d): %d wet cells, ground %.1f m, water %.1f m; spill %.1f m at x %.0f z %.0f%s; basin %.0f m2, fill volume %.0f m3, stored %.0f m3, missing %.0f m3 (%.1f h of one %.0f m3/s spring); painted river: %s; CLASS %s" % [
+	return "INLAND end x %.0f z %.0f (sample %d,%d): %d wet cells, ground %.1f m, water %.1f m; spill %.1f m at x %.0f z %.0f%s; basin %.0f m2, fill volume %.0f m3, stored %.0f m3, missing %.0f m3 (%.1f h of one %.0f m3/s spring); painted river: %s; %s; CLASS %s" % [
 			x, z, ei, ej, cells, ground_end, water_end, rim, data.x0 + float(int(flood["spill"]) % side) * spacing, data.z0 + floorf(float(int(flood["spill"])) / float(side)) * spacing,
-			" (no outlet found, window edge)" if bool(flood["closed"]) else "", area, fill, stored, missing, hours, spring, carries, kind]
+			" (no outlet found, window edge)" if bool(flood["closed"]) else "", area, fill, stored, missing, hours, spring, carries, fed, kind]
+
+
+# Is the body fed? The distance from its nearest cell to the nearest settler spring and that spring's rate, and the drainage the tile file records
+# at the body's highest cell (the catchment the river brings in, in km2): a body with no spring near it and a big catchment is a river that is
+# painted but never gets its water in the settle (the cause of "full but stopped").
+func _fed(data, side: int, spacing: float, members: PackedInt32Array) -> String:
+	var head_cell: int = members[0]
+	var nearest: float = INF
+	var nearest_rate: float = 0.0
+
+	for k in members:
+		if data.heights[k] > data.heights[head_cell]:
+			head_cell = k
+
+		var ki: int = k % side
+		var kj: int = floori(float(k) / float(side))
+
+		for n in range(_spring_cells.size()):
+			var d: float = sqrt(float((_spring_cells[n] % side - ki) * (_spring_cells[n] % side - ki) + (floori(float(_spring_cells[n]) / float(side)) - kj) * (floori(float(_spring_cells[n]) / float(side)) - kj))) * spacing
+
+			if d < nearest:
+				nearest = d
+				nearest_rate = _spring_rates[n]
+
+	var catchment: float = _flow[head_cell] * spacing * spacing / 1.0e6 if not _flow.is_empty() else -1.0
+	return "nearest spring %s, head x %.0f z %.0f ground %.1f m, catchment at head %s" % [("none" if nearest == INF else "%.0f m (%.1f m3/s)" % [nearest, nearest_rate]), data.x0 + float(head_cell % side) * spacing, data.z0 + floorf(float(head_cell) / float(side)) * spacing, data.heights[head_cell], ("unknown" if catchment < 0.0 else "%.1f km2" % catchment)]
 
 
 # Minimax path (priority flood) from `start` out to the window's rim: `rim` is the lowest height the water has to climb to to leave
