@@ -948,8 +948,42 @@ func meters_text() -> String:
 		var filled: int = clampi(int(round((clampf(peak, -60.0, 0.0) + 60.0) / 60.0 * METER_CELLS)), 0, METER_CELLS)
 		lines.append("  %-9s [%s%s] %6.1f  hold %6.1f%s" % [bus_name, "#".repeat(filled), ".".repeat(METER_CELLS - filled), maxf(peak, -99.9), maxf(float(held[0]), -99.9), "  CLIPPING" if peak > -0.5 else ""])
 
+	lines.append("  " + loudest_text("Nature"))
+	lines.append("  " + loudest_text("Wind"))
 	lines.append("  audio output latency %.0f ms, mix rate %d Hz" % [AudioServer.get_output_latency() * 1000.0, int(AudioServer.get_mix_rate())])
 	return "\n".join(lines)
+
+
+# F3: the loudest playing voice on a bus at the listener, so "what is that noise" has a name. 3D voices are rated by their own
+# volume less the distance fall-off (unit_size, inverse distance; out of max_distance they are silent); the 2D beds by volume.
+func loudest_text(bus_name: String) -> String:
+	var ear_at: Vector3 = get_viewport().get_camera_3d().global_position if get_viewport().get_camera_3d() != null else Vector3.ZERO
+	var best_db: float = -200.0
+	var best: String = "none"
+	var voices: Array = get_tree().get_nodes_in_group("world_sounds")
+	voices.append_array(find_children("*", "AudioStreamPlayer", true, false))
+
+	for player in voices:
+		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus) != bus_name:
+			continue
+
+		var db: float = player.volume_db
+		var where: String = ""
+
+		if player is AudioStreamPlayer3D:
+			var d: float = player.global_position.distance_to(ear_at)
+
+			if d > player.max_distance and player.max_distance > 0.0:
+				continue
+
+			db -= 20.0 * log(maxf(d / maxf(player.unit_size, 0.1), 1.0)) / log(10.0)
+			where = " %.0f m" % d
+
+		if db > best_db:
+			best_db = db
+			best = "%s%s %.0f dB" % [player.stream.resource_path.get_file().get_basename(), where, db]
+
+	return "loudest %s: %s" % [bus_name, best]
 
 
 func mix_table() -> String:
