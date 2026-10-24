@@ -1410,3 +1410,7 @@ Answered: 2026-10-24 14:54 UTC
 Answer: No: We have no need for an adze. And the hammer is solely used for picking blueprints when you have a hammer in your hand and your right click. It will give you a menu of blueprints that you can place and when you have a blueprint selected and your left click it will place the blueprint. The first item on the blueprint menu is going to be the repair function so if you select the repair function, your hammer becomes a repairing tool and you can click to repair stuff if you have what’s needed to repair it
 Answered: 2026-10-24 14:54 UTC
 
+## fire-three-pieces | Does '3 types of wood' mean 3 pieces of that wood for a fire tier?
+Answer: Yes
+Answered: 2026-10-24 16:01 UTC
+
