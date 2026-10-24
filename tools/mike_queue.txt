@@ -16,6 +16,7 @@ branch steve-shrub-lod
 test test_tunnel_watch
 test test_worn_sync
 test test_water_flow
+test test_water_settle_rules
 test validate_items
 rig frametime Low | --frametime 20 --quality 0 --name frametime_low
 rig item looks (all showroom rows) | --showroom all --name showroom_all
