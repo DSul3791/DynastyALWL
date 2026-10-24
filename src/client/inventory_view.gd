@@ -3,6 +3,7 @@ const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
+const CarcassLook := preload("res://src/client/carcass_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 
@@ -2184,23 +2185,7 @@ func _make_chest() -> Node3D:
 # `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
 # A dead animal lying on its side: a brown ellipsoid sized by species (rabbit 0.45 m).
 func _make_carcass(species: String) -> Node3D:
-	var root: Node3D = Node3D.new()
-	var length: float = 0.45 if species == "rabbit" else 1.2
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0
-	material.albedo_color = Color(0.4, 0.31, 0.22)
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var ball: SphereMesh = SphereMesh.new()
-	ball.radius = 0.5
-	ball.height = 1.0
-	ball.radial_segments = 8
-	ball.rings = 4
-	body.mesh = ball
-	body.material_override = material
-	body.scale = Vector3(length * 0.5, length * 0.28, length)
-	body.position = Vector3(0.0, length * 0.14, 0.0)
-	root.add_child(body)
-	return root
+	return CarcassLook.build(species)
 
 
 func _make_remains(age: float) -> Node3D:
