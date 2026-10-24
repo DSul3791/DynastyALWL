@@ -18,6 +18,7 @@ extends SceneTree
 #   --tiles-only   skip the sketch (island shape) checks
 #   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
 #   --bakelog=FILE the bake log; its line "gullies: N, dead ends: M" feeds the dead-end gully row
+#   --spawn-search=M list pads within M metres of the spawn that pass the spawn gate (nearest first)
 #   --gullies=TEXT the same line pasted directly
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
@@ -48,6 +49,7 @@ var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
 var _gully_line: String = ""
+var _spawn_search_m: float = 0.0
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
 var _features: Dictionary = {}   # island id -> feature name of island_list.json
@@ -81,6 +83,8 @@ func _run() -> int:
 			_fine = true
 		elif argument.begins_with("--bakelog="):
 			_gully_line = _find_gully_line(FileAccess.get_file_as_string(argument.trim_prefix("--bakelog=")))
+		elif argument.begins_with("--spawn-search="):
+			_spawn_search_m = float(argument.trim_prefix("--spawn-search="))
 		elif argument.begins_with("--gullies="):
 			_gully_line = argument.trim_prefix("--gullies=")
 		elif argument == "--sketch-only":
@@ -1346,9 +1350,58 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	if _fine:
 		stitched = fine
 
+	_tile_farmland(stitched, tile_limits)
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
 
 	_tile_summits(world_dir, fine)
+
+
+# Farmable and rolling share per landmass on the baked 32 m maps (same zone and slopes as the sketch row).
+# Reports only; landmasses with fewer than farm_min_cells zone cells are skipped.
+func _tile_farmland(stitched: Dictionary, tile_limits: Dictionary) -> void:
+	var defaults: Dictionary = _limits["defaults"]
+	var farm_deg: float = float(defaults["farm_slope_deg"])
+	var flat_deg: float = float(defaults["flat_slope_deg"])
+	var low_m: float = float(defaults["beach_top_m"])
+	var top_m: float = float(defaults["farm_top_m"])
+	var width: int = stitched["width"]
+	var rows: int = stitched["rows"]
+	var spacing: float = stitched["spacing"]
+	var heights: PackedFloat32Array = stitched["heights"]
+	var landmass: PackedInt32Array = _label_landmasses(stitched)
+	var zone: Dictionary = {}
+	var farmable: Dictionary = {}
+	var rolling: Dictionary = {}
+	var origin: Dictionary = {}
+
+	for j in range(1, rows - 1):
+		for i in range(1, width - 1):
+			var index: int = j * width + i
+			var id: int = landmass[index]
+			var h: float = heights[index]
+
+			if id < 0 or h <= low_m or h > top_m or not _dry(stitched["water"][index], h):
+				continue
+
+			var dx: float = (heights[index + 1] - heights[index - 1]) / (2.0 * spacing)
+			var dz: float = (heights[index + width] - heights[index - width]) / (2.0 * spacing)
+			var slope: float = rad_to_deg(atan(sqrt(dx * dx + dz * dz)))
+			zone[id] = int(zone.get(id, 0)) + 1
+			origin[id] = Vector2(float(stitched["origin_x"]) + float(i) * spacing, float(stitched["origin_z"]) + float(j) * spacing) if not origin.has(id) else origin[id]
+
+			if slope <= farm_deg:
+				farmable[id] = int(farmable.get(id, 0)) + 1
+
+				if slope > flat_deg:
+					rolling[id] = int(rolling.get(id, 0)) + 1
+
+	for id in zone.keys():
+		if int(zone[id]) < 300:
+			continue
+
+		var farm_share: float = float(int(farmable.get(id, 0))) / float(zone[id])
+		var rolling_share: float = float(int(rolling.get(id, 0))) / float(zone[id])
+		_row("tile landmass near x %d z %d farmland (%.0f-%.0f m, slope at or under %.0f deg)" % [int((origin[id] as Vector2).x), int((origin[id] as Vector2).y), low_m, top_m, farm_deg], "%.1f%% farmable, %.1f%% rolling, %d cells of 32 m" % [farm_share * 100.0, rolling_share * 100.0, int(zone[id])], "report", "INFO")
 
 
 func _seam_checks(settings, directory: String, tiles: Array) -> void:
@@ -1449,6 +1502,64 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 	_bound_row(title + " max slope in %.0f m" % ring, steepest, tile_limits["spawn_max_slope_deg"], true, "%.1f deg over %d samples (8 m map)" % [steepest, count])
 	_bound_row(title + " height range", high - low, tile_limits["spawn_range_m"], true, "%.2f m (%.2f to %.2f)" % [high - low, low, high])
 	_bound_row(title + " water samples", float(wet), tile_limits["spawn_max_water_cells"], true, "%d" % wet)
+
+	if _spawn_search_m > 0.0:
+		_spawn_candidates(heights, water, n, spacing, origin, spawn, ring, tile_limits)
+
+
+# Pads near the spawn that pass the same gate (slope, range, no water, above the beach top), nearest first, at least 300 m apart.
+func _spawn_candidates(heights: PackedFloat32Array, water: PackedByteArray, n: int, spacing: float, origin: Vector2, spawn: Vector2, ring: float, tile_limits: Dictionary) -> void:
+	var reach: int = int(ceil(ring / spacing))
+	var step: int = maxi(int(round(32.0 / spacing)), 1)
+	var found: Array = []
+	var span: int = int(ceil(_spawn_search_m / spacing))
+	var center_i: int = int(round((spawn.x - origin.x) / spacing))
+	var center_j: int = int(round((spawn.y - origin.y) / spacing))
+
+	for cj in range(center_j - span, center_j + span + 1, step):
+		for ci in range(center_i - span, center_i + span + 1, step):
+			var offset: Vector2 = Vector2(float(ci - center_i), float(cj - center_j)) * spacing
+
+			if offset.length() > _spawn_search_m or ci - reach < 0 or cj - reach < 0 or ci + reach + 1 >= n or cj + reach + 1 >= n:
+				continue
+
+			var low: float = INF
+			var high: float = -INF
+			var steepest: float = 0.0
+			var wet: int = 0
+
+			for dj in range(-reach, reach + 1):
+				for di in range(-reach, reach + 1):
+					if Vector2(di, dj).length() * spacing > ring:
+						continue
+
+					var k: int = (cj + dj) * n + ci + di
+					low = minf(low, heights[k])
+					high = maxf(high, heights[k])
+					wet += 1 if water[k] != 0 else 0
+					steepest = maxf(steepest, rad_to_deg(atan(absf(heights[k + 1] - heights[k]) / spacing)))
+					steepest = maxf(steepest, rad_to_deg(atan(absf(heights[k + n] - heights[k]) / spacing)))
+
+			if steepest <= float(tile_limits["spawn_max_slope_deg"]) and high - low <= float(tile_limits["spawn_range_m"]) and wet <= int(tile_limits["spawn_max_water_cells"]) and low >= 10.0:
+				found.append({"d": offset.length(), "x": spawn.x + offset.x, "z": spawn.y + offset.y, "slope": steepest, "h": low})
+
+	found.sort_custom(func(a, b): return a["d"] < b["d"])
+	var picked: Array = []
+
+	for candidate in found:
+		var apart: bool = true
+
+		for other in picked:
+			if Vector2(candidate["x"] - other["x"], candidate["z"] - other["z"]).length() < 300.0:
+				apart = false
+
+		if apart:
+			picked.append(candidate)
+
+		if picked.size() >= 5:
+			break
+
+	_row("spawn candidates within %.0f m (%d pads pass)" % [_spawn_search_m, found.size()], "; ".join(picked.map(func(c): return "x %d z %d (%.0f m away, %.1f deg, %.0f m high)" % [int(c["x"]), int(c["z"]), c["d"], c["slope"], c["h"]])) if not picked.is_empty() else "none", "-", "INFO")
 
 
 # The 32 m maps of all baked tiles side by side. Cells outside the baked area are 255 in `water`.
