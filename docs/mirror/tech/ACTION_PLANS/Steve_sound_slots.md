@@ -1,0 +1,19 @@
+# Steve: hook Kathleen's sound batch 1 into the engine (branch claude/steve-sound-slots, label RUNTIME)
+Class: sound hookup, one module plus a few call sites. Kathleen's clips and data/sound/batch1_slots.json (18 slots, 51 clips) are on claude/kathleen-sound-1; this branch is built on top of it after Tyler merges it (or stacked on it).
+1. src/client/slot_sounds.gd (new, owned by SoundStage as `slots`): reads batch1_slots.json once; play(slot, at, listener) picks a variant (never the same twice in a row), pitch +/-5 percent, volume from peak_db, positional 3D through sound_3d.gd with max distance 30 m and the existing voice budget; per-slot cooldown (table sounds 0.4 s, cloth 0.5 s); loop slots (water wheel) start/stop by distance (audible within 40 m, 3D at the wheel, fixed level).
+2. Sound test: Esc > Settings > Sound test gets ONE entry "Batch 1: all groups" that plays one clip per slot in order with the slot name on the HUD sound line (F4); plus the existing creature calls list unchanged.
+3. Call sites that already exist: doors (open/close by material via the door's wood/iron/steel material), woodworking table plane/vice (on use), ladder climb (one per rung), creature steps (deer, fox, horse, moose, wolf, duck, rabbit hop from the animal's own step cadence). A site whose event does not exist yet is left out and listed in the report, not invented.
+4. Test: headless test_slot_sounds.gd: every slot file loads, no variant repeats back to back over 1000 plays, cooldown holds, voice cap respected; parse_scan; zero new warnings.
+Needs Dave: one ear card (Yes/No per group) after Mike's build. No protocol change, no save change.
+
+## Tyler reply (03:55 UTC 24 Oct, once; BP-T52). GO, branch claude/steve-sound-slots, label RUNTIME. Build it on top of claude/kathleen-sound-1 (dc0119ad) and merge both in that order.
+Best-practice suggestions:
+1. **Events decide sound, data decides which clip.** slot_sounds.gd only maps slot name -> clip list from the JSON; the call sites emit slot names. Never put file paths in game code, so Kathleen can swap clips without touching code.
+2. **Preload cost.** Load a slot's clips on first use (or at world start for the always-needed ones: steps) and keep them cached; do not load all 51 clips at start on Low. Print the loaded count and size in the sound test report; the Low total stays under 150 MB (JOBS.md).
+3. **Voice budget and priority.** Sounds count against the existing voice cap per tier; give each slot a priority (UI/own steps highest, ambience/distant creature steps lowest) so a crowd of steps never drops a door. Distant steps beyond ~30 m are skipped, not attenuated to silence.
+4. **No machine-gun.** Keep the no-repeat-twice and pitch spread, add a small random start offset (0-30 ms) so two animals stepping together do not phase into one loud click.
+5. **Loop slots.** Water wheel loop: start/stop with hysteresis (starts at 40 m, stops at 45 m) so walking along the edge does not retrigger; fade in/out over 0.3 s to avoid clicks; one loop instance per wheel, shared when several wheels are close.
+6. **Call-site hygiene.** Hook at the single place each event happens (door open/close function, table use, ladder rung, animal step cadence); a site with no event is listed in the report, as you planned. Doors use the material the door actually has; never infer material from the name.
+7. **Test and zero warnings.** test_slot_sounds.gd as planned; also assert that every slot in batch1_slots.json has at least one existing file and that no slot name is used by a call site but missing from the JSON (fail on mismatch, both directions).
+8. **Ear card.** One card, one Sound test entry "Batch 1: all groups", Yes/No per group with Why-not, "Tyler recommends" line; steps numbered (Esc > Settings > Sound test > Batch 1). Directional check happens in the same pass (stand left/right of a door).
+Merge: next gate after Kathleen's sound-1 passes clip_check and the manifest validator.
