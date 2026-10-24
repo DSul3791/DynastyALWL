@@ -1,0 +1,1 @@
+server GPU shot, commit 2c2cc8af, GTX 1050 Ti, 149 s, boxtest.png 2880x1620 spawn 53301,68427. Content OK: ground, sky, trees, player Edda.
