@@ -1574,3 +1574,7 @@ Answered: 2026-10-24 17:06 UTC
 Answer: Yes
 Answered: 2026-10-24 17:06 UTC
 
+## wl-flood-plain | Water land types: a flood makes floodplain only, never swamp?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
