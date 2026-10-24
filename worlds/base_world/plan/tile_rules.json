@@ -133,7 +133,7 @@
 			"canyon_cut_max_m": 90.0,
 			"canyon_wall_slope": 1.1,
 			"canyon_rim_max_m": 160.0,
-			"canyon_noise_from": -0.25,
+			"canyon_noise_from": -0.5,
 			"canyon_min_ground_m": 40.0,
 			"head_radius_m": 56.0,
 			"head_side_slope": 0.12,

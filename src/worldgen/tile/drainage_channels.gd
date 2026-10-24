@@ -341,7 +341,7 @@ func _canyons(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		var q: float = sqrt(flow.discharge[index])
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var half_m: float = 0.5 * width_m
-		var depth_cap: float = minf(cut_max, 12.0 + 6.0 * q) * strength
+		var depth_cap: float = minf(cut_max, 18.0 + 14.0 * q) * strength
 		var rim_m: float = minf(half_m + depth_cap / wall_slope, rim_max)
 		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
 		var reach: int = int(ceil(rim_m / cell_m))
