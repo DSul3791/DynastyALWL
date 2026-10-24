@@ -105,3 +105,8 @@ Note: Recommendation: Yes because a breach could blow up the water simulation ot
 Note: Needs span and pier pieces with a flood rating from Sal's building tiers.
 Note: Recommendation: Yes because it makes bridges matter. Why not: players lose work to floods.
 [check]
+
+## wl-dead-trees | Water land types: dead trees stay visible 20 to 30 game days, then fall?
+Note: Needs a new bare-trunk model per species; until then trees just vanish.
+Note: Recommendation: Yes because players should see why the wood is changing.
+[check]
