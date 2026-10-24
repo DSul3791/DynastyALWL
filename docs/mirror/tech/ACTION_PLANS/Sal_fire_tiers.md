@@ -10,10 +10,10 @@ Goal: a small stick fire (sticks, driftwood, kindling; started from rocks, stick
 ## Tiers (numbers are a table in cooking.json "fire_tiers", editable)
 | tier | made when | light range / energy | heat (+C within radius) | wolves keep-off |
 |---|---|---|---|---|
-| 1 Stick fire | the fire holds only stick, driftwood or kindling fuel | 6 m / 0.9 | +8 C within 2.5 m | 6 m |
+| 1 Stick fire | the fire holds only stick, driftwood or kindling fuel | 6 m / 0.7 | +8 C within 2.5 m | 6 m |
 | 2 Camp fire | any firewood in the fire | 12 m / 1.6 (today's) | +20 C within 4 m (today's) | 12 m (today's) |
 | 3 Log fire (optional, say no to drop) | a log in the fire | 14 m / 1.8 | +25 C within 5 m | 14 m |
-Burn time: stick fuel stays as is (a stick 2 game min; the 20-stick start is 40 game minutes). Stick fire cap 3 game hours (so sticks alone can never run all night); firewood cap 12 h (today's); log 24 h. Driftwood counts as stick fuel (900 stays: it is the sub-par wood that still burns well, about 15 game min).
+Burn time (Tyler's catch, 24:1 clock): today a stick is 120 game s = 5 real s, so 20 sticks last about 100 real seconds. In a small fire sticks get 10 times that: stick 1200 game s (50 real s each; the 20-stick start = 6.7 real min), driftwood 3000 (2 real min), kindling 600. Firewood 1800, soft firewood 900 and log 7200 stay as today. Caps: stick fire 3 game h (7.5 real min of banked fuel), firewood 12 game h (today's), log 24 game h.
 Rule: the tier is the best fuel burning now. The fire keeps two counters, weak_left (stick/driftwood) and strong_left (firewood/log); it burns the strong one first; tier = strong if strong_left > 0 else stick. Adding firewood to a stick fire upgrades it; when the firewood is gone it drops back.
 
 ## Code changes
