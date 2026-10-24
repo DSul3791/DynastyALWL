@@ -284,3 +284,64 @@ static func rock_pile() -> Node3D:
 
 	_solid(root, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
 	return root
+
+
+# A sawmill, 3 m by 2 m: an upright saw frame with two blades over a log carriage, and the water wheel (2 m span) beside it at local x -2.5 to -0.5.
+static func saw_mill() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var iron: StandardMaterial3D = StandardMaterial3D.new()
+	iron.albedo_color = Color(0.46, 0.46, 0.48)
+	iron.metallic = 0.5
+	iron.roughness = 0.5
+
+	for x in [0.2, 2.2]:
+		for z in [-0.8, 0.8]:
+			_box(root, Vector3(0.18, 2.0, 0.18), Vector3(x, 1.0, z), _frame)
+
+	_box(root, Vector3(2.2, 0.16, 1.8), Vector3(1.2, 2.05, 0.0), _frame)
+	_box(root, Vector3(2.4, 0.2, 0.5), Vector3(1.2, 0.5, 0.0), _planks)
+	_box(root, Vector3(0.03, 1.4, 0.2), Vector3(0.9, 1.3, 0.0), iron)
+	_box(root, Vector3(0.03, 1.4, 0.2), Vector3(1.5, 1.3, 0.0), iron)
+	_solid(root, Vector3(2.4, 1.0, 1.8), Vector3(1.2, 0.5, 0.0))
+	var wheel: Node3D = water_wheel()
+	wheel.position = Vector3(-1.5, 1.0, 0.0)
+	root.add_child(wheel)
+	return root
+
+
+# A water wheel 2 m across, lying with its axle along z: a hub, a rim of eight spokes and a paddle at the end of each.
+static func water_wheel() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.2, 0.2, 1.1), Vector3.ZERO, _frame)
+
+	for i in 8:
+		var spoke: Node3D = Node3D.new()
+		spoke.rotation = Vector3(0.0, 0.0, TAU * float(i) / 8.0)
+		_box(spoke, Vector3(0.08, 0.9, 0.1), Vector3(0.0, 0.5, 0.0), _frame)
+		_box(spoke, Vector3(0.45, 0.1, 0.9), Vector3(0.0, 0.95, 0.0), _planks)
+		root.add_child(spoke)
+
+	return root
+
+
+# A woodworking table, 2 m by 1 m: a heavy plank top on thick legs with a side vice at one end and a row of clamps along the back.
+static func woodworking_table() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.12, 0.9), Vector3(0.0, 0.9, 0.0), _planks)
+
+	for x in [-0.85, 0.85]:
+		for z in [-0.35, 0.35]:
+			_box(root, Vector3(0.14, 0.86, 0.14), Vector3(x, 0.43, z), _frame)
+
+	_box(root, Vector3(1.7, 0.08, 0.1), Vector3(0.0, 0.25, 0.0), _frame)
+	_box(root, Vector3(0.12, 0.2, 0.3), Vector3(1.05, 0.88, 0.0), _frame)
+	_box(root, Vector3(0.1, 0.1, 0.5), Vector3(1.2, 0.9, 0.0), _planks)
+
+	for k in 3:
+		_box(root, Vector3(0.06, 0.2, 0.06), Vector3(-0.6 + 0.4 * float(k), 1.06, -0.38), _frame)
+
+	_solid(root, Vector3(2.0, 1.0, 0.9), Vector3(0.0, 0.5, 0.0))
+	return root
