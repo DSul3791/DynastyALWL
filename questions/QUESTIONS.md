@@ -23,11 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## fish-sea-shore-only | Limit sea fishing to shore and shallows until boats exist?
-Note: Deep-sea fish (tuna, cod) wait for boats.
-Note: Recommendation: Yes because boats do not exist yet and it avoids unreachable fish.
-[check]
-
 ## wl-soil-types | Water land types: swamp, marsh or bog chosen by soil and climate, not water alone?
 Note: Peat or cool = bog, fertile and warm = swamp, otherwise open marsh.
 Note: Recommendation: Yes because shallow water alone cannot tell them apart.
