@@ -155,3 +155,8 @@ Note: Recommendation: Yes because it matches your rule. Why not: more rules for 
 Note: The dam opens over about a minute and the stored water runs out at its visible pace.
 Note: Recommendation: Yes because players get a chance to react. Why not: less dramatic.
 [check]
+
+## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
+Note: Applied in the game client from water speeds; server checks damage.
+Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
+[check]
