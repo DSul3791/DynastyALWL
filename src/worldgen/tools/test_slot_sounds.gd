@@ -65,7 +65,7 @@ func _init() -> void:
 
 	if not imported:
 		print("SKIP play checks: the batch 1 clips are not imported yet (open the project in the Godot editor once, then rerun)")
-		_check_sites(slots, names)
+		_check_sites(names)
 		return
 
 	# One-shots: play, cooldown on the table group, skip beyond 30 m, voice cap and priority.
@@ -90,10 +90,10 @@ func _init() -> void:
 	slots.loop_near("water_wheel_loop", 2, Vector3(43, 0, 0), origin)
 	check(slots.loops_playing() == 0, "a wheel first met at 43 m does not start")
 
-	_check_sites(slots, names)
+	_check_sites(names)
 
 
-func _check_sites(slots: SlotSounds, names: Array) -> void:
+func _check_sites(names: Array) -> void:
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
 	var used: Dictionary = {}
 	var pattern: RegEx = RegEx.new()
