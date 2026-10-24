@@ -1346,3 +1346,7 @@ Answered: 2026-10-23 21:52 UTC
 Answer: No: No, we’ve established a new role where he sends it up to the GitHub and I just pull it
 Answered: 2026-10-24 02:48 UTC
 
+## mike-settings-all-2 | Give MikeW all the permissions he keeps needing (replaces the earlier settings card; ignore that one)
+Answer: No: This is outdated
+Answered: 2026-10-24 02:48 UTC
+
