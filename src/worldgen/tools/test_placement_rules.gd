@@ -112,6 +112,10 @@ func _init() -> void:
 	check(bool(Rules.snap(cfg, "floor_section_kit", Vector3(50.9, 10.0, 49.2), 0, base_rows)[2]), "a floor snaps onto the foundation")
 	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
+	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
+	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
+	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.1), "a thatch wall snaps onto the thatch floor, the tier 1 foundation (%s)" % str(on_thatch))
+	check(bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]) and bool(Rules.snap(cfg, "thatch_doorway_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)[2]), "a thatch roof and doorway snap onto it too")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
 
 	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors and roofs meet edge to edge.

@@ -205,7 +205,7 @@
    "size": 1.0,
    "placeholder": true
   },
-   "stone_spade": {
+  "stone_spade": {
    "shape": "spade",
    "color": "#7d7a74",
    "size": 1.0
@@ -1980,6 +1980,21 @@
   "clay_hearth_kit": {
    "shape": "kit",
    "color": "#9a6a4a",
+   "size": 1.0
+  },
+  "thatch_floor_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "thatch_roof_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_doorway_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
    "size": 1.0
   }
  }
