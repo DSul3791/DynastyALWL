@@ -28,11 +28,6 @@ Note: Lasting dams still make swamp.
 Note: Recommendation: Yes because floods come and go, so they should not rename land.
 [check]
 
-## wl-dam-breach | Dams: a breach is slow with a warning (creak, chat line), never instant?
-Note: The dam opens over about a minute and the stored water runs out at its visible pace.
-Note: Recommendation: Yes because players get a chance to react. Why not: less dramatic.
-[check]
-
 ## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
 Note: Applied in the game client from water speeds; server checks damage.
 Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
