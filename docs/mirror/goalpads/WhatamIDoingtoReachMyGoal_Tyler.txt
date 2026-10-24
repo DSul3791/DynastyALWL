@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 08:50 UTC sound batch 2 plans (Kathleen, Steve) answered GO; gate list 6 = sal-island-checks c88cc1a8 + steve-sound-batch2 018f30ed; no plan pending; 11:00 UTC handoff next
 - 08:18 UTC Steve river seams plan answered GO; BP-T54 (every bake carries the island table) added; Sal goal 1 confirmed; gate list 6 = sal-island-checks c88cc1a8; no plan pending
 - 07:58 UTC builds 781 (v30 bake, TV36) and 782 (water seams) merged with Dave's steps; BAKE_30_MERGE.md; no plan pending
 - 07:15 UTC builds 779 (key-woods, goal2-b, tree-belts, slot-test-warning) and 780 (harvest-field) merged; no plan pending
