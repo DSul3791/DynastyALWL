@@ -297,6 +297,51 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)
 			_box(parts, Vector3(0.02, 0.13, 0.21), Vector3(0.0, 0.0, 0.0), light)
+		"flower":
+			# A flower head on a short stem: three crossed flat petal blades, a centre and a green stem (about 80 triangles). bits[0] is the centre colour.
+			var centre: Color = Color.html(str(bits[0])) if bits.size() > 0 else Color(0.88, 0.7, 0.12)
+			_cyl(parts, 0.006, 0.12, Vector3(0.0, -0.01, 0.0), Vector3.ZERO, Color(0.3, 0.5, 0.2))
+
+			for k in 3:
+				var petal: BoxMesh = BoxMesh.new()
+				petal.size = Vector3(0.07, 0.006, 0.022)
+				parts.append([petal, Transform3D(Basis.from_euler(Vector3(0.0, PI * float(k) / 3.0, 0.0)), Vector3(0.0, 0.05, 0.0)), color])
+
+			_box(parts, Vector3(0.022, 0.01, 0.022), Vector3(0.0, 0.056, 0.0), centre)
+		"frond":
+			# A small fan of five leaf blades lying on a short stem (about 70 triangles).
+			_cyl(parts, 0.005, 0.12, Vector3(-0.06, -0.05, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)
+
+			for k in 5:
+				var leaf: BoxMesh = BoxMesh.new()
+				leaf.size = Vector3(0.12, 0.004, 0.04)
+				var turn: float = (float(k) - 2.0) * 0.4
+				parts.append([leaf, Transform3D(Basis.from_euler(Vector3(0.0, turn, 0.04 * float(k % 2))), Vector3(0.05 * cos(turn), -0.04 + 0.004 * float(k % 2), 0.05 * sin(turn))), color.lightened(0.08 * float(k % 2))])
+		"root":
+			# Three tapering roots lying side by side, thick at the top and thin at the tip (about 60 triangles).
+			for k in 3:
+				var taper: CylinderMesh = CylinderMesh.new()
+				taper.top_radius = 0.022
+				taper.bottom_radius = 0.004
+				taper.height = 0.2 - 0.03 * float(k)
+				taper.radial_segments = 5
+				taper.rings = 1
+				parts.append([taper, Transform3D(Basis.from_euler(Vector3(0.0, 0.25 * float(k - 1), PI * 0.5)), Vector3(0.0, -0.04 + 0.03 * float(k % 2), 0.035 * float(k - 1))), color.lightened(0.1 * float(k % 2))])
+		"nut":
+			# Two nuts: a round body and a darker cap on top (acorn, hazelnut, chestnut) (about 110 triangles).
+			for spot in [[0.0, 0.0], [0.045, 0.03]]:
+				var at: Vector3 = Vector3(float(spot[0]), -0.03, float(spot[1]))
+				_sph(parts, 0.022, Vector3(1.0, 1.15, 1.0), at, color, true)
+				_cyl(parts, 0.018, 0.012, at + Vector3(0.0, 0.026, 0.0), Vector3.ZERO, dark)
+		"cap":
+			# A mushroom: a domed cap on a pale stem; two of them, one smaller (about 130 triangles). bits[0] is the stem colour.
+			var stem: Color = Color.html(str(bits[0])) if bits.size() > 0 else Color(0.93, 0.9, 0.8)
+
+			for spot in [[0.0, 0.0, 1.0], [0.07, 0.04, 0.65]]:
+				var scale_v: float = float(spot[2])
+				var base: Vector3 = Vector3(float(spot[0]), -0.04, float(spot[1]))
+				_cyl(parts, 0.011 * scale_v, 0.07 * scale_v, base + Vector3(0.0, 0.02 * scale_v, 0.0), Vector3.ZERO, stem)
+				_sph(parts, 0.05 * scale_v, Vector3(1.0, 0.55, 1.0), base + Vector3(0.0, 0.06 * scale_v, 0.0), color, true)
 		_:
 			_sph(parts, 0.08, Vector3.ONE, Vector3.ZERO, color)
 
@@ -399,12 +444,12 @@ static func _fill(parts: Array, broth: Color, bits: Array, mound: bool) -> void:
 			_sph(parts, 0.017, Vector3.ONE, at, tint)
 
 
-static func _sph(parts: Array, radius: float, scale_v: Vector3, at: Vector3, color: Color) -> void:
+static func _sph(parts: Array, radius: float, scale_v: Vector3, at: Vector3, color: Color, low: bool = false) -> void:
 	var sph: SphereMesh = SphereMesh.new()
 	sph.radius = radius
 	sph.height = radius * 2.0
-	sph.radial_segments = 8
-	sph.rings = 4
+	sph.radial_segments = 6 if low else 8
+	sph.rings = 3 if low else 4
 	parts.append([sph, Transform3D(Basis.from_scale(scale_v), at), color])
 
 

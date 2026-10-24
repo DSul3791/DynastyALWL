@@ -96,23 +96,89 @@ SPECIAL.update({
     "brick": ("brick", "#a8452e", 1.4),
     "mortar": ("pile", "#a89c85", 1.0),
 })
+
+
+# Goal 1c (Kathleen, 24 Oct): looks for every gathered item. One row per item: (shape, colour, size[, bits]). bits[0] = the second colour (flower centre, mushroom stem).
+# Real-world reference per family (art/MODEL_INVENTORY.md): flowers 2-4 cm heads, roots 8-20 cm, nuts 1-4 cm, mushroom caps 4-10 cm, leaves 5-20 cm.
+def _rows(shape, size, colours, bits=None):
+    return {k: ((shape, c, size, bits) if bits else (shape, c, size)) for k, c in colours.items()}
+
+GATHERED = {}
+GATHERED.update(_rows("flower", 1.0, {
+    "arnica_flowers": "#f2b01e", "chamomile_flowers": "#f4f1e6", "dandelion_flowers": "#f7d117", "duskmallow_flowers": "#7a4aa8", "elderflowers": "#f1ecd8",
+    "feverfew": "#f1efe2", "frostglass_petals": "#bfe6f2", "hawthorn_blossom": "#f7ece8", "honey_flowers": "#f0c24a", "lavender_flowers": "#8f77c4",
+    "meadowsweet_flowers": "#f1e8c6", "mournbloom_petals": "#3a2a4a", "nightcrown_blooms": "#3a2e6a", "owlpetals": "#c9b8d8", "rose_petals": "#d4476a",
+    "sevenyear_blossoms": "#e9a3c2", "stillwater_petals": "#7ec8d9", "wispbloom_heads": "#a8f0e0", "quenchbell_heads": "#4a7ad0", "gloomthistle_heads": "#6a3a7a",
+    "gloaming_star": "#e8e0ff", "brinebells": "#6aa0d8", "st_johns_wort": "#f2d11a", "yarrow": "#f1efe2"}, ["#e0b020"]))
+GATHERED.update(_rows("frond", 1.0, {
+    "belladonna_leaves": "#4a7a30", "comfrey_leaves": "#4d7a35", "dandelion_leaves": "#5a9a35", "foxglove_leaves": "#4f8a45", "henbane_leaves": "#6b8a45",
+    "plantain_leaves": "#4f8f3a", "raspberry_leaves": "#5a8a3a", "sorrel_leaves": "#6aa03a", "sunsilver_leaves": "#c4ccd4", "truthsage_leaves": "#8aa07a",
+    "witness_leaves": "#7b8a56", "wild_garlic_leaves": "#3f8a3a", "hushfern_fronds": "#3a7a4a", "tideglass_fronds": "#7ac4c0", "whisperfern_fronds": "#5a8a6a",
+    "fiddleheads": "#6a9a3a", "watercress": "#3f8a3a", "greens": "#4f9a30", "herbs": "#6a8a3a", "mint": "#4f9a45", "sage": "#8a9a7a", "marjoram": "#6f8f4a",
+    "thyme": "#6a7a4a", "rosemary": "#4a6a3a", "mugwort": "#7a8a6a", "samphire": "#5a9a5a", "everember_needles": "#c4683a"}))
+GATHERED.update(_rows("frond", 1.6, {"banana_leaves": "#3f8a2a", "palm_fronds": "#3f8a3a"}))
+GATHERED.update(_rows("root", 1.0, {
+    "angelica_roots": "#d8c9a0", "burdock_roots": "#6a4a30", "comfrey_roots": "#3a2a20", "dandelion_roots": "#8a6a48", "duskmallow_roots": "#7a5a8a",
+    "emberroots": "#d4501e", "heartroots": "#b02a3a", "marrowroots": "#e8dcc0", "valerian_roots": "#9a7a50", "wild_carrot_roots": "#f0e0d0",
+    "wolfsbane_roots": "#5a4a3a", "wild_garlic_bulbs": "#efe7d8", "sevenyear_bulbs": "#d8b080"}))
+GATHERED.update(_rows("nut", 1.0, {
+    "acorns": "#8a6a34", "beechnuts": "#7a5028", "chestnuts": "#6a3a1c", "hazelnuts": "#b8864a", "walnuts": "#8a6a44", "walnut_husks": "#4f7a32"}))
+GATHERED["coconuts"] = ("nut", "#5a3c22", 2.2)
+GATHERED.update(_rows("round_berries", 1.0, {
+    "belladonna_berries": "#1a1020", "cranberries": "#b01c2e", "crowberries": "#15101c", "drakethorn_berries": "#a82a2a", "elderberries": "#2a1a3a",
+    "haws": "#b0221e", "juniper_berries": "#3a4a6a", "lingonberries": "#c0202a", "rowan_berries": "#e0481e", "sea_buckthorn_berries": "#f0961e",
+    "sleetberries": "#9ac4e0", "sunberries": "#f2c21e", "tidecrown_pearls": "#e8f0f4"}))
+GATHERED["cloudberries"] = ("berries", "#f0a030", 1.0)
+GATHERED.update({
+    "bananas": ("fruit", "#f2d34a", 1.3), "cherries": ("fruit", "#a0102a", 0.6), "crab_apples": ("fruit", "#c8a02e", 0.7), "dates": ("fruit", "#6a3a1e", 0.5),
+    "prickly_pears": ("fruit", "#c0402e", 0.9), "wild_pears": ("fruit", "#b8c04a", 0.9), "rose_hips": ("fruit", "#d4381e", 0.5)})
+GATHERED.update(_rows("cap", 1.0, {
+    "chanterelles": "#e0a028", "cinderfoot_caps": "#8a2a1a", "fly_agaric_caps": "#d02a1e", "lumencap_caps": "#7ad8c0", "mirrorcap_caps": "#c4ccd0",
+    "morels": "#8a6a3a", "porcini": "#8a5a34", "puffball": "#f0ead8", "rimecap_caps": "#a8d4e4"}, ["#efe6d0"]))
+GATHERED.update(_rows("bark", 1.0, {
+    "birch_bark": "#e8dcc0", "hagwillow_bark": "#5a4a3a", "mirrorbark_bark": "#9fa6a8", "tannin_bark": "#6a4a2a", "willow_bark": "#8a7a52", "witness_bark": "#7b6a56"}))
+GATHERED.update(_rows("beams", 1.0, {
+    "cherry_wood": "#a85a3a", "everember_wood": "#c4683a", "fine_wood": "#b99062", "hard_wood": "#7a5230", "hardwood": "#7a5230", "mirrorbark_wood": "#9fa6a8",
+    "palm_wood": "#b39465", "softwood": "#d3b583", "thorny_wood": "#5a3a24", "timber": "#a67c4a", "wardpine_wood": "#8f7a4f", "wood": "#a07a4a"}))
+GATHERED.update(_rows("bundle", 1.0, {
+    "bedding": "#c9b46a", "fodder": "#b8a85a", "straw": "#d8c070", "thatch": "#c4a860", "kindling": "#a8845a", "poles": "#8a6a3a", "withies": "#9a8a52",
+    "hagwillow_withies": "#6a5a3a", "thorny_canes": "#4a3322", "spines": "#6a5a44", "hearthwood_logs": "#a0452b", "reed_stems": "#b8a860", "riverbraid_stems": "#6a9a8a",
+    "stormreed_stalks": "#8a8a6a", "tanglewort_vines": "#4f7a3a", "angelica_stems": "#9ab45a", "honeyspindle_pods": "#b8a050", "fibre": "#c9bb7a"}))
+GATHERED["kindling"] = ("bundle", "#a8845a", 0.6)
+GATHERED.update(_rows("pile", 1.0, {
+    "stuffing": "#e8e0d0", "tinder": "#a89878", "gloomthistle_down": "#cfc8d8", "echo_moss": "#6a8a8a", "staunchmoss": "#4f7a3a", "pine_tar": "#2a2018", "potash": "#c8c4b8"}))
+GATHERED.update(_rows("chunk", 0.8, {
+    "amadou": "#a8825a", "tinder_fungus": "#8a7a5a", "cactus_pads": "#4f8a4a", "burrs": "#7a5a3a", "charcoal_wood": "#2a2826", "resin": "#c98a2a", "gum": "#c9a05a",
+    "wardpine_resin": "#7a9a5a"}))
+GATHERED.update(_rows("bottle", 0.8, {
+    "dye": "#8a2a6a", "oil": "#c9a82a", "water": "#5a9ad4", "pilgrims_cup_water": "#5a9ad4", "lantern_dew": "#a8f0e0", "sap": "#c9a05a", "everember_sap": "#e0602a",
+    "honeyspindle_nectar": "#f0c24a"}))
+GATHERED.update({"pilgrims_cup_pitchers": ("bottle", "#8aa04a", 1.0), "aloe_gel": ("bowl", "#a8e0a0", 0.8), "food": ("bowl", "#c9a05a", 0.9)})
+GATHERED.update(_rows("grit", 0.8, {"seeds": "#c9b57a", "linseed": "#7a4a2a", "henbane_seeds": "#4a3a2a", "stillwater_seeds": "#7ec8d9"}))
+
+GATHERED.update({
+    "firewood_soft": ("bundle", "#9a7a4a", 1.0), "wooden_block_soft": ("block", "#b8905a", 0.9), "saw_blade": ("bar", "#8f9296", 1.6), "water_wheel": ("coil", "#7a5a36", 1.4),
+    "saw_mill_kit": ("kit", "#8a6a3a", 1.2), "woodworking_table_kit": ("kit", "#7a5430", 1.0), "rock_pile": ("pile", "#7d7a74", 1.8)})
 SKIP = {"stone", "stick", "driftwood", "log"}
 
 out = {}
-for item_id, entry in items.items():
+generic = []
+ALL = dict(items, **{k: v for k, v in gathered.get("items", gathered).items() if k not in items})
+for item_id, entry in ALL.items():
     kind = entry.get("kind", "")
     if item_id in SKIP or item_id.startswith("log_") or kind == "structure":
         continue
     bits = None
-    if item_id in SPECIAL:
-        shape, color, size, *rest = SPECIAL[item_id]
+    if item_id in SPECIAL or item_id in GATHERED:
+        shape, color, size, *rest = SPECIAL.get(item_id) or GATHERED[item_id]
         bits = rest[0] if rest else None
     elif item_id.startswith("lumber_") or item_id.startswith("beam_"):
         species = item_id.split("_", 1)[1]
         shape, color, size = ("planks" if item_id.startswith("lumber_") else "beams"), WOOD.get(species, "#a07a4a"), 1.0
     elif kind in ("material", "food", "medicine", "clothing", "gear", "coin", "weapon"):
         shape, color, size = "chunk", "#8a8a8a", 1.0
-        print("no rule for", item_id, kind)
+        print("GENERIC (no rule):", item_id, kind)
+        generic.append(item_id)
     else:
         continue
     out[item_id] = {"shape": shape, "color": color, "size": size}
@@ -122,4 +188,6 @@ for item_id, entry in items.items():
 doc = {"_about": "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model.", "items": out}
 with open(os.path.join(ROOT, "data/items/looks.json"), "w") as f:
     json.dump(doc, f, indent=1)
-print(len(out), "looks")
+print(len(out), "looks;", len(generic), "GENERIC remaining")
+if generic:
+    raise SystemExit("GENERIC ids without a rule: " + ", ".join(generic))

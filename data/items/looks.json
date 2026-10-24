@@ -930,20 +930,45 @@
    "color": "#a88255",
    "size": 0.35
   },
-  "firewood_soft": {
-   "shape": "bundle",
-   "color": "#b88a58",
-   "size": 1.0
-  },
-  "wooden_block_soft": {
-   "shape": "block",
-   "color": "#c49a62",
-   "size": 0.9
-  },
   "wooden_block": {
    "shape": "block",
    "color": "#a67c4a",
    "size": 0.9
+  },
+  "firewood_soft": {
+   "shape": "bundle",
+   "color": "#9a7a4a",
+   "size": 1.0
+  },
+  "wooden_block_soft": {
+   "shape": "block",
+   "color": "#b8905a",
+   "size": 0.9
+  },
+  "saw_blade": {
+   "shape": "bar",
+   "color": "#8f9296",
+   "size": 1.6
+  },
+  "water_wheel": {
+   "shape": "coil",
+   "color": "#7a5a36",
+   "size": 1.4
+  },
+  "saw_mill_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2
+  },
+  "woodworking_table_kit": {
+   "shape": "kit",
+   "color": "#7a5430",
+   "size": 1.0
+  },
+  "rock_pile": {
+   "shape": "pile",
+   "color": "#7d7a74",
+   "size": 1.8
   },
   "blackberries": {
    "shape": "berries",
@@ -970,35 +995,949 @@
    "color": "#c8202a",
    "size": 1.0
   },
+  "acorns": {
+   "shape": "nut",
+   "color": "#8a6a34",
+   "size": 1.0
+  },
+  "aloe_gel": {
+   "shape": "bowl",
+   "color": "#a8e0a0",
+   "size": 0.8
+  },
+  "amadou": {
+   "shape": "chunk",
+   "color": "#a8825a",
+   "size": 0.8
+  },
+  "angelica_roots": {
+   "shape": "root",
+   "color": "#d8c9a0",
+   "size": 1.0
+  },
+  "angelica_stems": {
+   "shape": "bundle",
+   "color": "#9ab45a",
+   "size": 1.0
+  },
+  "arnica_flowers": {
+   "shape": "flower",
+   "color": "#f2b01e",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "banana_leaves": {
+   "shape": "frond",
+   "color": "#3f8a2a",
+   "size": 1.6
+  },
+  "bananas": {
+   "shape": "fruit",
+   "color": "#f2d34a",
+   "size": 1.3
+  },
+  "bedding": {
+   "shape": "bundle",
+   "color": "#c9b46a",
+   "size": 1.0
+  },
+  "beechnuts": {
+   "shape": "nut",
+   "color": "#7a5028",
+   "size": 1.0
+  },
+  "belladonna_berries": {
+   "shape": "round_berries",
+   "color": "#1a1020",
+   "size": 1.0
+  },
+  "belladonna_leaves": {
+   "shape": "frond",
+   "color": "#4a7a30",
+   "size": 1.0
+  },
+  "birch_bark": {
+   "shape": "bark",
+   "color": "#e8dcc0",
+   "size": 1.0
+  },
+  "brinebells": {
+   "shape": "flower",
+   "color": "#6aa0d8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "burdock_roots": {
+   "shape": "root",
+   "color": "#6a4a30",
+   "size": 1.0
+  },
+  "burrs": {
+   "shape": "chunk",
+   "color": "#7a5a3a",
+   "size": 0.8
+  },
+  "cactus_pads": {
+   "shape": "chunk",
+   "color": "#4f8a4a",
+   "size": 0.8
+  },
+  "chamomile_flowers": {
+   "shape": "flower",
+   "color": "#f4f1e6",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "chanterelles": {
+   "shape": "cap",
+   "color": "#e0a028",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "charcoal_wood": {
+   "shape": "chunk",
+   "color": "#2a2826",
+   "size": 0.8
+  },
+  "cherries": {
+   "shape": "fruit",
+   "color": "#a0102a",
+   "size": 0.6
+  },
+  "cherry_wood": {
+   "shape": "beams",
+   "color": "#a85a3a",
+   "size": 1.0
+  },
+  "chestnuts": {
+   "shape": "nut",
+   "color": "#6a3a1c",
+   "size": 1.0
+  },
+  "cinderfoot_caps": {
+   "shape": "cap",
+   "color": "#8a2a1a",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "cloudberries": {
+   "shape": "berries",
+   "color": "#f0a030",
+   "size": 1.0
+  },
+  "coconuts": {
+   "shape": "nut",
+   "color": "#5a3c22",
+   "size": 2.2
+  },
+  "comfrey_leaves": {
+   "shape": "frond",
+   "color": "#4d7a35",
+   "size": 1.0
+  },
+  "comfrey_roots": {
+   "shape": "root",
+   "color": "#3a2a20",
+   "size": 1.0
+  },
+  "crab_apples": {
+   "shape": "fruit",
+   "color": "#c8a02e",
+   "size": 0.7
+  },
+  "cranberries": {
+   "shape": "round_berries",
+   "color": "#b01c2e",
+   "size": 1.0
+  },
+  "crowberries": {
+   "shape": "round_berries",
+   "color": "#15101c",
+   "size": 1.0
+  },
+  "dandelion_flowers": {
+   "shape": "flower",
+   "color": "#f7d117",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "dandelion_leaves": {
+   "shape": "frond",
+   "color": "#5a9a35",
+   "size": 1.0
+  },
+  "dandelion_roots": {
+   "shape": "root",
+   "color": "#8a6a48",
+   "size": 1.0
+  },
+  "dates": {
+   "shape": "fruit",
+   "color": "#6a3a1e",
+   "size": 0.5
+  },
+  "drakethorn_berries": {
+   "shape": "round_berries",
+   "color": "#a82a2a",
+   "size": 1.0
+  },
+  "duskmallow_flowers": {
+   "shape": "flower",
+   "color": "#7a4aa8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "duskmallow_roots": {
+   "shape": "root",
+   "color": "#7a5a8a",
+   "size": 1.0
+  },
+  "dye": {
+   "shape": "bottle",
+   "color": "#8a2a6a",
+   "size": 0.8
+  },
+  "echo_moss": {
+   "shape": "pile",
+   "color": "#6a8a8a",
+   "size": 1.0
+  },
+  "elderberries": {
+   "shape": "round_berries",
+   "color": "#2a1a3a",
+   "size": 1.0
+  },
+  "elderflowers": {
+   "shape": "flower",
+   "color": "#f1ecd8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "emberroots": {
+   "shape": "root",
+   "color": "#d4501e",
+   "size": 1.0
+  },
+  "everember_needles": {
+   "shape": "frond",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "everember_sap": {
+   "shape": "bottle",
+   "color": "#e0602a",
+   "size": 0.8
+  },
+  "everember_wood": {
+   "shape": "beams",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "feverfew": {
+   "shape": "flower",
+   "color": "#f1efe2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "fibre": {
+   "shape": "bundle",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "fiddleheads": {
+   "shape": "frond",
+   "color": "#6a9a3a",
+   "size": 1.0
+  },
+  "fine_wood": {
+   "shape": "beams",
+   "color": "#b99062",
+   "size": 1.0
+  },
+  "fly_agaric_caps": {
+   "shape": "cap",
+   "color": "#d02a1e",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "fodder": {
+   "shape": "bundle",
+   "color": "#b8a85a",
+   "size": 1.0
+  },
+  "food": {
+   "shape": "bowl",
+   "color": "#c9a05a",
+   "size": 0.9
+  },
+  "foxglove_leaves": {
+   "shape": "frond",
+   "color": "#4f8a45",
+   "size": 1.0
+  },
+  "frostglass_petals": {
+   "shape": "flower",
+   "color": "#bfe6f2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "gloaming_star": {
+   "shape": "flower",
+   "color": "#e8e0ff",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "gloomthistle_down": {
+   "shape": "pile",
+   "color": "#cfc8d8",
+   "size": 1.0
+  },
+  "gloomthistle_heads": {
+   "shape": "flower",
+   "color": "#6a3a7a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "greens": {
+   "shape": "frond",
+   "color": "#4f9a30",
+   "size": 1.0
+  },
+  "gum": {
+   "shape": "chunk",
+   "color": "#c9a05a",
+   "size": 0.8
+  },
+  "hagwillow_bark": {
+   "shape": "bark",
+   "color": "#5a4a3a",
+   "size": 1.0
+  },
+  "hagwillow_withies": {
+   "shape": "bundle",
+   "color": "#6a5a3a",
+   "size": 1.0
+  },
+  "hard_wood": {
+   "shape": "beams",
+   "color": "#7a5230",
+   "size": 1.0
+  },
+  "hardwood": {
+   "shape": "beams",
+   "color": "#7a5230",
+   "size": 1.0
+  },
+  "haws": {
+   "shape": "round_berries",
+   "color": "#b0221e",
+   "size": 1.0
+  },
+  "hawthorn_blossom": {
+   "shape": "flower",
+   "color": "#f7ece8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "hazelnuts": {
+   "shape": "nut",
+   "color": "#b8864a",
+   "size": 1.0
+  },
+  "hearthwood_logs": {
+   "shape": "bundle",
+   "color": "#a0452b",
+   "size": 1.0
+  },
+  "heartroots": {
+   "shape": "root",
+   "color": "#b02a3a",
+   "size": 1.0
+  },
+  "henbane_leaves": {
+   "shape": "frond",
+   "color": "#6b8a45",
+   "size": 1.0
+  },
+  "henbane_seeds": {
+   "shape": "grit",
+   "color": "#4a3a2a",
+   "size": 0.8
+  },
+  "herbs": {
+   "shape": "frond",
+   "color": "#6a8a3a",
+   "size": 1.0
+  },
+  "honey_flowers": {
+   "shape": "flower",
+   "color": "#f0c24a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "honeyspindle_nectar": {
+   "shape": "bottle",
+   "color": "#f0c24a",
+   "size": 0.8
+  },
+  "honeyspindle_pods": {
+   "shape": "bundle",
+   "color": "#b8a050",
+   "size": 1.0
+  },
+  "hushfern_fronds": {
+   "shape": "frond",
+   "color": "#3a7a4a",
+   "size": 1.0
+  },
+  "juniper_berries": {
+   "shape": "round_berries",
+   "color": "#3a4a6a",
+   "size": 1.0
+  },
   "kindling": {
    "shape": "bundle",
    "color": "#a8845a",
    "size": 0.6
   },
-  "saw_blade": {
-   "shape": "bar",
-   "color": "#8f9296",
-   "size": 1.6
+  "lantern_dew": {
+   "shape": "bottle",
+   "color": "#a8f0e0",
+   "size": 0.8
   },
-  "water_wheel": {
-   "shape": "coil",
-   "color": "#7a5a36",
-   "size": 1.4
+  "lavender_flowers": {
+   "shape": "flower",
+   "color": "#8f77c4",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
   },
-  "saw_mill_kit": {
-   "shape": "kit",
-   "color": "#8a6a3a",
-   "size": 1.2
-  },
-  "woodworking_table_kit": {
-   "shape": "kit",
-   "color": "#7a5430",
+  "lingonberries": {
+   "shape": "round_berries",
+   "color": "#c0202a",
    "size": 1.0
   },
-  "rock_pile": {
+  "linseed": {
+   "shape": "grit",
+   "color": "#7a4a2a",
+   "size": 0.8
+  },
+  "lumencap_caps": {
+   "shape": "cap",
+   "color": "#7ad8c0",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "marjoram": {
+   "shape": "frond",
+   "color": "#6f8f4a",
+   "size": 1.0
+  },
+  "marrowroots": {
+   "shape": "root",
+   "color": "#e8dcc0",
+   "size": 1.0
+  },
+  "meadowsweet_flowers": {
+   "shape": "flower",
+   "color": "#f1e8c6",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "mint": {
+   "shape": "frond",
+   "color": "#4f9a45",
+   "size": 1.0
+  },
+  "mirrorbark_bark": {
+   "shape": "bark",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "mirrorbark_wood": {
+   "shape": "beams",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "mirrorcap_caps": {
+   "shape": "cap",
+   "color": "#c4ccd0",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "morels": {
+   "shape": "cap",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "mournbloom_petals": {
+   "shape": "flower",
+   "color": "#3a2a4a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "mugwort": {
+   "shape": "frond",
+   "color": "#7a8a6a",
+   "size": 1.0
+  },
+  "nightcrown_blooms": {
+   "shape": "flower",
+   "color": "#3a2e6a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "oil": {
+   "shape": "bottle",
+   "color": "#c9a82a",
+   "size": 0.8
+  },
+  "owlpetals": {
+   "shape": "flower",
+   "color": "#c9b8d8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "palm_fronds": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.6
+  },
+  "palm_wood": {
+   "shape": "beams",
+   "color": "#b39465",
+   "size": 1.0
+  },
+  "pilgrims_cup_pitchers": {
+   "shape": "bottle",
+   "color": "#8aa04a",
+   "size": 1.0
+  },
+  "pilgrims_cup_water": {
+   "shape": "bottle",
+   "color": "#5a9ad4",
+   "size": 0.8
+  },
+  "pine_tar": {
    "shape": "pile",
-   "color": "#7d7a74",
-   "size": 1.8
+   "color": "#2a2018",
+   "size": 1.0
+  },
+  "plantain_leaves": {
+   "shape": "frond",
+   "color": "#4f8f3a",
+   "size": 1.0
+  },
+  "poles": {
+   "shape": "bundle",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "porcini": {
+   "shape": "cap",
+   "color": "#8a5a34",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "potash": {
+   "shape": "pile",
+   "color": "#c8c4b8",
+   "size": 1.0
+  },
+  "prickly_pears": {
+   "shape": "fruit",
+   "color": "#c0402e",
+   "size": 0.9
+  },
+  "puffball": {
+   "shape": "cap",
+   "color": "#f0ead8",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "quenchbell_heads": {
+   "shape": "flower",
+   "color": "#4a7ad0",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "raspberry_leaves": {
+   "shape": "frond",
+   "color": "#5a8a3a",
+   "size": 1.0
+  },
+  "reed_stems": {
+   "shape": "bundle",
+   "color": "#b8a860",
+   "size": 1.0
+  },
+  "resin": {
+   "shape": "chunk",
+   "color": "#c98a2a",
+   "size": 0.8
+  },
+  "rimecap_caps": {
+   "shape": "cap",
+   "color": "#a8d4e4",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "riverbraid_stems": {
+   "shape": "bundle",
+   "color": "#6a9a8a",
+   "size": 1.0
+  },
+  "rose_hips": {
+   "shape": "fruit",
+   "color": "#d4381e",
+   "size": 0.5
+  },
+  "rose_petals": {
+   "shape": "flower",
+   "color": "#d4476a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "rosemary": {
+   "shape": "frond",
+   "color": "#4a6a3a",
+   "size": 1.0
+  },
+  "rowan_berries": {
+   "shape": "round_berries",
+   "color": "#e0481e",
+   "size": 1.0
+  },
+  "sage": {
+   "shape": "frond",
+   "color": "#8a9a7a",
+   "size": 1.0
+  },
+  "samphire": {
+   "shape": "frond",
+   "color": "#5a9a5a",
+   "size": 1.0
+  },
+  "sap": {
+   "shape": "bottle",
+   "color": "#c9a05a",
+   "size": 0.8
+  },
+  "sea_buckthorn_berries": {
+   "shape": "round_berries",
+   "color": "#f0961e",
+   "size": 1.0
+  },
+  "seeds": {
+   "shape": "grit",
+   "color": "#c9b57a",
+   "size": 0.8
+  },
+  "sevenyear_blossoms": {
+   "shape": "flower",
+   "color": "#e9a3c2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "sevenyear_bulbs": {
+   "shape": "root",
+   "color": "#d8b080",
+   "size": 1.0
+  },
+  "sleetberries": {
+   "shape": "round_berries",
+   "color": "#9ac4e0",
+   "size": 1.0
+  },
+  "softwood": {
+   "shape": "beams",
+   "color": "#d3b583",
+   "size": 1.0
+  },
+  "sorrel_leaves": {
+   "shape": "frond",
+   "color": "#6aa03a",
+   "size": 1.0
+  },
+  "spines": {
+   "shape": "bundle",
+   "color": "#6a5a44",
+   "size": 1.0
+  },
+  "st_johns_wort": {
+   "shape": "flower",
+   "color": "#f2d11a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "staunchmoss": {
+   "shape": "pile",
+   "color": "#4f7a3a",
+   "size": 1.0
+  },
+  "stillwater_petals": {
+   "shape": "flower",
+   "color": "#7ec8d9",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "stillwater_seeds": {
+   "shape": "grit",
+   "color": "#7ec8d9",
+   "size": 0.8
+  },
+  "stormreed_stalks": {
+   "shape": "bundle",
+   "color": "#8a8a6a",
+   "size": 1.0
+  },
+  "straw": {
+   "shape": "bundle",
+   "color": "#d8c070",
+   "size": 1.0
+  },
+  "stuffing": {
+   "shape": "pile",
+   "color": "#e8e0d0",
+   "size": 1.0
+  },
+  "sunberries": {
+   "shape": "round_berries",
+   "color": "#f2c21e",
+   "size": 1.0
+  },
+  "sunsilver_leaves": {
+   "shape": "frond",
+   "color": "#c4ccd4",
+   "size": 1.0
+  },
+  "tanglewort_vines": {
+   "shape": "bundle",
+   "color": "#4f7a3a",
+   "size": 1.0
+  },
+  "tannin_bark": {
+   "shape": "bark",
+   "color": "#6a4a2a",
+   "size": 1.0
+  },
+  "thatch": {
+   "shape": "bundle",
+   "color": "#c4a860",
+   "size": 1.0
+  },
+  "thorny_canes": {
+   "shape": "bundle",
+   "color": "#4a3322",
+   "size": 1.0
+  },
+  "thorny_wood": {
+   "shape": "beams",
+   "color": "#5a3a24",
+   "size": 1.0
+  },
+  "thyme": {
+   "shape": "frond",
+   "color": "#6a7a4a",
+   "size": 1.0
+  },
+  "tidecrown_pearls": {
+   "shape": "round_berries",
+   "color": "#e8f0f4",
+   "size": 1.0
+  },
+  "tideglass_fronds": {
+   "shape": "frond",
+   "color": "#7ac4c0",
+   "size": 1.0
+  },
+  "timber": {
+   "shape": "beams",
+   "color": "#a67c4a",
+   "size": 1.0
+  },
+  "tinder": {
+   "shape": "pile",
+   "color": "#a89878",
+   "size": 1.0
+  },
+  "tinder_fungus": {
+   "shape": "chunk",
+   "color": "#8a7a5a",
+   "size": 0.8
+  },
+  "truthsage_leaves": {
+   "shape": "frond",
+   "color": "#8aa07a",
+   "size": 1.0
+  },
+  "valerian_roots": {
+   "shape": "root",
+   "color": "#9a7a50",
+   "size": 1.0
+  },
+  "walnut_husks": {
+   "shape": "nut",
+   "color": "#4f7a32",
+   "size": 1.0
+  },
+  "walnuts": {
+   "shape": "nut",
+   "color": "#8a6a44",
+   "size": 1.0
+  },
+  "wardpine_resin": {
+   "shape": "chunk",
+   "color": "#7a9a5a",
+   "size": 0.8
+  },
+  "wardpine_wood": {
+   "shape": "beams",
+   "color": "#8f7a4f",
+   "size": 1.0
+  },
+  "water": {
+   "shape": "bottle",
+   "color": "#5a9ad4",
+   "size": 0.8
+  },
+  "watercress": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.0
+  },
+  "whisperfern_fronds": {
+   "shape": "frond",
+   "color": "#5a8a6a",
+   "size": 1.0
+  },
+  "wild_carrot_roots": {
+   "shape": "root",
+   "color": "#f0e0d0",
+   "size": 1.0
+  },
+  "wild_garlic_bulbs": {
+   "shape": "root",
+   "color": "#efe7d8",
+   "size": 1.0
+  },
+  "wild_garlic_leaves": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.0
+  },
+  "wild_pears": {
+   "shape": "fruit",
+   "color": "#b8c04a",
+   "size": 0.9
+  },
+  "willow_bark": {
+   "shape": "bark",
+   "color": "#8a7a52",
+   "size": 1.0
+  },
+  "wispbloom_heads": {
+   "shape": "flower",
+   "color": "#a8f0e0",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "withies": {
+   "shape": "bundle",
+   "color": "#9a8a52",
+   "size": 1.0
+  },
+  "witness_bark": {
+   "shape": "bark",
+   "color": "#7b6a56",
+   "size": 1.0
+  },
+  "witness_leaves": {
+   "shape": "frond",
+   "color": "#7b8a56",
+   "size": 1.0
+  },
+  "wolfsbane_roots": {
+   "shape": "root",
+   "color": "#5a4a3a",
+   "size": 1.0
+  },
+  "wood": {
+   "shape": "beams",
+   "color": "#a07a4a",
+   "size": 1.0
+  },
+  "yarrow": {
+   "shape": "flower",
+   "color": "#f1efe2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
   }
  }
 }

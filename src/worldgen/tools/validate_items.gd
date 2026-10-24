@@ -592,6 +592,7 @@ func _init() -> void:
 	# data/items/looks.json (client-only, Kathleen's data-driven item models): every key is a real item and every look has shape, colour and size.
 	if FileAccess.file_exists("res://data/items/looks.json"):
 		var looks: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/looks.json"))
+		var basic_source: String = FileAccess.get_file_as_string("res://src/client/basic_look.gd")
 
 		if typeof(looks) != TYPE_DICTIONARY:
 			fail("looks.json is not a JSON object")
@@ -610,6 +611,24 @@ func _init() -> void:
 
 				if typeof(look) != TYPE_DICTIONARY or typeof(look.get("shape", null)) != TYPE_STRING or not look.has("color") or float(look.get("size", 0.0)) <= 0.0:
 					fail("looks.json: '%s' needs shape (text), color and size (a number above 0)" % id)
+				elif basic_source.find("\t\t\"%s\":" % String(look["shape"])) < 0:
+					fail("looks.json: '%s' names an unknown shape '%s' (not in basic_look.gd)" % [id, look["shape"]])
+
+			# Goal 1c: the GENERIC count. Every loose material, food, medicine, clothing, gear, coin or weapon item has a look unless it is drawn by its own model (logs, stone, stick, driftwood).
+			var generic: Array = []
+
+			for table_file in [items_file, gathered_file]:
+				for id in table_file.get("items", {}):
+					var kind: String = String(table_file["items"][id].get("kind", ""))
+					var own_model: bool = String(id) in ["stone", "stick", "log", "driftwood"] or String(id).begins_with("log_")
+
+					if kind in ["material", "food", "medicine", "clothing", "gear", "coin", "weapon"] and not own_model and not entries.has(id):
+						generic.append(String(id))
+
+			print("looks: %d GENERIC items remaining%s" % [generic.size(), (" (" + ", ".join(generic) + ")") if generic.size() > 0 else ""])
+
+			if generic.size() > 0:
+				fail("%d items have no looks.json row (run tools/gen_looks.py): %s" % [generic.size(), ", ".join(generic)])
 
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])
