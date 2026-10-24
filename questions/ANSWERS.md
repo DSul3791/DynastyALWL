@@ -1546,3 +1546,7 @@ Answered: 2026-10-24 17:04 UTC
 Answer: Yes
 Answered: 2026-10-24 17:04 UTC
 
+## fish-shadows | Show dark fish shadows in clear shallow water as well as jumps?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
