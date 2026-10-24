@@ -135,3 +135,8 @@ Note: Recommendation: Yes because boats do not exist yet and it avoids unreachab
 Note: Peat or cool = bog, fertile and warm = swamp, otherwise open marsh.
 Note: Recommendation: Yes because shallow water alone cannot tell them apart.
 [check]
+
+## wl-flood-plain | Water land types: a flood makes floodplain only, never swamp?
+Note: Lasting dams still make swamp.
+Note: Recommendation: Yes because floods come and go, so they should not rename land.
+[check]
