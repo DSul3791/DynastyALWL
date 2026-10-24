@@ -12,3 +12,5 @@ Dave's pull steps (post when the build is ready):
 4. Esc > Admin > Reset all terrain edits.
 5. Esc > Admin > Clear blocks (reload from the server).
 6. Walk from spawn and look around; tell me what you see. Note: the ground has changed, so buildings, digs and pieces from earlier tests will not match the new terrain (test world).
+
+UPDATE 04:05 UTC: the three bake-related branches conflict in src/worldgen/tools/island_checks.gd (Sal's tool; Sonny's and Steve's branches carry older copies). I pre-resolved them (Sal's CURRENT version kept) into ONE code branch: origin/claude/tyler-bake28 (a782c6d4) = head 774 + sal-island-checks 746d095c + sonny-foothills 4532cf61 + steve-river-settle d6113617. merge_check clear, parse_scan 365 files 0 problems. MIKE: bake from claude/tyler-bake28 (not from sonny-foothills alone) so the tiles match the code I merge; if Mike already baked from sonny-foothills 4532cf61, the tiles are still valid (the extra changes are tools and the settle), but the settle must be re-run with river-settle rules for the final .water files.
