@@ -158,3 +158,18 @@ Bake source now claude/sonny-final c2eeb8e3 (Tyler 20:42 UTC; supersedes 22585d7
 Gates for 793: erosion plan answered once on arrival; macro-height raster in git with the run command and seed (byte-identical on two runs, David3); David3 headless checks first; Mike bakes in the second clone when Dave's PC is free; island table with the code commit id (BP-T54); Sonny reads the tiles; Mike ground-level render; merge code + tiles together on PASS.
 
 SPAWN for 793 (Sal, 24 Oct 23:08 UTC): x 53316 z 68476 (flat 4.1 deg, dry, sandstone ~428 m, river 30 m, clay close). Sonny pins it in the merged bake branch; bake gate re-checks flat+dry after the erosion carve. Dave still confirms after the bake (QA card).
+
+## FIRST-HOUR OWNERS (Tyler 24 Oct 23:15 UTC; Dave: "these are not Sonny jobs, somebody get them done")
+One plan per branch (BP-T52). Build numbers assume 792 = fire tiers/tripod/stack/weight, 793 = erosion + final bake; these land in 792b / 794+ so the bake is not delayed.
+| # | Item | Owner | Branch | Lands in |
+|---|---|---|---|---|
+| 1 | Thatch wall, roof, doorway pieces, openable recipes (first shelter) | Sal (data + pieces), Steve only if a new placement rule is needed | sal-thatch-shelter | 792 |
+| 2 | Clay hearth, oven, camp bench rename | Sal | sal-hearth-oven-bench | 792 |
+| 3 | Rough bed FUNCTION: lie down, health, exhaustion, weather and animal safety, roof rule | Steve (server rules); Sal only the item hooks | steve-rough-bed | 792 (after thatch roof exists) |
+| 4a | Hunting basics DESIGN list: which animals near spawn, drops (meat, hide, bone, sinew), butchering with knife/stone | Steve (animals and drops), Sal (items) | steve-hunt-drops | 794 |
+| 4b | Bow, arrows (wood bow, stone-tip arrow, quiver), shooting, hit/damage, retrieve arrows | Sal items + Steve shooting rules (two branches, two plans) | sal-bow-items, steve-bow-shoot | 795 |
+| 4c | Hide, hide clothing, traps | Sal items, Steve trap rules | after 4b (796) | 796 |
+| 5a | Hammer ladder menu (wood-wood-twine, stone, copper, bronze, iron, steel; no adze) | Sal (already on batch 2) | sal-tools-batch2 8600df50 | 792 |
+| 5b | Fishing balance (bite chance, school size, net/bow/spear factors, fish per hour target) | Steve (numbers) with Sal data; target set from fish plan: 8 to 20 small fish per hour at the shore with the net | steve-fish-balance | 794, after the water/fish A,B,C lands |
+Order of work for each owner: plan file first (one per branch, 1-5 small things), I answer once, then David3 gates. Kathleen supplies looks (bow, arrow, thatch pieces, hearth); Mike plays the first hour with a stopwatch after 792 when Dave's PC is free.
+Rule: Sonny stays on terrain only (erosion, final bake).
