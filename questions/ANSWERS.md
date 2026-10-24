@@ -1606,3 +1606,7 @@ Answered: 2026-10-24 22:16 UTC
 Answer: They should be probably 30 kg
 Answered: 2026-10-24 22:17 UTC
 
+## weight-spade-sizes | Which spade is your 3.8 kg one, and the other sizes?
+Answer: Just make them all the same
+Answered: 2026-10-24 22:17 UTC
+
