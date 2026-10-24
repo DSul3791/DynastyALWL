@@ -15,6 +15,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
+const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
@@ -33,6 +34,7 @@ var world_dir: String = ""
 var plan_cells: Dictionary = {}      # "x,z" -> cell of tile_plan.json
 var world_air: Dictionary = {}       # wet-air field for the whole world
 var river_network                    # the world's rivers (RiverNetwork)
+var erosion_delta                    # whole-island pre-carve (ErosionDelta), or null: then each tile erodes itself
 var margin: int = 80                 # samples built beyond each tile edge, then cropped
 
 
@@ -62,6 +64,12 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
 	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
 	river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+	# BAKE: a pre-carved island (erosion_delta_v1.bin next to world.json) replaces the per-tile erosion below.
+	erosion_delta = ErosionDeltaScript.new()
+
+	if not erosion_delta.load_file(world_dir + "/erosion_delta_v1.bin"):
+		erosion_delta = null
+
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 
@@ -179,7 +187,11 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	)
 
 	# Valleys reach this far from a river, so rivers just outside the frame shape it too.
-	if tile_rules.has("valleys"):
+	# With a pre-carve, tile_rules precarve.valley_guides decides whether the old valley shaping stays (it must match
+	# the heights the pre-carve was run on: tools/export_raw_heights.gd uses the same switch).
+	var use_guides: bool = erosion_delta == null or bool(tile_rules.get("precarve", {}).get("valley_guides", true))
+
+	if tile_rules.has("valleys") and use_guides:
 		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
 
 	# The rock under the frame (positions only), so erosion and ledges follow the real layers.
@@ -199,6 +211,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
+	var min_land: float = float(tile_rules["erosion"]["min_land_m"])
 	var core_height = TileHeightScript.new()
 	core_height.samples = core
 	core_height.spacing_m = frame_height.spacing_m
@@ -207,8 +220,17 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	core_height.heights = raw_heights
 	var erosion = TileErosionScript.new()
 	erosion.setup(settings, tile_rules)
-	erosion.build(core_height, frame_rock, margin, n)
-	frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
+
+	if erosion_delta != null:
+		# The same change, by world position, on the whole frame (margin included) and on the pre-erosion copy
+		# water routes over, so frames agree along their edges and rivers see the carved valleys.
+		frame_height.heights = erosion_delta.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+		raw_frame = erosion_delta.apply(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+		erosion.heights = crop(frame_height.heights, n, core)
+	else:
+		erosion.build(core_height, frame_rock, margin, n)
+		frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
+
 	timings["erosion"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
 	frame_height.add_strata()
