@@ -40,3 +40,10 @@ Note: 1. Pull claude/steve-sound-sliders (or the next build with it).
 Note: 2. Esc > Settings > Sound.
 Note: 3. Drag the Wind slider to 0 in a place with wind, then take a picture of the page.
 [picture]
+
+## held-tools-790 | Do held tools now look like the ground ones?
+Note: 1. Pull branch claude/kathleen-held-tools.
+Note: 2. Hold stone axe, pickaxe, hoe, spade, knife, spear in turn, first person; one picture each, plus the same axe lying on the ground.
+Note: 3. Check the blade faces the right way and the hand grips the handle end.
+Note: Recommendation: Yes: the hand now draws the same model as the ground.
+[picture]
