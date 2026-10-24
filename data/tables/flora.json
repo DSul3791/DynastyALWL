@@ -781,6 +781,7 @@
 			"display": "Juniper",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				4
@@ -838,6 +839,7 @@
 			"display": "Gorse",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				2.5
@@ -890,6 +892,7 @@
 			"display": "Dwarf birch",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.4,
 				1.2
@@ -937,6 +940,7 @@
 			"display": "Saltbush",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.5
@@ -1966,6 +1970,7 @@
 			"display": "Elder",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2223,6 +2228,7 @@
 			"display": "Hawthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2284,6 +2290,7 @@
 			"display": "Sea buckthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.5
@@ -3186,6 +3193,7 @@
 			"display": "Wild sage",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.7
@@ -3245,6 +3253,7 @@
 			"display": "Rosemary",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.6,
 				1.5
@@ -5119,6 +5128,7 @@
 			"display": "Drakethorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.8,
 				2.0
@@ -5234,6 +5244,7 @@
 			"display": "Sunberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.4
@@ -5474,6 +5485,7 @@
 			"display": "Hag willow",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				2,
 				4
@@ -5765,6 +5777,7 @@
 			"display": "Honeyspindle",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.0,
 				2.2
@@ -6003,6 +6016,7 @@
 			"display": "Sleetberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.8
@@ -6291,6 +6305,7 @@
 			"display": "Tanglewort",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.9
@@ -6800,6 +6815,7 @@
 			"display": "Sunsilver vine",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.0

@@ -181,6 +181,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"cane_shrub":
+			_cane_shrub(CANE_SHRUBS[str(entry["name"])], bark, leaves, rng, h, crown, far, _fruit_state(entry, season, stripped, CANE_SHRUBS[str(entry["name"])].get("bloom_in", ["spring"]), mid))
 		"fern_rosette":
 			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
 		"reed_stand":
@@ -2952,3 +2954,26 @@ static func _reed_stand(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				for b in range(3 if far else 6):
 					var pa: float = TAU * float(b) / 6.0
 					_bead(bark, tip + Vector3(cos(pa), 0.0, sin(pa)) * h * 0.03, Vector3(h * 0.03, h * 0.01, h * 0.015), color)
+
+
+# The remaining shrubs, family 5 of goal 1b (Kathleen, 24 Oct), all on the cane-shrub builder (full from the top to the ground like the berry bushes). One data row each.
+# Reference: juniper dense blue-green needles with blue-black cones; gorse spiny green mound with yellow flowers all year; elder tall many-stemmed with white umbels and black berries; hawthorn thorny, white May blossom, red haws;
+# sea buckthorn silvery narrow leaves with orange berries crowded on thorny stems; sage and rosemary low grey-green aromatic mounds with blue-violet flowers. The fantasy shrubs follow their listed colours.
+const CANE_SHRUBS := {
+	"juniper": {"fill": 18, "fill_r": 0.5, "canes": [12, 14], "segs": 3, "thorn_n": 0, "arch": 0.1, "reach": 0.7, "sprays": 10, "rate": 0.25, "cluster": 0.03, "cane": Color(0.35, 0.25, 0.18), "leaf": 0.35, "fruit": Color(0.2, 0.25, 0.4), "unripe": Color(0.35, 0.5, 0.3), "flower": null, "thorns": false},
+	"gorse": {"bloom_in": ["spring", "summer", "autumn", "winter"], "fill": 18, "canes": [14, 16], "segs": 3, "thorn_n": 5, "arch": 0.3, "reach": 0.9, "sprays": 8, "rate": 0.0, "cane": Color(0.25, 0.3, 0.15), "leaf": 0.45, "fruit": Color(0.3, 0.25, 0.1), "unripe": Color(0.4, 0.5, 0.2), "flower": Color(1.0, 0.85, 0.1), "thorns": true},
+	"dwarf_birch": {"fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.4, "reach": 0.9, "sprays": 7, "rate": 0.0, "cane": Color(0.35, 0.22, 0.15), "leaf": 0.7, "fruit": Color(0.5, 0.4, 0.2), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": false},
+	"saltbush": {"fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.3, "reach": 1.0, "sprays": 8, "rate": 0.0, "cane": Color(0.55, 0.55, 0.45), "leaf": 0.95, "fruit": Color(0.8, 0.8, 0.6), "unripe": Color(0.7, 0.75, 0.55), "flower": null, "thorns": false},
+	"elder": {"bloom_in": ["spring", "summer"], "fill": 12, "canes": [7, 9], "segs": 4, "thorn_n": 0, "arch": 0.5, "reach": 1.2, "sprays": 8, "rate": 0.5, "cluster": 0.09, "cane": Color(0.5, 0.45, 0.38), "leaf": 0.65, "fruit": Color(0.12, 0.05, 0.2), "unripe": Color(0.3, 0.5, 0.2), "flower": Color(1.0, 0.98, 0.9), "thorns": false},
+	"hawthorn": {"fill": 14, "canes": [8, 10], "segs": 4, "thorn_n": 3, "arch": 0.45, "reach": 1.1, "sprays": 8, "rate": 0.35, "cluster": 0.05, "cane": Color(0.3, 0.22, 0.16), "leaf": 0.55, "fruit": Color(0.75, 0.08, 0.1), "unripe": Color(0.55, 0.6, 0.25), "flower": Color(1.0, 0.97, 0.97), "thorns": true},
+	"sea_buckthorn": {"fill": 12, "canes": [11, 12], "segs": 4, "thorn_n": 3, "arch": 0.3, "reach": 1.0, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.35, 0.3, 0.22), "leaf": 0.9, "fruit": Color(1.0, 0.55, 0.05), "unripe": Color(0.8, 0.7, 0.2), "flower": null, "thorns": true},
+	"wild_sage": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [10, 12], "segs": 3, "thorn_n": 0, "arch": 0.15, "reach": 0.6, "sprays": 8, "rate": 0.0, "cane": Color(0.45, 0.5, 0.35), "leaf": 0.9, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": Color(0.55, 0.4, 0.8), "thorns": false},
+	"rosemary": {"bloom_in": ["spring"], "fill": 16, "canes": [12, 14], "segs": 3, "thorn_n": 0, "arch": 0.1, "reach": 0.55, "sprays": 8, "rate": 0.0, "cane": Color(0.4, 0.35, 0.25), "leaf": 0.45, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": Color(0.55, 0.65, 0.95), "thorns": false},
+	"drakethorn": {"fill": 14, "canes": [10, 12], "segs": 4, "thorn_n": 5, "arch": 0.4, "reach": 1.1, "sprays": 6, "rate": 0.3, "cluster": 0.05, "cane": Color(0.25, 0.05, 0.08), "leaf": 0.3, "fruit": Color(0.85, 0.1, 0.1), "unripe": Color(0.5, 0.15, 0.1), "flower": null, "thorns": true},
+	"sunberry": {"fill": 14, "canes": [9, 11], "segs": 4, "thorn_n": 0, "arch": 0.4, "reach": 1.0, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.45, 0.35, 0.2), "leaf": 0.75, "fruit": Color(1.0, 0.8, 0.1), "unripe": Color(0.8, 0.85, 0.3), "flower": null, "thorns": false},
+	"hagwillow": {"fill": 14, "canes": [13, 14], "segs": 4, "thorn_n": 0, "arch": 0.9, "reach": 1.2, "sprays": 10, "rate": 0.0, "cane": Color(0.4, 0.38, 0.34), "leaf": 0.6, "fruit": Color(0.5, 0.45, 0.35), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": false},
+	"honeyspindle": {"bloom_in": ["spring", "summer"], "fill": 14, "canes": [8, 10], "segs": 4, "thorn_n": 0, "arch": 0.35, "reach": 1.0, "sprays": 8, "rate": 0.2, "cluster": 0.06, "cane": Color(0.55, 0.4, 0.2), "leaf": 0.85, "fruit": Color(0.95, 0.7, 0.2), "unripe": Color(0.7, 0.7, 0.3), "flower": Color(1.0, 0.85, 0.4), "thorns": false},
+	"sleetberry": {"fill": 14, "canes": [9, 11], "segs": 4, "thorn_n": 0, "arch": 0.35, "reach": 0.9, "sprays": 8, "rate": 0.5, "cluster": 0.05, "cane": Color(0.3, 0.3, 0.4), "leaf": 0.55, "fruit": Color(0.6, 0.8, 0.95), "unripe": Color(0.8, 0.9, 0.95), "flower": null, "thorns": false},
+	"tanglewort": {"fill": 18, "fill_r": 0.8, "canes": [15, 17], "segs": 5, "thorn_n": 2, "arch": 1.0, "reach": 1.4, "sprays": 8, "rate": 0.0, "cane": Color(0.25, 0.3, 0.15), "leaf": 0.5, "fruit": Color(0.5, 0.4, 0.3), "unripe": Color(0.5, 0.5, 0.3), "flower": null, "thorns": true},
+	"sunsilver_vine": {"bloom_in": ["summer"], "fill": 14, "canes": [10, 12], "segs": 5, "thorn_n": 0, "arch": 0.8, "reach": 1.2, "sprays": 8, "rate": 0.15, "cluster": 0.05, "cane": Color(0.75, 0.78, 0.82), "leaf": 0.95, "fruit": Color(0.95, 0.85, 0.5), "unripe": Color(0.8, 0.8, 0.6), "flower": Color(1.0, 0.95, 0.7), "thorns": false},
+}
