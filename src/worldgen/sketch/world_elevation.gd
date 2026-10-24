@@ -515,7 +515,7 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
 			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
 
-			if along * along + across * across <= 1.0:
+			if along * along + across * across <= 1.6:
 				distances.append(d_m)
 
 	distances.sort()
@@ -537,7 +537,9 @@ func _band_height(table: Dictionary, d_m: float) -> float:
 			var from: float = float(bands[i - 1][0])
 			var span: float = maxf(float(bands[i][0]) - from, 0.0001)
 			var u: float = (share - from) / span
-			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), _smooth(u))
+			# Linear on the last segment: an eased end flattens the top into a plateau.
+			var eased: float = u if i == bands.size() - 1 else _smooth(u)
+			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)
 
 	return float(table["summit"]) * float(bands[bands.size() - 1][1])
 
@@ -558,7 +560,7 @@ func _raise_foothills(mount: Dictionary) -> void:
 	var sin_r: float = sin(rotation)
 	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
 	var exponent: float = float(mount.get("beach_exp", 1.7))
-	var floor_share: float = float(mount.get("foothill_floor", 0.55))
+	var floor_share: float = float(mount.get("foothill_floor", 0.88))
 	var spokes: float = float(mount.get("foothill_spokes", 9.0))
 	var wander: float = float(mount.get("foothill_wander", 0.5))
 	var table: Dictionary = _band_table(mount, sea, size, radius)
