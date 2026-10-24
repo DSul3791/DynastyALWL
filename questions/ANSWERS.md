@@ -1566,3 +1566,7 @@ Answered: 2026-10-24 17:05 UTC
 Answer: Yes
 Answered: 2026-10-24 17:06 UTC
 
+## wl-dam-breach | Dams: a breach is slow with a warning (creak, chat line), never instant?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
