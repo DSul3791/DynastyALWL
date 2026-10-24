@@ -129,3 +129,11 @@ Order: A, B, C, G first, then D and E, then F, then H throughout. NOTE for the f
 ## Final bake plan (Sonny, 24 Oct 19:44; replaces the 792 line)
 Build 792 = ONE bake: branch claude/sonny-final from sonny-outlets 4f2d2497, with ONE TERRAIN_VERSION bump, and ONLY the spawn move (after Sal's spawn search). A clean chute and plunge pool in drainage mode only if Dave wants it. Sonny withdrew the ore clamp and the stepped cascade (Dave's 21 Oct rule: no steps). Hill face stays as it is unless Mike's ground-level render of the baked tiles looks ugly. BP-T53 and BP-T54 apply (bake by MikeW, David3 overflow; tiles via git; island table with the code commit id). Tyler merges code and tiles together on a PASS.
 Status 19:55 UTC: build 788 merged (BUG-001 join fix, look_rig Linux). Plans answered: fish A, B, C, G, water Plan 1, steve-new-player (789), steve-shore-net (790). Still to answer when pushed: sal-r1-recipes, sal-rough-bed, sal-camp-bench, sal-cooking-stations.
+
+### Final bake additions (Tyler, 24 Oct 19:58 UTC; Sonny's pond/hole causes) - branch claude/sonny-final
+a) river_start 0.15 km2 where slope is over 25 degrees (rivers start lower on steep reaches).
+b) inland crest cuts capped at 6 m; 20 m only within about 600 m of the sea.
+c) valley freeboard 1.0 m (was 0.4 m) on flat reaches (fall under 2%), plus basin carve at springs (water Plan 1 item 6: 0.5 m below the 3-cell ring).
+d) river heads only where slope is under 10 degrees.
+Order: Sonny first reads Mike's dump from the 5a5745de bake to see if the wall/pit predate the caps. NO bake until Tyler schedules it. Island table must carry the code commit id (BP-T54).
+QA check after bake (David3 headless, Mike picture): pond at x 53840 z 68520 no longer spreads over the flat floor; no 20 m step or 20-25 m 3x3 pit in the crest gorge (max depth scan); every spring passes the catch-basin test; settle test clean; island_checks as before.
