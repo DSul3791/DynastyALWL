@@ -235,10 +235,10 @@ func _build_sound() -> void:
 			_c.sound.set_level(level[0], value)
 			note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
 
-	for group in ["wind", "nature", "steps"]:
-		_button(sound, "%s volume: change" % group.capitalize(), func():
-			var share: float = _c.sound.mix_step(group)
-			note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
+	for group in [["wind", "Wind volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
+		_slider(sound, group[1], float(_c.sound.mix_level[group[0]]), func(value: float):
+			_c.sound.set_mix(group[0], value)
+			note.text = "%s %d %%" % [group[1], roundi(value * 100.0)])
 
 	_button(sound, "Sound test (a list to click and hear)", func(): show_page("sound_test"))
 	_button(sound, "Back", func(): show_page("settings"))
@@ -402,8 +402,11 @@ func _slider(parent: VBoxContainer, text: String, value: float, changed: Callabl
 	var slider: HSlider = HSlider.new()
 	slider.min_value = 0.0
 	slider.max_value = 1.0
-	slider.step = 0.05
+	slider.step = 0.01
 	slider.value = value
-	slider.custom_minimum_size = Vector2(300.0, 24.0)
+	slider.custom_minimum_size = Vector2(BUTTON_W + 160.0, 40.0)
+	slider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	slider.value_changed.connect(changed)
+	label.text = "%s: %d %%" % [text, roundi(value * 100.0)]
+	slider.value_changed.connect(func(v: float): label.text = "%s: %d %%" % [text, roundi(v * 100.0)])
 	parent.add_child(slider)
