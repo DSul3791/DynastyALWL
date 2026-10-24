@@ -1,0 +1,23 @@
+# Test box: limited CPU/RAM, no ports, its own volumes. Does not touch any other container.
+# Run from the repo root:  docker compose -f tools/docker/docker-compose.yml run --rm testbox <command>
+services:
+  testbox:
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile
+    image: dynasty-testbox
+    container_name: dynasty-testbox
+    cpus: 2
+    mem_limit: 6g              # the server has about 13 GiB free (18 of 31 GiB used by the games)
+    memswap_limit: 6g
+    pids_limit: 512
+    cpu_shares: 128            # lowest priority when the game containers want the CPU
+    network_mode: bridge       # outbound only (git fetch); no ports published
+    environment:
+      REPO_URL: https://github.com/DSul3791/DynastyALWL.git
+      BRANCH: claude/generator-v2
+      JOB_TIMEOUT_S: "900"
+    volumes:
+      # On the 389 GB game drive, not the 79 GB system drive. Set DATA_DIR (default /srv/testbox) to a folder there.
+      - ${DATA_DIR:-/srv/testbox}/work:/work   # the clone and the Godot import cache (kept between runs)
+      - ${DATA_DIR:-/srv/testbox}/out:/out     # logs, the baked tiles and reports
