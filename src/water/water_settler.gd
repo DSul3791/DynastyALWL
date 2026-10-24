@@ -14,13 +14,22 @@ const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the ba
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 5                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 6                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
 static func rules() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RULES_PATH)) if FileAccess.file_exists(RULES_PATH) else null
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var out: Dictionary = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	for key in rules_override:
+		out[key] = rules_override[key]
+
+	return out
+
+
+# Tools and tests set keys here to compare rule versions (land_map.gd --old-rules); empty in the game.
+static var rules_override: Dictionary = {}
 
 
 # The drainage the tile file stores, in cells per sample (decode_flow), or empty when the tile has none (placeholder, old bake, section all zero).
@@ -85,6 +94,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 	# Highest head first: a big head pond has several heads and keeps the spring of the first one that
 	# reaches it, so the highest pond (not a lower basin beside it that the outlet carve made) gets it.
+	var flow_all: PackedFloat32Array = flow_of(data, generator)
 	var heads: Array = _find_heads(data, side)
 	heads.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return data.heights[a.y * side + a.x] > data.heights[b.y * side + b.x])
 
@@ -96,11 +106,20 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 			continue
 
 		var spot: Vector2i = _plateau_near(sim, head, side, data)
+		var in_pond: bool = _pond_near(data, head, side).x >= 0
 
 		# Dave 24 Oct 2026: water sources start in a natural catch basin. A river head (no pond) keeps its spring ON the head, where the bake carves the basin;
 		# the plateau move put springs on open ground. Ponds keep their pond middle.
-		if bool(rules().get("springs_at_heads", false)) and _pond_near(data, head, side).x < 0:
+		if bool(rules().get("springs_at_heads", false)) and not in_pond:
 			spot = head
+
+		# Steep ground (v6, Sonny 24 Oct): a spring on a rock face is a sheet running down it. Move it up the painted river to ground that is not
+		# steep, or drop it.
+		spot = _off_steep(data, side, spot)
+
+		if spot.x < 0:
+			continue
+
 		var duplicate: bool = false
 
 		# A big head pond has several "heads" around its edge: one spring per pond.
@@ -113,9 +132,14 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 		placed.append(spot)
 		# Owner (2026-10-20): one spring per pond, its flow growing with the pond (1x up to
-		# POND_FULL_FLOW_M across, then in step with the diameter).
-		var factor: float = 1.0 if seed_painted and _pond_near(data, head, side).x < 0 else flow_factor(_pond_diameter_m(data, spot, side))
-		sim.add_spring(spot.x, spot.y, rate * factor)
+		# POND_FULL_FLOW_M across, then in step with the diameter). v6 ("catchment" in the rules): the flow follows the catchment above the head instead.
+		var factor: float = 1.0 if seed_painted and not in_pond else flow_factor(_pond_diameter_m(data, spot, side))
+		var q: float = rate * factor
+
+		if catchment_on():
+			q = catchment_flow(_head_km2(data, flow_all, side, spot, 20 if in_pond else HEAD_KM2_REACH))
+
+		sim.add_spring(spot.x, spot.y, q)
 		last_kinds.append("head")
 
 	_add_feeders(sim, data, generator, side, placed, rate, heads)
@@ -183,7 +207,7 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 			var km2: float = outlet_flow * data.spacing_m * data.spacing_m / 1.0e6
 			var share: float = feeder_share(km2, cfg)
 			placed.append(at)
-			sim.add_spring(at.x, at.y, rate * share)
+			sim.add_spring(at.x, at.y, catchment_flow(km2) if catchment_on() else rate * share)
 			last_kinds.append("feeder_pond" if kind == LAKE else "feeder_river")
 			added += 1
 
@@ -273,6 +297,90 @@ static func _is_top(data, side: int, i: int, j: int) -> bool:
 				return false
 
 	return true
+
+
+# Spring flow that follows the catchment (v6, data/water_settle.json "catchment"; Sonny and Dave 24 Oct 2026: a 35 m pond got 100 m3/s).
+# m3 per second at the game's x1 flow key, = m3s_per_km2 x catchment km2, clamped to min_m3s .. max_m3s. The game multiplies it by the flow key (x10 start).
+static func catchment_on() -> bool:
+	return bool(rules().get("catchment", {}).get("enabled", false))
+
+
+static func catchment_flow(km2: float) -> float:
+	var cfg: Dictionary = rules().get("catchment", {})
+	return clampf(float(cfg.get("m3s_per_km2", 0.1)) * maxf(km2, 0.0), float(cfg.get("min_m3s", 0.01)), float(cfg.get("max_m3s", 2.0)))
+
+
+const HEAD_KM2_REACH := 6             # cells downstream of a head searched for its first drainage (the head cell itself holds 1 cell)
+
+# The catchment above a head in km2: the biggest drainage on a painted river cell within `reach` cells of it (the head cell holds only itself).
+# 0.35 km2, the river start threshold of the bake, when the tile has no flow map.
+static func _head_km2(data, flow: PackedFloat32Array, side: int, at: Vector2i, reach: int) -> float:
+	if flow.is_empty():
+		return 0.35
+
+	var best: float = 0.0
+
+	for dj in range(-reach, reach + 1):
+		for di in range(-reach, reach + 1):
+			var ni: int = at.x + di
+			var nj: int = at.y + dj
+
+			if ni < 0 or nj < 0 or ni >= side or nj >= side:
+				continue
+
+			var n: int = nj * side + ni
+
+			if data.water_class[n] == RIVER:
+				best = maxf(best, flow[n])
+
+	return maxf(best * data.spacing_m * data.spacing_m / 1.0e6, 0.0)
+
+
+# Steeper than this is a rock face (v6): the slope is the biggest drop to a neighbour over the cell spacing.
+const STEEP_TAN := 0.466              # tan 25 degrees
+
+static func _is_steep(data, side: int, i: int, j: int) -> bool:
+	if i < 1 or j < 1 or i >= side - 1 or j >= side - 1:
+		return false
+
+	var k: int = j * side + i
+	var drop: float = 0.0
+
+	for n in [k - 1, k + 1, k - side, k + side]:
+		drop = maxf(drop, absf(data.heights[k] - data.heights[n]))
+
+	return drop / data.spacing_m > STEEP_TAN
+
+
+# `spot` itself when the ground is not steep; else the nearest higher painted river cell within 15 cells that is not steep; else (-1, -1).
+static func _off_steep(data, side: int, spot: Vector2i) -> Vector2i:
+	if not bool(rules().get("steep", {}).get("enabled", false)) or not _is_steep(data, side, spot.x, spot.y):
+		return spot
+
+	var here: float = data.heights[spot.y * side + spot.x]
+	var best: Vector2i = Vector2i(-1, -1)
+	var best_d: float = INF
+
+	for dj in range(-15, 16):
+		for di in range(-15, 16):
+			var ni: int = spot.x + di
+			var nj: int = spot.y + dj
+
+			if ni < 1 or nj < 1 or ni >= side - 1 or nj >= side - 1:
+				continue
+
+			var n: int = nj * side + ni
+
+			if data.water_class[n] != RIVER or data.heights[n] < here or _is_steep(data, side, ni, nj):
+				continue
+
+			var d: float = float(di * di + dj * dj)
+
+			if d < best_d:
+				best_d = d
+				best = Vector2i(ni, nj)
+
+	return best
 
 
 # The nearest of `heads` within `reach` cells of `from`; (-1, -1) when none.

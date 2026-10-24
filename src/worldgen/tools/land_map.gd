@@ -3,7 +3,7 @@ extends SceneTree
 # R1 land map and spring catch-basin check (design/WATER_LAND_TYPES.md, Plan 1 of WATER_ACTION_PLANS.md).
 # Read only: reads a baked tile and its saved settled water, writes a report, a spring list and a land-type picture.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/land_map.gd -- --tile=3,4 [--all] [--world=res://worlds/base_world] [--out=DIR] [--picture] [--run-hours=6] (dry start like the server, then run this many simulated hours instead of reading the saved water)
+#   godot --headless --path . --script res://src/worldgen/tools/land_map.gd -- --tile=3,4 [--all] [--world=res://worlds/base_world] [--out=DIR] [--picture] [--run-hours=6] [--old-rules] (v4 spring rules, to compare) (dry start like the server, then run this many simulated hours instead of reading the saved water)
 #
 # Outputs in --out (default /mnt/project-files/water/land_map):
 #   springs_X_Z.csv   one row per spring the settler would place: cell, world x z, ground, metres below its ring, basin ok, spread cells, kind (lake_pond / river_head / river_bump / plateau) and catchment km2,
@@ -43,6 +43,8 @@ func _init() -> void:
 			tiles = [Vector2i(int(parts[0]), int(parts[1]))]
 		elif argument == "--all":
 			all = true
+		elif argument == "--old-rules":
+			WaterSettler.rules_override = {"catchment": {"enabled": false}, "springs_at_heads": false, "steep": {"enabled": false}}
 		elif argument.begins_with("--run-hours="):
 			run_hours = float(argument.trim_prefix("--run-hours="))
 		elif argument == "--picture":
@@ -95,10 +97,10 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 	var side: int = data.samples
 	var started: int = Time.get_ticks_msec()
 	var dry_run: bool = run_hours > 0.0
-	var sim = WaterSettler.build(data, 3.0 if dry_run else 10.0, generator, not dry_run)       # the server: base 3 m3/s x10, dry start
+	var sim = WaterSettler.build(data, 10.0, generator, not dry_run)       # the server: WATER_BASE_RATE 10 m3/s x10 (start flow key), dry start
 	var origins: Array = WaterSettler.last_kinds.duplicate()
 	var ground: PackedFloat32Array = sim.ground
-	var rows: PackedStringArray = PackedStringArray(["cell,i,j,world_x,world_z,ground_m,below_ring_m,basin_ok,fix_world_x,fix_world_z,spread_cells,spread_ok,kind,catchment_km2"])
+	var rows: PackedStringArray = PackedStringArray(["cell,i,j,world_x,world_z,ground_m,below_ring_m,basin_ok,fix_world_x,fix_world_z,spread_cells,spread_ok,kind,catchment_km2,spring_m3s"])
 
 	# Saved settled water if there is one; otherwise the painted water the settler starts from.
 	var water_file: String = "%s/water/tile_%d_%d.water" % [world, tile.x, tile.y]
@@ -122,7 +124,7 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 
 	var have_settled: bool = not settled.is_empty()
 	var depth: PackedFloat32Array = settled if have_settled else sim.get_depth()
-	_wet_picture_near(depth, data, side, Vector2(53840.0, 68520.0), "%s/near_defect_%d_%d.png" % [out_dir, tile.x, tile.y])
+	_defect_census(depth, data, side, out_dir, tile)
 	var fail: int = 0
 	var spread_fail: int = 0
 	var flow: PackedFloat32Array = WaterSettler.flow_of(data, generator)
@@ -156,7 +158,7 @@ func _one_tile(generator, world: String, tile: Vector2i, out_dir: String, pictur
 
 		var kind: String = (str(origins[spring_n]) if spring_n < origins.size() else "?") + "/" + _spring_kind(data, side, i, j)
 		var km2: float = (flow[k] * data.spacing_m * data.spacing_m / 1.0e6) if flow.size() == side * side else -1.0
-		rows.append("%d,%d,%d,%.0f,%.0f,%.2f,%.2f,%s,%s,%s,%d,%s,%s,%.3f" % [k, i, j, data.x0 + float(i) * data.spacing_m, data.z0 + float(j) * data.spacing_m, ground[k], float(report["below_m"]), "yes" if bool(report["ok"]) else "NO", fix_x, fix_z, spread, "yes" if spread_ok else "NO", kind, km2])
+		rows.append("%d,%d,%d,%.0f,%.0f,%.2f,%.2f,%s,%s,%s,%d,%s,%s,%.3f,%.3f" % [k, i, j, data.x0 + float(i) * data.spacing_m, data.z0 + float(j) * data.spacing_m, ground[k], float(report["below_m"]), "yes" if bool(report["ok"]) else "NO", fix_x, fix_z, spread, "yes" if spread_ok else "NO", kind, km2, float(sp[1])])
 
 	var csv: FileAccess = FileAccess.open("%s/springs_%d_%d.csv" % [out_dir, tile.x, tile.y], FileAccess.WRITE)
 	csv.store_string("\n".join(rows) + "\n")
@@ -265,3 +267,38 @@ func _spring_kind(data, side: int, i: int, j: int) -> String:
 		return "plateau"
 
 	return "river_head" if WaterSettler._is_top_in(data, side, i, j, WaterSettler.HEAD_RADIUS) else "river_bump"
+
+
+# Dave's build 789 defect spots (world x z): the pond with an island, the invisible falls, the small headpond, the flooded valley.
+const DEFECTS := {"pond_island": Vector2(53840, 68520), "fall_no_water": Vector2(53865, 69587), "small_headpond": Vector2(54461, 70941), "sideways_fall": Vector2(55123, 74025), "flooded_valley": Vector2(54683, 75053)}
+
+
+# For each defect spot inside this tile: wet cells (1 cm or more) off the painted channel within 40 cells, wet cells in all, and a picture.
+func _defect_census(depth: PackedFloat32Array, data, side: int, out_dir: String, tile: Vector2i) -> void:
+	for name in DEFECTS:
+		var point: Vector2 = DEFECTS[name]
+		var ci: int = int(round((point.x - data.x0) / data.spacing_m))
+		var cj: int = int(round((point.y - data.z0) / data.spacing_m))
+
+		if ci < 80 or cj < 80 or ci >= side - 80 or cj >= side - 80:
+			continue
+
+		var off: int = 0
+		var on: int = 0
+		var deep_off: int = 0
+
+		for dj in range(-40, 41):
+			for di in range(-40, 41):
+				var k: int = (cj + dj) * side + ci + di
+
+				if depth[k] < 0.01:
+					continue
+
+				if data.water_class[k] == 0:
+					off += 1
+					deep_off += 1 if depth[k] >= 0.15 else 0
+				else:
+					on += 1
+
+		print("defect %s (%.0f, %.0f): wet cells on painted water %d, OFF the painted channel %d (%d of them 15 cm or deeper)" % [name, point.x, point.y, on, off, deep_off])
+		_wet_picture_near(depth, data, side, point, "%s/near_%s_%d_%d.png" % [out_dir, name, tile.x, tile.y])
