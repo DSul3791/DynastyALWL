@@ -966,8 +966,6 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 
 	var floor_m: float = INF
 	var rim_total: float = 0.0
-	var rim_low: float = INF
-	var rim_low_bearing: float = 0.0
 	var points: int = 24
 
 	for step in range(points):
@@ -975,10 +973,6 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 		var direction: Vector2 = Vector2(sin(deg_to_rad(bearing)), -cos(deg_to_rad(bearing)))
 		var h: float = _h(center.x + direction.x * radius, center.y + direction.y * radius)
 		rim_total += h
-
-		if h < rim_low:
-			rim_low = h
-			rim_low_bearing = bearing
 
 		for fraction in [0.0, 0.4, 0.8]:
 			floor_m = minf(floor_m, _h(center.x + direction.x * radius * fraction, center.y + direction.y * radius * fraction))
