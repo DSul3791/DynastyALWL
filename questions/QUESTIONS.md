@@ -33,3 +33,8 @@ Note: Fire plan: logs make a bonfire, firewood a campfire, sticks a survival fir
 Note: 1 or 2 left-over pieces still burn, at the size of the tier below.
 Note: Recommendation: Yes, 3 pieces, because one stray log should not make a bonfire; Why-not box if you meant something else.
 [check]
+
+## fire-small-cooks | Can food be cooked on the tiny survival fire (sticks)?
+Note: The survival fire is the smallest size: sticks only, 15 minutes each, small light and heat.
+Note: Recommendation: Yes, slowly (about twice as long), because a first-night player has only sticks and needs a way to cook.
+[check]
