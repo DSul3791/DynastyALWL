@@ -57,13 +57,14 @@ Completed: (none yet)
 7. FRAME-COST BUDGETS for flora, water, sound per quality tier (ARCHITECTURE_BUDGET).
 Completed: parse_scan, water_flow_at, sunny switch (build 771)
 
-## MIKE. Ultimate: nothing reaches Dave untested, and every system is verified by the rig, not by hand.
-1. HOURLY MERGE GATE: one fixed list, a PASS/FAIL line per branch (MERGE_CHECK_NEXT.md pattern). Done when no branch waits more than 2 hours.
-2. BAKES THROUGH THE SECOND CLONE (BP-T53): bake, commit, push claude/mike-bake-*; never copy into Dave's folder.
-3. PERMISSIONS, BACKUP AND RESET: user-level settings working, 9 pm ADT backup, 8 AM reset, no run refused.
-4. FRAME-TIME BASELINE per build in one table.
-5. RIG COVERAGE: one new groupable test per day (T-GROUND, T-BERRIES, pieces row...), until every system has one.
-6. WEEKLY REGRESSION: the whole test list in one run, one pass/fail table.
+## MIKE. Ultimate (Dave 01:34): support everyone else as Dave's computer operator: run tests as efficiently as possible by combining them (one test covering batches of questions), move files around, provide tile builds and push them, and manage our backups according to the current plan.
+1. ONE COMBINED BATCH AT A TIME: collect every thread's REQUESTs (TEST_RECIPE template), run them as one launch sequence, report once with a PASS/FAIL line per request. Done when no request waits more than an hour and no test starts the engine for one question.
+2. MERGE GATE: hourly merge-check list on the second clone (MERGE_CHECK pattern), one PASS/FAIL line per branch. Done when no branch waits more than 2 hours.
+3. TILE BUILDS (BP-T53): bake or copy tiles and settled water into the second clone, commit and push claude/mike-bake-*; never copy into Dave's folder. Done when a bake reaches Tyler as a pushed branch with its hash line.
+4. FILE MOVING: copy files between bake folders, the second clone and backups on request, with a one-line log of what moved. Done when each request has its log line.
+5. BACKUPS per the plan (BACKUP_PLAN.md): 9 pm ADT nightly (retry 3x), restore test weekly, game and hidden server closed first. Done when last night's backup is verified and logged.
+6. PERMISSIONS AND CLONES: user-level settings working, no run refused, both clones current, 8 AM reset.
+7. BASELINES AND COVERAGE: frame-time table per build; one new groupable rig test per day; weekly regression run in one table.
 Completed: v26 and v27 tile bakes; merge checks for builds 771, 772, 773
 
 ## TYLER. Ultimate (Dave 01:32): provide accurate, up-to-date, best-practices-driven, IMPROVED action plans back to anyone creating a new branch.
