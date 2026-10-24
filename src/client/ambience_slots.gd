@@ -673,4 +673,6 @@ func _run_group(token: int, group: String) -> void:
 				print("sound test batch 2: %s clip %d play %d of %d" % [slot, index + 1, rep + 1, TEST_REPS])
 				var length: float = minf(stream.get_length(), TEST_BED_MAX_S if is_bed else TEST_ONESHOT_MAX_S)
 				await get_tree().create_timer(length + 0.2).timeout
-				player.queue_free()
+
+				if is_instance_valid(player):   # the next test press may have freed it already
+					player.queue_free()
