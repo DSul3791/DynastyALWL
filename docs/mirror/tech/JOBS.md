@@ -12,6 +12,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 7. Cave-in timer retest (collapse default 5 min, setting 2-20 min).
 
 ## Sonny (queue 6)
+0. LEAD 24 Oct (Dave 00:47): epic varied island terrain (ranges, passes, gullies, foothills, prairies, ravines, canyons, volcanoes, hot sandy beaches, rocky polar shores, different peak layouts per island). Sal is dedicated to it. Update Sonny_foothills_centre.md into ONE plan, Tyler reviews once.
 1. GO: claude/sonny-flora-patches (patch placer, shared 1-3x scale per patch, tight spacing, flora layout VERSION 2).
 2. Re-settle water after v26 tiles (Dave presses Clear blocks first).
 3. Valleys check on claude/sonny-valleys, v27 bake bundle prepared (no bake until Dave OKs v26).
@@ -20,6 +21,7 @@ Rule: when your current job finishes, or waits on Dave, Mike's batch or another 
 6. Edge match + 6-spot screenshot set after any generator change.
 
 ## Sal (queue 7)
+00. DEDICATED 24 Oct (Dave 00:47) to Sonny's island terrain job: take the sub-jobs Sonny hands you (island type tables, per-island layouts, beaches/shores, canyon and ravine rules, tests). Building look names plan is PARKED.
 0. FIRST JOB 24 Oct (Dave 23:51): showroom rows at spawn STAY but become REAL items (pick up, use, inspect/ID). Sal leads ONE combined action plan with Kathleen's Kathleen_ground_items.md; Tyler reviews once and gives GO with best practices (BP-T52).
 1. GO: sal-harvest (yield_scale clamp 400, elder base 130) after Mike's batch.
 2. Blueprint 1c.
