@@ -1570,3 +1570,7 @@ Answered: 2026-10-24 17:06 UTC
 Answer: Yes
 Answered: 2026-10-24 17:06 UTC
 
+## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
