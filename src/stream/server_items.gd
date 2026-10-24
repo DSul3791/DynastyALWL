@@ -87,6 +87,8 @@ const STRUCTURES_PATH := "res://data/items/structures.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
+const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the campfire; cooking.json fire_tiers)
+const FIRE_STATE_BONFIRE := 41
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
@@ -994,8 +996,10 @@ func save() -> void:
 
 		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
 
-		if it.has("fire") and int(it["fire"].get("uid", 0)) > 0:
-			row.append(int(it["fire"]["uid"]))   # a campfire's store (a number here; a structure's kind is a string)
+		if it.has("fire"):
+			var wood: Dictionary = _fire_wood(it["fire"])
+			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
+			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
 
 		items.append(row)
 
@@ -2222,7 +2226,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
-	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": 1.0e9, "fire": {"state": 1, "burn_left": float(_cooking.get("start_burn_game_s", 2400.0)) / GAME_RATE, "covered": covered, "recheck": COVER_RECHECK_S}}
+	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE, "wood": {"log": 0.0, "firewood": 0.0, "weak": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE}, "covered": covered, "recheck": COVER_RECHECK_S}}
 	_next_id += 1
 
 
@@ -2369,10 +2373,10 @@ func _fires(delta: float) -> void:
 		if fire.has("uid"):
 			_tend_fire(id, it, fire, delta)
 
-		if int(fire["state"]) != 1:
+		if not fire_is_lit(int(fire["state"])):
 			continue
 
-		fire["burn_left"] -= delta
+		_fire_burn(fire, delta)
 		fire["recheck"] -= delta
 
 		if fire["recheck"] <= 0.0:
@@ -2640,6 +2644,9 @@ func _load_world_items() -> void:
 				saved_state = 9 if float(row[7]) > 0.0 else 8
 
 			entry["fire"] = {"state": saved_state, "burn_left": float(row[7]), "covered": false, "recheck": 0.0}
+
+			if row.size() > 10 and typeof(row[10]) == TYPE_ARRAY and (row[10] as Array).size() == 3:   # before fire tiers the one counter is split by the fire's size
+				entry["fire"]["wood"] = {"log": float(row[10][0]), "firewood": float(row[10][1]), "weak": float(row[10][2])}
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -3592,6 +3599,89 @@ func _split(inv, slot: int, count: int) -> void:
 			return
 
 
+# --- Fire tiers (Dave 24 Oct, cooking.json fire_tiers): the wood in a fire is kept as burning seconds per class (log, firewood, weak),
+# burn_left is their sum. The biggest wood burns first; 3 pieces of a class lift the fire to its tier and it keeps that size until
+# that wood is gone. A lit fire's world-item state is its tier (40 survival, 1 campfire, 41 bonfire).
+static func fire_is_lit(state: int) -> bool:
+	return state == 1 or state == FIRE_STATE_SURVIVAL or state == FIRE_STATE_BONFIRE
+
+
+func _fire_wood(fire: Dictionary) -> Dictionary:
+	if not fire.has("wood"):
+		var all: float = maxf(float(fire.get("burn_left", 0.0)), 0.0)
+		fire["wood"] = {"log": 0.0, "firewood": all if int(fire.get("state", 0)) == 1 else 0.0, "weak": 0.0 if int(fire.get("state", 0)) == 1 else all}
+
+	return fire["wood"]
+
+
+func _fire_class_pieces(cls: String, seconds: float) -> int:
+	var row: Dictionary = (_cooking.get("fire_tiers", {}) as Dictionary).get(cls, {})
+	var piece_s: float = float({"log": 7200.0, "firewood": 3600.0, "weak": 900.0}.get(cls, 900.0)) / GAME_RATE
+	return int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
+
+
+# The lit state the wood now in the fire supports: the biggest class with at least min_pieces, else the survival fire.
+func _fire_best_state(fire: Dictionary) -> int:
+	var wood: Dictionary = _fire_wood(fire)
+	var need: int = int(_cooking.get("min_pieces", 3))
+
+	for cls in ["log", "firewood"]:
+		if _fire_class_pieces(cls, float(wood[cls])) >= need:
+			return int(_cooking["fire_tiers"][cls]["state"])
+
+	return FIRE_STATE_SURVIVAL
+
+
+func _fire_class_of_state(state: int) -> String:
+	return "log" if state == FIRE_STATE_BONFIRE else ("firewood" if state == 1 else "weak")
+
+
+func _fire_tier_of_state(state: int) -> int:
+	return 3 if state == FIRE_STATE_BONFIRE else (2 if state == 1 else 1)
+
+
+func _fire_sum(fire: Dictionary) -> void:
+	var wood: Dictionary = _fire_wood(fire)
+	fire["burn_left"] = float(wood["log"]) + float(wood["firewood"]) + float(wood["weak"])
+
+
+# One piece of wood onto the fire: its seconds go to its class (never past the stored-fuel cap) and a lit fire may step up a tier.
+func _fire_add(fire: Dictionary, wood_id: String) -> void:
+	var wood: Dictionary = _fire_wood(fire)
+	var cls: String = str((_cooking.get("fuel_class", {}) as Dictionary).get(wood_id, "weak"))
+	var seconds: float = float((_cooking.get("fuel", {}) as Dictionary).get(wood_id, 900.0)) / GAME_RATE
+	_fire_sum(fire)
+	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - float(fire["burn_left"])
+	wood[cls] = float(wood[cls]) + clampf(seconds, 0.0, maxf(room, 0.0))
+	_fire_sum(fire)
+
+	if fire_is_lit(int(fire["state"])):
+		var best: int = _fire_best_state(fire)
+
+		if _fire_tier_of_state(best) > _fire_tier_of_state(int(fire["state"])):
+			fire["state"] = best
+
+
+# Time passes on a lit fire: the biggest wood burns; when the wood that set its tier is gone it drops a tier.
+func _fire_burn(fire: Dictionary, delta: float) -> void:
+	var wood: Dictionary = _fire_wood(fire)
+	var left: float = delta
+
+	for cls in ["log", "firewood", "weak"]:
+		if left <= 0.0:
+			break
+
+		var used: float = minf(float(wood[cls]), left)
+		wood[cls] = float(wood[cls]) - used
+		left -= used
+
+	_fire_sum(fire)
+	var state: int = int(fire["state"])
+
+	if fire_is_lit(state) and state != FIRE_STATE_SURVIVAL and float(wood[_fire_class_of_state(state)]) <= 0.0:
+		fire["state"] = _fire_best_state(fire)
+
+
 # Wood on the fire: a stick or a log adds burning time (up to max_burn_game_s). A fire the rain put out
 # lights again when fed where rain no longer reaches it (covered, or the rain has stopped).
 func _fuel(peer: int, inv, id: int) -> void:
@@ -3600,14 +3690,12 @@ func _fuel(peer: int, inv, id: int) -> void:
 	if fire.is_empty():
 		return
 
-	var fuel: Dictionary = _cooking.get("fuel", {})
-
 	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
 		if inv.has(number, 1):
 			inv.remove(number, 1)
-			fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)) / GAME_RATE, float(_cooking.get("max_burn_game_s", 43200.0)) / GAME_RATE)
+			_fire_add(fire, wood)
 
 			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
 			if int(fire["state"]) == 8:
@@ -3627,6 +3715,9 @@ func _light(peer: int, inv, id: int) -> void:
 
 	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
 
+	var rain_cfg: Dictionary = _cooking.get("rain_light_chance", {})
+	var rain_now_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+
 	if raining and not bool(fire["covered"]):
 		_say(peer, "The rain will not let it light. Move it under cover.")
 		return
@@ -3638,7 +3729,13 @@ func _light(peer: int, inv, id: int) -> void:
 		return
 
 	inv.remove(table.number_of(tinder), 1)
-	fire["state"] = 1
+
+	# A drizzle makes lighting a gamble (cooking.json rain_light_chance); the tinder is spent either way.
+	if rain_now_v > 0.02 and not bool(fire["covered"]) and not roll_chance(peer, _rain_rng, maxf(1.0 - rain_now_v / maxf(float(rain_cfg.get("puts_out", 0.2)), 0.01) * float(rain_cfg.get("loss", 0.8)), float(rain_cfg.get("min_chance", 0.2)))):
+		_say(peer, "The tinder will not catch in the damp. Try again.")
+		return
+
+	fire["state"] = _fire_best_state(fire)
 	_items[id]["left"] = 1.0e9
 	_dirty = true
 
@@ -3647,7 +3744,7 @@ func _light(peer: int, inv, id: int) -> void:
 func _cook(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
 
-	if fire.is_empty() or int(fire["state"]) != 1:
+	if fire.is_empty() or not fire_is_lit(int(fire["state"])):
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -4027,15 +4124,14 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 	fire["tend"] = 2.0
 	var box = _chests[int(fire["uid"])]
 	var state: int = int(fire["state"])
-	var fuel: Dictionary = _cooking.get("fuel", {})
 
-	if (state == 1 and float(fire["burn_left"]) < float(_cooking.get("feed_below_s", 20.0))) or state == 8:
+	if (fire_is_lit(state) and float(fire["burn_left"]) < float(_cooking.get("feed_below_s", 20.0))) or state == 8:
 		for wood in _cooking.get("fuel_order", ["stick", "log"]):
 			var number: int = table.number_of(wood)
 
 			if box.has(number, 1):
 				box.remove(number, 1)
-				fire["burn_left"] = minf(float(fire["burn_left"]) + float(fuel.get(wood, 120.0)) / GAME_RATE, float(_cooking.get("max_burn_game_s", 43200.0)) / GAME_RATE)
+				_fire_add(fire, wood)
 
 				if state == 8:
 					fire["state"] = 9
@@ -4045,7 +4141,7 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 				_push_box(id, box)
 				break
 
-	if int(fire["state"]) != 1:
+	if not fire_is_lit(int(fire["state"])):
 		return
 
 	fire["cook_t"] = float(fire.get("cook_t", 0.0)) + 2.0
@@ -5411,29 +5507,40 @@ func daily_offset(weather: Dictionary, altitude_m: float = 0.0) -> float:
 
 # The positions of the burning fires. Inside one _vitals_tick they are listed once for all players (the soak test found warmth
 # scanning every world record per player); anywhere else the scan is live.
-var _lit_cache: Array = []
-
-
 func _lit_fires() -> Array:
+	var found: Array = []
+
+	for row in _lit_rows():
+		found.append(row[0])
+
+	return found
+
+
+var _lit_valid: bool = false
+var _rain_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+
+
+# [position, lit state] of every burning fire (warmth reads the tier's heat and reach from cooking.json fire_tiers). Cached inside one vitals tick.
+var _lit_cache_rows: Array = []
+
+
+func _lit_rows() -> Array:
 	if _in_vitals and _lit_valid:
-		return _lit_cache
+		return _lit_cache_rows
 
 	var found: Array = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("fire") and int(it["fire"]["state"]) == 1:
-			found.append(it["pos"])
+		if it.has("fire") and fire_is_lit(int(it["fire"]["state"])):
+			found.append([it["pos"], int(it["fire"]["state"])])
 
 	if _in_vitals:
-		_lit_cache = found
+		_lit_cache_rows = found
 		_lit_valid = true
 
 	return found
-
-
-var _lit_valid: bool = false
 
 
 func warmth_target(peer: int) -> float:
@@ -5447,10 +5554,17 @@ func warmth_target(peer: int) -> float:
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
-	for fire_pos in _lit_fires():
-		if fire_pos.distance_to(pos) <= radius:
-			feels += float(cfg.get("fire_c", 20.0))
-			break
+	var heat: float = 0.0
+	var tiers: Dictionary = _cooking.get("fire_tiers", {})
+
+	for row in _lit_rows():
+		var tier_row: Dictionary = tiers.get(_fire_class_of_state(int(row[1])), {})
+		var reach: float = float(tier_row.get("heat_radius_m", radius))
+
+		if (row[0] as Vector3).distance_to(pos) <= reach:
+			heat = maxf(heat, float(tier_row.get("heat_c", cfg.get("fire_c", 20.0))))
+
+	feels += heat
 
 	var stress: float = maxf(float(cfg.get("comfort_c", 15.0)) - feels, 0.0)
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
@@ -5899,7 +6013,7 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 		for id in _items:
 			var fire_item: Dictionary = _items[id]
 
-			if fire_item.has("fire") and int(fire_item["fire"]["state"]) == 1 and _peer_pos[peer].distance_to(fire_item["pos"]) <= FIRE_USE_M + 1.0:
+			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and _peer_pos[peer].distance_to(fire_item["pos"]) <= FIRE_USE_M + 1.0:
 				return true
 
 		return false

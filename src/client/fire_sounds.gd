@@ -102,7 +102,7 @@ func set_fires(fires: Array) -> void:
 # 2 burnt-out fire): call about once a second. Size is a fixed middle value until fires have a burn
 # time; a fire is "open" when the cover query says the sky reaches it.
 # Item world row states that are fires: 1 lit, 2 burnt out (old saves), 8 empty (ashes), 9 loaded but unlit.
-const FIRE_STATES := [1, 2, 8, 9]
+const FIRE_STATES := [1, 2, 8, 9, 40, 41]   # 40 survival fire and 41 bonfire are lit too (cooking.json fire_tiers)
 const FUEL_HEARD_M := 25.0
 const FUEL_DEDUP_MSEC := 1500
 var _world_states: Dictionary = {}      # fire id -> last seen row state
@@ -127,7 +127,7 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 		if int(_world_states.get(id, 9)) == 8 and int(row["state"]) == 9 and _here.distance_to(at) < FUEL_HEARD_M \
 				and Time.get_ticks_msec() - _last_fuel_msec > FUEL_DEDUP_MSEC:
 			fuel(at)
-		fires.append({"id": id, "at": at, "size": FIRE_SIZE, "lit": int(row["state"]) == 1,
+		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41],
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
 
 	_world_states = states
