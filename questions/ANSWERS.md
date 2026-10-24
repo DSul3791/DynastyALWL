@@ -1562,3 +1562,7 @@ Answered: 2026-10-24 17:05 UTC
 Answer: Yes
 Answered: 2026-10-24 17:05 UTC
 
+## wl-dam-strength | Dams: strength depends on material, thickness and bracing, and dirt erodes if water pours over the top?
+Answer: Yes
+Answered: 2026-10-24 17:06 UTC
+
