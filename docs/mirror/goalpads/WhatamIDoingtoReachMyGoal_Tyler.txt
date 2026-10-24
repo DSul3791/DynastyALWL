@@ -8,8 +8,6 @@ STEPS (open)
 2. For each new plan: read it, read DECISIONS.md + the design section it touches, write 3+ improvements with sources, mark GO/NO-GO, mirror to docs/mirror, tell the coordinator in one line. Done-check: reply file section exists and mirror pushed.
 3. Merge list 2 (tech/MERGE_CHECK_NEXT2.md): when Mike reports PASS, merge the passing branches, bump build to 774, BUILD_LOG + HANDOFF + DAY_LOG. Done-check: head build 774 on origin and number sent to coordinator.
 4. Trial-merge every newly pushed branch against head and add clean ones to the next merge list. Done-check: list file updated within 30 minutes of each push.
-6. LESSONS line for each merged branch of tonight (771, 772, 773): plan vs what happened. Done-check: three lines in tech/LESSONS.md.
-7. Review BEST_PRACTICES.md for stale entries (dates, contradictions with Dave rulings: BP-T50 vs BP-T52, BP-C23 vs BP-T53). Done-check: contradicting entries marked "superseded by BP-T5x".
 8. Add dates and sources to the 10 most-used best-practice entries (BP-T31, T44-T53, C23). Done-check: each has a date and source line.
 9. Design coverage map: one table, each DESIGN_IDEAS section (4 to 13) with owner, status, next goal. Done-check: tech/DESIGN_COVERAGE.md exists with a row per section.
 10. Refill JOBS.md queues from goals_<Name>.md so every thread has 3+ next lines. Done-check: each queue has 3+ open lines.
@@ -20,6 +18,7 @@ HANDED OFF
 (none)
 
 DONE
+- 03:40 UTC step 6 and 7: LESSONS line for builds 771-774 written; BP-C23, BP-T33, BP-T50 marked superseded/amended. Build 774 merged (6 branches), BAKE_28_MERGE.md ready, waiting on Mike's v28 bake and Sal's table PASS.
 - 03:10 UTC plan GO replies: Kathleen flora gaps, Steve river settle, Kathleen worn clothing, Steve worn attach (no plan pending); merge list 3 written (2 conflicts flagged to Steve); steve-stamp-items added to list 2
 - 02:55 UTC step 5: tech/PLAN_CHECKLISTS.md written (six kinds, 4-8 questions each)
 - 00:35-02:45 UTC plan GO replies: Kathleen building looks, Sal showroom, Sal look names, Steve rig pieces, Sonny foothills, Sal island checks, Kathleen item looks, Kathleen flora gaps, Steve river settle, Kathleen worn clothing
