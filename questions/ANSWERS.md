@@ -1406,3 +1406,7 @@ Answered: 2026-10-24 14:32 UTC
 Answer: No: We have no need for an adze. And the hammer is solely used for picking blueprints when you have a hammer in your hand and your right click. It will give you a menu of blueprints that you can place and when you have a blueprint selected and your left click it will place the blueprint. The first item on the blueprint menu is going to be the repair function so if you select the repair function, your hammer becomes a repairing tool and you can click to repair stuff if you have what’s needed to repair it
 Answered: 2026-10-24 14:54 UTC
 
+## tools-next-uses | What should the hammer and adze do first: real uses now (nails, smoothing logs), or build the anvil, tongs and bellows first?
+Answer: No: We have no need for an adze. And the hammer is solely used for picking blueprints when you have a hammer in your hand and your right click. It will give you a menu of blueprints that you can place and when you have a blueprint selected and your left click it will place the blueprint. The first item on the blueprint menu is going to be the repair function so if you select the repair function, your hammer becomes a repairing tool and you can click to repair stuff if you have what’s needed to repair it
+Answered: 2026-10-24 14:54 UTC
+
