@@ -193,6 +193,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
 			_grass(leaves, rng, h, crown, 2 if far else 3)
+			_blades(bark, rng, h, crown, 6 if far else 20, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
 		"fern":
 			_fern(leaves, rng, h, crown, far)
 		"mushroom":
@@ -2127,6 +2128,40 @@ static func _grass(leaves: Acc, rng: RandomNumberGenerator, h: float, crown: flo
 		leaves.card(Vector3(0.0, h * 0.5, 0.0), right, Vector3.UP, maxf(crown * 1.4, h * 0.22), h * 0.5, Vector3.UP, color)
 
 
+# Real grass blades (goal 2 batch C): thin ribbons that rise from the clump and arch outward, dark at the base and light at the tip.
+# Reference: meadow grass blades 0.5-1 cm wide, 20-60 cm long, bending over in the upper third. 5 vertices a blade, drawn from both sides.
+static func _blades(acc: Acc, rng: RandomNumberGenerator, h: float, crown: float, count: int, base_color: Color, tip_color: Color) -> void:
+	for k in range(count):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+		var base: Vector3 = out * crown * sqrt(rng.randf()) * 0.6
+		var tall: float = h * rng.randf_range(0.55, 1.0)
+		var half: float = maxf(h * 0.012, 0.004)
+		var lean: float = tall * rng.randf_range(0.1, 0.45)
+		var mid: Vector3 = base + out * lean * 0.25 + Vector3(0.0, tall * 0.55, 0.0)
+		var tip: Vector3 = base + out * lean + Vector3(0.0, tall * 0.92, 0.0)
+		var shade: float = rng.randf_range(0.85, 1.1)
+		var c0: Color = base_color * shade
+		var c1: Color = base_color.lerp(tip_color, 0.5) * shade
+		var c2: Color = tip_color * shade
+		c0.a = 1.0
+		c1.a = 1.0
+		c2.a = 1.0
+		var up: Vector3 = Vector3.UP
+		var i0: int = acc.vert(base - side * half, up, Vector2(0, 0), c0)
+		var i1: int = acc.vert(base + side * half, up, Vector2(1, 0), c0)
+		var i2: int = acc.vert(mid - side * half * 0.8, up, Vector2(0, 0.5), c1)
+		var i3: int = acc.vert(mid + side * half * 0.8, up, Vector2(1, 0.5), c1)
+		var i4: int = acc.vert(tip, up, Vector2(0.5, 1), c2)
+		acc.tri(i0, i1, i3)
+		acc.tri(i0, i3, i2)
+		acc.tri(i2, i3, i4)
+		acc.tri(i0, i3, i1)
+		acc.tri(i0, i2, i3)
+		acc.tri(i2, i4, i3)
+
+
 # Ferns: a rosette of drooping fronds.
 static func _fern(leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	var fronds: int = 5 if far else 9
@@ -2852,6 +2887,9 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
 			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
 
+	if head != "succulent":
+		_blades(bark, rng, h * low, crown, 6 if far else 22, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
+
 	var color: Color = look["head_color"]
 
 	for k in range(3 if far else int(look["heads"])):
@@ -2918,7 +2956,31 @@ static func _fern_rosette(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 
 	for k in range(fronds):
 		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.25, 0.25)
-		_frond(leaves, rng, Vector3(0.0, h * 0.25, 0.0), Vector3(cos(a), 0.0, sin(a)), maxf(crown * 2.0, h * 0.9) * float(look["length"]) * rng.randf_range(0.8, 1.1), float(look["rise"]) * rng.randf_range(0.7, 1.1), 1 if far else 2, float(look["width"]), look["tint"])
+		var length: float = maxf(crown * 2.0, h * 0.9) * float(look["length"]) * rng.randf_range(0.8, 1.1)
+		var rise: float = float(look["rise"]) * rng.randf_range(0.7, 1.1)
+		var dir: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		_frond(leaves, rng, Vector3(0.0, h * 0.25, 0.0), dir, length, rise, 1 if far else 2, float(look["width"]), look["tint"])
+
+		if not far:
+			# The midrib: a thin stalk along the frond's arch, pale green, so the leaf has a spine and a stem down to the crown.
+			var top: Vector3 = Vector3(0.0, h * 0.25, 0.0)
+			var m_mid: Vector3 = top + dir * length * 0.5 + Vector3(0.0, (rise * 0.5 - 0.9 * 0.25) * length * 0.5, 0.0)
+			var m_tip: Vector3 = top + dir * length + Vector3(0.0, (rise - 0.9) * length * 0.5, 0.0)
+			var rib: Color = Color(0.42, 0.5, 0.22) * look["tint"]
+			_branch(bark, top, m_mid, maxf(length * 0.012, 0.002), maxf(length * 0.009, 0.0015), rib, 3)
+			_branch(bark, m_mid, m_tip, maxf(length * 0.009, 0.0015), maxf(length * 0.004, 0.001), rib, 3)
+
+	if not far:
+		# Fiddleheads: young fronds still curled in the middle, a short stalk ending in a tight coil of three beads.
+		for k in range(3):
+			var fa: float = rng.randf() * TAU
+			var fb: Vector3 = Vector3(cos(fa), 0.0, sin(fa)) * crown * rng.randf_range(0.05, 0.25)
+			var stalk_h: float = h * rng.randf_range(0.35, 0.6)
+			_branch(bark, fb, fb + Vector3(0.0, stalk_h, 0.0), maxf(h * 0.012, 0.002), maxf(h * 0.009, 0.0015), Color(0.4, 0.5, 0.2), 3)
+			var curl: Vector3 = Vector3(cos(fa), 0.0, sin(fa)) * h * 0.04
+
+			for b in range(3):
+				_bead(bark, fb + Vector3(0.0, stalk_h, 0.0) + curl * float(b) * 0.7 - Vector3(0.0, float(b) * h * 0.03 - h * 0.03, 0.0), Vector3.ONE * h * (0.035 - 0.008 * float(b)), Color(0.45, 0.58, 0.24))
 
 
 # Reeds, family 4 of goal 1b. Reference: common reed 1.5-3 m stiff stems with leaves along them and a purple-brown feathery plume on top; the fantasy ones swap the plume.
