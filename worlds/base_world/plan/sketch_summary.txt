@@ -7,19 +7,19 @@ Features: shelf_n_n (2 mounts), shelf_n_p (2 mounts), shelf_p_n (2 mounts), shel
 LARGEST ISLANDS
     201.2 km2  peak  1981 m  tile (  0,  0)  center_island
     175.3 km2  peak   401 m  tile ( -5, -7)  shelf_n_n
-    148.1 km2  peak   588 m  tile (  6,  6)  shelf_p_p
-    138.2 km2  peak   538 m  tile ( -6, -6)  shelf_n_n
+    148.1 km2  peak  1132 m  tile (  6,  6)  shelf_p_p
+    138.2 km2  peak  1089 m  tile ( -6, -6)  shelf_n_n
     120.8 km2  peak   465 m  tile (  4, -6)  shelf_p_n
     113.2 km2  peak  1706 m  tile ( 10,  9)  arc_3
      99.9 km2  peak   430 m  tile (  6,  5)  shelf_p_p
-     95.7 km2  peak   432 m  tile (  3,  4)  shelf_p_p
+     95.7 km2  peak  1250 m  tile (  3,  4)  shelf_p_p
      88.6 km2  peak  1610 m  tile (-10,  6)  hotspot_2
-     88.5 km2  peak   440 m  tile (  3, -4)  shelf_p_n
+     88.5 km2  peak  1361 m  tile (  3, -4)  shelf_p_n
      81.9 km2  peak   439 m  tile (  4,  5)  shelf_p_p
-     81.1 km2  peak   449 m  tile ( -3, -4)  shelf_n_n
-     80.9 km2  peak   366 m  tile (  6, -6)  shelf_p_n
+     81.1 km2  peak  1291 m  tile ( -3, -4)  shelf_n_n
+     80.9 km2  peak  1140 m  tile (  6, -6)  shelf_p_n
      80.8 km2  peak  1678 m  tile (-10, -3)  arc_5
-     71.8 km2  peak   351 m  tile ( -6,  6)  shelf_n_p
+     71.8 km2  peak  1356 m  tile ( -6,  6)  shelf_n_p
 
 STARTER ISLANDS (island under the middle of each starter tile)
   inner  ( -3,  4)  54.1 km2

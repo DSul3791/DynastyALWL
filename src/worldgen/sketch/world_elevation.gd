@@ -98,6 +98,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 		for mount in feature.get("mounts", []):
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m"):
 				_shape_coast_profile(mount)
+				_raise_foothills(mount)
 
 	_raise_landmark_islands()
 	_clamp_heights()
@@ -452,6 +453,7 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
 	var exponent: float = float(mount.get("beach_exp", 1.7))
 	var spawn: Dictionary = rules.get("spawn_keep", {})
+	var table: Dictionary = _band_table(mount, distance_cells, size, radius)
 
 	for row in range(size):
 		for column in range(size):
@@ -479,6 +481,181 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 			cap *= 1.0 + 0.2 * _value(_ridged, index)
 			heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
 
+
+
+# Height bands (Dave 24 Oct): the island's land is ranked by distance from the sea and the height follows the share of land
+# area, not metres: beach and flatland about 20%, then farmland, rolling hills, foothills, mountains and epic peaks. The
+# table is data (`height_bands` in sketch_rules.json, share of land -> fraction of the island's summit height); the summit
+# height runs from `summit_m` [low, high] by the island's own peak number, so islands differ.
+func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: int) -> Dictionary:
+	var starter_rules: Dictionary = rules.get("starter_islands", {})
+	var bands: Array = starter_rules.get("height_bands", [])
+
+	if bands.is_empty():
+		return {}
+
+	var summit_range: Array = starter_rules.get("summit_m", [1000, 1450])
+	var peak_range: Array = starter_rules.get("peak_m", [300, 560])
+	var t: float = clampf((float(mount["peak"]) - float(peak_range[0])) / maxf(float(peak_range[1]) - float(peak_range[0]), 1.0), 0.0, 1.0)
+	var summit: float = lerpf(float(summit_range[0]), float(summit_range[1]), t)
+	var distances: PackedFloat32Array = PackedFloat32Array()
+	var rotation: float = deg_to_rad(float(mount["rot"]))
+	var cos_r: float = cos(rotation)
+	var sin_r: float = sin(rotation)
+
+	for row in range(size):
+		for column in range(size):
+			var d_m: float = sea[row * size + column] * cell_m
+
+			if d_m <= 0.0:
+				continue
+
+			var dx: float = float(column - radius) * cell_m
+			var dz: float = float(row - radius) * cell_m
+			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
+			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
+
+			if along * along + across * across <= 1.0:
+				distances.append(d_m)
+
+	distances.sort()
+	return {"bands": bands, "summit": summit, "distances": distances}
+
+
+# Height of the band curve at distance d_m from the sea.
+func _band_height(table: Dictionary, d_m: float) -> float:
+	var distances: PackedFloat32Array = table["distances"]
+	var bands: Array = table["bands"]
+
+	if distances.is_empty():
+		return 0.0
+
+	var share: float = float(distances.bsearch(d_m)) / float(distances.size())
+
+	for i in range(1, bands.size()):
+		if share <= float(bands[i][0]):
+			var from: float = float(bands[i - 1][0])
+			var span: float = maxf(float(bands[i][0]) - from, 0.0001)
+			var u: float = (share - from) / span
+			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), _smooth(u))
+
+	return float(table["summit"]) * float(bands[bands.size() - 1][1])
+
+
+# Foothill belt (ISLAND_SHAPE_PLAN step 2): the cap above only lowers land, so the sectors beside the peak axis stayed low and
+# flat for kilometres. Inland ground now rises to at least a share of the same concave curve, modulated by radial ridges
+# (spokes around the island centre, wandering with distance), so every sector has ridges and gullies running to the coast
+# for the valleys to fall between. Spawn area, shore and the island's own peak are left alone.
+func _raise_foothills(mount: Dictionary) -> void:
+	var reach_m: float = maxf(float(mount["a"]), float(mount["b"])) * 1.6
+	var radius: int = int(ceil(reach_m / cell_m))
+	var size: int = radius * 2 + 1
+	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
+	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
+	var sea: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+	var rotation: float = deg_to_rad(float(mount["rot"]))
+	var cos_r: float = cos(rotation)
+	var sin_r: float = sin(rotation)
+	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
+	var exponent: float = float(mount.get("beach_exp", 1.7))
+	var floor_share: float = float(mount.get("foothill_floor", 0.55))
+	var spokes: float = float(mount.get("foothill_spokes", 9.0))
+	var wander: float = float(mount.get("foothill_wander", 0.5))
+	var table: Dictionary = _band_table(mount, sea, size, radius)
+	var ceiling: float = INF
+	var spawn: Dictionary = rules.get("spawn_keep", {})
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = SeedUtil.purpose_seed(_master, "foothill_spokes_" + str(mount.get("id", "")))
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 1.0
+	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise.fractal_octaves = 2
+
+	for row in range(size):
+		for column in range(size):
+			var d_m: float = sea[row * size + column] * cell_m
+
+			if d_m <= 150.0:
+				continue
+
+			var dx: float = float(column - radius) * cell_m
+			var dz: float = float(row - radius) * cell_m
+			var along: float = (dx * cos_r + dz * sin_r) / float(mount["a"])
+			var across: float = (-dx * sin_r + dz * cos_r) / float(mount["b"])
+			var weight: float = 1.0 - _smooth(clampf((sqrt(along * along + across * across) - 1.1) / 0.5, 0.0, 1.0))
+			weight *= _smooth(clampf((d_m - 150.0) / 350.0, 0.0, 1.0))
+
+			if not spawn.is_empty():
+				var cx: float = origin_x + (float(center_column - radius + column) + 0.5) * cell_m
+				var cz: float = origin_z + (float(center_row - radius + row) + 0.5) * cell_m
+				var spawn_distance: float = Vector2(cx - float(spawn["x"]), cz - float(spawn["z"])).length()
+				weight *= _smooth(clampf((spawn_distance - float(spawn["keep_radius_m"])) / float(spawn["blend_radius_m"]), 0.0, 1.0))
+
+			if weight <= 0.0:
+				continue
+
+			var index: int = index_of(center_column - radius + column, center_row - radius + row)
+			var angle: float = atan2(dz, dx) + wander * _value(_warp_x, index) * minf(d_m / 2000.0, 1.0)
+			# Spokes: a closed circle in noise space, so the pattern is seamless around the island.
+			var spoke: float = 0.5 + 0.5 * noise.get_noise_2d(cos(angle) * spokes * 0.35, sin(angle) * spokes * 0.35)
+			spoke = clampf(spoke * 1.4 - 0.2, 0.0, 1.0)
+			var curve: float = 6.0 + 340.0 * cap_scale * pow(d_m / 3500.0, exponent * 0.91)
+
+			if not table.is_empty():
+				curve = _band_height(table, d_m)
+
+			var target: float = minf(curve * (floor_share + (1.0 - floor_share) * spoke), ceiling)
+
+			if target > heights[index]:
+				heights[index] = lerpf(heights[index], target, weight)
+
+
+# Chamfer distance (in cells) from the nearest sea cell, over the square of `radius` cells round a centre cell.
+func _sea_distance(center_column: int, center_row: int, radius: int) -> PackedFloat32Array:
+	var size: int = radius * 2 + 1
+	var distance_cells: PackedFloat32Array = PackedFloat32Array()
+	distance_cells.resize(size * size)
+
+	for row in range(size):
+		for column in range(size):
+			var h: float = heights[index_of(center_column - radius + column, center_row - radius + row)]
+			distance_cells[row * size + column] = 0.0 if h <= 0.0 else 1.0e9
+
+	var diagonal: float = 1.4142
+
+	for row in range(size):
+		for column in range(size):
+			var at: int = row * size + column
+			var best: float = distance_cells[at]
+
+			if column > 0:
+				best = minf(best, distance_cells[at - 1] + 1.0)
+			if row > 0:
+				best = minf(best, distance_cells[at - size] + 1.0)
+				if column > 0:
+					best = minf(best, distance_cells[at - size - 1] + diagonal)
+				if column < size - 1:
+					best = minf(best, distance_cells[at - size + 1] + diagonal)
+
+			distance_cells[at] = best
+
+	for row in range(size - 1, -1, -1):
+		for column in range(size - 1, -1, -1):
+			var at: int = row * size + column
+			var best: float = distance_cells[at]
+
+			if column < size - 1:
+				best = minf(best, distance_cells[at + 1] + 1.0)
+			if row < size - 1:
+				best = minf(best, distance_cells[at + size] + 1.0)
+				if column < size - 1:
+					best = minf(best, distance_cells[at + size + 1] + diagonal)
+				if column > 0:
+					best = minf(best, distance_cells[at + size - 1] + diagonal)
+
+			distance_cells[at] = best
+
+	return distance_cells
 
 
 # facing: how much this point lies on the island's beach side (+1) or
