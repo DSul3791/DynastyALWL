@@ -14,7 +14,7 @@ const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the ba
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 2                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 3                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -132,8 +132,19 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 		for i in range(4, side - 4):
 			var k: int = j * side + i
 
-			if data.water_class[k] != RIVER or not _is_top(data, side, i, j):
+			var kind: int = data.water_class[k]
+
+			if (kind != RIVER and kind != LAKE) or not _is_top(data, side, i, j):
 				continue
+
+			# A pond is fed only when a painted river runs out of it (a river cell lower than the pond within outlet_cells); a pond with no outlet is a natural pond.
+			var outlet_flow: float = flow[k]
+
+			if kind == LAKE:
+				outlet_flow = _outlet_flow(data, flow, side, i, j, int(cfg.get("outlet_cells", 20)))
+
+				if outlet_flow <= 0.0:
+					continue
 
 			var served: bool = false
 
@@ -145,13 +156,34 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 			if served:
 				continue
 
-			var km2: float = flow[k] * data.spacing_m * data.spacing_m / 1.0e6
+			var km2: float = outlet_flow * data.spacing_m * data.spacing_m / 1.0e6
 			var share: float = feeder_share(km2, cfg)
 			placed.append(Vector2i(i, j))
 			sim.add_spring(i, j, rate * share)
 			added += 1
 
 	return added
+
+
+# The biggest drainage on a painted river cell lower than the pond cell (i, j) within `reach` cells: the river that leaves the pond; 0 when none.
+static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: int, reach: int) -> float:
+	var here: float = data.heights[j * side + i]
+	var best: float = 0.0
+
+	for dj in range(-reach, reach + 1):
+		for di in range(-reach, reach + 1):
+			var ni: int = i + di
+			var nj: int = j + dj
+
+			if ni < 0 or nj < 0 or ni >= side or nj >= side:
+				continue
+
+			var n: int = nj * side + ni
+
+			if data.water_class[n] == RIVER and data.heights[n] < here:
+				best = maxf(best, flow[n])
+
+	return best
 
 
 # The feeder spring as a share of the base spring: (area / full_km2) ^ p, clamped to min_share .. 1 (Q = k * A^p with k = rate / full_km2^p).
