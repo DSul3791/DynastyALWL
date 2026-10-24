@@ -13,14 +13,24 @@ const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground n
 const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the base spring flow
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
+const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 4                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 9                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
 static func rules() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RULES_PATH)) if FileAccess.file_exists(RULES_PATH) else null
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	var out: Dictionary = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	for key in rules_override:
+		out[key] = rules_override[key]
+
+	return out
+
+
+# Tools and tests set keys here to compare rule versions (land_map.gd --old-rules); empty in the game.
+static var rules_override: Dictionary = {}
 
 
 # The drainage the tile file stores, in cells per sample (decode_flow), or empty when the tile has none (placeholder, old bake, section all zero).
@@ -58,7 +68,13 @@ static func _drawn_ground(data, generator) -> PackedFloat32Array:
 
 # A simulation started from the painted water with springs placed. `rate` is each
 # spring's flow in m3 per second.
+# Where each spring of the last build came from, in the order of sim.springs: "head" (_find_heads, moved to a plateau or pond middle),
+# "feeder_river" (a painted river cell that is the highest of its 3 x 3) or "feeder_pond" (a pond with an outlet). For the land map tool.
+static var last_kinds: Array = []
+
+
 static func build(data, rate: float, generator, seed_painted: bool = true):
+	last_kinds = []
 	var side: int = data.samples
 	var sim = WaterSim.new()
 	sim.setup(side, data.spacing_m, _drawn_ground(data, generator))
@@ -79,6 +95,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 	# Highest head first: a big head pond has several heads and keeps the spring of the first one that
 	# reaches it, so the highest pond (not a lower basin beside it that the outlet carve made) gets it.
+	var flow_all: PackedFloat32Array = flow_of(data, generator)
 	var heads: Array = _find_heads(data, side)
 	heads.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return data.heights[a.y * side + a.x] > data.heights[b.y * side + b.x])
 
@@ -90,6 +107,20 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 			continue
 
 		var spot: Vector2i = _plateau_near(sim, head, side, data)
+		var in_pond: bool = _pond_near(data, head, side).x >= 0
+
+		# Dave 24 Oct 2026: water sources start in a natural catch basin. A river head (no pond) keeps its spring ON the head, where the bake carves the basin;
+		# the plateau move put springs on open ground. Ponds keep their pond middle.
+		if bool(rules().get("springs_at_heads", false)) and not in_pond:
+			spot = head
+
+		# Steep ground (v6, Sonny 24 Oct): a spring on a rock face is a sheet running down it. Move it up the painted river to ground that is not
+		# steep, or drop it.
+		spot = _off_steep(data, side, spot)
+
+		if spot.x < 0:
+			continue
+
 		var duplicate: bool = false
 
 		# A big head pond has several "heads" around its edge: one spring per pond.
@@ -102,19 +133,117 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 
 		placed.append(spot)
 		# Owner (2026-10-20): one spring per pond, its flow growing with the pond (1x up to
-		# POND_FULL_FLOW_M across, then in step with the diameter).
-		var factor: float = 1.0 if seed_painted and _pond_near(data, head, side).x < 0 else flow_factor(_pond_diameter_m(data, spot, side))
-		sim.add_spring(spot.x, spot.y, rate * factor)
+		# POND_FULL_FLOW_M across, then in step with the diameter). v6 ("catchment" in the rules): the flow follows the catchment above the head instead.
+		var factor: float = 1.0 if seed_painted and not in_pond else flow_factor(_pond_diameter_m(data, spot, side))
+		var q: float = rate * factor
 
-	_add_feeders(sim, data, generator, side, placed, rate)
+		if catchment_on():
+			q = catchment_flow(_head_km2(data, flow_all, side, spot, 20 if in_pond else HEAD_KM2_REACH))
+
+		sim.add_spring(spot.x, spot.y, q)
+		last_kinds.append("head")
+
+	_add_feeders(sim, data, generator, side, placed, rate, heads)
+	_add_hollow_springs(sim, data, flow_all, side, placed)
+	_add_edge_inflows(sim, data, flow_all, side, placed)
 	sim.wake_all_wet()
 	return sim
+
+
+# Hollow springs (v7, Sonny 24 Oct 2026: otherwise a bowl with no river stays dry). Every natural hollow or carved bowl of min_depth_m and min_area_m2 or more
+# that holds no spring gets an inflow at its deepest cell: catchment_flow of the biggest drainage on its cells (0.35 km2 without a flow map).
+static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, placed: Array) -> int:
+	var cfg: Dictionary = rules().get("hollow_springs", {})
+
+	if not bool(cfg.get("enabled", false)):
+		return 0
+
+	var step: int = int(cfg.get("step", 2))
+	var added: int = 0
+
+	for hollow in HollowFinder.find(data, step, float(cfg.get("min_depth_m", 1.5))):
+		if float(hollow["area_m2"]) < float(cfg.get("min_area_m2", 5000.0)):
+			continue
+
+		var coarse: int = hollow["side"]
+		var members: Dictionary = {}
+		var km2: float = 0.35
+
+		if not flow.is_empty():
+			km2 = 0.0
+
+		for k in hollow["cells"]:
+			members[k] = true
+
+			if not flow.is_empty():
+				km2 = maxf(km2, flow[(k / coarse) * step * side + (k % coarse) * step] * data.spacing_m * data.spacing_m / 1.0e6)
+
+		var served: bool = false
+
+		for other in placed:
+			if members.has((other.y / step) * coarse + other.x / step):
+				served = true
+				break
+
+		if served:
+			continue
+
+		var deepest: int = hollow["cell"]
+		var at: Vector2i = Vector2i(deepest % side, deepest / side)
+		placed.append(at)
+		sim.add_spring(at.x, at.y, catchment_flow(km2))
+		last_kinds.append("hollow")
+		added += 1
+
+	return added
+
+
+# Edge inflows (v9): a painted river that runs into the tile over its edge from the next tile (its top is outside this tile, so no head here) gets a
+# spring on the edge cell, sized like a head from the drainage on that cell. A river cell on the outer row or column counts when the ground a cell inside
+# is lower; one spring per river (none if a spring is within near_cells already).
+static func _add_edge_inflows(sim, data, flow: PackedFloat32Array, side: int, placed: Array) -> int:
+	var cfg: Dictionary = rules().get("edge_inflows", {})
+
+	if not bool(cfg.get("enabled", false)) or flow.size() != side * side:
+		return 0
+
+	var near: float = float(rules().get("feeders", {}).get("near_cells", 30))
+	var added: int = 0
+
+	for n in range(side):
+		for edge in [Vector2i(n, 0), Vector2i(n, side - 1), Vector2i(0, n), Vector2i(side - 1, n)]:
+			var k: int = edge.y * side + edge.x
+
+			if data.water_class[k] != RIVER or flow[k] <= 0.0:
+				continue
+
+			var inward: Vector2i = Vector2i(signi(side / 2 - edge.x) if edge.x == 0 or edge.x == side - 1 else 0, signi(side / 2 - edge.y) if edge.y == 0 or edge.y == side - 1 else 0)
+
+			if data.heights[(edge.y + inward.y) * side + edge.x + inward.x] >= data.heights[k]:
+				continue
+
+			var served: bool = false
+
+			for other in placed:
+				if Vector2(edge.x - other.x, edge.y - other.y).length() < near:
+					served = true
+					break
+
+			if served:
+				continue
+
+			placed.append(edge)
+			sim.add_spring(edge.x, edge.y, catchment_flow(flow[k] * data.spacing_m * data.spacing_m / 1.0e6))
+			last_kinds.append("edge")
+			added += 1
+
+	return added
 
 
 # A spring for every river head the pond springs do not serve (a tributary head near a bigger river is not the highest river cell in its 80 m, so
 # _find_heads skips it and the stretch below it stays dry). Its size follows the drainage area at the head: rate x (area / full_km2) ^ p, clamped.
 # Rule-based, row by row, so the same tile always gets the same springs. Does nothing without the tile's flow map or when disabled in the rules.
-static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: float) -> int:
+static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: float, heads: Array = []) -> int:
 	var cfg: Dictionary = rules().get("feeders", {})
 
 	if not bool(cfg.get("enabled", false)) or generator == null or str(generator.tiles_dir) == "":
@@ -148,10 +277,20 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 				if outlet_flow <= 0.0:
 					continue
 
+			# Dave 24 Oct 2026 (springs only at river heads): a river cell that is only the highest of its 3 x 3 (a bump in the painted bed) is no head.
+			# It snaps to the nearest real head within snap_cells, or the spring is dropped.
+			var at: Vector2i = Vector2i(i, j)
+
+			if kind == RIVER and bool(rules().get("springs_at_heads", false)) and not _is_top_in(data, side, i, j, HEAD_RADIUS):
+				at = _nearest_head(heads, at, int(cfg.get("snap_cells", 25)))
+
+				if at.x < 0:
+					continue
+
 			var served: bool = false
 
 			for other in placed:
-				if Vector2(i - other.x, j - other.y).length() < near:
+				if Vector2(at.x - other.x, at.y - other.y).length() < near:
 					served = true
 					break
 
@@ -160,8 +299,9 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 
 			var km2: float = outlet_flow * data.spacing_m * data.spacing_m / 1.0e6
 			var share: float = feeder_share(km2, cfg)
-			placed.append(Vector2i(i, j))
-			sim.add_spring(i, j, rate * share)
+			placed.append(at)
+			sim.add_spring(at.x, at.y, catchment_flow(km2) if catchment_on() else rate * share)
+			last_kinds.append("feeder_pond" if kind == LAKE else "feeder_river")
 			added += 1
 
 	return added
@@ -247,6 +387,126 @@ static func _is_top(data, side: int, i: int, j: int) -> bool:
 			var n: int = k + dj * side + di
 
 			if n != k and data.water_class[n] != 0 and (data.heights[n] > here or (data.heights[n] == here and n < k)):
+				return false
+
+	return true
+
+
+# Spring flow that follows the catchment (v6, data/water_settle.json "catchment"; Sonny and Dave 24 Oct 2026: a 35 m pond got 100 m3/s).
+# m3 per second at the game's x1 flow key, = m3s_per_km2 x catchment km2, clamped to min_m3s .. max_m3s. The game multiplies it by the flow key (x10 start).
+static func catchment_on() -> bool:
+	return bool(rules().get("catchment", {}).get("enabled", false))
+
+
+static func catchment_flow(km2: float) -> float:
+	var cfg: Dictionary = rules().get("catchment", {})
+	return clampf(float(cfg.get("m3s_per_km2", 0.1)) * maxf(km2, 0.0), float(cfg.get("min_m3s", 0.01)), float(cfg.get("max_m3s", 2.0)))
+
+
+const HEAD_KM2_REACH := 6             # cells downstream of a head searched for its first drainage (the head cell itself holds 1 cell)
+
+# The catchment above a head in km2: the biggest drainage on a painted river cell within `reach` cells of it (the head cell holds only itself).
+# 0.35 km2, the river start threshold of the bake, when the tile has no flow map.
+static func _head_km2(data, flow: PackedFloat32Array, side: int, at: Vector2i, reach: int) -> float:
+	if flow.is_empty():
+		return 0.35
+
+	var best: float = 0.0
+
+	for dj in range(-reach, reach + 1):
+		for di in range(-reach, reach + 1):
+			var ni: int = at.x + di
+			var nj: int = at.y + dj
+
+			if ni < 0 or nj < 0 or ni >= side or nj >= side:
+				continue
+
+			var n: int = nj * side + ni
+
+			if data.water_class[n] == RIVER:
+				best = maxf(best, flow[n])
+
+	return maxf(best * data.spacing_m * data.spacing_m / 1.0e6, 0.0)
+
+
+# Steeper than this is a rock face (v6): the slope is the biggest drop to a neighbour over the cell spacing.
+const STEEP_TAN := 0.466              # tan 25 degrees
+
+static func _is_steep(data, side: int, i: int, j: int) -> bool:
+	if i < 1 or j < 1 or i >= side - 1 or j >= side - 1:
+		return false
+
+	var k: int = j * side + i
+	var drop: float = 0.0
+
+	for n in [k - 1, k + 1, k - side, k + side]:
+		drop = maxf(drop, absf(data.heights[k] - data.heights[n]))
+
+	return drop / data.spacing_m > STEEP_TAN
+
+
+# `spot` itself when the ground is not steep; else the nearest higher painted river cell within 15 cells that is not steep; else (-1, -1).
+static func _off_steep(data, side: int, spot: Vector2i) -> Vector2i:
+	if not bool(rules().get("steep", {}).get("enabled", false)) or not _is_steep(data, side, spot.x, spot.y):
+		return spot
+
+	var here: float = data.heights[spot.y * side + spot.x]
+	var best: Vector2i = Vector2i(-1, -1)
+	var best_d: float = INF
+
+	for dj in range(-15, 16):
+		for di in range(-15, 16):
+			var ni: int = spot.x + di
+			var nj: int = spot.y + dj
+
+			if ni < 1 or nj < 1 or ni >= side - 1 or nj >= side - 1:
+				continue
+
+			var n: int = nj * side + ni
+
+			if data.water_class[n] != RIVER or data.heights[n] < here or _is_steep(data, side, ni, nj):
+				continue
+
+			var d: float = float(di * di + dj * dj)
+
+			if d < best_d:
+				best_d = d
+				best = Vector2i(ni, nj)
+
+	return best
+
+
+# The nearest of `heads` within `reach` cells of `from`; (-1, -1) when none.
+static func _nearest_head(heads: Array, from: Vector2i, reach: int) -> Vector2i:
+	var best: Vector2i = Vector2i(-1, -1)
+	var best_d: float = float(reach)
+
+	for head in heads:
+		var d: float = Vector2(head - from).length()
+
+		if d <= best_d:
+			best_d = d
+			best = head
+
+	return best
+
+
+# Whether the cell is the highest water cell within `radius` cells (the same test as _find_heads, for any cell).
+static func _is_top_in(data, side: int, i: int, j: int, radius: int) -> bool:
+	var k: int = j * side + i
+	var here: float = data.heights[k]
+
+	for dj in range(-radius, radius + 1):
+		for di in range(-radius, radius + 1):
+			var ni: int = i + di
+			var nj: int = j + dj
+
+			if ni < 0 or nj < 0 or ni >= side or nj >= side:
+				continue
+
+			var n: int = nj * side + ni
+
+			if n != k and data.water_class[n] == RIVER and (data.heights[n] > here or (data.heights[n] == here and n < k)):
 				return false
 
 	return true
