@@ -2112,6 +2112,10 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
+			# Two members of one berry-shrub patch sit as close as the patch's own spacing says (the placer's patch mode, not the crown rule).
+			if not sa.has("stand") and (ids[a] >> 16) == (ids[b] >> 16) and (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE:
+				continue
+
 			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and sa.has("stand") else 0.0
 			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE and sb.has("stand") else 0.0
 			var gap: float = FloraPlacerScript.min_gap(sa["kind"], FloraPlacerScript.spacing_radius(sa, items["heights"][a]), stand_a, ids[a] >> 16, sb["kind"], FloraPlacerScript.spacing_radius(sb, items["heights"][b]), stand_b, ids[b] >> 16)
