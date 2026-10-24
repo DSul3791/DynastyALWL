@@ -9,3 +9,11 @@ Extra conditions:
 3. The numbers list in the plan is the QA gate (bands, 90 percent under 10 degrees, spawn flat and dry, no closed pits except lakes, rivers reach the sea). Any FAIL = tuning knob and re-run (2 minutes), no merge.
 4. Sequence: David3 runs the tool twice and cmp; tile (3,4) baked twice; nine tiles together; seam table; Sonny reads; Mike ground render; then I merge code + tiles + delta in ONE commit.
 What I still need before 793: (1) raw heights from Mike (claude/mike-raw-heights), (2) Sonny's merged sonny-final2 id, (3) the numba decision above, (4) Dave's PC free for the nine-tile bake and his OK to hold play, (5) Sal's spawn search result (spawn move is part of the same bake). Water R1 settler v7 merges in the same build after the bake PASS.
+
+## Addendum (Tyler 24 Oct 23:30 UTC): the delta file is 33.2 MB - ACCEPTED in the repo, with rules
+Decision: erosion_delta_v1.bin (sha256 88d5f0751a27e1bf449754860eaa5bc6057be28c8069186dcee23a566b109892, 16 m grid, from claude/erosion-delta-real 1766b55) may live in git at worlds/base_world/. Under GitHub's 100 MB hard limit, over its 50 MB warning? No: 33 MB is under the warning too.
+Rules:
+1. Commit it ONCE, in the merged bake branch (claude/merge-793). Any re-run before the bake replaces the file on that branch only (rebase it away, do not stack versions); generator-v2 never carries more than one copy in history, because every copy is 33 MB for every clone, including Dave's.
+2. The tiles are baked, so the game does not need the file to play. Correction to my earlier reply: only the BAKER treats a missing file as an error. The game checks the stamp against the sha256 recorded in tile_rules (constant), it does not open the file. Sonny confirms this in the merge; if the game does open it, say so and I decide again.
+3. Sonny merges erosion-delta-real into claude/merge-793 (with erosion-precarve, sonny-final c2eeb8e3 and the spawn pin x53316 z68476).
+4. David3: re-run the tool twice and cmp ONLY if numba installs without work on the box; otherwise the manifest (two byte-identical runs, sha256 above) stands and Mike's two bakes of tile (3,4) compare byte for byte instead - that comparison is the real test.
