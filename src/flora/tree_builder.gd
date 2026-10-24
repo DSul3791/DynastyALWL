@@ -258,6 +258,22 @@ static func _trunk(acc: Acc, _rng: RandomNumberGenerator, height: float, base_r:
 
 
 # A thin tube from `from` toward `to`.
+# Root flare (goal 2 batch C): where a trunk meets the ground it swells into buttress roots that run out and dive under the soil.
+# Reference: mature oak and beech show 4-7 surface roots reaching about two trunk radii out; near models only (far trees keep their silhouette).
+static func _root_flare(acc: Acc, main_rng: RandomNumberGenerator, at: Vector3, trunk_r: float, color: Color, count: int, reach: float = 2.2) -> void:
+	# Its own random stream, seeded from the tree's, so the rest of the tree is drawn exactly as before (no shift in the main stream).
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = main_rng.seed ^ 0x5eed
+	var phase: float = rng.randf() * TAU
+
+	for k in range(count):
+		var a: float = phase + TAU * float(k) / float(count) + rng.randf_range(-0.25, 0.25)
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var start: Vector3 = at + out * trunk_r * 0.55 + Vector3(0.0, trunk_r * rng.randf_range(0.6, 1.1), 0.0)
+		var end: Vector3 = at + out * trunk_r * rng.randf_range(reach * 0.75, reach) - Vector3(0.0, trunk_r * 0.25, 0.0)
+		_branch(acc, start, end, trunk_r * 0.38, trunk_r * 0.12, color, 4)
+
+
 static func _branch(acc: Acc, from: Vector3, to: Vector3, r0: float, r1: float, color: Color, sides: int) -> void:
 	var axis: Vector3 = (to - from)
 	var length: float = axis.length()
@@ -564,6 +580,9 @@ static func _birch(white: Acc, bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNu
 	var sides: int = 5 if far else 8
 	var rings: int = 1 if far else 12
 	_trunk(white, rng, h * 0.9, trunk_r, trunk_r * 0.14, lean, BARK_TINT_BIRCH, sides, rings, 0.0 if far else 0.7)
+
+	if not far:
+		_root_flare(bark, rng, Vector3.ZERO, trunk_r, Color(0.16, 0.14, 0.12), 4, 1.6)
 
 	if not far:
 		# The foot of an old birch goes black and rough in ragged tongues: the
@@ -887,6 +906,9 @@ static func _scots_pine(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: f
 	var trunk_h: float = h * 0.93
 	var first: int = bark.v.size()
 	_trunk(bark, rng, trunk_h, trunk_r, trunk_r * 0.15, lean, BARK_TINT_PINE_LOW, 5 if far else 8, 2 if far else 10, 0.0 if far else 0.5)
+
+	if not far:
+		_root_flare(bark, rng, Vector3.ZERO, trunk_r, BARK_TINT_PINE_LOW, 5, 2.0)
 	# Gray-brown plates low down give way to orange-red bark above.
 	var change: float = h * rng.randf_range(0.32, 0.42)
 
@@ -976,6 +998,9 @@ static func _spruce(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 	var lean: Vector2 = Vector2(rng.randf_range(-0.012, 0.012), rng.randf_range(-0.012, 0.012)) * h
 	var trunk_r: float = maxf(trunk, h * 0.012)
 	_trunk(bark, rng, h * 0.97, trunk_r, trunk_r * 0.08, lean, BARK_TINT_SOFT, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.6)
+
+	if not far:
+		_root_flare(bark, rng, Vector3.ZERO, trunk_r, BARK_TINT_SOFT, 5, 2.0)
 	var widest: float = maxf(crown, h * (0.13 if variant >= 2 else 0.16)) * rng.randf_range(0.92, 1.08)
 	var crown_base: float = h * (rng.randf_range(0.3, 0.42) if stand_grown else 0.0)
 	var y_low: float = maxf(crown_base, 1.3 + widest * 0.25)
@@ -1050,6 +1075,9 @@ static func _oak(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator,
 	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
 	var first: int = bark.v.size()
 	_trunk(bark, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.78, lean, BARK_TINT_OAK, 6 if far else 12, 1 if far else 5, 0.0 if far else 1.3)
+
+	if not far:
+		_root_flare(bark, rng, Vector3.ZERO, trunk_r, BARK_TINT_OAK, 6)
 
 	if not far:
 		# Rugged trunk: bulges and furrows, and a twist in the grain.
@@ -1652,6 +1680,9 @@ static func _beech(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 	var lean: Vector2 = Vector2(rng.randf_range(-0.02, 0.02), rng.randf_range(-0.02, 0.02)) * h
 	var first: int = smooth.v.size()
 	_trunk(smooth, rng, fork_y + h * 0.05, trunk_r, trunk_r * 0.8, lean, BARK_TINT_BEECH, 6 if far else 12, 1 if far else 5, 0.0 if far else 1.2)
+
+	if not far:
+		_root_flare(smooth, rng, Vector3.ZERO, trunk_r, BARK_TINT_BEECH, 5, 1.9)
 
 	if not far:
 		# Fluted: smooth rounded ribs running up the trunk, deepest at the foot.
