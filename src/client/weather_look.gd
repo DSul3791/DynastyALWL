@@ -39,6 +39,9 @@ const AMBIENT_STORM_FLOOR := 1.1         # the same floor in a full storm: no mo
 const AMBIENT_NIGHT_COLOR := Color(0.24, 0.3, 0.44)   # the cold fill used on dark nights and storms
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
+const CAVE_LIGHT_LEFT := 0.04            # share of the sun and sky light left deep in a cave or tunnel (daylight does not reach it)
+const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
+const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
 const EXPOSURE_CLEAR := 1.1
 const EXPOSURE_STORM := 0.95
 const SATURATION_CLEAR := 1.12
@@ -365,13 +368,15 @@ func _process_body(delta: float) -> void:
 		sky_material.set_shader_parameter("gloom", gloom)
 		sky_material.set_shader_parameter("flash", flash_level)
 
-	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both.
+	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both. Under rock (a cave, a tunnel
+	# dug into a hill) neither the sun nor the sky's light gets in, day or night: only torches and fires light it.
+	var under_rock: float = cave_light(_client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0)
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 
 	if _client._sun != null:
-		_client._sun.light_energy = LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2
+		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2) * under_rock
 
-	environment.ambient_light_energy = maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0
+	environment.ambient_light_energy = under_rock * (maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0)
 	# The sky's own light is near black on a dark night or a storm night, so a cold moonlit blue is mixed in
 	# (ambient colour counts where the sky contribution is below 1): trees and ground stay readable, never pure black.
 	var dim: float = clampf(maxf(day.night, _dark * 0.6), 0.0, 1.0)
@@ -391,6 +396,12 @@ func _process_body(delta: float) -> void:
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
 	_update_ground(rain, snow)
 	_update_particles(rain, snow, float(_s["wind"]))
+
+
+# Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).
+static func cave_light(rock_enclosure: float) -> float:
+	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
+	return lerpf(1.0, CAVE_LIGHT_LEFT, shut)
 
 
 # The same grading the sky shader applies, so the fog meets the sky's horizon.
