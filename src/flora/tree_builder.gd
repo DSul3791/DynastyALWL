@@ -181,6 +181,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
 			_column(bark, rng, h, trunk, Color(0.7, 0.9, 0.6), 6 if far else 8, 3)
+		"grass_tuft":
+			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
 			_grass(leaves, rng, h, crown, 2 if far else 3)
 		"fern":
@@ -2817,3 +2819,60 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					_bead(bark, base.lerp(top, 0.7 + 0.3 * float(m) / 10.0) + Vector3(rng.randfn(), 0.0, rng.randfn()) * bead * 0.6, Vector3.ONE * bead * 0.5, colour)
 			_:
 				_blossom(bark, rng, top, bead * 2.4, colour)
+
+
+# Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
+# green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
+const GRASS_LOOKS := {
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 7, "head_color": Color(0.74, 0.66, 0.38), "reach": 0.9},
+	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
+	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
+	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
+}
+
+
+static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var cards: int = int(look["cards"])
+	var head: String = str(look["head"])
+	var low: float = 0.45 if head == "spike" else 1.0       # plantain leaves lie low, only the spikes stand tall
+
+	if cards > 0:
+		var yaw: float = rng.randf() * PI
+
+		for k in range(maxi(cards - (1 if far else 0), 1)):
+			var turn: float = yaw + PI * float(k) / float(cards)
+			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
+			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
+
+	var color: Color = look["head_color"]
+
+	for k in range(3 if far else int(look["heads"])):
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var base: Vector3 = out * crown * rng.randf_range(0.05, 0.3)
+		var top_h: float = h * float(look["reach"]) * rng.randf_range(0.8, 1.0)
+		var tip: Vector3 = base + out * crown * rng.randf_range(0.1, 0.45) + Vector3(0.0, top_h, 0.0)
+		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
+
+		match head:
+			"succulent":
+				# Jointed stems that fork twice, thick and short, tips a lighter green.
+				var fork: Vector3 = tip - Vector3(0.0, top_h * 0.15, 0.0)
+				_branch(bark, base, mid, maxf(h * 0.03, 0.003), maxf(h * 0.022, 0.0025), color, 3)
+				_branch(bark, mid, fork, maxf(h * 0.022, 0.0025), maxf(h * 0.016, 0.002), color, 3)
+
+				if not far:
+					_branch(bark, fork, tip + out * crown * 0.1, maxf(h * 0.016, 0.002), maxf(h * 0.008, 0.0015), color.lightened(0.15), 3)
+					_branch(bark, fork, tip - out * crown * 0.1, maxf(h * 0.016, 0.002), maxf(h * 0.008, 0.0015), color.lightened(0.15), 3)
+			_:
+				var stalk: Color = Color(0.5, 0.55, 0.28) if head != "spike" else Color(0.45, 0.5, 0.25)
+				_branch(bark, base, mid, maxf(h * 0.008, 0.0015), maxf(h * 0.006, 0.0012), stalk, 3)
+				_branch(bark, mid, tip, maxf(h * 0.006, 0.0012), maxf(h * 0.004, 0.001), stalk, 3)
+
+				if head == "cotton":
+					_bead(bark, tip, Vector3(h * 0.07, h * 0.08, h * 0.07), color)
+				elif head == "spike":
+					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
+				elif not far:
+					for b in range(4):
+						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03, 0.0) + out * crown * 0.02 * float(b % 2), Vector3(h * 0.012, h * 0.022, h * 0.012), color * rng.randf_range(0.9, 1.1))

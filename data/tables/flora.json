@@ -1268,6 +1268,7 @@
 			"display": "Tall grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.5,
 				1.0
@@ -1388,6 +1389,7 @@
 			"display": "Cotton grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.2,
 				0.5
@@ -3071,6 +3073,7 @@
 			"display": "Samphire",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.3
@@ -3418,6 +3421,7 @@
 			"display": "Ribwort plantain",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.4
