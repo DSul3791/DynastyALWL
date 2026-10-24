@@ -428,7 +428,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.55, "squash": 0.7}
+			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"clay": {
 			"number": 36,
@@ -438,7 +438,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.55, "squash": 0.7}
+			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"sand": {
 			"number": 37,
