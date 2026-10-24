@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 07:15 UTC builds 779 (key-woods, goal2-b, tree-belts, slot-test-warning) and 780 (harvest-field) merged; no plan pending
 - 06:45 UTC checked: no plan pending, gate list 5 tips unchanged (ae925848, 2bf75e66, 1b1cd8a0, 21c5f838); waiting on Mike's PASS
 - 06:12 UTC plan GOs: Kathleen goal2 batch B, Sal key woods; gate list 5 = harvest-field ae925848, key-woods 2bf75e66, goal2-b 1b1cd8a0, slot-test-warning 21c5f838 (clean on 778); no plan pending
 - 05:40 UTC build 778 merged (v29b bake, TV34, spawn PASS); Steve harvest-field plan answered GO; gate list 5 = harvest-field 16cbafa2; no plan pending
