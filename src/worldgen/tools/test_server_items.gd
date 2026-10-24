@@ -258,7 +258,7 @@ func _init() -> void:
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
-	check(g.gather(1, "hazel", "shrub", "0,0,78", 78, Vector3(501.0, 70.0, 500.0)), "shrubs give sticks")
+	check(g.gather(1, "gorse", "shrub", "0,0,78", 78, Vector3(501.0, 70.0, 500.0)), "a shrub with no harvest row still gives sticks")
 	check(g.inventory_of(1).count_of(g.table.number_of("stick")) >= 1, "got sticks")
 	check(g.gather(1, "dandelion", "plant", "0,0,79", 79, Vector3(501.0, 70.0, 500.0)), "dandelion gives its leaves, roots or flowers in season")
 	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
