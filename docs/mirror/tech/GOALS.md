@@ -23,14 +23,16 @@ An amazing, well-rounded game that fits our design documents: a persistent rough
 7. ISLAND 2, 3, ... one per day: a different peak layout each (central peak, three peaks end to end, ...), types table row, checks, one-tile test, 9-tile bake.
 Completed: v26 and v27 world bakes delivered (builds 764, 772)
 
-## SAL. Ultimate: everything a player can make, build, grow and trade works, is fun, and fits the design (crafting, building, farming, production, economy).
-1. ISLAND JOB (dedicated): island checks, types tables, per-island layouts, sub-jobs from Sonny. Done when the check table runs on every bake.
-2. ITEM COMPLETENESS: audit every item: recipe, cost, inspect text, use, model name. Done when the audit table has no empty cell for the items in the game today.
-3. BLUEPRINT BUILD 1c: all tiers, foundations, walls, doors, windows, ceilings, roofs, braces with their look names (10.1). Done when each piece can be built in a test world.
-4. FARMING AND HARVEST (5.1, 5.2): pick, uproot, replant, patches, hoe grade, seasons. Done when a small farm runs a full season in the rig.
-5. PRODUCTION CHAIN: sawmill step 2 with water power, woodworking table, mine chain (11.1, 11.2). Done when logs become boards through the chain.
-6. SKILLS AND CRAFT PROGRESSION (5.3, 5.4). Done when a crafted item's quality depends on the skill.
-7. ECONOMY HOOKS (13, design principle 2: do it yourself or hire it out): coin values, a job doable by hand or by NPC. Done when one job works both ways.
+## SAL. Ultimate (Dave 01:31): fill the world with the medieval tools, instruments, workbenches, building items, clothing and any other items we need to exist, thrive and adventure in this fantasy world.
+1. ISLAND JOB (dedicated, stays first today): island checks, types tables, per-island layouts, sub-jobs from Sonny. Done when the check table runs on every bake.
+2. ITEM LIST AND COMPLETENESS: one master list of every item the design needs (tools, instruments, workbenches, building items, clothing, food, weapons, containers, magic items) with status; audit each existing item for recipe, cost, inspect text, use, model name. Done when the list exists and the existing items have no empty cell.
+3. TOOLS (5.3, ITEMS_DESIGN): hand tools, farm tools, mining tools, woodworking and smithing tools, tiers by material. Done when each tool class has its tiers, recipes and uses.
+4. WORKBENCHES AND STATIONS (10.1, 11.1): sawmill with water power, woodworking table, forge, anvil, loom, kiln, tanning rack, cooking station, in daily batches. Done when each station crafts its first recipes.
+5. BUILDING ITEMS: blueprint build 1c, all tiers (foundations, walls, doors, windows, ceilings, roofs, braces, stairs, furniture, storage). Done when each piece can be built in a test world.
+6. CLOTHING AND GEAR (6.7, armour is parked): clothing by climate and class, boots, cloaks, packs; hot and cold resistance from gear (4.5). Done when a character can dress for each climate zone.
+7. INSTRUMENTS AND CULTURE: musical instruments, tools of trades, books and journals (6.15), toys, game pieces, religious items. Done when the list has a recipe and a use for each.
+8. FARMING, FOOD AND PRODUCTION CHAINS (5.1, 5.2, 11.2): pick, uproot, replant, patches, hoe grade, seasons, mine chain. Done when a small farm and the mine chain run in the rig.
+9. SKILLS, QUALITY AND ECONOMY HOOKS (5.4, 13): quality depends on skill; coin values; a job doable by hand or by NPC (design principle 2).
 Completed: showroom real items (build 773, Dave to confirm in game)
 
 ## KATHLEEN. Ultimate (Dave 01:30): make the world and everything in it look as amazing and photorealistic as possible, for a fantasy world filled with magic and gods.
