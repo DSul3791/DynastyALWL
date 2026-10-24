@@ -16,12 +16,6 @@ Note: 1. Start the game (MikeW has pulled the new build). 2. Esc > Settings > So
 Note: Recommendation: Yes after listening, because the duck clips are real recordings that passed the team check and the sand run is now only about 5 dB over walk, as you asked.
 [test]
 
-## look-sound-batch2 | Do the new ambience sounds sound right? (bird chorus, owl, frogs, crickets, surf, wind)
-Note: 1. Pull build 787.
-Note: 2. Esc > Settings > Sound test > Batch 2: press once per group; each group plays 3 times.
-Note: 3. Listen with headphones. Yes if they sound natural. No: name the group that is wrong.
-[test]
-
 ## look-new-tools | Can you craft the new tools? (build 787: stone hammer, hand saw, stone adze)
 Note: 1. Pull build 787.
 Note: 2. At a workbench craft a stone hammer, a hand saw and a stone adze.
