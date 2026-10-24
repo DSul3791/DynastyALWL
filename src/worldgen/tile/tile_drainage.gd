@@ -369,6 +369,10 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 					continue
 
 				var floor_m: float = channels.bed[index]
+
+				# Underwater hollows (sea floor, ocean basins) are not pits to drain.
+				if floor_m < 1.0 or land[index] < 1.0:
+					continue
 				var rim: float = INF
 				var is_pit: bool = true
 
