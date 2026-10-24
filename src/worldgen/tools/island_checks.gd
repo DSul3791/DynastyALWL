@@ -658,6 +658,8 @@ func _tile_summits(world_dir: String, fine: Dictionary) -> void:
 			_bound_row("%s summit plateau (within %.0f m of the top)" % [title, float(band["within_m"])], float(plateau["across_m"]), band["max_m"], true,
 				"top %.0f m at x %d z %d, flat area %.0f m across (%d cells)" % [best, int(peak_xz.x), int(peak_xz.y), float(plateau["across_m"]), int(plateau["cells"])])
 
+		_slope_rows(title, fine, best_index, config)
+
 		if _picture_dir == "":
 			continue
 
@@ -667,6 +669,60 @@ func _tile_summits(world_dir: String, fine: Dictionary) -> void:
 			drawn.append({"deg": float(bearing), "ray": _ray_fine(fine, peak_xz, float(bearing))})
 
 		_draw_sections(island_id, drawn, best, title, spacing, "_tile")
+
+
+# Slope classes and canyon share on the 8 m maps in a window of slope_window_m round the summit:
+# land at or under the easy limit, up to the hard limit, steeper; and the share of land lying at least
+# canyon_min_depth_m below the mean of 8 points 60 m away (gorge floors).
+func _slope_rows(title: String, fine: Dictionary, top_index: int, config: Dictionary) -> void:
+	var tile_limits: Dictionary = _limits["tiles"]
+	var width: int = fine["width"]
+	var rows: int = fine["rows"]
+	var spacing: float = fine["spacing"]
+	var heights: PackedFloat32Array = fine["heights"]
+	var waters: PackedByteArray = fine["water"]
+	var reach: int = int(float(tile_limits["slope_window_m"]) / spacing)
+	var ring: int = int(round(60.0 / spacing))
+	var easy_tan: float = tan(deg_to_rad(float(tile_limits["route_easy_deg"])))
+	var hard_tan: float = tan(deg_to_rad(float(tile_limits["route_hard_deg"])))
+	var depth: float = float(tile_limits["canyon_min_depth_m"])
+	var ci: int = top_index % width
+	var cj: int = _quot(top_index, width)
+	var land: int = 0
+	var easy: int = 0
+	var hard: int = 0
+	var canyon: int = 0
+
+	for j in range(maxi(ring + 1, cj - reach), mini(rows - ring - 2, cj + reach)):
+		for i in range(maxi(ring + 1, ci - reach), mini(width - ring - 2, ci + reach)):
+			var index: int = j * width + i
+
+			if heights[index] <= 0.0 or waters[index] == 255 or waters[index] == 1:
+				continue
+
+			land += 1
+			var dx: float = absf(heights[index + 1] - heights[index - 1]) / (2.0 * spacing)
+			var dz: float = absf(heights[index + width] - heights[index - width]) / (2.0 * spacing)
+			var slope: float = sqrt(dx * dx + dz * dz)
+
+			if slope <= easy_tan:
+				easy += 1
+			elif slope <= hard_tan:
+				hard += 1
+
+			var around: float = heights[index - ring] + heights[index + ring] + heights[index - ring * width] + heights[index + ring * width]
+			around += heights[index - ring - ring * width] + heights[index + ring - ring * width] + heights[index - ring + ring * width] + heights[index + ring + ring * width]
+
+			if around / 8.0 - heights[index] >= depth:
+				canyon += 1
+
+	if land == 0:
+		return
+
+	var land_f: float = float(land)
+	var steep: float = 1.0 - float(easy + hard) / land_f
+	_row("%s slope classes (8 m maps, %.0f km window)" % [title, float(tile_limits["slope_window_m"]) / 1000.0], "easy %.0f%%, hard %.0f%%, over %.0f deg %.1f%%" % [float(easy) / land_f * 100.0, float(hard) / land_f * 100.0, float(tile_limits["route_hard_deg"]), steep * 100.0], "report", "INFO")
+	_range_row("%s canyon share (floor %.0f m under the 60 m ring)" % [title, depth], float(canyon) / land_f, config["canyon_share"], "%.1f%% of land" % (float(canyon) / land_f * 100.0))
 
 
 # The connected ground within `within_m` of the top: its widest side in metres, and its cell count.

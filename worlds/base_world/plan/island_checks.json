@@ -4,6 +4,7 @@
 	"defaults": {
 		"min_area_km2": 5.0,
 		"sector_count": 8,
+		"canyon_share": [null, null],
 		"summit_range_m": [null, null],
 		"summit_plateaus": [{"within_m": 5.0, "max_m": null}, {"within_m": 20.0, "max_m": null}],
 		"flat_slope_deg": 5.0,
@@ -49,6 +50,8 @@
 		"spawn_max_water_cells": 0,
 		"river_min_cells": 30,
 		"river_gap_m": 128,
+		"slope_window_m": 6000,
+		"canyon_min_depth_m": 15.0,
 		"river_wet_depth_m": 0.05,
 		"summit_search_m": 3000,
 		"route_easy_deg": 25.0,
