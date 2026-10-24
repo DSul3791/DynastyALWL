@@ -148,3 +148,4 @@ SPAWN (decision for Dave AFTER the bake): Sal found no spot with hard rock withi
 
 ### Final bake source correction (Tyler, 24 Oct 20:37 UTC)
 claude/sonny-final is now 22585d73 (72d60408 and 22a9ff02 did not parse; restored). Adds _carve_basins (head ponds depth 2-8 m radius 25-120 m; lakes about 2-18 ha on flat reaches, sized by Qs = 0.1 x catchment km2) on top of forced channel to the sea, freeboard 1.0 m, steep-valley fix. Gate in order: David3 parse check; Mike's (3,4) bake (when Dave's PC is free); Sonny reads the tile (pit/cliff window, dead ends, river reaches the sea, basin counts); water thread's basin check. Then the full 792 bake.
+Bake source now claude/sonny-final c2eeb8e3 (Tyler 20:42 UTC; supersedes 22585d73); same gates. Water R1 settler v7 merges together with it.
