@@ -359,7 +359,8 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 	var reach: float = float(rules["ore_reach_m"])
 	var nodes: Array = cave["nodes"]
 	var step: float = float(_rules["step_m"])
-	var min_roof: float = float(_rules["min_roof_m"])
+	# Ore side passages may run closer under the surface than main passages (river gorges thin the roof over shallow ore).
+	var min_roof: float = minf(float(_rules["min_roof_m"]), float(rules.get("ore_min_roof_m", 2.0)))
 
 	for ore in _geology.ore_bodies:
 		var target: Vector3 = _ore_target(ore)

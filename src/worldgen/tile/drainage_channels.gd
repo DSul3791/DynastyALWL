@@ -22,6 +22,8 @@ const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
 const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
 const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
+const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
+const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -143,6 +145,22 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			wanted = maxf(wanted, centre_bed[next])
 
 		centre_bed[index] = minf(wanted, h[index])
+
+	# A crest between a river cell and its receiver (routing ran over the pre-erosion ground): cut the gorge through it,
+	# upstream first, so the bed falls all the way to the sea.
+	var order_size: int = fill.order.size()
+	var uncut_bed: PackedFloat32Array = centre_bed.duplicate()
+
+	for k in range(order_size - 1, -1, -1):
+		var index: int = fill.order[k]
+
+		if flow.discharge[index] < threshold:
+			continue
+
+		var next: int = fill.receiver[index]
+
+		if next >= 0 and flow.discharge[next] >= threshold:
+			centre_bed[next] = maxf(minf(centre_bed[next], centre_bed[index] - CREST_CUT_FALL_M), uncut_bed[next] - CREST_CUT_MAX_M)
 
 	# Water level on the centre line, never rising going downstream either.
 	var centre_surface: PackedFloat32Array = centre_bed.duplicate()
