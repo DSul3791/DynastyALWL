@@ -1558,3 +1558,7 @@ Answered: 2026-10-24 17:05 UTC
 Answer: Yes
 Answered: 2026-10-24 17:05 UTC
 
+## wl-lake-size | Water land types: still water of 4 or more cells (about 250 m2) counts as a lake in the label?
+Answer: Yes
+Answered: 2026-10-24 17:05 UTC
+
