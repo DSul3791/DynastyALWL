@@ -47,11 +47,6 @@ Note: Recommendation: Yes because direct pieces suit a first shelter and need no
 Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
 [check]
 
-## copper-tin-placement | Place copper and tin nuggets at runtime near gullies and rock faces, because the baked ground has none?
-Note: Hard stone is handled by choosing the spawn point near it, not by placing it.
-Note: Recommendation: Yes because the final bake would otherwise leave the bronze step with no ore.
-[check]
-
 ## wl-window | Water land types: read the water over 30 game days so one storm does not rename land?
 Note: Plan: design/WATER_LAND_TYPES.md. Land is named from slowly averaged water (30 game days = 30 real hours).
 Note: Recommendation: Yes because a single storm should not turn a meadow into a swamp. Why not: change feels slow.
