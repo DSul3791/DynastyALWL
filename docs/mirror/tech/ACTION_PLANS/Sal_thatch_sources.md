@@ -1,4 +1,5 @@
 # Sal: more ways to get thatch (short plan; Dave 15:20 UTC 24 Oct)
+STATUS: APPROVED by Dave 15:30 UTC (thatch should be everywhere: grass clump patches in all grassy areas, bark of felled trees is thatch, more biome sources added later). Build after the devstop. Queue note: branch claude/sal-thatch-sources is plan only until GO.
 Goal: thatch must not come only from reeds. Add bark from felled trees, a special thatching grass that grows in patches and can be picked, keep reeds, tall grass and heather. A first shelter's 50 thatch must be reachable near spawn.
 
 ## Today (generator-v2)
