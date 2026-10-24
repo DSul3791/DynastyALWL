@@ -2397,6 +2397,10 @@ const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the 
 const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
 const PICKUP_BRIGHT := 1.3
 const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
+# Stones (Dave 24 Oct screenshot: flat white blobs in sun): brightness x1.3 and the glow washed them out. Grey-brown tint at 1.05 and no glow, so they keep their
+# shading and edges; at 1 to 2 m across on green grass they still read from afar. Sticks keep the lift.
+const STONE_TINT := Color(0.78, 0.74, 0.68)
+const STONE_BRIGHT := 1.05
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
@@ -2419,8 +2423,9 @@ func _pickup_group(group: String) -> Array:
 
 						if base is StandardMaterial3D:
 							var lit: StandardMaterial3D = base.duplicate()
-							lit.albedo_color = STICK_TINT if group == "stick" else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
-							lit.emission_enabled = true
+							var is_stone: bool = group.begins_with("stone")
+							lit.albedo_color = STICK_TINT if group == "stick" else (Color(STONE_TINT.r * STONE_BRIGHT, STONE_TINT.g * STONE_BRIGHT, STONE_TINT.b * STONE_BRIGHT) if is_stone else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT))
+							lit.emission_enabled = not is_stone
 							lit.emission = PICKUP_GLOW
 							mesh.surface_set_material(surface, lit)
 
