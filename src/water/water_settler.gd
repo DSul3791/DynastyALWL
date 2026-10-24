@@ -134,7 +134,9 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 
 			var kind: int = data.water_class[k]
 
-			if (kind != RIVER and kind != LAKE) or not _is_top(data, side, i, j):
+			# A pond cell is tried as it comes (row by row): the first one of a pond that has an outlet and no spring near gets the spring, the rest of the pond is then near it.
+			# (A pond's cell heights are its bed, so "highest cell" means nothing for ponds; the outlet test uses the water surface.)
+			if kind != LAKE and not (kind == RIVER and _is_top(data, side, i, j)):
 				continue
 
 			# A pond is fed only when a painted river runs out of it (a river cell lower than the pond within outlet_cells); a pond with no outlet is a natural pond.
@@ -167,7 +169,8 @@ static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: f
 
 # The biggest drainage on a painted river cell lower than the pond cell (i, j) within `reach` cells: the river that leaves the pond; 0 when none.
 static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: int, reach: int) -> float:
-	var here: float = data.heights[j * side + i]
+	var surface: float = data.water_surface[j * side + i]
+	var here: float = surface if not is_nan(surface) else data.heights[j * side + i]      # the pond's water level; its cell height is the bed
 	var best: float = 0.0
 
 	for dj in range(-reach, reach + 1):
@@ -180,7 +183,7 @@ static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: i
 
 			var n: int = nj * side + ni
 
-			if data.water_class[n] == RIVER and data.heights[n] < here:
+			if data.water_class[n] == RIVER and data.heights[n] <= here:
 				best = maxf(best, flow[n])
 
 	return best
