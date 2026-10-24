@@ -43,3 +43,6 @@ David3 only runs the scripts in this folder (`run_jobs.sh tests|queue|validate|s
 ## GPU and speed notes
 - The 1050 Ti (4 GB) is weaker than your PC, and shares the card with whatever the game containers use: run `nvidia-smi` before a picture job and skip it if the card is busy. Frame times from it are labelled "server GPU" and are not comparable to Mike's PC.
 - Without the toolkit the picture job falls back to software rendering (Mesa llvmpipe): works for content checks, is slow (a minute or more per picture) and not pixel-identical.
+
+## Bakes (overflow, only when MikeW is busy)
+`docker compose run --rm testbox bake <commit-id>` bakes in /data/godot/box/bake with 8 CPUs and 10 GB, lowest priority, and pushes `claude/david3-bake-<8hex>`. Old output is pruned by `cleanup` (never outside /data/godot/box). Apply the new limits: `cd ~/dynasty-src && git pull && cd tools/docker && docker compose up -d --force-recreate david3`.

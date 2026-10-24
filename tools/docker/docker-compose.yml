@@ -7,9 +7,9 @@ services:
       dockerfile: Dockerfile
     image: dynasty-testbox
     container_name: dynasty-testbox
-    cpus: 2
-    mem_limit: 8g              # the server has about 13 GiB free (18 of 31 GiB used by the games)
-    memswap_limit: 8g
+    cpus: 8                   # 8 of the server's cores, at the lowest priority (cpu_shares), so the games always win
+    mem_limit: 10g             # the server has about 13 GiB free (18 of 31 GiB used by the games)
+    memswap_limit: 10g
     pids_limit: 512
     cpu_shares: 128            # lowest priority when the game containers want the CPU
     network_mode: bridge       # outbound only (git fetch); no ports published
@@ -33,6 +33,7 @@ services:
       # Server convention: everything under /data/godot (the 389 GB game drive). Set GODOT_DIR to change it.
       - ${GODOT_DIR:-/data/godot}/projects/dynasty:/work/repo   # the checkout: survives container recreation
       - ${GODOT_DIR:-/data/godot}/box/ssh:/home/tester/.ssh      # the deploy key (private part never leaves the server)
+      - ${GODOT_DIR:-/data/godot}/box/bake:/work/bake            # the SECOND clone for bakes
       - ${GODOT_DIR:-/data/godot}/box/out:/out                   # logs and reports
       - ${GODOT_DIR:-/data/godot}/box/claude:/home/tester/.claude-box   # Claude Code sign-in and settings (stay on the server)
 

@@ -104,6 +104,42 @@ im=Image.open(sys.argv[1]).convert('RGB');im.thumbnail((1280,720));im.save(sys.a
 	git -C r add -A; git -C r -c user.name="${GIT_NAME:-Dynasty dev box}" -c user.email="${GIT_EMAIL:-devbox@example.invalid}" commit -q -m "Box results $(basename "$SRC")" && git -C r push -q origin HEAD:refs/heads/claude/box-results 2>&1 | tail -1
 	cd /; rm -rf "$T"; echo "published $(basename "$SRC") to claude/box-results"
 }
+bake() {   # bake COMMIT [--tiles "x,z;x,z"] [--dry]   Mike's recipe in a SECOND clone (/work/bake): bake tiles, settle water, island table; push claude/david3-bake-<commit>
+	local ID="${1:-}" TILES="" DRY="" ; shift || true
+	while [ $# -gt 0 ]; do case "$1" in --tiles) TILES="$2"; shift;; --dry) DRY=1;; *) echo "unknown argument $1"; return 2;; esac; shift; done
+	echo "$ID" | grep -Eq '^[0-9a-f]{7,40}$' || { bad "bake needs a commit id (hex), got '$ID'"; return 1; }
+	local B=/work/bake THREADS="${BAKE_THREADS:-6}" N S R
+	if [ -z "$DRY" ]; then
+		[ -d $B/.git ] || git clone -q "$REPO_URL" $B || { bad "clone for bake"; return 1; }
+		git -C $B fetch -q origin && git -C $B checkout -q -f --detach "$ID" || { bad "checkout $ID in $B"; return 1; }
+		git -C $B clean -fdq worlds/base_world/tiles worlds/base_world/water 2>/dev/null
+		[ -d $B/.godot ] || (cd $B && nice -n 19 timeout 900 "$GODOT_EXE" --headless --path . --import > "$OUT/bake_import.txt" 2>&1)
+	fi
+	if [ -z "$TILES" ]; then   # default: the tiles the commit already has
+		TILES=$(git -C $B ls-tree --name-only "$ID" worlds/base_world/tiles/ 2>/dev/null | sed -n 's#.*tile_\([0-9]*\)_\([0-9]*\)\.tile#\1,\2#p' | tr '\n' ';' | sed 's/;$//')
+	fi
+	echo "$TILES" | grep -Eq '^[0-9]+,[0-9]+(;[0-9]+,[0-9]+)*$' || { bad "bake: no valid tile list ('$TILES')"; return 1; }
+	grep -q '"drainage_mode": true' $B/worlds/base_world/plan/tile_rules.json 2>/dev/null || [ -n "$DRY" ] || { bad "bake: drainage_mode is not true in tile_rules.json at $ID"; return 1; }
+	echo "bake plan: commit $ID, tiles $TILES, threads $THREADS, settle each tile (7200 ticks), then island_checks"
+	[ -n "$DRY" ] && return 0
+	cd $B || return 1; S=$(date +%s)
+	nice -n 19 "$GODOT_EXE" --headless --path . --script res://src/worldgen/tools/bake_tiles.gd -- "--tiles=$TILES" --threads="$THREADS" > "$OUT/bake_tiles.txt" 2>&1 && ok "bake_tiles ($(( $(date +%s) - S )) s)" || { bad "bake_tiles (see bake_tiles.txt)"; return 1; }
+	for T in $(echo "$TILES" | tr ';' ' '); do
+		nice -n 19 timeout 3600 "$GODOT_EXE" --headless --path . --script res://src/worldgen/tools/settle_water.gd -- "--tile=$T" > "$OUT/settle_${T/,/_}.txt" 2>&1 && ok "settle $T" || bad "settle $T (see settle_${T/,/_}.txt)"
+	done
+	mkdir -p "docs/bake_${ID:0:8}"
+	{ echo "code commit $ID"; nice -n 19 "$GODOT_EXE" --headless --path . --script res://src/worldgen/tools/island_checks.gd 2>&1; } > "docs/bake_${ID:0:8}/island_table.txt"; R=$?
+	grep -q "FAIL" "docs/bake_${ID:0:8}/island_table.txt" && bad "island table has FAIL rows (docs/bake_${ID:0:8}/island_table.txt)" || ok "island table (no FAIL)"
+	git checkout -q -B "claude/david3-bake-${ID:0:8}" && git add -f worlds/base_world/tiles worlds/base_world/water "docs/bake_${ID:0:8}" \
+	 && git -c user.name="${GIT_NAME:-David3}" -c user.email="${GIT_EMAIL:-devbox@example.invalid}" commit -q -m "David3 bake of $ID: tiles, water, island table (BP-T53, BP-T54)" \
+	 && git push -q -f origin "HEAD:refs/heads/claude/david3-bake-${ID:0:8}" 2>&1 | tail -1
+	echo "pushed claude/david3-bake-${ID:0:8} (tiles by git; Tyler merges code and tiles together on a PASS)"
+}
+cleanup() {   # keep disk use bounded; only ever touches /out run folders and /work/bake
+	ls -1dt /out/2* 2>/dev/null | tail -n +"${KEEP_RUNS:-40}" | xargs -r rm -rf
+	while [ "$(du -sm /out 2>/dev/null | cut -f1)" -gt "${MAX_OUT_MB:-40000}" ] && [ "$(ls -1d /out/2* 2>/dev/null | wc -l)" -gt 3 ]; do ls -1dt /out/2* | tail -1 | xargs -r rm -rf; done
+	[ -d /work/bake ] && git -C /work/bake gc -q --prune=now 2>/dev/null; echo "out folder: $(du -sh /out 2>/dev/null | cut -f1)"
+}
 basics() {
 	python3 tools/parse_scan.py > "$OUT/parse_scan.txt" 2>&1 && ok "parse_scan" || bad "parse_scan: $(tail -3 "$OUT/parse_scan.txt" | tr '\n' ' ' | cut -c1-200)"
 	run_test validate_items
@@ -115,6 +151,8 @@ case "${1:-selftest}" in
 	gitcheck) gitcheck; finish;;
 	validate) validate; finish;;
 	shot) guard; shift; exec bash /opt/box/shot.sh "$@";;
+	bake) guard; shift; bake "$@"; cleanup; finish;;
+	cleanup) cleanup;;
 	claude) shift; cd /work/repo 2>/dev/null; exec claude "$@";;
 	godot) shift; cd /work/repo 2>/dev/null; exec "$GODOT_EXE" "$@";;
 	update) update; finish;;
