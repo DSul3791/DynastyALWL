@@ -1502,3 +1502,7 @@ Answered: 2026-10-24 16:40 UTC
 Answer: Yes
 Answered: 2026-10-24 16:40 UTC
 
+## new-player-switch | Start with nothing but ground items, hints on, plus an admin 'become a new player' switch for testing?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
