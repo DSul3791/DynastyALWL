@@ -222,6 +222,11 @@ func held_id() -> String:
 
 
 # Left-hand items: the item table marks them with "offhand": true (torch, shield, later a lantern).
+# True while a placement blueprint (ghost) is held; auto pickup stays off then.
+func placing() -> bool:
+	return _blueprint != null
+
+
 func is_offhand(number: int) -> bool:
 	if number == 0:
 		return false
