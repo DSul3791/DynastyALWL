@@ -29,12 +29,6 @@ Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
-## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
-Priority: 5
-Note: The water step must be fixed before a burst can be simulated safely.
-Note: Recommendation: Yes because a breach could blow up the water simulation otherwise.
-[check]
-
 ## wl-bridges | Bridges: low plank bridges and fords can be washed out in floods, high stone bridges with piers survive?
 Note: Needs span and pier pieces with a flood rating from Sal's building tiers.
 Note: Recommendation: Yes because it makes bridges matter. Why not: players lose work to floods.
