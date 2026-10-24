@@ -82,3 +82,7 @@ Note: Recommendation: Yes because it guides without nagging.
 Note: New players start with the direct way.
 Note: Recommendation: Yes because direct pieces suit a first shelter and need no protocol change.
 [check]
+
+## direct-on-blueprint | A direct piece placed on an unfinished blueprint waits until it is done; taking down a finished piece returns 50 percent?
+Note: Recommendation: Yes, and 50 percent is your call.
+[check]
