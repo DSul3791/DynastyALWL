@@ -21,3 +21,9 @@ Note: Mike's picture: evidence/r1pieces/r1pieces.png on branch claude/mike-evide
 Note: Tripod pot and clay hearth read well. The thatch wall reads more like golden planks than straw, and the rough bed is a small flat frame.
 Note: Recommendation: Yes for now (they are placeholders that work), because Kathleen will make the straw look fibrous and the bed fuller in the next pass.
 [check]
+
+## wind-soft-789 | Is the wind soft and airy now, not like ocean surf?
+Note: 1. After the build that has branch claude/kathleen-wind-soft, stand in an open meadow on a breezy day.
+Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound soft and airy (yes) or like waves or surf (no)?
+Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
+[test]
