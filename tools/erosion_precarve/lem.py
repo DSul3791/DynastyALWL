@@ -2,7 +2,7 @@
 import numpy as np, numba as nb, heapq, time, sys
 from scipy.ndimage import gaussian_filter
 
-@nb.njit(cache=True)
+@nb.njit(cache=True, fastmath=False, parallel=False)
 def route(h, sea, n):
     """priority-flood fill with epsilon; returns filled, receiver, order (downstream first)."""
     N = n*n
@@ -27,7 +27,7 @@ def route(h, sea, n):
             k = sz; sz += 1; hv[k] = filled[i]; hi[k] = i
             while k > 0:
                 p = (k-1)//2
-                if hv[p] > hv[k]:
+                if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
                     t = hv[p]; hv[p] = hv[k]; hv[k] = t
                     t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
                 else: break
@@ -38,8 +38,8 @@ def route(h, sea, n):
         k = 0
         while True:
             l = 2*k+1; rr = l+1; m = k
-            if l < sz and hv[l] < hv[m]: m = l
-            if rr < sz and hv[rr] < hv[m]: m = rr
+            if l < sz and (hv[l] < hv[m] or (hv[l] == hv[m] and hi[l] < hi[m])): m = l
+            if rr < sz and (hv[rr] < hv[m] or (hv[rr] == hv[m] and hi[rr] < hi[m])): m = rr
             if m == k: break
             t = hv[m]; hv[m] = hv[k]; hv[k] = t
             t2 = hi[m]; hi[m] = hi[k]; hi[k] = t2; k = m
@@ -58,7 +58,7 @@ def route(h, sea, n):
                 k = sz; sz += 1; hv[k] = filled[j]; hi[k] = j
                 while k > 0:
                     p = (k-1)//2
-                    if hv[p] > hv[k]:
+                    if hv[p] > hv[k] or (hv[p] == hv[k] and hi[p] > hi[k]):
                         t = hv[p]; hv[p] = hv[k]; hv[k] = t
                         t2 = hi[p]; hi[p] = hi[k]; hi[k] = t2; k = p
                     else: break
@@ -79,7 +79,7 @@ def route(h, sea, n):
         rec[i] = best
     return filled, rec, order[:no]
 
-@nb.njit(cache=True)
+@nb.njit(cache=True, fastmath=False, parallel=False)
 def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out):
     filled, rec, order = route(h, sea, n)
     N = n*n

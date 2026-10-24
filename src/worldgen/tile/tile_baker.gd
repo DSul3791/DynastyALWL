@@ -205,6 +205,11 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
 	var raw_frame: PackedFloat32Array = frame_height.heights.duplicate()   # before erosion: the same world function in every frame
 
+	# The 42 build is baked from the pre-carve file only: no file is an error, never a silent per-tile fallback.
+	if erosion_delta == null and not raw_only:
+		push_error("erosion_delta_v1.bin is missing next to world.json (terrain version 42 needs the pre-carve)")
+		return {"error": "erosion_delta_v1.bin missing", "timings": timings}
+
 	# Export tools want the ground as it stands before erosion (the input of TileErosion) and nothing else.
 	if raw_only:
 		return {"raw_heights": raw_heights, "core": core, "timings": timings}
@@ -212,24 +217,13 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
 	var min_land: float = float(tile_rules["erosion"]["min_land_m"])
-	var core_height = TileHeightScript.new()
-	core_height.samples = core
-	core_height.spacing_m = frame_height.spacing_m
-	core_height.origin_sx = origin_sx + margin
-	core_height.origin_sz = origin_sz + margin
-	core_height.heights = raw_heights
-	var erosion = TileErosionScript.new()
-	erosion.setup(settings, tile_rules)
+	var erosion = TileErosionScript.new()   # only carries the cropped heights now (the old per-tile erosion is not run)
 
-	if erosion_delta != null:
-		# The same change, by world position, on the whole frame (margin included) and on the pre-erosion copy
-		# water routes over, so frames agree along their edges and rivers see the carved valleys.
-		frame_height.heights = erosion_delta.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
-		raw_frame = erosion_delta.apply(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
-		erosion.heights = crop(frame_height.heights, n, core)
-	else:
-		erosion.build(core_height, frame_rock, margin, n)
-		frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
+	# The pre-carve change, by world position, on the whole frame (margin included) and on the pre-erosion copy water
+	# routes over, so frames agree along their edges and rivers see the carved valleys.
+	frame_height.heights = erosion_delta.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	raw_frame = erosion_delta.apply(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	erosion.heights = crop(frame_height.heights, n, core)
 
 	timings["erosion"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
