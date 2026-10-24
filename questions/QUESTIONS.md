@@ -47,11 +47,6 @@ Note: Recommendation: Yes because direct pieces suit a first shelter and need no
 Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
 [check]
 
-## wl-window | Water land types: read the water over 30 game days so one storm does not rename land?
-Note: Plan: design/WATER_LAND_TYPES.md. Land is named from slowly averaged water (30 game days = 30 real hours).
-Note: Recommendation: Yes because a single storm should not turn a meadow into a swamp. Why not: change feels slow.
-[check]
-
 ## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
 Note: The water step must be fixed before a burst can be simulated safely.
 Note: Recommendation: Yes because a breach could blow up the water simulation otherwise.
