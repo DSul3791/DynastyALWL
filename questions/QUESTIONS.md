@@ -38,3 +38,9 @@ Note: Recommendation: Yes, 3 pieces, because one stray log should not make a bon
 Note: The survival fire is the smallest size: sticks only, 15 minutes each, small light and heat.
 Note: Recommendation: Yes, slowly (about twice as long), because a first-night player has only sticks and needs a way to cook.
 [check]
+
+## thatch-sources-go | Build the new thatch sources (thatching grass patches in all grassy areas, thatch from tree bark)?
+Note: Thatching grass: 10 thatch per pick, patches in all grassy areas. Bark of felled birch, spruce, fir and pine gives 2 to 5 thatch. Reeds 8, tall grass 4, heather 4.
+Note: Nothing is placed near spawn on purpose; the spawn point is picked near resources later.
+Note: Recommendation: Yes, because nothing gives thatch today and the first shelter needs 50.
+[check]
