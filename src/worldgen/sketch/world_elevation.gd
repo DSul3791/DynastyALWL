@@ -44,6 +44,7 @@ var _warp_z: PackedByteArray
 var _fine_x: PackedByteArray
 var _fine_z: PackedByteArray
 var _master: int = 0
+var _starters: Array = []   # starter mounts (ellipses), so shelf hills away from them can be given more relief
 
 
 # cell_override lets tests build a coarser map quickly.
@@ -57,6 +58,13 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 	size_z = int(round(float(settings.tiles_z) * tile / cell_m))
 	origin_x = float(settings.min_tile) * tile
 	origin_z = float(settings.min_tile) * tile
+
+	_starters.clear()
+
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) == "starter":
+				_starters.append(mount)
 
 	_make_noise_fields()
 	_build_sea_floor()
@@ -257,7 +265,14 @@ func _raise_shelf(outline: Dictionary, shelf: Dictionary, owner_index: int) -> v
 
 			var mask: float = 1.0 - _smooth((distance - (1.0 - edge)) / (2.0 * edge))
 			var hills: float = _value(_hills, index)
-			var shelf_height: float = depth + amplitude * (hills - threshold)
+			var relief: float = amplitude * (hills - threshold)
+
+			# Shelf hills away from the starter islands rise higher (`shelf_hill_gain`), so those islands are mountain
+			# or moor islands too and not 400 m lumps.
+			if relief > 0.0:
+				relief *= lerpf(1.0, float(rules.get("shelves", {}).get("shelf_hill_gain", 1.0)), _away_from_starters(index_of(center_column + column_offset, center_row + row_offset), center_column + column_offset, center_row + row_offset))
+
+			var shelf_height: float = depth + relief
 
 			# Hills fade toward the shelf edge so islands stay on the shelf.
 			shelf_height = lerpf(depth, shelf_height, _smooth(clampf((1.0 - distance) / 0.35, 0.0, 1.0)))
@@ -268,6 +283,23 @@ func _raise_shelf(outline: Dictionary, shelf: Dictionary, owner_index: int) -> v
 				owners[index] = owner_index
 
 			heights[index] = blended
+
+
+# 0 inside a starter island's reach (its own shape rules apply there), 1 well away from all of them.
+func _away_from_starters(_index: int, column: int, row: int) -> float:
+	var away: float = 1.0
+	var x: float = origin_x + (float(column) + 0.5) * cell_m
+	var z: float = origin_z + (float(row) + 0.5) * cell_m
+
+	for mount in _starters:
+		var rotation: float = deg_to_rad(float(mount["rot"]))
+		var dx: float = x - float(mount["x"])
+		var dz: float = z - float(mount["z"])
+		var along: float = (dx * cos(rotation) + dz * sin(rotation)) / float(mount["a"])
+		var across: float = (-dx * sin(rotation) + dz * cos(rotation)) / float(mount["b"])
+		away = minf(away, _smooth(clampf((sqrt(along * along + across * across) - 2.2) / 0.8, 0.0, 1.0)))
+
+	return away
 
 
 # The ridge crest follows a path x(z), so each row only needs the cells
@@ -681,6 +713,33 @@ func _raise_foothills(mount: Dictionary) -> void:
 
 			if target > heights[index]:
 				heights[index] = lerpf(heights[index], target, weight)
+
+	var crater: Dictionary = _island_config(mount).get("crater", {})
+
+	if not crater.is_empty():
+		_crater_at_summit(mount, crater, radius)
+
+
+# Volcano type: a crater (no lava) cut into the island's highest point, a bowl floor `depth_m` under the summit. The breach
+# is a gap in the rim toward `breach_bearing_deg` so the crater lake can drain to a river instead of being a closed pit.
+func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> void:
+	var center_column: int = int(floor((float(mount["x"]) - origin_x) / cell_m))
+	var center_row: int = int(floor((float(mount["z"]) - origin_z) / cell_m))
+	var best: float = -INF
+	var best_at: Vector2 = Vector2.ZERO
+
+	for row_offset in range(-radius, radius + 1):
+		for column_offset in range(-radius, radius + 1):
+			var column: int = center_column + column_offset
+			var row: int = center_row + row_offset
+			var h: float = heights[index_of(column, row)]
+
+			if h > best:
+				best = h
+				best_at = cell_center_m(column, row)
+
+	var crater_rules: Dictionary = crater.duplicate()
+	_carve_crater(best_at, float(crater.get("radius_m", 320.0)), float(crater.get("depth_m", 180.0)), best, crater_rules, bool(crater.get("lava", false)))
 
 
 # Chamfer distance (in cells) from the nearest sea cell, over the square of `radius` cells round a centre cell.
@@ -1329,7 +1388,7 @@ func _raise_cone_exact(cone: Dictionary, owner_index: int) -> void:
 
 
 func _carve_crater(
-	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary
+	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary, lava: bool = true
 ) -> void:
 	var floor_height: float = rim_height - depth
 	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
@@ -1351,7 +1410,9 @@ func _carve_crater(
 			if distance < radius:
 				var bowl: float = floor_height + depth * pow(distance / radius, 3.0)
 				heights[index] = minf(heights[index], bowl)
-				special[index] = SPECIAL_LAVA
+
+				if lava:
+					special[index] = SPECIAL_LAVA
 
 			var along: float = offset.dot(breach_direction)
 			var lateral: float = absf(offset.cross(breach_direction))
