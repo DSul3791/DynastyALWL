@@ -371,9 +371,21 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 					# reversing gradually toward the fertile low ground).
 					var mountain: float = maxf(_ridge_factor(data, x, z, y), _mountain_near(data, x, z, y))
 					var mult: float = lerpf(MIX_MINOR, 1.0, mountain) if item["shape"] == "conifer" else lerpf(1.0, MIX_HARD_AT_MOUNTAIN, mountain)
+					# Tree belts (Dave 2026-10-24): fertile soil favours hardwoods, poor soil and foothill slopes favour softwoods, and a
+					# plateau that has gathered rich soil grows hardwoods again. The belt of softwoods stands between the hardwood land
+					# and the too-steep line, because it starts at FOOT_FROM, well below where the steep ground begins.
+					var fertile: float = clampf(_soil_growth[data.soil[k]], 0.0, 1.0)
+					var foothill: float = smoothstep(FOOT_FROM, FOOT_TO, slope)
+					var plateau: float = _plateau(data, x, z) * smoothstep(0.1, 0.45, mountain) * fertile
 
-					if item["shape"] == "broadleaf":
-						mult = minf(mult, lerpf(1.0, 0.05, steep))      # hardwoods give way on the slopes
+					if item["shape"] == "conifer":
+						mult = maxf(mult, foothill)                                      # a thick belt on the foothill slopes
+						mult = maxf(mult, (1.0 - fertile) * 0.6)                        # and wherever the soil is poor
+						mult = lerpf(mult, minf(mult, 0.4), plateau)                    # a rich plateau is left mostly to hardwoods
+					else:
+						mult = lerpf(mult, 0.6, plateau)                                # hardwoods on a plateau
+						mult *= lerpf(HARD_POOR_SOIL, 1.0, fertile)                     # hardwoods grow best where it is fertile
+						mult = minf(mult, lerpf(1.0, 0.05, smoothstep(FOOT_FROM, STEEP_TO, slope)))   # and give way from the first foothill slope
 
 					if rng_pick(x, z, species_id) >= mult:
 						continue
@@ -493,6 +505,10 @@ const TIER_PLANT := 4
 const STAND_BASE := 49152   # stand cells' item numbers start here (main grid cells stay below)
 const STEEP_FROM := 0.20    # ground slope (rise over run) where hardwoods start to thin
 const STEEP_TO := 0.60      # and where they are nearly gone
+const FOOT_FROM := 0.12     # tree belts: ground slope where the softwood belt begins and hardwoods start to give way
+const FOOT_TO := 0.30       # and where the belt is thickest (below the steep cutoff of each species)
+const HARD_POOR_SOIL := 0.4 # the hardwoods' chance multiplier on the poorest soil
+const PLATEAU_RING_M := 40.0
 const MIX_MINOR := 0.12     # the evergreens' chance multiplier in the lowlands (tables give about 86% hardwoods there)
 const MIX_HARD_AT_MOUNTAIN := 0.05   # the hardwoods' chance multiplier below a mountain (about 88% firs there)
 const MOUNTAIN_RISE_FROM := 25.0    # high ground within MOUNTAIN_RING_M standing this far above the spot starts to count as "below a mountain"
@@ -501,7 +517,7 @@ const MOUNTAIN_RING_M := [200.0, 450.0]
 const LEDGE_MAX_SLOPE := 0.30   # a ledge: the surface within 1.5 m is flatter than this
 const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
 const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
-const MONTANE_PATCH_SHARE := 0.4
+const MONTANE_PATCH_SHARE := 0.7   # (was 0.4) a thicker evergreen belt on the hill ground
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
@@ -845,6 +861,17 @@ func _mountain_near(data, x: float, z: float, y: float) -> float:
 			top = maxf(top, data.height_at(x + cos(a) * r, z + sin(a) * r))
 
 	return smoothstep(MOUNTAIN_RISE_FROM, MOUNTAIN_RISE_TO, top - y)
+
+
+# 0..1: how plateau-like the spot is: the slope here and on a ring 40 m around are all gentle, so rich soil has had a chance to gather.
+func _plateau(data, x: float, z: float) -> float:
+	var worst: float = _slope_at(data, x, z)
+
+	for k in range(8):
+		var a: float = TAU * float(k) / 8.0
+		worst = maxf(worst, _slope_at(data, x + cos(a) * PLATEAU_RING_M, z + sin(a) * PLATEAU_RING_M))
+
+	return 1.0 - smoothstep(0.05, 0.14, worst)
 
 
 # A stable 0..1 number per spot and species, so the woods look the same every visit.
