@@ -498,6 +498,9 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 	var peak_range: Array = starter_rules.get("peak_m", [300, 560])
 	var t: float = clampf((float(mount["peak"]) - float(peak_range[0])) / maxf(float(peak_range[1]) - float(peak_range[0]), 1.0), 0.0, 1.0)
 	var summit: float = lerpf(float(summit_range[0]), float(summit_range[1]), t)
+	# The spire sits on top of the bands (so the summit is a peak, not the end of a smooth curve): the bands end at
+	# (1 - spire_share) of the summit height and the spire adds the rest over the last (1 - spire_start) of the distance to the sea.
+	var spire: float = float(starter_rules.get("spire_share", 0.0)) * summit
 	var distances: PackedFloat32Array = PackedFloat32Array()
 	var rotation: float = deg_to_rad(float(mount["rot"]))
 	var cos_r: float = cos(rotation)
@@ -519,7 +522,11 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 				distances.append(d_m)
 
 	distances.sort()
-	return {"bands": bands, "summit": summit, "distances": distances}
+	var farthest: float = distances[distances.size() - 1] if not distances.is_empty() else 1.0
+	return {
+		"bands": bands, "summit": summit, "distances": distances, "spire": spire, "farthest": farthest,
+		"spire_start": float(starter_rules.get("spire_start", 0.88)), "spire_power": float(starter_rules.get("spire_power", 2.2)),
+	}
 
 
 # Height of the band curve at distance d_m from the sea.
@@ -531,6 +538,11 @@ func _band_height(table: Dictionary, d_m: float) -> float:
 		return 0.0
 
 	var share: float = float(distances.bsearch(d_m)) / float(distances.size())
+	var spire: float = 0.0
+
+	if float(table["spire"]) > 0.0:
+		var u_top: float = clampf((d_m / float(table["farthest"]) - float(table["spire_start"])) / (1.0 - float(table["spire_start"])), 0.0, 1.0)
+		spire = float(table["spire"]) * pow(u_top, float(table["spire_power"]))
 
 	for i in range(1, bands.size()):
 		if share <= float(bands[i][0]):
@@ -539,9 +551,9 @@ func _band_height(table: Dictionary, d_m: float) -> float:
 			var u: float = (share - from) / span
 			# Linear on the last segment: an eased end flattens the top into a plateau.
 			var eased: float = u if i == bands.size() - 1 else _smooth(u)
-			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)
+			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased) + spire
 
-	return float(table["summit"]) * float(bands[bands.size() - 1][1])
+	return float(table["summit"]) * float(bands[bands.size() - 1][1]) + spire
 
 
 # Foothill belt (ISLAND_SHAPE_PLAN step 2): the cap above only lowers land, so the sectors beside the peak axis stayed low and
