@@ -12,6 +12,32 @@ const HEAD_RADIUS := 10           # cells (80 m): a river cell this high among t
 const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground near a head
 const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the base spring flow
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
+const RULES_PATH := "res://data/water_settle.json"
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const VERSION := 2                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+
+
+# The settle rules (data/water_settle.json); {} when the file is missing or broken.
+static func rules() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RULES_PATH)) if FileAccess.file_exists(RULES_PATH) else null
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+# The drainage the tile file stores, in cells per sample (decode_flow), or empty when the tile has none (placeholder, old bake, section all zero).
+static func flow_of(data, generator) -> PackedFloat32Array:
+	var path: String = "%s/tile_%d_%d.tile" % [str(generator.tiles_dir), data.tile.x, data.tile.y]
+	var head: Dictionary = TileFileScript.read_header(path)
+
+	if not bool(head.get("ok", false)):
+		return PackedFloat32Array()
+
+	var flow: PackedFloat32Array = TileFileScript.decode_flow(TileFileScript.read_section(path, head["table"], "flow")["raw"])
+	var biggest: float = 0.0
+
+	for value in flow:
+		biggest = maxf(biggest, value)
+
+	return flow if biggest > 2.0 and flow.size() == data.samples * data.samples else PackedFloat32Array()
 
 
 # The ground as it is drawn: the map height plus the fine detail noise the voxel
@@ -80,8 +106,72 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 		var factor: float = 1.0 if seed_painted and _pond_near(data, head, side).x < 0 else flow_factor(_pond_diameter_m(data, spot, side))
 		sim.add_spring(spot.x, spot.y, rate * factor)
 
+	_add_feeders(sim, data, generator, side, placed, rate)
 	sim.wake_all_wet()
 	return sim
+
+
+# A spring for every river head the pond springs do not serve (a tributary head near a bigger river is not the highest river cell in its 80 m, so
+# _find_heads skips it and the stretch below it stays dry). Its size follows the drainage area at the head: rate x (area / full_km2) ^ p, clamped.
+# Rule-based, row by row, so the same tile always gets the same springs. Does nothing without the tile's flow map or when disabled in the rules.
+static func _add_feeders(sim, data, generator, side: int, placed: Array, rate: float) -> int:
+	var cfg: Dictionary = rules().get("feeders", {})
+
+	if not bool(cfg.get("enabled", false)) or generator == null or str(generator.tiles_dir) == "":
+		return 0
+
+	var flow: PackedFloat32Array = flow_of(data, generator)
+
+	if flow.is_empty():
+		return 0
+
+	var near: float = float(cfg.get("near_cells", 30))
+	var added: int = 0
+
+	for j in range(4, side - 4):
+		for i in range(4, side - 4):
+			var k: int = j * side + i
+
+			if data.water_class[k] != RIVER or not _is_top(data, side, i, j):
+				continue
+
+			var served: bool = false
+
+			for other in placed:
+				if Vector2(i - other.x, j - other.y).length() < near:
+					served = true
+					break
+
+			if served:
+				continue
+
+			var km2: float = flow[k] * data.spacing_m * data.spacing_m / 1.0e6
+			var share: float = feeder_share(km2, cfg)
+			placed.append(Vector2i(i, j))
+			sim.add_spring(i, j, rate * share)
+			added += 1
+
+	return added
+
+
+# The feeder spring as a share of the base spring: (area / full_km2) ^ p, clamped to min_share .. 1 (Q = k * A^p with k = rate / full_km2^p).
+static func feeder_share(km2: float, cfg: Dictionary) -> float:
+	return clampf(pow(km2 / maxf(float(cfg.get("full_km2", 3.0)), 0.01), float(cfg.get("p", 0.8))), float(cfg.get("min_share", 0.1)), 1.0)
+
+
+# A water cell (river or lake) with no higher water cell among its eight neighbours (a tie goes to the lower index).
+static func _is_top(data, side: int, i: int, j: int) -> bool:
+	var k: int = j * side + i
+	var here: float = data.heights[k]
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var n: int = k + dj * side + di
+
+			if n != k and data.water_class[n] != 0 and (data.heights[n] > here or (data.heights[n] == here and n < k)):
+				return false
+
+	return true
 
 
 # Spring flow for a pond of this diameter, as a multiple of the base spring: 1 up to

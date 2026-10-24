@@ -36,7 +36,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
 	water.heights = channels.bed
-	water.flow = flow.discharge
+	water.flow = flow.discharge.duplicate()
+
+	for index in range(total):
+		water.flow[index] /= unit   # the tile stores drained cells, as encode_flow and the settler expect
 	water.river_cells = 0
 	water.filled_cells = 0
 	water.lakes = []
