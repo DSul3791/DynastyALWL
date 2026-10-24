@@ -80,7 +80,7 @@ def route(h, sea, n):
     return filled, rec, order[:no]
 
 @nb.njit(cache=True, fastmath=False, parallel=False)
-def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out):
+def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul):
     filled, rec, order = route(h, sea, n)
     N = n*n
     cell = dx*dx
@@ -103,7 +103,10 @@ def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out):
         if filled[i] - filled[d] > 0 and h[i] > h[d]:
             h[i] = (h[i] + f*h[d])/(1+f)
     # hillslope diffusion (explicit, stable: D dt/dx^2 <= .2 via substeps)
-    ns = int(np.ceil(D*dt/(dx*dx)/0.2)); ns = max(ns, 1)
+    dmax = 1.0
+    for i in range(N):
+        if dmul[i] > dmax: dmax = dmul[i]
+    ns = int(np.ceil(D*dmax*dt/(dx*dx)/0.2)); ns = max(ns, 1)
     kk = D*dt/ns/(dx*dx)
     for s in range(ns):
         b = h.copy()
@@ -112,7 +115,7 @@ def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out):
                 i = r*n+c
                 if sea[i]: continue
                 lap = b[i-1]+b[i+1]+b[i-n]+b[i+n]-4*b[i]
-                h[i] = max(b[i]+kk*ery[i]*lap, 0.05)
+                h[i] = max(b[i]+kk*ery[i]*dmul[i]*lap, 0.05)
     # sediment: eroded volume travels downstream, drops in pits (filled-h > 0)
     Q = np.zeros(N)
     for i in range(N):
@@ -150,33 +153,55 @@ def make_start(n, dx, seed=7, summit=1300.0):
     h = gaussian_filter(h, 1.0)
     return h
 
-def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0):
-    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h)
+def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False):
+    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h, balance=balance, bal_smooth=bal_smooth, lowboost=lowboost, low_from=low_from, low_to=low_to, tarn=tarn)
 
-def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None):
+def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False):
     h = (start_h.copy() if start_h is not None else make_start(n, dx, seed, summit)).ravel().astype(np.float64)
     start = h.copy()
     sea = (h <= 0).astype(np.uint8)
     h[sea == 1] = np.minimum(h[sea == 1], -1.0)
     ery = np.ones(n*n)
+    w = np.clip((h-low_from)/(low_to-low_from), 0, 1); w = w*w*(3-2*w)
+    dmul = 1.0 + lowboost*(1.0-w)
     # uplift ramps up from the coast (distance to sea) so coastal land stays low and gentle
     from scipy.ndimage import distance_transform_edt
     dist = distance_transform_edt((sea == 0).reshape(n, n)).ravel()*dx
     Umap = U*np.clip(dist/ramp_m, 0, 1)**coast_pow
+    if balance > 0:
+        # uplift that would hold the starting surface in stream-power balance (keeps summits and relief bands)
+        hs = np.maximum(h, 0.0)
+        filled0, rec0, order0 = route(hs, sea, n)
+        A0 = np.zeros(n*n)
+        for q in order0: A0[q] = dx*dx
+        for q in range(order0.size-1, -1, -1):
+            i = order0[q]; d = rec0[i]
+            if d >= 0 and sea[d] == 0: A0[d] += A0[i]
+        S0 = np.zeros(n*n)
+        for q in order0:
+            d = rec0[q]
+            if d >= 0:
+                dd = dx*(1.4142 if abs(d-q) not in (1, n) else 1.0)
+                S0[q] = max(filled0[q]-filled0[d], 0)/dd
+        lap = (np.roll(hs.reshape(n, n), 1, 0)+np.roll(hs.reshape(n, n), -1, 0)+np.roll(hs.reshape(n, n), 1, 1)+np.roll(hs.reshape(n, n), -1, 1)-4*hs.reshape(n, n))/(dx*dx)
+        Ub = K*A0**m*S0 - D*w*lap.ravel()
+        Ub = np.clip(Ub, 0, 5*U if U > 0 else 1e-2); Ub[sea == 1] = 0; Ub = gaussian_filter(Ub.reshape(n, n), bal_smooth).ravel()
+        Umap = balance*Ub
     Uzero = np.zeros(n*n)
     # tectonic/glacial hollows: sink patches in the mid-lands become catch basins (lakes)
     rng = np.random.default_rng(seed+1); yy, xx = np.mgrid[0:n, 0:n]*dx; placed = 0
     d2 = dist.reshape(n, n); sink = np.zeros((n, n))
     while placed < basins:
         r, c = rng.integers(0, n, 2)
-        if 2500 < d2[r, c] < 9000:
-            rad = rng.uniform(500, 1100)
+        ok = (15 < h.reshape(n, n)[r, c] < 220 and d2[r, c] > 300) if tarn else (2500 < d2[r, c] < 9000)
+        if ok:
+            rad = rng.uniform(150, 450) if tarn else rng.uniform(500, 1100)
             sink += np.exp(-((yy-r*dx)**2+(xx-c*dx)**2)/(2*(rad/1.6)**2)); placed += 1
-    Umap = Umap - sub*U*np.clip(sink, 0, 1).ravel()
+    Umap = Umap - sub*(Umap[sea == 0].mean() if balance > 0 else U)*np.clip(sink, 0, 1).ravel()
     Umap[sea == 1] = 0
     fill = np.zeros(n*n); area = np.zeros(n*n)
     nsteps = int(years/dt); t0 = time.time()
     for s in range(nsteps):
-        step(h, sea, n, dx, dt, K, m, Umap if s < off*nsteps else Uzero, D, ery, dep, fill, area)
+        step(h, sea, n, dx, dt, K, m, Umap if s < off*nsteps else Uzero, D, ery, dep, fill, area, dmul)
         if log and s % 50 == 0: print(s, nsteps, round(time.time()-t0, 1), 'max h', round(h.max()), flush=True)
     return start.reshape(n, n), h.reshape(n, n), sea.reshape(n, n), fill.reshape(n, n), area.reshape(n, n), time.time()-t0
