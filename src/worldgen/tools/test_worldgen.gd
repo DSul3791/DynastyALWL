@@ -2092,7 +2092,16 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			ok_place = false
 			print("  flora outside chunk: item %d at %.1f,%.1f" % [ids[n], p.x, p.z])
 
-		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or item["per_biome"][data.biome[k]] <= 0.0:
+		# The placer picks the biome sample from the exact double position; the item keeps a float32 one, which can fall on the other side of a
+		# half-spacing border (round() ties). Accept a spot whose biome is allowed at the sample under the position nudged by 1 cm either way.
+		var biome_ok: bool = false
+
+		for nudge in [Vector2(0.0, 0.0), Vector2(0.01, 0.0), Vector2(-0.01, 0.0), Vector2(0.0, 0.01), Vector2(0.0, -0.01)]:
+			if item["per_biome"][data.biome[data.nearest(p.x + nudge.x, p.z + nudge.y)]] > 0.0:
+				biome_ok = true
+				break
+
+		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or not biome_ok:
 			ok_place = false
 			print("  flora ground/biome: item %d at %.1f,%.1f,%.1f ground %.2f biome %d" % [ids[n], p.x, p.y, p.z, generator.surface_height(p.x, p.z), data.biome[k]])
 
