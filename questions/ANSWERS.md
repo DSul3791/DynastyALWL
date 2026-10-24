@@ -1470,3 +1470,7 @@ Answered: 2026-10-24 16:12 UTC
 Answer: No: Yes, and no, the inner voice is going to have its own control panel in the settings for everyone and you could determine whether you have it on or off and whether it’s going to give you hints on and off and or if it’s going to give you inner dialogue on and off. The inner dialogue would be things like when your perception role is good and you realize you’re about to get attacked or there’s bad guys behind the door. Your inner voice might say well I feel like something bad is about to happen or it might make a funny joke about it or when you lay down and go to sleep it might say well that was a good day or at least we didn’t die. It’s got various uses.
 Answered: 2026-10-24 16:12 UTC
 
+## direct-on-blueprint | A direct piece placed on an unfinished blueprint waits until it is done; taking down a finished piece returns 50 percent?
+Answer: No: Taking down a blueprint returns 100%
+Answered: 2026-10-24 16:12 UTC
+
