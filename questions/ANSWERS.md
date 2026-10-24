@@ -1594,3 +1594,7 @@ Answered: 2026-10-24 22:15 UTC
 Answer: No: Nope, tools all still just look like the original square flat wooden shovel
 Answered: 2026-10-24 22:16 UTC
 
+## held-tools-790 | Do held tools now look like the ground ones?
+Answer: No: Nope, tools all still just look like the original square flat wooden shovel
+Answered: 2026-10-24 22:16 UTC
+
