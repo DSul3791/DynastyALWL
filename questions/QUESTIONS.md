@@ -115,3 +115,8 @@ Note: Recommendation: Yes because players should see why the wood is changing.
 Note: One game day is one real hour. Spruce, fir and beech drown first; willow and alder last.
 Note: Recommendation: Yes because it is slow enough to react, fast enough to see. Why not: you may want it faster.
 [check]
+
+## fish-species-list | Use this fish list (salmon and trout in rivers, herring to tuna in the sea)?
+Note: Full list and reasons: design/FISH_AND_FISHING_PLAN.md, section on species.
+Note: Recommendation: Yes because the list fits the North Atlantic island (moose, blueberry, ADT) and gives early fish near rivers.
+[check]
