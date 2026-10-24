@@ -3349,14 +3349,17 @@ func _refresh() -> void:
 
 		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
 
-	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
+	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
+	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
+	var shown_recipes: Array = can + cannot
+	shown_recipes.sort_custom(by_name)
 	can.sort_custom(by_name)
 	cannot.sort_custom(by_name)
 
 	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
-	for r in can + cannot:
+	for r in shown_recipes:
 		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
 		var entry: Button = Button.new()
 		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
@@ -3387,7 +3390,10 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "tripod_pot_kit", "clay_hearth_kit"]
+	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
+
+	for id in admin_ids:
 		var number: int = table.number_of(id)
 
 		if number == 0:
