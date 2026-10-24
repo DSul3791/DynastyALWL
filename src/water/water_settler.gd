@@ -14,7 +14,7 @@ const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the ba
 const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
-const VERSION := 3                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 4                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.
@@ -187,6 +187,49 @@ static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: i
 				best = maxf(best, flow[n])
 
 	return best
+
+
+# Thin-film option (data/water_settle.json "film", off by default): a painted river cell that carries real drainage and holds a film of settled water
+# (min_seen_m up to depth_m) is raised to depth_m, so a river that runs at 0.03 to 0.1 m is drawn as water, not as a dry gap. The added water is
+# counted (volume m3) and printed by the settle tool; it is a look setting, not a flow result. Returns {"cells", "volume_m3"}.
+static func film_floor(depth: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, spacing_m: float, cfg: Dictionary) -> Dictionary:
+	var result: Dictionary = {"cells": 0, "volume_m3": 0.0}
+
+	if not bool(cfg.get("enabled", false)) or flow.size() != depth.size():
+		return result
+
+	var target: float = float(cfg.get("depth_m", 0.13))
+	var seen: float = float(cfg.get("min_seen_m", 0.02))
+	var min_cells: float = float(cfg.get("min_km2", 0.05)) * 1.0e6 / maxf(spacing_m * spacing_m, 1.0)      # km2 of catchment as drained cells
+
+	for k in range(depth.size()):
+		if water_class[k] == RIVER and flow[k] >= min_cells and depth[k] >= seen and depth[k] < target:
+			result["volume_m3"] = float(result["volume_m3"]) + (target - depth[k]) * spacing_m * spacing_m
+			depth[k] = target
+			result["cells"] = int(result["cells"]) + 1
+
+	return result
+
+
+# Seam stitch: tile A's last column (east, dir 0) or last row (south, dir 1) is the same ground as tile B's first column or row, so the settled
+# depth there must be the same. Both get the larger of the two (water on one side only is water on both). Returns the number of cells changed.
+static func stitch_edge(a: PackedFloat32Array, b: PackedFloat32Array, side: int, dir: int) -> int:
+	var changed: int = 0
+
+	for n in range(side):
+		var ka: int = n * side + (side - 1) if dir == 0 else (side - 1) * side + n
+		var kb: int = n * side if dir == 0 else n
+		var deep: float = maxf(a[ka], b[kb])
+
+		if a[ka] != deep:
+			a[ka] = deep
+			changed += 1
+
+		if b[kb] != deep:
+			b[kb] = deep
+			changed += 1
+
+	return changed
 
 
 # The feeder spring as a share of the base spring: (area / full_km2) ^ p, clamped to min_share .. 1 (Q = k * A^p with k = rate / full_km2^p).

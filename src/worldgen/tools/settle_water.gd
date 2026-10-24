@@ -125,9 +125,12 @@ func _init() -> void:
 	var stored: float = sim.total_volume()
 	print("settle done after %d ticks (%s): started with %.0f m3, springs supplied %.0f m3, stored now %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3" % [t, why, start_volume, supplied, stored, sim.sea_m3, sim.evaporated_m3, start_volume + supplied - stored - sim.sea_m3 - sim.evaporated_m3])
 
+	var final_depth: PackedFloat32Array = sim.get_depth()
+	var film: Dictionary = WaterSettler.film_floor(final_depth, data.water_class, WaterSettler.flow_of(data, generator), data.spacing_m, WaterSettler.rules().get("film", {}))
+	print("film floor: %d river cells raised, %.0f m3 added (%s)" % [int(film["cells"]), float(film["volume_m3"]), "on" if bool(WaterSettler.rules().get("film", {}).get("enabled", false)) else "off"])
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(WORLD_DIR + "/water"))
-	var saved: int = WaterStore.save(out, side, sim.get_depth())
+	var saved: int = WaterStore.save(out, side, final_depth)
 	print("saved %d wet cells to %s" % [saved, out])
 
 	if picture != "":
