@@ -147,6 +147,7 @@ const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the lo
 const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch; while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
+const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 

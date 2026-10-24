@@ -20,6 +20,7 @@ func check(ok: bool, what: String) -> void:
 func _gully(side: int, half_width: int, fall_per_cell: float, wall_m: float) -> PackedFloat32Array:
 	var g: PackedFloat32Array = PackedFloat32Array()
 	g.resize(side * side)
+	@warning_ignore("integer_division")
 	var centre: int = side / 2
 
 	for j in range(side):
@@ -43,6 +44,7 @@ func _level_at(sim, i: int, j: int) -> float:
 
 func _init() -> void:
 	var side: int = 41
+	@warning_ignore("integer_division")
 	var centre: int = side / 2
 	var ground: PackedFloat32Array = _gully(side, 1, 0.5, 15.0)    # gully 3 cells (24 m) wide, 0.5 m fall per 8 m, walls 15 m
 	var sim = WaterSim.new()

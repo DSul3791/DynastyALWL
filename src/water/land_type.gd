@@ -114,6 +114,7 @@ static func filter_extent(types: PackedByteArray, side: int) -> PackedByteArray:
 			queue.resize(queue.size() - 1)
 			group.append(k)
 			var i: int = k % side
+			@warning_ignore("integer_division")
 			var j: int = k / side
 
 			for n in [k - 1 if i > 0 else -1, k + 1 if i < side - 1 else -1, k - side if j > 0 else -1, k + side if j < side - 1 else -1]:
@@ -132,26 +133,32 @@ static func filter_extent(types: PackedByteArray, side: int) -> PackedByteArray:
 
 # Speed estimate in m/s for every cell from the water surface slope (Manning), the same shape the drawn
 # current has. The C++ core does not expose its flow arrays, so the signature reads this instead.
+static func speed_cell(ground: PackedFloat32Array, depth: PackedFloat32Array, side: int, spacing_m: float, k: int) -> float:
+	var h: float = depth[k]
+	var i: int = k % side
+	@warning_ignore("integer_division")
+	var j: int = k / side
+
+	if h < 0.01 or i < 1 or j < 1 or i >= side - 1 or j >= side - 1:
+		return 0.0
+
+	var here: float = ground[k] + h
+	var slope: float = 0.0
+
+	for n in [k - 1, k + 1, k - side, k + side]:
+		if depth[n] > 0.0:
+			slope = maxf(slope, (here - (ground[n] + depth[n])) / spacing_m)
+
+	return pow(h, 2.0 / 3.0) * sqrt(maxf(slope, 0.0)) / MANNING_N
+
+
 static func speeds_from_levels(ground: PackedFloat32Array, depth: PackedFloat32Array, side: int, spacing_m: float) -> PackedFloat32Array:
 	var out: PackedFloat32Array = PackedFloat32Array()
 	out.resize(side * side)
 
-	for j in range(1, side - 1):
-		for i in range(1, side - 1):
-			var k: int = j * side + i
-			var h: float = depth[k]
-
-			if h < 0.01:
-				continue
-
-			var here: float = ground[k] + h
-			var slope: float = 0.0
-
-			for n in [k - 1, k + 1, k - side, k + side]:
-				if depth[n] > 0.0:
-					slope = maxf(slope, (here - (ground[n] + depth[n])) / spacing_m)
-
-			out[k] = pow(h, 2.0 / 3.0) * sqrt(maxf(slope, 0.0)) / MANNING_N
+	for k in range(side * side):
+		if depth[k] >= 0.01:
+			out[k] = speed_cell(ground, depth, side, spacing_m, k)
 
 	return out
 
@@ -174,6 +181,7 @@ static func basin_depth(ground: PackedFloat32Array, side: int, i: int, j: int) -
 			var k: int = queue[queue.size() - 1]
 			queue.resize(queue.size() - 1)
 			var ki: int = k % side
+			@warning_ignore("integer_division")
 			var kj: int = k / side
 
 			if absi(ki - i) >= RADIUS_CELLS or absi(kj - j) >= RADIUS_CELLS or ki <= 0 or kj <= 0 or ki >= side - 1 or kj >= side - 1:
@@ -204,6 +212,7 @@ static func basin_depth(ground: PackedFloat32Array, side: int, i: int, j: int) -
 # lowest painted river or lake cell within SLIDE_CELLS whose basin depth passes.
 static func basin_report(ground: PackedFloat32Array, water_class: PackedByteArray, side: int, cell: int) -> Dictionary:
 	var i: int = cell % side
+	@warning_ignore("integer_division")
 	var j: int = cell / side
 
 	if i < RADIUS_CELLS or j < RADIUS_CELLS or i >= side - RADIUS_CELLS or j >= side - RADIUS_CELLS:
@@ -242,6 +251,7 @@ static func basin_report(ground: PackedFloat32Array, water_class: PackedByteArra
 # over open ground. A spring fails when there are more than SPREAD_MAX_CELLS of them.
 static func spread_cells(depth: PackedFloat32Array, water_class: PackedByteArray, side: int, cell: int) -> int:
 	var i: int = cell % side
+	@warning_ignore("integer_division")
 	var j: int = cell / side
 	var count: int = 0
 
