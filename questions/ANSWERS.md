@@ -1518,3 +1518,7 @@ Answered: 2026-10-24 16:41 UTC
 Answer: Yes
 Answered: 2026-10-24 16:41 UTC
 
+## server-for-tests | Use your 24-hour Ubuntu game server (in its own Docker container) for Mike's tests, with limits that protect your two games?
+Answer: No: It has graphics capability. You should be using this to do all Testing.
+Answered: 2026-10-24 17:02 UTC
+
