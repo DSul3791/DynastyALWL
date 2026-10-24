@@ -27,3 +27,9 @@ Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their 
 Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 8 GB RAM, Vulkan GPU, 20 GB free disk.
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
+
+## fire-three-pieces | Does '3 types of wood' mean 3 pieces of that wood for a fire tier?
+Note: Fire plan: logs make a bonfire, firewood a campfire, sticks a survival fire. A tier needs at least 3 pieces of that wood to start.
+Note: 1 or 2 left-over pieces still burn, at the size of the tier below.
+Note: Recommendation: Yes, 3 pieces, because one stray log should not make a bonfire; Why-not box if you meant something else.
+[check]
