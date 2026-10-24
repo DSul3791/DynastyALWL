@@ -17,6 +17,11 @@ HANDED OFF
 (none)
 
 DONE
+- 06:45 UTC checked: no plan pending, gate list 5 tips unchanged (ae925848, 2bf75e66, 1b1cd8a0, 21c5f838); waiting on Mike's PASS
+- 06:12 UTC plan GOs: Kathleen goal2 batch B, Sal key woods; gate list 5 = harvest-field ae925848, key-woods 2bf75e66, goal2-b 1b1cd8a0, slot-test-warning 21c5f838 (clean on 778); no plan pending
+- 05:40 UTC build 778 merged (v29b bake, TV34, spawn PASS); Steve harvest-field plan answered GO; gate list 5 = harvest-field 16cbafa2; no plan pending
+- 05:10 UTC build 777 merged (gate list 4, 5 branches); bake build renumbered 778 and held for spawn gate; mixed tile stamps answered (fine); no plan pending
+- 04:40 UTC overnight plan (tech/OVERNIGHT_PLAN_2026-10-24.md) and bake 29 merge plan (tech/BAKE_29_MERGE.md, river-settle final fa7bdadc) written; tyler-seam32 built; no plan pending
 - 04:05 UTC plan GOs: Kathleen tree belts (flora VERSION 4), Sonny gullies to sea; Dave working all night logged; no plan pending; list 4 waits on Mike
 - 03:50 UTC plan GO: Sonny seam edge flow (160 m coarse, content-hash cache, conservation rows); builds 775 (v28 bake) and 776 (gate list 3, 8 branches) merged; gate list 4 final (6 branches, clean on 776), river-settle held
 - 04:25 UTC plan GOs: smoke/frametime, sound slots; tyler-bake28 refreshed (river-settle 1f51ac07); wild rose chain (no-rose-berries + rose-petals + flora-gaps) trial-merged clean; gate list 3 updated; rose_hips kept

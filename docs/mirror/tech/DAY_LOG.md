@@ -9,3 +9,7 @@ Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop
 - 03:15 UTC 24 Oct Guru_003: build 775 merged (v28 bake, TERRAIN_VERSION 29).
 - 03:20 UTC 24 Oct Guru_003: build 776 merged (gate list 3, 8 branches).
 - 03:45 UTC 24 Oct (Dave 03:42 UTC): WORKING ALL NIGHT. BP-T43 after-hours limits and the wrap-up call do NOT apply tonight; normal goals continue, merge gate in order, builds with notes for the morning pull, handoff at 8 AM ADT (11:00 UTC), Mike backs up in a gap with Godot closed.
+- 04:58 UTC 24 Oct Guru_003: build 777 merged (gate list 4, 5 branches).
+- 05:20 UTC 24 Oct Guru_003: build 778 merged (v29b bake, TERRAIN_VERSION 34).
+- 06:55 UTC 24 Oct Guru_003: build 779 merged (gate list 5, 4 branches).
+- 07:00 UTC 24 Oct Guru_003: build 780 merged (harvest-field 5100acbf).

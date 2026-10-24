@@ -163,6 +163,17 @@ func _collect(data, depth: PackedFloat32Array, side: int, start: int, body: Pack
 	return members
 
 
+# Distance in cells from any cell of the body to the nearest settler spring.
+func _nearest_spring(members: PackedInt32Array, side: int) -> float:
+	var nearest: float = INF
+
+	for k in members:
+		for n in range(_spring_cells.size()):
+			nearest = minf(nearest, Vector2(float(k % side - _spring_cells[n] % side), float(floori(float(k) / float(side)) - floori(float(_spring_cells[n]) / float(side)))).length())
+
+	return nearest
+
+
 # Why the feeder rule skipped this body: the classes of its cells, the best outlet flow the rule sees from any of its cells (reach 20), and the nearest
 # spring in cells (the rule needs at least near_cells = 30 to add one).
 func _why_unfed(data, side: int, members: PackedInt32Array) -> String:
@@ -266,12 +277,14 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 		kind = "STEEP FALL (the ground drops over 1 m per cell below the spill: the water leaves as a film or a fall, not a stop)"
 	elif not bool(flood["closed"]) and rim - ground_end < 0.3:
 		kind = "DOWNHILL OPEN (the ground runs on downhill from the end, no pit: the water ran out or was lost; settler volume)"
-	elif bool(flood["closed"]) and carries == "no painted river below":
+	elif bool(flood["closed"]) and carries.begins_with("no painted river below"):
 		kind = "PIT (terrain: no spill route inside the window, no painted river below)"
 	elif missing > 0.5 * fill and fill > 0.0:
 		kind = "NOT FULL (basin %.0f%% full: water never reached the spill)" % (100.0 * stored / maxf(fill, 1.0))
-	elif carries == "no painted river below":
-		kind = "NATURAL POND (full at its rim, no painted river runs out of it: correct as it is)"
+	elif carries.begins_with("no painted river below"):
+		kind = "NATURAL POND (full at its rim, no painted RIVER runs out of it" + (", a lower pond is " + carries.get_slice("lower pond ", 1) if carries.contains("lower pond ") else "") + ": correct as it is)"
+	elif missing <= 0.1 * fill and _nearest_spring(members, side) <= 30.0:
+		kind = "FED POND, RIVER OUT STILL DRY (a spring is %.0f cells from the pond, it is full at its rim and a painted river leaves it, but nothing runs: the outlet notch or the spill cell is the thing to check) " % _nearest_spring(members, side) + _why_unfed(data, side, members)
 	elif missing <= 0.1 * fill:
 		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these) " + _why_unfed(data, side, members)
 	else:
@@ -484,6 +497,7 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 	var ground: float = data.heights[ej * side + ei]
 	var closest: float = INF
 	var drop: float = 0.0
+	var pond_closest: float = INF
 
 	for dj in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
 		for di in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
@@ -499,12 +513,15 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 			if (painted == 2 or painted == 3) and data.heights[k] < ground - 0.3:
 				var d: float = sqrt(float(di * di + dj * dj))
 
-				if d < closest:
+				if painted == 3 and d < closest:
 					closest = d
 					drop = ground - data.heights[k]
+				elif painted == 2:
+					pond_closest = minf(pond_closest, d)
 
 	if closest == INF:
-		return "no painted river below"
+		# Only another pond lower down (a pond chain, joined by no painted river): not a river that should run.
+		return "no painted river below" + (" (lower pond %.0f m away)" % (pond_closest * data.spacing_m) if pond_closest < INF else "")
 
 	return "carries on %.0f m away, %.1f m lower" % [closest * data.spacing_m, drop]
 

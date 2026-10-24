@@ -15,6 +15,7 @@ var _interior_at: int = -1
 var _gear_at: int = -1
 var _creature_at: int = -1
 var _hit_at: int = -1
+var _slots_at: int = -1
 var sound:
 	get: return _client.sound
 var body:
@@ -74,6 +75,9 @@ func add_buttons(settings: VBoxContainer) -> void:      # `settings` is the list
 		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
 		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
 		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
+	_menu_button(settings, "Sound test: Batch 1 (doors, steps, ladder, table, wheel, cloak)", func():
+		_slots_at += 1
+		_menu_note.text = sound.slots.test_step(_slots_at, camera.global_position, -camera.global_transform.basis.z))
 	_menu_button(settings, "Sound test: spear", func():
 		_spear_at = (_spear_at + 1) % 6
 		var eye: Vector3 = camera.global_position
