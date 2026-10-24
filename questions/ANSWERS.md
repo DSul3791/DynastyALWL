@@ -1530,3 +1530,7 @@ Answered: 2026-10-24 17:03 UTC
 Answer: Yes
 Answered: 2026-10-24 17:03 UTC
 
+## wl-tree-speed | Water land types: trees take 3 to 6 real days to die after the water changes (herbs half a day)?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
