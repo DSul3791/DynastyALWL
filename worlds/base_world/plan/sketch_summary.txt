@@ -5,21 +5,21 @@ Sizes: islet 72, small 120, medium 48, large 28, great 22, colossal 25
 Features: shelf_n_n (2 mounts), shelf_n_p (2 mounts), shelf_p_n (2 mounts), shelf_p_p (2 mounts), trench_arc (18 mounts), arc_1 (14 mounts), arc_2 (14 mounts), arc_3 (12 mounts), arc_4 (11 mounts), arc_5 (10 mounts), hotspot_1 (15 mounts), hotspot_2 (10 mounts), hotspot_3 (10 mounts), hotspot_4 (9 mounts), ridge_1 (3 mounts), seamount_field (300 mounts), central_trench (0 mounts), center_island (0 mounts)
 
 LARGEST ISLANDS
-    206.0 km2  peak   903 m  tile ( -5, -7)  shelf_n_n
+    206.0 km2  peak   879 m  tile ( -5, -7)  shelf_n_n
     201.2 km2  peak  1981 m  tile (  0,  0)  center_island
-    162.9 km2  peak  1021 m  tile (  4, -6)  shelf_p_n
-    148.1 km2  peak  1203 m  tile (  6,  6)  shelf_p_p
+    162.9 km2  peak   943 m  tile (  4, -6)  shelf_p_n
+    148.1 km2  peak  1870 m  tile (  6,  6)  shelf_p_p
     138.2 km2  peak  1067 m  tile ( -6, -6)  shelf_n_n
-    128.4 km2  peak   851 m  tile ( -4, -4)  shelf_n_n
-    121.6 km2  peak   713 m  tile ( -6,  5)  shelf_n_p
+    128.4 km2  peak   591 m  tile ( -4, -5)  shelf_n_n
+    121.6 km2  peak   537 m  tile ( -5,  5)  shelf_n_p
     113.2 km2  peak  1706 m  tile ( 10,  9)  arc_3
-    108.5 km2  peak   938 m  tile (  6,  5)  shelf_p_p
-    104.0 km2  peak   767 m  tile (  5, -5)  shelf_p_n
-    101.1 km2  peak   971 m  tile (  4,  5)  shelf_p_p
-    100.5 km2  peak   878 m  tile ( -6,  8)  shelf_n_p
+    108.5 km2  peak   593 m  tile (  6,  5)  shelf_p_p
+    104.0 km2  peak   685 m  tile (  5, -5)  shelf_p_n
+    101.1 km2  peak   955 m  tile (  4,  5)  shelf_p_p
+    100.5 km2  peak   800 m  tile ( -6,  8)  shelf_n_p
      95.7 km2  peak  1265 m  tile (  3,  4)  shelf_p_p
-     90.8 km2  peak   669 m  tile (  4,  3)  shelf_p_p
-     89.3 km2  peak  1086 m  tile ( -5, -3)  shelf_n_n
+     90.8 km2  peak   451 m  tile (  4,  3)  shelf_p_p
+     89.3 km2  peak  1024 m  tile ( -5, -3)  shelf_n_n
 
 STARTER ISLANDS (island under the middle of each starter tile)
   inner  ( -3,  4)  54.1 km2

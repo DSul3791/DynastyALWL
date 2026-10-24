@@ -108,6 +108,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 				_shape_coast_profile(mount)
 				_raise_foothills(mount)
 
+	_shape_shelf_coasts(sketch)
 	_raise_landmark_islands()
 	_clamp_heights()
 
@@ -283,6 +284,47 @@ func _raise_shelf(outline: Dictionary, shelf: Dictionary, owner_index: int) -> v
 				owners[index] = owner_index
 
 			heights[index] = blended
+
+
+# Shelf islands (the hills on a continental shelf, away from the starter islands) get the same concave coast profile as the
+# starters: gentle at the shore, the flat share of the land near the sea, steeper inland, so they have beaches and farmland
+# before the mountains (`shelf_hill_gain` raised their relief).
+func _shape_shelf_coasts(sketch: Dictionary) -> void:
+	var exponent: float = float(rules.get("shelves", {}).get("shelf_coast_exponent", 1.55))
+	var scale_m: float = float(rules.get("shelves", {}).get("shelf_coast_scale_m", 340.0))
+
+	if scale_m <= 0.0:
+		return
+
+	for feature in sketch.get("features", []):
+		if str(feature["kind"]) != "continental_shelf":
+			continue
+
+		var outline: Dictionary = feature["shelf"]
+		var reach_m: float = float(outline["half_length_m"]) * (1.0 + float(outline["edge_width"])) + float(outline["half_width_m"]) * 0.5
+		var radius: int = int(ceil(reach_m / cell_m))
+		var size: int = radius * 2 + 1
+		var center_column: int = int(floor((float(outline["center_m"][0]) - origin_x) / cell_m))
+		var center_row: int = int(floor((float(outline["center_m"][1]) - origin_z) / cell_m))
+		var sea: PackedFloat32Array = _sea_distance(center_column, center_row, radius)
+
+		for row in range(size):
+			for column in range(size):
+				var d_m: float = sea[row * size + column] * cell_m
+
+				if d_m <= 0.0:
+					continue
+
+				var cc: int = center_column - radius + column
+				var cr: int = center_row - radius + row
+				var weight: float = _away_from_starters(0, cc, cr)
+
+				if weight <= 0.0:
+					continue
+
+				var index: int = index_of(cc, cr)
+				var cap: float = 6.0 + scale_m * pow(d_m / 3500.0, exponent) * (1.0 + 0.2 * _value(_ridged, index))
+				heights[index] = lerpf(heights[index], minf(heights[index], cap), weight)
 
 
 # 0 inside a starter island's reach (its own shape rules apply there), 1 well away from all of them.
@@ -594,16 +636,61 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 
 	distances.sort()
 	var farthest: float = distances[distances.size() - 1] if not distances.is_empty() else 1.0
+	var peaks: Array = _pick_peaks(starter_rules, sea, size, radius, farthest)
 	return {
 		"bands": bands, "summit": summit, "distances": distances, "spire": spire, "farthest": farthest,
 		"spire_start": float(starter_rules.get("spire_start", 0.88)), "spire_power": float(starter_rules.get("spire_power", 2.2)),
-		"layout": starter_rules.get("layout", []), "layout_base": float(starter_rules.get("layout_base", 0.4)),
+		"layout": peaks, "layout_base": float(starter_rules.get("layout_base", 0.4)),
+		"peak_width_m": float(starter_rules.get("peak_width_m", 1500.0)),
 		"type": str(starter_rules.get("type", "")),
 	}
 
 
+# Peak layout (type rows with `peaks`: N, `peak_heights`: factors, `peak_separation_m`): the peaks are put on the island's
+# interior ridge, the cells farthest from the sea, at least the separation apart, highest first. Returns [x_m, z_m, factor] rows
+# relative to the island centre (the same frame as dx, dz in the shaping passes).
+func _pick_peaks(config: Dictionary, sea: PackedFloat32Array, size: int, radius: int, farthest: float) -> Array:
+	var count: int = int(config.get("peaks", 0))
+	var factors: Array = config.get("peak_heights", [])
+	var peaks: Array = []
+
+	if count <= 0:
+		return peaks
+
+	var separation: float = float(config.get("peak_separation_m", 1800.0))
+	var order: Array = []
+
+	for row in range(size):
+		for column in range(size):
+			var d_m: float = sea[row * size + column] * cell_m
+
+			if d_m >= 0.3 * farthest:
+				order.append([d_m, column, row])
+
+	order.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+
+	for candidate in order:
+		var x: float = float(int(candidate[1]) - radius) * cell_m
+		var z: float = float(int(candidate[2]) - radius) * cell_m
+		var clear: bool = true
+
+		for peak in peaks:
+			if Vector2(x - float(peak[0]), z - float(peak[1])).length() < separation:
+				clear = false
+				break
+
+		if clear:
+			var factor: float = float(factors[peaks.size()]) if peaks.size() < factors.size() else 1.0
+			peaks.append([x, z, factor])
+
+			if peaks.size() >= count:
+				break
+
+	return peaks
+
+
 # Height of the band curve at distance d_m from the sea.
-func _band_height(table: Dictionary, d_m: float, along: float = 0.0, across: float = 0.0) -> float:
+func _band_height(table: Dictionary, d_m: float, x_m: float = 0.0, z_m: float = 0.0) -> float:
 	var distances: PackedFloat32Array = table["distances"]
 	var bands: Array = table["bands"]
 
@@ -624,27 +711,32 @@ func _band_height(table: Dictionary, d_m: float, along: float = 0.0, across: flo
 			var u: float = (share - from) / span
 			# Linear on the last segment: an eased end flattens the top into a plateau.
 			var eased: float = u if i == bands.size() - 1 else _smooth(u)
-			return _layout(table, share, along, across, float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)) + spire
+			return _layout(table, d_m, share, x_m, z_m, float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)) + spire
 
-	return _layout(table, share, along, across, float(table["summit"]) * float(bands[bands.size() - 1][1])) + spire
+	return _layout(table, d_m, share, x_m, z_m, float(table["summit"]) * float(bands[bands.size() - 1][1])) + spire
 
 
 # Peak layout: rows [along, across, width, height factor] in island-ellipse units. High ground (share above 0.4) is shaped
 # toward the nearest peaks, with passes in between at `layout_base` of the band height; low ground is left alone.
-func _layout(table: Dictionary, share: float, along: float, across: float, band_height: float) -> float:
+func _layout(table: Dictionary, d_m: float, share: float, x_m: float, z_m: float, band_height: float) -> float:
 	var peaks: Array = table["layout"]
 
 	if peaks.is_empty():
 		return band_height
 
+	var width: float = float(table["peak_width_m"])
 	var field: float = 0.0
+	var cone: float = 0.0
 
 	for row in peaks:
-		var distance_sq: float = (along - float(row[0])) * (along - float(row[0])) + (across - float(row[1])) * (across - float(row[1]))
-		field = maxf(field, float(row[3]) * exp(-distance_sq / maxf(float(row[2]) * float(row[2]), 0.0001)))
+		var distance_sq: float = Vector2(x_m - float(row[0]), z_m - float(row[1])).length_squared()
+		var gauss: float = exp(-distance_sq / maxf(width * width, 1.0))
+		field = maxf(field, float(row[2]) * gauss)
+		# Each peak is its own cone, so it stands even where the sea-distance rank is low; it fades out at the coast.
+		cone = maxf(cone, float(table["summit"]) * float(row[2]) * gauss * _smooth(clampf(d_m / 700.0, 0.0, 1.0)))
 
 	var factor: float = float(table["layout_base"]) + (1.0 - float(table["layout_base"])) * clampf(field, 0.0, 1.0)
-	return band_height * lerpf(1.0, factor, _smooth(clampf((share - 0.4) / 0.4, 0.0, 1.0)))
+	return maxf(band_height * lerpf(1.0, factor, _smooth(clampf((share - 0.4) / 0.4, 0.0, 1.0))), cone)
 
 
 # Foothill belt (ISLAND_SHAPE_PLAN step 2): the cap above only lowers land, so the sectors beside the peak axis stayed low and
@@ -707,7 +799,7 @@ func _raise_foothills(mount: Dictionary) -> void:
 			var curve: float = 6.0 + 340.0 * cap_scale * pow(d_m / 3500.0, exponent * 0.91)
 
 			if not table.is_empty():
-				curve = _band_height(table, d_m, along, across)
+				curve = _band_height(table, d_m, dx, dz)
 
 			var target: float = minf(curve * (floor_share + (1.0 - floor_share) * spoke), ceiling)
 

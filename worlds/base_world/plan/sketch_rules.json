@@ -23,6 +23,8 @@
 		"hill_amplitude_m": 800,
 		"hill_threshold": 0.14,
 		"shelf_hill_gain": 2.0,
+		"shelf_coast_exponent": 2.2,
+		"shelf_coast_scale_m": 1100,
 		"geology": ["granite", "basin", "fold_belt"]
 	},
 
@@ -117,8 +119,8 @@
 	"island_types": {
 		"temperate_hills": {"weight": 3, "summit_m": [500, 850], "spire_share": 0.2, "height_bands": [[0.0, 0.002], [0.2, 0.03], [0.4, 0.1], [0.6, 0.28], [0.8, 0.6], [1.0, 0.8]]},
 		"middle_peak": {"weight": 3},
-		"three_peak_ridge": {"weight": 2, "summit_m": [1450, 1800], "layout_base": 0.4, "layout": [[-0.55, 0.0, 0.45, 0.9], [0.0, 0.0, 0.4, 1.0], [0.55, 0.0, 0.45, 0.85]]},
-		"volcano": {"weight": 1, "summit_m": [1100, 1600], "spire_share": 0.12, "height_bands": [[0.0, 0.002], [0.2, 0.02], [0.4, 0.06], [0.6, 0.18], [0.8, 0.5], [1.0, 0.88]], "crater": {"radius_m": 320, "depth_m": 180, "lava": false, "breach_bearing_deg": 160, "breach_width_m": 160}},
+		"three_peak_ridge": {"weight": 2, "summit_m": [1450, 1800], "layout_base": 0.4, "peaks": 3, "peak_heights": [1.0, 0.9, 0.85], "peak_separation_m": 2200, "peak_width_m": 1500},
+		"volcano": {"weight": 1, "summit_m": [1100, 1600], "spire_share": 0.12, "height_bands": [[0.0, 0.002], [0.2, 0.02], [0.4, 0.06], [0.6, 0.18], [0.8, 0.5], [1.0, 0.88]], "crater": {"radius_m": 640, "depth_m": 300, "lava": false, "breach_bearing_deg": 160, "breach_width_m": 320}},
 		"prairie": {"weight": 1, "summit_m": [250, 450], "spire_share": 0.15, "height_bands": [[0.0, 0.002], [0.2, 0.05], [0.5, 0.2], [0.8, 0.5], [1.0, 0.7]]},
 		"moor_highland": {"weight": 1, "summit_m": [450, 750], "spire_share": 0.1, "height_bands": [[0.0, 0.002], [0.2, 0.08], [0.4, 0.35], [0.7, 0.65], [1.0, 0.8]]}
 	},
