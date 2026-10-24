@@ -1494,3 +1494,7 @@ Answered: 2026-10-24 16:17 UTC
 Answer: Yes
 Answered: 2026-10-24 16:39 UTC
 
+## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
