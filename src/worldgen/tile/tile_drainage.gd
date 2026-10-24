@@ -359,13 +359,19 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 	var pit_min_rim: float = float(rules.get("pit_min_rim_m", 2.0))
 	var pit_max_cut: float = float(rules.get("pit_max_cut_m", 8.0))
 	var pits_skipped: int = 0
+	var pits_kept: int = 0
+	var pit_keep_rim: float = float(rules.get("pit_keep_rim_m", 1.5))
+	var kept: PackedByteArray = PackedByteArray()
+	kept.resize(samples * samples)
 
-	for ring: int in [3, 6]:
+	# The wide ring first: a hollow 96 m across with a rim of pit_keep_rim_m or more is a real basin (Dave 24 Oct: lakes and
+	# ponds should be sizable). It stays, with its outlet cut at the lip (rim - 0.3 m) so it spills over a notch. Smaller pits drain.
+	for ring: int in [6, 3]:
 		for row in range(ring, samples - ring):
 			for column in range(ring, samples - ring):
 				var index: int = row * samples + column
 
-				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment or channels.basin_mask[index] == 1:
+				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment or channels.basin_mask[index] == 1 or kept[index] == 1:
 					continue
 
 				var floor_m: float = channels.bed[index]
@@ -390,19 +396,28 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 				if not is_pit or rim - floor_m < pit_min_rim:
 					continue
 
-				var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
+				var keep: bool = ring == 6 and rim - floor_m >= pit_keep_rim
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim - 0.3 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
 				if pit_cut_result.has("skipped"):
 					pits_skipped += 1
 					continue
 
-				pits += 1
+				if keep:
+					pits_kept += 1
+
+					for kz in range(maxi(row - 8, 0), mini(row + 9, samples)):
+						for kc in range(maxi(column - 8, 0), mini(column + 9, samples)):
+							kept[kz * samples + kc] = 1
+				else:
+					pits += 1
+
 				pit_cells += int(pit_cut_result["cells"])
 				pit_cut = maxf(pit_cut, float(pit_cut_result["lowered"]))
 
 				if verbose:
 					print("  pit: floor %.1f m rim %.1f m at world %d,%d, %d cells, deepest cut %.1f m" % [floor_m, rim, (column + water._origin_sx) * 8, (row + water._origin_sz) * 8, int(pit_cut_result["cells"]), float(pit_cut_result["lowered"])])
 
-	print("  pits: %d drained, %d left (cut too deep), %d cells cut, deepest cut %.1f m" % [pits, pits_skipped, pit_cells, pit_cut])
+	print("  pits: %d drained, %d kept as basins (outlet cut at the lip), %d left (cut too deep), %d cells cut, deepest cut %.1f m" % [pits, pits_kept, pits_skipped, pit_cells, pit_cut])
 
 
 # Walks the routing receivers downstream from `at` and cuts a three-cell-wide channel whose bed starts just under `level`
