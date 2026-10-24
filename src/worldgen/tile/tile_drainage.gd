@@ -242,6 +242,29 @@ static func _probe(water, fill, flow, channels, land: PackedFloat32Array, sample
 
 		print(line)
 
+	# Walk upstream along the biggest donor and print every 10th cell (world metres, discharge in cells), so two tiles can be
+	# compared to find where their catchments first differ.
+	var at: int = row * samples + column
+	var received: PackedInt32Array = PackedInt32Array()
+	received.resize(samples * samples)
+	received.fill(-1)
+
+	for cell in range(samples * samples):
+		var down: int = fill.receiver[cell]
+
+		if down >= 0 and (received[down] < 0 or flow.discharge[cell] > flow.discharge[received[down]]):
+			received[down] = cell
+
+	for step in range(600):
+		if received[at] < 0:
+			break
+
+		at = received[at]
+
+		if step % 10 == 0:
+			@warning_ignore("integer_division")
+			print("PROBE up %d world %d,%d Q %.0f%s" % [step, (at % samples + water._origin_sx) * int(cell_m), (at / samples + water._origin_sz) * int(cell_m), flow.discharge[at] / unit, " L" if fill.lake_id[at] != 0 else ""])
+
 	var heights_line: String = "PROBE heights land/bed centre row:"
 
 	for c in range(column - 8, column + 9):
