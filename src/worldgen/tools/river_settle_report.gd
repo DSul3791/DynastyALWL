@@ -89,7 +89,12 @@ func _init() -> void:
 		_flow = TileFileScript.decode_flow(TileFileScript.read_section(tile_path, head["table"], "flow")["raw"])
 
 	print("settler places %d springs on tile %d,%d; flow map %s" % [_spring_cells.size(), tile.x, tile.y, "read" if not _flow.is_empty() else "NOT read"])
-	print("flow map: %d values, biggest %.0f drained cells" % [_flow.size(), (_flow.max() if not _flow.is_empty() else 0.0)])
+	var flow_max: float = 0.0
+
+	for value in _flow:
+		flow_max = maxf(flow_max, value)
+
+	print("flow map: %d values, biggest %.0f drained cells" % [_flow.size(), flow_max])
 	var body: PackedInt32Array = PackedInt32Array()
 	body.resize(side * side)
 	body.fill(-1)
