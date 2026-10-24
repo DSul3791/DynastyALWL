@@ -950,7 +950,15 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 				var angle: float = float(step) * TAU / 8.0
 				ring_total += _h(candidate.x + cos(angle) * radius, candidate.y + sin(angle) * radius)
 
-			var candidate_depth: float = ring_total / 8.0 - _h(candidate.x, candidate.y)
+			var candidate_floor: float = _h(candidate.x, candidate.y)
+
+			for step in range(8):
+				var angle: float = float(step) * TAU / 8.0
+
+				for fraction in [0.4, 0.8]:
+					candidate_floor = minf(candidate_floor, _h(candidate.x + cos(angle) * radius * fraction, candidate.y + sin(angle) * radius * fraction))
+
+			var candidate_depth: float = ring_total / 8.0 - candidate_floor
 
 			if candidate_depth > best_depth:
 				best_depth = candidate_depth
