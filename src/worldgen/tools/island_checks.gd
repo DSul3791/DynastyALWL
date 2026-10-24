@@ -28,6 +28,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const CensusScript := preload("res://src/worldgen/sketch/island_census.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const WaterStoreScript := preload("res://src/water/water_store.gd")
 const EdgeCompareScript := preload("res://src/worldgen/tile/edge_compare.gd")
 
 const RAY_STEP_M := 40.0
@@ -904,7 +905,13 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 
 	stitched["origin_x"] = float(stitched["min_x"] * settings.tile_size_m)
 	stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
-	_river_checks(stitched, tile_limits)
+	var settled: PackedByteArray = _settled_grid(stitched, tiles, directory.get_base_dir() + "/water", tile_limits)
+
+	if settled.is_empty():
+		_river_checks(stitched, tile_limits, stitched["water"], "painted rivers, 32 m map, no settled water files", true)
+	else:
+		_river_checks(stitched, tile_limits, settled, "settled water, wet over %.2f m, 32 m map" % float(tile_limits["river_wet_depth_m"]), true)
+		_river_checks(stitched, tile_limits, stitched["water"], "painted rivers, 32 m map", false)
 
 	var fine: Dictionary = {}
 
@@ -1078,8 +1085,7 @@ func _stitch(tiles: Array, directory: String, fine: bool = false) -> Dictionary:
 
 
 # Rivers must reach the ocean (or run off the edge of the baked area).
-func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
-	var grid: PackedByteArray = stitched["water"]
+func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedByteArray, tag: String, gate: bool) -> void:
 	var map_heights: PackedFloat32Array = stitched["heights"]
 	var width: int = stitched["width"]
 	var rows: int = stitched["rows"]
@@ -1147,10 +1153,52 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 		if not reaches:
 			ending_inland += 1
 			var descent: String = _descent(grid, map_heights, width, rows, lowest_index, spacing)
-			_row("river ends inland near x %d z %d" % [int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
-				"%d river samples, lowest water at %.1f m; %s" % [river_cells, lowest, descent], "reaches sea", "FAIL")
+			_row("river ends inland (%s) near x %d z %d" % [tag, int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
+				"%d river samples, lowest water at %.1f m; %s" % [river_cells, lowest, descent], "reaches sea", "FAIL" if gate else "INFO")
 
-	_row("rivers reach the sea (32 m map)", "%d river bodies, %d end inland" % [bodies, ending_inland], "0 inland", "FAIL" if ending_inland > 0 else "PASS")
+	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d end inland" % [bodies, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
+
+
+# The settled water (tile_X_Z.water, the server's saved simulation) on the 32 m map: ocean from the painted
+# map, 3 where any 8 m cell of the block is wet over river_wet_depth_m, 0 elsewhere. A tile without a water
+# file keeps its painted classes. Returns an empty array when no tile has a water file.
+func _settled_grid(stitched: Dictionary, tiles: Array, water_dir: String, tile_limits: Dictionary) -> PackedByteArray:
+	var wet_m: float = float(tile_limits["river_wet_depth_m"])
+	var width: int = stitched["width"]
+	var painted: PackedByteArray = stitched["water"]
+	var grid: PackedByteArray = painted.duplicate()
+	var found: int = 0
+
+	for tile in tiles:
+		var file_path: String = "%s/tile_%d_%d.water" % [water_dir, tile.x, tile.y]
+		var header: Dictionary = TileFileScript.read_header("%s/tile_%d_%d.tile" % [water_dir.get_base_dir() + "/tiles", tile.x, tile.y])
+		var side: int = int(header["header"]["samples"]) if header["ok"] else 0
+		var depth: PackedFloat32Array = WaterStoreScript.load_depth(file_path, side) if side > 0 else PackedFloat32Array()
+
+		if depth.is_empty():
+			continue
+
+		found += 1
+		var step: int = _quot(side - 1, 4)
+		var base_x: int = (tile.x - int(stitched["min_x"])) * step
+		var base_z: int = (tile.y - int(stitched["min_z"])) * step
+
+		# Clear this tile's painted rivers and lakes (the ocean stays), then mark the wet blocks.
+		for j in range(step + 1):
+			for i in range(step + 1):
+				var cell: int = (base_z + j) * width + base_x + i
+
+				if grid[cell] >= 2 and grid[cell] <= 4:
+					grid[cell] = 0
+
+		for k in range(depth.size()):
+			if depth[k] > wet_m:
+				var cell: int = (base_z + _quot(_quot(k, side), 4)) * width + base_x + _quot(k % side, 4)
+
+				if grid[cell] == 0:
+					grid[cell] = 3
+
+	return grid if found > 0 else PackedByteArray()
 
 
 # From the lowest water cell of a river that stops inland, follow the steepest descent over the ground

@@ -49,6 +49,7 @@
 		"spawn_max_water_cells": 0,
 		"river_min_cells": 30,
 		"river_gap_m": 128,
+		"river_wet_depth_m": 0.05,
 		"summit_search_m": 3000,
 		"route_easy_deg": 25.0,
 		"route_hard_deg": 45.0,
