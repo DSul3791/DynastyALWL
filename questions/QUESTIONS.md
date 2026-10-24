@@ -28,12 +28,6 @@ Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound so
 Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
 [test]
 
-## sound-sliders | Please take a picture of Settings > Sound
-Note: 1. Pull claude/steve-sound-sliders (or the next build with it).
-Note: 2. Esc > Settings > Sound.
-Note: 3. Drag the Wind slider to 0 in a place with wind, then take a picture of the page.
-[picture]
-
 ## held-tools-790 | Do held tools now look like the ground ones?
 Note: 1. Pull branch claude/kathleen-held-tools.
 Note: 2. Hold stone axe, pickaxe, hoe, spade, knife, spear in turn, first person; one picture each, plus the same axe lying on the ground.
