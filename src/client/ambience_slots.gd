@@ -26,6 +26,7 @@ const DUSK_BEFORE_H := 1.0
 const DARK_MARGIN_H := 0.5
 const NEAR_WATER := 0.4                   # water zone weight from which a pond or the sea edge is near
 const SEA_EDGE_M := 8.0
+const SURF_MIN_WIND := 0.45               # Dave 24 Oct: surf only near the sea AND when it is windy (the world wind, 0.15 calm to 1 storm)
 const MAX_SHOTS := 2                      # one-shots playing at once
 const SHOT_LENGTH_S := 4.0                # a one-shot counts as playing this long in the 60-second simulation
 const WET_REFRESH_S := 2.0                # nearest_wet_point is looked up again after this long or after WET_REFRESH_M of walking
@@ -203,7 +204,7 @@ static func matches(tags: Dictionary, ctx: Dictionary) -> bool:
 			if water < NEAR_WATER:
 				return false
 		"sea_edge":
-			if water < NEAR_WATER or height >= SEA_EDGE_M:
+			if water < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:
 				return false
 		"lava":
 			if not bool(ctx.get("lava", false)):
@@ -398,6 +399,7 @@ func context(body: Node3D) -> Dictionary:
 		"biomes": biomes,
 		"water": float(weights.get("water", 0.0)),
 		"height": height,
+		"wind": float(_stage.weather.world_wind),
 		"lava": anchors.has("bed_lava_hiss"),
 	}
 
