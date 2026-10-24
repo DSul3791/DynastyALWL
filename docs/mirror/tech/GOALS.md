@@ -10,7 +10,7 @@ An amazing, well-rounded game that fits our design documents: a persistent rough
 3. A goal moves to "Completed" ONLY when it is truly done (its "Done when" check, confirmed by Tyler). Then the next goal becomes first.
 4. Today's island terrain job stays top for Sonny and Sal until complete.
 5. Moderator reminder every 30 minutes: awake, not idle, first goal first, update your scratch pad.
-6. SCRATCH PAD: /mnt/project-files/goalpads/WhatamIDoingtoReachMyGoal_<Name>.txt holds the finer steps toward goal 1 (read after any reset, update at job start, step done, and every reminder). Tyler mirrors pads to docs/mirror/goalpads/ at 8 AM.
+6. SCRATCH PAD: /mnt/project-files/goalpads/WhatamIDoingtoReachMyGoal_<Name>.txt holds the finer steps toward goal 1 (read after any reset, update at job start, step done, and every reminder). Tyler mirrors pads to docs/mirror/goalpads/ at 8 AM. EXCEPTION: Mike cannot write /mnt/project-files, so Mike's pad lives in git at docs/mirror/goalpads/WhatamIDoingtoReachMyGoal_Mike.txt (he pushes it on claude/mike-goalpad); Tyler merges it and copies it back to /mnt/project-files/goalpads/ at each handoff so the shared copy stays in sync.
 7. Every goal below is DAILY-SIZED: one working day. If a goal turns out bigger, Tyler splits it the same day, in this file.
 
 ## SONNY. Ultimate: the epic fantasy land, caves and oceans we play on, filled with cool resources and reasons to travel the world gathering and exploring.
