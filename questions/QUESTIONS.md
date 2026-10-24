@@ -28,11 +28,6 @@ Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
-## fire-small-cooks | Can food be cooked on the tiny survival fire (sticks)?
-Note: The survival fire is the smallest size: sticks only, 15 minutes each, small light and heat.
-Note: Recommendation: Yes, slowly (about twice as long), because a first-night player has only sticks and needs a way to cook.
-[check]
-
 ## thatch-sources-go | Build the new thatch sources (thatching grass patches in all grassy areas, thatch from tree bark)?
 Note: Thatching grass: 10 thatch per pick, patches in all grassy areas. Bark of felled birch, spruce, fir and pine gives 2 to 5 thatch. Reeds 8, tall grass 4, heather 4.
 Note: Nothing is placed near spawn on purpose; the spawn point is picked near resources later.
