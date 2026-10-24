@@ -192,6 +192,17 @@ func _init() -> void:
 	if not yield_scale.is_empty() and (float(yield_scale.get("min", 1.0)) < 0.1 or float(yield_scale.get("max", 1.0)) < float(yield_scale.get("min", 1.0)) or float(yield_scale.get("max", 1.0)) > 5.0):
 		fail("drops.json yield_scale: min 0.1 or more, max at least min and at most 5")
 
+	# The showroom (data/items/showroom.json) fills the world with REAL items: every row entry must be an existing item with a description to inspect.
+	for row in _read("showroom.json").get("rows", []):
+		for entry in row.get("items", []):
+			var show_id: String = String(entry[0])
+			var show_item: Dictionary = items_file.get("items", {}).get(show_id, gathered_file.get("items", {}).get(show_id, {}))
+
+			if show_item.is_empty():
+				fail("showroom.json row %s: unknown item '%s'" % [String(row.get("label", "")), show_id])
+			elif String(show_item.get("kind", "")) == "structure":
+				fail("showroom.json row %s: '%s' is a placed structure, use its kit" % [String(row.get("label", "")), show_id])
+
 	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
 	for key in drops.get("berry_yield", {}):
 		var berry: Dictionary = drops["berry_yield"][key]

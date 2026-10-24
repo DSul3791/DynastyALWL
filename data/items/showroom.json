@@ -1,5 +1,5 @@
 {
-	"note": "Admin showroom at spawn (Dave 2026-10-23). Drawn only on the admin's own screen while Admin mode (Esc > Admin) is on: not on the server, not pickable, no item limit, never saved. Grass is cleared under the rows. Add a row to look at things; no code needed. 'start' and 'step' are metres EAST and SOUTH of the spawn point, each entry in 'items' is [item id, how many sit in that spot] placed one 'step' after another. 'plants' rows (species names, same start/step) are read but not drawn yet. Unknown ids are skipped and logged.",
+	"note": "Admin showroom at spawn (Dave 2026-10-23). Filled by the server as REAL world items while Admin mode (Esc > Admin) is on (pick up, use, inspect); never saved, never despawned; Esc > Admin > Respawn showroom refills it. Grass is cleared under the rows. Add a row to look at things; no code needed. 'start' and 'step' are metres EAST and SOUTH of the spawn point, each entry in 'items' is [item id, how many sit in that spot] placed one 'step' after another. 'plants' rows (species names, same start/step) are read but not drawn yet. Unknown ids are skipped and logged.",
 	"rows": [
 		{
 			"label": "Spades",
@@ -424,7 +424,7 @@
 					1
 				],
 				[
-					"ladder",
+					"ladder_kit",
 					1
 				]
 			]

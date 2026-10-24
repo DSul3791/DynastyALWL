@@ -18,6 +18,8 @@ const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 1
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
+const SHOWROOM_CAP := 300                # most items one showroom fill places
+const SHOWROOM_PATH := "res://data/items/showroom.json"
 const MAX_DROPPED_NEAR := 64             # loose dropped items allowed within DROP_CROWD_M of a new drop
 const DROP_CROWD_M := 12.0
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
@@ -270,6 +272,9 @@ const BERRY_SIZE_MAX := 1.6
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
+var showroom_enabled: bool = true   # off in a real shared world: showroom items become real items in the economy
+var _showroom_todo: Array = []     # [key, number, count, Vector3 spot] still waiting for their ground to load
+var _showroom_wait: float = 0.0
 var _last_dig: Dictionary = {}
 var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe grade line (Vector3, or null while unset)
 var _last_mine: Dictionary = {}     # peer -> msec
@@ -625,7 +630,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 		for id in _items:
 			var near: Dictionary = _items[id]
 
-			if near.has("scatter") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder"):
+			if near.has("scatter") or near.has("showroom") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder"):
 				continue
 
 			if int(near["number"]) != number or int(near.get("wear", 0)) != 0 or int(near["count"]) >= PILE_CAP:
@@ -649,7 +654,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		if other.has("scatter") or other.has("struct") or other.has("fire") or other.has("tree"):
+		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree"):
 			continue
 
 		if Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= DROP_CROWD_M:
@@ -776,6 +781,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_say(peer, "Cleared %d dropped items." % clear_dropped(_peer_pos.get(peer, Vector3.ZERO), float(clampi(a, 1, 500))))
 
+	elif kind == Net.ACT_SHOWROOM:
+		if not admin_ok.is_valid() or admin_ok.call(peer):
+			_showroom_seed(peer, a == 1, at)
+
 	elif kind == Net.ACT_ADMIN_MODE:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			if a == 1:
@@ -809,6 +818,7 @@ var admin_ok: Callable                  # set by the server: true when the peer 
 
 func tick(delta: float) -> void:
 	_fly(delta)
+	_showroom_retry(delta)
 	_slow_in += delta
 
 	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
@@ -876,8 +886,8 @@ func save() -> void:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree"):
-			continue
+		if it.has("scatter") or it.has("tree") or it.has("showroom"):
+			continue   # the showroom is never saved: an admin fills it again after a restart
 
 		if it.has("struct") and bool(it["struct"].get("transient", false)):
 			continue
@@ -1267,7 +1277,7 @@ func clear_dropped(centre: Vector3, radius: float) -> int:
 	for id in _items.keys():
 		var other: Dictionary = _items[id]
 
-		if other.has("scatter") or other.has("struct") or other.has("fire") or other.has("tree") or other.has("boulder"):
+		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree") or other.has("boulder"):
 			continue
 
 		if Vector2(other["pos"].x - centre.x, other["pos"].z - centre.z).length() <= radius:
@@ -2167,6 +2177,91 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 			return Vector3(spot.x, NAN, spot.z)
 
 	return spot
+
+
+# The admin showroom (Dave 2026-10-23): the rows of data/items/showroom.json laid out east and south of the spawn point as REAL world items
+# (pick up, use, inspect). An upsert by key (row label + index): what is missing is placed, what is there stays, so a fill never flickers.
+# Never saved and never despawned; the admin fills it again after a restart. clear = true removes them all first (the respawn button).
+func _showroom_seed(peer: int, clear: bool, origin: Vector3) -> void:
+	if not showroom_enabled or not ground_height.is_valid():
+		_say(peer, "The showroom is off here.")
+		return
+
+	if clear:
+		for id in _items.keys():
+			if _items[id].has("showroom"):
+				_items.erase(id)
+
+	_showroom_todo.clear()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SHOWROOM_PATH))
+	var rows: Array = parsed["rows"] if parsed is Dictionary and parsed.get("rows") is Array else []
+	var there: Dictionary = {}
+
+	for id in _items:
+		if _items[id].has("showroom"):
+			there[str(_items[id]["showroom"])] = true
+
+	var planned: int = 0
+
+	for row in rows:
+		var start: Array = row.get("start", [0, 0])
+		var step: Array = row.get("step", [0, 1.5])
+		var at: Vector3 = origin + Vector3(float(start[0]), 0.0, float(start[1]))
+		var index: int = 0
+
+		for entry in row.get("items", []):
+			var key: String = "%s|%d" % [str(row.get("label", "")), index]
+			var number: int = table.number_of(str(entry[0]))
+			index += 1
+
+			if number > 0 and not there.has(key) and planned < SHOWROOM_CAP:
+				_showroom_todo.append([key, number, maxi(int(entry[1]) if entry.size() > 1 else 1, 1), at])
+				planned += 1
+			elif number <= 0:
+				print("Showroom: unknown item '%s' in row '%s' skipped" % [str(entry[0]), str(row.get("label", ""))])
+
+			at += Vector3(float(step[0]), 0.0, float(step[1]))
+
+	print("Showroom: peer %d %s, %d to place" % [peer, "respawned it" if clear else "filled it", _showroom_todo.size()])
+	var placed: int = _showroom_place()
+	_say(peer, "Showroom: %d items placed, %d waiting for the ground to load." % [placed, _showroom_todo.size()])
+
+
+# Places the planned items whose ground is in memory; the rest stay planned and are tried again.
+func _showroom_place() -> int:
+	var placed: int = 0
+	var left: Array = []
+
+	for plan in _showroom_todo:
+		var spot: Vector3 = plan[3]
+
+		if ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.z)):
+			left.append(plan)
+			continue
+
+		var ground: float = float(ground_height.call(spot.x, spot.z))
+
+		if is_nan(ground):
+			left.append(plan)
+			continue
+
+		_items[_next_id] = {"number": int(plan[1]), "count": int(plan[2]), "pos": Vector3(spot.x, ground, spot.z), "left": 1.0e9, "wear": 0, "showroom": str(plan[0])}
+		_next_id += 1
+		placed += 1
+
+	_showroom_todo = left
+	return placed
+
+
+func _showroom_retry(delta: float) -> void:
+	if _showroom_todo.is_empty():
+		return
+
+	_showroom_wait += delta
+
+	if _showroom_wait >= 2.0:
+		_showroom_wait = 0.0
+		_showroom_place()
 
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
