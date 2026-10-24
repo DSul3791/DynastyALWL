@@ -10,6 +10,7 @@ const HOP := 1
 const FLEE := 2
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 
 const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse"}
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
@@ -35,7 +36,7 @@ func on_rows(rows: Array) -> void:
 			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse(id) if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose(id) if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3, "quad": node.has_meta("quad")}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -132,6 +133,30 @@ func _process(delta: float) -> void:
 			_animate_quad(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		else:
 			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
+
+		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+
+
+# A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
+func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
+	var kind: String = str(b.get("kind", ""))
+
+	if kind == "" or kind == "duck" or speed < 0.4:
+		return
+
+	var count: int
+	if kind == "rabbit":
+		if state == GRAZE:
+			return
+
+		count = int(floor((_t * (9.0 if state == FLEE else 5.0) + float(b["phase"])) / PI))
+	else:
+		count = int(floor(float(b.get("gait", 0.0))))
+
+	if int(b["step_count"]) >= 0 and count != int(b["step_count"]):
+		stepped.emit(kind, node.global_position)
+
+	b["step_count"] = count
 
 
 func _material(color: Color) -> StandardMaterial3D:

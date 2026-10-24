@@ -1143,6 +1143,8 @@ func _welcome_body(info: Dictionary) -> void:
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
+	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
+		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
