@@ -633,6 +633,23 @@ func _init() -> void:
 				if slot in ["head", "body", "legs", "feet", "hands", "back"] and not rows.has(id):
 					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
 
+	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
+	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):
+		var outfits: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/outfits.json"))
+		var worn_rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/worn.json"))
+		var wearable: Dictionary = worn_rows.get("items", {}) if typeof(worn_rows) == TYPE_DICTIONARY else {}
+
+		if typeof(outfits) != TYPE_DICTIONARY:
+			fail("outfits.json is not an object")
+		else:
+			for outfit in outfits:
+				if str(outfit).begins_with("_"):
+					continue
+
+				for id in outfits[outfit]:
+					if not wearable.has(id):
+						fail("outfits.json: outfit '%s' wears '%s', which has no worn.json row" % [outfit, id])
+
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])
 	quit(1 if errors > 0 else 0)

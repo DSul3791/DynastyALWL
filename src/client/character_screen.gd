@@ -9,6 +9,8 @@ const BODY_PX := 30
 const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const WornSync := preload("res://src/client/worn_sync.gd")
 
 var open: bool = false
 
@@ -28,6 +30,9 @@ var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
 var _text_scale_built: float = -1.0
+var _preview: SubViewport               # the body preview (turns slowly); renders only while the screen is open
+var _preview_rig: Node3D
+var _preview_turn: float = 0.0
 
 
 class HeartView extends Control:
@@ -67,6 +72,32 @@ func toggle() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 	_panel.visible = open
+	_preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS if open else SubViewport.UPDATE_DISABLED   # a closed screen costs nothing
+
+
+# The body as others see it: the ragdoll in idle with the worn clothing, turning slowly in a small world of its own.
+func _make_preview() -> SubViewportContainer:
+	var holder: SubViewportContainer = SubViewportContainer.new()
+	holder.custom_minimum_size = Vector2(_px(190), _px(260))
+	holder.stretch = true
+	_preview = SubViewport.new()
+	_preview.own_world_3d = true
+	_preview.transparent_bg = true
+	_preview.size = Vector2i(_px(190), _px(260))
+	_preview.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	holder.add_child(_preview)
+	var camera: Camera3D = Camera3D.new()
+	camera.position = Vector3(0.0, 1.0, 3.1)
+	camera.fov = 32.0
+	_preview.add_child(camera)
+	var light: DirectionalLight3D = DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-35.0, 25.0, 0.0)
+	_preview.add_child(light)
+	_preview_rig = RagdollScript.new()
+	_preview.add_child(_preview_rig)
+	_preview_rig.dress(Color(0.78, 0.62, 0.5), Color(0.4, 0.34, 0.28), Color(0.25, 0.22, 0.2))
+	_preview_rig.play("idle")
+	return holder
 
 
 func _px(size: int) -> int:
@@ -146,6 +177,7 @@ func _build() -> void:
 		bars.add_child(row)
 		_bars[spec[0]] = [bar, value]
 
+	body.add_child(_make_preview())
 	var heart_box: VBoxContainer = VBoxContainer.new()
 	heart_box.custom_minimum_size = Vector2(_px(220), 0.0)
 	body.add_child(heart_box)
@@ -186,6 +218,8 @@ func _build() -> void:
 func refresh() -> void:
 	if _panel == null or not open:
 		return
+
+	WornSync.apply(_preview_rig, WornSync.ids_of(_items.worn, _items.table), false)
 
 	var threshold: float = maxf(float(_items.exertion_threshold()), 0.1)
 	var exertion: float = clampf(float(_items.strain) / threshold, 0.0, 1.0) * 100.0
@@ -524,6 +558,9 @@ func _add_remains_lines() -> void:
 func update(delta: float) -> void:
 	if not open or _panel == null:
 		return
+
+	_preview_turn = fposmod(_preview_turn + delta * 0.5, TAU)
+	_preview_rig.rotation.y = _preview_turn
 
 	var bpm: float = float(_items.heart_bpm.call()) if _items.heart_bpm.is_valid() else 0.0
 	bpm = bpm if bpm > 1.0 else HEART_REST_BPM
