@@ -2,13 +2,27 @@ WhatamIDoingtoReachMyGoal (Mike)
 ULTIMATE (Dave 01:34): support everyone else as Dave's computer operator: combine tests, move files, provide and push tile builds, manage backups per plan.
 GOAL 1: One combined batch at a time (every thread's REQUESTs in one launch sequence, one report with a PASS/FAIL line per request)
 
-How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
+How to use (Dave 01:26): scratch pad. Finer steps toward goal 1 only. Update at job start, each step done, every half-hour reminder. Never delete done lines; mark DONE with the time (UTC). If a step waits on someone, start the next. When fewer than 5 steps remain, add the next 10 from goals_Mike.md.
 
-STEPS NOW
-1. 
+STEPS NOW (each has a done check)
+1. Merge gate list 2 (steve-rig-pieces, steve-rig-showroom, sal-island-checks, sonny-checks, kathleen-item-looks, sal-building-looks) + steve-stamp-items 5cb8995: local_check, merge_check, parse_scan, test_server_items on a scratch merge in the second clone. DONE WHEN: one PASS/FAIL line per branch is sent to the coordinator.
+2. Plants showroom run for claude/kathleen-flora-gaps with Steve's --showroom flag (check whether data/items/showroom.json has plant rows; if not, say so). DONE WHEN: one "Test done: N pass, N fail" with per-row lines and picture paths.
+3. Collect all pending REQUESTs (coordinator relays, TEST_RECIPE template) into one list; sort into groups that share one engine start. DONE WHEN: the list is written here with the group for each request.
+4. Run the group with the most requests as ONE launch sequence (editor exe for scripts that need Voxel). DONE WHEN: every request in it has its PASS/FAIL line and the report went out once.
+5. Next island bake of Sonny's newest claude/sonny-foothills head in scratch world folder: bake, settle_water, island_checks --picture. DONE WHEN: table, river lines, picture and the baked commit hash are sent.
+6. Write a short request-intake note (what a request must contain: branch+hash, command, pass rule) and send it to the coordinator. DONE WHEN: the note is in this pad and sent.
+7. Time every request from arrival to report; log the longest wait. DONE WHEN: the log is in this pad and no request waited over 1 hour.
+8. Check both clones are current and clean (git status, no uncommitted tool files left): the test clone is on a detached head. DONE WHEN: both clones report current heads, one line each.
+9. Verify last night's backup exists and is logged (BACKUP_PLAN.md, 9 pm ADT). DONE WHEN: the backup folder, its size and time are written here.
+10. Frame-time baseline for the newest build in one rig launch. DONE WHEN: one table row per build is in this pad.
 
 HANDED OFF
 (none)
 
 DONE
-(none)
+(UTC 24 Oct 2026)
+01:38 Pad location set: this file on claude/mike-goalpad.
+01:50 v27 tile bake (build 772) pushed earlier as claude/mike-bake-9tile-v27 68bd63d0.
+02:07 Island bake 7c9655fb tile 3,4, settled water, island_checks and picture sent (world folder island_world_7c9655fb).
+02:19 6 water_window spots and river_settle_report sent.
+02:00 Kathleen item-looks showroom run: 12 rows ok, no family rows in showroom.json yet.
