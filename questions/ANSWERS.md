@@ -1434,3 +1434,7 @@ Answered: 2026-10-24 16:06 UTC
 Answer: No: Remove adze from the game. Make the first hammer made of wood and wood and twine. This is the weakest hammer although it does the exact same job. It just doesn’t last as long it has poor durability. The next step up would be stone and wood and twine and then it would be resource and Wood, like copper, bronze, iron, steel
 Answered: 2026-10-24 16:06 UTC
 
+## wl-r1-first | Water land types: build R1 first (admin map of land types, no plant changes, plus the dam test)?
+Answer: Yes
+Answered: 2026-10-24 16:07 UTC
+
