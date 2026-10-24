@@ -276,6 +276,11 @@ func _init() -> void:
 		if int(gathered_file.get("items", {}).get(berry_id, items_file.get("items", {}).get(berry_id, {})).get("stack", 1)) < 100:
 			fail("drops.json berry_yield.%s: %s needs a stack of 100 or more" % [key, berry_id])
 
+	# One source of truth: a species is in berry_yield or harvest_yield, never both (the helper would silently pick the berry row).
+	for key in drops.get("berry_yield", {}):
+		if (drops.get("harvest_yield", {}) as Dictionary).has(key):
+			fail("drops.json: '%s' is in both berry_yield and harvest_yield" % key)
+
 	# Harvest per plant beyond berries (drops.json harvest_yield): same shape, and a harvest takes at most 3 pack slots.
 	for key in drops.get("harvest_yield", {}):
 		var harvest: Dictionary = drops["harvest_yield"][key]

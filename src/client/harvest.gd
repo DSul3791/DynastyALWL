@@ -184,7 +184,7 @@ func product_name_at(point: Vector3) -> String:
 
 	var id: int = int(found[1])
 	var row: Dictionary = _flora_by_id.get(id >> 16, {})
-	var berry: Dictionary = (_drops.get("berry_yield", {}) as Dictionary).get(str(row.get("name", "")), {})
+	var berry: Dictionary = GatherRules.harvest_row(_drops, str(row.get("name", "")))
 
 	if berry.is_empty() or _client.flora.is_stripped(found[0], id):
 		return ""
@@ -260,7 +260,7 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 				continue
 
 			verdict = GatherRules.check(row, "shrub" if kind == 1 else "plant", _drops, season, has_tool, exists)
-			var berry: bool = (_drops.get("berry_yield", {}) as Dictionary).has(str(row.get("name", "")))
+			var berry: bool = not GatherRules.harvest_row(_drops, str(row.get("name", ""))).is_empty()
 
 			# A berry bush already picked this season stays standing, bare: it says so instead of offering a pick.
 			if berry and verdict["ok"] and _client.flora.is_stripped(chunk, id):

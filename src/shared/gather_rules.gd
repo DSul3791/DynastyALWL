@@ -20,14 +20,43 @@ static func tool_name(tool_class: String, drops: Dictionary) -> String:
 	return str(drops.get("tool_rules", {}).get("tool_names", {}).get(tool_class, tool_class))
 
 
+# The harvest row of a species: {"item", "count"} from drops.json "berry_yield" (berries) or "harvest_yield" (herbs, flowers, roots, mushrooms, other fruit);
+# {} when it has none. One field for both: E gives that product only, once a season, and the plant stays standing and bare until the season changes.
+static func harvest_row(drops: Dictionary, species_name: String) -> Dictionary:
+	var berry: Dictionary = (drops.get("berry_yield", {}) as Dictionary).get(species_name, {})
+
+	if not berry.is_empty():
+		return berry
+
+	return (drops.get("harvest_yield", {}) as Dictionary).get(species_name, {})
+
+
+# Dave's count rule, once: the table count scaled by the plant's size against an average one of its species (patch scale 1 to 3 from drops.json
+# "yield_scale", never below the table number, never above 3x), rounded up, never 0. Berries and every other harvest plant call this.
+static func harvest_scale(drops: Dictionary, plant_height: float, flora_entry: Dictionary) -> float:
+	var limits: Dictionary = drops.get("yield_scale", {})
+	var low: float = float(limits.get("min", 1.0))
+	var high: float = float(limits.get("max", 3.0))
+
+	if plant_height <= 0.0 or not flora_entry.has("height_m"):
+		return low
+
+	var range_m: Array = flora_entry["height_m"]
+	return clampf(plant_height / maxf((float(range_m[0]) + float(range_m[1])) * 0.5, 0.01), low, high)
+
+
+static func harvest_count(row: Dictionary, scale: float) -> int:
+	return maxi(1, int(ceil(float(row.get("count", 1)) * scale - 0.0001)))
+
+
 # Can this plant be picked now? {"ok": bool, "reason": String}. `flora_row` is the flora table row,
 # `has_tool` a Callable(tool class) -> bool, `item_exists` a Callable(item id) -> bool.
 static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season: String, has_tool: Callable, item_exists: Callable) -> Dictionary:
 	var name: String = str(flora_row.get("name", ""))
 	var rows: Array = drops.get("by_species", {}).get(name, drops.get("by_kind", {}).get(kind, []))
 
-	# A berry bush (drops.json "berry_yield"): E picks its berries, in the plant's season only.
-	if (drops.get("berry_yield", {}) as Dictionary).has(name):
+	# A harvest plant (drops.json "berry_yield" or "harvest_yield"): E picks its product, in the plant's season only.
+	if not harvest_row(drops, name).is_empty():
 		var berry_seasons: Array = flora_row.get("season", [])
 		return {"ok": true, "reason": ""} if berry_seasons.is_empty() or berry_seasons.has("all") or berry_seasons.has(season) else {"ok": false, "reason": "not in season"}
 
