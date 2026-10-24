@@ -7,7 +7,7 @@ extends SceneTree
 #
 # Targets (ISLAND_SHAPE_PLAN): about 40 m at 1 km, 130 m at 2 km, 340 m at 3.5 km from the coast.
 
-const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const SPAWN := Vector2(53301.0, 68427.0)
 const CELL_M := 8.0
 const TILE_SAMPLES := 1920
@@ -20,8 +20,8 @@ func _init() -> void:
 	var tile_z: int = int(args[2]) if args.size() > 2 else 4
 	var origin_x: int = tile_x * TILE_SAMPLES
 	var origin_z: int = tile_z * TILE_SAMPLES
-	var head: Dictionary = TileFile.read_header(path)
-	var h: PackedFloat32Array = TileFile.decode_height(TileFile.read_section(path, head["table"], "height")["raw"])
+	var head: Dictionary = TileFileScript.read_header(path)
+	var h: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"])
 	var side: int = int(round(sqrt(float(h.size()))))
 	var best: float = -1.0
 	var best_index: int = 0
@@ -31,7 +31,7 @@ func _init() -> void:
 			best = h[i]
 			best_index = i
 
-	var peak := Vector2(float(best_index % side + origin_x) * CELL_M, float(best_index / side + origin_z) * CELL_M)
+	var peak := Vector2(float(best_index % side + origin_x) * CELL_M, float(floori(float(best_index) / float(side)) + origin_z) * CELL_M)
 	print("peak %.0f m at %.0f %.0f, %.0f m from spawn" % [best, peak.x, peak.y, SPAWN.distance_to(peak)])
 
 	for band in [5.0, 10.0, 20.0, 40.0]:
@@ -115,7 +115,7 @@ func _init() -> void:
 # percentile / median / 90th percentile of height per distance band.
 func _by_sea_distance(h: PackedFloat32Array, side: int) -> void:
 	var step: int = 4
-	var n: int = side / step
+	var n: int = floori(float(side) / float(step))
 	var dist: PackedFloat32Array = PackedFloat32Array()
 	dist.resize(n * n)
 
@@ -164,7 +164,7 @@ func _by_sea_distance(h: PackedFloat32Array, side: int) -> void:
 			var d_m: float = dist[i] * float(step) * CELL_M
 
 			if d_m >= band[0] and d_m < band[1]:
-				values.append(h[(i / n) * step * side + (i % n) * step])
+				values.append(h[floori(float(i) / float(n)) * step * side + (i % n) * step])
 
 		values.sort()
 
@@ -172,4 +172,4 @@ func _by_sea_distance(h: PackedFloat32Array, side: int) -> void:
 			print("  %4.0f-%4.0f m: too few cells" % [band[0], band[1]])
 			continue
 
-		print("  %4.0f-%4.0f m: %6d cells  p10 %4.0f  median %4.0f  p90 %4.0f  max %4.0f" % [band[0], band[1], values.size(), values[values.size() / 10], values[values.size() / 2], values[values.size() * 9 / 10], values[values.size() - 1]])
+		print("  %4.0f-%4.0f m: %6d cells  p10 %4.0f  median %4.0f  p90 %4.0f  max %4.0f" % [band[0], band[1], values.size(), values[floori(float(values.size()) / 10.0)], values[floori(float(values.size()) / 2.0)], values[floori(float(values.size()) * 0.9)], values[values.size() - 1]])

@@ -4,15 +4,15 @@ extends SceneTree
 # the bodies that touch no sea and no tile edge, with the lowest cell and the gap to the nearest water further down.
 #   godot --headless --path . --script res://src/worldgen/tools/river_ends.gd -- <tile file>
 
-const TileFile := preload("res://src/worldgen/tile/tile_file.gd")
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const GAP := 3
 
 
 func _init() -> void:
 	var path: String = OS.get_cmdline_user_args()[0]
-	var head: Dictionary = TileFile.read_header(path)
-	var h: PackedFloat32Array = TileFile.decode_height(TileFile.read_section(path, head["table"], "height")["raw"])
-	var w: PackedByteArray = TileFile.read_section(path, head["table"], "water_class")["raw"]
+	var head: Dictionary = TileFileScript.read_header(path)
+	var h: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"])
+	var w: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
 	var side: int = int(round(sqrt(float(h.size()))))
 	var seen: PackedByteArray = PackedByteArray()
 	seen.resize(w.size())
@@ -45,7 +45,7 @@ func _init() -> void:
 				lowest_at = index
 
 			var ci: int = index % side
-			var cj: int = index / side
+			var cj: int = floori(float(index) / float(side))
 
 			for dj in range(-GAP, GAP + 1):
 				for di in range(-GAP, GAP + 1):
@@ -72,7 +72,7 @@ func _init() -> void:
 		if not reaches:
 			inland += 1
 			var ex: int = lowest_at % side
-			var ez: int = lowest_at / side
+			var ez: int = floori(float(lowest_at) / float(side))
 			# Look downhill from the end: height 100 samples (800 m) further along the steepest descent, and local slope.
 			var drop: float = 0.0
 
