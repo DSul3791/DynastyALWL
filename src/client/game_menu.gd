@@ -83,6 +83,22 @@ func build(client) -> void:
 		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
 		show_page("admin"))
 	_button(reset, "No, keep them", func(): show_page("admin"))
+	var fresh: VBoxContainer = _page("new_player")
+	var fresh_warn: Label = Label.new()
+	fresh_warn.text = "Start over as a brand new player?\nYour pack and worn gear are emptied, your vitals reset\nand Admin mode goes off. You stay where you are."
+	fresh_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fresh_warn.add_theme_font_size_override("font_size", 30)
+	fresh.add_child(fresh_warn)
+	_button(fresh, "Yes, play as a new player", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_NEW_PLAYER, 0, 0, 0, Vector3.ZERO)
+		if _c.items != null:
+			_c.items.admin_craft = false
+
+		if _admin_mode_switch != null:
+			_admin_mode_switch.set_on(false)
+
+		show_page("admin"))
+	_button(fresh, "No, keep my character", func(): show_page("admin"))
 	_build_developer()
 	note = Label.new()
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -266,6 +282,7 @@ func _build_admin() -> void:
 		_c.weather_look.clear_day = on
 		_c.weather_look._day_next_msec = 0
 		note.text = "Noon light, clear sky and no fog %s. Off goes back to the game clock and the world weather." % ("on" if on else "off"))
+	_button(admin, "Play as a new player", func(): show_page("new_player"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
