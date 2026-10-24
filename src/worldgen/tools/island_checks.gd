@@ -1350,7 +1350,7 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	if _fine:
 		stitched = fine
 
-	_tile_farmland(stitched, tile_limits)
+	_tile_farmland(stitched)
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
 
 	_tile_summits(world_dir, fine)
@@ -1358,7 +1358,7 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 
 # Farmable and rolling share per landmass on the baked 32 m maps (same zone and slopes as the sketch row).
 # Reports only; landmasses with fewer than farm_min_cells zone cells are skipped.
-func _tile_farmland(stitched: Dictionary, tile_limits: Dictionary) -> void:
+func _tile_farmland(stitched: Dictionary) -> void:
 	var defaults: Dictionary = _limits["defaults"]
 	var farm_deg: float = float(defaults["farm_slope_deg"])
 	var flat_deg: float = float(defaults["flat_slope_deg"])
