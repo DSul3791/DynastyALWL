@@ -143,7 +143,7 @@ var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0}   # Esc > Settings sliders, 0 to 1
-var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
+var mix_level: Dictionary = {"wind": 1.0, "nature": 1.0, "steps": 1.0}   # per group, 0 to 1 (Esc > Settings > Sound sliders)
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # preset["voices"]
 var preset: Dictionary = Presets.row(2) # this tier's mixer row (sound_presets.gd); layers read their limits here
@@ -887,13 +887,14 @@ func step_level_db(surface_kind: String, gait: int) -> float:
 	return base + float(gait_db[g]) + float(extra[g] if extra.size() == 3 else 0.0)
 
 
-# Esc > Settings mixer: steps one group (wind, nature, steps) through 100, 75, 50, 25 % and off.
-# Returns the new share. Saved for the next run.
-func mix_step(group: String) -> float:
-	mix_index[group] = (int(mix_index[group]) + 1) % VOLUME_STEPS.size()
+# Esc > Settings mixer: sets one group (wind, nature, steps) to a share from 0 to 1. Saved for the next run.
+func set_mix(group: String, value: float) -> void:
+	if not mix_level.has(group):
+		return
+
+	mix_level[group] = clampf(value, 0.0, 1.0)
 	_apply_mix(group)
 	_save_settings()
-	return float(VOLUME_STEPS[int(mix_index[group])])
 
 
 # Headless loudness table (job 67, --mix-levels): the highest peak seen on each bus since tracking began.
@@ -996,12 +997,12 @@ var _faint_applied: float = 0.0
 func _apply_buses() -> void:
 	var shares: Dictionary = {
 		"Master": float(levels["master"]) * float(VOLUME_STEPS[volume_index]),
-		"Foley": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
-		"Wind": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["wind"])]),
-		"Nature": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
-		"Weather": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
+		"Foley": float(levels["effects"]) * float(mix_level["steps"]),
+		"Wind": float(levels["ambient"]) * float(mix_level["wind"]),
+		"Nature": float(levels["ambient"]) * float(mix_level["nature"]),
+		"Weather": float(levels["ambient"]) * float(mix_level["nature"]),
 		"Interface": float(levels["interface"]),
-		"Body": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
+		"Body": float(levels["effects"]) * float(mix_level["steps"]),
 	}
 
 	for bus_name in shares:
@@ -1062,7 +1063,8 @@ func _load_settings() -> void:
 
 	if file.load(SETTINGS_PATH) == OK:
 		for group in MIX_GROUPS:
-			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
+			var old_step: int = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
+			mix_level[group] = clampf(float(file.get_value("mixer_level", group, VOLUME_STEPS[old_step])), 0.0, 1.0)
 
 		for sound_name in levels:
 			levels[sound_name] = clampf(float(file.get_value("levels", sound_name, 1.0)), 0.0, 1.0)
@@ -1074,7 +1076,7 @@ func _save_settings() -> void:
 	var file: ConfigFile = ConfigFile.new()
 
 	for group in MIX_GROUPS:
-		file.set_value("mixer", group, int(mix_index[group]))
+		file.set_value("mixer_level", group, float(mix_level[group]))
 
 	for sound_name in levels:
 		file.set_value("levels", sound_name, float(levels[sound_name]))
