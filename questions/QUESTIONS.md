@@ -59,3 +59,8 @@ Note: Recommendation: Yes, because all hafted stone tools then cost the same and
 Note: Waterlogging still hurts crops.
 Note: Recommendation: Yes because your fields should not turn into woods overnight.
 [check]
+
+## wl-r1-first | Water land types: build R1 first (admin map of land types, no plant changes, plus the dam test)?
+Note: R2 plants and R3 succession follow.
+Note: Recommendation: Yes because it is safe and shows where the game thinks each type is. Why not: nothing new in play yet.
+[check]
