@@ -17,6 +17,8 @@ var quality_buttons: Array = []
 var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
+var _sound_scroll: ScrollContainer     # Settings > Sound, scrolls when the window is short
+var _test_scroll: ScrollContainer      # Settings > Sound > Sound test list
 var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
@@ -112,6 +114,18 @@ func build(client) -> void:
 func show_page(page_name: String) -> void:
 	for key in _pages:
 		_pages[key].visible = key == page_name
+
+	# The two long sound pages scroll inside what the window leaves under the title, the back button and the note.
+	var room: float = 480.0
+
+	if _c != null and _c.get_viewport() != null:
+		room = clampf(_c.get_viewport().get_visible_rect().size.y - 300.0, 200.0, 760.0)
+
+	if _sound_scroll != null:
+		_sound_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
+
+	if _test_scroll != null:
+		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
 
 	if note != null:
 		note.text = ""
@@ -228,7 +242,13 @@ func _build_display() -> void:
 
 
 func _build_sound() -> void:
-	var sound: VBoxContainer = _page("sound")
+	var page: VBoxContainer = _page("sound")
+	_sound_scroll = ScrollContainer.new()
+	_sound_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	page.add_child(_sound_scroll)
+	var sound: VBoxContainer = VBoxContainer.new()
+	sound.add_theme_constant_override("separation", 10)
+	_sound_scroll.add_child(sound)
 
 	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
 		_slider(sound, level[1], float(_c.sound.levels[level[0]]), func(value: float):
@@ -241,7 +261,7 @@ func _build_sound() -> void:
 			note.text = "%s %d %%" % [group[1], roundi(value * 100.0)])
 
 	_button(sound, "Sound test (a list to click and hear)", func(): show_page("sound_test"))
-	_button(sound, "Back", func(): show_page("settings"))
+	_button(page, "Back", func(): show_page("settings"))
 
 
 func _build_gameplay() -> void:
@@ -261,9 +281,11 @@ func _build_gameplay() -> void:
 func _build_sound_test() -> void:
 	var page: VBoxContainer = _page("sound_test")
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(BUTTON_W + 40.0, 520.0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_test_scroll = scroll
 	page.add_child(scroll)
 	_sound_list = VBoxContainer.new()
+	_sound_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_sound_list.add_theme_constant_override("separation", 8)
 	scroll.add_child(_sound_list)
 	_c.sound_tests.add_buttons(_sound_list)
@@ -367,6 +389,7 @@ func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 	button.text = text
 	button.custom_minimum_size = Vector2(BUTTON_W, 52.0)
 	button.add_theme_font_size_override("font_size", 26)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long line wraps inside the button instead of running off the panel
 	button.pressed.connect(action)
 	@warning_ignore("standalone_ternary")
 	button.pressed.connect(func(): _c.sound.ui.play("ui_click") if _c.sound != null else null)   # after the action: a cue it plays itself wins
