@@ -28,12 +28,6 @@ Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
-## thatch-sources-go | Build the new thatch sources (thatching grass patches in all grassy areas, thatch from tree bark)?
-Note: Thatching grass: 10 thatch per pick, patches in all grassy areas. Bark of felled birch, spruce, fir and pine gives 2 to 5 thatch. Reeds 8, tall grass 4, heather 4.
-Note: Nothing is placed near spawn on purpose; the spawn point is picked near resources later.
-Note: Recommendation: Yes, because nothing gives thatch today and the first shelter needs 50.
-[check]
-
 ## bridge-ramp-cap | Cap a bridge ramp at 40 m long?
 Note: Bridge ramps and supports reach into the ground, so steep banks make longer ramps. Past 40 m the ghost says 'ramp too long'.
 Note: Recommendation: Yes, 40 m, because a 1 in 6 ramp over a 6 m bank is 36 m and anything longer is a different structure.
