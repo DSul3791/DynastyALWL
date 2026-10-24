@@ -1095,6 +1095,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -1212,6 +1213,7 @@
 			"display": "Wild flax",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.4,
@@ -1437,6 +1439,7 @@
 			"display": "Alpine flowers",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -2647,6 +2650,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.5, "count": [12, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.45},
 			"height_m": [
 				0.2,
@@ -2703,6 +2707,7 @@
 			"display": "Wild thyme",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.4},
 			"height_m": [
 				0.05,
@@ -2766,6 +2771,7 @@
 			"display": "Water mint",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.5},
 			"height_m": [
@@ -2831,6 +2837,7 @@
 			"display": "Sorrel",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -2885,6 +2892,7 @@
 			"display": "Dandelion",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.1,
@@ -2947,6 +2955,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -3002,6 +3011,7 @@
 			"display": "Watercress",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -3115,6 +3125,7 @@
 			"display": "Wild marjoram",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.3,
@@ -3286,6 +3297,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3345,6 +3357,7 @@
 			"display": "Yarrow",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.3,
@@ -3462,6 +3475,7 @@
 			"display": "Chamomile",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.2,
@@ -3584,6 +3598,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.8
@@ -3640,6 +3655,7 @@
 			"display": "Valerian",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.6,
@@ -3698,6 +3714,7 @@
 			"display": "Meadowsweet",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.6,
@@ -3758,6 +3775,7 @@
 			"display": "Feverfew",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.3,
@@ -3930,6 +3948,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -3983,6 +4002,7 @@
 			"display": "Angelica",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				1,
@@ -4101,6 +4121,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "wildflower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.5
@@ -4216,6 +4237,7 @@
 			"display": "Wolfsbane",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "wildflower",
 			"model": "wildflower",
 			"height_m": [
 				0.5,
@@ -4801,6 +4823,7 @@
 			"display": "Owlpetal",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -4913,6 +4936,7 @@
 			"display": "Emberroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -5499,6 +5523,7 @@
 			"display": "Heartroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5612,6 +5637,7 @@
 			"display": "Gloomthistle",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.4
@@ -5669,6 +5695,7 @@
 			"display": "Dewlantern",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5786,6 +5813,7 @@
 			"display": "Marrowroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -5907,6 +5935,7 @@
 			"display": "Brinebell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -6022,6 +6051,7 @@
 			"display": "Quenchbell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6187,6 +6217,7 @@
 			"display": "Duskmallow",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -6363,6 +6394,7 @@
 			"display": "Truthsage",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6585,6 +6617,7 @@
 			"display": "Nightcrown",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -6639,6 +6672,7 @@
 			"display": "Mournbloom",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6694,6 +6728,7 @@
 			"display": "Pilgrim's cup",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6809,6 +6844,7 @@
 			"display": "Frostglass orchid",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.3
@@ -6863,6 +6899,7 @@
 			"display": "Sevenyear lily",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.2
@@ -6920,6 +6957,7 @@
 			"display": "Stillwater lotus",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -6980,6 +7018,7 @@
 			"display": "Gloaming star",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
