@@ -1342,3 +1342,7 @@ Answered: 2026-10-23 21:52 UTC
 Answer: Yes
 Answered: 2026-10-23 21:52 UTC
 
+## mike-settings-all | Give MikeW all the permissions he keeps needing (one file, about 2 minutes)
+Answer: No: No, we’ve established a new role where he sends it up to the GitHub and I just pull it
+Answered: 2026-10-24 02:48 UTC
+
