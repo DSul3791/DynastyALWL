@@ -243,8 +243,7 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 
 # The island type the generator gave the starter island whose mount is nearest to this peak (same pick as
 # WorldElevation._island_config: starter_types by tile, else a weighted hash of the mount position). "" when no starter mount is near.
-func _auto_type(peak: Vector2) -> String:
-	var types: Dictionary = _rules.get("island_types", {})
+func _starter_mount(peak: Vector2) -> Dictionary:
 	var best: Dictionary = {}
 	var best_distance: float = 6000.0
 
@@ -258,6 +257,13 @@ func _auto_type(peak: Vector2) -> String:
 			if distance < best_distance:
 				best_distance = distance
 				best = mount
+
+	return best
+
+
+func _auto_type(peak: Vector2) -> String:
+	var types: Dictionary = _rules.get("island_types", {})
+	var best: Dictionary = _starter_mount(peak)
 
 	if best.is_empty() or types.is_empty():
 		return ""
@@ -331,6 +337,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 	# Peaks.
 	var peaks: Array = _find_peaks(cells, number, census["label"], float(island["peak_m"]), config)
 	_range_row("%s peak count" % title, float(peaks.size()), config["peak_count"], "%d" % peaks.size())
+	_layout_check(title, peaks, peak_m, config)
 
 	# Slopes and sectors, around the main peak.
 	var sectors: int = int(config["sector_count"])
@@ -909,6 +916,51 @@ func _near_sea(column: int, row: int) -> bool:
 	return false
 
 
+# Peak layout of a typed island (island_types.<type>.layout rows [along, across, radius, height] in units of the
+# island's half axes): every layout peak needs a detected peak within layout_match_distance of it (same units),
+# and its height as a share of the highest peak within layout_match_height of the row's height.
+func _layout_check(title: String, peaks: Array, top_peak: Vector2, config: Dictionary) -> void:
+	var type_rules: Dictionary = (_rules.get("island_types", {}) as Dictionary).get(str(config.get("type", "")), {})
+
+	if not type_rules.has("layout") or peaks.is_empty():
+		return
+
+	var mount: Dictionary = _starter_mount(top_peak)
+
+	if mount.is_empty():
+		return
+
+	var rotation: float = deg_to_rad(float(mount["rot"]))
+	var tolerance: float = float(config["layout_match_distance"])
+	var height_tolerance: float = float(config["layout_match_height"])
+	var top_h: float = _h(peaks[0].x, peaks[0].y)
+	var number: int = 0
+
+	for row in type_rules["layout"]:
+		number += 1
+		var best_distance: float = INF
+		var best_height: float = 0.0
+		var best_at: Vector2 = Vector2.ZERO
+
+		for peak in peaks:
+			var dx: float = peak.x - float(mount["x"])
+			var dz: float = peak.y - float(mount["z"])
+			var along: float = (dx * cos(rotation) + dz * sin(rotation)) / float(mount["a"])
+			var across: float = (-dx * sin(rotation) + dz * cos(rotation)) / float(mount["b"])
+			var distance: float = Vector2(along - float(row[0]), across - float(row[1])).length()
+
+			if distance < best_distance:
+				best_distance = distance
+				best_height = _h(peak.x, peak.y) / top_h
+				best_at = Vector2(along, across)
+
+		var expected: float = float(row[3])
+		var ok: bool = best_distance <= tolerance and absf(best_height - expected) <= height_tolerance
+		_row("%s layout peak %d (along %.2f, across %.2f)" % [title, number, float(row[0]), float(row[1])],
+			"nearest peak at along %.2f across %.2f (%.2f away), %.0f%% of the top" % [best_at.x, best_at.y, best_distance, best_height * 100.0],
+			"within %.2f, height %.0f%% +- %.0f%%" % [tolerance, expected * 100.0, height_tolerance * 100.0], "PASS" if ok else "FAIL")
+
+
 # Separate peaks: local maxima that stand at least peak_prominence_m above
 # the pass to any higher ground. Returns positions in metres, highest first.
 func _find_peaks(cells: PackedInt32Array, number: int, label: PackedInt32Array, island_peak_m: float, config: Dictionary) -> Array:
@@ -1257,6 +1309,8 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 	seen.resize(grid.size())
 	var bodies: int = 0
 	var ending_inland: int = 0
+	var natural_ends: int = 0
+	var stopped: int = 0
 	var min_cells: int = int(tile_limits["river_min_cells"])
 	var gap_cells: int = int(ceil(float(tile_limits["river_gap_m"]) / spacing))
 
@@ -1312,12 +1366,22 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 		bodies += 1
 
 		if not reaches:
-			ending_inland += 1
-			var descent: String = _descent(grid, map_heights, width, rows, lowest_index, spacing)
-			_row("river ends inland (%s) near x %d z %d" % [tag, int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
-				"%d river samples, lowest water at %.1f m; %s" % [river_cells, lowest, descent], "reaches sea", "FAIL" if gate else "INFO")
+			stopped += 1
+			var look: Dictionary = _descent(grid, map_heights, width, rows, lowest_index, spacing, float(tile_limits["river_natural_look_m"]))
+			# Natural ends (Sonny's rule): the last cell is a lake, or the ground falls less than river_natural_drop_m over
+			# the next river_natural_look_m (a head hollow or basin), or the ground continues with water on the way.
+			var natural: bool = grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0
+			var real_end: bool = not natural
 
-	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d end inland" % [bodies, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
+			if real_end:
+				ending_inland += 1
+			else:
+				natural_ends += 1
+
+			_row("river ends %s (%s) near x %d z %d" % ["inland" if real_end else "naturally", tag, int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
+				"%d river samples, lowest water at %.1f m; %s; drop %.1f m over %.0f m" % [river_cells, lowest, look["text"], float(look["drop_m"]), float(tile_limits["river_natural_look_m"])], "reaches sea", ("FAIL" if gate else "INFO") if real_end else "INFO")
+
+	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d do not touch the sea (old count), %d of those end naturally (lake, head hollow, or water continues), %d end inland" % [bodies, stopped, natural_ends, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
 
 
 # The settled water (tile_X_Z.water, the server's saved simulation) on the 32 m map: ocean from the painted
@@ -1365,18 +1429,27 @@ func _settled_grid(stitched: Dictionary, tiles: Array, water_dir: String, tile_l
 # From the lowest water cell of a river that stops inland, follow the steepest descent over the ground
 # (8-neighbour, 32 m cells): does the land keep falling to the sea (the river should have continued) or
 # does it end in a pit (a closed basin, so the terrain traps the water)?
-func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int, rows: int, start: int, spacing: float) -> String:
+# Returns {"text", "drop_m" (fall over the next look_m), "wet" (wet cells on that stretch), "sea" (reaches the sea)}.
+func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int, rows: int, start: int, spacing: float, look_m: float) -> Dictionary:
 	var index: int = start
 	var travelled: float = 0.0
 	var water_cells: int = 0
+	var look_drop: float = -1.0
+	var look_wet: int = 0
+	var start_h: float = map_heights[start]
 
 	for step in range(2000):
 		var ci: int = index % width
 		var cj: int = _quot(index, width)
 		var h: float = map_heights[index]
 
+		if look_drop < 0.0 and travelled >= look_m:
+			look_drop = start_h - h
+			look_wet = water_cells
+
 		if h <= 0.0 or grid[index] == 1:
-			return "ground keeps falling to the sea after %.1f km (%d wet cells on the way): the river should continue" % [travelled / 1000.0, water_cells]
+			return {"text": "ground keeps falling to the sea after %.1f km (%d wet cells on the way): the river should continue" % [travelled / 1000.0, water_cells],
+				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": true}
 
 		var best: int = -1
 		var best_h: float = h
@@ -1396,7 +1469,8 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 					best = nj * width + ni
 
 		if best < 0:
-			return "ground stops falling at %.1f m after %.1f km: a closed basin (pit)" % [h, travelled / 1000.0]
+			return {"text": "ground stops falling at %.1f m after %.1f km: a closed basin (pit)" % [h, travelled / 1000.0],
+				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": false}
 
 		travelled += spacing * (1.414 if best % width != ci and _quot(best, width) != cj else 1.0)
 		index = best
@@ -1404,7 +1478,7 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 		if grid[index] >= 2 and grid[index] <= 4:
 			water_cells += 1
 
-	return "no end found in 2000 steps"
+	return {"text": "no end found in 2000 steps", "drop_m": 0.0, "wet": 0, "sea": false}
 
 
 # Walking routes on the baked tiles (Sonny's rule, Dave 24 Oct): 8-neighbour steps
