@@ -797,6 +797,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_cut_hole(peer, inv, a)
 	elif kind == Net.ACT_FISH:
 		_fish(peer, inv, a, at)
+	elif kind == Net.ACT_NET:
+		_net_cast(peer, inv, a, b == 1, at)
 	elif kind == Net.ACT_WEAR:
 		_gain_quiet = true
 		_wear(peer, inv, a)
@@ -6091,6 +6093,103 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
+# The shore net (ACT_NET, fishing.json "net"): the player holds the button at the water's edge; after hold_s the server rolls the haul.
+func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
+	var cfg: Dictionary = _fishing_data().get("net", {})
+	var state: Dictionary = _fishing.get(peer, {})
+
+	if cancel:
+		if str(state.get("phase", "")) == "net":
+			_fishing.erase(peer)
+			_say(peer, str(cfg.get("say_cancel", "")))
+
+		return
+
+	if cfg.is_empty() or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
+	if str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) != "net" or not state.is_empty():
+		return
+
+	var pos: Vector3 = _peer_pos[peer]
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_fish.get(peer, -100000)) < int(float(_fishing_data().get("cooldown_s", 2.0)) * 1000.0):
+		return
+
+	_last_fish[peer] = now
+
+	if not water_near.is_valid() or not bool(water_near.call(at, 1.0)) or Vector2(at.x - pos.x, at.z - pos.z).length() > float(cfg.get("reach_m", 5.0)):
+		_say(peer, str(cfg.get("say_no_water", "")))
+		return
+
+	if _on_ice(pos):
+		_say(peer, str(cfg.get("say_frozen", "")))
+		return
+
+	if water_depth_at.is_valid():
+		var depth: float = float(water_depth_at.call(at))
+		var band: Array = cfg.get("depth_m", [0.3, 1.2])
+
+		if depth < float(band[0]):
+			_say(peer, str(cfg.get("say_shallow", "")))
+			return
+
+		if depth > float(band[1]):
+			_say(peer, str(cfg.get("say_deep", "")))
+			return
+
+	_fishing[peer] = {"phase": "net", "at": now + int(float(cfg.get("hold_s", 20.0)) * 1000.0), "spot": pos, "cell": _fish_cell(pos), "slot": slot}
+	_say(peer, str(cfg.get("say_start", "")))
+
+
+# The haul: up to catch[1] tries (a random 1 to 3 wanted), each limited by the cell's stock and the fishing chance (dawn and dusk best).
+func _net_haul(peer: int, state: Dictionary) -> void:
+	var cfg: Dictionary = _fishing_data().get("net", {})
+	_fishing.erase(peer)
+	var key: String = _peer_key.get(peer, "")
+	var inv = _inventories.get(key)
+	var slot: int = int(state.get("slot", -1))
+
+	if inv == null or slot < 0 or inv.numbers[slot] == 0 or str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) != "net":
+		return
+
+	var cell: Vector2i = state["cell"]
+	var cell_key: String = "%d,%d" % [cell.x, cell.y]
+	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
+	var chance: float = clampf(_fish_chance(peer, cell, false) * float(cfg.get("chance_mult", 1.0)), 0.02, float(cfg.get("max_chance", 0.95)))
+	var caught: Array = []
+
+	for n in want:
+		if fish_stock(cell) <= 0:
+			break
+
+		if fate(peer, "fish", chance):
+			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
+			var species: String = _fish_species(cell)
+			var left: int = inv.add(table.number_of(species), 1)
+
+			if left > 0:
+				drop_in_world(table.number_of(species), left, _peer_pos[peer])
+
+			caught.append(table.name_of(table.number_of(species)).to_lower())
+
+	_wear_slot(peer, inv, slot, "net")
+	_dirty = true
+
+	if caught.is_empty():
+		_say(peer, str(cfg.get("say_nothing", "")))
+		return
+
+	practice(peer, "fish")
+	var line: String = "You haul in %s." % ", ".join(caught)
+
+	if fish_stock(cell) < int(_fishing_data().get("hint_below", 3)):
+		line += " " + str(_fishing_data().get("say_still", "The water is still."))
+
+	_say(peer, line)
+
+
 # A spear jab at water (the client sends ACT_FISH with the spear in hand and the point it stabs at): see fishing.json "spear".
 func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary) -> void:
 	var cfg: Dictionary = fishing.get("spear", {})
@@ -6261,11 +6360,22 @@ func _fish_tick() -> void:
 	for peer in _fishing.keys():
 		var state: Dictionary = _fishing[peer]
 
-		if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(state["spot"]) > float(cfg.get("move_cancel_m", 6.0)):
+		var net_phase: bool = str(state["phase"]) == "net"
+		var cancel_m: float = float(cfg.get("net", {}).get("move_cancel_m", 2.0)) if net_phase else float(cfg.get("move_cancel_m", 6.0))
+
+		if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(state["spot"]) > cancel_m:
 			_fishing.erase(peer)
+
+			if net_phase:
+				_say(peer, str(cfg.get("net", {}).get("say_cancel", "")))
+
 			continue
 
 		if now < int(state["at"]):
+			continue
+
+		if net_phase:
+			_net_haul(peer, state)
 			continue
 
 		if str(state["phase"]) == "wait":

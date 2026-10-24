@@ -892,6 +892,23 @@
 			"value": 10,
 			"look_alikes": []
 		},
+		"shore_net": {
+			"number": 260,
+			"name": "Shore net",
+			"description": "A knotted twine net weighted with stones. Stand at the water's edge facing the water and hold the left button for about 20 seconds.",
+			"kind": "tool",
+			"tool_class": "net",
+			"durability": 20,
+			"repair": [
+				[
+					"twine",
+					4
+				]
+			],
+			"stack": 1,
+			"value": 12,
+			"look_alikes": []
+		},
 		"trout": {
 			"number": 76,
 			"name": "Trout",
