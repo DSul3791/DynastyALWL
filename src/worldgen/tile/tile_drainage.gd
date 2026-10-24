@@ -281,6 +281,26 @@ static func _probe(water, fill, flow, channels, land: PackedFloat32Array, sample
 			@warning_ignore("integer_division")
 			print("PROBE up %d world %d,%d Q %.0f%s" % [step, (at % samples + water._origin_sx) * int(cell_m), (at / samples + water._origin_sz) * int(cell_m), flow.discharge[at] / unit, " L" if fill.lake_id[at] != 0 else ""])
 
+	# And downstream from the same start cell to the sea, every 10th cell: world metres, discharge, channel/lake flags, ground, bed.
+	var down_at: int = row * samples + column
+
+	for r in range(row - 8, row + 9):
+		for c in range(column - 8, column + 9):
+			if flow.discharge[r * samples + c] > flow.discharge[down_at]:
+				down_at = r * samples + c
+
+	for step in range(900):
+		var next_cell: int = fill.receiver[down_at]
+
+		if step % 10 == 0 or next_cell < 0:
+			@warning_ignore("integer_division")
+			print("PROBE down %d world %d,%d Q %.0f%s%s land %.1f bed %.1f%s" % [step, (down_at % samples + water._origin_sx) * int(cell_m), (down_at / samples + water._origin_sz) * int(cell_m), flow.discharge[down_at] / unit, " c" if not is_nan(channels.surface[down_at]) else "", " L" if fill.lake_id[down_at] != 0 else "", land[down_at], channels.bed[down_at], " END" if next_cell < 0 else ""])
+
+		if next_cell < 0:
+			break
+
+		down_at = next_cell
+
 	var heights_line: String = "PROBE heights land/bed centre row:"
 
 	for c in range(column - 8, column + 9):

@@ -432,6 +432,10 @@ func _gullies(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 	var wall_slope: float = float(rules.get("gully_wall_slope", 0.55))
 	var slope_from: float = float(rules.get("gully_slope_from", 0.105))
 	var slope_to: float = float(rules.get("gully_slope_to", 0.176))
+	var farm_from: float = float(rules.get("farm_height_from_m", 120.0))
+	var farm_to: float = float(rules.get("farm_height_to_m", 250.0))
+	var farm_depth_share: float = float(rules.get("farm_gully_depth_share", 0.3))
+	var farm_wall_slope: float = float(rules.get("farm_gully_wall_slope", 0.14))
 	var softness: Array = rules.get("gully_softness_by_height", [[0.0, 1.3], [150.0, 1.1], [400.0, 0.8], [800.0, 0.5], [1200.0, 0.35]])
 	var cut: PackedFloat32Array = bed.duplicate()
 
@@ -464,9 +468,12 @@ func _gullies(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		if strength < 0.05:
 			continue
 
-		var depth: float = minf(per_sqrt_q * sqrt(q_km2), cut_max) * _band_value(softness, h[index]) * strength
+		# Farmland keeps gentle ground: shallow gullies with soft sides, steep V-gullies only on hill and mountain ground.
+		var farm: float = 1.0 - smoothstep(farm_from, farm_to, h[index])
+		var depth: float = minf(per_sqrt_q * sqrt(q_km2), cut_max) * _band_value(softness, h[index]) * strength * lerpf(1.0, farm_depth_share, farm)
+		var wall_here: float = lerpf(wall_slope, farm_wall_slope, farm)
 		var half_m: float = maxf(cell_m * 0.75, 6.0)
-		var rim_m: float = half_m + depth / wall_slope
+		var rim_m: float = half_m + depth / wall_here
 		var reach: int = int(ceil(rim_m / cell_m))
 
 		for dz in range(-reach, reach + 1):
@@ -487,7 +494,7 @@ func _gullies(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 					continue
 
 				var neighbor: int = nr * size + nc
-				var wanted: float = h[index] - depth + wall_slope * maxf(distance - half_m, 0.0)
+				var wanted: float = h[index] - depth + wall_here * maxf(distance - half_m, 0.0)
 				var weight: float = 1.0 - smoothstep(0.7, 1.0, distance / rim_m)
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - depth)
 				cut[neighbor] = minf(cut[neighbor], carved)

@@ -33,7 +33,7 @@
 		"aspect": [1.2, 1.6],
 		"peak_m": [300, 560],
 		"profile_exponent": 0.75, "beach_profile_exponent": 1.7, "beach_cap_m": 1100, "summit_m": [1000, 1450], "spire_share": 0.22, "spire_start": 0.9, "spire_power": 2.4,
-		"height_bands": [[0.0, 0.002], [0.2, 0.025], [0.35, 0.07], [0.5, 0.16], [0.65, 0.35], [0.85, 0.7], [1.0, 0.78]],
+		"height_bands": [[0.0, 0.002], [0.2, 0.02], [0.35, 0.05], [0.5, 0.08], [0.65, 0.15], [0.85, 0.5], [1.0, 0.78]],
 		"shore_shelf_m": 1500,
 		"max_offset_m": 1500,
 		"note": "Poleward shores are rocky and steep, equator-facing shores have long sandy beaches with a flat coastal plain for the town and a sheltered bay for the port.",
