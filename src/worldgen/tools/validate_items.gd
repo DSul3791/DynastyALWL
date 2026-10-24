@@ -630,6 +630,28 @@ func _init() -> void:
 			if generic.size() > 0:
 				fail("%d items have no looks.json row (run tools/gen_looks.py): %s" % [generic.size(), ", ".join(generic)])
 
+	# data/items/worn.json (goal 1f): every item with a body slot has a row, every row names a real item and a known builder.
+	if FileAccess.file_exists("res://data/items/worn.json"):
+		var worn: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/worn.json"))
+		var worn_source: String = FileAccess.get_file_as_string("res://src/client/worn_look.gd")
+
+		if typeof(worn) != TYPE_DICTIONARY or not (worn.get("items") is Dictionary):
+			fail("worn.json is not an object with items")
+		else:
+			var rows: Dictionary = worn["items"]
+
+			for id in rows:
+				if not items_file.get("items", {}).has(id):
+					fail("worn.json: '%s' is not an item in items.json" % id)
+				elif worn_source.find("\t\t\"%s\":" % String(rows[id].get("builder", ""))) < 0:
+					fail("worn.json: '%s' names an unknown builder '%s'" % [id, rows[id].get("builder", "")])
+
+			for id in items_file.get("items", {}):
+				var slot: String = String(items_file["items"][id].get("slot", ""))
+
+				if slot in ["head", "body", "legs", "feet", "hands", "back"] and not rows.has(id):
+					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
+
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])
 	quit(1 if errors > 0 else 0)
