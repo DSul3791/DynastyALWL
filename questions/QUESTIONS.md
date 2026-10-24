@@ -49,3 +49,8 @@ Note: Recommendation: Yes, because nothing gives thatch today and the first shel
 Note: Bridge ramps and supports reach into the ground, so steep banks make longer ramps. Past 40 m the ghost says 'ramp too long'.
 Note: Recommendation: Yes, 40 m, because a 1 in 6 ramp over a 6 m bank is 36 m and anything longer is a different structure.
 [check]
+
+## hammer-adze-recipe | Make the stone hammer and stone adze cost 1 stone + 1 stick + 5 twine like the axe?
+Note: Today they cost 2 stone + stick + 1 twine. The stone axe becomes 1 stone + 1 stick + 5 twine. The knife stays 2 stone + stick.
+Note: Recommendation: Yes, because all hafted stone tools then cost the same and fibre becomes the early limit.
+[check]
