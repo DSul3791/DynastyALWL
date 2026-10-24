@@ -1196,13 +1196,13 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 
 	stitched["origin_x"] = float(stitched["min_x"] * settings.tile_size_m)
 	stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
-	var settled: PackedByteArray = _settled_grid(stitched, tiles, directory.get_base_dir() + "/water", tile_limits)
+	var settled: Dictionary = _settled_grid(stitched, tiles, directory.get_base_dir() + "/water", tile_limits)
 
 	if settled.is_empty():
-		_river_checks(stitched, tile_limits, stitched["water"], "painted rivers, 32 m map, no settled water files", true)
+		_river_checks(stitched, tile_limits, stitched["water"], PackedByteArray(), "painted rivers, 32 m map, no settled water files", true)
 	else:
-		_river_checks(stitched, tile_limits, settled, "settled water, wet over %.2f m, 32 m map" % float(tile_limits["river_wet_depth_m"]), true)
-		_river_checks(stitched, tile_limits, stitched["water"], "painted rivers, 32 m map", false)
+		_river_checks(stitched, tile_limits, settled["grid"], settled["film"], "settled water, wet over %.2f m, film over %.3f m, 32 m map" % [float(tile_limits["river_wet_depth_m"]), float(tile_limits["river_film_depth_m"])], true)
+		_river_checks(stitched, tile_limits, stitched["water"], PackedByteArray(), "painted rivers, 32 m map", false)
 
 	var fine: Dictionary = {}
 
@@ -1376,7 +1376,7 @@ func _stitch(tiles: Array, directory: String, fine: bool = false) -> Dictionary:
 
 
 # Rivers must reach the ocean (or run off the edge of the baked area).
-func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedByteArray, tag: String, gate: bool) -> void:
+func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedByteArray, film: PackedByteArray, tag: String, gate: bool) -> void:
 	var map_heights: PackedFloat32Array = stitched["heights"]
 	var width: int = stitched["width"]
 	var rows: int = stitched["rows"]
@@ -1445,10 +1445,11 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 
 		if not reaches:
 			stopped += 1
-			var look: Dictionary = _descent(grid, map_heights, width, rows, lowest_index, spacing, float(tile_limits["river_natural_look_m"]))
+			var look: Dictionary = _descent(grid, film, map_heights, width, rows, lowest_index, spacing, float(tile_limits["river_natural_look_m"]))
 			# Natural ends (Sonny's rule): the last cell is a lake, or the ground falls less than river_natural_drop_m over
-			# the next river_natural_look_m (a head hollow or basin), or the ground continues with water on the way.
-			var natural: bool = grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0
+			# the next river_natural_look_m (a head hollow or basin), the ground continues with water or a thin film on the way,
+			# or it falls steeply (every one of the first 4 cells below the end drops more than river_steep_drop_m per 8 m: a fall where the water leaves as a film).
+			var natural: bool = grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
 			var real_end: bool = not natural
 
 			if real_end:
@@ -1465,11 +1466,14 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 # The settled water (tile_X_Z.water, the server's saved simulation) on the 32 m map: ocean from the painted
 # map, 3 where any 8 m cell of the block is wet over river_wet_depth_m, 0 elsewhere. A tile without a water
 # file keeps its painted classes. Returns an empty array when no tile has a water file.
-func _settled_grid(stitched: Dictionary, tiles: Array, water_dir: String, tile_limits: Dictionary) -> PackedByteArray:
+func _settled_grid(stitched: Dictionary, tiles: Array, water_dir: String, tile_limits: Dictionary) -> Dictionary:
 	var wet_m: float = float(tile_limits["river_wet_depth_m"])
 	var width: int = stitched["width"]
 	var painted: PackedByteArray = stitched["water"]
 	var grid: PackedByteArray = painted.duplicate()
+	var film: PackedByteArray = PackedByteArray()
+	film.resize(grid.size())
+	var film_m: float = float(tile_limits["river_film_depth_m"])
 	var found: int = 0
 
 	for tile in tiles:
@@ -1495,26 +1499,28 @@ func _settled_grid(stitched: Dictionary, tiles: Array, water_dir: String, tile_l
 					grid[cell] = 0
 
 		for k in range(depth.size()):
-			if depth[k] > wet_m:
+			if depth[k] > film_m:
 				var cell: int = (base_z + _quot(_quot(k, side), 4)) * width + base_x + _quot(k % side, 4)
+				film[cell] = 1
 
-				if grid[cell] == 0:
+				if depth[k] > wet_m and grid[cell] == 0:
 					grid[cell] = 3
 
-	return grid if found > 0 else PackedByteArray()
+	return {"grid": grid, "film": film} if found > 0 else {}
 
 
 # From the lowest water cell of a river that stops inland, follow the steepest descent over the ground
 # (8-neighbour, 32 m cells): does the land keep falling to the sea (the river should have continued) or
 # does it end in a pit (a closed basin, so the terrain traps the water)?
 # Returns {"text", "drop_m" (fall over the next look_m), "wet" (wet cells on that stretch), "sea" (reaches the sea)}.
-func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int, rows: int, start: int, spacing: float, look_m: float) -> Dictionary:
+func _descent(grid: PackedByteArray, film: PackedByteArray, map_heights: PackedFloat32Array, width: int, rows: int, start: int, spacing: float, look_m: float) -> Dictionary:
 	var index: int = start
 	var travelled: float = 0.0
 	var water_cells: int = 0
 	var look_drop: float = -1.0
 	var look_wet: int = 0
 	var start_h: float = map_heights[start]
+	var first_drop: float = INF
 
 	for step in range(2000):
 		var ci: int = index % width
@@ -1527,7 +1533,7 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 
 		if h <= 0.0 or grid[index] == 1:
 			return {"text": "ground keeps falling to the sea after %.1f km (%d wet cells on the way): the river should continue" % [travelled / 1000.0, water_cells],
-				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": true}
+				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": true, "first_drop_m": first_drop if first_drop != INF else 0.0}
 
 		var best: int = -1
 		var best_h: float = h
@@ -1548,15 +1554,18 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 
 		if best < 0:
 			return {"text": "ground stops falling at %.1f m after %.1f km: a closed basin (pit)" % [h, travelled / 1000.0],
-				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": false}
+				"drop_m": start_h - h if look_drop < 0.0 else look_drop, "wet": water_cells if look_drop < 0.0 else look_wet, "sea": false, "first_drop_m": first_drop if first_drop != INF else 0.0}
+
+		if step < 4:
+			first_drop = minf(first_drop, h - best_h)
 
 		travelled += spacing * (1.414 if best % width != ci and _quot(best, width) != cj else 1.0)
 		index = best
 
-		if grid[index] >= 2 and grid[index] <= 4:
+		if (grid[index] >= 2 and grid[index] <= 4) or (not film.is_empty() and film[index] == 1):
 			water_cells += 1
 
-	return {"text": "no end found in 2000 steps", "drop_m": 0.0, "wet": 0, "sea": false}
+	return {"text": "no end found in 2000 steps", "drop_m": 0.0, "wet": 0, "sea": false, "first_drop_m": 0.0}
 
 
 # Walking routes on the baked tiles (Sonny's rule, Dave 24 Oct): 8-neighbour steps

@@ -62,6 +62,8 @@
 		"slope_window_m": 6000,
 		"canyon_min_depth_m": 15.0,
 		"river_wet_depth_m": 0.05,
+		"river_film_depth_m": 0.005,
+		"river_steep_drop_m": 1.0,
 		"summit_search_m": 3000,
 		"route_easy_deg": 25.0,
 		"route_hard_deg": 45.0,
