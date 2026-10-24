@@ -338,6 +338,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 	var peaks: Array = _find_peaks(cells, number, census["label"], float(island["peak_m"]), config)
 	_range_row("%s peak count" % title, float(peaks.size()), config["peak_count"], "%d" % peaks.size())
 	_layout_check(title, peaks, peak_m, config)
+	_crater_check(title, peak_m, config)
 
 	# Slopes and sectors, around the main peak.
 	var sectors: int = int(config["sector_count"])
@@ -914,6 +915,54 @@ func _near_sea(column: int, row: int) -> bool:
 				return true
 
 	return false
+
+
+# Volcano type: a crater of island_types.<type>.crater (radius_m, depth_m, breach_bearing_deg, breach_width_m)
+# round the island's mount centre. Depth = the mean rim height (8 points on the rim radius) minus the lowest
+# ground inside 0.8 of the radius; the breach = the lowest rim point must lie near the breach bearing and be
+# clearly below the rest of the rim.
+func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void:
+	var type_rules: Dictionary = (_rules.get("island_types", {}) as Dictionary).get(str(config.get("type", "")), {})
+
+	if not type_rules.has("crater"):
+		return
+
+	var crater: Dictionary = type_rules["crater"]
+	var mount: Dictionary = _starter_mount(top_peak)
+
+	if mount.is_empty():
+		return
+
+	var center: Vector2 = Vector2(float(mount["x"]), float(mount["z"]))
+	var radius: float = float(crater["radius_m"])
+	var floor_m: float = INF
+	var rim_total: float = 0.0
+	var rim_low: float = INF
+	var rim_low_bearing: float = 0.0
+	var points: int = 24
+
+	for step in range(points):
+		var bearing: float = float(step) * 360.0 / float(points)
+		var direction: Vector2 = Vector2(sin(deg_to_rad(bearing)), -cos(deg_to_rad(bearing)))
+		var h: float = _h(center.x + direction.x * radius, center.y + direction.y * radius)
+		rim_total += h
+
+		if h < rim_low:
+			rim_low = h
+			rim_low_bearing = bearing
+
+		for fraction in [0.0, 0.4, 0.8]:
+			floor_m = minf(floor_m, _h(center.x + direction.x * radius * fraction, center.y + direction.y * radius * fraction))
+
+	var rim_mean: float = rim_total / float(points)
+	var depth: float = rim_mean - floor_m
+	var wanted: float = float(crater["depth_m"])
+	var tolerance: float = float(config["crater_depth_tolerance"])
+	_row("%s crater depth (rim %.0f m radius)" % [title, radius], "%.0f m (rim mean %.0f m, floor %.0f m)" % [depth, rim_mean, floor_m], "%.0f m +- %.0f%%" % [wanted, tolerance * 100.0], "PASS" if absf(depth - wanted) <= wanted * tolerance else "FAIL")
+	var off: float = absf(fposmod(rim_low_bearing - float(crater["breach_bearing_deg"]) + 180.0, 360.0) - 180.0)
+	var below: float = rim_mean - rim_low
+	_row("%s crater breach" % title, "lowest rim point at %.0f deg, %.0f m under the mean rim" % [rim_low_bearing, below], "within %.0f deg of %.0f, at least %.0f m low" % [float(config["crater_breach_tolerance_deg"]), float(crater["breach_bearing_deg"]), float(config["crater_breach_min_m"])],
+		"PASS" if off <= float(config["crater_breach_tolerance_deg"]) and below >= float(config["crater_breach_min_m"]) else "FAIL")
 
 
 # Peak layout of a typed island (island_types.<type>.layout rows [along, across, radius, height] in units of the

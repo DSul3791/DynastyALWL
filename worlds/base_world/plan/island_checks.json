@@ -4,6 +4,9 @@
 	"defaults": {
 		"min_area_km2": 5.0,
 		"sector_count": 8,
+		"crater_depth_tolerance": 0.4,
+		"crater_breach_tolerance_deg": 45.0,
+		"crater_breach_min_m": 30.0,
 		"layout_match_distance": 0.3,
 		"layout_match_height": 0.25,
 		"canyon_share": [null, null],
@@ -36,7 +39,8 @@
 		"note": "Island types of sketch_rules.json island_types, with Sonny's summit ranges (24 Oct). An island row names its type; its own keys win.",
 		"temperate_hills": {"summit_range_m": [500, 850]},
 		"middle_peak": {"summit_range_m": [1000, 1450]},
-		"three_peak_ridge": {"summit_range_m": [1100, 1500], "peak_count": [3, 3]},
+		"three_peak_ridge": {"summit_range_m": [1450, 1800], "peak_count": [3, 3]},
+		"volcano": {"summit_range_m": [1100, 1600]},
 		"prairie": {"summit_range_m": [250, 450]},
 		"moor_highland": {"summit_range_m": [450, 750]}
 	},
