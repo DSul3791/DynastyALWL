@@ -1680,6 +1680,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 	var bodies: int = 0
 	var ending_inland: int = 0
 	var natural_ends: int = 0
+	var heads: int = 0
 	var stopped: int = 0
 	var min_cells: int = int(tile_limits["river_min_cells"])
 	var gap_cells: int = int(ceil(float(tile_limits["river_gap_m"]) / spacing))
@@ -1745,8 +1746,11 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 			# Natural ends (Sonny's rule): the last cell is a lake, or the ground falls less than river_natural_drop_m over
 			# the next river_natural_look_m (a head hollow or basin), the ground continues with water or a thin film on the way,
 			# or it falls steeply (every one of the first 4 cells below the end drops more than river_steep_drop_m per 8 m: a fall where the water leaves as a film).
-			# A settled-only body (no painted river cell in it) on ground that falls on to the sea is a seep or spring head below the river start size, not a river end (Steve, 24 Oct). A pit stays flagged.
-			var natural: bool = (painted_cells == 0 and bool(look["sea"])) or grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
+			# A settled-only body (no painted river cell in it) has no catchment above the river start size: a head or pit, not a river end (Steve, 24 Oct).
+			if painted_cells == 0:
+				heads += 1
+
+			var natural: bool = painted_cells == 0 or grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
 			var real_end: bool = not natural
 
 			if real_end:
@@ -1757,7 +1761,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 			_row("river ends %s (%s) near x %d z %d" % ["inland" if real_end else "naturally", tag, int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
 				"%d river samples, lowest water at %.1f m; %s; drop %.1f m over %.0f m" % [river_cells, lowest, look["text"], float(look["drop_m"]), float(tile_limits["river_natural_look_m"])], "reaches sea", ("FAIL" if gate else "INFO") if real_end else "INFO")
 
-	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d do not touch the sea (old count), %d of those end naturally (lake, head hollow, or water continues), %d end inland" % [bodies, stopped, natural_ends, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
+	_row("rivers reach the sea (%s)" % tag, "%d river bodies, %d do not touch the sea (old count), %d of those end naturally (lake, head hollow, or water continues; %d settled-only heads with no painted river), %d end inland" % [bodies, stopped, natural_ends, heads, ending_inland], "0 inland within %.0f m gaps" % float(tile_limits["river_gap_m"]), ("FAIL" if gate else "INFO") if ending_inland > 0 else "PASS")
 
 
 # The settled water (tile_X_Z.water, the server's saved simulation) on the 32 m map: ocean from the painted
