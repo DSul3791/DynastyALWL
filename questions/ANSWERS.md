@@ -1442,3 +1442,7 @@ Answered: 2026-10-24 16:07 UTC
 Answer: No: We don’t place rooms we only place pieces and eventually when players put a bunch of blueprints together and they’re happy with those they can save that group of blueprints and everything connected to it as a grand blueprint so I could use blueprints to build a house and save it and then I could just place the blueprint for that house. Also, if I like the house, or a building I can right click on my hammer, select the blueprint maker and then use the hammer on a building or structure, and it would immediately make a blueprint of that structure and save it asking me for a name and then I could place that blueprint anywhere in the world
 Answered: 2026-10-24 16:09 UTC
 
+## thatch-screen-first-room | Is the first room a cheap thatch screen wall (about 12 thatch, 4 twine, 6 sticks)?
+Answer: No: We don’t place rooms we only place pieces and eventually when players put a bunch of blueprints together and they’re happy with those they can save that group of blueprints and everything connected to it as a grand blueprint so I could use blueprints to build a house and save it and then I could just place the blueprint for that house. Also, if I like the house, or a building I can right click on my hammer, select the blueprint maker and then use the hammer on a building or structure, and it would immediately make a blueprint of that structure and save it asking me for a name and then I could place that blueprint anywhere in the world
+Answered: 2026-10-24 16:09 UTC
+
