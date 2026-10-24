@@ -4,20 +4,18 @@ GOAL 1: One combined batch at a time (every thread's REQUESTs in one launch sequ
 
 How to use (Dave 01:26): scratch pad. Finer steps toward goal 1 only. Update at job start, each step done, every half-hour reminder. Never delete done lines; mark DONE with the time (UTC). If a step waits on someone, start the next. When fewer than 5 steps remain, add the next 10 from goals_Mike.md.
 
-STEPS NOW (each has a done check)  [handoff written 24 Oct 11:07 UTC]
-1. Rerun test_worldgen on sonny-outlets 4c355b99 (ore fix 2). Cave sites ARE baked in the tile files, so (3,4) must be re-baked from 4c355b99 first (about 9 min). DONE WHEN: ore steering line and totals sent.
-2. Cave light check: godot --headless --path . --script res://tools/check_cave_light.gd on claude/project-thread-yttwff 6e40ee76 + one daytime tunnel picture. DONE WHEN: pass/fail counts sent.
-3. Kathleen close-ups 1.5 m from the side: B1 (pickaxe, knife), K1 (flowers), K12 (workshop parts), later K2-K11; push to claude/mike-evidence-goal2b. DONE WHEN: hash sent.
-4. Sound batch 2 gate (steve-sound-batch2 018f30ed): parse_scan, test_slot_sounds, frame time at F2 Low. DONE WHEN: PASS/FAIL sent.
-5. Kathleen goal2-c 538976f7: merge-test on generator-v2, parse_scan, test_flora_budget.gd, before/after pictures at 1.5 m, frame time Low and Ultra. DONE WHEN: reported.
-6. local_check on mike-bake-v31 (418df97b); the island_checks table has 1 FAIL (seam 4,4-4,5 height 0.10 m). DONE WHEN: result sent.
-7. Nightly backup 9 pm ADT (tools/nightly_backup.py in Dave's folder, game closed, retry 3x). DONE WHEN: Backup done line logged.
-
-MID-RUN ON THE PC AT HANDOFF: nothing important. Old folder C:\GodotProjects\DynastyALWL_test may still have a finished a6bb422a re-bake (island_world_v31b) and v31 settle: ignore them (obsolete).
-CLONES: second clone C:\GodotProjects\DynastyALWL_test (detached, busy tree, many checked-out tool files) and a fresh copy E:\Software\godotDev\DynastyALWL_test2 (418df97b + steve river tools + Sal island_checks, tiles from the v31 bake in worlds/base_world). Dave's folder is untouched.
-KEY FOLDERS (E:\Software\godotDev): island_world_418df97b (v31 bake, water, docs), island_world_e8eb25fd (v30), island_world_f49a1033 (v29), DynastyALWL_Evidence (pictures), DynastyALWL_ProjectBackups.
-BRANCHES I PUSHED: mike-bake-v28 117c2025, v29 ba9b7d27, v29b 76f82042, v30 6e4c338a, v30b 9acf3c64, v31 0e8f64fb, mike-bake-3adc 8fc83cca, mike-bake-e23c af96d1f3, mike-evidence-goal2b 78ae4e85, mike-seam-test e4ad1f31 and later, mike-goalpad.
-RULES I FOUND: kill of Godot processes is refused (cannot stop a running bake); sleep chains are blocked, use until-loops in the background; editor exe needed for scripts that use Voxel; cave sites live in tile files; tile files carry no TERRAIN_VERSION stamp.
+STEPS NOW  [HANDOFF 24 Oct 23:40 UTC, Dave is updating the Claude app, full stop]
+STATE OF THE NINE-TILE BAKE (the big job): claude/merge-793 a0e158df (TERRAIN_VERSION 42, erosion_delta_v1.bin next to world.json), all 9 tiles, one run, 4 threads, DRAINAGE_BREACH_LOG=1, in the fresh copy E:\Software\godotDev\DynastyALWL_test2, world folder E:\Software\godotDev\island_world_793, log island_world_793ake.log. Started 23:22 UTC. At 23:35 UTC eight tiles were written (2_3 2_4 2_5 3_3 3_4 3_5 4_3 4_4), tile 4,5 still baking; bake_end file appears when done. If the app update kills the Godot process the bake must be re-run (no resume): command is in this pad (bake_tiles.gd --tiles="2,3;2,4;2,5;3,3;3,4;3,5;4,3;4,4;4,5" --world=E:/Software/godotDev/island_world_793 --out=.../tiles --threads=4, from a0e158df, ~25 min).
+NEXT STEPS (in order):
+1. Check island_world_793/bake_end and that tiles 2_3..4_5 (9 files) exist. If not: re-run the bake as above.
+2. FINAL CODE IS claude/merge-793 5b9d9f91 (5b9d9f915c014bb6591b30275da1f86a2b77f873): no terrain/tile-baker change, so the a0e158df tiles stay valid. Check it out in DynastyALWL_test2, run the water settle on all nine tiles (stock settle_water, one process per tile, 3 at a time: xargs -P3; steady after ~8400 ticks), then stitch_water_seams, island_checks tiles-only with --bakelog, river_settle_report on 3,4.
+3. Push claude/mike-bake-793 with tiles + water + logs (git plumbing; keep each file under 100 MB). Report: bake errors, island table FAILs, seam table (expect 0 hard failures), pits kept/drained, lake bodies per tile, heads count, rivers to sea, steady settle ticks.
+4. Kathleen job 2 (hand views claude/kathleen-held-tools 6429ab6e, stone before/after kathleen-stone-look 3b1f0066): first attempt gave aerial pictures (client still hovering at y 61 when the shot was taken); retake with --settle 60 --wait 150, check by eye the hand is in frame, push to a mike-evidence branch.
+5. PBR ground downloads (5 ambientCG sets, branch claude/kathleen-photoreal-batch1 docs/mirror/art/PBR_DOWNLOADS.md) to assets/pbr/ground, push claude/mike-pbr-ground. Not started.
+6. Nightly backup (tools/nightly_backup.py in Dave's folder, game closed, retry 3x): not done since 00:51 ADT 24 Oct; Dave has to close his game first.
+PUSHED THIS SESSION: mike-bake-v28 117c2025, v29 ba9b7d27, v29b 76f82042, v30 6e4c338a, v30b 9acf3c64, v31 0e8f64fb (code 418df97b), mike-bake-heads a30dad72, mike-raw-heights c38f66e3, mike-evidence-goal2b (pictures, last 7ae52c2a), mike-evidence-bowl ce3b86bf, mike-seam-test c8d80ed3.
+DAVE'S DECISIONS: devstop over ('go'); MikeW does all terrain bakes; David3 does tests and one-picture shots; no tests while Dave plays on the PC.
+RULES: kill of Godot processes is refused; use until-loops in the background (no sleep chains); editor exe for Voxel scripts; --gy 31.25 for flat items; cave sites live in tile files.
 
 HANDED OFF
 (none)
@@ -37,3 +35,4 @@ DONE
 07:00 v30 bake pushed: claude/mike-bake-v30 6e4c338a (e8eb25fd, 66 checks 0 FAIL).
 07:34 v30b stitched water pushed: claude/mike-bake-v30b 9acf3c64 (seam rows OK).
 11:05 v31 bake pushed: claude/mike-bake-v31 0e8f64fb (418df97b, 67 checks 1 FAIL).
+23:40 Handoff written; raw heights export pushed (mike-raw-heights); 793 bake running.
