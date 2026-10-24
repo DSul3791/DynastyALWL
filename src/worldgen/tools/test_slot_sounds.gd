@@ -42,7 +42,7 @@ func _init() -> void:
 		var found: int = 0
 
 		for path in parsed["files"]:
-			found += 1 if ResourceLoader.exists(str(path)) else 0
+			found += 1 if FileAccess.file_exists(str(path)) else 0        # the file is in the project (git); whether the editor has imported it yet is checked below
 
 		clips += found
 		check(found >= 1, "slot %s has a clip (%d of %d files exist)" % [slot, found, parsed["files"].size()])
@@ -59,6 +59,14 @@ func _init() -> void:
 		last = pick
 
 	check(repeats == 0, "1000 draws of 3 clips never repeat back to back")
+
+	# Playing needs the clips imported by the editor (a fresh clone has none until the project is opened once): skip the play checks with a clear line, never fail them.
+	var imported: bool = ResourceLoader.exists("res://assets/audio/batch1/door_wood_open_0.ogg")
+
+	if not imported:
+		print("SKIP play checks: the batch 1 clips are not imported yet (open the project in the Godot editor once, then rerun)")
+		_check_sites(slots, names)
+		return
 
 	# One-shots: play, cooldown on the table group, skip beyond 30 m, voice cap and priority.
 	var origin: Vector3 = Vector3.ZERO
@@ -82,6 +90,10 @@ func _init() -> void:
 	slots.loop_near("water_wheel_loop", 2, Vector3(43, 0, 0), origin)
 	check(slots.loops_playing() == 0, "a wheel first met at 43 m does not start")
 
+	_check_sites(slots, names)
+
+
+func _check_sites(slots: SlotSounds, names: Array) -> void:
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
 	var used: Dictionary = {}
 	var pattern: RegEx = RegEx.new()
