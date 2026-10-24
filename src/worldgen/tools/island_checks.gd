@@ -47,6 +47,7 @@ var _limits: Dictionary = {}
 var _fine: bool = false
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
+var _features: Dictionary = {}   # island id -> feature name of island_list.json
 var _picture_dir: String = ""
 
 
@@ -223,6 +224,7 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 			continue
 
 		wanted[number] = island_id
+		_features[island_id] = str(entry.get("feature", ""))
 
 	var cells_of: Dictionary = {}
 
@@ -310,7 +312,13 @@ func _census_number(census: Dictionary, x_m: float, z_m: float) -> int:
 
 func _check_island(island_id: int, number: int, census: Dictionary, cells: PackedInt32Array) -> void:
 	var peak_cell: int = int(census["islands"][number]["peak_index"])
-	var config: Dictionary = _config_for(island_id, _auto_type(_elevation.cell_center_m(peak_cell % _elevation.size_x, _quot(peak_cell, _elevation.size_x))))
+	var auto_type: String = _auto_type(_elevation.cell_center_m(peak_cell % _elevation.size_x, _quot(peak_cell, _elevation.size_x)))
+
+	# Shelf islands without a starter mount are the generator's "shelf_hills" type (Sonny, 24 Oct).
+	if auto_type == "" and str(_features.get(island_id, "")).begins_with("shelf") and (_limits.get("types", {}) as Dictionary).has("shelf_hills"):
+		auto_type = "shelf_hills"
+
+	var config: Dictionary = _config_for(island_id, auto_type)
 	var title: String = "island %d" % island_id
 
 	if config.has("name"):
@@ -372,7 +380,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 
 	var steep_share: float = float(steep) / float(cells.size())
 	_bound_row("%s steep share (over %.0f deg)" % [title, climb], steep_share, config["steep_share_max"], true, "%.1f%% of land at 160 m cells" % (steep_share * 100.0))
-	var worst_share: float = 1.0
+	var worst_share: float = 2.0
 	var worst_sector: int = -1
 
 	for sector in range(sectors):
@@ -928,13 +936,26 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 		return
 
 	var crater: Dictionary = type_rules["crater"]
-	var mount: Dictionary = _starter_mount(top_peak)
-
-	if mount.is_empty():
-		return
-
-	var center: Vector2 = Vector2(float(mount["x"]), float(mount["z"]))
 	var radius: float = float(crater["radius_m"])
+	var center: Vector2 = top_peak
+	var best_depth: float = -INF
+
+	# The crater is cut into the island's highest point: search round it for the spot where the rim ring stands highest over the floor.
+	for dz in range(-12, 13):
+		for dx in range(-12, 13):
+			var candidate: Vector2 = top_peak + Vector2(float(dx), float(dz)) * (radius / 8.0)
+			var ring_total: float = 0.0
+
+			for step in range(8):
+				var angle: float = float(step) * TAU / 8.0
+				ring_total += _h(candidate.x + cos(angle) * radius, candidate.y + sin(angle) * radius)
+
+			var candidate_depth: float = ring_total / 8.0 - _h(candidate.x, candidate.y)
+
+			if candidate_depth > best_depth:
+				best_depth = candidate_depth
+				center = candidate
+
 	var floor_m: float = INF
 	var rim_total: float = 0.0
 	var rim_low: float = INF

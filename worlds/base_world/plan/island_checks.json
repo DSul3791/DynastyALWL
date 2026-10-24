@@ -41,6 +41,7 @@
 		"middle_peak": {"summit_range_m": [1000, 1450]},
 		"three_peak_ridge": {"summit_range_m": [1450, 1800], "peak_count": [3, 3]},
 		"volcano": {"summit_range_m": [1100, 1600]},
+		"shelf_hills": {"summit_range_m": [450, 1100], "flat_share_min": 0.15, "peak_count": [0, null], "walkable_min_share_per_sector": 0.2},
 		"prairie": {"summit_range_m": [250, 450]},
 		"moor_highland": {"summit_range_m": [450, 750]}
 	},
