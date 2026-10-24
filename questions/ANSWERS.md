@@ -1378,3 +1378,7 @@ Answered: 2026-10-24 14:19 UTC
 Answer: No: No, I’m deep in a cave right now and I can still see without a torch
 Answered: 2026-10-24 14:20 UTC
 
+## look-trees-ferns | Do the trees, ferns and grass look better, and is there a softwood belt on the foothills? (build 779, 784)
+Answer: Yes
+Answered: 2026-10-24 14:20 UTC
+
