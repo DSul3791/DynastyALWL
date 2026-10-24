@@ -149,6 +149,26 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hide":
 			_sph(parts, 0.17, Vector3(1.0, 0.08, 0.75), Vector3(0.0, -0.05, 0.0), color)
 			_sph(parts, 0.1, Vector3(1.0, 0.09, 0.6), Vector3(0.04, -0.03, 0.0), dark)
+		"net":
+			# A shore net, folded: a flat round of crossing twine strands (a grid of thin bars) with a ring of small stone weights round the rim.
+			for k in 9:
+				var off: float = (float(k) - 4.0) * 0.022
+				_box(parts, Vector3(0.2, 0.006, 0.006), Vector3(0.0, -0.02, off), color)
+				_box(parts, Vector3(0.006, 0.006, 0.2), Vector3(off, -0.02, 0.0), dark)
+
+			for k in 10:
+				var a: float = TAU * float(k) / 10.0
+				_sph(parts, 0.014, Vector3(1.0, 0.8, 1.0), Vector3(cos(a) * 0.1, -0.015, sin(a) * 0.1), light)
+		"basket":
+			# A stick basket: a round open pot of woven sticks, three darker weave bands and a rim, a loop handle of one bent stick.
+			_cyl(parts, 0.09, 0.14, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
+			_cyl(parts, 0.075, 0.13, Vector3(0.0, 0.012, 0.0), Vector3.ZERO, dark)
+			_torus(parts, 0.09, 0.012, Vector3(0.0, 0.07, 0.0), light)
+
+			for k in 3:
+				_torus(parts, 0.09, 0.008, Vector3(0.0, -0.045 + 0.045 * float(k), 0.0), dark)
+
+			_torus(parts, 0.07, 0.01, Vector3(0.0, 0.09, 0.0), color)
 		"coil":
 			_torus(parts, 0.07, 0.02, Vector3(0.0, -0.03, 0.0), color)
 			_torus(parts, 0.07, 0.02, Vector3(0.0, 0.0, 0.0), dark)
