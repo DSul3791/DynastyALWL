@@ -938,7 +938,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
 		return false
 
-	var berry: Dictionary = _drops.get("berry_yield", {}).get(species_name, {})
+	var berry: Dictionary = GatherRules.harvest_row(_drops, species_name)      # berries and every other harvest plant: one path
 
 	if not berry.is_empty():
 		return _gather_berries(peer, species_name, flora_key, berry, plant_height)

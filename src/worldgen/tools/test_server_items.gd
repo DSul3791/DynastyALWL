@@ -268,6 +268,15 @@ func _init() -> void:
 	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
 	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_spade"))] == 1, "picking roots wears the spade one use")
 	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
+	# Herbs and the other harvest plants (drops.json "harvest_yield") go through the same path as berries: the product only, once a season, the plant stays.
+	g._last_gather.clear()
+	var thyme: int = g.table.number_of("thyme")
+	var sticks_before: int = g.inventory_of(1).count_of(g.table.number_of("stick"))
+	check(g.gather(1, "wild_thyme", "plant", "0,0,92", 92, Vector3(501.0, 70.0, 500.0), 0.3) and g.plant_stays, "a thyme plant gives its harvest and stays standing")
+	check(g.inventory_of(1).count_of(thyme) >= 1, "got thyme")
+	check(g.inventory_of(1).count_of(g.table.number_of("stick")) == sticks_before, "a harvest plant gives no sticks")
+	g._last_gather.clear()
+	check(not g.gather(1, "wild_thyme", "plant", "0,0,92", 92, Vector3(501.0, 70.0, 500.0), 0.3), "and nothing more the same season")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
