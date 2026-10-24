@@ -57,6 +57,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	water.filled_cells = 0
 	water.lakes = []
 	var min_water_m: float = float(rules.get("water_min_depth_m", 0.05))
+	var basin_lake_cells: int = 0
 
 	for index in range(total):
 		if sea[index] == 1:
@@ -70,6 +71,13 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 			water.water_class[index] = water.RIVER
 			water.water_surface[index] = level
 			water.river_cells += 1
+
+			# Water standing in a carved pond or lake bowl, deeper than lake_min_depth_m, is a lake, not a river.
+			if channels.basin_mask[index] == 1 and level - channels.bed[index] >= float(rules.get("lake_min_depth_m", 0.5)):
+				water.water_class[index] = water.LAKE
+				basin_lake_cells += 1
+
+	print("  basin water: %d cells tagged lake (%.1f ha)" % [basin_lake_cells, basin_lake_cells * cell_m * cell_m / 10000.0])
 
 	var counts: PackedInt32Array = PackedInt32Array()
 	counts.resize(fill.lakes.size() + 1)
