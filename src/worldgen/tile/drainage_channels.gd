@@ -25,6 +25,9 @@ const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above th
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
 const HEAD_BASIN_M := 0.5            # a river head's bed stands at least this far under the ring of cells 3 cells out
+const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
+const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
+const STEEP_VALLEY_SHARE := 0.8
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -311,6 +314,9 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		var strength: float = smoothstep(start_here, start_here * 8.0, flow.discharge[index]) * (1.0 - _canyon[index])
 		var cut_cap: float = lerpf(float(rules.get("valley_cut_max_m", 15.0)), float(rules.get("farm_valley_cut_max_m", 25.0)), farm)
 		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, cut_cap)
+		# A stream on a steep face stays a shallow channel on the hillside: a valley cut of 25 m into a 60 degree slope leaves a
+		# trench with a cliff wall (x53780 z68540 in the v30 bake). Steepness of the ground at the river cell scales the cut.
+		max_cut_m *= 1.0 - STEEP_VALLEY_SHARE * smoothstep(tan(deg_to_rad(STEEP_FROM_DEG)), tan(deg_to_rad(STEEP_TO_DEG)), _ground_slope(h, index, size, cell_m))
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var rim_cap: float = lerpf(max_radius_m, float(rules.get("farm_valley_max_radius_m", max_radius_m)), farm)
 		var rim_m: float = minf(lerpf(radius_widths, float(rules.get("farm_valley_radius_widths", radius_widths)), farm) * width_m, rim_cap)
@@ -667,6 +673,27 @@ func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, ha
 				print("  head not in a basin: world %d,%d bed %.1f ring second-lowest %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), bed[index], median])
 
 	print("  heads: %d river heads, %d not in a catch basin (bed less than %.1f m under the second-lowest ring cell)" % [heads, failing, HEAD_BASIN_M])
+
+
+# Steepest rise per metre between a cell and its eight neighbours.
+func _ground_slope(h: PackedFloat32Array, index: int, size: int, cell_m: float) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+	var steepest: float = 0.0
+
+	for dz in range(-1, 2):
+		for dc in range(-1, 2):
+			var nr: int = row + dz
+			var nc: int = column + dc
+
+			if (dz == 0 and dc == 0) or nr < 0 or nr >= size or nc < 0 or nc >= size:
+				continue
+
+			var run: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+			steepest = maxf(steepest, absf(h[nr * size + nc] - h[index]) / run)
+
+	return steepest
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
