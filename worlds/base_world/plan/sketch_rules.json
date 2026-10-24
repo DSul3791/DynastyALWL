@@ -22,6 +22,9 @@
 		"edge_width": 0.15,
 		"hill_amplitude_m": 800,
 		"hill_threshold": 0.14,
+		"shelf_hill_gain": 2.0,
+		"shelf_coast_exponent": 2.2,
+		"shelf_coast_scale_m": 1100,
 		"geology": ["granite", "basin", "fold_belt"]
 	},
 
@@ -29,7 +32,8 @@
 		"area_km2": {"inner": [64, 78], "outer": [86, 104]},
 		"aspect": [1.2, 1.6],
 		"peak_m": [300, 560],
-		"profile_exponent": 0.75, "beach_profile_exponent": 1.7, "beach_cap_m": 1100,
+		"profile_exponent": 0.75, "beach_profile_exponent": 1.7, "beach_cap_m": 1100, "summit_m": [1000, 1450], "spire_share": 0.22, "spire_start": 0.9, "spire_power": 2.4,
+		"height_bands": [[0.0, 0.002], [0.2, 0.025], [0.35, 0.07], [0.5, 0.16], [0.65, 0.35], [0.85, 0.7], [1.0, 0.78]],
 		"shore_shelf_m": 1500,
 		"max_offset_m": 1500,
 		"note": "Poleward shores are rocky and steep, equator-facing shores have long sandy beaches with a flat coastal plain for the town and a sheltered bay for the port.",
@@ -111,6 +115,15 @@
 		"shore_shelf_m": [600, 120]
 	},
 
+	"starter_types": {"3,4": "middle_peak"},
+	"island_types": {
+		"temperate_hills": {"weight": 3, "summit_m": [500, 850], "spire_share": 0.2, "height_bands": [[0.0, 0.002], [0.2, 0.03], [0.4, 0.1], [0.6, 0.28], [0.8, 0.6], [1.0, 0.8]]},
+		"middle_peak": {"weight": 3},
+		"three_peak_ridge": {"weight": 2, "summit_m": [1450, 1800], "layout_base": 0.4, "peaks": 3, "peak_heights": [1.0, 0.9, 0.85], "peak_separation_m": 2200, "peak_width_m": 1500},
+		"volcano": {"weight": 1, "summit_m": [1100, 1600], "spire_share": 0.12, "height_bands": [[0.0, 0.002], [0.2, 0.02], [0.4, 0.06], [0.6, 0.18], [0.8, 0.5], [1.0, 0.88]], "crater": {"radius_m": 640, "depth_m": 300, "lava": false, "breach_bearing_deg": 160, "breach_width_m": 320}},
+		"prairie": {"weight": 1, "summit_m": [250, 450], "spire_share": 0.15, "height_bands": [[0.0, 0.002], [0.2, 0.05], [0.5, 0.2], [0.8, 0.5], [1.0, 0.7]]},
+		"moor_highland": {"weight": 1, "summit_m": [450, 750], "spire_share": 0.1, "height_bands": [[0.0, 0.002], [0.2, 0.08], [0.4, 0.35], [0.7, 0.65], [1.0, 0.8]]}
+	},
 	"spawn_keep": {"note": "The coast profile cap leaves the land around spawn and the showroom as it was: untouched inside keep_radius_m, blended in over blend_radius_m.", "x": 53301, "z": 68427, "keep_radius_m": 400, "blend_radius_m": 500},
 	"keep_clear": {
 		"shelf_margin_tiles": 0.6,
