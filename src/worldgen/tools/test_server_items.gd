@@ -336,7 +336,7 @@ func _init() -> void:
 	g._last_gather.clear()
 	check(not g.gather(1, "wild_thyme", "plant", "0,0,60", 60, Vector3(501.0, 70.0, 500.0), 0.1), "and not again in season 50")
 	g.save()
-	var restarted = make("user://test_server_items")
+	var restarted = make("user://test_server_items_b")
 	restarted.season_stamp = func(): return 50
 	check(restarted.stripped_ids("0,0").has(60), "a restart in the middle of the season keeps the plant bare")
 	g.season_stamp = func(): return 51
