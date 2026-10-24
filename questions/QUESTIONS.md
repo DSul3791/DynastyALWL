@@ -86,3 +86,7 @@ Note: Recommendation: Yes because direct pieces suit a first shelter and need no
 ## direct-on-blueprint | A direct piece placed on an unfinished blueprint waits until it is done; taking down a finished piece returns 50 percent?
 Note: Recommendation: Yes, and 50 percent is your call.
 [check]
+
+## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
+Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
+[check]
