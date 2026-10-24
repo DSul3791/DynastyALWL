@@ -1,0 +1,44 @@
+{
+	"format_version": 1,
+	"note": "Limits for src/worldgen/tools/island_checks.gd (Sal, 24 Oct). A null limit means the check is reported (INFO) but cannot fail. Sonny sets the limits; per-island rows under islands override the defaults key by key. Island ids are those of plan/island_list.json.",
+	"defaults": {
+		"min_area_km2": 5.0,
+		"sector_count": 8,
+		"unreachable_min_km2": 0.5,
+		"route_hard_deg": 45.0,
+		"isolated_flag_share": 0.05,
+		"climb_limit_deg": 42.0,
+		"walkable_min_share_per_sector": null,
+		"steep_share_max": null,
+		"profile_distances_m": [1000, 2000, 3500],
+		"profile_targets_m": null,
+		"ray_slope_max_deg": null,
+		"relief_range_m": [null, null],
+		"peak_count": [1, null],
+		"peak_prominence_m": 40.0,
+		"peak_min_fraction": 0.3,
+		"beach_top_m": 10.0,
+		"beach_width_m": [null, null],
+		"class_share": {},
+		"classes": {"beach_max_slope_deg": 8.0, "prairie_max_slope_deg": 6.0, "prairie_max_h_m": 300.0, "mountain_min_h_m": 600.0, "mountain_min_slope_deg": 25.0, "canyon_depth_m": 80.0}
+	},
+	"islands": {
+		"8": {"name": "inner starter island", "profile_targets_m": {"1000": [20, 60], "2000": [60, 200], "3500": [150, 400]}, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 3]},
+		"1": {"name": "center island"}
+	},
+	"tiles": {
+		"note": "Tile checks read the baked tiles read-only. The spawn is the spawn_pad of plan/tile_rules.json; the seam compare uses the limits in src/worldgen/tile/edge_compare.gd.",
+		"spawn_ring_m": 30.0,
+		"spawn_max_slope_deg": 7.0,
+		"spawn_range_m": 1.5,
+		"spawn_max_water_cells": 0,
+		"river_min_cells": 30,
+		"route_easy_deg": 25.0,
+		"route_hard_deg": 45.0,
+		"route_easy_min_km2": 1.0,
+		"easy_reach_m": 2000,
+		"easy_uncovered_max_share": 0.02,
+		"isolated_flag_share": 0.05,
+		"route_min_region_km2": 0.3
+	}
+}
