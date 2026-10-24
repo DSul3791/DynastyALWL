@@ -22,7 +22,14 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
 	var origin := Vector2i(water._origin_sx, water._origin_sz)
-	var routing: PackedFloat32Array = _routing_heights(land, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
+	# Water is routed over the ground as it was before erosion: erosion only runs inside each tile, so beyond 640 m from a seam
+	# the two tiles' eroded ground differs and so would their lakes and divides. The raw ground is the same in every frame.
+	var route_over: PackedFloat32Array = land
+
+	if bool(rules.get("route_over_raw", true)) and water.routing_raw.size() == land.size():
+		route_over = water.routing_raw
+
+	var routing: PackedFloat32Array = _routing_heights(route_over, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
 	fill.build(routing, sea, samples, lake_min_depth)
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
