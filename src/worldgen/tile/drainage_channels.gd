@@ -27,7 +27,7 @@ const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a ce
 const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
-const LAKE_MAX_SLOPE_DEG := 8.0      # lakes sit on flat reaches
+const LAKE_MAX_SLOPE_DEG := 10.0     # lakes sit on flat reaches
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
 const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
@@ -683,8 +683,8 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 # channel downstream, which is the outlet notch), then a bank rising BASIN_BANK_SLOPE per metre. No cell is lowered more than
 # BASIN_MAX_CUT_M. Cells under the lip get the lip as their water level. Prints how many ponds and lakes and their area.
 func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float, rules: Dictionary) -> void:
-	var lake_from: float = float(rules.get("lake_from_km2", 2.0))
-	var lake_share: float = float(rules.get("lake_block_share", 0.35))
+	var lake_from: float = float(rules.get("lake_from_km2", 1.0))
+	var lake_share: float = float(rules.get("lake_block_share", 0.6))
 	var spacing: int = maxi(int(float(rules.get("lake_spacing_m", 1500.0)) / cell_m), 1)
 	var pond_slope: float = tan(deg_to_rad(POND_MAX_SLOPE_DEG))
 	var lake_slope: float = tan(deg_to_rad(LAKE_MAX_SLOPE_DEG))
