@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_server_items.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
@@ -284,6 +285,17 @@ func _init() -> void:
 	check(again_b.stripped_ids("0,0").has(200), "the bare state survives a restart")
 	stamp[0] = 11
 	check(again_b.stripped_ids("0,0").is_empty(), "a new season clears it")
+	# A save made under another flora layout names plants that no longer stand there: picked and bare marks start clean.
+	var layout_path: String = "user://test_server_items_b/world_items.json"
+	var layout_save: Variant = JSON.parse_string(FileAccess.get_file_as_string(layout_path))
+	check(int(layout_save.get("layout", -1)) == FloraLayoutScript.VERSION, "the save carries the flora layout version")
+	layout_save["layout"] = FloraLayoutScript.VERSION + 1
+	var layout_file: FileAccess = FileAccess.open(layout_path, FileAccess.WRITE)
+	layout_file.store_string(JSON.stringify(layout_save))
+	layout_file.close()
+	var other_layout = make("user://test_server_items_b")
+	other_layout.season_stamp = func(): return 10     # the season the bush was picked in: without the clear it would still be bare
+	check(other_layout.stripped_ids("0,0").is_empty(), "a save from another flora layout clears the bare marks")
 	g.season_now = func(): return "winter"
 	check(not g.gather(1, "raspberry", "shrub", "0,0,201", 201, Vector3(501.0, 70.0, 500.0), 2.0), "out of season gives nothing")
 	# Picking never gives wood, canes or leaves from a berry species, in any season (Dave 2026-10-23: sticks from raspberries).

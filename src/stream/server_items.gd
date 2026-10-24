@@ -12,6 +12,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const LuckScript := preload("res://src/shared/luck.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const SwimRules := preload("res://src/shared/swim.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -908,7 +909,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "boulders": _boulder_left})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -2492,8 +2493,15 @@ func _load_world_items() -> void:
 
 	_picked = parsed.get("picked", {})
 	_stripped = {}
+	var same_layout: bool = int(parsed.get("layout", 1)) == FloraLayout.VERSION
 
-	for chunk_key in parsed.get("stripped", {}):      # JSON gives the stamps back as floats
+	# Picked and bare marks name plants by chunk and id: under another flora layout they would point at the wrong plants, so they start clean
+	# (a file from before the stamp counts as layout 1; the removed-plant marks do the same in server_flora.gd).
+	if not same_layout:
+		_picked = {}
+		print("server items: flora layout %d is not %d, picked and bare plant marks cleared" % [int(parsed.get("layout", 1)), FloraLayout.VERSION])
+
+	for chunk_key in (parsed.get("stripped", {}) if same_layout else {}):      # JSON gives the stamps back as floats
 		var ids: Dictionary = {}
 
 		for plant in parsed["stripped"][chunk_key]:
