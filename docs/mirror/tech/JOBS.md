@@ -1,7 +1,8 @@
 # READY QUEUES (Tyler, 23 Oct 22:55 UTC; Dave: "nobody should ever need to be idle"; this block overrides everything below)
 Rule: when your current job finishes, or waits on Dave, Mike's batch or another thread, take the NEXT line here without asking. Tell Tyler only when you START a job that needs a branch (BP-T50 action plan), Tyler's GO is already given for lines marked GO. Tyler refills this block every day and at every merge.
 
-## Steve (queue 7)
+## Steve (queue 8)
+0. Rig flag --pieces a,b,c (labelled row of building pieces by look name, same idea as --flora) so piece looks can be photographed in one picture; plan first (BP-T52, tell Tyler), Sal and Kathleen use it from tomorrow.
 1. GO: finish berry picking (steve-berry-picking) review fixes after Mike's batch; then step 2-4 of harvest naming.
 2. GO: steve-sound-3d (directional sound) ear test notes for Dave's card.
 3. DONE (steve-water-flow-at pushed, merges after Mike PASS): next take line 4.
