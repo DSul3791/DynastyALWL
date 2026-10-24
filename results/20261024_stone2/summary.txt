@@ -1,0 +1,1 @@
+Kathleen stone look, server GPU. before = generator-v2 f221c667, after = claude/kathleen-stone-look 3b1f0066. 5 stones dropped by look_rig --ground-close, camera 0.35 m, pitch -45. sun 53840,68520; shade 53828,68546
