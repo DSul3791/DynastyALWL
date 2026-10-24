@@ -19,6 +19,7 @@ extends SceneTree
 #   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
 #   --bakelog=FILE the bake log; its line "gullies: N, dead ends: M" feeds the dead-end gully row
 #   --spawn-search=M list pads within M metres of the spawn that pass the spawn gate (nearest first)
+#   --probe=X,Z    print painted class, settled class and settled depth for the 32 m cells from X,Z 1.5 km toward +z
 #   --gullies=TEXT the same line pasted directly
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
@@ -49,6 +50,7 @@ var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
 var _gully_line: String = ""
+var _probe: Vector2 = Vector2(-1.0, -1.0)
 var _spawn_search_m: float = 0.0
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
@@ -85,6 +87,9 @@ func _run() -> int:
 			_gully_line = _find_gully_line(FileAccess.get_file_as_string(argument.trim_prefix("--bakelog=")))
 		elif argument.begins_with("--spawn-search="):
 			_spawn_search_m = float(argument.trim_prefix("--spawn-search="))
+		elif argument.begins_with("--probe="):
+			var parts: PackedStringArray = argument.trim_prefix("--probe=").split(",")
+			_probe = Vector2(float(parts[0]), float(parts[1]))
 		elif argument.begins_with("--gullies="):
 			_gully_line = argument.trim_prefix("--gullies=")
 		elif argument == "--sketch-only":
@@ -1337,6 +1342,9 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 		_river_checks(stitched, tile_limits, settled["grid"], settled["film"], "settled water, wet over %.2f m, film over %.3f m, 32 m map" % [float(tile_limits["river_wet_depth_m"]), float(tile_limits["river_film_depth_m"])], true)
 		_river_checks(stitched, tile_limits, stitched["water"], PackedByteArray(), "painted rivers, 32 m map", false)
 
+	if _probe.x >= 0.0:
+		_probe_column(stitched, settled, tiles, directory.get_base_dir() + "/water")
+
 	var fine: Dictionary = {}
 
 	fine = _stitch(tiles, directory, true)
@@ -1402,6 +1410,50 @@ func _tile_farmland(stitched: Dictionary) -> void:
 		var farm_share: float = float(int(farmable.get(id, 0))) / float(zone[id])
 		var rolling_share: float = float(int(rolling.get(id, 0))) / float(zone[id])
 		_row("tile landmass near x %d z %d farmland (%.0f-%.0f m, slope at or under %.0f deg)" % [int((origin[id] as Vector2).x), int((origin[id] as Vector2).y), low_m, top_m, farm_deg], "%.1f%% farmable, %.1f%% rolling, %d cells of 32 m" % [farm_share * 100.0, rolling_share * 100.0, int(zone[id])], "report", "INFO")
+
+
+# Debug print for one river spot: the column of 32 m cells from _probe toward +z.
+func _probe_column(stitched: Dictionary, settled: Dictionary, tiles: Array, water_dir: String) -> void:
+	var width: int = stitched["width"]
+	var spacing: float = stitched["spacing"]
+	var heights: PackedFloat32Array = stitched["heights"]
+	var painted: PackedByteArray = stitched["water"]
+	var column: int = int(round((_probe.x - float(stitched["origin_x"])) / spacing))
+	var row: int = int(round((_probe.y - float(stitched["origin_z"])) / spacing))
+	var depths: Dictionary = {}
+
+	for tile in tiles:
+		var header: Dictionary = TileFileScript.read_header("%s/tile_%d_%d.tile" % [water_dir.get_base_dir() + "/tiles", tile.x, tile.y])
+		var side: int = int(header["header"]["samples"]) if header["ok"] else 0
+		depths[tile] = [side, WaterStoreScript.load_depth("%s/tile_%d_%d.water" % [water_dir, tile.x, tile.y], side) if side > 0 else PackedFloat32Array()]
+
+	print("== probe near x %d z %d (cell %d,%d): z, ground m, painted class, settled class, film, max settled depth m in the 32 m cell" % [int(_probe.x), int(_probe.y), column, row])
+
+	for step in range(48):
+		var j: int = row + step
+		var index: int = j * width + column
+		var best: float = 0.0
+		var per_tile: int = _quot(int((depths.values()[0] as Array)[0]) - 1, 4)
+		var tile_x: int = int(stitched["min_x"]) + _quot(column, per_tile)
+		var tile_z: int = int(stitched["min_z"]) + _quot(j, per_tile)
+		var entry: Array = depths.get(Vector2i(tile_x, tile_z), [0, PackedFloat32Array()])
+		var side: int = entry[0]
+		var depth: PackedFloat32Array = entry[1]
+
+		if side > 0 and not depth.is_empty():
+			var local_i: int = (column - (tile_x - int(stitched["min_x"])) * per_tile) * 4
+			var local_j: int = (j - (tile_z - int(stitched["min_z"])) * per_tile) * 4
+
+			for dj in range(4):
+				for di in range(4):
+					var k: int = (local_j + dj) * side + local_i + di
+
+					if k >= 0 and k < depth.size():
+						best = maxf(best, depth[k])
+
+		var settled_class: int = (settled["grid"] as PackedByteArray)[index] if not settled.is_empty() else -1
+		var film_flag: int = (settled["film"] as PackedByteArray)[index] if not settled.is_empty() else -1
+		print("  z %d | ground %.1f | painted %d | settled %d | film %d | depth %.3f" % [int(float(stitched["origin_z"]) + float(j) * spacing), heights[index], painted[index], settled_class, film_flag, best])
 
 
 func _seam_checks(settings, directory: String, tiles: Array) -> void:
