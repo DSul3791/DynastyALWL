@@ -2560,5 +2560,72 @@ func _init() -> void:
 	print("scatter within 48 m: spawn %d stones %d sticks; far %d things" % [near_stones, near_sticks, far_total])
 	check(far_total < near_stones + near_sticks, "far from spawn the scatter stays sparse (%d against %d)" % [far_total, near_stones + near_sticks])
 
+	# Zone (protocol 76): the biome under a player goes to the client at login, at once after a teleport or respawn, and after a change that reads the same
+	# twice running (about 4 s); nothing is sent while it stays the same. Bytes and sample cost are printed.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_zone")
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_zone2")
+	var zi = make("user://test_server_items_zone")
+	var zone_sent: Array = []
+	var zone_now: Array = [0]
+	var biome_here: Array = [8]
+	zi.send_zone = func(peer, biome_id): zone_sent.append([peer, biome_id])
+	zi.zone_at = func(_pos): return biome_here[0]
+	zi.zone_clock = func(): return zone_now[0]
+	zi.peer_connected_hello(1, "zonepeer001")
+	zi.report_position(1, Vector3(100.0, 5.0, 100.0))
+	check(zone_sent == [[1, 8]], "login: the biome is sent on the first report (%s)" % str(zone_sent))
+	zone_now[0] = 1000
+	zi.report_position(1, Vector3(101.0, 5.0, 100.0))
+	zone_now[0] = 2000
+	zi.report_position(1, Vector3(102.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "standing in the same biome sends nothing more")
+	biome_here[0] = 13
+	zone_now[0] = 4000
+	zi.report_position(1, Vector3(103.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "a first read of a new biome is held back (no flicker on a border)")
+	biome_here[0] = 8
+	zone_now[0] = 6000
+	zi.report_position(1, Vector3(104.0, 5.0, 100.0))
+	biome_here[0] = 13
+	zone_now[0] = 8000
+	zi.report_position(1, Vector3(105.0, 5.0, 100.0))
+	check(zone_sent.size() == 1, "stepping back and forth over a border sends nothing")
+	zone_now[0] = 10000
+	zi.report_position(1, Vector3(106.0, 5.0, 100.0))
+	check(zone_sent.size() == 2 and zone_sent[1] == [1, 13], "the same new biome read twice running is sent (%s)" % str(zone_sent))
+	biome_here[0] = 3
+	zone_now[0] = 12000
+	zi.report_position(1, Vector3(5000.0, 5.0, 100.0))
+	check(zone_sent.size() == 3 and zone_sent[2] == [1, 3], "a teleport or respawn is sent at once")
+	zi.peer_left(1)
+	zi.peer_connected_hello(1, "zonepeer001")
+	zone_now[0] = 14000
+	zi.report_position(1, Vector3(5000.0, 5.0, 100.0))
+	check(zone_sent.size() == 4 and zone_sent[3] == [1, 3], "a returning player gets the zone again")
+	zone_now[0] = 14500
+	zi.report_position(1, Vector3(5001.0, 5.0, 100.0))
+	check(zi.zone_samples == 8 and zone_sent.size() == 4, "reports closer than 2 s apart read nothing")
+	biome_here[0] = -1
+	zone_now[0] = 17000
+	zi.report_position(1, Vector3(5002.0, 5.0, 100.0))
+	check(zone_sent.size() == 4, "an unknown biome (-1) sends nothing")
+	# One minute of a player walking over a border back and forth every 5 s: messages and bytes (a zone call is a reliable rpc with one int, about 12 bytes with its header).
+	var walker = make("user://test_server_items_zone2")
+	var walker_sent: Array = []
+	var walker_now: Array = [0]
+	var walker_biome: Array = [8]
+	walker.send_zone = func(peer, biome_id): walker_sent.append([peer, biome_id])
+	walker.zone_at = func(_pos): return walker_biome[0]
+	walker.zone_clock = func(): return walker_now[0]
+	walker.peer_connected_hello(2, "zonepeer002")
+
+	for second in range(60):
+		walker_now[0] = second * 1000
+		walker_biome[0] = 8 if floori(float(second) / 10.0) % 2 == 0 else 13
+		walker.report_position(2, Vector3(float(second) * 3.0, 5.0, 0.0))
+
+	print("zone: 60 s of a player crossing a border every 10 s: %d messages (about %d bytes per minute), %d lookups, %.1f microseconds each" % [walker_sent.size(), walker_sent.size() * 12, walker.zone_samples, float(walker.zone_usec) / maxf(float(walker.zone_samples), 1.0)])
+	check(walker_sent.size() <= 7 and walker.zone_samples <= 31, "a minute costs a handful of messages and at most one lookup per 2 s (%d messages, %d lookups)" % [walker_sent.size(), walker.zone_samples])
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

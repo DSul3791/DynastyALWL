@@ -3,14 +3,17 @@ extends Node
 # weather_bed and time_bed play one loop each at a time (crossfaded over FADE_S), positional beds play at a place (up to two), one-shots play at most
 # two at once with a gap of 4 to 20 s, never the same clip twice in a row, pitch +/-5 percent. The context (hour, season, how much forest, meadow and
 # water is around, height) comes from AmbientLife, which keeps its own scan. No file path lives in game code.
-# What the client cannot tell yet is marked in the slot's tags and handled by name: canyon, volcano, desert, dry scrub, polar and ice biomes and lava have
-# no client lookup, so those slots wait for `force_biome` / `set_anchor` (the sound test and the rig use them) until a biome lookup exists.
+# The server sends the biome id under the player (protocol 76 zone, set_zone); data/sound/zone_tags.json maps it to the tag words (desert, polar, ice, ...).
+# Canyon and lava have no data source yet and the volcano bed needs a vent anchor: those slots are "test_only" in the JSON and wait for `force_biome` /
+# `set_anchor` (the sound test and the rig use them).
 #   sound.ambience.update(delta, body)         every frame from the sound stage
 #   sound.ambience.test_press()                the "Sound test: Batch 2" entry: each group in turn, each clip played three times back to back
 
 const AmbientLife := preload("res://src/client/ambient_life.gd")
 const Sound3D := preload("res://src/client/sound_3d.gd")
 const SLOTS_PATH := "res://data/sound/batch2_slots.json"
+const ZONE_TAGS_PATH := "res://data/sound/zone_tags.json"
+const BIOMES_PATH := "res://data/tables/biomes.json"
 const CHECK_SEC := 1.5
 const FADE_S := 2.0
 const SILENT_DB := -60.0
@@ -32,6 +35,8 @@ const TEST_ONESHOT_MAX_S := 6.0
 const TEST_BED_MAX_S := 15.0
 
 var enabled: bool = true
+var zone_biome: int = -1                  # the biome id the server last sent (-1 none yet)
+var zone_tags: Array = []                 # its tag words
 var test_only_count: int = 0              # slots marked "test_only" in the JSON: no client lookup for their place yet (open job in JOBS.md)
 var force_biome: String = ""              # a biome name the client cannot read yet (canyon, volcano, desert ...): rig and test
 var anchors: Dictionary = {}              # slot -> Vector3 where a positional bed sits (volcano crater, lava)
@@ -43,6 +48,8 @@ var last: String = ""                     # the F4 sound line: the bed started, 
 
 var _stage
 var _slots: Dictionary = {}
+var _biome_names: Dictionary = {}         # biome id -> name (data/tables/biomes.json)
+var _zone_rows: Dictionary = {}           # biome name -> tag words (data/sound/zone_tags.json)
 var _beds: Dictionary = {}                # layer -> Array of {"slot", "level" 0..1, "target", "player"}: at most the fading ones and the wanted one
 var _positional: Dictionary = {}          # slot -> {"level", "target", "player"}
 var _check_left: float = 0.0
@@ -64,6 +71,9 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.get("slots") is Dictionary:
 		_slots = parsed["slots"]
 
+	_biome_names = biome_names(BIOMES_PATH)
+	_zone_rows = zone_rows(ZONE_TAGS_PATH)
+
 	if stage != null and stage.get("ambient") != null:
 		stage.ambient.replaced = REPLACES.duplicate()
 
@@ -74,6 +84,34 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 	for slot_name in _slots:
 		if bool(_slots[slot_name].get("test_only", false)):
 			test_only_count += 1
+
+
+# The biome the server says the player stands in (protocol 76): its tag words join the measured ones.
+func set_zone(biome_id: int) -> void:
+	zone_biome = biome_id
+	zone_tags = zone_tags_for(biome_id, _biome_names, _zone_rows)
+	last = "zone %s -> %s" % [str(_biome_names.get(biome_id, "unknown %d" % biome_id)), ", ".join(PackedStringArray(zone_tags))]
+
+
+static func biome_names(path: String) -> Dictionary:
+	var names: Dictionary = {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		for entry in parsed.get("entries", []):
+			names[int(entry["id"])] = str(entry["name"])
+
+	return names
+
+
+static func zone_rows(path: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return (parsed.get("tags", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+# The tag words of a biome id; an unknown id (or a biome with no row) gives none.
+static func zone_tags_for(biome_id: int, names: Dictionary, rows: Dictionary) -> Array:
+	return (rows.get(str(names.get(biome_id, "")), []) as Array).duplicate()
 
 
 func slot_names() -> Array:
@@ -95,8 +133,8 @@ static func time_class(hour: float, season: String) -> String:
 	return "day"
 
 
-# The biomes the client can tell from what AmbientLife measures (trees, grass, water, height); `forced` adds one it cannot.
-static func biomes_for(forest: float, meadow: float, water: float, height_m: float, forced: String = "") -> Array:
+# The biomes the client can tell from what AmbientLife measures (trees, grass, water, height), plus `zone` (the server's biome, as tag words) and `forced` (rig).
+static func biomes_for(forest: float, meadow: float, water: float, height_m: float, forced: String = "", zone: Array = []) -> Array:
 	var list: Array = []
 
 	if forest >= 0.35:
@@ -110,6 +148,10 @@ static func biomes_for(forest: float, meadow: float, water: float, height_m: flo
 
 	if forced != "":
 		list.append(forced)
+
+	for tag in zone:
+		if not list.has(tag):
+			list.append(tag)
 
 	return list
 
@@ -338,7 +380,7 @@ func context(body: Node3D) -> Dictionary:
 	return {
 		"season": str(conditions.get("season", "autumn")),
 		"time": time_class(float(conditions.get("hour", 14.0)), str(conditions.get("season", "autumn"))),
-		"biomes": biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome),
+		"biomes": biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome, zone_tags),
 		"water": float(weights.get("water", 0.0)),
 		"height": height,
 		"lava": anchors.has("bed_lava_hiss"),
