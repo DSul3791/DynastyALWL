@@ -39,6 +39,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		flow.build(fill, runoff)
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -206,3 +207,45 @@ static func _seed_frame_edge(water, fill, runoff: PackedFloat32Array, land: Pack
 			added += amount
 
 	return added
+
+
+# Debug only: DRAINAGE_PROBE="x_m,z_m" (world metres) prints the cells round that spot, for finding why two tiles disagree.
+static func _probe(water, fill, flow, channels, land: PackedFloat32Array, samples: int, cell_m: float, unit: float) -> void:
+	if not OS.has_environment("DRAINAGE_PROBE"):
+		return
+
+	var parts: PackedStringArray = OS.get_environment("DRAINAGE_PROBE").split(",")
+	var column: int = int(floor(float(parts[0]) / cell_m)) - water._origin_sx
+	var row: int = int(floor(float(parts[1]) / cell_m)) - water._origin_sz
+
+	if column < 8 or row < 8 or column >= samples - 8 or row >= samples - 8:
+		return
+
+	print("PROBE frame origin ", water._origin_sx, ",", water._origin_sz, " cell ", column, ",", row)
+
+	for r in range(row - 8, row + 9):
+		var line: String = "PROBE r%+d" % (r - row)
+
+		for c in range(column - 8, column + 9):
+			var index: int = r * samples + c
+			var k: float = flow.discharge[index] / unit
+			var arrow: String = "."
+			var next: int = fill.receiver[index]
+
+			if next >= 0:
+				var dx: int = next % samples - c
+				@warning_ignore("integer_division")
+				var dz: int = next / samples - r
+				arrow = "E" if dx > 0 and dz == 0 else ("W" if dx < 0 and dz == 0 else ("S" if dz > 0 and dx == 0 else ("N" if dz < 0 and dx == 0 else "d")))
+
+			line += " %5.0f%s%s%s" % [k, arrow, "L" if fill.lake_id[index] != 0 else "-", "c" if not is_nan(channels.surface[index]) else "-"]
+
+		print(line)
+
+	var heights_line: String = "PROBE heights land/bed centre row:"
+
+	for c in range(column - 8, column + 9):
+		var index: int = row * samples + c
+		heights_line += " %.1f/%.1f" % [land[index], channels.bed[index]]
+
+	print(heights_line)
