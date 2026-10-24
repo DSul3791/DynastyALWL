@@ -53,3 +53,9 @@ Note: Plain words: I cannot look up real weights for made-up things. Type a weig
 Note: 1. magic tonic 0.2 kg (a vial)  2. lantern dew 0.1  3. pilgrim's cup water 0.1  4. everember sap 0.1  5. tidecrown pearls 0.01  6. gloaming star, echo moss, frostglass petals, gloomthistle down 0.01 each  7. hearthwood logs 15 (a short log)  8. witness tree log 45 (shoulder log)
 Note: Recommendation: Keep mine (ok) because they match real equivalents: a vial, a handful of petals, a short log.
 [text]
+
+## weight-big-kits | How heavy should the big workshop pieces be?
+Note: Real weights are carts-and-crane heavy. Today: saw mill 120 kg, master forge 80, large forge 60, water wheel 60, stone forge 25.6, blacksmithy 40, woodworking table 36.6, log workbench 30. Type a weight in kg per piece (or one number for all) in the notes box, or 'real' for the true sum of its materials (saw mill 183, blacksmithy 169, log workbench 61).
+Note: You said we can add game-logic carrying rules later (two people, a cart), so I am not fudging.
+Note: Recommendation: Keep today's numbers for now because nobody carries these alone anyway; the cart or two-person rule comes next.
+[text]
