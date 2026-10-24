@@ -4,6 +4,7 @@ const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
 const CarcassLook := preload("res://src/client/carcass_look.gd")
+const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 
@@ -2282,13 +2283,9 @@ func _mesh_for(number: int) -> Mesh:
 			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
-			var rock: SphereMesh = SphereMesh.new()
-			rock.radius = 0.11
-			rock.height = 0.15
-			rock.radial_segments = 8
-			rock.rings = 4
-			material.albedo_color = Color(0.47, 0.46, 0.44)
-			mesh = rock
+			mesh = RockLook.mesh()      # an irregular faceted lump with its own vertex colours (src/client/rock_look.gd)
+			material.vertex_color_use_as_albedo = true
+			material.albedo_color = Color.WHITE
 		elif str(table.entry(id).get("kind", "")) in ["placeable", "structure", "tool", "weapon"]:
 			var crate: BoxMesh = BoxMesh.new()
 			crate.size = Vector3(0.3, 0.12, 0.2)
