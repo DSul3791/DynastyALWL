@@ -1,0 +1,1 @@
+look_rig.sh --flora raspberry,bramble on Linux, server GPU (nvidia), branch claude/david3-rig
