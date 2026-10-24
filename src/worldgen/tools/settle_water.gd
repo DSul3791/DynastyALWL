@@ -107,6 +107,7 @@ func _init() -> void:
 			# Measured against the supply, not the total stored: the painted lakes hold 60 times what the springs bring and would always look steady.
 			var volume: float = sim.total_volume() * area_m2
 			var poured: float = maxf(supplied - supplied_at_check, 1.0)
+			print("  block at tick %d: stored %.0f m3 (%+.0f), poured %.0f m3, to sea/edge %.0f m3 so far, dried %.0f m3 so far" % [t, volume, volume - last_volume, poured, sim.sea_m3, sim.evaporated_m3])
 			quiet = quiet + 1 if absf(volume - last_volume) <= tolerance * poured else 0
 			last_volume = volume
 			supplied_at_check = supplied
