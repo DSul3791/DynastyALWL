@@ -28,12 +28,6 @@ Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
-## fire-three-pieces | Does '3 types of wood' mean 3 pieces of that wood for a fire tier?
-Note: Fire plan: logs make a bonfire, firewood a campfire, sticks a survival fire. A tier needs at least 3 pieces of that wood to start.
-Note: 1 or 2 left-over pieces still burn, at the size of the tier below.
-Note: Recommendation: Yes, 3 pieces, because one stray log should not make a bonfire; Why-not box if you meant something else.
-[check]
-
 ## fire-small-cooks | Can food be cooked on the tiny survival fire (sticks)?
 Note: The survival fire is the smallest size: sticks only, 15 minutes each, small light and heat.
 Note: Recommendation: Yes, slowly (about twice as long), because a first-night player has only sticks and needs a way to cook.
