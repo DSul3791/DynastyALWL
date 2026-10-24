@@ -21,6 +21,7 @@ const MEANDER_WAVELENGTH_WIDTHS := 12.0   # sinuous reaches: about 12 widths fro
 const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
 const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
 const MEANDER_SLOPE_NONE := 0.04
+const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -30,6 +31,7 @@ var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
 var _origin: Vector2i = Vector2i.ZERO   # world sample coordinates of cell 0, so everything below depends on the place, not on the frame
+var _centre_surface: PackedFloat32Array = PackedFloat32Array()
 var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at centre cells (+ = turning right on the map, z down)
 
 
@@ -116,6 +118,8 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 
 	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	_valleys(h, fill, flow, size, cell_m, rules)
+	_heads(h, fill, flow, size, cell_m, threshold, rules)
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
@@ -136,6 +140,7 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 	# Water level on the centre line, never rising going downstream either.
 	var centre_surface: PackedFloat32Array = centre_bed.duplicate()
+	_centre_surface = centre_surface
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold:
@@ -223,6 +228,122 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
 			bed[index] = maxf(bed[index], bed[next])
+
+
+# Stage 3b: valleys. Rivers with a big catchment sit in a valley graded to their water level: the floor stands just above
+# the water, and the sides rise at `valley_side_slope` (rise per metre) out to `valley_radius_widths` channel widths, fading
+# into the old ground at the rim. Ground already lower than the valley is left alone, so plains get no ditch. Everything
+# reads world-position data and the catchment, so two tiles agree along their shared edge.
+func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules: Dictionary) -> void:
+	var start_km2: float = float(rules.get("valley_start_km2", 2.0))
+	var radius_widths: float = float(rules.get("valley_radius_widths", 6.0))
+	var side_slope: float = float(rules.get("valley_side_slope", 0.08))
+	var max_radius_m: float = float(rules.get("valley_max_radius_m", 300.0))
+	var cut: PackedFloat32Array = bed.duplicate()
+
+	for index in fill.order:
+		if flow.discharge[index] < start_km2 or is_nan(_centre_surface[index]):
+			continue
+
+		if smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index]) < 0.02:
+			continue
+
+		var q: float = sqrt(flow.discharge[index])
+		# Brooks get no valley, big rivers a full one; the cut is capped so a river beside a mountain does not eat it.
+		var strength: float = smoothstep(start_km2, start_km2 * 8.0, flow.discharge[index])
+		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, float(rules.get("valley_cut_max_m", 15.0)))
+		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
+		var rim_m: float = minf(radius_widths * width_m, max_radius_m)
+		var half_m: float = 0.5 * width_m
+		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+		var reach: int = int(ceil(rim_m / cell_m))
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > rim_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = floor_level + side_slope * maxf(distance - half_m, 0.0)
+				var weight: float = (1.0 - smoothstep(0.5, 1.0, distance / rim_m)) * strength
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
+				cut[neighbor] = minf(cut[neighbor], carved)
+
+	bed = cut
+
+
+# Stage 3c: river heads. A real stream begins in a hollow (headward erosion cuts an amphitheatre into the slope), not on a
+# terrace edge. Every channel cell with no channel cell above it gets a spoon-shaped hollow graded to its water level, rising
+# `head_side_slope` per metre out to `head_radius_m`. Nothing is placed: the ground is shaped and the water finds the hollow.
+func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
+	var radius_m: float = float(rules.get("head_radius_m", 56.0))
+	var side_slope: float = float(rules.get("head_side_slope", 0.12))
+	var max_cut_m: float = float(rules.get("head_cut_max_m", 8.0))
+	var edge: int = 20   # heads this close to the frame edge may have an upstream outside it
+	var has_up: PackedByteArray = PackedByteArray()
+	has_up.resize(size * size)
+
+	for index in range(size * size):
+		var next: int = fill.receiver[index]
+
+		if next >= 0 and flow.discharge[index] >= threshold and flow.discharge[next] >= threshold:
+			has_up[next] = 1
+
+	var cut: PackedFloat32Array = bed.duplicate()
+	var reach: int = int(ceil(radius_m / cell_m))
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or has_up[index] == 1 or is_nan(_centre_surface[index]):
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			continue
+
+		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+
+		for dz in range(-reach, reach + 1):
+			var nr: int = row + dz
+
+			if nr < 0 or nr >= size:
+				continue
+
+			for dc in range(-reach, reach + 1):
+				var nc: int = column + dc
+
+				if nc < 0 or nc >= size:
+					continue
+
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > radius_m:
+					continue
+
+				var neighbor: int = nr * size + nc
+				var wanted: float = floor_level + side_slope * distance
+				var weight: float = 1.0 - smoothstep(0.5, 1.0, distance / radius_m)
+				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
+				cut[neighbor] = minf(cut[neighbor], carved)
+
+	bed = cut
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:

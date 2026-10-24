@@ -5,7 +5,7 @@ extends SceneTree
 # each river head (moved to flat high ground close by), runs the simulation, writes
 # worlds/base_world/water/tile_X_Z.water and a flood picture.
 #
-#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=600] [--rate=10] (m3/s per spring) [--world=DIR] (a scratch copy of the world folder, default res://worlds/base_world) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
+#   godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 [--ticks=7200] [--rate=10] (m3/s per spring) [--world=DIR] (a scratch copy of the world folder, default res://worlds/base_world) [--multiplier=10] (the server's start flow rate, WaterLive.DEFAULT_RATE) [--picture=PATH]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -21,7 +21,7 @@ var WORLD_DIR: String = DEFAULT_WORLD_DIR
 
 func _init() -> void:
 	var tile: Vector2i = Vector2i(3, 4)
-	var ticks: int = 600
+	var ticks: int = 7200   # 600 left the river middle dry (still filling); 7200 is settled (23 Oct tests)
 	var rate: float = 10.0
 	var picture: String = ""
 	var multiplier: float = 1.0
