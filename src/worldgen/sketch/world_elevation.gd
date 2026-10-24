@@ -934,7 +934,7 @@ func _island_height(
 		height += cliff * _smooth(clampf(inland / 0.07, 0.0, 1.0))
 
 		# Gullies and ridges on the slopes, strongest on high ground.
-		height += 0.18 * peak * inland * _value(_ridged, index) * (1.0 - beach)
+		height += 0.24 * peak * inland * inland * _value(_ridged, index) * (1.0 - beach)
 		height += 6.0 * _value(_detail, index) * (1.0 - 0.7 * beach)
 
 		if beach > 0.0:
