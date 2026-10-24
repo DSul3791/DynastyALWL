@@ -295,6 +295,7 @@ func _init() -> void:
 		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
 		g.season_now = func(): return season_name
 		table_peer += 1
+		g.peer_connected_hello(table_peer, "tablepeer%03d" % table_peer)
 		g.report_position(table_peer, Vector3(500.0, 70.0, 500.0))
 		var item_number: int = g.table.number_of(str(row["item"]))
 		var average: float = (float(entry["height_m"][0]) + float(entry["height_m"][1])) * 0.5
