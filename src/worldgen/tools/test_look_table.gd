@@ -20,8 +20,8 @@ func check(ok: bool, what: String) -> void:
 func _triangles(node: Node) -> int:
 	var total: int = 0
 
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
 		total += floori(float((node as MeshInstance3D).mesh.get_faces().size()) / 3.0)
-		total += (node as MeshInstance3D).mesh.get_faces().size() / 3
 
 	for child in node.get_children():
 		total += _triangles(child)
