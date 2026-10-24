@@ -163,7 +163,7 @@ static func _pin_spawn_pad(heights: PackedFloat32Array, n: int, spacing_m: float
 
 
 
-func bake(tile: Vector2i) -> Dictionary:
+func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var timings: Dictionary = {}
 	var tile_samples: int = int(settings.tile_size_m / settings.map_spacing_m)
 	var core: int = tile_samples + 1
@@ -192,6 +192,10 @@ func bake(tile: Vector2i) -> Dictionary:
 	timings["height"] = Time.get_ticks_msec() - clock
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
 	var raw_frame: PackedFloat32Array = frame_height.heights.duplicate()   # before erosion: the same world function in every frame
+
+	# Export tools want the ground as it stands before erosion (the input of TileErosion) and nothing else.
+	if raw_only:
+		return {"raw_heights": raw_heights, "core": core, "timings": timings}
 
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
