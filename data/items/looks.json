@@ -352,6 +352,11 @@
    "color": "#8a6a3a",
    "size": 1.0
   },
+  "shore_net": {
+   "shape": "cloth",
+   "color": "#a89a78",
+   "size": 1.0
+  },
   "fishing_rod": {
    "shape": "rod",
    "color": "#9a9a9e",

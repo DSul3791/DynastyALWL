@@ -381,6 +381,14 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_other_tool():
+		# The shore net: hold the left button at the water's edge (about 20 s); letting go cancels (the server also cancels when you walk off).
+		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
+			if pressed:
+				_arm_play("use", 0.6)
+
+			_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0 if pressed else 1, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
+			return true
+
 		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
 		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
 			raise_mode = not raise_mode
@@ -887,6 +895,8 @@ func _other_tool_hint() -> String:
 	match str(_inv.table.entry(held_id()).get("tool_class", "")):
 		"rod":
 			return "Click at the water to cast, and click again when something bites"
+		"net":
+			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
 			return "The hoe treads a path (left click) and smooths the ground by moving dirt from high spots to low ones (right click). It uses no items, only its own wear"
 		"spade":

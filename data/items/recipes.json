@@ -920,6 +920,26 @@
 			"craft_s": 12.0,
 			"known": true
 		},
+		"shore_net": {
+			"number": 160,
+			"name": "Shore net",
+			"needs": [
+				[
+					"twine",
+					20
+				],
+				[
+					"stone",
+					4
+				]
+			],
+			"gives": [
+				"shore_net",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false
+		},
 		"fishing_rod": {
 			"number": 46,
 			"name": "Fishing rod",
