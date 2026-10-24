@@ -1692,6 +1692,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 		var stack: PackedInt32Array = PackedInt32Array([start])
 		seen[start] = 1
 		var river_cells: int = 0
+		var painted_cells: int = 0
 		var reaches: bool = false
 		var lowest: float = INF
 		var lowest_index: int = start
@@ -1702,6 +1703,9 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 
 			if grid[index] == 3:
 				river_cells += 1
+
+			if (stitched["water"] as PackedByteArray)[index] == 3:
+				painted_cells += 1
 
 			if map_heights[index] < lowest:
 				lowest = map_heights[index]
@@ -1741,7 +1745,8 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary, grid: PackedBy
 			# Natural ends (Sonny's rule): the last cell is a lake, or the ground falls less than river_natural_drop_m over
 			# the next river_natural_look_m (a head hollow or basin), the ground continues with water or a thin film on the way,
 			# or it falls steeply (every one of the first 4 cells below the end drops more than river_steep_drop_m per 8 m: a fall where the water leaves as a film).
-			var natural: bool = grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
+			# A settled-only body (no painted river cell in it) on ground that falls on to the sea is a seep or spring head below the river start size, not a river end (Steve, 24 Oct). A pit stays flagged.
+			var natural: bool = (painted_cells == 0 and bool(look["sea"])) or grid[lowest_index] == 2 or float(look["drop_m"]) < float(tile_limits["river_natural_drop_m"]) or int(look["wet"]) > 0 or float(look["first_drop_m"]) > float(tile_limits["river_steep_drop_m"]) * spacing / 8.0
 			var real_end: bool = not natural
 
 			if real_end:
