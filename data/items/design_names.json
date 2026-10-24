@@ -9,7 +9,8 @@
 		"book": "culture", "journal": "culture", "dice": "culture", "chess_set": "culture", "toy": "culture", "holy_symbol": "culture"
 	},
 	"aliases": {
-		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "spade": ["stone_spade", "wooden_spade"], "knife": ["stone_knife"],
+		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "spade": ["stone_spade", "wooden_spade"], "knife": ["stone_knife"], "hoe": ["wooden_hoe", "stone_hoe", "iron_hoe", "steel_hoe"],
+		"hammer": ["stone_hammer"], "saw": ["hand_saw"], "adze": ["stone_adze"],
 		"forge": ["stone_forge"], "boots": ["hide_boots"], "cloak": ["hide_cloak", "grass_cloak"], "hood": ["hide_hood"]
 	}
 }

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 244,
+	"next_number": 247,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2814,6 +2814,75 @@
 			"stack": 1,
 			"look_alikes": [],
 			"value": 45
+		},
+		"stone_hammer": {
+			"number": 244,
+			"name": "Stone hammer",
+			"description": "A hafted stone hammer. It does nothing yet: nails and finishing work are still to come.",
+			"kind": "tool",
+			"tool_class": "hammer",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 4350,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
+		},
+		"hand_saw": {
+			"number": 245,
+			"name": "Hand saw",
+			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
+			"kind": "tool",
+			"tool_class": "saw",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 2500,
+			"repair": [
+				[
+					"twine",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 70,
+			"look_alikes": []
+		},
+		"stone_adze": {
+			"number": 246,
+			"name": "Stone adze",
+			"description": "A hafted stone blade with a curved edge. It does nothing yet: smoothing beams is still to come.",
+			"kind": "tool",
+			"tool_class": "adze",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 3400,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
 		}
 	}
 }

@@ -6382,6 +6382,12 @@ func _craft_tick(spent: float) -> void:
 		for keep in recipe.get("keeps", []):
 			tools_ok = tools_ok and (free_entry or inv.has(keep[0], keep[1]))
 
+		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
+		var wears_tool: String = str(recipe.get("wears_tool", ""))
+
+		if wears_tool != "" and not free_entry:
+			tools_ok = tools_ok and inv != null and _tool_slot(inv, wears_tool) >= 0
+
 		if not tools_ok:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
@@ -6390,6 +6396,10 @@ func _craft_tick(spent: float) -> void:
 			_gain_source = SRC_CRAFT
 			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
 			_gain_source = SRC_PICKUP
+
+			if wears_tool != "" and not free_entry:
+				_wear_tool(peer, inv, wears_tool, "craft")
+
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
 			head[1] = int(head[1]) - 1
 
