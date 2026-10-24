@@ -72,6 +72,7 @@ var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
 var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
 var showroom_look_down: float = 999.0    # --shot-showroom-look=DEG: its pitch (e.g. -35); default aims at the row from the height and distance
+var showroom_per: int = 0                 # --shot-showroom-per=N: one picture per N items of a row, framed to those items (0 = the whole row in one picture)
 var showroom_spread: bool = false        # --shot-showroom-spread: name tags staggered in three heights, so neighbours do not overlap
 var _showroom_t: int = 0
 var _showroom_rows_chosen: Array = []
@@ -130,6 +131,8 @@ func setup(owner_client, args: Array) -> void:
 			showroom_cam_height = float(argument.trim_prefix("--shot-showroom-height="))
 		elif argument.begins_with("--shot-showroom-look="):
 			showroom_look_down = float(argument.trim_prefix("--shot-showroom-look="))
+		elif argument.begins_with("--shot-showroom-per="):
+			showroom_per = int(argument.trim_prefix("--shot-showroom-per="))
 		elif argument == "--shot-showroom-spread":
 			showroom_spread = true
 		elif argument.begins_with("--shot-showroom="):
@@ -610,6 +613,28 @@ func _show_pieces(now: int) -> void:
 # --showroom: turn Admin mode on so the server lays the showroom rows out as real world items, then one view per chosen row from the west side
 # (the rows run north to south, start/step in metres east and south of the spawn point), looking east. _tag_showroom then puts a name tag over each
 # item and prints one "shot runner: showroom row" line per row: how many of its items were found where they belong (world_item_name_near).
+# A --showroom word picks rows in this order: a row whose whole label is that word ("Spades"), else rows with that word as one of their words
+# ("K1" is in "Kathleen K1 flowers" but not "Kathleen K10 wood and fibre"), else a part of a label (spades finds "Big spades"). Any case.
+func _showroom_label_matches(label: String, want: String, rows: Array) -> bool:
+	var word: String = want.to_lower()
+	var low: String = label.to_lower()
+	var whole: bool = false
+	var by_word: bool = false
+
+	for row in rows:
+		var other: String = str(row.get("label", "")).to_lower()
+		whole = whole or other == word
+		by_word = by_word or other.replace(":", " ").split(" ", false).has(word)
+
+	if whole:
+		return low == word
+
+	if by_word:
+		return low.replace(":", " ").split(" ", false).has(word)
+
+	return low.contains(word)
+
+
 func _show_showroom(now: int) -> void:
 	if client.showroom == null:
 		return    # the client has not read the world's spawn yet: try again next frame
@@ -624,7 +649,7 @@ func _show_showroom(now: int) -> void:
 		var take: bool = showroom_rows.has("all")
 
 		for want in showroom_rows:
-			if label.to_lower().contains(want.to_lower()):
+			if _showroom_label_matches(label, want, rows):
 				take = true
 
 		if take:
@@ -648,13 +673,25 @@ func _show_showroom(now: int) -> void:
 		var start: Array = row.get("start", [0, 0])
 		var step: Array = row.get("step", [0, 1.5])
 		var items: Array = row.get("items", [])
-		var length: float = Vector2(float(step[0]), float(step[1])).length() * float(maxi(items.size() - 1, 1))
-		var mid_x: float = origin.x + float(start[0]) + float(step[0]) * float(items.size() - 1) * 0.5
-		var mid_z: float = origin.z + float(start[1]) + float(step[1]) * float(items.size() - 1) * 0.5
-		var dist: float = 3.0 + length * 0.9
-		var above: float = showroom_cam_height if showroom_cam_height > 0.0 else 1.6 + length * 0.25
-		var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
-		views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+		var per: int = showroom_per if showroom_per > 0 else maxi(items.size(), 1)
+		var parts: int = int(ceil(float(items.size()) / float(per)))
+
+		# One picture for the whole row, or (--showroom-per N) one per N items framed to those items: close enough to see a small item.
+		for part in range(maxi(parts, 1)):
+			var first: int = part * per
+			var count: int = mini(per, items.size() - first)
+			var length: float = Vector2(float(step[0]), float(step[1])).length() * float(maxi(count - 1, 1))
+			var mid_x: float = origin.x + float(start[0]) + float(step[0]) * (float(first) + float(count - 1) * 0.5)
+			var mid_z: float = origin.z + float(start[1]) + float(step[1]) * (float(first) + float(count - 1) * 0.5)
+			var dist: float = (2.0 + length * 0.6) if showroom_per > 0 else 3.0 + length * 0.9
+			var above: float = showroom_cam_height if showroom_cam_height > 0.0 else ((1.2 + length * 0.2) if showroom_per > 0 else 1.6 + length * 0.25)
+			var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
+
+			if parts > 1:
+				view_name += "_part%d" % (part + 1)
+
+			views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+
 		_showroom_rows_chosen.append(row)
 
 	_showroom_t = now
@@ -674,6 +711,10 @@ func _tag_overlaps() -> String:
 			continue
 
 		var at: Vector2 = cam.unproject_position(world)
+
+		if not get_viewport().get_visible_rect().has_point(at):
+			continue
+
 		var size: Vector2 = Vector2(float(label.text.length()) * float(label.font_size) * 0.45, float(label.font_size))
 		boxes.append(Rect2(at - size * 0.5, size))
 

@@ -16,3 +16,5 @@ Tyler GO (24 Oct, BP-T55), done in the follow-up commit:
 - Camera numbers are flags and logged: --close-height / --close-dist / --close-pitch (printed at start), showroom --showroom-cam-height / --showroom-look-down (logged per picture in the "shot runner: view" line).
 - Showroom tag-overlap check: "shot runner: tag overlap view <row> ok|OVERLAP (n tags, m overlapping pairs)" per picture (estimate from letter count and font size; fixed-size tags).
 - tools/check_rig_syntax.sh: bash -n, syntax parse of the python tools, merged item tables; prints "rig syntax: N pass, N fail". Run before handing to Mike (BP-T55). Evidence pictures stay out of generator-v2.
+
+Follow-up from Mike's run of a15eeecc (same branch): --gy default 31.25 (the visible spawn ground is 31.17, flat items were buried); --showroom words match a whole label, else one word of it (K1 no longer picks K10-K12), else part of a label; new `--showroom-per N` frames one picture per N items of a row (close enough for small items, tags checked per picture); tag overlap counts only tags on screen.
