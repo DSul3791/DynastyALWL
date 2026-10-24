@@ -1418,3 +1418,7 @@ Answered: 2026-10-24 16:01 UTC
 Answer: Yes
 Answered: 2026-10-24 16:02 UTC
 
+## thatch-sources-go | Build the new thatch sources (thatching grass patches in all grassy areas, thatch from tree bark)?
+Answer: Yes
+Answered: 2026-10-24 16:02 UTC
+
