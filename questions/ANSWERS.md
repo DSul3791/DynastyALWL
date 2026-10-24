@@ -1498,3 +1498,7 @@ Answered: 2026-10-24 16:39 UTC
 Answer: Yes
 Answered: 2026-10-24 16:40 UTC
 
+## fire-lighting-rain | Does fire always light in dry weather (strike stones into dry plant-fibre tinder), and rain makes it slow or fail?
+Answer: Yes
+Answered: 2026-10-24 16:40 UTC
+
