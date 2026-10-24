@@ -89,6 +89,7 @@ func _init() -> void:
 		_flow = TileFileScript.decode_flow(TileFileScript.read_section(tile_path, head["table"], "flow")["raw"])
 
 	print("settler places %d springs on tile %d,%d; flow map %s" % [_spring_cells.size(), tile.x, tile.y, "read" if not _flow.is_empty() else "NOT read"])
+	print("flow map: %d values, biggest %.0f drained cells" % [_flow.size(), (_flow.max() if not _flow.is_empty() else 0.0)])
 	var body: PackedInt32Array = PackedInt32Array()
 	body.resize(side * side)
 	body.fill(-1)
@@ -239,8 +240,24 @@ func _fed(data, side: int, spacing: float, members: PackedInt32Array) -> String:
 				nearest = d
 				nearest_rate = _spring_rates[n]
 
-	var catchment: float = _flow[head_cell] * spacing * spacing / 1.0e6 if not _flow.is_empty() else -1.0
-	return "nearest spring %s, head x %.0f z %.0f ground %.1f m, catchment at head %s" % [("none" if nearest == INF else "%.0f m (%.1f m3/s)" % [nearest, nearest_rate]), data.x0 + float(head_cell % side) * spacing, data.z0 + floorf(float(head_cell) / float(side)) * spacing, data.heights[head_cell], ("unknown" if catchment < 0.0 else "%.1f km2" % catchment)]
+	# The highest wet cell is often not a painted river cell (flow 0 there), so take the biggest drainage on the body and within 2 cells of it.
+	var drained: float = 0.0
+
+	if _flow.size() == data.heights.size():
+		for k in members:
+			var ki2: int = k % side
+			var kj2: int = floori(float(k) / float(side))
+
+			for dj in range(-2, 3):
+				for di in range(-2, 3):
+					var ni: int = ki2 + di
+					var nj: int = kj2 + dj
+
+					if ni >= 0 and ni < side and nj >= 0 and nj < side:
+						drained = maxf(drained, _flow[nj * side + ni])
+
+	var catchment: float = drained * spacing * spacing / 1.0e6 if _flow.size() == data.heights.size() else -1.0
+	return "nearest spring %s, head x %.0f z %.0f ground %.1f m, biggest catchment on body %s" % [("none" if nearest == INF else "%.0f m (%.1f m3/s)" % [nearest, nearest_rate]), data.x0 + float(head_cell % side) * spacing, data.z0 + floorf(float(head_cell) / float(side)) * spacing, data.heights[head_cell], ("unknown (flow map size %d vs %d samples)" % [_flow.size(), data.heights.size()] if catchment < 0.0 else "%.1f km2" % catchment)]
 
 
 # Minimax path (priority flood) from `start` out to the window's rim: `rim` is the lowest height the water has to climb to to leave
