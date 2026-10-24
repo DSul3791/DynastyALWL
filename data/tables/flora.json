@@ -2134,12 +2134,11 @@
 			],
 			"water": [],
 			"yields": [
-				"rose_hips",
 				"rose_petals"
 			],
 			"season": [
-				"summer",
-				"autumn"
+				"spring",
+				"summer"
 			],
 			"rarity": "common",
 			"familiarity": 93,
