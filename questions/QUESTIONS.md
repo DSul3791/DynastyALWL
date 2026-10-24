@@ -28,12 +28,6 @@ Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound so
 Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
 [test]
 
-## weight-wood-units | How big is one wooden block, lumber piece and beam?
-Note: Today: wooden block 3.0 kg (a quarter of a short log), rough plank 3.0, lumber 4.0 (about a 2.4 m board), beam 12 (2.4 m post), timber 4, poles 2.5, bricks 2.7, cobblestone 2.0, cut stone block 25, mortar 2.5 per bucket.
-Note: Type any weight in kg you want changed in the notes box, or 'ok'.
-Note: Recommendation: ok because each matches a real 2.4 m board or a single brick or block.
-[text]
-
 ## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
 Note: 1. Pull branch claude/kathleen-forest-bed and press F6.
 Note: 2. Stand in the woods, away from water, for one minute in summer, then in winter (Admin season).
