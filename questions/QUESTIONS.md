@@ -58,3 +58,8 @@ Note: Recommendation: Relax it: play it softly from the ground within about 3 km
 Note: The hammer and adze exist but do nothing yet. Nails need an iron chain (forge, anvil).
 Note: Recommendation: Give the hammer and adze their first real uses now (placing nails, finishing logs into beams); the anvil, tongs and bellows come in the next tools batch, because a tool that does nothing should not stay in the game.
 [check]
+
+## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
+Note: Some items still use simple models. Kathleen upgrades families in order (animals, tools, fire, chests, trees, grass, ferns done or in progress).
+Note: Recommendation: Yes, accept them for now; the art goal is already ordered, and fixing shapes one by one would stop terrain work.
+[check]
