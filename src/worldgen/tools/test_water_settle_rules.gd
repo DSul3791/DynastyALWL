@@ -92,17 +92,18 @@ func _init() -> void:
 	check(WaterSettler.stitch_edge(tile_a, tile_c, 5, 1) == 1 and is_equal_approx(tile_c[1], 0.8), "stitch south: last row of A is the first row of C")
 	# Thin film option: off by default, on raises only river cells with enough drainage and a film between min_seen and depth_m.
 	var film_cfg: Dictionary = rules.get("film", {})
-	check(not bool(film_cfg.get("enabled", true)), "the film option is off in the rules file")
-	var film_depth: PackedFloat32Array = PackedFloat32Array([0.0, 0.05, 0.05, 0.05, 0.01, 0.5])
+	check(bool(film_cfg.get("enabled", false)), "the film option is on in the rules file (v8)")
+	var film_depth: PackedFloat32Array = PackedFloat32Array([0.0, 0.05, 0.05, 0.05, 0.002, 0.5])
 	var film_class: PackedByteArray = PackedByteArray([3, 3, 3, 2, 3, 3])
 	var film_flow: PackedFloat32Array = PackedFloat32Array([1000.0, 1000.0, 1.0, 1000.0, 1000.0, 1000.0])
-	var off: Dictionary = WaterSettler.film_floor(film_depth, film_class, film_flow, 8.0, film_cfg)
+	var off_cfg: Dictionary = film_cfg.duplicate()
+	off_cfg["enabled"] = false
+	var off: Dictionary = WaterSettler.film_floor(film_depth, film_class, film_flow, 8.0, off_cfg)
 	check(int(off["cells"]) == 0 and is_equal_approx(film_depth[1], 0.05), "film off changes nothing")
 	var on_cfg: Dictionary = film_cfg.duplicate()
-	on_cfg["enabled"] = true
 	var on: Dictionary = WaterSettler.film_floor(film_depth, film_class, film_flow, 8.0, on_cfg)
 	check(int(on["cells"]) == 1 and is_equal_approx(film_depth[1], float(on_cfg["depth_m"])), "film on raises a river film with drainage")
-	check(is_equal_approx(film_depth[0], 0.0) and is_equal_approx(film_depth[2], 0.05) and is_equal_approx(film_depth[3], 0.05) and is_equal_approx(film_depth[4], 0.01) and is_equal_approx(film_depth[5], 0.5), "and leaves dry, undrained, lake, trace and deep cells alone")
+	check(is_equal_approx(film_depth[0], 0.0) and is_equal_approx(film_depth[2], 0.05) and is_equal_approx(film_depth[3], 0.05) and is_equal_approx(film_depth[4], 0.002) and is_equal_approx(film_depth[5], 0.5), "and leaves dry, undrained, lake, trace and deep cells alone")
 	check(is_equal_approx(float(on["volume_m3"]), (float(on_cfg["depth_m"]) - 0.05) * 64.0), "the added water is counted")
 	# Springs only at river heads (Dave 24 Oct 2026): a bump in the painted bed is no head; it snaps to the nearest head in reach or is dropped.
 	check(bool(rules.get("springs_at_heads", false)), "the rules ask for springs at heads")
