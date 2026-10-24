@@ -3425,7 +3425,13 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 			give(peer, log_n if log_n > 0 else table.number_of("log"), 1)   # "Oak log" for an oak; an unknown species gives the plain log
 			tree["logs_left"] = int(tree["logs_left"]) - 1
 
-		if roll_chance(peer, rng, float(cfg.get("bark_chance", 0.3))):
+		var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(str(tree.get("species", "")), {})
+
+		if not thatch_bark.is_empty():   # birch and softwood bark is thatch (Dave 24 Oct)
+			if roll_chance(peer, rng, float(thatch_bark.get("chance", 0.3))):
+				var count: Array = thatch_bark.get("count", [2, 4])
+				give(peer, table.number_of("thatch"), roll_amount(peer, rng, int(count[0]), int(count[1])))
+		elif roll_chance(peer, rng, float(cfg.get("bark_chance", 0.3))):
 			give(peer, table.number_of("bark"), 1)
 
 		if roll_chance(peer, rng, float(cfg.get("seed_chance", 0.15))):
