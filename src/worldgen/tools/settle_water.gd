@@ -85,7 +85,10 @@ func _init() -> void:
 		spring_rate += float(sp[1]) * sim.spring_multiplier
 
 	var supplied: float = 0.0
-	var last_volume: float = -1.0
+	var supplied_at_check: float = 0.0
+	var area_m2: float = sim.spacing_m * sim.spacing_m
+	var start_volume: float = sim.total_volume() * area_m2      # the painted lakes and rivers the settle starts from are already stored
+	var last_volume: float = start_volume
 	var quiet: int = 0
 	var t: int = 0
 	var why: String = "min ticks"
@@ -100,9 +103,13 @@ func _init() -> void:
 			print("  tick %d: active %d, wet %d, moved %.0f m3, sea %.0f m3, dried %.0f m3, %d ms so far" % [t, sim.active_cells(), sim.wet_cells(), moved, sim.sea_m3, sim.evaporated_m3, Time.get_ticks_msec() - started])
 
 		if t >= min_ticks and t % every == 0:
-			var volume: float = sim.total_volume() * sim.spacing_m * sim.spacing_m
-			quiet = quiet + 1 if last_volume >= 0.0 and absf(volume - last_volume) <= tolerance * maxf(volume, 1.0) else 0
+			# Steady = in this block the stored water changed by less than `tolerance` of what the springs poured in (the rest left by the sea, the edge or drying).
+			# Measured against the supply, not the total stored: the painted lakes hold 60 times what the springs bring and would always look steady.
+			var volume: float = sim.total_volume() * area_m2
+			var poured: float = maxf(supplied - supplied_at_check, 1.0)
+			quiet = quiet + 1 if absf(volume - last_volume) <= tolerance * poured else 0
 			last_volume = volume
+			supplied_at_check = supplied
 
 			if quiet >= quiet_needed:
 				why = "stored water steady"
@@ -112,8 +119,8 @@ func _init() -> void:
 			why = "max ticks" if max_ticks > min_ticks else why
 			break
 
-	var stored: float = sim.total_volume() * sim.spacing_m * sim.spacing_m
-	print("settle done after %d ticks (%s): supplied %.0f m3, stored %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3" % [t, why, supplied, stored, sim.sea_m3, sim.evaporated_m3, supplied - stored - sim.sea_m3 - sim.evaporated_m3])
+	var stored: float = sim.total_volume() * area_m2
+	print("settle done after %d ticks (%s): started with %.0f m3, springs supplied %.0f m3, stored now %.0f m3, to sea/edge %.0f m3, dried %.0f m3, unaccounted %.0f m3" % [t, why, start_volume, supplied, stored, sim.sea_m3, sim.evaporated_m3, start_volume + supplied - stored - sim.sea_m3 - sim.evaporated_m3])
 
 	var out: String = "%s/water/tile_%d_%d.water" % [WORLD_DIR, tile.x, tile.y]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(WORLD_DIR + "/water"))
