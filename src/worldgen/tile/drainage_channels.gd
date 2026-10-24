@@ -630,7 +630,7 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 
 # Dave 24 Oct: water sources start in natural catch basins. Counts river heads (first channel cell, no channel upstream)
-# whose bed is not at least HEAD_BASIN_M below the median of the ring of cells 3 cells out; prints the total and the
+# whose bed is not at least HEAD_BASIN_M below the second-lowest cell of the ring 3 cells out; prints the total and the
 # failures (with DRAINAGE_BREACH_LOG=1 every failing head's world position). Log only, no change to the ground.
 func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, has_up: PackedByteArray, edge: int) -> void:
 	var heads: int = 0
@@ -657,16 +657,16 @@ func _log_head_basins(fill, flow, size: int, cell_m: float, threshold: float, ha
 					around.append(bed[(row + dz) * size + column + dc])
 
 		around.sort()
-		var median: float = (float(around[3]) + float(around[4])) * 0.5
+		var median: float = float(around[1])   # second-lowest ring cell: one outlet is allowed
 		heads += 1
 
 		if bed[index] > median - HEAD_BASIN_M:
 			failing += 1
 
 			if verbose:
-				print("  head not in a basin: world %d,%d bed %.1f ring median %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), bed[index], median])
+				print("  head not in a basin: world %d,%d bed %.1f ring second-lowest %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), bed[index], median])
 
-	print("  heads: %d river heads, %d not in a catch basin (bed less than %.1f m under the ring median)" % [heads, failing, HEAD_BASIN_M])
+	print("  heads: %d river heads, %d not in a catch basin (bed less than %.1f m under the second-lowest ring cell)" % [heads, failing, HEAD_BASIN_M])
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
