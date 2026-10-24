@@ -246,6 +246,7 @@ func inflows_into(rect: Rect2) -> Array:
 			if rect.has_point(from_m):
 				continue
 
+			@warning_ignore("integer_division")
 			var step_row: int = down / size_x - posmod(row, size_z)
 			var step_column: int = down % size_x - posmod(column, size_x)
 

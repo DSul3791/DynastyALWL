@@ -40,7 +40,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	var flow = FlowScript.new()
 	flow.build(fill, runoff)
-	var seeded_km2: float = _seed_frame_edge(water, fill, runoff, land, sea, samples, cell_m, unit, rules)
+	var seeded_km2: float = _seed_frame_edge(water, fill, runoff, land, sea, samples, cell_m, rules)
 
 	if seeded_km2 > 0.0:
 		flow.build(fill, runoff)
@@ -158,7 +158,7 @@ static func _knot(kx: int, kz: int, seed_value: int) -> float:
 # river network knows every catchment, so each place it flows into this frame adds its catchment to the lowest dry
 # ground at that spot on the frame edge. It depends only on world coordinates and the network, so tiles agree.
 # Returns the catchment added (km2).
-static func _seed_frame_edge(water, fill, runoff: PackedFloat32Array, land: PackedFloat32Array, sea: PackedByteArray, samples: int, cell_m: float, unit: float, rules: Dictionary) -> float:
+static func _seed_frame_edge(water, fill, runoff: PackedFloat32Array, land: PackedFloat32Array, sea: PackedByteArray, samples: int, cell_m: float, rules: Dictionary) -> float:
 	var network = water.world_network
 
 	if network == null or not bool(rules.get("edge_inflow", true)):

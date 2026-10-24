@@ -119,11 +119,13 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 
 	_along = along
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	var stamped: PackedFloat32Array = bed.duplicate()
 	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
 	_canyons(h, fill, flow, size, cell_m, rules)
 	_gullies(h, fill, flow, size, cell_m, rules)
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
+	_keep_spawn_clear(stamped, size, cell_m, rules)
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
@@ -232,6 +234,27 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
 			bed[index] = maxf(bed[index], bed[next])
+
+
+# The spawn area stays as the land and the river stamp made it: valleys, canyons, gullies and heads fade out inside
+# spawn_keep_m of the spawn point and are fully back at spawn_keep_m + spawn_blend_m (Dave: the spawn must be flat dry ground).
+func _keep_spawn_clear(stamped: PackedFloat32Array, size: int, cell_m: float, rules: Dictionary) -> void:
+	if not rules.has("spawn_x"):
+		return
+
+	var spawn: Vector2 = Vector2(float(rules["spawn_x"]), float(rules["spawn_z"]))
+	var keep: float = float(rules.get("spawn_keep_m", 450.0))
+	var blend: float = maxf(float(rules.get("spawn_blend_m", 650.0)), 1.0)
+	var reach: int = int(ceil((keep + blend) / cell_m)) + 1
+	var column0: int = int(floor(spawn.x / cell_m)) - _origin.x
+	var row0: int = int(floor(spawn.y / cell_m)) - _origin.y
+
+	for row in range(maxi(row0 - reach, 0), mini(row0 + reach + 1, size)):
+		for column in range(maxi(column0 - reach, 0), mini(column0 + reach + 1, size)):
+			var world: Vector2 = Vector2(float(column + _origin.x) + 0.5, float(row + _origin.y) + 0.5) * cell_m
+			var weight: float = smoothstep(keep, keep + blend, world.distance_to(spawn))
+			var index: int = row * size + column
+			bed[index] = lerpf(stamped[index], bed[index], weight)
 
 
 # Stage 3b: valleys. Rivers with a big catchment sit in a valley graded to their water level: the floor stands just above
