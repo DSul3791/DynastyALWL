@@ -45,3 +45,38 @@ Stability (Ark-style) stays later. Ladder climbing stays with Steve.
 4. Rough planks come from splitting a log at a chopping block (4 per log)? Recommend yes.
 5. Nails: 1 iron ingot = 20 nails at a forge? Recommend yes.
 6. Mason walls so heavy you build them where you stand (about 200 kg)? Recommend yes.
+
+## 7. Bridges: blueprints in 5 m, 10 m and 20 m, per tier (Dave 15:55 UTC; plan only, build after the devstop)
+Placed like a foundation: scroll wheel turns it, Shift + scroll raises or lowers it. Each blueprint is a whole bridge: deck, a sloping ramp at BOTH ends, and its own supports where the span needs them. 2 m wide (one grid cell); a wide version is a later size row. A ford (shallow stepping stones) is terrain and needs no piece.
+
+### Sizes, tiers and materials (rows in a table; more or adjusted sizes are a row edit)
+Deck length is between the ramps; ramps are extra. Cost is per metre of deck; supports are paid for in the same blueprint.
+| tier | deck per metre | support (post/pier) | max free span | sizes | load (whole bridge) | in a flood |
+|---|---|---|---|---|---|---|
+| 1 Basic (log and rope) | 1 log + 3 sticks + 4 twine | none | 5 m | 5 m only | 300 kg | washes out when the deck is wet or flow over 2 m/s |
+| 2 Plank | 3 rough planks + 4 nails | log trestle every 5 m: 4 logs + 8 nails per metre of height | 5 m | 5, 10, 20 | 500 kg | washes out (deck wet or flow over 2 m/s) |
+| 3 Fine wood | 2 lumber + 6 nails | lumber trestle every 5 m: 4 lumber + 12 nails per m of height | 5 m | 5, 10, 20 | 800 kg | washes out (deck wet or flow over 2.5 m/s) |
+| 4 Log | 2 logs + 4 wooden pins | log crib pier every 6 m: 6 logs per m of height | 6 m | 5, 10, 20 | 1,500 kg | holds to 0.5 m of water over the deck and 3 m/s |
+| 5 Cobblestone | 6 cobblestones + 1 mortar | stone pier every 8 m: 12 cobblestones + 4 mortar per m of height | 8 m | 5, 10, 20 | 3,000 kg | holds to 1.5 m over the deck and 4 m/s |
+| 6 Mason | 3 cut stone blocks + 1 mortar | mason pier every 10 m: 6 cut blocks + 4 mortar per m of height | 10 m | 5, 10, 20 | 6,000 kg | holds to 1.5 m over the deck and 5 m/s |
+Ramps and supports (Dave 15:57 and 16:04 UTC): support poles are 5 m long, measured from the bottom of the bridge floor, and the ramps go down to that same height (5 m below the floor). There is no ramp length cap: a ramp keeps its 1 in 6 slope, so a full 5 m drop is a 30 m ramp, and it simply runs on until it meets the ground or reaches the 5 m depth, then buries its end 1 m. A support pole goes down from the floor to the ground (always at most 5 m, buried 1 m at the foot). Awkward terrain is the player's to solve; the ghost shows where the bridge touches ground and where it does not. Costs are per metre of ramp and per pole. Washed-out wooden bridges drop half their wood downstream.
+
+### Placement (reuses the foundation code)
+- Same path as `foundation_section`: kit item, `piece: true`, `footprint_x` = length, `footprint_z` = 2, grid snap 2 m, ghost green/red with a reason (`PlacementRules`), ACT_PLACE with lift steps, yaw and position (`held_item.gd` `_blueprint_*`).
+- Turn: scroll wheel, 15 degree steps for bridges (foundations keep their grid turn). Raise/lower: Shift + scroll, 0.25 m steps, up to 12 m above the ground (foundations stay 0.1 m, 1 m). Both shown in the ghost caption.
+- The ghost builds the ramps and supports itself: it samples the ground along each ramp and under each support, lengthens the ramp (down to 5 m below the floor) until it meets the ground and buries 1 m of its end, and sinks each support 1 m below the ground at its foot. It does not go red for steep banks. The server repeats the sampling and refuses only if the deck underside is under the flood height + 0.5 m, if a support foot stands in fast water (over the tier limit), if a ramp end or support foot lands on a cell where another structure stands, or if the ground at a ramp end or pole foot is more than 5 m below the bridge floor (the pole length) ("deck is under flood level"; until the flood plan has that height it is the river depth + 1 m).
+- One blueprint per size and tier (18 kits, ids `bridge_<tier>_<size>m_kit`) generated from the size table by a script, so adding 15 m or 30 m is a row.
+- Supports are built into the blueprint (they reach into the ground as part of the bridge). The Yes/No card for Dave is no longer needed.
+
+### Code and data changes
+1. structures.json: `bridge` kind rows from the table above (deck_clear_m, max_flow_ms, load_kg, support spacing, tier). items.json and recipes.json: 18 kits (written by tools/gen_bridges.py from the table). Label RESTART.
+2. placement_rules.gd: bridge footprint (length x 2), ground sampling at both ends, support cells check, flood-height rule, `lift_max_m` and `lift_step_m` per structure (foundations keep today's 0.1 m x 10).
+3. held_item.gd: wheel handling by kind: bridge turns on wheel, lifts on Shift + wheel; foundation unchanged.
+4. Look: Kathleen builds the deck, rails, ramps, trestle and pier meshes from length (parametric, like PieceLook).
+5. Server: cover and walking collision for the deck and ramps (like a floor section), the once-a-minute footprint wash-out check from the flood plan (10.1 point 5), salvage drop on washout, saved in the same world_items rows.
+6. Tests: placement rows (ramp meets ground, flood rule, steep bank refused), recipe table, wash-out of a plank bridge under test water, stone bridge stays.
+
+Order: data and kits, then plank and log tiers with the flood check, then stone tiers.
+
+### Dave 16:12 UTC: taking down a blueprint returns 100 percent
+Removing a placed bridge blueprint (or any piece still in blueprint state) returns every material in full. (Finished pieces: unchanged for now, tell Sal if Dave wants 100 percent there too.)
