@@ -969,6 +969,36 @@
    "shape": "berries",
    "color": "#c8202a",
    "size": 1.0
+  },
+  "kindling": {
+   "shape": "bundle",
+   "color": "#a8845a",
+   "size": 0.6
+  },
+  "saw_blade": {
+   "shape": "bar",
+   "color": "#8f9296",
+   "size": 1.6
+  },
+  "water_wheel": {
+   "shape": "coil",
+   "color": "#7a5a36",
+   "size": 1.4
+  },
+  "saw_mill_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2
+  },
+  "woodworking_table_kit": {
+   "shape": "kit",
+   "color": "#7a5430",
+   "size": 1.0
+  },
+  "rock_pile": {
+   "shape": "pile",
+   "color": "#7d7a74",
+   "size": 1.8
   }
  }
 }

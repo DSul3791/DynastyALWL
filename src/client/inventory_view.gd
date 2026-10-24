@@ -2270,6 +2270,10 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return PieceLook.path()
 		"rock_pile":
 			return PieceLook.rock_pile()
+		"saw_mill":
+			return PieceLook.saw_mill()
+		"woodworking_table":
+			return PieceLook.woodworking_table()
 		"door_shut":
 			return PieceLook.doorway(false)
 		"door_open":
