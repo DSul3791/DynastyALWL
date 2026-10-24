@@ -160,3 +160,8 @@ Note: Recommendation: Yes because players get a chance to react. Why not: less d
 Note: Applied in the game client from water speeds; server checks damage.
 Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
 [check]
+
+## fire-lighting-rain | Does fire always light in dry weather (strike stones into dry plant-fibre tinder), and rain makes it slow or fail?
+Note: Fire size follows the wood as you decided. This is only about lighting it.
+Note: Recommendation: Yes because it takes about 10 seconds, is physical and never softlocks.
+[check]
