@@ -16,11 +16,6 @@ Note: 1. Start the game (MikeW has pulled the new build). 2. Esc > Settings > So
 Note: Recommendation: Yes after listening, because the duck clips are real recordings that passed the team check and the sand run is now only about 5 dB over walk, as you asked.
 [test]
 
-## mike-settings-all-2 | Give MikeW all the permissions he keeps needing (replaces the earlier settings card; ignore that one)
-Note: 1. Open the file settings_mike_all.json in the project files folder (it is your own settings.json plus the new lines, with the broken curly quotes on the last line fixed; nothing you had is removed). 2. Select all and copy. 3. Open C:\GodotProjects\DynastyALWL\.claude\settings.json, select all, paste over it, Save. 4. Restart MikeW (close his session, start a new one) and approve the new MikeW session card. 5. Tell us 'saved'. New lines let him pull, copy and push in your game folder and E:\Software\godotDev by single plain commands; pushing to main, force push, deleting and rm -r stay blocked.
-Note: Recommendation: Yes, do it, because it ends the repeated blocks and only opens your game folder, the backup folder and non-main branches.
-[test]
-
 ## berries-per-plant | Berries you get from one ripe plant: raspberry 150, bramble 250, blueberry 150, blackthorn 300, wild rose 60?
 Note: E on a ripe plant gives the berries only; the plant stays and grows them back next season. Other plants: strawberry 10, lingonberry 15, cranberry 12, crowberry 40, cloudberry 3, elder 400, juniper 100. They are real-world estimates for one plant; a stack holds more than 20 so they fit in a few stacks.
 Note: Recommendation: Yes because they are close to what a real plant carries, and we can lower any number later if it makes food too easy.
