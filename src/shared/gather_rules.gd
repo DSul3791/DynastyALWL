@@ -31,6 +31,24 @@ static func harvest_row(drops: Dictionary, species_name: String) -> Dictionary:
 	return (drops.get("harvest_yield", {}) as Dictionary).get(species_name, {})
 
 
+# Dave's count rule, once: the table count scaled by the plant's size against an average one of its species (patch scale 1 to 3 from drops.json
+# "yield_scale", never below the table number, never above 3x), rounded up, never 0. Berries and every other harvest plant call this.
+static func harvest_scale(drops: Dictionary, plant_height: float, flora_entry: Dictionary) -> float:
+	var limits: Dictionary = drops.get("yield_scale", {})
+	var low: float = float(limits.get("min", 1.0))
+	var high: float = float(limits.get("max", 3.0))
+
+	if plant_height <= 0.0 or not flora_entry.has("height_m"):
+		return low
+
+	var range_m: Array = flora_entry["height_m"]
+	return clampf(plant_height / maxf((float(range_m[0]) + float(range_m[1])) * 0.5, 0.01), low, high)
+
+
+static func harvest_count(row: Dictionary, scale: float) -> int:
+	return maxi(1, int(ceil(float(row.get("count", 1)) * scale - 0.0001)))
+
+
 # Can this plant be picked now? {"ok": bool, "reason": String}. `flora_row` is the flora table row,
 # `has_tool` a Callable(tool class) -> bool, `item_exists` a Callable(item id) -> bool.
 static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season: String, has_tool: Callable, item_exists: Callable) -> Dictionary:

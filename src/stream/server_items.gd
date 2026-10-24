@@ -268,8 +268,6 @@ var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last pic
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
 var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
-const BERRY_SIZE_MIN := 0.3           # berries scale with the plant's size against an average one of its species, between these
-const BERRY_SIZE_MAX := 1.6
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
@@ -1021,13 +1019,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 	if number == 0:
 		return false
 
-	var scale: float = 1.0
-
-	if plant_height > 0.0 and entry.has("height_m"):
-		var range_m: Array = entry["height_m"]
-		scale = clampf(plant_height / maxf((float(range_m[0]) + float(range_m[1])) * 0.5, 0.01), BERRY_SIZE_MIN, BERRY_SIZE_MAX)
-
-	var count: int = maxi(1, int(round(float(berry["count"]) * scale)))
+	var count: int = GatherRules.harvest_count(berry, GatherRules.harvest_scale(_drops, plant_height, entry))      # the one count rule (Dave: size scaled, 3x cap, rounded up, never 0)
 	practice(peer, "gather_plant")
 	give(peer, number, count)
 
