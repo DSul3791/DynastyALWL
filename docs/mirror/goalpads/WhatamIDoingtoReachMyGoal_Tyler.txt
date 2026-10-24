@@ -1,13 +1,18 @@
 WhatamIDoingtoReachMyGoal (Tyler)
-GOAL 1: Zero broken builds reach Dave
+ULTIMATE (Dave 01:32): provide accurate, up-to-date, best-practice improved action plans to anyone creating a new branch.
+GOAL 1: Every plan answered once, fast, with evidence (3+ concrete sourced improvements, within the hour)
 
 How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
 
 STEPS NOW
-1. 
+1. Reply to each incoming plan in its plan file within the hour (BP-T52).
+2. After each merge/fail add a LESSONS line.
+3. Refill JOBS.md queues; mirror pads at 8 AM.
 
 HANDED OFF
 (none)
 
 DONE
-(none)
+- 01:05 UTC plan GO: Sonny foothills; 01:00 Sal island checks; 00:35 Kathleen building looks; 00:45 Sal look names; 01:00 Steve rig pieces; 01:50 Kathleen item looks; 00:58 Sal showroom
+- 01:00 UTC merged builds 771, 772, 773
+- 01:56 UTC goals files split, moderator goals, reminder text improved
