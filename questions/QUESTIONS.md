@@ -90,3 +90,8 @@ Note: Recommendation: Yes, and 50 percent is your call.
 ## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
 Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
 [check]
+
+## copper-tin-placement | Place copper and tin nuggets at runtime near gullies and rock faces, because the baked ground has none?
+Note: Hard stone is handled by choosing the spawn point near it, not by placing it.
+Note: Recommendation: Yes because the final bake would otherwise leave the bronze step with no ore.
+[check]
