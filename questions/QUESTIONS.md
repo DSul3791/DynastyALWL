@@ -28,13 +28,6 @@ Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound so
 Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
 [test]
 
-## water-soft-790 | Does the surf-like rush go away in the woods and by water?
-Note: 1. Pull branch claude/kathleen-water-soft and press F6.
-Note: 2. Stand in the woods away from the sea, then beside a river and near a waterfall; listen about a minute each.
-Note: 3. Does anything still sound like ocean surf or a wash? Say where.
-Note: Recommendation: Yes it worked: river and fall loops are duller (top end cut from about 5 kHz to 2-3.6 kHz) and forest beds use the softer wind.
-[test]
-
 ## sound-sliders | Please take a picture of Settings > Sound
 Note: 1. Pull claude/steve-sound-sliders (or the next build with it).
 Note: 2. Esc > Settings > Sound.
