@@ -101,6 +101,37 @@ static func _textured(base: Color, boards: int, seed_value: int, knots: bool) ->
 	return m
 
 
+# Straw (Mike's picture 24 Oct: the thatch read as golden planks): fine uneven strands running across the piece, each its own shade, a few dark gaps and bright ends.
+static func _straw(base: Color, seed_value: int) -> StandardMaterial3D:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
+	var strand: PackedFloat32Array = PackedFloat32Array()
+
+	for y in TEX:
+		strand.append(rng.randf_range(0.7, 1.25))
+
+	for y in TEX:
+		for x in TEX:
+			var shade: float = strand[y] * (0.9 + 0.2 * sin(float(x) * 0.35 + float(y) * 1.7)) + rng.randf_range(-0.08, 0.08)
+
+			if rng.randf() < 0.012:
+				shade *= 0.45         # a dark gap between bundles
+
+			if rng.randf() < 0.01:
+				shade *= 1.3          # a bright straw end
+
+			image.set_pixel(x, y, Color(clampf(base.r * shade, 0.0, 1.0), clampf(base.g * shade, 0.0, 1.0), clampf(base.b * shade, 0.0, 1.0)))
+
+	image.generate_mipmaps()
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(1.2, 1.2, 1.2)
+	return m
+
+
 static func _materials() -> void:
 	if _planks != null:
 		return
@@ -116,7 +147,7 @@ static func _materials() -> void:
 	_steel.metallic = 0.7
 	_steel.roughness = 0.45
 	_log = _textured(Color(0.42, 0.29, 0.17), 1, 71, false)              # bark-brown round logs
-	_thatch = _textured(Color(0.72, 0.6, 0.3), 14, 83, false)            # straw bundles: many thin horizontal courses, golden
+	_thatch = _straw(Color(0.74, 0.6, 0.3), 83)                           # straw: many fine strands, uneven, with dark gaps between bundles
 	_clay = _blocks_material(Color(0.58, 0.36, 0.24), 1, 91, 0.3)        # fired clay: warm, mottled, no seams
 	_pot = _blocks_material(Color(0.1, 0.09, 0.085), 1, 97, 0.2)         # blackened clay or iron pot
 
@@ -525,7 +556,8 @@ static func rough_bed() -> Node3D:
 		for z in [-0.4, 0.4]:
 			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.08, z), _frame)
 
-	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat
+	_box(root, Vector3(1.9, 0.14, 0.8), Vector3(0.0, 0.27, 0.0), _thatch)         # the lower mat, thick and rounded at the edges
+	_box(root, Vector3(1.7, 0.12, 0.84), Vector3(0.0, 0.3, 0.0), _thatch)
 	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(-0.5, 0.34, 0.0), _thatch)       # raised straw at the foot and
 	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(0.55, 0.34, 0.0), _thatch)        # the head, a dent between them
 	_box(root, Vector3(0.3, 0.14, 0.5), Vector3(0.75, 0.4, 0.0), _thatch)          # the rolled pillow
