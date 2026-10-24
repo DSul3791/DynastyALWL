@@ -141,3 +141,7 @@ e) (Tyler, 24 Oct 20:03 UTC) CAUSE of Dave's pit/cliff: since river_start 0.35 k
 
 ## MIKE HOLD (Tyler, 24 Oct 20:08 UTC; Dave is playing on his PC)
 Until Dave says done: Mike runs NO tests, renders or bakes. All tests and pictures go to David3 (server box). Merge only on a David3 PASS. WAITING ON MIKE: tile (3,4) bake from sonny-final 17401b10 (item e), Sonny's heads bake, Kathleen piece re-render, Windows look_rig checks, first-hour stopwatch play test (gate after 790; David3 headless test_first_hour stands in for logic, Mike still needed for feel). Mike may still do non-PC help: docs, plans, building/data work other threads ask for.
+
+### Final bake source update (Tyler, 24 Oct 20:33 UTC)
+Bake source is now claude/sonny-final 22a9ff02 (UNTESTED), replacing 72d60408 and 17401b10 (item e): forced channel to the sea, freeboard 1.0 m, smaller meander swing, head basins, steep-valley fix. Same gate: Mike bakes only when Dave's PC is free; David3 headless checks first; island table carries the code commit id (BP-T54); one TERRAIN_VERSION bump.
+SPAWN (decision for Dave AFTER the bake): Sal found no spot with hard rock within 300 m. Sonny recommends spot 1 = x 53304 z 68464 (37 m from old spawn), stone rule relaxed to 450 m, plus a small bake-time knoll at x 53450 z 68460. Dave picks the spawn after seeing the baked result; QA card then.
