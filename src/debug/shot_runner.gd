@@ -60,6 +60,12 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var frametime_s: float = 0.0             # --shot-frametime=SECONDS: after a 10 s warm-up, measure frame times this long and print one "shot runner: frametime" line
+var quality_set: int = -1                # --shot-quality=0..3 (0 = Low): set before the measurement
+var _frame_times: PackedFloat32Array = PackedFloat32Array()
+var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
+var _frame_start_msec: int = 0
+var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
@@ -104,6 +110,12 @@ func setup(owner_client, args: Array) -> void:
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
 			side_sign = -1.0
+		elif argument.begins_with("--shot-frametime="):
+			frametime_s = float(argument.trim_prefix("--shot-frametime="))
+		elif argument.begins_with("--shot-build="):
+			build_label = argument.trim_prefix("--shot-build=")
+		elif argument.begins_with("--shot-quality="):
+			quality_set = clampi(int(argument.trim_prefix("--shot-quality=")), 0, 3)
 		elif argument.begins_with("--shot-views="):
 			views = _parse_views(argument.trim_prefix("--shot-views="))
 		elif argument.begins_with("--shot-flora-scale="):
@@ -162,9 +174,12 @@ func setup(owner_client, args: Array) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
+
+	if frametime_s > 0.0 and _frame_state < 2:
+		_measure_frames(delta)
 
 	# Hold the hour and weather every frame, whatever the server says.
 	if _index >= 0 and _index < shots.size():
@@ -884,6 +899,47 @@ func _ground(x: float, z: float) -> float:
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+# --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
+# and print the average, the 95th percentile and the worst frame in ms (the always-playable check: Low should stay under 33 ms).
+func _measure_frames(delta: float) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if _frame_state == 0:
+		if now - client.connected_msec < 10000:
+			return
+
+		if quality_set >= 0 and client.quality != quality_set:
+			client.quality = quality_set
+			client._apply_quality()
+
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)   # vsync snaps frame times to 16.7 ms steps
+		_frame_state = 1
+		_frame_start_msec = now
+
+	_frame_times.append(delta * 1000.0)
+
+	if now - _frame_start_msec >= int(frametime_s * 1000.0):
+		_frame_state = 2
+		var sorted: PackedFloat32Array = _frame_times.duplicate()
+		sorted.sort()
+		var total: float = 0.0
+		var over_50: int = 0
+		var over_100: int = 0
+
+		for value in sorted:
+			total += value
+			over_50 += 1 if value > 50.0 else 0
+			over_100 += 1 if value > 100.0 else 0
+
+		var p95: float = sorted[int(float(sorted.size()) * 0.95)]
+		var p99: float = sorted[int(float(sorted.size()) * 0.99)]
+		var verdict: String = "FAIL" if (p95 >= 33.0 or over_100 > 0) else ("WARN p99 over 50 ms" if p99 > 50.0 else "OK")
+		var spot: Vector3 = client.body.global_position
+		print("shot runner: frametime build %s quality %s spot %.0f,%.0f frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
+			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
+			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
 
 
 func _next(now: int) -> void:
