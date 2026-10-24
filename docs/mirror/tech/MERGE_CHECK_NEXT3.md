@@ -102,8 +102,18 @@ David3: selftest, parse_scan, validate_items, local_check 233, test_server_items
 ## 792 ORDER (Tyler 23:20 UTC; each step = David3 PASS id, then merge, then the next is rebased on it)
 1. sal-thatch-shelter 0450dcb1 (test NOW; full gate + save round trip + dup sweep)
 2. sal-fire-tiers-build (Sal rebases on 1)
-3. sal-cooking-tripod (recipe 165; Sal rebases on 2)
+3. sal-cooking-tripod = now the CAMPFIRE POT (Dave 24 Oct 23:20; recipe 165; Sal rebases on 2 and sends a new hash)
 4. steve-rough-bed 6459b079 (built on 1; David3: test_bed, test_animal_senses, test_warmth, validate_items, dup sweep, local_check)
 5. steve-sound-hookup fce8a304 (test_batch3_slots, parse_scan, local_check; shore-net part already in 791, so expect no conflict)
 6. sal-no-stack-caps-build + sal-weight-audit (after Dave's four weight cards; count-field width check)
 A 792 may ship as two smaller builds if Dave wants the bed sooner: merge 1+4 first.
+
+## CAMPFIRE POT gate (Tyler 23:35 UTC; Dave: renamed from tripod pot; snaps to a normal small fire; fire capped at the firewood stage while attached; pot cooks whenever its fire is lit)
+Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one hash (Sal's rebased cooking branch contains fire tiers). David3 headless tests:
+ 1. Rename: item/structure/recipe names read "Campfire pot" everywhere (grep tripod: no player-facing text left); recipe number stays 165; old saves with a tripod pot load as the campfire pot.
+ 2. Snap: placing the pot near a normal small fire attaches to it (distance rule in data); placing it with no fire nearby is refused or waits (say which); it never attaches to a bigger/other fire type.
+ 3. Cap: with the pot attached the fire cannot go above the firewood stage (adding a log does not raise it; fuel cap stays); remove the pot and the cap lifts; the fire's strength never jumps down below what its fuel allows.
+ 4. Cook: the pot cooks only while its fire is lit; fire out = cooking stops (progress kept or lost: Sal states it); rain puts out open fires as before.
+ 5. Remove/destroy: fire keeps burning; no dangling attachment id; saving and reloading with the pot attached, detached and with the fire out all give the same state.
+ 6. Old saves: state-1 fires and a tripod structure from before load without errors.
+ 7. Standard: validate_items, full dup sweep (recipes highest 169 then 165 is reserved), parse_scan, local_check 233.
