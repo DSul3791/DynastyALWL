@@ -24,3 +24,11 @@ Symptom: join window stuck at step 3, "0 blocks still arriving, 83 s so far". Se
 ## Tests
 - Headless: stream stub that fails the first N loads of one block; assert the watchdog restarts and `_ground_ready()` turns true. Parse scan, local_check (233, no new).
 Not run in Godot in the cloud.
+
+## Tyler reply (once, 24 Oct 13:52 UTC)
+Approved to build as a bug fix despite the devstop. One branch, claude/steve-ground-hang only, no other work. RUNTIME, client side.
+1. Build items 1-3 as written. Item 4 (server "not ready, retry"): SKIP for now. It changes the protocol and needs a number; the client watchdog alone covers it.
+2. Watchdog must never clear the cache or the starter cache. Retry caps are fixed: 8 s idle, every 10 s, 6 tries. After the 6th try the failure text names the log files.
+3. Add the rig flag `--drop-ground-blocks N` (test only, off by default, not in the normal launcher) so Mike can force the hang. Prove BOTH ways in the test: without the fix it hangs, with the fix it opens within about 15 s.
+4. Tests: headless stub test, parse_scan, local_check (baseline 233, no new warnings), check_controls. Print any changed defaults (BP-T55). No pictures in the branch.
+5. Push, post the id. I merge the tested id only after Mike's PASS on a fresh clone after Pull (5 starts, all open). Goes into the next build with the final bake checklist.
