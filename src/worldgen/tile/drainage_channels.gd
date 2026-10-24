@@ -24,8 +24,11 @@ const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
-const HEAD_BASIN_M := 0.5            # a river head's bed stands at least this far under the lowest of its eight neighbours
-const HEAD_BASIN_MAX_CUT_M := 1.0    # and is never lowered by more than this for it
+const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
+const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
+const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
+const LAKE_MAX_SLOPE_DEG := 8.0      # lakes sit on flat reaches
+const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
 const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
 const STEEP_VALLEY_SHARE := 0.8
@@ -646,7 +649,7 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
-	_carve_head_basins(fill, flow, size, threshold, has_up, edge, cell_m)
+	_carve_basins(h, fill, flow, size, threshold, has_up, edge, cell_m, rules)
 
 
 # The drained centre line is the river's path to the sea: every cell on it keeps its channel at least CENTRE_MIN_DEPTH_M
@@ -670,18 +673,26 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 	print("  centre line: %d cells deepened to keep the river continuous" % fixed)
 
 
-# Dave 24 Oct: water sources start in natural catch basins. A river head (first channel cell, no channel upstream) is
-# lowered until its bed stands HEAD_BASIN_M under the lowest of its eight neighbours (the lip its water has to climb to
-# leave), by at most HEAD_BASIN_MAX_CUT_M. The settler puts springs on heads, so every spring is a hollow the water fills
-# before it spills. Prints how many heads there were, how many already stood in a basin, and how many were carved.
-func _carve_head_basins(fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float) -> void:
-	var heads: int = 0
-	var already: int = 0
-	var carved: int = 0
-	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
+# Dave 24 Oct: water sources start in natural catch basins, and ponds and lakes should be sizable. Sites: every river head (a
+# pond) and, on flat reaches of rivers with a catchment of lake_from_km2 or more, a few lakes (one candidate per lake_spacing_m
+# block, kept by a world-position hash so two tiles agree). Size follows the spring flow Qs = 0.1 x catchment km2 (0.01..2 m3/s):
+#   pond  depth 2 + 0.8 sqrt(Qs) m (up to 8), radius 25 + 60 sqrt(Qs) m (up to 120)
+#   lake  depth 3 + 4 sqrt(Qs) m (up to 12), radius 80 + 80 Qs m (up to 250)
+# The bowl is bed = lip - depth x (1 - (r/R)^2), where the lip is the lowest ground on the ring at R (on a river that is the
+# channel downstream, which is the outlet notch), then a bank rising BASIN_BANK_SLOPE per metre. No cell is lowered more than
+# BASIN_MAX_CUT_M. Cells under the lip get the lip as their water level. Prints how many ponds and lakes and their area.
+func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float, rules: Dictionary) -> void:
+	var lake_from: float = float(rules.get("lake_from_km2", 2.0))
+	var lake_share: float = float(rules.get("lake_block_share", 0.35))
+	var spacing: int = maxi(int(float(rules.get("lake_spacing_m", 1500.0)) / cell_m), 1)
+	var pond_slope: float = tan(deg_to_rad(POND_MAX_SLOPE_DEG))
+	var lake_slope: float = tan(deg_to_rad(LAKE_MAX_SLOPE_DEG))
+	var sites: Array = []   # [index, catchment km2, is_lake]
+	var lake_pick: Dictionary = {}   # block -> [slope, index]
+	var steep: int = 0
 
 	for index in fill.order:
-		if flow.discharge[index] < threshold or has_up[index] == 1:
+		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or h[index] < 2.0:
 			continue
 
 		@warning_ignore("integer_division")
@@ -691,31 +702,118 @@ func _carve_head_basins(fill, flow, size: int, threshold: float, has_up: PackedB
 		if row < edge or column < edge or row >= size - edge or column >= size - edge:
 			continue
 
-		var lip: float = INF
+		var slope: float = _ground_slope(h, index, size, cell_m)
 
-		for dz in range(-1, 2):
-			for dc in range(-1, 2):
-				if dz != 0 or dc != 0:
-					lip = minf(lip, bed[(row + dz) * size + column + dc])
+		if has_up[index] == 0:
+			if slope > pond_slope:
+				steep += 1
+			else:
+				sites.append([index, flow.discharge[index], false])
 
-		heads += 1
-		var wanted: float = maxf(lip - HEAD_BASIN_M, bed[index] - HEAD_BASIN_MAX_CUT_M)
-
-		if bed[index] <= lip - HEAD_BASIN_M:
-			already += 1
 			continue
 
-		carved += 1
-		var before: float = bed[index]
-		bed[index] = wanted
+		if flow.discharge[index] < lake_from or slope > lake_slope:
+			continue
 
-		if is_nan(surface[index]) or surface[index] < bed[index]:
-			surface[index] = bed[index] + 0.1
+		var block: Vector2i = Vector2i(floori(float(_origin.x + column) / spacing), floori(float(_origin.y + row) / spacing))
+
+		if _hash(block.y * 100003 + block.x, _seed + 5151) > lake_share:
+			continue
+
+		if not lake_pick.has(block) or slope < float(lake_pick[block][0]):
+			lake_pick[block] = [slope, index]
+
+	for block in lake_pick:
+		var picked: int = int(lake_pick[block][1])
+		sites.append([picked, flow.discharge[picked], true])
+
+	var ponds: int = 0
+	var lakes: int = 0
+	var pond_cells: int = 0
+	var lake_cells: int = 0
+	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
+
+	for site in sites:
+		var index: int = int(site[0])
+		var qs: float = clampf(SPRING_M3S_PER_KM2 * float(site[1]), 0.01, 2.0)
+		var is_lake: bool = bool(site[2])
+		var depth: float = clampf(3.0 + 4.0 * sqrt(qs), 3.0, 12.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
+		var radius: float = clampf(80.0 + 80.0 * qs, 80.0, 250.0) if is_lake else clampf(25.0 + 60.0 * sqrt(qs), 25.0, 120.0)
+		var reach: int = int(ceil(2.0 * radius / cell_m)) + 1
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < reach or column < reach or row >= size - reach or column >= size - reach:
+			continue
+
+		var lip: float = INF
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				var ring: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if ring >= radius and ring <= radius + 1.5 * cell_m:
+					lip = minf(lip, bed[(row + dz) * size + column + dc])
+
+		if lip == INF or lip < 1.0:
+			continue
+
+		var wet: int = 0
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > 2.0 * radius:
+					continue
+
+				var neighbor: int = (row + dz) * size + column + dc
+				var t: float = distance / radius
+				var target: float = lip - depth * (1.0 - t * t) if t <= 1.0 else lip + BASIN_BANK_SLOPE * (distance - radius)
+				var wanted: float = maxf(target, h[neighbor] - BASIN_MAX_CUT_M)
+
+				if wanted < bed[neighbor]:
+					bed[neighbor] = wanted
+
+				if t <= 1.0 and bed[neighbor] < lip - 0.05:
+					wet += 1
+
+					if is_nan(surface[neighbor]) or surface[neighbor] < lip:
+						surface[neighbor] = lip
+
+		if is_lake:
+			lakes += 1
+			lake_cells += wet
+		else:
+			ponds += 1
+			pond_cells += wet
 
 		if verbose:
-			print("  head basin: world %d,%d bed %.1f lip %.1f lowered to %.1f" % [(_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), before, lip, wanted])
+			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
-	print("  heads: %d river heads, %d already in a catch basin, %d carved to HEAD_BASIN_M under the lip" % [heads, already, carved])
+	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, steep, POND_MAX_SLOPE_DEG])
+
+
+# Steepest rise per metre between a cell and its eight neighbours.
+func _ground_slope(h: PackedFloat32Array, index: int, size: int, cell_m: float) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+	var steepest: float = 0.0
+
+	for dz in range(-1, 2):
+		for dc in range(-1, 2):
+			var nr: int = row + dz
+			var nc: int = column + dc
+
+			if (dz == 0 and dc == 0) or nr < 0 or nr >= size or nc < 0 or nc >= size:
+				continue
+
+			var run: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+			steepest = maxf(steepest, absf(h[nr * size + nc] - h[index]) / run)
+
+	return steepest
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:
