@@ -13,7 +13,7 @@ var height: int = 0
 var cell_m: float = 32.0
 var origin_x: float = 0.0
 var origin_z: float = 0.0
-var seed: int = 0
+var file_seed: int = 0
 var params_hash: int = 0
 var data: PackedFloat32Array = PackedFloat32Array()
 
@@ -34,7 +34,7 @@ func load_file(path: String) -> bool:
 	origin_x = file.get_float()
 	origin_z = file.get_float()
 	file.get_float()
-	seed = file.get_32()
+	file_seed = file.get_32()
 	params_hash = file.get_32()
 	data = file.get_buffer(width * height * 4).to_float32_array()
 	return data.size() == width * height
