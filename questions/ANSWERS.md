@@ -1602,3 +1602,7 @@ Answered: 2026-10-24 22:16 UTC
 Answer: Depends on what the materials are, but they should weigh something equivalent to what a normal and wood so magic ring would weigh about the same as a normal ring a magic tree or a log should weigh about the same as an equivalent tree or log
 Answered: 2026-10-24 22:16 UTC
 
+## weight-big-kits | How heavy should the big workshop pieces be?
+Answer: They should be probably 30 kg
+Answered: 2026-10-24 22:17 UTC
+
