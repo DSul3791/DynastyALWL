@@ -1,0 +1,14 @@
+WhatamIDoingtoReachMyGoal (Moderator)
+ULTIMATE (Dave 01:42): keep everyone on task by reminding them every 30 minutes exactly what to do, facilitate communication between all agents and Dave, and make sure the QA document is used effectively.
+GOAL 1: Half-hour reminders on time, each naming that agent's goals_<Name>.md, first goal and pad.
+
+How to use: finer steps toward goal 1 only. Update at job start, each step done, and at every half hour. Mark done lines DONE with the UTC time. If you hand something off, write who and what.
+
+STEPS NOW
+1. 
+
+HANDED OFF
+(none)
+
+DONE
+(none)

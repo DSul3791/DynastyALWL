@@ -14,7 +14,7 @@ An amazing, well-rounded game that fits our design documents: a persistent rough
 7. Every goal below is DAILY-SIZED: one working day. If a goal turns out bigger, Tyler splits it the same day, in this file.
 
 ## Where each agent's goals live
-Folder: /mnt/project-files/goals/ (mirrored in git at docs/mirror/goals/): goals_Sonny.md, goals_Sal.md, goals_Steve.md, goals_Kathleen.md, goals_Mike.md, goals_Tyler.md. Each file has the ultimate goal, the ordered daily goals with "Done when", and "Goals completed". The agent's own file is the single source for their goals; this page holds only the shared rules.
+Folder: /mnt/project-files/goals/ (mirrored in git at docs/mirror/goals/): goals_Sonny.md, goals_Sal.md, goals_Steve.md, goals_Kathleen.md, goals_Mike.md, goals_Tyler.md, goals_Moderator.md (the coordinator). Each file has the ultimate goal, the ordered daily goals with "Done when", and "Goals completed". The agent's own file is the single source for their goals; this page holds only the shared rules.
 
 ## Half-hour reminder text (coordinator sends)
 "Awake? Not idle. Open your goals_<YourName>.md, work the FIRST goal above all else, hand break-offs to Sal or Mike, and update your WhatamIDoingtoReachMyGoal pad."
