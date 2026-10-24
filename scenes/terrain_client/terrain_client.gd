@@ -1184,6 +1184,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
+	items.auto_pickup_blocked = func(): return swimming or (held != null and held.placing())
 	items.stance_event = _on_stance_from_server
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
@@ -2820,6 +2821,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_P and items != null:
+			items.toggle_auto_pickup()
 		elif event.keycode == KEY_SLASH:
 			inspecting = not inspecting
 			status_icons.tick(0.0, true)
