@@ -190,6 +190,10 @@ func _build_display() -> void:
 		_c._apply_render_scale()
 		_c._save_display()
 		_c._report_display())
+	_button(display, "Cave darkness: Dark / Normal", func():
+		_c.display.cave_dark = not _c.display.cave_dark
+		_c._save_display()
+		note.text = "Cave darkness: %s (saved). Dark leaves 4%% of the daylight under rock, Normal 12%%." % ("Dark" if _c.display.cave_dark else "Normal"))
 	_button(display, "Crafting screen text size: change", func():
 		_c.display.text_index = (_c.display.text_index + 1) % _c.display.TEXT_SCALES.size()
 		_c.items.set_text_scale(_c.display.TEXT_SCALES[_c.display.text_index])
