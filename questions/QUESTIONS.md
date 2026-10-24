@@ -100,3 +100,8 @@ Note: Recommendation: Yes because a single storm should not turn a meadow into a
 Note: The water step must be fixed before a burst can be simulated safely.
 Note: Recommendation: Yes because a breach could blow up the water simulation otherwise.
 [check]
+
+## wl-bridges | Bridges: low plank bridges and fords can be washed out in floods, high stone bridges with piers survive?
+Note: Needs span and pier pieces with a flood rating from Sal's building tiers.
+Note: Recommendation: Yes because it makes bridges matter. Why not: players lose work to floods.
+[check]
