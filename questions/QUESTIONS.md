@@ -24,25 +24,30 @@ Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their 
 [test]
 
 ## laptop-for-tests | Use your old laptop for tests (local_check, test_worldgen, sound tests, pictures) and keep all bakes on Mike's PC?
+Priority: 8
 Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 8 GB RAM, Vulkan GPU, 20 GB free disk.
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
 ## new-player-switch | Start with nothing but ground items, hints on, plus an admin 'become a new player' switch for testing?
+Priority: 4
 Note: Empties the pack, turns hints on, drops admin powers so Mike can time the real first hour.
 Note: Recommendation: Yes because we cannot test the first hour any other way.
 [check]
 
 ## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
+Priority: 1
 Note: New players start with the direct way.
 Note: Recommendation: Yes because direct pieces suit a first shelter and need no protocol change.
 [check]
 
 ## release-stages | Release in three stages: R1 first hour and house, R2 hunting and hide, R3 metal?
+Priority: 2
 Note: Recommendation: Yes because hunting needs a carcass system and metal needs hide, neither built.
 [check]
 
 ## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
+Priority: 5
 Note: The water step must be fixed before a burst can be simulated safely.
 Note: Recommendation: Yes because a breach could blow up the water simulation otherwise.
 [check]
@@ -118,16 +123,19 @@ Note: Recommendation: Yes because it is safe and kind first. Why not: you may wa
 [check]
 
 ## fire-lighting-rain | Does fire always light in dry weather (strike stones into dry plant-fibre tinder), and rain makes it slow or fail?
+Priority: 3
 Note: Fire size follows the wood as you decided. This is only about lighting it.
 Note: Recommendation: Yes because it takes about 10 seconds, is physical and never softlocks.
 [check]
 
 ## shore-net-first | Does fishing start with a shore net (20 twine + 4 stones), with trap, spear and rod later and no reflex minigame?
+Priority: 7
 Note: Stand at a ripple spot at the water edge, hold E about 20 s, get 1 to 3 small fish.
 Note: Recommendation: Yes because it is simple and obvious for the first hour.
 [check]
 
 ## rough-bed-rules | Rough bed: thatch + 4 sticks + 2 twine under any roof, better sleep, food and water at half rate asleep, never auto-wakes?
+Priority: 6
 Note: A roofed room hides the sleeper. The Rested bonus from decoration comes later.
 Note: Recommendation: Yes because it makes home worth building and gives a safe one-hour break.
 [check]
