@@ -144,6 +144,13 @@ func _bound_row(name: String, value: float, bound: Variant, is_max: bool, measur
 func _config_for(island_id: int) -> Dictionary:
 	var config: Dictionary = (_limits["defaults"] as Dictionary).duplicate(true)
 	var override: Dictionary = (_limits.get("islands", {}) as Dictionary).get(str(island_id), {})
+	var type_rows: Dictionary = _limits.get("types", {})
+
+	# An island row may name a type; the type's row (island_checks.json "types") applies first, the island's own keys on top.
+	if override.has("type") and type_rows.has(str(override["type"])):
+		var merged: Dictionary = (type_rows[str(override["type"])] as Dictionary).duplicate(true)
+		merged.merge(override, true)
+		override = merged
 
 	for key in override.keys():
 		if typeof(config.get(key)) == TYPE_DICTIONARY and typeof(override[key]) == TYPE_DICTIONARY:
@@ -332,6 +339,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 
 	_row("%s terrain mix" % title, ", ".join(mix), "report", "INFO")
 	_flat_share_check(title, cells, config)
+	_range_row("%s summit height" % title, float(island["peak_m"]), config["summit_range_m"], "%.0f m%s" % [float(island["peak_m"]), (" (type %s)" % str(config["type"])) if config.has("type") else ""])
 
 	if config["band_table_check"]:
 		_band_checks(title, land, float(island["peak_m"]), config)
@@ -425,16 +433,12 @@ func _flat_share_check(title: String, cells: PackedInt32Array, config: Dictionar
 # `land` is the sorted land heights.
 func _band_checks(title: String, land: PackedFloat32Array, peak_m: float, config: Dictionary) -> void:
 	var starter: Dictionary = _rules.get("starter_islands", {})
-	var bands: Array = starter.get("height_bands", [])
+	var type_rules: Dictionary = (_rules.get("island_types", {}) as Dictionary).get(str(config.get("type", "")), {})
+	var bands: Array = type_rules.get("height_bands", starter.get("height_bands", []))
 
 	if bands.is_empty():
 		_row("%s height bands" % title, "no height_bands in sketch_rules.json", "-", "INFO")
 		return
-
-	var summit_range: Array = starter.get("summit_m", [])
-
-	if summit_range.size() == 2:
-		_range_row("%s summit height" % title, peak_m, summit_range, "%.0f m" % peak_m)
 
 	var tolerance_m: float = float(config["band_tolerance_m"])
 	var tolerance_frac: float = float(config["band_tolerance_frac"])
@@ -549,8 +553,8 @@ func _text(image: Image, x: int, y: int, text: String, color: Color, scale: int)
 		cursor += 4 * scale
 
 
-# Sections of the baked tile (8 m maps) from the island's real summit.
-func _tile_pictures(world_dir: String, fine: Dictionary) -> void:
+# The real summit of each listed island on the baked 8 m maps: plateau width, and the six sections when --picture is given.
+func _tile_summits(world_dir: String, fine: Dictionary) -> void:
 	var listed: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/island_list.json"))
 
 	if typeof(listed) != TYPE_DICTIONARY:
@@ -595,42 +599,13 @@ func _tile_pictures(world_dir: String, fine: Dictionary) -> void:
 
 		var peak_xz: Vector2 = Vector2(float(fine["origin_x"]) + float(best_index % width) * spacing, float(fine["origin_z"]) + float(best_index / width) * spacing)
 
-		# Summit plateau: the connected ground within summit_flat_m of the top (its widest side).
-		var window: Dictionary = {best_index: true}
-		var stack: PackedInt32Array = PackedInt32Array([best_index])
-		var low_i: int = best_index % width
-		var high_i: int = low_i
-		var low_j: int = best_index / width
-		var high_j: int = low_j
+		for band in config["summit_plateaus"]:
+			var plateau: Dictionary = _plateau(fine, best_index, float(band["within_m"]))
+			_bound_row("%s summit plateau (within %.0f m of the top)" % [title, float(band["within_m"])], float(plateau["across_m"]), band["max_m"], true,
+				"top %.0f m at x %d z %d, flat area %.0f m across (%d cells)" % [best, int(peak_xz.x), int(peak_xz.y), float(plateau["across_m"]), int(plateau["cells"])])
 
-		while not stack.is_empty() and window.size() < 400000:
-			var index: int = stack[stack.size() - 1]
-			stack.remove_at(stack.size() - 1)
-			var ci: int = index % width
-			var cj: int = index / width
-
-			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var ni: int = ci + offset.x
-				var nj: int = cj + offset.y
-
-				if ni < 0 or nj < 0 or ni >= width or nj >= rows:
-					continue
-
-				var other: int = nj * width + ni
-
-				if window.has(other) or heights[other] < best - float(tile_limits["summit_flat_m"]):
-					continue
-
-				window[other] = true
-				stack.append(other)
-				low_i = mini(low_i, ni)
-				high_i = maxi(high_i, ni)
-				low_j = mini(low_j, nj)
-				high_j = maxi(high_j, nj)
-
-		var across: float = float(maxi(high_i - low_i, high_j - low_j) + 1) * spacing
-		_bound_row("%s summit plateau (within %.0f m of the top)" % [title, float(tile_limits["summit_flat_m"])], across, config["summit_plateau_max_m"], true,
-			"top %.0f m at x %d z %d, flat area %.0f m across (%d cells)" % [best, int(peak_xz.x), int(peak_xz.y), across, window.size()])
+		if _picture_dir == "":
+			continue
 
 		var drawn: Array = []
 
@@ -638,6 +613,47 @@ func _tile_pictures(world_dir: String, fine: Dictionary) -> void:
 			drawn.append({"deg": float(bearing), "ray": _ray_fine(fine, peak_xz, float(bearing))})
 
 		_draw_sections(island_id, drawn, best, title, spacing, "_tile")
+
+
+# The connected ground within `within_m` of the top: its widest side in metres, and its cell count.
+func _plateau(fine: Dictionary, top_index: int, within_m: float) -> Dictionary:
+	var width: int = fine["width"]
+	var rows: int = fine["rows"]
+	var heights: PackedFloat32Array = fine["heights"]
+	var floor_m: float = heights[top_index] - within_m
+	var window: Dictionary = {top_index: true}
+	var stack: PackedInt32Array = PackedInt32Array([top_index])
+	var low_i: int = top_index % width
+	var high_i: int = low_i
+	var low_j: int = top_index / width
+	var high_j: int = low_j
+
+	while not stack.is_empty() and window.size() < 400000:
+		var index: int = stack[stack.size() - 1]
+		stack.remove_at(stack.size() - 1)
+		var ci: int = index % width
+		var cj: int = index / width
+
+		for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var ni: int = ci + offset.x
+			var nj: int = cj + offset.y
+
+			if ni < 0 or nj < 0 or ni >= width or nj >= rows:
+				continue
+
+			var other: int = nj * width + ni
+
+			if window.has(other) or heights[other] < floor_m:
+				continue
+
+			window[other] = true
+			stack.append(other)
+			low_i = mini(low_i, ni)
+			high_i = maxi(high_i, ni)
+			low_j = mini(low_j, nj)
+			high_j = maxi(high_j, nj)
+
+	return {"across_m": float(maxi(high_i - low_i, high_j - low_j) + 1) * float(fine["spacing"]), "cells": window.size()}
 
 
 # Walks from the summit outward over the 8 m heights until the sea or the edge of the baked area.
@@ -890,22 +906,20 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 
 	var fine: Dictionary = {}
 
-	if _fine or _picture_dir != "":
-		fine = _stitch(tiles, directory, true)
+	fine = _stitch(tiles, directory, true)
 
-		if not fine["ok"]:
-			return
+	if not fine["ok"]:
+		return
 
-		fine["origin_x"] = float(fine["min_x"] * settings.tile_size_m)
-		fine["origin_z"] = float(fine["min_z"] * settings.tile_size_m)
+	fine["origin_x"] = float(fine["min_x"] * settings.tile_size_m)
+	fine["origin_z"] = float(fine["min_z"] * settings.tile_size_m)
 
 	if _fine:
 		stitched = fine
 
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
 
-	if _picture_dir != "":
-		_tile_pictures(world_dir, fine)
+	_tile_summits(world_dir, fine)
 
 
 func _seam_checks(settings, directory: String, tiles: Array) -> void:
