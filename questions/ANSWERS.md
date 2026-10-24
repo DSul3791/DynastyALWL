@@ -1598,3 +1598,7 @@ Answered: 2026-10-24 22:16 UTC
 Answer: No: Nope, tools all still just look like the original square flat wooden shovel
 Answered: 2026-10-24 22:16 UTC
 
+## weight-fantasy | What should the magic and fantasy materials weigh?
+Answer: Depends on what the materials are, but they should weigh something equivalent to what a normal and wood so magic ring would weigh about the same as a normal ring a magic tree or a log should weigh about the same as an equivalent tree or log
+Answered: 2026-10-24 22:16 UTC
+
