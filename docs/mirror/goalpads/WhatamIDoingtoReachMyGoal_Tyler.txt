@@ -8,7 +8,6 @@ STEPS (open)
 2. For each new plan: read it, read DECISIONS.md + the design section it touches, write 3+ improvements with sources, mark GO/NO-GO, mirror to docs/mirror, tell the coordinator in one line. Done-check: reply file section exists and mirror pushed.
 3. Merge list 2 (tech/MERGE_CHECK_NEXT2.md): when Mike reports PASS, merge the passing branches, bump build to 774, BUILD_LOG + HANDOFF + DAY_LOG. Done-check: head build 774 on origin and number sent to coordinator.
 4. Trial-merge every newly pushed branch against head and add clean ones to the next merge list. Done-check: list file updated within 30 minutes of each push.
-5. Build the plan checklists, one page per kind: terrain/bake, item data, model/look, server/protocol, rig/test, docs. Done-check: tech/PLAN_CHECKLISTS.md has six sections with 5-8 questions each.
 6. LESSONS line for each merged branch of tonight (771, 772, 773): plan vs what happened. Done-check: three lines in tech/LESSONS.md.
 7. Review BEST_PRACTICES.md for stale entries (dates, contradictions with Dave rulings: BP-T50 vs BP-T52, BP-C23 vs BP-T53). Done-check: contradicting entries marked "superseded by BP-T5x".
 8. Add dates and sources to the 10 most-used best-practice entries (BP-T31, T44-T53, C23). Done-check: each has a date and source line.
@@ -21,5 +20,6 @@ HANDED OFF
 (none)
 
 DONE
+- 02:55 UTC step 5: tech/PLAN_CHECKLISTS.md written (six kinds, 4-8 questions each)
 - 00:35-02:45 UTC plan GO replies: Kathleen building looks, Sal showroom, Sal look names, Steve rig pieces, Sonny foothills, Sal island checks, Kathleen item looks, Kathleen flora gaps, Steve river settle, Kathleen worn clothing
 - 01:00-01:35 UTC builds 771, 772, 773 merged; goals files split; reminder text improved; moderator goals created
