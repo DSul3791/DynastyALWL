@@ -28,11 +28,6 @@ Note: The hammer and adze exist but do nothing yet. Nails need an iron chain (fo
 Note: Recommendation: Give the hammer and adze their first real uses now (placing nails, finishing logs into beams); the anvil, tongs and bellows come in the next tools batch, because a tool that does nothing should not stay in the game.
 [check]
 
-## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
-Note: Some items still use simple models. Kathleen upgrades families in order (animals, tools, fire, chests, trees, grass, ferns done or in progress).
-Note: Recommendation: Yes, accept them for now; the art goal is already ordered, and fixing shapes one by one would stop terrain work.
-[check]
-
 ## laptop-for-tests | Use your old laptop for tests (local_check, test_worldgen, sound tests, pictures) and keep all bakes on Mike's PC?
 Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 8 GB RAM, Vulkan GPU, 20 GB free disk.
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
