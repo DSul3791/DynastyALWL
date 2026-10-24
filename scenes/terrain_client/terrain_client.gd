@@ -4665,7 +4665,7 @@ func _note_last_sound() -> void:
 	var sources: Array = [
 		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last], ["placed", sound.placed.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
-		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call], ["npc voice", _npc_voice.last if _npc_voice != null else ""], ["inner voice", sound.inner.last],
+		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call], ["ambience", sound.ambience.last], ["npc voice", _npc_voice.last if _npc_voice != null else ""], ["inner voice", sound.inner.last],
 	]
 
 	for n in range(sources.size()):

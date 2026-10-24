@@ -78,6 +78,8 @@ func add_buttons(settings: VBoxContainer) -> void:      # `settings` is the list
 	_menu_button(settings, "Sound test: Batch 1 (doors, steps, ladder, table, wheel, cloak)", func():
 		_slots_at += 1
 		_menu_note.text = sound.slots.test_step(_slots_at, camera.global_position, -camera.global_transform.basis.z))
+	_menu_button(settings, "Sound test: Batch 2 (ambience: forest, night, coast, wind, canyon, volcano, pond, birds, owls, frogs, ice)", func():
+		_menu_note.text = sound.ambience.test_press())
 	_menu_button(settings, "Sound test: spear", func():
 		_spear_at = (_spear_at + 1) % 6
 		var eye: Vector3 = camera.global_position

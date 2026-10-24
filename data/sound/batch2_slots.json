@@ -1,0 +1,656 @@
+{
+ "_about": "Sound batch 2 slots (Kathleen, goal 7, ambience): slot -> variant files from assets/audio/make_batch2.py. Tags tell the game when a slot may play (season, time, biome, near_water, altitude). layer: weather_bed and time_bed play one each at a time, positional plays the two nearest, oneshot plays at most two (scheduler gap_s 4-20, pitch +/-5 percent, never the same variant twice in a row). All peak -14 dB under creature clips. Engine hookup is Steve's. test_only (Steve, 24 Oct): the slot's place has no client lookup yet (canyon, volcano, desert, polar, ice, lava), so it plays in the Sound test and with --biome=NAME / set_anchor only; open job in JOBS.md.",
+ "voice_plan": {
+  "weather_bed": 1,
+  "time_bed": 1,
+  "positional": 2,
+  "oneshot": 2,
+  "max_simultaneous": 6
+ },
+ "slots": {
+  "bed_forest_day": {
+   "group": "forest ambience",
+   "layer": "weather_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_forest_day_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn"
+    ],
+    "time": "day",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "grassland",
+     "woodland"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "bed_forest_winter": {
+   "group": "forest ambience",
+   "layer": "weather_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_forest_winter_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "grassland",
+     "woodland"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "bed_night": {
+   "group": "night ambience",
+   "layer": "time_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_night_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "night",
+    "biome": [
+     "any_except_desert_polar"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "bed_crickets": {
+   "group": "night ambience",
+   "layer": "time_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_crickets_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "summer",
+     "autumn"
+    ],
+    "time": "night",
+    "biome": [
+     "grassland",
+     "woodland",
+     "temperate_forest"
+    ],
+    "near_water": "any",
+    "altitude": "below_800m"
+   },
+   "status": "filled",
+   "note": "warm nights only (engine: temperature above 12 C)"
+  },
+  "bed_surf": {
+   "group": "coast",
+   "layer": "weather_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_surf_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "beach"
+    ],
+    "near_water": "sea_edge",
+    "altitude": "sea_level"
+   },
+   "status": "filled",
+   "note": "ice-edge islands: surf slot is used as the ice shore (no crack bed)",
+   "positional": {
+    "max_distance_m": 150,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      40,
+      0.7
+     ],
+     [
+      100,
+      0.3
+     ],
+     [
+      150,
+      0.0
+     ]
+    ]
+   }
+  },
+  "bed_desert_wind": {
+   "group": "dry land",
+   "layer": "weather_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_desert_wind_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "desert",
+     "dry_scrub"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": "",
+   "test_only": true
+  },
+  "bed_canyon_wind": {
+   "group": "canyon",
+   "layer": "weather_bed",
+   "files": [
+    "res://assets/audio/batch2/bed_canyon_wind_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "canyon"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": "",
+   "positional": {
+    "max_distance_m": 120,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      40,
+      0.6
+     ],
+     [
+      90,
+      0.2
+     ],
+     [
+      120,
+      0.0
+     ]
+    ]
+   },
+   "test_only": true
+  },
+  "bed_volcano_rumble": {
+   "group": "volcano",
+   "layer": "positional",
+   "files": [
+    "res://assets/audio/batch2/bed_volcano_rumble_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "volcano"
+    ],
+    "near_water": "any",
+    "altitude": "above_300m"
+   },
+   "status": "filled",
+   "note": "moderate; audible from the crater rim region, fades with a table, not a straight line",
+   "positional": {
+    "max_distance_m": 1500,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      200,
+      0.8
+     ],
+     [
+      500,
+      0.45
+     ],
+     [
+      1000,
+      0.15
+     ],
+     [
+      1500,
+      0.0
+     ]
+    ]
+   },
+   "test_only": true
+  },
+  "bed_pond": {
+   "group": "water",
+   "layer": "positional",
+   "files": [
+    "res://assets/audio/batch2/bed_pond_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "any"
+    ],
+    "near_water": "pond",
+    "altitude": "any"
+   },
+   "status": "filled",
+   "note": "",
+   "positional": {
+    "max_distance_m": 40,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      15,
+      0.5
+     ],
+     [
+      40,
+      0.0
+     ]
+    ]
+   }
+  },
+  "bed_lava_hiss": {
+   "group": "volcano",
+   "layer": "positional",
+   "files": [
+    "res://assets/audio/batch2/bed_lava_hiss_0.ogg"
+   ],
+   "loop": true,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "volcano"
+    ],
+    "near_water": "lava",
+    "altitude": "above_300m"
+   },
+   "status": "filled",
+   "note": "",
+   "positional": {
+    "max_distance_m": 60,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      20,
+      0.5
+     ],
+     [
+      60,
+      0.0
+     ]
+    ]
+   },
+   "test_only": true
+  },
+  "bird_tweet": {
+   "group": "birds",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/bird_tweet_0.ogg",
+    "res://assets/audio/batch2/bird_tweet_1.ogg",
+    "res://assets/audio/batch2/bird_tweet_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn"
+    ],
+    "time": "day",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "grassland",
+     "woodland"
+    ],
+    "near_water": "any",
+    "altitude": "below_1500m"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "bird_whistle": {
+   "group": "birds",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/bird_whistle_0.ogg",
+    "res://assets/audio/batch2/bird_whistle_1.ogg",
+    "res://assets/audio/batch2/bird_whistle_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer"
+    ],
+    "time": "day",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "grassland",
+     "woodland"
+    ],
+    "near_water": "any",
+    "altitude": "below_1500m"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "bird_trill": {
+   "group": "birds",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/bird_trill_0.ogg",
+    "res://assets/audio/batch2/bird_trill_1.ogg",
+    "res://assets/audio/batch2/bird_trill_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer"
+    ],
+    "time": "day",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "grassland",
+     "woodland",
+     "dry_scrub"
+    ],
+    "near_water": "any",
+    "altitude": "below_1500m"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": ""
+  },
+  "owl_hoot": {
+   "group": "night birds",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/owl_hoot_0.ogg",
+    "res://assets/audio/batch2/owl_hoot_1.ogg",
+    "res://assets/audio/batch2/owl_hoot_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "night",
+    "biome": [
+     "temperate_forest",
+     "boreal_forest",
+     "woodland"
+    ],
+    "near_water": "any",
+    "altitude": "below_1500m"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": "a hoot, soft"
+  },
+  "frog_croak": {
+   "group": "frogs",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/frog_croak_0.ogg",
+    "res://assets/audio/batch2/frog_croak_1.ogg",
+    "res://assets/audio/batch2/frog_croak_2.ogg",
+    "res://assets/audio/batch2/frog_croak_3.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer"
+    ],
+    "time": "dusk_and_night",
+    "biome": [
+     "any"
+    ],
+    "near_water": "pond",
+    "altitude": "any"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": "",
+   "positional": {
+    "max_distance_m": 50,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      20,
+      0.5
+     ],
+     [
+      50,
+      0.0
+     ]
+    ]
+   }
+  },
+  "canyon_echo": {
+   "group": "canyon",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/canyon_echo_0.ogg",
+    "res://assets/audio/batch2/canyon_echo_1.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day",
+    "biome": [
+     "canyon"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": "",
+   "positional": {
+    "max_distance_m": 300,
+    "table_m": [
+     [
+      0,
+      1.0
+     ],
+     [
+      100,
+      0.5
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   },
+   "test_only": true
+  },
+  "ice_crack": {
+   "group": "polar",
+   "layer": "oneshot",
+   "files": [
+    "res://assets/audio/batch2/ice_crack_0.ogg",
+    "res://assets/audio/batch2/ice_crack_1.ogg",
+    "res://assets/audio/batch2/ice_crack_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "tags": {
+    "season": [
+     "spring",
+     "summer",
+     "autumn",
+     "winter"
+    ],
+    "time": "day_and_night",
+    "biome": [
+     "polar",
+     "ice"
+    ],
+    "near_water": "any",
+    "altitude": "any"
+   },
+   "scheduler": {
+    "gap_s": [
+     4,
+     20
+    ],
+    "pitch_jitter": 0.05,
+    "no_repeat_variant": true
+   },
+   "status": "filled",
+   "note": "moderate; never on hot islands",
+   "test_only": true
+  }
+ }
+}
