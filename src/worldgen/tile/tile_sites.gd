@@ -368,6 +368,20 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 		if is_nan(target.x):
 			continue
 
+		# A target above the ground is sunk into the rock (an outcropping vein is cut where the ground is still thick enough);
+		# a target that would need sinking more than ore_sink_max_m is not an ore this cave can reach.
+		var target_index: int = _index_at(Vector2(target.x, target.z), float(_rules["edge_margin_m"]))
+
+		if target_index >= 0:
+			var deepest_ok: float = _heights[target_index] - min_roof - 3.0
+
+			if target.y > deepest_ok:
+				if target.y - deepest_ok > float(rules.get("ore_sink_max_m", 25.0)):
+					ore_report["above"] = int(ore_report.get("above", 0)) + 1
+					continue
+
+				target.y = deepest_ok
+
 		var target_2d: Vector2 = Vector2(target.x, target.z)
 		var best: int = -1
 		var best_distance: float = reach
