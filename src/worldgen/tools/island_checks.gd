@@ -409,6 +409,7 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 
 	_row("%s terrain mix" % title, ", ".join(mix), "report", "INFO")
 	_flat_share_check(title, cells, config)
+	_farmland_check(title, cells, config)
 	_range_row("%s summit height" % title, float(island["peak_m"]), config["summit_range_m"], "%.0f m%s" % [float(island["peak_m"]), (" (type %s)" % str(config["type"])) if config.has("type") else ""])
 
 	if config["band_table_check"]:
@@ -495,6 +496,45 @@ func _flat_share_check(title: String, cells: PackedInt32Array, config: Dictionar
 
 	var share: float = float(flat) / float(cells.size())
 	_bound_row("%s flat share (slope under %.0f deg)" % [title, flat_deg], share, config["flat_share_min"], false, "%.1f%% of land" % (share * 100.0))
+
+
+# Rolling farmland (Dave 24 Oct): land from the beach top up to farm_top_m.
+# Share farmable (slope at or under farm_slope_deg) and share rolling (over
+# flat_slope_deg, so valleys are real); null limits report only.
+func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary) -> void:
+	var farm_deg: float = float(config["farm_slope_deg"])
+	var flat_deg: float = float(config["flat_slope_deg"])
+	var top_m: float = float(config["farm_top_m"])
+	var low_m: float = float(config["beach_top_m"])
+	var zone: int = 0
+	var farmable: int = 0
+	var rolling: int = 0
+
+	for index in cells:
+		var column: int = index % _elevation.size_x
+		var row: int = _quot(index, _elevation.size_x)
+		var h: float = _cell_h(column, row)
+
+		if h <= low_m or h > top_m:
+			continue
+
+		var slope: float = _slope_deg(column, row)
+		zone += 1
+
+		if slope <= farm_deg:
+			farmable += 1
+
+			if slope > flat_deg:
+				rolling += 1
+
+	if zone == 0:
+		_row("%s farmland" % title, "no land between %.0f and %.0f m" % [low_m, top_m], "-", "INFO")
+		return
+
+	var farm_share: float = float(farmable) / float(zone)
+	var rolling_share: float = float(rolling) / float(zone)
+	_bound_row("%s farmable share (slope at or under %.0f deg, %.0f-%.0f m)" % [title, farm_deg, low_m, top_m], farm_share, config["farm_share_min"], false, "%.1f%% of %d cells" % [farm_share * 100.0, zone])
+	_bound_row("%s rolling share (farmable but over %.0f deg)" % [title, flat_deg], rolling_share, config["rolling_share_min"], false, "%.1f%% of %d cells" % [rolling_share * 100.0, zone])
 
 
 # The island's land, ranked by height, against starter_islands.height_bands of
