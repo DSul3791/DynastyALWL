@@ -2832,6 +2832,29 @@
 			"look_alikes": [],
 			"value": 45
 		},
+		"wooden_hammer": {
+			"number": 247,
+			"name": "Wooden hammer",
+			"description": "A wooden head on a stick. The weakest hammer; it wears out fast. Nails and building still to come.",
+			"kind": "tool",
+			"tool_class": "hammer",
+			"material": "wood",
+			"tier": 1,
+			"stack": 1,
+			"durability": 1500,
+			"repair": [
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 10,
+			"look_alikes": []
+		},
 		"stone_hammer": {
 			"number": 244,
 			"name": "Stone hammer",
@@ -2899,7 +2922,8 @@
 				]
 			],
 			"value": 30,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true
 		},
 		"rough_bed_kit": {
 			"number": 250,

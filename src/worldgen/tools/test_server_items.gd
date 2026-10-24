@@ -584,7 +584,7 @@ func _init() -> void:
 	m._last_mine.clear()
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
-	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 1
+	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 5
 
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(-6.0, 10.0, 0.0))
@@ -1048,12 +1048,13 @@ func _init() -> void:
 		wr._last_mine.clear()
 		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 
-	check(wr.inventory_of(1).wear[0] >= 2 and wr.inventory_of(1).wear[0] <= 3, "each effective blow wears the axe one use (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
+	check(wr.inventory_of(1).wear[0] >= 13 and wr.inventory_of(1).wear[0] <= 16, "each effective blow on rock wears the axe five uses (drops.json tool_wear) (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
 	wr.inventory_of(1).wear[0] = durability - 1
 	wr._last_mine.clear()
 	wr._mined.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
+	wr.inventory_of(1).wear[0] = durability   # a rock blow wears five uses, so the last one can overshoot
 	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
@@ -1974,14 +1975,14 @@ func _init() -> void:
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
 	check(saw_slot >= 0 and saw_slot < 10 and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
 
-	for rid in ["stone_hammer", "stone_adze"]:
+	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}
 
 		for rn in hs.recipes.numbers():
 			if hs.recipes.recipe(rn)["id"] == rid:
 				rec = hs.recipes.recipe(rn)
 
-		var live: bool = not rec.is_empty() and rec["station"] == "workbench"
+		var live: bool = not rec.is_empty()
 
 		for row in rec.get("needs", []):
 			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
