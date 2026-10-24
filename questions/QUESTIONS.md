@@ -28,13 +28,6 @@ Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound so
 Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
 [test]
 
-## held-tools-790 | Do held tools now look like the ground ones?
-Note: 1. Pull branch claude/kathleen-held-tools.
-Note: 2. Hold stone axe, pickaxe, hoe, spade, knife, spear in turn, first person; one picture each, plus the same axe lying on the ground.
-Note: 3. Check the blade faces the right way and the hand grips the handle end.
-Note: Recommendation: Yes: the hand now draws the same model as the ground.
-[picture]
-
 ## weight-fantasy | What should the magic and fantasy materials weigh?
 Note: Plain words: I cannot look up real weights for made-up things. Type a weight in kg for each in the notes box, or write 'ok' to keep mine.
 Note: 1. magic tonic 0.2 kg (a vial)  2. lantern dew 0.1  3. pilgrim's cup water 0.1  4. everember sap 0.1  5. tidecrown pearls 0.01  6. gloaming star, echo moss, frostglass petals, gloomthistle down 0.01 each  7. hearthwood logs 15 (a short log)  8. witness tree log 45 (shoulder log)
