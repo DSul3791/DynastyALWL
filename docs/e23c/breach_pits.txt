@@ -1,0 +1,115 @@
+  gullies: 19918, dead ends: 0
+  breach: lake level 316.3 m, outlet world 60560,61984, 7 cells, deepest cut 2.9 m
+  breach: lake level 320.4 m, outlet world 60568,62088, 8 cells, deepest cut 2.2 m
+  breach: lake level 322.3 m, outlet world 60208,62456, 1 cells, deepest cut 0.0 m
+  breach: lake level 322.1 m, outlet world 60152,62520, 1 cells, deepest cut 0.0 m
+  breach: lake level 322.6 m, outlet world 60240,62456, 1 cells, deepest cut 0.0 m
+  breach: lake level 321.3 m, outlet world 60064,62552, 1 cells, deepest cut 0.0 m
+  breach: lake level 369.7 m, outlet world 59864,63400, 1 cells, deepest cut 0.0 m
+  breach: lake level 373.2 m, outlet world 59920,63400, 1 cells, deepest cut 0.0 m
+  breach: lake level 372.0 m, outlet world 59864,63608, 1 cells, deepest cut 0.0 m
+  breach: lake level 97.6 m, outlet world 55408,64392, 4 cells, deepest cut 0.0 m
+  breach: lake level 77.2 m, outlet world 59632,66752, 1 cells, deepest cut 0.0 m
+  breach: lake level 94.8 m, outlet world 58080,68432, 1 cells, deepest cut 0.0 m
+  breach: lake level 46.1 m, outlet world 53592,68624, 7 cells, deepest cut 0.3 m
+  breach: lake level 591.3 m, outlet world 55720,68760, 6 cells, deepest cut 13.7 m
+  breach: lake level 591.8 m, outlet world 55736,68784, 8 cells, deepest cut 13.1 m
+  breach: lake level 101.7 m, outlet world 53016,69464, 2 cells, deepest cut 0.0 m
+  breach: lake level 95.0 m, outlet world 47984,69584, 1 cells, deepest cut 0.0 m
+  breach: lake level 898.6 m, outlet world 55464,69776, 1 cells, deepest cut 0.0 m
+  breach: lake level 100.3 m, outlet world 51064,69872, 1 cells, deepest cut 0.0 m
+  breach: lake level 179.7 m, outlet world 52376,70248, 1 cells, deepest cut 0.0 m
+  breach: lake level 847.5 m, outlet world 54064,70936, 1 cells, deepest cut 0.0 m
+  breach: lake level 966.0 m, outlet world 54536,71672, 1 cells, deepest cut 0.0 m
+  breach: lake level 673.5 m, outlet world 53784,72144, 1 cells, deepest cut 0.0 m
+  breach: lake level 929.3 m, outlet world 54904,72440, 1 cells, deepest cut 0.0 m
+  breach: lake level 671.5 m, outlet world 54288,72752, 1 cells, deepest cut 0.0 m
+  breach: lake level 629.7 m, outlet world 54104,72936, 1 cells, deepest cut 0.0 m
+  breach: lake level 640.4 m, outlet world 54248,73080, 1 cells, deepest cut 0.0 m
+  breach: lake level 611.8 m, outlet world 54976,73552, 1 cells, deepest cut 0.0 m
+  breach: lake level 608.8 m, outlet world 54984,73608, 1 cells, deepest cut 0.0 m
+  breach: lake level 605.2 m, outlet world 54936,73632, 1 cells, deepest cut 0.0 m
+  breach: lake level 88.0 m, outlet world 58336,74072, 7 cells, deepest cut 0.0 m
+  breach: lake level 90.4 m, outlet world 58200,74176, 13 cells, deepest cut 0.4 m
+  breach: lake level 84.3 m, outlet world 57808,74304, 21 cells, deepest cut 0.1 m
+  breach: lake level 97.4 m, outlet world 57224,74352, 2 cells, deepest cut 0.0 m
+  breach: lake level 92.2 m, outlet world 58176,74360, 7 cells, deepest cut 0.2 m
+  breach: lake level 93.9 m, outlet world 58088,74424, 4 cells, deepest cut 0.1 m
+  breach: lake level 114.1 m, outlet world 56744,75000, 1 cells, deepest cut 0.0 m
+  breach: lake level 14.0 m, outlet world 53480,75304, 1 cells, deepest cut 0.0 m
+  breach: lake level 77.5 m, outlet world 55584,75624, 15 cells, deepest cut 2.7 m
+  breach: lake level 177.7 m, outlet world 61504,79472, 11 cells, deepest cut 0.3 m
+  breach: lake level 173.0 m, outlet world 62040,79752, 6 cells, deepest cut 8.1 m
+  breach: 41 lakes, 289 cells cut, deepest cut 13.7 m
+  pit: floor 203.4 m rim 205.9 m at world 59608,62400, 32 cells, deepest cut 5.2 m
+  pit: floor 70.1 m rim 72.2 m at world 58560,68512, 123 cells, deepest cut 5.5 m
+  pit: floor 31.3 m rim 33.9 m at world 52208,69336, 51 cells, deepest cut 4.8 m
+  pit: floor 46.6 m rim 49.2 m at world 52232,69488, 78 cells, deepest cut 8.5 m
+  pit: floor 594.8 m rim 597.8 m at world 53320,70552, 51 cells, deepest cut 5.4 m
+  pit: floor 206.8 m rim 209.9 m at world 51888,70560, 31 cells, deepest cut 8.9 m
+  pit: floor 564.7 m rim 566.9 m at world 52960,70712, 34 cells, deepest cut 4.0 m
+  pit: floor 573.0 m rim 575.8 m at world 53016,70784, 39 cells, deepest cut 4.2 m
+  pit: floor 890.9 m rim 893.1 m at world 54416,70896, 56 cells, deepest cut 6.6 m
+  pit: floor 819.2 m rim 821.7 m at world 54120,70976, 118 cells, deepest cut 7.8 m
+  pit: floor 599.5 m rim 604.0 m at world 56160,70976, 94 cells, deepest cut 8.3 m
+  pit: floor 636.2 m rim 638.3 m at world 53576,71976, 36 cells, deepest cut 3.4 m
+  pit: floor 637.7 m rim 639.8 m at world 54032,72224, 45 cells, deepest cut 4.6 m
+  pit: floor 574.7 m rim 577.6 m at world 53760,72480, 40 cells, deepest cut 5.7 m
+  pit: floor 614.7 m rim 617.2 m at world 54280,73032, 87 cells, deepest cut 4.8 m
+  pit: floor 579.2 m rim 581.7 m at world 54816,73328, 80 cells, deepest cut 4.3 m
+  pit: floor 559.6 m rim 562.4 m at world 54688,73416, 40 cells, deepest cut 5.4 m
+  pit: floor 83.3 m rim 85.3 m at world 53016,73632, 64 cells, deepest cut 14.3 m
+  pit: floor 557.9 m rim 562.3 m at world 55240,73760, 39 cells, deepest cut 7.6 m
+  pit: floor 548.6 m rim 552.0 m at world 55216,73800, 17 cells, deepest cut 12.9 m
+  pit: floor 192.5 m rim 196.4 m at world 54824,74136, 102 cells, deepest cut 8.0 m
+  pit: floor 85.2 m rim 87.4 m at world 57392,74192, 111 cells, deepest cut 4.6 m
+  pit: floor 192.9 m rim 195.8 m at world 55064,74232, 32 cells, deepest cut 7.1 m
+  pit: floor 86.2 m rim 91.5 m at world 57248,74312, 135 cells, deepest cut 5.6 m
+  pit: floor 195.3 m rim 197.7 m at world 55736,74368, 51 cells, deepest cut 5.5 m
+  pit: floor 145.3 m rim 149.1 m at world 54992,74384, 45 cells, deepest cut 11.1 m
+  pit: floor 148.2 m rim 151.9 m at world 55848,74552, 45 cells, deepest cut 7.3 m
+  pit: floor 82.8 m rim 85.5 m at world 54584,74640, 44 cells, deepest cut 8.7 m
+  pit: floor 64.2 m rim 66.8 m at world 54568,74792, 72 cells, deepest cut 10.3 m
+  pit: floor 99.8 m rim 102.5 m at world 55568,74968, 48 cells, deepest cut 5.6 m
+  pit: floor 62.7 m rim 65.6 m at world 55216,75600, 105 cells, deepest cut 15.9 m
+  pit: floor -15.4 m rim -10.4 m at world 62520,77936, 441 cells, deepest cut 13.9 m
+  pit: floor -10.5 m rim -8.1 m at world 62208,78008, 476 cells, deepest cut 9.2 m
+  pit: floor 171.3 m rim 173.4 m at world 61512,79480, 210 cells, deepest cut 6.4 m
+  pit: floor 167.4 m rim 170.7 m at world 62104,79752, 152 cells, deepest cut 5.3 m
+  pit: floor 54.8 m rim 57.7 m at world 47576,68704, 71 cells, deepest cut 8.7 m
+  pit: floor 171.1 m rim 173.4 m at world 52368,70328, 91 cells, deepest cut 3.8 m
+  pit: floor 599.6 m rim 603.9 m at world 56152,70976, 4 cells, deepest cut 3.2 m
+  pit: floor 599.2 m rim 603.2 m at world 56160,70976, 84 cells, deepest cut 0.3 m
+  pit: floor 598.9 m rim 602.9 m at world 56168,70976, 77 cells, deepest cut 0.3 m
+  pit: floor 598.5 m rim 603.3 m at world 56176,70984, 70 cells, deepest cut 0.3 m
+  pit: floor 598.2 m rim 604.1 m at world 56176,70992, 63 cells, deepest cut 0.3 m
+  pit: floor 48.5 m rim 51.0 m at world 52560,73400, 76 cells, deepest cut 19.2 m
+  pit: floor 48.2 m rim 50.9 m at world 52552,73408, 62 cells, deepest cut 0.3 m
+  pit: floor 65.5 m rim 67.7 m at world 58040,73424, 121 cells, deepest cut 2.0 m
+  pit: floor 65.5 m rim 67.7 m at world 58032,73432, 5 cells, deepest cut 1.9 m
+  pit: floor 83.4 m rim 87.9 m at world 53024,73624, 6 cells, deepest cut 2.0 m
+  pit: floor 83.0 m rim 87.7 m at world 53016,73632, 56 cells, deepest cut 0.3 m
+  pit: floor 82.6 m rim 86.5 m at world 53008,73640, 49 cells, deepest cut 0.3 m
+  pit: floor 74.2 m rim 76.3 m at world 57832,73872, 134 cells, deepest cut 2.9 m
+  pit: floor 74.3 m rim 76.6 m at world 57816,73880, 11 cells, deepest cut 3.0 m
+  pit: floor 85.3 m rim 90.0 m at world 57360,74208, 141 cells, deepest cut 0.3 m
+  pit: floor 86.4 m rim 92.2 m at world 57240,74336, 14 cells, deepest cut 6.0 m
+  pit: floor 86.5 m rim 90.1 m at world 57224,74352, 12 cells, deepest cut 6.9 m
+  pit: floor 150.2 m rim 152.3 m at world 55000,74360, 9 cells, deepest cut 4.2 m
+  pit: floor 149.8 m rim 152.5 m at world 54992,74368, 4 cells, deepest cut 0.3 m
+  pit: floor 143.8 m rim 146.8 m at world 54992,74376, 62 cells, deepest cut 6.0 m
+  pit: floor 64.3 m rim 67.2 m at world 54568,74784, 4 cells, deepest cut 2.0 m
+  pit: floor 63.9 m rim 67.6 m at world 54568,74792, 66 cells, deepest cut 0.3 m
+  pit: floor 63.6 m rim 66.0 m at world 54568,74800, 60 cells, deepest cut 0.3 m
+  pit: floor 128.6 m rim 131.9 m at world 57192,75152, 60 cells, deepest cut 15.7 m
+  pit: floor 20.5 m rim 22.8 m at world 54328,75336, 223 cells, deepest cut 4.8 m
+  pit: floor 20.2 m rim 23.2 m at world 54312,75352, 194 cells, deepest cut 0.3 m
+  pit: floor 19.8 m rim 22.8 m at world 54312,75360, 198 cells, deepest cut 0.3 m
+  pit: floor 19.9 m rim 22.7 m at world 54312,75368, 20 cells, deepest cut 4.2 m
+  pit: floor 71.3 m rim 73.7 m at world 55392,75576, 134 cells, deepest cut 13.4 m
+  pit: floor 71.4 m rim 74.0 m at world 55400,75576, 4 cells, deepest cut 1.5 m
+  pit: floor 74.6 m rim 76.7 m at world 55552,75600, 103 cells, deepest cut 2.4 m
+  pit: floor 166.9 m rim 170.0 m at world 62128,79744, 112 cells, deepest cut 0.3 m
+  pit: floor 167.1 m rim 171.8 m at world 62104,79752, 38 cells, deepest cut 0.3 m
+  pit: floor 167.2 m rim 169.2 m at world 62096,79760, 5 cells, deepest cut 4.2 m
+  pits: 71 drained, 16 left (cut too deep), 5667 cells cut, deepest cut 19.2 m

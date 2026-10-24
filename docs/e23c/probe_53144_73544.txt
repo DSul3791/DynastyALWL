@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+settler places 267 springs on tile 3,4; flow map read
+seam east (tile 4,4): neighbour not settled
+seam west (tile 2,4): neighbour not settled
+seam south (tile 3,5): neighbour not settled
+seam north (tile 3,3): neighbour not settled
+probe from sample 883,1513 (x 53144 z 73544)
+  step 0 x 53144 z 73544 ground 92.40 class 0 depth 5.550 drainage 0.00 km2
+  (a low point: nothing lower around it)
+  spring at x 53032 z 73624: 10.0 m3/s, 17 cells from the probe
+  spring at x 53312 z 73720: 1.0 m3/s, 30 cells from the probe

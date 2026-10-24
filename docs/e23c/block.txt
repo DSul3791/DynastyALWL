@@ -1,0 +1,14 @@
+settle 3,4: settle done after 8400 ticks (stored water steady): started with 5212986 m3, springs supplied 5600709 m3, stored now 1453341 m3, to sea/edge 9307279 m3, dried 13394 m3, unaccounted 39680 m3 film floor: 0 river cells raised, 0 m3 added (off)  (342 s)
+stitch done: 1 tiles read, 0 edge cells changed in 0 tiles
+seam east (tile 4,4): neighbour not settled
+seam west (tile 2,4): neighbour not settled
+seam south (tile 3,5): neighbour not settled
+seam north (tile 3,3): neighbour not settled
+river continuity: 31533 painted river cells above the sea, 55.0% carry water (0.12 m or more), 18.9% only a film, 26.0% dry
+river_settle_report tile 3,4: 97 water bodies of 60+ cells, 60 end inland
+     30 CLASS DOWNHILL OPEN 
+      2 CLASS FED POND, RIVER OUT STILL DRY 
+      1 CLASS FULL BUT STOPPED 
+      1 CLASS NOT FULL 
+     26 CLASS STEEP FALL 
+all output in /e/Software/godotDev/island_world_e23c5f99/block
