@@ -163,6 +163,29 @@ func _collect(data, depth: PackedFloat32Array, side: int, start: int, body: Pack
 	return members
 
 
+# Why the feeder rule skipped this body: the classes of its cells, the best outlet flow the rule sees from any of its cells (reach 20), and the nearest
+# spring in cells (the rule needs at least near_cells = 30 to add one).
+func _why_unfed(data, side: int, members: PackedInt32Array) -> String:
+	var lake: int = 0
+	var river: int = 0
+	var outlet: float = 0.0
+
+	for k in members:
+		lake += 1 if data.water_class[k] == WaterSettler.LAKE else 0
+		river += 1 if data.water_class[k] == WaterSettler.RIVER else 0
+
+		if _flow.size() == data.heights.size() and data.water_class[k] == WaterSettler.LAKE:
+			outlet = maxf(outlet, WaterSettler._outlet_flow(data, _flow, side, k % side, floori(float(k) / float(side)), 20))
+
+	var nearest: float = INF
+
+	for k in members:
+		for n in range(_spring_cells.size()):
+			nearest = minf(nearest, Vector2(float(k % side - _spring_cells[n] % side), float(floori(float(k) / float(side)) - floori(float(_spring_cells[n]) / float(side)))).length())
+
+	return "[diag: %d lake cells, %d river cells, best outlet flow %.0f, nearest spring %.0f cells]" % [lake, river, outlet, nearest]
+
+
 # Hand-off at the tile borders (pad step 6): the edge row/column is shared with the neighbour tile, so settled depth there must match. Per border: wet
 # cells on one side only, and the biggest depth difference, or "neighbour not settled" when its .water file is missing.
 func _seams(tile: Vector2i, depth: PackedFloat32Array, side: int) -> void:
@@ -250,7 +273,7 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 	elif carries == "no painted river below":
 		kind = "NATURAL POND (full at its rim, no painted river runs out of it: correct as it is)"
 	elif missing <= 0.1 * fill:
-		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these)"
+		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these) " + _why_unfed(data, side, members)
 	else:
 		kind = "FULL BUT STOPPED (spill %.1f m above the end, water level %.1f vs rim %.1f: check the spill cell)" % [rim - ground_end, water_end, rim]
 
