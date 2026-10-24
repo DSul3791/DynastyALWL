@@ -27,10 +27,3 @@ Note: 1. After the build that has branch claude/kathleen-wind-soft, stand in an 
 Note: 2. Listen for 1 minute with nothing else loud near. Does the wind sound soft and airy (yes) or like waves or surf (no)?
 Note: 3. Also stand 150 m from a waterfall: is the waterfall itself the surf-like sound?
 [test]
-
-## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
-Note: 1. Pull branch claude/kathleen-forest-bed and press F6.
-Note: 2. Stand in the woods, away from water, for one minute in summer, then in winter (Admin season).
-Note: 3. You should hear separate leaf rustles, a few far-off birds, and calm between. Anything like a steady wash or surf?
-Note: Recommendation: Yes it worked: no steady noise is left in the bed, only rustles and far birds with calm between.
-[test]
