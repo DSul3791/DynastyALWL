@@ -245,6 +245,8 @@ var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (d
 var _remains_check_in: float = 0.0
 var _energy_sent: Dictionary = {}
 var _sleep_cfg: Dictionary = {}     # data/items/sleep.json
+var _bed_cfg: Dictionary = {}       # data/items/bed.json (the rough bed's function)
+var _bed_cache: Dictionary = {}     # peer -> {"id": world id of the bed under them or 0, "until": msec of the next look}
 var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player who held Z); {rested: seconds with no strain}
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
@@ -328,6 +330,8 @@ func setup(item_table, store_dir: String) -> void:
 	_carcass_cfg = carcass_parsed if typeof(carcass_parsed) == TYPE_DICTIONARY else {}
 	var death_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/death.json"))
 	_death_cfg = death_parsed if typeof(death_parsed) == TYPE_DICTIONARY else {}
+	var bed_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/bed.json"))
+	_bed_cfg = bed_parsed if typeof(bed_parsed) == TYPE_DICTIONARY else {}
 	var sleep_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/sleep.json"))
 	_sleep_cfg = sleep_parsed if typeof(sleep_parsed) == TYPE_DICTIONARY else {}
 	var dig_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
@@ -459,6 +463,7 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
+	_bed_cache.erase(peer)
 	_zone_sent.erase(peer)
 	_zone_cand.erase(peer)
 	_zone_pos.erase(peer)
@@ -4372,7 +4377,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 	elif _asleep.has(peer):
 		e += lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0)) * hours
 	elif stance == 3:
-		e += float(rec.get("lie", 8.3)) * hours
+		e += float(rec.get("sleep", 12.5) if on_good_bed(peer) else rec.get("lie", 8.3)) * hours
 	elif stance == 2 and e < float(_energy_cfg.get("sit_cap", 75.0)):
 		e = minf(e + float(rec.get("sit", 9.4)) * hours, float(_energy_cfg.get("sit_cap", 75.0)))
 
@@ -4629,12 +4634,83 @@ func sleep_eta(peer: int) -> float:
 
 
 # 1 under a roof or crown, the open-dry value in the open, -1 when rain reaches the sleeper (cannot sleep there).
+# The rough bed under a lying player (bed.json): the world id of the nearest placed rough_bed within reach, or 0. Looked up at most every
+# recheck_s; a bed that is gone (taken up, destroyed) is dropped from the cache at once, so nothing keeps a sleeper "in bed".
+func _bed_of(peer: int) -> int:
+	if _bed_cfg.is_empty() or int(_stance.get(peer, 0)) != 3 or not _peer_pos.has(peer):
+		_bed_cache.erase(peer)
+		return 0
+
+	var now: int = Time.get_ticks_msec()
+	var entry: Dictionary = _bed_cache.get(peer, {})
+
+	if not entry.is_empty() and int(entry["id"]) != 0 and not _items.has(int(entry["id"])):
+		entry = {}
+
+	if not entry.is_empty() and now < int(entry["until"]):
+		return int(entry["id"])
+
+	var here: Vector3 = _peer_pos[peer]
+	var reach: float = float(_bed_cfg.get("reach_m", 1.2))
+	var best: int = 0
+	var best_d: float = INF
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or str(it["struct"].get("kind", "")) != "rough_bed":
+			continue
+
+		var d: float = Vector2(it["pos"].x - here.x, it["pos"].z - here.z).length()
+
+		if d <= reach and d < best_d and absf(it["pos"].y - here.y) < 3.0:
+			best = int(id)
+			best_d = d
+
+	_bed_cache[peer] = {"id": best, "until": now + int(float(_bed_cfg.get("recheck_s", 1.5)) * 1000.0)}
+	return best
+
+
+# A lying player on a rough bed that has cover over it (roof or crown): the only case the bed's advantages apply.
+func on_good_bed(peer: int) -> bool:
+	return _bed_of(peer) != 0 and cover_at.is_valid() and float(cover_at.call(_peer_pos[peer])) > 0.5
+
+
+# True when that good bed stands in a closed room: a roof (cover 2.0, a built one) and walls_needed wall pieces near it. Animals do not sense the sleeper.
+func _bed_room_closed(peer: int) -> bool:
+	if not on_good_bed(peer) or float(cover_at.call(_peer_pos[peer])) < 1.5:
+		return false
+
+	var here: Vector3 = _peer_pos[peer]
+	var radius: float = float(_bed_cfg.get("walls_radius_m", 3.0))
+	var walls: int = 0
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(_structures.get(str(it["struct"].get("kind", "")), {}).get("piece_kind", "")) == "wall" and Vector2(it["pos"].x - here.x, it["pos"].z - here.z).length() <= radius:
+			walls += 1
+
+	return walls >= int(_bed_cfg.get("walls_needed", 3))
+
+
+# How fast food and water drain right now: bed.json drain_mult asleep or lying on a good bed, asleep_ground_mult asleep anywhere else, 1 otherwise.
+func _drain_mult(peer: int) -> float:
+	if _bed_cfg.is_empty():
+		return 1.0
+
+	if on_good_bed(peer):
+		return float(_bed_cfg.get("drain_mult", 0.5))
+
+	return float(_bed_cfg.get("asleep_ground_mult", 1.0)) if _asleep.has(peer) else 1.0
+
+
 func _sleep_quality(peer: int) -> float:
 	var q: Dictionary = _sleep_cfg.get("quality", {})
 	var covered: bool = cover_at.is_valid() and _peer_pos.has(peer) and float(cover_at.call(_peer_pos[peer])) > 0.5
 
 	if covered:
-		return float(q.get("covered", 1.0))
+		return float(_bed_cfg.get("quality", 1.0)) if on_good_bed(peer) else float(q.get("covered", 1.0))
 
 	if rain_now.is_valid() and float(rain_now.call()) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
 		return -1.0
@@ -4652,7 +4728,12 @@ func peer_stances() -> Array:
 	var out: Array = []
 
 	for peer in _peer_pos:
-		out.append(int(_stance.get(peer, 0)))
+		var stance: int = int(_stance.get(peer, 0))
+
+		if stance == 3 and on_good_bed(peer):
+			stance = 5 if _bed_room_closed(peer) else 4   # 4 lying on a covered bed, 5 in a closed room: server_animals reads them as lying, harder to sense
+
+		out.append(stance)
 
 	return out
 
@@ -5086,7 +5167,8 @@ func _vitals_tick(spent: float) -> void:
 			continue
 
 		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
-		var burn: float = burn_per_day * game_s / 86400.0
+		var drain_mult: float = _drain_mult(peer)
+		var burn: float = burn_per_day * game_s / 86400.0 * drain_mult
 		v["fed"] = float(v["fed"]) - burn
 
 		if float(v["fed"]) < 0.0:
@@ -5096,7 +5178,7 @@ func _vitals_tick(spent: float) -> void:
 
 		var thirst: Dictionary = _vitals_cfg.get("thirst", {})
 		var dry_per_day: float = float(thirst.get("rest_ml_day", 1000)) + float(thirst.get("work_ml_day", 1200)) * exertion_of(peer)
-		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0, 0.0)
+		v["wet"] = maxf(float(v["wet"]) - dry_per_day * game_s / 86400.0 * drain_mult, 0.0)
 
 		_warmth_tick(peer, v, spent, game_s)
 		_sick_tick(peer, v, spent, game_s)
@@ -5106,6 +5188,9 @@ func _vitals_tick(spent: float) -> void:
 
 			if _asleep.has(peer):
 				regen *= 1.0 + (float(_sleep_cfg.get("regen_mult", 2.0)) - 1.0) * maxf(_sleep_quality(peer), 0.0)
+
+			if on_good_bed(peer):
+				regen *= float(_bed_cfg.get("regen_mult", 1.0))   # asleep or just lying on it
 
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
@@ -5461,6 +5546,9 @@ func warmth_target(peer: int) -> float:
 			break
 
 	var stress: float = maxf(float(cfg.get("comfort_c", 15.0)) - feels, 0.0)
+
+	if on_good_bed(peer):
+		stress *= 1.0 - float(_bed_cfg.get("warmth_bonus", 0.0))
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
 	if precip > 0.05 and not covered:
@@ -6661,8 +6749,8 @@ func _strain_tick(peer: int, spent: float) -> void:
 			if bool(rest.get("nap", false)):
 				if strain <= float(rest["nap_end"]) + 0.001:
 					_wake(peer, "You wake refreshed")
-			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
-				_wake(peer, "You wake rested")
+			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9 and not on_good_bed(peer):
+				_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
 
 	if state == 2:
 		if float(st["t"]) >= float(cfg.get("faint_s", 8.0)):

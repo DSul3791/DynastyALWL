@@ -343,6 +343,8 @@
 		"crouch_factor": 0.6,
 		"sit_factor": 0.8,
 		"lie_factor": 0.5,
+		"bed_mult": 0.7,
+		"hidden_mult": 0.05,
 		"blind_factor": 0.35,
 		"always_notice_m": 8.0,
 		"los_step_m": 4.0,
