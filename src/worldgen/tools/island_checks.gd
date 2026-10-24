@@ -106,6 +106,10 @@ func _run() -> int:
 	return 1 if _failures > 0 else 0
 
 
+func _quot(a: int, b: int) -> int:
+	return floori(float(a) / float(b))
+
+
 # ---------------------------------------------------------------- output
 
 func _row(name: String, measured: String, limit: String, verdict: String) -> void:
@@ -259,7 +263,6 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 	var peak_m: Vector2 = _elevation.cell_center_m(peak_index % _elevation.size_x, peak_index / _elevation.size_x)
 	print("")
 	print("== %s: %.1f km2, peak %.0f m at %d, %d" % [title, float(island["area_km2"]), float(island["peak_m"]), int(peak_m.x), int(peak_m.y)])
-	var cell_m: float = _elevation.cell_m
 	var heights: PackedFloat32Array = _elevation.heights
 
 	# Relief: spread between the 2nd and 98th percentile of land height.
@@ -547,7 +550,7 @@ func _text(image: Image, x: int, y: int, text: String, color: Color, scale: int)
 		if glyph != "":
 			for bit in range(15):
 				if glyph[bit] == "1":
-					image.fill_rect(Rect2i(cursor + (bit % 3) * scale, y + (bit / 3) * scale, scale, scale), color)
+					image.fill_rect(Rect2i(cursor + (bit % 3) * scale, y + _quot(bit, 3) * scale, scale, scale), color)
 
 		cursor += 4 * scale
 
@@ -596,7 +599,7 @@ func _tile_summits(world_dir: String, fine: Dictionary) -> void:
 			_row("%s summit" % title, "island %d is not in the baked tiles" % island_id, "-", "INFO")
 			continue
 
-		var peak_xz: Vector2 = Vector2(float(fine["origin_x"]) + float(best_index % width) * spacing, float(fine["origin_z"]) + float(best_index / width) * spacing)
+		var peak_xz: Vector2 = Vector2(float(fine["origin_x"]) + float(best_index % width) * spacing, float(fine["origin_z"]) + float(_quot(best_index, width)) * spacing)
 
 		for band in config["summit_plateaus"]:
 			var plateau: Dictionary = _plateau(fine, best_index, float(band["within_m"]))
@@ -624,14 +627,14 @@ func _plateau(fine: Dictionary, top_index: int, within_m: float) -> Dictionary:
 	var stack: PackedInt32Array = PackedInt32Array([top_index])
 	var low_i: int = top_index % width
 	var high_i: int = low_i
-	var low_j: int = top_index / width
+	var low_j: int = _quot(top_index, width)
 	var high_j: int = low_j
 
 	while not stack.is_empty() and window.size() < 400000:
 		var index: int = stack[stack.size() - 1]
 		stack.remove_at(stack.size() - 1)
 		var ci: int = index % width
-		var cj: int = index / width
+		var cj: int = _quot(index, width)
 
 		for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 			var ni: int = ci + offset.x
@@ -1114,7 +1117,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 				lowest_index = index
 
 			var ci: int = index % width
-			var cj: int = index / width
+			var cj: int = _quot(index, width)
 
 			for dj in range(-gap_cells, gap_cells + 1):
 				for di in range(-gap_cells, gap_cells + 1):
@@ -1144,7 +1147,7 @@ func _river_checks(stitched: Dictionary, tile_limits: Dictionary) -> void:
 		if not reaches:
 			ending_inland += 1
 			var descent: String = _descent(grid, map_heights, width, rows, lowest_index, spacing)
-			_row("river ends inland near x %d z %d" % [int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(lowest_index / width) * spacing)],
+			_row("river ends inland near x %d z %d" % [int(origin_x + float(lowest_index % width) * spacing), int(origin_z + float(_quot(lowest_index, width)) * spacing)],
 				"%d river samples, lowest water at %.1f m; %s" % [river_cells, lowest, descent], "reaches sea", "FAIL")
 
 	_row("rivers reach the sea (32 m map)", "%d river bodies, %d end inland" % [bodies, ending_inland], "0 inland", "FAIL" if ending_inland > 0 else "PASS")
@@ -1160,7 +1163,7 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 
 	for step in range(2000):
 		var ci: int = index % width
-		var cj: int = index / width
+		var cj: int = _quot(index, width)
 		var h: float = map_heights[index]
 
 		if h <= 0.0 or grid[index] == 1:
@@ -1186,7 +1189,7 @@ func _descent(grid: PackedByteArray, map_heights: PackedFloat32Array, width: int
 		if best < 0:
 			return "ground stops falling at %.1f m after %.1f km: a closed basin (pit)" % [h, travelled / 1000.0]
 
-		travelled += spacing * (1.414 if best % width != ci and best / width != cj else 1.0)
+		travelled += spacing * (1.414 if best % width != ci and _quot(best, width) != cj else 1.0)
 		index = best
 
 		if grid[index] >= 2 and grid[index] <= 4:
@@ -1308,7 +1311,7 @@ func _route_checks(stitched: Dictionary, tile_limits: Dictionary, spawn: Vector2
 
 		if not is_source:
 			var ci: int = index % width
-			var cj: int = index / width
+			var cj: int = _quot(index, width)
 
 			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 				var ni: int = ci + offset.x
@@ -1327,7 +1330,7 @@ func _route_checks(stitched: Dictionary, tile_limits: Dictionary, spawn: Vector2
 
 		for index in frontier:
 			var ci: int = index % width
-			var cj: int = index / width
+			var cj: int = _quot(index, width)
 
 			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 				var ni: int = ci + offset.x
@@ -1385,7 +1388,7 @@ func _label_landmasses(stitched: Dictionary) -> PackedInt32Array:
 			var index: int = stack[stack.size() - 1]
 			stack.remove_at(stack.size() - 1)
 			var ci: int = index % width
-			var cj: int = index / width
+			var cj: int = _quot(index, width)
 
 			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 				var ni: int = ci + offset.x
@@ -1445,7 +1448,7 @@ func _label_regions(stitched: Dictionary, max_tan: float) -> Dictionary:
 			stack.remove_at(stack.size() - 1)
 			cells += 1
 			var ci: int = index % width
-			var cj: int = index / width
+			var cj: int = _quot(index, width)
 			var h: float = heights[index]
 			sum_i += float(ci)
 			sum_j += float(cj)
