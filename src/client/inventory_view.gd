@@ -148,6 +148,7 @@ var _meshes: Dictionary = {}       # item number -> Mesh
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const AutoPickupScript := preload("res://src/client/auto_pickup.gd")
 
 func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_position: Callable, ground_below: Callable) -> void:
 	net = terrain_net
@@ -198,6 +199,19 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
 	_build_vitals_hud()
+	auto_pickup = AutoPickupScript.new()
+	_auto_label = Label.new()
+	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_auto_label.anchor_top = 0.38
+	_auto_label.anchor_bottom = 0.38
+	_auto_label.offset_top = -30.0
+	_auto_label.offset_bottom = 30.0
+	_auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_auto_label.add_theme_font_size_override("font_size", 36)
+	_auto_label.add_theme_constant_override("outline_size", 8)
+	_auto_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+	_auto_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_auto_label)
 	_prompt = Label.new()
 	# Below the crosshair, top-aligned and wrapping downward; the name (terrain_client.gd _inspect_label) is bottom-aligned above the crosshair.
 	_prompt.anchor_left = 0.0
@@ -646,6 +660,7 @@ func _process_body(_delta: float) -> void:
 	_roll_tick(_delta, now)
 	_snap_tick(now)
 	_hold_e_check()
+	_auto_pickup_tick(now)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -672,6 +687,33 @@ func _process_body(_delta: float) -> void:
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = "Hold Z to sleep"
 
+
+
+# P (terrain_client.gd): auto pickup on or off, announced slightly above the middle of the screen.
+var auto_pickup: RefCounted
+var auto_pickup_blocked: Callable = Callable()   # () -> true while swimming or placing a blueprint (set by the terrain client)
+var _auto_label: Label
+
+
+func toggle_auto_pickup() -> void:
+	_auto_label.text = auto_pickup.toggle(Time.get_ticks_msec())
+
+
+func _auto_pickup_tick(now: int) -> void:
+	if _auto_label != null and _auto_label.text != "":
+		var left: int = auto_pickup.announce_until_msec - now
+		_auto_label.modulate.a = clampf(float(left) / 500.0, 0.0, 1.0)
+
+		if left <= 0:
+			_auto_label.text = ""
+
+	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
+		return
+
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+
+	if id != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
 # Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
@@ -3038,6 +3080,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
+	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -3205,6 +3248,7 @@ func _drop_selected(whole: bool) -> void:
 	var here: Vector3 = _player_position.call()
 	var ground: float = _ground_below.call(here)
 	var at: Vector3 = Vector3(here.x, ground if not is_nan(ground) else here.y - 1.0, here.z)
+	auto_pickup.note_drop(inventory.numbers[_selected], at, Time.get_ticks_msec())   # auto pickup leaves it alone for 15 s
 	net.inventory_action.rpc_id(1, Net.ACT_DROP, _selected, 0, inventory.counts[_selected] if whole else 1, at)
 	_selected = -1
 
@@ -3349,14 +3393,17 @@ func _refresh() -> void:
 
 		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
 
-	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
+	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
+	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
+	var shown_recipes: Array = can + cannot
+	shown_recipes.sort_custom(by_name)
 	can.sort_custom(by_name)
 	cannot.sort_custom(by_name)
 
 	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
-	for r in can + cannot:
+	for r in shown_recipes:
 		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
 		var entry: Button = Button.new()
 		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
@@ -3387,7 +3434,10 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "tripod_pot_kit", "clay_hearth_kit"]
+	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
+
+	for id in admin_ids:
 		var number: int = table.number_of(id)
 
 		if number == 0:

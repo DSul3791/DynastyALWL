@@ -352,6 +352,11 @@
    "color": "#8a6a3a",
    "size": 1.0
   },
+  "shore_net": {
+   "shape": "cloth",
+   "color": "#a89a78",
+   "size": 1.0
+  },
   "fishing_rod": {
    "shape": "rod",
    "color": "#9a9a9e",
@@ -1956,6 +1961,26 @@
    "bits": [
     "#e0b020"
    ]
+  },
+  "rough_bed_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_wall_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "tripod_pot_kit": {
+   "shape": "kit",
+   "color": "#4a3a2a",
+   "size": 1.0
+  },
+  "clay_hearth_kit": {
+   "shape": "kit",
+   "color": "#9a6a4a",
+   "size": 1.0
   }
  }
 }
