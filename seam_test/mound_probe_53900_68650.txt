@@ -1,0 +1,53 @@
+PROBE frame origin 5360,7280 cell 1377,1301
+PROBE r-8     4d--    12d--    15N--    19d--    17d--    42d--    18d--    38d--     4d--    58d--    54d--  5140d--    44d--    45d--     7d--   481d--     1W--
+PROBE r-7     3N--    11N--    14N--    18N--    16N--    24N--    17d--    17d--    37d--     3d--    57d--    53d--  5139d--    43d--    44d--     6d--   479d--
+PROBE r-6     2N--    10N--    13N--    17N--    15N--    23N--     2N--    14d--    16d--    36d--     2d--    56d--    52d--  5138d--    42d--    43d--     5d--
+PROBE r-5     1N--     9N--    12N--    16N--    14N--    22N--     1N--    13N--    15N--    17N--    18d--     1d--    55d--    51d--  5137d--    41d--    42d--
+PROBE r-4     5d--     8N--    11N--    15N--    13N--    11N--    10d--    12N--    14N--     9N--     7d--    17d--     7N--    47d--    50d--  5136d--    40d--
+PROBE r-3     4N--     7N--    10N--    14N--    12N--    10N--     9N--    11N--    13N--     8N--     6N--    16N--     6N--    16N--    30d--    49d--  5135d--
+PROBE r-2     3N--     6N--     9N--    13N--    11N--     9N--     8N--    10N--    12N--     7N--     5N--    15N--     5N--    15N--    15N--    14d--    48d--
+PROBE r-1     2N--     5N--     8N--    12N--    10N--     8N--     7N--     9N--    11N--     6N--     4N--    14N--     4N--    14N--    14N--    13N--    13N--
+PROBE r+0     1N--     4N--     7N--    11N--     9N--     7N--     6N--     8N--    10N--     5N--     3N--    13N--     3N--    13N--    13N--    12N--    12N--
+PROBE r+1     1d--     3N--     6N--    10N--     8N--     6N--     5N--     7N--     9N--     4N--     2N--    12N--     2N--    12N--    12N--    11N--    11N--
+PROBE r+2     1d--     2N--     5N--     9N--     7N--     5N--     4N--     6N--     8N--     3N--     1N--    11N--     1N--    11N--    11N--    10N--    10N--
+PROBE r+3     2d--     1N--     4N--     8N--     6N--     4N--     3N--     5N--     7N--     2N--     1d--     9N--    10d--    10d--     9d--     9d--     7d--
+PROBE r+4     2d--     1d--     3N--     7N--     5N--     3N--     2N--     4N--     6N--     1N--     8d--     9d--     9d--     8d--     8d--     6d--     5d--
+PROBE r+5     3d--     1d--     2N--     6N--     4N--     2N--     1N--     3N--     5N--     7d--     8d--     8d--     7d--     7d--     5d--     4d--     4d--
+PROBE r+6     3d--     2d--     1N--     5N--     3N--     1N--     2d--     4d--     6d--     7d--     7d--     6d--     6d--     4d--     3d--     3d--     3d--
+PROBE r+7     3d--     2d--     1d--     4N--     2N--     1d--     3d--     5d--     6d--     6d--     5d--     5d--     3d--     2d--     2d--     2d--     2d--
+PROBE r+8     3d--     2d--     1d--     3N--     1N--     2d--     4d--     5d--     5d--     4d--     4d--     2d--     1d--     1d--     1d--     1d--     1E--
+PROBE up start world 53920,68584 Q 5140
+PROBE up 0 world 53928,68592 Q 5139
+PROBE up 10 world 53984,68672 Q 4932
+PROBE up 20 world 54056,68696 Q 2191
+PROBE up 30 world 54136,68696 Q 2181
+PROBE up 40 world 54216,68768 Q 1546
+PROBE up 50 world 54296,68800 Q 1054
+PROBE up 60 world 54376,68832 Q 833
+PROBE up 70 world 54456,68856 Q 805
+PROBE up 80 world 54536,68920 Q 692
+PROBE up 90 world 54608,68968 Q 222
+PROBE up 100 world 54688,69024 Q 182
+PROBE up 110 world 54768,69072 Q 140
+PROBE up 120 world 54848,69136 Q 71
+PROBE up 130 world 54928,69184 Q 7
+PROBE down 0 world 53920,68584 Q 5140 land 132.7 bed 132.1
+PROBE down 10 world 53840,68520 Q 5150 land 70.0 bed 69.8
+PROBE down 20 world 53760,68520 Q 6547 c land 56.4 bed 54.8
+PROBE down 30 world 53680,68456 Q 6719 c land 49.3 bed 47.1
+PROBE down 40 world 53600,68408 Q 6748 c land 41.5 bed 40.0
+PROBE down 50 world 53520,68352 Q 7998 c land 37.5 bed 35.7
+PROBE down 60 world 53440,68352 Q 8008 c land 33.9 bed 32.6
+PROBE down 70 world 53360,68320 Q 8027 c land 30.1 bed 28.5
+PROBE down 80 world 53280,68272 Q 8046 c land 23.6 bed 21.6
+PROBE down 90 world 53200,68296 Q 8089 land 20.9 bed 19.0
+PROBE down 100 world 53120,68312 Q 8099 c land 18.0 bed 16.3
+PROBE down 110 world 53040,68288 Q 8109 c land 14.2 bed 12.7
+PROBE down 120 world 52960,68272 Q 8119 land 10.8 bed 9.4
+PROBE down 130 world 52896,68224 Q 9637 c land 7.5 bed 5.9
+PROBE down 140 world 52816,68184 Q 16909 land 6.3 bed 4.4
+PROBE down 150 world 52736,68128 Q 28159 land 3.6 bed 2.1
+PROBE down 160 world 52656,68120 Q 28175 land 2.8 bed 0.5
+PROBE down 170 world 52584,68064 Q 32018 land 0.8 bed -0.6
+PROBE down 178 world 52520,68056 Q 32034 c land -0.3 bed -1.7 END
+PROBE heights land/bed centre row: 181.2/181.2 185.7/185.7 188.8/188.8 190.8/190.8 192.5/192.5 193.5/193.5 193.5/193.5 193.8/193.8 192.1/192.1 190.3/190.3 187.7/187.7 184.8/184.8 182.7/182.7 180.5/180.5 178.2/178.2 176.7/176.7 177.0/176.5
