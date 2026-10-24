@@ -23,11 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## fish-stock-schools | Keep fish as hidden stock with moving schools, not swimming creatures?
-Note: Fish stay a number per area with schools that drift; no swimming fish bodies to simulate.
-Note: Recommendation: Yes because it costs almost nothing per frame and still lets players read the water.
-[check]
-
 ## fish-salmon-autumn | Make the salmon run autumn-only, trout the rest of the year?
 Note: Salmon only in rivers in autumn; trout and perch the rest of the year.
 Note: Recommendation: Yes because a season gives a reason to return to the river.
