@@ -78,3 +78,6 @@ tech/BEST_PRACTICES.md is the guideline. The Guru (Tyler_Guru_SenDev) checks and
 
 ## HOW WE WORK summary (2026-10-22)
 One-page map of the team, BP-T22 to T25 (cross-talk, priority, ideas, design reading), the approved infrastructure changes and the restart plan: `tech/HOW_WE_WORK.md`. Keep it in step with this file.
+
+## PICTURES (Tyler 24 Oct 2026)
+PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goes to David3 on the server box); the pictures live on branch claude/box-results: results/PICTURES_INDEX.md (what exists), results/PICTURE_REQUESTS.md (what is asked), a README in each folder. Read there first; do not ask Mike for pictures while Dave's PC is busy.

@@ -27,3 +27,6 @@ Starts when David3 has finished its first test (selftest + gitcheck pass, one te
 - NOT yet copied from MikeW's recipe: stitch.txt, breach_pits.txt, river_settle_report. David3 and MikeW compare the first David3 bake against a MikeW bake of the same commit (tiles byte-identical) before I merge any David3 bake.
 - Space: a bake commit adds about 55 MB tiles + 1 MB water; the second clone about 2 GB; each run folder is small. `run_jobs.sh cleanup` runs after every bake: keeps the newest 40 run folders and at most 40 GB in /out, touches nothing outside /data/godot/box.
 - Same guards: PAUSE file, load 6 or more waits, claude/* branches only.
+
+## Pictures
+PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goes to David3 on the server box); the pictures live on branch claude/box-results: results/PICTURES_INDEX.md (what exists), results/PICTURE_REQUESTS.md (what is asked), a README in each folder. Read there first; do not ask Mike for pictures while Dave's PC is busy.
