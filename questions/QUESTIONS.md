@@ -92,11 +92,3 @@ Note: Recommendation: Yes because players get a chance to react. Why not: less d
 Note: Applied in the game client from water speeds; server checks damage.
 Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
 [check]
-
-## server-for-tests | Use your 24-hour Ubuntu game server (in its own Docker container) for Mike's tests, with limits that protect your two games?
-Priority: 8
-Note: Plan: tech/SERVER_FOR_TESTS.md. Only checks that need no graphics card run there. Bakes, pictures and frame time stay on Mike's PC.
-Note: Rules: a separate container with CPU and memory caps, never touching your game containers, runs only when you switch it on.
-Note: Please answer in the Why box: 1. CPU, RAM and free disk? 2. Any graphics card? 3. Peak players and busy hours? 4. OK to leave it running when you allow?
-Note: Recommendation: Yes because the server is on 24 hours and lightly loaded, and the caps and your on/off switch keep your games safe.
-[check]
