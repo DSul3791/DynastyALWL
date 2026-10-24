@@ -19,3 +19,4 @@ Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop
 - 12:10 UTC 24 Oct Guru_003: build 784 merged (gates 6+7, 5 branches).
 - 12:35 UTC 24 Oct Guru_003: build 785 merged (biome lookup, protocol 76).
 - 13:15 UTC 24 Oct Guru_003: build 786 merged (vent anchor, protocol 77).
+- 13:25 UTC 24 Oct Guru_003: build 787 merged (rig-item, tools batch 1).
