@@ -1,0 +1,13 @@
+# Mike's batch queue (tools/mike_batch.sh reads this). One job per line; # starts a comment. Lines run top to bottom.
+#   branch NAME               merge origin/claude/NAME into the throwaway batch branch (stops the batch on a conflict, says which)
+#   test SCRIPT               headless src/worldgen/tools/SCRIPT.gd, pass when exit 0 and no "N fail" / "FAIL" line
+#   rig LABEL | ARGS          tools/look_rig.sh ARGS --out <batch folder>; pass when the rig exits 0 and prints no FAIL / ERROR / SCRIPT line
+# Everything runs in the second clone, never Dave's folder. Nothing is committed or pushed.
+branch steve-worn-attach
+branch steve-smoke-row
+branch steve-river-settle
+test test_tunnel_watch
+test test_worn_sync
+test test_water_flow
+test validate_items
+rig frametime Low | --frametime 20 --quality 0 --name frametime_low
