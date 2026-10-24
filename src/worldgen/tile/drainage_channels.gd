@@ -40,6 +40,7 @@ const SURFACE_SHARE := 0.6           # water stands this share of the centre dep
 var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
 var surface: PackedFloat32Array = PackedFloat32Array()         # water level in channel cells, NAN elsewhere
+var basin_mask: PackedByteArray = PackedByteArray()          # 1 inside a carved pond or lake bowl (the pit pass leaves these alone)
 var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
@@ -687,6 +688,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var spacing: int = maxi(int(float(rules.get("lake_spacing_m", 1500.0)) / cell_m), 1)
 	var pond_slope: float = tan(deg_to_rad(POND_MAX_SLOPE_DEG))
 	var lake_slope: float = tan(deg_to_rad(LAKE_MAX_SLOPE_DEG))
+	basin_mask.resize(size * size)
+	basin_mask.fill(0)
 	var sites: Array = []   # [index, catchment km2, is_lake]
 	var lake_pick: Dictionary = {}   # block -> [slope, index]
 	var steep: int = 0
@@ -775,6 +778,9 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 				if wanted < bed[neighbor]:
 					bed[neighbor] = wanted
+
+				if t <= 1.0:
+					basin_mask[neighbor] = 1
 
 				if t <= 1.0 and bed[neighbor] < lip - 0.05:
 					wet += 1

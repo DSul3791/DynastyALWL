@@ -365,7 +365,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 			for column in range(ring, samples - ring):
 				var index: int = row * samples + column
 
-				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment:
+				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment or channels.basin_mask[index] == 1:
 					continue
 
 				var floor_m: float = channels.bed[index]
