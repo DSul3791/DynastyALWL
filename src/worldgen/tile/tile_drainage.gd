@@ -47,7 +47,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
 	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
-	_breach_outlets(fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
+	_breach_outlets(water, fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -315,7 +315,7 @@ static func _probe(water, fill, flow, channels, land: PackedFloat32Array, sample
 # from the real ground (erosion, scree, ledges), so the outlet path may cross a crest higher than the water. Walk the outlet
 # path downstream and cut a channel whose bed falls from just under the lake level at `breach_fall_per_cell` until the real
 # ground is below it, three cells wide. Water then has a way out and the painted outlet is a river, not a dry ridge.
-static func _breach_outlets(fill, flow, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, lake_min_catchment: float, rules: Dictionary) -> void:
+static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, lake_min_catchment: float, rules: Dictionary) -> void:
 	var drop: float = float(rules.get("breach_drop_m", 0.3))
 	var fall: float = float(rules.get("breach_fall_per_cell", 0.04))
 	var depth_m: float = float(rules.get("breach_water_m", 0.5))
@@ -324,6 +324,11 @@ static func _breach_outlets(fill, flow, channels, land: PackedFloat32Array, sea:
 	if fall < 0.0 or longest <= 0:
 		return
 
+	var breached: int = 0
+	var cells_cut: int = 0
+	var deepest_cut: float = 0.0
+	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
+
 	for lake in fill.lakes:
 		var at: int = int(lake["outlet"])
 
@@ -331,6 +336,9 @@ static func _breach_outlets(fill, flow, channels, land: PackedFloat32Array, sea:
 			continue
 
 		var level: float = float(lake["level"])
+		var first: int = at
+		var lowered: float = 0.0
+		var length: int = 0
 
 		for step in range(longest):
 			if sea[at] == 1:
@@ -357,16 +365,28 @@ static func _breach_outlets(fill, flow, channels, land: PackedFloat32Array, sea:
 					var wanted: float = target + (0.0 if dz == 0 and dc == 0 else 0.4)
 
 					if channels.bed[neighbor] > wanted:
+						lowered = maxf(lowered, channels.bed[neighbor] - wanted)
 						channels.bed[neighbor] = wanted
+						cells_cut += 1
 
 					var surface: float = wanted + depth_m
 
 					if is_nan(channels.surface[neighbor]) or channels.surface[neighbor] < surface:
 						channels.surface[neighbor] = surface
 
+			length += 1
 			var next: int = fill.receiver[at]
 
 			if next < 0:
 				break
 
 			at = next
+
+		breached += 1
+		deepest_cut = maxf(deepest_cut, lowered)
+
+		if verbose:
+			@warning_ignore("integer_division")
+			print("  breach: lake level %.1f m, outlet world %d,%d, %d cells, deepest cut %.1f m" % [level, (first % samples + water._origin_sx) * 8, (first / samples + water._origin_sz) * 8, length, lowered])
+
+	print("  breach: %d lakes, %d cells cut, deepest cut %.1f m" % [breached, cells_cut, deepest_cut])
