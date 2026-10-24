@@ -50,6 +50,7 @@ var zeroed_blocks: int = 0
 var _refused_key: Vector4i = Vector4i(0, 0, 0, -1)   # the last block refused (damaged, zeroed, not ready): _load asks again
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
 var drop_blocks_left: int = 0           # test only (--drop-ground-blocks N): the first N blocks the engine asks for always fail, as a refused block does, so the join hang can be forced
+var drop_xz: Vector2 = Vector2(NAN, NAN)  # test only: when finite, only blocks whose column holds this x,z (at any LOD) are dropped; the engine loads the coarse far blocks first, so "the first N" alone never reached the ground under the player
 var _dropped: Dictionary = {}         # Vector4i -> true: the blocks dropped for that test
 var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
 var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
@@ -151,7 +152,10 @@ func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 func _drop_for_test(key: Vector4i) -> bool:
 	_mutex.lock()
 
-	if not _dropped.has(key) and drop_blocks_left > 0:
+	var size: float = float(16 << key.w)
+	var in_column: bool = not drop_xz.is_finite() or (key.x == int(floor(drop_xz.x / size)) and key.z == int(floor(drop_xz.y / size)))
+
+	if in_column and not _dropped.has(key) and drop_blocks_left > 0:
 		drop_blocks_left -= 1
 		_dropped[key] = true
 		print("client: test drop (--drop-ground-blocks) block %s LOD %d, %d left" % [str(Vector3i(key.x, key.y, key.z)), key.w, drop_blocks_left])

@@ -5,8 +5,9 @@ extends RefCounted
 # ready and the stream has nothing outstanding, the client starts a new stream (same cache, nothing cleared) and the engine asks for everything again.
 #   var watchdog := GroundWatchdog.new()
 #   match watchdog.step(now_msec, waiting_for_ground, stream.pending()):   "retry": restream; "give_up": show the failure; "": nothing
-# Numbers (Tyler, 24 Oct): idle 8 s, a retry at most every 10 s, 6 tries; a busy stream (blocks outstanding) that still gives no ground after BUSY_S is retried
-# too, every BUSY_RETRY_S.
+# Numbers (Tyler, 24 Oct): idle 8 s, a retry at most every 10 s, 6 tries. "Idle" is nothing outstanding for 8 s, or no block arrived for 8 s (after the
+# first one: a server still reading its tiles is the existing "not sending ground" guard's business). A stream that keeps delivering but still gives
+# no ground after BUSY_S is retried too, every BUSY_RETRY_S. (Mike's run: pending flickers 0..1 while thousands of blocks arrive, so "pending is 0" alone is not idle.)
 
 const IDLE_S := 8.0
 const EVERY_S := 10.0
@@ -18,10 +19,12 @@ var tries: int = 0
 var _wait_start_msec: int = -1
 var _idle_since_msec: int = -1
 var _last_try_msec: int = -1
+var _last_received: int = -1
+var _progress_msec: int = -1
 
 
 # One call per frame. Returns "retry" (start a new stream), "give_up" (the sixth retry did not help) or "".
-func step(now_msec: int, waiting: bool, pending: int) -> String:
+func step(now_msec: int, waiting: bool, pending: int, received: int = 0) -> String:
 	if not waiting:
 		_wait_start_msec = -1
 		_idle_since_msec = -1
@@ -29,6 +32,11 @@ func step(now_msec: int, waiting: bool, pending: int) -> String:
 
 	if _wait_start_msec < 0:
 		_wait_start_msec = now_msec
+		_progress_msec = now_msec
+
+	if received != _last_received:
+		_last_received = received
+		_progress_msec = now_msec
 
 	if pending > 0:
 		_idle_since_msec = -1
@@ -37,6 +45,7 @@ func step(now_msec: int, waiting: bool, pending: int) -> String:
 
 	var since_try: float = 1.0e9 if _last_try_msec < 0 else float(now_msec - _last_try_msec) * 0.001
 	var idle: bool = _idle_since_msec >= 0 and float(now_msec - _idle_since_msec) * 0.001 >= IDLE_S
+	idle = idle or (received > 0 and float(now_msec - _progress_msec) * 0.001 >= IDLE_S)
 	var busy: bool = pending > 0 and float(now_msec - _wait_start_msec) * 0.001 >= BUSY_S and since_try >= BUSY_RETRY_S
 	var due: bool = (idle and since_try >= EVERY_S) or busy
 
@@ -49,6 +58,7 @@ func step(now_msec: int, waiting: bool, pending: int) -> String:
 	tries += 1
 	_last_try_msec = now_msec
 	_idle_since_msec = -1
+	_progress_msec = now_msec
 	return "retry"
 
 

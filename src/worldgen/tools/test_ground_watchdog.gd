@@ -72,6 +72,15 @@ func _init() -> void:
 	check(stream._drop_for_test(a) and stream._drop_for_test(a) and stream._drop_for_test(b) and not stream._drop_for_test(c), "--drop-ground-blocks: the first N blocks fail every time, the next ones do not")
 	check(not StreamScript.new()._drop_for_test(a), "a new stream drops nothing")
 
+	# With a column set, only blocks holding that x,z (at any LOD) are dropped: the far coarse blocks the engine loads first are not.
+	var column = StreamScript.new()
+	column.drop_blocks_left = 5
+	column.drop_xz = Vector2(53301.0, 68427.0)
+	check(not column._drop_for_test(Vector4i(50, 4, 63, 6)), "a coarse far block outside the spawn column is not dropped")
+	check(column._drop_for_test(Vector4i(int(floor(53301.0 / 16.0)), 3, int(floor(68427.0 / 16.0)), 0)), "the LOD 0 block under the spawn is dropped")
+	check(column._drop_for_test(Vector4i(int(floor(53301.0 / 1024.0)), 0, int(floor(68427.0 / 1024.0)), 6)), "the LOD 6 block over the spawn is dropped")
+	check(column.drop_blocks_left == 3, "only dropped blocks use up the count (%d left)" % column.drop_blocks_left)
+
 	# The watchdog does nothing while ground is not wanted, or while blocks are still outstanding (under 60 s).
 	var idle = WatchdogScript.new()
 	var quiet: bool = true
@@ -90,6 +99,26 @@ func _init() -> void:
 			fired += 1
 
 	check(fired == 3, "blocks outstanding but no ground: retried at 60, 90 and 120 s (%d in 130 s)" % fired)
+
+	# A stream that keeps delivering (received rising, a block outstanding now and then) never trips the 8 s rule; one that stops delivering does.
+	var flowing = WatchdogScript.new()
+	var flow_fired: int = 0
+
+	for t in range(1, 500):
+		if flowing.step(t * 100, true, t % 2, t) == "retry":
+			flow_fired += 1
+
+	check(flow_fired == 0, "blocks arriving all the time, pending flickering 0/1: no retry in 50 s (%d)" % flow_fired)
+
+	var stalled = WatchdogScript.new()
+	var stall_at: int = -1
+
+	for t in range(1, 400):
+		var got: int = mini(t, 30)   # blocks arrive for 3 s, then nothing, one still outstanding
+		if stalled.step(t * 100, true, 1, got) == "retry" and stall_at < 0:
+			stall_at = t * 100
+
+	check(stall_at >= 10900 and stall_at <= 11200, "delivery stops at 3 s with a block outstanding: retry 8 s later (%.1f s)" % (float(stall_at) * 0.001))
 
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

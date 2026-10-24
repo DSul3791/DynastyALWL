@@ -943,6 +943,7 @@ func _welcome_body(info: Dictionary) -> void:
 	stream = StreamScript.new()
 	stream.cache = cache
 	stream.drop_blocks_left = _drop_ground_blocks
+	stream.drop_xz = Vector2(float(info["spawn"].x), float(info["spawn"].z)) if test_start.is_finite() == false else Vector2(test_start.x, test_start.z)
 	link = BlockLinkScript.new()
 	link.stream = stream
 	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
@@ -2364,7 +2365,7 @@ func _run_ground_watchdog() -> void:
 		return
 
 	var now: int = Time.get_ticks_msec()
-	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending())
+	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending(), stream.blocks_received)
 
 	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
 	if waiting_for_ground and now - _ground_log_msec >= 5000:
