@@ -1490,3 +1490,7 @@ Answered: 2026-10-24 16:17 UTC
 Answer: No: It shouldn’t be overnight. It should take a long long time so if the water let’s say gets re-rooted and flood the field, it starts the timer that starts slowly hurting the crops and let’s say it’s gonna take a week before it kills the crops. Then the farmer can go find what caused the flooding and fix it or they can dig ditches to run off the water, or they can build dams and ditches around their fields and once the water clears off, then that land will stop being under threat of change.
 Answered: 2026-10-24 16:17 UTC
 
+## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
+Answer: Yes
+Answered: 2026-10-24 16:39 UTC
+
