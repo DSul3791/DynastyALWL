@@ -64,3 +64,9 @@ Note: Recommendation: Yes because your fields should not turn into woods overnig
 Note: R2 plants and R3 succession follow.
 Note: Recommendation: Yes because it is safe and shows where the game thinks each type is. Why not: nothing new in play yet.
 [check]
+
+## thatch-screen-first-room | Is the first room a cheap thatch screen wall (about 12 thatch, 4 twine, 6 sticks)?
+Note: The full wall (20 twine, 50 thatch, 15 sticks) makes a 4-wall room cost 200 thatch, too much for a roofed bed in 90 minutes.
+Note: The full 50-thatch wall stays as the proper wall for later.
+Note: Recommendation: Yes because it makes a roofed bed in 90 minutes reachable; otherwise the target moves to about 2.5 hours.
+[check]
