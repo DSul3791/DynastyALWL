@@ -23,11 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## wl-tree-speed | Water land types: trees take 3 to 6 real days to die after the water changes (herbs half a day)?
-Note: One game day is one real hour. Spruce, fir and beech drown first; willow and alder last.
-Note: Recommendation: Yes because it is slow enough to react, fast enough to see. Why not: you may want it faster.
-[check]
-
 ## fish-species-list | Use this fish list (salmon and trout in rivers, herring to tuna in the sea)?
 Note: Full list and reasons: design/FISH_AND_FISHING_PLAN.md, section on species.
 Note: Recommendation: Yes because the list fits the North Atlantic island (moose, blueberry, ADT) and gives early fish near rivers.
