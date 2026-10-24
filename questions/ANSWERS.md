@@ -1398,3 +1398,7 @@ Answered: 2026-10-24 14:31 UTC
 Answer: No: The hammers only purpose is to allow you to access blueprints to put down on the ground. So if you wanna put down the blueprint of a type of foundation, you have to pull out your hammer and right click and then it will give you a menu that allows you to go through all the blueprints.
 Answered: 2026-10-24 14:32 UTC
 
+## simple-shapes-ok | Accept the simple shapes of pickaxes, water wheel and kits for now and improve them in the art goal (goal 2)?
+Answer: No: The hammers only purpose is to allow you to access blueprints to put down on the ground. So if you wanna put down the blueprint of a type of foundation, you have to pull out your hammer and right click and then it will give you a menu that allows you to go through all the blueprints.
+Answered: 2026-10-24 14:32 UTC
+
