@@ -5,10 +5,11 @@
   CLASH   a function with the same name as a member var/const/signal in the file (the water_debug clash)
   NATIVE  a const/var/class_name named like a native Godot class (TileData shadows the engine class)
   FUNCDUP the same function name defined twice in a file
+  PACKED  .max()/.min() called on a variable typed Packed*Array (only Array has them; Godot: "Cannot find member max")
   SHADOW  a local named like a member var (warning only, counted by local_check)
 
 Usage: tools/parse_scan.py [paths...]     (default: every .gd under src, scenes, tools)
-Exit 1 when any DUP, CLASH, NATIVE or FUNCDUP is found. SHADOW is listed with --shadow.
+Exit 1 when any DUP, CLASH, NATIVE, FUNCDUP or PACKED is found. SHADOW is listed with --shadow.
 It reads text only, so it can miss things (inline lambdas, multi-line expressions); a hit is worth a look, no hit is not a proof.
 """
 import os
@@ -105,6 +106,13 @@ def scan(path, shadow):
                 elif shadow and name in members:
                     problems.append((path, n, "SHADOW", "%s shadows the member at line %d" % (name, members[name])))
             stack[-1][1][name] = n
+
+    packed = set(re.findall(r"\b(?:var|const)\s+(\w+)\s*:\s*Packed\w+Array", "\n".join(lines)))
+    packed |= set(re.findall(r"\b(\w+)\s*:\s*Packed\w+Array\s*[,)]", "\n".join(lines)))
+    for n, text in enumerate(lines, 1):
+        for name in re.findall(r"\b(\w+)\.(?:max|min)\(\)", text):
+            if name in packed:
+                problems.append((path, n, "PACKED", "%s is a Packed*Array: .max()/.min() do not exist on it, loop over the values" % name))
 
     return problems
 
