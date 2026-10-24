@@ -1390,3 +1390,7 @@ Answered: 2026-10-24 14:30 UTC
 Answer: No: No, I’m standing at the base of a mountain and all I can hear is a heavy heavy heavy rumbling in my ears, but I don’t think I’m near a waterfall. I don’t see any signs of big strong wind like the pollen is flowing by gently. It just sounds like a really big wind. Sounds like I’m in a wind storm.
 Answered: 2026-10-24 14:30 UTC
 
+## rumble-300m | Should the volcano rumble play only above 300 m (high up), or also from the ground near the volcano?
+Answer: No: If it is an island that has a volcano and the volcano is active then it should rumble and you should be able to hear it and or feel it depending on how close it is to exploding all over the island
+Answered: 2026-10-24 14:31 UTC
+
