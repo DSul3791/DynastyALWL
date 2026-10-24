@@ -834,6 +834,7 @@ func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> vo
 				best = h
 				best_at = cell_center_m(column, row)
 
+	mount["crater_at"] = [best_at.x, best_at.y]   # metadata for the island checks; no terrain effect
 	var crater_rules: Dictionary = crater.duplicate()
 	# The rim is the ring round the summit at the crater radius, lifted a little, so it stands as a wall even when the summit
 	# is a narrow spire (sampling the single highest cell as the rim left only a pit in the spire's side).
