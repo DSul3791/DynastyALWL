@@ -104,6 +104,11 @@ if dupes.returncode != 0:
         if not line.startswith("dupe names:"):
             bad("duplicate GDScript name: " + line)
 
+looks = subprocess.run([sys.executable, "tools/check_look_names.py"], capture_output=True, text=True)
+if looks.returncode != 0:
+    for line in looks.stdout.splitlines()[1:]:
+        bad("look name: " + line)
+
 if problems:
     print("MERGE CHECK FAILED:")
     for p in problems:
