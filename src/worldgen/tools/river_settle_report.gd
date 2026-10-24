@@ -89,6 +89,7 @@ func _init() -> void:
 		_flow = TileFileScript.decode_flow(TileFileScript.read_section(tile_path, head["table"], "flow")["raw"])
 
 	print("settler places %d springs on tile %d,%d; flow map %s" % [_spring_cells.size(), tile.x, tile.y, "read" if not _flow.is_empty() else "NOT read"])
+	_seams(tile, depth, side)
 	var flow_max: float = 0.0
 
 	for value in _flow:
@@ -160,6 +161,35 @@ func _collect(data, depth: PackedFloat32Array, side: int, start: int, body: Pack
 					members.append(n)
 
 	return members
+
+
+# Hand-off at the tile borders (pad step 6): the edge row/column is shared with the neighbour tile, so settled depth there must match. Per border: wet
+# cells on one side only, and the biggest depth difference, or "neighbour not settled" when its .water file is missing.
+func _seams(tile: Vector2i, depth: PackedFloat32Array, side: int) -> void:
+	for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		var other: Vector2i = tile + step
+		var path: String = "%s/water/tile_%d_%d.water" % [world_dir, other.x, other.y]
+		var neighbour: PackedFloat32Array = WaterStore.load_depth(path, side) if FileAccess.file_exists(path) else PackedFloat32Array()
+		var label: String = {Vector2i(1, 0): "east", Vector2i(-1, 0): "west", Vector2i(0, 1): "south", Vector2i(0, -1): "north"}[step]
+
+		if neighbour.is_empty():
+			print("seam %s (tile %d,%d): neighbour not settled" % [label, other.x, other.y])
+			continue
+
+		var one_sided: int = 0
+		var wet_both: int = 0
+		var worst: float = 0.0
+
+		for n in range(side):
+			var mine: int = n * side + (side - 1) if step.x == 1 else (n * side if step.x == -1 else ((side - 1) * side + n if step.y == 1 else n))
+			var theirs: int = n * side if step.x == 1 else (n * side + (side - 1) if step.x == -1 else (n if step.y == 1 else (side - 1) * side + n))
+			var a: float = depth[mine]
+			var b: float = neighbour[theirs]
+			one_sided += 1 if (a >= WET_M) != (b >= WET_M) else 0
+			wet_both += 1 if a >= WET_M and b >= WET_M else 0
+			worst = maxf(worst, absf(a - b))
+
+		print("seam %s (tile %d,%d): %d edge cells wet on both sides, %d wet on one side only, biggest depth difference %.2f m  [%s]" % [label, other.x, other.y, wet_both, one_sided, worst, "OK" if one_sided == 0 and worst < 0.1 else "MISMATCH"])
 
 
 # True when the cell is at the tile edge or has sea (ground at or under 0) within GAP samples: the water reaches an outlet.
