@@ -17,3 +17,4 @@ Dave's pull steps (send with the build)
 5. Esc > Admin > Clear blocks.
 6. Walk from spawn (spawn and buildings may shift; report where).
 Notes for Dave: earlier digs/buildings will not match the new ground; flora layout and tree belts follow when Kathleen's VERSION 4 merges.
+HOLD 04:50 UTC: build 777 (bake 29, mike-bake-v29 ba9b7d27) held for Dave until spawn gate fails (slope 9.9 vs 7.0, 5 water samples) are fixed by Sonny. List 4 merges continue.
