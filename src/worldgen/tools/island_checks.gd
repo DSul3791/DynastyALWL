@@ -719,10 +719,64 @@ func _slope_rows(title: String, fine: Dictionary, top_index: int, config: Dictio
 	if land == 0:
 		return
 
+	if _picture_dir != "":
+		_draw_slope_map(title, fine, ci, cj, reach, easy_tan, hard_tan)
+
 	var land_f: float = float(land)
 	var steep: float = 1.0 - float(easy + hard) / land_f
 	_row("%s slope classes (8 m maps, %.0f km window)" % [title, float(tile_limits["slope_window_m"]) / 1000.0], "easy %.0f%%, hard %.0f%%, over %.0f deg %.1f%%" % [float(easy) / land_f * 100.0, float(hard) / land_f * 100.0, float(tile_limits["route_hard_deg"]), steep * 100.0], "report", "INFO")
 	_range_row("%s canyon share (floor %.0f m under the 60 m ring)" % [title, depth], float(canyon) / land_f, config["canyon_share"], "%.1f%% of land" % (float(canyon) / land_f * 100.0))
+
+
+# Top-down map of the window (every 2nd sample): green easy, orange hard, red steeper, blue water, dark sea;
+# a grid line every 1 km, numbered in km from the window's west and north edge.
+func _draw_slope_map(title: String, fine: Dictionary, ci: int, cj: int, reach: int, easy_tan: float, hard_tan: float) -> void:
+	var width: int = fine["width"]
+	var rows: int = fine["rows"]
+	var heights: PackedFloat32Array = fine["heights"]
+	var waters: PackedByteArray = fine["water"]
+	var spacing: float = fine["spacing"]
+	var stride: int = 2
+	var left: int = maxi(1, ci - reach)
+	var top: int = maxi(1, cj - reach)
+	var size_x: int = _quot(mini(width - 2, ci + reach) - left, stride)
+	var size_z: int = _quot(mini(rows - 2, cj + reach) - top, stride)
+	var margin: int = 20
+	var image: Image = Image.create(size_x + margin, size_z + margin, false, Image.FORMAT_RGB8)
+	image.fill(Color(0.96, 0.96, 0.94))
+	var every: int = int(1000.0 / (spacing * float(stride)))
+
+	for z in range(size_z):
+		for x in range(size_x):
+			var i: int = left + x * stride
+			var j: int = top + z * stride
+			var index: int = j * width + i
+			var color: Color = Color(0.10, 0.18, 0.30)
+
+			if waters[index] == 255:
+				color = Color(0.7, 0.7, 0.7)
+			elif heights[index] > 0.0 and waters[index] != 1:
+				var dx: float = absf(heights[index + 1] - heights[index - 1]) / (2.0 * spacing)
+				var dz: float = absf(heights[index + width] - heights[index - width]) / (2.0 * spacing)
+				var slope: float = sqrt(dx * dx + dz * dz)
+				color = SECTION_FLAT if slope <= easy_tan else (SECTION_EASY if slope <= hard_tan else SECTION_HARD)
+
+				if waters[index] >= 2:
+					color = Color(0.15, 0.40, 0.85)
+
+			if x % every == 0 or z % every == 0:
+				color = color.lerp(Color(1, 1, 1), 0.35)
+
+			image.set_pixel(x + margin, z + margin, color)
+
+	for k in range(_quot(size_x, every) + 1):
+		_text(image, margin + k * every, 2, "%d" % k, Color(0.1, 0.1, 0.1), 2)
+
+	for k in range(_quot(size_z, every) + 1):
+		_text(image, 2, margin + k * every, "%d" % k, Color(0.1, 0.1, 0.1), 2)
+
+	var path: String = "%s/%s_slopemap.png" % [_picture_dir, title.replace(" ", "_")]
+	_row("%s slope map" % title, path if image.save_png(path) == OK else "cannot save", "green easy, orange hard, red steeper, blue water, 1 km grid", "INFO")
 
 
 # The connected ground within `within_m` of the top: its widest side in metres, and its cell count.
