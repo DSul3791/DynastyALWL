@@ -59,3 +59,9 @@ Note: Real weights are carts-and-crane heavy. Today: saw mill 120 kg, master for
 Note: You said we can add game-logic carrying rules later (two people, a cart), so I am not fudging.
 Note: Recommendation: Keep today's numbers for now because nobody carries these alone anyway; the cart or two-person rule comes next.
 [text]
+
+## weight-wood-units | How big is one wooden block, lumber piece and beam?
+Note: Today: wooden block 3.0 kg (a quarter of a short log), rough plank 3.0, lumber 4.0 (about a 2.4 m board), beam 12 (2.4 m post), timber 4, poles 2.5, bricks 2.7, cobblestone 2.0, cut stone block 25, mortar 2.5 per bucket.
+Note: Type any weight in kg you want changed in the notes box, or 'ok'.
+Note: Recommendation: ok because each matches a real 2.4 m board or a single brick or block.
+[text]
