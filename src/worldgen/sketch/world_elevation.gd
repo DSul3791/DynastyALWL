@@ -110,6 +110,14 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 	_shape_shelf_coasts(sketch)
 	_raise_landmark_islands()
+
+	# Craters last: the shelf and coast caps above would otherwise level the rim again.
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			var crater: Dictionary = _island_config(mount).get("crater", {})
+
+			if str(mount["type"]) == "starter" and mount.has("beach_cap_m") and not crater.is_empty():
+				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
 
 
@@ -711,9 +719,9 @@ func _band_height(table: Dictionary, d_m: float, x_m: float = 0.0, z_m: float = 
 			var u: float = (share - from) / span
 			# Linear on the last segment: an eased end flattens the top into a plateau.
 			var eased: float = u if i == bands.size() - 1 else _smooth(u)
-			return _layout(table, d_m, share, x_m, z_m, float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)) + spire
+			return minf(_layout(table, d_m, share, x_m, z_m, float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)) + spire, float(table["summit"]))
 
-	return _layout(table, d_m, share, x_m, z_m, float(table["summit"]) * float(bands[bands.size() - 1][1])) + spire
+	return minf(_layout(table, d_m, share, x_m, z_m, float(table["summit"]) * float(bands[bands.size() - 1][1])) + spire, float(table["summit"]))
 
 
 # Peak layout: rows [along, across, width, height factor] in island-ellipse units. High ground (share above 0.4) is shaped
@@ -806,10 +814,6 @@ func _raise_foothills(mount: Dictionary) -> void:
 			if target > heights[index]:
 				heights[index] = lerpf(heights[index], target, weight)
 
-	var crater: Dictionary = _island_config(mount).get("crater", {})
-
-	if not crater.is_empty():
-		_crater_at_summit(mount, crater, radius)
 
 
 # Volcano type: a crater (no lava) cut into the island's highest point, a bowl floor `depth_m` under the summit. The breach
@@ -831,7 +835,19 @@ func _crater_at_summit(mount: Dictionary, crater: Dictionary, radius: int) -> vo
 				best_at = cell_center_m(column, row)
 
 	var crater_rules: Dictionary = crater.duplicate()
-	_carve_crater(best_at, float(crater.get("radius_m", 320.0)), float(crater.get("depth_m", 180.0)), best, crater_rules, bool(crater.get("lava", false)))
+	# The rim is the ring round the summit at the crater radius, lifted a little, so it stands as a wall even when the summit
+	# is a narrow spire (sampling the single highest cell as the rim left only a pit in the spire's side).
+	var crater_radius: float = float(crater.get("radius_m", 320.0))
+	var ring_sum: float = 0.0
+	var ring_count: int = 16
+
+	for step in range(ring_count):
+		var angle: float = TAU * float(step) / float(ring_count)
+		var at: Vector2 = best_at + Vector2(cos(angle), sin(angle)) * crater_radius
+		ring_sum += heights[index_of(int(floor((at.x - origin_x) / cell_m)), int(floor((at.y - origin_z) / cell_m)))]
+
+	var rim: float = ring_sum / float(ring_count) + float(crater.get("rim_lift_m", 60.0))
+	_carve_crater(best_at, crater_radius, float(crater.get("depth_m", 180.0)), rim, crater_rules, bool(crater.get("lava", false)), true)
 
 
 # Chamfer distance (in cells) from the nearest sea cell, over the square of `radius` cells round a centre cell.
@@ -1480,7 +1496,7 @@ func _raise_cone_exact(cone: Dictionary, owner_index: int) -> void:
 
 
 func _carve_crater(
-	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary, lava: bool = true
+	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary, lava: bool = true, raise_rim: bool = false
 ) -> void:
 	var floor_height: float = rim_height - depth
 	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
@@ -1498,6 +1514,10 @@ func _carve_crater(
 			var index: int = index_of(column, row)
 			var offset: Vector2 = cell_center_m(column, row) - center
 			var distance: float = offset.length()
+
+			if raise_rim and distance >= radius * 0.8 and distance < radius * 1.2:
+				var wall: float = rim_height * (1.0 - pow(absf(distance / radius - 1.0) / 0.2, 2.0) * 0.25)
+				heights[index] = maxf(heights[index], wall)
 
 			if distance < radius:
 				var bowl: float = floor_height + depth * pow(distance / radius, 3.0)
