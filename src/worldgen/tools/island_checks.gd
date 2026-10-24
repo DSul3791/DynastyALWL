@@ -939,26 +939,28 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 	var radius: float = float(crater["radius_m"])
 	var center: Vector2 = top_peak
 	var best_depth: float = -INF
+	var mount: Dictionary = _starter_mount(top_peak)
+	var known: bool = mount.has("crater_at")
 
-	# The crater is cut into the island's highest point: search round it for the spot where the rim ring stands highest over the floor.
-	for dz in range(-12, 13):
-		for dx in range(-12, 13):
+	# When the sketch records where the crater was cut (mount "crater_at": [x, z]) that is the centre.
+	if known:
+		center = Vector2(float(mount["crater_at"][0]), float(mount["crater_at"][1]))
+
+	# The crater is cut into the island's highest point: search round it for the centre of the bowl, the spot
+	# that the ring at 0.6 of the radius stands highest over.
+	for dz in range(-16, 17):
+		for dx in range(-16, 17):
+			if known:
+				break
+
 			var candidate: Vector2 = top_peak + Vector2(float(dx), float(dz)) * (radius / 8.0)
 			var ring_total: float = 0.0
 
 			for step in range(8):
 				var angle: float = float(step) * TAU / 8.0
-				ring_total += _h(candidate.x + cos(angle) * radius, candidate.y + sin(angle) * radius)
+				ring_total += _h(candidate.x + cos(angle) * radius * 0.6, candidate.y + sin(angle) * radius * 0.6)
 
-			var candidate_floor: float = _h(candidate.x, candidate.y)
-
-			for step in range(8):
-				var angle: float = float(step) * TAU / 8.0
-
-				for fraction in [0.4, 0.8]:
-					candidate_floor = minf(candidate_floor, _h(candidate.x + cos(angle) * radius * fraction, candidate.y + sin(angle) * radius * fraction))
-
-			var candidate_depth: float = ring_total / 8.0 - candidate_floor
+			var candidate_depth: float = ring_total / 8.0 - _h(candidate.x, candidate.y)
 
 			if candidate_depth > best_depth:
 				best_depth = candidate_depth
@@ -1003,6 +1005,18 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 	var designed: float = float(crater["breach_bearing_deg"])
 	var designed_share: float = (_wall(center, radius, designed) - floor_m) / maxf(wall_mean - floor_m, 1.0)
 	var lowest_share: float = (wall_low - floor_m) / maxf(wall_mean - floor_m, 1.0)
+	var along: PackedStringArray = PackedStringArray()
+
+	for offset in [-40.0, -20.0, 0.0, 20.0, 40.0]:
+		var direction: Vector2 = Vector2(sin(deg_to_rad(designed + offset)), -cos(deg_to_rad(designed + offset)))
+		var values: PackedStringArray = PackedStringArray()
+
+		for fraction in [0.0, 0.6, 1.0, 1.4, 1.8]:
+			values.append("%.0f" % _h(center.x + direction.x * radius * fraction, center.y + direction.y * radius * fraction))
+
+		along.append("%+.0f deg: %s" % [offset, " ".join(values)])
+
+	_row("%s crater profile (heights at 0, 0.6, 1.0, 1.4, 1.8 radii; centre %d, %d)" % [title, int(center.x), int(center.y)], "; ".join(along), "report", "INFO")
 	_row("%s crater breach at %.0f deg" % [title, designed], "wall %.0f%% of the mean wall over the floor (lowest wall of all: %.0f deg, %.0f%%)" % [designed_share * 100.0, wall_bearing, lowest_share * 100.0], "under %.0f%%" % (float(config["crater_breach_max_wall_share"]) * 100.0),
 		"PASS" if designed_share <= float(config["crater_breach_max_wall_share"]) else "FAIL")
 
