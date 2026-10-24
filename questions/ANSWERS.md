@@ -1414,3 +1414,7 @@ Answered: 2026-10-24 14:54 UTC
 Answer: Yes
 Answered: 2026-10-24 16:01 UTC
 
+## fire-small-cooks | Can food be cooked on the tiny survival fire (sticks)?
+Answer: Yes
+Answered: 2026-10-24 16:02 UTC
+
