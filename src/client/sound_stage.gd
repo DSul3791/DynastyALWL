@@ -539,8 +539,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	wind_strength = strength
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
-	_wind_low.volume_db = linear_to_db(0.0035 + 0.006 * strength)
-	_wind_gust.volume_db = linear_to_db(0.0025 + 0.012 * pow(strength, 1.6))
+	_wind_low.volume_db = linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
+	_wind_gust.volume_db = linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
