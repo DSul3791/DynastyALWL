@@ -12,7 +12,7 @@ from matplotlib.colors import LightSource
 
 raw_dir, out_dir = sys.argv[1], sys.argv[2]
 P = dict(U=1.2e-3, K=4e-6, D=0.25, dep=0.03, off=0.6, sub=1.5, coast_pow=2.2, basins=14, years=1e6, dt=4000.0,
-         X0=2, Z0=3, X1=4, Z1=5, edge_fade_m=1500.0, ramp_m=12000.0)
+         X0=2, Z0=3, X1=4, Z1=5, edge_fade_m=1500.0, S=4, ramp_m=12000.0, balance=1.0, bal_smooth=3.0, lowboost=8.0, tarn=True)
 if len(sys.argv) > 3: P.update(json.loads(sys.argv[3]))
 os.makedirs(out_dir, exist_ok=True)
 T = 1920
@@ -23,7 +23,7 @@ for z in range(P['Z0'], P['Z1']+1):
         a = np.fromfile(f'{raw_dir}/raw_{x}_{z}.f32', '<f4').reshape(T+1, T+1)
         fine[(z-P['Z0'])*T:(z-P['Z0'])*T+T+1, (x-P['X0'])*T:(x-P['X0'])*T+T+1] = a
 assert np.isfinite(fine).all()
-S = 4                                    # 8 m -> 32 m, box average +-2 like TileErosion
+S = int(P.get('S', 4))
 n = (fine.shape[0]-1)//S+1
 pad = np.pad(fine, 2, mode='edge')
 c = np.zeros((n, n), np.float64)
@@ -36,7 +36,7 @@ start = c.copy()
 t0 = time.time()
 lem.RAMP_M = P['ramp_m']
 st, h, sea, fill, area, secs = lem.run_from(c, dx, years=P['years'], dt=P['dt'], K=P['K'], U=P['U'], D=P['D'], dep=P['dep'],
-                                           off=P['off'], coast_pow=P['coast_pow'], basins=P['basins'], sub=P['sub'], ramp_m=P['ramp_m'])
+                                           off=P['off'], coast_pow=P['coast_pow'], basins=P['basins'], sub=P['sub'], ramp_m=P['ramp_m'], balance=P['balance'], bal_smooth=P['bal_smooth'], lowboost=P['lowboost'], tarn=P['tarn'])
 delta = (h-start)
 delta[start <= 0] = 0.0
 # fade to zero toward the grid edge so outside frames see no step
@@ -67,7 +67,10 @@ def st8(z):
     land = z > 0; s = sl(z); farm = land & (z < 250)
     return dict(summit=float(z.max()), land_km2=float(land.sum()*64/1e6), farm_km2=float(farm.sum()*64/1e6),
                 farm_lt10=float((s[farm] < 10).mean()), farm_lt8=float((s[farm] < 8).mean()), median_slope=float(np.median(s[land])))
-res = dict(before_8m=st8(fine), after_8m=st8(fin_after), runtime_s=secs, grid=n, max_cut_m=float(-delta.min()), max_fill_m=float(delta.max()))
+def st32(z):
+    land = z > 0; g = np.gradient(z, dx); s = np.degrees(np.arctan(np.hypot(g[0], g[1]))); farm = land & (z < 250)
+    return dict(farm_lt10=float((s[farm] < 10).mean()), farm_lt8=float((s[farm] < 8).mean()), median_slope=float(np.median(s[land])))
+res = dict(before_32m=st32(start), after_32m=st32(newh), before_8m=st8(fine), after_8m=st8(fin_after), runtime_s=secs, grid=n, max_cut_m=float(-delta.min()), max_fill_m=float(delta.max()))
 sea_m = (start <= 0)
 riv = (area > 2e6) & ~sea_m
 nbm = np.zeros_like(riv)
