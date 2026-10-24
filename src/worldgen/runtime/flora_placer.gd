@@ -63,6 +63,7 @@ var species: Array = []              # Dictionary per table row (retired rows sk
 var _by_id: Dictionary = {}          # species id -> Dictionary
 var _by_biome: Array = []            # biome id -> Array of species Dictionaries (sorted by id)
 var patchiness: float = 0.0
+var _plateau_cache: Dictionary = {}   # 40 m cell -> plateau value (see _plateau)
 var _soil_growth: PackedFloat32Array = PackedFloat32Array()   # soil id -> tree and shrub growth factor
 var _patches: FastNoiseLite
 var _grove_seed: int = 0
@@ -865,13 +866,26 @@ func _mountain_near(data, x: float, z: float, y: float) -> float:
 
 # 0..1: how plateau-like the spot is: the slope here and on a ring 40 m around are all gentle, so rich soil has had a chance to gather.
 func _plateau(data, x: float, z: float) -> float:
-	var worst: float = _slope_at(data, x, z)
+	var cell: Vector2i = Vector2i(int(floorf(x / PLATEAU_RING_M)), int(floorf(z / PLATEAU_RING_M)))
+
+	if _plateau_cache.has(cell):
+		return _plateau_cache[cell]
+
+	var cx: float = (float(cell.x) + 0.5) * PLATEAU_RING_M      # tested once per 40 m cell, at its centre (the result is a probability, so the cell edges do not show)
+	var cz: float = (float(cell.y) + 0.5) * PLATEAU_RING_M
+	var worst: float = _slope_at(data, cx, cz)
 
 	for k in range(8):
 		var a: float = TAU * float(k) / 8.0
-		worst = maxf(worst, _slope_at(data, x + cos(a) * PLATEAU_RING_M, z + sin(a) * PLATEAU_RING_M))
+		worst = maxf(worst, _slope_at(data, cx + cos(a) * PLATEAU_RING_M, cz + sin(a) * PLATEAU_RING_M))
 
-	return 1.0 - smoothstep(0.05, 0.14, worst)
+	var value: float = 1.0 - smoothstep(0.05, 0.14, worst)
+
+	if _plateau_cache.size() > 20000:
+		_plateau_cache.clear()
+
+	_plateau_cache[cell] = value
+	return value
 
 
 # A stable 0..1 number per spot and species, so the woods look the same every visit.
