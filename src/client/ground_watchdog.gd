@@ -7,13 +7,13 @@ extends RefCounted
 #   match watchdog.step(now_msec, waiting_for_ground, stream.pending()):   "retry": restream; "give_up": show the failure; "": nothing
 # Numbers (Tyler, 24 Oct): idle 8 s, a retry at most every 10 s, 6 tries. "Idle" is nothing outstanding for 8 s, or no block arrived for 8 s (after the
 # first one: a server still reading its tiles is the existing "not sending ground" guard's business). A stream that keeps delivering but still gives
-# no ground after BUSY_S is retried too, every BUSY_RETRY_S. (Mike's run: pending flickers 0..1 while thousands of blocks arrive, so "pending is 0" alone is not idle.)
+# no ground after BUSY_S (30 s) is retried too, every BUSY_RETRY_S. (Mike's run: pending flickers 0..1 while thousands of blocks arrive, so "pending is 0" alone is not idle.)
 
 const IDLE_S := 8.0
 const EVERY_S := 10.0
 const MAX_TRIES := 6
-const BUSY_S := 60.0
-const BUSY_RETRY_S := 30.0
+const BUSY_S := 30.0
+const BUSY_RETRY_S := 15.0
 
 var tries: int = 0
 var _wait_start_msec: int = -1

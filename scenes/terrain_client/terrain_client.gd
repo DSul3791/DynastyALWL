@@ -198,7 +198,7 @@ var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
-var _drop_ground_blocks: int = 0                  # test only (--drop-ground-blocks=N): the first N blocks asked for fail for good, so the join hang can be forced
+var _drop_ground_lods: int = 0                  # test only (--drop-ground-lods=N): the blocks of LOD 0 to N-1 in the spawn column fail for good, so the join hang can be forced
 var _ground_watchdog = GroundWatchdogScript.new()  # restarts the stream when the ground does not come (see ground_watchdog.gd)
 var _ground_giving_up: bool = false
 var _ground_log_msec: int = 0
@@ -524,8 +524,8 @@ func _ready() -> void:
 			test_fly_alt = float(argument.trim_prefix("--flyalt="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
-		elif argument.begins_with("--drop-ground-blocks="):
-			_drop_ground_blocks = int(argument.trim_prefix("--drop-ground-blocks="))
+		elif argument.begins_with("--drop-ground-lods="):
+			_drop_ground_lods = int(argument.trim_prefix("--drop-ground-lods="))
 		elif argument == "--clear-cache":
 			clear_cache = true
 		elif argument.begins_with("--quality="):
@@ -942,7 +942,7 @@ func _welcome_body(info: Dictionary) -> void:
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 	stream = StreamScript.new()
 	stream.cache = cache
-	stream.drop_blocks_left = _drop_ground_blocks
+	stream.drop_lods = _drop_ground_lods
 	stream.drop_xz = Vector2(float(info["spawn"].x), float(info["spawn"].z)) if test_start.is_finite() == false else Vector2(test_start.x, test_start.z)
 	link = BlockLinkScript.new()
 	link.stream = stream
@@ -1522,7 +1522,7 @@ func _water_ahead() -> bool:
 func _arrive_on_ground() -> void:
 	if connected_msec > 0 and not _ground_logged:
 		_ground_logged = true
-		_join_log("JOIN: ground ready after %d retries, test drops left %d, player %s" % [_ground_watchdog.tries, stream.drop_blocks_left if stream != null else 0, str(body.global_position)])
+		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position)])
 
 	var ground: float = _ground_below(body.global_position)
 
@@ -2370,7 +2370,7 @@ func _run_ground_watchdog() -> void:
 	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
 	if waiting_for_ground and now - _ground_log_msec >= 5000:
 		_ground_log_msec = now
-		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d, pending %d, test drops left %d, retries %d" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, stream.pending(), stream.drop_blocks_left, _ground_watchdog.tries])
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d, pending %d, test drops %d, retries %d" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, stream.pending(), stream.drops_made, _ground_watchdog.tries])
 
 	if action == "":
 		return

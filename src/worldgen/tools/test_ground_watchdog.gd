@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Join hang (Dave, build 787): the ground under the player never loads and nothing is outstanding. Simulates the join with a real stream's test drop
-# (--drop-ground-blocks) and the watchdog, with and without the fix.
+# (--drop-ground-lods) and the watchdog, with and without the fix.
 #   godot --headless --path . --script res://src/worldgen/tools/test_ground_watchdog.gd
 # Prints "Test done: N pass, N fail".
 
@@ -20,12 +20,13 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
-# One join: the engine asks a stream once for the block under the player. `drop` blocks fail for good on the first stream (and on every new stream when
+# One join: the engine asks a stream once for the block under the player. `drop` LODs of the column fail for good on the first stream (and on every new stream when
 # `drop_new` is true). Returns {"opened_s": seconds until the ground was ready or -1, "gave_up_s": seconds until give_up or -1, "tries": retries made}.
 func _join(drop: int, drop_new: bool, fix: bool, limit_s: float) -> Dictionary:
 	var key: Vector4i = Vector4i(3, 1, 4, 0)
 	var stream = StreamScript.new()
-	stream.drop_blocks_left = drop
+	stream.drop_lods = drop
+	stream.drop_xz = Vector2(49.0, 65.0)   # inside the column of the block (3, 1, 4) at LOD 0
 	var ready: bool = not stream._drop_for_test(key)
 	var watchdog = WatchdogScript.new()
 	var opened: float = 0.0 if ready else -1.0
@@ -38,7 +39,8 @@ func _join(drop: int, drop_new: bool, fix: bool, limit_s: float) -> Dictionary:
 
 		if action == "retry":
 			stream = StreamScript.new()
-			stream.drop_blocks_left = drop if drop_new else 0
+			stream.drop_lods = drop if drop_new else 0
+			stream.drop_xz = Vector2(49.0, 65.0)
 			ready = not stream._drop_for_test(key)
 		elif action == "give_up":
 			gave_up = float(now) * 0.001
@@ -63,23 +65,18 @@ func _init() -> void:
 	var stubborn: Dictionary = _join(1, true, true, 200.0)
 	check(stubborn["tries"] == 6 and stubborn["gave_up_s"] > 0.0 and stubborn["gave_up_s"] <= 80.0, "a ground that never comes gives up after 6 tries within 80 s (%.1f s, %d tries)" % [stubborn["gave_up_s"], stubborn["tries"]])
 
-	# The test drop: the first N distinct blocks fail every time, later ones and a new stream are fine.
-	var stream = StreamScript.new()
-	stream.drop_blocks_left = 2
-	var a: Vector4i = Vector4i(0, 0, 0, 0)
-	var b: Vector4i = Vector4i(1, 0, 0, 0)
-	var c: Vector4i = Vector4i(2, 0, 0, 0)
-	check(stream._drop_for_test(a) and stream._drop_for_test(a) and stream._drop_for_test(b) and not stream._drop_for_test(c), "--drop-ground-blocks: the first N blocks fail every time, the next ones do not")
-	check(not StreamScript.new()._drop_for_test(a), "a new stream drops nothing")
-
-	# With a column set, only blocks holding that x,z (at any LOD) are dropped: the far coarse blocks the engine loads first are not.
+	# The test drop: every block of LOD 0 .. N-1 in the spawn column fails every time; coarser LODs, other columns and a new stream are fine.
 	var column = StreamScript.new()
-	column.drop_blocks_left = 5
+	column.drop_lods = 2
 	column.drop_xz = Vector2(53301.0, 68427.0)
-	check(not column._drop_for_test(Vector4i(50, 4, 63, 6)), "a coarse far block outside the spawn column is not dropped")
-	check(column._drop_for_test(Vector4i(int(floor(53301.0 / 16.0)), 3, int(floor(68427.0 / 16.0)), 0)), "the LOD 0 block under the spawn is dropped")
-	check(column._drop_for_test(Vector4i(int(floor(53301.0 / 1024.0)), 0, int(floor(68427.0 / 1024.0)), 6)), "the LOD 6 block over the spawn is dropped")
-	check(column.drop_blocks_left == 3, "only dropped blocks use up the count (%d left)" % column.drop_blocks_left)
+	var under: Vector4i = Vector4i(int(floor(53301.0 / 16.0)), 3, int(floor(68427.0 / 16.0)), 0)
+	var lod1: Vector4i = Vector4i(int(floor(53301.0 / 32.0)), 1, int(floor(68427.0 / 32.0)), 1)
+	var lod2: Vector4i = Vector4i(int(floor(53301.0 / 64.0)), 1, int(floor(68427.0 / 64.0)), 2)
+	check(column._drop_for_test(under) and column._drop_for_test(under) and column._drop_for_test(lod1), "the blocks of LOD 0 and 1 under the spawn fail every time")
+	check(not column._drop_for_test(lod2), "LOD 2 is not dropped when N is 2")
+	check(not column._drop_for_test(Vector4i(50, 4, 63, 0)), "a block of another column is not dropped")
+	check(column.drops_made == 2, "two distinct blocks dropped (%d)" % column.drops_made)
+	check(not StreamScript.new()._drop_for_test(under), "a new stream drops nothing")
 
 	# The watchdog does nothing while ground is not wanted, or while blocks are still outstanding (under 60 s).
 	var idle = WatchdogScript.new()
@@ -98,17 +95,17 @@ func _init() -> void:
 		if busy.step(t * 100, true, 5) == "retry":
 			fired += 1
 
-	check(fired == 3, "blocks outstanding but no ground: retried at 60, 90 and 120 s (%d in 130 s)" % fired)
+	check(fired == 6, "blocks outstanding but no ground: retried from 30 s, every 15 s, 6 tries then give up (%d in 130 s)" % fired)
 
 	# A stream that keeps delivering (received rising, a block outstanding now and then) never trips the 8 s rule; one that stops delivering does.
 	var flowing = WatchdogScript.new()
 	var flow_fired: int = 0
 
-	for t in range(1, 500):
+	for t in range(1, 250):
 		if flowing.step(t * 100, true, t % 2, t) == "retry":
 			flow_fired += 1
 
-	check(flow_fired == 0, "blocks arriving all the time, pending flickering 0/1: no retry in 50 s (%d)" % flow_fired)
+	check(flow_fired == 0, "blocks arriving all the time, pending flickering 0/1: no retry in 25 s (%d)" % flow_fired)
 
 	var stalled = WatchdogScript.new()
 	var stall_at: int = -1
