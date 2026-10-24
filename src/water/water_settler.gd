@@ -189,6 +189,7 @@ static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, 
 			continue
 
 		var deepest: int = hollow["cell"]
+		@warning_ignore("integer_division")
 		var at: Vector2i = Vector2i(deepest % side, deepest / side)
 		placed.append(at)
 		sim.add_spring(at.x, at.y, catchment_flow(km2))
@@ -208,7 +209,8 @@ static func _add_edge_inflows(sim, data, flow: PackedFloat32Array, side: int, pl
 		return 0
 
 	var near: float = float(rules().get("feeders", {}).get("near_cells", 30))
-	var added: int = 0
+	var reach: int = int(cfg.get("reach_cells", 4))
+	var found: Array = []
 
 	for n in range(side):
 		for edge in [Vector2i(n, 0), Vector2i(n, side - 1), Vector2i(0, n), Vector2i(side - 1, n)]:
@@ -217,25 +219,37 @@ static func _add_edge_inflows(sim, data, flow: PackedFloat32Array, side: int, pl
 			if data.water_class[k] != RIVER or flow[k] <= 0.0:
 				continue
 
-			var inward: Vector2i = Vector2i(signi(side / 2 - edge.x) if edge.x == 0 or edge.x == side - 1 else 0, signi(side / 2 - edge.y) if edge.y == 0 or edge.y == side - 1 else 0)
+			@warning_ignore("integer_division")
+			var dx: int = signi(side / 2 - edge.x) if edge.x == 0 or edge.x == side - 1 else 0
+			@warning_ignore("integer_division")
+			var dy: int = signi(side / 2 - edge.y) if edge.y == 0 or edge.y == side - 1 else 0
 
-			if data.heights[(edge.y + inward.y) * side + edge.x + inward.x] >= data.heights[k]:
+			# The ground a few cells inside is lower: the river runs on into the tile (a bump of a few dm right at the edge does not count).
+			if data.heights[(edge.y + dy * reach) * side + edge.x + dx * reach] >= data.heights[k]:
 				continue
 
-			var served: bool = false
+			found.append([flow[k], edge])
 
-			for other in placed:
-				if Vector2(edge.x - other.x, edge.y - other.y).length() < near:
-					served = true
-					break
+	# The biggest drainage first, so the spring sits on the river's main cell, not on the thin bank cell beside it.
+	found.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	var added: int = 0
 
-			if served:
-				continue
+	for entry in found:
+		var edge: Vector2i = entry[1]
+		var served: bool = false
 
-			placed.append(edge)
-			sim.add_spring(edge.x, edge.y, catchment_flow(flow[k] * data.spacing_m * data.spacing_m / 1.0e6))
-			last_kinds.append("edge")
-			added += 1
+		for other in placed:
+			if Vector2(edge.x - other.x, edge.y - other.y).length() < near:
+				served = true
+				break
+
+		if served:
+			continue
+
+		placed.append(edge)
+		sim.add_spring(edge.x, edge.y, catchment_flow(float(entry[0]) * data.spacing_m * data.spacing_m / 1.0e6))
+		last_kinds.append("edge")
+		added += 1
 
 	return added
 
@@ -547,8 +561,10 @@ static func _pond_diameter_m(data, spot: Vector2i, side: int) -> float:
 static func _find_heads(data, side: int) -> Array:
 	var heads: Array = []
 
-	for j in range(HEAD_RADIUS, side - HEAD_RADIUS):
-		for i in range(HEAD_RADIUS, side - HEAD_RADIUS):
+	# The whole tile (v9): the old range left out the HEAD_RADIUS cells at each edge, so a river painted from 80 m inside the edge (its top is in the next tile)
+	# had no head and no spring (tile 3,4 river at x60192 z76736). Neighbours outside the tile do not count.
+	for j in range(side):
+		for i in range(side):
 			var k: int = j * side + i
 
 			if data.water_class[k] != RIVER:
@@ -557,8 +573,8 @@ static func _find_heads(data, side: int) -> Array:
 			var here: float = data.heights[k]
 			var top: bool = true
 
-			for dj in range(-HEAD_RADIUS, HEAD_RADIUS + 1):
-				for di in range(-HEAD_RADIUS, HEAD_RADIUS + 1):
+			for dj in range(maxi(-HEAD_RADIUS, -j), mini(HEAD_RADIUS, side - 1 - j) + 1):
+				for di in range(maxi(-HEAD_RADIUS, -i), mini(HEAD_RADIUS, side - 1 - i) + 1):
 					var n: int = k + dj * side + di
 
 					if n != k and data.water_class[n] == RIVER and (data.heights[n] > here or (data.heights[n] == here and n < k)):

@@ -8,6 +8,7 @@ extends RefCounted
 # joined group of cells whose fill is min_depth_m or more above the ground, whatever its size. `side` of the coarse grid = samples / step.
 static func find(data, step: int, min_depth_m: float) -> Array:
 	var full: int = data.samples
+	@warning_ignore("integer_division")
 	var side: int = full / step
 	var cell_m2: float = pow(data.spacing_m * float(step), 2.0)
 	var ground: PackedFloat32Array = PackedFloat32Array()

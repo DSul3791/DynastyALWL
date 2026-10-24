@@ -24,6 +24,7 @@ class Land:
 	var samples: int = 64
 	var spacing_m: float = 8.0
 	var heights: PackedFloat32Array = PackedFloat32Array()
+	var water_class: PackedByteArray = PackedByteArray()
 
 
 func check(ok: bool, what: String) -> void:
@@ -121,6 +122,28 @@ func _init() -> void:
 	check(WaterSettler._nearest_head([Vector2i(0, 5), Vector2i(9, 9)], Vector2i(7, 5), 10) == Vector2i(9, 9), "a bump snaps to the nearest head in reach")
 	check(WaterSettler._nearest_head([Vector2i(0, 5)], Vector2i(7, 5), 5) == Vector2i(-1, -1), "and is dropped when no head is in reach")
 	print("water settle rules test: %d failures" % failures)
+	# Edge inflows (v9): a river on the south edge, a 0.3 m bump just inside, ground falling inland; the main cell (bigger drainage) gets the spring.
+	var edge_land: Land = Land.new()
+	edge_land.samples = 32
+	edge_land.heights.resize(32 * 32)
+	edge_land.water_class.resize(32 * 32)
+
+	for j in range(32):
+		for i in range(32):
+			edge_land.heights[j * 32 + i] = 10.0 + float(j) * 0.5
+
+	edge_land.heights[30 * 32 + 15] = 25.3
+	edge_land.heights[31 * 32 + 15] = 25.0
+	edge_land.water_class[31 * 32 + 14] = WaterSettler.RIVER
+	edge_land.water_class[31 * 32 + 15] = WaterSettler.RIVER
+	var edge_flow: PackedFloat32Array = PackedFloat32Array()
+	edge_flow.resize(32 * 32)
+	edge_flow[31 * 32 + 14] = 1.0
+	edge_flow[31 * 32 + 15] = 12000.0
+	var edge_sim: Springs = Springs.new()
+	check(WaterSettler._add_edge_inflows(edge_sim, edge_land, edge_flow, 32, []) == 1, "a river entering over the tile edge gets one spring, bump or not")
+	check(edge_sim.added.size() == 1 and edge_sim.added[0][0] == 15 and edge_sim.added[0][1] == 31, "on its main cell, not the thin cell beside it")
+
 	# Hollow springs (v7): a 3 m deep bowl 24 x 24 cells (about 37,000 m2) on a 10 m plateau, edge of the map lower so it is a true hollow.
 	var land: Land = Land.new()
 	land.heights.resize(64 * 64)
