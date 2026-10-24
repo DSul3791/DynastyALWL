@@ -34,3 +34,9 @@ Note: 2. Stand in the woods away from the sea, then beside a river and near a wa
 Note: 3. Does anything still sound like ocean surf or a wash? Say where.
 Note: Recommendation: Yes it worked: river and fall loops are duller (top end cut from about 5 kHz to 2-3.6 kHz) and forest beds use the softer wind.
 [test]
+
+## sound-sliders | Please take a picture of Settings > Sound
+Note: 1. Pull claude/steve-sound-sliders (or the next build with it).
+Note: 2. Esc > Settings > Sound.
+Note: 3. Drag the Wind slider to 0 in a place with wind, then take a picture of the page.
+[picture]
