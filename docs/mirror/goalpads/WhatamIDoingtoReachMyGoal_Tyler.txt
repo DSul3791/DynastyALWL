@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 12:00 UTC build 785 (biome lookup, protocol 76) merged; gate 8 = steve-vent 4d0d68a8 (protocol 77) waits for local_check; ore fix 4f2d2497 goes in the final bake; no plan pending
 - 12:30 UTC builds 783 (v31 bake TV41) and 784 (gates 6+7, 5 branches) merged; cave-dark and biome-lookup plans answered; biome-lookup 7347ac36 waits for Mike's local_check (785); no plan pending
 - 10:58 UTC 8 AM handoff written (DAILY_HANDOFF.md top), LAPTOP_SETUP.md, BAKE_31_MERGE.md; goal2-c queued as gate 7
 - 10:25 UTC Sal item-master plan answered GO (aa7023df in gate 6); no plan pending; handoff at 11:00 UTC
