@@ -1,0 +1,58 @@
+{
+ "_about": "Biome (data/tables/biomes.json name) -> the sound tag words the ambience slots use in their biome lists (data/sound/batch2_slots.json). A biome with no row fails the test, so a new biome must be given one (an empty list is a row). Steve, 24 Oct: the server sends the biome id (protocol 76); the client maps it here.",
+ "tags": {
+  "ocean": [],
+  "beach": [
+   "beach"
+  ],
+  "hot_desert": [
+   "desert"
+  ],
+  "dry_scrub": [
+   "dry_scrub"
+  ],
+  "savanna": [
+   "grassland",
+   "dry_scrub"
+  ],
+  "tropical_forest": [
+   "woodland"
+  ],
+  "mangrove": [],
+  "temperate_grassland": [
+   "grassland"
+  ],
+  "temperate_forest": [
+   "temperate_forest",
+   "woodland"
+  ],
+  "mixed_forest": [
+   "temperate_forest",
+   "woodland"
+  ],
+  "marsh": [],
+  "heath": [
+   "grassland"
+  ],
+  "boreal_forest": [
+   "boreal_forest"
+  ],
+  "tundra": [
+   "polar"
+  ],
+  "alpine_meadow": [
+   "grassland"
+  ],
+  "bare_rock": [],
+  "snowfield": [
+   "polar"
+  ],
+  "glacier": [
+   "polar",
+   "ice"
+  ],
+  "volcanic_waste": [
+   "volcano"
+  ]
+ }
+}

@@ -1,5 +1,5 @@
 {
- "_about": "Sound batch 2 slots (Kathleen, goal 7, ambience): slot -> variant files from assets/audio/make_batch2.py. Tags tell the game when a slot may play (season, time, biome, near_water, altitude). layer: weather_bed and time_bed play one each at a time, positional plays the two nearest, oneshot plays at most two (scheduler gap_s 4-20, pitch +/-5 percent, never the same variant twice in a row). All peak -14 dB under creature clips. Engine hookup is Steve's. test_only (Steve, 24 Oct): the slot's place has no client lookup yet (canyon, volcano, desert, polar, ice, lava), so it plays in the Sound test and with --biome=NAME / set_anchor only; open job in JOBS.md.",
+ "_about": "Sound batch 2 slots (Kathleen, goal 7, ambience): slot -> variant files from assets/audio/make_batch2.py. Tags tell the game when a slot may play (season, time, biome, near_water, altitude). layer: weather_bed and time_bed play one each at a time, positional plays the two nearest, oneshot plays at most two (scheduler gap_s 4-20, pitch +/-5 percent, never the same variant twice in a row). All peak -14 dB under creature clips. Engine hookup is Steve's. test_only (Steve, 24 Oct): the slot's place has no data source yet (canyon and lava are in no table; the volcano bed needs a vent anchor), so it plays in the Sound test and with --biome=NAME / set_anchor only. Desert, dry scrub, polar and ice come from the server's biome id (protocol 76, data/sound/zone_tags.json).",
  "voice_plan": {
   "weather_bed": 1,
   "time_bed": 1,
@@ -180,8 +180,7 @@
     "altitude": "any"
    },
    "status": "filled",
-   "note": "",
-   "test_only": true
+   "note": ""
   },
   "bed_canyon_wind": {
    "group": "canyon",
@@ -649,8 +648,7 @@
     "no_repeat_variant": true
    },
    "status": "filled",
-   "note": "moderate; never on hot islands",
-   "test_only": true
+   "note": "moderate; never on hot islands"
   }
  }
 }

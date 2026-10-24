@@ -314,6 +314,15 @@ func _ready() -> void:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
 	@warning_ignore("confusable_local_declaration")
+	@warning_ignore("confusable_local_declaration")
+	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
+	items.zone_at = func(pos: Vector3) -> int:
+		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if tile_data.placeholder or tile_data.biome.is_empty():
+			return -1
+
+		return int(tile_data.biome[tile_data.nearest(pos.x, pos.z)])
 	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
 	@warning_ignore("confusable_local_declaration")
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)

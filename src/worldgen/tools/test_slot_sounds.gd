@@ -97,6 +97,7 @@ func _init() -> void:
 
 func _check_sites(names: Array) -> void:
 	_check_ambience()
+	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.
 	var used: Dictionary = {}
 	var pattern: RegEx = RegEx.new()
@@ -261,15 +262,15 @@ func _check_ambience() -> void:
 	# The wet-point lookup is cached: not within 2 s and 10 m, again after either.
 	check(not Ambience.wet_needs_refresh(1.5, 3.0) and Ambience.wet_needs_refresh(2.0, 0.0) and Ambience.wet_needs_refresh(0.5, 10.0), "the nearest water point is looked up again only after 2 s or 10 m")
 
-	# Slots whose place the client cannot read yet are marked test-only (and only those).
-	var unreadable: Array = ["canyon", "volcano", "desert", "polar", "ice"]
+	# Slots whose place has no data source yet (canyon, volcano vent, lava) are marked test-only (and only those); desert, dry scrub, polar and ice come from the zone.
+	var unreadable: Array = ["canyon", "volcano"]
 
 	for slot in slots:
 		var biome_tags: Array = slots[slot]["tags"]["biome"]
 		var all_unreadable: bool = true
 
 		for biome in biome_tags:
-			all_unreadable = all_unreadable and (unreadable.has(biome) or biome == "dry_scrub")
+			all_unreadable = all_unreadable and unreadable.has(biome)
 
 		var expect_test_only: bool = all_unreadable or str(slots[slot]["tags"]["near_water"]) == "lava"
 		check(bool(slots[slot].get("test_only", false)) == expect_test_only, "slot %s: test_only is %s" % [slot, expect_test_only])
@@ -282,3 +283,44 @@ func _sum(counts: Dictionary) -> int:
 		total += int(counts[slot])
 
 	return total
+
+
+# Zone (protocol 76): every biome in biomes.json has a tag row, the rows use only words the slots know, ids map to names, and the right slots wake up.
+func _check_zone() -> void:
+	var names: Dictionary = Ambience.biome_names("res://data/tables/biomes.json")
+	var rows: Dictionary = Ambience.zone_rows(Ambience.ZONE_TAGS_PATH)
+	check(names.size() >= 19 and rows.size() >= 19, "biomes and zone tag rows are read (%d, %d)" % [names.size(), rows.size()])
+
+	for id in names:
+		check(rows.has(names[id]), "biome %s has a zone tag row" % names[id])
+
+	for row_name in rows:
+		check(names.values().has(row_name), "zone row %s is a biome in biomes.json" % row_name)
+
+	var slots: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Ambience.SLOTS_PATH))["slots"]
+	var known: Dictionary = {"any": true, "any_except_desert_polar": true}
+
+	for slot in slots:
+		for tag in slots[slot]["tags"]["biome"]:
+			known[tag] = true
+
+	for row_name in rows:
+		for tag in rows[row_name]:
+			check(known.has(tag), "zone tag %s (biome %s) is a biome word some slot uses" % [tag, row_name])
+
+	check(Ambience.zone_tags_for(999, names, rows) == [] and Ambience.zone_tags_for(-1, names, rows) == [], "an unknown biome id gives no tags")
+	var desert: Dictionary = {"season": "summer", "time": "day", "biomes": Ambience.biomes_for(0.0, 0.0, 0.0, 40.0, "", Ambience.zone_tags_for(2, names, rows)), "water": 0.0, "height": 40.0}
+	check(Ambience.choose_bed(slots, "weather_bed", desert) == "bed_desert_wind", "hot desert (biome 2) wakes the desert wind")
+	var polar: Dictionary = {"season": "winter", "time": "day", "biomes": Ambience.biomes_for(0.0, 0.0, 0.0, 40.0, "", Ambience.zone_tags_for(17, names, rows)), "water": 0.0, "height": 40.0}
+	check(Ambience.matching(slots, "oneshot", polar).has("ice_crack"), "glacier (biome 17) wakes the ice crack")
+	var forest: Dictionary = {"season": "summer", "time": "day", "biomes": Ambience.biomes_for(0.0, 0.0, 0.0, 40.0, "", Ambience.zone_tags_for(8, names, rows)), "water": 0.0, "height": 40.0}
+	check(Ambience.choose_bed(slots, "weather_bed", forest) == "bed_forest_day", "temperate forest (biome 8) wakes the forest day bed even before trees are measured")
+
+	# Wire agreement: the version in terrain_net.gd has its row in PROTOCOL.md, and the message is sent by the server and received by the client.
+	var net_text: String = FileAccess.get_file_as_string("res://src/stream/terrain_net.gd")
+	var version_hit: RegExMatch = RegEx.create_from_string("const PROTOCOL_VERSION := (\\d+)").search(net_text)
+	var version: String = version_hit.get_string(1) if version_hit != null else ""
+	check(version != "" and FileAccess.get_file_as_string("res://PROTOCOL.md").contains("\n- %s: " % version), "PROTOCOL.md has a row for PROTOCOL_VERSION %s" % version)
+	check(net_text.contains("func zone(biome_id: int)") and net_text.contains("signal zone_received(biome_id: int)"), "terrain_net declares zone and zone_received")
+	check(FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").contains("net.zone.rpc_id(peer, biome_id)"), "the server sends zone")
+	check(FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("net.zone_received.connect") and FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("sound.ambience.set_zone"), "the client receives zone and gives it to the ambience layer")

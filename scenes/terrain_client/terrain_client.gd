@@ -677,6 +677,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:

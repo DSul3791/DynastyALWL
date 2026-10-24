@@ -222,6 +222,12 @@ var _skills_sent: Dictionary = {}   # peer -> the rows last sent
 var _skills_send_in: Dictionary = {}   # peer -> msec before which no skills message goes out
 var _last_practice: Dictionary = {}   # peer -> {skill: msec of its last counted success}
 var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
+var send_zone: Callable = Callable()        # (peer, biome id): tells the client which biome it stands in (protocol 76; ambience slots read it)
+var zone_at: Callable = Callable()          # (position Vector3) -> biome id from the tile biome map, -1 when unknown; set by the server scene
+var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
+var zone_samples: int = 0                   # biome lookups made, messages sent and microseconds spent (the report reads these)
+var zone_messages: int = 0
+var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
 var send_warmth: Callable           # (peer, warmth percent 0..100)
@@ -363,6 +369,9 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		return
 
 	_peer_key[peer] = key
+	_zone_sent.erase(peer)
+	_zone_cand.erase(peer)
+	_zone_checked.erase(peer)
 
 	if not _inventories.has(key):
 		_inventories[key] = InventoryScript.new(table)
@@ -443,6 +452,10 @@ func start_position_for(peer: int) -> Array:
 
 
 func peer_left(peer: int) -> void:
+	_zone_sent.erase(peer)
+	_zone_cand.erase(peer)
+	_zone_pos.erase(peer)
+	_zone_checked.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_off.erase(peer)
@@ -497,10 +510,58 @@ func report_position(peer: int, position: Vector3) -> void:
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
 		var now: int = Time.get_ticks_msec()
+		_note_zone(peer, position)
 
 		if now - int(_spot_saved_msec.get(peer, 0)) >= SAVE_SPOT_EVERY_MSEC:
 			_spot_saved_msec[peer] = now
 			_note_spot(peer, "online")
+
+
+const ZONE_EVERY_MSEC := 2000       # the biome under a player is read this often
+const ZONE_TELEPORT_M := 200.0       # a jump this far between two reads (teleport, respawn) is sent at once
+var _zone_sent: Dictionary = {}      # peer -> biome id the client was last told
+var _zone_cand: Dictionary = {}      # peer -> a new biome read once; sent when the next read agrees (about 4 s)
+var _zone_pos: Dictionary = {}       # peer -> position at the last read
+var _zone_checked: Dictionary = {}   # peer -> msec of the last read
+
+
+# Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
+# a border). Reliable and ordered, so the client's last value is the server's last.
+func _note_zone(peer: int, position: Vector3) -> void:
+	if not zone_at.is_valid() or not send_zone.is_valid():
+		return
+
+	var now: int = int(zone_clock.call()) if zone_clock.is_valid() else Time.get_ticks_msec()
+
+	if _zone_checked.has(peer) and now - int(_zone_checked[peer]) < ZONE_EVERY_MSEC:
+		return
+
+	_zone_checked[peer] = now
+	var started: int = Time.get_ticks_usec()
+	var biome: int = int(zone_at.call(position))
+	zone_usec += Time.get_ticks_usec() - started
+	zone_samples += 1
+	var jumped: bool = _zone_pos.has(peer) and position.distance_to(_zone_pos[peer]) > ZONE_TELEPORT_M
+	_zone_pos[peer] = position
+
+	if biome < 0:
+		return
+
+	if not _zone_sent.has(peer) or jumped:
+		_send_zone(peer, biome)
+	elif biome == int(_zone_sent[peer]):
+		_zone_cand.erase(peer)
+	elif int(_zone_cand.get(peer, -2)) == biome:
+		_send_zone(peer, biome)
+	else:
+		_zone_cand[peer] = biome
+
+
+func _send_zone(peer: int, biome: int) -> void:
+	_zone_sent[peer] = biome
+	_zone_cand.erase(peer)
+	zone_messages += 1
+	send_zone.call(peer, biome)
 
 
 func inventory_of(peer: int):
