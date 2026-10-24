@@ -110,3 +110,8 @@ Note: Recommendation: Yes because it makes bridges matter. Why not: players lose
 Note: Needs a new bare-trunk model per species; until then trees just vanish.
 Note: Recommendation: Yes because players should see why the wood is changing.
 [check]
+
+## wl-tree-speed | Water land types: trees take 3 to 6 real days to die after the water changes (herbs half a day)?
+Note: One game day is one real hour. Spruce, fir and beech drown first; willow and alder last.
+Note: Recommendation: Yes because it is slow enough to react, fast enough to see. Why not: you may want it faster.
+[check]
