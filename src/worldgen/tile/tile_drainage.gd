@@ -245,6 +245,15 @@ static func _probe(water, fill, flow, channels, land: PackedFloat32Array, sample
 	# Walk upstream along the biggest donor and print every 10th cell (world metres, discharge in cells), so two tiles can be
 	# compared to find where their catchments first differ.
 	var at: int = row * samples + column
+
+	# Start from the biggest stream cell in the window (the probe spot itself is often just bank).
+	for r in range(row - 8, row + 9):
+		for c in range(column - 8, column + 9):
+			if flow.discharge[r * samples + c] > flow.discharge[at]:
+				at = r * samples + c
+
+	@warning_ignore("integer_division")
+	print("PROBE up start world %d,%d Q %.0f" % [(at % samples + water._origin_sx) * int(cell_m), (at / samples + water._origin_sz) * int(cell_m), flow.discharge[at] / unit])
 	var received: PackedInt32Array = PackedInt32Array()
 	received.resize(samples * samples)
 	received.fill(-1)
