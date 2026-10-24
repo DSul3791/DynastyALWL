@@ -56,3 +56,54 @@ UPDATE 13:40 UTC: gate list 8 adds sal-tools-batch1 4ec83436 (final; wears_tool 
 4. cave air + cave pollen - plans answered, not built yet; merge only tested ids.
 5. david3-rig-only e792d7c5 (tools/look_rig.sh only, identical to reviewed b2538698; syntax 5 pass 0 fail). Merge the TESTED id after Mike's Windows look_rig PASS (flora + item run). Linux flora already done by David3 (nvidia, 2.5 min).
    -> PASS 24 Oct 19:35 UTC (Mike, Windows: --flora and --item exit 0, 2 pass 0 fail, run on b2538698). e792d7c5 has the identical look_rig.sh (diff 0 lines), so merge e792d7c5 in the next build, after the devstop ends. Linux horizon name tags: David3 to look later, not a blocker.
+
+## Water R1 (Tyler, 24 Oct 20:25 UTC) - claude/water-r1-landmap ea0e049b (supersedes 4052808; adds ACT_LAND_TYPES 46 button, no protocol bump)
+David3 to run on ea0e049b: test_land_type.gd, test_dam_backup.gd, settle rules tests, test_water_flow/settle unchanged, parse_scan, validate_items, local_check 233, and report the per-tile signature memory (must stay under 1.2 GB water limit). Button not tested in a running game: Mike presses it once after merge when Dave's PC is free. 30-day signature wiring is a later R1b. Merge only on PASS id. Label RESTART.
+
+## 790 queue (Tyler, 20:30 UTC)
+1. claude/sal-thatch-grass 76bb2517 (thatch_grass plant flora 127, fixed drops, bark thatch; flora layout, RESTART). David3: validate_items, test_server_items, flora tests, parse_scan, local_check 233, one flora picture of thatch_grass (look_rig --flora). Merge on PASS id.
+2. claude/steve-fall-quiet (water_sounds.gd only), claude/steve-wind-bus (ambience_slots.gd, 1 line) and claude/kathleen-wind-soft 3655ccbd: sound-only RUNTIME. David3: parse_scan, validate_items, local_check 233 on the tested ids; merge on PASS. Ear check by Dave via QA cards (wind-soft-789 and fall card).
+
+## Water R1 update (Tyler, 24 Oct 20:42 UTC)
+David3: test claude/water-r1-landmap at its latest commit bd991eff (settler rules v7, supersedes ea0e049b), same test list. Merge in 793 only on David3 PASS AND Mike's check after the final bake from claude/sonny-final c2eeb8e3 (the settler and the bake go together; TERRAIN_VERSION bump with it).
+3. claude/steve-settle-memory 6815e9a4 (settle_water.gd, 3 lines): David3 parse_scan + settle past tick 9000, memory flat, first 2000 ticks identical to the undrained run. Merge in 790 (the final-bake clone needs it).
+
+## PRIORITY bundle 790 (Tyler 20:55 UTC): claude/tyler-790a d8d7a602 (includes sound-sliders scroll fix)
+Contains steve-go-spawn, steve-nature-debug, steve-wind-bus, steve-sound-sliders, kathleen-water-soft a18971dc (with fall-quiet and wind-soft), steve-settle-memory. David3: parse_scan, validate_items, local_check 233, selftest, + settle past tick 9000 memory flat. Merge that exact id on PASS. Then thatch (sal-thatch-grass) as the next build.
+
+## Thatch build (after the sound/menu bundle) (Tyler 20:58 UTC)
+Next build = claude/sal-thatch-grass 76bb2517 + claude/sal-unknown-item 9716dc5f (thatch, bedding, straw, reed stems, tinder, stuffing, fibre always known; validator errors if any recipe ingredient can read Unknown). Both RESTART. Plan: GO as one class (no new plan needed): keep the validator rule, keep real descriptions, no change to inspection mode for other items. David3: validate_items, test_server_items, flora tests, parse_scan, local_check 233. Merge on PASS ids.
+Also in the thatch build: claude/kathleen-held-tools 6429ab6e (held_item.gd). David3 renders the hand views first (hammer, saw, axe, pickaxe, torch, net, empty hand), then parse_scan + local_check. Merge on PASS.
+Last in line: claude/sal-weight-audit 00502227 (data; wait for Dave's four weight cards; David3 validate_items, test_server_items, carry-weight, test_first_hour, local_check). Merge on PASS id.
+
+## David3 follow-up job (Tyler 21:35 UTC): settle memory check on generator-v2 (build 790)
+No dry-start flag needed: tools/settle_water.gd starts from dry by itself. Command (scratch world copy so the repo stays clean):
+cp -r worlds/base_world /out/scratch_world; godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 --ticks=9500 --world=/out/scratch_world
+Watch the process memory (e.g. ps -o rss every 60 s). PASS = reaches tick 9500 with no bad_alloc and memory flat (not +160 KB per tick). Optional match test: run --ticks=2000 on build 788 (git stash/worktree) and 790, compare the printed mass balance; they must be equal. Not blocking anything: Mike's final bake waits on it.
+After held-tools: claude/sal-fire-tiers-build 9d911ec8 (cooking.json, server_items.gd, building_look, inventory_view; RESTART). David3: validate_items, test_server_items, old state-1 fire save loads, picture of each tier, parse_scan, local_check. Merge on PASS id.
+Also 791: claude/steve-forest-bed (BED_TRIM_DB -12 dB, code only). David3: parse_scan + local_check. Merge on PASS id.
+791 also: claude/kathleen-forest-bed f57c1bd9 (new quieter forest beds) together with steve-forest-bed (BED_TRIM_DB set to 0 by Steve; David3 must test the head AFTER Steve's 0 commit). David3: parse_scan + local_check only, no renders. Merge both on PASS ids.
+791 also: claude/steve-sound-test-free (ambience_slots.gd guard). David3: parse_scan + local_check. Merge on PASS id.
+Same build as weight audit (after fire tiers): claude/sal-no-stack-caps-build 39a03c5c + sal-weight-audit 00502227. David3 count-field width check + save round trip per Sal_no_stack_caps_build_REPLY.md. Merge both on PASS ids.
+791 also: claude/sal-bed-recipe-sort 768b92ae (bed recipe, sorted menus). David3: validate_items, test_server_items, craft-bed recipe test, parse_scan, local_check. Merge on PASS id.
+791 also: claude/steve-wind-surf (rebase on generator-v2 790 first). David3: parse_scan + local_check. Merge on PASS id.
+791 also: claude/sal-auto-pickup-build (client, P toggle, default off). David3: headless test, check_controls, parse_scan, local_check. Merge on PASS id.
+
+## 791a bundle READY FOR DAVID3 (Tyler 22:55 UTC): claude/tyler-791a 02e0910c
+Contains (merged on generator-v2 build 790): sal-thatch-grass, sal-unknown-item, sal-bed-recipe-sort, steve-shore-net 980b5904, sal-auto-pickup-build, kathleen-held-tools, kathleen-forest-bed, steve-forest-bed, steve-sound-test-free, steve-wind-surf. My cloud local_check PASS (RESTART label, validator 0 errors, test_server_items, test_shore_net, test_auto_pickup, test_fishing, test_new_player). Fixes I made while merging: recipes next_number 164, items next_number 261, shore_net description to 105 chars, test_shore_net iterator renamed (warning). Duplicate item/recipe number check: merge_check clear. NOTE: steve-forest-bed trim-to-0 commit must be in the branch head: if David3 finds BED_TRIM_DB still -12 together with Kathleen's quieter beds, say so.
+David3: selftest, parse_scan, validate_items, local_check 233, test_server_items, test_shore_net, test_fishing, test_auto_pickup, test_first_hour, flora tests, hand-view renders (hammer, saw, axe, pickaxe, torch, net, empty hand) and thatch_grass picture. Merge that exact id on PASS.
+791b (next): fire tiers 9d911ec8 + tripod e0985a54 (recipe 165), then no-stack caps 39a03c5c + weight audit 00502227.
+
+## 792 queue (Tyler 23:25 UTC)
+1. claude/sal-thatch-shelter 0450dcb1 (clean on 791; dup sweep clean on my trial). David3: full gate per tech/ACTION_PLANS/Sal_r1_pieces_REPLY.md incl. save round trip.
+2. sal-fire-tiers-build, 3. sal-cooking-tripod (recipe 165), 4. sal-no-stack-caps-build + sal-weight-audit: Sal rebases each onto the merged head (conflicts today: weights.json, recipes.json, .uid). Numbers: bed 160, hammer 161, shore net 163, thatch kits 166-169, tripod 165.
+792 also: claude/steve-sound-hookup c87d8522 (client, with kathleen-sound-r1) and claude/steve-rough-bed (code after Steve rebuilds it on the merged shelter; plan answered GO). See Steve_rough_bed_REPLY.md, Steve_sound_hookup_REPLY.md.
+
+## 792 ORDER (Tyler 23:20 UTC; each step = David3 PASS id, then merge, then the next is rebased on it)
+1. sal-thatch-shelter 0450dcb1 (test NOW; full gate + save round trip + dup sweep)
+2. sal-fire-tiers-build (Sal rebases on 1)
+3. sal-cooking-tripod (recipe 165; Sal rebases on 2)
+4. steve-rough-bed 6459b079 (built on 1; David3: test_bed, test_animal_senses, test_warmth, validate_items, dup sweep, local_check)
+5. steve-sound-hookup fce8a304 (test_batch3_slots, parse_scan, local_check; shore-net part already in 791, so expect no conflict)
+6. sal-no-stack-caps-build + sal-weight-audit (after Dave's four weight cards; count-field width check)
+A 792 may ship as two smaller builds if Dave wants the bed sooner: merge 1+4 first.
