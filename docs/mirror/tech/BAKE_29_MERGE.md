@@ -18,3 +18,7 @@ Dave's pull steps (send with the build)
 6. Walk from spawn (spawn and buildings may shift; report where).
 Notes for Dave: earlier digs/buildings will not match the new ground; flora layout and tree belts follow when Kathleen's VERSION 4 merges.
 HOLD 04:50 UTC: build 777 (bake 29, mike-bake-v29 ba9b7d27) held for Dave until spawn gate fails (slope 9.9 vs 7.0, 5 water samples) are fixed by Sonny. List 4 merges continue.
+
+UPDATE 04:55 UTC: spawn fix. Code: sonny-foothills a1824d00 (TERRAIN_VERSION 34, on f49a1033, only tile (3,4) changes). Tiles: claude/mike-bake-v29b (9 tiles, new (3,4) re-settled). River-settle final fa7bdadc (code only, merged on top; no new settle needed). HOLD lifts when Mike's table shows the spawn gate PASS.
+Mixed stamps are fine: a tile file carries no TERRAIN_VERSION. Its header holds only FORMAT_VERSION 1 and GENERATOR_VERSION 1 (tile_file.gd). TERRAIN_VERSION is ONE code constant (terrain_layout.gd, 34) sent by the server, and the saved ground and the client cache are keyed by "version + md5 of all tile files" (server_block_store.gd:70, terrain_client.gd:909). So the game never compares tiles to each other: all 9 tiles are read with version 34 rules and any changed tile file changes the stamp, which clears the saved ground (Dave resets edits anyway). No restamp, no full rebake is needed because of the version label.
+Merge order for 777: mike-bake-v29b (must contain a1824d00 or merge sonny-foothills a1824d00 with it), then tyler-seam32, fa7bdadc, then passing list 4 branches. HUD check for Dave: "ground v34".
