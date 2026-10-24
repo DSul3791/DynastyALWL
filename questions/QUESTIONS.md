@@ -34,12 +34,6 @@ Note: Type any weight in kg you want changed in the notes box, or 'ok'.
 Note: Recommendation: ok because each matches a real 2.4 m board or a single brick or block.
 [text]
 
-## weight-spade-sizes | Which spade is your 3.8 kg one, and the other sizes?
-Note: I set the medium steel and iron spade to 3.8 kg, small 2.4, large 5.0 (garden spade is about 2 kg, a navvy's about 5). Wooden spades 0.7 / 1.0 / 1.7, stone 1.0 / 1.6 / 2.6.
-Note: Type the weights you want in the notes box, or 'ok'.
-Note: Recommendation: ok because medium steel is your 3.8 kg and the others scale from it.
-[text]
-
 ## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
 Note: 1. Pull branch claude/kathleen-forest-bed and press F6.
 Note: 2. Stand in the woods, away from water, for one minute in summer, then in winter (Admin season).
