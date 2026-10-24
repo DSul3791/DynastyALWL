@@ -23,11 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## rumble-300m | Should the volcano rumble play only above 300 m (high up), or also from the ground near the volcano?
-Note: Now the rumble plays only when you are above 300 m. A volcano on the horizon is silent from the ground.
-Note: Recommendation: Relax it: play it softly from the ground within about 3 km of the vent, louder up close, because a volcano you can see should be heard (a distance table, no new code).
-[check]
-
 ## tools-next-uses | What should the hammer and adze do first: real uses now (nails, smoothing logs), or build the anvil, tongs and bellows first?
 Note: The hammer and adze exist but do nothing yet. Nails need an iron chain (forge, anvil).
 Note: Recommendation: Give the hammer and adze their first real uses now (placing nails, finishing logs into beams); the anvil, tongs and bellows come in the next tools batch, because a tool that does nothing should not stay in the game.
