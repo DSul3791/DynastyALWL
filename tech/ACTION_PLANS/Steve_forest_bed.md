@@ -5,3 +5,5 @@ Trace (RUNTIME, ambience_slots.gd): bed_surf only plays for beach / sea_edge, so
 Change: BED_TRIM_DB -12 dB on the two forest beds (mean about -39 to -43 dB, the level of the wind Dave found fine). One constant, easy to retune.
 If it still happens, read F3 (branch nature-debug): the "loudest Nature:" line names the voice. bed_forest_* = the bed (needs a different recording from Kathleen, less steady noise, more birds/leaves); water_river/water_fall with a distance = water; ambience files like bed_* / creature names = those.
 Test: stand in a forest away from water, nature one-shots (birds, leaves) audible over the bed.
+
+Update 24 Oct 22:02 UTC: Kathleen's new forest beds (claude/kathleen-forest-bed f57c1bd9) are 15-20 dB quieter, so BED_TRIM_DB is 0 for both (constant kept for retuning). Land the two together in 791.

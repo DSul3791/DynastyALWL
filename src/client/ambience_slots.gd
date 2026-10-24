@@ -19,7 +19,7 @@ const FADE_S := 2.0
 const SILENT_DB := -60.0
 # Dave 24 Oct: a surf-like roar in the middle of a forest drowned the nature sounds. The forest beds are steady broadband noise at about
 # -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
-const BED_TRIM_DB := {"bed_forest_day": -12.0, "bed_forest_winter": -12.0}
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0}   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
 const ONESHOT_DIST_M := [12.0, 45.0]
