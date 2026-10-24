@@ -48,6 +48,9 @@ Test: test_ground_watchdog now has 14 checks (column drop, flowing stream never 
 
 ## Second correction after Mike's rerun of bda9bad3 (Steve, 24 Oct 15:00)
 Mike: spawn-column drops worked (40 used) but the join still opened at +33 s with 0 retries and blocks kept arriving. Cause: 40 dropped blocks are not the whole column (it has many y blocks per LOD), so another block gave ground, and a stream that keeps delivering never looks idle. Changes:
-- Test flag is now `--drop-ground-lods=N` (replaces --drop-ground-blocks): EVERY block of LOD 0 to N-1 in the spawn column fails for good. Use N=2 to force the hang.
+- Test flag is now `--drop-ground-lods=N` (replaces --drop-ground-blocks): EVERY block of LOD 0 to N-1 in the spawn column fails for good. Use N=4 to force the hang: the terrain makes collision for LOD 0 to 3 (collision_lod_count 4), so dropping fewer lets a coarser block give ground.
 - Busy rule: a stream that delivers but still gives no ground is retried after 30 s (was 60), then every 15 s, same 6 tries. The cache keeps every block already received, so a restream costs little.
 - Expect for Mike: `--drop-ground-lods=2`: "test drop (--drop-ground-lods)" lines, then at about 8 s without arrivals or at 30 s after the welcome "JOIN: ground retry, try 1 of 6", then "ground ready after 1 retries".
+
+## Third note (Mike's runs of 37c943c6, N=1 and N=2)
+Collision is generated for LOD 0 to 3, so with N=1 or 2 a coarser block (LOD 2 or 3) gave ground first ("ready after 0 retries" at +32 to +36 s, no drops yet). The engine then refined to LOD 0/1, those blocks were dropped, the coarse collider went away, the ray found nothing again, and the watchdog correctly retried at +59 s (same join path: waiting_for_ground true again). Player y 32 after ready is normal: the arrival step lowers the player from the spawn drop (61) to ground + ARRIVAL_HEIGHT. Rerun with `--drop-ground-lods=4`: no collision at all from the start, expect "waiting for ground" lines, then "ground retry, try 1 of 6" (8 s after arrivals stop or 30 s), then "ground ready after 1 retries".

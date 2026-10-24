@@ -198,7 +198,7 @@ var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
-var _drop_ground_lods: int = 0                  # test only (--drop-ground-lods=N): the blocks of LOD 0 to N-1 in the spawn column fail for good, so the join hang can be forced
+var _drop_ground_lods: int = 0                  # test only (--drop-ground-lods=N): the blocks of LOD 0 to N-1 in the spawn column fail for good; N=4 removes every collision LOD (collision_lod_count 4) and so forces the join hang
 var _ground_watchdog = GroundWatchdogScript.new()  # restarts the stream when the ground does not come (see ground_watchdog.gd)
 var _ground_giving_up: bool = false
 var _ground_log_msec: int = 0
