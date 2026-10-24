@@ -45,3 +45,6 @@ UPDATE 13:05 UTC: ore fix 3 PROVEN: sonny-outlets 4f2d2497 (test_worldgen 885 pa
 UPDATE 13:10 UTC: FINAL BAKE list (Sonny + Sal): 1 ore fix 4f2d2497; 2 farmland tune and anything from Dave's look at 783-785 (waiting for his notes); 3 inland river ends: 0 on v31 (one INFO end at x71264 z75264, not on the list); 4 seam 0.10 m accepted. The final bake waits only on Dave's feedback; if he reports nothing terrain-related, bake with the ore fix alone.
 UPDATE 13:20 UTC (head 786): gate list 8 adds steve-rig-item a15eeecc (final) (rig tooling; Mike runs the two look_rig commands from the plan + local_check).
 UPDATE 13:40 UTC: gate list 8 adds sal-tools-batch1 4ec83436 (final; wears_tool field, recipe 159 lumber_by_hand) (3 tools + hoe alias; data only, RESTART).
+
+## Final-build checklist addition (24 Oct 13:50 UTC)
+- BUG-001 join-screen hang fixed (timeout + retry) and repro'd on a fresh clone after Pull. See BUG_LIST.md.
