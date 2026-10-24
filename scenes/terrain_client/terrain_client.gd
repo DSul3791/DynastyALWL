@@ -201,6 +201,8 @@ var waiting_for_ground: bool = false
 var _drop_ground_blocks: int = 0                  # test only (--drop-ground-blocks=N): the first N blocks asked for fail for good, so the join hang can be forced
 var _ground_watchdog = GroundWatchdogScript.new()  # restarts the stream when the ground does not come (see ground_watchdog.gd)
 var _ground_giving_up: bool = false
+var _ground_log_msec: int = 0
+var _ground_logged: bool = false
 var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
@@ -1517,6 +1519,10 @@ func _water_ahead() -> bool:
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
 # surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
 func _arrive_on_ground() -> void:
+	if connected_msec > 0 and not _ground_logged:
+		_ground_logged = true
+		_join_log("JOIN: ground ready after %d retries, test drops left %d, player %s" % [_ground_watchdog.tries, stream.drop_blocks_left if stream != null else 0, str(body.global_position)])
+
 	var ground: float = _ground_below(body.global_position)
 
 	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
@@ -2357,14 +2363,19 @@ func _run_ground_watchdog() -> void:
 	if connected_msec <= 0 or stream == null or _ground_giving_up:
 		return
 
-	var action: String = _ground_watchdog.step(Time.get_ticks_msec(), waiting_for_ground, stream.pending())
+	var now: int = Time.get_ticks_msec()
+	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending())
+
+	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
+	if waiting_for_ground and now - _ground_log_msec >= 5000:
+		_ground_log_msec = now
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d, pending %d, test drops left %d, retries %d" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, stream.pending(), stream.drop_blocks_left, _ground_watchdog.tries])
 
 	if action == "":
 		return
 
 	var line: String = "JOIN: ground %s, try %d of %d: loads %d, received %d, timeouts %d, bad %d, zeroed %d, pending %d, player %s" % [action, _ground_watchdog.tries, _ground_watchdog.MAX_TRIES, stream.loads, stream.blocks_received, stream.timeouts, stream.bad_blocks, stream.zeroed_blocks, stream.pending(), str(body.global_position) if body != null else "?"]
-	_telemetry.event(line)
-	print("Terrain client: " + line)
+	_join_log(line)
 
 	if action == "retry":
 		_restream_ground()
@@ -2374,6 +2385,13 @@ func _run_ground_watchdog() -> void:
 
 	if _connect_window != null:
 		_connect_window.fail("The ground did not arrive", "The server welcomed this game, but the ground under you did not load after %d tries.\n\nPlease quit, press Play again, and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % _ground_watchdog.tries, func(): _finish(1))
+
+
+# One join line to the telemetry log and to the console, with the wall-clock time and the seconds since the welcome (the logs had neither).
+func _join_log(text: String) -> void:
+	var line: String = "%s [+%.1f s] %s" % [Time.get_datetime_string_from_system(), float(Time.get_ticks_msec() - connected_msec) * 0.001, text]
+	_telemetry.event(line)
+	print("Terrain client: " + line)
 
 
 func _restream_ground() -> void:

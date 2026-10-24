@@ -154,6 +154,7 @@ func _drop_for_test(key: Vector4i) -> bool:
 	if not _dropped.has(key) and drop_blocks_left > 0:
 		drop_blocks_left -= 1
 		_dropped[key] = true
+		print("client: test drop (--drop-ground-blocks) block %s LOD %d, %d left" % [str(Vector3i(key.x, key.y, key.z)), key.w, drop_blocks_left])
 
 	var dropped: bool = _dropped.has(key)
 	_mutex.unlock()
