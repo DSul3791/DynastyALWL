@@ -18,6 +18,7 @@
 		"farm_top_m": 400.0,
 		"farm_share_min": null,
 		"rolling_share_min": null,
+		"rolling_share_max": null,
 		"band_table_check": false,
 		"band_tolerance_m": 15.0,
 		"band_tolerance_frac": 0.25,
@@ -50,7 +51,7 @@
 		"moor_highland": {"summit_range_m": [450, 750]}
 	},
 	"islands": {
-		"8": {"name": "inner starter island", "type": "middle_peak", "band_table_check": true, "flat_share_min": 0.2, "summit_plateaus": [{"within_m": 5.0, "max_m": 100}, {"within_m": 20.0, "max_m": 200}], "profile_targets_m": null, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 6]},
+		"8": {"name": "inner starter island", "type": "middle_peak", "band_table_check": true, "flat_share_min": 0.2, "farm_share_min": 0.7, "rolling_share_min": 0.3, "rolling_share_max": 0.55, "summit_plateaus": [{"within_m": 5.0, "max_m": 100}, {"within_m": 20.0, "max_m": 200}], "profile_targets_m": null, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 6]},
 		"1": {"name": "center island"}
 	},
 	"tiles": {
@@ -59,6 +60,7 @@
 		"spawn_max_slope_deg": 7.0,
 		"spawn_range_m": 1.5,
 		"spawn_max_water_cells": 0,
+		"gully_dead_end_max_share": 0.02,
 		"river_min_cells": 30,
 		"river_gap_m": 128,
 		"river_natural_drop_m": 2.0,

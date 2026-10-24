@@ -17,6 +17,8 @@ extends SceneTree
 #   --sketch-only  skip the tile checks
 #   --tiles-only   skip the sketch (island shape) checks
 #   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks); with tiles baked also island_<id>_bearings_tile.png from the 8 m maps, plus the summit plateau width
+#   --bakelog=FILE the bake log; its line "gullies: N, dead ends: M" feeds the dead-end gully row
+#   --gullies=TEXT the same line pasted directly
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
 # Limits live in <world>/plan/island_checks.json (null = report only).
@@ -45,6 +47,7 @@ var _checks: int = 0
 var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
+var _gully_line: String = ""
 var _rules: Dictionary = {}
 var _sketch: Dictionary = {}
 var _features: Dictionary = {}   # island id -> feature name of island_list.json
@@ -76,6 +79,10 @@ func _run() -> int:
 			_picture_dir = argument.trim_prefix("--picture=")
 		elif argument == "--fine":
 			_fine = true
+		elif argument.begins_with("--bakelog="):
+			_gully_line = _find_gully_line(FileAccess.get_file_as_string(argument.trim_prefix("--bakelog=")))
+		elif argument.begins_with("--gullies="):
+			_gully_line = argument.trim_prefix("--gullies=")
 		elif argument == "--sketch-only":
 			do_tiles = false
 		elif argument == "--tiles-only":
@@ -535,6 +542,7 @@ func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary)
 	var rolling_share: float = float(rolling) / float(zone)
 	_bound_row("%s farmable share (slope at or under %.0f deg, %.0f-%.0f m)" % [title, farm_deg, low_m, top_m], farm_share, config["farm_share_min"], false, "%.1f%% of %d cells" % [farm_share * 100.0, zone])
 	_bound_row("%s rolling share (farmable but over %.0f deg)" % [title, flat_deg], rolling_share, config["rolling_share_min"], false, "%.1f%% of %d cells" % [rolling_share * 100.0, zone])
+	_bound_row("%s rolling share, too hilly for farmland" % title, rolling_share, config["rolling_share_max"], true, "%.1f%% (English look 35-55%%)" % (rolling_share * 100.0))
 
 
 # The island's land, ranked by height, against starter_islands.height_bands of
@@ -1249,6 +1257,41 @@ func _ray(origin: Vector2, bearing_deg: float, distances: Array, beach_top_m: fl
 
 # ---------------------------------------------------------------- tiles (baked files, read-only)
 
+# "gullies: N, dead ends: M" from the bake log (Sonny): dead-end gullies as a
+# share of all gullies, and per km2 of baked tiles.
+func _find_gully_line(text: String) -> String:
+	for line in text.split("\n"):
+		if line.contains("gullies:") and line.contains("dead ends:"):
+			return line
+
+	return ""
+
+
+func _gully_checks(area_km2: float, tile_limits: Dictionary) -> void:
+	if _gully_line == "":
+		_row("dead-end gullies", "no gully line (pass --bakelog=FILE or --gullies=\"gullies: N, dead ends: M\")", "-", "INFO")
+		return
+
+	var numbers: PackedStringArray = PackedStringArray()
+	var digits: String = ""
+
+	for letter in _gully_line + " ":
+		if letter >= "0" and letter <= "9":
+			digits += letter
+		elif digits != "":
+			numbers.append(digits)
+			digits = ""
+
+	if numbers.size() < 2:
+		_row("dead-end gullies", "cannot read: %s" % _gully_line, "-", "INFO")
+		return
+
+	var gullies: int = int(numbers[0])
+	var dead: int = int(numbers[1])
+	var share: float = float(dead) / float(maxi(gullies, 1))
+	_bound_row("dead-end gullies share (sink, not lake or sea, within 3 km)", share, tile_limits["gully_dead_end_max_share"], true, "%d of %d gullies, %.2f per km2" % [dead, gullies, float(dead) / maxf(area_km2, 0.001)])
+
+
 func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	var tile_limits: Dictionary = _limits["tiles"]
 	var tiles: Array = []
@@ -1266,6 +1309,7 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 		return
 
 	_seam_checks(settings, directory, tiles)
+	_gully_checks(float(tiles.size()) * pow(float(settings.tile_size_m) / 1000.0, 2.0), tile_limits)
 	_spawn_check(settings, world_dir, directory, tile_limits)
 	var stitched: Dictionary = _stitch(tiles, directory)
 
