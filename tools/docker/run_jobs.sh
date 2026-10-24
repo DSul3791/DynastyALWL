@@ -88,6 +88,22 @@ run_test() {
 	if [ $RC -eq 0 ] && ! echo "$R" | grep -qiE "[1-9][0-9]* fail|^FAIL|SCRIPT ERROR|Parse Error"; then ok "$N"
 	else bad "$N (exit $RC): $(echo "$R" | grep -iE "fail|error" | head -3 | tr '\n' ' ' | cut -c1-240)"; fi
 }
+guard() {   # PAUSE file or a busy server: refuse to start a job (Dave's games come first)
+	[ -f /out/PAUSE ] && { echo "PAUSED: /out/PAUSE exists (remove it to run jobs)"; exit 3; }
+	local L; L=$(cut -d' ' -f1 /proc/loadavg | cut -d. -f1)
+	[ "$L" -ge "${MAX_LOAD:-6}" ] && { echo "BUSY: server load $L is at or above ${MAX_LOAD:-6}; try later"; exit 3; }
+	return 0
+}
+publish() {   # push the summary and small jpgs of one run folder to claude/box-results (never main, never generator-v2):  publish [/out/<stamp>]
+	local SRC="${1:-$OUT}"; local T; T=$(mktemp -d); cd "$T" || return
+	git clone -q --depth 1 --branch claude/box-results "$REPO_URL" r 2>/dev/null || { git init -q r; git -C r checkout -q -b claude/box-results; git -C r remote add origin "$REPO_URL"; }
+	mkdir -p "r/results/$(basename "$SRC")"; cp "$SRC"/*.txt "r/results/$(basename "$SRC")/" 2>/dev/null
+	for P in "$SRC"/shots/*.png; do [ -f "$P" ] && python3 -c "
+from PIL import Image;import sys
+im=Image.open(sys.argv[1]).convert('RGB');im.thumbnail((1280,720));im.save(sys.argv[2],'JPEG',quality=70)" "$P" "r/results/$(basename "$SRC")/$(basename "${P%.png}").jpg" 2>/dev/null; done
+	git -C r add -A; git -C r -c user.name="${GIT_NAME:-Dynasty dev box}" -c user.email="${GIT_EMAIL:-devbox@example.invalid}" commit -q -m "Box results $(basename "$SRC")" && git -C r push -q origin HEAD:refs/heads/claude/box-results 2>&1 | tail -1
+	cd /; rm -rf "$T"; echo "published $(basename "$SRC") to claude/box-results"
+}
 basics() {
 	python3 tools/parse_scan.py > "$OUT/parse_scan.txt" 2>&1 && ok "parse_scan" || bad "parse_scan: $(tail -3 "$OUT/parse_scan.txt" | tr '\n' ' ' | cut -c1-200)"
 	run_test validate_items
@@ -95,13 +111,14 @@ basics() {
 case "${1:-selftest}" in
 	selftest) update; selftest; finish;;
 	keygen) keygen;;
+	publish) publish "$2";;
 	gitcheck) gitcheck; finish;;
 	validate) validate; finish;;
-	shot) shift; exec bash /work/repo/tools/docker/shot.sh "$@";;
+	shot) guard; shift; exec bash /work/repo/tools/docker/shot.sh "$@";;
 	godot) shift; cd /work/repo 2>/dev/null; exec "$GODOT_EXE" "$@";;
 	update) update; finish;;
-	tests) shift; update; selftest; basics; for N in "$@"; do run_test "$N"; done; finish;;
-	queue) Q="${2:-tools/mike_queue.txt}"; update; selftest; cd /work/repo || exit 2
+	tests) guard; shift; update; selftest; basics; for N in "$@"; do run_test "$N"; done; finish;;
+	queue) guard; Q="${2:-tools/mike_queue.txt}"; update; selftest; cd /work/repo || exit 2
 		git checkout -q -B "box-$STAMP" "origin/$BRANCH"
 		while IFS= read -r LINE || [ -n "$LINE" ]; do
 			LINE="${LINE%%#*}"; LINE=$(echo "$LINE" | sed 's/[[:space:]]*$//'); [ -z "$LINE" ] && continue

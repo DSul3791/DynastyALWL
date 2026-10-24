@@ -23,7 +23,7 @@ RUN mkdir -p /out && xz -dc /tmp/godot.xz > /out/godot
 FROM engine-${ENGINE} AS engine
 
 FROM ubuntu:24.04
-RUN apt-get update && apt-get install -y --no-install-recommends git openssh-client python3 ca-certificates tini curl \
+RUN apt-get update && apt-get install -y --no-install-recommends git openssh-client python3 python3-pil ca-certificates tini curl \
  xvfb libx11-6 libxcursor1 libxinerama1 libxi6 libxrandr2 libgl1 libegl1 libvulkan1 mesa-vulkan-drivers vulkan-tools && rm -rf /var/lib/apt/lists/*
 COPY --from=engine /out/godot /opt/godot/godot
 RUN chmod +x /opt/godot/godot && ln -s /opt/godot/godot /opt/godot/godot-gfx && /opt/godot/godot --version
