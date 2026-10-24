@@ -845,6 +845,7 @@ func _init() -> void:
 	w.report_position(1, Vector3(14.0, 10.0, 0.0))
 	var sticks: int = w.table.number_of("stick")
 	var logs: int = w.table.number_of("log")
+	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
@@ -858,6 +859,19 @@ func _init() -> void:
 
 	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "log_oak", "the trunk is worked into oak logs (one on the shoulder, the rest on the ground) and used up")
 	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
+
+	# A trunk of a wood that is not a key wood (Dave 24 Oct) gives only small wood, never a log.
+	apple["tree"]["species"] = "wild_apple"
+	var apple_id: int = trunk_id + 100000
+	var shoulder_before: String = w.shoulder_of(1)
+	w._items[apple_id] = apple
+	var apple_guard: int = 0
+	while w._items.has(apple_id) and apple_guard < 100:
+		w._last_process.clear()
+		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, Vector3.ZERO)
+		apple_guard += 1
+
+	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before, "an apple trunk is used up and gives no log")
 	var stump_left: bool = false
 
 	for k in w._items:

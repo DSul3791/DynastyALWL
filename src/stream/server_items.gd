@@ -3310,6 +3310,9 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
+
+		if not (_wood_species.get("key_woods", []) as Array).has(str(tree.get("species", ""))):
+			tree["logs_left"] = 0   # only the key woods make logs and lumber (Dave 24 Oct); every other tree gives firewood, kindling and sticks
 		tree["blows"] = 0
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()

@@ -4,6 +4,7 @@
 		"hardwood": {"firewood": "firewood", "block": "wooden_block"},
 		"softwood": {"firewood": "firewood_soft", "block": "wooden_block_soft"}
 	},
+	"key_woods": ["oak", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
 	"default": {
 		"class": "hardwood",
 		"burn": 4,
