@@ -23,11 +23,6 @@ Note: 3. Use the hand saw on a log: hand-sawn lumber recipe.
 Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their descriptions say so.
 [test]
 
-## fish-shadows | Show dark fish shadows in clear shallow water as well as jumps?
-Note: Dark shapes in clear shallow water, plus jumps and ripples, so players can see where to fish.
-Note: Recommendation: Yes because it teaches fishing by looking, as the early-game rules ask.
-[check]
-
 ## fish-sea-shore-only | Limit sea fishing to shore and shallows until boats exist?
 Note: Deep-sea fish (tuna, cod) wait for boats.
 Note: Recommendation: Yes because boats do not exist yet and it avoids unreachable fish.
