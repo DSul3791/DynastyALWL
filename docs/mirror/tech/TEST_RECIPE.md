@@ -11,7 +11,7 @@ Applies to MikeW, Steve's rig, every thread asking for a test. Old long version:
 ## Row kinds (one picture each)
 - PLANTS: `look_rig.sh --flora raspberry,bramble,wild_rose,blackthorn,blueberry,nettle,... --views "wide:8:-8:1.5;close:4:-15:1.0" --nograss` (fruit season set by the item, flowers off-season as a second row only if the season rule is under test).
 - ITEMS/TOOLS: the spawn showroom rows (data/items/showroom.json), one row per category (shovels, axes, hoes, ...), first person picture along the row.
-- ALWAYS PLAYABLE (smoke): `look_rig.sh --frametime 20 --quality 0` (F2 Low, 20 s after warm-up): ONE line "shot runner: frametime ... p95 .. ms (OK/FAIL over 33 ms)". Mike reports that one number per build.
+- ALWAYS PLAYABLE (smoke): `look_rig.sh --frametime 20 --quality 0` (F2 Low, 20 s after warm-up): ONE line "shot runner: frametime build .. quality .. spot .. avg p95 p99 max over50 over100 [OK|WARN|FAIL] machine ..". PASS = p95 under 33 ms and no frame over 100 ms (Low only); also run `--quality 1`, `2`, `3` once a day. Mike appends one row per build to tech/FRAMETIME.md; a rise over 10 percent against the last build is a named regression.
 - BUILD PIECES: `look_rig.sh --pieces foundation_section,wall_section,doorway_section,window_section,door_open,floor_section,roof_section --views "wide:9:-8:1.5;close:4:-10:1.2"` (names = data/items/structures.json keys; built by the game's own ghost_model; spacing from sizes; `--pieces-yaw 180` shows the backs; the "shot runner: piece" lines give each size, FAIL empty = draws nothing).
 - GROUND BEHAVIOUR (dig, drop, pile, chop): ONE script T-GROUND below, not four tests.
 - LOOKS BEFORE/AFTER: same row, same camera, two pictures from two builds in one image pair.

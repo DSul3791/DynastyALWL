@@ -65,6 +65,7 @@ var quality_set: int = -1                # --shot-quality=0..3 (0 = Low): set be
 var _frame_times: PackedFloat32Array = PackedFloat32Array()
 var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
 var _frame_start_msec: int = 0
+var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
@@ -111,6 +112,8 @@ func setup(owner_client, args: Array) -> void:
 			side_sign = -1.0
 		elif argument.begins_with("--shot-frametime="):
 			frametime_s = float(argument.trim_prefix("--shot-frametime="))
+		elif argument.begins_with("--shot-build="):
+			build_label = argument.trim_prefix("--shot-build=")
 		elif argument.begins_with("--shot-quality="):
 			quality_set = clampi(int(argument.trim_prefix("--shot-quality=")), 0, 3)
 		elif argument.begins_with("--shot-views="):
@@ -911,6 +914,7 @@ func _measure_frames(delta: float) -> void:
 			client.quality = quality_set
 			client._apply_quality()
 
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)   # vsync snaps frame times to 16.7 ms steps
 		_frame_state = 1
 		_frame_start_msec = now
 
@@ -921,11 +925,21 @@ func _measure_frames(delta: float) -> void:
 		var sorted: PackedFloat32Array = _frame_times.duplicate()
 		sorted.sort()
 		var total: float = 0.0
+		var over_50: int = 0
+		var over_100: int = 0
 
 		for value in sorted:
 			total += value
+			over_50 += 1 if value > 50.0 else 0
+			over_100 += 1 if value > 100.0 else 0
 
-		print("shot runner: frametime quality %s frames %d avg %.1f ms p95 %.1f ms max %.1f ms (%s)" % [client.QUALITY_NAMES[client.quality], sorted.size(), total / float(sorted.size()), sorted[int(float(sorted.size()) * 0.95)], sorted[sorted.size() - 1], "OK" if sorted[int(float(sorted.size()) * 0.95)] < 33.0 else "FAIL over 33 ms"])
+		var p95: float = sorted[int(float(sorted.size()) * 0.95)]
+		var p99: float = sorted[int(float(sorted.size()) * 0.99)]
+		var verdict: String = "FAIL" if (p95 >= 33.0 or over_100 > 0) else ("WARN p99 over 50 ms" if p99 > 50.0 else "OK")
+		var spot: Vector3 = client.body.global_position
+		print("shot runner: frametime build %s quality %s spot %.0f,%.0f frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
+			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
+			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
 
 
 func _next(now: int) -> void:
