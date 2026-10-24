@@ -34,6 +34,21 @@ const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's m
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
+# A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
+# looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
+# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
+const HELD_LOOK_SCALE := 1.4
+const HELD_SPEAR_SCALE := 1.6
+const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
+const HELD_GRIP_FROM_END_M := 0.12
+const HELD_LOOK_TURN := {
+	"axe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"pick": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
+}
 const JAB_REACH := 0.7
 const JAB_S := 0.28
 const THROW_SPEED := 24.0
@@ -979,7 +994,7 @@ func _mount_model() -> void:
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
 	elif kind != "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
-		grip = Vector3(0.0, 0.0, -float(GRIP_ALONG_Y[kind]))
+		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
 
 	_model.basis = tilt * turn
 	_model.position = tilt * grip
@@ -989,7 +1004,7 @@ func _mount_model() -> void:
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(60.0))
-	var grip: Vector3 = Vector3(0.0, float(GRIP_ALONG_Y.get(kind, 0.0)), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if kind == "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
@@ -1218,9 +1233,36 @@ func _make_container_model() -> Node3D:
 
 
 # Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
+# The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
+# The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
+func _make_look_tool_model() -> Node3D:
+	var def: Dictionary = BasicLook.entry(held_id())
+	var shape: String = str(def.get("shape", ""))
+
+	if not HELD_LOOK_TURN.has(shape):
+		return null
+
+	var held: Mesh = BasicLook.mesh_for(held_id())
+	var length: float = held.get_aabb().size.x
+	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01))
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = held
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis).scaled(Vector3.ONE * held_scale)
+	node.add_child(mesh)
+	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
+
+	return node
+
+
 func _make_other_model() -> Node3D:
 	if str(_inv.table.entry(held_id()).get("kind", "")) == "container":
 		return _make_container_model()
+
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 	var node: Node3D = Node3D.new()
@@ -1284,6 +1326,11 @@ func _make_torch_model(id: String = "") -> Node3D:
 
 
 func _make_knife_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var knife: Node3D = Node3D.new()
 	var handle: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
@@ -1308,6 +1355,11 @@ func _make_knife_model() -> Node3D:
 
 
 func _make_axe_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var axe: Node3D = Node3D.new()
 	var handle: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
@@ -1332,6 +1384,11 @@ func _make_axe_model() -> Node3D:
 
 
 func _make_spear_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var spear: Node3D = Node3D.new()
 	var shaft: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
