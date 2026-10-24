@@ -1,0 +1,9 @@
+  gullies: 0, dead ends: 0
+  gullies: 616, dead ends: 0
+  gullies: 3360, dead ends: 0
+  gullies: 6727, dead ends: 0
+  gullies: 6309, dead ends: 0
+  gullies: 3802, dead ends: 0
+  gullies: 11724, dead ends: 0
+  gullies: 17701, dead ends: 0
+  gullies: 12571, dead ends: 0
