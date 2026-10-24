@@ -27,8 +27,3 @@ Note: 4. Yes if all three craft. The hammer and adze do nothing else yet; their 
 Note: Lasting dams still make swamp.
 Note: Recommendation: Yes because floods come and go, so they should not rename land.
 [check]
-
-## wl-wash-away | Dams: fast flood water sweeps players and loose items downstream with light damage and no death at first?
-Note: Applied in the game client from water speeds; server checks damage.
-Note: Recommendation: Yes because it is safe and kind first. Why not: you may want deaths later.
-[check]
