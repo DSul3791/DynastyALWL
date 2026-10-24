@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 13:05 UTC Steve rig-item and Sal tools-batch-1 plans answered GO; BP-T55 added; gate 8 = steve-rig-item a15eeecc + sal-tools-batch1 4ec83436 (clean on 786); no plan pending
 - 12:35 UTC build 786 (vent anchor, protocol 77) merged; ore fix 4f2d2497 proven, held for the final bake (waits on Dave's notes); no plan pending
 - 12:00 UTC build 785 (biome lookup, protocol 76) merged; gate 8 = steve-vent 4d0d68a8 (protocol 77) waits for local_check; ore fix 4f2d2497 goes in the final bake; no plan pending
 - 12:30 UTC builds 783 (v31 bake TV41) and 784 (gates 6+7, 5 branches) merged; cave-dark and biome-lookup plans answered; biome-lookup 7347ac36 waits for Mike's local_check (785); no plan pending
