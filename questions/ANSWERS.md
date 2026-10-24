@@ -1458,3 +1458,7 @@ Answered: 2026-10-24 16:10 UTC
 Answer: Yes
 Answered: 2026-10-24 16:10 UTC
 
+## cooking-stations | Three cooking stations: tripod pot, clay hearth, oven (tier 1 in R2, the others R3)?
+Answer: Yes
+Answered: 2026-10-24 16:10 UTC
+
