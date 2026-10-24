@@ -14,10 +14,10 @@ LARGEST ISLANDS
      99.9 km2  peak   430 m  tile (  6,  5)  shelf_p_p
      95.7 km2  peak  1265 m  tile (  3,  4)  shelf_p_p
      88.6 km2  peak  1610 m  tile (-10,  6)  hotspot_2
-     88.5 km2  peak  1268 m  tile (  3, -4)  shelf_p_n
+     88.5 km2  peak   742 m  tile (  3, -4)  shelf_p_n
      81.9 km2  peak   439 m  tile (  4,  5)  shelf_p_p
-     81.1 km2  peak  1262 m  tile ( -3, -4)  shelf_n_n
-     80.9 km2  peak  1112 m  tile (  6, -6)  shelf_p_n
+     81.1 km2  peak  1276 m  tile ( -3, -4)  shelf_n_n
+     80.9 km2  peak   997 m  tile (  6, -6)  shelf_p_n
      80.8 km2  peak  1678 m  tile (-10, -3)  arc_5
      71.8 km2  peak  1389 m  tile ( -6,  6)  shelf_n_p
 

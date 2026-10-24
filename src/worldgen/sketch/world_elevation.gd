@@ -487,8 +487,48 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 # area, not metres: beach and flatland about 20%, then farmland, rolling hills, foothills, mountains and epic peaks. The
 # table is data (`height_bands` in sketch_rules.json, share of land -> fraction of the island's summit height); the summit
 # height runs from `summit_m` [low, high] by the island's own peak number, so islands differ.
-func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: int) -> Dictionary:
+# Island type (stage 2, Kathleen's list in tech/ISLAND_TYPES_Kathleen.md): `island_types` in sketch_rules.json holds rows that
+# override the starter-island defaults (summit_m, height_bands, spire_share, layout of peaks). A starter island's type is
+# `starter_types["x,z"]` if set, else rolled from the type weights by a hash of the island's place, so it never changes.
+func _island_config(mount: Dictionary) -> Dictionary:
 	var starter_rules: Dictionary = rules.get("starter_islands", {})
+	var types: Dictionary = rules.get("island_types", {})
+	var config: Dictionary = starter_rules.duplicate()
+
+	if types.is_empty():
+		return config
+
+	var key: String = "%d,%d" % [int(mount["starter"][0]), int(mount["starter"][1])] if mount.has("starter") else ""
+	var chosen: String = str(rules.get("starter_types", {}).get(key, ""))
+
+	if chosen == "" or not types.has(chosen):
+		var total: float = 0.0
+
+		for name in types:
+			total += float(types[name].get("weight", 1.0))
+
+		var hash_value: int = (int(mount["x"]) * 73856093) ^ (int(mount["z"]) * 19349663)
+		var roll: float = float(absi(hash_value) % 10007) / 10007.0 * total
+
+		for name in types:
+			roll -= float(types[name].get("weight", 1.0))
+
+			if roll <= 0.0:
+				chosen = str(name)
+				break
+
+		if chosen == "":
+			chosen = str(types.keys()[0])
+
+	for field in types[chosen]:
+		config[field] = types[chosen][field]
+
+	config["type"] = chosen
+	return config
+
+
+func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: int) -> Dictionary:
+	var starter_rules: Dictionary = _island_config(mount)
 	var bands: Array = starter_rules.get("height_bands", [])
 
 	if bands.is_empty():
@@ -526,11 +566,13 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 	return {
 		"bands": bands, "summit": summit, "distances": distances, "spire": spire, "farthest": farthest,
 		"spire_start": float(starter_rules.get("spire_start", 0.88)), "spire_power": float(starter_rules.get("spire_power", 2.2)),
+		"layout": starter_rules.get("layout", []), "layout_base": float(starter_rules.get("layout_base", 0.4)),
+		"type": str(starter_rules.get("type", "")),
 	}
 
 
 # Height of the band curve at distance d_m from the sea.
-func _band_height(table: Dictionary, d_m: float) -> float:
+func _band_height(table: Dictionary, d_m: float, along: float = 0.0, across: float = 0.0) -> float:
 	var distances: PackedFloat32Array = table["distances"]
 	var bands: Array = table["bands"]
 
@@ -551,9 +593,27 @@ func _band_height(table: Dictionary, d_m: float) -> float:
 			var u: float = (share - from) / span
 			# Linear on the last segment: an eased end flattens the top into a plateau.
 			var eased: float = u if i == bands.size() - 1 else _smooth(u)
-			return float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased) + spire
+			return _layout(table, share, along, across, float(table["summit"]) * lerpf(float(bands[i - 1][1]), float(bands[i][1]), eased)) + spire
 
-	return float(table["summit"]) * float(bands[bands.size() - 1][1]) + spire
+	return _layout(table, share, along, across, float(table["summit"]) * float(bands[bands.size() - 1][1])) + spire
+
+
+# Peak layout: rows [along, across, width, height factor] in island-ellipse units. High ground (share above 0.4) is shaped
+# toward the nearest peaks, with passes in between at `layout_base` of the band height; low ground is left alone.
+func _layout(table: Dictionary, share: float, along: float, across: float, band_height: float) -> float:
+	var peaks: Array = table["layout"]
+
+	if peaks.is_empty():
+		return band_height
+
+	var field: float = 0.0
+
+	for row in peaks:
+		var distance_sq: float = (along - float(row[0])) * (along - float(row[0])) + (across - float(row[1])) * (across - float(row[1]))
+		field = maxf(field, float(row[3]) * exp(-distance_sq / maxf(float(row[2]) * float(row[2]), 0.0001)))
+
+	var factor: float = float(table["layout_base"]) + (1.0 - float(table["layout_base"])) * clampf(field, 0.0, 1.0)
+	return band_height * lerpf(1.0, factor, _smooth(clampf((share - 0.4) / 0.4, 0.0, 1.0)))
 
 
 # Foothill belt (ISLAND_SHAPE_PLAN step 2): the cap above only lowers land, so the sectors beside the peak axis stayed low and
@@ -616,7 +676,7 @@ func _raise_foothills(mount: Dictionary) -> void:
 			var curve: float = 6.0 + 340.0 * cap_scale * pow(d_m / 3500.0, exponent * 0.91)
 
 			if not table.is_empty():
-				curve = _band_height(table, d_m)
+				curve = _band_height(table, d_m, along, across)
 
 			var target: float = minf(curve * (floor_share + (1.0 - floor_share) * spoke), ceiling)
 
