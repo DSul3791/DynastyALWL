@@ -63,7 +63,6 @@
 		"bramble": {"item": "blackberries", "count": 250},
 		"blueberry": {"item": "blueberries", "count": 150},
 		"blackthorn": {"item": "sloes", "count": 300},
-		"wild_rose": {"item": "rose_hips", "count": 60},
 		"wild_strawberry": {"item": "strawberries", "count": 10},
 		"lingonberry": {"item": "lingonberries", "count": 15},
 		"cranberry": {"item": "cranberries", "count": 12},
