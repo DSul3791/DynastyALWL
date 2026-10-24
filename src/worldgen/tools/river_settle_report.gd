@@ -220,7 +220,34 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 
 	return "INLAND end x %.0f z %.0f (sample %d,%d): %d wet cells, ground %.1f m, water %.1f m; spill %.1f m at x %.0f z %.0f%s; basin %.0f m2, fill volume %.0f m3, stored %.0f m3, missing %.0f m3 (%.1f h of one %.0f m3/s spring); painted river: %s; %s; CLASS %s" % [
 			x, z, ei, ej, cells, ground_end, water_end, rim, data.x0 + float(int(flood["spill"]) % side) * spacing, data.z0 + floorf(float(int(flood["spill"])) / float(side)) * spacing,
-			" (no outlet found, window edge)" if bool(flood["closed"]) else "", area, fill, stored, missing, hours, spring, carries, fed, kind]
+			" (no outlet found, window edge)" if bool(flood["closed"]) else "", area, fill, stored, missing, hours, spring, carries, fed + "; beyond the spill (ground/depth, steepest way down): " + _beyond(data, depth, side, int(flood["spill"])), kind]
+
+
+# Ground and stored water at the spill cell and the 10 cells below it, walking the steepest way down: shows whether the overflow carries water on.
+func _beyond(data, depth: PackedFloat32Array, side: int, spill: int) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	var at: int = spill
+
+	for step in range(11):
+		parts.append("%.2f/%.3f" % [data.heights[at], depth[at]])
+		var ai: int = at % side
+		var aj: int = floori(float(at) / float(side))
+		var best: int = at
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				var ni: int = ai + di
+				var nj: int = aj + dj
+
+				if (di != 0 or dj != 0) and ni >= 0 and nj >= 0 and ni < side and nj < side and data.heights[nj * side + ni] < data.heights[best]:
+					best = nj * side + ni
+
+		if best == at:
+			break
+
+		at = best
+
+	return " ".join(parts)
 
 
 # Is the body fed? The distance from its nearest cell to the nearest settler spring and that spring's rate, and the drainage the tile file records
