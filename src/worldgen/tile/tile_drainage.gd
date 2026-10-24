@@ -22,7 +22,14 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
 	var origin := Vector2i(water._origin_sx, water._origin_sz)
-	var routing: PackedFloat32Array = _routing_heights(land, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
+	# Water is routed over the ground as it was before erosion: erosion only runs inside each tile, so beyond 640 m from a seam
+	# the two tiles' eroded ground differs and so would their lakes and divides. The raw ground is the same in every frame.
+	var route_over: PackedFloat32Array = land
+
+	if bool(rules.get("route_over_raw", true)) and water.routing_raw.size() == land.size():
+		route_over = water.routing_raw
+
+	var routing: PackedFloat32Array = _routing_heights(route_over, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
 	fill.build(routing, sea, samples, lake_min_depth)
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
@@ -33,8 +40,13 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	var flow = FlowScript.new()
 	flow.build(fill, runoff)
+	var seeded_km2: float = _seed_frame_edge(water, fill, runoff, land, sea, samples, cell_m, rules)
+
+	if seeded_km2 > 0.0:
+		flow.build(fill, runoff)
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -139,3 +151,140 @@ static func _knot(kx: int, kz: int, seed_value: int) -> float:
 	var x: int = (kx * 73856093) ^ (kz * 83492791) ^ (seed_value * 19349663)
 	x = (x ^ (x >> 13)) * 1274126177
 	return float((x ^ (x >> 16)) & 0xFFFF) / 65535.0 * 2.0 - 1.0
+
+
+# A frame only holds the catchment inside it, so a river that comes in from beyond the frame edge loses its upstream
+# and its channel can stop short of the tile seam while the neighbour (whose frame holds the river) carries on. The world
+# river network knows every catchment, so each place it flows into this frame adds its catchment to the lowest dry
+# ground at that spot on the frame edge. It depends only on world coordinates and the network, so tiles agree.
+# Returns the catchment added (km2).
+static func _seed_frame_edge(water, fill, runoff: PackedFloat32Array, land: PackedFloat32Array, sea: PackedByteArray, samples: int, cell_m: float, rules: Dictionary) -> float:
+	var network = water.world_network
+
+	if network == null or not bool(rules.get("edge_inflow", true)):
+		return 0.0
+
+	var scale: float = float(rules.get("edge_inflow_scale", 1.0))
+	var depth: int = int(rules.get("edge_inflow_depth_cells", 3))
+	var reach: int = int(rules.get("edge_inflow_reach_cells", 12))
+	var origin: Vector2 = Vector2(float(water._origin_sx), float(water._origin_sz)) * cell_m
+	var rect: Rect2 = Rect2(origin, Vector2(float(samples), float(samples)) * cell_m)
+	var added: float = 0.0
+
+	for entry in network.inflows_into(rect):
+		var from_m: Vector2 = entry["from"]
+		var to_m: Vector2 = entry["to"]
+		var at: Vector2 = to_m
+
+		for step in range(51):
+			var probe: Vector2 = from_m.lerp(to_m, float(step) / 50.0)
+
+			if rect.has_point(probe):
+				at = probe
+				break
+
+		var column: int = clampi(int(floor((at.x - origin.x) / cell_m)), 0, samples - 1)
+		var row: int = clampi(int(floor((at.y - origin.y) / cell_m)), 0, samples - 1)
+		var best: int = -1
+		var best_height: float = INF
+
+		for dz in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var c: int = column + dx
+				var r: int = row + dz
+
+				if c < 0 or r < 0 or c >= samples or r >= samples:
+					continue
+
+				if mini(mini(c, r), mini(samples - 1 - c, samples - 1 - r)) > depth:
+					continue
+
+				var index: int = r * samples + c
+
+				if sea[index] == 1 or fill.lake_id[index] != 0:
+					continue
+
+				if land[index] < best_height:
+					best_height = land[index]
+					best = index
+
+		if best >= 0:
+			var amount: float = float(entry["km2"]) * scale
+			runoff[best] += amount
+			added += amount
+
+	return added
+
+
+# Debug only: DRAINAGE_PROBE="x_m,z_m" (world metres) prints the cells round that spot, for finding why two tiles disagree.
+static func _probe(water, fill, flow, channels, land: PackedFloat32Array, samples: int, cell_m: float, unit: float) -> void:
+	if not OS.has_environment("DRAINAGE_PROBE"):
+		return
+
+	var parts: PackedStringArray = OS.get_environment("DRAINAGE_PROBE").split(",")
+	var column: int = int(floor(float(parts[0]) / cell_m)) - water._origin_sx
+	var row: int = int(floor(float(parts[1]) / cell_m)) - water._origin_sz
+
+	if column < 8 or row < 8 or column >= samples - 8 or row >= samples - 8:
+		return
+
+	print("PROBE frame origin ", water._origin_sx, ",", water._origin_sz, " cell ", column, ",", row)
+
+	for r in range(row - 8, row + 9):
+		var line: String = "PROBE r%+d" % (r - row)
+
+		for c in range(column - 8, column + 9):
+			var index: int = r * samples + c
+			var k: float = flow.discharge[index] / unit
+			var arrow: String = "."
+			var next: int = fill.receiver[index]
+
+			if next >= 0:
+				var dx: int = next % samples - c
+				@warning_ignore("integer_division")
+				var dz: int = next / samples - r
+				arrow = "E" if dx > 0 and dz == 0 else ("W" if dx < 0 and dz == 0 else ("S" if dz > 0 and dx == 0 else ("N" if dz < 0 and dx == 0 else "d")))
+
+			line += " %5.0f%s%s%s" % [k, arrow, "L" if fill.lake_id[index] != 0 else "-", "c" if not is_nan(channels.surface[index]) else "-"]
+
+		print(line)
+
+	# Walk upstream along the biggest donor and print every 10th cell (world metres, discharge in cells), so two tiles can be
+	# compared to find where their catchments first differ.
+	var at: int = row * samples + column
+
+	# Start from the biggest stream cell in the window (the probe spot itself is often just bank).
+	for r in range(row - 8, row + 9):
+		for c in range(column - 8, column + 9):
+			if flow.discharge[r * samples + c] > flow.discharge[at]:
+				at = r * samples + c
+
+	@warning_ignore("integer_division")
+	print("PROBE up start world %d,%d Q %.0f" % [(at % samples + water._origin_sx) * int(cell_m), (at / samples + water._origin_sz) * int(cell_m), flow.discharge[at] / unit])
+	var received: PackedInt32Array = PackedInt32Array()
+	received.resize(samples * samples)
+	received.fill(-1)
+
+	for cell in range(samples * samples):
+		var down: int = fill.receiver[cell]
+
+		if down >= 0 and (received[down] < 0 or flow.discharge[cell] > flow.discharge[received[down]]):
+			received[down] = cell
+
+	for step in range(600):
+		if received[at] < 0:
+			break
+
+		at = received[at]
+
+		if step % 10 == 0:
+			@warning_ignore("integer_division")
+			print("PROBE up %d world %d,%d Q %.0f%s" % [step, (at % samples + water._origin_sx) * int(cell_m), (at / samples + water._origin_sz) * int(cell_m), flow.discharge[at] / unit, " L" if fill.lake_id[at] != 0 else ""])
+
+	var heights_line: String = "PROBE heights land/bed centre row:"
+
+	for c in range(column - 8, column + 9):
+		var index: int = row * samples + c
+		heights_line += " %.1f/%.1f" % [land[index], channels.bed[index]]
+
+	print(heights_line)

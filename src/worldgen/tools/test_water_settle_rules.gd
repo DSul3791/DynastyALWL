@@ -9,6 +9,7 @@ var failures: int = 0
 
 class Grid:
 	var heights: PackedFloat32Array = PackedFloat32Array()
+	var water_surface: PackedFloat32Array = PackedFloat32Array()
 	var water_class: PackedByteArray = PackedByteArray()
 
 
@@ -40,5 +41,23 @@ func _init() -> void:
 	grid.heights[2 * 5 + 3] = 4.0
 	grid.heights[2 * 5 + 4] = 4.0
 	check(WaterSettler._is_top(grid, 5, 3, 2) and not WaterSettler._is_top(grid, 5, 4, 2), "a tie goes to the lower index")
+	# A pond (lake cell) at the east end with the river running west and lower: the outlet flow is the river's flow; a pond with no lower river has none.
+	grid.water_surface.resize(25)
+	grid.water_surface.fill(NAN)
+	var flow: PackedFloat32Array = PackedFloat32Array()
+	flow.resize(25)
+	flow.fill(0.0)
+
+	for i in range(5):
+		grid.heights[2 * 5 + i] = float(i)
+		grid.water_class[2 * 5 + i] = WaterSettler.RIVER
+		flow[2 * 5 + i] = 100.0 * float(i + 1)
+
+	grid.water_class[2 * 5 + 4] = WaterSettler.LAKE
+	check(is_equal_approx(WaterSettler._outlet_flow(grid, flow, 5, 4, 2, 3), 400.0), "a pond's outlet flow is the biggest river flow lower than it nearby")
+	grid.heights[2 * 5 + 4] = 0.2       # the pond's bed is below the outlet river's bed; its water level (surface 4.0) is what counts
+	grid.water_surface[2 * 5 + 4] = 4.0
+	check(is_equal_approx(WaterSettler._outlet_flow(grid, flow, 5, 4, 2, 3), 400.0), "the outlet test uses the pond's water level, not its bed")
+	check(WaterSettler._outlet_flow(grid, flow, 5, 0, 2, 3) == 0.0, "no lower river, no outlet: a natural pond")
 	print("water settle rules test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

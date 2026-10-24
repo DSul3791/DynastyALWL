@@ -3,7 +3,7 @@
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
 	"frame": {
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
-		"margin_samples": 160
+		"margin_samples": 400
 	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
@@ -129,7 +129,7 @@
 			"valley_radius_widths": 12.0,
 			"valley_side_slope": 0.06,
 			"valley_max_radius_m": 400.0,
-			"canyon_start_km2": 0.6,
+			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "spawn_x": 53301, "spawn_z": 68427, "spawn_keep_m": 450, "spawn_blend_m": 650, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
 			"canyon_cut_max_m": 90.0,
 			"canyon_wall_slope": 1.1,
 			"canyon_rim_max_m": 160.0,

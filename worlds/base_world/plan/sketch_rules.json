@@ -24,7 +24,7 @@
 		"hill_threshold": 0.14,
 		"shelf_hill_gain": 2.0,
 		"shelf_coast_exponent": 2.2,
-		"shelf_coast_scale_m": 1100,
+		"shelf_coast_scale_m": 1100, "climate_shores": {"hot_row": 2.0, "polar_row": 7.0, "sand_width_m": 1500, "sand_cap_scale": 0.35, "cliff_m": 70, "cliff_run_m": 150},
 		"geology": ["granite", "basin", "fold_belt"]
 	},
 
