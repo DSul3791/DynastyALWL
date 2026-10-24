@@ -145,3 +145,6 @@ Until Dave says done: Mike runs NO tests, renders or bakes. All tests and pictur
 ### Final bake source update (Tyler, 24 Oct 20:33 UTC)
 Bake source is now claude/sonny-final 22a9ff02 (UNTESTED), replacing 72d60408 and 17401b10 (item e): forced channel to the sea, freeboard 1.0 m, smaller meander swing, head basins, steep-valley fix. Same gate: Mike bakes only when Dave's PC is free; David3 headless checks first; island table carries the code commit id (BP-T54); one TERRAIN_VERSION bump.
 SPAWN (decision for Dave AFTER the bake): Sal found no spot with hard rock within 300 m. Sonny recommends spot 1 = x 53304 z 68464 (37 m from old spawn), stone rule relaxed to 450 m, plus a small bake-time knoll at x 53450 z 68460. Dave picks the spawn after seeing the baked result; QA card then.
+
+### Final bake source correction (Tyler, 24 Oct 20:37 UTC)
+claude/sonny-final is now 22585d73 (72d60408 and 22a9ff02 did not parse; restored). Adds _carve_basins (head ponds depth 2-8 m radius 25-120 m; lakes about 2-18 ha on flat reaches, sized by Qs = 0.1 x catchment km2) on top of forced channel to the sea, freeboard 1.0 m, steep-valley fix. Gate in order: David3 parse check; Mike's (3,4) bake (when Dave's PC is free); Sonny reads the tile (pit/cliff window, dead ends, river reaches the sea, basin counts); water thread's basin check. Then the full 792 bake.
