@@ -95,3 +95,8 @@ Note: Recommendation: Yes because the final bake would otherwise leave the bronz
 Note: Plan: design/WATER_LAND_TYPES.md. Land is named from slowly averaged water (30 game days = 30 real hours).
 Note: Recommendation: Yes because a single storm should not turn a meadow into a swamp. Why not: change feels slow.
 [check]
+
+## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
+Note: The water step must be fixed before a burst can be simulated safely.
+Note: Recommendation: Yes because a breach could blow up the water simulation otherwise.
+[check]
