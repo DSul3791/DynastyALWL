@@ -39,7 +39,11 @@ const AMBIENT_STORM_FLOOR := 1.1         # the same floor in a full storm: no mo
 const AMBIENT_NIGHT_COLOR := Color(0.24, 0.3, 0.44)   # the cold fill used on dark nights and storms
 const AMBIENT_FLOOR := 0.32             # ambient light never drops below this, so a storm night is not pure black
 const AMBIENT_STORM := 0.4               # ambient light left in a full storm (1 clear)
-const CAVE_LIGHT_LEFT := 0.04            # share of the sun and sky light left deep in a cave or tunnel (daylight does not reach it)
+const CAVE_LIGHT_DARK := 0.04            # share of the sun and sky light left deep in a cave or tunnel, setting "Dark"
+const CAVE_LIGHT_NORMAL := 0.12          # the same, setting "Normal"
+const CAVE_GO_DARK_S := 1.0              # the light fades out over this long on going in, and back over CAVE_COME_OUT_S
+const CAVE_COME_OUT_S := 2.5             # (the eyes take longer to get used to the light again)
+const CAVE_SHADOW_OFF := 0.05            # no sun shadows below this share of the light: nothing to cast
 const CAVE_DARK_FROM := 0.1              # rock enclosure (cave_sounds.gd) from which the light starts to fade
 const CAVE_DARK_FULL := 0.6              # and at which it is fully gone
 const EXPOSURE_CLEAR := 1.1
@@ -110,6 +114,7 @@ var gloom: float = 0.0
 var day = DayCycleScript.new()         # sun, moon and sky colours from the game clock (day_cycle.gd), refreshed twice a second
 var _day_next_msec: int = 0
 var _sky_next_msec: int = 0
+var _cave_factor: float = 1.0           # share of the sun and sky light let in under rock, eased (1 open air)
 var _dark: float = 0.0                  # 0 bright .. 1 stormy: sun, ambient light, exposure and colour follow it
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
@@ -370,10 +375,19 @@ func _process_body(delta: float) -> void:
 
 	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both. Under rock (a cave, a tunnel
 	# dug into a hill) neither the sun nor the sky's light gets in, day or night: only torches and fires light it.
-	var under_rock: float = cave_light(_client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0)
+	var enclosed: float = _client.sound.cave.rock_enclosure if _client.sound != null and _client.sound.cave != null else 0.0
+	var left: float = CAVE_LIGHT_DARK if _client.display.cave_dark else CAVE_LIGHT_NORMAL
+	var cave_target: float = cave_light(enclosed, left)
+	_cave_factor = move_toward(_cave_factor, cave_target, delta / (CAVE_GO_DARK_S if cave_target < _cave_factor else CAVE_COME_OUT_S))
+	var under_rock: float = _cave_factor
 	var sun_amount: float = clampf(1.0 - cloud_cover * 1.25, 0.0, 1.0)
 
 	if _client._sun != null:
+		var shadows_wanted: bool = under_rock >= CAVE_SHADOW_OFF and float(_client.QUALITY_SHADOW_M[_client.quality]) > 0.0
+
+		if shadows_wanted != _client._sun.shadow_enabled:
+			_client._sun.shadow_enabled = shadows_wanted
+
 		_client._sun.light_energy = (LookSettings.SUN_ENERGY * lerpf(SUN_STORM, 1.0, sun_amount) * day.light_factor + flash_level * 1.2) * under_rock
 
 	environment.ambient_light_energy = under_rock * (maxf(lerpf(1.0, AMBIENT_STORM, _dark * (1.0 - 0.7 * day.night)) * day.ambient_factor, lerpf(AMBIENT_FLOOR, AMBIENT_STORM_FLOOR, _dark)) + flash_level * 2.0)
@@ -399,9 +413,9 @@ func _process_body(delta: float) -> void:
 
 
 # Share of the sun and sky light that reaches the player at this rock enclosure (0 open air .. 1 a tunnel).
-static func cave_light(rock_enclosure: float) -> float:
+static func cave_light(rock_enclosure: float, left: float = CAVE_LIGHT_DARK) -> float:
 	var shut: float = smoothstep(CAVE_DARK_FROM, CAVE_DARK_FULL, rock_enclosure)
-	return lerpf(1.0, CAVE_LIGHT_LEFT, shut)
+	return lerpf(1.0, left, shut)
 
 
 # The same grading the sky shader applies, so the fog meets the sky's horizon.

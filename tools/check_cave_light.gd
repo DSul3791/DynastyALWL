@@ -19,6 +19,9 @@ func _initialize() -> void:
 	if WeatherLook.cave_light(1.0) > 0.06:
 		failures.append("a tunnel is not dark: %.3f" % WeatherLook.cave_light(1.0))
 
+	if WeatherLook.cave_light(1.0, WeatherLook.CAVE_LIGHT_NORMAL) < 0.1 or WeatherLook.cave_light(1.0, WeatherLook.CAVE_LIGHT_NORMAL) > 0.14:
+		failures.append("Normal is not about 12 percent")
+
 	var last: float = 2.0
 
 	for k in range(21):
@@ -30,7 +33,7 @@ func _initialize() -> void:
 		last = light
 
 	if failures.is_empty():
-		print("Cave light check: 4 pass, 0 fail")
+		print("Cave light check: 5 pass, 0 fail")
 		quit(0)
 	else:
 		for f in failures:
