@@ -453,7 +453,6 @@ func _shape_coast_profile(mount: Dictionary) -> void:
 	var cap_scale: float = float(mount["beach_cap_m"]) / 1100.0
 	var exponent: float = float(mount.get("beach_exp", 1.7))
 	var spawn: Dictionary = rules.get("spawn_keep", {})
-	var table: Dictionary = _band_table(mount, distance_cells, size, radius)
 
 	for row in range(size):
 		for column in range(size):
