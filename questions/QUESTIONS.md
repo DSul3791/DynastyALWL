@@ -130,3 +130,8 @@ Note: Recommendation: Yes because it costs almost nothing per frame and still le
 Note: Salmon only in rivers in autumn; trout and perch the rest of the year.
 Note: Recommendation: Yes because a season gives a reason to return to the river.
 [check]
+
+## fish-shadows | Show dark fish shadows in clear shallow water as well as jumps?
+Note: Dark shapes in clear shallow water, plus jumps and ripples, so players can see where to fish.
+Note: Recommendation: Yes because it teaches fishing by looking, as the early-game rules ask.
+[check]
