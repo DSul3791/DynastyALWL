@@ -13,11 +13,35 @@ services:
     pids_limit: 512
     cpu_shares: 128            # lowest priority when the game containers want the CPU
     network_mode: bridge       # outbound only (git fetch); no ports published
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, graphics, utility, compute, display]   # needs the NVIDIA Container Toolkit on the host
     environment:
-      REPO_URL: https://github.com/DSul3791/DynastyALWL.git
+      NVIDIA_DRIVER_CAPABILITIES: all
+      REPO_URL: git@github.com:DSul3791/DynastyALWL.git
       BRANCH: claude/generator-v2
+      DEV_BRANCH: claude/dave-box
+      GIT_NAME: ${GIT_NAME:-Dynasty dev box}
+      GIT_EMAIL: ${GIT_EMAIL:-devbox@example.invalid}
       JOB_TIMEOUT_S: "900"
     volumes:
-      # On the 389 GB game drive, not the 79 GB system drive. Set DATA_DIR (default /srv/testbox) to a folder there.
-      - ${DATA_DIR:-/srv/testbox}/work:/work   # the clone and the Godot import cache (kept between runs)
-      - ${DATA_DIR:-/srv/testbox}/out:/out     # logs, the baked tiles and reports
+      # Server convention: everything under /data/godot (the 389 GB game drive). Set GODOT_DIR to change it.
+      - ${GODOT_DIR:-/data/godot}/projects/dynasty:/work/repo   # the checkout: survives container recreation
+      - ${GODOT_DIR:-/data/godot}/box/ssh:/home/tester/.ssh      # the deploy key (private part never leaves the server)
+      - ${GODOT_DIR:-/data/godot}/box/out:/out                   # logs and reports
+      - ${GODOT_DIR:-/data/godot}/box/claude:/home/tester/.claude-box   # Claude Code sign-in and settings (stay on the server)
+
+  # "Mike2": Claude Code in remote-control mode inside the same box, so the project can send it test jobs.
+  # Start it only after the first interactive sign-in (see README). Stop: docker compose stop mike2
+  mike2:
+    extends: testbox
+    container_name: dynasty-mike2
+    stdin_open: true
+    tty: true
+    command: ["claude", "remote-control", "--name", "Mike2 test box", "--spawn", "same-dir"]
+    working_dir: /work/repo
+    restart: "no"

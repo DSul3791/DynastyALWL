@@ -19,12 +19,15 @@ RUN mkdir -p /out && xz -dc /tmp/godot.xz > /out/godot
 FROM engine-${ENGINE} AS engine
 
 FROM ubuntu:24.04
-RUN apt-get update && apt-get install -y --no-install-recommends git python3 ca-certificates tini && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git openssh-client python3 ca-certificates tini curl && rm -rf /var/lib/apt/lists/*
 COPY --from=engine /out/godot /opt/godot/godot
 RUN chmod +x /opt/godot/godot && /opt/godot/godot --version
 COPY run_jobs.sh /usr/local/bin/run_jobs.sh
 RUN chmod +x /usr/local/bin/run_jobs.sh && useradd -m -u 1500 tester && mkdir -p /work /out && chown tester /work /out
 USER tester
+# Claude Code (native installer from the official quickstart); signs in later with Dave's own browser login, nothing is baked in
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH="/home/tester/.local/bin:${PATH}" CLAUDE_CONFIG_DIR=/home/tester/.claude-box
 ENV GODOT_EXE=/opt/godot/godot PYTHONDONTWRITEBYTECODE=1
 WORKDIR /work
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/run_jobs.sh"]
