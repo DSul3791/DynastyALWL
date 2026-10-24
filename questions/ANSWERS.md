@@ -1534,3 +1534,7 @@ Answered: 2026-10-24 17:03 UTC
 Answer: Yes
 Answered: 2026-10-24 17:04 UTC
 
+## fish-species-list | Use this fish list (salmon and trout in rivers, herring to tuna in the sea)?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
