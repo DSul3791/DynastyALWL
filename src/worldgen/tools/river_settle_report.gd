@@ -217,6 +217,10 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 		kind = "PIT (terrain: no spill route inside the window, no painted river below)"
 	elif missing > 0.5 * fill and fill > 0.0:
 		kind = "NOT FULL (basin %.0f%% full: water never reached the spill)" % (100.0 * stored / maxf(fill, 1.0))
+	elif carries == "no painted river below":
+		kind = "NATURAL POND (full at its rim, no painted river runs out of it: correct as it is)"
+	elif missing <= 0.1 * fill:
+		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these)"
 	else:
 		kind = "FULL BUT STOPPED (spill %.1f m above the end, water level %.1f vs rim %.1f: check the spill cell)" % [rim - ground_end, water_end, rim]
 
