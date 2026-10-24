@@ -173,6 +173,13 @@ func covered(pos: Vector3) -> bool:
 	return yes
 
 
+func roofed(pos: Vector3) -> bool:
+	_mutex.lock()
+	var yes: bool = cover.roofed(pos)
+	_mutex.unlock()
+	return yes
+
+
 # Roofs (lean-tos) live in the same cover index as the tree crowns.
 func add_roof(roof: Array) -> int:
 	_mutex.lock()

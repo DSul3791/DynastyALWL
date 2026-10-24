@@ -143,7 +143,7 @@ var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
 var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0}   # Esc > Settings sliders, 0 to 1
-var mix_index: Dictionary = {"wind": 0, "nature": 0, "steps": 0}   # per group, into VOLUME_STEPS
+var mix_level: Dictionary = {"wind": 1.0, "nature": 1.0, "steps": 1.0}   # per group, 0 to 1 (Esc > Settings > Sound sliders)
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # preset["voices"]
 var preset: Dictionary = Presets.row(2) # this tier's mixer row (sound_presets.gd); layers read their limits here
@@ -539,8 +539,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	# Build 51: the low layer still sounded like surf nearby; it is lower again.
 	wind_strength = strength
 	# Build 79: still like a river; lower again and the loops now have deep lulls between the swells.
-	_wind_low.volume_db = linear_to_db(0.0035 + 0.006 * strength)
-	_wind_gust.volume_db = linear_to_db(0.0025 + 0.012 * pow(strength, 1.6))
+	_wind_low.volume_db = linear_to_db(0.8 * (0.0035 + 0.006 * strength))   # x0.8: the softer loops are 2 dB louder in RMS (Dave, build 789)
+	_wind_gust.volume_db = linear_to_db(0.8 * (0.0025 + 0.012 * pow(strength, 1.6)))
 	_wind_filter.cutoff_hz = lerpf(1500.0, 7000.0, clampf(strength - 0.2 * _shelter, 0.0, 1.0)) * (1.0 + 0.25 * exposure)   # whistles on a ridge, hushed in a valley
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
@@ -887,13 +887,14 @@ func step_level_db(surface_kind: String, gait: int) -> float:
 	return base + float(gait_db[g]) + float(extra[g] if extra.size() == 3 else 0.0)
 
 
-# Esc > Settings mixer: steps one group (wind, nature, steps) through 100, 75, 50, 25 % and off.
-# Returns the new share. Saved for the next run.
-func mix_step(group: String) -> float:
-	mix_index[group] = (int(mix_index[group]) + 1) % VOLUME_STEPS.size()
+# Esc > Settings mixer: sets one group (wind, nature, steps) to a share from 0 to 1. Saved for the next run.
+func set_mix(group: String, value: float) -> void:
+	if not mix_level.has(group):
+		return
+
+	mix_level[group] = clampf(value, 0.0, 1.0)
 	_apply_mix(group)
 	_save_settings()
-	return float(VOLUME_STEPS[int(mix_index[group])])
 
 
 # Headless loudness table (job 67, --mix-levels): the highest peak seen on each bus since tracking began.
@@ -948,8 +949,42 @@ func meters_text() -> String:
 		var filled: int = clampi(int(round((clampf(peak, -60.0, 0.0) + 60.0) / 60.0 * METER_CELLS)), 0, METER_CELLS)
 		lines.append("  %-9s [%s%s] %6.1f  hold %6.1f%s" % [bus_name, "#".repeat(filled), ".".repeat(METER_CELLS - filled), maxf(peak, -99.9), maxf(float(held[0]), -99.9), "  CLIPPING" if peak > -0.5 else ""])
 
+	lines.append("  " + loudest_text("Nature"))
+	lines.append("  " + loudest_text("Wind"))
 	lines.append("  audio output latency %.0f ms, mix rate %d Hz" % [AudioServer.get_output_latency() * 1000.0, int(AudioServer.get_mix_rate())])
 	return "\n".join(lines)
+
+
+# F3: the loudest playing voice on a bus at the listener, so "what is that noise" has a name. 3D voices are rated by their own
+# volume less the distance fall-off (unit_size, inverse distance; out of max_distance they are silent); the 2D beds by volume.
+func loudest_text(bus_name: String) -> String:
+	var ear_at: Vector3 = get_viewport().get_camera_3d().global_position if get_viewport().get_camera_3d() != null else Vector3.ZERO
+	var best_db: float = -200.0
+	var best: String = "none"
+	var voices: Array = get_tree().get_nodes_in_group("world_sounds")
+	voices.append_array(find_children("*", "AudioStreamPlayer", true, false))
+
+	for player in voices:
+		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus) != bus_name:
+			continue
+
+		var db: float = player.volume_db
+		var where: String = ""
+
+		if player is AudioStreamPlayer3D:
+			var d: float = player.global_position.distance_to(ear_at)
+
+			if d > player.max_distance and player.max_distance > 0.0:
+				continue
+
+			db -= 20.0 * log(maxf(d / maxf(player.unit_size, 0.1), 1.0)) / log(10.0)
+			where = " %.0f m" % d
+
+		if db > best_db:
+			best_db = db
+			best = "%s%s %.0f dB" % [player.stream.resource_path.get_file().get_basename(), where, db]
+
+	return "loudest %s: %s" % [bus_name, best]
 
 
 func mix_table() -> String:
@@ -996,12 +1031,12 @@ var _faint_applied: float = 0.0
 func _apply_buses() -> void:
 	var shares: Dictionary = {
 		"Master": float(levels["master"]) * float(VOLUME_STEPS[volume_index]),
-		"Foley": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
-		"Wind": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["wind"])]),
-		"Nature": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
-		"Weather": float(levels["ambient"]) * float(VOLUME_STEPS[int(mix_index["nature"])]),
+		"Foley": float(levels["effects"]) * float(mix_level["steps"]),
+		"Wind": float(levels["ambient"]) * float(mix_level["wind"]),
+		"Nature": float(levels["ambient"]) * float(mix_level["nature"]),
+		"Weather": float(levels["ambient"]) * float(mix_level["nature"]),
 		"Interface": float(levels["interface"]),
-		"Body": float(levels["effects"]) * float(VOLUME_STEPS[int(mix_index["steps"])]),
+		"Body": float(levels["effects"]) * float(mix_level["steps"]),
 	}
 
 	for bus_name in shares:
@@ -1062,7 +1097,8 @@ func _load_settings() -> void:
 
 	if file.load(SETTINGS_PATH) == OK:
 		for group in MIX_GROUPS:
-			mix_index[group] = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)
+			var old_step: int = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
+			mix_level[group] = clampf(float(file.get_value("mixer_level", group, VOLUME_STEPS[old_step])), 0.0, 1.0)
 
 		for sound_name in levels:
 			levels[sound_name] = clampf(float(file.get_value("levels", sound_name, 1.0)), 0.0, 1.0)
@@ -1074,7 +1110,7 @@ func _save_settings() -> void:
 	var file: ConfigFile = ConfigFile.new()
 
 	for group in MIX_GROUPS:
-		file.set_value("mixer", group, int(mix_index[group]))
+		file.set_value("mixer_level", group, float(mix_level[group]))
 
 	for sound_name in levels:
 		file.set_value("levels", sound_name, float(levels[sound_name]))

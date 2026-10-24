@@ -48,3 +48,11 @@ UPDATE 13:40 UTC: gate list 8 adds sal-tools-batch1 4ec83436 (final; wears_tool 
 
 ## Final-build checklist addition (24 Oct 13:50 UTC)
 - BUG-001 join-screen hang fixed (timeout + retry) and repro'd on a fresh clone after Pull. See BUG_LIST.md.
+
+## Next build queue (24 Oct 15:07 UTC, merge only after Dave ends the devstop)
+1. steve-ground-hang 9774c028 (BUG-001, Mike tested, ready) - merge first.
+2. vent 4d0d68a8 - ALREADY merged in build 786 (protocol 77). Nothing to do.
+3. steve-rig-item 0fe597e5 (look_rig defaults, shot_runner) - not yet merged; needs a PASS id from Mike.
+4. cave air + cave pollen - plans answered, not built yet; merge only tested ids.
+5. david3-rig-only e792d7c5 (tools/look_rig.sh only, identical to reviewed b2538698; syntax 5 pass 0 fail). Merge the TESTED id after Mike's Windows look_rig PASS (flora + item run). Linux flora already done by David3 (nvidia, 2.5 min).
+   -> PASS 24 Oct 19:35 UTC (Mike, Windows: --flora and --item exit 0, 2 pass 0 fail, run on b2538698). e792d7c5 has the identical look_rig.sh (diff 0 lines), so merge e792d7c5 in the next build, after the devstop ends. Linux horizon name tags: David3 to look later, not a blocker.

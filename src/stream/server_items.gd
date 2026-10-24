@@ -143,7 +143,7 @@ var water_near: Callable         # (position, reach in metres) -> true when wate
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
 var roof_remove: Callable       # (key)
-var cover_at: Callable         # (position) -> 0.0 open or 1.0 under a tree's crown (Cover.at, or its stand-in)
+var cover_at: Callable         # (position) -> 0.0 open, 1.0 under a tree's crown, 2.0 under a built roof (Cover.at, or its stand-in); rain and sun cover from 0.5, wind shelter only from 1.5
 
 var _dir: String = ""
 var _inventories: Dictionary = {}   # key String -> Inventory
@@ -392,6 +392,9 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	if not _characters.has(key):
 		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2}
 		_dirty = true
+
+	if bool(_characters[key].get("new_player", false)):
+		_admin_mode_off[peer] = true   # a character that started over as a new player logs in with Admin mode off
 
 	_vitals_sent.erase(peer)
 	_sync_vitals(peer, true)
@@ -873,6 +876,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_SHOWROOM:
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_showroom_seed(peer, a == 1, at)
+
+	elif kind == Net.ACT_NEW_PLAYER:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			_become_new_player(peer)
 
 	elif kind == Net.ACT_ADMIN_MODE:
 		if admin_ok.is_valid() and admin_ok.call(peer):
@@ -4227,6 +4234,34 @@ func vitals_of(peer: int) -> Dictionary:
 	return _vitals.get(_peer_key.get(peer, ""), {})
 
 
+# ACT_NEW_PLAYER: the admin's own character starts over as a brand new player, to test the early game as a newcomer sees it. No teleport.
+func _become_new_player(peer: int) -> void:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "":
+		return
+
+	_inventories[key] = InventoryScript.new(table)
+	_inventories[key].bag_from = 10
+	_characters[key]["worn"] = _clean_worn([])
+	_characters[key]["new_player"] = true
+	_vitals[key] = _new_vitals()
+	_craft_queues.erase(key)
+	_asleep.erase(peer)
+	_admin_mode_off[peer] = true
+	_known[peer] = {}
+	send_full.call(peer, _inventories[key].to_bytes())
+	_vitals_sent.erase(peer)
+	_sync_vitals(peer, true)
+	_sync_energy(peer, true)
+	_sync_warmth(peer, true)
+	_sync_sick(peer, true)
+	_sync_worn(peer, true)
+	_sync_craft_queue(peer)
+	_dirty = true
+	_say(peer, "You start again as a new player. Admin mode is off.")
+
+
 func _new_vitals() -> Dictionary:
 	return {"fed": float(_vitals_cfg.get("stomach_cap_kcal", 2400)), "weight": float(_vitals_cfg.get("start_weight_kg", 75)), "health": float(_vitals_cfg.get("health_max", 100)), "wet": float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), "energy": 100.0, "warmth": 100.0, "sick": 0.0}
 
@@ -5407,7 +5442,8 @@ func warmth_target(peer: int) -> float:
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) + daily_offset(weather, pos.y) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
-	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if covered else 1.0)
+	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
+	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 	var feels: float = air - wind * float(cfg.get("wind_chill_c", 6.0))
 	var radius: float = float(cfg.get("fire_radius_m", 4.0))
 
@@ -6991,6 +7027,7 @@ func _load_characters() -> void:
 			"charisma": clampi(int(parsed["players"][key].get("charisma", 0)), -10, 10),
 			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
+			"new_player": bool(parsed["players"][key].get("new_player", false)),
 		}
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:

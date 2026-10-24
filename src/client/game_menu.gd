@@ -17,6 +17,8 @@ var quality_buttons: Array = []
 var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
+var _sound_scroll: ScrollContainer     # Settings > Sound, scrolls when the window is short
+var _test_scroll: ScrollContainer      # Settings > Sound > Sound test list
 var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
@@ -83,6 +85,22 @@ func build(client) -> void:
 		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
 		show_page("admin"))
 	_button(reset, "No, keep them", func(): show_page("admin"))
+	var fresh: VBoxContainer = _page("new_player")
+	var fresh_warn: Label = Label.new()
+	fresh_warn.text = "Start over as a brand new player?\nYour pack and worn gear are emptied, your vitals reset\nand Admin mode goes off. You stay where you are."
+	fresh_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fresh_warn.add_theme_font_size_override("font_size", 30)
+	fresh.add_child(fresh_warn)
+	_button(fresh, "Yes, play as a new player", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_NEW_PLAYER, 0, 0, 0, Vector3.ZERO)
+		if _c.items != null:
+			_c.items.admin_craft = false
+
+		if _admin_mode_switch != null:
+			_admin_mode_switch.set_on(false)
+
+		show_page("admin"))
+	_button(fresh, "No, keep my character", func(): show_page("admin"))
 	_build_developer()
 	note = Label.new()
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -96,6 +114,18 @@ func build(client) -> void:
 func show_page(page_name: String) -> void:
 	for key in _pages:
 		_pages[key].visible = key == page_name
+
+	# The two long sound pages scroll inside what the window leaves under the title, the back button and the note.
+	var room: float = 480.0
+
+	if _c != null and _c.get_viewport() != null:
+		room = clampf(_c.get_viewport().get_visible_rect().size.y - 300.0, 200.0, 760.0)
+
+	if _sound_scroll != null:
+		_sound_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
+
+	if _test_scroll != null:
+		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 220.0, room)
 
 	if note != null:
 		note.text = ""
@@ -212,20 +242,26 @@ func _build_display() -> void:
 
 
 func _build_sound() -> void:
-	var sound: VBoxContainer = _page("sound")
+	var page: VBoxContainer = _page("sound")
+	_sound_scroll = ScrollContainer.new()
+	_sound_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	page.add_child(_sound_scroll)
+	var sound: VBoxContainer = VBoxContainer.new()
+	sound.add_theme_constant_override("separation", 10)
+	_sound_scroll.add_child(sound)
 
 	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
 		_slider(sound, level[1], float(_c.sound.levels[level[0]]), func(value: float):
 			_c.sound.set_level(level[0], value)
 			note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
 
-	for group in ["wind", "nature", "steps"]:
-		_button(sound, "%s volume: change" % group.capitalize(), func():
-			var share: float = _c.sound.mix_step(group)
-			note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
+	for group in [["wind", "Wind volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
+		_slider(sound, group[1], float(_c.sound.mix_level[group[0]]), func(value: float):
+			_c.sound.set_mix(group[0], value)
+			note.text = "%s %d %%" % [group[1], roundi(value * 100.0)])
 
 	_button(sound, "Sound test (a list to click and hear)", func(): show_page("sound_test"))
-	_button(sound, "Back", func(): show_page("settings"))
+	_button(page, "Back", func(): show_page("settings"))
 
 
 func _build_gameplay() -> void:
@@ -245,9 +281,11 @@ func _build_gameplay() -> void:
 func _build_sound_test() -> void:
 	var page: VBoxContainer = _page("sound_test")
 	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(BUTTON_W + 40.0, 520.0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_test_scroll = scroll
 	page.add_child(scroll)
 	_sound_list = VBoxContainer.new()
+	_sound_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_sound_list.add_theme_constant_override("separation", 8)
 	scroll.add_child(_sound_list)
 	_c.sound_tests.add_buttons(_sound_list)
@@ -266,6 +304,10 @@ func _build_admin() -> void:
 		_c.weather_look.clear_day = on
 		_c.weather_look._day_next_msec = 0
 		note.text = "Noon light, clear sky and no fog %s. Off goes back to the game clock and the world weather." % ("on" if on else "off"))
+	_button(admin, "Go to spawn", func():
+		_c.go_to_spawn()
+		_c._set_menu(false))
+	_button(admin, "Play as a new player", func(): show_page("new_player"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
@@ -347,6 +389,7 @@ func _button(parent: VBoxContainer, text: String, action: Callable) -> Button:
 	button.text = text
 	button.custom_minimum_size = Vector2(BUTTON_W, 52.0)
 	button.add_theme_font_size_override("font_size", 26)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long line wraps inside the button instead of running off the panel
 	button.pressed.connect(action)
 	@warning_ignore("standalone_ternary")
 	button.pressed.connect(func(): _c.sound.ui.play("ui_click") if _c.sound != null else null)   # after the action: a cue it plays itself wins
@@ -382,8 +425,11 @@ func _slider(parent: VBoxContainer, text: String, value: float, changed: Callabl
 	var slider: HSlider = HSlider.new()
 	slider.min_value = 0.0
 	slider.max_value = 1.0
-	slider.step = 0.05
+	slider.step = 0.01
 	slider.value = value
-	slider.custom_minimum_size = Vector2(300.0, 24.0)
+	slider.custom_minimum_size = Vector2(BUTTON_W + 160.0, 40.0)
+	slider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	slider.value_changed.connect(changed)
+	label.text = "%s: %d %%" % [text, roundi(value * 100.0)]
+	slider.value_changed.connect(func(v: float): label.text = "%s: %d %%" % [text, roundi(v * 100.0)])
 	parent.add_child(slider)
