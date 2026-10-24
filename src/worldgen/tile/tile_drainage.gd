@@ -356,48 +356,79 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 	var pits: int = 0
 	var pit_cells: int = 0
 	var pit_cut: float = 0.0
-	var ring: int = 3
-	var pit_min_rim: float = float(rules.get("pit_min_rim_m", 1.0))
+	var pit_min_rim: float = float(rules.get("pit_min_rim_m", 2.0))
+	var pit_max_cut: float = float(rules.get("pit_max_cut_m", 8.0))
+	var pits_skipped: int = 0
 
-	for row in range(ring, samples - ring):
-		for column in range(ring, samples - ring):
-			var index: int = row * samples + column
+	for ring: int in [3, 6]:
+		for row in range(ring, samples - ring):
+			for column in range(ring, samples - ring):
+				var index: int = row * samples + column
 
-			if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment:
-				continue
+				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment:
+					continue
 
-			var floor_m: float = channels.bed[index]
-			var rim: float = INF
-			var is_pit: bool = true
+				var floor_m: float = channels.bed[index]
+				var rim: float = INF
+				var is_pit: bool = true
 
-			for dz in range(-ring, ring + 1, ring):
-				for dc in range(-ring, ring + 1, ring):
-					if dz == 0 and dc == 0:
-						continue
+				for dz in range(-ring, ring + 1, ring):
+					for dc in range(-ring, ring + 1, ring):
+						if dz == 0 and dc == 0:
+							continue
 
-					var around: int = (row + dz) * samples + column + dc
-					rim = minf(rim, channels.bed[around])
+						var around: int = (row + dz) * samples + column + dc
+						rim = minf(rim, channels.bed[around])
 
-					if sea[around] == 1 or channels.bed[around] < floor_m + 0.02:
-						is_pit = false
+						if sea[around] == 1 or channels.bed[around] < floor_m + 0.02:
+							is_pit = false
 
-			if not is_pit or rim - floor_m < pit_min_rim:
-				continue
+				if not is_pit or rim - floor_m < pit_min_rim:
+					continue
 
-			var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest)
-			pits += 1
-			pit_cells += int(pit_cut_result["cells"])
-			pit_cut = maxf(pit_cut, float(pit_cut_result["lowered"]))
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut)
+				if pit_cut_result.has("skipped"):
+					pits_skipped += 1
+					continue
 
-			if verbose:
-				print("  pit: floor %.1f m rim %.1f m at world %d,%d, %d cells, deepest cut %.1f m" % [floor_m, rim, (column + water._origin_sx) * 8, (row + water._origin_sz) * 8, int(pit_cut_result["cells"]), float(pit_cut_result["lowered"])])
+				pits += 1
+				pit_cells += int(pit_cut_result["cells"])
+				pit_cut = maxf(pit_cut, float(pit_cut_result["lowered"]))
 
-	print("  pits: %d drained, %d cells cut, deepest cut %.1f m" % [pits, pit_cells, pit_cut])
+				if verbose:
+					print("  pit: floor %.1f m rim %.1f m at world %d,%d, %d cells, deepest cut %.1f m" % [floor_m, rim, (column + water._origin_sx) * 8, (row + water._origin_sz) * 8, int(pit_cut_result["cells"]), float(pit_cut_result["lowered"])])
+
+	print("  pits: %d drained, %d left (cut too deep), %d cells cut, deepest cut %.1f m" % [pits, pits_skipped, pit_cells, pit_cut])
 
 
 # Walks the routing receivers downstream from `at` and cuts a three-cell-wide channel whose bed starts just under `level`
 # and falls `fall` per cell until the real ground is lower than the channel or the sea is reached.
-static func _cut_outlet_path(at: int, level: float, fill, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, drop: float, fall: float, depth_m: float, longest: int) -> Dictionary:
+static func _cut_outlet_path(at: int, level: float, fill, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, drop: float, fall: float, depth_m: float, longest: int, max_cut_m: float = -1.0) -> Dictionary:
+	# A path that would need a cut deeper than max_cut_m is left alone (no gorge across a mountain for a small pit).
+	if max_cut_m > 0.0:
+		var probe_at: int = at
+		var needed: float = 0.0
+
+		for step in range(longest):
+			if sea[probe_at] == 1:
+				break
+
+			var probe_target: float = level - drop - fall * float(step)
+
+			if land[probe_at] < probe_target - 0.5 and step > 0:
+				break
+
+			needed = maxf(needed, channels.bed[probe_at] - probe_target)
+			var probe_next: int = fill.receiver[probe_at]
+
+			if probe_next < 0:
+				break
+
+			probe_at = probe_next
+
+		if needed > max_cut_m:
+			return {"lowered": 0.0, "length": 0, "cells": 0, "skipped": true}
+
 	var lowered: float = 0.0
 	var length: int = 0
 	var cells_cut: int = 0
