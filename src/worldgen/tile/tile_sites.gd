@@ -396,6 +396,7 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 		var previous: int = best
 		var added: Array = []
 		var ok: bool = true
+		var why: String = ""
 
 		for k in range(1, steps + 1):
 			var t: float = float(k) / float(steps)
@@ -405,6 +406,7 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 
 			if index < 0:
 				ok = false
+				why = "outside the tile margin at step %d of %d, p %.0f,%.0f" % [k, steps, p.x, p.y]
 				break
 
 			var y: float = lerpf(start.y, target.y, t)
@@ -416,6 +418,7 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 			if y > ceiling:
 				if k == steps:
 					ok = false
+					why = "ore end too shallow: y %.1f needs %.1f or lower (ground %.1f)" % [y, ceiling, _heights[index]]
 					break
 
 				y = ceiling
@@ -424,6 +427,9 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 
 		if not ok or added.is_empty():
 			ore_report["blocked"] += 1
+
+			if OS.has_environment("ORE_STEER_LOG"):
+				print("  ore blocked: id %s shape %s target %.0f,%.0f,%.0f from node %d (%.0f,%.0f,%.0f) %.0f m, %d steps: %s" % [str(ore["id"]), str(ore["shape"]), target.x, target.y, target.z, best, start.x, start.y, start.z, best_distance, steps, why])
 			continue
 
 		ore_report["reached"] += 1
