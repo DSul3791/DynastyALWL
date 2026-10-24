@@ -13,15 +13,15 @@
 				"amplitude_m": 14
 			},
 			{
-				"wavelength_m": 300,
+				"wavelength_m": 300, "hill_only": true,
 				"amplitude_m": 7
 			},
 			{
-				"wavelength_m": 100,
+				"wavelength_m": 100, "hill_only": true,
 				"amplitude_m": 3.0
 			},
 			{
-				"wavelength_m": 35,
+				"wavelength_m": 35, "hill_only": true,
 				"amplitude_m": 1.2
 			},
 			{
@@ -29,6 +29,7 @@
 				"amplitude_m": 0.45
 			}
 		],
+		"hill_from_m": 150, "hill_to_m": 420, "hill_min_share": 0.3,
 		"calm_below_m": 4,
 		"full_above_m": 120,
 		"calm_strength": 0.12,
