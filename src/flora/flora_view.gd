@@ -439,6 +439,7 @@ func _models_task(entries: Array) -> void:
 		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus", "mushroom"]
 		var near_meshes: Array = []
 		var far_meshes: Array = []
+		var mid_built: Array = []         # the middle model (flora.json "mid_m"): Kathleen's build(mid=true), about 900 vertices
 
 		if not built:
 			var plain: ArrayMesh = _make_mesh(entry, reference)
@@ -449,16 +450,20 @@ func _models_task(entries: Array) -> void:
 			for v in range(2):
 				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
 				near_meshes.append(model)
-				far_meshes.append(model)
+				# The low berry and herb plants (TreeBuilder.GROUND_LOOKS, and the plant-sized blueberry) have a cheaper far model: a patch of 15 to 30 draws it beyond near_m.
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials) if (TreeBuilder.GROUND_LOOKS.has(str(entry["name"])) or TreeBuilder.SHRUB_LOOKS.has(str(entry["name"]))) else model)
 		else:
 			for v in range(TreeBuilder.VARIANTS):
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
 				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
 
+				if entry.has("mid_m"):
+					mid_built.append(TreeBuilder.build(entry, reference, v, false, _tree_materials, "", false, true))
+
 			_override_models(str(entry["name"]), near_meshes, far_meshes)
 
 		_models_mutex.lock()
-		_models_ready[int(entry["id"])] = [near_meshes, far_meshes]
+		_models_ready[int(entry["id"])] = [near_meshes, far_meshes, mid_built]
 		_models_mutex.unlock()
 
 
@@ -587,6 +592,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 
 	var near_meshes: Array = models[0]
 	var far_meshes: Array = models[1]
+	var mid_from_builder: Array = models[2] if models.size() > 2 else []
 
 	if OS.has_environment("FLORA_DEBUG"):
 		var counts: Array = []
@@ -602,7 +608,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 		print("FLORA_DEBUG ", entry["name"], " id=", entry["id"], " kind=", entry["kind"], " shape=", shape, " model=", entry.get("model", "-"), " height=", reference, " near_vertices=", counts, " built=", built)
 
 	# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
-	var mid_meshes: Array = near_meshes.duplicate()
+	var mid_meshes: Array = mid_from_builder if not mid_from_builder.is_empty() else near_meshes.duplicate()
 	if kind == KIND_TREE and built:
 		for v in range(near_meshes.size()):
 			_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
@@ -628,6 +634,10 @@ func _setup_entry(entry: Dictionary) -> bool:
 	if entry.has("near_m") and kind != KIND_TREE:
 		_species[int(entry["id"])]["close_m"] = float(entry["near_m"])   # data/tables/flora.json "near_m": full model only this close (default: the kind's near distance)
 		_close_ms[float(entry["near_m"])] = true
+
+	if entry.has("mid_m") and not mid_from_builder.is_empty() and entry.has("near_m") and kind != KIND_TREE:
+		_species[int(entry["id"])]["mid_m"] = float(entry["mid_m"])   # flora.json "mid_m": the full model only within this, the mid model out to near_m, the far model beyond
+		_close_ms[float(entry["mid_m"])] = true
 
 	if entry.has("young_below_m"):
 		_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
@@ -1359,12 +1369,16 @@ func _seasonal_models_task(entries: Array, for_season: String, materials: Dictio
 			var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 			var near_meshes: Array = []
 			var far_meshes: Array = []
+			var mid_meshes: Array = []
 
-			for v in range(TreeBuilder.VARIANTS):
+			for v in range(2 if str(entry["kind"]) == "plant" else TreeBuilder.VARIANTS):
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare))
 				far_meshes.append(TreeBuilder.build(entry, reference, v, true, materials, for_season, bare))
 
-			models_set[int(entry["id"])] = [near_meshes, far_meshes]
+				if entry.has("mid_m"):
+					mid_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare, true))
+
+			models_set[int(entry["id"])] = [near_meshes, far_meshes, mid_meshes]
 
 		_seasonal_mutex.lock()
 		_seasonal_ready["%s|%d" % [for_season, 1 if bare else 0]] = models_set
@@ -1779,7 +1793,12 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			var close_cells: int = int(chunk_m / CLOSE_CELL_M)
 			var close_x: int = posmod(int(floor(p.x / CLOSE_CELL_M)), close_cells)
 			var close_z: int = posmod(int(floor(p.z / CLOSE_CELL_M)), close_cells)
-			is_near = 1 if (int(masks.get(info["close_m"], 0)) >> (close_z * close_cells + close_x)) & 1 != 0 else 0
+			var within: int = int(masks.get(info["close_m"], 0)) >> (close_z * close_cells + close_x)
+			is_near = 1 if within & 1 != 0 else 0
+
+			if info.has("mid_m") and is_near == 1:
+				# Full only inside mid_m, the middle model between mid_m and near_m (Kathleen's ~900-vertex model), the far model beyond.
+				is_near = 1 if (int(masks.get(info["mid_m"], 0)) >> (close_z * close_cells + close_x)) & 1 != 0 else TIER_MID
 
 		if int(info["kind"]) == KIND_TREE:
 			# The model of this tree's 64 m cell (see _level): far 0, full 1, impostor 2, mid 3.
@@ -1953,7 +1972,9 @@ func _apply_step(job: Dictionary) -> bool:
 		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if bool(key[5]) else 0], {})
 
 		if seasonal.has(key[0]):
-			models = seasonal[key[0]][0 if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT or key[4] == TIER_MID) else 1]
+			var wanted_set: Array = seasonal[key[0]]
+			var which: int = 0 if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (2 if key[4] == TIER_MID and not (wanted_set[2] as Array).is_empty() else (0 if key[4] == TIER_MID else 1))
+			models = wanted_set[which]
 
 	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == TIER_IMPOSTOR and _impostors.has(key[0]) else models[key[3] % models.size()]
 	multimesh.use_custom_data = bool(info["tinted"])
@@ -1966,6 +1987,8 @@ func _apply_step(job: Dictionary) -> bool:
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if proxy_pass else (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 	draw.set_meta("kind", int(info["kind"]))      # for the GPU probe (src/debug/gpu_probe.gd)
 	draw.set_meta("casts", casts)
+	draw.set_meta("tier", int(key[4]))               # for the look rig (0 far, 1 full, 3 mid)
+	draw.set_meta("species", str(_slugs.get(key[0], "")))
 	node.add_child(draw)
 	instances += 0 if proxy_pass else int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
