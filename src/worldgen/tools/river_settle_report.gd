@@ -266,12 +266,12 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 		kind = "STEEP FALL (the ground drops over 1 m per cell below the spill: the water leaves as a film or a fall, not a stop)"
 	elif not bool(flood["closed"]) and rim - ground_end < 0.3:
 		kind = "DOWNHILL OPEN (the ground runs on downhill from the end, no pit: the water ran out or was lost; settler volume)"
-	elif bool(flood["closed"]) and carries == "no painted river below":
+	elif bool(flood["closed"]) and carries.begins_with("no painted river below"):
 		kind = "PIT (terrain: no spill route inside the window, no painted river below)"
 	elif missing > 0.5 * fill and fill > 0.0:
 		kind = "NOT FULL (basin %.0f%% full: water never reached the spill)" % (100.0 * stored / maxf(fill, 1.0))
-	elif carries == "no painted river below":
-		kind = "NATURAL POND (full at its rim, no painted river runs out of it: correct as it is)"
+	elif carries.begins_with("no painted river below"):
+		kind = "NATURAL POND (full at its rim, no painted RIVER runs out of it" + (", a lower pond is " + carries.get_slice("lower pond ", 1) if carries.contains("lower pond ") else "") + ": correct as it is)"
 	elif missing <= 0.1 * fill:
 		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these) " + _why_unfed(data, side, members)
 	else:
@@ -484,6 +484,7 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 	var ground: float = data.heights[ej * side + ei]
 	var closest: float = INF
 	var drop: float = 0.0
+	var pond_closest: float = INF
 
 	for dj in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
 		for di in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
@@ -499,12 +500,15 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 			if (painted == 2 or painted == 3) and data.heights[k] < ground - 0.3:
 				var d: float = sqrt(float(di * di + dj * dj))
 
-				if d < closest:
+				if painted == 3 and d < closest:
 					closest = d
 					drop = ground - data.heights[k]
+				elif painted == 2:
+					pond_closest = minf(pond_closest, d)
 
 	if closest == INF:
-		return "no painted river below"
+		# Only another pond lower down (a pond chain, joined by no painted river): not a river that should run.
+		return "no painted river below" + (" (lower pond %.0f m away)" % (pond_closest * data.spacing_m) if pond_closest < INF else "")
 
 	return "carries on %.0f m away, %.1f m lower" % [closest * data.spacing_m, drop]
 
