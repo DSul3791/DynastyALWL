@@ -48,11 +48,18 @@ delta = (delta*f).astype(np.float32)
 newh = np.where(start > 0, np.maximum(start+delta, np.minimum(start, 0.05)), start)
 delta = (newh-start).astype(np.float32)
 with open(f'{out_dir}/erosion_delta_v1.bin', 'wb') as fh:
-    fh.write(b'ERD1'); fh.write(struct.pack('<iiffffii', n, n, dx, P['X0']*T*8.0, P['Z0']*T*8.0, 0.0, 0, 0))
+    import zlib
+    ph = zlib.crc32(json.dumps(P, sort_keys=True).encode()) & 0x7fffffff
+    fh.write(b'ERD1'); fh.write(struct.pack('<iiffffii', n, n, dx, P['X0']*T*8.0, P['Z0']*T*8.0, 0.0, 0, ph))
     fh.write(delta.astype('<f4').tobytes())
 
+import hashlib, platform, numba, scipy
+man = dict(params=P, python=platform.python_version(), numpy=np.__version__, numba=numba.__version__, scipy=scipy.__version__,
+           input_sha256={f: hashlib.sha256(open(f'{raw_dir}/{f}', 'rb').read()).hexdigest() for f in sorted(os.listdir(raw_dir)) if f.endswith('.f32')},
+           delta_sha256=hashlib.sha256(open(f'{out_dir}/erosion_delta_v1.bin', 'rb').read()).hexdigest())
+json.dump(man, open(f'{out_dir}/erosion_delta_manifest.json', 'w'), indent=1)
 # stats at 8 m: bilinear delta on the fine map
-dz = zoom(delta, S, order=1)[:fine.shape[0], :fine.shape[1]]
+dz = zoom(delta, S, order=3)[:fine.shape[0], :fine.shape[1]]
 fin_after = np.where(fine > 0, np.maximum(fine+dz, np.minimum(fine, 0.05)), fine)
 def sl(z):
     gy, gx = np.gradient(z, 8.0); return np.degrees(np.arctan(np.hypot(gx, gy)))

@@ -6,7 +6,7 @@ extends RefCounted
 # neighbouring frames get the same change along their shared edge. Format "ERD1" (little endian):
 #   char[4] "ERD1", int32 width, int32 height, float32 cell_m, float32 origin_x_m, float32 origin_z_m,
 #   float32 reserved, int32 seed, int32 params_hash, then width * height float32 (row-major, z down).
-# Outside the grid the change is 0.
+# Outside the grid the change is 0. The file is committed once with the final bake; the tool never runs at bake time.
 
 var width: int = 0
 var height: int = 0
@@ -40,7 +40,8 @@ func load_file(path: String) -> bool:
 	return data.size() == width * height
 
 
-# Change in metres at a world position (bilinear, 0 outside the grid).
+# Change in metres at a world position: bicubic (Catmull-Rom) on the 32 m grid, so there are no slope kinks at the
+# cell lines for the 8 m water routing to find. 0 outside the grid.
 func sample(x_m: float, z_m: float) -> float:
 	var u: float = (x_m - origin_x) / cell_m
 	var v: float = (z_m - origin_z) / cell_m
@@ -52,9 +53,17 @@ func sample(x_m: float, z_m: float) -> float:
 	var r0: int = mini(int(v), height - 2)
 	var tu: float = u - float(c0)
 	var tv: float = v - float(r0)
-	var top: float = lerpf(data[r0 * width + c0], data[r0 * width + c0 + 1], tu)
-	var bottom: float = lerpf(data[(r0 + 1) * width + c0], data[(r0 + 1) * width + c0 + 1], tu)
-	return lerpf(top, bottom, tv)
+	var rows: PackedFloat32Array = PackedFloat32Array()
+
+	for dr in range(-1, 3):
+		var row: int = clampi(r0 + dr, 0, height - 1) * width
+		rows.append(_cubic(data[row + clampi(c0 - 1, 0, width - 1)], data[row + c0], data[row + c0 + 1], data[row + clampi(c0 + 2, 0, width - 1)], tu))
+
+	return _cubic(rows[0], rows[1], rows[2], rows[3], tv)
+
+
+static func _cubic(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
+	return p1 + 0.5 * t * (p2 - p0 + t * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3 + t * (3.0 * (p1 - p2) + p3 - p0)))
 
 
 # The frame (n by n samples, origin in sample units) with the change added. Sea (<= 0) is never changed
