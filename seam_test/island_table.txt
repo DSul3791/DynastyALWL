@@ -1,0 +1,38 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+
+== baked tiles: 2 in E:/Software/godotDev/island_world_d539520d/tiles
+CHECK seam (4,4) east to (5,4) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,4) south to (4,5) | 8 hard failures | 0 | FAIL
+   height              9 of 1921 differ worst 7.10 m   FAIL
+   water_class         1 of 1921 differ    FAIL
+   water_surface       1 of 1921 differ worst 0.00 m   FAIL
+   province            0 of 1921 differ 
+   layer_offset        0 of 1921 differ 
+   river crossings: 0 in A, 1 in B, 1 unmatched
+   flow                0 of 1921 differ (0.0%) worst 0 steps
+   biome               2 of 1921 differ (0.1%) worst 9   FAIL
+   soil                4 of 1921 differ (0.2%) worst 8   FAIL
+   fertility          12 of 1921 differ (0.6%) worst 103   FAIL
+   moisture            0 of 1921 differ (0.0%) worst 0
+   cover               9 of 1921 differ (0.5%) worst 16   FAIL
+CHECK seam (4,5) east to (5,5) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,5) south to (4,6) | neighbor not baked; neighbor is an ocean placeholder: 221 of 1921 edge samples are not ocean | ocean edge | INFO
+CHECK spawn (53301, 68427) tile (3,4) | tile not baked | - | INFO
+CHECK river ends naturally (painted rivers, 32 m map, no settled water files) near x 71264 z 74816 | 44 river samples, lowest water at 41.3 m; ground stops falling at 41.3 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends inland (painted rivers, 32 m map, no settled water files) near x 67424 z 75776 | 48 river samples, lowest water at 46.3 m; ground keeps falling to the sea after 0.8 km (8 wet cells on the way): the river should continue; drop 35.8 m over 500 m | reaches sea | FAIL
+CHECK river ends naturally (painted rivers, 32 m map, no settled water files) near x 68992 z 81248 | 41 river samples, lowest water at 24.9 m; ground keeps falling to the sea after 0.5 km (8 wet cells on the way): the river should continue; drop 25.6 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map, no settled water files) near x 65472 z 83904 | 51 river samples, lowest water at 48.5 m; ground stops falling at 9.9 m after 0.6 km: a closed basin (pit); drop 34.2 m over 500 m | reaches sea | INFO
+CHECK rivers reach the sea (painted rivers, 32 m map, no settled water files) | 13 river bodies, 4 do not touch the sea (old count), 3 of those end naturally (lake, head hollow, or water continues), 1 end inland | 0 inland within 128 m gaps | FAIL
+CHECK landmass near x 61968 z 63421 hard routes | 3.9 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 71495 z 61622 hard routes | 0.4 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 67260 z 78925 hard routes | 85.9 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66424 z 88915 hard routes | 2.9 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 75071 z 91682 hard routes | 1.8 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK spawn on a hard route | the spawn cell is not walkable land | walkable | FAIL
+CHECK isolated regions (hard class, 32 m map) | 0 listed, 0 flagged | 0 flagged | PASS
+CHECK dry land farther than 2000 m from an easy route or coast | 0.1% (0.1 km2 of 95.0 km2); 4 easy regions over 1.0 km2 | max 0.02 | PASS
+CHECK island 1 tile summit | island 1 is not in the baked tiles | - | INFO
+CHECK island 8 tile summit | island 8 is not in the baked tiles | - | INFO
+
+20 checks, 4 FAIL
