@@ -1,0 +1,12 @@
+# Test queue (read by: run_jobs.sh queue /path/to/this-file). One job per line; # starts a comment. Runner = who runs the line.
+#   branch NAME      David3  merge origin/claude/NAME into a throwaway branch (never into generator-v2); a conflict is reported and skipped
+#   test SCRIPT      David3  headless src/worldgen/tools/SCRIPT.gd (all 78 test_*.gd work; pass = exit 0 and no "N fail"/FAIL line)
+#   shot ARGS        David3  one picture (tools/docker/shot.sh args); GPU pictures are labelled "server GPU"
+#   rig ...          skipped here until look_rig.sh is ported to Linux (then David3)
+#   bake ...         MikeW ONLY: every terrain tile build, big or small (not run by David3)
+#   play ...         DAVE'S PC ONLY: anything that needs a play session (looks, sounds, feel)
+test validate_items
+test test_worldgen
+test test_slot_sounds
+test test_server_items
+test test_first_hour
