@@ -18,7 +18,7 @@ const RIFFLE_FACTOR := 0.6
 const POOL_FACTOR := 1.25
 const CONFLUENCE_FACTOR := 1.3
 const MEANDER_WAVELENGTH_WIDTHS := 12.0   # sinuous reaches: about 12 widths from bend to bend
-const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
+const MEANDER_AMPLITUDE_WIDTHS := 0.6    # sideways swing on gentle ground (v30 had 1.5: the painted channel left the routed centre line and the river broke into dashes on flat valley floors)
 const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
 const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
@@ -29,6 +29,9 @@ const HEAD_BASIN_MAX_CUT_M := 1.0    # and is never lowered by more than this fo
 const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
 const STEEP_VALLEY_SHARE := 0.8
+const VALLEY_FREEBOARD_FLAT_M := 1.0   # the same on reaches that fall under 0.5%
+const CENTRE_MIN_DEPTH_M := 0.3       # every drained centre cell holds at least this much water, so the painted river is one line
+const CENTRE_MAX_CUT_M := 1.5
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
@@ -132,6 +135,7 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 	_canyons(h, fill, flow, size, cell_m, rules)
 	_gullies(h, fill, flow, size, cell_m, rules)
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
+	_ensure_centre_channel(fill, flow, threshold)
 	_keep_spawn_clear(stamped, size, cell_m, rules)
 
 
@@ -323,7 +327,16 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		var rim_m: float = minf(lerpf(radius_widths, float(rules.get("farm_valley_radius_widths", radius_widths)), farm) * width_m, rim_cap)
 		var side_here: float = lerpf(side_slope, float(rules.get("farm_valley_side_slope", side_slope)), farm)
 		var half_m: float = 0.5 * width_m
-		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+		# On flat reaches the floor must stand higher above the water, or the settled water spreads over the whole floor
+		# (Dave 24 Oct, build 789: a flooded valley with no channel to the sea).
+		var freeboard: float = VALLEY_FREEBOARD_M
+		var down: int = fill.receiver[index]
+
+		if down >= 0:
+			var fall_here: float = maxf(h[index] - h[down], 0.0) / maxf(_step_length(index, down, size, cell_m), 1.0)
+			freeboard = lerpf(VALLEY_FREEBOARD_FLAT_M, VALLEY_FREEBOARD_M, smoothstep(0.005, 0.02, fall_here))
+
+		var floor_level: float = _centre_surface[index] + freeboard
 		var reach: int = int(ceil(rim_m / cell_m))
 		@warning_ignore("integer_division")
 		var row: int = index / size
@@ -634,6 +647,27 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 	bed = cut
 	_carve_head_basins(fill, flow, size, threshold, has_up, edge, cell_m)
+
+
+# The drained centre line is the river's path to the sea: every cell on it keeps its channel at least CENTRE_MIN_DEPTH_M
+# under the water level, whatever the valley, gully and head cuts did around it (lowered by at most CENTRE_MAX_CUT_M).
+func _ensure_centre_channel(fill, flow, threshold: float) -> void:
+	var fixed: int = 0
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]):
+			continue
+
+		var wanted: float = maxf(_centre_surface[index] - CENTRE_MIN_DEPTH_M, bed[index] - CENTRE_MAX_CUT_M)
+
+		if bed[index] > wanted:
+			bed[index] = wanted
+			fixed += 1
+
+			if is_nan(surface[index]) or surface[index] < _centre_surface[index]:
+				surface[index] = _centre_surface[index]
+
+	print("  centre line: %d cells deepened to keep the river continuous" % fixed)
 
 
 # Dave 24 Oct: water sources start in natural catch basins. A river head (first channel cell, no channel upstream) is
