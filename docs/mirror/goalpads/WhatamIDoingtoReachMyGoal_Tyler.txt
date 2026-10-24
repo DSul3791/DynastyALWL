@@ -17,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 04:40 UTC overnight plan (tech/OVERNIGHT_PLAN_2026-10-24.md) and bake 29 merge plan (tech/BAKE_29_MERGE.md, river-settle final fa7bdadc) written; tyler-seam32 built; no plan pending
 - 04:05 UTC plan GOs: Kathleen tree belts (flora VERSION 4), Sonny gullies to sea; Dave working all night logged; no plan pending; list 4 waits on Mike
 - 03:50 UTC plan GO: Sonny seam edge flow (160 m coarse, content-hash cache, conservation rows); builds 775 (v28 bake) and 776 (gate list 3, 8 branches) merged; gate list 4 final (6 branches, clean on 776), river-settle held
 - 04:25 UTC plan GOs: smoke/frametime, sound slots; tyler-bake28 refreshed (river-settle 1f51ac07); wild rose chain (no-rose-berries + rose-petals + flora-gaps) trial-merged clean; gate list 3 updated; rose_hips kept
