@@ -320,7 +320,7 @@
 		"per_use": {
 			"axe": {
 				"gather": 1,
-				"rock": 1,
+				"rock": 5,
 				"tree": 1,
 				"trunk": 1,
 				"split": 1
