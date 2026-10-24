@@ -35,7 +35,7 @@ Thread names count iterations: Name_NNN (a fresh thread each day, see section 3)
 - tools/local_check.sh: warning baseline 233 (only Tyler rewrites), zero new warnings. Dave: GitHub Desktop Fetch origin, Pull; close the game fully first.
 - After hours (BP-T43): only Dave's asks of that day; Tyler decides merges so Dave's pulled build does not change while he plays.
 ## 6. Bakes
-- 1-tile test bakes: no approval, MikeW in second clone, at least 2 h apart, never committed. 9-tile bake: Tyler batches, tile copy outside repo first, Dave commits the .tile files himself (BP-C23), Sonny re-settles water, QA card tells Dave to press Clear blocks. Never bake or commit tiles in the cloud. TERRAIN_VERSION change ships only with a bake.
+- 1-tile test bakes: no approval, MikeW in second clone, at least 2 h apart, never committed. 9-tile bake: Tyler batches, MikeW bakes in the second clone, commits and pushes claude/mike-bake-* from there (BP-T53), Tyler merges it with the baked code in one build, Dave only pulls, Sonny re-settles water, QA card tells Dave to press Clear blocks. Never bake or commit tiles in the cloud. TERRAIN_VERSION change ships only with a bake.
 ## 7. Testing
 - Team tests first (BP-T46); only human-judgment items go to Dave. tech/TEST_RECIPE.md: plan template, look down, step back about 1 m, expect-and-stop (BP-T49). Look rig tools/look_rig.sh, admin showroom at spawn (BP-T45). "No chasing ghosts": fix only with log, repro or screenshot.
 ## 8. Dave's rules
