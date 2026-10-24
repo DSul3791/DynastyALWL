@@ -140,3 +140,8 @@ Note: Recommendation: Yes because shallow water alone cannot tell them apart.
 Note: Lasting dams still make swamp.
 Note: Recommendation: Yes because floods come and go, so they should not rename land.
 [check]
+
+## wl-lake-size | Water land types: still water of 4 or more cells (about 250 m2) counts as a lake in the label?
+Note: Ponds are still never placed in the bake. This is only the runtime label.
+Note: Recommendation: Yes because smaller is a puddle.
+[check]
