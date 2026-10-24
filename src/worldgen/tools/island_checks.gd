@@ -1399,12 +1399,31 @@ func _tile_farmland(stitched: Dictionary) -> void:
 	var farmable: Dictionary = {}
 	var rolling: Dictionary = {}
 	var origin: Dictionary = {}
+	# Dave 24 Oct: farmland is not only floors and plains. It runs up to the foot of the evergreen belt (the softwood belt is
+	# thickest at ground slope 0.30, about 17 deg) as long as the player can walk up it (easy route limit, route_easy_deg).
+	var belt_deg: float = float(defaults.get("farm_belt_deg", 16.7))
+	var walk_deg: float = float((_limits["tiles"] as Dictionary)["route_easy_deg"])
+	var land_cells: Dictionary = {}
+	var belt_cells: Dictionary = {}
+	var belt_walk_cells: Dictionary = {}
 
 	for j in range(1, rows - 1):
 		for i in range(1, width - 1):
 			var index: int = j * width + i
 			var id: int = landmass[index]
 			var h: float = heights[index]
+
+			if id >= 0 and h > low_m and _dry(stitched["water"][index], h):
+				var bdx: float = (heights[index + 1] - heights[index - 1]) / (2.0 * spacing)
+				var bdz: float = (heights[index + width] - heights[index - width]) / (2.0 * spacing)
+				var bslope: float = rad_to_deg(atan(sqrt(bdx * bdx + bdz * bdz)))
+				land_cells[id] = int(land_cells.get(id, 0)) + 1
+
+				if bslope <= belt_deg:
+					belt_cells[id] = int(belt_cells.get(id, 0)) + 1
+
+					if bslope <= walk_deg:
+						belt_walk_cells[id] = int(belt_walk_cells.get(id, 0)) + 1
 
 			if id < 0 or h <= low_m or h > top_m or not _dry(stitched["water"][index], h):
 				continue
@@ -1427,6 +1446,9 @@ func _tile_farmland(stitched: Dictionary) -> void:
 
 		var farm_share: float = float(int(farmable.get(id, 0))) / float(zone[id])
 		var rolling_share: float = float(int(rolling.get(id, 0))) / float(zone[id])
+		var belt_share: float = float(int(belt_cells.get(id, 0))) / float(maxi(int(land_cells.get(id, 1)), 1))
+		var belt_walk: float = float(int(belt_walk_cells.get(id, 0))) / float(maxi(int(belt_cells.get(id, 0)), 1))
+		_row("tile landmass near x %d z %d farmland up to the evergreen belt (slope at or under %.1f deg, walkable up to %.0f deg)" % [int((origin[id] as Vector2).x), int((origin[id] as Vector2).y), belt_deg, walk_deg], "%.1f%% of land is farmable, %.1f km2, %.0f%% of it walkable" % [belt_share * 100.0, float(int(belt_cells.get(id, 0))) * spacing * spacing / 1.0e6, belt_walk * 100.0], "report", "INFO")
 		_row("tile landmass near x %d z %d farmland (%.0f-%.0f m, slope at or under %.0f deg)" % [int((origin[id] as Vector2).x), int((origin[id] as Vector2).y), low_m, top_m, farm_deg], "%.1f%% farmable, %.1f%% rolling, %d cells of 32 m" % [farm_share * 100.0, rolling_share * 100.0, int(zone[id])], "report", "INFO")
 
 
