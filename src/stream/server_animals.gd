@@ -742,6 +742,11 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 	var sen: Dictionary = cfg.get("senses", {})
 	var f: float = 1.0
 
+	# Stances 4 and 5 are lying on a covered rough bed and lying in a closed room (server_items.peer_stances, bed.json): lying, and harder to sense.
+	if stance >= 4:
+		f *= float(sen.get("bed_mult", 0.7)) if stance == 4 else float(sen.get("hidden_mult", 0.05))
+		stance = 3
+
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
 		f = maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)
