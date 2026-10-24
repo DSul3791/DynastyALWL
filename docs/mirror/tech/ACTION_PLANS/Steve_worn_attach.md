@@ -1,0 +1,20 @@
+# Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
+Branch claude/steve-worn-attach from generator-v2 after claude/kathleen-worn-clothing merges (needs src/client/worn_look.gd and data/items/worn.json). Queued behind the river settle work.
+Today: the server sends the worn item numbers to the player (protocol 40 net.worn, inventory_view._on_worn). Only the player's own third-person avatar (terrain_client._make_avatar, held_item._avatar_rig) and NPCs (npc_view._make_body) have bodies; other players have none yet (no remote-player bodies, so "sync" means the local player and NPCs).
+Plan, three small hooks, one call each, no protocol change:
+1. Own avatar: on every _on_worn change, WornLook.attach(avatar_rig, ids_from_numbers(worn), far=false) and on the first-person arms rig (held_item._arms) the mittens only if the builder allows; ids come from table.id_of(number).
+2. NPCs: npc_view._make_body calls WornLook.attach(ragdoll, ids, far) with ids from an optional "worn": [item ids] list in the NPC roster rows (data/npcs); far = true beyond 30 m (re-attach when the NPC crosses the distance, one check per second, not per frame).
+3. Character screen body preview: character_screen.gd gets a small SubViewport with a RagdollBody in idle, turning slowly, WornLook.attach with the same ids, refreshed in character.refresh(). Shown beside the slots; no new input.
+Best-practice questions for Tyler: one shared helper (src/client/worn_sync.gd: numbers -> ids -> attach) so the three places do not each convert; far/near switch by distance in one place; SubViewport cost when the screen is closed (no render while hidden).
+Tests: parse_scan, local_check 233, test_worldgen/validate_items (Kathleen's rows), Mike one rig picture with a full outfit (give the 9 items via --give, then look from the side) and one character-screen picture.
+
+## Tyler reply (03:05 UTC 24 Oct, once; BP-T52). GO, branch claude/steve-worn-attach after claude/kathleen-worn-clothing is merged. Yes to one helper.
+Best-practice suggestions:
+1. **One helper, one conversion.** src/client/worn_sync.gd with a single entry: apply(rig, worn_numbers_or_ids, far). It converts numbers to ids once (table.id_of), diffs against what is already attached (remember the applied ids on the rig as metadata) and adds or removes only the pieces that changed, so a worn change does not rebuild the whole outfit.
+2. **Distance switch in one place.** Keep a single `far` decision (30 m, one check per second, hysteresis of a few metres so a body at 30 m does not flicker) inside the helper or its caller, not in each of the three places. Re-attach only when the far flag flips.
+3. **Closed screens cost nothing.** The character-screen SubViewport uses render_target_update_mode DISABLED (or UPDATE_ONCE per refresh) while the screen is hidden, and its body is freed or paused; the idle turn runs only while visible. Report the frame cost with the screen open and closed (Ctrl+Shift+G).
+4. **First-person arms.** Show mittens on the arms only if Kathleen's builder is flagged for it in worn.json (arm_ok); the first-person camera must not see clipping through the cloak or hood (hide hood/cloak parts on the own head layer, visible to others and the third-person view only).
+5. **NPC rosters.** The optional "worn" list in data/npcs rows is validated in Python (every id exists and has a worn.json row); an unknown id logs once and is skipped, never an error.
+6. **Protocol note.** No protocol change today is right. When remote-player bodies arrive, the same apply() takes the list the server sends; document that in worn_sync.gd's header and claim a protocol number then.
+7. **Tests.** parse_scan, local_check at 233, validate_items, plus one headless test that attaches an outfit twice (second call changes nothing) and swaps one item (only that piece changes). Mike's picture is one REQUEST: full outfit side view, and the character-screen body (two pictures).
+Label RUNTIME. Merge: next hourly batch after Kathleen's branch.
