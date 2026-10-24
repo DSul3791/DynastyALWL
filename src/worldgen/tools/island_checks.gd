@@ -1289,7 +1289,7 @@ func _gully_checks(area_km2: float, tile_limits: Dictionary) -> void:
 	var gullies: int = int(numbers[0])
 	var dead: int = int(numbers[1])
 	var share: float = float(dead) / float(maxi(gullies, 1))
-	_bound_row("dead-end gullies share (sink, not lake or sea, within 3 km)", share, tile_limits["gully_dead_end_max_share"], true, "%d of %d gullies, %.2f per km2" % [dead, gullies, float(dead) / maxf(area_km2, 0.001)])
+	_bound_row("dead-end gullies share (sink, not lake or sea, within 3 km)", share, tile_limits["gully_dead_end_max_share"], true, "%d of %d gullies, %.4f per km2" % [dead, gullies, float(dead) / maxf(area_km2, 0.001)])
 
 
 func _tile_checks(settings, world_dir: String, directory: String) -> void:
