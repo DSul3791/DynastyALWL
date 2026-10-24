@@ -1386,3 +1386,7 @@ Answered: 2026-10-24 14:20 UTC
 Answer: No: No, I’m standing at the base of a mountain and all I can hear is a heavy heavy heavy rumbling in my ears, but I don’t think I’m near a waterfall. I don’t see any signs of big strong wind like the pollen is flowing by gently. It just sounds like a really big wind. Sounds like I’m in a wind storm.
 Answered: 2026-10-24 14:30 UTC
 
+## look-sound-batch2 | Do the new ambience sounds sound right? (bird chorus, owl, frogs, crickets, surf, wind)
+Answer: No: No, I’m standing at the base of a mountain and all I can hear is a heavy heavy heavy rumbling in my ears, but I don’t think I’m near a waterfall. I don’t see any signs of big strong wind like the pollen is flowing by gently. It just sounds like a really big wind. Sounds like I’m in a wind storm.
+Answered: 2026-10-24 14:30 UTC
+
