@@ -1,0 +1,13 @@
+WhatamIDoingtoReachMyGoal (Mike)
+GOAL 1: One hourly merge-check gate with a PASS/FAIL line per branch; every test groupable
+
+How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
+
+STEPS NOW
+1. 
+
+HANDED OFF
+(none)
+
+DONE
+(none)

@@ -6,7 +6,8 @@ High-level only. Detailed jobs are decided day to day in tech/JOBS.md and in act
 2. If you must break off for a reason, hand that work to a subordinate (Sal or Mike) and keep advancing goal 1. The subordinate works while you carry on with goal 1.
 3. A goal moves to "Goals completed" ONLY when it is truly done (Tyler confirms with the check named in the goal). Only then does the next goal become first.
 4. Today's island terrain job stays top for Sonny and Sal until it is complete.
-5. Moderator reminder every 30 minutes: "awake, not idle, first goal first".
+5. Moderator reminder every 30 minutes: "awake, not idle, first goal first, update your scratch pad".
+6. SCRATCH PAD (Dave 01:26): every agent keeps /mnt/project-files/goalpads/WhatamIDoingtoReachMyGoal_<Name>.txt (Kathleen, Sonny, Sal, Steve, Mike, Tyler; already created). It holds the finer steps toward goal 1, what was handed off and to whom, and DONE lines with a UTC time. Read it first after any reset, update it at job start, at each finished step and at every half-hour reminder. Tyler mirrors the pads to docs/mirror/goalpads/ at the 8 AM handoff.
 
 ## Kathleen (art + sound)
 1. Simple, reasonably accurate-to-real models for EVERYTHING in the game that needs one (plants, trees, tools, items, building pieces, creatures, characters).
