@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Setup (world elevation, wet air, river network, tables) in 131756 ms; 15887 river cells in 3743 chains
+  gullies: 18939, dead ends: 0
+  basins: 96 head ponds (37.0 ha), 1 lakes (3.5 ha), 10 heads skipped (ground steeper than 20 deg)
+  centre line: 0 cells deepened to keep the river continuous
+  breach: 41 lakes, 277 cells cut, deepest cut 13.7 m
+  pits: 17 drained, 24 kept as basins (outlet cut at the lip), 6 left (cut too deep), 1367 cells cut, deepest cut 8.0 m
+  water: drainage mode, 102 lakes, 65075 river cells in 145433 ms
+Tile (3, 4) baked in 297.3 s: 8.87 MB, stages { "height": 16326, "erosion": 71654, "ledges": 27056, "scree": 4118, "water": 148349, "climate": 18033, "geology": 9299, "sites": 624 } -> res://worlds/base_world/tiles/tile_3_4.tile
