@@ -5,7 +5,7 @@ GOAL 1: Hourly slack check (read the other pads and JOBS.md, name who is behind)
 How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
 
 STEPS NOW (ordered, built 02:20 UTC 24 Oct; work down, never idle: if a step waits, start the next)
-1. [ ] River settle report tool (src/worldgen/tools/river_settle_report.gd): reads a tile + its settled .water, lists each inland river end with world x z, ground, nearest painted river cells below it, priority-flood fill volume and spill cell. Done when it parses (parse_scan) and Mike has one run of it on tile 3,4 with a table.
+1. [~] PUSHED 02:30 UTC (claude/steve-river-settle 2e708ff, parse_scan clean); waits for Mike run on tile 3,4. River settle report tool (src/worldgen/tools/river_settle_report.gd): reads a tile + its settled .water, lists each inland river end with world x z, ground, nearest painted river cells below it, priority-flood fill volume and spill cell. Done when it parses (parse_scan) and Mike has one run of it on tile 3,4 with a table.
 2. [ ] Classify the 3 handed-over ends (47648,66944), (52832,70656), (53184,73856) from that table as pit / low volume / spring misplaced / seam. Done when each has a named class with numbers in the plan file.
 3. [ ] Spring rate law Q = k*A^p in data/water_settle.json, settler reads it, report prints k and p. Done when settle_water.gd output shows Q per spring and test_water_sim stays green.
 4. [ ] Spring ON the river line in a water-grid-only basin (rule-based, no coordinates). Done when a headless test shows flow at the head cell and a fall has a source above it.
@@ -13,9 +13,9 @@ STEPS NOW (ordered, built 02:20 UTC 24 Oct; work down, never idle: if a step wai
 6. [ ] Seam hand-off check: border rows equal on both sides after a settle. Done when the report prints seam equality per border.
 7. [ ] Acceptance run in the second clone via Mike: inland ends before/after, settle time per tile <= 15 min. Done when the table is in the plan file and Tyler accepts.
 8. [ ] Slack check every hour (02:37, 03:37 ...), one line each in DONE. Done each hour.
-9. [ ] Shrub LOD and carpets once steve-berry-picking and kathleen-blackthorn-size merge (plan Steve_shrub_lod_carpet.md). Done when frame times before/after are in the plan file.
+9. [~] PUSHED 03:00 UTC (claude/steve-shrub-lod 7a37909, RUNTIME), needs Mike frame-time + piece-line run. Shrub LOD and carpets once steve-berry-picking and kathleen-blackthorn-size merge (plan Steve_shrub_lod_carpet.md). Done when frame times before/after are in the plan file.
 10. [ ] Harvest field steps 2-4 (Steve_harvest_naming.md) after berry merge, reading Sal's harvest_yield. Done when berries, herbs and tree fruit all use one field and test_server_items is green.
-11. [ ] Stamp world_items stripped/picked with the flora layout VERSION after steve-berry-picking merges (layout-stamp follow-up). Done when a layout bump clears them in a test.
+11. [x] DONE 02:45 UTC (claude/steve-stamp-items 5cb8995, test added). Stamp world_items stripped/picked with the flora layout VERSION after steve-berry-picking merges (layout-stamp follow-up). Done when a layout bump clears them in a test.
 12. [ ] Always-playable smoke test (start-up with F2 Low under 33 ms) as a Mike batch line. Done when TEST_RECIPE has the row and Mike has one number.
 13. [ ] Wet tunnel sounds by ear: rig run + Dave's ear card. Done when the card is posted.
 14. [ ] Cave-in timer retest (setting 2-20 min). Done when a rig/test line shows the timer fires at the set time.
@@ -24,7 +24,31 @@ HANDED OFF
 - 02:10 UTC from Kathleen to Steve (accepted 01:45): shrub mid-LOD pick by distance (30-60 m) in flora_view with her mid=true models, season/stripped passed to build(), low-berry carpets. Plan: tech/ACTION_PLANS/Steve_shrub_lod_carpet.md (revised). Starts after steve-berry-picking and claude/kathleen-blackthorn-size merge.
 
 DONE
+- 02:45 UTC found by git ancestry check: berry-picking, layout-stamp, water-flow-at, sound-3d, sunny-button, prompt-layout, rig-views, parse-scan and kathleen-blackthorn-size are ALL merged in generator-v2. So steps 9, 10, 11 are unblocked. 11 done; 9 and 10 next (after step 1 run waits on Mike).
 - 02:14 UTC slack check 3 (early, Dave: keep working). Pads: Mike empty (no DONE since goals, but he is running batches), Kathleen DONE 02:55 (items looks, needs Mike showroom rows = my --showroom), Sal 01:56 river gate pushed, Sonny 01:57 canyons in progress and test bake running, Tyler 01:56. Nobody idle. MOST BEHIND: Sonny (island list is long: canyons, volcano, shelf islands, 2b types). Sal asks for river-to-sea numbers; 23 of 45 river bodies end inland on v27 tiles. Slice I can take: water-sim side of river ends (pits and flat gaps in the settle step) IF Sonny hands it over via the coordinator; terrain code stays his.
 - 01:56 UTC check 2: --pieces pushed (claude/steve-rig-pieces 70e5308) 01:30; --showroom pushed complete (claude/steve-rig-showroom 65f9a28, on top of --pieces) 01:55 after Mike found my first push incomplete (anchor edits silently missed on the wrong base; lesson: assert every replacement). Goal 3 flow for Mike done.
 - 01:37 UTC slack check 1 (pad empty for all; Kathleen most loaded).
 - 01:40 UTC read goals_Steve.md; goal 3 flow: all rig flags and parse errors for others are fixed (parse_scan, --pieces, test fixes).
+DONE: worn attach pushed (hooks, preview, validator, test_worn_sync); needs Mike run: test_worn_sync + validate_items + 2 pictures
+AFTER EVERY PUSH: git ls-remote origin <branch> must equal git rev-parse HEAD; check git branch --show-current first (never detached).
+02:29 UTC check: worn attach pushed 34447f1 (needs Mike run); river report fix pushed 8d13146 (needs Mike rerun); parse_scan PACKED check added.
+02:32 UTC: Sonny flow fix 31426b55; waiting Mike rebake tile 3,4 + report ef8f5bf rerun; then code Q=k*A^p springs (width fallback).
+03:00 UTC step 12 PUSHED claude/steve-smoke-row c227ff8 (rig --frametime/--quality, TEST_RECIPE row, plan Steve_smoke_frametime.md); needs Tyler plan reply + Mike one run. Shrub-lod/flora-gaps and settle/island-checks rebases blocked: neither base merged yet (flora-gaps conflict is trivial: keep near_m line, drop duplicate model line).
+03:10 UTC steps 13+14 checked: 14 already covered by test_tunnel_watch (set 2 min, running window falls at 12 min) -> only needs Mike run. 13 wet sounds ARE hooked (terrain_client:3272 via drip_view.gap_m); only the by-ear card for Dave remains (Admin 'Dump water'/wet_gap_override). Step 10 waits berry merge + field shape agreed with Sal via Tyler.
+03:15 UTC sound slots WIP pushed (module, test entry, creature steps); doors/ladder/table/wheel + test_slot_sounds remain. River settle now first: DOWNHILL OPEN 18, FULL BUT STOPPED 33 on 3,4 with real flow.
+03:01 UTC check: settle stop rule fixed (1f51ac0) + per-block print (7e76520); FULL BUT STOPPED still 34, asked Mike for 6 lines + block lines; sound slots 26e7832; no-rose-berries 82b0bd5; batch queue 6769572; smoke row 7010a23.
+03:32 UTC check: river settle v3b (ponds with outlet fed, water-level test) a2a68e1->706b792; accounting bug (64x) found and fixed, balance closes; waiting Mike class counts. shrub-lod 250730e, sound-slots 0ff7769 rebased on 776/sound-1; no-rose-berries 82b0bd5.
+04:10 UTC step 6 seam check in river_settle_report pushed (see git head).
+04:36 UTC check: report fixes (pond chain = natural, FED POND RIVER OUT STILL DRY) final fa7bdadc6241; waiting Mike's report rerun after 9-tile rebake. Next idle job: harvest steps need berry merge; could prep Steve_harvest step 2 plan.
+05:40 UTC check: harvest field ae92584 pushed (Tyler's 6 changes); river settle waits Mike report rerun on fa7bdadc (in 778).
+06:12 UTC check: slot-test warning fix 21c5f83 pushed; harvest field ae92584; river settle waits Mike's rerun / DOWNHILL OPEN lines.
+06:43 UTC check: report2 eb11c0eecaac pushed+verified; probe ask posted to Mike/Sal; waiting for probe output on x48800 z70976.
+07:15 UTC check: harvest-field fixed 5100acbf (two test bugs); both inland ends judged dry pits, no settler change; waiting Mike rerun + continuity run.
+07:46 UTC check: seam stitch+film pushed (961adf3c), seams all 0.00 m on v30; fed pond x53144 z73544 = painted river crosses 103-106 m ridge (terrain, Sonny); next: list all ridge-crossing painted river cells on tile 3,4.
+08:18 UTC check: nothing new since 07:46 (ridge-crossing river cell list sent to Sonny/Sal, csv in tech/); waiting on Sonny terrain fix and Mike reruns.
+08:25 UTC HOURLY SLACK CHECK: nobody idle. Bottleneck = Mike (bakes, tests, pictures; Kathleen waits for close-ups, Sonny for (3,4) bake). Helped: tools/settle_block.sh (settle 9 tiles + stitch + report in one command) pushed 2c604a43 on claude/steve-river-seams.
+08:49 UTC check: sound batch 2 hooked + Tyler's 6 points pushed 018f30ed; settle_block.sh 2c604a43; (3,4) recount on 3adc876b: centre-line uphill 0 (side-cell artefact), 55 ends sorted (about 6 real); waiting Mike full-block settle + stitch + film LOOK picture.
+09:21 UTC check: nothing new since 08:49; waiting Mike (9-tile settle+stitch, film LOOK picture, test_slot_sounds on 018f30ed).
+09:52 UTC check + hourly slack: nothing new from me; waiting Mike.
+10:23 UTC check: nothing new since 09:52; waiting Mike.
+10:56 UTC check: nothing new since 10:23; waiting Mike.
