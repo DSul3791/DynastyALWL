@@ -29,12 +29,6 @@ Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
 [check]
 
-## new-player-switch | Start with nothing but ground items, hints on, plus an admin 'become a new player' switch for testing?
-Priority: 4
-Note: Empties the pack, turns hints on, drops admin powers so Mike can time the real first hour.
-Note: Recommendation: Yes because we cannot test the first hour any other way.
-[check]
-
 ## wl-dam-order | Dams: build order is dam test, then water stability test, then strength and breach, then wash-away?
 Priority: 5
 Note: The water step must be fixed before a burst can be simulated safely.
