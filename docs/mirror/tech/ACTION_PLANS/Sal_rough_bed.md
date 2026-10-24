@@ -1,0 +1,6 @@
+# sal-rough-bed: the rough bed item (build 790; Steve does respawn at own bed)
+Goal (Dave): a rough bed in the first shelter: lie down, health returns, exhaustion falls, food and water at half rate, never auto-wakes. Cards rough-bed-rules and respawn-at-bed are YES.
+Item side (Sal): kit `rough_bed_kit` (new item, recipe known=true, hand craft): 10 thatch + 4 sticks + 2 twine (Dave). Structure `rough_bed` (kind placed, look rough_bed from Kathleen, footprint 1 x 2 m, state appended after 31, cap 20 per 256 m chunk, anyone may use, owner recorded for respawn). Placement rule: needs cover (Cover.at over 0.5, a roof, not a tree canopy; the same cover query as the lean-to); refused with "A bed needs a roof". Taking it down returns the kit (100 percent). Weight 6 kg.
+Rules already in data/code: sleep.json (hold Z lies down; better sleep indoors). The bed changes three numbers in sleep.json when the sleeper is on a bed: rest rate x1.5, hunger and thirst rate x0.5 while asleep, no auto-wake. Steve owns the respawn-at-bed link (bed owner = placer).
+Files: items.json, recipes.json, structures.json (rough_bed), sleep.json, weights.json, looks, tests (craft kit, place needs roof, take down gives kit, owner saved in world_items). RESTART.
+Open: none for Dave; the lie-down animation is Kathleen/Steve.

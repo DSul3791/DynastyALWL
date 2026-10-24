@@ -1,0 +1,4 @@
+# sal-camp-bench: the camp bench as the first station (build 791; small)
+Goal: the workbench is the player's first station. Rename in the game to "Camp bench" (ids stay: workbench_kit, workbench). Kit stays 12 sticks + 3 twine, known=true (it already works).
+Levels: level 1 bare; add-ons tool rack and vice (exist) lift it to 2 and 3; both stay as is. The bench is what the thatch pieces, hafted-tool upgrades (stone hammer) and the shore net/rod are made at, so those recipes get station workbench level 1.
+Changes: names in items.json/structures.json ("Camp bench", description "A flat plank on stakes where tools and pieces are made"), the early-game flow row, recipes that should be bench-made get station workbench (thatch pieces in sal-r1-recipes; stone hammer already). No new items. Look: existing. Tests: name present, recipes list at the bench. RESTART (data only).
