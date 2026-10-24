@@ -1538,3 +1538,7 @@ Answered: 2026-10-24 17:04 UTC
 Answer: Yes
 Answered: 2026-10-24 17:04 UTC
 
+## fish-stock-schools | Keep fish as hidden stock with moving schools, not swimming creatures?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
