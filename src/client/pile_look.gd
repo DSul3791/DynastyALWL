@@ -10,7 +10,9 @@ const ROW_RISE_M := 0.22            # height of one row
 const ROW_SPREAD_M := 0.17          # footprint radius per row
 const ROCK_R_M := 0.27
 
-# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound", "handful", "color", "rock" (rock size scale), "squash"}.
+# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound", "handful", "color", "rock" (rock size scale), "squash",
+# optional "tight" (scales footprint and row rise with the lump size, default 1.0) and "jitter" (lump size spread, default 0.2)}.
+# Soil and clay (Dave 2026-10-24): lumps half the size of one dirt clump, packed tight so neighbours overlap.
 
 static var _cache: Dictionary = {}
 static var _material: StandardMaterial3D
@@ -35,6 +37,8 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 	var base_color: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
 	var rock_scale: float = float(kind["rock"])
 	var flat: float = float(kind["squash"])
+	var tight: float = float(kind.get("tight", 1.0))
+	var jitter: float = float(kind.get("jitter", 0.2))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_id * 2654435761 + 91
 	var shown: int = mini(count, MAX_DRAWN)
@@ -71,14 +75,14 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 		if in_row <= 0:
 			continue
 
-		var spread: float = ROW_SPREAD_M * sqrt(float(in_row)) * grow
-		var y: float = ROW_RISE_M * float(rows - k) * flat * grow
+		var spread: float = ROW_SPREAD_M * tight * sqrt(float(in_row)) * grow
+		var y: float = ROW_RISE_M * tight * float(rows - k) * flat * grow
 
 		for i in range(in_row):
 			var angle: float = float(i) * 2.39996 + rng.randf() * 0.4
 			var radius: float = spread * sqrt((float(i) + 0.5) / float(in_row))
 			radius *= 1.0 - 0.15 * float(rows - k) / float(rows)
-			var size: float = ROCK_R_M * rock_scale * grow * rng.randf_range(0.8, 1.2)
+			var size: float = ROCK_R_M * rock_scale * grow * rng.randf_range(1.0 - jitter, 1.0 + jitter)
 			var at: Vector3 = Vector3(cos(angle) * radius, y + size * 0.6, sin(angle) * radius)
 			var tilt: Basis = Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU))
 			var squash: Basis = tilt * Basis.from_scale(Vector3(size * rng.randf_range(1.0, 1.3), size * flat * 1.2, size * rng.randf_range(1.0, 1.3)))
