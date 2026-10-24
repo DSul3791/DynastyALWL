@@ -16,6 +16,7 @@ extends SceneTree
 #   --all          every island of at least min_area_km2, not only those listed in the limits file
 #   --sketch-only  skip the tile checks
 #   --tiles-only   skip the sketch (island shape) checks
+#   --picture=DIR  write DIR/island_<id>_bearings.png: the six bearing sections in one labelled row (sketch checks)
 #   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
 # Limits live in <world>/plan/island_checks.json (null = report only).
@@ -45,6 +46,7 @@ var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
 var _rules: Dictionary = {}
+var _picture_dir: String = ""
 
 
 func _init() -> void:
@@ -68,6 +70,8 @@ func _run() -> int:
 			only_island = int(argument.trim_prefix("--island="))
 		elif argument == "--all":
 			all_islands = true
+		elif argument.begins_with("--picture="):
+			_picture_dir = argument.trim_prefix("--picture=")
 		elif argument == "--fine":
 			_fine = true
 		elif argument == "--sketch-only":
@@ -346,9 +350,11 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 	var targets: Variant = config["profile_targets_m"]
 	var beach_widths: Array = []
 	var ray_slope_worst: float = 0.0
+	var drawn: Array = []
 
 	for bearing in bearings:
 		var ray: Dictionary = _ray(peak_m, float(bearing["deg"]), distances, float(config["beach_top_m"]))
+		drawn.append({"deg": float(bearing["deg"]), "ray": ray})
 		ray_slope_worst = maxf(ray_slope_worst, float(ray["max_slope_deg"]))
 
 		if ray["coast_m"] < 0.0:
@@ -378,6 +384,9 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 		parts.append("coast %.1f km" % (float(ray["coast_m"]) / 1000.0))
 		parts.append("max slope %.0f deg" % float(ray["max_slope_deg"]))
 		_row("%s ray %s" % [title, bearing["label"]], ", ".join(parts), ", ".join(limit_parts) if limited else "none set", ("PASS" if ok else "FAIL") if limited else "INFO")
+
+	if _picture_dir != "":
+		_draw_sections(island_id, drawn, float(island["peak_m"]), title)
 
 	_bound_row("%s steepest ray slope" % title, ray_slope_worst, config["ray_slope_max_deg"], true, "%.0f deg" % ray_slope_worst)
 
@@ -436,6 +445,108 @@ func _band_checks(title: String, land: PackedFloat32Array, peak_m: float, config
 		var measured: float = land[mini(land.size() - 1, int(share * float(land.size())))]
 		var allowed: float = maxf(tolerance_m, expected * tolerance_frac)
 		_row("%s band at %.0f%% of land" % [title, share * 100.0], "%.0f m (expected %.0f m of peak %.0f)" % [measured, expected, peak_m], "within %.0f m" % allowed, "PASS" if absf(measured - expected) <= allowed else "FAIL")
+
+
+# ---------------------------------------------------------------- picture
+
+const GLYPHS := {
+	"0": "111101101101111", "1": "010110010010111", "2": "111001111100111", "3": "111001111001111",
+	"4": "101101111001001", "5": "111100111001111", "6": "111100111101111", "7": "111001001001001",
+	"8": "111101111101111", "9": "111101111001111", "k": "101101110101101", "m": "101111111101101",
+	"-": "000000111000000", "+": "000010111010000",
+}
+const PANEL_W := 420
+const PANEL_H := 320
+const MARGIN := 48
+const SECTION_FLAT := Color(0.40, 0.65, 0.30)
+const SECTION_EASY := Color(0.85, 0.62, 0.20)
+const SECTION_HARD := Color(0.80, 0.22, 0.18)
+
+
+# One row of sections, one panel per bearing: the coast at the left, the peak at the right (the profile
+# read back from the peak outward), every panel on the same scales. Fill colour is the local slope:
+# green under the easy limit (25 deg), orange up to the hard limit (45 deg), red above it.
+func _draw_sections(island_id: int, drawn: Array, peak_m: float, title: String) -> void:
+	var limit_m: float = 1000.0
+	var tallest: float = ceil(peak_m / 100.0) * 100.0
+
+	for entry in drawn:
+		limit_m = maxf(limit_m, ceil(float(entry["ray"]["coast_m"]) / 1000.0) * 1000.0)
+
+	var panels: int = drawn.size()
+	var image: Image = Image.create(MARGIN + panels * (PANEL_W + MARGIN), PANEL_H + 2 * MARGIN, false, Image.FORMAT_RGB8)
+	image.fill(Color(0.96, 0.96, 0.94))
+	var ink: Color = Color(0.12, 0.12, 0.12)
+	var grid: Color = Color(0.80, 0.80, 0.78)
+	var easy: float = tan(deg_to_rad(float((_limits["tiles"] as Dictionary)["route_easy_deg"])))
+	var hard: float = tan(deg_to_rad(float((_limits["tiles"] as Dictionary)["route_hard_deg"])))
+
+	for panel in range(panels):
+		var left: int = MARGIN + panel * (PANEL_W + MARGIN)
+		var top: int = MARGIN
+		image.fill_rect(Rect2i(left, top, PANEL_W, PANEL_H), Color(1, 1, 1))
+
+		# Grid: a line every 1 km across, every 200 m up.
+		for km in range(int(limit_m / 1000.0) + 1):
+			var gx: int = left + int(float(km) * 1000.0 / limit_m * float(PANEL_W - 1))
+			image.fill_rect(Rect2i(gx, top, 1, PANEL_H), grid)
+			_text(image, gx - 3, top + PANEL_H + 6, "%d" % km, ink, 2)
+
+		for step in range(int(tallest / 200.0) + 1):
+			var gy: int = top + PANEL_H - 1 - int(float(step) * 200.0 / tallest * float(PANEL_H - 1))
+			image.fill_rect(Rect2i(left, gy, PANEL_W, 1), grid)
+
+			if panel == 0:
+				_text(image, 2, gy - 4, "%d" % (step * 200), ink, 2)
+
+		# Section: the coast at x = 0, inland to the right.
+		var ray: Dictionary = drawn[panel]["ray"]
+		var samples: PackedFloat32Array = ray["samples"]
+		var coast: float = float(ray["coast_m"])
+
+		if coast > 0.0:
+			var count: int = samples.size()
+
+			for x in range(PANEL_W):
+				var inland: float = float(x) / float(PANEL_W - 1) * limit_m
+				var at: float = (coast - inland) / RAY_STEP_M
+
+				if at < 0.0:
+					break
+
+				var index: int = clampi(int(round(at)), 0, count - 1)
+				var h: float = maxf(samples[index], 0.0)
+				var neighbor: float = samples[clampi(index + 1, 0, count - 1)]
+				var local: float = absf(neighbor - samples[index]) / RAY_STEP_M
+				var color: Color = SECTION_FLAT if local <= easy else (SECTION_EASY if local <= hard else SECTION_HARD)
+				var column_top: int = top + PANEL_H - 1 - int(h / tallest * float(PANEL_H - 1))
+				image.fill_rect(Rect2i(left + x, column_top, 1, top + PANEL_H - column_top), color)
+
+		# Label: the bearing, large, over the panel.
+		_text(image, left + 6, top + 6, "%d" % int(round(float(drawn[panel]["deg"]))), ink, 4)
+
+	var unit_y: int = PANEL_H + MARGIN + 18
+	_text(image, MARGIN, unit_y, "%d" % island_id, ink, 3)
+	_text(image, MARGIN + 60, unit_y, "%dm" % int(tallest), ink, 3)
+	_text(image, MARGIN + 200, unit_y, "%dkm" % int(limit_m / 1000.0), ink, 3)
+	var path: String = "%s/island_%d_bearings.png" % [_picture_dir, island_id]
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_picture_dir) if _picture_dir.begins_with("res://") else _picture_dir)
+	var saved: int = image.save_png(path)
+	_row("%s picture" % title, path if saved == OK else "cannot save %s" % path, "6 bearing sections, grid 1 km x 200 m, colour = slope", "PASS" if saved == OK else "FAIL")
+
+
+func _text(image: Image, x: int, y: int, text: String, color: Color, scale: int) -> void:
+	var cursor: int = x
+
+	for character in text:
+		var glyph: String = GLYPHS.get(character, "")
+
+		if glyph != "":
+			for bit in range(15):
+				if glyph[bit] == "1":
+					image.fill_rect(Rect2i(cursor + (bit % 3) * scale, y + (bit / 3) * scale, scale, scale), color)
+
+		cursor += 4 * scale
 
 
 # ---------------------------------------------------------------- sketch helpers
@@ -600,7 +711,7 @@ func _ray(origin: Vector2, bearing_deg: float, distances: Array, beach_top_m: fl
 
 		distance += RAY_STEP_M
 
-	var result: Dictionary = {"coast_m": coast_m, "heights": {}, "max_slope_deg": max_slope, "beach_m": -1.0}
+	var result: Dictionary = {"coast_m": coast_m, "heights": {}, "max_slope_deg": max_slope, "beach_m": -1.0, "samples": samples}
 
 	if coast_m < 0.0:
 		return result
