@@ -70,8 +70,11 @@ func _init() -> void:
 
 	# Cover and a fire, on an ordinary cold day.
 	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
+	var open_target: float = items.warmth_target(1)
+	items.cover_at = func(_p): return 2.0
+	check(items.warmth_target(1) > 25.0 and items.warmth_target(1) > open_target, "a built roof cuts the wind (%.0f)" % items.warmth_target(1))
 	items.cover_at = func(_p): return 1.0
-	check(items.warmth_target(1) > 25.0, "cover cuts the wind (%.0f)" % items.warmth_target(1))
+	check(is_equal_approx(items.warmth_target(1), open_target), "a tree crown does not (Dave 24 Oct: canopy is rain and sun cover only)")
 	items.cover_at = Callable()
 	items._items[777] = {"number": 1, "count": 1, "pos": Vector3(11.0, 0.0, 10.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1000.0, "covered": false, "recheck": 0.0}}
 	check(items.warmth_target(1) > 60.0, "a lit fire warms (%.0f)" % items.warmth_target(1))
