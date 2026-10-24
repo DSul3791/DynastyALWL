@@ -70,6 +70,9 @@ var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
+var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
+var showroom_look_down: float = 999.0    # --shot-showroom-look=DEG: its pitch (e.g. -35); default aims at the row from the height and distance
+var showroom_spread: bool = false        # --shot-showroom-spread: name tags staggered in three heights, so neighbours do not overlap
 var _showroom_t: int = 0
 var _showroom_rows_chosen: Array = []
 var _showroom_tagged: bool = false
@@ -122,6 +125,12 @@ func setup(owner_client, args: Array) -> void:
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
 		elif argument.begins_with("--shot-cam-above="):
 			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
+		elif argument.begins_with("--shot-showroom-height="):
+			showroom_cam_height = float(argument.trim_prefix("--shot-showroom-height="))
+		elif argument.begins_with("--shot-showroom-look="):
+			showroom_look_down = float(argument.trim_prefix("--shot-showroom-look="))
+		elif argument == "--shot-showroom-spread":
+			showroom_spread = true
 		elif argument.begins_with("--shot-showroom="):
 			showroom_rows = argument.trim_prefix("--shot-showroom=").split(",", false)
 			no_grass = true
@@ -642,9 +651,9 @@ func _show_showroom(now: int) -> void:
 		var mid_x: float = origin.x + float(start[0]) + float(step[0]) * float(items.size() - 1) * 0.5
 		var mid_z: float = origin.z + float(start[1]) + float(step[1]) * float(items.size() - 1) * 0.5
 		var dist: float = 3.0 + length * 0.9
-		var above: float = 1.6 + length * 0.25
+		var above: float = showroom_cam_height if showroom_cam_height > 0.0 else 1.6 + length * 0.25
 		var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
-		views.append({"name": view_name, "dist": dist, "pitch": -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+		views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
 		_showroom_rows_chosen.append(row)
 
 	_showroom_t = now
@@ -678,7 +687,7 @@ func _tag_showroom() -> void:
 			tag.font_size = 36
 			tag.outline_size = 10
 			tag.no_depth_test = true
-			tag.position = Vector3(x, g + 0.9, z)
+			tag.position = Vector3(x, g + 0.9 + (float(n % 3) * 0.45 if showroom_spread else 0.0), z)
 			client.add_child(tag)
 
 		print("shot runner: showroom row %s %s items %d found %d" % [str(row.get("label", "")), "ok" if found == items.size() else "FAIL missing", items.size(), found])
