@@ -9,7 +9,6 @@ STEPS (open)
 3. Merge list 2 (tech/MERGE_CHECK_NEXT2.md): when Mike reports PASS, merge the passing branches, bump build to 774, BUILD_LOG + HANDOFF + DAY_LOG. Done-check: head build 774 on origin and number sent to coordinator.
 4. Trial-merge every newly pushed branch against head and add clean ones to the next merge list. Done-check: list file updated within 30 minutes of each push.
 8. Add dates and sources to the 10 most-used best-practice entries (BP-T31, T44-T53, C23). Done-check: each has a date and source line.
-9. Design coverage map: one table, each DESIGN_IDEAS section (4 to 13) with owner, status, next goal. Done-check: tech/DESIGN_COVERAGE.md exists with a row per section.
 10. Refill JOBS.md queues from goals_<Name>.md so every thread has 3+ next lines. Done-check: each queue has 3+ open lines.
 11. Verify one best practice per week against current official docs (Godot, Voxel Tools, git); log the check. Done-check: a dated line in tech/LESSONS.md.
 12. Daily audit for 24 Oct against the efficiency plan targets (tech/AUDITS/AUDIT_2026-10-24.md) at 20:00 ADT. Done-check: file exists with 7 pass/fail lines.
@@ -18,6 +17,7 @@ HANDED OFF
 (none)
 
 DONE
+- 03:45 UTC step 9: tech/DESIGN_COVERAGE.md written (every DESIGN_IDEAS section with owner, status, next goal; gaps marked 'none yet')
 - 03:40 UTC step 6 and 7: LESSONS line for builds 771-774 written; BP-C23, BP-T33, BP-T50 marked superseded/amended. Build 774 merged (6 branches), BAKE_28_MERGE.md ready, waiting on Mike's v28 bake and Sal's table PASS.
 - 03:10 UTC plan GO replies: Kathleen flora gaps, Steve river settle, Kathleen worn clothing, Steve worn attach (no plan pending); merge list 3 written (2 conflicts flagged to Steve); steve-stamp-items added to list 2
 - 02:55 UTC step 5: tech/PLAN_CHECKLISTS.md written (six kinds, 4-8 questions each)
