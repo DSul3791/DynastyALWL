@@ -6,3 +6,4 @@ Dave decisions: island shape plan approved; player bot declined (better rig step
 Held: sonny-island-shape (spawn zone check failed twice), kathleen-materials/shovel/spades (superseded), steve-warning-699, project-thread-sp0ppw.
 Lessons: build 743 shipped with conflict markers (fixed in 744); CI false failures fixed; tests must look down at the spot.
 Open for tomorrow: island rebake with agreed spawn/showroom method; rig dig/drop/pile/chop plans run by MikeW; Kathleen flora redo from Dave's photos; Sal species and blueprint; Guru: crash_reports untrack (warn Dave), inbox files, water options research final, id claims.
+- 03:15 UTC 24 Oct Guru_003: build 775 merged (v28 bake, TERRAIN_VERSION 29).
