@@ -9,3 +9,10 @@ One class of small rig fixes, asked for by Kathleen and Mike:
 
 Mike's check: `tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground` and `tools/look_rig.sh --showroom K1,K2 --showroom-cam-height 3 --showroom-look-down -35 --showroom-spread`. Parse scan and local_check as usual (expect 233, no new).
 Not run in Godot in the cloud.
+
+Tyler GO (24 Oct, BP-T55), done in the follow-up commit:
+- tools/item_numbers.py: ONE function (load_numbers) merges items.json and gathered.json; a duplicate name or number stops the rig with an error. look_rig.sh and look_rig_seed.py both use it.
+- Old behaviour reachable and changed defaults printed: every run prints "rig defaults: --gy 31.0 (was 28.0 ...)"; `--gy 28` repeats an old picture.
+- Camera numbers are flags and logged: --close-height / --close-dist / --close-pitch (printed at start), showroom --showroom-cam-height / --showroom-look-down (logged per picture in the "shot runner: view" line).
+- Showroom tag-overlap check: "shot runner: tag overlap view <row> ok|OVERLAP (n tags, m overlapping pairs)" per picture (estimate from letter count and font size; fixed-size tags).
+- tools/check_rig_syntax.sh: bash -n, syntax parse of the python tools, merged item tables; prints "rig syntax: N pass, N fail". Run before handing to Mike (BP-T55). Evidence pictures stay out of generator-v2.

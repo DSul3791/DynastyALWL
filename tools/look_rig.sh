@@ -6,10 +6,10 @@
 #   --flora a,b,c  a labelled row of those plant species 4 m ahead (e.g. raspberry,bramble,nettle,wild_rose)
 #   --pieces a,b,c  a labelled row of building pieces 4 m ahead, by structure name (data/items/structures.json keys, e.g. wall_section,doorway_section,window_section,floor_section,roof_section,foundation_section,chest,workbench), built by the game's own ghost_model, spaced by size; grass off; two pictures (wide, close) unless --views is given; one "shot runner: piece" line each with its size (FAIL empty = draws nothing). A typo stops in seconds with the valid names.
 #   --showroom all|label,label  turns Admin mode on and takes ONE picture per admin showroom row (data/items/showroom.json; a label part matches, any case: --showroom spades,hoes), from the west, with a name tag over each item; one "shot runner: showroom row" line each (items expected vs found, FAIL missing)
-#   --showroom-cam-height M  --showroom-look-down DEG  --showroom-spread  with --showroom: camera M metres above the ground (default 1.6 + 0.25 x row length; 3 for a view from above), its pitch (e.g. -35), and name tags staggered in three heights so neighbours do not overlap
+#   --showroom-cam-height M  --showroom-look-down DEG  --showroom-spread  (the camera numbers are logged on every picture, "shot runner: view ... dist pitch above"; tag overlaps are counted: "shot runner: tag overlap")  with --showroom: camera M metres above the ground (default 1.6 + 0.25 x row length; 3 for a view from above), its pitch (e.g. -35), and name tags staggered in three heights so neighbours do not overlap
 #   --pieces-yaw N  turn the whole --pieces row N degrees (see the back of a wall)
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height of the pile (default 31.0 = the spawn ground in the current world; set it if you use --at elsewhere)
-#   --ground-close ID[:N]  the same pile (default 1) seen close, side-on: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). --item/--agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
+#   --ground-close ID[:N]  the same pile (default 1) seen close: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). Numbers are flags: --close-height M --close-dist M --close-pitch DEG; --agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
 #   --flora-scale N  draw the --flora row N times its size (diagnosis: is a small plant only hard to see?)
 #   --cam-above M  with --flora: the camera stands M metres above the ground at the plant row (e.g. --cam-above 0.5 --dist 3 --pitch -10); default keeps --agl
 #   --frametime S [--quality 0-3]  after a 10 s warm-up measures frame times for S seconds (quality 0 = Low) and prints one "shot runner: frametime" line: build, quality, spot, avg, p95, p99, max, frames over 50/100 ms, verdict (FAIL = p95 >= 33 ms or any frame over 100 ms; WARN = p99 over 50 ms), machine (GPU, driver, window). VSync off, fixed hour and weather, flora and water on. For a borderline number run it 3 times and take the median
@@ -30,15 +30,22 @@
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
 cd "$(dirname "$0")/.." || exit 2
 GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"
-PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"; WAIT=25; SETTLE=12; DDIST=1.0
+CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"; WAIT=25; SETTLE=12; DDIST=1.0
 while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
-    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; ADMIN="$ADMIN --shot-ground --shot-back=0 --shot-lookdown=-45 --shot-drop-dist=0.9"; DDIST=0.9; AGL=0.35; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
+# --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
+if [ -n "$CLOSE" ]; then
+  ADMIN="$ADMIN --shot-ground --shot-back=0 --shot-lookdown=$CP --shot-drop-dist=$CD"; DDIST="$CD"; AGL="$CH"
+  echo "rig: ground close-up camera: height $CH m, distance $CD m, pitch $CP deg (flags --close-height --close-dist --close-pitch)"
+fi
+# Defaults changed on 24 Oct 2026: printed on every run so a before/after picture is not mistaken for a game change.
+echo "rig defaults: --gy $GY (was 28.0 until 24 Oct; the spawn ground is 31.0 in the current world, pass --gy 28 to repeat an old picture)"
 # --pieces: refuse a name that is not a structures.json key before the scene starts (a typo costs seconds, not a launch).
 if [ -n "$PIECES" ]; then
   KEYS=$(grep -oE '^		"[a-z_0-9]+": \{' data/items/structures.json | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | grep -vE '^(campfire)$' | tr '\n' ' ')
@@ -53,21 +60,7 @@ RIG=$(mktemp -d); STORE="$RIG/store"; UD="$RIG/appdata/Godot/app_userdata/Dynast
 mkdir -p "$STORE" "$UD" "$OUT"
 KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 if [ -n "$ITEM" ]; then
-  NUM=$(python - "$ITEM" <<'PYEOF'
-import json,sys
-def find(o,k):
-    if isinstance(o,dict):
-        if k in o and isinstance(o[k],dict) and 'number' in o[k]: return o[k]['number']
-        for v in o.values():
-            r=find(v,k)
-            if r is not None: return r
-r=None
-for f in ('items','gathered'):
-    r=find(json.load(open('data/items/%s.json'%f,encoding='utf-8')),sys.argv[1])
-    if r is not None: break
-print(r if r is not None else "")
-PYEOF
-)
+  NUM=$(python tools/item_numbers.py "$ITEM") || { echo "item tables: duplicate name or number (see above)"; exit 2; }
   [ -z "$NUM" ] && { echo "no such item: $ITEM"; exit 2; }
   python - "$STORE/inventories.json" "$KEY" "$NUM" "$COUNT" <<'PYEOF'
 import json,sys
