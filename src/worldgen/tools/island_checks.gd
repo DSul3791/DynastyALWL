@@ -988,10 +988,40 @@ func _crater_check(title: String, top_peak: Vector2, config: Dictionary) -> void
 	var wanted: float = float(crater["depth_m"])
 	var tolerance: float = float(config["crater_depth_tolerance"])
 	_row("%s crater depth (rim %.0f m radius)" % [title, radius], "%.0f m (rim mean %.0f m, floor %.0f m)" % [depth, rim_mean, floor_m], "%.0f m +- %.0f%%" % [wanted, tolerance * 100.0], "PASS" if absf(depth - wanted) <= wanted * tolerance else "FAIL")
-	var off: float = absf(fposmod(rim_low_bearing - float(crater["breach_bearing_deg"]) + 180.0, 360.0) - 180.0)
-	var below: float = rim_mean - rim_low
-	_row("%s crater breach" % title, "lowest rim point at %.0f deg, %.0f m under the mean rim" % [rim_low_bearing, below], "within %.0f deg of %.0f, at least %.0f m low" % [float(config["crater_breach_tolerance_deg"]), float(crater["breach_bearing_deg"]), float(config["crater_breach_min_m"])],
-		"PASS" if off <= float(config["crater_breach_tolerance_deg"]) and below >= float(config["crater_breach_min_m"]) else "FAIL")
+
+	# Breach (Sonny): a notch from 0.6 to 1.8 crater radii out along the compass bearing (0 = north, 90 = east, direction
+	# (sin b, -cos b)). The wall is the highest ground along that stretch; at the designed bearing it must be a small share
+	# of the mean wall over the floor. The lowest wall of all bearings is shown too.
+	var wall_total: float = 0.0
+	var wall_low: float = INF
+	var wall_bearing: float = 0.0
+
+	for step in range(points):
+		var bearing: float = float(step) * 360.0 / float(points)
+		var wall: float = _wall(center, radius, bearing)
+		wall_total += wall
+
+		if wall < wall_low:
+			wall_low = wall
+			wall_bearing = bearing
+
+	var wall_mean: float = wall_total / float(points)
+	var designed: float = float(crater["breach_bearing_deg"])
+	var designed_share: float = (_wall(center, radius, designed) - floor_m) / maxf(wall_mean - floor_m, 1.0)
+	var lowest_share: float = (wall_low - floor_m) / maxf(wall_mean - floor_m, 1.0)
+	_row("%s crater breach at %.0f deg" % [title, designed], "wall %.0f%% of the mean wall over the floor (lowest wall of all: %.0f deg, %.0f%%)" % [designed_share * 100.0, wall_bearing, lowest_share * 100.0], "under %.0f%%" % (float(config["crater_breach_max_wall_share"]) * 100.0),
+		"PASS" if designed_share <= float(config["crater_breach_max_wall_share"]) else "FAIL")
+
+
+# Highest ground between 0.6 and 1.8 crater radii out from the centre along a compass bearing.
+func _wall(center: Vector2, radius: float, bearing_deg: float) -> float:
+	var direction: Vector2 = Vector2(sin(deg_to_rad(bearing_deg)), -cos(deg_to_rad(bearing_deg)))
+	var wall: float = -INF
+
+	for fraction in [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8]:
+		wall = maxf(wall, _h(center.x + direction.x * radius * fraction, center.y + direction.y * radius * fraction))
+
+	return wall
 
 
 # Peak layout of a typed island (island_types.<type>.layout rows [along, across, radius, height] in units of the
