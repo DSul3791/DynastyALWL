@@ -13,6 +13,10 @@ static var _frame: StandardMaterial3D
 static var _roof: StandardMaterial3D
 static var _earth: StandardMaterial3D
 static var _stone: StandardMaterial3D
+static var _tar: StandardMaterial3D
+static var _steel: StandardMaterial3D
+static var _log: StandardMaterial3D
+static var _meshes: Dictionary = {}      # shared log meshes by variant key, built once
 
 
 # Boards from a little noise, drawn once: `boards` boards across, dark seams between them, long grain along y, a per-board tint, a few knots.
@@ -103,6 +107,12 @@ static func _materials() -> void:
 	_roof = _textured(Color(0.36, 0.25, 0.15), 10, 37, false)   # split boards laid close
 	_earth = _blocks_material(Color(0.33, 0.25, 0.17), 1, 41, 0.35)      # packed earth: mottled, no seams
 	_stone = _blocks_material(Color(0.5, 0.49, 0.46), 4, 53, 0.22)       # fitted stone: courses of blocks with dark joints
+	_tar = _blocks_material(Color(0.07, 0.065, 0.06), 1, 61, 0.3)        # tarred roofing: near-black, rough, mottled
+	_steel = StandardMaterial3D.new()
+	_steel.albedo_color = Color(0.58, 0.6, 0.62)
+	_steel.metallic = 0.7
+	_steel.roughness = 0.45
+	_log = _textured(Color(0.42, 0.29, 0.17), 1, 71, false)              # bark-brown round logs
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -212,14 +222,7 @@ static func _wall_with_gap(low: float, high: float, jamb: float) -> Node3D:
 # A doorway: a gap one metre wide and two high, with a plank door in it. Shut it fills the gap (solid); open it stands swung back against the jamb.
 static func doorway(open: bool = false) -> Node3D:
 	var root: Node3D = _wall_with_gap(0.0, 2.0, 0.5)
-
-	if open:
-		_box(root, Vector3(0.06, 2.0, 0.9), Vector3(0.47, 1.0, 0.47), _frame)
-		_solid(root, Vector3(0.06, 2.0, 0.9), Vector3(0.47, 1.0, 0.47))
-	else:
-		_box(root, Vector3(1.0, 2.0, 0.08), Vector3(0.0, 1.0, 0.0), _frame)
-		_solid(root, Vector3(1.0, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
-
+	root.add_child(door(1.0, 1, "bar", false, open))
 	return root
 
 
@@ -283,4 +286,140 @@ static func rock_pile() -> Node3D:
 		_box(root, Vector3.ONE * float(row[1]), row[0], _stone)
 
 	_solid(root, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
+	return root
+
+
+# A shared log along x, `length` m long and `thick` m across (5-sided when far), made once per variant and reused by every piece.
+static func _log_mesh(length: float, thick: float, far: bool) -> CylinderMesh:
+	var key: String = "log_%.2f_%.2f_%s" % [length, thick, far]
+
+	if not _meshes.has(key):
+		var m: CylinderMesh = CylinderMesh.new()
+		m.top_radius = thick * 0.5
+		m.bottom_radius = thick * 0.5
+		m.height = length
+		m.radial_segments = 5 if far else 6
+		m.rings = 1
+		_meshes[key] = m
+
+	return _meshes[key]
+
+
+static func _log_at(parent: Node3D, length: float, thick: float, at: Vector3, far: bool) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = _log_mesh(length, thick, far)
+	mesh.material_override = _log
+	mesh.rotation = Vector3(0.0, 0.0, PI * 0.5)
+	mesh.position = at
+	parent.add_child(mesh)
+
+
+# A log wall 2 m wide, 8 courses of 0.3 m logs (2.4 m): every log stays inside the piece, no ends poke out. Odd courses are 0.3 m shorter so a saddle-notch gap is left
+# at each end where a connecting wall's logs pass; a dark notch block marks it. Length and tone vary a little per course from a fixed seed (never changes between frames).
+# About 290 triangles near (6-sided logs and notch blocks), 160 far (5-sided logs, no notch blocks).
+static func log_wall(far: bool = false) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 4242
+
+	for course in 8:
+		var y: float = 0.15 + 0.3 * float(course)
+		var odd: bool = course % 2 == 1
+		var length: float = (1.7 if odd else 2.0) - rng.randf_range(0.0, 0.04)
+		_log_at(root, length, 0.3, Vector3(0.0, y, 0.0), far)
+
+		if odd and not far:
+			for x in [-0.93, 0.93]:
+				_box(root, Vector3(0.14, 0.12, 0.3), Vector3(x, y, 0.0), _frame)
+
+	_solid(root, Vector3(2.0, 2.4, 0.3), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# One door builder for every kind. `width` m wide, `leaves` 1 or 2, `handle` "bar" (a wooden pull, no latch), "steel" or "none", `steel_leaf` true makes the leaf steel.
+# Vertical boards held by a top rail and a middle rail only: no bottom edge board across the doorway (a double door has no bar between its leaves either). No knobs.
+static func door(width: float = 1.0, leaves: int = 1, handle: String = "bar", steel_leaf: bool = false, open: bool = false) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var leaf_w: float = width / float(leaves)
+	var leaf_mat: StandardMaterial3D = _steel if steel_leaf else _planks
+	var rail_mat: StandardMaterial3D = _steel if steel_leaf else _frame
+
+	for i in leaves:
+		var side: float = -1.0 if i == 0 else 1.0
+		var cx: float = 0.0 if leaves == 1 else side * leaf_w * 0.5
+		var at_z: float = 0.0
+		var swung: bool = open
+
+		if swung:
+			cx = side * (width * 0.5 - 0.03) if leaves > 1 else width * 0.47
+			at_z = leaf_w * 0.5
+
+		var leaf: Node3D = Node3D.new()
+		leaf.position = Vector3(cx, 0.0, at_z)
+		_box(leaf, Vector3(0.06 if swung else leaf_w, 2.0, leaf_w if swung else 0.07), Vector3(0.0, 1.0, 0.0), leaf_mat)
+
+		if not swung:
+			_box(leaf, Vector3(leaf_w, 0.1, 0.09), Vector3(0.0, 1.85, 0.0), rail_mat)
+			_box(leaf, Vector3(leaf_w, 0.1, 0.09), Vector3(0.0, 1.0, 0.0), rail_mat)
+
+			if handle != "none":
+				var mat: StandardMaterial3D = _steel if handle == "steel" else _frame
+				var hx: float = leaf_w * 0.4 * (-side if leaves > 1 else 1.0)
+				_box(leaf, Vector3(0.04, 0.3, 0.04), Vector3(hx, 1.0, 0.09), mat)
+
+		root.add_child(leaf)
+
+		if swung:
+			_solid(leaf, Vector3(0.06, 2.0, leaf_w), Vector3(0.0, 1.0, 0.0))
+
+	if not open:
+		_solid(root, Vector3(width, 2.0, 0.1), Vector3(0.0, 1.0, 0.0))
+
+	return root
+
+
+# A ceiling piece 2 by 2 m: planks seen from below and above with three joists under them (0.1 m thick plus the joists, 0.2 m in all); about 50 triangles.
+static func ceiling() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.08, 2.0), Vector3(0.0, 0.0, 0.0), _planks)
+
+	for x in [-0.66, 0.0, 0.66]:
+		_box(root, Vector3(0.12, 0.12, 2.0), Vector3(x, -0.1, 0.0), _frame)
+
+	_solid(root, Vector3(2.0, 0.2, 2.0), Vector3(0.0, -0.04, 0.0))
+	return root
+
+
+# A flat tarred roof 2 m square: a thin slab in rough tar-black material with a low lip round the edge; about 60 triangles.
+static func flat_roof() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.1, 2.0), Vector3(0.0, 0.0, 0.0), _tar)
+
+	for z in [-0.97, 0.97]:
+		_box(root, Vector3(2.0, 0.07, 0.06), Vector3(0.0, 0.08, z), _tar)
+
+	for x in [-0.97, 0.97]:
+		_box(root, Vector3(0.06, 0.07, 1.88), Vector3(x, 0.08, 0.0), _tar)
+
+	_solid(root, Vector3(2.0, 0.15, 2.0), Vector3(0.0, 0.02, 0.0))
+	return root
+
+
+# A split-log brace along the bottom edge of a wall or ceiling piece: a quarter of a log (a square-ish timber turned 45 degrees) `length` m long (small 1, medium 2, large 3).
+# Wood only: never put it on a stone piece.
+static func brace(length: float = 2.0) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var timber: MeshInstance3D = MeshInstance3D.new()
+	var shape: BoxMesh = BoxMesh.new()
+	shape.size = Vector3(length, 0.12, 0.12)
+	timber.mesh = shape
+	timber.material_override = _log
+	timber.rotation = Vector3(PI * 0.25, 0.0, 0.0)
+	timber.position = Vector3(0.0, 0.08, 0.0)
+	root.add_child(timber)
 	return root
