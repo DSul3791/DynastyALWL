@@ -63,6 +63,10 @@ var _flora_t: int = 0
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
+var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
+var _showroom_t: int = 0
+var _showroom_rows_chosen: Array = []
+var _showroom_tagged: bool = false
 var flora_scale: float = 1.0       # --shot-flora-scale=N: draw the row N times its natural size (a check that a small plant is only hard to see)
 var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
 var views: Array = []                # --shot-views="name:dist:pitch:above;...": extra pictures of the same scene (see _parse_views)
@@ -106,6 +110,9 @@ func setup(owner_client, args: Array) -> void:
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
 		elif argument.begins_with("--shot-cam-above="):
 			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
+		elif argument.begins_with("--shot-showroom="):
+			showroom_rows = argument.trim_prefix("--shot-showroom=").split(",", false)
+			no_grass = true
 		elif argument.begins_with("--shot-pieces-yaw="):
 			pieces_yaw_deg = float(argument.trim_prefix("--shot-pieces-yaw="))
 		elif argument.begins_with("--shot-pieces="):
@@ -345,6 +352,18 @@ func _process(_delta: float) -> void:
 		_show_flora(now)
 		return
 
+	if not showroom_rows.is_empty() and _showroom_t == 0:
+		_show_showroom(now)
+		return
+
+	if _showroom_t != 0 and now - _showroom_t < 9000:
+		return
+
+	if _showroom_t != 0 and not _showroom_tagged:
+		_showroom_tagged = true
+		_tag_showroom()
+		return
+
 	if not piece_names.is_empty() and _pieces_t == 0:
 		_show_pieces(now)
 		return
@@ -563,6 +582,93 @@ func _show_pieces(now: int) -> void:
 	_pieces_t = now
 
 
+# --showroom: turn Admin mode on so the server lays the showroom rows out as real world items, then one view per chosen row from the west side
+# (the rows run north to south, start/step in metres east and south of the spawn point), looking east. _tag_showroom then puts a name tag over each
+# item and prints one "shot runner: showroom row" line per row: how many of its items were found where they belong (world_item_name_near).
+func _show_showroom(now: int) -> void:
+	if client.showroom == null:
+		return    # the client has not read the world's spawn yet: try again next frame
+
+	var table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/showroom.json"))
+	var rows: Array = table.get("rows", []) if typeof(table) == TYPE_DICTIONARY else []
+	var origin: Vector3 = client.showroom.origin
+	var chosen: Array = []
+
+	for row in rows:
+		var label: String = str(row.get("label", ""))
+		var take: bool = showroom_rows.has("all")
+
+		for want in showroom_rows:
+			if label.to_lower().contains(want.to_lower()):
+				take = true
+
+		if take:
+			chosen.append(row)
+
+	if chosen.is_empty():
+		var labels: PackedStringArray = PackedStringArray()
+
+		for row in rows:
+			labels.append(str(row.get("label", "")))
+
+		print("shot runner: --showroom error: no row matches %s; rows: %s" % [str(showroom_rows), ", ".join(labels)])
+		(Engine.get_main_loop() as SceneTree).quit(2)
+		return
+
+	client.items.admin_craft = true
+	client.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
+	views = []
+
+	for row in chosen:
+		var start: Array = row.get("start", [0, 0])
+		var step: Array = row.get("step", [0, 1.5])
+		var items: Array = row.get("items", [])
+		var length: float = Vector2(float(step[0]), float(step[1])).length() * float(maxi(items.size() - 1, 1))
+		var mid_x: float = origin.x + float(start[0]) + float(step[0]) * float(items.size() - 1) * 0.5
+		var mid_z: float = origin.z + float(start[1]) + float(step[1]) * float(items.size() - 1) * 0.5
+		var dist: float = 3.0 + length * 0.9
+		var above: float = 1.6 + length * 0.25
+		var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
+		views.append({"name": view_name, "dist": dist, "pitch": -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+		_showroom_rows_chosen.append(row)
+
+	_showroom_t = now
+
+
+func _tag_showroom() -> void:
+	var origin: Vector3 = client.showroom.origin
+
+	for row in _showroom_rows_chosen:
+		var start: Array = row.get("start", [0, 0])
+		var step: Array = row.get("step", [0, 1.5])
+		var items: Array = row.get("items", [])
+		var found: int = 0
+
+		for n in range(items.size()):
+			var x: float = origin.x + float(start[0]) + float(step[0]) * float(n)
+			var z: float = origin.z + float(start[1]) + float(step[1]) * float(n)
+			var g: float = _ground(x, z)
+
+			if is_nan(g):
+				g = origin.y
+
+			if client.items.world_item_name_near(Vector3(x, g + 0.2, z), 0.9) != "":
+				found += 1
+
+			var tag: Label3D = Label3D.new()
+			tag.text = str(items[n][0])
+			tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			tag.fixed_size = true
+			tag.pixel_size = 0.0007
+			tag.font_size = 36
+			tag.outline_size = 10
+			tag.no_depth_test = true
+			tag.position = Vector3(x, g + 0.9, z)
+			client.add_child(tag)
+
+		print("shot runner: showroom row %s %s items %d found %d" % [str(row.get("label", "")), "ok" if found == items.size() else "FAIL missing", items.size(), found])
+
+
 # The box round every mesh under `node`, in world space (an empty AABB when nothing draws).
 func _aabb_of(node: Node) -> AABB:
 	var box: AABB = AABB()
@@ -623,10 +729,10 @@ func _run_view(now: int) -> void:
 			_subject = Vector3(p.x, _ground(p.x, p.z - 4.0), p.z - 4.0)
 			_subject_set = true
 
-		var cam_x: float = _subject.x
-		var cam_z: float = _subject.z + float(view["dist"])
+		var cam_x: float = float(view["cam_x"]) if view.has("cam_x") else _subject.x
+		var cam_z: float = float(view["cam_z"]) if view.has("cam_z") else _subject.z + float(view["dist"])
 		var ground: float = _ground(cam_x, cam_z)
-		client.body.rotation.y = 0.0
+		client.body.rotation.y = deg_to_rad(float(view.get("yaw", 0.0)))
 		client.body.global_position = Vector3(cam_x, (_subject.y if is_nan(ground) else ground) + float(view["above"]) - client.camera.position.y, cam_z)
 		client.pitch = deg_to_rad(float(view["pitch"]))
 		client.camera.rotation.x = client.pitch
