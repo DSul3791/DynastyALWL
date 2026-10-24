@@ -516,6 +516,7 @@ func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary)
 	var zone: int = 0
 	var farmable: int = 0
 	var rolling: int = 0
+	var rocky: int = 0
 
 	for index in cells:
 		var column: int = index % _elevation.size_x
@@ -526,6 +527,12 @@ func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary)
 			continue
 
 		var slope: float = _slope_deg(column, row)
+
+		# Cliff and canyon-apron cells are not farmland: leave them out of the zone (counted below).
+		if bool(config["farm_skip_rocky"]) and _terrain_class(column, row, slope, config["classes"], low_m) in ["canyon", "mountain"]:
+			rocky += 1
+			continue
+
 		zone += 1
 
 		if slope <= farm_deg:
@@ -540,7 +547,7 @@ func _farmland_check(title: String, cells: PackedInt32Array, config: Dictionary)
 
 	var farm_share: float = float(farmable) / float(zone)
 	var rolling_share: float = float(rolling) / float(zone)
-	_bound_row("%s farmable share (slope at or under %.0f deg, %.0f-%.0f m)" % [title, farm_deg, low_m, top_m], farm_share, config["farm_share_min"], false, "%.1f%% of %d cells" % [farm_share * 100.0, zone])
+	_bound_row("%s farmable share (slope at or under %.0f deg, %.0f-%.0f m)" % [title, farm_deg, low_m, top_m], farm_share, config["farm_share_min"], false, "%.1f%% of %d cells (%d rocky cells left out)" % [farm_share * 100.0, zone, rocky])
 	_bound_row("%s rolling share (farmable but over %.0f deg)" % [title, flat_deg], rolling_share, config["rolling_share_min"], false, "%.1f%% of %d cells" % [rolling_share * 100.0, zone])
 	_bound_row("%s rolling share, too hilly for farmland" % title, rolling_share, config["rolling_share_max"], true, "%.1f%% (English look 35-55%%)" % (rolling_share * 100.0))
 

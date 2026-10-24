@@ -9,6 +9,7 @@
 # Needs the project's Godot on the PATH (godot). It loads every script with --debug, because headless Godot only
 # reports warnings in debug mode, and counts what the engine says.
 cd "$(dirname "$0")/.." || exit 2
+command -v godot >/dev/null || { echo "check_warnings: godot is not on the PATH, nothing was checked" >&2; exit 2; }
 OUT=$(mktemp)
 timeout 600 godot --headless --debug --path . --script res://tools/check_warnings.gd 2>&1 | grep "^WARN \|^scripts checked" | sed 's/^WARN //' | sort -u > "$OUT"
 grep "^scripts checked" "$OUT" | tail -1

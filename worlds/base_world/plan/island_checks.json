@@ -16,6 +16,7 @@
 		"flat_share_min": null,
 		"farm_slope_deg": 9.0,
 		"farm_top_m": 400.0,
+		"farm_skip_rocky": false,
 		"farm_share_min": null,
 		"rolling_share_min": null,
 		"rolling_share_max": null,
@@ -51,7 +52,7 @@
 		"moor_highland": {"summit_range_m": [450, 750]}
 	},
 	"islands": {
-		"8": {"name": "inner starter island", "type": "middle_peak", "band_table_check": true, "flat_share_min": 0.2, "farm_share_min": 0.7, "rolling_share_min": 0.3, "rolling_share_max": 0.55, "summit_plateaus": [{"within_m": 5.0, "max_m": 100}, {"within_m": 20.0, "max_m": 200}], "profile_targets_m": null, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 6]},
+		"8": {"name": "inner starter island", "type": "middle_peak", "band_table_check": true, "flat_share_min": 0.2, "farm_share_min": 0.6, "rolling_share_min": 0.3, "rolling_share_max": 0.55, "summit_plateaus": [{"within_m": 5.0, "max_m": 100}, {"within_m": 20.0, "max_m": 200}], "profile_targets_m": null, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 6]},
 		"1": {"name": "center island"}
 	},
 	"tiles": {
