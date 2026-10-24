@@ -9,3 +9,4 @@ All pictures: server GPU (GTX 1050 Ti), JPEG 1280x720, 1.7 m eye unless noted. D
 - results/20261024_spawn_gpu - spawn shot from Dave's testbox run - generator-v2 2c2cc8af
 - results/20261024_publish - first server GPU test shot at spawn - generator-v2 2c2cc8af
 - results/20261024_bake34, 34b, 34c - logs and island tables of tile (3,4) bakes (no pictures) - c2eeb8e3, 6f4801e8, 4f442c54
+- results/20261024_island_map - top-down island map (3840x2880): lakes, rivers, farmland, spawn; v1 = merge-793 5b9d9f91 v31 tiles + erosion_delta_v1 on heights (water not re-routed); redo from Mike's bake when it lands
