@@ -38,11 +38,6 @@ Note: Empties the pack, turns hints on, drops admin powers so Mike can time the 
 Note: Recommendation: Yes because we cannot test the first hour any other way.
 [check]
 
-## metal-ladder | Metal ladder: stone pick first, then bronze pick from the basic forge, iron needs a bronze pick; add copper, tin and bronze to the game?
-Note: Stone pick opens soft rock, clay and coal. An optional bone/antler pick can dig copper and tin. The data jumps from stone to iron today.
-Note: Recommendation: Yes because a rock cannot break iron, and soft metal first matches real history.
-[check]
-
 ## respawn-at-bed | Respawn at your own bed (per player), built right after the first hour work?
 Note: Needs new server and save state. Today there is one global respawn point.
 Note: Recommendation: Yes because it makes the bed your home.
