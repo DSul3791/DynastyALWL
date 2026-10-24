@@ -29,8 +29,14 @@
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
 cd "$(dirname "$0")/.." || exit 2
-GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"
-CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"; WAIT=25; SETTLE=12; DDIST=1.0
+# Windows (Git bash) keeps the old behaviour; Linux (the server box) draws on the NVIDIA GPU under Xvfb, like tools/docker/shot.sh.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
+if [ -n "$WIN" ]; then
+  GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; PY=python; DEFOUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"
+else
+  GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
+fi
+CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
 while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
@@ -55,14 +61,15 @@ if [ -n "$PIECES" ]; then
   done
 fi
 [ -z "$NAME" ] && NAME="${ITEM:-empty}_${CAM}"
+if [ -n "$WIN" ]; then WAIT="${WAIT:-25}"; SETTLE="${SETTLE:-12}"; else WAIT="${WAIT:-120}"; SETTLE="${SETTLE:-20}"; fi
 X="${AT%,*}"; Z="${AT#*,}"
-RIG=$(mktemp -d); STORE="$RIG/store"; UD="$RIG/appdata/Godot/app_userdata/Dynasty a life well lived"
+RIG=$(mktemp -d); STORE="$RIG/store"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then UD="$RIG/appdata/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
 mkdir -p "$STORE" "$UD" "$OUT"
 KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 if [ -n "$ITEM" ]; then
-  NUM=$(python tools/item_numbers.py "$ITEM") || { echo "item tables: duplicate name or number (see above)"; exit 2; }
+  NUM=$($PY tools/item_numbers.py "$ITEM") || { echo "item tables: duplicate name or number (see above)"; exit 2; }
   [ -z "$NUM" ] && { echo "no such item: $ITEM"; exit 2; }
-  python - "$STORE/inventories.json" "$KEY" "$NUM" "$COUNT" <<'PYEOF'
+  $PY - "$STORE/inventories.json" "$KEY" "$NUM" "$COUNT" <<'PYEOF'
 import json,sys
 slots=[[0,0,0] for _ in range(30)]
 slots[0]=[int(sys.argv[3]),int(sys.argv[4]),0]
@@ -71,7 +78,7 @@ PYEOF
 fi
 if [ -n "$GROUND" ]; then
   GID="${GROUND%%:*}"; GCOUNT="${GROUND#*:}"; [ "$GCOUNT" = "$GROUND" ] && GCOUNT=1
-  python tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
+  $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
 fi
 PORT=$((7800 + RANDOM % 150))
 "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 > "$RIG/server.log" 2>&1 &
@@ -80,6 +87,19 @@ trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEE
 sleep 30
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
-APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"} > "$RIG/client.log" 2>&1
+CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"})
+if [ -n "$WIN" ]; then
+  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
+else
+  # NVIDIA Vulkan file when nvidia-smi works (found by looking), else Mesa lavapipe; own HOME so Dave's settings are never touched.
+  ICD=""; REND=software
+  if [ "${SHOT_RENDERER:-auto}" != software ] && command -v nvidia-smi >/dev/null && nvidia-smi -L >/dev/null 2>&1; then
+    ICD=$(ls /usr/share/vulkan/icd.d/nvidia_icd*.json /etc/vulkan/icd.d/nvidia_icd*.json 2>/dev/null | head -1); [ -n "$ICD" ] && REND=nvidia
+  fi
+  [ -z "$ICD" ] && ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json /etc/vulkan/icd.d/lvp_icd*.json 2>/dev/null | head -1)
+  [ -z "$ICD" ] && { echo "no Vulkan driver file found"; exit 1; }
+  echo "renderer: $REND ($ICD)"; [ "$REND" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
+  HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
+fi
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
