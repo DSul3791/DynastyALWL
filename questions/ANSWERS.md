@@ -1542,3 +1542,7 @@ Answered: 2026-10-24 17:04 UTC
 Answer: Yes
 Answered: 2026-10-24 17:04 UTC
 
+## fish-salmon-autumn | Make the salmon run autumn-only, trout the rest of the year?
+Answer: Yes
+Answered: 2026-10-24 17:04 UTC
+
