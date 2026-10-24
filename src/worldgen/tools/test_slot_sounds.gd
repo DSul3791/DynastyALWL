@@ -5,6 +5,7 @@ extends SceneTree
 
 const SlotSounds := preload("res://src/client/slot_sounds.gd")
 const Ambience := preload("res://src/client/ambience_slots.gd")
+const AmbientLife := preload("res://src/client/ambient_life.gd")
 const AnimalView := preload("res://src/client/animal_view.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const SOURCES := ["res://scenes/terrain_client/terrain_client.gd", "res://src/client/placed_sounds.gd", "res://src/client/animal_view.gd", "res://src/client/sound_test_menu.gd"]
@@ -188,3 +189,96 @@ func _check_ambience() -> void:
 		layers_seen[slots[slot]["layer"]] = true
 
 	check(layers_seen.size() == 4, "all four layers are used by the batch")
+
+	# Doubling guard: the four old AmbientLife calls make no voices once the slots take them over; the others still run. 60 simulated seconds per place.
+	for call_name in Ambience.REPLACES:
+		check(not AmbientLife.runs(call_name, Ambience.REPLACES), "old call %s runs 0 voices while the slots have it" % call_name)
+
+	check(AmbientLife.runs("bird_feebee", Ambience.REPLACES) and AmbientLife.runs("crow_caw", Ambience.REPLACES), "the calls with no slot (feebee, crow) still run")
+	var places: Dictionary = {"summer forest day": summer_forest, "summer pond dusk": pond_dusk, "summer forest night": night, "beach": beach}
+	var busiest: int = 0
+
+	for place in places:
+		var run: Dictionary = Ambience.simulate(slots, places[place], 60.0, 12)
+		busiest = maxi(busiest, int(run["voices_busiest"]))
+		check(int(run["shots_busiest"]) <= Ambience.MAX_SHOTS and int(run["repeats"]) == 0, "%s, 60 s: %d one-shots, at most %d together, no repeated clip" % [place, _sum(run["counts"]), run["shots_busiest"]])
+		check(int(run["voices_busiest"]) <= int(parsed["voice_plan"]["max_simultaneous"]), "%s: %d ambience voices at the busiest moment (plan %d)" % [place, run["voices_busiest"], parsed["voice_plan"]["max_simultaneous"]])
+
+	print("busiest ambience voice count over the test places: %d" % busiest)
+
+	# Determinism: the same day gives the same run; another day another one; no clip repeats over an hour or across a change of place.
+	var first: Dictionary = Ambience.simulate(slots, summer_forest, 600.0, 7)
+	var second: Dictionary = Ambience.simulate(slots, summer_forest, 600.0, 7)
+	var other_day: Dictionary = Ambience.simulate(slots, summer_forest, 600.0, 8)
+	check(first == second, "the same day reproduces the same one-shots")
+	check(first != other_day, "another day gives another run")
+	check(int(Ambience.simulate(slots, summer_forest, 3600.0, 3)["repeats"]) == 0, "an hour of one-shots never repeats a clip back to back")
+	var rng: RandomNumberGenerator = Ambience.shot_rng(1, 1)
+	var last_clip: String = ""
+	var repeats: int = 0
+	var mixed: Array = Ambience.matching(slots, "oneshot", summer_forest) + Ambience.matching(slots, "oneshot", pond_dusk)
+
+	for n in 1000:
+		var shot: Dictionary = Ambience.pick_shot(slots, mixed, last_clip, rng)
+		repeats += 1 if str(shot["clip"]) == last_clip else 0
+		last_clip = str(shot["clip"])
+
+	check(repeats == 0, "1000 picks across two places (a change of place in between) never repeat a clip")
+
+	# Crossfade: A to B with the hour going back and forth; two beds never exceed constant power and a returning bed resumes from its level.
+	var beds: Array = []
+	Ambience.retarget(beds, "bed_night")
+	Ambience.advance(beds, 2.0)
+	check(beds.size() == 1 and is_equal_approx(float(beds[0]["level"]), 1.0), "one bed fades in to full in FADE_S")
+	var worst_power: float = 0.0
+	var wanted: Array = ["bed_crickets", "bed_night", "bed_crickets", "bed_crickets", "bed_night", "", "bed_night", "bed_night", "bed_night", "bed_night"]
+
+	for step in wanted.size():
+		var level_before: Dictionary = {}
+
+		for entry in beds:
+			level_before[entry["slot"]] = float(entry["level"])
+
+		Ambience.retarget(beds, wanted[step])
+
+		for entry in beds:
+			if level_before.has(entry["slot"]):
+				check(is_equal_approx(float(entry["level"]), float(level_before[entry["slot"]])), "step %d: bed %s resumes from its level, not from 0" % [step, entry["slot"]])
+
+		Ambience.advance(beds, 0.5)
+		var power: float = 0.0
+
+		for entry in beds:
+			power += pow(Ambience.fade_gain(float(entry["level"])), 2.0)
+
+		worst_power = maxf(worst_power, power)
+
+	check(worst_power <= 1.0001, "constant power through a back-and-forth change of bed (worst %.4f)" % worst_power)
+	Ambience.advance(beds, 3.0)
+	check(beds.size() == 0 or (beds.size() == 1 and str(beds[0]["slot"]) == "bed_night" and is_equal_approx(float(beds[0]["level"]), 1.0)), "after the change settles one bed (or none) is left")
+	check(Ambience.fade_gain(0.0) == 0.0 and is_equal_approx(Ambience.fade_gain(1.0), 1.0) and is_equal_approx(pow(Ambience.fade_gain(0.3), 2.0) + pow(Ambience.fade_gain(0.7), 2.0), 1.0), "the gain curve is equal power")
+
+	# The wet-point lookup is cached: not within 2 s and 10 m, again after either.
+	check(not Ambience.wet_needs_refresh(1.5, 3.0) and Ambience.wet_needs_refresh(2.0, 0.0) and Ambience.wet_needs_refresh(0.5, 10.0), "the nearest water point is looked up again only after 2 s or 10 m")
+
+	# Slots whose place the client cannot read yet are marked test-only (and only those).
+	var unreadable: Array = ["canyon", "volcano", "desert", "polar", "ice"]
+
+	for slot in slots:
+		var biome_tags: Array = slots[slot]["tags"]["biome"]
+		var all_unreadable: bool = true
+
+		for biome in biome_tags:
+			all_unreadable = all_unreadable and (unreadable.has(biome) or biome == "dry_scrub")
+
+		var expect_test_only: bool = all_unreadable or str(slots[slot]["tags"]["near_water"]) == "lava"
+		check(bool(slots[slot].get("test_only", false)) == expect_test_only, "slot %s: test_only is %s" % [slot, expect_test_only])
+
+
+func _sum(counts: Dictionary) -> int:
+	var total: int = 0
+
+	for slot in counts:
+		total += int(counts[slot])
+
+	return total

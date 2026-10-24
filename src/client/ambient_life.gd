@@ -218,7 +218,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool) -> void:
 	for event in EVENTS:
 		var sound_name: String = event["name"]
 
-		if replaced.has(sound_name):
+		if not runs(sound_name, replaced):
 			continue
 
 		_next[sound_name] = float(_next[sound_name]) - step * _rate(event)
@@ -415,8 +415,18 @@ func _hour_ok(event: Dictionary) -> bool:
 
 
 # A due call: plays when the zones, hour and season allow it.
+# True when the call's timer runs here; the calls another layer plays (`replaced`) do not.
+static func runs(sound_name: String, replaced_names: Array) -> bool:
+	return not replaced_names.has(sound_name)
+
+
 func voices_playing() -> int:
 	return _voices.size()
+
+
+# The game day number (a game day is one real hour of nature seconds); seeds the ambience scheduler so a recorded test reproduces.
+func day_number() -> int:
+	return int(_clock / 3600.0)
 
 
 # The water square found by the last scan that is nearest to `from`; Vector3.INF when none.

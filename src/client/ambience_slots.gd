@@ -10,7 +10,6 @@ extends Node
 
 const AmbientLife := preload("res://src/client/ambient_life.gd")
 const Sound3D := preload("res://src/client/sound_3d.gd")
-const SlotSounds := preload("res://src/client/slot_sounds.gd")
 const SLOTS_PATH := "res://data/sound/batch2_slots.json"
 const CHECK_SEC := 1.5
 const FADE_S := 2.0
@@ -24,28 +23,34 @@ const DUSK_BEFORE_H := 1.0
 const DARK_MARGIN_H := 0.5
 const NEAR_WATER := 0.4                   # water zone weight from which a pond or the sea edge is near
 const SEA_EDGE_M := 8.0
+const MAX_SHOTS := 2                      # one-shots playing at once
+const SHOT_LENGTH_S := 4.0                # a one-shot counts as playing this long in the 60-second simulation
+const WET_REFRESH_S := 2.0                # nearest_wet_point is looked up again after this long or after WET_REFRESH_M of walking
+const WET_REFRESH_M := 10.0
 const TEST_REPS := 3
 const TEST_ONESHOT_MAX_S := 6.0
 const TEST_BED_MAX_S := 15.0
 
 var enabled: bool = true
+var test_only_count: int = 0              # slots marked "test_only" in the JSON: no client lookup for their place yet (open job in JOBS.md)
 var force_biome: String = ""              # a biome name the client cannot read yet (canyon, volcano, desert ...): rig and test
 var anchors: Dictionary = {}              # slot -> Vector3 where a positional bed sits (volcano crater, lava)
 var played: Dictionary = {}               # slot -> one-shots played
 var beds_started: Dictionary = {}         # slot -> times a bed was started (the rig reads this)
 var test_note: String = ""
 var current: Dictionary = {}              # layer -> slot name playing now ("" none)
+var last: String = ""                     # the F4 sound line: the bed started, the one-shot played, or the test group heard
 
 var _stage
 var _slots: Dictionary = {}
-var _beds: Dictionary = {}                # layer -> {"slot", "player", "fading"}; fading ones are dropped when silent
-var _fading: Array = []
-var _positional: Dictionary = {}          # slot -> AudioStreamPlayer3D
+var _beds: Dictionary = {}                # layer -> Array of {"slot", "level" 0..1, "target", "player"}: at most the fading ones and the wanted one
+var _positional: Dictionary = {}          # slot -> {"level", "target", "player"}
 var _check_left: float = 0.0
 var _gap_left: float = 6.0
+var _shot_count: int = 0                  # one-shots started; with the day number it seeds the next gap, clip, place and pitch
+var _last_clip: String = ""               # "slot:index" of the last one-shot, kept across bed changes
 var _voices: Array = []
-var _last_pick: Dictionary = {}
-var _rng := RandomNumberGenerator.new()
+var _wet_cache: Dictionary = {"from": Vector3.INF, "at": Vector3.INF, "age": 99.0}
 var _ctx: Dictionary = {}
 var _test_group: int = -1
 var _test_token: int = 0
@@ -54,7 +59,6 @@ var _test_players: Array = []
 
 func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 	_stage = stage
-	_rng.randomize()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(slots_path))
 
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.get("slots") is Dictionary:
@@ -66,6 +70,10 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--biome="):
 			force_biome = arg.get_slice("=", 1)
+
+	for slot_name in _slots:
+		if bool(_slots[slot_name].get("test_only", false)):
+			test_only_count += 1
 
 
 func slot_names() -> Array:
@@ -209,6 +217,118 @@ static func matching(slots: Dictionary, layer: String, ctx: Dictionary) -> Array
 	return list
 
 
+# ---------------------------------------------------------------- pure scheduler and crossfade rules (tested without a scene)
+
+# The random stream of one-shot number `counter` on game day `day`: the same day and count give the same gap, clip, place and pitch (a recorded test reproduces).
+static func shot_rng(day: int, counter: int, salt: String = "") -> RandomNumberGenerator:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d:%s" % [day, counter, salt])
+	return rng
+
+
+# The next one-shot: a slot from `options` and a clip of it, never the clip played last (`last_clip` is "slot:index"; it survives a bed change). Only a
+# single clip with nothing else to play can repeat. Returns {"slot", "index", "clip"}.
+static func pick_shot(slots: Dictionary, options: Array, last_clip: String, rng: RandomNumberGenerator) -> Dictionary:
+	var slot: String = str(options[rng.randi() % options.size()])
+	var count: int = maxi((slots[slot].get("files", []) as Array).size(), 1)
+	var index: int = rng.randi() % count
+
+	if "%s:%d" % [slot, index] == last_clip:
+		if count > 1:
+			index = (index + 1) % count
+		elif options.size() > 1:
+			slot = str(options[(options.find(slot) + 1) % options.size()])
+			index = 0
+
+	return {"slot": slot, "index": index, "clip": "%s:%d" % [slot, index]}
+
+
+# One fade step for a bed: the level (0 silent, 1 full) moves toward its target in FADE_S seconds.
+static func fade_level(level: float, target: float, delta: float) -> float:
+	return move_toward(level, target, delta / FADE_S)
+
+
+# Equal-power gain for a level: an outgoing bed (level falling from 1) and an incoming one (rising from 0) sum to constant power.
+static func fade_gain(level: float) -> float:
+	return sin(clampf(level, 0.0, 1.0) * PI * 0.5)
+
+
+# Point the layer's beds at `slot` ("" for none): the wanted bed (kept if it is still fading out, so it resumes from its current level, never from 0) gets
+# target 1, every other target 0. Returns true when a new entry (level 0) was added and needs a player.
+static func retarget(entries: Array, slot: String) -> bool:
+	var found: bool = false
+
+	for entry in entries:
+		if str(entry["slot"]) == slot:
+			entry["target"] = 1.0
+			found = true
+		else:
+			entry["target"] = 0.0
+
+	if slot != "" and not found:
+		entries.append({"slot": slot, "level": 0.0, "target": 1.0})
+		return true
+
+	return false
+
+
+# Move every entry's level on; entries that are silent and heading for silence are removed (returned, so the caller can free their players).
+static func advance(entries: Array, delta: float) -> Array:
+	var gone: Array = []
+
+	for n in range(entries.size() - 1, -1, -1):
+		var entry: Dictionary = entries[n]
+		entry["level"] = fade_level(float(entry["level"]), float(entry["target"]), delta)
+
+		if float(entry["level"]) <= 0.0 and float(entry["target"]) <= 0.0:
+			gone.append(entry)
+			entries.remove_at(n)
+
+	return gone
+
+
+# Whether nearest_wet_point is looked up again: after WET_REFRESH_S, or after walking WET_REFRESH_M since the last lookup.
+static func wet_needs_refresh(age_s: float, moved_m: float) -> bool:
+	return age_s >= WET_REFRESH_S or moved_m >= WET_REFRESH_M
+
+
+# `seconds` of the one-shot scheduler on game day `day` in a context, with no engine: how many of each slot play, the most playing together, and the
+# beds a place of this kind holds (one weather bed, one time bed, up to two positional) - the voices ambience needs at the busiest moment.
+static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: int) -> Dictionary:
+	var options: Array = matching(slots, "oneshot", ctx)
+	var counts: Dictionary = {}
+	var live: Array = []
+	var busiest: int = 0
+	var clock: float = 0.0
+	var counter: int = 0
+	var last_clip: String = ""
+	var repeats: int = 0
+	var order: Array = []
+
+	while not options.is_empty():
+		var rng: RandomNumberGenerator = shot_rng(day, counter)
+		clock += rng.randf_range(float(GAP_S[0]), float(GAP_S[1]))
+
+		if clock >= seconds:
+			break
+
+		live = live.filter(func(end): return float(end) > clock)
+
+		if live.size() < MAX_SHOTS:
+			var shot: Dictionary = pick_shot(slots, options, last_clip, rng)
+			repeats += 1 if str(shot["clip"]) == last_clip else 0
+			last_clip = str(shot["clip"])
+			order.append(last_clip)
+			counts[shot["slot"]] = int(counts.get(shot["slot"], 0)) + 1
+			live.append(clock + SHOT_LENGTH_S)
+			busiest = maxi(busiest, live.size())
+
+		counter += 1
+
+	var beds: int = (1 if choose_bed(slots, "weather_bed", ctx) != "" else 0) + (1 if choose_bed(slots, "time_bed", ctx) != "" else 0) + mini(2, matching(slots, "positional", ctx).size())
+	return {"counts": counts, "order": order, "shots_busiest": busiest, "beds": beds, "voices_busiest": busiest + beds, "repeats": repeats}
+
+
 # ---------------------------------------------------------------- the running layer
 
 func context(body: Node3D) -> Dictionary:
@@ -229,7 +349,7 @@ func update(delta: float, body: Node3D) -> void:
 	if not enabled or _slots.is_empty() or _stage == null:
 		return
 
-	_fade_all(delta)
+	_advance_all(delta)
 	_check_left -= delta
 
 	if _check_left <= 0.0:
@@ -245,8 +365,12 @@ func update(delta: float, body: Node3D) -> void:
 	_gap_left -= delta
 
 	if _gap_left <= 0.0 and not _ctx.is_empty():
-		_gap_left = _rng.randf_range(float(GAP_S[0]), float(GAP_S[1]))
+		_gap_left = shot_rng(_day(), _shot_count).randf_range(float(GAP_S[0]), float(GAP_S[1]))
 		_one_shot(body)
+
+
+func _day() -> int:
+	return _stage.ambient.day_number()
 
 
 func _stream(slot: String, index: int = 0) -> AudioStream:
@@ -268,35 +392,38 @@ func _looped(stream: AudioStream) -> AudioStream:
 
 
 func _set_bed(layer: String, slot: String) -> void:
-	var now: String = str(_beds.get(layer, {}).get("slot", ""))
-	current[layer] = now
+	var entries: Array = _beds.get(layer, [])
+	var wanted: String = slot if slot == "" or _stage.has_room() or _has_entry(entries, slot) else ""
+	var added: bool = retarget(entries, wanted)
+	_beds[layer] = entries
 
-	if slot == now:
-		return
+	if added:
+		var entry: Dictionary = entries[entries.size() - 1]
+		var stream: AudioStream = _stream(wanted)
 
-	if _beds.has(layer):
-		_fading.append(_beds[layer]["player"])
-		_beds.erase(layer)
+		if stream == null:
+			entries.pop_back()
+			wanted = ""
+		else:
+			var player: AudioStreamPlayer = AudioStreamPlayer.new()
+			player.stream = _looped(stream)
+			player.bus = "Nature"
+			player.volume_db = SILENT_DB
+			add_child(player)
+			player.play()
+			entry["player"] = player
+			beds_started[wanted] = int(beds_started.get(wanted, 0)) + 1
+			last = "bed %s (%s)" % [wanted, layer]
 
-	current[layer] = ""
+	current[layer] = wanted
 
-	if slot == "" or not _stage.has_room():
-		return
 
-	var stream: AudioStream = _stream(slot)
+func _has_entry(entries: Array, slot: String) -> bool:
+	for entry in entries:
+		if str(entry["slot"]) == slot:
+			return true
 
-	if stream == null:
-		return
-
-	var player: AudioStreamPlayer = AudioStreamPlayer.new()
-	player.stream = _looped(stream)
-	player.bus = "Nature"
-	player.volume_db = SILENT_DB
-	add_child(player)
-	player.play()
-	_beds[layer] = {"slot": slot, "player": player}
-	current[layer] = slot
-	beds_started[slot] = int(beds_started.get(slot, 0)) + 1
+	return false
 
 
 func _set_positional(body: Node3D) -> void:
@@ -311,19 +438,17 @@ func _set_positional(body: Node3D) -> void:
 		if anchors.has(slot):
 			at = anchors[slot]
 		elif str(_slots[slot].get("tags", {}).get("near_water", "")) == "pond":
-			at = _stage.ambient.nearest_wet_point(body.global_position)
+			at = _nearest_wet(body.global_position)
 
 		if at != Vector3.INF:
 			wanted[slot] = at
 
-	for slot in _positional.keys():
-		if not wanted.has(slot):
-			_fading.append(_positional[slot])
-			_positional.erase(slot)
+	for slot in _positional:
+		_positional[slot]["target"] = 1.0 if wanted.has(slot) else 0.0
 
 	for slot in wanted:
 		if _positional.has(slot):
-			_positional[slot].global_position = wanted[slot]
+			_positional[slot]["player"].global_position = wanted[slot]
 			continue
 
 		var stream: AudioStream = _stream(slot)
@@ -336,35 +461,55 @@ func _set_positional(body: Node3D) -> void:
 		player.volume_db = SILENT_DB
 		player.global_position = wanted[slot]
 		player.play()
-		_positional[slot] = player
+		_positional[slot] = {"slot": slot, "level": 0.0, "target": 1.0, "player": player}
 		beds_started[slot] = int(beds_started.get(slot, 0)) + 1
+		last = "bed %s (positional)" % slot
 
 
-func _fade_all(delta: float) -> void:
+# AmbientLife's nearest water square, looked up again only every WET_REFRESH_S or after WET_REFRESH_M of walking (the scan itself is every 1.5 s).
+func _nearest_wet(from: Vector3) -> Vector3:
+	_wet_cache["age"] = float(_wet_cache["age"]) + CHECK_SEC
+	var moved: float = from.distance_to(_wet_cache["from"]) if _wet_cache["from"] != Vector3.INF else INF
+
+	if wet_needs_refresh(float(_wet_cache["age"]), moved):
+		_wet_cache["age"] = 0.0
+		_wet_cache["from"] = from
+		_wet_cache["at"] = _stage.ambient.nearest_wet_point(from)
+
+	return _wet_cache["at"]
+
+
+func _advance_all(delta: float) -> void:
 	for layer in _beds:
-		var player: AudioStreamPlayer = _beds[layer]["player"]
-		player.volume_db = move_toward(player.volume_db, 0.0, 60.0 / FADE_S * delta)
+		var entries: Array = _beds[layer]
+
+		for gone in advance(entries, delta):
+			if is_instance_valid(gone.get("player")):
+				gone["player"].queue_free()
+
+		for entry in entries:
+			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001))
+
+	var dead: Array = []
 
 	for slot in _positional:
-		var player3d: AudioStreamPlayer3D = _positional[slot]
-		player3d.volume_db = move_toward(player3d.volume_db, 0.0, 60.0 / FADE_S * delta)
+		var entry: Dictionary = _positional[slot]
+		entry["level"] = fade_level(float(entry["level"]), float(entry["target"]), delta)
+		entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001))
 
-	for n in range(_fading.size() - 1, -1, -1):
-		var gone = _fading[n]
+		if float(entry["level"]) <= 0.0 and float(entry["target"]) <= 0.0:
+			entry["player"].queue_free()
+			dead.append(slot)
 
-		if not is_instance_valid(gone):
-			_fading.remove_at(n)
-			continue
-
-		gone.volume_db = move_toward(gone.volume_db, SILENT_DB, 60.0 / FADE_S * delta)
-
-		if gone.volume_db <= SILENT_DB + 0.5:
-			gone.queue_free()
-			_fading.remove_at(n)
+	for slot in dead:
+		_positional.erase(slot)
 
 
 func _one_shot(body: Node3D) -> void:
-	if _voices.size() >= 2 or not _stage.has_room():
+	var counter: int = _shot_count
+	_shot_count += 1
+
+	if _voices.size() >= MAX_SHOTS or not _stage.has_room():
 		return
 
 	var options: Array = matching(_slots, "oneshot", _ctx)
@@ -372,27 +517,29 @@ func _one_shot(body: Node3D) -> void:
 	if options.is_empty():
 		return
 
-	var slot: String = options[_rng.randi() % options.size()]
-	var files: Array = _slots[slot].get("files", [])
-	var pick: int = SlotSounds.pick_index(files.size(), int(_last_pick.get(slot, -1)), _rng.randi())
-	_last_pick[slot] = pick
-	var stream: AudioStream = _stream(slot, pick)
+	var rng: RandomNumberGenerator = shot_rng(_day(), counter)
+	rng.randf()            # the gap draw of this count, so the clip draws below follow it as in simulate()
+	var shot: Dictionary = pick_shot(_slots, options, _last_clip, rng)
+	var slot: String = str(shot["slot"])
+	var stream: AudioStream = _stream(slot, int(shot["index"]))
 
 	if stream == null:
 		return
 
-	var angle: float = _rng.randf() * TAU
-	var distance: float = _rng.randf_range(float(ONESHOT_DIST_M[0]), float(ONESHOT_DIST_M[1]))
+	_last_clip = str(shot["clip"])
+	var angle: float = rng.randf() * TAU
+	var distance: float = rng.randf_range(float(ONESHOT_DIST_M[0]), float(ONESHOT_DIST_M[1]))
 	var band: Array = ONESHOT_HEIGHT_M.get(str(_slots[slot].get("group", "")), [0.0, 0.0])
-	var at: Vector3 = body.global_position + Vector3(cos(angle) * distance, _rng.randf_range(float(band[0]), float(band[1])) - 0.9, sin(angle) * distance)
+	var at: Vector3 = body.global_position + Vector3(cos(angle) * distance, rng.randf_range(float(band[0]), float(band[1])) - 0.9, sin(angle) * distance)
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Nature", 8.0, 120.0)
 	player.stream = stream
-	player.pitch_scale = 1.0 + _rng.randf_range(-PITCH_SPREAD, PITCH_SPREAD)
+	player.pitch_scale = 1.0 + shot_rng(_day(), counter, slot).randf_range(-PITCH_SPREAD, PITCH_SPREAD)
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
 	_voices.append(player)
 	played[slot] = int(played.get(slot, 0)) + 1
+	last = "%s_%d" % [slot, int(shot["index"])]
 
 
 # ---------------------------------------------------------------- the sound test
@@ -439,6 +586,7 @@ func test_press() -> String:
 		return test_note
 
 	var group: String = str(all[_test_group])
+	last = "test group %d of %d: %s" % [_test_group + 1, all.size(), group]
 	test_note = "Batch 2 group %d of %d: %s (%s), every clip %d times back to back. Press for the next group." % [_test_group + 1, all.size(), group, ", ".join(slots_in_group(group)), TEST_REPS]
 	_run_group(_test_token, group)
 	return test_note

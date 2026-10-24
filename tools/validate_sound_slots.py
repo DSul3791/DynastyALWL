@@ -98,6 +98,11 @@ for batch in sorted(f for f in os.listdir(os.path.join(ROOT, "data/sound")) if f
         if slot["status"] == "filled" and slot["files"]:
             filled += 1
 
+    test_only = [n for n, s in slots.items() if s.get("test_only")]
+
+    if test_only:
+        print("test-only slots (no client lookup for their place yet, not counted as wired): %s" % ", ".join(test_only))
+
     empty = [n for n, s in slots.items() if s["status"] != "filled" or not s["files"]]
     empty_total += len(empty)
     print("%s: %d bytes in files (%.2f MB)" % (batch, total, total / 1e6))
