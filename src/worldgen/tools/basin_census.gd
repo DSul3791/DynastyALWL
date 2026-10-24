@@ -106,6 +106,7 @@ func _census(data, saved: PackedFloat32Array, out_dir: String, tile: Vector2i) -
 
 		if kind != "small":
 			var c: int = hollow["cell"]
+			@warning_ignore("integer_division")
 			rows.append("%.0f,%.0f,%.0f,%.2f,%.0f,%.1f,%.2f,%s" % [data.x0 + float(c % full) * data.spacing_m, data.z0 + float(c / full) * data.spacing_m, area, max_depth, hollow["volume_m3"], hollow["spill_m"], float(wet) / float(hollow["cells"].size()), kind])
 
 	var file: FileAccess = FileAccess.open("%s/basins_%d_%d.csv" % [out_dir, tile.x, tile.y], FileAccess.WRITE)
@@ -114,7 +115,6 @@ func _census(data, saved: PackedFloat32Array, out_dir: String, tile: Vector2i) -
 
 	# The settled water's own deep pools: wet cells 0.6 m or deeper, joined; area and deepest.
 	var pools: int = 0
-	var pool_cells: int = 0
 	var big_pools: int = 0
 
 	if not saved.is_empty():
@@ -141,7 +141,6 @@ func _census(data, saved: PackedFloat32Array, out_dir: String, tile: Vector2i) -
 
 			if n_cells >= 16:
 				pools += 1
-				pool_cells += n_cells
 				big_pools += 1 if float(n_cells) * data.spacing_m * data.spacing_m >= LAKE_AREA_M2 else 0
 
 	print("tile %s: hollows 0.3 m+ of the baked ground: %d small, %d ponds (0.5 m, 1,000 m2), %d lakes (1.5 m, 5,000 m2), %d big lakes (3 m, 20,000 m2); of these hold water in the settled water: ponds %d, lakes %d, big %d; total hollow volume %.0f m3. Settled water: %d deep pools (0.6 m+, 1,000 m2+), %d of them 5,000 m2+, %d ms" % [str(tile), counts["small"], counts["pond"], counts["lake"], counts["big"], wet_counts["pond"], wet_counts["lake"], wet_counts["big"], total_volume, pools, big_pools, Time.get_ticks_msec() - started])
