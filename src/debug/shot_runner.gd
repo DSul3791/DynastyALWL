@@ -70,9 +70,13 @@ var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
+var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
+var showroom_look_down: float = 999.0    # --shot-showroom-look=DEG: its pitch (e.g. -35); default aims at the row from the height and distance
+var showroom_spread: bool = false        # --shot-showroom-spread: name tags staggered in three heights, so neighbours do not overlap
 var _showroom_t: int = 0
 var _showroom_rows_chosen: Array = []
 var _showroom_tagged: bool = false
+var _showroom_tags: Array = []           # the Label3D name tags of the chosen rows (for the overlap count)
 var flora_scale: float = 1.0       # --shot-flora-scale=N: draw the row N times its natural size (a check that a small plant is only hard to see)
 var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
 var views: Array = []                # --shot-views="name:dist:pitch:above;...": extra pictures of the same scene (see _parse_views)
@@ -122,6 +126,12 @@ func setup(owner_client, args: Array) -> void:
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
 		elif argument.begins_with("--shot-cam-above="):
 			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
+		elif argument.begins_with("--shot-showroom-height="):
+			showroom_cam_height = float(argument.trim_prefix("--shot-showroom-height="))
+		elif argument.begins_with("--shot-showroom-look="):
+			showroom_look_down = float(argument.trim_prefix("--shot-showroom-look="))
+		elif argument == "--shot-showroom-spread":
+			showroom_spread = true
 		elif argument.begins_with("--shot-showroom="):
 			showroom_rows = argument.trim_prefix("--shot-showroom=").split(",", false)
 			no_grass = true
@@ -642,12 +652,39 @@ func _show_showroom(now: int) -> void:
 		var mid_x: float = origin.x + float(start[0]) + float(step[0]) * float(items.size() - 1) * 0.5
 		var mid_z: float = origin.z + float(start[1]) + float(step[1]) * float(items.size() - 1) * 0.5
 		var dist: float = 3.0 + length * 0.9
-		var above: float = 1.6 + length * 0.25
+		var above: float = showroom_cam_height if showroom_cam_height > 0.0 else 1.6 + length * 0.25
 		var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
-		views.append({"name": view_name, "dist": dist, "pitch": -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+		views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
 		_showroom_rows_chosen.append(row)
 
 	_showroom_t = now
+
+
+# How many pairs of name tags overlap on screen from the current camera (an estimate: a tag is about 0.45 x font size wide per letter, one font size
+# high, drawn at fixed screen size). OVERLAP n = tags in the way of each other: raise --showroom-spread or the camera.
+func _tag_overlaps() -> String:
+	var boxes: Array = []
+	var cam: Camera3D = client.camera
+
+	for tag in _showroom_tags:
+		var label: Label3D = tag
+		var world: Vector3 = label.global_position
+
+		if cam.is_position_behind(world):
+			continue
+
+		var at: Vector2 = cam.unproject_position(world)
+		var size: Vector2 = Vector2(float(label.text.length()) * float(label.font_size) * 0.45, float(label.font_size))
+		boxes.append(Rect2(at - size * 0.5, size))
+
+	var pairs: int = 0
+
+	for a in range(boxes.size()):
+		for b in range(a + 1, boxes.size()):
+			if (boxes[a] as Rect2).intersects(boxes[b]):
+				pairs += 1
+
+	return "%s (%d tags, %d overlapping pairs)" % ["ok" if pairs == 0 else "OVERLAP", boxes.size(), pairs]
 
 
 func _tag_showroom() -> void:
@@ -678,8 +715,9 @@ func _tag_showroom() -> void:
 			tag.font_size = 36
 			tag.outline_size = 10
 			tag.no_depth_test = true
-			tag.position = Vector3(x, g + 0.9, z)
+			tag.position = Vector3(x, g + 0.9 + (float(n % 3) * 0.45 if showroom_spread else 0.0), z)
 			client.add_child(tag)
+			_showroom_tags.append(tag)
 
 		print("shot runner: showroom row %s %s items %d found %d" % [str(row.get("label", "")), "ok" if found == items.size() else "FAIL missing", items.size(), found])
 
@@ -763,6 +801,9 @@ func _run_view(now: int) -> void:
 
 	if not flora_names.is_empty():
 		_print_flora_row()   # the drawn pieces and vertex counts at this distance (near, mid, far models)
+
+	if not _showroom_tags.is_empty():
+		print("shot runner: tag overlap view %s %s" % [view["name"], _tag_overlaps()])
 
 	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
 	_view_i += 1
