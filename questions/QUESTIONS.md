@@ -71,3 +71,10 @@ Note: I set the medium steel and iron spade to 3.8 kg, small 2.4, large 5.0 (gar
 Note: Type the weights you want in the notes box, or 'ok'.
 Note: Recommendation: ok because medium steel is your 3.8 kg and the others scale from it.
 [text]
+
+## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
+Note: 1. Pull branch claude/kathleen-forest-bed and press F6.
+Note: 2. Stand in the woods, away from water, for one minute in summer, then in winter (Admin season).
+Note: 3. You should hear separate leaf rustles, a few far-off birds, and calm between. Anything like a steady wash or surf?
+Note: Recommendation: Yes it worked: no steady noise is left in the bed, only rustles and far birds with calm between.
+[test]
