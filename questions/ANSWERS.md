@@ -1350,3 +1350,7 @@ Answered: 2026-10-24 02:48 UTC
 Answer: No: This is outdated
 Answered: 2026-10-24 02:48 UTC
 
+## berries-per-plant | Berries you get from one ripe plant: raspberry 150, bramble 250, blueberry 150, blackthorn 300, wild rose 60?
+Answer: No: Wild erosion get flowers from, but you can’t get berries from it
+Answered: 2026-10-24 02:49 UTC
+
