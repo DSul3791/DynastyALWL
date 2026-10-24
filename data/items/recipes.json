@@ -953,6 +953,7 @@
 			],
 			"craft_s": 15.0,
 			"known": true
+		},
 		"thatch_floor_kit": {
 			"number": 166,
 			"name": "Thatch floor",
