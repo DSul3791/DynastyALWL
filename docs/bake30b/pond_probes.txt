@@ -1,0 +1,24 @@
+=== --probe=52976,73368
+probe from sample 862,1491 (x 52976 z 73368)
+  step 0 x 52976 z 73368 ground 88.60 class 0 depth 0.000 drainage 0.00 km2
+  step 1 x 52968 z 73376 ground 87.50 class 0 depth 0.000 drainage 0.00 km2
+  step 2 x 52960 z 73376 ground 86.60 class 0 depth 0.000 drainage 0.00 km2
+  step 3 x 52952 z 73376 ground 86.10 class 0 depth 0.000 drainage 0.00 km2
+  step 4 x 52944 z 73384 ground 85.10 class 0 depth 0.000 drainage 0.00 km2
+  step 5 x 52936 z 73392 ground 83.80 class 0 depth 0.000 drainage 0.00 km2
+  step 6 x 52928 z 73400 ground 82.20 class 0 depth 0.000 drainage 0.00 km2
+  step 7 x 52920 z 73408 ground 80.40 class 0 depth 0.000 drainage 0.00 km2
+  step 8 x 52912 z 73416 ground 78.70 class 0 depth 0.000 drainage 0.00 km2
+  step 9 x 52904 z 73424 ground 77.30 class 0 depth 0.860 drainage 0.00 km2
+  step 10 x 52896 z 73416 ground 77.00 class 0 depth 0.480 drainage 0.00 km2
+  step 11 x 52896 z 73408 ground 76.70 class 0 depth 0.290 drainage 0.00 km2
+  (a low point: nothing lower around it)
+  spring at x 53096 z 73584: 10.0 m3/s, 31 cells from the probe
+  spring at x 52752 z 73336: 10.0 m3/s, 28 cells from the probe
+  spring at x 53008 z 73216: 1.0 m3/s, 19 cells from the probe
+=== --probe=53144,73544
+probe from sample 883,1513 (x 53144 z 73544)
+  step 0 x 53144 z 73544 ground 92.40 class 0 depth 5.530 drainage 0.00 km2
+  (a low point: nothing lower around it)
+  spring at x 53096 z 73584: 10.0 m3/s, 8 cells from the probe
+  spring at x 53312 z 73720: 1.0 m3/s, 30 cells from the probe
