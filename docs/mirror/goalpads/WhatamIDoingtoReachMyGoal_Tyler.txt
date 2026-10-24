@@ -20,6 +20,7 @@ HANDED OFF
 (none)
 
 DONE
+- 03:10 UTC plan GO replies: Kathleen flora gaps, Steve river settle, Kathleen worn clothing, Steve worn attach (no plan pending); merge list 3 written (2 conflicts flagged to Steve); steve-stamp-items added to list 2
 - 02:55 UTC step 5: tech/PLAN_CHECKLISTS.md written (six kinds, 4-8 questions each)
 - 00:35-02:45 UTC plan GO replies: Kathleen building looks, Sal showroom, Sal look names, Steve rig pieces, Sonny foothills, Sal island checks, Kathleen item looks, Kathleen flora gaps, Steve river settle, Kathleen worn clothing
 - 01:00-01:35 UTC builds 771, 772, 773 merged; goals files split; reminder text improved; moderator goals created
