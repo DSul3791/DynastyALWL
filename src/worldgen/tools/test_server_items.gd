@@ -2627,5 +2627,46 @@ func _init() -> void:
 	print("zone: 60 s of a player crossing a border every 10 s: %d messages (about %d bytes per minute), %d lookups, %.1f microseconds each" % [walker_sent.size(), walker_sent.size() * 12, walker.zone_samples, float(walker.zone_usec) / maxf(float(walker.zone_samples), 1.0)])
 	check(walker_sent.size() <= 7 and walker.zone_samples <= 31, "a minute costs a handful of messages and at most one lookup per 2 s (%d messages, %d lookups)" % [walker_sent.size(), walker.zone_samples])
 
+	# Vent anchor (protocol 77): sent at login when a vent is in range, then only when the nearest vent changes; nothing for a player with no vent near.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_vent")
+	var vi = make("user://test_server_items_vent")
+	var vent_sent: Array = []
+	var vent_now: Array = [0]
+	var vent_here: Array = [Vector3.INF]
+	vi.send_zone = func(_peer, _biome_id): pass
+	vi.zone_at = func(_pos): return 8
+	vi.zone_clock = func(): return vent_now[0]
+	vi.send_vent = func(peer, at): vent_sent.append([peer, at])
+	vi.vent_near = func(_pos): return vent_here[0]
+	vi.peer_connected_hello(1, "ventpeer0001")
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.is_empty(), "no vent in range: nothing is sent at login (%s)" % str(vent_sent))
+	vent_now[0] = 2000
+	vent_here[0] = Vector3(900.0, 300.0, 100.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent == [[1, Vector3(900.0, 300.0, 100.0)]], "a vent comes in range: its anchor is sent (%s)" % str(vent_sent))
+	vent_now[0] = 4000
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 1, "the same vent sends nothing more")
+	vent_now[0] = 5000
+	vent_here[0] = Vector3(-700.0, 250.0, 0.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 1, "reads closer than 2 s apart look at nothing")
+	vent_now[0] = 6500
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 2 and vent_sent[1][1] == Vector3(-700.0, 250.0, 0.0), "a different nearest vent is sent")
+	vent_now[0] = 9000
+	vent_here[0] = Vector3.INF
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 3 and not (vent_sent[2][1] as Vector3).is_finite(), "walking out of range sends INF (the client drops the bed)")
+	vent_now[0] = 11500
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 3, "still none: nothing more")
+	vi.peer_connected_hello(1, "ventpeer0001")
+	vent_now[0] = 14000
+	vent_here[0] = Vector3(-700.0, 250.0, 0.0)
+	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
+	check(vent_sent.size() == 4, "a returning player gets the vent again")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

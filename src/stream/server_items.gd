@@ -225,8 +225,11 @@ var _warmth_cfg: Dictionary = {}    # data/items/warmth.json
 var send_zone: Callable = Callable()        # (peer, biome id): tells the client which biome it stands in (protocol 76; ambience slots read it)
 var zone_at: Callable = Callable()          # (position Vector3) -> biome id from the tile biome map, -1 when unknown; set by the server scene
 var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
+var send_vent: Callable = Callable()        # (peer, Vector3): the nearest volcanic vent within VENT_RANGE_M, Vector3.INF when none (protocol 77; the volcano bed sits there)
+var vent_near: Callable = Callable()        # (position Vector3) -> Vector3 of the nearest vent top within VENT_RANGE_M, INF when none; set by the server scene
 var zone_samples: int = 0                   # biome lookups made, messages sent and microseconds spent (the report reads these)
 var zone_messages: int = 0
+var vent_messages: int = 0
 var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset until clothing exists
@@ -372,6 +375,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_zone_sent.erase(peer)
 	_zone_cand.erase(peer)
 	_zone_checked.erase(peer)
+	_vent_sent.erase(peer)
 
 	if not _inventories.has(key):
 		_inventories[key] = InventoryScript.new(table)
@@ -456,6 +460,7 @@ func peer_left(peer: int) -> void:
 	_zone_cand.erase(peer)
 	_zone_pos.erase(peer)
 	_zone_checked.erase(peer)
+	_vent_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
 	_logout_peers.erase(peer)
 	_admin_mode_off.erase(peer)
@@ -518,11 +523,14 @@ func report_position(peer: int, position: Vector3) -> void:
 
 
 const ZONE_EVERY_MSEC := 2000       # the biome under a player is read this often
+const VENT_RANGE_M := 1500.0           # the volcano bed is inaudible beyond this (batch2_slots.json max_distance_m)
+const VENT_MOVE_M := 1.0               # a vent anchor is sent again only when it moved by more than this (a different vent, or none)
 const ZONE_TELEPORT_M := 200.0       # a jump this far between two reads (teleport, respawn) is sent at once
 var _zone_sent: Dictionary = {}      # peer -> biome id the client was last told
 var _zone_cand: Dictionary = {}      # peer -> a new biome read once; sent when the next read agrees (about 4 s)
 var _zone_pos: Dictionary = {}       # peer -> position at the last read
 var _zone_checked: Dictionary = {}   # peer -> msec of the last read
+var _vent_sent: Dictionary = {}      # peer -> the vent anchor the client was last told (INF = none)
 
 
 # Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
@@ -537,6 +545,7 @@ func _note_zone(peer: int, position: Vector3) -> void:
 		return
 
 	_zone_checked[peer] = now
+	_note_vent(peer, position)
 	var started: int = Time.get_ticks_usec()
 	var biome: int = int(zone_at.call(position))
 	zone_usec += Time.get_ticks_usec() - started
@@ -555,6 +564,26 @@ func _note_zone(peer: int, position: Vector3) -> void:
 		_send_zone(peer, biome)
 	else:
 		_zone_cand[peer] = biome
+
+
+# The nearest volcanic vent within VENT_RANGE_M, on the zone's 2 s cadence: sent at login and whenever it changes (a different vent, or none in range).
+func _note_vent(peer: int, position: Vector3) -> void:
+	if not vent_near.is_valid() or not send_vent.is_valid():
+		return
+
+	var at: Vector3 = vent_near.call(position)
+	var known: bool = _vent_sent.has(peer)
+	var before: Vector3 = _vent_sent.get(peer, Vector3.INF)
+
+	if known and (at == before or (at.is_finite() and before.is_finite() and at.distance_to(before) <= VENT_MOVE_M)):
+		return
+
+	# At login nothing needs saying when there is no vent: the client starts with none.
+	_vent_sent[peer] = at
+
+	if known or at.is_finite():
+		vent_messages += 1
+		send_vent.call(peer, at)
 
 
 func _send_zone(peer: int, biome: int) -> void:

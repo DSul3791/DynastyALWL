@@ -272,7 +272,8 @@ func _check_ambience() -> void:
 		for biome in biome_tags:
 			all_unreadable = all_unreadable and unreadable.has(biome)
 
-		var expect_test_only: bool = all_unreadable or str(slots[slot]["tags"]["near_water"]) == "lava"
+		# The volcano rumble has its anchor from the server (protocol 77, set_vent), so it is not test-only.
+		var expect_test_only: bool = (all_unreadable and slot != "bed_volcano_rumble") or str(slots[slot]["tags"]["near_water"]) == "lava"
 		check(bool(slots[slot].get("test_only", false)) == expect_test_only, "slot %s: test_only is %s" % [slot, expect_test_only])
 
 

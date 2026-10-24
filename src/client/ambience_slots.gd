@@ -4,7 +4,7 @@ extends Node
 # two at once with a gap of 4 to 20 s, never the same clip twice in a row, pitch +/-5 percent. The context (hour, season, how much forest, meadow and
 # water is around, height) comes from AmbientLife, which keeps its own scan. No file path lives in game code.
 # The server sends the biome id under the player (protocol 76 zone, set_zone); data/sound/zone_tags.json maps it to the tag words (desert, polar, ice, ...).
-# Canyon and lava have no data source yet and the volcano bed needs a vent anchor: those slots are "test_only" in the JSON and wait for `force_biome` /
+# Canyon and lava have no data source yet (the volcano bed gets its vent anchor from the server, protocol 77, set_vent): those slots are "test_only" in the JSON and wait for `force_biome` /
 # `set_anchor` (the sound test and the rig use them).
 #   sound.ambience.update(delta, body)         every frame from the sound stage
 #   sound.ambience.test_press()                the "Sound test: Batch 2" entry: each group in turn, each clip played three times back to back
@@ -87,6 +87,16 @@ func setup(stage, slots_path: String = SLOTS_PATH) -> void:
 
 
 # The biome the server says the player stands in (protocol 76): its tag words join the measured ones.
+# The nearest volcanic vent the server knows within 1500 m (protocol 77), Vector3.INF when none: the volcano rumble bed sits there and the "volcano" tag is on.
+func set_vent(at: Vector3) -> void:
+	if at.is_finite():
+		anchors["bed_volcano_rumble"] = at
+		last = "vent at %d %d %d" % [int(at.x), int(at.y), int(at.z)]
+	else:
+		anchors.erase("bed_volcano_rumble")
+		last = "vent gone"
+
+
 func set_zone(biome_id: int) -> void:
 	zone_biome = biome_id
 	zone_tags = zone_tags_for(biome_id, _biome_names, _zone_rows)
@@ -377,10 +387,15 @@ func context(body: Node3D) -> Dictionary:
 	var conditions: Dictionary = _stage.ambient.conditions
 	var weights: Dictionary = _stage.ambient.weights
 	var height: float = body.global_position.y
+	var biomes: Array = biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome, zone_tags)
+
+	if anchors.has("bed_volcano_rumble") and not biomes.has("volcano"):
+		biomes.append("volcano")
+
 	return {
 		"season": str(conditions.get("season", "autumn")),
 		"time": time_class(float(conditions.get("hour", 14.0)), str(conditions.get("season", "autumn"))),
-		"biomes": biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome, zone_tags),
+		"biomes": biomes,
 		"water": float(weights.get("water", 0.0)),
 		"height": height,
 		"lava": anchors.has("bed_lava_hiss"),

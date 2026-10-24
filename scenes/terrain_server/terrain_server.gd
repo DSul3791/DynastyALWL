@@ -323,6 +323,35 @@ func _ready() -> void:
 			return -1
 
 		return int(tile_data.biome[tile_data.nearest(pos.x, pos.z)])
+	items.send_vent = func(peer, at: Vector3): net.vent.rpc_id(peer, at)
+	items.vent_near = func(pos: Vector3) -> Vector3:
+		var best: Vector3 = Vector3.INF
+		var best_d: float = items.VENT_RANGE_M
+		var tile_size: float = generator.tile_size_m
+
+		for dz in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				var px: float = pos.x + float(dx) * tile_size
+				var pz: float = pos.z + float(dz) * tile_size
+
+				# The tile under the player is read if needed; a neighbour only when it is already in memory (a read takes over a second).
+				if (dx != 0 or dz != 0) and not generator.tile_cached(px, pz):
+					continue
+
+				var tile_data = generator.get_tile(generator.tile_of(px, pz))
+
+				for body in tile_data.bodies:
+					if int(body["kind"]) != 1:
+						continue
+
+					var c: Vector2 = body["center"]
+					var d: float = Vector2(c.x - pos.x, c.y - pos.z).length()
+
+					if d < best_d:
+						best_d = d
+						best = Vector3(c.x, float(body["top"]), c.y)
+
+		return best
 	items.send_reject = func(peer_id, reason): net.reject.rpc_id(peer_id, reason)
 	@warning_ignore("confusable_local_declaration")
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
