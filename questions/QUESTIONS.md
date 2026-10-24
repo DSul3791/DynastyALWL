@@ -38,11 +38,6 @@ Note: Empties the pack, turns hints on, drops admin powers so Mike can time the 
 Note: Recommendation: Yes because we cannot test the first hour any other way.
 [check]
 
-## inner-voice-hints | Inner-voice hints: max 6 an hour, 12 words, never an order, admin can mute, one gentle up-front hint after 60 s of doing nothing?
-Note: Hints otherwise come after a mistake.
-Note: Recommendation: Yes because it guides without nagging.
-[check]
-
 ## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
 Note: New players start with the direct way.
 Note: Recommendation: Yes because direct pieces suit a first shelter and need no protocol change.
