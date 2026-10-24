@@ -1486,3 +1486,7 @@ Answered: 2026-10-24 16:15 UTC
 Answer: No: It shouldn’t be overnight. It should take a long long time so if the water let’s say gets re-rooted and flood the field, it starts the timer that starts slowly hurting the crops and let’s say it’s gonna take a week before it kills the crops. Then the farmer can go find what caused the flooding and fix it or they can dig ditches to run off the water, or they can build dams and ditches around their fields and once the water clears off, then that land will stop being under threat of change.
 Answered: 2026-10-24 16:17 UTC
 
+## wl-farmland | Water land types: player-tilled farmland is exempt from wild succession (weeds only)?
+Answer: No: It shouldn’t be overnight. It should take a long long time so if the water let’s say gets re-rooted and flood the field, it starts the timer that starts slowly hurting the crops and let’s say it’s gonna take a week before it kills the crops. Then the farmer can go find what caused the flooding and fix it or they can dig ditches to run off the water, or they can build dams and ditches around their fields and once the water clears off, then that land will stop being under threat of change.
+Answered: 2026-10-24 16:17 UTC
+
