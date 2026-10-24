@@ -68,3 +68,7 @@ Note: Recommendation: Yes because a rock cannot break iron, and soft metal first
 Note: Needs new server and save state. Today there is one global respawn point.
 Note: Recommendation: Yes because it makes the bed your home.
 [check]
+
+## cooking-stations | Three cooking stations: tripod pot, clay hearth, oven (tier 1 in R2, the others R3)?
+Note: Recommendation: Yes because each tier is a thing you place and the recipes already exist.
+[check]
