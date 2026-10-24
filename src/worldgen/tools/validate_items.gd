@@ -151,6 +151,63 @@ func _init() -> void:
 		if not wood_file.get("class_items", {}).has(String(wood_file["species"][sp].get("class", ""))):
 			fail("wood_species.json: species %s has a class without class_items" % sp)
 
+	# Key woods (Dave 24 Oct): each is a tree with live log, lumber and beam items; no live recipe, drop table or building cost names a retired item.
+	var trees: Dictionary = {}
+	var biome_key: Dictionary = {}
+	var biome_any: Dictionary = {}
+
+	for entry in _read("../tables/flora.json").get("entries", []):
+		if str(entry.get("kind", "")) != "tree":
+			continue
+
+		trees[str(entry["name"])] = true
+
+		for biome in entry.get("per_hectare", {}):
+			biome_any[biome] = true
+
+			if (wood_file.get("key_woods", []) as Array).has(str(entry["name"])):
+				biome_key[biome] = true
+
+	for key_wood in wood_file.get("key_woods", []):
+		if not trees.has(str(key_wood)):
+			fail("wood_species.json: key wood %s is not a tree in flora.json" % key_wood)
+
+		for prefix in ["log_", "lumber_", "beam_"]:
+			var key_item: Dictionary = items_file.get("items", {}).get(prefix + str(key_wood), {})
+
+			if key_item.is_empty() or bool(key_item.get("retired", false)):
+				fail("wood_species.json: key wood %s needs a live %s%s item" % [key_wood, prefix, key_wood])
+
+	var retired_ids: Array = []
+
+	for id in items_file.get("items", {}):
+		if bool(items_file["items"][id].get("retired", false)):
+			retired_ids.append(str(id))
+
+	for rid in recipes_file.get("recipes", {}):
+		var recipe: Dictionary = recipes_file["recipes"][rid]
+
+		if bool(recipe.get("retired", false)):
+			continue
+
+		for ref in JSON.stringify(recipe).split("\""):
+			if retired_ids.has(ref):
+				fail("recipes.json: live recipe %s names the retired item %s" % [rid, ref])
+
+	for file_name in ["drops.json", "structures.json"]:
+		for ref in JSON.stringify(_read(file_name)).split("\""):
+			if retired_ids.has(ref):
+				fail("%s names the retired item %s" % [file_name, ref])
+
+	var no_key: Array = []
+
+	for biome in biome_any:
+		if not biome_key.has(biome):
+			no_key.append(biome)
+
+	no_key.sort()
+	print("info: biomes whose trees include no key wood (they give firewood and sticks only): ", ", ".join(no_key))
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
