@@ -38,12 +38,14 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 #cmd dt{font-weight:700;margin-top:.7rem}#cmd dd{margin:.1rem 0 0 .5rem;color:var(--mut)}
 .dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:11;background:var(--card);border-radius:16px;padding:1.2rem;width:min(92vw,26rem);display:none;box-shadow:0 8px 30px rgba(0,0,0,.35)}
 .dlg.on{display:block}.dlg .row{display:flex;gap:.6rem}.dlg .row button{flex:1;margin-top:.8rem}
+.qcount{font-size:1.15rem;font-weight:700;margin:.2rem 0 .6rem}.qcount small{font-weight:400;font-size:.85rem;margin-left:.5rem}
 </style></head><body>
 <div class="bar"><button class="ib" aria-label="Menu" onclick="sheet('menu')">&#9776;</button><h1>Questions &amp; Tasks for Dave</h1><button class="ib" aria-label="Reload" onclick="load()">&#8635;</button></div>
 <main>
+<div id="qcount" class="qcount">Questions: ...</div>
 <div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<p class=ver>Page version: poke v9 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
+<p class=ver>Page version: poke v10 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
 </main>
 <div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
 <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -86,13 +88,17 @@ function parse(t){const out=[];let c=null;
   return out}
 function chk(n){const r=document.querySelector(`input[name=q${n}]:checked`);document.getElementById('why'+n).hidden=!(r&&r.value=='No')}
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
-const PV="v9";
+const PV="v10";
 async function selfUpdate(){try{const {text}=await get("questions/qa.html");const m=/Page version: poke (v\d+)/.exec(text);if(m&&m[1]!=PV)location.reload()}catch(e){}}
+let shownIds="";
+function setCount(n,fresh){document.getElementById("qcount").innerHTML="Questions: "+n+(fresh?"<small>(list changed, tap reload &#8635;)</small>":"")}
+async function pollCount(){if(!tok())return;try{const {text}=await get(QF);const qs=parse(text);const ids=qs.map(x=>x.id).join(",");setCount(qs.length,shownIds!==""||ids!==""?ids!==shownIds:false)}catch(e){}}
+setInterval(pollCount,60000);
 async function load(){
   selfUpdate();
   const L=document.getElementById("list");document.getElementById("tok").hidden=!!tok();
   if(!tok()){L.textContent="";return}
-  try{const {text}=await get(QF);const qs=parse(text);
+  try{const {text}=await get(QF);const qs=parse(text);shownIds=qs.map(x=>x.id).join(',');setCount(qs.length,false);
     if(!qs.length){L.innerHTML="<div class=q><h2>All clear</h2><p>No questions right now.</p></div>";return}
     let k=0;
     const card=(q,n)=>{
