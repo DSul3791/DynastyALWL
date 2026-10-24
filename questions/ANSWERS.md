@@ -1630,3 +1630,7 @@ Answered: 2026-10-24 22:18 UTC
 Answer: No: No, it sounds like the surf everywhere
 Answered: 2026-10-24 22:18 UTC
 
+## wind-soft-789 | Is the wind soft and airy now, not like ocean surf?
+Answer: No: The wind has no sound at all when I turned the volume down for nature sounds. I lose everything even with the wind volume all the way up I still don’t have any wind sound. I think it’s all incorporated into nature so break them apart.
+Answered: 2026-10-24 22:18 UTC
+
