@@ -1342,3 +1342,19 @@ Answered: 2026-10-23 21:52 UTC
 Answer: Yes
 Answered: 2026-10-23 21:52 UTC
 
+## mike-settings-all | Give MikeW all the permissions he keeps needing (one file, about 2 minutes)
+Answer: No: No, we’ve established a new role where he sends it up to the GitHub and I just pull it
+Answered: 2026-10-24 02:48 UTC
+
+## mike-settings-all-2 | Give MikeW all the permissions he keeps needing (replaces the earlier settings card; ignore that one)
+Answer: No: This is outdated
+Answered: 2026-10-24 02:48 UTC
+
+## berries-per-plant | Berries you get from one ripe plant: raspberry 150, bramble 250, blueberry 150, blackthorn 300, wild rose 60?
+Answer: No: Wild erosion get flowers from, but you can’t get berries from it
+Answered: 2026-10-24 02:49 UTC
+
+## harvest-counts | What one pick gives from one plant: leaf herbs 12, flower herbs 20, mushrooms 1 to 5, fruit trees 60 to 200?
+Answer: Yes
+Answered: 2026-10-24 02:50 UTC
+
