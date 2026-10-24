@@ -72,3 +72,8 @@ Note: Recommendation: Yes because it makes the bed your home.
 ## cooking-stations | Three cooking stations: tripod pot, clay hearth, oven (tier 1 in R2, the others R3)?
 Note: Recommendation: Yes because each tier is a thing you place and the recipes already exist.
 [check]
+
+## inner-voice-hints | Inner-voice hints: max 6 an hour, 12 words, never an order, admin can mute, one gentle up-front hint after 60 s of doing nothing?
+Note: Hints otherwise come after a mistake.
+Note: Recommendation: Yes because it guides without nagging.
+[check]
