@@ -282,6 +282,9 @@ func _build_admin() -> void:
 		_c.weather_look.clear_day = on
 		_c.weather_look._day_next_msec = 0
 		note.text = "Noon light, clear sky and no fog %s. Off goes back to the game clock and the world weather." % ("on" if on else "off"))
+	_button(admin, "Go to spawn", func():
+		_c.go_to_spawn()
+		_c._set_menu(false))
 	_button(admin, "Play as a new player", func(): show_page("new_player"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
 	_button(admin, "Dump water here (to a file on the server)", func():
