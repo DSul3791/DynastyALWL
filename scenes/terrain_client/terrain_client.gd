@@ -49,6 +49,7 @@ const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
+const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre apart
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
@@ -220,6 +221,7 @@ var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
+var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
 var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
 var drip_view = DripViewScript.new()          # dripping ceilings under water (drip_view.gd)
@@ -3121,7 +3123,14 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 	body.velocity = result["velocity"]
 
 	if not bool(result["active"]):
+		_ladder_climbed_m = 0.0
 		return false
+
+	_ladder_climbed_m += absf(body.velocity.y) * delta
+
+	if _ladder_climbed_m >= LADDER_RUNG_M:
+		_ladder_climbed_m = fmod(_ladder_climbed_m, LADDER_RUNG_M)
+		sound.slots.play("ladder_rung", body.global_position - Vector3(0.0, 0.9, 0.0))      # one per rung climbed, by distance, not by a timer
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
