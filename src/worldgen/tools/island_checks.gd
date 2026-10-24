@@ -46,6 +46,7 @@ var _elevation
 var _limits: Dictionary = {}
 var _fine: bool = false
 var _rules: Dictionary = {}
+var _sketch: Dictionary = {}
 var _picture_dir: String = ""
 
 
@@ -145,10 +146,14 @@ func _bound_row(name: String, value: float, bound: Variant, is_max: bool, measur
 	_row(name, measured, "%s %s" % ["max" if is_max else "min", str(bound)], "PASS" if ok else "FAIL")
 
 
-func _config_for(island_id: int) -> Dictionary:
+func _config_for(island_id: int, auto_type: String = "") -> Dictionary:
 	var config: Dictionary = (_limits["defaults"] as Dictionary).duplicate(true)
 	var override: Dictionary = (_limits.get("islands", {}) as Dictionary).get(str(island_id), {})
 	var type_rows: Dictionary = _limits.get("types", {})
+
+	if not override.has("type") and auto_type != "":
+		override = override.duplicate()
+		override["type"] = auto_type
 
 	# An island row may name a type; the type's row (island_checks.json "types") applies first, the island's own keys on top.
 	if override.has("type") and type_rows.has(str(override["type"])):
@@ -188,6 +193,7 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 	var sketch: Dictionary = sketch_maker.generate(existing)
 	_elevation = ElevationScript.new()
 	_elevation.build(settings, rules, sketch, 0.0)
+	_sketch = sketch
 	var census: Dictionary = CensusScript.count(_elevation)
 	var listed: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/island_list.json"))
 
@@ -235,6 +241,50 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 		_check_island(int(wanted[number]), int(number), census, cells_of[number])
 
 
+# The island type the generator gave the starter island whose mount is nearest to this peak (same pick as
+# WorldElevation._island_config: starter_types by tile, else a weighted hash of the mount position). "" when no starter mount is near.
+func _auto_type(peak: Vector2) -> String:
+	var types: Dictionary = _rules.get("island_types", {})
+	var best: Dictionary = {}
+	var best_distance: float = 6000.0
+
+	for feature in _sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) != "starter":
+				continue
+
+			var distance: float = Vector2(float(mount["x"]), float(mount["z"])).distance_to(peak)
+
+			if distance < best_distance:
+				best_distance = distance
+				best = mount
+
+	if best.is_empty() or types.is_empty():
+		return ""
+
+	var key: String = "%d,%d" % [int(best["starter"][0]), int(best["starter"][1])] if best.has("starter") else ""
+	var chosen: String = str((_rules.get("starter_types", {}) as Dictionary).get(key, ""))
+
+	if chosen != "" and types.has(chosen):
+		return chosen
+
+	var total: float = 0.0
+
+	for type_name in types:
+		total += float(types[type_name].get("weight", 1.0))
+
+	var hash_value: int = (int(best["x"]) * 73856093) ^ (int(best["z"]) * 19349663)
+	var roll: float = float(absi(hash_value) % 10007) / 10007.0 * total
+
+	for type_name in types:
+		roll -= float(types[type_name].get("weight", 1.0))
+
+		if roll <= 0.0:
+			return str(type_name)
+
+	return str(types.keys()[0])
+
+
 func _census_number(census: Dictionary, x_m: float, z_m: float) -> int:
 	var best: int = -1
 	var best_distance: float = MATCH_RADIUS_M
@@ -253,7 +303,8 @@ func _census_number(census: Dictionary, x_m: float, z_m: float) -> int:
 
 
 func _check_island(island_id: int, number: int, census: Dictionary, cells: PackedInt32Array) -> void:
-	var config: Dictionary = _config_for(island_id)
+	var peak_cell: int = int(census["islands"][number]["peak_index"])
+	var config: Dictionary = _config_for(island_id, _auto_type(_elevation.cell_center_m(peak_cell % _elevation.size_x, _quot(peak_cell, _elevation.size_x))))
 	var title: String = "island %d" % island_id
 
 	if config.has("name"):
