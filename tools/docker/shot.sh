@@ -13,12 +13,29 @@ export HOME="$RIG/home" XDG_DATA_HOME="$RIG/data"; UD="$XDG_DATA_HOME/godot/app_
 echo -n "00112233445566778899aabb" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 PORT=$((7800 + RANDOM % 150))
 "$SRV" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 > "$RIG/server.log" 2>&1 &
-SP=$!; trap 'kill $SP 2>/dev/null; sleep 1; rm -rf "$RIG"' EXIT
+SP=$!; trap 'kill $SP 2>/dev/null; sleep 1; [ -n "$KEEP" ] && echo "rig kept: $RIG" || rm -rf "$RIG"' EXIT
 sleep 30
-T0=$(date +%s)
-LIBGL_ALWAYS_SOFTWARE=1 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json \
- xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- \
- --server=127.0.0.1 --port=$PORT --shots="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,clear,-1" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE > "$RIG/client.log" 2>&1
+pick_icd() {   # sets ICD and RENDERER: the NVIDIA Vulkan file when nvidia-smi works, else Mesa lavapipe (found by looking, not by a fixed name)
+	ICD=""; RENDERER=software
+	if [ "${SHOT_RENDERER:-auto}" != software ] && command -v nvidia-smi >/dev/null && nvidia-smi -L >/dev/null 2>&1; then
+		ICD=$(ls /usr/share/vulkan/icd.d/nvidia_icd*.json /etc/vulkan/icd.d/nvidia_icd*.json 2>/dev/null | head -1)
+		[ -n "$ICD" ] && RENDERER=nvidia
+	fi
+	if [ -z "$ICD" ]; then ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json /etc/vulkan/icd.d/lvp_icd*.json 2>/dev/null | head -1); RENDERER=software; fi
+}
+timed() { if [ -x /usr/bin/time ]; then /usr/bin/time -f "peak memory: %M KB" "$@"; else "$@"; fi; }
+run_client() {
+	pick_icd; [ -z "$ICD" ] && { echo "no Vulkan driver file found (nvidia_icd*.json or lvp_icd*.json)"; return 1; }
+	echo "renderer: $RENDERER ($ICD)"
+	T0=$(date +%s)
+	[ "$RENDERER" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
+	VK_ICD_FILENAMES="$ICD" timed \
+	 xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- \
+	 --server=127.0.0.1 --port=$PORT --shots="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,clear,-1" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE > "$RIG/client.log" 2>&1
+}
+run_client
+if [ ! -s "$OUT/$NAME.png" ] && [ "$RENDERER" = nvidia ]; then echo "NVIDIA run made no picture; retrying in software"; export SHOT_RENDERER=software; run_client; fi
+grep -E "peak memory|renderer" "$RIG/client.log" | head -3
 echo "shot: $(( $(date +%s) - T0 )) s"
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}' || echo "no picture made"
