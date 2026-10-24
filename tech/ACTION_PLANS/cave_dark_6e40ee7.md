@@ -18,3 +18,7 @@ Follow-up (Tyler, GO): light eases out over 1 s going in, 2.5 s coming out; Sett
 
 Limit: an open-top pit (sky overhead, no rock ceiling) is not dimmed; only covered holes and tunnels.
 Not run in cloud (no Godot binary).
+
+## Part 2 (Dave 24 Oct 14:24): no pollen in caves — PLAN ONLY until devstop ends
+Cause: src/client/wind_cue.gd (wind-direction specks, pollen in summer) is one camera-following GPUParticles3D (weather_look.gd:460); it fades for calm, rain/snow, underwater, sea height and night, but never for rock overhead, so it blows through tunnels.
+Plan (RUNTIME): pass `_client.sound.cave.rock_enclosure` into `wind_cue.update` (new argument, default 0) and multiply `want` by `1 - smoothstep(0.1, 0.5, enclosure)`: none in covered caves, fading near the mouth, easing with the existing 2 s `_fade`. Add a static helper `cave_fade(enclosure)` and one more check line in tools/check_cave_light.gd (open air 1.0, tunnel 0.0, never rising). Same branch claude/project-thread-yttwff. Air sounds are NOT in this plan (Steve's sound plan owns cave_sounds.gd).
