@@ -183,7 +183,7 @@ static func _outlet_flow(data, flow: PackedFloat32Array, side: int, i: int, j: i
 
 			var n: int = nj * side + ni
 
-			if data.water_class[n] == RIVER and data.heights[n] <= here:
+			if n != j * side + i and data.water_class[n] == RIVER and data.heights[n] <= here:
 				best = maxf(best, flow[n])
 
 	return best
