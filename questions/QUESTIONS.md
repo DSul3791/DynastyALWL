@@ -77,3 +77,8 @@ Note: Recommendation: Yes because each tier is a thing you place and the recipes
 Note: Hints otherwise come after a mistake.
 Note: Recommendation: Yes because it guides without nagging.
 [check]
+
+## build-both-ways | Building both ways: blueprint and direct piece from the hotbar, same cost, 2 m grid and foundation rule; ship direct foundation first?
+Note: New players start with the direct way.
+Note: Recommendation: Yes because direct pieces suit a first shelter and need no protocol change.
+[check]
