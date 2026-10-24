@@ -337,7 +337,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 
 		var level: float = float(lake["level"])
 		var first: int = at
-		var cut: Dictionary = _cut_outlet_path(at, level, fill, channels, land, sea, samples, drop, fall, depth_m, longest)
+		var cut: Dictionary = _cut_outlet_path(at, level, fill, channels, land, sea, samples, drop, fall, depth_m, longest, 0.0, float(rules.get("breach_max_cut_m", 20.0)))
 		var lowered: float = float(cut["lowered"])
 		var length: int = int(cut["length"])
 		cells_cut += int(cut["cells"])
@@ -386,7 +386,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 				if not is_pit or rim - floor_m < pit_min_rim:
 					continue
 
-				var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut)
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
 				if pit_cut_result.has("skipped"):
 					pits_skipped += 1
 					continue
@@ -403,9 +403,9 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 
 # Walks the routing receivers downstream from `at` and cuts a three-cell-wide channel whose bed starts just under `level`
 # and falls `fall` per cell until the real ground is lower than the channel or the sea is reached.
-static func _cut_outlet_path(at: int, level: float, fill, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, drop: float, fall: float, depth_m: float, longest: int, max_cut_m: float = -1.0) -> Dictionary:
-	# A path that would need a cut deeper than max_cut_m is left alone (no gorge across a mountain for a small pit).
-	if max_cut_m > 0.0:
+static func _cut_outlet_path(at: int, level: float, fill, channels, land: PackedFloat32Array, sea: PackedByteArray, samples: int, drop: float, fall: float, depth_m: float, longest: int, skip_over_m: float = -1.0, max_cut_m: float = -1.0) -> Dictionary:
+	# A path that would need a cut deeper than skip_over_m is left alone (no gorge across a mountain for a small pit).
+	if skip_over_m > 0.0:
 		var probe_at: int = at
 		var needed: float = 0.0
 
@@ -426,7 +426,7 @@ static func _cut_outlet_path(at: int, level: float, fill, channels, land: Packed
 
 			probe_at = probe_next
 
-		if needed > max_cut_m:
+		if needed > skip_over_m:
 			return {"lowered": 0.0, "length": 0, "cells": 0, "skipped": true}
 
 	var lowered: float = 0.0
@@ -456,6 +456,10 @@ static func _cut_outlet_path(at: int, level: float, fill, channels, land: Packed
 
 				var neighbor: int = r * samples + c
 				var wanted: float = target + (0.0 if dz == 0 and dc == 0 else 0.4)
+
+				# Hard cap: no single cell is ever lowered by more than max_cut_m.
+				if max_cut_m > 0.0:
+					wanted = maxf(wanted, channels.bed[neighbor] - max_cut_m)
 
 				if channels.bed[neighbor] > wanted:
 					lowered = maxf(lowered, channels.bed[neighbor] - wanted)
