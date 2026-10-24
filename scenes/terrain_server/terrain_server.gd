@@ -979,6 +979,9 @@ func _cover_at(point: Vector3) -> float:
 		for dx in [-1, 0, 1]:
 			flora.chunk_bytes(home + Vector2i(dx, dz), false)
 
+	if flora.roofed(point):
+		return 2.0   # under a built roof: also shelter from the wind
+
 	return 1.0 if flora.covered(point) else 0.0
 
 

@@ -464,7 +464,7 @@ func _set_bed(layer: String, slot: String) -> void:
 		else:
 			var player: AudioStreamPlayer = AudioStreamPlayer.new()
 			player.stream = _looped(stream)
-			player.bus = "Nature"
+			player.bus = "Wind" if wanted.contains("wind") else "Nature"   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
 			player.volume_db = SILENT_DB
 			add_child(player)
 			player.play()

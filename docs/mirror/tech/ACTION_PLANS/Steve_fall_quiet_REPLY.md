@@ -1,0 +1,2 @@
+# Tyler reply (once, 24 Oct 20:32 UTC): Steve fall-quiet - GO
+Approved as written: one file, RUNTIME. Conditions: (1) print the changed defaults in the notes (BP-T55). (2) A parse/validator PASS by David3 is the gate; the ear check is Dave's via the QA card (Mike's PC is busy). Do NOT make it quieter than the card promises: audible 40 m, faint 90 m, silent past 110 m. (3) Merge in 790 together with kathleen-wind-soft 3655ccbd (sound only).
