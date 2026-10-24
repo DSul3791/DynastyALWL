@@ -45,3 +45,20 @@ Stability (Ark-style) stays later. Ladder climbing stays with Steve.
 4. Rough planks come from splitting a log at a chopping block (4 per log)? Recommend yes.
 5. Nails: 1 iron ingot = 20 nails at a forge? Recommend yes.
 6. Mason walls so heavy you build them where you stand (about 200 kg)? Recommend yes.
+
+## 7. Bridges: span and pier pieces (note added 24 Oct 16:00 UTC for the water design, WATER_LAND_TYPES.md 10.6; plan only)
+Same 2 m grid as every other piece, 2 m wide deck, new slot kinds `span` and `pier`. A ford (shallow, stepping stones) is terrain and needs no piece.
+| piece | tier | made of (per 2 m) | span between supports | load per span | flood behaviour |
+|---|---|---|---|---|---|
+| Log bridge span | 1 Basic / 4 Log | 2 logs as stringers + 6 sticks + 8 twine (basic) or 3 split logs (log tier) | 4 m | 300 kg (about 4 people) | washes out if water reaches the deck or flows over 2 m/s; drops 50% of its logs downstream |
+| Plank bridge span | 2 Plank / 3 Fine | 6 rough planks (or lumber) + 8 nails, no piers needed up to 4 m, rail optional (4 sticks) | 4 m | 500 kg | washes out the same way, drops 50% planks |
+| Stone bridge span | 5 Cobble / 6 Mason | 8 cobblestones + 3 mortar (or 2 mason blocks) per 2 m slab | 6 m between piers | 2,000 kg | survives; only fails if a pier fails |
+| Stone pier | 5 / 6 | 12 cobblestones + 4 mortar per metre of height, base 2 x 2 m set on the riverbed | holds the spans on both sides | carries 6,000 kg | survives to 3 m/s flow and the design flood depth; a dam breach beyond that can still take it (fails above rating) |
+| Bridge ramp (2 m, rises 0.5 m) | same as the span | half a span's materials | - | - | joins deck to bank |
+Rules:
+1. **Deck above flood height.** Placement ghost goes red ("deck is under flood level") if the underside of the deck is lower than the cell's design flood height + 0.5 m. The flood height comes from the flood plan (WATER_FLOOD_PLAN.md item 4); until it exists the rule uses the river's current depth + 1 m.
+2. **Wash-out** uses the once-per-minute footprint check already planned for placed items (10.1 point 5): water depth at the deck over `deck_clear_m` (0.3 m) or speed over the piece's `max_flow` removes the piece, drops its salvage downstream. Stone spans and piers have a very high limit.
+3. Load: heavier than rating = the span breaks (a cart, later). Player weight comes from the carry system.
+4. Data: structures.json rows `bridge_span_log`, `bridge_span_plank`, `bridge_span_stone`, `bridge_pier_stone`, `bridge_ramp` with footprint 2 x 2, `deck_clear_m`, `max_flow_ms`, `load_kg`, `tier`; recipes in the tier table; ids appended after the 30 tier states. No pieces exist today.
+5. Needs: Kathleen looks (planks, logs, stone arch, pier); Steve's flood check; mortar and cobblestone items (cobblestone exists, mortar exists as an unused material in ITEM_ORPHANS).
+Order: log and plank spans first (cheap, data plus the flood check), then pier and stone span with the stone tier.
