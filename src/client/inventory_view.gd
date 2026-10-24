@@ -1,8 +1,8 @@
 extends Node
 const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
+const LookTable := preload("res://src/client/look_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
-const PieceLook := preload("res://src/client/piece_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 
@@ -2229,7 +2229,12 @@ func _make_remains(age: float) -> Node3D:
 # The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
 # `extra` is the row's extras (remains age, carcass species).
 func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
-	match StructureLook.look_of(state):
+	var look: String = StructureLook.look_of(state)
+
+	if LookTable.has_look(look):
+		return LookTable.build(look)   # building pieces: one table in look_table.gd
+
+	match look:
 		"campfire":
 			return _make_fire(false, state == 9)
 		"lean_to":
@@ -2252,38 +2257,10 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 			return _make_smithy()
 		"big_forge":
 			return _make_big_forge(state)
-		"wall":
-			return PieceLook.wall()
-		"floor":
-			return PieceLook.floor_piece()
-		"roof":
-			return PieceLook.roof()
-		"foundation":
-			return PieceLook.foundation()
-		"prop":
-			return PieceLook.prop()
-		"set":
-			return PieceLook.timber_set()
-		"ladder":
-			return PieceLook.ladder()
-		"path":
-			return PieceLook.path()
-		"rock_pile":
-			return PieceLook.rock_pile()
-		"saw_mill":
-			return PieceLook.saw_mill()
-		"woodworking_table":
-			return PieceLook.woodworking_table()
-		"door_shut":
-			return PieceLook.doorway(false)
-		"door_open":
-			return PieceLook.doorway(true)
-		"window_wall":
-			return PieceLook.window_wall()
 		"carcass":
 			return _make_carcass(str(extra.get("sp", "")))
 
-	return _make_block()
+	return _make_block()   # the chopping block (and any name nobody drew yet) is a plain block
 
 
 # The ghost's model: a lit campfire is shown cold.
