@@ -70,13 +70,13 @@ func _init() -> void:
 	tile_b[3 * 5 + 0] = 0.9      # both wet, B deeper
 	tile_a[2 * 5 + 2] = 0.7
 	var changed: int = WaterSettler.stitch_edge(tile_a, tile_b, 5, 0)
-	check(tile_b[1 * 5 + 0] == 1.2 and tile_a[2 * 5 + 4] == 0.5 and tile_a[3 * 5 + 4] == 0.9 and tile_b[3 * 5 + 0] == 0.9, "stitch: each shared edge cell takes the deeper side on both tiles")
-	check(changed == 3 and tile_a[2 * 5 + 2] == 0.7 and tile_b[2 * 5 + 2] == 0.0, "stitch: only edge cells change (%d)" % changed)
+	check(is_equal_approx(tile_b[1 * 5 + 0], 1.2) and is_equal_approx(tile_a[2 * 5 + 4], 0.5) and is_equal_approx(tile_a[3 * 5 + 4], 0.9) and is_equal_approx(tile_b[3 * 5 + 0], 0.9), "stitch: each shared edge cell takes the deeper side on both tiles")
+	check(changed == 3 and is_equal_approx(tile_a[2 * 5 + 2], 0.7) and is_equal_approx(tile_b[2 * 5 + 2], 0.0), "stitch: only edge cells change (%d)" % changed)
 	check(WaterSettler.stitch_edge(tile_a, tile_b, 5, 0) == 0, "stitch: a second run changes nothing")
 	var tile_c: PackedFloat32Array = PackedFloat32Array()
 	tile_c.resize(25)
 	tile_a[4 * 5 + 1] = 0.8      # A's south row (row 4), column 1
-	check(WaterSettler.stitch_edge(tile_a, tile_c, 5, 1) == 1 and tile_c[1] == 0.8, "stitch south: last row of A is the first row of C")
+	check(WaterSettler.stitch_edge(tile_a, tile_c, 5, 1) == 1 and is_equal_approx(tile_c[1], 0.8), "stitch south: last row of A is the first row of C")
 	# Thin film option: off by default, on raises only river cells with enough drainage and a film between min_seen and depth_m.
 	var film_cfg: Dictionary = rules.get("film", {})
 	check(not bool(film_cfg.get("enabled", true)), "the film option is off in the rules file")
@@ -84,12 +84,12 @@ func _init() -> void:
 	var film_class: PackedByteArray = PackedByteArray([3, 3, 3, 2, 3, 3])
 	var film_flow: PackedFloat32Array = PackedFloat32Array([1000.0, 1000.0, 1.0, 1000.0, 1000.0, 1000.0])
 	var off: Dictionary = WaterSettler.film_floor(film_depth, film_class, film_flow, 8.0, film_cfg)
-	check(int(off["cells"]) == 0 and film_depth[1] == 0.05, "film off changes nothing")
+	check(int(off["cells"]) == 0 and is_equal_approx(film_depth[1], 0.05), "film off changes nothing")
 	var on_cfg: Dictionary = film_cfg.duplicate()
 	on_cfg["enabled"] = true
 	var on: Dictionary = WaterSettler.film_floor(film_depth, film_class, film_flow, 8.0, on_cfg)
 	check(int(on["cells"]) == 1 and is_equal_approx(film_depth[1], float(on_cfg["depth_m"])), "film on raises a river film with drainage")
-	check(film_depth[0] == 0.0 and film_depth[2] == 0.05 and film_depth[3] == 0.05 and film_depth[4] == 0.01 and film_depth[5] == 0.5, "and leaves dry, undrained, lake, trace and deep cells alone")
+	check(is_equal_approx(film_depth[0], 0.0) and is_equal_approx(film_depth[2], 0.05) and is_equal_approx(film_depth[3], 0.05) and is_equal_approx(film_depth[4], 0.01) and is_equal_approx(film_depth[5], 0.5), "and leaves dry, undrained, lake, trace and deep cells alone")
 	check(is_equal_approx(float(on["volume_m3"]), (float(on_cfg["depth_m"]) - 0.05) * 64.0), "the added water is counted")
 	print("water settle rules test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
