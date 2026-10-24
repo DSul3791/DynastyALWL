@@ -125,3 +125,8 @@ Note: Recommendation: Yes because the list fits the North Atlantic island (moose
 Note: Fish stay a number per area with schools that drift; no swimming fish bodies to simulate.
 Note: Recommendation: Yes because it costs almost nothing per frame and still lets players read the water.
 [check]
+
+## fish-salmon-autumn | Make the salmon run autumn-only, trout the rest of the year?
+Note: Salmon only in rivers in autumn; trout and perch the rest of the year.
+Note: Recommendation: Yes because a season gives a reason to return to the river.
+[check]
