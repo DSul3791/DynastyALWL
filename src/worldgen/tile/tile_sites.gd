@@ -409,9 +409,16 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 
 			var y: float = lerpf(start.y, target.y, t)
 
-			if y + 1.5 > _heights[index] - min_roof:
-				ok = false
-				break
+			# Follow the ground: where it dips (valley, gorge) the passage dips with it and stays under the roof limit;
+			# only the ore end itself must be deep enough.
+			var ceiling: float = _heights[index] - min_roof - 1.5
+
+			if y > ceiling:
+				if k == steps:
+					ok = false
+					break
+
+				y = ceiling
 
 			added.append([snappedf(p.x, 0.1), snappedf(y, 0.1), snappedf(p.y, 0.1), 2.5, 2.5])
 
