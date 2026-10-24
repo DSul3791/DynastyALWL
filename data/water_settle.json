@@ -1,5 +1,5 @@
 {
-	"_note": "Settled-water rules (Steve, river settle). feeders: a painted river head that no pond spring serves gets its own spring, sized from the drainage area the tile file stores (flow map): share of the base spring = (area km2 / full_km2) ^ p, between min_share and 1, i.e. Q = k * A^p with k = rate / full_km2^p. A head is a river cell with no higher water cell around it; one with a spring within near_cells (30 cells = 240 m) is served. stop: the settle runs in blocks and stops once the stored water has stopped changing (basins full and spilling) after min_ticks, or at max_ticks. version: bump when the rules change; settle_water prints it.",
+	"_note": "Settled-water rules (Steve, river settle). feeders: a painted river head that no pond spring serves gets its own spring, sized from the drainage area the tile file stores (flow map): share of the base spring = (area km2 / full_km2) ^ p, between min_share and 1, i.e. Q = k * A^p with k = rate / full_km2^p. A head is a river cell with no higher water cell around it; one with a spring within near_cells (30 cells = 240 m) is served. stop: the settle runs in blocks and stops once, in a block of check_every ticks, the stored water changed by under volume_change (5 percent) of what the springs poured in (basins full and spilling) twice running, after min_ticks, or at max_ticks. version: bump when the rules change; settle_water prints it.",
 	"version": 2,
 	"feeders": {
 		"enabled": true,
@@ -12,7 +12,7 @@
 		"check_every": 600,
 		"min_ticks": 7200,
 		"max_ticks": 21600,
-		"volume_change": 0.002,
+		"volume_change": 0.05,
 		"quiet_checks": 2
 	}
 }
