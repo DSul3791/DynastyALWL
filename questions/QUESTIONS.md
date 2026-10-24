@@ -57,11 +57,6 @@ Note: Some items still use simple models. Kathleen upgrades families in order (a
 Note: Recommendation: Yes, accept them for now; the art goal is already ordered, and fixing shapes one by one would stop terrain work.
 [check]
 
-## terrain-final-ideas | More rolling hills (27 to 30 percent of the land) for the final bake, plus mountain passes, as one terrain change?
-Note: The final bake is the last terrain build for now; every terrain change makes you Reset edits and Clear blocks again. Other climates are separate islands.
-Note: Recommendation: Yes: one final bake with the ore fix, 27 to 30 percent rolling hills and passes, because you only have to reset once. Other climate islands come later as a separate bake.
-[check]
-
 ## laptop-for-tests | Use your old laptop for tests (local_check, test_worldgen, sound tests, pictures) and keep all bakes on Mike's PC?
 Note: Steps are in tech/LAPTOP_SETUP.md. First step is a 5-minute dxdiag check: 8 GB RAM, Vulkan GPU, 20 GB free disk.
 Note: Recommendation: Yes: bakes never wait for tests, and the laptop's frame times are labelled so they are not mixed with Mike's PC.
