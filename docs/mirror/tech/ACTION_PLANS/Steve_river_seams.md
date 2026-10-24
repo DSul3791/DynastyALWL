@@ -1,0 +1,16 @@
+# Steve: river seams, thin film, fed-pond outlet (RESTART at most; settled .water files only, no tile change)
+Branch claude/steve-river-seams (on top of claude/steve-river-report2). One class of small settle fixes from the v30 report (tile 3,4: 38 inland ends).
+Measured (v30 report, 34 DOWNHILL OPEN / STEEP FALL ends): 31 carry a film of 0.03 to 0.3 m below the 0.12 m draw cutoff; 3 are truly dry (one natural 818 m head, one 1 m3/s spring with a 0.00-0.03 m stretch, one fed pond whose river out stays dry). Seams: east 30 cells / 1.06 m, south 4 cells / 0.84 m mismatch because every tile settles alone.
+1. Seam stitch (stitch_water_seams.gd + WaterSettler.stitch_edge): after the tiles of a block are settled, both sides of each shared edge take the larger depth; two passes for the four-tile corner; unit test on small grids. Halo settle (loading the neighbour's border water before settling) is the next step if the stitch leaves a visible step inside the tile; Tyler's BP-T52 suggestion 6 asks for this.
+2. Thin-film option (WaterSettler.film_floor, data/water_settle.json "film", enabled false): painted river cells with >= min_km2 drainage and settled depth between min_seen_m and depth_m are raised to depth_m; added volume printed. Look setting, default off; Dave judges on a rig shot before it is switched on.
+3. Fed-pond outlet (x53144 z73544): wait for Mike's probe from the spill cell x52976 z73368 (water 97.9 m is above the 97.0 m spill but 9 cells below the pond are dry): fix follows the numbers.
+Rules version 4. Needs Dave: only the film on/off look. Needs Mike: settle the 9 tiles, run stitch_water_seams --from=2,3 --to=4,5, rerun river_settle_report on 3,4 (seam rows), test_water_settle_rules.
+
+## Tyler reply (24 Oct 08:05 UTC) GO (parts 1 and 2 already merged as build 782; part 3 follows the numbers). Answered once.
+1. Stitch: max-of-two is right for water (water on one side only means water on both), but add a MASS note: the stitch adds volume at the seams; print the total added m3 per seam in the report and compare to the tile's total, so a seam fix cannot hide a big mistake (conservation check, the same idea as BP on seam inflow).
+2. Idempotence test: running stitch twice must change 0 cells the second time (cheap unit test); and the four-tile corner order must not matter (test both orders on a small grid).
+3. Halo settle stays the fallback; trigger it only if the seam row shows a step above 0.2 m inside 20 cells of the edge after the stitch (state the trigger as a number).
+4. Film stays OFF until Dave sees it: one rig picture, film off vs on, same camera at a river with a 0.03-0.1 m film, one card with "Tyler recommends: on for rivers with at least 0.05 km2 and not for the 3 truly dry ones". Because it raises water only for drawing, label it LOOK in the log so nobody reads it as flow.
+5. Fed-pond outlet: fix only after Mike's probe numbers, with the probe row attached to the commit message. The rules version bump to 4 does NOT invalidate saved water: only the settle tool and a test read it (checked at build 782).
+6. One rerun rule: every change to the settle rules means one settle of all 9 tiles + stitch + report in one Mike run, never tile by tile, and the 9 .water files travel in one claude/mike-bake-* commit (BP-T53).
+Label: RESTART at most. Go.

@@ -1,0 +1,10 @@
+probe from sample 890,1515 (x 53200 z 73560)
+  step 0 x 53200 z 73560 ground 97.80 class 0 depth 0.320 drainage 0.00 km2
+  step 1 x 53192 z 73552 ground 97.40 class 0 depth 0.140 drainage 0.00 km2
+  step 2 x 53184 z 73544 ground 96.50 class 0 depth 1.410 drainage 0.00 km2
+  step 3 x 53176 z 73536 ground 95.80 class 0 depth 2.360 drainage 0.00 km2
+  step 4 x 53168 z 73528 ground 94.30 class 0 depth 3.350 drainage 0.00 km2
+  step 5 x 53168 z 73520 ground 94.00 class 0 depth 4.090 drainage 0.00 km2
+  (a low point: nothing lower around it)
+  spring at x 53096 z 73584: 10.0 m3/s, 13 cells from the probe
+  spring at x 53312 z 73720: 1.0 m3/s, 24 cells from the probe

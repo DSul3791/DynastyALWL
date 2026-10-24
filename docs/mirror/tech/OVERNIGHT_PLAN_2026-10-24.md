@@ -1,5 +1,6 @@
 # Overnight plan 24-25 Oct (Tyler, 04:15 UTC). Dave: working all night. Mike is the bottleneck; times are rough (start = Mike free).
 ## Mike's queue, in order (only what NEEDS Godot / voxel / Dave's PC)
+0. (04:25 UTC, coordinator) FIRST: 2-tile seam test of Sonny's seam fix bc7282c5 (TERRAIN_VERSION 32) on claude/tyler-seam32 (head 776 + bc7282c5 + steve-river-settle 399341a4, island_checks.json kept at head's version). PROBE runs are done.
 1. Gate list 4 (tech/MERGE_CHECK_NEXT3.md): sound-1 9a2e1ba9, sound-slots 0ff7769b, shrub-lod 250730e0, mike-batch 11e03851, goal2-a e986e7e7, showroom-rows 8e79c4a0. Open the editor ONCE first (imports the oggs), then run tools/mike_batch.sh. ~25 min. Report PASS/FAIL per branch. (river-settle stays held until Steve's final hash.)
 2. Seam probe + 2-tile seam test, (4,4)+(4,5) with edge_match, then (3,4)-(3,5) and (4,4)-(5,4), when Sonny pushes the edge-flow code. ~20 min each bake, ~5 min check. Overlaps with 1: bake runs while the editor tests wait.
 3. Tree-belt run: Kathleen's slope-band count table (headless) + ONE before/after picture at x 52474 z 72888 facing south on v29 ground. ~10 min.

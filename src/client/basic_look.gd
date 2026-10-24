@@ -239,8 +239,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.034, 0.03, Vector3(0.19, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # lashing
 			_cyl(parts, 0.034, 0.03, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))
 		"pick":
+			# A pickaxe: eye block on the haft, a long head that curves down to a point at each end, and a wedge at the haft's end.
 			_handle(parts, 0.6)
-			_box(parts, Vector3(0.04, 0.04, 0.3), Vector3(0.27, 0.0, 0.0), color)
+			_box(parts, Vector3(0.05, 0.05, 0.06), Vector3(0.27, 0.0, 0.0), dark)                                   # the eye the head sits in
+			_box(parts, Vector3(0.04, 0.04, 0.16), Vector3(0.27, 0.0, 0.0), color)                                  # middle of the head
+			for side in [-1.0, 1.0]:
+				_box_rot(parts, Vector3(0.035, 0.035, 0.1), Vector3(0.265, -0.012, side * 0.12), Vector3(side * 0.35, 0.0, 0.0), color)   # head sweeps down
+				_box_rot(parts, Vector3(0.018, 0.018, 0.07), Vector3(0.25, -0.045, side * 0.195), Vector3(side * 0.6, 0.0, 0.0), light)   # the points
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
 			_handle(parts, 0.75)
@@ -259,8 +264,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box_rot(parts, Vector3(0.012, 0.17, 0.1), Vector3(0.5, 0.0, 0.1), Vector3(0.0, -0.25, 0.0), color)           # the flat blade, wide across
 			_box_rot(parts, Vector3(0.012, 0.17, 0.015), Vector3(0.5, 0.0, 0.147), Vector3(0.0, -0.25, 0.0), light)       # the sharpened lower edge
 		"knife":
+			# A knife: a rounded grip, a small guard, and a blade with a thick back and a thin pointed edge.
 			_handle(parts, 0.14)
-			_box(parts, Vector3(0.13, 0.015, 0.035), Vector3(0.12, 0.0, 0.0), color)
+			_box(parts, Vector3(0.015, 0.03, 0.045), Vector3(0.05, 0.0, 0.0), dark)                                 # guard
+			_box(parts, Vector3(0.1, 0.012, 0.03), Vector3(0.115, 0.0, 0.0), color)                                 # blade body
+			_box(parts, Vector3(0.1, 0.006, 0.012), Vector3(0.115, 0.0, 0.017), light)                              # the edge
+			_cone(parts, 0.016, 0.05, Vector3(0.2, 0.0, 0.0), color)                                                # the point
 		"needle":
 			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 		"rod":

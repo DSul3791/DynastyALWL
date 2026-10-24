@@ -33,6 +33,7 @@ func _init() -> void:
 	var window: int = 150
 	var min_cells: int = 60
 	var spring: float = 10.0
+	var probe: Vector2 = Vector2(-1.0, -1.0)      # --probe=X,Z: walk steepest-down from this world spot and print ground, class, depth, drainage and springs
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):
@@ -44,6 +45,9 @@ func _init() -> void:
 			window = int(argument.trim_prefix("--window="))
 		elif argument.begins_with("--min-cells="):
 			min_cells = int(argument.trim_prefix("--min-cells="))
+		elif argument.begins_with("--probe="):
+			var at_parts: PackedStringArray = argument.trim_prefix("--probe=").split(",")
+			probe = Vector2(float(at_parts[0]), float(at_parts[1]))
 		elif argument.begins_with("--spring="):
 			spring = float(argument.trim_prefix("--spring="))
 
@@ -95,6 +99,12 @@ func _init() -> void:
 	for value in _flow:
 		flow_max = maxf(flow_max, value)
 
+	if probe.x >= 0.0:
+		_probe(data, depth, side, probe)
+		quit(0)
+		return
+
+	_continuity(data, depth, side)
 	print("flow map: %d values, biggest %.0f drained cells" % [_flow.size(), flow_max])
 	var body: PackedInt32Array = PackedInt32Array()
 	body.resize(side * side)
@@ -163,6 +173,44 @@ func _collect(data, depth: PackedFloat32Array, side: int, start: int, body: Pack
 	return members
 
 
+# How many of the 3 cells below the spill (steepest way down) hold water of WET_M or more.
+func _wet_below(data, depth: PackedFloat32Array, side: int, spill: int) -> int:
+	var at: int = spill
+	var wet: int = 0
+
+	for step in range(3):
+		var ai: int = at % side
+		var aj: int = floori(float(at) / float(side))
+		var best: int = at
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				var ni: int = ai + di
+				var nj: int = aj + dj
+
+				if (di != 0 or dj != 0) and ni >= 0 and nj >= 0 and ni < side and nj < side and data.heights[nj * side + ni] < data.heights[best]:
+					best = nj * side + ni
+
+		if best == at:
+			break
+
+		at = best
+		wet += 1 if depth[at] >= WET_M else 0
+
+	return wet
+
+
+# Distance in cells from any cell of the body to the nearest settler spring.
+func _nearest_spring(members: PackedInt32Array, side: int) -> float:
+	var nearest: float = INF
+
+	for k in members:
+		for n in range(_spring_cells.size()):
+			nearest = minf(nearest, Vector2(float(k % side - _spring_cells[n] % side), float(floori(float(k) / float(side)) - floori(float(_spring_cells[n]) / float(side)))).length())
+
+	return nearest
+
+
 # Why the feeder rule skipped this body: the classes of its cells, the best outlet flow the rule sees from any of its cells (reach 20), and the nearest
 # spring in cells (the rule needs at least near_cells = 30 to add one).
 func _why_unfed(data, side: int, members: PackedInt32Array) -> String:
@@ -184,6 +232,61 @@ func _why_unfed(data, side: int, members: PackedInt32Array) -> String:
 			nearest = minf(nearest, Vector2(float(k % side - _spring_cells[n] % side), float(floori(float(k) / float(side)) - floori(float(_spring_cells[n]) / float(side)))).length())
 
 	return "[diag: %d lake cells, %d river cells, best outlet flow %.0f, nearest spring %.0f cells]" % [lake, river, outlet, nearest]
+
+
+# --probe: from the cell nearest the spot, 80 steps steepest-down (and the 8 neighbours' lowest): world x z, ground, class, settled depth, drainage in km2, and
+# the springs within 40 cells with their rates. Shows where a river's water stops and what feeds the head.
+func _probe(data, depth: PackedFloat32Array, side: int, spot: Vector2) -> void:
+	var ci: int = clampi(int(round((spot.x - data.x0) / data.spacing_m)), 0, side - 1)
+	var cj: int = clampi(int(round((spot.y - data.z0) / data.spacing_m)), 0, side - 1)
+	var at: int = cj * side + ci
+	print("probe from sample %d,%d (x %.0f z %.0f)" % [ci, cj, data.x0 + float(ci) * data.spacing_m, data.z0 + float(cj) * data.spacing_m])
+
+	for step in range(80):
+		var ai: int = at % side
+		var aj: int = floori(float(at) / float(side))
+		var km2: float = _flow[at] * data.spacing_m * data.spacing_m / 1.0e6 if _flow.size() == data.heights.size() else -1.0
+		print("  step %d x %.0f z %.0f ground %.2f class %d depth %.3f drainage %.2f km2" % [step, data.x0 + float(ai) * data.spacing_m, data.z0 + float(aj) * data.spacing_m, data.heights[at], data.water_class[at], depth[at], km2])
+		var best: int = at
+
+		for dj in range(-1, 2):
+			for di in range(-1, 2):
+				var ni: int = ai + di
+				var nj: int = aj + dj
+
+				if (di != 0 or dj != 0) and ni >= 0 and nj >= 0 and ni < side and nj < side and data.heights[nj * side + ni] < data.heights[best]:
+					best = nj * side + ni
+
+		if best == at:
+			print("  (a low point: nothing lower around it)")
+			break
+
+		at = best
+
+	for n in range(_spring_cells.size()):
+		var si: int = _spring_cells[n] % side
+		var sj: int = floori(float(_spring_cells[n]) / float(side))
+
+		if Vector2(float(si - ci), float(sj - cj)).length() <= 40.0:
+			print("  spring at x %.0f z %.0f: %.1f m3/s, %.0f cells from the probe" % [data.x0 + float(si) * data.spacing_m, data.z0 + float(sj) * data.spacing_m, _spring_rates[n], Vector2(float(si - ci), float(sj - cj)).length()])
+
+
+# The river line as the player sees it: of all painted river cells above the sea, the share with water of WET_M or more, the share with only a film
+# (a quarter of WET_M up to WET_M: a thin sheet, shown as nothing) and the dry rest. One number to compare runs by.
+func _continuity(data, depth: PackedFloat32Array, side: int) -> void:
+	var total: int = 0
+	var wet: int = 0
+	var film: int = 0
+
+	for k in range(side * side):
+		if data.water_class[k] != WaterSettler.RIVER or data.heights[k] <= 0.0:
+			continue
+
+		total += 1
+		wet += 1 if depth[k] >= WET_M else 0
+		film += 1 if depth[k] >= 0.25 * WET_M and depth[k] < WET_M else 0
+
+	print("river continuity: %d painted river cells above the sea, %.1f%% carry water (%.2f m or more), %.1f%% only a film, %.1f%% dry" % [total, 100.0 * float(wet) / maxf(float(total), 1.0), WET_M, 100.0 * float(film) / maxf(float(total), 1.0), 100.0 * float(total - wet - film) / maxf(float(total), 1.0)])
 
 
 # Hand-off at the tile borders (pad step 6): the edge row/column is shared with the neighbour tile, so settled depth there must match. Per border: wet
@@ -266,12 +369,16 @@ func _describe(data, depth: PackedFloat32Array, side: int, spacing: float, membe
 		kind = "STEEP FALL (the ground drops over 1 m per cell below the spill: the water leaves as a film or a fall, not a stop)"
 	elif not bool(flood["closed"]) and rim - ground_end < 0.3:
 		kind = "DOWNHILL OPEN (the ground runs on downhill from the end, no pit: the water ran out or was lost; settler volume)"
-	elif bool(flood["closed"]) and carries == "no painted river below":
+	elif bool(flood["closed"]) and carries.begins_with("no painted river below"):
 		kind = "PIT (terrain: no spill route inside the window, no painted river below)"
 	elif missing > 0.5 * fill and fill > 0.0:
 		kind = "NOT FULL (basin %.0f%% full: water never reached the spill)" % (100.0 * stored / maxf(fill, 1.0))
-	elif carries == "no painted river below":
-		kind = "NATURAL POND (full at its rim, no painted river runs out of it: correct as it is)"
+	elif carries.begins_with("no painted river below"):
+		kind = "NATURAL POND (full at its rim, no painted RIVER runs out of it" + (", a lower pond is " + carries.get_slice("lower pond ", 1) if carries.contains("lower pond ") else "") + ": correct as it is)"
+	elif missing <= 0.1 * fill and _wet_below(data, depth, side, int(flood["spill"])) >= 2:
+		kind = "FED POND, FLOWS ON (water of %.2f m or more in %d of the 3 cells below the spill: the river runs, the first painted river cell is just farther on)" % [WET_M, _wet_below(data, depth, side, int(flood["spill"]))]
+	elif missing <= 0.1 * fill and _nearest_spring(members, side) <= 30.0:
+		kind = "FED POND, RIVER OUT STILL DRY (a spring is %.0f cells from the pond, it is full at its rim and a painted river leaves it, but nothing runs: the outlet notch or the spill cell is the thing to check) " % _nearest_spring(members, side) + _why_unfed(data, side, members)
 	elif missing <= 0.1 * fill:
 		kind = "POND WITH RIVER OUT BUT UNFED (full at its rim, a painted river leaves it and stays dry: needs a spring; settler rules v3 feeds these) " + _why_unfed(data, side, members)
 	else:
@@ -484,6 +591,7 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 	var ground: float = data.heights[ej * side + ei]
 	var closest: float = INF
 	var drop: float = 0.0
+	var pond_closest: float = INF
 
 	for dj in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
 		for di in range(-CONTINUES_SEARCH, CONTINUES_SEARCH + 1):
@@ -499,12 +607,15 @@ func _continues(data, side: int, ei: int, ej: int) -> String:
 			if (painted == 2 or painted == 3) and data.heights[k] < ground - 0.3:
 				var d: float = sqrt(float(di * di + dj * dj))
 
-				if d < closest:
+				if painted == 3 and d < closest:
 					closest = d
 					drop = ground - data.heights[k]
+				elif painted == 2:
+					pond_closest = minf(pond_closest, d)
 
 	if closest == INF:
-		return "no painted river below"
+		# Only another pond lower down (a pond chain, joined by no painted river): not a river that should run.
+		return "no painted river below" + (" (lower pond %.0f m away)" % (pond_closest * data.spacing_m) if pond_closest < INF else "")
 
 	return "carries on %.0f m away, %.1f m lower" % [closest * data.spacing_m, drop]
 

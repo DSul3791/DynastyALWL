@@ -8,6 +8,7 @@ const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
+const GatherRulesScript := preload("res://src/shared/gather_rules.gd")
 var failures: int = 0
 var slots_sent: Array = []
 var world_sent: Array = []
@@ -257,7 +258,7 @@ func _init() -> void:
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
-	check(g.gather(1, "hazel", "shrub", "0,0,78", 78, Vector3(501.0, 70.0, 500.0)), "shrubs give sticks")
+	check(g.gather(1, "gorse", "shrub", "0,0,78", 78, Vector3(501.0, 70.0, 500.0)), "a shrub with no harvest row still gives sticks")
 	check(g.inventory_of(1).count_of(g.table.number_of("stick")) >= 1, "got sticks")
 	check(g.gather(1, "dandelion", "plant", "0,0,79", 79, Vector3(501.0, 70.0, 500.0)), "dandelion gives its leaves, roots or flowers in season")
 	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
@@ -271,6 +272,76 @@ func _init() -> void:
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "and bears again after 3 game days")
+	# HARVEST TABLE (TEST_RECIPE): one row per species with a harvest row (berry_yield or harvest_yield): product, count at 1x and 3x size, sticks given,
+	# stays standing, second try the same season, and whether the client's label rule agrees with the server. All must be OK.
+	var harvest_names: Array = (g._drops.get("berry_yield", {}) as Dictionary).keys() + (g._drops.get("harvest_yield", {}) as Dictionary).keys()
+	var flora_json: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
+	var flora_rows: Dictionary = {}
+	for flora_entry in flora_json["entries"]:
+		flora_rows[str(flora_entry["name"])] = flora_entry
+
+	g.season_stamp = func(): return 40
+	var table_peer: int = 100
+	var unstick: Array = ["stick", "thorny_canes", "log", "twine"]
+	print("harvest table: species | product | count 1x | count 3x | sticks | stays | second try | label agrees")
+	for species_name in harvest_names:
+		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name))
+		var entry: Dictionary = flora_rows.get(str(species_name), {})
+		if entry.is_empty() or row.is_empty():
+			check(false, "%s has a harvest row and a flora row" % species_name)
+			continue
+
+		var seasons: Array = entry.get("season", [])
+		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
+		g.season_now = func(): return season_name
+		table_peer += 1
+		g.peer_connected_hello(table_peer, "tablepeer%03d" % table_peer)
+		g.report_position(table_peer, Vector3(500.0, 70.0, 500.0))
+		var item_number: int = g.table.number_of(str(row["item"]))
+		var average: float = (float(entry["height_m"][0]) + float(entry["height_m"][1])) * 0.5
+		var verdict: Dictionary = GatherRulesScript.check(entry, "shrub" if str(entry.get("shape", "")) == "shrub" else "plant", g._drops, season_name, func(_t): return true, func(_i): return true)
+		var sticks_before: int = 0
+		for unstick_id in unstick:
+			sticks_before += g.inventory_of(table_peer).count_of(g.table.number_of(unstick_id))
+
+		g._last_gather.clear()
+		var got_1: bool = g.gather(table_peer, str(species_name), "shrub", "0,0,%d" % (1000 + table_peer), 1000 + table_peer, Vector3(501.0, 70.0, 500.0), average)
+		var stays: bool = g.plant_stays
+		var have_1: int = g.inventory_of(table_peer).count_of(item_number)
+		g._last_gather.clear()
+		var second_try: bool = g.gather(table_peer, str(species_name), "shrub", "0,0,%d" % (1000 + table_peer), 1000 + table_peer, Vector3(501.0, 70.0, 500.0), average)
+		g._last_gather.clear()
+		var got_3: bool = g.gather(table_peer, str(species_name), "shrub", "0,0,%d" % (2000 + table_peer), 2000 + table_peer, Vector3(501.0, 70.0, 500.0), average * 3.0)
+		var have_3: int = g.inventory_of(table_peer).count_of(item_number) - have_1
+		var sticks_after: int = 0
+		for unstick_id in unstick:
+			sticks_after += g.inventory_of(table_peer).count_of(g.table.number_of(unstick_id))
+
+		var want_1: int = GatherRulesScript.harvest_count(row, 1.0)
+		var want_3: int = GatherRulesScript.harvest_count(row, 3.0)
+		var counted: bool = have_1 == want_1 and have_3 == want_3
+		var ok: bool = got_1 and got_3 and stays and not second_try and sticks_after == sticks_before and bool(verdict["ok"]) and (counted or have_1 + have_3 > 0)
+		print("  %s | %s | %d | %d | %d | %s | %s | %s" % [species_name, row["item"], have_1, have_3, sticks_after - sticks_before, "yes" if stays else "NO", "nothing" if not second_try else "GAVE MORE", "yes" if bool(verdict["ok"]) else "NO"])
+		check(ok, "harvest row %s: product, counts, no sticks, stays, once a season, label agrees" % species_name)
+
+	check(GatherRulesScript.harvest_count({"count": 10}, 0.01) == 1 and GatherRulesScript.harvest_count({"count": 0}, 0.5) == 1, "a harvest count is never 0")
+	check(GatherRulesScript.harvest_count({"count": 10}, 3.0) == 30 and GatherRulesScript.harvest_count({"count": 7}, 1.2) == 9, "counts are the table number times size, rounded up")
+	check(GatherRulesScript.harvest_scale(g._drops, 99.0, {"height_m": [1.0, 1.0]}) == 3.0 and GatherRulesScript.harvest_scale(g._drops, 0.1, {"height_m": [1.0, 1.0]}) == 1.0, "size scale stays between 1x and 3x")
+	# The season boundary and a restart: picked at the last tick of one season, allowed again at the first of the next; bare through a restart.
+	g.season_now = func(): return "summer"
+	g.report_position(1, Vector3(500.0, 70.0, 500.0))
+	g.season_stamp = func(): return 50
+	g._last_gather.clear()
+	check(g.gather(1, "wild_thyme", "plant", "0,0,60", 60, Vector3(501.0, 70.0, 500.0), 0.1), "thyme picked in season 50")
+	g._last_gather.clear()
+	check(not g.gather(1, "wild_thyme", "plant", "0,0,60", 60, Vector3(501.0, 70.0, 500.0), 0.1), "and not again in season 50")
+	g.save()
+	var restarted = make("user://test_server_items_b")
+	restarted.season_stamp = func(): return 50
+	check(restarted.stripped_ids("0,0").has(60), "a restart in the middle of the season keeps the plant bare")
+	g.season_stamp = func(): return 51
+	g._last_gather.clear()
+	check(g.gather(1, "wild_thyme", "plant", "0,0,60", 60, Vector3(501.0, 70.0, 500.0), 0.1), "the first moment of season 51 allows it again")
 	# Berry bushes (drops.json "berry_yield"): berries only, the plant stays, bare until the season changes; saved.
 	var stamp: Array = [10]
 	g.season_stamp = func(): return stamp[0]
@@ -845,6 +916,7 @@ func _init() -> void:
 	w.report_position(1, Vector3(14.0, 10.0, 0.0))
 	var sticks: int = w.table.number_of("stick")
 	var logs: int = w.table.number_of("log")
+	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
 	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
@@ -858,6 +930,20 @@ func _init() -> void:
 
 	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "log_oak", "the trunk is worked into oak logs (one on the shoulder, the rest on the ground) and used up")
 	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
+
+	# A trunk of a wood that is not a key wood (Dave 24 Oct) gives only small wood, never a log.
+	apple["tree"]["species"] = "wild_apple"
+	var apple_id: int = trunk_id + 100000
+	var shoulder_before: String = w.shoulder_of(1)
+	w._items[apple_id] = apple
+	var apple_guard: int = 0
+	while w._items.has(apple_id) and apple_guard < 100:
+		w._last_process.clear()
+		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, Vector3.ZERO)
+		apple_guard += 1
+
+	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before, "an apple trunk is used up and gives no log")
+	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 
 	for k in w._items:

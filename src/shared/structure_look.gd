@@ -25,7 +25,7 @@ static func table() -> Dictionary:
 			var state: int = int(def.get("state", -1))
 
 			if state >= 0 and not _table.has(state) and def.has("look"):
-				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true))}
+				_table[state] = {"look": str(def["look"]), "sound": str(def.get("sound", "thump")), "clears_grass": bool(def.get("clears_grass", true)), "material": str(def.get("material", ""))}
 
 	_table[12] = _table.get(11, {"look": "remains", "sound": "thump", "clears_grass": true})
 	return _table
@@ -38,6 +38,11 @@ static func look_of(state: int) -> String:
 # The placed-sound kind of a state, "" when it makes none.
 static func sound_of(state: int) -> String:
 	return str(table().get(state, {}).get("sound", ""))
+
+
+# The material the piece is made of (structures.json "material": wood, iron, steel ...), "" when it has none. Never inferred from a name.
+static func material_of(state: int) -> String:
+	return str(table().get(state, {}).get("material", ""))
 
 
 # True when a placed thing of this state clears grass around it.

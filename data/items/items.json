@@ -1153,7 +1153,8 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_beech": {
 			"number": 104,
@@ -1164,7 +1165,8 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_beech": {
 			"number": 105,
@@ -1175,7 +1177,8 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_birch": {
 			"number": 106,
@@ -1289,7 +1292,8 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_alder": {
 			"number": 116,
@@ -1300,7 +1304,8 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_alder": {
 			"number": 117,
@@ -1311,7 +1316,8 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_willow": {
 			"number": 118,
@@ -1323,7 +1329,8 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_willow": {
 			"number": 119,
@@ -1334,7 +1341,8 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_willow": {
 			"number": 120,
@@ -1345,7 +1353,8 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_coconut_palm": {
 			"number": 121,
@@ -1357,7 +1366,8 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_coconut_palm": {
 			"number": 122,
@@ -1368,7 +1378,8 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_coconut_palm": {
 			"number": 123,
@@ -1379,7 +1390,8 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_tropical_hardwood": {
 			"number": 124,
@@ -1425,7 +1437,8 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_acacia": {
 			"number": 128,
@@ -1436,7 +1449,8 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_acacia": {
 			"number": 129,
@@ -1447,7 +1461,8 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_mangrove": {
 			"number": 130,
@@ -1459,7 +1474,8 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_mangrove": {
 			"number": 131,
@@ -1470,7 +1486,8 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_mangrove": {
 			"number": 132,
@@ -1481,7 +1498,8 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_rowan": {
 			"number": 133,
@@ -1493,7 +1511,8 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_rowan": {
 			"number": 134,
@@ -1504,7 +1523,8 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_rowan": {
 			"number": 135,
@@ -1515,7 +1535,8 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_apple": {
 			"number": 136,
@@ -1527,7 +1548,8 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_apple": {
 			"number": 137,
@@ -1538,7 +1560,8 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_apple": {
 			"number": 138,
@@ -1549,7 +1572,8 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_pear": {
 			"number": 139,
@@ -1561,7 +1585,8 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_pear": {
 			"number": 140,
@@ -1572,7 +1597,8 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_pear": {
 			"number": 141,
@@ -1583,7 +1609,8 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_cherry": {
 			"number": 142,
@@ -1595,7 +1622,8 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_cherry": {
 			"number": 143,
@@ -1606,7 +1634,8 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_cherry": {
 			"number": 144,
@@ -1617,7 +1646,8 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_sweet_chestnut": {
 			"number": 145,
@@ -1629,7 +1659,8 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_sweet_chestnut": {
 			"number": 146,
@@ -1640,7 +1671,8 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_sweet_chestnut": {
 			"number": 147,
@@ -1651,7 +1683,8 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_walnut": {
 			"number": 148,
@@ -1697,7 +1730,8 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_date_palm": {
 			"number": 152,
@@ -1708,7 +1742,8 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_date_palm": {
 			"number": 153,
@@ -1719,7 +1754,8 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_mirrorbark": {
 			"number": 154,
@@ -1731,7 +1767,8 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_mirrorbark": {
 			"number": 155,
@@ -1742,7 +1779,8 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_mirrorbark": {
 			"number": 156,
@@ -1753,7 +1791,8 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wardpine": {
 			"number": 157,
@@ -1765,7 +1804,8 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wardpine": {
 			"number": 158,
@@ -1776,7 +1816,8 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wardpine": {
 			"number": 159,
@@ -1787,7 +1828,8 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_hearthwood": {
 			"number": 160,
@@ -1799,7 +1841,8 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_hearthwood": {
 			"number": 161,
@@ -1810,7 +1853,8 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_hearthwood": {
 			"number": 162,
@@ -1821,7 +1865,8 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_everember": {
 			"number": 163,
@@ -1833,7 +1878,8 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_everember": {
 			"number": 164,
@@ -1844,7 +1890,8 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_everember": {
 			"number": 165,
@@ -1855,7 +1902,8 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_witness_tree": {
 			"number": 166,
@@ -1867,7 +1915,8 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_witness_tree": {
 			"number": 167,
@@ -1878,7 +1927,8 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_witness_tree": {
 			"number": 168,
@@ -1889,7 +1939,8 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_balsam_fir": {
 			"number": 169,
@@ -1901,7 +1952,8 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_balsam_fir": {
 			"number": 170,
@@ -1912,7 +1964,8 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_balsam_fir": {
 			"number": 171,
@@ -1923,7 +1976,8 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_maple": {
 			"number": 172,
