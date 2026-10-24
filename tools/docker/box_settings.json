@@ -1,16 +1,39 @@
 {
+  "model": "sonnet",
   "permissions": {
     "allow": [
       "Bash(run_jobs.sh:*)",
       "Bash(/opt/godot/godot:*)",
-      "Bash(git status:*)", "Bash(git fetch:*)", "Bash(git log:*)", "Bash(git diff:*)", "Bash(git branch:*)",
-      "Bash(git checkout:*)", "Bash(git merge:*)", "Bash(git add:*)", "Bash(git commit:*)", "Bash(git push origin claude/*)",
-      "Bash(python3 tools/*)", "Bash(bash tools/*)", "Bash(ls:*)", "Bash(cat:*)", "Bash(grep:*)", "Bash(tail:*)", "Bash(head:*)",
-      "Read(/work/repo/**)", "Read(/out/**)", "Edit(/work/repo/**)", "Write(/out/**)"
+      "Bash(git status:*)",
+      "Bash(git fetch:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin claude/*)",
+      "Bash(python3 tools/*)",
+      "Bash(bash tools/*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Read(/work/repo/**)",
+      "Read(/out/**)",
+      "Edit(/work/repo/**)",
+      "Write(/out/**)"
     ],
     "deny": [
-      "Bash(sudo:*)", "Bash(rm -rf /:*)", "Bash(git push origin main:*)", "Bash(git push --force:*)", "Bash(git push -f:*)",
-      "Read(/home/tester/.ssh/id_ed25519)", "Read(/home/tester/.claude-box/.credentials.json)"
+      "Bash(sudo:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Read(/home/tester/.ssh/id_ed25519)",
+      "Read(/home/tester/.claude-box/.credentials.json)"
     ]
   }
 }

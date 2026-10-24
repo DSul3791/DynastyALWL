@@ -115,6 +115,7 @@ case "${1:-selftest}" in
 	gitcheck) gitcheck; finish;;
 	validate) validate; finish;;
 	shot) guard; shift; exec bash /opt/box/shot.sh "$@";;
+	claude) shift; cd /work/repo 2>/dev/null; exec claude "$@";;
 	godot) shift; cd /work/repo 2>/dev/null; exec "$GODOT_EXE" "$@";;
 	update) update; finish;;
 	tests) guard; shift; update; selftest; basics; for N in "$@"; do run_test "$N"; done; finish;;

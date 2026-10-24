@@ -24,7 +24,7 @@ One container `dynasty-testbox`: Godot 4.7.2 + Voxel Tools 1.7 (+ the water core
 10. `docker compose run --rm testbox selftest` must print `SELFTEST_PASS` and `Test done: 2 pass, 0 fail`.
 
 **E. Claude Code ("David3", works like MikeW: we message it, it runs the jobs)**
-11. First sign-in (you, once, in your own browser): `docker compose run --rm testbox claude`, type `/login`, choose your Claude account, open the URL it prints in your browser, finish there, then `/exit`. Nothing is pasted into chat or stored in the repo.
+11. First sign-in (you, once, in your own browser): `docker compose run --rm testbox claude` (it opens Claude Code; at its prompt, not at the shell, type `/login`), choose your Claude account, open the URL it prints in your browser, finish there, then `/exit`. Nothing is pasted into chat or stored in the repo.
 12. `docker compose run --rm david3` once (answer `y` to "Trust directory?" and "Enable Remote Control?", then Ctrl+C). Then `docker compose up -d david3`. From now on it starts by itself after a reboot (restart: unless-stopped) and shows up as "David3 test box" in claude.ai/code.
 13. Needs your OK: the Remote Control toggle if your plan is Team or Enterprise; the deploy key's write access.
 14. Pause everything: `touch /data/godot/box/out/PAUSE` (remove the file to resume). Jobs also refuse to start if the server load is 6 or more. Stop it: `docker compose stop david3`.
