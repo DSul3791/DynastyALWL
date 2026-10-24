@@ -2128,13 +2128,22 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 	return _chain_to(node, ancestor).origin
 
 
+# Is a lit fire (any tier) within r metres of a point? Display only.
+func _lit_fire_near(pos: Vector3, r: float) -> bool:
+	for fire_id in _world:
+		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach
 		for fire_id in _world:
-			if int(_world[fire_id]["state"]) == 1 and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
 				return true
 
 		return false
@@ -2146,6 +2155,9 @@ func station_near(station: String, level: int = 1) -> bool:
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+			if station == "tripod_pot" and not _lit_fire_near(_world[id]["pos"], 2.5):
+				continue   # the pot cooks only with a lit fire beside it
+
 			return true
 
 		if int(def.get("also", {}).get(station, 0)) >= level:

@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 163,
+	"next_number": 164,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -922,6 +922,30 @@
 				1
 			],
 			"craft_s": 10.0,
+			"known": true
+		},
+		"tripod_pot_kit": {
+			"number": 163,
+			"name": "Tripod pot",
+			"needs": [
+				[
+					"stick",
+					3
+				],
+				[
+					"twine",
+					5
+				],
+				[
+					"clay_pot",
+					1
+				]
+			],
+			"gives": [
+				"tripod_pot_kit",
+				1
+			],
+			"craft_s": 15.0,
 			"known": true
 		},
 		"workbench_kit": {
@@ -1987,7 +2011,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_nut_paste": {
@@ -2008,7 +2032,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_roast_roots": {
@@ -2050,7 +2074,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_baked_apples": {
@@ -2250,7 +2274,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_forager_stew": {
@@ -2279,7 +2303,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_fish_stew": {
@@ -2308,7 +2332,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_trail_bread": {
@@ -2370,7 +2394,7 @@
 				3
 			],
 			"craft_s": 14.0,
-			"station": "campfire",
+			"station": "tripod_pot",
 			"known": true
 		},
 		"cook_feast_roast": {

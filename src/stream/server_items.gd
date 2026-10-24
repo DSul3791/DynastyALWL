@@ -87,6 +87,7 @@ const STRUCTURES_PATH := "res://data/items/structures.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
+const TRIPOD_FIRE_M := 2.5               # a tripod pot cooks only with a lit fire this close
 const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the campfire; cooking.json fire_tiers)
 const FIRE_STATE_BONFIRE := 41
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
@@ -6030,6 +6031,18 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 			continue
 
 		if station_level_of(it, def, station) >= level:
+			if station == "tripod_pot" and not _lit_fire_within(it["pos"], TRIPOD_FIRE_M):
+				continue   # the pot hangs over a fire: with no lit fire beside it nothing cooks (and nothing is lost)
+
+			return true
+
+	return false
+
+
+# Is a lit fire (any tier) within r metres of a point?
+func _lit_fire_within(pos: Vector3, r: float) -> bool:
+	for row in _lit_rows():
+		if (row[0] as Vector3).distance_to(pos) <= r:
 			return true
 
 	return false
