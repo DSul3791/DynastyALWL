@@ -1,0 +1,46 @@
+PROBE frame origin 5360,7280 cell 731,1670
+PROBE r-8    13d--    10d--     9d--     8d--    35d--     7d--     5d--     4d--     3d--     2d--    18d--     2d--     1d--     6S--     6S--    16S--     3S--
+PROBE r-7    11d--    19d--     9W--    36d--     8d--     6d--     5d--     4d--     3d--    19d--     3S--     2d--     1d--     7d--     7S--    17S--     4S--
+PROBE r-6    20d--     1d--    37d--     9d--     7d--     6d--     5d--     4d--    20d--     1d--     6d--     2S--     8S--     1S--     8S--    18S--     5S--
+PROBE r-5     2d--    38d--    10d--     8d--     7d--     6d--     5S--    21d--     2d--     7d--     1d--     3S--     9S--     2S--     9d--    19d--     6d--
+PROBE r-4    39d--    11d--     9d--     8d--     7S--     1S--    27d--     3d--     8d--     2d--     1S--     4S--    10S--    12S--    20d--     7d--    37d--
+PROBE r-3    12d--    10d--     9S--     1d--     8S--    29S--     4d--     9d--     3d--     1d--     2S--     5S--    11S--    33S--     8d--    38d--     2d--
+PROBE r-2    11d--     1d--    11d--     1S--     9S--    34d--    10d--     4d--     2d--     1d--     3S--     6S--    12d--    42d--    39d--     3d--  7807d--
+PROBE r-1     2d--    12d--     1d--     2S--    44d--    11d--     5d--     3d--     2d--     1d--     4d--    19d--    43d--    40d--     4d--  7808d--     3d--
+PROBE r+0    13d--     2d--     1d--    47d--    12d--     6d--     4d--     3d--     2S--     5S--    20d--    44d--    41d--     5d--  7809d--     4d--     2S--
+PROBE r+1     3d--     2d--    48d--    13d--     7d--     5d--     4S--     1S--     3S--    26S--    45d--    42d--     6d--  7810d--     5S--     1S--     3S--
+PROBE r+2     3d--    49S--    14d--     8d--     6d--     1d--     5S--     2S--     4S--    72d--    43d--     7d--  7811d--     1d--     6S--     2S--     4S--
+PROBE r+3     1d--    64S--     9d--     7d--     2d--     1d--     6d--     3d--    77d--    44d--     8d-c  7812d--     2d--     1d--     7S--     3d--     8d--
+PROBE r+4     1S--    74S--     8d--     3d--     2d--     7d--     4d--    78d--    45d--     9d-c  7813d-c     3d-c     2d--     1d--    11d--     9d--     2d--
+PROBE r+5     2S--    83S--     4d--     3d--     8d--     5d--    79d--    46d--    10d-c  7814d-c     4d-c     3S--     2S--    12S--    10d--     3d--     8d--
+PROBE r+6     3S--    88S--     4d--     9d--     6d--    80d--    47d--    11d-c  7815d-c     5d-c     1d--     4d--     3d--    27d--     4W--     9d--    20d--
+PROBE r+7     4S--    93S--    10d--     7d--    81d--    48d--    12d-c  7816d-c     6d-c     2d--     5d--     4d--    28d--     1d--    10d--    21d--    87d-c
+PROBE r+8     5S--   104S--     8d--    82d--    49d--    13d-c  7817d-c     7d-c     3d--     6d--     5d--    29d--     2d--    11d--    22d--    88d-c  8335d-c
+PROBE up start world 48792,71664 Q 8335
+PROBE up 0 world 48800,71656 Q 8334
+PROBE up 10 world 48880,71600 Q 8295
+PROBE up 20 world 48960,71552 Q 8145
+PROBE up 30 world 49024,71472 Q 8081
+PROBE up 40 world 49104,71448 Q 8012
+PROBE up 50 world 49184,71448 Q 8002
+PROBE up 60 world 49264,71440 Q 7953
+PROBE up 70 world 49344,71440 Q 7804
+PROBE up 80 world 49424,71424 Q 7758
+PROBE up 90 world 49504,71368 Q 7690
+PROBE up 100 world 49584,71336 Q 7439
+PROBE up 110 world 49632,71288 Q 3077
+PROBE up 120 world 49712,71224 Q 1677
+PROBE up 130 world 49792,71152 Q 885
+PROBE up 140 world 49872,71072 Q 875
+PROBE up 150 world 49944,70992 Q 858
+PROBE up 160 world 49968,70912 Q 286
+PROBE up 170 world 50040,70840 Q 234
+PROBE up 180 world 50120,70800 Q 43
+PROBE up 190 world 50200,70720 Q 33
+PROBE up 200 world 50280,70640 Q 23
+PROBE down 0 world 48792,71664 Q 8335 c land 15.2 bed 14.0
+PROBE down 10 world 48712,71696 Q 8514 c land 9.7 bed 7.8
+PROBE down 20 world 48632,71768 Q 16873 c land 5.4 bed 3.5
+PROBE down 30 world 48576,71848 Q 16996 c land 1.0 bed -0.7
+PROBE down 33 world 48560,71872 Q 17016 c land -0.2 bed -1.5 END
+PROBE heights land/bed centre row: 15.5/15.5 16.0/16.0 16.2/16.2 16.4/16.4 16.6/16.6 16.9/16.9 17.2/17.2 17.4/17.4 17.6/17.6 17.8/17.8 18.0/18.0 18.3/18.3 18.5/18.5 18.8/18.8 19.0/19.0 19.2/19.2 19.5/19.5
