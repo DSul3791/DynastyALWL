@@ -1,6 +1,6 @@
 {
-	"_note": "Settled-water rules (Steve, river settle). feeders: a painted river head that no pond spring serves gets its own spring, sized from the drainage area the tile file stores (flow map): share of the base spring = (area km2 / full_km2) ^ p, between min_share and 1, i.e. Q = k * A^p with k = rate / full_km2^p. A head is a river or pond cell with no higher water cell around it (a pond only when a painted river runs out of it within outlet_cells; a pond with no outlet is a natural pond and stays unfed); one with a spring within near_cells (30 cells = 240 m) is served. stop: the settle runs in blocks and stops once, in a block of check_every ticks, the stored water changed by under volume_change (5 percent) of what the springs poured in (basins full and spilling) twice running, after min_ticks, or at max_ticks. version: bump when the rules change; settle_water prints it.",
-	"version": 3,
+	"_note": "Settled-water rules (Steve, river settle). feeders: a painted river head that no pond spring serves gets its own spring, sized from the drainage area the tile file stores (flow map): share of the base spring = (area km2 / full_km2) ^ p, between min_share and 1, i.e. Q = k * A^p with k = rate / full_km2^p. A head is a river or pond cell with no higher water cell around it (a pond only when a painted river runs out of it within outlet_cells; a pond with no outlet is a natural pond and stays unfed); one with a spring within near_cells (30 cells = 240 m) is served. stop: the settle runs in blocks and stops once, in a block of check_every ticks, the stored water changed by under volume_change (5 percent) of what the springs poured in (basins full and spilling) twice running, after min_ticks, or at max_ticks. film (off by default, a look setting): painted river cells with at least min_km2 of drainage and settled water between min_seen_m and depth_m are raised to depth_m so a thin river is drawn. version: bump when the rules change; settle_water prints it.",
+	"version": 4,
 	"feeders": {
 		"enabled": true,
 		"full_km2": 3.0,
@@ -8,6 +8,12 @@
 		"min_share": 0.1,
 		"near_cells": 30,
 		"outlet_cells": 20
+	},
+	"film": {
+		"enabled": false,
+		"depth_m": 0.13,
+		"min_seen_m": 0.02,
+		"min_km2": 0.05
 	},
 	"stop": {
 		"check_every": 600,
