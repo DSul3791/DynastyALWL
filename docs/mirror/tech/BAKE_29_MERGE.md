@@ -1,6 +1,6 @@
 # Bake 29 merge plan (Tyler, 24 Oct 04:35 UTC). TERRAIN_VERSION 33. Code and tiles go out as ONE build (BP-T53).
 Inputs
-- Code: claude/tyler-seam32 (32142d7b = head 776 + sonny-foothills bc7282c5 + steve-river-settle 399341a4; island_checks.json kept at head's version) + sonny-foothills f49a1033 + steve-river-settle 91c84aa (final; report-only change over 399341a4) + passing gate list 4 items.
+- Code: claude/tyler-seam32 (32142d7b = head 776 + sonny-foothills bc7282c5 + steve-river-settle 399341a4; island_checks.json kept at head's version) + sonny-foothills f49a1033 + steve-river-settle fa7bdadc (final; report-only changes since 399341a4) + passing gate list 4 items.
 - Tiles: claude/mike-bake-v29 (9 tiles of f49a1033 + 9 settled .water + docs/bake29 tables).
 Dry run done (04:35 UTC, on tyler-seam32): sonny-foothills f49a1033 and the six list 4 branches (sound-1 9a2e1ba9, sound-slots 0ff7769b, shrub-lod 250730e0, mike-batch 11e03851, goal2-a e986e7e7, showroom-rows 8e79c4a0) all merge clean; parse_scan 374 files 0 problems; merge_check clear; TERRAIN_VERSION 33.
 Steps when Mike's v29 and list 4 PASS arrive
