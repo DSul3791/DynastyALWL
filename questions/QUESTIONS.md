@@ -120,3 +120,8 @@ Note: Recommendation: Yes because it is slow enough to react, fast enough to see
 Note: Full list and reasons: design/FISH_AND_FISHING_PLAN.md, section on species.
 Note: Recommendation: Yes because the list fits the North Atlantic island (moose, blueberry, ADT) and gives early fish near rivers.
 [check]
+
+## fish-stock-schools | Keep fish as hidden stock with moving schools, not swimming creatures?
+Note: Fish stay a number per area with schools that drift; no swimming fish bodies to simulate.
+Note: Recommendation: Yes because it costs almost nothing per frame and still lets players read the water.
+[check]
