@@ -11,7 +11,7 @@ Applies to MikeW, Steve's rig, every thread asking for a test. Old long version:
 ## Row kinds (one picture each)
 - PLANTS: `look_rig.sh --flora raspberry,bramble,wild_rose,blackthorn,blueberry,nettle,... --views "wide:8:-8:1.5;close:4:-15:1.0" --nograss` (fruit season set by the item, flowers off-season as a second row only if the season rule is under test).
 - ITEMS/TOOLS: the spawn showroom rows (data/items/showroom.json), one row per category (shovels, axes, hoes, ...), first person picture along the row.
-- BUILD PIECES: one row of the pieces side by side (foundation sizes, wall variants), same camera.
+- BUILD PIECES: `look_rig.sh --pieces foundation_section,wall_section,doorway_section,window_section,door_open,floor_section,roof_section --views "wide:9:-8:1.5;close:4:-10:1.2"` (names = data/items/structures.json keys; built by the game's own ghost_model; spacing from sizes; `--pieces-yaw 180` shows the backs; the "shot runner: piece" lines give each size, FAIL empty = draws nothing).
 - GROUND BEHAVIOUR (dig, drop, pile, chop): ONE script T-GROUND below, not four tests.
 - LOOKS BEFORE/AFTER: same row, same camera, two pictures from two builds in one image pair.
 

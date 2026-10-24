@@ -60,6 +60,9 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
+var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
+var _pieces_t: int = 0
 var flora_scale: float = 1.0       # --shot-flora-scale=N: draw the row N times its natural size (a check that a small plant is only hard to see)
 var cam_above_m: float = -1.0       # --shot-cam-above=M: the camera stands M metres above the ground at the plant row (--flora); -1 keeps the --agl height
 var views: Array = []                # --shot-views="name:dist:pitch:above;...": extra pictures of the same scene (see _parse_views)
@@ -103,6 +106,14 @@ func setup(owner_client, args: Array) -> void:
 			flora_scale = float(argument.trim_prefix("--shot-flora-scale="))
 		elif argument.begins_with("--shot-cam-above="):
 			cam_above_m = float(argument.trim_prefix("--shot-cam-above="))
+		elif argument.begins_with("--shot-pieces-yaw="):
+			pieces_yaw_deg = float(argument.trim_prefix("--shot-pieces-yaw="))
+		elif argument.begins_with("--shot-pieces="):
+			piece_names = argument.trim_prefix("--shot-pieces=").split(",", false)
+			no_grass = true
+
+			if views.is_empty():
+				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
 		elif argument.begins_with("--shot-flora="):
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
@@ -334,7 +345,11 @@ func _process(_delta: float) -> void:
 		_show_flora(now)
 		return
 
-	if _flora_t != 0 and now - _flora_t < 6000:
+	if not piece_names.is_empty() and _pieces_t == 0:
+		_show_pieces(now)
+		return
+
+	if (_flora_t != 0 and now - _flora_t < 6000) or (_pieces_t != 0 and now - _pieces_t < 4000):
 		return
 
 	if _view_i < views.size():
@@ -473,6 +488,98 @@ func _show_flora(now: int) -> void:
 	if cam_above_m >= 0.0 and not items["positions"].is_empty():
 		var subject: Vector3 = items["positions"][0]
 		client.body.global_position.y = subject.y - flora_lift_m + cam_above_m - client.camera.position.y
+
+
+# A labelled row of building pieces (look rig --pieces): one of each named structure (data/items/structures.json key) 4 m ahead of the player, built by the
+# game's own ghost_model (the builder a placed piece and the placement ghost use), spaced by their size, each with a name tag. One "shot runner: piece"
+# line per piece is the pass/fail source: a piece that draws nothing says FAIL. Unknown names were already refused by tools/look_rig.sh.
+func _show_pieces(now: int) -> void:
+	var table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+	var defs: Dictionary = table.get("structures", {}) if typeof(table) == TYPE_DICTIONARY else {}
+	var models: Array = []
+	var p: Vector3 = client.body.global_position
+
+	for piece_name in piece_names:
+		var def: Dictionary = defs.get(piece_name, {})
+
+		if def.is_empty():
+			print("shot runner: piece %s FAIL not in structures.json" % piece_name)
+			continue
+
+		if bool(def.get("planned", false)):
+			print("shot runner: piece %s skipped: planned, not built yet" % piece_name)
+			continue
+
+		var model: Node3D = client.items.ghost_model(int(def["state"]))
+
+		if model == null:
+			print("shot runner: piece %s FAIL no model for state %d" % [piece_name, int(def["state"])])
+			continue
+
+		client.add_child(model)
+		model.rotation.y = deg_to_rad(pieces_yaw_deg)
+		models.append([str(piece_name), def, model])
+
+	var widths: Array = []
+	var total: float = 0.0
+
+	for entry in models:
+		var box: AABB = _aabb_of(entry[2])
+		var width: float = maxf(box.size.x, box.size.z) if box.size != Vector3.ZERO else 1.0
+		widths.append(width)
+		total += width + 1.0
+
+	var x: float = p.x - (total - 1.0) * 0.5
+	var z: float = p.z - 4.0
+	var subject_y: float = p.y - 1.5
+
+	for n in range(models.size()):
+		var model: Node3D = models[n][2]
+		x += float(widths[n]) * 0.5
+		var g: float = _ground(x, z)
+
+		if is_nan(g):
+			g = p.y - 1.5
+
+		model.global_position = Vector3(x, g, z)
+		var box: AABB = _aabb_of(model)
+		var height: float = box.size.y
+		var tag: Label3D = Label3D.new()
+		tag.text = str(models[n][0])
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.fixed_size = true
+		tag.pixel_size = 0.0009
+		tag.font_size = 40
+		tag.outline_size = 10
+		tag.no_depth_test = true
+		tag.position = Vector3(x, g + maxf(height, 0.4) + 0.5, z)
+		client.add_child(tag)
+		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position)])
+		x += float(widths[n]) * 0.5 + 1.0
+		subject_y = g
+
+	_subject = Vector3(p.x, subject_y, z)
+	_subject_set = true
+	_pieces_t = now
+
+
+# The box round every mesh under `node`, in world space (an empty AABB when nothing draws).
+func _aabb_of(node: Node) -> AABB:
+	var box: AABB = AABB()
+	var found: bool = false
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+
+		if current is MeshInstance3D and (current as MeshInstance3D).mesh != null:
+			var world: AABB = (current as MeshInstance3D).global_transform * (current as MeshInstance3D).get_aabb()
+			box = world if not found else box.merge(world)
+			found = true
+
+		stack.append_array(current.get_children())
+
+	return box
 
 
 # --shot-views="name:dist:pitch:above;name2:...": extra pictures of the placed scene from other cameras, all in one start. dist = metres from the
