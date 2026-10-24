@@ -1374,3 +1374,7 @@ Answered: 2026-10-24 14:15 UTC
 Answer: No: No, I’m deep in a cave right now and I can still see without a torch
 Answered: 2026-10-24 14:19 UTC
 
+## look-caves-dark | Are caves and tunnels dark by day now? (build 784)
+Answer: No: No, I’m deep in a cave right now and I can still see without a torch
+Answered: 2026-10-24 14:20 UTC
+
