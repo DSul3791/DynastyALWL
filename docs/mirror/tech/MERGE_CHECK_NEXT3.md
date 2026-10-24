@@ -13,3 +13,5 @@ UPDATE 03:35 UTC: list 2 merged as build 774 (6 branches; sal-building-looks hel
 UPDATE 03:55 UTC additions for the next gate (trial-merged clean by Tyler where noted): steve-smoke-row 7010a23c (frametime row), steve-mike-batch b781d44f (tools/mike_batch.sh + mike_queue.txt; read it before running), kathleen-sound-1 dc0119ad (sounds, with clip_check + manifest validator), then steve-sound-slots on top of it when pushed.
 
 UPDATE 03:58 UTC: use sal-building-looks a63a3933 (NOT 60a0aedb, which has a parse error and NOT 82d4b40b, which had 1 new warning). Fixed head: test_look_table 26 looks, 0 failures, 0 new warnings per Sal. Tyler trial merge on head 774: see result in thread.
+
+UPDATE 04:10 UTC: add origin/claude/steve-no-rose-berries 82b0bd5 (Dave: wild rose has no berries; data/yields) right AFTER kathleen-flora-gaps (it also fixes the wild rose model/yields; if both touch flora.json keep both changes). steve-river-settle d6113617 is superseded by a newer head; Tyler refreshes claude/tyler-bake28 when Steve gives the hash.
