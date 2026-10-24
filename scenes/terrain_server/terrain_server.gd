@@ -323,7 +323,7 @@ func _ready() -> void:
 			return -1
 
 		return int(tile_data.biome[tile_data.nearest(pos.x, pos.z)])
-	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
+	items.send_reject = func(peer_id, reason): net.reject.rpc_id(peer_id, reason)
 	@warning_ignore("confusable_local_declaration")
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
 	@warning_ignore("confusable_local_declaration")
