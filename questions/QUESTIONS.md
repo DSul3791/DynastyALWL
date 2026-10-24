@@ -28,11 +28,6 @@ Note: Lasting dams still make swamp.
 Note: Recommendation: Yes because floods come and go, so they should not rename land.
 [check]
 
-## wl-dam-strength | Dams: strength depends on material, thickness and bracing, and dirt erodes if water pours over the top?
-Note: Stone holds more than dirt; stone or dirt piled behind adds strength; a spillway relieves pressure.
-Note: Recommendation: Yes because it matches your rule. Why not: more rules for builders to learn.
-[check]
-
 ## wl-dam-breach | Dams: a breach is slow with a warning (creak, chat line), never instant?
 Note: The dam opens over about a minute and the stored water runs out at its visible pace.
 Note: Recommendation: Yes because players get a chance to react. Why not: less dramatic.
