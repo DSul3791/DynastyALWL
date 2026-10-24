@@ -872,6 +872,7 @@ func _init() -> void:
 		apple_guard += 1
 
 	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before, "an apple trunk is used up and gives no log")
+	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 
 	for k in w._items:

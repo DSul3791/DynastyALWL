@@ -1103,7 +1103,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_beech": {
 			"number": 55,
@@ -1120,7 +1121,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_birch": {
 			"number": 56,
@@ -1239,7 +1241,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_alder": {
 			"number": 63,
@@ -1256,7 +1259,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_willow": {
 			"number": 64,
@@ -1273,7 +1277,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_willow": {
 			"number": 65,
@@ -1290,7 +1295,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_coconut_palm": {
 			"number": 66,
@@ -1307,7 +1313,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_coconut_palm": {
 			"number": 67,
@@ -1324,7 +1331,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_tropical_hardwood": {
 			"number": 68,
@@ -1375,7 +1383,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_acacia": {
 			"number": 71,
@@ -1392,7 +1401,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_mangrove": {
 			"number": 72,
@@ -1409,7 +1419,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_mangrove": {
 			"number": 73,
@@ -1426,7 +1437,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_rowan": {
 			"number": 74,
@@ -1443,7 +1455,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_rowan": {
 			"number": 75,
@@ -1460,7 +1473,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_wild_apple": {
 			"number": 76,
@@ -1477,7 +1491,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_wild_apple": {
 			"number": 77,
@@ -1494,7 +1509,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_wild_pear": {
 			"number": 78,
@@ -1511,7 +1527,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_wild_pear": {
 			"number": 79,
@@ -1528,7 +1545,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_wild_cherry": {
 			"number": 80,
@@ -1545,7 +1563,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_wild_cherry": {
 			"number": 81,
@@ -1562,7 +1581,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_sweet_chestnut": {
 			"number": 82,
@@ -1579,7 +1599,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_sweet_chestnut": {
 			"number": 83,
@@ -1596,7 +1617,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_walnut": {
 			"number": 84,
@@ -1647,7 +1669,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_date_palm": {
 			"number": 87,
@@ -1664,7 +1687,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_mirrorbark": {
 			"number": 88,
@@ -1681,7 +1705,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_mirrorbark": {
 			"number": 89,
@@ -1698,7 +1723,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_wardpine": {
 			"number": 90,
@@ -1715,7 +1741,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_wardpine": {
 			"number": 91,
@@ -1732,7 +1759,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_hearthwood": {
 			"number": 92,
@@ -1749,7 +1777,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_hearthwood": {
 			"number": 93,
@@ -1766,7 +1795,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_everember": {
 			"number": 94,
@@ -1783,7 +1813,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_everember": {
 			"number": 95,
@@ -1800,7 +1831,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_witness_tree": {
 			"number": 96,
@@ -1817,7 +1849,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_witness_tree": {
 			"number": 97,
@@ -1834,7 +1867,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_balsam_fir": {
 			"number": 98,
@@ -1851,7 +1885,8 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"beams_balsam_fir": {
 			"number": 99,
@@ -1868,7 +1903,8 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
-			"station": "saw_mill"
+			"station": "saw_mill",
+			"retired": true
 		},
 		"lumber_maple": {
 			"number": 100,
