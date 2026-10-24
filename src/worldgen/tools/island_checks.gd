@@ -16,6 +16,7 @@ extends SceneTree
 #   --all          every island of at least min_area_km2, not only those listed in the limits file
 #   --sketch-only  skip the tile checks
 #   --tiles-only   skip the sketch (island shape) checks
+#   --fine         walking routes on the 8 m maps instead of the 32 m maps (about 10 minutes; run in the background)
 #
 # Limits live in <world>/plan/island_checks.json (null = report only).
 # Island shape checks run on the 160 m sketch elevation, so they work before
@@ -35,12 +36,15 @@ const CLASS_NAMES := ["beach", "prairie", "foothill", "mountain", "canyon"]
 const PEAK_SEARCH_CELLS := 3
 const PEAK_FLOOD_LIMIT := 40000
 const RING_CELLS := 6
+const MATCH_RADIUS_M := 3000.0   # island_list.json is derived data; after a sketch change the peak may have moved
 const RIVER_GAP_CELLS := 2    # the 32 m map breaks thin rivers; bridge gaps up to 2 samples
 
 var _failures: int = 0
 var _checks: int = 0
 var _elevation
 var _limits: Dictionary = {}
+var _fine: bool = false
+var _rules: Dictionary = {}
 
 
 func _init() -> void:
@@ -64,6 +68,8 @@ func _run() -> int:
 			only_island = int(argument.trim_prefix("--island="))
 		elif argument == "--all":
 			all_islands = true
+		elif argument == "--fine":
+			_fine = true
 		elif argument == "--sketch-only":
 			do_tiles = false
 		elif argument == "--tiles-only":
@@ -155,6 +161,7 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 		_row("sketch rules", "cannot read", "-", "FAIL")
 		return
 
+	_rules = rules
 	var existing: Dictionary = {}
 	var sketch_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(world_dir + "/plan/world_sketch.json"))
 
@@ -215,7 +222,7 @@ func _island_checks(settings, world_dir: String, only_island: int, all_islands: 
 
 func _census_number(census: Dictionary, x_m: float, z_m: float) -> int:
 	var best: int = -1
-	var best_distance: float = _elevation.cell_m * 1.6
+	var best_distance: float = MATCH_RADIUS_M
 	var islands: Array = census["islands"]
 
 	for number in range(islands.size()):
@@ -320,6 +327,10 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 			_range_row("%s share of %s" % [title, class_name_], share, bounds, "%.1f%%" % (share * 100.0))
 
 	_row("%s terrain mix" % title, ", ".join(mix), "report", "INFO")
+	_flat_share_check(title, cells, config)
+
+	if config["band_table_check"]:
+		_band_checks(title, land, float(island["peak_m"]), config)
 
 	# Rays from the main peak to the coast: profile, slope, beach.
 	var bearings: Array = []
@@ -382,6 +393,49 @@ func _check_island(island_id: int, number: int, census: Dictionary, cells: Packe
 		_range_row("%s beach width (coast to %.0f m)" % [title, float(config["beach_top_m"])], mean, config["beach_width_m"], "mean %.0f m over %d rays" % [mean, beach_widths.size()])
 
 	_island_route_check(title, cells, config)
+
+
+# ---------------------------------------------------------------- height bands (Sonny, Dave 24 Oct)
+
+# Land share in the beach and flat band: cells at or under flat_slope_deg.
+func _flat_share_check(title: String, cells: PackedInt32Array, config: Dictionary) -> void:
+	var flat_deg: float = float(config["flat_slope_deg"])
+	var flat: int = 0
+
+	for index in cells:
+		if _slope_deg(index % _elevation.size_x, index / _elevation.size_x) <= flat_deg:
+			flat += 1
+
+	var share: float = float(flat) / float(cells.size())
+	_bound_row("%s flat share (slope under %.0f deg)" % [title, flat_deg], share, config["flat_share_min"], false, "%.1f%% of land" % (share * 100.0))
+
+
+# The island's land, ranked by height, against starter_islands.height_bands of
+# sketch_rules.json: at each band share the measured height divided by the
+# island's own peak must match the band fraction, and the peak must sit in summit_m.
+# `land` is the sorted land heights.
+func _band_checks(title: String, land: PackedFloat32Array, peak_m: float, config: Dictionary) -> void:
+	var starter: Dictionary = _rules.get("starter_islands", {})
+	var bands: Array = starter.get("height_bands", [])
+
+	if bands.is_empty():
+		_row("%s height bands" % title, "no height_bands in sketch_rules.json", "-", "INFO")
+		return
+
+	var summit_range: Array = starter.get("summit_m", [])
+
+	if summit_range.size() == 2:
+		_range_row("%s summit height" % title, peak_m, summit_range, "%.0f m" % peak_m)
+
+	var tolerance_m: float = float(config["band_tolerance_m"])
+	var tolerance_frac: float = float(config["band_tolerance_frac"])
+
+	for i in range(1, bands.size() - 1):
+		var share: float = float(bands[i][0])
+		var expected: float = peak_m * float(bands[i][1])
+		var measured: float = land[mini(land.size() - 1, int(share * float(land.size())))]
+		var allowed: float = maxf(tolerance_m, expected * tolerance_frac)
+		_row("%s band at %.0f%% of land" % [title, share * 100.0], "%.0f m (expected %.0f m of peak %.0f)" % [measured, expected, peak_m], "within %.0f m" % allowed, "PASS" if absf(measured - expected) <= allowed else "FAIL")
 
 
 # ---------------------------------------------------------------- sketch helpers
@@ -602,6 +656,16 @@ func _tile_checks(settings, world_dir: String, directory: String) -> void:
 	stitched["origin_x"] = float(stitched["min_x"] * settings.tile_size_m)
 	stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
 	_river_checks(stitched, tile_limits)
+
+	if _fine:
+		stitched = _stitch(tiles, directory, true)
+
+		if not stitched["ok"]:
+			return
+
+		stitched["origin_x"] = float(stitched["min_x"] * settings.tile_size_m)
+		stitched["origin_z"] = float(stitched["min_z"] * settings.tile_size_m)
+
 	_route_checks(stitched, tile_limits, _spawn_of(world_dir))
 
 
@@ -706,7 +770,7 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 
 
 # The 32 m maps of all baked tiles side by side. Cells outside the baked area are 255 in `water`.
-func _stitch(tiles: Array, directory: String) -> Dictionary:
+func _stitch(tiles: Array, directory: String, fine: bool = false) -> Dictionary:
 	var min_x: int = 1 << 30
 	var min_z: int = 1 << 30
 	var max_x: int = -(1 << 30)
@@ -725,17 +789,17 @@ func _stitch(tiles: Array, directory: String) -> Dictionary:
 	for tile in tiles:
 		var path: String = "%s/tile_%d_%d.tile" % [directory, tile.x, tile.y]
 		var header: Dictionary = TileFileScript.read_header(path)
-		var water_section: Dictionary = TileFileScript.read_section(path, header["table"], "low_water_class")
-		var height_section: Dictionary = TileFileScript.read_section(path, header["table"], "low_height")
+		var water_section: Dictionary = TileFileScript.read_section(path, header["table"], "water_class" if fine else "low_water_class")
+		var height_section: Dictionary = TileFileScript.read_section(path, header["table"], "height" if fine else "low_height")
 
 		if not water_section["ok"] or not height_section["ok"]:
 			_row("tile (%d,%d) low-res maps" % [tile.x, tile.y], str(water_section["error"]) + str(height_section["error"]), "-", "FAIL")
 			return result
 
 		if side == 0:
-			side = int(header["header"]["low_res_samples"])
+			side = int(header["header"]["samples" if fine else "low_res_samples"])
 			step = side - 1
-			result["spacing"] = float(header["header"]["low_res_spacing_m"])
+			result["spacing"] = float(header["header"]["map_spacing_m" if fine else "low_res_spacing_m"])
 			result["width"] = (max_x - min_x + 1) * step + 1
 			result["rows"] = (max_z - min_z + 1) * step + 1
 			result["water"].resize(int(result["width"]) * int(result["rows"]))
@@ -920,7 +984,7 @@ func _route_checks(stitched: Dictionary, tile_limits: Dictionary, spawn: Vector2
 
 		_row("spawn in the main region of its landmass", "main region" if is_main else "a cut-off region (%d hard regions on this landmass)" % spawn_mass_regions.size(), "main region", "PASS" if is_main else "FAIL")
 
-	_row("isolated regions (hard class, 32 m map)", "%d listed, %d flagged" % [listed, flagged], "0 flagged", "FAIL" if flagged > 0 else "PASS")
+	_row("isolated regions (hard class, %d m map)" % int(spacing), "%d listed, %d flagged" % [listed, flagged], "0 flagged", "FAIL" if flagged > 0 else "PASS")
 
 	# Easy routes: big easy regions, and the share of dry land farther than easy_reach_m from one or a coast.
 	var easy_min_cells: int = int(ceil(float(tile_limits["route_easy_min_km2"]) / cell_km2))

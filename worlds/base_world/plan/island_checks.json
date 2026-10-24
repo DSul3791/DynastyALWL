@@ -4,6 +4,11 @@
 	"defaults": {
 		"min_area_km2": 5.0,
 		"sector_count": 8,
+		"flat_slope_deg": 5.0,
+		"flat_share_min": null,
+		"band_table_check": false,
+		"band_tolerance_m": 15.0,
+		"band_tolerance_frac": 0.25,
 		"unreachable_min_km2": 0.5,
 		"route_hard_deg": 45.0,
 		"isolated_flag_share": 0.05,
@@ -23,7 +28,7 @@
 		"classes": {"beach_max_slope_deg": 8.0, "prairie_max_slope_deg": 6.0, "prairie_max_h_m": 300.0, "mountain_min_h_m": 600.0, "mountain_min_slope_deg": 25.0, "canyon_depth_m": 80.0}
 	},
 	"islands": {
-		"8": {"name": "inner starter island", "profile_targets_m": {"1000": [20, 60], "2000": [60, 200], "3500": [150, 400]}, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 3]},
+		"8": {"name": "inner starter island", "band_table_check": true, "flat_share_min": 0.2, "profile_targets_m": null, "walkable_min_share_per_sector": 0.2, "peak_count": [1, 3]},
 		"1": {"name": "center island"}
 	},
 	"tiles": {
