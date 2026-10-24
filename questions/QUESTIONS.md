@@ -135,3 +135,8 @@ Note: Recommendation: Yes because it teaches fishing by looking, as the early-ga
 Note: Deep-sea fish (tuna, cod) wait for boats.
 Note: Recommendation: Yes because boats do not exist yet and it avoids unreachable fish.
 [check]
+
+## wl-soil-types | Water land types: swamp, marsh or bog chosen by soil and climate, not water alone?
+Note: Peat or cool = bog, fertile and warm = swamp, otherwise open marsh.
+Note: Recommendation: Yes because shallow water alone cannot tell them apart.
+[check]
