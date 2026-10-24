@@ -165,3 +165,8 @@ Note: Recommendation: Yes because it is safe and kind first. Why not: you may wa
 Note: Fire size follows the wood as you decided. This is only about lighting it.
 Note: Recommendation: Yes because it takes about 10 seconds, is physical and never softlocks.
 [check]
+
+## shore-net-first | Does fishing start with a shore net (20 twine + 4 stones), with trap, spear and rod later and no reflex minigame?
+Note: Stand at a ripple spot at the water edge, hold E about 20 s, get 1 to 3 small fish.
+Note: Recommendation: Yes because it is simple and obvious for the first hour.
+[check]
