@@ -60,6 +60,11 @@ var _spin_next_msec: int = 0
 var _selected: bool = false
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
+var frametime_s: float = 0.0             # --shot-frametime=SECONDS: after a 10 s warm-up, measure frame times this long and print one "shot runner: frametime" line
+var quality_set: int = -1                # --shot-quality=0..3 (0 = Low): set before the measurement
+var _frame_times: PackedFloat32Array = PackedFloat32Array()
+var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
+var _frame_start_msec: int = 0
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
@@ -104,6 +109,10 @@ func setup(owner_client, args: Array) -> void:
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
 			side_sign = -1.0
+		elif argument.begins_with("--shot-frametime="):
+			frametime_s = float(argument.trim_prefix("--shot-frametime="))
+		elif argument.begins_with("--shot-quality="):
+			quality_set = clampi(int(argument.trim_prefix("--shot-quality=")), 0, 3)
 		elif argument.begins_with("--shot-views="):
 			views = _parse_views(argument.trim_prefix("--shot-views="))
 		elif argument.begins_with("--shot-flora-scale="):
@@ -162,9 +171,12 @@ func setup(owner_client, args: Array) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
+
+	if frametime_s > 0.0 and _frame_state < 2:
+		_measure_frames(delta)
 
 	# Hold the hour and weather every frame, whatever the server says.
 	if _index >= 0 and _index < shots.size():
@@ -884,6 +896,36 @@ func _ground(x: float, z: float) -> float:
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	var hit = tool.raycast(Vector3(x, 1500.0, z), Vector3.DOWN, 2000.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+# --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
+# and print the average, the 95th percentile and the worst frame in ms (the always-playable check: Low should stay under 33 ms).
+func _measure_frames(delta: float) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if _frame_state == 0:
+		if now - client.connected_msec < 10000:
+			return
+
+		if quality_set >= 0 and client.quality != quality_set:
+			client.quality = quality_set
+			client._apply_quality()
+
+		_frame_state = 1
+		_frame_start_msec = now
+
+	_frame_times.append(delta * 1000.0)
+
+	if now - _frame_start_msec >= int(frametime_s * 1000.0):
+		_frame_state = 2
+		var sorted: PackedFloat32Array = _frame_times.duplicate()
+		sorted.sort()
+		var total: float = 0.0
+
+		for value in sorted:
+			total += value
+
+		print("shot runner: frametime quality %s frames %d avg %.1f ms p95 %.1f ms max %.1f ms (%s)" % [client.QUALITY_NAMES[client.quality], sorted.size(), total / float(sorted.size()), sorted[int(float(sorted.size()) * 0.95)], sorted[sorted.size() - 1], "OK" if sorted[int(float(sorted.size()) * 0.95)] < 33.0 else "FAIL over 33 ms"])
 
 
 func _next(now: int) -> void:
