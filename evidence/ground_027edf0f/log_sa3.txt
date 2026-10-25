@@ -1,0 +1,7 @@
+== stone_arrow exit 0
+shot runner: item view front try 1: box at (53315.98, 31.60236, 68474.2) size (0.742188, 0.068953, 0.125) is 53 % off centre, part outside, aiming again
+shot runner: item view front try 2: box at (53316.04, 31.68849, 68475.8) size (0.742188, 0.035702, 0.125) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 39 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 57 % of the frame, centre 0 % off, all inside the frame
