@@ -19,3 +19,5 @@ Cave rule covered by headless test_spawn_column.gd (src/client/ground_column.gd 
 
 ## Spawn near the ground (Tyler GO, Dave 25 Oct)
 Instead of asking the server for the surface (David3 saw the column answer 19-23 s after the welcome), the client uses what the welcome already carries: the server computes the spawn y as surface height at the spawn x,z + 2 m at start (terrain_server._spawn_point). Join, go-to-spawn, death respawn and the cave-in respawn now put the player at the spawn point + 0.5 m (was +28 m), so the first frame is within 3 m of the ground; the player waits level for ground as before and arrival sets them down. A moved spawn only changes x,z on the server; y follows from it. Test: first frame within 3 m of ground and standing within 10 s for join, respawn, go-to-spawn.
+
+Debug flags (client): --test-respawn=S, --test-go-to-spawn=S (S s after the welcome and first ground: move the player 300 m aside, then respawn / go to spawn; prints "SPAWNTEST ...: first frame ... m above the ground" and "standing on the ground N s later"); --spawn-y-offset=M (added to every spawn height; -5 puts the spawn inside the ground).

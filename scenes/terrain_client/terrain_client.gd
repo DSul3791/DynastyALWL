@@ -275,6 +275,10 @@ var _wait_frames: int = 0             # walk test: frames spent waiting for grou
 var _space_wake_s: float = 0.0
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var _tunnel_test: int = 0
+var _spawn_test: String = ""            # --test-respawn=S / --test-go-to-spawn=S: S s after the welcome (and ground) do a respawn or go-to-spawn and log how it lands
+var _spawn_test_after_s: float = 0.0
+var _spawn_test_msec: int = 0           # when it was done (0 = not yet), then the log waits for the player to stand
+var _spawn_y_offset: float = 0.0        # --spawn-y-offset=M: M added to every spawn point's height (negative puts the spawn inside the ground)
 var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
@@ -530,6 +534,14 @@ func _ready() -> void:
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument.begins_with("--drop-ground-lods="):
 			_drop_ground_lods = int(argument.trim_prefix("--drop-ground-lods="))
+		elif argument.begins_with("--test-respawn="):
+			_spawn_test = "respawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-respawn="))
+		elif argument.begins_with("--test-go-to-spawn="):
+			_spawn_test = "go_to_spawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-go-to-spawn="))
+		elif argument.begins_with("--spawn-y-offset="):
+			_spawn_y_offset = float(argument.trim_prefix("--spawn-y-offset="))
 		elif argument == "--clear-cache":
 			clear_cache = true
 		elif argument.begins_with("--quality="):
@@ -978,7 +990,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
-	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M, 0.0))
+	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -1324,6 +1336,33 @@ func _note_dig(center: Vector3) -> void:
 	rescue.note_dig(center)
 
 
+# --test-respawn / --test-go-to-spawn: once the first ground is ready and S seconds have passed, do it and print "SPAWNTEST" lines: height above the ground on the first frame and the seconds until the player stands.
+func _spawn_test_step(now: int) -> void:
+	if _spawn_test == "" or connected_msec <= 0 or body == null or not world.has("spawn"):
+		return
+
+	if _spawn_test_msec == 0:
+		if waiting_for_ground or now - connected_msec < int(_spawn_test_after_s * 1000.0):
+			return
+
+		_spawn_test_msec = now
+		var from: Vector3 = body.global_position
+		body.global_position += Vector3(0.0, 0.0, 300.0)   # somewhere else first, so the move is a real one
+
+		if _spawn_test == "respawn":
+			_on_died("spawn test", Vector3(world["spawn"]))
+		else:
+			go_to_spawn()
+
+		var ground: float = _ground_below(body.global_position)
+		print("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
+		return
+
+	if _spawn_test_msec > 0 and not waiting_for_ground and body.is_on_floor():
+		print("SPAWNTEST %s: standing on the ground %.1f s later, player %s" % [_spawn_test, float(now - _spawn_test_msec) * 0.001, str(body.global_position.round())])
+		_spawn_test = ""
+
+
 # --tunnel-test: stand on the ground at the spawn, dig a 6 m shaft and a 6 m side tunnel, stand in the tunnel for 10 s, say where the player is.
 func _tunnel_step() -> void:
 	var now: int = Time.get_ticks_msec()
@@ -1580,7 +1619,7 @@ func go_to_spawn() -> void:
 	if body == null or not world.has("spawn"):
 		return
 
-	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M, 0.0)
+	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1600,7 +1639,7 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 		cavein_death.start(self, spawn_point)
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1611,7 +1650,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	if body == null:
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -3449,6 +3488,9 @@ func _process(delta: float) -> void:
 
 	if link_bars != null:
 		link_bars.client_stalled(delta)
+
+	if _spawn_test != "":
+		_spawn_test_step(Time.get_ticks_msec())
 
 	if _tunnel_test > 0:
 		_tunnel_step()
