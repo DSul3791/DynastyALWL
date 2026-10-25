@@ -1130,6 +1130,10 @@ func _mount_model() -> void:
 			turn = turn * Basis(Vector3.UP, deg_to_rad(HELD_HOE_ROLL_DEG))   # roll the hoe about its haft so the blade face shows in the frame (Tyler: first person read as a stick)
 		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
 
+		if _model.has_meta("held_pitch_deg"):
+			turn = Basis(Vector3.RIGHT, deg_to_rad(float(_model.get_meta("held_pitch_deg")))) * turn   # point the tip up into the view
+			grip.y += 0.05
+
 	_model.basis = (tilt * turn).scaled(Vector3.ONE / ARMS_SCALE)      # the hand mount is scaled with the arms
 	_model.position = tilt * grip / ARMS_SCALE
 
@@ -1393,7 +1397,7 @@ func _make_look_tool_model() -> Node3D:
 	var node: Node3D = Node3D.new()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis).scaled(Vector3.ONE * held_scale)
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
 	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
 
@@ -1401,6 +1405,7 @@ func _make_look_tool_model() -> Node3D:
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
 
 	if shape == "arrow":
+		node.set_meta("held_pitch_deg", 30.0)
 		node.set_meta("grip_y", 0.1)   # an arrow is held about its middle, so the head and the shaft show in the view
 
 	return node
