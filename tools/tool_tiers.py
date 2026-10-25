@@ -12,6 +12,20 @@ TIERS = {1: "wooden", 2: "stone", 3: "iron", 4: "steel"}
 WANTED = ["axe", "hammer", "knife", "adze", "saw", "spade", "hoe", "pick", "rod", "net", "needle", "torch"]
 
 
+REC = """## Recommendation (design call, for Dave through Tyler)
+
+Keep the numbers as they are (renumbering would touch digging.json tier_extra, hammer blueprint tiers and saves). Read the tier as the rung inside the class:
+
+| tier | rung | stays / new |
+|---|---|---|
+| 1 | wooden or first tool | wooden hammer, hoe, spade; stone axe, stone knife (no wooden axe or knife exists, so these are the first rung); torch, rod, net |
+| 2 | stone | stone hammer, hoe, spade, adze (exist); **new:** stone pick, stone saw |
+| 3 | iron | iron hoe, spade (future), hand saw (exists); iron pick (future) |
+| 4 | steel | steel hoe, spade, pick (future) |
+
+Not done on purpose: no copper or bronze rung until Dave asks for one. New early tools (stone saw, stone pick, sickle, scythe, rake) each come as their own plan from the reserved block (items 267-299, recipes 170-199), with the name sent to Kathleen first."""
+
+
 def load(p):
     with open(os.path.join(ROOT, p), encoding="utf-8") as f:
         return json.load(f)
@@ -46,6 +60,7 @@ def build():
         miss = [TIERS[t] for t in TIERS if t not in live]
         if miss:
             out.append("- **%s**: no live item at %s" % (c, ", ".join(miss)))
+    out += ["", REC]
     return "\n".join(out) + "\n"
 
 
