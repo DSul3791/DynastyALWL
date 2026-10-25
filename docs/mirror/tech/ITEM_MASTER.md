@@ -12,11 +12,11 @@
 ## Counts
 | What | Count |
 |---|---|
-| items in items.json (validate_items 'core', must equal) | 266 |
-| live items (minus retired) | 210 |
+| items in items.json (validate_items 'core', must equal) | 271 |
+| live items (minus retired) | 215 |
 | retired items (own section) | 56 |
 | gap: future | 60 |
-| gap: no recipe | 39 |
+| gap: no recipe | 41 |
 | gap: not used | 21 |
 | design names matched / missing | 14 / 24 |
 
@@ -107,7 +107,7 @@ Matched by exact id or alias in data/items/design_names.json.
 | 57 | Stomach tea | 8 | 1 | 0 |  |
 | 58 | Chamomile tea | 6 | 1 | 0 |  |
 | 59 | Willow bark tea | 6 | 1 | 0 |  |
-| 68 | Raw meat | 8 | 0 | 3 | future |
+| 68 | Raw meat | 8 | 0 | 4 | future |
 | 69 | Roast Meat | 14 | 0 | 0 | future |
 | 76 | Trout | 8 | 0 | 1 | future |
 | 77 | Perch | 6 | 0 | 1 | future |
@@ -131,6 +131,9 @@ Matched by exact id or alias in data/items/design_names.json.
 | 189 | Trail bread | 46 | 1 | 0 |  |
 | 190 | Hearty pottage | 65 | 1 | 0 |  |
 | 191 | Roast Beast | 75 | 1 | 0 |  |
+| 273 | Flatbread | 10 | 1 | 0 |  |
+| 274 | Honey loaf | 22 | 1 | 0 |  |
+| 275 | Rosemary joint | 25 | 1 | 0 |  |
 
 ## gear
 | # | item | value | recipes making it | recipes using it | gaps |
@@ -247,6 +250,7 @@ Matched by exact id or alias in data/items/design_names.json.
 | 261 | Thatch floor | 10 | 1 | 0 |  |
 | 263 | Thatch roof | 10 | 1 | 0 |  |
 | 265 | Thatch doorway | 10 | 1 | 0 |  |
+| 268 | Oven | 10 | 0 | 0 | no recipe |
 
 ## structure
 | # | item | value | recipes making it | recipes using it | gaps |
@@ -283,6 +287,7 @@ Matched by exact id or alias in data/items/design_names.json.
 | 262 | Thatch floor |  | 0 | 0 | no recipe |
 | 264 | Thatch roof |  | 0 | 0 | no recipe |
 | 266 | Thatch doorway |  | 0 | 0 | no recipe |
+| 267 | Oven |  | 0 | 0 | no recipe |
 
 ## tool
 | # | item | value | recipes making it | recipes using it | gaps |
@@ -385,7 +390,7 @@ Kept so numbers are never reused and old saves still load; not gaps.
 | 246 | Stone adze |
 
 ## Item sheet
-210 items (150 live, 60 future). Empty cells: use 3.
+215 items (155 live, 60 future). Empty cells: use 3.
 
 | # | id | name | kind | status | source | cost | use | look | kg | value |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -587,7 +592,7 @@ Kept so numbers are never reused and old saves still load; not gaps.
 | 254 | campfire_pot_kit | Campfire pot | placeable | live | recipe campfire_pot_kit | 3 stick, 5 twine, 1 clay_pot | placed: campfire_pot | looks.json | 1.8 | 10 |
 | 255 | campfire_pot | Campfire pot | structure | live | placed piece |  | placed: campfire_pot | structure look | 1.8 | **?** |
 | 256 | clay_hearth_kit | Clay hearth | placeable | live | placed piece |  | placed: clay_hearth | looks.json | 60.0 | 10 |
-| 257 | clay_hearth | Clay hearth | structure | live | placed piece |  | placed: clay_hearth | structure look | 60.0 | **?** |
+| 257 | clay_hearth | Clay hearth | structure | live | world (gathered, dropped, caught or cooked: see data/items) |  | placed: clay_hearth | structure look | 60.0 | **?** |
 | 260 | shore_net | Shore net | tool | live | recipe shore_net | 20 twine, 4 stone | tool: net tier 1 | looks.json | 0.8 | 12 |
 | 261 | thatch_floor_kit | Thatch floor | placeable | live | recipe thatch_floor_kit | 6 twine, 20 thatch | placed: thatch_floor | looks.json | 2.1 | 10 |
 | 262 | thatch_floor | Thatch floor | structure | live | placed piece |  | placed: thatch_floor | structure look | 2.1 | **?** |
@@ -595,10 +600,15 @@ Kept so numbers are never reused and old saves still load; not gaps.
 | 264 | thatch_roof | Thatch roof | structure | live | placed piece |  | placed: thatch_roof | structure look | 7.1 | **?** |
 | 265 | thatch_doorway_kit | Thatch doorway | placeable | live | recipe thatch_doorway_kit | 12 twine, 25 thatch, 12 stick | placed: thatch_doorway | looks.json | 5.7 | 10 |
 | 266 | thatch_doorway | Thatch doorway | structure | live | placed piece |  | placed: thatch_doorway | structure look | 5.7 | **?** |
+| 267 | oven | Oven | structure | live | world (gathered, dropped, caught or cooked: see data/items) |  | placed: oven | structure look | 90.0 | **?** |
+| 268 | oven_kit | Oven | placeable | live | placed piece |  | placed: oven | looks.json | 90.0 | 10 |
 | 269 | wooden_bow | Wooden bow | weapon | live | recipe wooden_bow | 2 stick, 3 twine | weapon: bow | looks.json | 0.7 | 30 |
 | 270 | wooden_arrow | Wooden arrow | material | live | recipe wooden_arrow | 2 stick, 2 feather | **?** | looks.json | 0.05 | 2 |
 | 271 | stone_arrow | Stone arrow | material | live | recipe stone_arrow | 2 stick, 2 feather, 2 stone | **?** | looks.json | 0.08 | 4 |
 | 272 | quiver | Quiver | gear | live | recipe quiver | 2 hide, 2 twine | worn: slot back | looks.json | 0.4 | 25 |
+| 273 | flatbread | Flatbread | food | live | recipe cook_flatbread | 3 seeds, 1 water | food | looks.json | 0.3 | 10 |
+| 274 | honey_loaf | Honey loaf | food | live | recipe cook_honey_loaf | 3 seeds, 1 hazelnuts, 1 honeyspindle_nectar | food | looks.json | 0.3 | 22 |
+| 275 | roast_joint | Rosemary joint | food | live | recipe cook_roast_joint | 2 raw_meat, 1 rosemary, 1 wild_garlic_bulbs | food | looks.json | 0.3 | 25 |
 
 ### Gathered items (data/items/gathered.json): 174, 0 without an inspect text
 
