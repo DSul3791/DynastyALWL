@@ -11,3 +11,6 @@
 - **Stone tools** (stone hammer, spade, hoe, adze) are tools, so the bench is correct by rule 1; the wooden hammer, tools whose recipe is wood + twine only are by hand (first hour).
 ## Audit
 Sal audits all live recipes (125) against these rules: every recipe gets one class (tool/weapon at bench, cooking at a cooking station, by hand, processing station). The audit table goes to design/RECIPE_STATION_AUDIT.md; changes ship as ONE data branch (recipes.json only, no number changes), gated by validate_items, the dup sweep, test_server_items, test_first_hour, and a test per class ("by hand" recipes craft with no station; bench recipes refuse without one).
+
+## UPDATE 25 Oct 02:57 UTC (Dave): NO KITS, BLUEPRINTS ON THE HAMMER
+Thatch pieces, building section kits and processing-station kits are not kit items. They are blueprints on the hammer, "just like the bridge". Sal writes one plan (item/recipe numbers stay, old saves load). Supersedes the kit parts above. Sal crafting gate (sal-thatch-floor-hand) is HELD until that plan is answered.
