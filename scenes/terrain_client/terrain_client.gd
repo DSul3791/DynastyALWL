@@ -140,6 +140,9 @@ const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
 const GroundColumn := preload("res://src/client/ground_column.gd")
+# Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
+# a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
+const SPAWN_LIFT_M := 0.5
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
 const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
@@ -975,7 +978,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
-	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, 28.0, 0.0))
+	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -1577,7 +1580,7 @@ func go_to_spawn() -> void:
 	if body == null or not world.has("spawn"):
 		return
 
-	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, 28.0, 0.0)
+	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1597,7 +1600,7 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 		cavein_death.start(self, spawn_point)
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1608,7 +1611,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	if body == null:
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
