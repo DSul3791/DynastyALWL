@@ -204,6 +204,8 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
+var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
+var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> bool: set by the server, hits the animal in front
 var _last_strike: Dictionary = {}
 var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
@@ -274,6 +276,7 @@ var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plant
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
 const FishSchoolsScript := preload("res://src/server/server_fish.gd")
+const BowScript := preload("res://src/stream/server_bow.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
@@ -287,6 +290,9 @@ var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last pic
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
 var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
+var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
+var _bow = null                     # server_bow.gd, made at the first shot
+var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
 var _last_throw: Dictionary = {}    # peer -> msec
 var _wood_species: Dictionary = {}   # data/items/wood_species.json: class of each tree species and the firewood and block items of each class
@@ -811,6 +817,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_fish(peer, inv, a, at)
 	elif kind == Net.ACT_NET:
 		_net_cast(peer, inv, a, b == 1, at)
+	elif kind == Net.ACT_SHOOT:
+		_shoot(peer, inv, a, b, at)
 	elif kind == Net.ACT_WEAR:
 		_gain_quiet = true
 		_wear(peer, inv, a)
@@ -1554,7 +1562,100 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	_flights.append({"number": number, "wear": spent, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
 
 
+# ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
+func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1:
+		return
+
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+	if str(entry.get("weapon_class", "")) != "bow" or _is_broken(inv.numbers[slot], inv.wear[slot]):
+		return
+
+	if _bow == null:
+		_bow = BowScript.new()
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_shot.get(peer, -100000)) < int(_bow.cfg.get("pace_ms", 700)):
+		return
+
+	var ammo: int = _bow.ammo_slot(inv, table)
+
+	if ammo < 0:
+		_say(peer, str(_bow.cfg.get("say_no_ammo", "")))
+		return
+
+	_last_shot[peer] = now
+	var arrow: Dictionary = table.entry(table.id_of(inv.numbers[ammo]))
+	var number: int = inv.numbers[ammo]
+	inv.take_from_slot(ammo, 1)
+	var power: float = _bow.power(draw_ms)
+
+	if power <= float(_bow.cfg.get("weak_power", 0.25)):
+		_say(peer, str(_bow.cfg.get("say_weak", "")))
+
+	_wear_slot(peer, inv, slot, "strike")
+	_arrows.append({"peer": peer, "number": number, "tip": str(arrow.get("tip", "wood")), "damage": _bow.damage(float(arrow.get("damage", 5.0)), power, skill_factor(peer, "bow")),
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * _bow.speed(power), "flown": 0.0, "age": 0.0})
+
+	if animal_alarm.is_valid():
+		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)))
+
+
+# Arrows in the air, in steps of step_s: the first animal on the segment is hurt, otherwise the ground (or water) or the range ends the flight.
+func _arrow_fly(delta: float) -> void:
+	if _arrows.is_empty():
+		return
+
+	var step: float = float(_bow.cfg.get("step_s", 0.05))
+	var left: float = delta
+
+	while left > 0.0 and not _arrows.is_empty():
+		var dt: float = minf(left, step)
+		left -= dt
+
+		for ar in _arrows.duplicate():
+			var from: Vector3 = ar["pos"]
+			ar["vel"].y -= THROW_GRAVITY * dt
+			var to: Vector3 = from + ar["vel"] * dt
+			ar["flown"] += from.distance_to(to)
+			ar["age"] += dt
+			var landed: bool = false
+			var hit_animal_now: bool = false
+			var at: Vector3 = to
+
+			if hit_animal_path.is_valid():
+				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]))
+
+				if not hit.is_empty():
+					landed = true
+					hit_animal_now = true
+					at = hit["at"]
+					practice(int(ar["peer"]), "bow")
+
+			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
+
+			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(_bow.cfg.get("range_m", 80.0)) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+				landed = true
+				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
+
+			ar["pos"] = to
+
+			if not landed:
+				continue
+
+			_arrows.erase(ar)
+			var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05
+
+			if fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
+				drop_in_world(int(ar["number"]), 1, at)
+			elif wet:
+				_say(int(ar["peer"]), str(_bow.cfg.get("say_lost", "")))
+
+
 func _fly(delta: float) -> void:
+	_arrow_fly(delta)
 	for flight in _flights.duplicate():
 		flight["vel"].y -= THROW_GRAVITY * delta
 		flight["pos"] += flight["vel"] * delta
