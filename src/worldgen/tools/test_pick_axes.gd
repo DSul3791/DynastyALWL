@@ -40,7 +40,7 @@ func _init() -> void:
 		_check(absf(right_tip.x + left_tip.x) < 0.005, id + ": the head is centred on the haft (tips equal distance left and right)")
 		_check(absf(right_tip.y - left_tip.y) < 0.005 and absf(right_tip.z - left_tip.z) < 0.005, id + ": the two tips are at the same height and the same depth")
 		_check(right_tip.z < -0.05 and left_tip.z < -0.05, id + ": the points droop downward (held z is up) on both sides")
-		_check(absf(box.size.y) > 0.55 and box.size.x > 0.5, id + ": the haft runs along y (%.2f long) and the head along x (%.2f wide)" % [box.size.y, box.size.x])
+		_check(absf(box.size.y) > 0.55 and box.size.x > 0.4 and box.size.x < 0.7, id + ": the haft runs along y (%.2f long) and the head along x (%.2f wide)" % [box.size.y, box.size.x])
 		_check(absf(box.position.x + box.size.x * 0.5) < 0.005, id + ": the whole mesh is symmetrical about the haft in x")
 
 	print("pick axes: %d failures" % failures)
