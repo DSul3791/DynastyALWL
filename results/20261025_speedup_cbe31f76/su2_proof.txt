@@ -1,0 +1,15 @@
+su2 head cbe31f7 imported
+RUN nc9 threads 9 exit 0 seconds 449 peak_ram_MB 2933
+fit threads 9
+RUN cachebuild threads 9 exit 0 seconds 365 peak_ram_MB 3126
+RUN cachereuse threads 9 exit 0 seconds 239 peak_ram_MB 3162
+RUN cachereuse6 threads 6 exit 0 seconds 235 peak_ram_MB 3138
+MD5 same tile_3_4 nc9
+MD5 same tile_4_4 nc9
+MD5 same tile_3_4 cachebuild
+MD5 same tile_4_4 cachebuild
+MD5 same tile_3_4 cachereuse
+MD5 same tile_4_4 cachereuse
+MD5 same tile_3_4 cachereuse6
+MD5 same tile_4_4 cachereuse6
+SU2DONE

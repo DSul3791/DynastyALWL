@@ -1,0 +1,4 @@
+generator-speedup cbe31f76c4f57175081446c53a58762d23db436e vs merge-793 5b9d9f915c014bb6591b30275da1f86a2b77f873, tiles 3,4 and 4,4, no settle. Container: 9 CPUs, 10 GB, swap 0.
+nc9 449 s peak RAM 2933 MB | cachebuild 365 s 3126 MB | cachereuse (9 threads) 239 s 3162 MB | cachereuse6 (6 threads) 235 s 3138 MB. Base 5b9d9f9 (6 threads, earlier run) 375 s.
+md5: all 4 runs, both tiles, byte-identical to the base tiles. 9 threads fit (only 2 tiles, so threads beyond 2 add nothing).
+RAM peaks are container memory.current sampled every 5 s.

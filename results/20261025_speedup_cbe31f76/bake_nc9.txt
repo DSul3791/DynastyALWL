@@ -1,0 +1,44 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Setup (world elevation, wet air, river network, tables) in 154938 ms; 15887 river cells in 3743 chains
+  drain timing: routing noise 3057 ms
+  drain timing: routing noise 3591 ms
+  drain timing: fill 29281 ms
+  drain timing: flow + edge seed 3731 ms
+  drain timing: fill 30670 ms
+  channel timing: centre line 4778 ms
+  drain timing: flow + edge seed 4815 ms
+  channel timing: centre line 5252 ms
+  channel timing: stamp 8881 ms
+  channel timing: stamp 8042 ms
+  channel timing: canyon map + valleys 95812 ms
+  channel timing: canyons 1159 ms
+  gullies: 7602, dead ends: 0
+  channel timing: gullies 2497 ms
+  basins: 32 head ponds (9.7 ha), 4 lakes (4.5 ha), 6 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 3483 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1015 ms
+  drain timing: channels 117625 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  pits: 9 drained, 2 kept as basins (outlet cut at the lip), 0 left (cut too deep), 453 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 3070 ms
+  basin water: 2016 cells tagged lake (12.9 ha)
+  water: drainage mode, 32 lakes, 42342 river cells in 161170 ms
+  channel timing: canyon map + valleys 111335 ms
+  channel timing: canyons 1301 ms
+  gullies: 10417, dead ends: 0
+  channel timing: gullies 2662 ms
+  basins: 52 head ponds (19.6 ha), 12 lakes (21.5 ha), 18 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 3608 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1100 ms
+  drain timing: channels 133300 ms
+  breach: 3 lakes, 4 cells cut, deepest cut 0.5 m
+  pits: 6 drained, 7 kept as basins (outlet cut at the lip), 5 left (cut too deep), 429 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 3350 ms
+  basin water: 5218 cells tagged lake (33.4 ha)
+  water: drainage mode, 37 lakes, 51872 river cells in 180360 ms
+Tile (3, 4): 8.73 MB, stages { "height": 21113, "erosion": 9685, "ledges": 37666, "scree": 5063, "water": 183476, "climate": 21449, "geology": 11778, "sites": 733 } -> /work/o2_nc9/tile_3_4.tile
+Tile (4, 4): 5.83 MB, stages { "height": 20234, "erosion": 8557, "ledges": 36159, "scree": 4449, "water": 164333, "climate": 20059, "geology": 10538, "sites": 123 } -> /work/o2_nc9/tile_4_4.tile
+2 tiles on 9 threads in 294.0 s
