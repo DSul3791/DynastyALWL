@@ -2723,9 +2723,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"brick": {
 			"number": 128,
@@ -3074,9 +3072,7 @@
 				4
 			],
 			"craft_s": 6.0,
-			"known": true,
-			"station": "workbench",
-			"station_level": 1
+			"known": true
 		},
 		"fine_board": {
 			"number": 144,
@@ -3127,9 +3123,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"stone_shingle": {
 			"number": 147,
@@ -3145,9 +3139,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"tar": {
 			"number": 148,
@@ -3197,9 +3189,7 @@
 				4
 			],
 			"craft_s": 5.0,
-			"known": true,
-			"station": "workbench",
-			"station_level": 1
+			"known": true
 		},
 		"saw_blade": {
 			"number": 152,
