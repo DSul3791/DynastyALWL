@@ -628,7 +628,6 @@
 			"kind": "gear",
 			"stack": 1,
 			"value": 40,
-			"future": true,
 			"look_alikes": [],
 			"slot": "back",
 			"carry_bonus_kg": 12
@@ -756,7 +755,6 @@
 			"slot": "body",
 			"warmth": 0.3,
 			"stack": 1,
-			"future": true,
 			"value": 25,
 			"look_alikes": []
 		},
@@ -768,7 +766,6 @@
 			"slot": "feet",
 			"warmth": 0.15,
 			"stack": 1,
-			"future": true,
 			"value": 20,
 			"look_alikes": []
 		},
@@ -780,7 +777,6 @@
 			"slot": "head",
 			"warmth": 0.1,
 			"stack": 1,
-			"future": true,
 			"value": 15,
 			"look_alikes": []
 		},
@@ -792,7 +788,6 @@
 			"slot": "hands",
 			"warmth": 0.08,
 			"stack": 1,
-			"future": true,
 			"value": 12,
 			"look_alikes": []
 		},
@@ -804,7 +799,6 @@
 			"slot": "legs",
 			"warmth": 0.12,
 			"stack": 1,
-			"future": true,
 			"value": 18,
 			"look_alikes": []
 		},

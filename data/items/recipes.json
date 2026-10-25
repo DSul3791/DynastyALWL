@@ -636,9 +636,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": true
 		},
 		"energy_bar": {
 			"number": 31,
@@ -843,9 +841,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": true
 		},
 		"hide_boots": {
 			"number": 40,
@@ -866,8 +862,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": true
 		},
 		"hide_hood": {
 			"number": 41,
@@ -888,7 +883,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_mittens": {
 			"number": 42,
@@ -909,7 +904,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_leggings": {
 			"number": 43,
@@ -930,8 +925,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": true
 		},
 		"sinew_cord": {
 			"number": 44,
