@@ -8,7 +8,7 @@ extends RefCounted
 
 const MAGIC := "SETUPCACHE1"
 const CODE_FOLDERS := ["res://src/worldgen/sketch", "res://src/worldgen/settings", "res://src/worldgen/tile", "res://src/worldgen/tables", "res://src/worldgen/runtime"]
-const INPUT_FILES := ["/world.json", "/plan/sketch_rules.json", "/plan/world_sketch.json", "/plan/tile_rules.json", "/plan/tile_plan.json", "/erosion_delta_v1.bin"]
+const INPUT_FILES := ["/world.json", "/plan/sketch_rules.json", "/plan/world_sketch.json", "/plan/tile_rules.json", "/plan/tile_plan.json", "/erosion_delta_v2.bin"]
 
 
 static func key(world_dir: String, elevation_cell_m: float) -> String:

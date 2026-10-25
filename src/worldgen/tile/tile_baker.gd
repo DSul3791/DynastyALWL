@@ -77,10 +77,10 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 		if use_cache:
 			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air, sketch)
 
-	# BAKE: a pre-carved island (erosion_delta_v1.bin next to world.json) replaces the per-tile erosion below.
+	# BAKE: a pre-carved island (erosion_delta_v2.bin next to world.json) replaces the per-tile erosion below.
 	erosion_delta = ErosionDeltaScript.new()
 
-	if not erosion_delta.load_file(world_dir + "/erosion_delta_v1.bin"):
+	if not erosion_delta.load_file(world_dir + "/erosion_delta_v2.bin"):
 		erosion_delta = null
 
 	tables = TableSetScript.new()
@@ -220,8 +220,8 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	# The 42 build is baked from the pre-carve file only: no file is an error, never a silent per-tile fallback.
 	if erosion_delta == null and not raw_only:
-		push_error("erosion_delta_v1.bin is missing next to world.json (terrain version 42 needs the pre-carve)")
-		return {"error": "erosion_delta_v1.bin missing", "timings": timings}
+		push_error("erosion_delta_v2.bin is missing next to world.json (terrain version 42 needs the pre-carve)")
+		return {"error": "erosion_delta_v2.bin missing", "timings": timings}
 
 	# Export tools want the ground as it stands before erosion (the input of TileErosion) and nothing else.
 	if raw_only:
