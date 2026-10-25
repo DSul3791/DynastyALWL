@@ -44,7 +44,7 @@ func load_file(path: String, item_table) -> bool:
 			identify.append(item_table.number_of(str(need)))
 
 		var entry: Dictionary = {
-			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs, "keeps": keeps, "identify": identify,
+			"number": int(row["number"]), "id": id, "name": str(row["name"]), "category": str(row.get("category", "")), "needs": needs, "keeps": keeps, "identify": identify,
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),

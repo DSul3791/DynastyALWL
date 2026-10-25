@@ -114,6 +114,7 @@ var _placement: Dictionary = {}              # structures.json: footprints, gaps
 var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
+var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const SWING_S := 0.55
 const HIT_STOP_S := 0.045
@@ -122,6 +123,8 @@ const REACH_M := 3.0
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
+const FlameUp := preload("res://src/client/flame_up.gd")
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -133,6 +136,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 
 	_tree_near = tree_near
 	_inv = inventory_view
+	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
 	_camera = camera
 	_root = world_root
@@ -290,6 +294,25 @@ func placing() -> bool:
 	return _blueprint != null
 
 
+# A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
+func _blueprinting() -> bool:
+	return holding and blueprints.picked > 0 and _hammer_tier() > 0
+
+
+func _hammer_tier() -> int:
+	var entry: Dictionary = _inv.table.entry(held_id())
+	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
+
+
+# R with a hammer in hand opens or shuts its blueprint list.
+func toggle_blueprints() -> bool:
+	if _hammer_tier() <= 0:
+		return false
+
+	blueprints.toggle(_hammer_tier())
+	return true
+
+
 func is_offhand(number: int) -> bool:
 	if number == 0:
 		return false
@@ -371,6 +394,20 @@ func _start_swing() -> void:
 
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
+	if blueprints.is_open:
+		blueprints.move(down, _hammer_tier())
+		return true
+
+	if _blueprinting():
+		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
+
+		if bool(picked_def.get("foundation", false)):
+			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
+			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+			return true
+
+		return false
+
 	if not holding or not _is_placeable():
 		return false
 
@@ -422,6 +459,9 @@ func _place_slot() -> int:
 
 
 func _placing_id() -> String:
+	if _blueprinting():
+		return blueprints.kit_of(blueprints.picked)
+
 	return _inv.table.id_of(_inv.inventory.numbers[_place_slot()])
 
 
@@ -430,6 +470,18 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
 		_inv.eat_slot(held_slot)
 		return true
+
+	if blueprints.is_open:
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			blueprints.choose(_hammer_tier())
+
+		return button == MOUSE_BUTTON_LEFT
+
+	if _blueprinting():
+		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+
+		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
@@ -729,7 +781,10 @@ func _ghost_clean(node: Node) -> void:
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 func _update_blueprint() -> void:
-	if not _is_placeable():
+	if (blueprints.picked > 0 or blueprints.is_open) and _hammer_tier() <= 0:
+		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+
+	if not _is_placeable() and not _blueprinting():
 		if _blueprint != null:
 			_blueprint.visible = false
 
@@ -803,7 +858,7 @@ func _update_blueprint() -> void:
 		blueprint_state = "covered" if covered else "open"
 
 	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
-	_blueprint_ok = _blueprint_ok and not blocked
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -981,7 +1036,17 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+	if _blueprinting():
+		var short: bool = not blueprints.can_afford(_hammer_tier())
+		text = "%s blueprint" % blueprints.name_of(blueprints.picked)
+
+		if PlacementRules.reason_text(blueprint_state) != "":
+			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+		elif short:
+			text += "   (red: not enough materials; R: the list)"
+		else:
+			text += "   (left click: build it with the materials in your pack; R: the list)"
+	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():
 		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
@@ -1368,38 +1433,182 @@ func _make_other_model() -> Node3D:
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
 func _make_torch_model(id: String = "") -> Node3D:
 	var torch: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.42, 0.3, 0.17)
+	wood.emission_enabled = true
+	wood.emission = Color(0.5, 0.3, 0.12)
+	wood.emission_energy_multiplier = 0.12
+	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
+	grime.albedo_color = Color(0.2, 0.14, 0.09)
 	var stick: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
-	rod.top_radius = 0.025
-	rod.bottom_radius = 0.03
+	rod.top_radius = 0.017
+	rod.bottom_radius = 0.025
 	rod.height = 0.6
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.27, 0.14)
+	rod.radial_segments = 16
 	rod.material = wood
 	stick.mesh = rod
 	torch.add_child(stick)
-	var flame: MeshInstance3D = MeshInstance3D.new()
-	var cone: CylinderMesh = CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = 0.07
-	cone.height = 0.22
-	var glow: StandardMaterial3D = StandardMaterial3D.new()
-	glow.albedo_color = Color(1.0, 0.6, 0.2)
-	glow.emission_enabled = true
-	glow.emission = Color(1.0, 0.5, 0.1)
-	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	cone.material = glow
-	flame.mesh = cone
-	flame.position = Vector3(0.0, 0.4, 0.0)
-	torch.add_child(flame)
+	# The top of the stick darkens with handling and smoke in three steps, so there is no hard seam.
+	for step in range(3):
+		var soot: MeshInstance3D = MeshInstance3D.new()
+		var soot_mesh: CylinderMesh = CylinderMesh.new()
+		var soot_y: float = 0.12 + 0.08 * float(step)
+		soot_mesh.top_radius = 0.0218 - 0.01333 * (soot_y + 0.04)   # a hair wider than the stick at that height
+		soot_mesh.bottom_radius = 0.0218 - 0.01333 * (soot_y - 0.04)
+		soot_mesh.height = 0.08
+		soot_mesh.radial_segments = 16
+		var shade: StandardMaterial3D = StandardMaterial3D.new()
+		shade.albedo_color = Color(0.42, 0.3, 0.17).lerp(Color(0.2, 0.14, 0.09), 0.3 + 0.35 * float(step))
+		soot_mesh.material = shade
+		soot.mesh = soot_mesh
+		soot.position = Vector3(0.0, soot_y, 0.0)
+		torch.add_child(soot)
+
+	# The head: rag or bark wound round the top of the stick and bound with twine, about 2.5 times the stick's width and 15 cm long; dark
+	# brown, the top third charred and glowing. The same colours as the unlit torch on the ground (basic_look.gd).
+	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
+	wrap_material.albedo_color = Color(0.26, 0.17, 0.1)
+	wrap_material.roughness = 1.0   # matte
+	wrap_material.emission_enabled = true   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
+	wrap_material.emission = Color(0.5, 0.22, 0.08)
+	wrap_material.emission_energy_multiplier = 0.2
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var wrapping: CylinderMesh = CylinderMesh.new()
+	wrapping.top_radius = 0.052
+	wrapping.bottom_radius = 0.04
+	wrapping.height = 0.15
+	wrapping.material = wrap_material
+	head.mesh = wrapping
+	head.position = Vector3(0.0, 0.325, 0.0)
+	torch.add_child(head)
+	var char_material: StandardMaterial3D = StandardMaterial3D.new()
+	char_material.albedo_color = Color(0.16, 0.1, 0.065)
+	char_material.roughness = 1.0
+	char_material.emission_enabled = true
+	char_material.emission = Color(0.9, 0.3, 0.05)
+	char_material.emission_energy_multiplier = 0.35
+	var charred: MeshInstance3D = MeshInstance3D.new()
+	var char_mesh: CylinderMesh = CylinderMesh.new()
+	char_mesh.top_radius = 0.0525
+	char_mesh.bottom_radius = 0.0485
+	char_mesh.height = 0.05
+	char_mesh.material = char_material
+	charred.mesh = char_mesh
+	charred.position = Vector3(0.0, 0.375, 0.0)
+	torch.add_child(charred)
+	var twine_material: StandardMaterial3D = StandardMaterial3D.new()
+	twine_material.albedo_color = Color(0.34, 0.26, 0.17)   # dark rope, not cream
+	twine_material.roughness = 1.0
+
+	for band_y in [0.28, 0.335]:
+		var band: MeshInstance3D = MeshInstance3D.new()
+		var ring: CylinderMesh = CylinderMesh.new()
+		ring.top_radius = 0.054 if band_y > 0.3 else 0.046
+		ring.bottom_radius = ring.top_radius
+		ring.height = 0.013
+		ring.material = twine_material
+		band.mesh = ring
+		band.position = Vector3(0.0, band_y, 0.0)
+		torch.add_child(band)
+
+	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 8 cm across at the base, a slim teardrop, a
+	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core.
+	# The two upper cones sway slowly so it does not read as one solid shape.
+	var rig: Node3D = Node3D.new()
+	rig.set_script(FlameUp)
+	rig.head_local = Vector3(0.0, 0.4, 0.0)
+	torch.add_child(rig)
+	var flames: Array = []
+	var layers: Array = [[0.062, 0.3, Color(1.0, 0.45, 0.08, 0.2), 0.0], [0.042, 0.22, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.034, 0.27, Color(1.0, 0.68, 0.14, 0.9), 0.006], [0.019, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.004]]
+
+	for n in range(layers.size()):
+		var layer: Array = layers[n]
+		var glow: StandardMaterial3D = StandardMaterial3D.new()
+		glow.albedo_color = layer[2]
+		glow.emission_enabled = true
+		glow.emission = layer[2]
+		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA   # the outer cones are see-through so the inner ones show through; the core glows added
+
+		if n == 3 or n == 0:
+			glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+
+		var tongue: Node3D = Node3D.new()   # pivots at the base so the sway leans the tip
+		var mesh_node: MeshInstance3D = MeshInstance3D.new()
+		glow.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mesh_node.mesh = _teardrop_mesh(float(layer[1]), float(layer[0]), glow)
+		tongue.add_child(mesh_node)
+		tongue.name = "Flame%d" % n
+		tongue.position = Vector3(float(layer[3]), 0.0, 0.0)
+		rig.add_child(tongue)
+
+		if n == 1 or n == 2:
+			flames.append(tongue)
+
+	for n in range(flames.size() if _root != null else 0):
+		var sway: Tween = _root.create_tween().set_loops()
+		sway.bind_node(flames[n])
+		var lean: float = 0.12 + 0.05 * float(n)
+		var span: float = 0.55 + 0.17 * float(n)
+		sway.tween_property(flames[n], "rotation:z", lean, span).set_trans(Tween.TRANS_SINE)
+		sway.tween_property(flames[n], "rotation:z", -lean, span).set_trans(Tween.TRANS_SINE)
+
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.shadow_enabled = false
-	light.position = Vector3(0.0, 0.55, 0.0)
+	light.light_volumetric_fog_energy = 0.0
+	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
+	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
+	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
+	hand_light.name = "HandLight"
+	hand_light.light_color = Color(1.0, 0.6, 0.28)
+	hand_light.omni_range = 1.6
+	hand_light.light_energy = 0.7
+	hand_light.shadow_enabled = false
+	hand_light.light_volumetric_fog_energy = 0.0   # no glowing ball in the fog around the hand
+	hand_light.light_cull_mask = 0xFFFFFFFD
+	hand_light.position = Vector3(0.0, -0.05, 0.12)
+	torch.add_child(hand_light)
+
+	for child in torch.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).layers = 2   # see the light cull masks above
+
 	return torch
+
+
+# A flame's teardrop: round and fullest about a third of the way up, closing to a point at the tip and to a point at the base.
+func _teardrop_mesh(height: float, radius: float, material: Material) -> ArrayMesh:
+	var surface: SurfaceTool = SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings: int = 12
+	var sides: int = 16
+
+	for ring in range(rings):
+		var t0: float = float(ring) / float(rings)
+		var t1: float = float(ring + 1) / float(rings)
+		var r0: float = radius * sin(PI * pow(t0, 0.7))
+		var r1: float = radius * sin(PI * pow(t1, 0.7))
+
+		for side in range(sides):
+			var a0: float = TAU * float(side) / float(sides)
+			var a1: float = TAU * float(side + 1) / float(sides)
+			var p00: Vector3 = Vector3(cos(a0) * r0, t0 * height, sin(a0) * r0)
+			var p10: Vector3 = Vector3(cos(a1) * r0, t0 * height, sin(a1) * r0)
+			var p01: Vector3 = Vector3(cos(a0) * r1, t1 * height, sin(a0) * r1)
+			var p11: Vector3 = Vector3(cos(a1) * r1, t1 * height, sin(a1) * r1)
+
+			for corner in [p00, p10, p11, p00, p11, p01]:
+				surface.add_vertex(corner)
+
+	surface.generate_normals()
+	var mesh: ArrayMesh = surface.commit()
+	mesh.surface_set_material(0, material)
+	return mesh
 
 
 func _make_knife_model() -> Node3D:

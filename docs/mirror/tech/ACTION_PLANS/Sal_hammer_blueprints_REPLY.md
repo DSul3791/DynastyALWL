@@ -17,3 +17,9 @@ Queue: after spawn column, B, C, bed, sound hookup. Not before the bake hold end
 
 ## AMENDMENT 25 Oct 03:00 UTC (Dave: "nothing in the first tier should be" a blueprint)
 First tier stays hand-crafted items: thatch four, rough bed, campfire, campfire pot, chests, first bench (log workbench). NOT blueprints, NOT retired; points 4, 6 (thatch four, first bench), 8 and build 1 list above are changed accordingly. Blueprints are later tiers only: station kits, section kits, timber set, ladder, lean-to if not tier 1, clay hearth, oven, bridges. sal-thatch-floor-hand / 39a63cef (thatch four, first bench, clothing, backpack, forge) may be gated again once Sal confirms the final hash.
+
+## ANSWER 25 Oct 05:00 UTC: which hammer
+Not a global "stone hammer" rule. Each blueprint row keeps its own `hammer` field (minimum tier, 1 = wooden hammer, recipe 161, a hand craft). The hammer must be the SELECTED item in hand when the blueprint list opens and when placing (as in your plan), not just somewhere on the hotbar. Defaults: section kits, timber set, ladder = tier 1 (wooden); processing stations = tier 1 plus a workbench in reach. A higher tier is used only where Dave says so; leave the field in the data, do not hard-code it. Build 1 stays PROTOCOL 78 (ACT_PLACE_BLUEPRINT = 48), RESTART; David3 gates the exact head 2f697bed after rebase on the current head; merge on PASS.
+
+## ANSWER 2 (25 Oct 05:10 UTC): build 1 deviation
+OK: "usable hammer of enough tier on the hotbar" for build 1, same as every other tool. Selected-slot check goes in build 2 (client sends the slot) inside protocol 78, no further bump. Before David3 gates ac8c0985: Sal states that none of recipes 119-124, 126, 130 is in the first-hour list (EARLY_GAME_LIST.md); if any is, it stays an item. The gate pass is David3 on the exact head named by Sal after the last rebase.

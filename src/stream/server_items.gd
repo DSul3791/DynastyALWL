@@ -71,6 +71,7 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
@@ -84,6 +85,7 @@ const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spe
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
+const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
@@ -140,6 +142,7 @@ var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
+var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
@@ -168,6 +171,8 @@ var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
+var _blueprints: Dictionary = {}    # blueprints.json: number -> row (with its "id"), placed from the hammer instead of a kit item
+var _blueprint_of_kit: Dictionary = {}   # kit item id -> blueprint number (a piece takes down into its materials, not a kit)
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
@@ -268,6 +273,7 @@ var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the w
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
+const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
@@ -317,6 +323,7 @@ func setup(item_table, store_dir: String) -> void:
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
 
+	_load_blueprints()
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
@@ -394,7 +401,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2}
+		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_dirty = true
 
 	if bool(_characters[key].get("new_player", false)):
@@ -501,6 +508,7 @@ func peer_left(peer: int) -> void:
 	_last_gather.erase(peer)
 	_last_use.erase(peer)
 	_last_eat.erase(peer)
+	_eat_warn.erase(peer)
 	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
@@ -847,6 +855,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
+	elif kind == Net.ACT_PLACE_BLUEPRINT:
+		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_STRIKE:
@@ -899,6 +909,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_DUMP_WATER:
 		if admin_ok.is_valid() and admin_ok.call(peer) and dump_water.is_valid():
 			_say(peer, "Water dump: %s" % str(dump_water.call(at.x, at.z)))
+	elif kind == Net.ACT_LAND_TYPES:
+		if admin_ok.is_valid() and admin_ok.call(peer) and land_types.is_valid():
+			_say(peer, "Land types: %s" % str(land_types.call(at.x, at.z)))
 	elif kind == Net.ACT_RESET_EDITS:
 		if admin_ok.is_valid() and admin_ok.call(peer) and reset_terrain_edits.is_valid():
 			print("server: peer %d reset all terrain edits" % peer)
@@ -913,6 +926,7 @@ var ground_ready: Callable              # (x, z) -> bool: the ground there is in
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
+var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
@@ -2165,13 +2179,21 @@ func _foundation_rows() -> Array:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
-func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0) -> void:
-	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
-		return
+func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0, blueprint: Dictionary = {}) -> void:
+	var number: int = 0
+	var kit_id: String = ""
 
-	var number: int = inv.numbers[slot]
+	if not blueprint.is_empty():   # from the hammer: no kit item, the materials are checked here and taken with the piece
+		if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, blueprint):
+			return
 
-	var kit_id: String = table.id_of(number)
+		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
+	else:
+		if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+			return
+
+		number = inv.numbers[slot]
+		kit_id = table.id_of(number)
 
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
@@ -3856,7 +3878,7 @@ func _cook(peer: int, inv, id: int) -> void:
 
 # Food that should have been cooked (cooking.json raw_sick, hours of sickness by item id or id suffix; Tyler: raw meat 24 h,
 # fiddleheads and beans 12, acorns and wild mushrooms mild at 6). It still feeds you; the stomach pays afterwards.
-func _raw_sickness(peer: int, item_id: String) -> void:
+func _raw_hours(item_id: String) -> float:
 	var cfg: Dictionary = _cooking.get("raw_sick", {})
 	var hours: float = float(cfg.get("by_id", {}).get(item_id, 0.0))
 
@@ -3866,9 +3888,96 @@ func _raw_sickness(peer: int, item_id: String) -> void:
 				hours = float(cfg["by_suffix"][suffix])
 				break
 
+	return hours
+
+
+func _raw_sickness(peer: int, item_id: String) -> void:
+	var hours: float = _raw_hours(item_id)
+
 	if hours > 0.0:
-		_say(peer, "That should have been cooked. Your stomach turns.")
-		make_sick(peer, hours)
+		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")
+	else:
+		_learn_food(peer, item_id, "ok")
+
+
+# --- Eat-once learning (EARLY_GAME_PRINCIPLES 5, data/items/eat_memory.json) ---
+
+var _eat_cfg: Dictionary = {}
+var _eat_warn: Dictionary = {}      # peer -> {"item": id, "until": msec}: the harm warning the next press confirms
+
+
+func _eat_cfg_value(key: String, fallback: Variant) -> Variant:
+	if _eat_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/eat_memory.json"))
+		_eat_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	return _eat_cfg.get(key, fallback)
+
+
+func tried_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "" or not _characters.has(key):
+		return {}
+
+	if typeof(_characters[key].get("tried", null)) != TYPE_DICTIONARY:
+		_characters[key]["tried"] = {}
+
+	return _characters[key]["tried"]
+
+
+func grace_of(peer: int) -> float:
+	return float(_characters.get(str(_peer_key.get(peer, "")), {}).get("grace_s", 0.0))
+
+
+# A harm is never forgotten; "ok" only fills an unknown food.
+func _learn_food(peer: int, item_id: String, what: String) -> void:
+	var tried: Dictionary = tried_of(peer)
+
+	if str(tried.get(item_id, "")) == "harm" or str(tried.get(item_id, "")) == what:
+		return
+
+	if _characters.has(str(_peer_key.get(peer, ""))):
+		tried[item_id] = what
+		_dirty = true
+
+
+# A food that harms: in the first hour an unknown one costs food and water only, otherwise the stomach pays. Either way it is remembered.
+func _harm_bite(peer: int, item_id: String, hours: float, line: String) -> void:
+	var unknown: bool = not tried_of(peer).has(item_id)
+	_learn_food(peer, item_id, "harm")
+
+	if unknown and grace_of(peer) > 0.0:
+		var v: Dictionary = vitals_of(peer)
+		var cost: Dictionary = _eat_cfg_value("first_hour_cost", {})
+		v["fed"] = maxf(float(v["fed"]) - float(cost.get("fed_kcal", 150)), 0.0)
+		v["wet"] = maxf(float(v["wet"]) - float(cost.get("wet_ml", 150)), 0.0)
+		_say(peer, str(_eat_cfg_value("say_first_hour", "")))
+		_sync_vitals(peer, true)
+		return
+
+	if line != "":
+		_say(peer, line)
+
+	make_sick(peer, hours)
+
+
+# True when the bite must wait: a food that harmed this character before is stopped once, with a hint; a second press within
+# confirm_window_s eats it anyway.
+func _eat_stopped(peer: int, item_id: String, now: int) -> bool:
+	if str(tried_of(peer).get(item_id, "")) != "harm":
+		return false
+
+	var warn: Dictionary = _eat_warn.get(peer, {})
+
+	if str(warn.get("item", "")) == item_id and now <= int(warn.get("until", 0)):
+		_eat_warn.erase(peer)
+		return false
+
+	_eat_warn[peer] = {"item": item_id, "until": now + int(float(_eat_cfg_value("confirm_window_s", 5.0)) * 1000.0)}
+	_say(peer, str(_eat_cfg_value("say_warn", "")))
+	think(peer, "hint_harm")
+	return true
 
 
 # A hot meal or a hot drink lifts body warmth a little (cooking.json "warms", warmth points); the warmth tick then pulls it back.
@@ -3904,6 +4013,73 @@ func _fire_in_reach(peer: int, id: int) -> Dictionary:
 
 
 # --- Placed structures (data/items/structures.json): lean-to shelter now, storage chest next ---
+
+func _load_blueprints() -> void:
+	_blueprints.clear()
+	_blueprint_of_kit.clear()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(BLUEPRINTS_PATH))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for id in parsed.get("blueprints", {}):
+		var row: Dictionary = parsed["blueprints"][id].duplicate()
+		row["id"] = id
+		_blueprints[int(row["number"])] = row
+		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
+
+
+# Whether this blueprint can go down now: a hammer of enough tier on the hotbar, the station near when it needs one, every material in the pack.
+# Says why when it cannot, and takes nothing.
+func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
+	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
+		return false
+
+	var hammer: int = _tool_slot(inv, "hammer")
+
+	if hammer < 0:
+		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
+		return false
+
+	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+		_say(peer, "This hammer is too light for that. A stone hammer or better.")
+		return false
+
+	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"])):
+		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
+		return false
+
+	for need in row["cost"]:
+		if inv.count_of(table.number_of(str(need[0]))) < int(need[1]):
+			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
+			return false
+
+	return true
+
+
+func _pay_blueprint(inv, row: Dictionary) -> void:
+	for need in row["cost"]:
+		inv.remove(table.number_of(str(need[0])), int(need[1]))
+
+
+# All the materials back into the pack, or none (with a word) when they do not fit.
+func _refund_blueprint(peer: int, inv, row: Dictionary) -> bool:
+	var given: Array = []
+
+	for need in row["cost"]:
+		var number: int = table.number_of(str(need[0]))
+		var left: int = inv.add(number, int(need[1]))
+		given.append([number, int(need[1]) - left])
+
+		if left > 0:
+			for put in given:
+				inv.remove(int(put[0]), int(put[1]))
+
+			_say(peer, "Make room in your pack first.")
+			return false
+
+	return true
+
 
 func _structure_of_kit(kit_id: String) -> Dictionary:
 	for kind in _structures:
@@ -3946,7 +4122,11 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
-	inv.take_from_slot(slot, 1)
+	if slot < 0:
+		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])])
+	else:
+		inv.take_from_slot(slot, 1)
+
 	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
 
 	if int(def.get("slots", 0)) > 0:
@@ -4058,9 +4238,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take down what stands on it first.")
 		return
 
-	var kit: int = table.number_of(str(def["kit"]))
-
-	if inv.add(kit, 1) > 0:
+	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+			return
+	elif inv.add(table.number_of(str(def["kit"])), 1) > 0:
 		return
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
@@ -4469,6 +4650,8 @@ func _become_new_player(peer: int) -> void:
 	_inventories[key].bag_from = 10
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
+	_characters[key]["tried"] = {}
+	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
@@ -5300,6 +5483,12 @@ func _vitals_tick(spent: float) -> void:
 
 		if v.is_empty():
 			continue
+
+		var crow: Dictionary = _characters.get(_peer_key[peer], {})
+
+		if float(crow.get("grace_s", 0.0)) > 0.0:   # online time only: this loop runs for connected peers
+			crow["grace_s"] = maxf(float(crow["grace_s"]) - spent, 0.0)
+			_dirty = _dirty or float(crow["grace_s"]) <= 0.0
 
 		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
 		var burn: float = burn_per_day * game_s / 86400.0
@@ -6228,13 +6417,57 @@ func fish_stock(cell: Vector2i) -> int:
 	var best: int = mini(int(cfg.get("stock_base", 4)) + _cell_hash(cell) % maxi(int(cfg.get("stock_extra", 8)), 1), int(cfg.get("stock_max", 12)))
 	var key: String = "%d,%d" % [cell.x, cell.y]
 	var row: Array = _fish_stock.get(key, [best, _unix()])
-	var back: int = int(floor((_unix() - float(row[1])) / maxf(float(cfg.get("regrow_s", 3600.0)), 1.0)))
+	var regrow_s: float = float(cfg.get("regrow_s", 3600.0))
+
+	if water_kind_at.is_valid() and cfg.has("regrow_s_sea"):
+		var size: float = float(cfg.get("cell_m", 128.0))
+
+		if str(water_kind_at.call((float(cell.x) + 0.5) * size, (float(cell.y) + 0.5) * size).get("kind", "")).begins_with("sea"):
+			regrow_s = float(cfg["regrow_s_sea"])   # sea water refills faster (balance plan 5b)
+
+	var back: int = int(floor((_unix() - float(row[1])) / maxf(regrow_s, 1.0)))
 	var now_n: int = mini(int(row[0]) + back, best)
 	_fish_stock[key] = [now_n, _unix() if back > 0 else float(row[1])]
 	return now_n
 
 
-func _fish_chance(peer: int, _cell: Vector2i, bait: bool) -> float:
+var _schools = null     # server_fish.gd, made when the first cast needs it and the water kind hook is set
+
+
+# The best school factor for a line or net thrown from `pos` with `reach` m of reach: the stand point and eight directions at half and full reach
+# (the water is somewhere out there, the shore is under the feet). {"factor", "species", "active"}; factor 1.0 and not active when plan C has nothing to say.
+func school_hit(pos: Vector3, reach: float) -> Dictionary:
+	var none: Dictionary = {"factor": 1.0, "species": "", "active": false}
+
+	if not water_kind_at.is_valid():
+		return none
+
+	if _schools == null:
+		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
+		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
+
+	var day: int = int(floor(_now_game_s() / 86400.0))
+	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
+	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
+	var best: Dictionary = none
+	var memo: Dictionary = {}
+
+	for k in 17:
+		var at: Vector3 = pos
+
+		if k > 0:
+			var a: float = float((k - 1) % 8) * TAU / 8.0
+			at = pos + Vector3(cos(a), 0.0, sin(a)) * (reach if k > 8 else reach * 0.5)
+
+		var got: Dictionary = _schools.factor_at(at.x, at.z, day, season, _now_game_s(), stock, memo)
+
+		if bool(got["active"]) and (not bool(best["active"]) or float(got["factor"]) > float(best["factor"])):
+			best = got
+
+	return best
+
+
+func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) -> float:
 	var cfg: Dictionary = _fishing_data()
 	var chance: float = float(cfg.get("base_chance", 0.55)) * skill_factor(peer, "fish")
 	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0 if game_seconds.is_valid() else 12.0
@@ -6261,11 +6494,15 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool) -> float:
 	if bait:
 		chance *= float(cfg.get("bait_mult", 1.5))
 
-	return clampf(chance, 0.02, float(cfg.get("max_chance", 0.93)))
+	chance *= float(hit.get("factor", 1.0))   # plan C: inside a school 1.0, near it 0.5, away from every school 0.15
+	return clampf(chance, float(cfg.get("min_chance", 0.02)), float(cfg.get("max_chance", 0.93)))
 
 
-func _fish_species(cell: Vector2i) -> String:
+func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
 	var cfg: Dictionary = _fishing_data()
+
+	if str(hit.get("species", "")) != "":
+		return str(hit["species"])   # the school the line or net is in or near
 	var types: Array = cfg.get("types", ["pond"])
 	@warning_ignore("integer_division")
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
@@ -6326,7 +6563,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 
 	var cell: Vector2i = _fish_cell(_peer_pos[peer])
 	var bait_slot: int = _fish_bait_slot(inv, cfg)
-	var chance: float = _fish_chance(peer, cell, bait_slot >= 0) * (float(cfg.get("ice", {}).get("ice_mult", 0.8)) if icy else 1.0)
+	var hit: Dictionary = school_hit(_peer_pos[peer], float(cfg.get("reach_m", 8.0)))
+	var chance: float = _fish_chance(peer, cell, bait_slot >= 0, hit) * (float(cfg.get("ice", {}).get("ice_mult", 0.8)) if icy else 1.0)
 
 	if bait_slot >= 0:
 		inv.take_from_slot(bait_slot, 1)
@@ -6335,7 +6573,7 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
 	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
-	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites}
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", ""))}
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
@@ -6403,7 +6641,8 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 	var cell: Vector2i = state["cell"]
 	var cell_key: String = "%d,%d" % [cell.x, cell.y]
 	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
-	var chance: float = clampf(_fish_chance(peer, cell, false) * float(cfg.get("chance_mult", 1.0)), 0.02, float(cfg.get("max_chance", 0.95)))
+	var hit: Dictionary = school_hit(state["spot"], float(cfg.get("reach_m", 5.0)))
+	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
 
 	for n in want:
@@ -6412,7 +6651,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 		if fate(peer, "fish", chance):
 			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
-			var species: String = _fish_species(cell)
+			var species: String = _fish_species(cell, hit)
 			var left: int = inv.add(table.number_of(species), 1)
 
 			if left > 0:
@@ -6580,7 +6819,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		return
 
 	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-	var species: String = _fish_species(cell)
+	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))})
 	var left: int = inv.add(table.number_of(species), 1)
 
 	if left > 0:
@@ -6683,8 +6922,15 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
 		return
 
+	# Short of a part the pack could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
+	if not _pack_covers(inv, recipe, count):
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count)
+
+		if outcome == 1:
+			return
+
 	var entries: Array = queue["entries"]
-	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty()
+	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0)
 
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
@@ -6714,6 +6960,98 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	_sync_craft_queue(peer)
 
 
+# Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
+func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
+	for need in recipe["needs"]:
+		if not inv.has(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
+			return false
+
+	for keep in recipe["keeps"]:
+		if not inv.has(keep[0], keep[1]):
+			return false
+
+	return true
+
+
+# Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
+# was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int) -> int:
+	var ctx: Dictionary = {
+		"have": func(item: int) -> int: return inv.count_of(item),
+		"station_ok": func(r: Dictionary) -> bool: return str(r.get("station", "")) == "" or station_near(peer, str(r["station"]), int(r.get("station_level", 1))),
+		"free": false,
+	}
+	var plan: Dictionary = CraftPlanner.plan(recipes, table, recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), ctx)
+
+	if not bool(plan["ok"]):
+		if str(plan["msg"]) != "" and str(plan["msg"]) != "You do not have what that needs":
+			_say(peer, str(plan["msg"]))
+			return 0
+
+		return -1
+
+	var steps: Array = plan["steps"]
+
+	if steps.size() == 1:
+		return -1   # nothing to make first: the plain path
+
+	var entries: Array = queue["entries"]
+
+	if entries.size() + steps.size() > CRAFT_QUEUE_ENTRIES:
+		_say(peer, "The crafting queue is full")
+		return 0
+
+	for made in plan["made"]:   # the made parts must fit in the pack and under the carry limit
+		if _fit(peer, inv, int(made[0]), int(made[1])) < int(made[1]):
+			_say(peer, "You cannot carry that many %s" % table.name_of(int(made[0])).to_lower())
+			return 0
+
+	var chain: int = 1
+
+	for entry in entries:
+		if entry.size() > 4:
+			chain = maxi(chain, int(entry[4]) + 1)
+
+	for step in steps:
+		for need in step["take"]:
+			inv.remove(need[0], int(need[1]) * int(step["count"]))
+
+		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
+
+	_dirty = true
+	_sync_craft_queue(peer)
+	return 1
+
+
+# The head entry starts: the parts an earlier step made leave the pack now. False (the entry and what depends on it are cancelled and refunded)
+# when they are not there any more.
+func _start_deferred(peer: int, head: Array) -> bool:
+	var inv = inventory_of(peer)
+	var times: int = int(head[1])
+
+	for need in head[3]:
+		if inv == null or not inv.has(need[0], int(need[1]) * times):
+			_cancel_craft(peer, 0)
+			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
+			return false
+
+	for need in head[3]:
+		inv.remove(need[0], int(need[1]) * times)
+		var merged: bool = false
+
+		for have in head[2]:
+			if int(have[0]) == int(need[0]):
+				have[1] = int(have[1]) + int(need[1])
+				merged = true
+
+		if not merged:
+			head[2].append([int(need[0]), int(need[1])])
+
+	head[3] = []
+	_dirty = true
+	return true
+
+
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
@@ -6733,6 +7071,20 @@ func _cancel_craft(peer: int, index: int) -> void:
 		queue["elapsed"] = 0.0
 
 	_refund_entry(peer, entry)
+
+	# Cancelling a part cancels what was waiting for it (the same chain, queued after it); each is refunded what it took.
+	if entry.size() > 4 and int(entry[4]) > 0:
+		var at: int = index
+
+		while at < queue["entries"].size():
+			var later: Array = queue["entries"][at]
+
+			if later.size() > 4 and int(later[4]) == int(entry[4]):
+				queue["entries"].remove_at(at)
+				_refund_entry(peer, later)
+			else:
+				at += 1
+
 	_dirty = true
 	_sync_craft_queue(peer)
 
@@ -6757,13 +7109,16 @@ func _craft_tick(spent: float) -> void:
 			continue
 
 		# A station recipe only runs while you are near its station; step away and it waits (nothing is lost, cancel refunds).
-		var free_entry: bool = (head[2] as Array).is_empty()   # an admin-mode craft: no station, no kept tool
+		var free_entry: bool = (head[2] as Array).is_empty() and (head.size() < 4 or (head[3] as Array).is_empty())   # an admin-mode craft: no station, no kept tool
 
 		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				_say(peer, "Your craft waits: go back to the %s" % _station_name(str(recipe["station"])))
 
+			continue
+
+		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
@@ -6862,7 +7217,12 @@ func _load_craft_queues() -> void:
 			for need in entry[2] if entry.size() > 2 else []:
 				needs.append([int(need[0]), int(need[1])])
 
-			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs])
+			var parts: Array = []
+
+			for need in entry[3] if entry.size() > 3 else []:
+				parts.append([int(need[0]), int(need[1])])
+
+			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs, parts, int(entry[4]) if entry.size() > 4 else 0])
 
 		_craft_queues[str(key)] = {"entries": entries, "elapsed": float(row.get("elapsed", 0.0))}
 
@@ -7128,12 +7488,22 @@ func _eat(peer: int, inv, slot: int) -> void:
 	var item_id: String = table.id_of(inv.numbers[slot])
 	var spoil: Dictionary = table.spoilage()
 
+	if _eat_stopped(peer, item_id, now):
+		_last_eat[peer] = now
+		return
+
 	if not spoil.is_empty() and item_id == str(spoil.get("rotten_item", "")):
 		_last_eat[peer] = now
 		inv.take_from_slot(slot, 1)
+
+		if not tried_of(peer).has(item_id) and grace_of(peer) > 0.0:
+			_harm_bite(peer, item_id, -1.0, "")
+			return
+
 		var sick: Dictionary = spoil.get("sick", {})
 		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 0)), 1.0)
 		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 0)), 0.0)
+		_learn_food(peer, item_id, "harm")
 		make_sick(peer)
 		_sync_vitals(peer, true)
 		return
@@ -7390,6 +7760,8 @@ func _load_characters() -> void:
 			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
+			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
+			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:

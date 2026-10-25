@@ -1,0 +1,5 @@
+{
+	"note": "Which settings switch a line of the inner voice belongs to (Esc > Settings > Inner voice). 'hint' = the nudges of the early game (after a mistake, or up front when the player idles); 'dialogue' = the character's own remarks: perception warnings, jokes, 'that was a good day'. A kind not listed here counts as dialogue, except one that starts with 'hint_', which counts as hint. New hint lines only need their kind added to the hint list (or named hint_<something>).",
+	"hint": ["hint"],
+	"dialogue": ["vomit", "diarrhea", "perception", "sleep", "joke"]
+}

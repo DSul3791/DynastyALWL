@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -62,6 +63,7 @@ const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
+const LandTypeScript := preload("res://src/water/land_type.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
 const DRY_SHRINK := 0.7                 # full dry heat takes this share off the spring flow (a trickle is left); the floor below
 const RUNOFF_FLOOR := 0.2               # rivers never shrink below this share of the start flow
@@ -303,8 +305,10 @@ func _ready() -> void:
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 
-			if not tile_data.sim_levels.is_empty():
-				if not is_nan(tile_data.sim_levels[k]):
+			var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+			if not sim.is_empty():
+				if not is_nan(sim[k]):
 					return true
 			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
 				return true
@@ -313,6 +317,18 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
+		var water: Array = _water_at(Vector3(x, 0.0, z))
+		var baked: int = 0
+
+		if generator.tile_cached(x, z):
+			var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+			if not tile_data.placeholder and not tile_data.water_class.is_empty():
+				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
+
+		return [water[0], water[1], baked])
+	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
@@ -393,6 +409,7 @@ func _ready() -> void:
 	items.water_flow_at = _water_flow_at
 	items.water_flow_runs = _water_flow_runs
 	items.dump_water = _dump_water
+	items.land_types = _land_types
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
@@ -563,7 +580,7 @@ func _ready() -> void:
 # Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
-const SPAWN_OVERRIDE := Vector2(53301.0, 68427.0)
+const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
 
 
 func _spawn_point(world_dir: String) -> Vector3:
@@ -675,8 +692,10 @@ func _water_at(position: Vector3) -> Array:
 	elif water_live != null:
 		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
 
-		if tile_data != null and not tile_data.sim_levels.is_empty():
-			surface = tile_data.sim_levels[tile_data.nearest(position.x, position.z)]
+		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
+
+		if not sim.is_empty():
+			surface = sim[tile_data.nearest(position.x, position.z)]
 
 	return [surface, ground]
 
@@ -950,8 +969,7 @@ func _poll_water() -> void:
 			if tile_data == null:
 				continue
 
-			tile_data.sim_levels = update[1]
-			tile_data.fall_levels = update[2]
+			tile_data.set_sim(update[1], update[2])
 
 			if update[0] == water_live.centre:
 				_centre_levels = update[1]
@@ -1248,6 +1266,71 @@ func _dump_water(x: float, z: float) -> String:
 	file.close()
 	print("server: water dump written to ", path)
 	return path
+
+
+# Water land types, R1 (design/WATER_LAND_TYPES.md): classifies the 200 m box round (x, z) from the live water (instant reading; the running
+# 30 day signature is not wired into the water thread yet), draws it as letters (. dry, L lake, R river, M marsh, S swamp, B bog, F floodplain,
+# * spring that passes the catch-basin rule, ! spring that fails it) and writes <store>/land_types_X_Z.txt. Admin button "Land types here".
+func _land_types(x: float, z: float) -> String:
+	var tile: Vector2i = generator.tile_of(x, z)
+	var data = water_live.data_of(tile) if water_live != null else null
+	var sim = water_live.sim_of(tile) if water_live != null else null
+
+	if data == null or sim == null:
+		return "no running water sim for the tile at %d, %d" % [int(x), int(z)]
+
+	var half: int = 12
+	var ci: int = int(round((x - data.x0) / sim.spacing_m))
+	var cj: int = int(round((z - data.z0) / sim.spacing_m))
+	var depth: PackedFloat32Array = sim.get_depth()
+	var letters: String = ".LRMSBF"
+	var counts: Array = [0, 0, 0, 0, 0, 0, 0]
+	var rows: PackedStringArray = PackedStringArray()
+	var spring_at: Dictionary = {}
+	var passing: int = 0
+	var failing: int = 0
+
+	for spring in sim.springs:
+		var report: Dictionary = LandTypeScript.basin_report(sim.ground, data.water_class, sim.side, int(spring[0]))
+		spring_at[int(spring[0])] = bool(report["ok"])
+
+	for j in range(maxi(cj - half, 1), mini(cj + half, sim.side - 2) + 1):
+		var row: String = ""
+
+		for i in range(maxi(ci - half, 1), mini(ci + half, sim.side - 2) + 1):
+			var n: int = j * sim.side + i
+			var t: int = LandTypeScript.DRY
+
+			if depth[n] >= 0.01 or data.water_class[n] == 2 or data.water_class[n] == 3:
+				var peaty: bool = n < data.soil.size() and data.soil[n] == 6
+				var warm: bool = n < data.biome.size() and data.biome[n] == 10 and not peaty
+				var wet: float = 1.0 if depth[n] >= LandTypeScript.WET_M else 0.0
+				t = LandTypeScript.classify_cell(depth[n], LandTypeScript.speed_cell(sim.ground, depth, sim.side, sim.spacing_m, n), wet, data.water_class[n], peaty, warm)
+
+			counts[t] += 1
+			row += letters[t]
+
+			if spring_at.has(n):
+				row = row.substr(0, row.length() - 1) + ("*" if spring_at[n] else "!")
+
+				if spring_at[n]:
+					passing += 1
+				else:
+					failing += 1
+
+		rows.append(row)
+
+	var summary: String = "tile %s: dry %d, lake %d, river %d, marsh %d, swamp %d, bog %d, floodplain %d; springs in the box: %d pass the basin rule, %d fail" % [str(tile), counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], passing, failing]
+	var path: String = _store_path + "/land_types_%d_%d.txt" % [int(x), int(z)]
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		return summary + " (cannot write " + path + ")"
+
+	file.store_string("land types at x %.0f z %.0f (8 m cells, north up, 25 x 25)\n. dry L lake R river M marsh S swamp B bog F floodplain * spring in a basin ! spring NOT in a basin\n%s\n%s\n" % [x, z, "\n".join(rows), summary])
+	file.close()
+	print("server: land types written to ", path)
+	return summary
 
 
 # Running water for placement rules (src/stream/water_flow.gd): the speed in m/s of the settled water at a point (-1 none, 0 still), and whether

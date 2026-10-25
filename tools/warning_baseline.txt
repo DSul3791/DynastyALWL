@@ -5,10 +5,10 @@
       8 src/worldgen/tools/test_wolves.gd
       7 src/worldgen/tools/test_animals.gd
       7 src/worldgen/tile/tile_erosion.gd
-      7 src/worldgen/tile/tile_climate.gd
       6 src/worldgen/tools/test_items_persistence.gd
       6 src/worldgen/tile/tile_geology.gd
       6 src/worldgen/tile/tile_file.gd
+      5 src/worldgen/tile/tile_climate.gd
       5 src/worldgen/sketch/world_elevation.gd
       5 src/debug/shot_runner.gd
       4 src/worldgen/tile/tile_sites.gd
@@ -26,8 +26,6 @@
       2 src/worldgen/tools/prebuild_blocks.gd
       2 src/worldgen/runtime/terrain_generator.gd
       2 src/worldgen/runtime/flora_placer.gd
-      2 src/builder/world_preview.gd
-      2 src/builder/geology/tectonic_deformation.gd
       2 scenes/bot/bot_main.gd
       1 src/worldgen/tools/tree_mesh_dump.gd
       1 src/worldgen/tools/test_tunnel_watch.gd

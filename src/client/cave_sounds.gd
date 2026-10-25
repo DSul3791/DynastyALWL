@@ -15,8 +15,13 @@ extends Node
 # capped at 0.15, 4 rays); Mid and High run it fully (wet up to 0.35 / 0.45, larger room) with 8 rays. Off while open air
 # (enclosure under 0.05).
 # Drips: assets/audio/cave/cave_drip_N.ogg (make_cave.py), recordings in recorded/cave/ win.
+# Cave air (Dave 24 Oct, Steve_cave_air.md): the outside air is heard for a while after entering, less the further in. DEPTH is the metres walked inside rock
+# (grows while rock_enclosure is 0.5 or more, falls 3x as fast walking out below 0.3, holds between); data/sound/cave_air.json turns it into dB per air bus and a
+# low-pass; deep inside only Foley is heard (silent base). The older enclosure cut stays on top for half-open places. WET caves (the server's leak message, held
+# 20 s) have drips and a full reverb; DRY caves play no drips and half the reverb. Drips are on the Foley bus.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const AIR_PATH := "res://data/sound/cave_air.json"
 const GENERATED_DIR := "res://assets/audio/cave/"
 const RECORDED_DIR := "res://assets/audio/recorded/cave/"
 
@@ -38,6 +43,11 @@ var rock_enclosure: float = 0.0         # the same, rock only (no building floor
 var drips_played: int = 0
 var interior_floor: float = 0.0        # a building sets this (interior_sounds.gd): enclosure never below it, no drips from it
 var forced: float = -1.0                # --cave=0..1 forces it (headless checks), -1 measures
+var depth_m: float = 0.0                # metres walked inside rock (see above)
+var wet: float = 0.0                    # 0 dry cave to 1 dripping ceiling overhead, held wet_hold_s after the last leak message
+var air: Dictionary = {}                # data/sound/cave_air.json
+var forced_depth: float = -1.0          # --cave-depth=M
+var forced_wet: float = -1.0            # --cave-wet=0..1
 
 var _stage                              # SoundStage (tier, voice room)
 var _tier: int = 2
@@ -51,6 +61,11 @@ var _amplify: Dictionary = {}           # bus name -> AudioEffectAmplify
 var _reverb: AudioEffectReverb
 var _streams: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
+var _last_pos: Vector3 = Vector3.INF
+var _applied_depth: float = -1.0
+var _applied_wet: float = -1.0
+var _wet_left: float = 0.0
+var _gap_m: float = 99.0
 
 
 func setup(stage) -> void:
@@ -60,6 +75,12 @@ func setup(stage) -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--cave="):
 			forced = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--cave-depth="):
+			forced_depth = float(arg.get_slice("=", 1))
+		elif arg.begins_with("--cave-wet="):
+			forced_wet = float(arg.get_slice("=", 1))
+
+	air = load_air(AIR_PATH)
 
 	for bus_name in DROP_DB:
 		var bus: int = AudioServer.get_bus_index(bus_name)
@@ -113,10 +134,14 @@ func update(delta: float, body: CharacterBody3D, flying: bool = false) -> void:
 
 	enclosure = move_toward(enclosure, maxf(_target, interior_floor), EASE_PER_SEC * delta)
 	rock_enclosure = move_toward(rock_enclosure, _target, EASE_PER_SEC * delta)
+	_step_depth(body.global_position)
+	_step_wet(delta)
 
-	if absf(enclosure - _applied) > 0.002 or _tier != _applied_tier:
+	if absf(enclosure - _applied) > 0.002 or _tier != _applied_tier or absf(depth_m - _applied_depth) > 0.25 or absf(wet - _applied_wet) > 0.05:
 		_applied = enclosure
 		_applied_tier = _tier
+		_applied_depth = depth_m
+		_applied_wet = wet
 		_apply()
 
 	_drip(delta, body)
@@ -165,22 +190,117 @@ func _rock_hit(space: PhysicsDirectSpaceState3D, body: CharacterBody3D, from: Ve
 	return -1.0
 
 
+# The server's leak message (drip_view.gap_m, 99 when none) goes in here every frame.
+func note_gap(gap_m: float) -> void:
+	_gap_m = gap_m
+
+
+func _step_depth(pos: Vector3) -> void:
+	if forced_depth >= 0.0:
+		depth_m = forced_depth
+		return
+
+	var moved: float = Vector2(pos.x - _last_pos.x, pos.z - _last_pos.z).length() if _last_pos.is_finite() else INF
+	_last_pos = pos
+	depth_m = advance_depth(air, depth_m, moved, rock_enclosure)
+
+
+func _step_wet(delta: float) -> void:
+	if forced_wet >= 0.0:
+		wet = forced_wet
+		return
+
+	var now: float = wet_from_gap(air, _gap_m)
+
+	if now > 0.0:
+		wet = now
+		_wet_left = float(air.get("wet_hold_s", 20.0))
+	else:
+		_wet_left = maxf(_wet_left - delta, 0.0)
+
+		if _wet_left <= 0.0:
+			wet = 0.0
+
+
+# --- the table (static, so the headless test needs no audio) ---
+
+static func load_air(path: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+# Linear interpolation of a row of the table over depth (clamped at both ends).
+static func table_value(depths: Array, values: Array, depth: float) -> float:
+	if depths.is_empty() or values.size() != depths.size():
+		return 0.0
+
+	if depth <= float(depths[0]):
+		return float(values[0])
+
+	for k in range(1, depths.size()):
+		if depth <= float(depths[k]):
+			var span: float = float(depths[k]) - float(depths[k - 1])
+			return lerpf(float(values[k - 1]), float(values[k]), (depth - float(depths[k - 1])) / maxf(span, 0.001))
+
+	return float(values[values.size() - 1])
+
+
+static func air_db(table: Dictionary, bus_name: String, depth: float) -> float:
+	return table_value(table.get("depth_m", []), (table.get("db", {}) as Dictionary).get(bus_name, []), depth)
+
+
+static func air_lowpass(table: Dictionary, depth: float) -> float:
+	return table_value(table.get("depth_m", []), table.get("lowpass_hz", []), depth)
+
+
+# Walked metres inside rock. `moved` is the horizontal metres since the last call (INF = the first call or a teleport).
+static func advance_depth(table: Dictionary, depth: float, moved: float, rock: float) -> float:
+	var depths: Array = table.get("depth_m", [0, 40])
+	var cap: float = float(depths[depths.size() - 1])
+	var deep_from: float = float(table.get("deep_from_enclosure", 0.5))
+	var shallow_below: float = float(table.get("shallow_below_enclosure", 0.3))
+
+	if is_inf(moved) or moved > 20.0:
+		return cap if rock >= deep_from else 0.0
+
+	if rock >= deep_from:
+		return minf(depth + moved, cap)
+
+	if rock < shallow_below:
+		return maxf(depth - moved * float(table.get("walk_out_factor", 3.0)), 0.0)
+
+	return depth
+
+
+# 0 dry to 1 for the leak message's closest ceiling gap (metres of rock between a dripping ceiling and the water above it).
+static func wet_from_gap(table: Dictionary, gap_m: float) -> float:
+	var limit: float = float(table.get("wet_gap_m", 4.0))
+	return clampf(1.0 - gap_m / limit, 0.0, 1.0) if gap_m < limit else 0.0
+
+
+# Drips only in a wet cave (the enclosure must also be there).
+static func drips_allowed(table: Dictionary, enclosure_now: float, wet_now: float) -> bool:
+	return enclosure_now >= DRIP_FROM and wet_now >= float(table.get("drip_wet_from", 0.2))
+
+
 func _apply() -> void:
 	for bus_name in _lowpass:
-		_lowpass[bus_name].cutoff_hz = lerpf(20000.0, MUFFLE_HZ, enclosure)
-		_amplify[bus_name].volume_db = float(DROP_DB[bus_name]) * enclosure
+		var db: float = minf(air_db(air, bus_name, depth_m), float(DROP_DB[bus_name]) * enclosure)
+		var hz: float = minf(air_lowpass(air, depth_m), lerpf(20000.0, MUFFLE_HZ, enclosure))
+		_lowpass[bus_name].cutoff_hz = maxf(hz, 500.0)
+		_amplify[bus_name].volume_db = maxf(db, -80.0) if db > float(air.get("mute_below_db", -60.0)) else -80.0
 
 	var on: bool = bool(_stage.preset["cave_reverb"]) and enclosure > REVERB_FROM
 	var world: int = AudioServer.get_bus_index(WORLD_BUS)
 
 	if world >= 0:
 		AudioServer.set_bus_effect_enabled(world, 0, on)
-		_reverb.wet = float(_stage.preset["cave_wet"]) * enclosure
+		_reverb.wet = float(_stage.preset["cave_wet"]) * enclosure * lerpf(float(air.get("dry_reverb_mult", 0.5)), 1.0, wet)
 		_reverb.room_size = lerpf(float(_stage.preset["cave_room"]) * 0.5, float(_stage.preset["cave_room"]), enclosure)
 
 
 func _drip(delta: float, body: CharacterBody3D) -> void:
-	if enclosure < DRIP_FROM:
+	if not drips_allowed(air, enclosure, wet):
 		return
 
 	_next_drip -= delta
@@ -188,7 +308,7 @@ func _drip(delta: float, body: CharacterBody3D) -> void:
 	if _next_drip > 0.0:
 		return
 
-	_next_drip = _rng.randf_range(float(DRIP_EVERY[0]), float(DRIP_EVERY[1])) / enclosure
+	_next_drip = _rng.randf_range(float(DRIP_EVERY[0]), float(DRIP_EVERY[1])) / (enclosure * maxf(wet, 0.2))
 
 	if not _stage.has_room():
 		return
@@ -202,7 +322,7 @@ func _drip(delta: float, body: CharacterBody3D) -> void:
 	var distance: float = _rng.randf_range(3.0, 12.0)
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	player.stream = list[_rng.randi_range(0, list.size() - 1)]
-	player.bus = "Nature"
+	player.bus = "Foley"           # the air buses fade with depth; the drips must stay (and Foley has the cave reverb)
 	player.volume_db = DRIP_DB + _rng.randf_range(-4.0, 2.0)
 	player.pitch_scale = _rng.randf_range(0.9, 1.1)
 	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE

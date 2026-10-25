@@ -1,4 +1,6 @@
 extends Node
+const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
@@ -92,6 +94,8 @@ var _death_msec: int = 0                    # when the last death arrived, 0 whe
 var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
 var memory: int = 0
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
+const InnerSettingsScript := preload("res://src/client/inner_voice_settings.gd")
+var inner_settings = InnerSettingsScript.new()   # Esc > Settings > Inner voice: hints and dialogue switches (inner_voice_settings.gd)
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
@@ -1993,7 +1997,32 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory)
+	return _free_craft() or recipes.can_make(number, inventory) or bool(_parts_plan(number)["ok"])
+
+
+var _plan_cache: Dictionary = {}   # recipe number -> its auto-make plan, cleared on every refresh
+
+
+# What the server would queue if you picked this recipe short of a part it can make (Dave 25 Oct): {"ok", "made": [[item, count]], "ambiguous", "msg"}.
+func _parts_plan(number: int) -> Dictionary:
+	if _plan_cache.has(number):
+		return _plan_cache[number]
+
+	var plan: Dictionary = {"ok": false, "steps": [], "made": [], "ambiguous": 0, "msg": ""}
+
+	if not recipes.can_make(number, inventory):
+		var ctx: Dictionary = {
+			"have": func(item: int) -> int: return inventory.count_of(item),
+			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
+			"free": false,
+		}
+		plan = CraftPlanner.plan(recipes, table, number, 1, ctx)
+
+		if bool(plan["ok"]) and (plan["steps"] as Array).size() < 2:
+			plan["ok"] = false
+
+	_plan_cache[number] = plan
+	return plan
 
 
 func _station_ok(r: Dictionary) -> bool:
@@ -2546,6 +2575,9 @@ const BODY_PX := 30
 const TITLE_PX := 40
 
 var _search: LineEdit
+var _recipe_search: LineEdit             # the search box at the top of the Make list: filters recipes by name as you type
+var _recipe_category: String = ""        # "" = All
+var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _recipe_list: VBoxContainer
 var _detail: VBoxContainer
 var _selected_recipe: int = 0
@@ -2664,6 +2696,9 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 
 # The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
 func _on_thought(line_id: String, text: String, kind: String) -> void:
+	if not inner_settings.allows(kind):
+		return      # the player switched this kind of line off (the symptom message itself is not a line of the voice)
+
 	_thought_label.text = "(%s)" % text
 	_thought_until_msec = Time.get_ticks_msec() + 5500
 
@@ -2846,7 +2881,7 @@ func _build_panel() -> void:
 		top.add_child(size_button)
 
 	_search = LineEdit.new()
-	_search.placeholder_text = "Search recipes and items"
+	_search.placeholder_text = "Search items"
 	_search.custom_minimum_size = Vector2(_px(120), 0.0)
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search.size_flags_stretch_ratio = 1.0
@@ -2869,6 +2904,7 @@ func _build_panel() -> void:
 	left_title.text = "Make"
 	_style(left_title, TITLE_PX - 6)
 	left.add_child(left_title)
+	left.add_child(_build_recipe_filter())
 	var list_scroll: ScrollContainer = ScrollContainer.new()
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -3274,6 +3310,38 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name; a tab shows one category.
+func _build_recipe_filter() -> Control:
+	var holder: VBoxContainer = VBoxContainer.new()
+	_recipe_search = LineEdit.new()
+	_recipe_search.placeholder_text = "Search what you can make"
+	_recipe_search.clear_button_enabled = true
+	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style(_recipe_search, BODY_PX)
+	_recipe_search.text_changed.connect(func(_text): _refresh())
+	holder.add_child(_recipe_search)
+	var tabs: HFlowContainer = HFlowContainer.new()
+	holder.add_child(tabs)
+	_category_buttons.clear()
+
+	for label in [""] + RecipeFilter.CATEGORIES:
+		var tab: Button = Button.new()
+		tab.text = "All" if label == "" else str(label)
+		tab.toggle_mode = true
+		_style(tab, BODY_PX - 6)
+		tab.pressed.connect(func():
+			_recipe_category = str(label)
+			_refresh())
+		tabs.add_child(tab)
+		_category_buttons[str(label)] = tab
+
+	return holder
+
+
+func _recipe_shown(r: Dictionary) -> bool:
+	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "")
+
+
 func _matches(text: String, filter: String) -> bool:
 	return filter == "" or text.to_lower().contains(filter)
 
@@ -3359,6 +3427,7 @@ func _refresh() -> void:
 		return
 
 	_note_acquired()
+	_plan_cache.clear()
 	_arrange_slots()
 
 	if _weight_label != null:
@@ -3406,10 +3475,13 @@ func _refresh() -> void:
 	var can: Array = []
 	var cannot: Array = []
 
+	for tab_name in _category_buttons:
+		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
 
-		if (not r["known"] and not _free_craft()) or not _recipe_matches(r, filter):
+		if (not r["known"] and not _free_craft()) or not _recipe_shown(r):
 			continue
 
 		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
@@ -3499,6 +3571,22 @@ func _refresh_detail() -> void:
 		_style(where, BODY_PX)
 		_detail.add_child(where)
 
+	var parts: Dictionary = _parts_plan(_selected_recipe)
+
+	if bool(parts["ok"]):
+		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], table.name_of(m[0]).to_lower()])
+		var auto_line: Label = Label.new()
+		auto_line.text = "Makes %s first" % " and ".join(made)
+		auto_line.modulate = Color(0.55, 1.0, 0.55)
+		_style(auto_line, BODY_PX)
+		_detail.add_child(auto_line)
+	elif int(parts["ambiguous"]) != 0:
+		var choose_line: Label = Label.new()
+		choose_line.text = str(parts["msg"])
+		choose_line.modulate = Color(1.0, 0.8, 0.4)
+		_style(choose_line, BODY_PX)
+		_detail.add_child(choose_line)
+
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
 		var have: int = inventory.count_of(need[0])
@@ -3548,7 +3636,7 @@ func run_test() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	toggle()
-	_search.text = "stone"
+	_recipe_search.text = "stone"
 	_refresh()
 	var shown: int = 0
 
@@ -3557,7 +3645,7 @@ func run_test() -> void:
 			shown += 1
 
 	print("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
-	_search.text = ""
+	_recipe_search.text = ""
 	_refresh()
 	toggle()
 	print("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])

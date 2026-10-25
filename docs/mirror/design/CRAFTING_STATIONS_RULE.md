@@ -16,3 +16,6 @@ Sal audits all live recipes (125) against these rules: every recipe gets one cla
 Thatch pieces, building section kits and processing-station kits are not kit items. They are blueprints on the hammer, "just like the bridge". Sal writes one plan (item/recipe numbers stay, old saves load). Supersedes the kit parts above. Sal crafting gate (sal-thatch-floor-hand) is HELD until that plan is answered.
 
 UPDATE 25 Oct 03:00 UTC (Dave): FIRST TIER IS NEVER A BLUEPRINT. Thatch four, rough bed, campfire, campfire pot, chests, first bench stay hand-crafted items. Blueprints on the hammer are for later tiers only.
+
+## Dave 25 Oct 09:06 UTC (BP-T72 addendum): building tiers
+Foundations and all other building items of FINE WOOD OR LOWER tier are made by hand and placed. No kits, no hammer blueprint (same as the chopping block). Anything HIGHER than fine wood needs a blueprint placed from the hammer, because the materials are too heavy to carry. Supersedes "foundation is a blueprint" in builds 800/801; Sal reworks the blueprint data to match (one plan to Tyler). Hold any further foundation-as-blueprint change until that plan.

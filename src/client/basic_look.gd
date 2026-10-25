@@ -572,8 +572,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.0035, 0.22, Vector3(0.34 + 0.01 * float(k), off.x, off.y), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.18))
 				_box_rot(parts, Vector3(0.07, 0.02, 0.003), Vector3(0.42 + 0.01 * float(k), off.x, off.y), Vector3(float(k) * 1.0, 0.0, 0.0), Color(0.85, 0.82, 0.74) if k != 2 else Color(0.35, 0.3, 0.26))   # fletching
 		"torch":
-			_handle(parts, 0.5)
-			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
+			# Unlit: the stick with a wrapped head and twine bands, no flame. The vertex colours are linear, the held torch's materials are sRGB, so
+			# the same look goes through _lin (held_item.gd's torch has these colours and proportions).
+			_cyl_fine(parts, 0.016, 0.44, Vector3(-0.022, 0.0, 0.0), Color(0.42, 0.3, 0.17))                   # the stick
+			_cyl_fine(parts, 0.0185, 0.17, Vector3(0.1, 0.0, 0.0), Color(0.2, 0.14, 0.09))                      # the grimy top of the stick
+			_cyl_fine(parts, 0.045, 0.14, Vector3(0.17, 0.0, 0.0), Color(0.26, 0.17, 0.1))                      # the wrapped head
+			_cyl_fine(parts, 0.0455, 0.047, Vector3(0.2115, 0.0, 0.0), Color(0.16, 0.1, 0.065))                 # the charred top third
+			_cyl_fine(parts, 0.047, 0.015, Vector3(0.235, 0.0, 0.0), Color(0.1, 0.06, 0.04))                    # soot on the very top
+			_cyl_fine(parts, 0.0475, 0.012, Vector3(0.125, 0.0, 0.0), Color(0.34, 0.26, 0.17))                  # dark rope bands
+			_cyl_fine(parts, 0.0485, 0.012, Vector3(0.19, 0.0, 0.0), Color(0.34, 0.26, 0.17))
 		"pot":
 			# A clay cooking pot: round belly, narrow neck, flared rim and two small lug handles.
 			_sph(parts, 0.11, Vector3(1.0, 0.85, 1.0), Vector3(0.0, -0.025, 0.0), color)
@@ -707,6 +714,17 @@ static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void
 	var box: BoxMesh = BoxMesh.new()
 	box.size = dims
 	parts.append([box, Transform3D(Basis.IDENTITY, at), color])
+
+
+# A round cylinder along X with its colour given as sRGB (like a StandardMaterial3D albedo), 16 sides.
+static func _cyl_fine(parts: Array, radius: float, length: float, at: Vector3, color: Color) -> void:
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
+	cyl.height = length
+	cyl.radial_segments = 16
+	cyl.rings = 1
+	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), at), color.srgb_to_linear()])
 
 
 static func _cyl(parts: Array, radius: float, height: float, at: Vector3, tilt: Vector3, color: Color) -> void:

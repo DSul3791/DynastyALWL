@@ -1,0 +1,43 @@
+{
+ "params": {
+  "U": 0.0012,
+  "K": 4e-06,
+  "D": 0.05,
+  "dep": 0.03,
+  "off": 0.9,
+  "sub": 1.0,
+  "coast_pow": 2.2,
+  "basins": 14,
+  "years": 1000000.0,
+  "dt": 4000.0,
+  "X0": 2,
+  "Z0": 3,
+  "X1": 4,
+  "Z1": 5,
+  "edge_fade_m": 1500.0,
+  "fill_max": 12.0,
+  "dslope": 0.25,
+  "S": 2,
+  "ramp_m": 12000.0,
+  "balance": 0.9,
+  "bal_smooth": 3.0,
+  "lowboost": 0,
+  "tarn": true
+ },
+ "python": "3.13.17",
+ "numpy": "2.5.3",
+ "numba": "0.68.0",
+ "scipy": "1.18.1",
+ "input_sha256": {
+  "raw_2_3.f32": "f22eae2bd9d2fbbb3e884c22884fe1a5cdc49755256cd762e9ebf7f200163df0",
+  "raw_2_4.f32": "47af4878df272d2950dd9dd7bd15567f19dcb0ad92750897668717eb9793416d",
+  "raw_2_5.f32": "44048608d2b204822cd589a14aebddf548b305bed3bd3853656b0bede31a3a3a",
+  "raw_3_3.f32": "620f02657d0af10f4b19cec894867780b7920bba2dbac448d1cf1fe6606837b8",
+  "raw_3_4.f32": "4aed8f435c5d00ee575e87c2906f1cfbf1893b4e6be798526bb7c5277cd19d49",
+  "raw_3_5.f32": "b2469d3fb24f2136666f3747ebc27ee8b9a541ac4e3002bc256c8e94fde701ab",
+  "raw_4_3.f32": "d41c97b747429fac43ff2f7971dc242df2267f09eea588a898e022148be6fa27",
+  "raw_4_4.f32": "1a4b20b8780c062b72a6c774771ef351e4d01eaeb79092c053030d71bd5fef1e",
+  "raw_4_5.f32": "a3a72dfeb04c021917f39a26276b27707624d9a56f1861c8224bf510cf12f270"
+ },
+ "delta_sha256": "ac0df3cc0fc4cc54feb0cb3365d2022960c45690e8e84fa31b2963e8ee9e55c4"
+}

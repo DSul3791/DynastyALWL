@@ -18,17 +18,36 @@ const RIFFLE_FACTOR := 0.6
 const POOL_FACTOR := 1.25
 const CONFLUENCE_FACTOR := 1.3
 const MEANDER_WAVELENGTH_WIDTHS := 12.0   # sinuous reaches: about 12 widths from bend to bend
-const MEANDER_AMPLITUDE_WIDTHS := 1.5    # sideways swing on gentle ground
+const MEANDER_AMPLITUDE_WIDTHS := 0.6    # sideways swing on gentle ground (v30 had 1.5: the painted channel left the routed centre line and the river broke into dashes on flat valley floors)
 const MEANDER_SLOPE_FULL := 0.015        # under this fall per metre the swing is full, over MEANDER_SLOPE_NONE none
 const MEANDER_SLOPE_NONE := 0.04
 const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above the river's water level
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
+const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
+const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
+const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
+const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
+const LAKE_RADIUS_BASE_M := 190.0   # lake bowl radius = base + per_qs x spring flow, up to max (a 190 m bowl is 11 ha, a 400 m one 50 ha)
+const LAKE_RADIUS_PER_QS_M := 200.0
+const LAKE_RADIUS_MAX_M := 400.0
+const LAKE_MIN_GROUND_M := 6.0   # lake sites sit at least this high, so the bowl's lip stays above the sea
+const LAKE_RELAXED_SLOPE_DEG := 18.0 # a tile with no lake at all takes its flattest reach up to this slope
+const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
+const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
+const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
+const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
+const STEEP_VALLEY_SHARE := 0.8
+const VALLEY_FREEBOARD_FLAT_M := 1.0   # the same on reaches that fall under 0.5%
+const CENTRE_MIN_DEPTH_M := 0.3       # every drained centre cell holds at least this much water, so the painted river is one line
+const CENTRE_MAX_CUT_M := 1.5
 const SURFACE_SHARE := 0.6           # water stands this share of the centre depth above the bed
 
 var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
 var surface: PackedFloat32Array = PackedFloat32Array()         # water level in channel cells, NAN elsewhere
+var basin_mask: PackedByteArray = PackedByteArray()          # 1 inside a carved pond or lake bowl (the pit pass leaves these alone)
+var lake_sites: Array = []   # [world x, world z, radius m] of each carved lake (for checks)
 var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
@@ -41,6 +60,7 @@ var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at 
 # `rules`: depth_m_per_sqrt_q, min_depth_m, max_depth_m, width_m_per_sqrt_q, min_width_m.
 func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary, seed_value: int, origin: Vector2i = Vector2i.ZERO) -> void:
 	_origin = origin
+	var clock: int = Time.get_ticks_msec()
 	var total: int = size * size
 	bed = h.duplicate()
 	centre_depth.resize(total)
@@ -120,14 +140,33 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 		centre_depth[index] = depth * shape * jitter
 
 	_along = along
+	_lap("centre line", clock)
+	clock = Time.get_ticks_msec()
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	_lap("stamp", clock)
+	clock = Time.get_ticks_msec()
 	var stamped: PackedFloat32Array = bed.duplicate()
 	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
+	_lap("canyon map + valleys", clock)
+	clock = Time.get_ticks_msec()
 	_canyons(h, fill, flow, size, cell_m, rules)
+	_lap("canyons", clock)
+	clock = Time.get_ticks_msec()
 	_gullies(h, fill, flow, size, cell_m, rules)
+	_lap("gullies", clock)
+	clock = Time.get_ticks_msec()
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
+	_lap("heads + basins", clock)
+	clock = Time.get_ticks_msec()
+	_ensure_centre_channel(fill, flow, threshold)
 	_keep_spawn_clear(stamped, size, cell_m, rules)
+	_lap("centre fix + spawn", clock)
+
+
+# Timing line for the bake log.
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  channel timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
@@ -178,6 +217,9 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		centre_surface[index] = level
 
+	var jobs_i: PackedInt32Array = PackedInt32Array()      # per river cell: cell, span in cells
+	var jobs_f: PackedFloat64Array = PackedFloat64Array()  # per river cell: radius, sideways shift x and z, depth
+
 	for index in range(h.size()):
 		if flow.discharge[index] < threshold:
 			continue
@@ -185,9 +227,6 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 		var q: float = sqrt(flow.discharge[index])
 		var radius_m: float = 0.5 * maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var reach: int = maxi(int(ceil(radius_m / cell_m)), 1)
-		@warning_ignore("integer_division")
-		var row: int = index / size
-		var column: int = index % size
 		var turn: float = curvature[index]
 		var depth_here: float = h[index] - centre_bed[index]
 		var shift_x: float = 0.0
@@ -210,7 +249,8 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			var slope: float = maxf(h[index] - h[next], 0.0) / maxf(_step_length(index, next, size, cell_m), 1.0)
 			var gentle: float = 1.0 - smoothstep(MEANDER_SLOPE_FULL, MEANDER_SLOPE_NONE, slope)
 			var width_m: float = 2.0 * radius_m
-			var swing: float = gentle * MEANDER_AMPLITUDE_WIDTHS * width_m * _swing_noise(index, size, cell_m, width_m)
+			# Bends already shift the deepest line to the outer bank above; the meander swing fades out on a bend so it does not hide that.
+			var swing: float = gentle * (1.0 - smoothstep(0.05, 0.3, absf(turn))) * MEANDER_AMPLITUDE_WIDTHS * width_m * _swing_noise(index, size, cell_m, width_m)
 			var mx: float = float(next % size - index % size)
 			@warning_ignore("integer_division")
 			var mz: float = float(next / size - index / size)
@@ -219,6 +259,49 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			shift_z -= mx / mlen * swing
 
 		var span: int = reach + 2 + int(ceil(sqrt(shift_x * shift_x + shift_z * shift_z) / cell_m))
+		jobs_i.append(index)
+		jobs_i.append(span)
+		jobs_f.append_array(PackedFloat64Array([radius_m, shift_x, shift_z, depth_here]))
+
+	# The stamps run after the loop, in the same order (in C++ when GenCore is loaded): they only read h and centre_surface.
+	var stamped: Dictionary
+
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("stamp_channels"):
+		stamped = ClassDB.instantiate("GenCore").stamp_channels(bed, surface, h, centre_surface, size, cell_m, jobs_i, jobs_f)
+	else:
+		stamped = stamp_channels_script(bed, surface, h, centre_surface, size, cell_m, jobs_i, jobs_f)
+
+	bed = stamped["bed"]
+	surface = stamped["surface"]
+
+	for index in range(h.size()):
+		if flow.discharge[index] >= threshold:
+			bed[index] = minf(bed[index], centre_bed[index])
+
+	# Wide sections of deep downstream cells can reach upstream centres: lift those so the bed never rises downstream.
+	for index in fill.order:
+		var next: int = fill.receiver[index]
+
+		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
+			bed[index] = maxf(bed[index], bed[next])
+
+
+# The river stamps of _stamp, one after the other into copies of `bed_in` and `surface_in`: the GDScript the C++ GenCore.stamp_channels must match bit for bit.
+static func stamp_channels_script(bed_in: PackedFloat32Array, surface_in: PackedFloat32Array, h: PackedFloat32Array, centre_surface: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array) -> Dictionary:
+	var bed_out: PackedFloat32Array = bed_in.duplicate()
+	var surface_out: PackedFloat32Array = surface_in.duplicate()
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var span: int = jobs_i[job * 2 + 1]
+		var radius_m: float = jobs_f[job * 4]
+		var shift_x: float = jobs_f[job * 4 + 1]
+		var shift_z: float = jobs_f[job * 4 + 2]
+		var depth_here: float = jobs_f[job * 4 + 3]
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
 
 		for dz in range(-span, span + 1):
 			for dc in range(-span, span + 1):
@@ -237,21 +320,12 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 				var target: float = h[index] - depth_here * (1.0 - t * t)
 				var neighbor: int = nr * size + nc
-				bed[neighbor] = minf(bed[neighbor], target)
+				bed_out[neighbor] = minf(bed_out[neighbor], target)
 
-				if target < centre_surface[index] and (is_nan(surface[neighbor]) or surface[neighbor] < centre_surface[index]):
-					surface[neighbor] = centre_surface[index]
+				if target < centre_surface[index] and (is_nan(surface_out[neighbor]) or surface_out[neighbor] < centre_surface[index]):
+					surface_out[neighbor] = centre_surface[index]
 
-	for index in range(h.size()):
-		if flow.discharge[index] >= threshold:
-			bed[index] = minf(bed[index], centre_bed[index])
-
-	# Wide sections of deep downstream cells can reach upstream centres: lift those so the bed never rises downstream.
-	for index in fill.order:
-		var next: int = fill.receiver[index]
-
-		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
-			bed[index] = maxf(bed[index], bed[next])
+	return {"bed": bed_out, "surface": surface_out}
 
 
 # The spawn area stays as the land and the river stamp made it: valleys, canyons, gullies and heads fade out inside
@@ -291,6 +365,8 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 	var farm_start: float = float(rules.get("farm_valley_start_km2", start_km2))
 	var farm_gate: float = minf(start_km2, farm_start)
 	var cut: PackedFloat32Array = bed.duplicate()
+	var jobs_i: PackedInt32Array = PackedInt32Array()      # per valley stamp: cell, reach in cells
+	var jobs_f: PackedFloat64Array = PackedFloat64Array()  # per valley stamp: floor level, side slope, half width, rim, strength, max cut
 
 	for index in fill.order:
 		if flow.discharge[index] < farm_gate or is_nan(_centre_surface[index]):
@@ -310,13 +386,56 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 		var strength: float = smoothstep(start_here, start_here * 8.0, flow.discharge[index]) * (1.0 - _canyon[index])
 		var cut_cap: float = lerpf(float(rules.get("valley_cut_max_m", 15.0)), float(rules.get("farm_valley_cut_max_m", 25.0)), farm)
 		var max_cut_m: float = minf(float(rules.get("valley_cut_base_m", 3.0)) + float(rules.get("valley_cut_m_per_sqrt_q", 1.5)) * q, cut_cap)
+		# A stream on a steep face stays a shallow channel on the hillside: a valley cut of 25 m into a 60 degree slope leaves a
+		# trench with a cliff wall (x53780 z68540 in the v30 bake). Steepness of the ground at the river cell scales the cut.
+		max_cut_m *= 1.0 - STEEP_VALLEY_SHARE * smoothstep(tan(deg_to_rad(STEEP_FROM_DEG)), tan(deg_to_rad(STEEP_TO_DEG)), _ground_slope(h, index, size, cell_m))
 		var width_m: float = maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var rim_cap: float = lerpf(max_radius_m, float(rules.get("farm_valley_max_radius_m", max_radius_m)), farm)
 		var rim_m: float = minf(lerpf(radius_widths, float(rules.get("farm_valley_radius_widths", radius_widths)), farm) * width_m, rim_cap)
 		var side_here: float = lerpf(side_slope, float(rules.get("farm_valley_side_slope", side_slope)), farm)
 		var half_m: float = 0.5 * width_m
-		var floor_level: float = _centre_surface[index] + VALLEY_FREEBOARD_M
+		# On flat reaches the floor must stand higher above the water, or the settled water spreads over the whole floor
+		# (Dave 24 Oct, build 789: a flooded valley with no channel to the sea).
+		var freeboard: float = VALLEY_FREEBOARD_M
+		var down: int = fill.receiver[index]
+
+		if down >= 0:
+			var fall_here: float = maxf(h[index] - h[down], 0.0) / maxf(_step_length(index, down, size, cell_m), 1.0)
+			freeboard = lerpf(VALLEY_FREEBOARD_FLAT_M, VALLEY_FREEBOARD_M, smoothstep(0.005, 0.02, fall_here))
+
+		var floor_level: float = _centre_surface[index] + freeboard
 		var reach: int = int(ceil(rim_m / cell_m))
+		jobs_i.append(index)
+		jobs_i.append(reach)
+		jobs_f.append_array(PackedFloat64Array([floor_level, side_here, half_m, rim_m, strength, max_cut_m]))
+
+	# The stamps only read h, never cut, so they run after the loop, in the same order (in C++ when GenCore is loaded).
+	if not force_script and ClassDB.class_exists("GenCore"):
+		cut = ClassDB.instantiate("GenCore").carve_valleys(cut, h, size, cell_m, jobs_i, jobs_f)
+	else:
+		cut = carve_valleys_script(cut, h, size, cell_m, jobs_i, jobs_f)
+
+	bed = cut
+
+
+# Tests set this to compare the GDScript stamps with GenCore's (test_gen_core.gd); false in the bake.
+static var force_script: bool = false
+
+
+# The valley stamps (see _valleys), one after the other into a copy of `cut`: the GDScript the C++ GenCore.carve_valleys must match bit for bit.
+static func carve_valleys_script(cut_in: PackedFloat32Array, h: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array) -> PackedFloat32Array:
+	var cut: PackedFloat32Array = cut_in.duplicate()
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var reach: int = jobs_i[job * 2 + 1]
+		var floor_level: float = jobs_f[job * 6]
+		var side_here: float = jobs_f[job * 6 + 1]
+		var half_m: float = jobs_f[job * 6 + 2]
+		var rim_m: float = jobs_f[job * 6 + 3]
+		var strength: float = jobs_f[job * 6 + 4]
+		var max_cut_m: float = jobs_f[job * 6 + 5]
 		@warning_ignore("integer_division")
 		var row: int = index / size
 		var column: int = index % size
@@ -344,7 +463,7 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
 				cut[neighbor] = minf(cut[neighbor], carved)
 
-	bed = cut
+	return cut
 
 
 # Stage 3b2: canyons and ravines. Where a river with a big catchment crosses high ground and a slowly varying place noise
@@ -625,6 +744,254 @@ func _heads(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 				cut[neighbor] = minf(cut[neighbor], carved)
 
 	bed = cut
+	_carve_basins(h, fill, flow, size, threshold, has_up, edge, cell_m, rules)
+
+
+# The drained centre line is the river's path to the sea: every cell on it keeps its channel at least CENTRE_MIN_DEPTH_M
+# under the water level, whatever the valley, gully and head cuts did around it (lowered by at most CENTRE_MAX_CUT_M).
+func _ensure_centre_channel(fill, flow, threshold: float) -> void:
+	var fixed: int = 0
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]):
+			continue
+
+		var wanted: float = maxf(_centre_surface[index] - CENTRE_MIN_DEPTH_M, bed[index] - CENTRE_MAX_CUT_M)
+
+		if bed[index] > wanted:
+			bed[index] = wanted
+			fixed += 1
+
+			if is_nan(surface[index]) or surface[index] < _centre_surface[index]:
+				surface[index] = _centre_surface[index]
+
+	print("  centre line: %d cells deepened to keep the river continuous" % fixed)
+
+
+# Lowest ground on the ring of radius radius_m round a cell (the bowl's lip); INF when the ring leaves the frame.
+func _ring_lip(index: int, radius_m: float, size: int, cell_m: float) -> float:
+	var reach: int = int(ceil(2.0 * radius_m / cell_m)) + 1
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+
+	if row < reach or column < reach or row >= size - reach or column >= size - reach:
+		return INF
+
+	var lip: float = INF
+
+	for dz in range(-reach, reach + 1):
+		for dc in range(-reach, reach + 1):
+			var ring: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+			if ring >= radius_m and ring <= radius_m + 1.5 * cell_m:
+				lip = minf(lip, bed[(row + dz) * size + column + dc])
+
+	return lip
+
+
+# Dave 24 Oct: water sources start in natural catch basins, and ponds and lakes should be sizable. Sites: every river head (a
+# pond) and, on flat reaches of rivers with a catchment of lake_from_km2 or more, a few lakes (one candidate per lake_spacing_m
+# block, kept by a world-position hash so two tiles agree). Size follows the spring flow Qs = 0.1 x catchment km2 (0.01..2 m3/s):
+#   pond  depth 2 + 0.8 sqrt(Qs) m (up to 8), radius 25 + 60 sqrt(Qs) m (up to 120)
+#   lake  depth 3 + 4 sqrt(Qs) m (up to 12), radius 80 + 80 Qs m (up to 250)
+# The bowl is bed = lip - depth x (1 - (r/R)^2), where the lip is the lowest ground on the ring at R (on a river that is the
+# channel downstream, which is the outlet notch), then a bank rising BASIN_BANK_SLOPE per metre. No cell is lowered more than
+# BASIN_MAX_CUT_M. Cells under the lip get the lip as their water level. Prints how many ponds and lakes and their area.
+func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float, rules: Dictionary) -> void:
+	var lake_from: float = float(rules.get("lake_from_km2", 1.0))
+	var lake_share: float = float(rules.get("lake_block_share", 0.9))
+	var block_m: float = float(rules.get("lake_spacing_m", 1536.0))   # 10 blocks to a tile edge, so no block straddles two tiles
+	var relaxed_slope: float = tan(deg_to_rad(LAKE_RELAXED_SLOPE_DEG))
+	# The tile this frame was built for: its centre sample. Lake sites are decided only for that tile, and only where the whole
+	# bowl (twice the radius) stays inside the tile and inside its 1536 m block, so two frames never disagree along an edge.
+	var tile_x: int = floori((float(_origin.x) + 0.5 * float(size)) * cell_m / TILE_SIZE_M)
+	var tile_z: int = floori((float(_origin.y) + 0.5 * float(size)) * cell_m / TILE_SIZE_M)
+	var relaxed_best: Array = []   # [slope, index]: the tile's flattest reach, in case it gets no lake otherwise
+	var pond_slope: float = tan(deg_to_rad(POND_MAX_SLOPE_DEG))
+	var lake_slope: float = tan(deg_to_rad(LAKE_MAX_SLOPE_DEG))
+	basin_mask.resize(size * size)
+	basin_mask.fill(0)
+	lake_sites = []
+	var sites: Array = []   # [index, catchment km2, is_lake]
+	var lake_pick: Dictionary = {}   # block -> [slope, index]
+	var steep: int = 0
+	var lake_seen: int = 0   # river cells that reached the lake gate (in this tile, inside a block interior)
+	var lake_flat: int = 0   # of those, flat enough and wide enough a catchment
+	var lake_unlucky: int = 0   # of those, in a block that lost the lake_block_share draw
+	var skipped_edge: int = 0
+	var skipped_lip: int = 0
+
+	for index in fill.order:
+		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or h[index] < 2.0:
+			continue
+
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < edge or column < edge or row >= size - edge or column >= size - edge:
+			continue
+
+		var slope: float = _ground_slope(h, index, size, cell_m)
+
+		if has_up[index] == 0:
+			if slope > pond_slope:
+				steep += 1
+			else:
+				sites.append([index, flow.discharge[index], false])
+
+			continue
+
+		if flow.discharge[index] < 0.5 * lake_from or slope > relaxed_slope:
+			continue
+
+		# Where is the whole bowl? Radius as in the carve below (catchment decides it).
+		var qs_here: float = clampf(SPRING_M3S_PER_KM2 * float(flow.discharge[index]), 0.01, 2.0)
+		var keep_m: float = 1.5 * clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs_here, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M)
+		var wx: float = float(_origin.x + column) * cell_m
+		var wz: float = float(_origin.y + row) * cell_m
+
+		if floori(wx / TILE_SIZE_M) != tile_x or floori(wz / TILE_SIZE_M) != tile_z:
+			continue
+
+		var in_tile_x: float = fposmod(wx, TILE_SIZE_M)
+		var in_tile_z: float = fposmod(wz, TILE_SIZE_M)
+
+		if in_tile_x < keep_m or in_tile_x > TILE_SIZE_M - keep_m or in_tile_z < keep_m or in_tile_z > TILE_SIZE_M - keep_m:
+			continue
+
+		if h[index] < LAKE_MIN_GROUND_M:
+			continue   # an estuary flat: a bowl there has its lip at sea level and is dropped later
+
+		var site_lip: float = _ring_lip(index, clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs_here, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M), size, cell_m)
+
+		if site_lip < 1.0:
+			continue   # the downstream channel or the sea is under 1 m on the ring: the carve would drop this bowl
+
+		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
+			relaxed_best = [slope, index]
+
+		lake_seen += 1
+
+		if flow.discharge[index] < lake_from or slope > lake_slope:
+			continue
+
+		lake_flat += 1
+		var block: Vector2i = Vector2i(floori(wx / block_m), floori(wz / block_m))
+
+		if _hash(block.y * 100003 + block.x, _seed + 5151) > lake_share:
+			lake_unlucky += 1
+			continue
+
+		if not lake_pick.has(block) or slope < float(lake_pick[block][0]):
+			lake_pick[block] = [slope, index]
+
+	var guaranteed: int = 0
+
+	if lake_pick.is_empty() and not relaxed_best.is_empty():
+		var chosen: int = int(relaxed_best[1])
+		sites.append([chosen, flow.discharge[chosen], true])
+		guaranteed = 1
+
+	for block in lake_pick:
+		var picked: int = int(lake_pick[block][1])
+		sites.append([picked, flow.discharge[picked], true])
+
+	var ponds: int = 0
+	var lakes: int = 0
+	var pond_cells: int = 0
+	var lake_cells: int = 0
+	var verbose: bool = OS.has_environment("DRAINAGE_BREACH_LOG")
+
+	for site in sites:
+		var index: int = int(site[0])
+		var qs: float = clampf(SPRING_M3S_PER_KM2 * float(site[1]), 0.01, 2.0)
+		var is_lake: bool = bool(site[2])
+		var depth: float = clampf(5.0 + 5.0 * sqrt(qs), 5.0, 16.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
+		var radius: float = clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M) if is_lake else clampf(25.0 + 60.0 * sqrt(qs), 25.0, 120.0)
+		var reach: int = int(ceil(2.0 * radius / cell_m)) + 1
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
+
+		if row < reach or column < reach or row >= size - reach or column >= size - reach:
+			skipped_edge += 1
+			continue
+
+		var lip: float = INF
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				var ring: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if ring >= radius and ring <= radius + 1.5 * cell_m:
+					lip = minf(lip, bed[(row + dz) * size + column + dc])
+
+		if lip == INF or lip < 1.0:
+			skipped_lip += 1
+			continue
+
+		var wet: int = 0
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				var distance: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+				if distance > 2.0 * radius:
+					continue
+
+				var neighbor: int = (row + dz) * size + column + dc
+				var t: float = distance / radius
+				var target: float = lip - depth * (1.0 - t * t) if t <= 1.0 else lip + BASIN_BANK_SLOPE * (distance - radius)
+				var wanted: float = maxf(target, h[neighbor] - BASIN_MAX_CUT_M)
+
+				if wanted < bed[neighbor]:
+					bed[neighbor] = wanted
+
+				if t <= 1.0:
+					basin_mask[neighbor] = 1
+
+				if t <= 1.0 and bed[neighbor] < lip - 0.05:
+					wet += 1
+
+					if is_nan(surface[neighbor]) or surface[neighbor] < lip:
+						surface[neighbor] = lip
+
+		if is_lake:
+			lakes += 1
+			lake_cells += wet
+			lake_sites.append([float(_origin.x + column) * cell_m, float(_origin.y + row) * cell_m, radius])
+		else:
+			ponds += 1
+			pond_cells += wet
+
+		if verbose:
+			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
+
+	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip])
+	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
+
+
+# Steepest rise per metre between a cell and its eight neighbours.
+func _ground_slope(h: PackedFloat32Array, index: int, size: int, cell_m: float) -> float:
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+	var steepest: float = 0.0
+
+	for dz in range(-1, 2):
+		for dc in range(-1, 2):
+			var nr: int = row + dz
+			var nc: int = column + dc
+
+			if (dz == 0 and dc == 0) or nr < 0 or nr >= size or nc < 0 or nc >= size:
+				continue
+
+			var run: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+			steepest = maxf(steepest, absf(h[nr * size + nc] - h[index]) / run)
+
+	return steepest
 
 
 func _walk(fill, flow, index: int, steps: int, threshold: float) -> int:

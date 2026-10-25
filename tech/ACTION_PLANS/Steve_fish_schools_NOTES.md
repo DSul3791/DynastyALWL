@@ -1,0 +1,8 @@
+# Fish plan C build notes (claude/steve-fish-schools, RESTART, no protocol bump; GO as written)
+Stacks on B (claude/steve-fish-classifier ff873d0b). Merge order R1, B, C.
+- src/server/server_fish.gd: schools from hash(cell, slot, game day); placed only where water_kind_at suits the species (6 tries, else no school); drift 12 m around the base over 6 game hours, held at the base if it would leave suitable water; sizes = shares of the cell's hidden stock (sum never above it); factor 1.0 inside / 0.5 within 2x radius / 0.15 elsewhere; 1.0 and "not active" where the module has nothing to say (no hook, dry point, kind with no species).
+- data/items/fish_schools.json: all numbers and the species per water kind. A species whose item does not exist yet is left out (salmon, herring, mackerel, smelt wait for Sal's fish items, plan F), so today only trout, perch, carp, pike are drawn. Salmon only in autumn, mackerel only in summer.
+- server_items.gd: school_hit(pos, reach) takes the best factor over the stand point and 16 points at half and full reach (the shore is under the feet, the water is out there); `_fish_chance` multiplies by it; `_fish_species` returns the school's species; wired into the rod cast (species remembered in the state until the fish is landed) and the net haul. Spear is not wired (it aims at a point; plan G).
+- Not done, on purpose: salmon moving upstream (needs the river flow direction from water_flow; later), larger sea stock (stock model is Sal's fishing.json), jumps (D).
+- Cost: nothing per tick; a cast does 17 lookups on cached placements, test limit 1 ms.
+Needs David3: test_fish_schools (new), test_fish_water, any fishing tests, local_check 233, parse_scan.

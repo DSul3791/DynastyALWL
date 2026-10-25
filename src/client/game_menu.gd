@@ -23,6 +23,8 @@ var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
+var _hints_switch
+var _dialogue_switch
 var _tunnel_switch
 var _admin_mode_switch
 var _cave_button: Button
@@ -73,6 +75,7 @@ func build(client) -> void:
 	_build_display()
 	_build_sound()
 	_build_gameplay()
+	_build_inner_voice()
 	_build_sound_test()
 	_build_admin()
 	var reset: VBoxContainer = _page("reset_edits")
@@ -143,6 +146,8 @@ func refresh() -> void:
 		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
+		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
+		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
 
 
@@ -187,6 +192,7 @@ func _build_settings() -> void:
 	_button(settings, "Display", func(): show_page("display"))
 	_button(settings, "Sound", func(): show_page("sound"))
 	_button(settings, "Gameplay", func(): show_page("gameplay"))
+	_button(settings, "Inner voice", func(): show_page("inner_voice"))
 	_button(settings, "Back", func(): show_page("main"))
 
 
@@ -277,6 +283,24 @@ func _build_gameplay() -> void:
 	_button(gameplay, "Back", func(): show_page("settings"))
 
 
+# Esc > Settings > Inner voice (Dave 24 Oct): the character's own voice can give hints, speak its thoughts, both or neither.
+func _build_inner_voice() -> void:
+	var page: VBoxContainer = _page("inner_voice")
+	_heading(page, "Inner voice")
+	_hints_switch = _switch_row(page, "Hints", func(on: bool):
+		if _c.items != null:
+			_c.items.inner_settings.set_hints(on))
+	_dialogue_switch = _switch_row(page, "Inner dialogue", func(on: bool):
+		if _c.items != null:
+			_c.items.inner_settings.set_dialogue(on))
+	var hint: Label = Label.new()
+	hint.text = "Hints: a gentle nudge when you are stuck.\nInner dialogue: your own remarks, warnings and jokes."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 22)
+	page.add_child(hint)
+	_button(page, "Back", func(): show_page("settings"))
+
+
 # The sound test: a scrolling list, click a line to hear it (each line steps through its own variations; the note says which).
 func _build_sound_test() -> void:
 	var page: VBoxContainer = _page("sound_test")
@@ -321,6 +345,9 @@ func _build_admin() -> void:
 
 		print(report)
 		note.text = "The server writes water_dump_X_Z.txt in its store; this client's view is in the game log and in user://water_client_X_Z.txt (Project > Open User Data Folder).")
+	_button(admin, "Land types here (a map of lake, river, marsh, swamp, bog)", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_LAND_TYPES, 0, 0, 0, _c.body.global_position)
+		note.text = "The server answers in chat and writes land_types_X_Z.txt in its store: a letter map of the 200 m box round you (L lake, R river, M marsh, S swamp, B bog, F floodplain, * spring in a catch basin, ! spring not in one).")
 	_button(admin, "Clear blocks (reload from the server)", func(): _c._ask_clear_cache())
 	_button(admin, "Show my player key (and copy it)", func():
 		var key: String = _c.items.player_key() if _c.items != null else ""

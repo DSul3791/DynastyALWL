@@ -218,3 +218,13 @@ BP-T72 addendum (25 Oct, Dave): no kit items for building pieces or station kits
 BP-T72 addendum 2 (25 Oct 03:00): first-tier things are hand-crafted items, never hammer blueprints; blueprints are later tiers only.
 
 BP-T73 (25 Oct): shared caches in code that server worker threads call need a Mutex (or per-thread copies). A server crash fix ships as its own small build ahead of feature builds, cut on its own branch off the merged head. Owners sweep their code for other shared caches after a thread-safety crash.
+
+BP-T74 (25 Oct, Dave): tool-look review without Dave: Mike shoots, Moderator and Tyler each give an opinion on what to change, Tyler looks up the real tool (shape, photo reference, dimensions, source named) when unsure; Moderator sends one combined list to Kathleen, who works from it without waiting for Dave. Dave approves later; pickaxe 5ef0b60e is the quality bar.
+
+BP-T75 (Dave 25 Oct 04:58): if the game server box goes down and David3 is lost, MikeW takes over everything David3 does (gates and picture jobs) on Dave's PC. His gate results use the same format: HEAD=<40-char hash> first line, parse_scan, local_check 233, the tests. I merge only on those results. The Moderator tells me when David3 is down.
+
+BP-T76 (25 Oct, Tyler's own slip): after a merge push, read the origin build.gd NUMBER and the tested hash on origin BEFORE telling anyone it is merged; a pull --rebase over a merge commit can stop in a conflict and leave the push undone. Use plain push after a merge commit (no rebase) when origin has not moved.
+
+BP-T77 (25 Oct 07:25, Tyler): two gates in parallel while Dave is away. David3 (Linux box) stays the main gate; Mike on Dave's PC takes full runs of a separate set of heads when the queue is over 2 hours, only when Dave's PC is free and Dave is not playing. Same checks, same result format (HEAD=<40-char hash> first line, parse_scan, local_check 233, tests). Each head is gated by ONE of them, named in MERGE_CHECK_NEXT3.md. Heads touching bake output (merge-793 group) prefer Mike (Windows md5 check).
+
+BP-T78 (Tyler 25 Oct 11:30 UTC): run `python3 tools/merge_check.py` before EVERY merge push, even when David3 passed and local_check is green (merge guard job merge-check runs it on every push). Build 806 failed the guard (runs 654 to 656) because a conflict marker was committed inside src/client/ambience_slots.gd.uid by the fish classifier merge commit f78f5f02; local_check does not look for markers. David3 adds merge_check.py to the gate header; thread merges (base into branch) end with a grep for conflict markers (git grep -n '^<<<<<<<\|^>>>>>>>'). Fixed in 5c678224.

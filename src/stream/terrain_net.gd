@@ -31,7 +31,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 77
+const PROTOCOL_VERSION := 78
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -139,6 +139,7 @@ const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one ho
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
 const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
 const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
+const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
@@ -149,6 +150,7 @@ const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the lo
 const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch; while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
 const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
+const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
