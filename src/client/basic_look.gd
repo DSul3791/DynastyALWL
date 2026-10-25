@@ -469,7 +469,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
 			# chipped, about as long as the handle (about 23 cm overall). No sheen. Mesh axes: handle at -x, blade pointing +x.
-			var stone: Color = Color(0.19, 0.16, 0.115)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
+			var stone: Color = Color(0.3, 0.26, 0.19)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.3, 0.2, 0.11), k, 0.14))

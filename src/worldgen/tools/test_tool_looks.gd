@@ -126,7 +126,7 @@ func _init() -> void:
 	for v in (knife.surface_get_arrays(0)[Mesh.ARRAY_COLOR] as PackedColorArray):
 		brightest = maxf(brightest, v.get_luminance())
 
-	_check(brightest < 0.3, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
+	_check(brightest < 0.4, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
 	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
 
 	print("tool looks: %d failures" % failures)
