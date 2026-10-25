@@ -215,3 +215,4 @@ Audit scope note (2026-10-22): this first pass is a document-level audit of PROC
 - BP-T72 (25 Oct): crafting stations rule (Dave): benches only for weapons and tools, cooking at cooking stations, everything else by hand; the FIRST bench (log workbench) by hand, processing-station kits (saw mill, stone forge, blacksmithy, woodworking table, vice, tool rack) at the log workbench, material recipes at the processing stations; design/CRAFTING_STATIONS_RULE.md. A recipe plan states its class; David3 tests "by hand" recipes with no station nearby.
 
 BP-T72 addendum (25 Oct, Dave): no kit items for building pieces or station kits; they are hammer blueprints (bridge pattern). Keep numbers so old saves load. Hold any crafting gate that still makes kits.
+BP-T72 addendum 2 (25 Oct 03:00): first-tier things are hand-crafted items, never hammer blueprints; blueprints are later tiers only.

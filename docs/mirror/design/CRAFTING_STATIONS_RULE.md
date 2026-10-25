@@ -14,3 +14,5 @@ Sal audits all live recipes (125) against these rules: every recipe gets one cla
 
 ## UPDATE 25 Oct 02:57 UTC (Dave): NO KITS, BLUEPRINTS ON THE HAMMER
 Thatch pieces, building section kits and processing-station kits are not kit items. They are blueprints on the hammer, "just like the bridge". Sal writes one plan (item/recipe numbers stay, old saves load). Supersedes the kit parts above. Sal crafting gate (sal-thatch-floor-hand) is HELD until that plan is answered.
+
+UPDATE 25 Oct 03:00 UTC (Dave): FIRST TIER IS NEVER A BLUEPRINT. Thatch four, rough bed, campfire, campfire pot, chests, first bench stay hand-crafted items. Blueprints on the hammer are for later tiers only.

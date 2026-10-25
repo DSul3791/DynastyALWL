@@ -14,3 +14,6 @@ BUILD ORDER (two builds, one branch each, one plan each already covered by this 
  Build 2 (client): hammer list, ghost, have/need counts. Kathleen's held_item.gd gets one additive hunk; she answers on her branch, no separate plan.
  Later builds: tool rack, vice, stone forge, blacksmithy, water wheel, saw mill, woodworking table, hearth, oven, 18 bridge sizes are born as blueprints when their builds land.
 Queue: after spawn column, B, C, bed, sound hookup. Not before the bake hold ends for anything touching ground; this plan does not bake, so it can go as soon as David3 is free.
+
+## AMENDMENT 25 Oct 03:00 UTC (Dave: "nothing in the first tier should be" a blueprint)
+First tier stays hand-crafted items: thatch four, rough bed, campfire, campfire pot, chests, first bench (log workbench). NOT blueprints, NOT retired; points 4, 6 (thatch four, first bench), 8 and build 1 list above are changed accordingly. Blueprints are later tiers only: station kits, section kits, timber set, ladder, lean-to if not tier 1, clay hearth, oven, bridges. sal-thatch-floor-hand / 39a63cef (thatch four, first bench, clothing, backpack, forge) may be gated again once Sal confirms the final hash.
