@@ -58,6 +58,7 @@ func build(tile: Vector2i) -> void:
 # is world sample (origin_x, origin_z). A tile with a margin is built this
 # way, so its edge samples see the same inputs as the neighbor's.
 func build_frame(origin_x: int, origin_z: int, count: int) -> void:
+	var clock: int = Time.get_ticks_msec()
 	samples = count
 	origin_sx = origin_x
 	origin_sz = origin_z
@@ -121,8 +122,13 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		for i in range(samples):
 			heights[out + i] = w0 * line_0[i] + w1 * line_1[i] + w2 * line_2[i] + w3 * line_3[i]
 
+	_lap("frame cubic", clock)
+	clock = Time.get_ticks_msec()
 	_detail_scale = _shape_valleys()
+	_lap("shape valleys", clock)
+	clock = Time.get_ticks_msec()
 	_add_detail(_detail_scale)
+	_lap("add detail", clock)
 
 	if not defer_strata:
 		add_strata()
@@ -131,6 +137,11 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 # Rock beds: ledges and cliffs where hard beds crop out. With `rock` set (a TileGeology
 # prepared for this frame) the beds are the real rock layers; without, synthetic beds.
 # The baker defers this until after erosion, so ledges show where erosion left the rock.
+# Timing line for the bake log.
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  height timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
+
+
 func add_strata() -> void:
 	if rock != null:
 		_add_rock_beds(_detail_scale)
@@ -519,7 +530,10 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 	# The beds are found on a softened copy of the land: a cliff steepens the slope several
 	# times over, so on the raw land every small bump of the detail noise near a bed's edge
 	# would stand up as a spike.
+	var clock: int = Time.get_ticks_msec()
 	var smooth: PackedFloat32Array = _box_blur(heights, int(rules.get("bed_smooth_samples", 1)))
+	_lap("beds: blur", clock)
+	clock = Time.get_ticks_msec()
 
 	for index in range(total):
 		var h: float = smooth[index]
@@ -568,6 +582,8 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 
 		delta[index] = (rise - t) * sub * strength
 
+	_lap("beds: per-sample beds", clock)
+	clock = Time.get_ticks_msec()
 	# Blend across province borders (the layers jump there): a box blur of the change on
 	# samples within `reach` of a border, in two passes.
 	var reach: int = int(rules.get("border_blend_samples", 4))
@@ -587,6 +603,9 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 				if province[nj * samples + ni] != p:
 					near_border[index] = 1
 					break
+
+	_lap("beds: border search", clock)
+	clock = Time.get_ticks_msec()
 
 	for axis in range(2):
 		var before: PackedFloat32Array = delta.duplicate()
@@ -612,6 +631,8 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 					count += 1
 
 				delta[index] = sum / float(count)
+
+	_lap("beds: border blend", clock)
 
 	for index in range(total):
 		if delta[index] != 0.0:

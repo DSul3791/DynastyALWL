@@ -71,6 +71,7 @@ func use_world_fresh_water(points: PackedVector2Array) -> void:
 # A frame wider than a tile (a margin) must start on a multiple of the
 # coarse step, so neighboring frames share the same coarse grid.
 func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx: int, origin_sz: int) -> void:
+	var clock: int = Time.get_ticks_msec()
 	_origin_sx = origin_sx
 	_origin_sz = origin_sz
 	samples = int(round(sqrt(float(heights.size()))))
@@ -129,6 +130,8 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 	var fresh_distance: PackedFloat32Array = _chamfer(fresh_mask, coarse, cell_m)
 	var air: PackedFloat32Array = _world_air_grid(coarse, step) if not _air_field.is_empty() else _wet_air(coarse_height, coarse, cell_m, tile_row_of(z0))
 
+	print("  climate timing: coarse grids + chamfer + air %d ms" % (Time.get_ticks_msec() - clock))
+	clock = Time.get_ticks_msec()
 	# Noise so boundaries are organic.
 	var noise_rules: Dictionary = _rules["noise"]
 	var moisture_noise: PackedByteArray = _noise("climate_moisture", float(noise_rules["moisture_wavelength_m"]))
@@ -200,6 +203,8 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 	soil_counts.resize(256)
 	var fertile_cells: int = 0
 	var inv_two_spacing: float = 1.0 / (2.0 * spacing_m)
+	print("  climate timing: noise + setup %d ms" % (Time.get_ticks_msec() - clock))
+	clock = Time.get_ticks_msec()
 
 	for j in range(samples):
 		var v: float = float(j) / float(step)
@@ -273,6 +278,8 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 
 			if value >= 150.0:
 				fertile_cells += 1
+
+	print("  climate timing: per-sample loop %d ms" % (Time.get_ticks_msec() - clock))
 
 	for entry in _tables.get_entries("biomes"):
 		var count: int = biome_counts[int(entry["id"])]
