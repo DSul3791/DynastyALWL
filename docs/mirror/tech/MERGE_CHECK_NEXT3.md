@@ -119,3 +119,5 @@ Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one ha
  7. Standard: validate_items, full dup sweep (recipes highest 169 then 165 is reserved), parse_scan, local_check 233.
 
 ## BAKE HOLD (Tyler 00:15 UTC 25 Oct, Dave): no bakes or settles until the generator build is done. David3: cancel/skip the settle-past-9000 job. 792 items proceed (none needs a bake). Water R1 settler v7 waits for the bake; classifier/button/dam test code may go earlier only as a separate branch.
+
+## Generator speed-up (Tyler 00:20 UTC 25 Oct): base merge-793 5b9d9f9, merges into merge-793 only. Reply: ACTION_PLANS/Generator_speedup_REPLY.md. Proof bakes wait for Dave's go (box only). Cleanup branch separate.
