@@ -107,6 +107,7 @@ var _placement: Dictionary = {}              # structures.json: footprints, gaps
 var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
+var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const SWING_S := 0.55
 const HIT_STOP_S := 0.045
@@ -115,6 +116,7 @@ const REACH_M := 3.0
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -126,6 +128,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 
 	_tree_near = tree_near
 	_inv = inventory_view
+	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
 	_camera = camera
 	_root = world_root
@@ -283,6 +286,25 @@ func placing() -> bool:
 	return _blueprint != null
 
 
+# A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
+func _blueprinting() -> bool:
+	return holding and blueprints.picked > 0 and _hammer_tier() > 0
+
+
+func _hammer_tier() -> int:
+	var entry: Dictionary = _inv.table.entry(held_id())
+	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
+
+
+# R with a hammer in hand opens or shuts its blueprint list.
+func toggle_blueprints() -> bool:
+	if _hammer_tier() <= 0:
+		return false
+
+	blueprints.toggle(_hammer_tier())
+	return true
+
+
 func is_offhand(number: int) -> bool:
 	if number == 0:
 		return false
@@ -364,6 +386,20 @@ func _start_swing() -> void:
 
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
+	if blueprints.is_open:
+		blueprints.move(down, _hammer_tier())
+		return true
+
+	if _blueprinting():
+		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
+
+		if bool(picked_def.get("foundation", false)):
+			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
+			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+			return true
+
+		return false
+
 	if not holding or not _is_placeable():
 		return false
 
@@ -415,6 +451,9 @@ func _place_slot() -> int:
 
 
 func _placing_id() -> String:
+	if _blueprinting():
+		return blueprints.kit_of(blueprints.picked)
+
 	return _inv.table.id_of(_inv.inventory.numbers[_place_slot()])
 
 
@@ -423,6 +462,18 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
 		_inv.eat_slot(held_slot)
 		return true
+
+	if blueprints.is_open:
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			blueprints.choose(_hammer_tier())
+
+		return button == MOUSE_BUTTON_LEFT
+
+	if _blueprinting():
+		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+
+		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
@@ -722,7 +773,10 @@ func _ghost_clean(node: Node) -> void:
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 func _update_blueprint() -> void:
-	if not _is_placeable():
+	if (blueprints.picked > 0 or blueprints.is_open) and _hammer_tier() <= 0:
+		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+
+	if not _is_placeable() and not _blueprinting():
 		if _blueprint != null:
 			_blueprint.visible = false
 
@@ -796,7 +850,7 @@ func _update_blueprint() -> void:
 		blueprint_state = "covered" if covered else "open"
 
 	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
-	_blueprint_ok = _blueprint_ok and not blocked
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -974,7 +1028,17 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+	if _blueprinting():
+		var short: bool = not blueprints.can_afford(_hammer_tier())
+		text = "%s blueprint" % blueprints.name_of(blueprints.picked)
+
+		if PlacementRules.reason_text(blueprint_state) != "":
+			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+		elif short:
+			text += "   (red: not enough materials; R: the list)"
+		else:
+			text += "   (left click: build it with the materials in your pack; R: the list)"
+	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():
 		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
