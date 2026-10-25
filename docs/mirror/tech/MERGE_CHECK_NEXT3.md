@@ -197,3 +197,5 @@ SPEED-UP 3a MERGED into claude/merge-793 (25 Oct 05:30 UTC, fast-forward cbe31f7
 3b-1(a): C++ core port of box blur and border search with GDScript fallback and test cases: accepted (see reply). Binaries rebuilt ONCE at the end of the 3b group, after the last proof.
 
 NEW HEADS ON merge-793 690ee171 (25 Oct 05:55 UTC, Sonny rebased; sent to David3): bend-swing-fade 5dffc0de82d7ab75e1d28b2d838715322310b88f, ore-near-rivers 313a172b88f34ab9018601f2f54b6129547b28a8, river-ore-guarantee 372f3ef4cd27df67bb6a40fa86d1c14b55be697f, sonny-test-fixes 3908aca3f23c476298e38db31ed3fbd3dba218d1, remove-old-builder 3a49753130e0bb4788147ee2bf65e549a3b8a1a3. These replace the older hashes for those branches. Merge only exact PASS ids into merge-793. erosion v2 4ae9a58a still to rebase on 690ee171.
+
+TORCH HEAD (25 Oct 06:55 UTC): claude/sal-torch-head c180a36fbc76c31bc3aa45b4c9897e2e4e51e249 (round 3; adds src/client/flame_up.gd, new small file, flame node keeps world-up; edit is no longer only inside _make_torch_model). Look-only, RUNTIME. Gate after Kathleen/Tyler pictures are judged; new .gd needs its .uid file committed (check at merge), parse_scan, warnings 233.
