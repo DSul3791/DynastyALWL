@@ -1650,3 +1650,7 @@ Answered: 2026-10-25 00:23 UTC
 Answer: No: We use the hoe for everything farming
 Answered: 2026-10-25 13:49 UTC
 
+## early-tools-uses | Add a wooden rake and a stone sickle for farming (iron scythe later)?
+Answer: No: We use the hoe for everything farming
+Answered: 2026-10-25 13:49 UTC
+
