@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://b04i7f07dk03e"]
-
-[ext_resource type="Script" uid="uid://cfpl04pwqq6hm" path="res://src/builder/world_preview.gd" id="1_xjsws"]
-
-[node name="WorldPreview" type="Node" unique_id=76454481]
-script = ExtResource("1_xjsws")
