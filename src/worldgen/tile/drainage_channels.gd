@@ -323,6 +323,8 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 	var farm_start: float = float(rules.get("farm_valley_start_km2", start_km2))
 	var farm_gate: float = minf(start_km2, farm_start)
 	var cut: PackedFloat32Array = bed.duplicate()
+	var jobs_i: PackedInt32Array = PackedInt32Array()      # per valley stamp: cell, reach in cells
+	var jobs_f: PackedFloat64Array = PackedFloat64Array()  # per valley stamp: floor level, side slope, half width, rim, strength, max cut
 
 	for index in fill.order:
 		if flow.discharge[index] < farm_gate or is_nan(_centre_surface[index]):
@@ -361,6 +363,37 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 
 		var floor_level: float = _centre_surface[index] + freeboard
 		var reach: int = int(ceil(rim_m / cell_m))
+		jobs_i.append(index)
+		jobs_i.append(reach)
+		jobs_f.append_array(PackedFloat64Array([floor_level, side_here, half_m, rim_m, strength, max_cut_m]))
+
+	# The stamps only read h, never cut, so they run after the loop, in the same order (in C++ when GenCore is loaded).
+	if not force_script and ClassDB.class_exists("GenCore"):
+		cut = ClassDB.instantiate("GenCore").carve_valleys(cut, h, size, cell_m, jobs_i, jobs_f)
+	else:
+		cut = carve_valleys_script(cut, h, size, cell_m, jobs_i, jobs_f)
+
+	bed = cut
+
+
+# Tests set this to compare the GDScript stamps with GenCore's (test_gen_core.gd); false in the bake.
+static var force_script: bool = false
+
+
+# The valley stamps (see _valleys), one after the other into a copy of `cut`: the GDScript the C++ GenCore.carve_valleys must match bit for bit.
+static func carve_valleys_script(cut_in: PackedFloat32Array, h: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array) -> PackedFloat32Array:
+	var cut: PackedFloat32Array = cut_in.duplicate()
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var reach: int = jobs_i[job * 2 + 1]
+		var floor_level: float = jobs_f[job * 6]
+		var side_here: float = jobs_f[job * 6 + 1]
+		var half_m: float = jobs_f[job * 6 + 2]
+		var rim_m: float = jobs_f[job * 6 + 3]
+		var strength: float = jobs_f[job * 6 + 4]
+		var max_cut_m: float = jobs_f[job * 6 + 5]
 		@warning_ignore("integer_division")
 		var row: int = index / size
 		var column: int = index % size
@@ -388,7 +421,7 @@ func _valleys(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, rules
 				var carved: float = maxf(lerpf(cut[neighbor], minf(cut[neighbor], wanted), weight), h[neighbor] - max_cut_m)
 				cut[neighbor] = minf(cut[neighbor], carved)
 
-	bed = cut
+	return cut
 
 
 # Stage 3b2: canyons and ravines. Where a river with a big catchment crosses high ground and a slowly varying place noise

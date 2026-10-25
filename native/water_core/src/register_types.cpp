@@ -1,3 +1,4 @@
+#include "gen_core.h"
 #include "water_core.h"
 
 #include <gdextension_interface.h>
@@ -11,6 +12,7 @@ void initialize_water_core(ModuleInitializationLevel level) {
 		return;
 	}
 	GDREGISTER_CLASS(WaterCore);
+	GDREGISTER_CLASS(GenCore);
 }
 
 void uninitialize_water_core(ModuleInitializationLevel level) {

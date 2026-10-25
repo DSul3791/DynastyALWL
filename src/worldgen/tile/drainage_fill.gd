@@ -13,6 +13,10 @@ const LEVEL_TOLERANCE_M := 0.02
 const LEVEL_SET_MAX_CELLS := 4000
 const BUCKETS_PER_M := 100.0   # flood order is exact to a centimetre
 
+# Tests set this to compare the GDScript flood and route with GenCore's (test_gen_core.gd); false in the bake. When GenCore is
+# loaded (addons/water_core) the C++ version of _flood and _route runs; these two stay as the fallback and the reference.
+static var force_script: bool = false
+
 var size: int = 0
 var filled: PackedFloat32Array = PackedFloat32Array()
 var lake_id: PackedInt32Array = PackedInt32Array()
@@ -32,8 +36,19 @@ func build(h: PackedFloat32Array, sea: PackedByteArray, grid: int, min_depth_m: 
 	_parent.fill(-1)
 	order.clear()
 	lakes.clear()
-	_flood(h, sea)
-	_route(h, sea)
+	if not force_script and ClassDB.class_exists("GenCore"):
+		var core = ClassDB.instantiate("GenCore")
+		var flooded: Dictionary = core.flood(h, sea, size)
+		filled = flooded["filled"]
+		_parent = flooded["parent"]
+		order = flooded["order"]
+		var routed: Dictionary = core.route(h, sea, filled, _parent, size)
+		receiver = routed["receiver"]
+		order = routed["order"]
+	else:
+		_flood(h, sea)
+		_route(h, sea)
+
 	_label(h, sea, min_depth_m)
 
 

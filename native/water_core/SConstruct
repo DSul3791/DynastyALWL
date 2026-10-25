@@ -5,6 +5,8 @@ import os
 
 env = SConscript("godot-cpp/SConstruct")
 env.Append(CPPPATH=["src/"])
+# Same arithmetic as GDScript on every compiler: no fast-math, no fused multiply-add (tile files must be byte-identical on Linux and Windows).
+env.Append(CCFLAGS=["-fno-fast-math", "-ffp-contract=off"])
 sources = Glob("src/*.cpp")
 out = "../../addons/water_core/bin/libwatercore{}{}".format(env["suffix"], env["SHLIBSUFFIX"])
 library = env.SharedLibrary(out, source=sources)
