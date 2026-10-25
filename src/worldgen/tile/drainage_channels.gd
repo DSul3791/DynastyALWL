@@ -835,10 +835,10 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if floori(wx / TILE_SIZE_M) != tile_x or floori(wz / TILE_SIZE_M) != tile_z:
 			continue
 
-		var in_block_x: float = fposmod(wx, block_m)
-		var in_block_z: float = fposmod(wz, block_m)
+		var in_tile_x: float = fposmod(wx, TILE_SIZE_M)
+		var in_tile_z: float = fposmod(wz, TILE_SIZE_M)
 
-		if in_block_x < keep_m or in_block_x > block_m - keep_m or in_block_z < keep_m or in_block_z > block_m - keep_m:
+		if in_tile_x < keep_m or in_tile_x > TILE_SIZE_M - keep_m or in_tile_z < keep_m or in_tile_z > TILE_SIZE_M - keep_m:
 			continue
 
 		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):

@@ -14,7 +14,6 @@ const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 
 const RIVER_KM2 := 0.35
 const TILE_M := 15360.0
-const BLOCK_M := 1536.0
 
 var failures: int = 0
 
@@ -82,12 +81,12 @@ func _init() -> void:
 
 	for site in first.lake_sites:
 		var keep: float = 1.5 * float(site[2])
-		var in_x: float = fposmod(float(site[0]), BLOCK_M)
-		var in_z: float = fposmod(float(site[1]), BLOCK_M)
-		worst = minf(worst, minf(minf(in_x, BLOCK_M - in_x), minf(in_z, BLOCK_M - in_z)) - keep)
+		var in_x: float = fposmod(float(site[0]), TILE_M)
+		var in_z: float = fposmod(float(site[1]), TILE_M)
+		worst = minf(worst, minf(minf(in_x, TILE_M - in_x), minf(in_z, TILE_M - in_z)) - keep)
 		_check(float(site[0]) - keep >= x_min and float(site[0]) + keep <= x_min + TILE_M and float(site[1]) - keep >= z_min and float(site[1]) + keep <= z_min + TILE_M, "lake at %d,%d (radius %.0f m) lies inside its tile" % [int(site[0]), int(site[1]), float(site[2])])
 
-	_check(worst >= -0.001, "every lake bowl stays inside its 1536 m block (margin %.0f m)" % worst)
+	_check(worst >= -0.001, "every lake bowl stays inside its tile (margin %.0f m)" % worst)
 	var second = _channels(data, side, cell_m, origin)
 	_check(str(second.lake_sites) == str(first.lake_sites), "a second build gives the same lakes")
 	print("tile lakes: %d failures" % failures)
