@@ -256,19 +256,16 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.0195, 0.014, Vector3(-0.08 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
 			if metal_head:
-				var iron_head: Color = Color(0.2, 0.2, 0.2)
-				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head)                              # the socket
+				var iron_head: Color = Color(0.2, 0.19, 0.17)
+				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head * 0.8)                       # the socket cone
 				_metal(parts, 0.5, 0.5)
-				_sph(parts, 0.05, Vector3(2.6, 0.12, 0.8), Vector3(0.62, 0.0, 0.0), iron_head * 1.3, true)             # the leaf blade, flat
-				_metal(parts, 0.5, 0.5)
-				_box(parts, Vector3(0.22, 0.012, 0.008), Vector3(0.62, 0.0, 0.0), iron_head * 0.8)                      # the midrib
-				_metal(parts, 0.5, 0.5)
-				_cone(parts, 0.012, 0.05, Vector3(0.72, 0.0, 0.0), iron_head * 1.5)                                    # the sharp point
-				_metal(parts, 0.5, 0.5)
-				_cyl(parts, 0.0255, 0.016, Vector3(0.455, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.16))   # the twine binding below the socket
+				_plate(parts, 0.545, 0.3, 0.07, 0, 12, iron_head * 1.35, true, true, 0.5, 0.5, Transform3D.IDENTITY, 3)   # a flat leaf blade with a ridge down the middle (the midrib) and a sharp point
+				_cyl(parts, 0.0255, 0.018, Vector3(0.455, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.16))   # the twine binding below the socket
+				_cyl(parts, 0.0255, 0.012, Vector3(0.475, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.38, 0.27, 0.12))
 			else:
-				_cone(parts, 0.0155, 0.3, Vector3(0.6, 0.0, 0.0), ash_spear.darkened(0.2))                             # the whittled point
-				_cone(parts, 0.007, 0.08, Vector3(0.75, 0.0, 0.0), ash_spear.darkened(0.55))                          # the fire-hardened tip
+				var stops: Array = [[0.45, 0.58, 0.0155, 0.0112, 0.1], [0.58, 0.7, 0.0112, 0.0062, 0.25], [0.7, 0.8, 0.0062, 0.0022, 0.42], [0.8, 0.84, 0.0022, 0.0004, 0.58]]   # the whittled point, darkening softly to a fire-hardened tip
+				for stop in stops:
+					_cyl_taper(parts, stop[2], stop[3], stop[1] - stop[0], Vector3(0.5 * (stop[0] + stop[1]), 0.0, 0.0), ash_spear.darkened(stop[4]))
 		"axe":
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
@@ -370,15 +367,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl_taper(parts, 0.02, 0.034, 0.06, Vector3(0.41, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # a short socket cone
 			if metal_blade:
 				_metal(parts, rough, sheen)
-			_cyl(parts, 0.045, 0.014, Vector3(0.437, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), blade * 1.5 if metal_blade else blade.lightened(0.2))   # a raised round collar at the socket mouth
+			_cyl(parts, 0.045, 0.014, Vector3(0.437, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), blade * 1.5 if metal_blade else Color(0.16, 0.09, 0.045))   # a raised round collar at the socket mouth
 			if metal_blade:
 				_metal(parts, rough, sheen)
 			_plate(parts, 0.44, 0.3, 0.2, 0, 12, blade, true, metal_blade, rough, sheen)                             # the blade plate, 30 by 20 cm, one piece with a symmetric arched tip
-			_box(parts, Vector3(0.03, 0.01, 0.17), Vector3(0.46, 0.013, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.2))   # the step plate across the shoulders
+			_box(parts, Vector3(0.03, 0.01, 0.17), Vector3(0.46, 0.013, 0.0), blade * 1.5 if metal_blade else Color(0.16, 0.09, 0.045))   # the step plate across the shoulders (a leather strap on wood and stone)
 			if metal_blade:
 				_metal(parts, rough, sheen)
 			for side in [-1.0, 1.0]:
-				_sph(parts, 0.007, Vector3(1.0, 0.5, 1.0), Vector3(0.46, 0.019, side * 0.05), blade * 1.5 if metal_blade else blade.lightened(0.3), true)   # two round domed rivets
+				_sph(parts, 0.007, Vector3(1.0, 0.5, 1.0), Vector3(0.46, 0.019, side * 0.05), blade * 1.5 if metal_blade else Color(0.08, 0.05, 0.03), true)   # two round domed rivets
 				if metal_blade:
 					_metal(parts, rough, sheen)
 		"saw":
@@ -435,7 +432,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			if metal_blade:
 				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)
 			elif absf(color.r - color.b) < 0.1:
-				blade = Color(0.17, 0.16, 0.145)                                                               # stone: matt grey, rough, tied on with twine below
+				blade = Color(0.19, 0.17, 0.14)                                                               # stone: matt grey, rough, tied on with twine below
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
@@ -492,29 +489,37 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			if bits.has("pin"):
 				_cyl_taper(parts, 0.011, 0.016, 0.1, Vector3(0.1, 0.0, 0.0), _tone(color, 1, 0.05))
 				_cyl_taper(parts, 0.004, 0.011, 0.18, Vector3(-0.04, 0.0, 0.0), _tone(color, 2, 0.05))
-				_sph(parts, 0.018, Vector3(0.7, 1.0, 1.0), Vector3(0.16, 0.0, 0.0), _tone(color, 3, 0.05))
+				_sph(parts, 0.0175, Vector3(0.9, 1.0, 1.0), Vector3(0.155, 0.0, 0.0), _tone(color, 3, 0.05))
 			else:
-				for k in range(3):                                                                                   # the cane in three tones, thick at the butt and fine at the tip
-					var x0: float = -0.55 + 0.45 * float(k) * 1.0
+				for k in range(3):                                                                                   # the cane in three clear tones, thick at the butt and fine at the tip
+					var x0: float = -0.55 + 0.45 * float(k)
 					var x1: float = x0 + 0.45 if k < 2 else 0.8
 					var r0: float = 0.0105 - 0.0035 * (x0 + 0.55) / 1.35
 					var r1: float = 0.0105 - 0.0035 * (x1 + 0.55) / 1.35
-					_cyl_taper(parts, r0, r1, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(cane, k, 0.07))
-				_cyl(parts, 0.0135, 0.28, Vector3(-0.68, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.22, 0.13, 0.07))   # the leather handle wrap
-				for k in range(3):
-					_cyl(parts, 0.0148, 0.012, Vector3(-0.78 + 0.1 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025))
-				_box(parts, Vector3(0.05, 0.012, 0.016), Vector3(-0.5, -0.016, 0.0), cane.darkened(0.3))              # the reel seat
-				_cyl(parts, 0.032, 0.022, Vector3(-0.5, -0.04, 0.0), Vector3(PI * 0.5, 0.0, 0.0), color.darkened(0.25))   # the reel drum
-				_cyl(parts, 0.036, 0.004, Vector3(-0.5, -0.04, 0.012), Vector3(PI * 0.5, 0.0, 0.0), color)             # its side plate
-				for k in range(3):                                                                                   # guide rings along the cane
-					var gx: float = -0.1 + 0.4 * float(k)
+					_cyl_taper(parts, r0, r1, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(cane, [2, 5, 8][k], 0.16))
+				_cyl(parts, 0.0122, 0.06, Vector3(-0.6, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), cane.darkened(0.15))   # the butt under the wrap
+				_wrap(parts, -0.8, -0.58, 0.0142)                                                                    # the leather handle, one continuous spiral wrap
+				_box(parts, Vector3(0.05, 0.012, 0.016), Vector3(-0.46, -0.0165, 0.0), cane.darkened(0.3))            # the reel seat on the cane, just above the reel
+				_cyl(parts, 0.022, 0.02, Vector3(-0.46, -0.044, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.14, 0.11, 0.09))   # a small dark iron reel drum
+				_cyl(parts, 0.026, 0.004, Vector3(-0.46, -0.044, 0.012), Vector3(PI * 0.5, 0.0, 0.0), Color(0.2, 0.17, 0.14))   # its side plate
+				var line: Array = [Vector2(-0.46, -0.024)]                                                           # the line: reel top, up to each guide, on to the tip
+				for k in range(4):
+					var gx: float = -0.1 + 0.28 * float(k) if k < 3 else 0.78
+					var gy: float = -(0.0105 - 0.0035 * (gx + 0.55) / 1.35 + 0.006)
 					var ring: TorusMesh = TorusMesh.new()
-					ring.inner_radius = 0.0055
-					ring.outer_radius = 0.0085
-					ring.rings = 8
-					ring.ring_segments = 4
-					parts.append([ring, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(gx, -0.012, 0.0)), Color(0.45, 0.45, 0.47)])
-				_cyl(parts, 0.0015, 1.3, Vector3(0.0, -0.02, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.013), Color(0.8, 0.78, 0.7))   # the line from the reel to the tip
+					ring.inner_radius = 0.0045
+					ring.outer_radius = 0.0075
+					ring.rings = 6
+					ring.ring_segments = 3
+					parts.append([ring, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(gx, gy, 0.0)), Color(0.3, 0.28, 0.25)])
+					line.append(Vector2(gx, gy))
+				line.append(Vector2(0.8, -0.002))
+
+				for k in range(line.size() - 1):
+					var from: Vector2 = line[k]
+					var to: Vector2 = line[k + 1]
+					var span: Vector2 = to - from
+					_cyl(parts, 0.0012, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.8, 0.78, 0.7))
 		"torch":
 			_handle(parts, 0.5)
 			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
@@ -711,6 +716,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
+		elif mode == 3:
+			half = 0.5 * wide * pow(sin(PI * pow(t, 0.8)), 0.8)                                                             # a spear leaf: swelling, then a sharp point
 		elif mode == 2:
 			half = 0.5 * wide * (1.0 - 0.64 * t)                                                                      # a saw blade: 14 cm at the heel tapering to 5 cm at the toe
 
@@ -719,13 +726,13 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		half = maxf(half, 0.012)
 		var forward: float = 0.006 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
-		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else 0.0)) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
-		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else 0.0025)
+		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else (-0.007 if mode == 3 else 0.0))) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
+		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else (0.003 if mode == 3 else 0.0025))
 
 		if mode == 1:
 			base += 0.007 * smoothstep(0.35, 0.7, t) * (1.0 - 0.8 * smoothstep(0.8, 1.0, t))                           # a hoe's edge thickens, then bevels to a thin cutting edge
 		base *= thick_scale
-		var rim: float = 0.006 if mode != 2 else 0.0
+		var rim: float = 0.006 if mode < 2 else 0.0
 		var top_row: Array = []
 		var bottom_row: Array = []
 
