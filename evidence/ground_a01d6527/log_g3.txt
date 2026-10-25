@@ -1,0 +1,30 @@
+== stone_axe exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 7 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 66 % of the frame, centre 16 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 71 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 72 % of the frame, centre 9 % off, all inside the frame
+shot runner: done (item pictures FAILED)
+== stone_hammer exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 8 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 77 % of the frame, centre 15 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 53 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 67 % of the frame, centre 11 % off, all inside the frame
+shot runner: done (item pictures FAILED)
+== wooden_hammer exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 8 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 68 % of the frame, centre 15 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 66 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 70 % of the frame, centre 10 % off, all inside the frame
+shot runner: done (item pictures FAILED)
+== stone_knife exit 0
+shot runner: item view front FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 23 % of the frame, centre 20 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 65 % of the frame, centre 12 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 0 % of the frame, centre 100 % off, PART OUTSIDE THE FRAME
+shot runner: done (item pictures FAILED)
+== iron_pickaxe exit 0
+shot runner: item view front FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 11 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 13 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 72 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 68 % of the frame, centre 11 % off, all inside the frame
+shot runner: done (item pictures FAILED)
