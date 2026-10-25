@@ -789,6 +789,7 @@
 			"placer_resources": [
 				"gold",
 				"tin",
+				"copper",
 				"diamond",
 				"ruby",
 				"sapphire",
