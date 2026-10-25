@@ -1,0 +1,1 @@
+kathleen-tool-pass 43fac154d529fcd22464573e497fa4645fcea4ec + steve-look-shots 83db2539497621e0762bbc2c311c5c068380905d merged locally; look_rig.sh --look NAME --nograss; views front side top diag; noon clear; server GPU. Sheets order: plank_wall, plank_window_wall, plank_door, plank_door_open, plank_floor, fine_wall, fine_window_wall, fine_door, fine_door_open, fine_floor
