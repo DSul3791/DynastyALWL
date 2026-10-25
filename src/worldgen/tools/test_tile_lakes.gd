@@ -81,7 +81,7 @@ func _init() -> void:
 	var worst: float = INF
 
 	for site in first.lake_sites:
-		var keep: float = 2.0 * float(site[2])
+		var keep: float = 1.5 * float(site[2])
 		var in_x: float = fposmod(float(site[0]), BLOCK_M)
 		var in_z: float = fposmod(float(site[1]), BLOCK_M)
 		worst = minf(worst, minf(minf(in_x, BLOCK_M - in_x), minf(in_z, BLOCK_M - in_z)) - keep)
