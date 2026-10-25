@@ -168,3 +168,5 @@ sal-net-look: merges with kathleen-held-tools 6429ab6e (shared files basic_look.
 kathleen-held-pose 3af62551: part 1 (heads, saw/hammer shapes) merges with kathleen-held-tools and sal-net-look; part 2 (pose) own commit later. Hand views K14..K22. NOTE: claude/sal-net-look was not visible on the remote when I fetched at 02:30 UTC: Sal must push it (hash to David3).
 
 ## BUILD 793 MERGED (A = shelter + fire tiers + campfire pot, d79a4a44). Next in order: B 15616045 (craft menu), C b9c6afb8 (auto-make), rough bed 6459b079 + bed-respawn, sound hookup fce8a304, no-stack caps + weight audit, shore-net look, held-tools + held-pose, showroom-test, water-soak. B and C gate after the shot-landing check; each is rebased by its owner on 793 first (A is now in).
+
+## steve-spawn-column dc3ab9cf (stacked on shot-landing 3bc42417): priority 1 for David3 (after nothing else; independent). Reply: ACTION_PLANS/Steve_spawn_column_REPLY.md. One gate, one build.
