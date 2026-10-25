@@ -1,6 +1,8 @@
 ## 2026-10-25 Mike (Windows rig): world pictures on generator-v2 build 810 (9f55bbf0) with the c30d6d5f bake
 Branch claude/mike-evidence-kathleen-13df38ae, folder evidence/world_810/: world_spawn_a-d (spawn four directions), world_river_a-d, world_farmland_slope, second_pass_world_biglake_3_4 and second_pass_world_lake_4_3, aerial_world_biglake_3_4_aerial (x52552 z69016, 465 m up, pitch -60) and aerial_world_biglake_3_4_aerial_top. Finding: both lakes carry trees standing in the water (forest blocks with square edges inside the (3,4) lake).
 
+- 2026-10-25 Mike (Windows rig), tool pass: branch claude/mike-evidence-kathleen-13df38ae, folders evidence/toolpass_<hash> (held: first person 35 down, third person a-d, top) and evidence/ground_<hash> (Steve's item job: front, side, top, diag + log) for Kathleen's hashes a01d6527 ... 7c806b9d: spades, hoes, hand saw, axe, hammers, knife, rod, spears, pin, torch (rounds 1-6), bow 60e82f3e / e4a8e44e, stone arrow 7c806b9d. Index of the newest per item: bow e4a8e44e, stone arrow 7c806b9d, torch 302f8279, spades acf53a86, stone hoe 023e44b3, knife 106c4899.
+
 # Pictures index (newest first). One line per set: folder, topic, build, notes.
 All pictures: server GPU (GTX 1050 Ti), JPEG 1280x720, 1.7 m eye unless noted. Details in each folder's README.md or summary.txt.
 
