@@ -12,6 +12,8 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 
+const LOAD_WAIT_S := 120.0
+
 var failures: int = 0
 
 
@@ -32,6 +34,19 @@ func _volume(path: String, side: int, ground: PackedFloat32Array) -> float:
 			total += depth[k] * 64.0
 
 	return total
+
+
+# True when every wanted tile that has land (a baked tile, not open sea) is live in the hub.
+func _all_live(hub, wanted: Array, generator) -> bool:
+	hub._mutex.lock()
+	var loaded: Array = hub._tiles.keys()
+	hub._mutex.unlock()
+
+	for t in wanted:
+		if not loaded.has(t) and not generator.get_tile(t).placeholder:
+			return false
+
+	return true
 
 
 func _init() -> void:
@@ -74,8 +89,10 @@ func _init() -> void:
 		hub.set_live(tiles)
 		var before: Dictionary = {}
 		var end: int = Time.get_ticks_msec() + int(phase_s * 1000.0)
+		var deadline: int = Time.get_ticks_msec() + int(LOAD_WAIT_S * 1000.0)
 
-		while Time.get_ticks_msec() < end:
+		# The new tiles take longer than a fixed phase to load: each phase lasts at least phase_s and until every wanted LAND tile is live (open sea has no water tile), at most LOAD_WAIT_S.
+		while Time.get_ticks_msec() < end or (not _all_live(hub, tiles, generator) and Time.get_ticks_msec() < deadline):
 			OS.delay_msec(100)
 			hub._mutex.lock()
 			var loaded: Array = hub._tiles.keys()
@@ -88,7 +105,7 @@ func _init() -> void:
 			peak_mb = maxf(peak_mb, float(OS.get_static_memory_usage() - hub._baseline) / 1048576.0)
 
 			# Volumes just before the next change, for the tiles that will go to sleep.
-			if Time.get_ticks_msec() > end - 300:
+			if Time.get_ticks_msec() > end - 300 and (_all_live(hub, tiles, generator) or Time.get_ticks_msec() >= deadline - 300):
 				for t in loaded:
 					var sim = hub.sim_of(t)
 
