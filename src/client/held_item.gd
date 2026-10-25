@@ -48,7 +48,7 @@ const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look si
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
 	"axe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"pick": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"pick": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the head runs across the player (mesh z to the right), its points curving down: from the front it is a straight bar (Dave 2026-10-25: it was bent sideways)
 	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"saw": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
