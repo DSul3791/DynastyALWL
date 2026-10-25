@@ -22,23 +22,23 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack)
 	var rows: Array = list.rows(1)
-	check(rows.size() == 8, "a wooden hammer lists all eight build 1 blueprints (%d)" % rows.size())
+	check(rows.size() == 4, "a wooden hammer lists the four heavy station blueprints (%d)" % rows.size())
 	check(str(rows[0]["name"]) <= str(rows[1]["name"]), "the list is alphabetical")
 	check(not bool(rows[0]["can"]), "an empty pack covers nothing")
 
 	var wall: Dictionary = {}
 
 	for row in rows:
-		if str(row["name"]) == "Wall section":
+		if str(row["name"]) == "Woodworking table":
 			wall = row
 
-	check(wall.get("kit", "") == "wall_section_kit" and str(wall["text"]) == "lumber 0/4, twine 0/1", "wall row: kit and have/need text (%s)" % str(wall.get("text", "")))
-	pack.add(table.number_of("lumber"), 3)
-	pack.add(table.number_of("twine"), 1)
-	check(not list.rows(1).filter(func(r): return r["name"] == "Wall section")[0]["can"], "3 of 4 lumber is short")
+	check(wall.get("kit", "") == "woodworking_table_kit" and str(wall["text"]) == "lumber 0/12, nails 0/60", "table row: kit and have/need text (%s)" % str(wall.get("text", "")))
+	pack.add(table.number_of("lumber"), 11)
+	pack.add(table.number_of("nails"), 60)
+	check(not list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]["can"], "11 of 12 lumber is short")
 	pack.add(table.number_of("lumber"), 1)
-	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Wall section")[0]
-	check(bool(wall_now["can"]) and str(wall_now["text"]) == "lumber 4/4, twine 1/1", "4 lumber and a twine cover the wall (%s)" % str(wall_now["text"]))
+	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Woodworking table")[0]
+	check(bool(wall_now["can"]) and str(wall_now["text"]) == "lumber 12/12, nails 60/60", "12 lumber and 60 nails cover the table (%s)" % str(wall_now["text"]))
 
 	list.set_open(true, 1)
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
@@ -54,6 +54,6 @@ func _init() -> void:
 	var strict_list = ListScript.new()
 	strict_list.setup(table, pack)
 	strict_list._book[0]["hammer"] = 2
-	check(strict_list.rows(1).size() == 7 and strict_list.rows(2).size() == 8, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 3 and strict_list.rows(2).size() == 4, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
