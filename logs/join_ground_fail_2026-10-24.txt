@@ -1,0 +1,36 @@
+Mike client log of a failing join (stone_hammer real-view run, 24 Oct 2026 22:46 ADT). Build: be20764e (merge of steve-shot-lock). Server on a fresh local port, same checkout.
+Server health at the end:
+server: water update 30 (1 tiles), 39568 wet squares on the starter tile
+server: 0 urgent and 0 prefetch queued; generated 24767, cache hits 3921, edit hits 0; flora chunks 30 made, 8548 from memory; idle-built 1356 columns; bad blocks 0, failed tile loads 0
+server: 24456 blocks sent on the block line (10.8 MB)
+Client 651605528 left after 0 blocks, 0.0 MB; flora 0.2 MB
+
+Client lines (ground / watchdog / join / welcome):
+Terrain client: welcome after 112 ms; world Modular Island World; spawn (53301.0, 33.18662, 68427.0); cache user://terrain_cache/Modular Island World/v41_7300d0bce1 (10240 MB)
+Terrain client: 2026-10-24T22:46:47 [+16.1 s] JOIN: waiting for ground 16 s after the welcome: loads 7, received 120, pending 1, test drops 0, retries 0
+Terrain client: ground under (53310, 68439) is at 31.3 m
+Terrain client: 2026-10-24T22:46:52 [+21.1 s] JOIN: waiting for ground 21 s after the welcome: loads 7, received 120, pending 1, test drops 0, retries 0
+Terrain client: stopped flying at (53301.0, 400.0, 68427.0), loading the ground here
+Terrain client: ground under (53301, 68427) is at 31.2 m
+Terrain client: ground detail levels 1
+Terrain client: 2026-10-24T22:46:57 [+26.1 s] JOIN: waiting for ground 26 s after the welcome: loads 79, received 858, pending 1, test drops 0, retries 0
+Terrain client: stopped flying at (53301.0, 33.0, 68427.0), loading the ground here
+Terrain client: ground detail levels 7
+Terrain client: 2026-10-24T22:47:02 [+31.1 s] JOIN: waiting for ground 31 s after the welcome: loads 415, received 2214, pending 1, test drops 0, retries 0
+Terrain client: 2026-10-24T22:47:07 [+36.1 s] JOIN: waiting for ground 36 s after the welcome: loads 1373, received 5269, pending 1, test drops 0, retries 0
+Terrain client: 2026-10-24T22:47:12 [+41.1 s] JOIN: waiting for ground 41 s after the welcome: loads 3165, received 7693, pending 1, test drops 0, retries 0
+Terrain client: 2026-10-24T22:47:17 [+46.1 s] JOIN: waiting for ground 46 s after the welcome: loads 5905, received 9883, pending 1, test drops 0, retries 1
+Terrain client: 2026-10-24T22:47:17 [+46.1 s] JOIN: ground retry, try 1 of 6: loads 5905, received 9883, timeouts 0, bad 0, zeroed 0, pending 1, player (53301.0, 32.7, 68427.0)
+Terrain client: 2026-10-24T22:47:22 [+51.1 s] JOIN: waiting for ground 51 s after the welcome: loads 2610, received 4615, pending 1, test drops 0, retries 1
+Terrain client: 2026-10-24T22:47:27 [+56.1 s] JOIN: waiting for ground 56 s after the welcome: loads 5131, received 8350, pending 0, test drops 0, retries 1
+Terrain client: 2026-10-24T22:47:32 [+61.1 s] JOIN: waiting for ground 61 s after the welcome: loads 7956, received 12526, pending 1, test drops 0, retries 2
+Terrain client: 2026-10-24T22:47:32 [+61.1 s] JOIN: ground retry, try 2 of 6: loads 7956, received 12526, timeouts 0, bad 0, zeroed 0, pending 1, player (53301.0, 32.7, 68427.0)
+Terrain client: 2026-10-24T22:47:37 [+66.1 s] JOIN: waiting for ground 66 s after the welcome: loads 10744, received 2047, pending 0, test drops 0, retries 2
+Terrain client: 2026-10-24T22:47:42 [+71.1 s] JOIN: waiting for ground 71 s after the welcome: loads 10744, received 2047, pending 0, test drops 0, retries 2
+Terrain client: 2026-10-24T22:47:43 [+72.6 s] JOIN: ground retry, try 3 of 6: loads 10744, received 2047, timeouts 0, bad 0, zeroed 0, pending 0, player (53301.0, 32.7, 68427.0)
+Terrain client: 2026-10-24T22:47:47 [+76.1 s] JOIN: waiting for ground 76 s after the welcome: loads 10744, received 0, pending 0, test drops 0, retries 3
+Terrain client: 2026-10-24T22:47:52 [+81.1 s] JOIN: waiting for ground 81 s after the welcome: loads 10744, received 0, pending 0, test drops 0, retries 3
+Terrain client: 2026-10-24T22:47:53 [+82.6 s] JOIN: ground retry, try 4 of 6: loads 10744, received 0, timeouts 0, bad 0, zeroed 0, pending 0, player (53301.0, 32.7, 68427.0)
+shot runner: state: expect ""; player (53301.0, 32.7, 68427.0) pitch -50; 4 loose items within 6 m: wooden_spade x1 server y 30.90 drawn y 30.94 collision ground 30.91 voxel ground 30.00 gap 0.94 dist 4.0; stone_spade x1 server y 30.96 drawn y 31.00 collision 
+shot runner: pose real2_hammer pos 53301.00,32.70,68427.00 yaw 0.0 (asked 0.0) pitch -50.0 (asked -50.0) camera orbit 0 GROUND NOT READY
+shot runner: saved E:/Software/godotDev/DynastyALWL_Evidence/hands6/real2_hammer_FAILED_ground_not_ready.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
