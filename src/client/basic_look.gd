@@ -352,7 +352,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.015, 0.03, 0.045), Vector3(0.05, 0.0, 0.0), dark)                                 # guard
 			_box(parts, Vector3(0.1, 0.012, 0.03), Vector3(0.115, 0.0, 0.0), color)                                 # blade body
 			_box(parts, Vector3(0.1, 0.006, 0.012), Vector3(0.115, 0.0, 0.017), light)                              # the edge
-			_cone(parts, 0.016, 0.05, Vector3(0.2, 0.0, 0.0), color)                                                # the point
+			_box(parts, Vector3(0.04, 0.011, 0.024), Vector3(0.185, 0.0, 0.003), color)                              # the blade narrows to the point, touching the body (no gap)
+			_box(parts, Vector3(0.03, 0.009, 0.012), Vector3(0.22, 0.0, 0.0), color)
+			_box(parts, Vector3(0.012, 0.006, 0.006), Vector3(0.241, 0.0, -0.002), light)                             # the tip
 		"needle":
 			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 		"rod":
