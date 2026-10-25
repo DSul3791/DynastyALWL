@@ -115,6 +115,7 @@ const REACH_M := 3.0
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const FlameUp := preload("res://src/client/flame_up.gd")
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -1348,56 +1349,84 @@ func _make_other_model() -> Node3D:
 func _make_torch_model(id: String = "") -> Node3D:
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.27, 0.14)
+	wood.albedo_color = Color(0.42, 0.3, 0.17)
 	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
 	grime.albedo_color = Color(0.2, 0.14, 0.09)
 	var stick: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
-	rod.top_radius = 0.022
-	rod.bottom_radius = 0.031
+	rod.top_radius = 0.017
+	rod.bottom_radius = 0.025
 	rod.height = 0.6
+	rod.radial_segments = 16
 	rod.material = wood
 	stick.mesh = rod
 	torch.add_child(stick)
-	var soot: MeshInstance3D = MeshInstance3D.new()
-	var soot_mesh: CylinderMesh = CylinderMesh.new()
-	soot_mesh.top_radius = 0.0225
-	soot_mesh.bottom_radius = 0.0255
-	soot_mesh.height = 0.2
-	soot_mesh.material = grime
-	soot.mesh = soot_mesh
-	soot.position = Vector3(0.0, 0.2, 0.0)
-	torch.add_child(soot)
-	# The head: rag or bark wound round the top of the stick, bound with twine. The only head part; the flame starts right above it.
+	# The top of the stick darkens with handling and smoke in three steps, so there is no hard seam.
+	for step in range(3):
+		var soot: MeshInstance3D = MeshInstance3D.new()
+		var soot_mesh: CylinderMesh = CylinderMesh.new()
+		var soot_y: float = 0.12 + 0.08 * float(step)
+		soot_mesh.top_radius = 0.0218 - 0.01333 * (soot_y + 0.04)   # a hair wider than the stick at that height
+		soot_mesh.bottom_radius = 0.0218 - 0.01333 * (soot_y - 0.04)
+		soot_mesh.height = 0.08
+		soot_mesh.radial_segments = 16
+		var shade: StandardMaterial3D = StandardMaterial3D.new()
+		shade.albedo_color = Color(0.42, 0.3, 0.17).lerp(Color(0.2, 0.14, 0.09), 0.3 + 0.35 * float(step))
+		soot_mesh.material = shade
+		soot.mesh = soot_mesh
+		soot.position = Vector3(0.0, soot_y, 0.0)
+		torch.add_child(soot)
+
+	# The head: rag or bark wound round the top of the stick and bound with twine, about 2.5 times the stick's width and 15 cm long; dark
+	# brown, the top third charred and glowing. The same colours as the unlit torch on the ground (basic_look.gd).
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
-	wrap_material.albedo_color = Color(0.2, 0.15, 0.1)
+	wrap_material.albedo_color = Color(0.24, 0.16, 0.1)
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var wrapping: CylinderMesh = CylinderMesh.new()
-	wrapping.top_radius = 0.05
-	wrapping.bottom_radius = 0.036
+	wrapping.top_radius = 0.052
+	wrapping.bottom_radius = 0.04
 	wrapping.height = 0.15
 	wrapping.material = wrap_material
 	head.mesh = wrapping
-	head.position = Vector3(0.0, 0.3, 0.0)
+	head.position = Vector3(0.0, 0.325, 0.0)
 	torch.add_child(head)
+	var char_material: StandardMaterial3D = StandardMaterial3D.new()
+	char_material.albedo_color = Color(0.14, 0.09, 0.06)
+	char_material.emission_enabled = true
+	char_material.emission = Color(0.9, 0.3, 0.05)
+	char_material.emission_energy_multiplier = 0.4
+	var charred: MeshInstance3D = MeshInstance3D.new()
+	var char_mesh: CylinderMesh = CylinderMesh.new()
+	char_mesh.top_radius = 0.0525
+	char_mesh.bottom_radius = 0.0485
+	char_mesh.height = 0.05
+	char_mesh.material = char_material
+	charred.mesh = char_mesh
+	charred.position = Vector3(0.0, 0.375, 0.0)
+	torch.add_child(charred)
 	var twine_material: StandardMaterial3D = StandardMaterial3D.new()
-	twine_material.albedo_color = Color(0.62, 0.5, 0.3)
+	twine_material.albedo_color = Color(0.7, 0.58, 0.36)
 
-	for band_y in [0.26, 0.31]:
+	for band_y in [0.28, 0.335]:
 		var band: MeshInstance3D = MeshInstance3D.new()
 		var ring: CylinderMesh = CylinderMesh.new()
-		ring.top_radius = 0.047 if band_y > 0.28 else 0.041
+		ring.top_radius = 0.054 if band_y > 0.3 else 0.046
 		ring.bottom_radius = ring.top_radius
-		ring.height = 0.012
+		ring.height = 0.013
 		ring.material = twine_material
 		band.mesh = ring
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
 
-	# The flame: three emissive cones from one base, each narrower and taller than the one below, orange at the base to yellow at the tip,
-	# with an orange glow ring where it meets the wrap. The two upper cones sway slowly so it does not read as one solid shape.
+	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 18 cm tall and 8 cm across at the base, a
+	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core, and an orange glow ring on the head.
+	# The two upper cones sway slowly so it does not read as one solid shape.
+	var rig: Node3D = Node3D.new()
+	rig.set_script(FlameUp)
+	rig.head_local = Vector3(0.0, 0.4, 0.0)
+	torch.add_child(rig)
 	var flames: Array = []
-	var layers: Array = [[0.062, 0.1, Color(1.0, 0.4, 0.08), 0.0], [0.045, 0.15, Color(1.0, 0.62, 0.14), 0.006], [0.027, 0.2, Color(1.0, 0.86, 0.35), -0.008]]
+	var layers: Array = [[0.04, 0.15, Color(1.0, 0.4, 0.08), 0.0], [0.028, 0.19, Color(1.0, 0.68, 0.16), 0.007], [0.014, 0.1, Color(1.0, 0.92, 0.6), -0.005]]
 
 	for n in range(layers.size()):
 		var layer: Array = layers[n]
@@ -1406,25 +1435,28 @@ func _make_torch_model(id: String = "") -> Node3D:
 		glow.emission_enabled = true
 		glow.emission = layer[2]
 		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		var tongue: MeshInstance3D = MeshInstance3D.new()
+		var tongue: Node3D = Node3D.new()   # pivots at the base so the sway leans the tip
+		var mesh_node: MeshInstance3D = MeshInstance3D.new()
 		var tip: CylinderMesh = CylinderMesh.new()
 		tip.top_radius = 0.0
 		tip.bottom_radius = float(layer[0])
 		tip.height = float(layer[1])
-		tip.radial_segments = 8
+		tip.radial_segments = 10
 		tip.material = glow
-		tongue.mesh = tip
+		mesh_node.mesh = tip
+		mesh_node.position = Vector3(0.0, float(layer[1]) * 0.5, 0.0)
+		tongue.add_child(mesh_node)
 		tongue.name = "Flame%d" % n
-		tongue.position = Vector3(float(layer[3]), 0.375 + float(layer[1]) * 0.5, 0.0)
-		torch.add_child(tongue)
+		tongue.position = Vector3(float(layer[3]), 0.0, 0.0)
+		rig.add_child(tongue)
 
-		if n > 0:
+		if n < 2:
 			flames.append(tongue)
 
 	var halo: MeshInstance3D = MeshInstance3D.new()
 	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.058
-	disc.bottom_radius = 0.058
+	disc.top_radius = 0.052
+	disc.bottom_radius = 0.052
 	disc.height = 0.008
 	var halo_material: StandardMaterial3D = StandardMaterial3D.new()
 	halo_material.albedo_color = Color(1.0, 0.45, 0.1)
@@ -1433,13 +1465,13 @@ func _make_torch_model(id: String = "") -> Node3D:
 	halo_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	disc.material = halo_material
 	halo.mesh = disc
-	halo.position = Vector3(0.0, 0.378, 0.0)
-	torch.add_child(halo)
+	halo.position = Vector3(0.0, -0.002, 0.0)
+	rig.add_child(halo)
 
 	for n in range(flames.size() if _root != null else 0):
 		var sway: Tween = _root.create_tween().set_loops()
 		sway.bind_node(flames[n])
-		var lean: float = 0.1 + 0.04 * float(n)
+		var lean: float = 0.12 + 0.05 * float(n)
 		var span: float = 0.55 + 0.17 * float(n)
 		sway.tween_property(flames[n], "rotation:z", lean, span).set_trans(Tween.TRANS_SINE)
 		sway.tween_property(flames[n], "rotation:z", -lean, span).set_trans(Tween.TRANS_SINE)
@@ -1449,7 +1481,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.shadow_enabled = false
-	light.position = Vector3(0.0, 0.55, 0.0)
+	light.position = Vector3(0.0, 0.5, 0.0)
 	torch.add_child(light)
 	return torch
 

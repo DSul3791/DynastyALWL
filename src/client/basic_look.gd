@@ -361,12 +361,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.008, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.4, 0.3, 0.18))
 			_cyl(parts, 0.025, 0.04, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color)
 		"torch":
-			# Unlit: the stick with a wrapped head and twine bands, no flame (the held model in held_item.gd is the same torch).
+			# Unlit: the stick with a wrapped head and twine bands, no flame (held_item.gd's torch has the same colours).
 			_handle(parts, 0.5, 0.016)
 			_cyl(parts, 0.0185, 0.2, Vector3(0.125, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.14, 0.09))   # the grimy top of the stick
-			_cyl(parts, 0.034, 0.13, Vector3(0.19, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.15, 0.1))     # the wrapped head
-			_cyl(parts, 0.037, 0.011, Vector3(0.155, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.5, 0.3))   # twine
-			_cyl(parts, 0.0385, 0.011, Vector3(0.215, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.5, 0.3))
+			_cyl(parts, 0.036, 0.125, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.24, 0.16, 0.1))     # the wrapped head
+			_cyl(parts, 0.0365, 0.042, Vector3(0.241, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.14, 0.09, 0.06))
+			_cyl(parts, 0.0375, 0.014, Vector3(0.262, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.08, 0.05, 0.04))   # soot on the very top   # the charred top third
+			_cyl(parts, 0.0385, 0.011, Vector3(0.16, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.6, 0.5, 0.32))   # twine, worn
+			_cyl(parts, 0.0395, 0.011, Vector3(0.218, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.6, 0.5, 0.32))
 		"pot":
 			# A clay cooking pot: round belly, narrow neck, flared rim and two small lug handles.
 			_sph(parts, 0.11, Vector3(1.0, 0.85, 1.0), Vector3(0.0, -0.025, 0.0), color)
