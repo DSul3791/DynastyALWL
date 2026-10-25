@@ -188,6 +188,7 @@ static func _add_hollow_springs(sim, data, flow: PackedFloat32Array, side: int, 
 			continue
 
 		var deepest: int = hollow["cell"]
+		@warning_ignore("integer_division")
 		var at: Vector2i = Vector2i(deepest % side, deepest / side)
 		placed.append(at)
 		sim.add_spring(at.x, at.y, catchment_flow(km2))
