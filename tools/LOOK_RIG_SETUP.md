@@ -12,3 +12,10 @@ Do not change without Dave's say.
 - Server: its own throwaway store, a port nobody holds, shown in a visible window titled "Test server" (log tail, kept after the run with "--- run finished ---", closed at the start of the next run; `NOWINDOW=1` turns it off). Timings printed as `rig timing:` lines.
 - Never run while Dave plays; tell him when the run starts and ends (mouse off during the run).
 - First-person hand and tool cannot be drawn by the runner (it turns the first-person hand off); real-view mode `--realview` keeps hand, held tool and HUD on with the look-down set as a pose.
+
+## Added 25 Oct (Dave): start at ground level, press G to stand
+- While the ground loads the player waits at ground height (`--shot-wait-y=$GY`, 31.0 by default), not at 400 m; shots with --agl over 5 m (aerial) keep their own height.
+- `--realview` shots press G (a real key event) once the player is placed, so flying is off and the player stands on the ground; the other shots stay in flying mode.
+- `--extra <client flag>` passes a flag to the client (for example `--extra --arms-debug`).
+- A warm server store is copied in and out of E:\Software\godotDev\rig_warm_store (the server generates nothing for this world, so it changes no time).
+- Timings (hammer, 3 pictures): about 40 s with a warm client cache, whether the wait is at 400 m or at ground level.

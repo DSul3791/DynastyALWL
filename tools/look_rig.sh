@@ -99,7 +99,8 @@ if [ "$TURNS" -gt 1 ]; then   # Dave 25 Oct: 3 shots per spot, turning left 90 d
     SHOT="${SHOT:+$SHOT;}${NAME}_${LETTERS:$_t:1}:$X,$AGL,$Z,$(python3 -c "print(($YAW) + 90 * $_t)" 2>/dev/null || python -c "print(($YAW) + 90 * $_t)"),$PITCH,$HOUR,$WEATHER,$WALK"
   done
 fi
-CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE --shot-ground-settle=$GSETTLE --shot-ground-max=$GMAX $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"})
+WAITY=""; [ "$(python3 -c "print(1 if $AGL <= 5 else 0)" 2>/dev/null || echo 1)" = "1" ] && WAITY="--shot-wait-y=$GY"   # Dave 25 Oct: wait at ground level, not at 400 m; aerial shots (agl over 5 m) keep their own height
+CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE --shot-ground-settle=$GSETTLE --shot-ground-max=$GMAX $WAITY $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
   APPDATA="$(cygpath -w "$AD")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 else

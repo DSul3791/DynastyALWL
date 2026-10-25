@@ -28,6 +28,7 @@ var ground_settle_s: float = -1.0   # --shot-ground-settle=S: shoot S seconds af
 var ground_max_s: float = 60.0       # --shot-ground-max=S: longest wait for the ground; on timeout the picture is taken and marked GROUND NOT READY
 var turn_settle_s: float = 2.0       # settle after a turn on the same spot (the 3-views rule)
 var real_view: bool = false          # the player's real view: hand, held tool and HUD on, the look-down set as a pose (the client ignores the mouse in a shots run)
+var wait_y: float = 400.0            # --shot-wait-y=: the height the player waits at while the ground loads (at ground level so the ground under it loads first)
 var _ground_ok_msec: int = 0
 var _ground_late: bool = false
 
@@ -188,6 +189,8 @@ func setup(owner_client, args: Array) -> void:
 			settle_s = float(argument.trim_prefix("--shot-settle="))
 		elif argument.begins_with("--shot-ground-settle="):
 			ground_settle_s = float(argument.trim_prefix("--shot-ground-settle="))
+		elif argument.begins_with("--shot-wait-y="):
+			wait_y = float(argument.trim_prefix("--shot-wait-y="))
 		elif argument == "--shot-realview":
 			real_view = true
 		elif argument.begins_with("--shot-ground-max="):
@@ -273,12 +276,22 @@ func _process(delta: float) -> void:
 		var ground: float = _ground(shot_pos.x, shot_pos.z)
 
 		if is_nan(ground) and now - _ground_wait_msec < 300000:
-			client.body.global_position = Vector3(shot_pos.x, 400.0, shot_pos.z)
+			client.body.global_position = Vector3(shot_pos.x, wait_y, shot_pos.z)
 			return
 
 		_placed = true
 		_moved_msec = now
 		client.body.global_position = Vector3(shot_pos.x, -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y), shot_pos.z)
+
+		if real_view and client.flying:
+			# The player's own key: G turns flying off, so the player stands.
+			for pressed in [true, false]:
+				var key: InputEventKey = InputEventKey.new()
+				key.keycode = KEY_G
+				key.physical_keycode = KEY_G
+				key.pressed = pressed
+				Input.parse_input_event(key)
+
 		return
 
 	# Something in the client turns the body while it settles (shot c came out at -143 for 180): hold the asked yaw and pitch every frame.
@@ -1042,11 +1055,11 @@ func _next(now: int) -> void:
 		return
 
 	var shot: Dictionary = shots[_index]
-	client.flying = not real_view     # a real-view shot stands on the ground like a player; the others hover
+	client.flying = true
 	_placed = false
 	_ground_wait_msec = now
 	_ground_ok_msec = 0
-	client.body.global_position = Vector3(shot["pos"].x, 400.0, shot["pos"].z)
+	client.body.global_position = Vector3(shot["pos"].x, wait_y, shot["pos"].z)
 	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
 	client.pitch = deg_to_rad(float(shot["pitch"]))
 	client.camera.rotation.x = client.pitch
