@@ -1,20 +1,19 @@
-# David3 handoff, 24 Oct 2026 ~23:50 UTC
-Box: container dynasty-david3, 6-core cap, GTX 1050 Ti. Never touch game containers, keys, main. Push claude/* only.
-Copies: /work/repo (do not switch branch: untracked .uid files block checkouts), /work/bake (bake clone and test copy), /work/pics (export of merge-793 a0e158df; use it for pictures only, never for gates).
-Helpers in /tmp are lost on restart: shot_gpu.sh (NVIDIA ICD shot), look_rig.sh (= claude/david3-rig-only), /tmp/gbin/godot link (tools/godot shim is Windows only). Recreate: link /opt/godot/godot as godot on PATH and set GODOT_EXE=/opt/godot/godot for local_check.
+# David3 handoff (updated 25 Oct ~05:00 UTC; Dave away until ~14:55 UTC)
+Box: container dynasty-david3, 9 CPUs (no pinning now), memory 10 GB (15 GB request pending Dave), swap 0. Push claude/* only. BP-T70: HEAD=<full hash> on the first line of every result.
+Recreate after a restart (/tmp is lost): /tmp/gbin/godot -> /opt/godot/godot, GODOT_EXE=/opt/godot/godot; shot scripts (shot_gpu / shot_land2 with a 4-thread server default and no taskset); a watchdog that kills the client when the server dies.
+Work copies (export folders, not git worktrees): /work/bake (bake clone, tests), /work/gs3a (generator-speedup 690ee171), /work/su_base (merge-793 5b9d9f9), /work/ts2 (thread-safety dba07947), /work/sc2 (spawn-column bbb4977d), /work/out_base (reference tiles 3,4 and 4,4).
 
-## Done and pushed
-- claude/david3-rig-only e792d7c5: look_rig.sh on Linux (merged by Tyler). claude/david3-shot-gpu 843e24c4: GPU shot script.
-- Bakes of tile (3,4), branches claude/david3-bake-<hash>: c2eeb8e3, 6f4801e8, 4f442c54 (starved water), e9a91504 (water-v9: settle steady, 117076 wet cells, 3 FAIL: east seam, river ends inland near x60192 z76704, 1 river inland). Logs in results/20261024_bake34*.
-- Pictures index: results/PICTURES_INDEX.md, how to request: results/PICTURE_REQUESTS.md.
-- Tests reported: steve-new-player 81a3407e pass; tyler-790a d8d7a602 pass; sonny-final c2eeb8e3/22585d73/6f4801e8 parse pass; merge-793 a0e158df 5 pass 1 fail (6 new warnings in basin_census, water_settler, erosion_delta, hollow_finder); tyler-791a 02e0910c pass (duplicate sweep clean).
+## Reported
+- Speed-up proof cbe31f76: 8 pass, 0 fail, md5 identical (results/20261025_speedup_cbe31f76). 3a 690ee171: 600-tick settle .water md5 identical (e35ba275...), test_gen_core 0 fail. The four tile bakes and 3b timing are run by the review thread's box.
+- Flora mutex 8394ee6f: unfixed file crashed the server in run 1, fixed 0 of 10 (caveat: no SPAWNTEST lines printed, hybrid tree).
+- Gate A sal-cooking-tripod d79a4a44: PASS (78 pass, 6 fail = base six). Baseline FAIL lines: results/20261025_baseline.
+- thread-safety 0e23eb0a headless: 0.250 us per call, swap test 1 pass.
+- Bakes of tile (3,4): c2eeb8e3, 6f4801e8, 4f442c54, e9a91504 (branches claude/david3-bake-*), no bakes allowed now except generator proofs.
 
-## Open
-1. 792 gate, thatch shelter claude/sal-thatch-shelter e2986139: NOT PASS, not reported yet. parse_scan 0 problems, local_check pass (233), test_thatch_pieces passes, but the full run was 73 pass, 10 fail. On the base (generator-v2 47f7af7f) test_first_hour, test_first_town, test_inventory and test_slot_sounds PASS, so those 4 are regressions of the shelter branch: stone axe and spear no longer made by hand (recipe change axe 1 stone + 1 stick + 5 twine), tree and log steps follow. Tests that fail on both (old, not the shelter): test_drainage_flow, test_head_pond_fill, test_pond_outlet, test_showroom (FakeView 'net'), test_water_soak. test_worldgen: also FAILS on the base (readonly database errors, likely the box), so not the shelter. Fire state 1 check belongs to the fire-tiers gate.
-2. Bed tests (test_bed, test_animal_senses, test_warmth) on claude/steve-rough-bed 6459b079: not started.
-3. Pictures not done: 13 from the e9a91504 bake (lakes 17 ha at x58183 z73092, 6 ha at x54311 z75282, 3-4 ha lakes at x58376 z72600, x58005 z73467, x54328 z75263, x58347 z71337, head ponds, river window z75053-75780, pit window x53772-53788 z68570-68586, spawn x53316 z68476) with the bake branch claude/david3-bake-e9a91504 checked out in /work/pics, not /work/bake. Kathleen close-ups (conifer, cane, ferns sun/shade, stone pile) on generator-v2 e1fcbdf5, folder results/<date>_kathleen_close. Held-tools and stone centred redo go to Mike.
-4. Dry-start settle (tick 9000, memory flat): command from Tyler in MERGE_CHECK_NEXT3.md, not run.
-5. Raw-heights export: Mike has it; only if his job fails.
-6. Bowl 1 (53760,68650 east): thin sheet over a flat plane in two renders, unexplained (Mike's Windows picture decides).
-## Next steps
-Report item 1 to the coordinator and Tyler first. Then bed tests, then pictures one at a time at nice 19 under the load 6 and PAUSE rules.
+## Running / queued (in this order)
+1. thread-safety dba07947255c486dedd528bd2225030061a0ffdb then spawn-column bbb4977df2dca19fe55547a4517fa5dd7286ad4e (script /tmp/two.sh; results /tmp/g_ts2.txt, /tmp/g_sc2.txt).
+2. kathleen-weak-looks 5ef0b60e8ecf23bd670060f9190963b77469c922: parse, local_check 233, check_look_names, test_pick_axes 0 failures.
+3. Sal B edcfefee / C 03c2e9ee are superseded: B 15616045ecf22bd3ef1bb7f71cc6f13b427310c7, C b9c6afb86ed5fccec8445975a97bb50fa567d90c (gate in order, tests in /work/bake via gate script); sal-hand-crafts 3c5dde01; sonny-test-fixes dde9ff2e3dda35c8b14d5a6eed57b2d4c56d20a1 (test_pond_outlet retired); remove-old-builder 5c2ac5bb273c30cd06da8556b44e121ef027461c; water-soak b028ffc2; steve-rough-bed 6459b079 and bed-respawn; net-look b2aad0eb (K20 picture, cloth look compare).
+4. Pending Dave: memory 15 GB (steps sent), standard picture set K01-K19 (quick set K01 K03 K05 K09 + a tool) once Tyler names a build; picture wait rule: shoot after landing check (needs the fix in the spawn-column line).
+## Known issues
+- shot_runner landing check false failure was fixed in later heads. Column answer takes about 20 s after the welcome in my rig. Server crash: _plateau_cache race (fixed by flora-mutex). bowl 1 hill picture thin-sheet unexplained.
