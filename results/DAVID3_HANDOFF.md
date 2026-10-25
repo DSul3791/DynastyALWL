@@ -10,6 +10,12 @@ Work copies (export folders, not git worktrees): /work/bake (bake clone, tests),
 - thread-safety 0e23eb0a headless: 0.250 us per call, swap test 1 pass.
 - Bakes of tile (3,4): c2eeb8e3, 6f4801e8, 4f442c54, e9a91504 (branches claude/david3-bake-*), no bakes allowed now except generator proofs.
 
+## State at 25 Oct ~13:30 UTC (Dave away until ~14:55)
+Reported since the first handoff (all with HEAD= full hash in the thread): generator speed-up 3a/3b proofs (md5 identical, 600-tick settle identical), flora mutex, thread-safety, spawn column (merged head d002d4fe: 10x respawn/go-to-spawn clean), Sal A/B/C, hammer blueprints/list, torch, inner voice, eat-once 75fd9ff3 PASS, item shots ed93634d PASS, fish B ff873d0b / C 03db354a / balance 8558333c PASS, bow shoot 42075f59 PASS vs plain generator-v2 9f55bbf0, FINAL 793 (lake-size c30d6d5f + tiles ee50b0e2: only merge_check fails: stale base, conflict marker in ambience_slots.gd.uid, build 806 < 808), test re-pin d845e8ec (103 pass, only test_showroom fails; drainage rises found 16), lake bakes (lake-size, lake-4-3 c30d6d5f: (4,3) guaranteed lake 8.5 ha), flora-wet test, drainage rises list. Open results: hearth/oven 0f190ff2 FAIL (test_dishes: flatbread/honey_loaf/roast_joint not made at the lit fire).
+Running: item master 422beb3b, then tool tiers ad07a34b parse_scan (script /tmp/q27.sh).
+Build 810 baseline (generator-v2 9f55bbf0): failures drainage_flow, head_pond_fill, river_ore, river_surface, showroom, water_soak (the test re-pin branch fixes five of them; test_pond_outlet retired). Warning baseline now 227.
+Scripts: results/david3_scripts (older), plus the gate function in /tmp/q*.sh (fullgate: export hash to /work/q_<8hex>, import, parse_scan, marker grep, local_check, all test_*.gd, duplicate sweep).
+
 ## Running / queued (in this order)
 1. thread-safety dba07947255c486dedd528bd2225030061a0ffdb then spawn-column bbb4977df2dca19fe55547a4517fa5dd7286ad4e (script /tmp/two.sh; results /tmp/g_ts2.txt, /tmp/g_sc2.txt).
 2. kathleen-weak-looks 5ef0b60e8ecf23bd670060f9190963b77469c922: parse, local_check 233, check_look_names, test_pick_axes 0 failures.
