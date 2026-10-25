@@ -34,3 +34,12 @@ Budget: 21 shots in one server start: about 40 to 60 minutes on the 1050 Ti box.
 - Kathleen: first review of the 792 batch and the first critiques file; also the before/after for the terrain material pass.
 - Tyler: keeps this spec, adds the line to the daily handoff, checks at every merge that the batch exists and the index line is there (BP-T68).
 - Coordinator: relays critiques to owners, one task each.
+
+## RULES FOR EVERY SHOT (Dave 25 Oct 01:22: "he is shooting pictures but he isn't rotating the camera, so they are all the same picture")
+1. **Each shot sets its OWN pose**: position (x, y or eye height, z) AND yaw AND pitch, written per row in tools/docker/shots.txt (columns: id, x, z, eye_or_alt, yaw_deg, pitch_deg, hour, weather). A shot without its own yaw/pitch is a script error, not a default. The README prints the pose actually used (read back from the game, not from the file) for every picture.
+2. **Duplicate check fails the batch.** After the batch, compute a checksum of every JPEG (and a small-thumbnail perceptual hash, 16x16 greyscale) and compare all pairs: any two identical checksums fail the batch; two pictures with a perceptual difference under 2 percent also fail it, EXCEPT the pairs that are meant to differ only by time of day or shade (K01 vs K03, K02 vs K04, K05 vs K06), which must still differ by at least 5 percent mean brightness. The result line prints "pictures: N of N, duplicates: 0".
+3. **Camera must have settled**: each shot waits for the pose read-back to match the requested pose (within 0.05 m, 0.5 degrees) before capture, with a maximum wait; a mismatch is reported, never silently shot.
+4. **Failure policy**: duplicates or pose mismatches fail the PICTURE batch (reported as a problem on the test result) but not the build gate (BP-T68 unchanged), and the batch is not indexed as reviewed for Kathleen until it passes.
+
+## Wait time in tools/docker/shot.sh (Dave wants faster tests)
+Decision: FOLLOW David3's shorter wait (120 s to 60 s and 30 s to its new value), committed to the repo's shot.sh so repo and box agree. Condition: the fixed time is only a MAXIMUM. The script polls the client log for the ground-ready line (HUD "ground vNN" known, watchdog quiet) and shoots as soon as it appears; if not ready at the maximum it shoots anyway and marks the picture "ground not ready" in the README so Kathleen does not critique an unloaded view. The earlier thin dark sheet in the bowl render happened at long waits, so waiting longer is not the cure; the ready line is.
