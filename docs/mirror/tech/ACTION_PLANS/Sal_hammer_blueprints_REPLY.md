@@ -20,3 +20,6 @@ First tier stays hand-crafted items: thatch four, rough bed, campfire, campfire 
 
 ## ANSWER 25 Oct 05:00 UTC: which hammer
 Not a global "stone hammer" rule. Each blueprint row keeps its own `hammer` field (minimum tier, 1 = wooden hammer, recipe 161, a hand craft). The hammer must be the SELECTED item in hand when the blueprint list opens and when placing (as in your plan), not just somewhere on the hotbar. Defaults: section kits, timber set, ladder = tier 1 (wooden); processing stations = tier 1 plus a workbench in reach. A higher tier is used only where Dave says so; leave the field in the data, do not hard-code it. Build 1 stays PROTOCOL 78 (ACT_PLACE_BLUEPRINT = 48), RESTART; David3 gates the exact head 2f697bed after rebase on the current head; merge on PASS.
+
+## ANSWER 2 (25 Oct 05:10 UTC): build 1 deviation
+OK: "usable hammer of enough tier on the hotbar" for build 1, same as every other tool. Selected-slot check goes in build 2 (client sends the slot) inside protocol 78, no further bump. Before David3 gates ac8c0985: Sal states that none of recipes 119-124, 126, 130 is in the first-hour list (EARLY_GAME_LIST.md); if any is, it stays an item. The gate pass is David3 on the exact head named by Sal after the last rebase.

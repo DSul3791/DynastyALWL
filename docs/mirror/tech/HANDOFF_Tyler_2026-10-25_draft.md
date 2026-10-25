@@ -7,3 +7,6 @@ Rules new today: BP-T72 (+ addenda), BP-T73 shared caches, BP-T74 tool-look revi
 Tool looks: knife batch 1 and spade batches 2 and 3 reviewed; Kathleen works from the lists.
 
 Dave 25 Oct 04:56: the 8 AM timer now includes a BACKUP (by MikeW) before anyone codes again; put it first in the 11:00 UTC handoff.
+Standing order BP-T75: if David3 is down, MikeW does all of David3's gates and pictures (same format).
+Answered 05:10: Sal blueprint build 1 (hotbar hammer ok; selected slot in build 2), Sonny river ore, Steve item shots, cave air (no change), erosion fill cap (GO, v2 file).
+Queue add: cave air 719bed5b, item shots e8fba534, hammer blueprints build 1 ac8c0985 (RESTART, protocol 78, merge-order after spawn column group).
