@@ -240,6 +240,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"coin":
 			_cyl(parts, 0.035, 0.008, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, color)
 			_cyl(parts, 0.027, 0.01, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, light)
+		"hand_net":
+			_net(parts, color)
 		"cloth":
 			_box(parts, Vector3(0.26, 0.04, 0.2), Vector3(0.0, -0.04, 0.0), color)
 			_box(parts, Vector3(0.22, 0.03, 0.16), Vector3(0.01, -0.005, 0.0), light)
@@ -378,6 +380,46 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 
 # A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
+# A shore net (Dave 25 Oct: it must not look like a hammer): a pole along +X with an oval hoop at the head, a bag of twine strings and rings hanging
+# beyond the hoop, and cork floats round the rim. The hoop is square on to the pole, like a butterfly net.
+static func _net(parts: Array, color: Color) -> void:
+	var rim: float = 0.15
+	var hoop_x: float = 0.42
+	var apex: Vector3 = Vector3(hoop_x + 0.3, 0.0, 0.0)
+	_cyl(parts, 0.016, 0.9, Vector3(-0.03, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+	_net_ring(parts, rim, 0.011, hoop_x, Color(0.36, 0.25, 0.14))
+
+	for k in 8:
+		var turn: float = float(k) * TAU / 8.0
+		var from: Vector3 = Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim)
+		var line: Vector3 = apex - from
+		var long: float = line.length()
+		var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
+		parts.append([_net_box(Vector3(long, 0.006, 0.006)), Transform3D(basis, from + line * 0.5), color])
+
+	_net_ring(parts, rim * 0.62, 0.005, hoop_x + 0.12, color)
+	_net_ring(parts, rim * 0.3, 0.005, hoop_x + 0.22, color)
+
+	for k in 4:
+		var turn: float = float(k) * TAU / 4.0 + PI * 0.25
+		_sph(parts, 0.024, Vector3.ONE, Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim), Color(0.8, 0.66, 0.4), true)
+
+
+static func _net_box(dims: Vector3) -> BoxMesh:
+	var box: BoxMesh = BoxMesh.new()
+	box.size = dims
+	return box
+
+
+static func _net_ring(parts: Array, ring: float, tube: float, at_x: float, color: Color) -> void:
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = ring - tube
+	torus.outer_radius = ring + tube
+	torus.rings = 12
+	torus.ring_segments = 4
+	parts.append([torus, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(at_x, 0.0, 0.0)), color])
+
+
 static func _handle(parts: Array, length: float) -> void:
 	_cyl(parts, 0.016, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
 

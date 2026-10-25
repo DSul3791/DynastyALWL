@@ -353,7 +353,7 @@
    "size": 1.0
   },
   "shore_net": {
-   "shape": "cloth",
+   "shape": "hand_net",
    "color": "#a89a78",
    "size": 1.0
   },
