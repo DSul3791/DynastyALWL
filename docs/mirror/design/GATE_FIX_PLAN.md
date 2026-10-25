@@ -20,3 +20,16 @@ I measure today's numbers (full serial set on 4 cores: 821 s of test time, 335 s
 
 ## Order
 1 test_impact.py and gate.sh first (usable by David3 and Mike at once), 4 and 5 in parallel by David3, then 3, then 6 and 7.
+
+## DECISION after six reviews (19:00 UTC): who builds what
+Reviews: Sal (item fast lane list, whole item group, next_number conflicts, order of item batches), Kathleen (pictures only on look changes, changed items only, rebase before final), Steve (39 of 109 tests write under user://: per-lane data dir; test_animals/npcs flake from load; he builds the test selector and runner), Sonny (slow-test triggers; baked tiles or re-settle select the slow lane plus the pin check; never batch BAKE with code; check tile md5 in warm clones), David3 (gate.sh on the box, warm clones, queue with one entry per branch, 4-5 min expected), Mike (PC lane, per-platform baseline, pause flag, first-import crash, stop gating data-only branches on the PC).
+| Piece | Builder |
+|---|---|
+| tools/tests_for_diff.py + tools/test_lanes.json (always set, item group, look paths = picture lane, slow triggers, BAKE rule, unknown path = all fast tests) | Steve, rules from Sal/Kathleen/Sonny/David3 above |
+| tools/run_tests.sh (N workers, per-worker data dir, serial timing lane with one logged retry, one summary line `Test done: N pass, M fail`, seconds per test) and the flake finder (each timing test 20 times under 6-way load) | Steve |
+| tools/gate.sh on the box (trial merge, warm clones gate1..4, import, parse_scan, merge_check, local_check, tests via the two tools above, tile md5 check, queue with one entry per branch where a new hash replaces the queued one, one result file with HEAD= first, auto-publish), nightly and per-build slow lane | David3 |
+| PC lane: tools/gate_pc.sh using the same two tools, pause flag checked between tests, per-platform baseline tech/TEST_BASELINE_PC.md compared by test name, import-crash retry, on-request Windows lane (bake pipeline, walk, GPU pictures); no data-only gating on the PC | Mike |
+| tools/ship.sh, BP-T80..T83, tech/FLAKY_TESTS.md, the integration check against the last 5 gated branches (before/after times), final numbers | Tyler |
+| Final review of test_lanes.json | Sal, Kathleen, Sonny |
+Not now: a single Godot process running many tests (tests call quit() themselves; revisit after the first numbers), the claude/box-requests request-file queue (queue.txt with one entry per branch is enough for now).
+Interface (so the pieces fit): `tests_for_diff.py <base> <head>` prints one JSON line {"class":"docs|data|code|bake","fast":[...],"timing":[...],"slow":[...],"pictures":[paths of changed looks],"why":{...}}; `run_tests.sh --jobs N --fast a b c --timing x y --slow z` prints the summary and per-test seconds and exits non-zero on a real failure. Fast tests = anything in test_*.gd not in the timing or slow lists.
