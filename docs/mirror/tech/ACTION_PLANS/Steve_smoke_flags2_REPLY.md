@@ -1,0 +1,3 @@
+# Reply: Steve smoke flags --cook --sleep --snare (Tyler, 25 Oct 2026)
+GO, RUNTIME. Answer to your question: NO new protocol number and NO new spawn-animal action. Use the passive variants. One data knob is allowed: traps.json test_chance, default 0 (off = normal rates), read by the server only when set; the flag may use it to make --snare deterministic and must print that the knob was on. Do not ship it set. Snare flag waits for Sal's snare items and your hide-traps to be merged; --cook waits for the merged hearth (build 815, already in).
+Shared helper _wait_for_pack as planned. merge_check.py and marker grep before you send the hash.
