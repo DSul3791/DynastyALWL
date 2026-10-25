@@ -182,4 +182,4 @@ Rule: Sonny stays on terrain only (erosion, final bake).
 - Needed from the generator thread: its plan (one, BAKE or RUNTIME label), whether the stamp changes, and the byte-compare result on tile (3,4).
 
 ## NAMED ITEM: LOOK REVIEW LOOP (Dave 25 Oct 00:16) - spec in tech/STANDARD_SHOTS.md
-David3 shoots a fixed set with every build test (S01..S08), publishes to claude/box-results with an index line, Kathleen reviews each batch (art/CRITIQUES/<build>.md), critiques of severity 2-3 become tasks with an owner. First batch with the 792 test run. Owners: David3 pictures, Kathleen reviews, Tyler checks at each merge (BP-T68).
+David3 shoots a fixed set with every build test (K01..K21, Kathleen's set v2), publishes to claude/box-results with an index line, Kathleen reviews each batch (art/CRITIQUES/<build>.md), critiques of severity 2-3 become tasks with an owner. First batch with the 792 test run. Owners: David3 pictures, Kathleen reviews, Tyler checks at each merge (BP-T68).
