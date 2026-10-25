@@ -9,3 +9,7 @@ Change (DEBUG only, src/debug/shot_runner.gd, no game code, no protocol): new jo
 Test (headless, pure math, no Godot scene): test_item_cam.gd: for sizes 0.2, 0.6 and 1.5 m checks distance in 0.6..1.5, camera aimed at the item (angle error under 1 degree), the four views distinct, top view straight down, camera above the ground, projected fill at least a third for sizes up to 0.9 m (larger items stay at 1.5 m and are logged, not failed).
 Gate (David3): `--shot-item=iron_pickaxe`, 4 pictures, no debug text, the tool filling a third or more, log lines present; Kathleen/Tyler judge the pictures.
 Risk: none to the game (runner only). A very small item (a seed) may need 0.6 m; the clamp is the limit.
+
+## Build notes (Tyler GO, with pose read-back and exit code)
+src/debug/item_cam.gd (pure maths: distance_for on the frame WIDTH, 0.2..1.5 m, views, fill_fraction), shot_runner.gd (--shot-item, --shot-item-at, _build_item_views, _node_aabb, _check_item_view; exit code 1 when any view's pose is off by over 0.1 m / 2 degrees or the fill is under 32 %), test_item_cam.gd. Distance is on the frame width because a tool lies across the picture; tiny items go down to 0.2 m (the range Tyler gave, 1.0-1.5, applies to items of a metre or more).
+Run: godot ... -- --shots="item:X,1.7,Z,0,-30,12" --shot-item=iron_pickaxe --shot-wait=40 ; look for "shot runner: item view front ok ..." x4 and the exit code.

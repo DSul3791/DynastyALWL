@@ -13,11 +13,15 @@ extends Node
 #   --shot-settle=S     seconds per shot for streaming after the move (default 25)
 #   --shot-cost         also print primitives, draw calls and objects with the sun shadows off and the flora hidden
 #   --shot-admin        show the F3 debug lines in the pictures
+#   --shot-item=ITEM    a picture set of one item lying on the ground (id or name): give, drop, hide the player, HUD, grass and flora, then four views (front, side, top,
+#                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
+#                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
 
 const Net := preload("res://src/stream/terrain_net.gd")
+const ItemCam := preload("res://src/debug/item_cam.gd")
 
 var client = null
 var shots: Array = []
@@ -35,6 +39,13 @@ var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
 var no_grass: bool = false
+var item_mode: bool = false        # --shot-item (see the header)
+var item_at: Vector2 = Vector2(INF, INF)
+var _item_built: bool = false
+var _item_spot: Vector3 = Vector3.ZERO
+var _item_failed: bool = false
+var _item_box: AABB = AABB()
+var _item_views: Array = []
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
 var _given: bool = false
@@ -153,6 +164,15 @@ func setup(owner_client, args: Array) -> void:
 			if give_item.contains(":"):
 				give_count = int(give_item.get_slice(":", 1))
 				give_item = give_item.get_slice(":", 0)
+		elif argument.begins_with("--shot-item-at="):
+			var xz: PackedStringArray = argument.trim_prefix("--shot-item-at=").split(",")
+			item_at = Vector2(float(xz[0]), float(xz[1]))
+		elif argument.begins_with("--shot-item="):
+			item_mode = true
+			give_item = argument.trim_prefix("--shot-item=")
+			give_count = 1
+			drop_it = true
+			no_grass = true
 		elif argument == "--shot-drop":
 			drop_it = true
 			ground_test = true
@@ -230,6 +250,12 @@ func _process(delta: float) -> void:
 		var bp: Vector3 = client.body.global_position
 		var gy: float = _ground(bp.x, bp.z - drop_dist_m)
 		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - drop_dist_m)
+
+		if item_at.is_finite():
+			var ig: float = _ground(item_at.x, item_at.y)
+			at = Vector3(item_at.x, bp.y - 1.0 if is_nan(ig) else ig, item_at.y)
+
+		_item_spot = at
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
@@ -376,6 +402,15 @@ func _process(delta: float) -> void:
 		client.camera.rotation.x = client.pitch
 		_moved_msec = now
 		return
+
+	if item_mode:
+		client.flora.visible = false
+
+		if not _item_built:
+			if _dropped and now - _drop_msec > 3000:
+				_build_item_views(now)
+
+			return
 
 	if not flora_names.is_empty() and _flora_t == 0:
 		_show_flora(now)
@@ -776,6 +811,83 @@ func _parse_views(text: String) -> Array:
 	return list
 
 
+# --shot-item: finds the dropped item, measures it and makes the four views (the normal view loop then takes the pictures). Gives up (FAILED) after 25 s.
+func _build_item_views(now: int) -> void:
+	var best: Dictionary = {}
+	var best_d: float = INF
+
+	for id in client.items._world:
+		var it: Dictionary = client.items._world[id]
+
+		if client.items.table.id_of(int(it["number"])) != client.items.table.id_of(client.items.table.number_of(give_item)):
+			continue
+
+		var d: float = (it["pos"] as Vector3).distance_to(_item_spot)
+
+		if d < best_d and it.get("node") != null:
+			best = it
+			best_d = d
+
+	if best.is_empty() or best_d > 3.0:
+		if now - _drop_msec > 25000:
+			_item_failed = true
+			_item_built = true
+			print("shot runner: FAILED item %s never showed up on the ground near %s" % [give_item, str(_item_spot)])
+
+		return
+
+	_item_box = _node_aabb(best["node"])
+
+	if _item_box.size == Vector3.ZERO:
+		_item_box = AABB((best["pos"] as Vector3) - Vector3(0.1, 0.0, 0.1), Vector3(0.2, 0.2, 0.2))
+
+	var centre: Vector3 = _item_box.get_center()
+	var ground: float = _ground(centre.x, centre.z)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	views = ItemCam.views(centre, maxf(_item_box.size.x, _item_box.size.z), client.camera.fov, centre.y - 0.1 if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	_item_views = views
+	_subject = centre
+	_subject_set = true
+	_item_built = true
+	print("shot runner: item %s at %s, box %s, %d views" % [give_item, str(centre), str(_item_box.size), views.size()])
+
+
+func _node_aabb(node: Node) -> AABB:
+	var box: AABB = AABB()
+	var first: bool = true
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+
+		if n is MeshInstance3D and (n as MeshInstance3D).is_visible_in_tree():
+			var part: AABB = (n as MeshInstance3D).global_transform * (n as MeshInstance3D).get_aabb()
+			box = part if first else box.merge(part)
+			first = false
+
+		stack.append_array(n.get_children())
+
+	return box
+
+
+# The pose the camera really has against the one asked for, and how much of the frame the item fills (a third at least). A miss marks the run failed.
+func _check_item_view(view: Dictionary) -> void:
+	var cam: Camera3D = client.camera
+	var forward: Vector3 = -cam.global_transform.basis.z
+	var want_pos: Vector3 = view["cam"]
+	var pos_err: float = cam.global_position.distance_to(want_pos)
+	var yaw_err: float = absf(wrapf(rad_to_deg(atan2(-forward.x, -forward.z)) - float(view["yaw"]), -180.0, 180.0)) if absf(float(view["pitch"])) < 80.0 else 0.0
+	var pitch_err: float = absf(rad_to_deg(asin(clampf(forward.y, -1.0, 1.0))) - float(view["pitch"]))
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	var fill: float = ItemCam.fill_fraction(_item_box, cam.global_position, forward, cam.global_transform.basis.y, cam.fov, size.x / maxf(size.y, 1.0))
+	var ok: bool = pos_err <= 0.1 and yaw_err <= 2.0 and pitch_err <= 2.0 and fill >= 0.32
+
+	if not ok:
+		_item_failed = true
+
+	print("shot runner: item view %s %s: pose off by %.2f m, yaw %.1f, pitch %.1f degrees; item fills %.0f %% of the frame" % [view["name"], "ok" if ok else "FAILED", pos_err, yaw_err, pitch_err, fill * 100.0])
+
+
 # One view per call: set the camera, let it settle 2 s, save the frame, go on to the next; the normal picture follows the last view.
 func _run_view(now: int) -> void:
 	var view: Dictionary = views[_view_i]
@@ -808,6 +920,9 @@ func _run_view(now: int) -> void:
 
 	if not _showroom_tags.is_empty():
 		print("shot runner: tag overlap view %s %s" % [view["name"], _tag_overlaps()])
+
+	if item_mode:
+		_check_item_view(view)
 
 	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
 	_view_i += 1
@@ -995,8 +1110,8 @@ func _next(now: int) -> void:
 	_index += 1
 
 	if _index >= shots.size():
-		print("shot runner: done")
-		get_tree().quit()
+		print("shot runner: done%s" % (" (item pictures FAILED)" if _item_failed else ""))
+		get_tree().quit(1 if _item_failed else 0)
 		return
 
 	var shot: Dictionary = shots[_index]
