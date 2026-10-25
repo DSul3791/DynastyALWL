@@ -7,3 +7,6 @@ Ask: Tyler GO to merge the list and the uses file; GO on the gathered descriptio
 
 ## Step 2 (same branch, 25 Oct): gathered item inspect texts
 data/items/gathered_text.json holds 167 hand-written one-line texts (what it is, how it is used; poisonous plants say so; fantasy plants are described by look and name only, no new mechanics). tools/gen_gathered_items.py merges them into gathered.json where no description exists (the first-hour ALWAYS_KNOWN texts win). gathered.json diff: 167 added "description" lines. Result: master list 0 empty cells, 0 of 174 gathered items without a text. validate_items 0 errors, test_inventory, test_first_hour, test_server_items pass. Cost: 167 short strings (about 10 KB) loaded with the item table.
+
+## Update 25 Oct (Tyler GO)
+One generator now: `tools/item_master.py` (item sheet, uses, inspect cell, gathered texts and the poison check ported in; `item_master_list.py` and `design/ITEM_MASTER_LIST.md` deleted). The sheet lives in `tech/ITEM_MASTER.md`; `--check` exits 1 when it is stale or a poison text disagrees with the harm list.
