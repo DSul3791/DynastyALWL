@@ -28,9 +28,9 @@ const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell m
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
 const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
-const LAKE_RADIUS_BASE_M := 130.0   # lake bowl radius = base + per_qs x spring flow, up to max (a 130 m bowl is 5 ha, a 300 m one 28 ha)
-const LAKE_RADIUS_PER_QS_M := 120.0
-const LAKE_RADIUS_MAX_M := 300.0
+const LAKE_RADIUS_BASE_M := 190.0   # lake bowl radius = base + per_qs x spring flow, up to max (a 190 m bowl is 11 ha, a 400 m one 50 ha)
+const LAKE_RADIUS_PER_QS_M := 200.0
+const LAKE_RADIUS_MAX_M := 400.0
 const LAKE_RELAXED_SLOPE_DEG := 14.0 # a tile with no lake at all takes its flattest reach up to this slope
 const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
@@ -880,7 +880,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		var index: int = int(site[0])
 		var qs: float = clampf(SPRING_M3S_PER_KM2 * float(site[1]), 0.01, 2.0)
 		var is_lake: bool = bool(site[2])
-		var depth: float = clampf(4.0 + 5.0 * sqrt(qs), 4.0, 14.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
+		var depth: float = clampf(5.0 + 5.0 * sqrt(qs), 5.0, 16.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
 		var radius: float = clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M) if is_lake else clampf(25.0 + 60.0 * sqrt(qs), 25.0, 120.0)
 		var reach: int = int(ceil(2.0 * radius / cell_m)) + 1
 		@warning_ignore("integer_division")
