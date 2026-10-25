@@ -23,6 +23,7 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
+const TOOL_TILT_SLIGHT_DEG := 48.0   # first person, hand tools: the arm is pitched 50 degrees down, so this much extra tilt up leaves the head about 17 degrees below level (Dave 2026-10-25: they hung 45, should be slightly down)
 # Dave 2026-10-21: at rest the arms hang at the character's side, below the bottom of the screen, and the tool sits in the hand there,
 # fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
 # arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
@@ -34,7 +35,7 @@ const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's m
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
-const THIRD_LEAN_DEG := -45.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -45 turns the head forward-down)
+const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
@@ -1005,7 +1006,7 @@ func _mount_model() -> void:
 		return
 
 	_arms.hand_mount_r.add_child(_model)
-	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind in ["spear", "kit"] else TOOL_TILT_SLIGHT_DEG))
 	var turn: Basis = Basis.IDENTITY
 	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
 
