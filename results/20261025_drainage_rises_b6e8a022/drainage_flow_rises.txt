@@ -1,0 +1,77 @@
+
+ok   mass balance: 116.38 km2 of land, 116.38 leaves
+today's river cells 18347, within 64 m of a drainage channel: 10385 (57%), 1.7 s
+ok   fill and flow under 30 s per tile (1.7 s)
+  channel timing: centre line 2178 ms
+  channel timing: stamp 3285 ms
+  channel timing: canyon map + valleys 554 ms
+  channel timing: canyons 0 ms
+  channel timing: gullies 0 ms
+  lake gate: tile 0,0, 4027 river cells in block interiors, 1558 flat enough, 261 in blocks that lost the draw, 0 sites skipped at the frame edge, 3 skipped at a low lip
+  basins: 37 head ponds (13.8 ha), 20 lakes (47.4 ha, 0 of them the tile's guaranteed lake), 14 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 8078 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 536 ms
+channel cells 7199, bends 219, outer/inner depth ratio 1.79, 14.6 s
+rises (first 57): 
+  x 55720 z 67360 rise 0.46 m, class 0 -> 0, discharge 1.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 55704 z 67368 rise 0.99 m, class 0 -> 0, discharge 1.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 56608 z 68024 rise 0.82 m, class 0 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 56616 z 68024 rise 1.13 m, class 0 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 56624 z 68032 rise 1.52 m, class 0 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 56632 z 68032 rise 1.15 m, class 0 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 49864 z 68720 rise 0.10 m, class 0 -> 0, discharge 1.2 km2, basin 0 -> 0, lake within 8 cells true
+  x 49792 z 68848 rise 0.30 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells true
+  x 49840 z 69064 rise 1.15 m, class 0 -> 0, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 51432 z 69584 rise 0.46 m, class 0 -> 0, discharge 2.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 51432 z 69592 rise 0.29 m, class 0 -> 0, discharge 2.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 51432 z 69600 rise 0.10 m, class 0 -> 0, discharge 2.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 57672 z 70040 rise 0.20 m, class 0 -> 0, discharge 1.4 km2, basin 0 -> 0, lake within 8 cells false
+  x 58056 z 71456 rise 0.29 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58064 z 71456 rise 1.22 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 57992 z 71464 rise 0.07 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58000 z 71464 rise 0.10 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58008 z 71464 rise 0.12 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58016 z 71464 rise 0.15 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58024 z 71464 rise 0.18 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58032 z 71464 rise 0.21 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 58040 z 71464 rise 0.23 m, class 3 -> 3, discharge 0.7 km2, basin 0 -> 0, lake within 8 cells false
+  x 52944 z 73304 rise 0.30 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 57784 z 73336 rise 0.80 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells false
+  x 57800 z 73344 rise 0.30 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells false
+  x 57792 z 73352 rise 0.10 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells false
+  x 57816 z 73352 rise 0.50 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells false
+  x 57808 z 73360 rise 0.30 m, class 0 -> 0, discharge 0.9 km2, basin 0 -> 0, lake within 8 cells false
+  x 57424 z 73376 rise 1.62 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 57816 z 73376 rise 0.40 m, class 0 -> 0, discharge 1.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 57432 z 73384 rise 0.20 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 57816 z 73384 rise 0.10 m, class 0 -> 0, discharge 1.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 57832 z 73384 rise 0.80 m, class 0 -> 0, discharge 1.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 57848 z 73400 rise 0.50 m, class 0 -> 0, discharge 1.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 57840 z 73416 rise 0.20 m, class 0 -> 0, discharge 1.0 km2, basin 0 -> 0, lake within 8 cells false
+  x 53264 z 73424 rise 0.97 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 53264 z 73432 rise 1.67 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 53400 z 73960 rise 0.79 m, class 0 -> 0, discharge 0.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 53392 z 73984 rise 0.03 m, class 0 -> 0, discharge 2.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 53384 z 73992 rise 0.10 m, class 0 -> 0, discharge 2.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 53400 z 73992 rise 1.70 m, class 0 -> 0, discharge 1.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53408 z 73992 rise 0.84 m, class 0 -> 0, discharge 1.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53416 z 73992 rise 0.42 m, class 0 -> 0, discharge 1.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53368 z 74000 rise 0.20 m, class 0 -> 0, discharge 2.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 53376 z 74000 rise 0.92 m, class 0 -> 0, discharge 2.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 53424 z 74000 rise 0.10 m, class 0 -> 0, discharge 1.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53360 z 74008 rise 0.26 m, class 0 -> 0, discharge 2.1 km2, basin 0 -> 0, lake within 8 cells false
+  x 53432 z 74008 rise 0.30 m, class 0 -> 0, discharge 1.4 km2, basin 0 -> 0, lake within 8 cells false
+  x 53440 z 74016 rise 0.50 m, class 0 -> 0, discharge 1.4 km2, basin 0 -> 0, lake within 8 cells false
+  x 53904 z 74176 rise 0.20 m, class 3 -> 3, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53832 z 74240 rise 1.00 m, class 3 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 53840 z 74240 rise 0.30 m, class 3 -> 3, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+  x 55288 z 74776 rise 0.30 m, class 0 -> 0, discharge 1.3 km2, basin 0 -> 0, lake within 8 cells false
+  x 55280 z 74784 rise 1.60 m, class 3 -> 0, discharge 1.3 km2, basin 0 -> 0, lake within 8 cells false
+  x 55296 z 74792 rise 3.10 m, class 3 -> 3, discharge 1.4 km2, basin 0 -> 0, lake within 8 cells false
+  x 55272 z 74864 rise 2.90 m, class 3 -> 3, discharge 1.5 km2, basin 0 -> 0, lake within 8 cells false
+  x 55944 z 74944 rise 0.20 m, class 0 -> 0, discharge 0.6 km2, basin 0 -> 0, lake within 8 cells false
+FAIL bed never rises downstream (57 rises of 7199 cells)
+ok   at least 20 bends (219)
+ok   outer bank at least 1.3x the inner bank depth
+drainage flow: 1 failures
