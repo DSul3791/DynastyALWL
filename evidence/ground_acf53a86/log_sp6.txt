@@ -1,0 +1,20 @@
+== iron_spade_large exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53299.69, 31.57962, 68425.89) size (1.332031, 0.642939, 0.828125) is 33 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53300.71, 31.44412, 68426.89) size (1.367188, 0.525963, 0.710938) is 100 % off centre, part outside, aiming again
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 54 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 85 % of the frame, centre 0 % off, all inside the frame
+== steel_spade_large exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53299.88, 31.80396, 68425.98) size (0.925781, 1.130108, 1.0) is 61 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53300.74, 31.40306, 68426.53) size (1.355469, 0.561808, 0.40625) is 100 % off centre, part outside, aiming again
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 55 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53300.68, 31.19844, 68425.3) size (1.34375, 0.375736, 0.414062) is 83 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 2 % off, all inside the frame
+== stone_hoe exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 52 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 1 % off, all inside the frame
