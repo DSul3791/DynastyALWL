@@ -13,6 +13,9 @@ func _init() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/traps.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
+	if float(cfg.get("test_chance", 0.0)) > 0.0:
+		print("server traps: TEST CHANCE IS ON (%.2f a look, a rabbit is imagined beside every snare): for smoke runs only" % float(cfg["test_chance"]))
+
 
 func is_kind(kind: String) -> bool:
 	return kind == str(cfg.get("kind", "snare_trap"))
@@ -57,6 +60,9 @@ func animal_weight(row: Dictionary) -> float:
 
 # The nearest catchable animal near a snare: its row, or {}.
 func lured(at: Vector3) -> Dictionary:
+	if float(cfg.get("test_chance", 0.0)) > 0.0:
+		return {"id": 0, "sp": "rabbit", "pos": at}   # the smoke knob: no animal needed, none is taken from the world
+
 	if not host.animals_near.is_valid():
 		return {}
 
@@ -82,6 +88,9 @@ func _bait_id(at: Vector3) -> int:
 
 # The chance this look catches `row`, without the bait (see check_one): 0 for a snare that cannot catch.
 func chance_at(at: Vector3, row: Dictionary, baited: bool) -> float:
+	if float(cfg.get("test_chance", 0.0)) > 0.0:
+		return clampf(float(cfg["test_chance"]), 0.0, 1.0)
+
 	var p: float = float(cfg.get("base_chance", 0.3)) * animal_weight(row)
 
 	if host.trail_strength.is_valid():
@@ -163,7 +172,7 @@ func check_one(id: int) -> bool:
 	if not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], row, bait >= 0)):
 		return false
 
-	if not host.animal_snare.is_valid() or not bool(host.animal_snare.call(int(row["id"]))):
+	if int(row["id"]) != 0 and (not host.animal_snare.is_valid() or not bool(host.animal_snare.call(int(row["id"])))):
 		return false
 
 	if bait >= 0:

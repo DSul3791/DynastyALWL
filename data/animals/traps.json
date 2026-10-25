@@ -1,5 +1,7 @@
 {
 	"note": "Snares (Steve 2026-10-25, plan tech/ACTION_PLANS/Steve_hide_traps.md). A set snare (struct kind snare_trap) looks every check_s real seconds, only while a player is within active_m. The chance of a catch is base_chance x the worn-trail factor at the snare x the species weight of the nearest eligible animal within lure_m x bait x night x storm; luck nudges the roll (fate kind snare). A catch takes that animal out of the world and lays its carcass beside the snare (the knife flow, parts, hide and rot are the carcass module's); the snare is quiet avoid_s afterwards (10 game minutes) and wears wear_per_catch and breaks at its durability. While its carcass still lies there the snare is sprung and catches nothing. Deer and bigger are never caught (species not in species_weight). All numbers here.",
+	"test_chance": 0.0,
+	"test_chance_note": "Smoke runs only (Tyler 25 Oct): above 0, every look at a set snare catches an imagined rabbit with this chance; the server prints a line at load while it is on. Keep 0.",
 	"kind": "snare_trap",
 	"item": "snare",
 	"check_s": 30.0,

@@ -197,6 +197,14 @@ func _init() -> void:
 			found = sid
 
 	check(found >= 0 and int(again._items[found].get("wear", 0)) == 3 and str(again._items[found]["struct"]["owner"]) == "trap-key-00000001" and float(again._items[found]["struct"]["seq"]) == float(items._items[keep]["struct"]["seq"]), "a set snare saves and reloads with its wear and owner")
+	# The smoke knob: off by default; on, a snare with no animal near catches an imagined rabbit and takes none from the world.
+	check(float(traps.cfg["test_chance"]) == 0.0, "the smoke knob is off in the data")
+	traps.cfg["test_chance"] = 1.0
+	near = []
+	taken.clear()
+	var knob_id: int = lay(items, Vector3(300.0, 10.0, 300.0))
+	check(traps.check_one(knob_id) and taken.is_empty(), "with the smoke knob on, a lone snare catches an imagined rabbit")
+	traps.cfg["test_chance"] = 0.0
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
