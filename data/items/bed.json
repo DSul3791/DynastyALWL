@@ -1,0 +1,13 @@
+{
+	"note": "The rough bed's function (Steve_rough_bed plan, Tyler GO 24 Oct). A placed rough_bed within reach_m of a LYING or sleeping player, under a built roof or tree crown (cover), is a 'good bed': sleep quality quality; health regeneration x regen_mult on top of sleep's; lying on it (awake) recovers energy at the sleep rate; food and water drain at drain_mult while asleep or lying on it; a sleeper on it never wakes just for being rested (stay); the cold stress is cut by warmth_bonus; animals sense a lying player on it less (data/animals/animals.json senses bed_mult 0.7, on top of lie_factor), and almost not at all (hidden_mult 0.05) when it stands in a closed room: a built roof plus walls_needed wall pieces within walls_radius_m. asleep_ground_mult is the drain while asleep anywhere else (set 1.0 to switch it off). No bed, or no cover, and nothing here applies. Moving, a stance key, a hit or a fall always wakes, bed or not.",
+	"reach_m": 1.2,
+	"recheck_s": 1.5,
+	"quality": 1.0,
+	"comfort": 1,
+	"regen_mult": 1.25,
+	"drain_mult": 0.5,
+	"asleep_ground_mult": 0.7,
+	"warmth_bonus": 0.1,
+	"walls_needed": 3,
+	"walls_radius_m": 3.0
+}
