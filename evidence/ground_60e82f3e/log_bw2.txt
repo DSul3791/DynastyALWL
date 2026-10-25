@@ -1,0 +1,28 @@
+== wooden_bow exit 0
+shot runner: item view front try 1: box at (53316.0, 31.56384, 68474.41) size (1.175781, 0.223631, 0.148438) is 42 % off centre, part outside, aiming again
+shot runner: item view front try 2: box at (53316.07, 31.631, 68475.78) size (1.171875, 0.273424, 0.054688) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 88 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 48 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 1 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 80 % of the frame, centre 0 % off, all inside the frame
+== wooden_arrow exit 0
+shot runner: item view front try 1: box at (53316.02, 31.60286, 68474.2) size (0.6875, 0.091675, 0.132812) is 55 % off centre, part outside, aiming again
+shot runner: item view front try 2: box at (53315.95, 31.69195, 68475.8) size (0.6875, 0.046494, 0.125) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 40 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 0 % off, all inside the frame
+== stone_arrow exit 0
+shot runner: item view front try 1: box at (53316.02, 31.60355, 68474.22) size (0.707031, 0.092176, 0.132812) is 54 % off centre, part outside, aiming again
+shot runner: item view front try 2: box at (53315.97, 31.69153, 68475.8) size (0.707031, 0.045073, 0.125) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 88 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 40 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 0 % off, all inside the frame
+== quiver exit 0
+shot runner: item view front try 1: box at (53315.92, 31.59386, 68474.27) size (0.777344, 0.310787, 0.34375) is 54 % off centre, part outside, aiming again
+shot runner: item view front try 2: box at (53316.38, 31.67231, 68475.73) size (0.769531, 0.26438, 0.296875) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 52 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 70 % of the frame, centre 0 % off, all inside the frame
