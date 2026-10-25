@@ -58,6 +58,7 @@ func build(tile: Vector2i) -> void:
 # is world sample (origin_x, origin_z). A tile with a margin is built this
 # way, so its edge samples see the same inputs as the neighbor's.
 func build_frame(origin_x: int, origin_z: int, count: int) -> void:
+	var clock: int = Time.get_ticks_msec()
 	samples = count
 	origin_sx = origin_x
 	origin_sz = origin_z
@@ -121,8 +122,13 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 		for i in range(samples):
 			heights[out + i] = w0 * line_0[i] + w1 * line_1[i] + w2 * line_2[i] + w3 * line_3[i]
 
+	_lap("frame cubic", clock)
+	clock = Time.get_ticks_msec()
 	_detail_scale = _shape_valleys()
+	_lap("shape valleys", clock)
+	clock = Time.get_ticks_msec()
 	_add_detail(_detail_scale)
+	_lap("add detail", clock)
 
 	if not defer_strata:
 		add_strata()
@@ -131,6 +137,11 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 # Rock beds: ledges and cliffs where hard beds crop out. With `rock` set (a TileGeology
 # prepared for this frame) the beds are the real rock layers; without, synthetic beds.
 # The baker defers this until after erosion, so ledges show where erosion left the rock.
+# Timing line for the bake log.
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  height timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
+
+
 func add_strata() -> void:
 	if rock != null:
 		_add_rock_beds(_detail_scale)
@@ -519,7 +530,10 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 	# The beds are found on a softened copy of the land: a cliff steepens the slope several
 	# times over, so on the raw land every small bump of the detail noise near a bed's edge
 	# would stand up as a spike.
+	var clock: int = Time.get_ticks_msec()
 	var smooth: PackedFloat32Array = _box_blur(heights, int(rules.get("bed_smooth_samples", 1)))
+	_lap("beds: blur", clock)
+	clock = Time.get_ticks_msec()
 
 	for index in range(total):
 		var h: float = smooth[index]
@@ -568,25 +582,21 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 
 		delta[index] = (rise - t) * sub * strength
 
+	_lap("beds: per-sample beds", clock)
+	clock = Time.get_ticks_msec()
 	# Blend across province borders (the layers jump there): a box blur of the change on
 	# samples within `reach` of a border, in two passes.
 	var reach: int = int(rules.get("border_blend_samples", 4))
 	var province: PackedByteArray = rock.province
 	var near_border: PackedByteArray = PackedByteArray()
-	near_border.resize(total)
 
-	for j in range(samples):
-		for i in range(samples):
-			var index: int = j * samples + i
-			var p: int = province[index]
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("near_border"):
+		near_border = ClassDB.instantiate("GenCore").near_border(province, samples, reach)
+	else:
+		near_border = near_border_script(province, samples, reach)
 
-			for step in [Vector2i(reach, 0), Vector2i(-reach, 0), Vector2i(0, reach), Vector2i(0, -reach)]:
-				var ni: int = clampi(i + step.x, 0, samples - 1)
-				var nj: int = clampi(j + step.y, 0, samples - 1)
-
-				if province[nj * samples + ni] != p:
-					near_border[index] = 1
-					break
+	_lap("beds: border search", clock)
+	clock = Time.get_ticks_msec()
 
 	for axis in range(2):
 		var before: PackedFloat32Array = delta.duplicate()
@@ -613,9 +623,33 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 
 				delta[index] = sum / float(count)
 
+	_lap("beds: border blend", clock)
+
 	for index in range(total):
 		if delta[index] != 0.0:
 			heights[index] += delta[index]
+
+
+# 1 where a sample `reach` samples away on an axis (clamped to the frame) lies in another province: the cells whose bed change is blurred.
+static func near_border_script(province: PackedByteArray, side: int, reach: int) -> PackedByteArray:
+	var near_border: PackedByteArray = PackedByteArray()
+	near_border.resize(side * side)
+	var steps: Array = [Vector2i(reach, 0), Vector2i(-reach, 0), Vector2i(0, reach), Vector2i(0, -reach)]
+
+	for j in range(side):
+		for i in range(side):
+			var index: int = j * side + i
+			var p: int = province[index]
+
+			for step in steps:
+				var ni: int = clampi(i + step.x, 0, side - 1)
+				var nj: int = clampi(j + step.y, 0, side - 1)
+
+				if province[nj * side + ni] != p:
+					near_border[index] = 1
+					break
+
+	return near_border
 
 
 # Cumulative bed edges (0 to 1) of a rock layer split into `count` beds of uneven thickness; the same for every
@@ -676,6 +710,18 @@ func _dip_shift(layer_number: int, index: int, seed_value: int, rules: Dictionar
 
 # A box blur of `field` (samples x samples) over (2 radius + 1) squared, two passes.
 func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("box_blur"):
+		return ClassDB.instantiate("GenCore").box_blur(field, samples, radius)
+
+	return box_blur_script(field, samples, radius)
+
+
+# Tests set this to compare the GDScript loops here with GenCore's (test_gen_core.gd); false in the bake.
+static var force_script: bool = false
+
+
+# The two-pass box blur in GDScript: the reference GenCore.box_blur must match bit for bit.
+static func box_blur_script(field: PackedFloat32Array, side: int, radius: int) -> PackedFloat32Array:
 	if radius <= 0:
 		return field.duplicate()
 
@@ -684,8 +730,8 @@ func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
 	for axis in range(2):
 		var source: PackedFloat32Array = out.duplicate()
 
-		for j in range(samples):
-			for i in range(samples):
+		for j in range(side):
+			for i in range(side):
 				var sum: float = 0.0
 				var count: int = 0
 
@@ -693,12 +739,12 @@ func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
 					var ni: int = i + (k if axis == 0 else 0)
 					var nj: int = j + (k if axis == 1 else 0)
 
-					if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+					if ni < 0 or nj < 0 or ni >= side or nj >= side:
 						continue
 
-					sum += source[nj * samples + ni]
+					sum += source[nj * side + ni]
 					count += 1
 
-				out[j * samples + i] = sum / float(count)
+				out[j * side + i] = sum / float(count)
 
 	return out
