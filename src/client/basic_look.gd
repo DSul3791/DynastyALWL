@@ -320,37 +320,44 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var metal_blade: bool = bits.has("metal")
 			var blade: Color = color
 			var ash: Color = Color(0.42, 0.3, 0.17)
-			var rough: float = 0.55
+			var rough: float = 0.65                                                                                 # spade metal: mostly albedo, little sky reflection (the sky turned it blue and blew it out at 0.8 metallic)
 
 			if metal_blade:
-				blade = Color(0.2, 0.2, 0.2) if bits.has("steel") else Color(0.08, 0.075, 0.068)       # steel: a neutral mid-grey, lighter than iron; iron: dark charcoal (linear values; no blue)
+				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)        # steel: a neutral mid-grey (about sRGB 137), lighter than iron; iron: dark charcoal, neutral to faintly warm (about sRGB 89); linear values, no blue
 			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
 				blade = _warm_stone(color)                                                                     # stone: darker and warmer than the table grey
 
 			_cyl_taper(parts, 0.0175, 0.0165, 0.25, Vector3(0.325, 0.0, 0.0), _tone(ash, 1, 0.05))                # the haft: long tapering lengths, no banding
 			_cyl_taper(parts, 0.0165, 0.0175, 0.25, Vector3(0.075, 0.0, 0.0), _tone(ash, 2, 0.05))
 			_cyl_taper(parts, 0.0175, 0.0185, 0.25, Vector3(-0.175, 0.0, 0.0), _tone(ash, 3, 0.05))
-			_cyl_taper(parts, 0.0195, 0.0195, 0.16, Vector3(-0.06, 0.0, 0.0), ash.darkened(0.6))                 # the smooth, clearly darker patch where the hands go
-			_torus(parts, 0.065, 0.018, Vector3(-0.36, 0.0, 0.0), _tone(ash, 6, 0.06))                           # the closed, rounded D-grip, about 15 cm across
-			_box(parts, Vector3(0.026, 0.034, 0.13), Vector3(-0.297, 0.0, 0.0), _tone(ash, 7, 0.06))             # its flat side, closing the D against the haft
-			_cyl_taper(parts, 0.022, 0.036, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.5 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket: a short, bold cone about 10 cm
+			_wrap(parts, -0.12, 0.0, 0.0202)                                                                      # a dark leather wrap with visible spiral turns where the hands go
+			_box(parts, Vector3(0.024, 0.032, 0.15), Vector3(-0.4, 0.0, 0.0), _tone(ash, 6, 0.06))               # the grip: a closed rounded rectangle in ash, 15 by 10 cm; the far bar
+			_box(parts, Vector3(0.024, 0.032, 0.15), Vector3(-0.31, 0.0, 0.0), _tone(ash, 7, 0.06))              # the near bar, against the haft end
+			for side in [-1.0, 1.0]:
+				_box(parts, Vector3(0.1, 0.032, 0.024), Vector3(-0.355, 0.0, side * 0.063), _tone(ash, 8, 0.06))    # the two side bars
+				for end in [-0.4, -0.31]:
+					_box_rot(parts, Vector3(0.03, 0.03, 0.03), Vector3(end + (0.012 if end < -0.35 else -0.012), 0.0, side * 0.066), Vector3(0.0, 0.785, 0.0), _tone(ash, 9, 0.06))   # chamfered corners
+			_cyl_taper(parts, 0.022, 0.036, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.25 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket: a short, bold cone about 10 cm
 			if metal_blade:
-				_metal(parts, rough, 0.6)
+				_metal(parts, rough, 0.3)
 
 			for side in [-1.0, 1.0]:
 				_box(parts, Vector3(0.13, 0.02, 0.014), Vector3(0.425, 0.0, side * 0.034), blade * 2.2 if metal_blade else blade.lightened(0.25))   # the strap up each side of the socket, in a lighter tone
 				if metal_blade:
-					_metal(parts, rough, 0.6)
+					_metal(parts, rough, 0.3)
 				for k in range(2):
 					_sph(parts, 0.011, Vector3.ONE, Vector3(0.38 + 0.05 * float(k), 0.012, side * 0.034), blade * 3.2 if metal_blade else blade.lightened(0.4), true)    # two big rivets
 					if metal_blade:
-						_metal(parts, rough, 0.6)
+						_metal(parts, rough, 0.3)
 
-			_box(parts, Vector3(0.028, 0.02, 0.2), Vector3(0.46, 0.0, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.2))   # the thick tread plate across the square shoulders
+			_box(parts, Vector3(0.028, 0.02, 0.19), Vector3(0.46, 0.0, 0.0), blade * 1.3 if metal_blade else blade.lightened(0.2))   # the thick tread plate across the square shoulders
 			if metal_blade:
-				_metal(parts, rough, 0.6)
-			_plate(parts, 0.474, 0.27, 0.19, 0, 9, blade, true, metal_blade, rough, 0.6)                          # the blade plate
-			_plate(parts, 0.474, 0.27, 0.19, 9, 12, Color(0.5, 0.5, 0.5) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.6)   # its last quarter: a bright strip along the bottom edge
+				_metal(parts, rough, 0.3)
+			_cyl(parts, 0.011, 0.19, Vector3(0.478, 0.012, 0.0), Vector3(PI * 0.5, 0.0, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.3))   # the rolled lip along the top shoulders
+			if metal_blade:
+				_metal(parts, rough, 0.3)
+			_plate(parts, 0.474, 0.31, 0.18, 0, 11, blade, true, metal_blade, rough, 0.3)                          # the blade plate, 31 by 18 cm
+			_plate(parts, 0.474, 0.31, 0.18, 11, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3)   # the last 2.5 cm: a bright strip along the bottom edge
 		"saw":
 			# A hand saw (modelled on a real panel saw): a wooden pistol grip with brass rivets at -x, a thin steel blade plate (a real polygon plate, 45 cm, 11 cm at the heel
 			# narrowing to 7 cm at the toe) with a row of teeth along the cutting edge (+z), blade on the metal surface in a neutral grey.
@@ -398,21 +405,21 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var metal_blade: bool = bits.has("metal")
 			var blade: Color = color
 			var ash: Color = Color(0.42, 0.3, 0.17)
-			var rough: float = 0.55
+			var rough: float = 0.65
 
 			if metal_blade:
-				blade = Color(0.2, 0.2, 0.2) if bits.has("steel") else Color(0.08, 0.075, 0.068)
+				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)
 			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
 				blade = _warm_stone(color)
 
 			_cyl_taper(parts, 0.0175, 0.0165, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.05))
 			_cyl_taper(parts, 0.0165, 0.0175, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.05))
 			_cyl_taper(parts, 0.0175, 0.019, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.05))
-			_cyl_taper(parts, 0.0195, 0.0195, 0.16, Vector3(-0.2, 0.0, 0.0), ash.darkened(0.6))                   # the darker patch where the hands go
+			_wrap(parts, -0.28, -0.12, 0.0202)                                                                        # a dark leather wrap with visible spiral turns where the hands go
 			_sph(parts, 0.021, Vector3(0.8, 1.0, 1.0), Vector3(-0.815, 0.0, 0.0), _tone(ash, 4, 0.06))           # the rounded end
 			_cyl_taper(parts, 0.022, 0.034, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.5 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket cone
 			if metal_blade:
-				_metal(parts, rough, 0.6)
+				_metal(parts, rough, 0.3)
 
 			var reach: Vector3 = Vector3(0.45, 0.0, 0.0)
 
@@ -420,11 +427,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var phi: float = (float(k) + 0.5) * deg_to_rad(70.0) / 3.0
 				_box_rot(parts, Vector3(0.045, 0.024, 0.024), Vector3(0.45 + 0.08 * sin(phi), 0.0, 0.08 * (1.0 - cos(phi))), Vector3(0.0, -phi, 0.0), blade * 1.5 if metal_blade else blade.darkened(0.2))
 				if metal_blade:
-					_metal(parts, rough, 0.6)
+					_metal(parts, rough, 0.3)
 
 			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
-			_plate(parts, 0.0, 0.14, 0.17, 0, 8, blade, true, metal_blade, rough, 0.6, frame, 1)                       # the blade plate, hanging toward +z, wide across y
-			_plate(parts, 0.0, 0.14, 0.17, 8, 12, Color(0.5, 0.5, 0.5) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.6, frame, 1)   # its bright cutting edge
+			_plate(parts, 0.0, 0.14, 0.17, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1)                       # the blade plate, hanging toward +z, wide across y
+			_plate(parts, 0.0, 0.14, 0.17, 8, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3, frame, 1)   # its bright cutting edge
 		"knife":
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
@@ -699,13 +706,22 @@ static func _plate_quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d
 		tool.add_vertex(v)
 
 
+# A leather wrap on a haft from x0 to x1: slanted bands in two dark tones so the spiral turns read (spade and hoe hand grips).
+static func _wrap(parts: Array, x0: float, x1: float, radius: float) -> void:
+	var count: int = int((x1 - x0) / 0.03)
+
+	for k in range(count):
+		var tone: Color = Color(0.1, 0.05, 0.025) if k % 2 == 0 else Color(0.16, 0.09, 0.045)
+		_cyl(parts, radius, 0.032, Vector3(x0 + 0.03 * (float(k) + 0.5), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), tone)
+
+
 # A cylinder along x (radius `back` at -x, `front` at +x) centred at `at`: a smooth tapering haft or socket cone.
 static func _cyl_taper(parts: Array, back: float, front: float, length: float, at: Vector3, color: Color) -> void:
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = front
 	cyl.bottom_radius = back
 	cyl.height = length
-	cyl.radial_segments = 12
+	cyl.radial_segments = 8
 	cyl.rings = 1
 	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
 

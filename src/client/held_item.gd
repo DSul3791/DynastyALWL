@@ -38,7 +38,7 @@ const SHOULDER_LOG_X := 0.5               # first person: the log's side of the 
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
-const THIRD_SPADE_PITCH_DEG := -50.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
+const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
