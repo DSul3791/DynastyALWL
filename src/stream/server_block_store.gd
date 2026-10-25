@@ -49,7 +49,10 @@ var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
 var settle_enabled: bool = true         # data/network.json "settled_ground": 0 turns settled copies off (every load replays the whole log)
-var settle = GroundSettle.new()        # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth
+var _settle = GroundSettle.new()       # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth. Swapped by clear_generated under _mutex: read it as `settle` (a fresh reference each time)
+var settle:
+	get:
+		return _settle_now()
 var ops = GroundOps.new()               # the ground edit log (digs.dat, DIGS2): digs and fills replayed over every block
 
 
@@ -185,12 +188,28 @@ func _purge_old_settled() -> void:
 			DirAccess.remove_absolute(folder + "/" + file)
 
 
-func _open_settle() -> String:
-	settle.ops = ops
-	settle.base_loader = _load_base_lod0
-	settle.guard = _settled_ok
-	ops.settled_upto = settle.upto_of
-	return settle.open(_settled_stem())
+func _open_settle(target = null) -> String:
+	var fresh = target if target != null else _settle
+	fresh.ops = ops
+	fresh.base_loader = _load_base_lod0
+	fresh.guard = _settled_ok
+	ops.settled_upto = fresh.upto_of
+	return fresh.open(_settled_stem())
+
+
+# Same shape as the generated-ground cache: workers read the settled copies through one reference taken under _mutex, the main thread publishes a new one
+# under the same mutex, and a worker that holds the old one finishes with it (refcounted).
+func _settle_now():
+	_mutex.lock()
+	var current = _settle
+	_mutex.unlock()
+	return current
+
+
+func set_settle(fresh) -> void:
+	_mutex.lock()
+	_settle = fresh
+	_mutex.unlock()
 
 
 func _load_base_lod0(buffer: VoxelBuffer, block: Vector3i) -> void:
@@ -241,10 +260,11 @@ func clear_generated() -> void:
 	set_cache(_open_generated())
 	_warm(_cache_now())
 	# The settled copies were made over the ground just thrown away: new files for the new generation, the old ones deleted.
-	settle.close()
-	settle = GroundSettle.new()
+	_settle_now().close()
 	_purge_old_settled()
-	_open_settle()
+	var fresh = GroundSettle.new()
+	_open_settle(fresh)
+	set_settle(fresh)
 
 
 # The generated-ground cache is swapped on the main thread (clear_generated) while workers read it: workers take their own reference under _mutex, so a worker that
@@ -282,7 +302,7 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	if lod == 0:
 		# A busy block has a settled copy with its first `upto` edits in it: replay only the rest (the same ground as replaying
 		# them all, ground_settle.gd).
-		var upto: int = settle.try_load(buffer, block) if settle_enabled else -1
+		var upto: int = _settle_now().try_load(buffer, block) if settle_enabled else -1
 
 		if upto >= 0:
 			ops.apply_range(buffer, block, upto, 1 << 30)

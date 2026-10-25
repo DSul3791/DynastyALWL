@@ -32,6 +32,12 @@ func add_struct(items, id: int, kind: String, pos: Vector3) -> void:
 	items._items[id] = {"number": items.table.number_of(str(items._structures[kind]["item"])), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0, "uid": id}}
 
 
+# The stances with the bed look made afresh: the server caches the bed under a player for recheck_s of wall-clock time, so a slow or loaded run could answer from an older look.
+func stances(items) -> Array:
+	items._bed_cache.clear()
+	return items.peer_stances()
+
+
 func run(items, seconds: int) -> void:
 	for n in seconds:
 		items.tick(1.0)
@@ -57,23 +63,25 @@ func _init() -> void:
 	items._asleep[1] = {"rested": 0.0, "t": 0.0}
 	check(is_equal_approx(items._drain_mult(1), float(cfg["asleep_ground_mult"])), "asleep on the ground drains at the ground row")
 	items._asleep.erase(1)
-	check(items.peer_stances() == [3], "a lying player is stance 3")
+	check(stances(items) == [3], "a lying player is stance 3")
 
 	# A bed under cover.
 	add_struct(items, 9001, "rough_bed", Vector3(5.0, 10.0, 5.5))
 	items._bed_cache.clear()
 	check(items._bed_of(1) == 9001 and items.on_good_bed(1), "a covered bed under the player counts")
 	check(is_equal_approx(items._drain_mult(1), float(cfg["drain_mult"])), "drain is slow on the bed, even awake")
-	check(items.peer_stances() == [4], "lying on a covered bed is stance 4")
+	check(stances(items) == [4], "lying on a covered bed is stance 4")
 
 	# Without cover it is only ground.
 	covered[0] = 0.0
+	items._bed_cache.clear()
 	check(not items.on_good_bed(1) and is_equal_approx(items._drain_mult(1), 1.0), "no cover: the bed does not count")
 	covered[0] = 1.0
 
 	# Standing next to it is not lying on it.
 	items._stance[1] = 0
-	check(items._bed_of(1) == 0 and items.peer_stances() == [0], "standing, no bed")
+	items._bed_cache.clear()
+	check(items._bed_of(1) == 0 and stances(items) == [0], "standing, no bed")
 	items._stance[1] = 3
 	items._bed_cache.clear()
 
@@ -86,13 +94,13 @@ func _init() -> void:
 
 	# A closed room: a built roof (cover 2.0) and three wall pieces.
 	covered[0] = 2.0
-	check(items.peer_stances() == [4], "a roof but no walls: not hidden")
+	check(stances(items) == [4], "a roof but no walls: not hidden")
 	add_struct(items, 9002, "thatch_wall", Vector3(5.0, 10.0, 3.5))
 	add_struct(items, 9003, "thatch_wall", Vector3(3.5, 10.0, 5.0))
 	add_struct(items, 9004, "thatch_wall", Vector3(6.5, 10.0, 5.0))
-	check(items.peer_stances() == [5], "roof and three walls: the sleeper is hidden (stance 5)")
+	check(stances(items) == [5], "roof and three walls: the sleeper is hidden (stance 5)")
 	covered[0] = 1.0
-	check(items.peer_stances() == [4], "a tree crown is not a roof: not hidden")
+	check(stances(items) == [4], "a tree crown is not a roof: not hidden")
 	items._items.erase(9002)
 	items._items.erase(9003)
 	items._items.erase(9004)

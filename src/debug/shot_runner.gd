@@ -86,6 +86,8 @@ var _frame_times: PackedFloat32Array = PackedFloat32Array()
 var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
 var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
+var piece_views: bool = false     # --shot-piece-views: the first named piece gets the four item views (front, side, top, diag) at 3 to 6 m instead of the row pictures
+var _piece_built: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
@@ -173,6 +175,8 @@ func setup(owner_client, args: Array) -> void:
 			if give_item.contains(":"):
 				give_count = int(give_item.get_slice(":", 1))
 				give_item = give_item.get_slice(":", 0)
+		elif argument == "--shot-piece-views":
+			piece_views = true
 		elif argument.begins_with("--shot-item-at="):
 			var xz: PackedStringArray = argument.trim_prefix("--shot-item-at=").split(",")
 			item_at = Vector2(float(xz[0]), float(xz[1]))
@@ -480,6 +484,10 @@ func _process(delta: float) -> void:
 	if (_flora_t != 0 and now - _flora_t < 6000) or (_pieces_t != 0 and now - _pieces_t < 4000):
 		return
 
+	if piece_views and not _piece_built:
+		_build_piece_views()
+		return
+
 	if _view_i < views.size():
 		_run_view(now)
 		return
@@ -645,6 +653,7 @@ func _show_pieces(now: int) -> void:
 			continue
 
 		client.add_child(model)
+		model.set_meta("piece_name", str(piece_name))
 		model.rotation.y = deg_to_rad(pieces_yaw_deg)
 		models.append([str(piece_name), def, model])
 
@@ -664,7 +673,7 @@ func _show_pieces(now: int) -> void:
 	for n in range(models.size()):
 		var model: Node3D = models[n][2]
 		x += float(widths[n]) * 0.5
-		var g: float = _ground(x, z)
+		var g: float = _piece_ground(x, z)
 
 		if is_nan(g):
 			g = p.y - 1.5
@@ -689,6 +698,46 @@ func _show_pieces(now: int) -> void:
 	_subject = Vector3(p.x, subject_y, z)
 	_subject_set = true
 	_pieces_t = now
+
+
+# --shot-piece-views: after _show_pieces, the first piece gets the four item views fitted to its drawn box (3 to 6 m, a low piece seen from higher up); the normal
+# view loop takes the pictures and _check_item_view judges each (fills a third of the frame, centred, all inside). A piece that drew nothing or is missing says so
+# and the run ends with the row pictures only.
+func _build_piece_views() -> void:
+	_piece_built = true
+	var wanted: String = str(piece_names[0]) if piece_names.size() > 0 else ""
+	var node: Node3D = null
+
+	for child in client.get_children():
+		if child is Node3D and child.has_meta("piece_name") and str(child.get_meta("piece_name")) == wanted:
+			node = child
+
+	if node == null:
+		print("shot runner: piece-views skipped for %s: no model was built (missing or planned piece)" % wanted)
+		views = []
+		return
+
+	var box: AABB = _aabb_of(node)
+
+	if box.size == Vector3.ZERO:
+		print("shot runner: piece-views FAIL %s draws nothing" % wanted)
+		_item_failed = true
+		views = []
+		return
+
+	var centre: Vector3 = box.get_center()
+	var ground: float = _piece_ground(centre.x, centre.z)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	var low: bool = box.size.y < 0.6 * maxf(box.size.x, box.size.z)
+	_item_node = node
+	_item_box = box
+	views = ItemCam.views(box, client.camera.fov, box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), Vector2.ZERO, Vector3.ZERO, 6.0, low)
+	_subject = centre
+	_subject_set = true
+	client.flying = true
+	client.body.collision_mask = 0
+	client.body.collision_layer = 0
+	print("shot runner: piece %s at %s, box %s, %d views%s" % [wanted, str(centre), str(box.size), views.size(), " (low piece: higher orbit)" if low else ""])
 
 
 # --showroom: turn Admin mode on so the server lays the showroom rows out as real world items, then one view per chosen row from the west side
@@ -1061,7 +1110,7 @@ func _run_view(now: int) -> void:
 	if not _showroom_tags.is_empty():
 		print("shot runner: tag overlap view %s %s" % [view["name"], _tag_overlaps()])
 
-	if item_mode:
+	if item_mode or piece_views:
 		_check_item_view(view)
 
 	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
@@ -1199,6 +1248,12 @@ func _tally(root: Node, eye: Vector3) -> void:
 
 
 # The ground height under x, z from the voxel data (no collision needed), NAN while it is not loaded.
+# Where a building piece stands: the physics ground the game's own placement ghost uses, the voxel raycast only when no collider is built there yet.
+func _piece_ground(x: float, z: float) -> float:
+	var from_y: float = client.body.global_position.y
+	return ItemCam.pick_ground(float(client._ground_below(Vector3(x, from_y, z))), _ground(x, z))
+
+
 func _ground(x: float, z: float) -> float:
 	var tool = client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF

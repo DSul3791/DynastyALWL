@@ -379,6 +379,11 @@ var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m fr
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
+var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
+var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
+var test_snare: bool = false             # --snare: set a snare and wait for a carcass (SNARE TEST lines; server knob traps.json test_chance)
+var test_place_foundation: bool = false   # --place-foundation: give a thatch floor kit and place it ahead (FOUNDATION TEST lines)
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
@@ -692,6 +697,16 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--shoot":
+			test_shoot = true
+		elif argument == "--place-foundation":
+			test_place_foundation = true
+		elif argument == "--cook":
+			test_cook = true
+		elif argument == "--sleep":
+			test_sleep = true
+		elif argument == "--snare":
+			test_snare = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -1314,6 +1329,21 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chop:
 		items.run_chop_test(self)
+
+	if test_shoot:
+		items.run_shoot_test(self)
+
+	if test_place_foundation:
+		items.run_foundation_test(self)
+
+	if test_cook:
+		items.run_cook_test(self)
+
+	if test_sleep:
+		items.run_sleep_test(self)
+
+	if test_snare:
+		items.run_snare_test(self)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
