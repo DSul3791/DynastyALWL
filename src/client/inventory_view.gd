@@ -4143,6 +4143,170 @@ func run_foundation_test(client) -> void:
 	print("FOUNDATION TEST %s" % ("PASS" if kit_left == 0 and not near.is_empty() else "FAILED: the floor was not placed"))
 
 
+# Waits up to 15 s for `count` of an item to show in the pack after an admin give; the give is sent once more at 8 s when nothing came
+# (a cold join on a busy server loses the first). Returns true when it arrived.
+func _smoke_give(id: String, count: int) -> bool:
+	var number: int = table.number_of(id)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, count, Vector3.ZERO)
+
+	for n in 30:
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.count_of(number) >= count:
+			return true
+
+		if n == 16 and inventory.count_of(number) == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, count, Vector3.ZERO)
+
+	return false
+
+
+# The nearest world row within `reach` of a spot with a given item id (and, when states is not empty, one of those states): its id, or -1.
+func _smoke_row_near(spot: Vector3, item_id: String, reach: float, states: Array = []) -> int:
+	var best: int = -1
+	var best_d: float = reach
+
+	for id in _world:
+		if table.id_of(int(_world[id]["number"])) != item_id or (not states.is_empty() and not states.has(int(_world[id]["state"]))):
+			continue
+
+		var d: float = (_world[id]["pos"] as Vector3).distance_to(spot)
+
+		if d <= best_d:
+			best = id
+			best_d = d
+
+	return best
+
+
+# Headless check (--cook): a campfire is laid and lit, raw meat is roasted on it and eaten. Prints COOK TEST lines; the last one is PASS or FAILED.
+func run_cook_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var meat: int = table.number_of("raw_meat")
+
+	for pair in [["campfire_kit", 1], ["plant_fibre", 3], ["raw_meat", 2]]:
+		if not await _smoke_give(str(pair[0]), int(pair[1])):
+			print("COOK TEST FAILED: the pack did not get %s" % str(pair[0]))
+			return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 2.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("campfire_kit")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var fire: int = -1
+
+	for id in _world:
+		if (_world[id]["pos"] as Vector3).distance_to(spot) < 2.0 and int(_world[id]["state"]) in [9, 1, 40, 41]:
+			fire = id
+
+	print("COOK TEST: fire row %d, state %s" % [fire, str(_world[fire]["state"]) if fire >= 0 else "none"])
+
+	if fire < 0:
+		print("COOK TEST FAILED: the fire was not laid")
+		return
+
+	for n in 3:   # a damp tinder can fail: up to three tries
+		if _lit_state(int(_world[fire]["state"])):
+			break
+
+		net.inventory_action.rpc_id(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+		await get_tree().create_timer(2.0).timeout
+
+	if not _lit_state(int(_world[fire]["state"])):
+		print("COOK TEST FAILED: the fire did not light (state %s)" % str(_world[fire]["state"]))
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(2.5).timeout
+	var roast: int = table.number_of("roast_meat")
+	print("COOK TEST: raw meat %d -> %d, roast meat %d" % [2, inventory.count_of(meat), inventory.count_of(roast)])
+
+	if inventory.count_of(roast) < 1:
+		print("COOK TEST FAILED: nothing was roasted")
+		return
+
+	var fed_before: int = hunger
+	eat_slot(inventory.numbers.find(roast))
+	await get_tree().create_timer(2.0).timeout
+	print("COOK TEST: hunger %d -> %d, roast meat left %d" % [fed_before, hunger, inventory.count_of(roast)])
+	print("COOK TEST %s" % ("PASS" if inventory.count_of(roast) == 0 and hunger >= fed_before else "FAILED: the roast was not eaten"))
+
+
+# Headless check (--sleep): a rough bed is set down beside the player, they lie on it, fall asleep for a few seconds and wake. Prints SLEEP TEST lines.
+func run_sleep_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+
+	if not await _smoke_give("rough_bed_kit", 1):
+		print("SLEEP TEST FAILED: the pack did not get the rough bed")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 0.9
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("rough_bed_kit")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var bed: int = _smoke_row_near(spot, "rough_bed", 2.0)
+	print("SLEEP TEST: bed row %d (no roof here is fine: it then behaves as ground)" % bed)
+
+	if bed < 0:
+		print("SLEEP TEST FAILED: the bed was not set down")
+		return
+
+	var energy_before: int = energy
+	request_stance(3)
+	await get_tree().create_timer(1.5).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(6.0).timeout
+	var slept: bool = asleep
+	var stance_in_sleep: int = stance_confirmed
+	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(2.0).timeout
+	request_stance(0)
+	await get_tree().create_timer(1.5).timeout
+	print("SLEEP TEST: lying %d, asleep %s, energy %d -> %d, after waking asleep %s" % [stance_in_sleep, str(slept), energy_before, energy, str(asleep)])
+	print("SLEEP TEST %s" % ("PASS" if slept and not asleep and energy >= energy_before else "FAILED: sleep did not start, did not end, or energy fell"))
+
+
+# Headless check (--snare): a snare is set down and left; passes when a carcass lies by it (server checks every 30 s; run the server with traps.json test_chance above 0,
+# otherwise this only waits for a rabbit to walk by). Prints SNARE TEST lines.
+func run_snare_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+
+	if not await _smoke_give("snare", 1):
+		print("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 3.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("snare")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var snare: int = _smoke_row_near(spot, "snare_trap", 2.0)
+
+	if snare < 0:
+		snare = _smoke_row_near(spot, "snare", 2.0)
+
+	print("SNARE TEST: snare row %d" % snare)
+
+	if snare < 0:
+		print("SNARE TEST FAILED: the snare was not set down")
+		return
+
+	for n in 40:   # up to 200 s: the server looks every 30 s
+		await get_tree().create_timer(5.0).timeout
+
+		if _smoke_row_near(spot, "carcass", 3.0) >= 0:
+			print("SNARE TEST: a carcass lies by the snare after %d s" % ((n + 1) * 5))
+			print("SNARE TEST PASS")
+			return
+
+	print("SNARE TEST FAILED: no catch in 200 s (the server needs traps.json test_chance above 0 for a sure run)")
+
+
 # Headless check (--eat): eat a roast and apply a poultice.
 func run_eat_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
