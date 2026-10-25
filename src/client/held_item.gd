@@ -38,6 +38,7 @@ const SHOULDER_LOG_X := 0.5               # first person: the log's side of the 
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
+const HELD_HOE_ROLL_DEG := 40.0       # first person: the hoe is rolled about its haft so the blade shows instead of hiding edge-on
 const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod points forward and up about 30 degrees (it lay horizontal and a little down at the default lean)
 const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
@@ -1056,6 +1057,9 @@ func _mount_model() -> void:
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
 	elif kind != "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
+
+		if str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
+			turn = turn * Basis(Vector3.UP, deg_to_rad(HELD_HOE_ROLL_DEG))   # roll the hoe about its haft so the blade face shows in the frame (Tyler: first person read as a stick)
 		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
 
 	_model.basis = (tilt * turn).scaled(Vector3.ONE / ARMS_SCALE)      # the hand mount is scaled with the arms

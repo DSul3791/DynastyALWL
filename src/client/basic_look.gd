@@ -473,14 +473,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var stone: Color = Color(0.3, 0.26, 0.19)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			for k in range(4):
-				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.3, 0.2, 0.11), k, 0.14))
-			for k in range(3):
-				_cyl(parts, 0.0185, 0.014, Vector3(-0.085 + 0.03 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide if k != 1 else hide.lightened(0.15))    # hide wraps
+				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
+			for k in range(2):
+				_cyl(parts, 0.0185, 0.016, Vector3(-0.07 + 0.04 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.1, 0.06, 0.03))    # two darker rope stripes
 			_cyl(parts, 0.0195, 0.016, Vector3(0.006, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide.darkened(0.1))                                      # the bound joint
-			var widths: Array = [0.022, 0.032, 0.038, 0.037, 0.03, 0.02, 0.01]                                                                          # leaf blade: width by slice
-			for k in range(widths.size()):
-				var w: float = widths[k]
-				_box(parts, Vector3(0.0175, 0.011 - 0.0008 * float(k), w), Vector3(0.014 + 0.0171 * float(k), 0.0, -0.019 + w * 0.5), _tone(stone, k, 0.1))
+			_plate(parts, 0.012, 0.125, 0.042, 0, 12, stone, true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 0.0)), 3, 2.4)   # one flaked leaf blade (a real plate: a ridge down the middle, thin edges both sides, a pointed tip)
 			_box(parts, Vector3(0.1, 0.014, 0.006), Vector3(0.06, 0.0, -0.0185), stone.darkened(0.12))                                                  # the thick straight back
 			_box_rot(parts, Vector3(0.012, 0.012, 0.012), Vector3(0.05, 0.0, 0.021), Vector3(0.0, 0.5, 0.0), stone.darkened(0.2))                       # a chipped notch on the edge
 		"needle":
