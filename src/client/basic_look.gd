@@ -265,24 +265,32 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for wrap in [0.165, 0.19, 0.28]:
 				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
-			# A pickaxe: eye block on the haft and a long head that sweeps down in a curve to a point at each end (four segments a side, thinning).
+			# A pickaxe, axes in mesh space: haft along x (grip at -x, head at +x = 0.27), head along z (symmetrical about z = 0), the sweep
+			# droops toward -y, the same on both sides. Each side is an arc (radius 0.3 m, 0.8 rad) of five thinning boxes, each turned
+			# about x to the arc tangent and placed on the arc, ending in a point; no sideways skew. Test: src/worldgen/tools/test_pick_axes.gd.
 			_handle(parts, 0.6, 0.021, Color(0.3, 0.2, 0.11))
 			_box(parts, Vector3(0.06, 0.06, 0.07), Vector3(0.27, 0.0, 0.0), dark)                                   # the eye the head sits in
-			_box(parts, Vector3(0.05, 0.05, 0.1), Vector3(0.27, 0.0, 0.0), color)                                   # middle of the head
-			for side in [-1.0, 1.0]:
-				for seg in range(4):
-					var t: float = float(seg)
-					var thick: float = 0.045 - 0.008 * t
-					_box_rot(parts, Vector3(thick, thick, 0.08 - 0.01 * t), Vector3(0.27 - 0.006 * t * t, -0.006 - 0.022 * t * t * 0.5, side * (0.06 + 0.055 * t)), Vector3(side * (0.18 + 0.2 * t), 0.0, 0.0), color if seg < 3 else light)   # curves down, ends in a point
-				_cone_down(parts, 0.012, 0.05, Vector3(0.255, -0.075, side * 0.285), light)
 			_cyl(parts, 0.036, 0.025, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # a cord wrap under the eye
-			if bits.has("steel"):
-				# Steel (bits ["steel"]): a polished ridge along the top of the head, bright points and a brass collar, so it reads apart from dull iron.
-				_box(parts, Vector3(0.012, 0.012, 0.5), Vector3(0.27, 0.025, 0.0), light.lightened(0.2))
-				_cyl(parts, 0.04, 0.02, Vector3(0.23, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))
+			var steel_pick: bool = bits.has("steel")
+			var radius: float = 0.3
+			var sweep: float = 0.8
+			var segments: int = 5
+
+			for side in [-1.0, 1.0]:
+				for seg in range(segments):
+					var phi0: float = sweep * float(seg) / float(segments)
+					var phi1: float = sweep * float(seg + 1) / float(segments)
+					var mid: float = 0.5 * (phi0 + phi1)
+					var taper: float = 1.0 - 0.7 * float(seg) / float(segments - 1)
+					var thick: float = 0.05 * taper + 0.012
+					var length: float = radius * (phi1 - phi0) * 1.12 + (0.0 if seg < segments - 1 else 0.02)
+					var at: Vector3 = Vector3(0.27, -radius * (1.0 - cos(mid)), side * radius * sin(mid))
+					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(side * mid, 0.0, 0.0), light if seg == segments - 1 else color)
+			if steel_pick:
+				_box(parts, Vector3(0.012, 0.012, 0.16), Vector3(0.27, 0.03, 0.0), light.lightened(0.2))              # a polished ridge on top of the middle of the head
+				_cyl(parts, 0.04, 0.02, Vector3(0.23, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # brass collar
 			else:
-				# Iron: a darker, rougher head, with a dark scale band where it was forged.
-				_box(parts, Vector3(0.052, 0.05, 0.14), Vector3(0.27, -0.004, 0.0), dark)
+				_box(parts, Vector3(0.052, 0.05, 0.14), Vector3(0.27, -0.004, 0.0), dark)                          # iron: a dark forged band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
 			_handle(parts, 0.75)
