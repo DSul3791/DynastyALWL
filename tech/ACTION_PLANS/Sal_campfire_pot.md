@@ -15,3 +15,12 @@ Twine is recipe 1: 3 plant fibre, 2 s, known from the start, no station or tool,
 
 ## 3. Craft menu categories and search (Dave 23:50), next build
 Search box at the top filters by name as you type. Category tabs: All, Tools, Weapons, Shelter and building, Fire and cooking, Food and drink, Clothing, Materials, Containers and furniture. Each recipe gets a "category" in recipes.json (default by gives-kind); alphabetical inside each. Client only (inventory_view.gd), CHANGE_LABEL RESTART. Test: filter text "tw" shows Twine; a category shows only its recipes.
+
+## 4. Auto-make the missing part (Dave 25 Oct 00:12)
+Pick the stone axe with no twine but with the fibre for it, and the craft makes the twine first, then the axe. Works for most recipes.
+- Server, in the existing craft queue (ACT_CRAFT_QUEUE): before taking ingredients, plan the shortfall. For each need the pack lacks, find the recipe that gives that item (known to the player, no station the player is away from, no kept tool missing), and plan it first, recursively, up to 4 levels deep. Plan against a copy of the pack so shared raw materials are not counted twice. If the whole chain cannot be paid from the pack, queue nothing and say what is missing (today's message).
+- Queue the sub-crafts as normal entries ahead of the target, in order (twine x5, then axe), each with its own ingredient list, so cancel and refund work per entry and the menu shows the steps in order. Cancelling a sub-craft cancels the entries that depend on it.
+- Pick the recipe for an intermediate only when exactly one known recipe gives it; with several, use the first by recipe number and show it in the menu text.
+- Client menu: a recipe whose missing parts can be made shows normally (not greyed) with a line "Makes 5 twine first". A recipe that cannot be reached stays greyed.
+- Tests: no twine, 15 fibre, queue the stone axe: queue is [twine x5, stone axe], result 1 axe, 0 fibre; 10 fibre: nothing queued; cancel the twine entry: axe entry goes too and fibre comes back; a station intermediate away from its station is not planned.
+Order: this, then categories and search (client menu work shared), as one build after the pot test fix.
