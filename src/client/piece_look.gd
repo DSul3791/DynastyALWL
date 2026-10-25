@@ -686,9 +686,14 @@ static func thatch_roof() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 
-	for x in [-1.1, 1.1]:
-		for z in [-1.1, 1.1]:
-			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+	for x in [-1.08, 1.08]:
+		for z in [-1.08, 1.08]:
+			_box(root, Vector3(0.2, 2.5, 0.2), Vector3(x, 1.25, z), _log)                                  # a stout post
+			_box(root, Vector3(0.3, 0.12, 0.3), Vector3(x, 2.44, z), _frame)                               # a bearer block under the eave
+			_box(root, Vector3(0.28, 0.1, 0.28), Vector3(x, 0.05, z), _stone)                              # a foot stone
+
+	for z in [-1.08, 1.08]:
+		_box(root, Vector3(2.2, 0.12, 0.12), Vector3(0.0, 2.2, z), _log)                                    # a tie beam between the posts
 
 	for side in [-1.0, 1.0]:
 		_box_rot(root, Vector3(1.4, 0.16, 2.5), Vector3(side * 0.62, 2.62, 0.0), Vector3(0.0, 0.0, -side * 0.3), _thatch)       # a sloping slab
