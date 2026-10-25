@@ -308,15 +308,37 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_metal(parts)
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
-			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
-			_handle(parts, 0.75)
-			_box(parts, Vector3(0.03, 0.03, 0.15), Vector3(-0.4, 0.0, 0.0), Color(0.42, 0.3, 0.17))                    # grip bar
-			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, 0.06), Color(0.42, 0.3, 0.17))                  # grip sides
-			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, -0.06), Color(0.42, 0.3, 0.17))
-			_cyl(parts, 0.024, 0.11, Vector3(0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                        # socket
-			_box(parts, Vector3(0.14, 0.012, 0.19), Vector3(0.4, 0.0, 0.0), color)                                     # blade, square part
-			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
-			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
+			# A digging spade (modelled on a real long-handled garden spade, Dave 2026-10-25: all tools to the pickaxe standard): a straight ash haft with weathered grain, a D-grip,
+			# a socket collar, a turned step (tread) across the shoulders, and a flat blade that narrows to a rounded point with a shallow centre rib. Mesh axes: haft along x
+			# (grip at -x, blade at +x), blade thin in y, wide in z. Iron and steel (bits "metal") are metallic charcoal on the metal surface; wood and stone blades are plain.
+			var metal_blade: bool = bits.has("metal")
+			var blade: Color = color
+			var ash: Color = Color(0.42, 0.3, 0.17)
+
+			if metal_blade:
+				blade = Color(0.085, 0.09, 0.1) if bits.has("steel") else Color(0.034, 0.036, 0.042)     # metallic charcoal (vertex colours are linear)
+			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
+				blade = _warm_stone(color)                                                                     # stone: darker and warmer than the table grey
+
+			for k in range(15):                                                                                # weathered grain along the haft
+				_cyl(parts, 0.016, 0.05, Vector3(-0.375 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(ash, k, 0.12))
+			_box(parts, Vector3(0.03, 0.03, 0.15), Vector3(-0.4, 0.0, 0.0), _tone(ash, 3, 0.1))               # D-grip bar
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, 0.06), _tone(ash, 4, 0.1))             # D-grip sides
+			_box(parts, Vector3(0.06, 0.03, 0.03), Vector3(-0.37, 0.0, -0.06), _tone(ash, 5, 0.1))
+			_cyl(parts, 0.024, 0.11, Vector3(0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), blade * 0.8 if metal_blade else Color(0.3, 0.2, 0.11))   # socket collar
+			if metal_blade:
+				_metal(parts)
+			_box(parts, Vector3(0.02, 0.016, 0.2), Vector3(0.365, 0.0, 0.0), blade * 1.3 if metal_blade else blade.darkened(0.2))     # the turned step across the shoulders
+			if metal_blade:
+				_metal(parts)
+			var widths: Array = [0.2, 0.2, 0.185, 0.16, 0.12, 0.07, 0.03]                                    # blade width by slice: a rounded point
+			for k in range(widths.size()):
+				_box(parts, Vector3(0.04, 0.012, widths[k]), Vector3(0.39 + 0.04 * float(k), 0.0, 0.0), _tone_mul(blade, k, 0.14) if metal_blade else _tone(blade, k, 0.06))
+				if metal_blade:
+					_metal(parts)
+			_box(parts, Vector3(0.2, 0.018, 0.02), Vector3(0.49, 0.0, 0.0), blade * 1.4 if metal_blade else blade.lightened(0.1))               # shallow centre rib
+			if metal_blade:
+				_metal(parts)
 		"saw":
 			# A hand saw: a wooden pistol grip at -x, a thin steel blade (about 0.55 m long) that narrows toward the tip, and a row of teeth along the cutting edge (+z).
 			var steel: Color = color.darkened(0.22)

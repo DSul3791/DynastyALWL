@@ -214,12 +214,14 @@
   "iron_spade": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "steel_spade": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["metal","steel"]
   },
   "bone": {
    "shape": "bone",
@@ -884,22 +886,26 @@
   "iron_spade_medium": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.25
+   "size": 1.25,
+   "bits": ["metal"]
   },
   "iron_spade_large": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.5
+   "size": 1.5,
+   "bits": ["metal"]
   },
   "steel_spade_medium": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.25
+   "size": 1.25,
+   "bits": ["metal","steel"]
   },
   "steel_spade_large": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.5
+   "size": 1.5,
+   "bits": ["metal","steel"]
   },
   "wooden_hoe": {
    "shape": "hoe",
