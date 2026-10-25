@@ -1,0 +1,1 @@
+kathleen-tool-pass 1798c127e3998564662b2bed9240c7a5dfbf30c8 + steve-piece-shots 9c88de5e540d3a947a5be4e1735b5d51119b11b8 (merged locally, HEAD c6ce10fe65a413c1b2d47cddb04f7cce0a48d626); look_rig.sh --piece-views NAME [--nograss]; views front side top diag; spawn area, noon clear; server GPU
