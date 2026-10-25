@@ -246,10 +246,29 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.22, 0.03, 0.16), Vector3(0.01, -0.005, 0.0), light)
 			_box(parts, Vector3(0.18, 0.025, 0.12), Vector3(0.0, 0.02, 0.0), color)
 		"shaft":
-			# A spear: a long shaft and a long, plainly pointed cone head at the +x end (Dave: it must be pointy).
-			_cyl(parts, 0.016, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
-			_cone(parts, 0.045, 0.28, Vector3(0.58, 0.0, 0.0), color)
-			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
+			# A spear (Dave: it must be pointy): an ash shaft with a slight taper and a leather grip wrap. The wooden spear has a whittled, fire-hardened point of the same wood (darker tip);
+			# the iron-headed spear (bits "metal") has a socket cone bound to the shaft and a flat leaf blade with a midrib, ending in a sharp point. Mesh axes: shaft along x, point at +x.
+			var ash_spear: Color = Color(0.38, 0.25, 0.12)
+			var metal_head: bool = bits.has("metal")
+			_cyl_taper(parts, 0.0175, 0.0165, 0.45, Vector3(-0.225, 0.0, 0.0), _tone(ash_spear, 1, 0.08))
+			_cyl_taper(parts, 0.0165, 0.0155, 0.45, Vector3(0.225, 0.0, 0.0), _tone(ash_spear, 2, 0.08))
+			for k in range(3):                                                                                       # a leather grip wrap
+				_cyl(parts, 0.0195, 0.014, Vector3(-0.08 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
+
+			if metal_head:
+				var iron_head: Color = Color(0.2, 0.2, 0.2)
+				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head)                              # the socket
+				_metal(parts, 0.5, 0.5)
+				_sph(parts, 0.05, Vector3(2.6, 0.12, 0.8), Vector3(0.62, 0.0, 0.0), iron_head * 1.3, true)             # the leaf blade, flat
+				_metal(parts, 0.5, 0.5)
+				_box(parts, Vector3(0.22, 0.012, 0.008), Vector3(0.62, 0.0, 0.0), iron_head * 0.8)                      # the midrib
+				_metal(parts, 0.5, 0.5)
+				_cone(parts, 0.012, 0.05, Vector3(0.72, 0.0, 0.0), iron_head * 1.5)                                    # the sharp point
+				_metal(parts, 0.5, 0.5)
+				_cyl(parts, 0.0255, 0.016, Vector3(0.455, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.16))   # the twine binding below the socket
+			else:
+				_cone(parts, 0.0155, 0.3, Vector3(0.6, 0.0, 0.0), ash_spear.darkened(0.2))                             # the whittled point
+				_cone(parts, 0.007, 0.08, Vector3(0.75, 0.0, 0.0), ash_spear.darkened(0.55))                          # the fire-hardened tip
 		"axe":
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
@@ -467,8 +486,35 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"needle":
 			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 		"rod":
-			_cyl(parts, 0.008, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.4, 0.3, 0.18))
-			_cyl(parts, 0.025, 0.04, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color)
+			# A fishing rod (item 75) or a wooden pin (bits "pin", item 233). The rod: a tapering ash cane 1.6 m, a leather-wrapped handle at the butt (-x), a small reel on a seat below it,
+			# three guide rings and a pale line running to the tip. The pin: a short tapered peg with a rounded head.
+			var cane: Color = Color(0.38, 0.25, 0.12)
+			if bits.has("pin"):
+				_cyl_taper(parts, 0.011, 0.016, 0.1, Vector3(0.1, 0.0, 0.0), _tone(color, 1, 0.05))
+				_cyl_taper(parts, 0.004, 0.011, 0.18, Vector3(-0.04, 0.0, 0.0), _tone(color, 2, 0.05))
+				_sph(parts, 0.018, Vector3(0.7, 1.0, 1.0), Vector3(0.16, 0.0, 0.0), _tone(color, 3, 0.05))
+			else:
+				for k in range(3):                                                                                   # the cane in three tones, thick at the butt and fine at the tip
+					var x0: float = -0.55 + 0.45 * float(k) * 1.0
+					var x1: float = x0 + 0.45 if k < 2 else 0.8
+					var r0: float = 0.0105 - 0.0035 * (x0 + 0.55) / 1.35
+					var r1: float = 0.0105 - 0.0035 * (x1 + 0.55) / 1.35
+					_cyl_taper(parts, r0, r1, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(cane, k, 0.07))
+				_cyl(parts, 0.0135, 0.28, Vector3(-0.68, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.22, 0.13, 0.07))   # the leather handle wrap
+				for k in range(3):
+					_cyl(parts, 0.0148, 0.012, Vector3(-0.78 + 0.1 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025))
+				_box(parts, Vector3(0.05, 0.012, 0.016), Vector3(-0.5, -0.016, 0.0), cane.darkened(0.3))              # the reel seat
+				_cyl(parts, 0.032, 0.022, Vector3(-0.5, -0.04, 0.0), Vector3(PI * 0.5, 0.0, 0.0), color.darkened(0.25))   # the reel drum
+				_cyl(parts, 0.036, 0.004, Vector3(-0.5, -0.04, 0.012), Vector3(PI * 0.5, 0.0, 0.0), color)             # its side plate
+				for k in range(3):                                                                                   # guide rings along the cane
+					var gx: float = -0.1 + 0.4 * float(k)
+					var ring: TorusMesh = TorusMesh.new()
+					ring.inner_radius = 0.0055
+					ring.outer_radius = 0.0085
+					ring.rings = 8
+					ring.ring_segments = 4
+					parts.append([ring, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(gx, -0.012, 0.0)), Color(0.45, 0.45, 0.47)])
+				_cyl(parts, 0.0015, 1.3, Vector3(0.0, -0.02, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.013), Color(0.8, 0.78, 0.7))   # the line from the reel to the tip
 		"torch":
 			_handle(parts, 0.5)
 			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)

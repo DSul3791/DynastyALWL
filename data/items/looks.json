@@ -19,7 +19,8 @@
   "spear": {
    "shape": "shaft",
    "color": "#b8bcc4",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "campfire_kit": {
    "shape": "kit",
@@ -969,7 +970,8 @@
   "wooden_pin": {
    "shape": "rod",
    "color": "#a88255",
-   "size": 0.35
+   "size": 0.35,
+   "bits": ["pin"]
   },
   "wooden_block": {
    "shape": "block",

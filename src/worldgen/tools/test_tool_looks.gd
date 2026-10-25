@@ -130,6 +130,22 @@ func _init() -> void:
 	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
 
 	print("tool looks: %d failures" % failures)
+
+	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
+		var tool_mesh: Mesh = BasicLook.mesh_for(id)
+		var tool_tris: int = 0
+
+		for si in tool_mesh.get_surface_count():
+			tool_tris += int(float((tool_mesh.surface_get_arrays(si)[Mesh.ARRAY_INDEX] as PackedInt32Array).size()) / 3.0)
+
+		_check(tool_tris >= 100 and tool_tris <= 1200, id + ": %d triangles" % tool_tris)
+
+	_check(BasicLook.mesh_for("spear").get_aabb().size.x > 1.1 and BasicLook.mesh_for("spear").get_aabb().size.x < 1.3, "spear: about 1.2 m")
+	_check(BasicLook.mesh_for("spear").get_surface_count() == 2, "spear: iron head on the metal surface")
+	_check(BasicLook.mesh_for("wooden_spear").get_surface_count() == 1, "wooden spear: one plain surface")
+	_check(BasicLook.mesh_for("fishing_rod").get_aabb().size.x > 1.5 and BasicLook.mesh_for("fishing_rod").get_aabb().size.x < 1.7, "fishing rod: about 1.6 m")
+	_check(BasicLook.mesh_for("wooden_pin").get_aabb().size.x < 0.15, "wooden pin: a short peg")
+
 	quit(1 if failures > 0 else 0)
 
 
