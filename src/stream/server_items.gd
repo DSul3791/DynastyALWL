@@ -142,6 +142,7 @@ var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
 var water_depth_at: Callable       # (position) -> metres of water there (optional; unset: depth is not checked)
+var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | pond | sea_shallow | sea_mid | sea_deep | "", "depth"} (server_fish_water.gd; optional)
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
@@ -907,6 +908,9 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_DUMP_WATER:
 		if admin_ok.is_valid() and admin_ok.call(peer) and dump_water.is_valid():
 			_say(peer, "Water dump: %s" % str(dump_water.call(at.x, at.z)))
+	elif kind == Net.ACT_LAND_TYPES:
+		if admin_ok.is_valid() and admin_ok.call(peer) and land_types.is_valid():
+			_say(peer, "Land types: %s" % str(land_types.call(at.x, at.z)))
 	elif kind == Net.ACT_RESET_EDITS:
 		if admin_ok.is_valid() and admin_ok.call(peer) and reset_terrain_edits.is_valid():
 			print("server: peer %d reset all terrain edits" % peer)
@@ -921,6 +925,7 @@ var ground_ready: Callable              # (x, z) -> bool: the ground there is in
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_flow_runs: Callable           # set by the server: (a: Vector3, b: Vector3) -> bool, true when the 2 m span runs at least data/water_flow.json min_speed_m_s all along
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
+var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
 var reset_terrain_edits: Callable       # set by the server: () -> void, wipes every saved dig and fill
 var admin_ok: Callable                  # set by the server: true when the peer may use admin gives
