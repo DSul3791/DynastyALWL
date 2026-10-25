@@ -1,6 +1,8 @@
 ## 2026-10-25 Mike (Windows rig): world pictures on generator-v2 build 810 (9f55bbf0) with the c30d6d5f bake
 Branch claude/mike-evidence-kathleen-13df38ae, folder evidence/world_810/: world_spawn_a-d (spawn four directions), world_river_a-d, world_farmland_slope, second_pass_world_biglake_3_4 and second_pass_world_lake_4_3, aerial_world_biglake_3_4_aerial (x52552 z69016, 465 m up, pitch -60) and aerial_world_biglake_3_4_aerial_top. Finding: both lakes carry trees standing in the water (forest blocks with square edges inside the (3,4) lake).
 
+- 2026-10-25 Mike (Windows rig): world pictures on land-types2 fdc7b4e0 + claude/mike-bake-land2 tiles: branch claude/mike-evidence-kathleen-13df38ae, evidence/world_land2_fdc7b4e0/: l2_spawn_a-d, l2_river_a-d, l2_farmland_slope, l2_foothill_east/west, l2_valley_farmland_uphill, l2_valley_farmland_2 (broken, camera artefact), l2_lake_shore_3_4, l2_lake_aerial_3_4, l2_lake_4_3, l2_walk (HUD). Before: evidence/world_land_1b9c6f82 and world_810.
+
 - 2026-10-25 Mike (Windows rig): world pictures on land-types 1b9c6f82 + claude/mike-bake-land tiles (TERRAIN_VERSION 43): branch claude/mike-evidence-kathleen-13df38ae, evidence/world_land_1b9c6f82/: land_spawn_a-d, land_river_a-d, land_farmland_slope, land_foothill_east/west (x53968 z68864), land_lake_shore_3_4, land_lake_aerial_3_4, land_lake_4_3, land_walk (HUD). Compare with evidence/world_810 (before).
 
 - 2026-10-25 Mike (Windows rig): clay_hearth, oven, thatch_floor, rough_bed on Kathleen f536fea7 (piece views front/side/top/diag): branch claude/mike-evidence-kathleen-13df38ae, evidence/placeables_f536fea7/pf_<piece>_<view>.png (16 pictures).
