@@ -261,7 +261,11 @@ func _process(delta: float) -> void:
 	_side_view(float(shots[_index]["walk"]))
 
 	# A join still waiting for collision under the player (a slow stream: Mike's log, 46+ s) is waited for, up to 120 s after the welcome, before any shot is placed.
-	if client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
+	# An aerial shot (more than 40 m above the ground) is taken from a flier: it does not wait for collision, only for the nearby blocks to draw (the settle time) (Dave 25 Oct).
+	var ground_here: float = _ground(shot_pos.x, shot_pos.z)
+	var aerial: bool = (shot_pos.y > 40.0) or (shot_pos.y < 0.0 and not is_nan(ground_here) and -shot_pos.y - ground_here > 40.0)
+
+	if not aerial and client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
 		return
 
 	if not _placed:
