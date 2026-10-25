@@ -15,8 +15,8 @@
 	"path_rules": [
 		{
 			"why": "Kathleen: looks and pieces",
-			"paths": ["src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/held_item.gd", "src/client/look_table.gd", "data/items/looks.json", "data/items/structures.json", "data/look/**"],
-			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules"],
+			"paths": ["src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/building_look.gd", "src/client/inventory_view.gd", "src/client/*_look.gd", "src/client/avatar*", "src/client/**/avatar*", "src/client/held_item.gd", "src/client/look_table.gd", "data/items/looks.json", "data/items/structures.json", "data/items/clothing.json", "data/look/**"],
+			"tests": ["test_tool_looks", "test_pick_axes", "test_look_table", "test_structure_look", "test_thatch_pieces", "test_placement_rules", "test_blueprints", "test_hammer_list"],
 			"checks": ["check_look_names.py", "warnings"]
 		},
 		{
@@ -43,6 +43,6 @@
 	"docs_globs": ["docs/**", "tech/**", "design/**", "proposed_removals/**", "art/**/*.md", "*.md", "**/*.md", "*.txt", "**/*.txt"],
 	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "plan/", "water/", "art/", ".github/"],
 	"known_files": ["project.godot", "export_presets.cfg", ".gitignore", ".gitattributes", "icon.svg", "icon.svg.import"],
-	"picture_paths": ["data/items/looks.json", "data/look/**", "src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/held_item.gd", "src/client/look_table.gd", "src/client/building_look.gd", "src/debug/item_cam.gd", "assets/models/**"],
+	"picture_paths": ["data/items/looks.json", "data/items/clothing.json", "data/look/**", "src/client/*_look.gd", "src/client/avatar*", "src/client/inventory_view.gd", "src/client/held_item.gd", "src/debug/item_cam.gd", "assets/models/**"],
 	"timeout_s": {"fast": 300, "timing": 300, "slow": 1500}
 }
