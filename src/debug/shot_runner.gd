@@ -49,6 +49,8 @@ var item_at: Vector2 = Vector2(INF, INF)
 var _item_built: bool = false
 var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
+var _item_checked: int = 0         # item views judged; a run that ends with fewer than ITEM_VIEWS is a failure, not a silent pass
+const ITEM_VIEWS := 4
 var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
@@ -888,7 +890,7 @@ func _build_item_views(now: int) -> void:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box), _face_normal(_item_node))
 	_item_views = views
 	_subject = centre
 	_subject_set = true
@@ -906,7 +908,7 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box), _face_normal(_item_node))
 
 	for v in fresh:
 		if v["name"] == view["name"]:
@@ -914,6 +916,43 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 			return v
 
 	return view
+
+
+func _face_normal(node: Node) -> Vector3:
+	return ItemCam.face_normal(_world_faces(node))
+
+
+# The direction from the middle of a long tool to its heavy end (item_cam.heavy_end) from the world-space triangles of its drawn meshes.
+func _blade_dir(node: Node, box: AABB) -> Vector2:
+	return ItemCam.heavy_end(_world_faces(node), box)
+
+
+# The triangles of every visible mesh under `node`, in world space.
+func _world_faces(node: Node) -> PackedVector3Array:
+	var faces: PackedVector3Array = PackedVector3Array()
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+
+		if n is MeshInstance3D and (n as MeshInstance3D).mesh != null and (n as MeshInstance3D).is_visible_in_tree():
+			var xf: Transform3D = (n as MeshInstance3D).global_transform
+
+			for v in (n as MeshInstance3D).mesh.get_faces():
+				faces.append(xf * v)
+
+		stack.append_array(n.get_children())
+
+	return faces
+
+
+# Every other loose thing on the ground (leftovers of earlier runs, the showroom rows) is hidden, so the picture holds the one item.
+func _hide_other_items() -> void:
+	for id in client.items._world:
+		var node: Variant = client.items._world[id].get("node")
+
+		if node is Node3D and node != _item_node:
+			(node as Node3D).visible = false
 
 
 func _node_aabb(node: Node) -> AABB:
@@ -946,6 +985,7 @@ func _check_item_view(view: Dictionary) -> void:
 	if _item_node != null and is_instance_valid(_item_node):
 		_item_box = _node_aabb(_item_node)      # where the item is now, not where it was when the view was set up
 
+	_item_checked += 1
 	var stats: Dictionary = ItemCam.frame_stats(_item_box, cam.global_position, forward, cam.global_transform.basis.y, cam.fov, size.x / maxf(size.y, 1.0))
 	var fill: float = stats["fill"]
 	var off: float = stats["off"]
@@ -967,6 +1007,9 @@ func _run_view(now: int) -> void:
 
 	if _view_msec == 0 and item_mode and _item_node != null and is_instance_valid(_item_node):
 		view = _remake_item_view(view)
+
+	if _view_msec == 0 and item_mode:
+		_hide_other_items()
 
 	if _view_msec == 0:
 		if not _subject_set:
@@ -1002,7 +1045,7 @@ func _run_view(now: int) -> void:
 
 		var pose_miss: bool = cam_now.global_position.distance_to(view["cam"]) > 0.1
 
-		if float(live["off"]) > 0.08 or not bool(live["inside"]) or float(live["extent"]) > 0.95 or pose_miss:
+		if float(live["off"]) > 0.04 or not bool(live["inside"]) or float(live["extent"]) > 0.95 or pose_miss:
 			_item_tries += 1
 			print("shot runner: item view %s try %d: box at %s size %s is %.0f %% off centre%s, aiming again" % [view["name"], _item_tries, str(_item_box.get_center()), str(_item_box.size), float(live["off"]) * 100.0, "" if bool(live["inside"]) else ", part outside"])
 			_view_msec = 0
@@ -1208,6 +1251,10 @@ func _next(now: int) -> void:
 	_index += 1
 
 	if _index >= shots.size():
+		if item_mode and not _item_failed and _item_checked < ITEM_VIEWS:
+			_item_failed = true
+			print("shot runner: FAILED only %d of %d item views were judged (the run ended early)" % [_item_checked, ITEM_VIEWS])
+
 		print("shot runner: done%s" % (" (item pictures FAILED)" if _item_failed else ""))
 		get_tree().quit(1 if _item_failed else 0)
 		return
