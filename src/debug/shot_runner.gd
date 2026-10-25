@@ -29,6 +29,9 @@ var ground_max_s: float = 60.0       # --shot-ground-max=S: longest wait for the
 var turn_settle_s: float = 2.0       # settle after a turn on the same spot (the 3-views rule)
 var real_view: bool = false          # the player's real view: hand, held tool and HUD on, the look-down set as a pose (the client ignores the mouse in a shots run)
 var side_elev_deg: float = 0.0       # --shot-elev=DEG: the side camera orbits at this elevation above the subject (80 = from the top)
+var orbit_item_at: Vector3 = Vector3.ZERO     # --shot-orbit-item=x,y,z,dist,elev: the side camera circles this point (an item on the ground) at dist m and elev degrees, the player hidden
+var orbit_item_d: float = 0.0
+var orbit_item_el: float = 0.0
 var wait_y: float = 400.0            # --shot-wait-y=: the height the player waits at while the ground loads (at ground level so the ground under it loads first)
 var _ground_ok_msec: int = 0
 var _ground_late: bool = false
@@ -192,6 +195,11 @@ func setup(owner_client, args: Array) -> void:
 			ground_settle_s = float(argument.trim_prefix("--shot-ground-settle="))
 		elif argument.begins_with("--shot-wait-y="):
 			wait_y = float(argument.trim_prefix("--shot-wait-y="))
+		elif argument.begins_with("--shot-orbit-item="):
+			var oi: PackedStringArray = argument.trim_prefix("--shot-orbit-item=").split(",")
+			orbit_item_at = Vector3(float(oi[0]), float(oi[1]), float(oi[2]))
+			orbit_item_d = float(oi[3])
+			orbit_item_el = float(oi[4])
 		elif argument.begins_with("--shot-elev="):
 			side_elev_deg = float(argument.trim_prefix("--shot-elev="))
 		elif argument == "--shot-realview":
@@ -913,6 +921,17 @@ func _side_view(walk: float) -> void:
 	client.debug_pace = walk
 
 	if walk < 0.0 or client._avatar == null or client.view_cam == null:
+		return
+
+	if orbit_item_d > 0.0:
+		var az: float = deg_to_rad(_orbit_deg(_index))
+		var el: float = deg_to_rad(orbit_item_el)
+		var target: Vector3 = orbit_item_at + Vector3(0.0, 0.1, 0.0)
+
+		client.third_person = true
+		client._avatar.visible = false
+		client.view_cam.global_position = target + Vector3(sin(az) * cos(el), sin(el), cos(az) * cos(el)) * orbit_item_d
+		client.view_cam.look_at(target, Vector3.UP if orbit_item_el < 80.0 else Vector3(0.0, 0.0, -1.0))
 		return
 
 	client.third_person = true
