@@ -1,4 +1,5 @@
 extends Node
+const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
@@ -2546,6 +2547,9 @@ const BODY_PX := 30
 const TITLE_PX := 40
 
 var _search: LineEdit
+var _recipe_search: LineEdit             # the search box at the top of the Make list: filters recipes by name as you type
+var _recipe_category: String = ""        # "" = All
+var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _recipe_list: VBoxContainer
 var _detail: VBoxContainer
 var _selected_recipe: int = 0
@@ -2846,7 +2850,7 @@ func _build_panel() -> void:
 		top.add_child(size_button)
 
 	_search = LineEdit.new()
-	_search.placeholder_text = "Search recipes and items"
+	_search.placeholder_text = "Search items"
 	_search.custom_minimum_size = Vector2(_px(120), 0.0)
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search.size_flags_stretch_ratio = 1.0
@@ -2869,6 +2873,7 @@ func _build_panel() -> void:
 	left_title.text = "Make"
 	_style(left_title, TITLE_PX - 6)
 	left.add_child(left_title)
+	left.add_child(_build_recipe_filter())
 	var list_scroll: ScrollContainer = ScrollContainer.new()
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -3274,6 +3279,38 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name; a tab shows one category.
+func _build_recipe_filter() -> Control:
+	var holder: VBoxContainer = VBoxContainer.new()
+	_recipe_search = LineEdit.new()
+	_recipe_search.placeholder_text = "Search what you can make"
+	_recipe_search.clear_button_enabled = true
+	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style(_recipe_search, BODY_PX)
+	_recipe_search.text_changed.connect(func(_text): _refresh())
+	holder.add_child(_recipe_search)
+	var tabs: HFlowContainer = HFlowContainer.new()
+	holder.add_child(tabs)
+	_category_buttons.clear()
+
+	for label in [""] + RecipeFilter.CATEGORIES:
+		var tab: Button = Button.new()
+		tab.text = "All" if label == "" else str(label)
+		tab.toggle_mode = true
+		_style(tab, BODY_PX - 6)
+		tab.pressed.connect(func():
+			_recipe_category = str(label)
+			_refresh())
+		tabs.add_child(tab)
+		_category_buttons[str(label)] = tab
+
+	return holder
+
+
+func _recipe_shown(r: Dictionary) -> bool:
+	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "")
+
+
 func _matches(text: String, filter: String) -> bool:
 	return filter == "" or text.to_lower().contains(filter)
 
@@ -3406,10 +3443,13 @@ func _refresh() -> void:
 	var can: Array = []
 	var cannot: Array = []
 
+	for tab_name in _category_buttons:
+		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
 
-		if (not r["known"] and not _free_craft()) or not _recipe_matches(r, filter):
+		if (not r["known"] and not _free_craft()) or not _recipe_shown(r):
 			continue
 
 		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
@@ -3548,7 +3588,7 @@ func run_test() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	toggle()
-	_search.text = "stone"
+	_recipe_search.text = "stone"
 	_refresh()
 	var shown: int = 0
 
@@ -3557,7 +3597,7 @@ func run_test() -> void:
 			shown += 1
 
 	print("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
-	_search.text = ""
+	_recipe_search.text = ""
 	_refresh()
 	toggle()
 	print("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
