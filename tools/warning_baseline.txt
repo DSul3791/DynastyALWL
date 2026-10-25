@@ -26,8 +26,6 @@
       2 src/worldgen/tools/prebuild_blocks.gd
       2 src/worldgen/runtime/terrain_generator.gd
       2 src/worldgen/runtime/flora_placer.gd
-      2 src/builder/world_preview.gd
-      2 src/builder/geology/tectonic_deformation.gd
       2 scenes/bot/bot_main.gd
       1 src/worldgen/tools/tree_mesh_dump.gd
       1 src/worldgen/tools/test_tunnel_watch.gd

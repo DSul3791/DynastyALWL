@@ -44,7 +44,8 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float) -> v
 		centres += 1
 		var next: int = fill.receiver[index]
 
-		if next >= 0 and flow.discharge[next] >= RIVER_CELLS_KM2 and channels.bed[next] > channels.bed[index] + 0.001:
+		# A carved pond or lake bowl dips below its outlet on purpose (the lip is the outlet), so its cells are not rises.
+		if next >= 0 and flow.discharge[next] >= RIVER_CELLS_KM2 and channels.bed[next] > channels.bed[index] + 0.001 and channels.basin_mask[index] == 0 and channels.basin_mask[next] == 0:
 			rising += 1
 
 		var turn: float = channels.curvature[index]
