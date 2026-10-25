@@ -27,7 +27,10 @@ const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a ce
 const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
-const LAKE_MAX_SLOPE_DEG := 10.0     # lakes sit on flat reaches
+const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
+const LAKE_RADIUS_BASE_M := 130.0   # lake bowl radius = base + per_qs x spring flow, up to max (a 130 m bowl is 5 ha, a 300 m one 28 ha)
+const LAKE_RADIUS_PER_QS_M := 120.0
+const LAKE_RADIUS_MAX_M := 300.0
 const LAKE_RELAXED_SLOPE_DEG := 14.0 # a tile with no lake at all takes its flattest reach up to this slope
 const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
@@ -777,7 +780,7 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 # BASIN_MAX_CUT_M. Cells under the lip get the lip as their water level. Prints how many ponds and lakes and their area.
 func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float, rules: Dictionary) -> void:
 	var lake_from: float = float(rules.get("lake_from_km2", 1.0))
-	var lake_share: float = float(rules.get("lake_block_share", 0.6))
+	var lake_share: float = float(rules.get("lake_block_share", 0.9))
 	var block_m: float = float(rules.get("lake_spacing_m", 1536.0))   # 10 blocks to a tile edge, so no block straddles two tiles
 	var relaxed_slope: float = tan(deg_to_rad(LAKE_RELAXED_SLOPE_DEG))
 	# The tile this frame was built for: its centre sample. Lake sites are decided only for that tile, and only where the whole
@@ -825,7 +828,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 		# Where is the whole bowl? Radius as in the carve below (catchment decides it).
 		var qs_here: float = clampf(SPRING_M3S_PER_KM2 * float(flow.discharge[index]), 0.01, 2.0)
-		var keep_m: float = 2.0 * clampf(80.0 + 80.0 * qs_here, 80.0, 250.0)
+		var keep_m: float = 1.5 * clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs_here, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M)
 		var wx: float = float(_origin.x + column) * cell_m
 		var wz: float = float(_origin.y + row) * cell_m
 
@@ -877,8 +880,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		var index: int = int(site[0])
 		var qs: float = clampf(SPRING_M3S_PER_KM2 * float(site[1]), 0.01, 2.0)
 		var is_lake: bool = bool(site[2])
-		var depth: float = clampf(3.0 + 4.0 * sqrt(qs), 3.0, 12.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
-		var radius: float = clampf(80.0 + 80.0 * qs, 80.0, 250.0) if is_lake else clampf(25.0 + 60.0 * sqrt(qs), 25.0, 120.0)
+		var depth: float = clampf(4.0 + 5.0 * sqrt(qs), 4.0, 14.0) if is_lake else clampf(2.0 + 0.8 * sqrt(qs), 2.0, 8.0)
+		var radius: float = clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M) if is_lake else clampf(25.0 + 60.0 * sqrt(qs), 25.0, 120.0)
 		var reach: int = int(ceil(2.0 * radius / cell_m)) + 1
 		@warning_ignore("integer_division")
 		var row: int = index / size
