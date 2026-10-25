@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
     --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
-    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; --turns) TURNS="$2"; shift 2;; --ground-settle) GSETTLE="$2"; shift 2;; --ground-max) GMAX="$2"; shift 2;; --realview) ADMIN="$ADMIN --shot-realview"; shift;; *) echo "unknown argument $1"; exit 2;;
+    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; --turns) TURNS="$2"; shift 2;; --ground-settle) GSETTLE="$2"; shift 2;; --ground-max) GMAX="$2"; shift 2;; --realview) ADMIN="$ADMIN --shot-realview"; shift;; --extra) ADMIN="$ADMIN $2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
 # --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
@@ -65,6 +65,7 @@ if [ -n "$WIN" ]; then WAIT="${WAIT:-3}"; SETTLE="${SETTLE:-12}"; else WAIT="${W
 X="${AT%,*}"; Z="${AT#*,}"
 RIG=$(mktemp -d); STORE="$RIG/store"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then AD="/e/Software/godotDev/rig_appdata"; UD="$AD/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
 mkdir -p "$STORE" "$UD" "$OUT"
+WARM="/e/Software/godotDev/rig_warm_store"; mkdir -p "$WARM"; cp -p "$WARM"/* "$STORE"/ 2>/dev/null   # Dave 25 Oct: the generated ground is kept between runs; the server throws it away itself when the terrain version or the tile files change (terrain_version.txt in the store)
 KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 if [ -n "$ITEM" ]; then
   NUM=$($PY tools/item_numbers.py "$ITEM") || { echo "item tables: duplicate name or number (see above)"; exit 2; }
@@ -88,7 +89,7 @@ if [ -n "$WIN" ] && [ -z "$NOWINDOW" ]; then   # Dave 25 Oct: a visible window s
   taskkill //F //FI "WINDOWTITLE eq Test server*" > /dev/null 2>&1
   cmd //c start "Test server" powershell -NoExit -Command "\$host.UI.RawUI.WindowTitle='Test server'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")' -ErrorAction SilentlyContinue; Write-Host '--- run finished ---'" > /dev/null 2>&1
 fi
-trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
+trap 'kill $SP 2>/dev/null; sleep 2; cp -p "$STORE"/generated* "$STORE"/terrain_version.txt "$STORE"/settled* "$WARM"/ 2>/dev/null; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 for _i in $(seq 1 60); do grep -q "listening" "$RIG/server.log" 2>/dev/null && break; sleep 0.5; done   # was a fixed sleep 30: go as soon as the server prints its listening line (30 s at most)
 echo "rig timing: server listening after $(( $(date +%s) - T0 )) s"
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }

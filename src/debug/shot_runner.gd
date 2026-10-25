@@ -1042,7 +1042,7 @@ func _next(now: int) -> void:
 		return
 
 	var shot: Dictionary = shots[_index]
-	client.flying = true
+	client.flying = not real_view     # a real-view shot stands on the ground like a player; the others hover
 	_placed = false
 	_ground_wait_msec = now
 	_ground_ok_msec = 0
