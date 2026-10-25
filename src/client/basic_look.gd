@@ -1601,6 +1601,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.027, 0.011, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, light)
 			_box(parts, Vector3(0.016, 0.003, 0.004), Vector3(0.0, -0.043, 0.0), dark)
 			_box(parts, Vector3(0.004, 0.003, 0.016), Vector3(0.0, -0.043, 0.0), dark)
+		"hand_net":
+			_net(parts, color)
 		"cloth":
 			# Folded cloth: a stack of three folds with a different tone each, a visible pale selvedge edge and a dark border stripe.
 			_box(parts, Vector3(0.26, 0.04, 0.2), Vector3(0.0, -0.04, 0.0), color)
@@ -2202,6 +2204,46 @@ static func _tone(color: Color, k: int, spread: float) -> Color:
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
 static func _warm_stone(color: Color) -> Color:
 	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
+# A shore net (Dave 25 Oct: it must not look like a hammer): a pole along +X with an oval hoop at the head, a bag of twine strings and rings hanging
+# beyond the hoop, and cork floats round the rim. The hoop is square on to the pole, like a butterfly net.
+static func _net(parts: Array, color: Color) -> void:
+	var rim: float = 0.15
+	var hoop_x: float = 0.42
+	var apex: Vector3 = Vector3(hoop_x + 0.3, 0.0, 0.0)
+	_cyl(parts, 0.016, 0.9, Vector3(-0.03, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+	_net_ring(parts, rim, 0.011, hoop_x, Color(0.36, 0.25, 0.14))
+
+	for k in 8:
+		var turn: float = float(k) * TAU / 8.0
+		var from: Vector3 = Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim)
+		var line: Vector3 = apex - from
+		var long: float = line.length()
+		var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
+		parts.append([_net_box(Vector3(long, 0.006, 0.006)), Transform3D(basis, from + line * 0.5), color])
+
+	_net_ring(parts, rim * 0.62, 0.005, hoop_x + 0.12, color)
+	_net_ring(parts, rim * 0.3, 0.005, hoop_x + 0.22, color)
+
+	for k in 4:
+		var turn: float = float(k) * TAU / 4.0 + PI * 0.25
+		_sph(parts, 0.024, Vector3.ONE, Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim), Color(0.8, 0.66, 0.4), true)
+
+
+static func _net_box(dims: Vector3) -> BoxMesh:
+	var box: BoxMesh = BoxMesh.new()
+	box.size = dims
+	return box
+
+
+static func _net_ring(parts: Array, ring: float, tube: float, at_x: float, color: Color) -> void:
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = ring - tube
+	torus.outer_radius = ring + tube
+	torus.rings = 12
+	torus.ring_segments = 4
+	parts.append([torus, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(at_x, 0.0, 0.0)), color])
+
+
 
 
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:
