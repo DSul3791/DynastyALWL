@@ -1,0 +1,6 @@
+== torch exit 0
+shot runner: item view front try 1: box at (53301.0, 31.31202, 68425.43) size (0.976562, 0.455599, 0.359375) is 16 % off centre, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 62 % of the frame, centre 6 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 56 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 71 % of the frame, centre 0 % off, all inside the frame
