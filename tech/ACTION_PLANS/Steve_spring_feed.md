@@ -6,3 +6,6 @@ Change (data only, needs a RE-SETTLE of the water, NO re-bake of terrain; label 
 2. version bump of the settle rules (v9 -> v10) so settle_water prints the change and old settled water is not mistaken for the new rules.
 3. Effect check (David3 on the box after the hold lifts, or Mike on the PC): re-settle tile (3,4), then (a) river continuity (the existing basin census / drainage test prints the share): expect up from 50.6 %, never lower; (b) the four named ends carry water at the settle's last tick; (c) no new lake over 5 ha and no head pond overfilling (test_head_pond_fill, test_drainage_flow known-fail list stays empty); (d) total poured m3 reported by the settle: expect a small rise only (only heads below 0.3 m3/s change).
 Risk: low for the game (a data number); if the number overshoots, brooks widen or a small pond fills, so the check (c) gates the merge. If 0.3 does not carry the four ends, the second option is a film rule for 0.0 km2 heads (the `film` rule needs min_km2 of drainage; a film_min_km2 of 0 for heads would draw them), which I would build as its own branch.
+
+## Build notes (Tyler GO)
+data/water_settle.json: version 10, catchment.min_m3s 0.3 (note extended); water_settler.gd VERSION 10 (test_water_settle_rules checks they match). Merges ONLY together with re-settled tile files as one build.
