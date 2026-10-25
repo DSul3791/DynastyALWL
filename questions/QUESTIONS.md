@@ -38,3 +38,8 @@ Note: Recommendation: Yes
 Note: Tests that flake under load (animals, npcs, bed) run alone at the end with one automatic retry. Mike's PC keeps first start, feel, play and Windows pictures, plus overflow gates; data-only branches go through the box fast lane. Full report: design/GATE_AUDIT.md.
 Note: Recommendation: Yes
 [check]
+
+## gates-e | Gates E: ship script and less noise
+Note: Tyler gets a script that does merge, checks, build number, logs, push and verify in about 1 minute instead of 5 and cannot silently fail. Drop the duplicate number sweeps and the item master warning from gate output. Keeps QA card before merge and the CI guard. Full report: design/GATE_AUDIT.md.
+Note: Recommendation: Yes
+[check]
