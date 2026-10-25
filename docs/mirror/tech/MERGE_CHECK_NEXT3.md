@@ -126,3 +126,6 @@ Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one ha
 
 ## 792 ORDER (revised by Tyler 00:30 UTC 25 Oct, after Sal_campfire_pot_REPLY.md)
 shelter e2986139 -> fire tiers 9d911ec8 -> A sal-campfire-pot (pot + twine tests; fix the old state-1 check first) -> steve-rough-bed 6459b079 -> steve-sound-hookup fce8a304 -> B sal-craft-menu -> C sal-auto-craft (limits in the reply) -> no-stack caps 39a03c5c + weight audit 00502227. No bake item in any of them.
+
+## PENDING RULE BP-T69 (Dave 25 Oct 00:49): bake thread count on the server box
+Waiting for David3's step-down result (highest thread count that completes inside the container memory limit, swap 0). Report must give: thread count, memory limit, peak RAM (from the shot/bake log "peak memory"), time per tile. When it arrives Tyler writes BP-T69 into BEST_PRACTICES.md and the bake instructions (tools/docker/README.md, DAVID3_HANDOVER.md "bakes"): fixed thread count, memory limit, peak RAM, and the step-down rule (run killed with exit 137 or OOM = repeat once with one fewer thread, never more than the proven count; log which count worked), then tells Mike and Sonny.
