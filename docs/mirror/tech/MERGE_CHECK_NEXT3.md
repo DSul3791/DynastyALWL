@@ -160,3 +160,5 @@ RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL
 steve-ground-quiet built: c836fa4a (hash for David3's HEAD= line). Merge only that exact hash on PASS.
 
 ## SPEED-UP steps 0-2 MERGED into claude/merge-793 (Tyler 02:10 UTC 25 Oct): fast-forward 5b9d9f91 -> cbe31f76 (David3 PASS 8/0, byte-identical md5 vs 5b9d9f91 on tiles 3,4 and 4,4, no-cache / cache build / reuse at 9 and 6 threads). Steps 0-2 are pure GDScript (timers, delta once, setup cache), so the Windows float concern applies only to step 3 (C++): the Windows proof (Mike, 1 thread) is required before step 3 merges. For the 793 production bake the setup cache is rebuilt cold in that run and the result is compared with --no-cache on tile (3,4). BP-T69 written (9 threads, step-down 6 then 4).
+
+## BUILD NUMBERS (Tyler 02:20 UTC 25 Oct): numbers go in merge order. 792 = ground-quiet (merged). The fire/pot/bed/sound/stack/weight group formerly called "792" will take the next numbers as each part merges (793 is still the bake build in the plan: call it BAKE-BUILD until its number is assigned, to avoid mixing).
