@@ -1350,6 +1350,9 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.42, 0.3, 0.17)
+	wood.emission_enabled = true
+	wood.emission = Color(0.5, 0.3, 0.12)
+	wood.emission_energy_multiplier = 0.12
 	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
 	grime.albedo_color = Color(0.2, 0.14, 0.09)
 	var stick: MeshInstance3D = MeshInstance3D.new()
@@ -1380,7 +1383,10 @@ func _make_torch_model(id: String = "") -> Node3D:
 	# The head: rag or bark wound round the top of the stick and bound with twine, about 2.5 times the stick's width and 15 cm long; dark
 	# brown, the top third charred and glowing. The same colours as the unlit torch on the ground (basic_look.gd).
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
-	wrap_material.albedo_color = Color(0.24, 0.16, 0.1)
+	wrap_material.albedo_color = Color(0.34, 0.22, 0.13)
+	wrap_material.emission_enabled = true   # a little warm light of its own so the head never goes black in the dark
+	wrap_material.emission = Color(0.6, 0.25, 0.08)
+	wrap_material.emission_energy_multiplier = 0.25
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var wrapping: CylinderMesh = CylinderMesh.new()
 	wrapping.top_radius = 0.052
@@ -1391,10 +1397,10 @@ func _make_torch_model(id: String = "") -> Node3D:
 	head.position = Vector3(0.0, 0.325, 0.0)
 	torch.add_child(head)
 	var char_material: StandardMaterial3D = StandardMaterial3D.new()
-	char_material.albedo_color = Color(0.14, 0.09, 0.06)
+	char_material.albedo_color = Color(0.22, 0.13, 0.08)
 	char_material.emission_enabled = true
 	char_material.emission = Color(0.9, 0.3, 0.05)
-	char_material.emission_energy_multiplier = 0.4
+	char_material.emission_energy_multiplier = 0.9
 	var charred: MeshInstance3D = MeshInstance3D.new()
 	var char_mesh: CylinderMesh = CylinderMesh.new()
 	char_mesh.top_radius = 0.0525
@@ -1405,7 +1411,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	charred.position = Vector3(0.0, 0.375, 0.0)
 	torch.add_child(charred)
 	var twine_material: StandardMaterial3D = StandardMaterial3D.new()
-	twine_material.albedo_color = Color(0.7, 0.58, 0.36)
+	twine_material.albedo_color = Color(0.6, 0.5, 0.32)
 
 	for band_y in [0.28, 0.335]:
 		var band: MeshInstance3D = MeshInstance3D.new()
@@ -1418,7 +1424,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
 
-	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 18 cm tall and 8 cm across at the base, a
+	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 10 cm across at the base, a
 	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core, and an orange glow ring on the head.
 	# The two upper cones sway slowly so it does not read as one solid shape.
 	var rig: Node3D = Node3D.new()
@@ -1426,7 +1432,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	rig.head_local = Vector3(0.0, 0.4, 0.0)
 	torch.add_child(rig)
 	var flames: Array = []
-	var layers: Array = [[0.04, 0.15, Color(1.0, 0.4, 0.08), 0.0], [0.028, 0.19, Color(1.0, 0.68, 0.16), 0.007], [0.014, 0.1, Color(1.0, 0.92, 0.6), -0.005]]
+	var layers: Array = [[0.05, 0.22, Color(1.0, 0.38, 0.06, 0.8), 0.0], [0.036, 0.27, Color(1.0, 0.68, 0.14, 0.85), 0.009], [0.02, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.006]]
 
 	for n in range(layers.size()):
 		var layer: Array = layers[n]
@@ -1435,6 +1441,11 @@ func _make_torch_model(id: String = "") -> Node3D:
 		glow.emission_enabled = true
 		glow.emission = layer[2]
 		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA   # the outer cones are see-through so the inner ones show through; the core glows added
+
+		if n == 2:
+			glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+
 		var tongue: Node3D = Node3D.new()   # pivots at the base so the sway leans the tip
 		var mesh_node: MeshInstance3D = MeshInstance3D.new()
 		var tip: CylinderMesh = CylinderMesh.new()
@@ -1455,8 +1466,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 
 	var halo: MeshInstance3D = MeshInstance3D.new()
 	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.052
-	disc.bottom_radius = 0.052
+	disc.top_radius = 0.056
+	disc.bottom_radius = 0.056
 	disc.height = 0.008
 	var halo_material: StandardMaterial3D = StandardMaterial3D.new()
 	halo_material.albedo_color = Color(1.0, 0.45, 0.1)
