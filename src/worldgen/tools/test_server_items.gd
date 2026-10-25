@@ -594,16 +594,18 @@ func _init() -> void:
 	f._fire_add(tfw, "stick")
 	check(f._fire_best_state(tfw) == ItemsScript.FIRE_STATE_SURVIVAL, "one firewood is only a survival fire")
 
-	# Tripod pot (Dave 24 Oct): a station that cooks only with a lit fire within 2.5 m of it.
+	# Campfire pot (Dave 24 Oct): a station that hangs over a fire and cooks only while that fire is lit.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.report_position(7, Vector3(300.0, 5.0, 300.0))
 	var tri_id: int = 900801
-	items._items[tri_id] = {"number": items.table.number_of("tripod_pot"), "count": 1, "pos": Vector3(301.0, 5.0, 300.0), "left": 1.0e9, "struct": {"kind": "tripod_pot", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
-	check(not items.station_near(7, "tripod_pot"), "a tripod pot with no fire beside it is not a station")
+	items._items[tri_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(301.0, 5.0, 300.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
+	check(not items.station_near(7, "campfire_pot"), "a campfire pot with no fire under it is not a station")
 	items._items[900802] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": Vector3(302.0, 5.0, 300.0), "left": 1.0e9, "fire": {"state": 40, "burn_left": 100.0, "covered": false, "recheck": 5.0}}
-	check(items.station_near(7, "tripod_pot"), "a tripod pot beside a lit fire is a station")
+	check(not items.station_near(7, "campfire_pot"), "a lit fire 1 m beside the pot is not the pot's fire")
+	items._items[900802]["pos"] = Vector3(301.0, 5.0, 300.0)
+	check(items.station_near(7, "campfire_pot"), "a campfire pot over a lit fire is a station")
 	items._items[900802]["fire"]["state"] = 9
-	check(not items.station_near(7, "tripod_pot"), "a laid fire that is not lit does not cook")
+	check(not items.station_near(7, "campfire_pot"), "a laid fire that is not lit does not cook")
 	items._items.erase(tri_id)
 	items._items.erase(900802)
 
