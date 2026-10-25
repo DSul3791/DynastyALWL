@@ -1662,3 +1662,7 @@ Answered: 2026-10-25 13:49 UTC
 Answer: Yes
 Answered: 2026-10-25 13:50 UTC
 
+## trim-c | Item trim C: Wood chain: one Lumber and one Beam, species kept as a tag (cut 15)
+Answer: Yes
+Answered: 2026-10-25 13:50 UTC
+
