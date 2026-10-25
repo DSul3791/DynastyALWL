@@ -139,6 +139,10 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
+const GroundColumn := preload("res://src/client/ground_column.gd")
+# Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
+# a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
+const SPAWN_LIFT_M := 0.5
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
 const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
@@ -271,6 +275,10 @@ var _wait_frames: int = 0             # walk test: frames spent waiting for grou
 var _space_wake_s: float = 0.0
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var _tunnel_test: int = 0
+var _spawn_test: String = ""            # --test-respawn=S / --test-go-to-spawn=S: S s after the welcome (and ground) do a respawn or go-to-spawn and log how it lands
+var _spawn_test_after_s: float = 0.0
+var _spawn_test_msec: int = 0           # when it was done (0 = not yet), then the log waits for the player to stand
+var _spawn_y_offset: float = 0.0        # --spawn-y-offset=M: M added to every spawn point's height (negative puts the spawn inside the ground)
 var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
@@ -526,6 +534,14 @@ func _ready() -> void:
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
 		elif argument.begins_with("--drop-ground-lods="):
 			_drop_ground_lods = int(argument.trim_prefix("--drop-ground-lods="))
+		elif argument.begins_with("--test-respawn="):
+			_spawn_test = "respawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-respawn="))
+		elif argument.begins_with("--test-go-to-spawn="):
+			_spawn_test = "go_to_spawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-go-to-spawn="))
+		elif argument.begins_with("--spawn-y-offset="):
+			_spawn_y_offset = float(argument.trim_prefix("--spawn-y-offset="))
 		elif argument == "--clear-cache":
 			clear_cache = true
 		elif argument.begins_with("--quality="):
@@ -756,7 +772,7 @@ func _update_connect_window() -> void:
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
-		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else ""])
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else "", ("\n\nThe ground is taking long: %d blocks received, %d failed, %d still arriving, player height %.0f m." % [_ground_received(), _ground_failed(), stream.pending() if stream != null else 0, body.global_position.y]) if since > 60 and body != null else ""])
 		return
 
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
@@ -974,7 +990,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
-	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, 28.0, 0.0))
+	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -1291,6 +1307,7 @@ func _welcome_body(info: Dictionary) -> void:
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
 
 
 
@@ -1317,6 +1334,43 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 # stands a player on the surface must not fire there (Dave 2026-10-22: tunnelled underground and popped back up to the top).
 func _note_dig(center: Vector3) -> void:
 	rescue.note_dig(center)
+
+
+# --test-respawn / --test-go-to-spawn: once the first ground is ready and S seconds have passed, do it and print "SPAWNTEST" lines: height above the ground on the first frame and the seconds until the player stands.
+func _spawn_test_step(now: int) -> void:
+	if _spawn_test == "" or connected_msec <= 0 or body == null or not world.has("spawn"):
+		return
+
+	if _spawn_test_msec == 0:
+		if now - connected_msec > int((_spawn_test_after_s + 150.0) * 1000.0):
+			print("SPAWNTEST %s: FAILED never started, still waiting for ground 150 s after the start time (player %s)" % [_spawn_test, str(body.global_position.round())])
+			_spawn_test = ""
+			return
+
+		if waiting_for_ground or now - connected_msec < int(_spawn_test_after_s * 1000.0):
+			return
+
+		_spawn_test_msec = now
+		var from: Vector3 = body.global_position
+		body.global_position += Vector3(0.0, 0.0, 300.0)   # somewhere else first, so the move is a real one
+
+		if _spawn_test == "respawn":
+			_on_died("spawn test", Vector3(world["spawn"]))
+		else:
+			go_to_spawn()
+
+		var ground: float = _ground_below(body.global_position)
+		print("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
+		return
+
+	if _spawn_test_msec > 0 and now - _spawn_test_msec > 60000:
+		print("SPAWNTEST %s: FAILED not standing 60 s later, player %s" % [_spawn_test, str(body.global_position.round())])
+		_spawn_test = ""
+		return
+
+	if _spawn_test_msec > 0 and not waiting_for_ground and body.is_on_floor():
+		print("SPAWNTEST %s: standing on the ground %.1f s later, player %s" % [_spawn_test, float(now - _spawn_test_msec) * 0.001, str(body.global_position.round())])
+		_spawn_test = ""
 
 
 # --tunnel-test: stand on the ground at the spawn, dig a 6 m shaft and a 6 m side tunnel, stand in the tunnel for 10 s, say where the player is.
@@ -1523,7 +1577,7 @@ func _water_ahead() -> bool:
 func _arrive_on_ground() -> void:
 	if connected_msec > 0 and not _ground_logged:
 		_ground_logged = true
-		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position)])
+		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
 	var ground: float = _ground_below(body.global_position)
 
@@ -1575,7 +1629,7 @@ func go_to_spawn() -> void:
 	if body == null or not world.has("spawn"):
 		return
 
-	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, 28.0, 0.0)
+	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1595,7 +1649,7 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 		cavein_death.start(self, spawn_point)
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1606,7 +1660,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	if body == null:
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1919,9 +1973,12 @@ func _update_anchor(now: int, delta: float) -> void:
 	# Stopped in the air (Dave, 2026-10-21): the ground straight below is built first. The server says where the
 	# ground is under the player (protocol 45), the streaming viewer goes down to it and only the finest level is built
 	# to a short distance until the ground under the player has a collider; then the rest follows.
-	if follow and flying and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
+	# 25 Oct (Dave: a start in the air never built the ground under it): the same dive runs for a player who is not flying but waiting for ground.
+	var column: bool = flying or waiting_for_ground
+
+	if follow and column and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
 		pass
-	elif follow and flying and _anchor_set:
+	elif follow and column and _anchor_set:
 		if _surface_asked_msec == 0:
 			_surface_asked_msec = now
 			_ground_below_y = NAN
@@ -1946,7 +2003,7 @@ func _update_anchor(now: int, delta: float) -> void:
 
 		_viewer_ground_y = NAN
 
-		if flying and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
+		if GroundColumn.dive(column, _ground_below_y, here.y):
 			_viewer_ground_y = _ground_below_y + 2.0
 
 			# Only when the ground below has no collider yet: staging drops every coarse level, so over ground that is
@@ -1968,6 +2025,10 @@ func _update_anchor(now: int, delta: float) -> void:
 		_viewer.global_position = _anchor if is_nan(_viewer_ground_y) else Vector3(_anchor.x, _viewer_ground_y, _anchor.z)
 
 
+func _viewer_y_text() -> String:
+	return "?" if _viewer == null else "%.1f" % _viewer.global_position.y
+
+
 # A collider under the player within 3000 m (the ground there has loaded).
 func _collider_below(p: Vector3) -> bool:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p, p + Vector3(0.0, -3000.0, 0.0))
@@ -1983,6 +2044,9 @@ func _on_surface_received(x: float, z: float, y: float) -> void:
 	_ground_below_y = y
 	_surface_answered_msec = Time.get_ticks_msec()
 	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
+
+	if waiting_for_ground and connected_msec > 0:
+		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m, viewer y %s" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y, _viewer_y_text()])
 
 
 # After a stop high up only the finest STAGE_LODS levels are built (the engine builds the coarsest first, so
@@ -2382,7 +2446,7 @@ func _run_ground_watchdog() -> void:
 	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
 	if waiting_for_ground and now - _ground_log_msec >= 5000:
 		_ground_log_msec = now
-		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits())])
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s, player y %.1f, viewer y %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits()), body.global_position.y, _viewer_y_text()])
 
 	if action == "":
 		return
@@ -3434,6 +3498,9 @@ func _process(delta: float) -> void:
 
 	if link_bars != null:
 		link_bars.client_stalled(delta)
+
+	if _spawn_test != "":
+		_spawn_test_step(Time.get_ticks_msec())
 
 	if _tunnel_test > 0:
 		_tunnel_step()
@@ -4861,7 +4928,7 @@ func _walk_step() -> void:
 func _ground_ready() -> bool:
 	var here: Vector3 = body.global_position
 	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
-	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -300.0, 0.0))
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -3000.0, 0.0))   # 3000 m: a start high in the air finds the collider once the column below is built
 	down.exclude = [body.get_rid()]
 
 	if not space.intersect_ray(down).is_empty():

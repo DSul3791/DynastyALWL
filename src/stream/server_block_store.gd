@@ -81,6 +81,8 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
+	_warm(_cache)
+	_warm(_edits)
 	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
 
 	if ops_error != "":
@@ -209,6 +211,14 @@ func _open_generated() -> VoxelStreamSQLite:
 	return stream
 
 
+# 25 Oct (Dave's server window: "another row available" at Connection::load_version during a join, then the workers made blocks again instead of reading
+# them): the first read of a new sqlite file made the voxel module open its connections from several worker threads at once, and they raced on the
+# file's version row. One read here, on the main thread before any worker runs, opens the file and its first connection alone.
+func _warm(stream: VoxelStreamSQLite) -> void:
+	var scratch: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	stream.load_voxel_block(scratch, Vector3i(0, 0, 0), 0)
+
+
 # Deletes generated ground files of other generations (best effort).
 func _purge_old_generated() -> void:
 	var folder: String = ProjectSettings.globalize_path(_store_dir)
@@ -229,6 +239,7 @@ func clear_generated() -> void:
 		file.close()
 
 	set_cache(_open_generated())
+	_warm(_cache_now())
 	# The settled copies were made over the ground just thrown away: new files for the new generation, the old ones deleted.
 	settle.close()
 	settle = GroundSettle.new()

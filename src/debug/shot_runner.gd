@@ -27,6 +27,11 @@ var settle_s: float = 25.0
 
 var _index: int = -1
 var _placed: bool = false
+var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
+var _land_failed: bool = false
+var force_land_fail: bool = false  # --shot-force-land-fail: the wanted height is 50 m off what the body is given, so the landing check must report FAILED (a test of the check)
+var _want_y: float = 0.0
+var _placed_msec: int = 0
 var _ground_wait_msec: int = 0
 var _moved_msec: int = 0
 var _hour: float = 12.0
@@ -178,6 +183,8 @@ func setup(owner_client, args: Array) -> void:
 			client.debug_hud.enabled = true
 		elif argument.begins_with("--shot-wait="):
 			wait_s = float(argument.trim_prefix("--shot-wait="))
+		elif argument == "--shot-force-land-fail":
+			force_land_fail = true
 		elif argument.begins_with("--shot-settle="):
 			settle_s = float(argument.trim_prefix("--shot-settle="))
 
@@ -186,6 +193,10 @@ func setup(owner_client, args: Array) -> void:
 
 func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
+		return
+
+	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
+	if client._spawn_test != "":
 		return
 
 	if frametime_s > 0.0 and _frame_state < 2:
@@ -254,7 +265,11 @@ func _process(delta: float) -> void:
 	_side_view(float(shots[_index]["walk"]))
 
 	# A join still waiting for collision under the player (a slow stream: Mike's log, 46+ s) is waited for, up to 120 s after the welcome, before any shot is placed.
-	if client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
+	# An aerial shot (more than 40 m above the ground) is taken from a flier: it does not wait for collision, only for the nearby blocks to draw (the settle time) (Dave 25 Oct).
+	var ground_here: float = _ground(shot_pos.x, shot_pos.z)
+	var aerial: bool = (shot_pos.y > 40.0) or (shot_pos.y < 0.0 and not is_nan(ground_here) and -shot_pos.y - ground_here > 40.0)
+
+	if not aerial and client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
 		return
 
 	if not _placed:
@@ -265,8 +280,34 @@ func _process(delta: float) -> void:
 			return
 
 		_placed = true
+		_landed = false
+		_land_failed = false
+		_placed_msec = now
 		_moved_msec = now
-		client.body.global_position = Vector3(shot_pos.x, -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y), shot_pos.z)
+		_want_y = -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y)
+		client.body.global_position = Vector3(shot_pos.x, _want_y, shot_pos.z)
+		_want_y += 50.0 if force_land_fail else 0.0
+		return
+
+	# 25 Oct (David3: a picture taken at 64.7 m over forest): the settle time starts only when the camera has landed, i.e. the body is within
+	# 0.5 m of the height the shot wants (the join gate above already waited for ground). Never landed in 90 s: the shot is saved as <name>_FAILED.png and the run goes on.
+	if not _landed:
+		var at: Vector3 = client.body.global_position
+		# The shot flies (client.flying), so waiting_for_ground is a stale value from the last walking frame and there may be no collider under a flier: height only.
+		var landed_ok: bool = absf(at.y - _want_y) <= 0.5 and (client.flying or not client.waiting_for_ground)
+
+		if not landed_ok and now - _placed_msec < 90000:
+			return
+
+		_landed = true
+		_land_failed = not landed_ok
+		_moved_msec = now - int(settle_s * 1000.0) if _land_failed else now
+
+		if _land_failed:
+			print("shot runner: FAILED %s never landed (y %.1f, wanted %.1f)" % [shots[_index]["name"], at.y, _want_y])
+		else:
+			print("shot runner: landed %s at y %.1f (wanted %.1f) after %.1f s" % [shots[_index]["name"], at.y, _want_y, float(now - _placed_msec) * 0.001])
+
 		return
 
 	if now - _moved_msec < int(settle_s * 1000.0):
@@ -410,7 +451,7 @@ func _process(delta: float) -> void:
 		_print_flora_row()
 
 	var image: Image = get_viewport().get_texture().get_image()
-	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
+	var path: String = "%s/%s%s.png" % [dir, shots[_index]["name"], "_FAILED" if _land_failed else ""]
 	image.save_png(path)
 	var p: Vector3 = client.body.global_position
 	if client.held != null and give_item != "":
@@ -1002,6 +1043,8 @@ func _next(now: int) -> void:
 	var shot: Dictionary = shots[_index]
 	client.flying = true
 	_placed = false
+	_landed = false
+	_land_failed = false
 	_ground_wait_msec = now
 	client.body.global_position = Vector3(shot["pos"].x, 400.0, shot["pos"].z)
 	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
