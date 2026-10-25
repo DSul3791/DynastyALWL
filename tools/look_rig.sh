@@ -85,11 +85,12 @@ PORT=$((7800 + RANDOM % 150)); while netstat -an 2>/dev/null | grep -q ":$PORT "
 T0=$(date +%s)
 "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 > "$RIG/server.log" 2>&1 &
 SP=$!
-if [ -n "$WIN" ] && [ -z "$NOWINDOW" ]; then   # Dave 25 Oct: a visible window shows the server log live; it stays open after the run, the next run closes it first
-  taskkill //F //FI "WINDOWTITLE eq Test server*" > /dev/null 2>&1
-  cmd //c start "Test server" powershell -NoExit -Command "\$host.UI.RawUI.WindowTitle='Test server'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")' -ErrorAction SilentlyContinue; Write-Host '--- run finished ---'" > /dev/null 2>&1
+WINPID=""
+if [ -n "$WIN" ] && [ -z "$NOWINDOW" ]; then   # a window of this run only: titled "RIG server <run id>", its process id recorded, closed by that id at the end of this run (never by title or by type)
+  WINPID=$(powershell -NoProfile -Command "\$t='RIG server $(basename "$RIG")'; \$c=\"\`\$host.UI.RawUI.WindowTitle='\$t'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")' -ErrorAction SilentlyContinue\"; (Start-Process powershell -ArgumentList '-NoProfile','-NoExit','-Command',\$c -PassThru).Id" 2>/dev/null | tr -d '\r')
+  echo "rig server window pid ${WINPID:-none}"
 fi
-trap 'kill $SP 2>/dev/null; sleep 2; cp -p "$STORE"/generated* "$STORE"/terrain_version.txt "$STORE"/settled* "$WARM"/ 2>/dev/null; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
+trap 'kill $SP 2>/dev/null; [ -n "$WINPID" ] && taskkill //F //PID $WINPID > /dev/null 2>&1; sleep 2; cp -p "$STORE"/generated* "$STORE"/terrain_version.txt "$STORE"/settled* "$WARM"/ 2>/dev/null; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 for _i in $(seq 1 60); do grep -q "listening" "$RIG/server.log" 2>/dev/null && break; sleep 0.5; done   # was a fixed sleep 30: go as soon as the server prints its listening line (30 s at most)
 echo "rig timing: server listening after $(( $(date +%s) - T0 )) s"
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }

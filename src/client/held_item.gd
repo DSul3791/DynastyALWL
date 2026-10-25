@@ -48,7 +48,7 @@ const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look si
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
 	"axe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"pick": Basis(Vector3(0, 1, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1)),   # haft forward (+y), head vertical (pick up, chisel down, points up and down: Dave 2026-10-25), both ends bending toward the grip in the haft-and-head plane, so from the front the head is one straight bar
+	"pick": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # haft forward (+y), head vertical with the pointed pick DOWN and the chisel up (Dave 2026-10-25: flip it 180 degrees about the haft), both ends bending toward the grip in the haft-and-head plane, so from the front the head is one straight bar
 	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"saw": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
