@@ -189,9 +189,10 @@
    "size": 1.0
   },
   "wooden_hammer": {
-   "shape": "axe",
+   "shape": "hammer",
    "color": "#8a6a3a",
    "size": 1.0,
+   "bits": ["wood"],
    "placeholder": true
   },
   "stone_hammer": {

@@ -30,18 +30,29 @@ func _init() -> void:
 			_check(box.size.y < 0.05 * scale and box.size.z > 0.18 * scale, id + ": the blade is thin (y %.3f) and wide (z %.3f)" % [box.size.y, box.size.z])
 			_check(tip_width < 0.5 * blade_width, id + ": the blade narrows to a point (width %.3f at the tip, %.3f at the middle)" % [tip_width, blade_width])
 
+	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
+	for id in ["stone_axe", "stone_hammer", "wooden_hammer"]:
+		var mesh: Mesh = BasicLook.mesh_for(id)
+		var box: AABB = mesh.get_aabb()
+		var scale: float = float(BasicLook.entry(id).get("size", 1.0))
+		_check(mesh.get_surface_count() == 1, id + ": one plain surface")
+		_check(box.size.x > 0.4 * scale and box.size.x < 0.9 * scale, id + ": haft along x, %.2f m long (size %.1f)" % [box.size.x, scale])
+		_check(box.size.z > 0.1 * scale, id + ": the head is wide across the haft (z %.3f)" % box.size.z)
+		_check(_width_near(mesh, 0.22 * scale, 0.1 * scale) > 0.1 * scale, id + ": the head sits at the haft's end (width %.3f near x 0.22)" % _width_near(mesh, 0.22 * scale, 0.1 * scale))
+	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
+
 	print("tool looks: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
 
-# The z extent of the vertices whose x is within 2 cm of `at`.
-func _width_near(mesh: Mesh, at: float) -> float:
+# The z extent of the vertices whose x is within `within` of `at`.
+func _width_near(mesh: Mesh, at: float, within: float = 0.02) -> float:
 	var low: float = 1e9
 	var high: float = -1e9
 
 	for surface in mesh.get_surface_count():
 		for v in (mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
-			if absf(v.x - at) < 0.02:
+			if absf(v.x - at) < within:
 				low = minf(low, v.z)
 				high = maxf(high, v.z)
 

@@ -251,20 +251,24 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cone(parts, 0.045, 0.28, Vector3(0.58, 0.0, 0.0), color)
 			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
 		"axe":
-			# A stone axe: a stick with a wedge-headed blade lashed to the end. The wedge is thick at the stick and thins to a sharp edge, sticking out
-			# sideways, so from the side the whole thing reads like a hoe. The edge is ground wider than the body and one corner is chipped, so the
-			# head is not a plain box; a thicker haft end and three wraps of cord hold it on.
+			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
+			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
+			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
 			color = _warm_stone(color)                                                                              # darker and warmer: in sunlight the plain grey read pale blue
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
-			_handle(parts, 0.5, 0.021, Color(0.3, 0.2, 0.11))                                                       # a thicker, darker haft
-			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))     # the haft swells where the head sits
-			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), dark)                                # the poll block the wedge sits on
-			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), color)                                     # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
+			var haft_wood: Color = Color(0.3, 0.2, 0.11)
+			var thong: Color = Color(0.3, 0.17, 0.09)
+			for k in range(10):                                                                                      # weathered grain along the haft
+				_cyl(parts, 0.021, 0.05, Vector3(-0.25 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.14))
+			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))   # the haft swells where the head sits
+			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), _tone(dark, 1, 0.12))                 # the poll block the wedge sits on
+			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), _tone(color, 4, 0.08))                      # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
 			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
 			_box_rot(parts, Vector3(0.03, 0.03, 0.035), Vector3(0.285, 0.0, 0.12), Vector3(0.0, 0.5, 0.0), dark)  # a chipped corner
-			for wrap in [0.165, 0.19, 0.28]:
-				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
+			for k in range(5):                                                                                       # leather thong lashing, five turns each side of the head
+				_cyl(parts, 0.034, 0.012, Vector3(0.155 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
+				_cyl(parts, 0.034, 0.012, Vector3(0.262 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
 		"pick":
 			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
 			# curving toward the grip (-x, the pommel end, as in Dave's reference) in the haft-and-head plane: a long tapering pick at +z, a shorter flat-ended chisel at -z.
@@ -351,16 +355,28 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(16):
 				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.15 + 0.0205 * float(k), 0.0, 0.043 if k < 10 else 0.035), Vector3(0.0, 0.0, 0.7), steel.lightened(0.15))   # teeth
 		"hammer":
-			# A stone hammer: a stick with a heavy blunt stone head lashed across the end, flat faces both sides (no edge).
-			color = _warm_stone(color)
-			dark = color.darkened(0.3)
-			_handle(parts, 0.45, 0.021, Color(0.3, 0.2, 0.11))
-			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))
-			_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                     # the head
-			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)       # a worn, darker striking face
-			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
-			for wrap in [0.155, 0.245]:
-				_cyl(parts, 0.04, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))
+			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
+			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
+			var mallet: bool = bits.has("wood")
+			var haft_wood: Color = Color(0.3, 0.2, 0.11)
+			var thong: Color = Color(0.3, 0.17, 0.09)
+			for k in range(9):
+				_cyl(parts, 0.021, 0.05, Vector3(-0.225 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.14))
+			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))
+			if mallet:
+				var grain: Color = Color(0.42, 0.3, 0.17)                                                            # a turned wooden barrel head, banded with leather at both ends
+				_cyl(parts, 0.05, 0.2, Vector3(0.2, 0.0, 0.0), Vector3(PI * 0.5, 0.0, 0.0), _tone(grain, 3, 0.1))
+				for end in [-0.09, 0.09]:
+					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
+			else:
+				color = _warm_stone(color)
+				dark = color.darkened(0.3)
+				_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                 # the head
+				_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)   # a worn, darker striking face
+				_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
+			for k in range(4):                                                                                       # leather thong lashing either side of the head
+				_cyl(parts, 0.03, 0.01, Vector3(0.135 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
+				_cyl(parts, 0.03, 0.01, Vector3(0.255 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
 		"hoe":
 			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
 			_handle(parts, 0.85)
