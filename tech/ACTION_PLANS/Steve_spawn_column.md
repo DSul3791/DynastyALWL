@@ -1,0 +1,13 @@
+# Steve: Spawn column first (branch claude/steve-spawn-column)
+
+Goal (Tyler): standing on the ground within 10 s of joining. Dave 25 Oct: sometimes the game starts with the player in the air; the ground under them is then never built and the player floats, so tests fail ("never finding ground").
+Found in the code (terrain_client.gd):
+1. The ground-under-the-player machinery (ask the server for the ground height, dive the streaming viewer to ground + 2 m, stage only the finest levels) runs ONLY while `flying`. A player who is not flying but airborne (the join at spawn + 28 m, a resumed saved spot in the air, a respawn, go-to-spawn) keeps the viewer at their own height, so the column below is built late or not at all.
+2. `_ground_ready()` looks only 300 m down. An airborne start higher than that (a saved spot, a bad spawn y) never reads ready: the body glides level for ever.
+Change (RUNTIME, client only, no protocol, no server change):
+a. `_update_anchor`: the dive (surface request, viewer at ground + 2 m, finest-levels stage) also runs while `waiting_for_ground` (not only flying). Nothing else about following changes.
+b. `_ground_ready()`: the down ray is 3000 m (same as `_collider_below`), so any height finds the collider once the column is built; `_arrive_on_ground` already sets the player just above it with the protection time. Fall distance is never real (arrival, no damage).
+c. JOIN log line adds "column: asked at +N s, answer +N s, collider +N s" so a slow column is visible.
+d. Test (test_spawn_column.gd, headless, no Godot scene): pure helper `column_wanted(flying, waiting, anchor_set, answered)` and ray length; plus a David3 run: start at 400 m and at 1500 m above the spawn (--start=x,y,z), expect ready under 10 s after the welcome and 0 "waiting for ground" after.
+Shot runner: unaffected (it already waits for waiting_for_ground == false); the landing check in claude/steve-shot-landing treats an airborne start as "not landed" until the arrival drop, then counts the settle time from there, so the picture is never taken in the air. Branch is cut from steve-shot-landing for that reason.
+Risk: dive for a waiting walker uses the existing server surface answer (one request per stop). Ray 3000 m costs one ray per frame while waiting only.
