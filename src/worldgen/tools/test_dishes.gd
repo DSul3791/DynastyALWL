@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Campfire dishes (Radar, 2026-10-22): every dish in data/items/dishes.json is made at a lit campfire from its ingredients, not away from
+# Campfire dishes (Radar, 2026-10-22): every dish in data/items/dishes.json is made at a lit campfire (the hearth and oven dishes at an oven) from its ingredients, not away from
 # one, feeds the stomach by its food points, and a dish with more kinds of ingredient is better (food points never fall as kinds rise).
 #   godot --headless --path . --script res://src/worldgen/tools/test_dishes.gd
 
@@ -54,6 +54,10 @@ func _init() -> void:
 	items._next_id += 1
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 	items._refresh_pots()
+
+	# The bread and the roast are made at an oven (it cooks what a clay hearth and a campfire cook besides).
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("oven"), "count": 1, "pos": Vector3(0.0, 10.0, 1.0), "left": 1.0e9, "struct": {"kind": "oven", "yaw": 0.0}}
 
 	var best_by_kinds: Dictionary = {}
 
