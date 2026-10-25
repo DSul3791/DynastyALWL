@@ -39,8 +39,13 @@ func _init() -> void:
 	check(names.size() >= 18, "the JSON lists the batch 1 slots (%d)" % names.size())
 	var clips: int = 0
 
+	var all_rows: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SlotSounds.SLOTS_PATH))["slots"].duplicate()
+
+	for extra in SlotSounds.EXTRA_PATHS:   # the slots merged in from the other files (batch 3: bed, net, thatch, twine)
+		all_rows.merge(JSON.parse_string(FileAccess.get_file_as_string(str(extra)))["slots"])
+
 	for slot in names:
-		var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SlotSounds.SLOTS_PATH))["slots"][slot]
+		var parsed: Dictionary = all_rows[slot]
 		var found: int = 0
 
 		for path in parsed["files"]:

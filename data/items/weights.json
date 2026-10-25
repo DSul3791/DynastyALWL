@@ -170,6 +170,8 @@
 		"feather": 0.005,
 		"rough_bed_kit": 2.0,
 		"rough_bed": 2.0,
+		"snare": 0.2,
+		"snare_trap": 0.2,
 		"campfire_pot_kit": 1.8,
 		"campfire_pot": 1.8,
 		"thatch_wall_kit": 9.0,

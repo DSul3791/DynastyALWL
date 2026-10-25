@@ -37,6 +37,7 @@ const LOOKS := {
 	"tripod_pot": {"builder": "tripod_pot", "args": []},
 	"clay_hearth": {"builder": "clay_hearth", "args": []},
 	"oven": {"builder": "oven", "args": []},
+	"snare_trap": {"builder": "snare_trap", "args": []},
 }
 
 static var _warned: Dictionary = {}
