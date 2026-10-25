@@ -749,14 +749,14 @@ func _update_connect_window() -> void:
 			_connect_window = null
 			return
 
-		var silent_server: bool = waiting_for_ground and stream != null and stream.blocks_received == 0 and stream.pending() == 0
+		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
 
 		if silent_server and since >= 20:
 			_telemetry.event("JOIN: %d s in the world with no ground, 0 blocks received, 0 asked for; link: %s" % [since, link_bars.text() if link_bars != null else "?"])
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
-		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else ""])
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else ""])
 		return
 
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
@@ -2377,17 +2377,17 @@ func _run_ground_watchdog() -> void:
 		return
 
 	var now: int = Time.get_ticks_msec()
-	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending(), stream.blocks_received)
+	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending(), _ground_received(), _ground_failed())
 
 	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
 	if waiting_for_ground and now - _ground_log_msec >= 5000:
 		_ground_log_msec = now
-		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d, pending %d, test drops %d, retries %d" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, stream.pending(), stream.drops_made, _ground_watchdog.tries])
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits())])
 
 	if action == "":
 		return
 
-	var line: String = "JOIN: ground %s, try %d of %d: loads %d, received %d, timeouts %d, bad %d, zeroed %d, pending %d, player %s" % [action, _ground_watchdog.tries, _ground_watchdog.MAX_TRIES, stream.loads, stream.blocks_received, stream.timeouts, stream.bad_blocks, stream.zeroed_blocks, stream.pending(), str(body.global_position) if body != null else "?"]
+	var line: String = "JOIN: ground %s, try %d of %d: loads %d, received %d, timeouts %d, bad %d, zeroed %d, pending %d, player %s" % [action, _ground_watchdog.tries, _ground_watchdog.MAX_TRIES, stream.loads, _ground_received(), stream.timeouts, stream.bad_blocks, stream.zeroed_blocks, stream.pending(), str(body.global_position) if body != null else "?"]
 	_join_log(line)
 
 	if action == "retry":
@@ -2407,7 +2407,32 @@ func _join_log(text: String) -> void:
 	print("Terrain client: " + line)
 
 
+# Diagnostics for the join line: does a ray straight down from the player find any collision (the thing "waiting for ground" waits for)?
+func _ground_ray_hits() -> bool:
+	if body == null:
+		return false
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(body.global_position + Vector3(0.0, 1.0, 0.0), body.global_position + Vector3(0.0, -300.0, 0.0))
+	query.exclude = [body.get_rid()]
+	return not body.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+# Blocks received and failed since the welcome, over every stream the watchdog has started (a restart resets the new stream's own counters).
+var _ground_received_prior: int = 0
+var _ground_failed_prior: int = 0
+
+
+func _ground_received() -> int:
+	return _ground_received_prior + (stream.blocks_received if stream != null else 0)
+
+
+func _ground_failed() -> int:
+	return _ground_failed_prior + (stream.failed_total() if stream != null else 0)
+
+
 func _restream_ground() -> void:
+	_ground_received_prior = _ground_received()
+	_ground_failed_prior = _ground_failed()
 	stream.close()
 	stream = StreamScript.new()
 	stream.cache = cache
@@ -2417,6 +2442,8 @@ func _restream_ground() -> void:
 
 
 func _reload_ground() -> void:
+	_ground_received_prior = 0
+	_ground_failed_prior = 0
 	cache.clear_all()
 	stream.close()
 	stream = StreamScript.new()

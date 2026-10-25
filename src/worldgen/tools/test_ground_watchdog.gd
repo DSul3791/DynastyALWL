@@ -32,16 +32,18 @@ func _join(drop: int, drop_new: bool, fix: bool, limit_s: float) -> Dictionary:
 	var opened: float = 0.0 if ready else -1.0
 	var gave_up: float = -1.0
 	var now: int = 0
+	var failed: int = stream.drops_made   # failures since the welcome, over every stream (the client carries them across a restart)
 
 	while opened < 0.0 and gave_up < 0.0 and float(now) * 0.001 < limit_s:
 		now += 100
-		var action: String = watchdog.step(now, not ready, 0) if fix else ""
+		var action: String = watchdog.step(now, not ready, 0, 0, failed) if fix else ""
 
 		if action == "retry":
 			stream = StreamScript.new()
 			stream.drop_lods = drop if drop_new else 0
 			stream.drop_xz = Vector2(49.0, 65.0)
 			ready = not stream._drop_for_test(key)
+			failed += stream.drops_made
 		elif action == "give_up":
 			gave_up = float(now) * 0.001
 
@@ -88,14 +90,50 @@ func _init() -> void:
 
 	check(quiet and idle.tries == 0, "no retry while not waiting, nor while 5 blocks are outstanding for under 60 s")
 
+	# 25 Oct (BUG-001 reopened): nothing failed and blocks are outstanding but none arrive: only the stall retry, twice, from 30 s, never a give up.
 	var busy = WatchdogScript.new()
 	var fired: int = 0
+	var gave: int = 0
 
 	for t in range(1, 1300):
-		if busy.step(t * 100, true, 5) == "retry":
-			fired += 1
+		var act: String = busy.step(t * 100, true, 5)
+		fired += 1 if act == "retry" else 0
+		gave += 1 if act == "give_up" else 0
 
-	check(fired == 6, "blocks outstanding but no ground: retried from 30 s, every 15 s, 6 tries then give up (%d in 130 s)" % fired)
+	check(fired == 2 and gave == 0, "blocks outstanding, none arriving, nothing failed: two stall retries from 30 s, no give up (%d retries, %d give ups)" % [fired, gave])
+
+	# Mike's failing run: the stream delivers for minutes (received rising, a block outstanding), nothing failed: never restarted.
+	var slow = WatchdogScript.new()
+	var slow_fired: int = 0
+
+	for t in range(1, 2400):
+		if slow.step(t * 100, true, 1, t * 5, 0) == "retry":
+			slow_fired += 1
+
+	check(slow_fired == 0, "a slow stream that keeps delivering with no failures is never restarted in 4 minutes (%d)" % slow_fired)
+
+	# Everything arrived (pending 0, nothing new for ages) and nothing failed: collision is just late; only the two stall retries, never a failure retry or give up.
+	var done = WatchdogScript.new()
+	var done_acts: Array = []
+
+	for t in range(1, 3000):
+		var act2: String = done.step(t * 100, true, 0, 500, 0)
+
+		if act2 != "":
+			done_acts.append(act2)
+
+	check(done_acts == ["retry", "retry"], "all blocks arrived, ground late: two stall retries at most, no give up (%s)" % str(done_acts))
+
+	# New failures while idle retry (a real missing block), and new failures while still delivering wait for the idle.
+	var failing = WatchdogScript.new()
+	var first_retry: int = -1
+
+	for t in range(1, 400):
+		var got2: int = mini(t, 30)
+		if failing.step(t * 100, true, 1, got2, 3) == "retry" and first_retry < 0:
+			first_retry = t * 100
+
+	check(first_retry >= 10900 and first_retry <= 11200, "delivery stops, 3 blocks failed: retry 8 s later (%d ms)" % first_retry)
 
 	# A stream that keeps delivering (received rising, a block outstanding now and then) never trips the 8 s rule; one that stops delivering does.
 	var flowing = WatchdogScript.new()
