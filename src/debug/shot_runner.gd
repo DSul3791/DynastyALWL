@@ -846,7 +846,7 @@ func _build_item_views(now: int) -> void:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	views = ItemCam.views(centre, maxf(_item_box.size.x, _item_box.size.z), client.camera.fov, centre.y - 0.1 if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
 	_item_views = views
 	_subject = centre
 	_subject_set = true
@@ -861,7 +861,7 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	var fresh: Array = ItemCam.views(centre, maxf(_item_box.size.x, _item_box.size.z), client.camera.fov, centre.y - 0.1 if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
 
 	for v in fresh:
 		if v["name"] == view["name"]:

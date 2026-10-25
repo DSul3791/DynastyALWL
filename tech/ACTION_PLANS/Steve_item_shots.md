@@ -13,3 +13,6 @@ Risk: none to the game (runner only). A very small item (a seed) may need 0.6 m;
 ## Build notes (Tyler GO, with pose read-back and exit code)
 src/debug/item_cam.gd (pure maths: distance_for on the frame WIDTH, 0.2..1.5 m, views, fill_fraction), shot_runner.gd (--shot-item, --shot-item-at, _build_item_views, _node_aabb, _check_item_view; exit code 1 when any view's pose is off by over 0.1 m / 2 degrees or the fill is under 32 %), test_item_cam.gd. Distance is on the frame width because a tool lies across the picture; tiny items go down to 0.2 m (the range Tyler gave, 1.0-1.5, applies to items of a metre or more).
 Run: godot ... -- --shots="item:X,1.7,Z,0,-30,12" --shot-item=iron_pickaxe --shot-wait=40 ; look for "shot runner: item view front ok ..." x4 and the exit code.
+
+## Fit-first (25 Oct, Mike's 1.2 m spade run)
+Camera distance is now the smallest at which every box corner lies within 90 % of the half-frame (bisection, 0.2 to 3 m), per view, aimed at the box centre; elevations 25 / 25 / 90 / 35 degrees for front / side / top / diag. test_item_cam.gd covers 0.2, 0.6, 1.2, 1.8 m items along X and Z in all four views plus a tall post, centring (<= 10 %), inside-with-margin, fill (>= 32 % unless the item points at the camera).
