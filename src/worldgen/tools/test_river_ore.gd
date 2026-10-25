@@ -86,7 +86,7 @@ func _made_up() -> void:
 	_check(str(again.ore_bodies) == str(geology.ore_bodies), "the same tile gives the same placers")
 
 	var near = _geology(side)
-	near.ore_bodies.append({"resource": "copper", "shape": "lens", "center": [640.0, 20.0, 600.0]})
+	near.ore_bodies.append({"resource": "copper", "shape": "placer", "points": [[640.0, 20.0, 600.0]]})
 	near._ensure_river_ore(Vector2i(3, 4), heights, water_class, flow, 0.0, 0.0)
 	metals = []
 
@@ -94,7 +94,7 @@ func _made_up() -> void:
 		if bool(body.get("guaranteed", false)):
 			metals.append(str(body["resource"]))
 
-	_check(metals == ["tin"], "copper already on the river: only tin is added (%s)" % str(metals))
+	_check(metals == ["tin"], "a copper placer already on the tile: only tin is added (%s)" % str(metals))
 
 	var dry = _geology(side)
 	var no_water: PackedByteArray = PackedByteArray()
