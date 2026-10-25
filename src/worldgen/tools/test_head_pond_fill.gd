@@ -15,8 +15,8 @@ const WaterSettler := preload("res://src/water/water_settler.gd")
 const SIM_SECONDS := 10800.0
 const FILL_SHARE := 0.8
 const MIN_GROUND_M := 0.0        # below sea level is a bay or estuary hollow, not a head pond
-const MIN_POND_DEPTH_M := 10.0   # head ponds are cut 10 to 14 m deep (head_pond_depth_m)
-const MAX_POND_DEPTH_M := 20.0   # deeper than that is a lake or the sea, not a head pond
+const MIN_POND_DEPTH_M := 1.5    # drainage-mode head ponds are carved 2 to 8 m deep (drainage_channels.gd _carve_basins); 25 Oct 2026: was 10 to 14 m (the placed head_pond_depth_m ponds)
+const MAX_POND_DEPTH_M := 8.5    # deeper than that is a lake or the sea, not a head pond
 
 var failures: int = 0
 
@@ -41,7 +41,7 @@ func _is_flat_water(data, k: int, surface: float) -> bool:
 			if data.water_class[n] > 1 and not is_nan(level) and absf(level - surface) < 0.5:
 				same += 1
 
-	return same >= 40
+	return same >= 20   # a carved head pond is 25 m across at the least (about 30 cells in this window), not the old 50 m
 
 
 func _init() -> void:
