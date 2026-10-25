@@ -432,7 +432,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			if metal_blade:
 				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)
 			elif absf(color.r - color.b) < 0.1:
-				blade = Color(0.19, 0.17, 0.14)                                                               # stone: matt grey, rough, tied on with twine below
+				blade = Color(0.22, 0.175, 0.12)                                                               # stone: matt grey, rough, tied on with twine below
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
