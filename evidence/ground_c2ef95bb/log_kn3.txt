@@ -1,0 +1,7 @@
+== stone_knife exit 0
+shot runner: item view front try 1: box at (53301.05, 31.30325, 68425.2) size (0.585938, 0.209164, 0.320312) is 21 % off centre, aiming again
+shot runner: item view front try 2: box at (53300.86, 31.30876, 68426.8) size (0.582031, 0.122602, 0.304688) is 100 % off centre, part outside, aiming again
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 86 % of the frame, centre 1 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 54 % of the frame, centre 1 % off, all inside the frame
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 1 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
