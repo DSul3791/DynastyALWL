@@ -1342,6 +1342,11 @@ func _spawn_test_step(now: int) -> void:
 		return
 
 	if _spawn_test_msec == 0:
+		if now - connected_msec > int((_spawn_test_after_s + 150.0) * 1000.0):
+			print("SPAWNTEST %s: FAILED never started, still waiting for ground 150 s after the start time (player %s)" % [_spawn_test, str(body.global_position.round())])
+			_spawn_test = ""
+			return
+
 		if waiting_for_ground or now - connected_msec < int(_spawn_test_after_s * 1000.0):
 			return
 
@@ -1356,6 +1361,11 @@ func _spawn_test_step(now: int) -> void:
 
 		var ground: float = _ground_below(body.global_position)
 		print("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
+		return
+
+	if _spawn_test_msec > 0 and now - _spawn_test_msec > 60000:
+		print("SPAWNTEST %s: FAILED not standing 60 s later, player %s" % [_spawn_test, str(body.global_position.round())])
+		_spawn_test = ""
 		return
 
 	if _spawn_test_msec > 0 and not waiting_for_ground and body.is_on_floor():

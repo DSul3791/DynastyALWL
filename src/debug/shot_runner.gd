@@ -195,6 +195,10 @@ func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
 
+	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
+	if client._spawn_test != "":
+		return
+
 	if frametime_s > 0.0 and _frame_state < 2:
 		_measure_frames(delta)
 
@@ -290,13 +294,13 @@ func _process(delta: float) -> void:
 	if not _landed:
 		var at: Vector3 = client.body.global_position
 		# The shot flies (client.flying), so waiting_for_ground is a stale value from the last walking frame and there may be no collider under a flier: height only.
-		var ready: bool = absf(at.y - _want_y) <= 0.5 and (client.flying or not client.waiting_for_ground)
+		var landed_ok: bool = absf(at.y - _want_y) <= 0.5 and (client.flying or not client.waiting_for_ground)
 
-		if not ready and now - _placed_msec < 90000:
+		if not landed_ok and now - _placed_msec < 90000:
 			return
 
 		_landed = true
-		_land_failed = not ready
+		_land_failed = not landed_ok
 		_moved_msec = now - int(settle_s * 1000.0) if _land_failed else now
 
 		if _land_failed:
