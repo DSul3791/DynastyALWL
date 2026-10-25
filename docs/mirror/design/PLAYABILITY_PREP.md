@@ -183,3 +183,6 @@ Rule: Sonny stays on terrain only (erosion, final bake).
 
 ## NAMED ITEM: LOOK REVIEW LOOP (Dave 25 Oct 00:16) - spec in tech/STANDARD_SHOTS.md
 David3 shoots a fixed set with every build test (K01..K19 (3 views per spot, Dave 25 Oct), Kathleen's set v2), publishes to claude/box-results with an index line, Kathleen reviews each batch (art/CRITIQUES/<build>.md), critiques of severity 2-3 become tasks with an owner. First batch with the 792 test run. Owners: David3 pictures, Kathleen reviews, Tyler checks at each merge (BP-T68).
+
+## ADDED ITEM (Tyler 25 Oct 02:05 UTC): SPAWN COLUMN FIRST / time to stand on the ground
+Mike's log: collision under the player appears 46+ s after join while about 10,000 blocks stream in. Steve's ground-quiet fix (claude/steve-ground-quiet) makes the join not fail; the next plan measures the wait and sends the spawn column first. Owner Steve, lands in the build after ground-quiet; target: standing on the ground within 10 s of the welcome on the box and on Mike's PC.
