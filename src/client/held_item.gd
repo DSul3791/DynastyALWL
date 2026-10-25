@@ -145,6 +145,15 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	camera.add_child(_arms)
 	_arms.play("idle")
 
+	# Debug (Kathleen 2026-10-25: the first-person arms cast shadows but do not show): --arms-debug draws them in plain magenta, unlit and
+	# on top of everything, so a picture tells whether the mesh is drawn at all (then it is a colour or occlusion fault) or not (then culling).
+	if OS.get_cmdline_user_args().has("--arms-debug") and _arms.body_mesh != null:
+		var debug_material: StandardMaterial3D = StandardMaterial3D.new()
+		debug_material.albedo_color = Color(1.0, 0.0, 1.0)
+		debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		debug_material.no_depth_test = true
+		_arms.body_mesh.material_override = debug_material
+
 
 # First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
 func set_first_person(on: bool) -> void:
