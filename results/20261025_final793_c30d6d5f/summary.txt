@@ -1,0 +1,14 @@
+HEAD=c30d6d5ffb9b71a16064abac732392aba858bda6 (lake-size) + tiles/water from ee50b0e2b700e97725bcfa081ae94b53ee3c02fd (mike-bake-793)
+parse_scan: parse_scan: 385 files, 0 problems
+conflict markers: ./src/client/ambience_slots.gd.uid (none if empty)
+PASS  no new warnings against baseline (227 total)
+LOCAL CHECK: PASS
+tile md5 (Mike: 3_4 31586ef6, 4_4 16581815, 4_3 8141b451): 3_4=31586ef6 4_4=16581815 4_3=8141b451 
+erosion_delta_v2.bin sha256: ac0df3cc0fc4cc54feb0cb3365d2022960c45690e8e84fa31b2963e8ee9e55c4 (expect ac0df3cc0fc4cc54feb0cb3365d2022960c45690e8e84fa31b2963e8ee9e55c4); v1 present: no (removed)
+TERRAIN_VERSION in code: TERRAIN_VERSION := 42 
+test_tile_lakes (on the baked tiles) exit 0: 24  ok lines, FAIL lines: tile lakes: 0 failures 
+merge_check.py: protocol 78 build 806 MERGE CHECK FAILED:  - conflict marker in src/client/ambience_slots.gd.uid  - build NUMBER 806 is lower than origin's 808 
+items 262 dup [] max 266 next 267
+recipes 167 dup [] max 169 next 170
+tests: 95 pass, 6 fail
+FGDONE
