@@ -26,3 +26,8 @@ Note: Scythe (iron, later): the same in a wide sweep, only when iron tools come.
 Note: No stone pick, no adze, and the saw needs an iron blade (your earlier answers stay).
 Note: Recommendation: Yes for rake and sickle, scythe later, because farming needs a clear way to clean a plot and a better harvest than the bare hand before iron.
 [check]
+
+## trim-a | Item trim A: Spade sizes: one spade per material (cut 8)
+Note: Full list: design/ITEM_TRIM_LIST.md group A. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
