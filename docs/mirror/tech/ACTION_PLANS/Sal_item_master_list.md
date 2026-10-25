@@ -1,0 +1,6 @@
+# Action plan: master item list and use lines (Sal, goal 2)
+Branch claude/sal-item-master (from generator-v2). Label RUNTIME at most; data and docs only. No numbers, protocol, save or ground change.
+What: tools/item_master_list.py reads items.json, recipes.json, structures.json, looks.json, weights.json and the other data files and writes design/ITEM_MASTER_LIST.md: one row per item (number, id, name, kind, live or future, source, cost, use, look, weight, value) and a list of the empty cells. New data/items/item_uses.json holds one use line for the 34 items no recipe or tool class explains (feather, soil, brick, the species lumber and beams...). `--check` exits 1 when a core item has an empty cell.
+Result today: 206 core items (not retired), 0 empty cells. 174 gathered items (gathered.json, made by gen_gathered_items.py) have no inspect text: 167 are listed in the file and are the next step (descriptions from the flora table, a generator change, one more small plan).
+Cost: none in the game (the new json is not read by the game). Tests: validate_items 0 errors; local_check 233; the script's --check in the branch notes.
+Ask: Tyler GO to merge the list and the uses file; GO on the gathered descriptions step.
