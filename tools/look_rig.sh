@@ -79,7 +79,7 @@ PYEOF
 fi
 if [ -n "$GROUND" ]; then
   GID="${GROUND%%:*}"; GCOUNT="${GROUND#*:}"; [ "$GCOUNT" = "$GROUND" ] && GCOUNT=1
-  $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
+  $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST" "$YAW"
 fi
 PORT=$((7800 + RANDOM % 150)); while netstat -an 2>/dev/null | grep -q ":$PORT "; do PORT=$((7800 + RANDOM % 150)); done   # a port nobody holds
 T0=$(date +%s)
