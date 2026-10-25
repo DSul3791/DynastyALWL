@@ -36,12 +36,12 @@ if [ -n "$WIN" ]; then
 else
   GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
 fi
-CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
+CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; LOOKS=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
 while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
-    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --piece-views) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2 --shot-piece-views"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --look) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:$2 --shot-piece-views"; shift 2;; --looks) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:${2//,/,look:}"; shift 2;; --piece-views) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2 --shot-piece-views"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
@@ -53,12 +53,21 @@ fi
 # Defaults changed on 24 Oct 2026: printed on every run so a before/after picture is not mistaken for a game change.
 echo "rig defaults: --gy $GY (was 28.0 until 24 Oct; the spawn ground is 31.0 in the current world, pass --gy 28 to repeat an old picture)"
 # --piece-views NAME: one piece, four close views (front, side, top, diag) at 3 to 6 m, judged like the item views (one name per run).
+#   --look NAME  one look straight from look_table.gd (plank_wall, thatch_doorway_open, ...), four views like --piece-views; --looks a,b,c  a row of looks. Both need no structure.
 # --pieces: refuse a name that is not a structures.json key before the scene starts (a typo costs seconds, not a launch).
 if [ -n "$PIECES" ]; then
   KEYS=$(grep -oE '^		"[a-z_0-9]+": \{' data/items/structures.json | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | grep -vE '^(campfire)$' | tr '\n' ' ')
   IFS=',' read -ra WANT <<< "$PIECES"
   for P in "${WANT[@]}"; do
     case " $KEYS " in *" $P "*) ;; *) echo "no such piece: $P"; echo "valid pieces: $KEYS"; exit 2;; esac
+  done
+fi
+# --look NAME / --looks a,b: a look straight from src/client/look_table.gd (no structure needed); refuse a name that is not a key there.
+if [ -n "$LOOKS" ]; then
+  LKEYS=$(grep -oE '^	"[a-z_0-9]+": \{"builder' src/client/look_table.gd | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | tr '\n' ' ')
+  IFS=',' read -ra WANTL <<< "$LOOKS"
+  for L in "${WANTL[@]}"; do
+    case " $LKEYS " in *" $L "*) ;; *) echo "no such look: $L"; echo "valid looks (src/client/look_table.gd): $LKEYS"; echo "a new look is one line in that file"; exit 2;; esac
   done
 fi
 [ -z "$NAME" ] && NAME="${ITEM:-empty}_${CAM}"

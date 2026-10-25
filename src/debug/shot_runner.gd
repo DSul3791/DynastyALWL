@@ -21,6 +21,7 @@ extends Node
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
 
 const Net := preload("res://src/stream/terrain_net.gd")
+const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
 
 var client = null
@@ -636,6 +637,21 @@ func _show_pieces(now: int) -> void:
 	var p: Vector3 = client.body.global_position
 
 	for piece_name in piece_names:
+		# "look:NAME" (look_rig --look / --looks): a look drawn straight from look_table.gd, no structure needed (a look nothing points at yet).
+		if str(piece_name).begins_with("look:"):
+			var look_name: String = str(piece_name).trim_prefix("look:")
+
+			if not LookTable.has_look(look_name):
+				print("shot runner: piece %s FAIL not in look_table.gd" % piece_name)
+				continue
+
+			var look_model: Node3D = LookTable.build(look_name)
+			client.add_child(look_model)
+			look_model.set_meta("piece_name", str(piece_name))
+			look_model.rotation.y = deg_to_rad(pieces_yaw_deg)
+			models.append([str(piece_name), {"state": -1, "look": look_name}, look_model])
+			continue
+
 		var def: Dictionary = defs.get(piece_name, {})
 
 		if def.is_empty():
