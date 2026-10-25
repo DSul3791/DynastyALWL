@@ -16,7 +16,7 @@ const SIM_SECONDS := 10800.0
 const FILL_SHARE := 0.8
 const MIN_GROUND_M := 0.0        # below sea level is a bay or estuary hollow, not a head pond
 const MIN_POND_DEPTH_M := 1.5    # drainage-mode head ponds are carved 2 to 8 m deep (drainage_channels.gd _carve_basins); 25 Oct 2026: was 10 to 14 m (the placed head_pond_depth_m ponds)
-const MIN_SPRING_M3S := 0.2      # a trickle under this cannot fill a bowl in three hours: not tested
+const MIN_SPRING_M3S := 0.5      # a trickle under this cannot fill a bowl in three hours (0.3 m3/s x 10800 s = 3,240 m3, about 0.2 m of a 7.6 m pond, and evaporation takes its share): not tested. 0.2 until 25 Oct 2026, when the catchment floor rose to 0.3 and put 0.3 m3/s springs in the set
 const LAKE_VOLUME_M3 := 100000.0 # a bigger bowl is a lake: its spring cannot fill it, so it only has to stand 1 m deep
 const LAKE_NEED_M := 1.0
 const BOWL_RING_M := [40.0, 80.0, 120.0]
