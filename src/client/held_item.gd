@@ -38,6 +38,7 @@ const SHOULDER_LOG_X := 0.5               # first person: the log's side of the 
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
+const HELD_HOE_ROLL_DEG := 60.0       # first person: the hoe is rolled about its haft so the blade shows instead of hiding edge-on
 const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod points forward and up about 30 degrees (it lay horizontal and a little down at the default lean)
 const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
@@ -48,7 +49,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.4
 const HELD_SPEAR_SCALE := 1.6
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -61,6 +62,9 @@ const HELD_LOOK_TURN := {
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
+	"bow": Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0)),   # the bow stands upright in the hand (limbs up and down, belly forward, string toward the archer)
+	"arrow": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"quiver": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 }
 const JAB_REACH := 0.7
 const JAB_S := 0.28
@@ -361,7 +365,8 @@ func _is_knife() -> bool:
 # animation on left click, so nothing silently fails to be held.
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
-	return kind in ["tool", "weapon", "container"] and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -1146,7 +1151,14 @@ func _mount_model() -> void:
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
 	elif kind != "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
+
+		if str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
+			turn = turn * Basis(Vector3.UP, deg_to_rad(HELD_HOE_ROLL_DEG))   # roll the hoe about its haft so the blade face shows in the frame (Tyler: first person read as a stick)
 		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
+
+		if _model.has_meta("held_pitch_deg"):
+			turn = Basis(Vector3.RIGHT, deg_to_rad(float(_model.get_meta("held_pitch_deg")))) * turn   # point the tip up into the view
+			grip.y += 0.05
 
 	_model.basis = (tilt * turn).scaled(Vector3.ONE / ARMS_SCALE)      # the hand mount is scaled with the arms
 	_model.position = tilt * grip / ARMS_SCALE
@@ -1411,9 +1423,16 @@ func _make_look_tool_model() -> Node3D:
 	var node: Node3D = Node3D.new()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis).scaled(Vector3.ONE * held_scale)
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
 	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
+
+	if shape == "bow":
+		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
+
+	if shape == "arrow":
+		node.set_meta("held_pitch_deg", 30.0)
+		node.set_meta("grip_y", 0.1)   # an arrow is held about its middle, so the head and the shaft show in the view
 
 	return node
 

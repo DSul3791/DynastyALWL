@@ -174,6 +174,20 @@ func _init() -> void:
 		_check(plate_tris > 100, id + ": the blade plate has %d triangles beyond the socket" % plate_tris)
 		_check(hi.z - lo.z > 0.17 * plate_scale and hi.x - lo.x > 0.2 * plate_scale and hi.y - lo.y > 0.008 * plate_scale, id + ": the plate is %.3f wide, %.3f long, %.3f deep" % [(hi.z - lo.z) / plate_scale, (hi.x - lo.x) / plate_scale, (hi.y - lo.y) / plate_scale])
 
+
+	for id in ["wooden_bow", "wooden_arrow", "stone_arrow", "quiver"]:                                                 # bow, arrows and quiver (items 269-272)
+		var bow_mesh: Mesh = BasicLook.mesh_for(id)
+		var bow_tris: int = 0
+
+		for si in bow_mesh.get_surface_count():
+			bow_tris += int(float((bow_mesh.surface_get_arrays(si)[Mesh.ARRAY_INDEX] as PackedInt32Array).size()) / 3.0)
+
+		_check(bow_tris >= 100 and bow_tris <= 1200, id + ": %d triangles" % bow_tris)
+
+	_check(BasicLook.mesh_for("wooden_bow").get_aabb().size.x > 0.6 and BasicLook.mesh_for("wooden_bow").get_aabb().size.x < 0.7, "wooden bow: about 1.2 m at real size (x0.55 shown)")
+	_check(BasicLook.mesh_for("wooden_arrow").get_aabb().size.x > 0.35 and BasicLook.mesh_for("wooden_arrow").get_aabb().size.x < 0.42, "wooden arrow: about 0.7 m at real size")
+	_check(BasicLook.mesh_for("stone_arrow").get_aabb().size.x > 0.35 and BasicLook.mesh_for("stone_arrow").get_aabb().size.x < 0.42, "stone arrow: about 0.7 m at real size")
+
 	quit(1 if failures > 0 else 0)
 
 
