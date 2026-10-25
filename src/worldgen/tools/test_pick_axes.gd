@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless check of the held pickaxe (Dave's reference picture, 2026-10-25). The pick mesh (basic_look.gd) has its haft along x (pommel at -x, eye at x = 0.27), its head
 # along z (pick at +z, chisel at -z) and both ends bending toward the grip (-x), as in the reference. HELD_LOOK_TURN["pick"] holds it with the head vertical (points up and
-# down, Dave: "held with the points up and down"), the haft along +y. So, held, in third person and in first person (which only lean the model about the mount's X axis):
+# down, Dave: "held with the points up and down"; then "flip it 180 degrees so the pointy part is on the bottom"), the haft along +y. So, held, in third person and in first person (which only lean the model about the mount's X axis):
 #   - the head runs up and down (z), the pick tip above and the chisel tip below the haft line;
 #   - both ends bend toward the grip (-y) in the haft-and-head plane, none sideways (x), tips at the head centre's x within 1 cm;
 #   - from the front (along the haft) the head is a straight bar: the head's centre line holds one x within 1 cm;
@@ -55,9 +55,10 @@ func _check_frame(label: String, vertices: PackedVector3Array, basis: Basis, gro
 	_check(absf(pick_bend - chisel_bend) < 0.03, label + ": the two ends bend by a similar amount")
 
 	if label.ends_with(" held"):
-		_check(head_axis.z > 0.999, label + ": the head stands vertical, points up and down (axis z %.3f)" % head_axis.z)
-		_check(pick.z > 0.2 and chisel.z < -0.2, label + ": pick tip above and chisel tip below the haft line (z %.2f, %.2f)" % [pick.z, chisel.z])
-		_check(absf(pick.z + chisel.z) < 0.05, label + ": the collar sits near the middle of the head (tips %.2f up, %.2f down)" % [pick.z, -chisel.z])
+		_check(head_axis.z < -0.999, label + ": the head stands vertical, pick end down (axis z %.3f)" % head_axis.z)
+		_check(pick.z < -0.2 and chisel.z > 0.2, label + ": the pointed pick tip is below and the chisel tip above the haft line (z %.2f, %.2f)" % [pick.z, chisel.z])
+		_check(pick.z < chisel.z, label + ": pick tip below chisel tip")
+		_check(absf(pick.z + chisel.z) < 0.05, label + ": the collar sits near the middle of the head (tips %.2f down, %.2f up)" % [-pick.z, chisel.z])
 
 	var low: float = 1e9
 	var high: float = -1e9
