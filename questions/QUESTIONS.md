@@ -18,8 +18,3 @@ Note: 2. Stand in the meadow and look down at the grass, then at a gravel bank a
 Note: 3. Is the ground more real than before, or does it show repeating tiles, too much bump or wrong colour? Say which.
 Note: Recommendation: Yes it is better: ground now has photo detail, bumps and a soil sheen near the eye.
 [picture]
-
-## trim-e | Item trim E: Food and drink: herbal tea, medicine, energy bar, nut paste (cut 4)
-Note: Full list: design/ITEM_TRIM_LIST.md group E. Yes = we make this cut or merge. Old saves convert to the merge target.
-Note: Recommendation: Yes
-[check]
