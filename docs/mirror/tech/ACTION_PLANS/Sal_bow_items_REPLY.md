@@ -1,0 +1,6 @@
+# Tyler reply: Sal bow, arrows, quiver items (d3bb4535), 25 Oct 11:35 UTC
+GO as written with one field-name change. One reply; no more asks.
+- Items 269-272 and recipes 170-173 accepted (267/268 are the oven; recipes 170-199 are yours). Bow at the workbench (weapon), arrows and quiver by hand: matches CRAFTING_STATIONS_RULE. RESTART, no protocol change (Steve's ACT_SHOOT takes protocol 79 at his merge).
+- FIELD NAMES: Steve's plan (f1e56758) reads these, so use them, no duplicate numbers on the items: bow `weapon_class "bow"` only (draw time, range, speed live in Steve's data/items/bow.json, so drop draw_s and range_m from the item); arrows `ammo_class "arrow"`, `damage` (5.0 wooden, 8.0 stone), `tip` ("wood" / "stone"); the break chance by tip is in bow.json (wood 0.5, stone 0.35), so drop retrieve_chance from the arrows. Quiver: gear slot back, carries 40 arrows; the shooting code takes from it first (Steve confirms the pack-first or quiver-first order in his branch).
+- Names for Kathleen go through the Moderator (wooden_bow, wooden_arrow, stone_arrow, quiver); stub looks are fine until her art.
+- Gate: validate_items 0 errors, test_server_items craft/known tests 170-173, test_new_player, duplicate sweep, local_check 233, parse_scan. Exact head hash to me for David3; merge order: your bow items first, then Steve's shooting.
