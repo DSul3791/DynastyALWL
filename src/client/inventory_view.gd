@@ -92,6 +92,8 @@ var _death_msec: int = 0                    # when the last death arrived, 0 whe
 var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
 var memory: int = 0
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
+const InnerSettingsScript := preload("res://src/client/inner_voice_settings.gd")
+var inner_settings = InnerSettingsScript.new()   # Esc > Settings > Inner voice: hints and dialogue switches (inner_voice_settings.gd)
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
@@ -2664,6 +2666,9 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 
 # The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
 func _on_thought(line_id: String, text: String, kind: String) -> void:
+	if not inner_settings.allows(kind):
+		return      # the player switched this kind of line off (the symptom message itself is not a line of the voice)
+
 	_thought_label.text = "(%s)" % text
 	_thought_until_msec = Time.get_ticks_msec() + 5500
 
