@@ -1,12 +1,14 @@
 == iron_spade_large exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 16 % off, all inside the frame
-shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 50 % off, PART OUTSIDE THE FRAME
-shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 72 % of the frame, centre 9 % off, all inside the frame
-shot runner: done (item pictures FAILED)
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 55 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53301.5, 31.03656, 68425.83) size (1.824219, 1.366922, 0.945312) is 59 % off centre, part outside, aiming again
+shot runner: item view top try 2: box at (53299.93, 31.37254, 68426.38) size (2.140625, 0.173845, 1.039062) is 56 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 49 % of the frame, centre 0 % off, all inside the frame
 == steel_spade_large exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 16 % off, all inside the frame
-shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 71 % off, PART OUTSIDE THE FRAME
-shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 79 % of the frame, centre 6 % off, all inside the frame
-shot runner: done (item pictures FAILED)
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 55 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53301.53, 31.00347, 68425.83) size (1.675781, 1.569304, 0.882812) is 70 % off centre, part outside, aiming again
+shot runner: item view top try 2: box at (53299.94, 31.25405, 68426.36) size (2.066406, 0.846836, 1.007812) is 67 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 62 % of the frame, centre 0 % off, all inside the frame
