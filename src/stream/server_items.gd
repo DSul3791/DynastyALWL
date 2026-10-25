@@ -71,6 +71,7 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const GATHER_PACE_MS := 80              # at most about 12 picks a second per player (hold-E sweep)
 const MINE_REACH_M := 4.5
@@ -6865,8 +6866,15 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
 		return
 
+	# Short of a part the pack could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
+	if not _pack_covers(inv, recipe, count):
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count)
+
+		if outcome == 1:
+			return
+
 	var entries: Array = queue["entries"]
-	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty()
+	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0)
 
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
@@ -6896,6 +6904,98 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	_sync_craft_queue(peer)
 
 
+# Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
+func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
+	for need in recipe["needs"]:
+		if not inv.has(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
+			return false
+
+	for keep in recipe["keeps"]:
+		if not inv.has(keep[0], keep[1]):
+			return false
+
+	return true
+
+
+# Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
+# was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int) -> int:
+	var ctx: Dictionary = {
+		"have": func(item: int) -> int: return inv.count_of(item),
+		"station_ok": func(r: Dictionary) -> bool: return str(r.get("station", "")) == "" or station_near(peer, str(r["station"]), int(r.get("station_level", 1))),
+		"free": false,
+	}
+	var plan: Dictionary = CraftPlanner.plan(recipes, table, recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), ctx)
+
+	if not bool(plan["ok"]):
+		if str(plan["msg"]) != "" and str(plan["msg"]) != "You do not have what that needs":
+			_say(peer, str(plan["msg"]))
+			return 0
+
+		return -1
+
+	var steps: Array = plan["steps"]
+
+	if steps.size() == 1:
+		return -1   # nothing to make first: the plain path
+
+	var entries: Array = queue["entries"]
+
+	if entries.size() + steps.size() > CRAFT_QUEUE_ENTRIES:
+		_say(peer, "The crafting queue is full")
+		return 0
+
+	for made in plan["made"]:   # the made parts must fit in the pack and under the carry limit
+		if _fit(peer, inv, int(made[0]), int(made[1])) < int(made[1]):
+			_say(peer, "You cannot carry that many %s" % table.name_of(int(made[0])).to_lower())
+			return 0
+
+	var chain: int = 1
+
+	for entry in entries:
+		if entry.size() > 4:
+			chain = maxi(chain, int(entry[4]) + 1)
+
+	for step in steps:
+		for need in step["take"]:
+			inv.remove(need[0], int(need[1]) * int(step["count"]))
+
+		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
+
+	_dirty = true
+	_sync_craft_queue(peer)
+	return 1
+
+
+# The head entry starts: the parts an earlier step made leave the pack now. False (the entry and what depends on it are cancelled and refunded)
+# when they are not there any more.
+func _start_deferred(peer: int, head: Array) -> bool:
+	var inv = inventory_of(peer)
+	var times: int = int(head[1])
+
+	for need in head[3]:
+		if inv == null or not inv.has(need[0], int(need[1]) * times):
+			_cancel_craft(peer, 0)
+			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
+			return false
+
+	for need in head[3]:
+		inv.remove(need[0], int(need[1]) * times)
+		var merged: bool = false
+
+		for have in head[2]:
+			if int(have[0]) == int(need[0]):
+				have[1] = int(have[1]) + int(need[1])
+				merged = true
+
+		if not merged:
+			head[2].append([int(need[0]), int(need[1])])
+
+	head[3] = []
+	_dirty = true
+	return true
+
+
 func _refund_entry(peer: int, entry: Array) -> void:
 	# The entry keeps its own ingredient list, so a refund works even if the recipe is later removed or renumbered.
 	for need in entry[2]:
@@ -6915,6 +7015,20 @@ func _cancel_craft(peer: int, index: int) -> void:
 		queue["elapsed"] = 0.0
 
 	_refund_entry(peer, entry)
+
+	# Cancelling a part cancels what was waiting for it (the same chain, queued after it); each is refunded what it took.
+	if entry.size() > 4 and int(entry[4]) > 0:
+		var at: int = index
+
+		while at < queue["entries"].size():
+			var later: Array = queue["entries"][at]
+
+			if later.size() > 4 and int(later[4]) == int(entry[4]):
+				queue["entries"].remove_at(at)
+				_refund_entry(peer, later)
+			else:
+				at += 1
+
 	_dirty = true
 	_sync_craft_queue(peer)
 
@@ -6939,13 +7053,16 @@ func _craft_tick(spent: float) -> void:
 			continue
 
 		# A station recipe only runs while you are near its station; step away and it waits (nothing is lost, cancel refunds).
-		var free_entry: bool = (head[2] as Array).is_empty()   # an admin-mode craft: no station, no kept tool
+		var free_entry: bool = (head[2] as Array).is_empty() and (head.size() < 4 or (head[3] as Array).is_empty())   # an admin-mode craft: no station, no kept tool
 
 		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				_say(peer, "Your craft waits: go back to the %s" % _station_name(str(recipe["station"])))
 
+			continue
+
+		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
@@ -7044,7 +7161,12 @@ func _load_craft_queues() -> void:
 			for need in entry[2] if entry.size() > 2 else []:
 				needs.append([int(need[0]), int(need[1])])
 
-			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs])
+			var parts: Array = []
+
+			for need in entry[3] if entry.size() > 3 else []:
+				parts.append([int(need[0]), int(need[1])])
+
+			entries.append([int(entry[0]), clampi(int(entry[1]), 1, CRAFT_QUEUE_MAX_COUNT), needs, parts, int(entry[4]) if entry.size() > 4 else 0])
 
 		_craft_queues[str(key)] = {"entries": entries, "elapsed": float(row.get("elapsed", 0.0))}
 

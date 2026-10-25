@@ -1,5 +1,6 @@
 extends Node
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
@@ -1996,7 +1997,32 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory)
+	return _free_craft() or recipes.can_make(number, inventory) or bool(_parts_plan(number)["ok"])
+
+
+var _plan_cache: Dictionary = {}   # recipe number -> its auto-make plan, cleared on every refresh
+
+
+# What the server would queue if you picked this recipe short of a part it can make (Dave 25 Oct): {"ok", "made": [[item, count]], "ambiguous", "msg"}.
+func _parts_plan(number: int) -> Dictionary:
+	if _plan_cache.has(number):
+		return _plan_cache[number]
+
+	var plan: Dictionary = {"ok": false, "steps": [], "made": [], "ambiguous": 0, "msg": ""}
+
+	if not recipes.can_make(number, inventory):
+		var ctx: Dictionary = {
+			"have": func(item: int) -> int: return inventory.count_of(item),
+			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
+			"free": false,
+		}
+		plan = CraftPlanner.plan(recipes, table, number, 1, ctx)
+
+		if bool(plan["ok"]) and (plan["steps"] as Array).size() < 2:
+			plan["ok"] = false
+
+	_plan_cache[number] = plan
+	return plan
 
 
 func _station_ok(r: Dictionary) -> bool:
@@ -3401,6 +3427,7 @@ func _refresh() -> void:
 		return
 
 	_note_acquired()
+	_plan_cache.clear()
 	_arrange_slots()
 
 	if _weight_label != null:
@@ -3543,6 +3570,22 @@ func _refresh_detail() -> void:
 		where.modulate = Color(0.55, 1.0, 0.55) if _station_ok(r) else Color(1.0, 0.8, 0.4)
 		_style(where, BODY_PX)
 		_detail.add_child(where)
+
+	var parts: Dictionary = _parts_plan(_selected_recipe)
+
+	if bool(parts["ok"]):
+		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], table.name_of(m[0]).to_lower()])
+		var auto_line: Label = Label.new()
+		auto_line.text = "Makes %s first" % " and ".join(made)
+		auto_line.modulate = Color(0.55, 1.0, 0.55)
+		_style(auto_line, BODY_PX)
+		_detail.add_child(auto_line)
+	elif int(parts["ambiguous"]) != 0:
+		var choose_line: Label = Label.new()
+		choose_line.text = str(parts["msg"])
+		choose_line.modulate = Color(1.0, 0.8, 0.4)
+		_style(choose_line, BODY_PX)
+		_detail.add_child(choose_line)
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
