@@ -6,7 +6,7 @@ extends SceneTree
 
 const LookTable := preload("res://src/client/look_table.gd")
 const NEAR_TRIANGLES := 300
-const BIG := {"log_wall": 1500, "saw_mill": 1500, "water_wheel": 800, "woodworking_table": 600, "door_double": 600, "foundation": 600, "clay_hearth": 600, "oven": 450, "thatch_floor": 300, "thatch_doorway": 400, "thatch_roof": 400}
+const BIG := {"log_wall": 1500, "saw_mill": 1500, "water_wheel": 800, "woodworking_table": 600, "door_double": 600, "foundation": 600, "clay_hearth": 600, "oven": 450, "thatch_floor": 300, "thatch_doorway": 400, "thatch_doorway_open": 400, "thatch_roof": 400, "plank_window_wall": 400, "fine_window_wall": 450, "fine_door": 450, "fine_door_open": 450, "plank_door": 350, "plank_door_open": 350}
 
 var failures: int = 0
 

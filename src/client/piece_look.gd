@@ -19,6 +19,8 @@ static var _log: StandardMaterial3D
 static var _thatch: StandardMaterial3D
 static var _clay: StandardMaterial3D
 static var _pot: StandardMaterial3D
+static var _fine: StandardMaterial3D
+static var _rough: StandardMaterial3D
 static var _meshes: Dictionary = {}      # shared log meshes by variant key, built once
 
 
@@ -119,6 +121,8 @@ static func _materials() -> void:
 	_thatch = _textured(Color(0.72, 0.6, 0.3), 14, 83, false)            # straw bundles: many thin horizontal courses, golden
 	_clay = _blocks_material(Color(0.58, 0.36, 0.24), 1, 91, 0.3)        # fired clay: warm, mottled, no seams
 	_pot = _blocks_material(Color(0.1, 0.09, 0.085), 1, 97, 0.2)         # blackened clay or iron pot
+	_fine = _textured(Color(0.66, 0.5, 0.3), 1, 101, false)              # planed lumber: pale, straight grain, no bark
+	_rough = _textured(Color(0.3, 0.2, 0.12), 6, 103, true)              # the rough flat face of a split plank: dark, knotty
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -643,9 +647,119 @@ static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, ma
 	parent.add_child(mesh)
 
 
+# ---- Building tiers (art/BUILDING_TIERS_LOOKS.md): one panel builder per tier, the gap walls and doorways built from it. Plank and Fine wood first. ----
+
+# A wall panel of `w` by `h` metres centred at (x, y, 0) in `root`. Plank (tier 2): half-round planks, smooth rounded outside (+z), flat rough face inside, dark gaps, 0.1 m.
+# Fine wood (tier 3): lapped clapboards 20 cm, 0.15 m with a flat core.
+static func _tier_panel(root: Node3D, tier: String, w: float, h: float, x: float, y: float) -> void:
+	if tier == "plank":
+		_box(root, Vector3(w, h, 0.06), Vector3(x, y, -0.02), _rough)                                       # the flat rough inside face
+		var n: int = maxi(1, roundi(w / 0.25))
+		var pw: float = w / float(n)
+
+		for k in n:
+			var mesh: MeshInstance3D = MeshInstance3D.new()
+			var shape: CylinderMesh = CylinderMesh.new()
+			shape.top_radius = pw * 0.5 - 0.006
+			shape.bottom_radius = pw * 0.5 - 0.006
+			shape.height = h
+			shape.radial_segments = 6
+			shape.rings = 1
+			shape.cap_top = false
+			shape.cap_bottom = false
+			mesh.mesh = shape
+			mesh.material_override = _planks
+			mesh.position = Vector3(x - w * 0.5 + pw * (float(k) + 0.5), y, 0.01)
+			mesh.scale = Vector3(1.0, 1.0, 0.4)
+			root.add_child(mesh)
+	else:
+		_box(root, Vector3(w, h, 0.08), Vector3(x, y, -0.03), _rough)                                       # the core behind the boards
+		var courses: int = maxi(1, roundi(h / 0.2))
+		var ch: float = h / float(courses)
+
+		for k in courses:
+			_box_rot(root, Vector3(w, ch + 0.02, 0.03), Vector3(x, y - h * 0.5 + ch * (float(k) + 0.5), 0.045 + 0.002 * float(k % 2)), Vector3(0.1, 0.0, 0.0), _fine)   # each board laps the one below
+
+
+static func _tier_posts(root: Node3D, tier: String, jamb_x: float, height: float) -> void:
+	for x in [-jamb_x, jamb_x]:
+		if tier == "fine":
+			_box(root, Vector3(0.12, height, 0.2), Vector3(x, height * 0.5, 0.0), _fine)                       # corner trim
+		else:
+			_box(root, Vector3(0.1, height, 0.14), Vector3(x, height * 0.5, 0.0), _log)                        # a bark-on corner post
+
+	_box(root, Vector3(2.0, 0.1, 0.2 if tier == "fine" else 0.14), Vector3(0.0, height - 0.05, 0.0), _fine if tier == "fine" else _log)   # top plate
+
+
+# A tier wall with an optional gap: `low` and `high` are the gap's bottom and top in metres, `jamb` the wall left each side of it (0 = a plain wall).
+static func _tier_wall(tier: String, low: float, high: float, jamb: float) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var thick: float = 0.15 if tier == "fine" else 0.1
+
+	if jamb <= 0.0:
+		_tier_panel(root, tier, 1.8, 2.3, 0.0, 1.15)
+	else:
+		var side_x: float = 1.0 - jamb * 0.5
+
+		for x in [-side_x, side_x]:
+			_tier_panel(root, tier, jamb - 0.1, 2.3, x, 1.15)
+
+		var gap_w: float = 2.0 * (1.0 - jamb)
+		_tier_panel(root, tier, gap_w, 2.3 - high, 0.0, (high + 2.3) * 0.5)
+
+		if low > 0.0:
+			_tier_panel(root, tier, gap_w, low, 0.0, low * 0.5)
+
+	_tier_posts(root, tier, 0.95, 2.4)
+	_solid(root, Vector3(2.0, 2.4, thick + 0.05), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+static func tier_wall(tier: String) -> Node3D:
+	return _tier_wall(tier, 0.0, 0.0, 0.0)
+
+
+static func tier_window_wall(tier: String) -> Node3D:
+	return _tier_wall(tier, 0.9, 1.7, 0.5)
+
+
+# A tier doorway: the tier wall with a one metre gap and a door in it. Plank: planks with two battens and a wooden latch (no iron). Fine wood: nailed boards with iron straps.
+static func tier_doorway(tier: String, open: bool = false) -> Node3D:
+	var root: Node3D = _tier_wall(tier, 0.0, 2.0, 0.5)
+	var leaf: Node3D = door(1.0, 1, "bar" if tier == "fine" else "none", false, open)
+	root.add_child(leaf)
+	return root
+
+
+# A tier floor, 2 by 2 m, top 0.12 m up. Plank: rough planks with gaps and pegs. Fine wood: planed boards laid close, joists under (nail heads come with the material pass).
+static func tier_floor(tier: String) -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	var n: int = 8 if tier == "plank" else 10
+	var gap: float = 0.02 if tier == "plank" else 0.004
+	var bw: float = 2.0 / float(n)
+
+	for x in [-0.8, 0.0, 0.8]:
+		_box(root, Vector3(0.1, 0.05, 2.0), Vector3(x, 0.025, 0.0), _log if tier == "plank" else _frame)   # the joists
+
+	for k in n:
+		var cx: float = -1.0 + bw * (float(k) + 0.5)
+		_box(root, Vector3(bw - gap, 0.07, 2.0), Vector3(cx, 0.085, 0.0), _planks if tier == "plank" else _fine)
+
+
+	if tier == "plank":
+		for x in [-0.7, 0.7]:
+			for z in [-0.7, 0.7]:
+				_box(root, Vector3(0.05, 0.01, 0.05), Vector3(x, 0.122, z), _frame)                            # a wooden peg
+
+	_solid(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0))
+	return root
+
+
 # A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, a timber frame round the gap,
 # and a door leaf of lashed sticks with twine bands and a rope pull.
-static func thatch_doorway() -> Node3D:
+static func thatch_doorway(open: bool = false) -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 
@@ -670,14 +784,26 @@ static func thatch_doorway() -> Node3D:
 
 	_box(root, Vector3(1.0, 0.1, 0.22), Vector3(0.0, 2.05, 0.0), _frame)            # the lintel
 
+	var leaf: Node3D = Node3D.new()                                                  # the door leaf, hinged on its right edge (x = 0.5), swung into the room (+z) when open
+	leaf.position = Vector3(0.5, 0.0, 0.02)
+	leaf.rotation.y = PI * 0.5 if open else 0.0
+	root.add_child(leaf)
+
 	for k in 7:
-		_box(root, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
+		_box(leaf, Vector3(0.06, 2.0, 0.05), Vector3(-0.92 + 0.14 * float(k), 1.0, 0.0), _log)   # the door's sticks
 
 	for y in [0.4, 1.0, 1.6]:
-		_box(root, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
+		_box(leaf, Vector3(0.96, 0.04, 0.06), Vector3(-0.5, y, 0.03), _frame)      # lashed cross-rails
 
-	_box(root, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
-	_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+	_box(leaf, Vector3(0.04, 0.2, 0.05), Vector3(-0.15, 1.0, 0.07), _thatch)       # the rope pull
+
+	if not open:
+		_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+		return root
+
+	_solid(root, Vector3(0.5, 2.4, 0.25), Vector3(-0.75, 1.2, 0.0))
+	_solid(root, Vector3(0.5, 2.4, 0.25), Vector3(0.75, 1.2, 0.0))
+	_solid(root, Vector3(1.0, 0.4, 0.25), Vector3(0.0, 2.2, 0.0))
 	return root
 
 

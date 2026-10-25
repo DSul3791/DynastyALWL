@@ -37,10 +37,21 @@ const LOOKS := {
 	"tripod_pot": {"builder": "tripod_pot", "args": []},
 	"clay_hearth": {"builder": "clay_hearth", "args": []},
 	"oven": {"builder": "oven", "args": []},
+	"plank_wall": {"builder": "tier_wall", "args": ["plank"]},
+	"plank_window_wall": {"builder": "tier_window_wall", "args": ["plank"]},
+	"plank_door": {"builder": "tier_doorway", "args": ["plank", false]},
+	"plank_door_open": {"builder": "tier_doorway", "args": ["plank", true]},
+	"plank_floor": {"builder": "tier_floor", "args": ["plank"]},
+	"fine_wall": {"builder": "tier_wall", "args": ["fine"]},
+	"fine_window_wall": {"builder": "tier_window_wall", "args": ["fine"]},
+	"fine_door": {"builder": "tier_doorway", "args": ["fine", false]},
+	"fine_door_open": {"builder": "tier_doorway", "args": ["fine", true]},
+	"fine_floor": {"builder": "tier_floor", "args": ["fine"]},
 	"snare_trap": {"builder": "snare_trap", "args": []},
 	"thatch_floor": {"builder": "thatch_floor", "args": []},
 	"thatch_roof": {"builder": "thatch_roof", "args": []},
-	"thatch_doorway": {"builder": "thatch_doorway", "args": []},
+	"thatch_doorway": {"builder": "thatch_doorway", "args": [false]},
+	"thatch_doorway_open": {"builder": "thatch_doorway", "args": [true]},
 }
 
 static var _warned: Dictionary = {}
