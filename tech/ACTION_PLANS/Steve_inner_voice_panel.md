@@ -10,3 +10,6 @@ Change:
 Test: src/worldgen/tools/test_inner_voice_settings.gd (headless): defaults on; hints off blocks only hint kinds; dialogue off blocks only dialogue kinds (vomit, diarrhea); unknown kind counts as dialogue; "hint_x" prefix counts as hint; save and load round trip through a temp path. Plus the Audit line for the new buttons (tools/items_check.py ui audit if it lists settings pages).
 Dave's check: Esc > Settings > Inner voice, switch Inner dialogue off, eat rotten food: the symptom message shows, the joke does not.
 Risk: low; small client-only change. Cost: one dictionary lookup per thought.
+
+## Build notes (Tyler GO)
+Built: data/items/inner_voice_classes.json, src/client/inner_voice_settings.gd (+ .uid), inventory_view.inner_settings and the filter in _on_thought, game_menu "Inner voice" page (Hints and Inner dialogue switches, refreshed from the saved state), src/worldgen/tools/test_inner_voice_settings.gd (+ .uid). The sickness symptom message is outside the filter. Defaults on when the cfg is missing.

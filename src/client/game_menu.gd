@@ -23,6 +23,8 @@ var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
+var _hints_switch
+var _dialogue_switch
 var _tunnel_switch
 var _admin_mode_switch
 var _cave_button: Button
@@ -73,6 +75,7 @@ func build(client) -> void:
 	_build_display()
 	_build_sound()
 	_build_gameplay()
+	_build_inner_voice()
 	_build_sound_test()
 	_build_admin()
 	var reset: VBoxContainer = _page("reset_edits")
@@ -143,6 +146,8 @@ func refresh() -> void:
 		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
+		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
+		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
 
 
@@ -187,6 +192,7 @@ func _build_settings() -> void:
 	_button(settings, "Display", func(): show_page("display"))
 	_button(settings, "Sound", func(): show_page("sound"))
 	_button(settings, "Gameplay", func(): show_page("gameplay"))
+	_button(settings, "Inner voice", func(): show_page("inner_voice"))
 	_button(settings, "Back", func(): show_page("main"))
 
 
@@ -275,6 +281,24 @@ func _build_gameplay() -> void:
 		var steps: Array = [120, 300, 600, 1200]
 		_c.net.tunnel_setting.rpc_id(1, _c.tunnel_on, steps[(steps.find(_c.tunnel_cave_in_s) + 1) % steps.size()]))
 	_button(gameplay, "Back", func(): show_page("settings"))
+
+
+# Esc > Settings > Inner voice (Dave 24 Oct): the character's own voice can give hints, speak its thoughts, both or neither.
+func _build_inner_voice() -> void:
+	var page: VBoxContainer = _page("inner_voice")
+	_heading(page, "Inner voice")
+	_hints_switch = _switch_row(page, "Hints", func(on: bool):
+		if _c.items != null:
+			_c.items.inner_settings.set_hints(on))
+	_dialogue_switch = _switch_row(page, "Inner dialogue", func(on: bool):
+		if _c.items != null:
+			_c.items.inner_settings.set_dialogue(on))
+	var hint: Label = Label.new()
+	hint.text = "Hints: a gentle nudge when you are stuck.\nInner dialogue: your own remarks, warnings and jokes."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 22)
+	page.add_child(hint)
+	_button(page, "Back", func(): show_page("settings"))
 
 
 # The sound test: a scrolling list, click a line to hear it (each line steps through its own variations; the note says which).
