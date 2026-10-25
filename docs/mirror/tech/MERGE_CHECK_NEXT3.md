@@ -146,3 +146,5 @@ RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL
 ## SHOTS v3 (Dave 25 Oct 01:26): 3 views per spot, turn left 90 degrees after each shot; spec STANDARD_SHOTS.md. David3: update shots.txt/batch runner (view column, yaw read-back differs by 90 between views, tools single view).
 
 ## CAMERA TURN (Dave 25 Oct 01:37): recipe in tech/CAMERA_TURN_RECIPE.md (mouse look rewrites the pose; shot_lock flag + pose read-back + body.rotation.y += PI/2 for a left turn). Steve plans the 3-line client flag; David3 tests on the box first.
+
+## GATE A (Tyler 01:42 UTC): e405038b NOT a pass (75/9). Hold A. Sal fixes test_dishes, test_new_player_day, test_placement_rules and rebases B and C. NEW RULE (BP-T71): the six failures that also fail on the base (generator-v2) are a BASELINE: David3 lists their names in tech/TEST_BASELINE.md with the commit they started failing; a branch passes if it adds no NEW failure vs that baseline, and each baseline failure gets an owner and a fix date, because a test that is already red hides real regressions.
