@@ -216,3 +216,5 @@ Audit scope note (2026-10-22): this first pass is a document-level audit of PROC
 
 BP-T72 addendum (25 Oct, Dave): no kit items for building pieces or station kits; they are hammer blueprints (bridge pattern). Keep numbers so old saves load. Hold any crafting gate that still makes kits.
 BP-T72 addendum 2 (25 Oct 03:00): first-tier things are hand-crafted items, never hammer blueprints; blueprints are later tiers only.
+
+BP-T73 (25 Oct): shared caches in code that server worker threads call need a Mutex (or per-thread copies). A server crash fix ships as its own small build ahead of feature builds, cut on its own branch off the merged head. Owners sweep their code for other shared caches after a thread-safety crash.
