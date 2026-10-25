@@ -1,3 +1,11 @@
 # Tyler reply (once, 25 Oct 02:55 UTC): Sal thatch floor by hand - GO
 Approved: claude/sal-thatch-floor-hand de011546 (base generator-v2 bb520939): recipe 166 thatch floor kit becomes a hand craft (6 twine + 20 thatch, no bench); wall, roof, doorway stay at the camp bench. One-line data change, RESTART. Recipe number 166 unchanged.
 Gate: David3 test_thatch_pieces (add one case: the floor kit is craftable with no station near, the wall kit is not), validate_items, dup sweep, local_check 233. Merges as a small build after the spawn-column line; independent of B and C (it only touches recipe 166; if B adds a "category" to recipes.json, the one-line edit may conflict: whoever merges second rebases, one line).
+
+## AMENDMENT (Tyler 25 Oct 03:00 UTC, Dave: "It's supposed to be made in your hand, not made on the bench")
+Same plan, wider recipe change: ALL FOUR thatch pieces (floor 166, wall 167, roof 168, doorway 169) become hand crafts: no station, in the player's own crafting menu. The test now says none of the four needs a station (test_thatch_pieces: craft each with no station nearby).
+While checking the first-hour list for other wrong bench dependencies I found on current generator-v2 (build 793), recipes.json:
+1. **log_workbench_kit (recipe 49, "the camp bench") has station "workbench" itself.** If that is real, the first bench can only be made at a bench that does not exist yet: a first-hour deadlock. Sal checks and, if confirmed, makes recipe 49 a hand craft (4 logs, 6 twine, 6 sticks, known). David3 test: craft the camp bench kit with NO station anywhere.
+2. Early-game list says stone hammer / handles / better nets / tool kits are bench items, so stone_hammer 156, stone_spade 26, stone_hoe 140, stone_adze 158 needing the bench is intended; the WOODEN hammer (161), rough bed (162), shore net (163), campfire pot (165), thatch kits (166-169, after this change) are by hand. If Sal reads the list differently for the stone hammer (list step 15: stone hammer for fire/hammer ladder), say so in one line; I decide.
+3. Not first hour (bench is right): backpack (30, hide, level 2 bench), hide clothing (39, 40, 43), plank chest, all sawmill and forge items, hand_saw (157, needs a blade).
+4. Recipe numbers in the merged head: bed kit is 162 (not 160 as I wrote to Steve earlier), hammer 161, shore net 163, pot 165, thatch kits 166-169.
