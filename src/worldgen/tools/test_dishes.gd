@@ -50,6 +50,11 @@ func _init() -> void:
 	items._next_id += 1
 	items._items[items._next_id] = {"number": items.table.number_of("campfire"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 5000.0, "covered": false, "recheck": 5.0}}
 
+	# The stews and pastes are made in the campfire pot, which hangs over that fire.
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
+	items._refresh_pots()
+
 	var best_by_kinds: Dictionary = {}
 
 	for dish_id in dishes:

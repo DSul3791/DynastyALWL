@@ -7,6 +7,8 @@ extends RefCounted
 const PATH := "res://data/items/structures.json"
 const CHUNK_M := 256.0
 const FIRE_STATES := [1, 8, 9]
+const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes on (not the bonfire, 41)
+const POT_ATTACH_M := 2.0
 const STRUCTURE_STATES := [5, 6, 7]
 const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
 
@@ -35,6 +37,9 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 # Returns [spot, yaw in degrees, on_foundation].
 static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = []) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if str(def.get("attach_to", "")) == "fire":
+		return [pot_spot(spot, rows), yaw_deg, false]
 
 	if def.is_empty() or not bool(def.get("piece", false)):
 		return [spot, yaw_deg, false]
@@ -133,6 +138,20 @@ static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Arra
 
 
 # The structure definition drawn as world-item state `state` (its row with "kind" added), {} when none.
+# A campfire pot snaps to the nearest small fire in `rows` ({"pos","state"}) within POT_ATTACH_M; with none it stays where it is
+# (and blocked() says "nofire").
+static func pot_spot(spot: Vector3, rows: Array) -> Vector3:
+	var best: Vector3 = spot
+	var best_d: float = POT_ATTACH_M
+
+	for row in rows:
+		if POT_FIRE_STATES.has(int(row["state"])) and (row["pos"] as Vector3).distance_to(spot) <= best_d:
+			best = row["pos"]
+			best_d = (row["pos"] as Vector3).distance_to(spot)
+
+	return best
+
+
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
 	for kind in cfg.get("structures", {}):
 		var def: Dictionary = cfg["structures"][kind]
@@ -168,6 +187,20 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
+
+	if str(def.get("attach_to", "")) == "fire":
+		var over_fire: bool = false
+
+		for row in rows:
+			if POT_FIRE_STATES.has(int(row["state"])) and (row["pos"] as Vector3).distance_to(spot) < 0.3:
+				over_fire = true
+			elif int(row["state"]) == int(def.get("state", -1)) and (row["pos"] as Vector3).distance_to(spot) < 0.3:
+				return "taken"
+
+		if not over_fire:
+			return "nofire"
+
+		return ""
 
 	for row in rows:
 		var state: int = int(row["state"])
@@ -229,6 +262,10 @@ static func reason_text(state: String) -> String:
 			return "the ground is too steep here"
 		"water":
 			return "you cannot build in water"
+		"nofire":
+			return "the pot goes on a small fire: lay one first"
+		"taken":
+			return "that fire already has a pot"
 
 	return ""
 

@@ -68,14 +68,18 @@ const RIVER_AROUND := 8
 # kind: loop name, loudness at the source (dB), how far it carries (m) for choosing sources
 # A fall carries far: its player hears out to FALL_MAX_M, a bigger unit size keeps it audible, and the
 # distance low-pass (the player's own attenuation filter) takes the top off with range.
-const FALL_MAX_M := 300.0
-const FALL_UNIT := 26.0
+# Dave 24 Oct (build 789): falls were heard at -8 dB from 93 m, far over the wind, one with no drawn water. Now about -22 dB
+# at the source, clear within roughly 60 m and gone by FALL_MAX_M, and scaled by the drawn flow (m3/s): a dry-looking fall is silent.
+const FALL_MAX_M := 110.0
+const FALL_UNIT := 9.0
+const FALL_FLOW_REF := 1.0              # flow (m3/s) at which the level is unchanged; 6 dB per halving below, 3 dB per doubling above
+const FALL_FLOW_SILENT := 0.05          # under this flow a fall makes no sound at all
 
 const KINDS := {
 	"brook": {"file": "water_brook", "db": -22.0, "reach": 45.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
 	"river": {"file": "water_river", "db": -22.0, "reach": 50.0},
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
-	"fall": {"file": "water_fall", "db": -14.0, "reach": 260.0},
+	"fall": {"file": "water_fall", "db": -22.0, "reach": 110.0},
 }
 
 var sources: Array = []                 # what is playing now: [{kind, distance}] for the HUD
@@ -490,9 +494,9 @@ func _fall_candidates(origin: Vector3) -> Array:
 		var at: Vector3 = Vector3(base.x, maxf(float(fall["pool"]), base.y), base.z)
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
 
-		if distance <= float(KINDS["fall"]["reach"]):
+		if distance <= float(KINDS["fall"]["reach"]) and float(fall["flow"]) >= FALL_FLOW_SILENT:
 			found.append({"kind": "fall", "at": at, "distance": distance, "drop": float(fall["top"].y) - base.y, "speed": -1.0,
-				"width": float(fall["width"]), "score": distance / float(KINDS["fall"]["reach"])})
+				"width": float(fall["width"]), "flow": float(fall["flow"]), "score": distance / float(KINDS["fall"]["reach"])})
 
 	return _merge_far_falls(found, origin)
 
@@ -536,16 +540,18 @@ func _merge_far_falls(found: Array, origin: Vector3) -> Array:
 		var total: float = 0.0
 		var centre: Vector3 = Vector3.ZERO
 		var drop: float = 0.0
+		var flow: float = 0.0
 
 		for fall in members:
 			var w: float = maxf(float(fall["width"]), 0.5)
 			total += w
 			centre += fall["at"] * w
 			drop = maxf(drop, float(fall["drop"]))
+			flow += float(fall["flow"])
 
 		centre /= total
 		var distance: float = Vector2(centre.x - origin.x, centre.z - origin.z).length()
-		near.append({"kind": "fall", "at": centre, "distance": distance, "drop": drop, "speed": -1.0, "width": total,
+		near.append({"kind": "fall", "at": centre, "distance": distance, "drop": drop, "speed": -1.0, "width": total, "flow": flow,
 			"score": distance / float(KINDS["fall"]["reach"]), "merged": members.size()})
 		merged_falls += members.size() - 1
 
@@ -688,6 +694,8 @@ func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 	if candidate["kind"] == "fall":
 		db += clampf(3.0 * log(maxf(float(candidate.get("width", 4.0)), 0.5) / 4.0) / log(2.0), -5.0, 4.0)    # wider falls roar louder
 		db += clampf((float(candidate["drop"]) - 3.0) / 10.0, 0.0, 1.0) * 3.0                                # and taller ones
+		var flow: float = float(candidate.get("flow", FALL_FLOW_REF))
+		db += clampf(6.0 * log(maxf(flow, 0.01) / FALL_FLOW_REF) / log(2.0), -24.0, 3.0)                       # the drawn flow: a thin trickle is quiet
 
 	var speed: float = float(candidate.get("speed", -1.0))
 

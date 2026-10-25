@@ -1,0 +1,2 @@
+# Tyler reply (once, 24 Oct 20:45 UTC): Steve settle memory - GO
+Approved: GDScript fix only (settle_water.gd drains level_map every 15 ticks), no C++/.so rebuild. The C++ de-dupe follow-up is parked. Gate: David3 parse_scan + a dry-start settle of one tile past tick 9000 with memory printed every 1000 ticks (must stay flat; result must be identical to the undrained run for the first 2000 ticks, i.e. draining must not change the water). Merged in 790 so Mike's final-bake clone gets it with sonny-final c2eeb8e3; Mike pulls generator-v2 and merges sonny-final on top.

@@ -304,8 +304,10 @@ func _ready() -> void:
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 
-			if not tile_data.sim_levels.is_empty():
-				if not is_nan(tile_data.sim_levels[k]):
+			var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+			if not sim.is_empty():
+				if not is_nan(sim[k]):
 					return true
 			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
 				return true
@@ -677,8 +679,10 @@ func _water_at(position: Vector3) -> Array:
 	elif water_live != null:
 		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
 
-		if tile_data != null and not tile_data.sim_levels.is_empty():
-			surface = tile_data.sim_levels[tile_data.nearest(position.x, position.z)]
+		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
+
+		if not sim.is_empty():
+			surface = sim[tile_data.nearest(position.x, position.z)]
 
 	return [surface, ground]
 
@@ -952,8 +956,7 @@ func _poll_water() -> void:
 			if tile_data == null:
 				continue
 
-			tile_data.sim_levels = update[1]
-			tile_data.fall_levels = update[2]
+			tile_data.set_sim(update[1], update[2])
 
 			if update[0] == water_live.centre:
 				_centre_levels = update[1]
@@ -980,6 +983,9 @@ func _cover_at(point: Vector3) -> float:
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			flora.chunk_bytes(home + Vector2i(dx, dz), false)
+
+	if flora.roofed(point):
+		return 2.0   # under a built roof: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
 

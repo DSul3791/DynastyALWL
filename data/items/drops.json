@@ -2,6 +2,7 @@
 	"berry_yield_note": "Berries per plant (Tyler card berries-per-plant, 2026-10-23; Dave may change): one E on a ripe plant gives all of item x count and leaves the plant bare until the next season. Keyed by flora name (data/tables/flora.json). The server gather() berry branch reads this (Steve).",
 	"harvest_yield_note": "Harvest per plant beyond berries (Tyler card harvest-counts, 2026-10-23; Dave may change): one E on a ripe plant gives all of item x count and leaves it bare until its next season. Same shape as berry_yield; keyed by flora name. Root herbs: uprooting IS the harvest (count 2). At most 3 slots per harvest.",
 	"harvest_yield": {
+		"thatch_grass": {"item": "thatch", "count": 10},
 		"wild_thyme": {"item": "thyme", "count": 12},
 		"wild_rose": {"item": "rose_petals", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
@@ -87,8 +88,10 @@
 				"plant_fibre",
 				1,
 				3
-			]
+			],
+			["thatch", 4, 4]
 		],
+		"heather": [["thatch", 4, 4]],
 		"nettle": [
 			[
 				"plant_fibre",
@@ -101,7 +104,8 @@
 				"plant_fibre",
 				2,
 				3
-			]
+			],
+			["thatch", 8, 8]
 		],
 		"riverbraid": [
 			[
@@ -209,6 +213,8 @@
 			]
 		],
 		"bark_chance": 0.3,
+		"thatch_bark_note": "Birch and the softwoods give thatch-worthy bark instead of plain bark (Dave 24 Oct): per blow chance and a count range, keyed by tree species.",
+		"thatch_bark": {"birch": {"chance": 0.5, "count": [3, 5]}, "spruce": {"chance": 0.3, "count": [2, 4]}, "balsam_fir": {"chance": 0.3, "count": [2, 4]}, "scots_pine": {"chance": 0.3, "count": [2, 4]}},
 		"seed_chance": 0.15,
 		"blows_per_log": 3,
 		"log_length_m": 2.44,
@@ -320,7 +326,7 @@
 		"per_use": {
 			"axe": {
 				"gather": 1,
-				"rock": 1,
+				"rock": 5,
 				"tree": 1,
 				"trunk": 1,
 				"split": 1

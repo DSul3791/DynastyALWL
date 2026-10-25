@@ -1,0 +1,2 @@
+# Tyler reply (once, 24 Oct 22:05 UTC): Steve forest bed trim - GO
+Approved: BED_TRIM_DB = -12 dB on bed_forest_day and bed_forest_winter, code only, RUNTIME; print the constant (BP-T55). Keep it a single named constant so Kathleen's replacement beds can reset it to 0 without another plan (that change rides her sound card, no new plan). Gate: David3 parse_scan + local_check 233; ear check = Dave via a QA card (is the forest surf gone?). Goes into the 791 bundle with thatch pair + held-tools (client-only, so it can ship even if the RESTART items wait).

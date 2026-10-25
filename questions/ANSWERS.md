@@ -1582,3 +1582,67 @@ Answered: 2026-10-24 17:06 UTC
 Answer: No: If you use a hand on a log, it should chop the log up into blocks which are round logs that are shorter, and we use blocks on a chopping block to make firewood
 Answered: 2026-10-24 19:26 UTC
 
+## water-soft-790 | Does the surf-like rush go away in the woods and by water?
+Answer: No: No, I am in land standing on a mountain. Amongst the reason I can still hear the ocean waves.
+Answered: 2026-10-24 22:15 UTC
+
+## sound-sliders | Please take a picture of Settings > Sound
+Answer: No: Nope, sound sliders are there I can see them working this test does nothing
+Answered: 2026-10-24 22:15 UTC
+
+## held-tools-790 | Do held tools now look like the ground ones?
+Answer: No: Nope, tools all still just look like the original square flat wooden shovel
+Answered: 2026-10-24 22:16 UTC
+
+## held-tools-790 | Do held tools now look like the ground ones?
+Answer: No: Nope, tools all still just look like the original square flat wooden shovel
+Answered: 2026-10-24 22:16 UTC
+
+## weight-fantasy | What should the magic and fantasy materials weigh?
+Answer: Depends on what the materials are, but they should weigh something equivalent to what a normal and wood so magic ring would weigh about the same as a normal ring a magic tree or a log should weigh about the same as an equivalent tree or log
+Answered: 2026-10-24 22:16 UTC
+
+## weight-big-kits | How heavy should the big workshop pieces be?
+Answer: They should be probably 30 kg
+Answered: 2026-10-24 22:17 UTC
+
+## weight-spade-sizes | Which spade is your 3.8 kg one, and the other sizes?
+Answer: Just make them all the same
+Answered: 2026-10-24 22:17 UTC
+
+## weight-spade-sizes | Which spade is your 3.8 kg one, and the other sizes?
+Answer: Just make them all the same
+Answered: 2026-10-24 22:17 UTC
+
+## weight-wood-units | How big is one wooden block, lumber piece and beam?
+Answer: Look up the average weight for these things on the Internet
+Answered: 2026-10-24 22:18 UTC
+
+## weight-wood-units | How big is one wooden block, lumber piece and beam?
+Answer: Look up the average weight for these things on the Internet
+Answered: 2026-10-24 22:18 UTC
+
+## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
+Answer: No: No, it sounds like the surf everywhere
+Answered: 2026-10-24 22:18 UTC
+
+## forest-bed-790 | Is the forest quiet and leafy instead of surf-like?
+Answer: No: No, it sounds like the surf everywhere
+Answered: 2026-10-24 22:18 UTC
+
+## wind-soft-789 | Is the wind soft and airy now, not like ocean surf?
+Answer: No: The wind has no sound at all when I turned the volume down for nature sounds. I lose everything even with the wind volume all the way up I still don’t have any wind sound. I think it’s all incorporated into nature so break them apart.
+Answered: 2026-10-24 22:18 UTC
+
+## wind-soft-789 | Is the wind soft and airy now, not like ocean surf?
+Answer: No: The wind has no sound at all when I turned the volume down for nature sounds. I lose everything even with the wind volume all the way up I still don’t have any wind sound. I think it’s all incorporated into nature so break them apart.
+Answered: 2026-10-24 22:18 UTC
+
+## sound-duck-vetted | Duck quacks and sand footsteps (build 752)
+Answer: Yes
+Answered: 2026-10-25 00:15 UTC
+
+## r1-pieces-look | Do the rough bed, thatch wall, tripod pot and clay hearth look right?
+Answer: No: I’m not able to test this right now however it is in the works for you to have a system to allow you to check them yourself soon
+Answered: 2026-10-25 00:23 UTC
+

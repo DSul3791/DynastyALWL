@@ -292,10 +292,10 @@ func take_updates() -> Array:
 	_mutex.unlock()
 
 	for tile in live:
-		var levels: PackedFloat32Array = live[tile].take_levels()
+		var pair: Array = live[tile].take_pair()
 
-		if not levels.is_empty():
-			out.append([tile, levels, live[tile].fall_levels])
+		if not (pair[0] as PackedFloat32Array).is_empty():
+			out.append([tile, pair[0], pair[1]])
 
 	return out
 

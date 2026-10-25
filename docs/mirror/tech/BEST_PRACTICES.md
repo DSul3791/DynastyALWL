@@ -193,3 +193,36 @@ Audit scope note (2026-10-22): this first pass is a document-level audit of PROC
 - BP-T54 (24 Oct 08:10 UTC, Tyler): EVERY bake commit (claude/mike-bake-*) carries the island check table (docs/bakeNN/island_table.txt, from island_checks.gd) with the commit id of the code it ran on; I merge a bake only with that file present and any FAIL listed as a known flaw for Dave. Source: Sal's goal 1 Done-when, shown on v28 (67 checks, 6 FAIL), v29 (66, 6 FAIL) and v30b (67, 0 FAIL); wired in tools/local_check.sh.
 
 - BP-T55 (24 Oct 13:25 UTC, Tyler): TOOLING branches (look_rig, python tools, scripts) carry their own syntax checks in the commit message (python -m py_compile, bash -n, parse_scan) and print the values of any default they change, so a picture taken before and after cannot be mistaken for a game change. Evidence pictures never go into generator-v2 (repo is 1.5 GB); they live on the QA page or in /mnt/project-files/evidence/.
+
+- BP-T56 (24 Oct): PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goes to David3 on the server box); the pictures live on branch claude/box-results: results/PICTURES_INDEX.md (what exists), results/PICTURE_REQUESTS.md (what is asked), a README in each folder. Read there first; do not ask Mike for pictures while Dave's PC is busy.
+
+## Added from the 24 Oct audit (Tyler, 25 Oct 00:10 UTC; see DAILY_AUDIT_2026-10-24.md)
+- BP-T57: a build that touches ground, stream or join must pass a fresh-clone join test (David3) before merge.
+- BP-T58: each branch's QA card must exist on the QA page (count line moves) before I merge it; no card = not merged.
+- BP-T59: never report "pushed" or "merged" without the printed remote hash.
+- BP-T60: tooling for the box ships with a self-test that fails on a deliberate break; memory is measured before sizing limits.
+- BP-T61: every plan states its BASE hash; item and recipe numbers are reserved in tech/NUMBER_RESERVATIONS.md before coding.
+- BP-T62: before a branch goes to David3, run merge_check, validate_items and parse_scan on a trial merge with current generator-v2; send the failures to the owner, do not patch their branch.
+- BP-T63: before any tiles reach Dave: pit/cliff scan (max depth, max step, pond width at springs) as a PASS gate in island_checks.
+- BP-T64: sound complaints get one diagnosis (F3 loudest-voice lines) and one note before any change.
+- BP-T65: every build note says how to get out of trouble for each new feature (go to spawn, New player, Clear blocks); escape tools come first.
+- BP-T66: move tests, pictures and overflow bakes to David3; Mike keeps only feel tests and the primary bake.
+- BP-T67: the daily audit (what we did wrong, what we do better, owner for each) is written to DAILY_AUDIT_<date>.md and is part of the 20:00 ADT handoff.
+- BP-T68 (25 Oct): LOOK REVIEW LOOP. Each build test publishes the standard picture set K01..K19 (3 views per spot, Dave 25 Oct) (tech/STANDARD_SHOTS.md, with frame time in ms) to claude/box-results with an index line; I check at merge that the batch exists; Kathleen reviews each batch and her severity 2-3 critiques become owned tasks; the daily handoff lists open critiques.
+- BP-T70 (25 Oct): every David3 job names the full 40-character commit hash; the first line of every result is `HEAD=<hash>` and a mismatch aborts the run. A result without it is not a PASS. (From the 40 minutes lost to a wrong-commit run.)
+- BP-T71 (25 Oct): the test baseline. Tests that already fail on generator-v2 are listed by name in tech/TEST_BASELINE.md (commit it started failing, owner, fix date). A branch passes with no NEW failure against that list; baseline entries are fixed within a day or removed from the gate with Dave's say-so, never silently ignored.
+- BP-T69 (25 Oct): BAKE THREADS ON THE SERVER BOX. Container limit 10 GB, swap 0, 8 CPUs. Measured by David3 (speed-up re-proof cbe31f76, results/20261025_speedup_cbe31f76): 9 threads completed inside the limit, peak 3.1 GB for 2 tiles, no step-down needed. Standing rule: bake with 9 threads (tools default for the box); David3 prints "peak memory" in every bake result; if a run is killed (exit 137 / OOM) repeat ONCE with 6 threads, then 4, and write which count completed in the result; never raise above the proven count without a measured nine-tile peak. OPEN: the peak for the full nine-tile bake (793) is recorded by David3 on that run and written here (target under 8 GB = 80 percent of the limit; above that, step down to 6).
+- BP-T72 (25 Oct): crafting stations rule (Dave): benches only for weapons and tools, cooking at cooking stations, everything else by hand; the FIRST bench (log workbench) by hand, processing-station kits (saw mill, stone forge, blacksmithy, woodworking table, vice, tool rack) at the log workbench, material recipes at the processing stations; design/CRAFTING_STATIONS_RULE.md. A recipe plan states its class; David3 tests "by hand" recipes with no station nearby.
+
+BP-T72 addendum (25 Oct, Dave): no kit items for building pieces or station kits; they are hammer blueprints (bridge pattern). Keep numbers so old saves load. Hold any crafting gate that still makes kits.
+BP-T72 addendum 2 (25 Oct 03:00): first-tier things are hand-crafted items, never hammer blueprints; blueprints are later tiers only.
+
+BP-T73 (25 Oct): shared caches in code that server worker threads call need a Mutex (or per-thread copies). A server crash fix ships as its own small build ahead of feature builds, cut on its own branch off the merged head. Owners sweep their code for other shared caches after a thread-safety crash.
+
+BP-T74 (25 Oct, Dave): tool-look review without Dave: Mike shoots, Moderator and Tyler each give an opinion on what to change, Tyler looks up the real tool (shape, photo reference, dimensions, source named) when unsure; Moderator sends one combined list to Kathleen, who works from it without waiting for Dave. Dave approves later; pickaxe 5ef0b60e is the quality bar.
+
+BP-T75 (Dave 25 Oct 04:58): if the game server box goes down and David3 is lost, MikeW takes over everything David3 does (gates and picture jobs) on Dave's PC. His gate results use the same format: HEAD=<40-char hash> first line, parse_scan, local_check 233, the tests. I merge only on those results. The Moderator tells me when David3 is down.
+
+BP-T76 (25 Oct, Tyler's own slip): after a merge push, read the origin build.gd NUMBER and the tested hash on origin BEFORE telling anyone it is merged; a pull --rebase over a merge commit can stop in a conflict and leave the push undone. Use plain push after a merge commit (no rebase) when origin has not moved.
+
+BP-T77 (25 Oct 07:25, Tyler): two gates in parallel while Dave is away. David3 (Linux box) stays the main gate; Mike on Dave's PC takes full runs of a separate set of heads when the queue is over 2 hours, only when Dave's PC is free and Dave is not playing. Same checks, same result format (HEAD=<40-char hash> first line, parse_scan, local_check 233, tests). Each head is gated by ONE of them, named in MERGE_CHECK_NEXT3.md. Heads touching bake output (merge-793 group) prefer Mike (Windows md5 check).

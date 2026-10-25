@@ -8,6 +8,7 @@
 		"spade": 0.9,
 		"knife": 0.55,
 		"rod": 0.45,
+		"net": 0.45,
 		"needle": 0.3,
 		"torch": 0.4,
 		"default": 0.6,

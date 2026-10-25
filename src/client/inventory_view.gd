@@ -148,6 +148,7 @@ var _meshes: Dictionary = {}       # item number -> Mesh
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const AutoPickupScript := preload("res://src/client/auto_pickup.gd")
 
 func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_position: Callable, ground_below: Callable) -> void:
 	net = terrain_net
@@ -198,6 +199,19 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
 	_build_vitals_hud()
+	auto_pickup = AutoPickupScript.new()
+	_auto_label = Label.new()
+	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_auto_label.anchor_top = 0.38
+	_auto_label.anchor_bottom = 0.38
+	_auto_label.offset_top = -30.0
+	_auto_label.offset_bottom = 30.0
+	_auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_auto_label.add_theme_font_size_override("font_size", 36)
+	_auto_label.add_theme_constant_override("outline_size", 8)
+	_auto_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+	_auto_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_auto_label)
 	_prompt = Label.new()
 	# Below the crosshair, top-aligned and wrapping downward; the name (terrain_client.gd _inspect_label) is bottom-aligned above the crosshair.
 	_prompt.anchor_left = 0.0
@@ -472,7 +486,7 @@ func _probe_fire() -> Dictionary:
 			if fuel_event.is_valid():
 				fuel_event.call()}
 
-	if state == 1:
+	if _lit_state(state):
 		found["hold"] = cook_nearest
 	elif state == 9:
 		found["hold"] = fuel_nearest
@@ -581,7 +595,7 @@ func open_container() -> bool:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -646,6 +660,7 @@ func _process_body(_delta: float) -> void:
 	_roll_tick(_delta, now)
 	_snap_tick(now)
 	_hold_e_check()
+	_auto_pickup_tick(now)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -672,6 +687,33 @@ func _process_body(_delta: float) -> void:
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = "Hold Z to sleep"
 
+
+
+# P (terrain_client.gd): auto pickup on or off, announced slightly above the middle of the screen.
+var auto_pickup: RefCounted
+var auto_pickup_blocked: Callable = Callable()   # () -> true while swimming or placing a blueprint (set by the terrain client)
+var _auto_label: Label
+
+
+func toggle_auto_pickup() -> void:
+	_auto_label.text = auto_pickup.toggle(Time.get_ticks_msec())
+
+
+func _auto_pickup_tick(now: int) -> void:
+	if _auto_label != null and _auto_label.text != "":
+		var left: int = auto_pickup.announce_until_msec - now
+		_auto_label.modulate.a = clampf(float(left) / 500.0, 0.0, 1.0)
+
+		if left <= 0:
+			_auto_label.text = ""
+
+	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
+		return
+
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+
+	if id != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
 # Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
@@ -1582,7 +1624,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var node: Node3D
 		var light: OmniLight3D = null
 
-		if state >= 5 and state != 8 and state != 9:   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
+		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
@@ -1602,7 +1644,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			continue
 
-		if state >= 3:
+		if state >= 3 and not _lit_state(state):
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
@@ -1618,7 +1660,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
 		else:
-			node = _make_fire(state == 1, state == 9)
+			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
@@ -1724,7 +1766,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21:
+		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -2128,13 +2170,22 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 	return _chain_to(node, ancestor).origin
 
 
+# Is a lit fire (any tier) within r metres of a point? Display only.
+func _lit_fire_near(pos: Vector3, r: float) -> bool:
+	for fire_id in _world:
+		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach
 		for fire_id in _world:
-			if int(_world[fire_id]["state"]) == 1 and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
 				return true
 
 		return false
@@ -2146,6 +2197,9 @@ func station_near(station: String, level: int = 1) -> bool:
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
+				continue   # the pot cooks only while the fire it hangs over is lit
+
 			return true
 
 		if int(def.get("also", {}).get(station, 0)) >= level:
@@ -2254,8 +2308,17 @@ func ghost_model(state: int) -> Node3D:
 	return _model_for_state(state)
 
 
-func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
-	return BuildingLook.fire(lit, loaded)
+func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
+	return BuildingLook.fire(lit, loaded, tier)
+
+
+# Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
+static func _lit_state(state: int) -> bool:
+	return state == 1 or state == 40 or state == 41
+
+
+static func _fire_tier(state: int) -> int:
+	return 1 if state == 40 else (3 if state == 41 else 2)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
@@ -3038,6 +3101,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
+	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -3205,6 +3269,7 @@ func _drop_selected(whole: bool) -> void:
 	var here: Vector3 = _player_position.call()
 	var ground: float = _ground_below.call(here)
 	var at: Vector3 = Vector3(here.x, ground if not is_nan(ground) else here.y - 1.0, here.z)
+	auto_pickup.note_drop(inventory.numbers[_selected], at, Time.get_ticks_msec())   # auto pickup leaves it alone for 15 s
 	net.inventory_action.rpc_id(1, Net.ACT_DROP, _selected, 0, inventory.counts[_selected] if whole else 1, at)
 	_selected = -1
 
@@ -3349,14 +3414,17 @@ func _refresh() -> void:
 
 		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
 
-	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
+	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
+	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
+	var shown_recipes: Array = can + cannot
+	shown_recipes.sort_custom(by_name)
 	can.sort_custom(by_name)
 	cannot.sort_custom(by_name)
 
 	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
-	for r in can + cannot:
+	for r in shown_recipes:
 		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
 		var entry: Button = Button.new()
 		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
@@ -3387,7 +3455,10 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit"]
+	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
+
+	for id in admin_ids:
 		var number: int = table.number_of(id)
 
 		if number == 0:

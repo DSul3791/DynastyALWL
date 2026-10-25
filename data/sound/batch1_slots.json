@@ -67,6 +67,30 @@
    "peak_db": -6,
    "status": "filled"
   },
+  "door_thatch_close": {
+   "group": "door",
+   "files": [
+    "res://assets/audio/batch1/door_wood_close_0.ogg",
+    "res://assets/audio/batch1/door_wood_close_1.ogg",
+    "res://assets/audio/batch1/door_wood_close_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -6,
+   "status": "filled",
+   "note": "Thatch doorway: reuses the wood door clips until Kathleen records a thatch one."
+  },
+  "door_thatch_open": {
+   "group": "door",
+   "files": [
+    "res://assets/audio/batch1/door_wood_open_0.ogg",
+    "res://assets/audio/batch1/door_wood_open_1.ogg",
+    "res://assets/audio/batch1/door_wood_open_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -6,
+   "status": "filled",
+   "note": "Thatch doorway: reuses the wood door clips until Kathleen records a thatch one."
+  },
   "door_wood_close": {
    "group": "door",
    "files": [

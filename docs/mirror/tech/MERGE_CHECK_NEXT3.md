@@ -56,3 +56,148 @@ UPDATE 13:40 UTC: gate list 8 adds sal-tools-batch1 4ec83436 (final; wears_tool 
 4. cave air + cave pollen - plans answered, not built yet; merge only tested ids.
 5. david3-rig-only e792d7c5 (tools/look_rig.sh only, identical to reviewed b2538698; syntax 5 pass 0 fail). Merge the TESTED id after Mike's Windows look_rig PASS (flora + item run). Linux flora already done by David3 (nvidia, 2.5 min).
    -> PASS 24 Oct 19:35 UTC (Mike, Windows: --flora and --item exit 0, 2 pass 0 fail, run on b2538698). e792d7c5 has the identical look_rig.sh (diff 0 lines), so merge e792d7c5 in the next build, after the devstop ends. Linux horizon name tags: David3 to look later, not a blocker.
+
+## Water R1 (Tyler, 24 Oct 20:25 UTC) - claude/water-r1-landmap ea0e049b (supersedes 4052808; adds ACT_LAND_TYPES 46 button, no protocol bump)
+David3 to run on ea0e049b: test_land_type.gd, test_dam_backup.gd, settle rules tests, test_water_flow/settle unchanged, parse_scan, validate_items, local_check 233, and report the per-tile signature memory (must stay under 1.2 GB water limit). Button not tested in a running game: Mike presses it once after merge when Dave's PC is free. 30-day signature wiring is a later R1b. Merge only on PASS id. Label RESTART.
+
+## 790 queue (Tyler, 20:30 UTC)
+1. claude/sal-thatch-grass 76bb2517 (thatch_grass plant flora 127, fixed drops, bark thatch; flora layout, RESTART). David3: validate_items, test_server_items, flora tests, parse_scan, local_check 233, one flora picture of thatch_grass (look_rig --flora). Merge on PASS id.
+2. claude/steve-fall-quiet (water_sounds.gd only), claude/steve-wind-bus (ambience_slots.gd, 1 line) and claude/kathleen-wind-soft 3655ccbd: sound-only RUNTIME. David3: parse_scan, validate_items, local_check 233 on the tested ids; merge on PASS. Ear check by Dave via QA cards (wind-soft-789 and fall card).
+
+## Water R1 update (Tyler, 24 Oct 20:42 UTC)
+David3: test claude/water-r1-landmap at its latest commit bd991eff (settler rules v7, supersedes ea0e049b), same test list. Merge in 793 only on David3 PASS AND Mike's check after the final bake from claude/sonny-final c2eeb8e3 (the settler and the bake go together; TERRAIN_VERSION bump with it).
+3. claude/steve-settle-memory 6815e9a4 (settle_water.gd, 3 lines): David3 parse_scan + settle past tick 9000, memory flat, first 2000 ticks identical to the undrained run. Merge in 790 (the final-bake clone needs it).
+
+## PRIORITY bundle 790 (Tyler 20:55 UTC): claude/tyler-790a d8d7a602 (includes sound-sliders scroll fix)
+Contains steve-go-spawn, steve-nature-debug, steve-wind-bus, steve-sound-sliders, kathleen-water-soft a18971dc (with fall-quiet and wind-soft), steve-settle-memory. David3: parse_scan, validate_items, local_check 233, selftest, + settle past tick 9000 memory flat. Merge that exact id on PASS. Then thatch (sal-thatch-grass) as the next build.
+
+## Thatch build (after the sound/menu bundle) (Tyler 20:58 UTC)
+Next build = claude/sal-thatch-grass 76bb2517 + claude/sal-unknown-item 9716dc5f (thatch, bedding, straw, reed stems, tinder, stuffing, fibre always known; validator errors if any recipe ingredient can read Unknown). Both RESTART. Plan: GO as one class (no new plan needed): keep the validator rule, keep real descriptions, no change to inspection mode for other items. David3: validate_items, test_server_items, flora tests, parse_scan, local_check 233. Merge on PASS ids.
+Also in the thatch build: claude/kathleen-held-tools 6429ab6e (held_item.gd). David3 renders the hand views first (hammer, saw, axe, pickaxe, torch, net, empty hand), then parse_scan + local_check. Merge on PASS.
+Last in line: claude/sal-weight-audit 00502227 (data; wait for Dave's four weight cards; David3 validate_items, test_server_items, carry-weight, test_first_hour, local_check). Merge on PASS id.
+
+## David3 follow-up job (Tyler 21:35 UTC): settle memory check on generator-v2 (build 790)
+No dry-start flag needed: tools/settle_water.gd starts from dry by itself. Command (scratch world copy so the repo stays clean):
+cp -r worlds/base_world /out/scratch_world; godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=3,4 --ticks=9500 --world=/out/scratch_world
+Watch the process memory (e.g. ps -o rss every 60 s). PASS = reaches tick 9500 with no bad_alloc and memory flat (not +160 KB per tick). Optional match test: run --ticks=2000 on build 788 (git stash/worktree) and 790, compare the printed mass balance; they must be equal. Not blocking anything: Mike's final bake waits on it.
+After held-tools: claude/sal-fire-tiers-build 9d911ec8 (cooking.json, server_items.gd, building_look, inventory_view; RESTART). David3: validate_items, test_server_items, old state-1 fire save loads, picture of each tier, parse_scan, local_check. Merge on PASS id.
+Also 791: claude/steve-forest-bed (BED_TRIM_DB -12 dB, code only). David3: parse_scan + local_check. Merge on PASS id.
+791 also: claude/kathleen-forest-bed f57c1bd9 (new quieter forest beds) together with steve-forest-bed (BED_TRIM_DB set to 0 by Steve; David3 must test the head AFTER Steve's 0 commit). David3: parse_scan + local_check only, no renders. Merge both on PASS ids.
+791 also: claude/steve-sound-test-free (ambience_slots.gd guard). David3: parse_scan + local_check. Merge on PASS id.
+Same build as weight audit (after fire tiers): claude/sal-no-stack-caps-build 39a03c5c + sal-weight-audit 00502227. David3 count-field width check + save round trip per Sal_no_stack_caps_build_REPLY.md. Merge both on PASS ids.
+791 also: claude/sal-bed-recipe-sort 768b92ae (bed recipe, sorted menus). David3: validate_items, test_server_items, craft-bed recipe test, parse_scan, local_check. Merge on PASS id.
+791 also: claude/steve-wind-surf (rebase on generator-v2 790 first). David3: parse_scan + local_check. Merge on PASS id.
+791 also: claude/sal-auto-pickup-build (client, P toggle, default off). David3: headless test, check_controls, parse_scan, local_check. Merge on PASS id.
+
+## 791a bundle READY FOR DAVID3 (Tyler 22:55 UTC): claude/tyler-791a 02e0910c
+Contains (merged on generator-v2 build 790): sal-thatch-grass, sal-unknown-item, sal-bed-recipe-sort, steve-shore-net 980b5904, sal-auto-pickup-build, kathleen-held-tools, kathleen-forest-bed, steve-forest-bed, steve-sound-test-free, steve-wind-surf. My cloud local_check PASS (RESTART label, validator 0 errors, test_server_items, test_shore_net, test_auto_pickup, test_fishing, test_new_player). Fixes I made while merging: recipes next_number 164, items next_number 261, shore_net description to 105 chars, test_shore_net iterator renamed (warning). Duplicate item/recipe number check: merge_check clear. NOTE: steve-forest-bed trim-to-0 commit must be in the branch head: if David3 finds BED_TRIM_DB still -12 together with Kathleen's quieter beds, say so.
+David3: selftest, parse_scan, validate_items, local_check 233, test_server_items, test_shore_net, test_fishing, test_auto_pickup, test_first_hour, flora tests, hand-view renders (hammer, saw, axe, pickaxe, torch, net, empty hand) and thatch_grass picture. Merge that exact id on PASS.
+791b (next): fire tiers 9d911ec8 + tripod e0985a54 (recipe 165), then no-stack caps 39a03c5c + weight audit 00502227.
+
+## 792 queue (Tyler 23:25 UTC)
+1. claude/sal-thatch-shelter 0450dcb1 (clean on 791; dup sweep clean on my trial). David3: full gate per tech/ACTION_PLANS/Sal_r1_pieces_REPLY.md incl. save round trip.
+2. sal-fire-tiers-build, 3. sal-cooking-tripod (recipe 165), 4. sal-no-stack-caps-build + sal-weight-audit: Sal rebases each onto the merged head (conflicts today: weights.json, recipes.json, .uid). Numbers: bed 160, hammer 161, shore net 163, thatch kits 166-169, tripod 165.
+792 also: claude/steve-sound-hookup c87d8522 (client, with kathleen-sound-r1) and claude/steve-rough-bed (code after Steve rebuilds it on the merged shelter; plan answered GO). See Steve_rough_bed_REPLY.md, Steve_sound_hookup_REPLY.md.
+
+## 792 ORDER (Tyler 23:20 UTC; each step = David3 PASS id, then merge, then the next is rebased on it)
+1. sal-thatch-shelter 0450dcb1 (test NOW; full gate + save round trip + dup sweep)
+2. sal-fire-tiers-build (Sal rebases on 1)
+3. sal-cooking-tripod = now the CAMPFIRE POT (Dave 24 Oct 23:20; recipe 165; Sal rebases on 2 and sends a new hash)
+4. steve-rough-bed 6459b079 (built on 1; David3: test_bed, test_animal_senses, test_warmth, validate_items, dup sweep, local_check)
+5. steve-sound-hookup fce8a304 (test_batch3_slots, parse_scan, local_check; shore-net part already in 791, so expect no conflict)
+6. sal-no-stack-caps-build + sal-weight-audit (after Dave's four weight cards; count-field width check)
+A 792 may ship as two smaller builds if Dave wants the bed sooner: merge 1+4 first.
+
+## CAMPFIRE POT gate (Tyler 23:35 UTC; Dave: renamed from tripod pot; snaps to a normal small fire; fire capped at the firewood stage while attached; pot cooks whenever its fire is lit)
+Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one hash (Sal's rebased cooking branch contains fire tiers). David3 headless tests:
+ 1. Rename: item/structure/recipe names read "Campfire pot" everywhere (grep tripod: no player-facing text left); recipe number stays 165; old saves with a tripod pot load as the campfire pot.
+ 2. Snap: placing the pot near a normal small fire attaches to it (distance rule in data); placing it with no fire nearby is refused or waits (say which); it never attaches to a bigger/other fire type.
+ 3. Cap: with the pot attached the fire cannot go above the firewood stage (adding a log does not raise it; fuel cap stays); remove the pot and the cap lifts; the fire's strength never jumps down below what its fuel allows.
+ 4. Cook: the pot cooks only while its fire is lit; fire out = cooking stops (progress kept or lost: Sal states it); rain puts out open fires as before.
+ 5. Remove/destroy: fire keeps burning; no dangling attachment id; saving and reloading with the pot attached, detached and with the fire out all give the same state.
+ 6. Old saves: state-1 fires and a tripod structure from before load without errors.
+ 7. Standard: validate_items, full dup sweep (recipes highest 169 then 165 is reserved), parse_scan, local_check 233.
+
+## BAKE HOLD (Tyler 00:15 UTC 25 Oct, Dave): no bakes or settles until the generator build is done. David3: cancel/skip the settle-past-9000 job. 792 items proceed (none needs a bake). Water R1 settler v7 waits for the bake; classifier/button/dam test code may go earlier only as a separate branch.
+
+## Generator speed-up (Tyler 00:20 UTC 25 Oct): base merge-793 5b9d9f9, merges into merge-793 only. Reply: ACTION_PLANS/Generator_speedup_REPLY.md. Proof bakes wait for Dave's go (box only). Cleanup branch separate.
+
+## GO from Dave (25 Oct 00:09 UTC): generator speed-up and its proof re-bakes on the server box are cleared. Allowed bakes: tile (3,4) and one edge tile, 1 and 4 threads, with and without setup cache. EVERYTHING ELSE stays held (793, nine-tile bake, other settles). Windows proof run needs Mike's PC: ask Dave when the Linux proofs pass.
+
+## 792 ORDER (revised by Tyler 00:30 UTC 25 Oct, after Sal_campfire_pot_REPLY.md)
+shelter e2986139 -> fire tiers 9d911ec8 -> A sal-campfire-pot (pot + twine tests; fix the old state-1 check first) -> steve-rough-bed 6459b079 -> steve-sound-hookup fce8a304 -> B sal-craft-menu -> C sal-auto-craft (limits in the reply) -> no-stack caps 39a03c5c + weight audit 00502227. No bake item in any of them.
+
+## PENDING RULE BP-T69 (Dave 25 Oct 00:49): bake thread count on the server box
+Waiting for David3's step-down result (highest thread count that completes inside the container memory limit, swap 0). Report must give: thread count, memory limit, peak RAM (from the shot/bake log "peak memory"), time per tile. When it arrives Tyler writes BP-T69 into BEST_PRACTICES.md and the bake instructions (tools/docker/README.md, DAVID3_HANDOVER.md "bakes"): fixed thread count, memory limit, peak RAM, and the step-down rule (run killed with exit 137 or OOM = repeat once with one fewer thread, never more than the proven count; log which count worked), then tells Mike and Sonny.
+
+792: steve-bed-respawn (cut from steve-rough-bed 6459b079) merges right after the rough bed. See ACTION_PLANS/Steve_bed_respawn_REPLY.md (free landing, no death loop).
+
+remove-old-builder 930447aa (base merge-793 5b9d9f91): merges into merge-793 AFTER the speed-up proof bakes. Reply: ACTION_PLANS/Sonny_remove_old_builder_REPLY.md. Build note line for Dave: close game and Godot editor, Pull, open the project once to re-import.
+
+## DAVID3 JOB ORDER (Tyler 01:30 UTC 25 Oct; he is the single gate, one job at a time)
+1. A = Sal's merge e405038b (campfire pot + the four test fixes; it must contain shelter e2986139: check with git merge-base --is-ancestor; if it does, A's PASS is the shelter's PASS and the shelter is not run separately; if not, A is not mergeable and goes back to Sal).
+2. Speed-up re-proof (unblocks Dave's no-bakes hold).
+3. B sal-craft-menu, 4. C sal-auto-craft.
+5. Bed 6459b079 then bed-respawn, 6. old-builder 930447aa (after the speed-up proof, as agreed), 7. sound hookup fce8a304, 8. no-stack caps + weight audit.
+RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL 40-character hash; David3's first result line is `HEAD=<git rev-parse HEAD>` and a mismatch with the job aborts the run before any test starts. No result without that line counts as a PASS.
+
+## PICTURE WAIT (Dave 25 Oct 01:24): shoot ground-ready + 10 s (SETTLE=10, WAIT=60 max, "ground not ready" mark). David3: change tools/docker/shot.sh and the batch runner (branch claude/docker-test-box) and report the new values; Mike: same rule in look_rig.sh when Dave's PC is free. Spec: STANDARD_SHOTS.md "Wait time".
+
+## SHOTS v3 (Dave 25 Oct 01:26): 3 views per spot, turn left 90 degrees after each shot; spec STANDARD_SHOTS.md. David3: update shots.txt/batch runner (view column, yaw read-back differs by 90 between views, tools single view).
+
+## CAMERA TURN (Dave 25 Oct 01:37): recipe in tech/CAMERA_TURN_RECIPE.md (mouse look rewrites the pose; shot_lock flag + pose read-back + body.rotation.y += PI/2 for a left turn). Steve plans the 3-line client flag; David3 tests on the box first.
+
+## GATE A (Tyler 01:42 UTC): e405038b NOT a pass (75/9). Hold A. Sal fixes test_dishes, test_new_player_day, test_placement_rules and rebases B and C. NEW RULE (BP-T71): the six failures that also fail on the base (generator-v2) are a BASELINE: David3 lists their names in tech/TEST_BASELINE.md with the commit they started failing; a branch passes if it adds no NEW failure vs that baseline, and each baseline failure gets an owner and a fix date, because a test that is already red hides real regressions.
+
+## NEW HEADS (Sal, 01:40 UTC 25 Oct): A d79a4a44, B 15616045, C b9c6afb8. David3 gates them AFTER the speed-up re-proof, in that order, with HEAD= line (BP-T70) and the test baseline (BP-T71). Merge each exact hash on PASS; B and C only after A has merged. Remaining "tripod" strings are internal keys / QA history: David3 greps player-facing text only (items.json names, descriptions, menu strings), not keys.
+
+## kathleen-showroom-test 00514732 (baseline test_showroom): David3 diffs the changed assertions (BP-T71): old "rows are drawn" replaced by server-asked-once / not twice on a second update / refill on respawn, plus every-id-resolves, grass and far-from-spawn kept. Confirm that the new test would FAIL if the client asked twice (a deliberate-break check). Small, merge on PASS with the next build; no item change.
+
+## water-soak test fix (claude/water-soak, base 5b9d9f91): David3 diff per BP-T71. Check: (1) the widened bound is COMPUTED from the actual volume of films under 4 mm in that run (not a constant percentage), (2) the 0.5 cm per cell term is unchanged, (3) deliberate break: change the save to drop 20 percent more water and the test must fail. Then remove test_water_soak from TEST_BASELINE.md and merge on PASS. The base for this branch is merge-793 (5b9d9f91), so it merges there; generator-v2 gets it with 793 unless the water thread rebases it onto generator-v2 (cheaper: ask them for that, the test file is independent of the bake).
+
+## steve-ground-quiet (BUG-001/002): see ACTION_PLANS/Steve_ground_quiet_REPLY.md. Independent of 792; David3 priority 2 after the speed-up re-proof (it fixes every join and the picture runs). Stall rule test required.
+
+steve-ground-quiet built: c836fa4a (hash for David3's HEAD= line). Merge only that exact hash on PASS.
+
+## SPEED-UP steps 0-2 MERGED into claude/merge-793 (Tyler 02:10 UTC 25 Oct): fast-forward 5b9d9f91 -> cbe31f76 (David3 PASS 8/0, byte-identical md5 vs 5b9d9f91 on tiles 3,4 and 4,4, no-cache / cache build / reuse at 9 and 6 threads). Steps 0-2 are pure GDScript (timers, delta once, setup cache), so the Windows float concern applies only to step 3 (C++): the Windows proof (Mike, 1 thread) is required before step 3 merges. For the 793 production bake the setup cache is rebuilt cold in that run and the result is compared with --no-cache on tile (3,4). BP-T69 written (9 threads, step-down 6 then 4).
+
+## BUILD NUMBERS (Tyler 02:20 UTC 25 Oct): numbers go in merge order. 792 = ground-quiet (merged). The fire/pot/bed/sound/stack/weight group formerly called "792" will take the next numbers as each part merges (793 is still the bake build in the plan: call it BAKE-BUILD until its number is assigned, to avoid mixing).
+
+## steve-sqlite-warm 0ea7c6fd: NOT MERGED (David3: no clear gain, no sqlite error in any run, same join time). Parked; revisit only if the diagnostics line shows sqlite time. Picture wait refinement (Steve's plan coming): the +10 s starts only after the camera has LANDED (pose at ground + eye height within 0.3 m, read back), FAILED mark in the README if it never lands within the maximum. STANDARD_SHOTS.md "Wait time" updated accordingly.
+sal-net-look: merges with kathleen-held-tools 6429ab6e (shared files basic_look.gd, held_item.gd; first to reach PASS merges, the other rebases once). Net hand view K20 added to STANDARD_SHOTS.md.
+kathleen-held-pose 3af62551: part 1 (heads, saw/hammer shapes) merges with kathleen-held-tools and sal-net-look; part 2 (pose) own commit later. Hand views K14..K22. NOTE: claude/sal-net-look was not visible on the remote when I fetched at 02:30 UTC: Sal must push it (hash to David3).
+
+## BUILD 793 MERGED (A = shelter + fire tiers + campfire pot, d79a4a44). Next in order: B 15616045 (craft menu), C b9c6afb8 (auto-make), rough bed 6459b079 + bed-respawn, sound hookup fce8a304, no-stack caps + weight audit, shore-net look, held-tools + held-pose, showroom-test, water-soak. B and C gate after the shot-landing check; each is rebased by its owner on 793 first (A is now in).
+
+## steve-spawn-column dc3ab9cf (stacked on shot-landing 3bc42417): priority 1 for David3 (after nothing else; independent). Reply: ACTION_PLANS/Steve_spawn_column_REPLY.md. One gate, one build.
+
+## spawn-column head moved: ceffb385 (was dc3ab9cf/a2b54143; includes shot-runner change: aerial shots more than 40 m above ground skip the ground-collision wait; ground-level shots keep the 0.5 m landing rule; landing check no longer requires a collider under a flying body). David3 gates ceffb385 ONCE with HEAD= line. K07 (forest aerial ~130 m) now takes the aerial path: STANDARD_SHOTS.md rule "aerial = more than 40 m above ground" applies to K07 only.
+
+## SPAWN HEIGHT (Dave 25 Oct 02:43): decision now, not after the final spawn move. Steve adds it to claude/steve-spawn-column as ONE small commit: at join/respawn/go-to-spawn the client asks the server's surface answer for the spawn x,z (already used by the dive), holds the player (no falling) at that height ground + 1.5 m, and lands them as soon as the collider exists (arrival protection stays); the "+28 m" constants (terrain_client.gd spawn + Vector3(0, 28, 0)) go away. Fallback when no surface answer within 5 s: the old +28 m. The later spawn move (x53316 z68476) only changes x,z. David3 test: start at spawn, camera y within 3 m of ground in the first frame and on the ground within 10 s; respawn and go-to-spawn the same.
+
+## sal-thatch-floor-hand de011546 (recipe 166 by hand): after spawn-column; ACTION_PLANS/Sal_thatch_floor_hand_REPLY.md.
+## Generator speed-up step 3a (C++ GenCore) claude/generator-speedup 690ee171: proof per Generator_speedup_REPLY.md: md5 equality FOUR runs (Linux 1 thread, Linux 4 threads, Windows 1 thread via Mike, reference), -fno-fast-math -ffp-contract=off identical flags on both platforms, GDScript fallback kept, water tests unchanged; binaries committed once per stage group. Merges into merge-793 only.
+sal-thatch-floor-hand 28ce1937: GO split in two commits (1 hand-craft pieces/kits/clothing/thatch; 2 material recipes wait for Dave). See Sal_thatch_floor_hand_REPLY.md AUDIT ANSWER.
+
+HOLD LIFTED (25 Oct 03:00 UTC): Sal crafting gate (39a63cef thatch four, first bench, clothing, backpack, forge) may be gated again once Sal confirms the final hash. Blueprints are later tiers only.
+
+SPEED-UP STEP 3 (25 Oct 03:20 UTC): Windows proof of claude/generator-speedup 690ee171 is in (Mike, 1 thread, tile 3,4): all four bakes md5 4fc5650d, 9,157,910 bytes. Times: reference 499 s; new cache off 341 s; cache build 341 s; cache reuse 171 s. Peak memory about 1.2 GB. Details: claude/box-results results/20261025_speedup_proof. Merge into merge-793 still waits for David3's Linux proof (1 and 4 threads) and 600-tick settle compare.
+
+CRASH FIX FIRST (25 Oct 03:30 UTC): server crash signal 11 in flora_placer._plateau (shared Dictionary cache, no lock, from a9b93a04). Steve's Mutex fix is on the spawn-column line, head 82e01b1a. DECISION (Tyler): merged as its OWN small build ahead of everything else. Steve cuts the Mutex commit alone onto a branch off the build 793 head (claude/steve-flora-mutex, one commit, no spawn-column code); David3 gates that hash first: join test, big-move test (fly, go-to-spawn, respawn x10 on 4 threads), no crash, local_check 233. Spawn column then rebases on top. If Steve says the commit cannot be cut apart, merge the stack in order, crash fix first. Label RESTART, no protocol or ground change. Owners (Sonny, Sal) sweep flora code for other shared caches touched by worker threads (grep Dictionary/Array members written in functions called from threads); report as one list, fixes one plan.
+
+CRASH FIX HASH (25 Oct 03:35 UTC): claude/steve-flora-mutex 8394ee6f25d8d749aef7a7bf4e35dab78dbb6720 (flora_placer.gd +10/-2). David3 gates it first; merge that exact hash on PASS. SWEEP: Sonny found only _plateau_cache shared (locked). Steve sweeps the rest of the server code reached by worker threads (water, items, server scenes) for shared members written without a lock: one list, no code change in the sweep; fixes one plan after. David3 is not asked (he stays on gates).
+
+SWEEP RESULT (25 Oct 03:36 UTC, Sonny, BP-T73): src/worldgen/runtime, src/flora, src/water, scenes/terrain_server swept; only flora_placer._plateau_cache was unguarded (Mutex fix covers it). Not traced: water_sim thread start, flora_view (client), terrain_server _warm_home/_aim/_peers. Steve traces those three in his sweep; nothing else needed.
+
+HAMMER BLUEPRINTS GATE (25 Oct 05:15 UTC, Tyler): build 1 = claude/sal-hammer-blueprints 7bafd73af93ba03d6a5769dfe54d99845a1d44be (RESTART, PROTOCOL 78, ACT_PLACE_BLUEPRINT 48; NOT ac8c0985). Build 2 = claude/sal-hammer-list a1eb7fe9d6a9fc2c79cbd0c24ce20c84a5a0d3da, stacked on build 1 (client list, R with a hammer). Gate build 1 first, then build 2 on top; each gets its own PASS and build number; no plan reply needed for build 2 (covered by the reply). Foundation (recipe 122) left open_recipes.json: now a blueprint known via the blueprint list; test_new_player checks it. Queue place: after spawn column group, B, C, bed, sound hookup; before nothing that touches protocol (take the protocol number 78 at merge time, check NUMBER_RESERVATIONS.md).
+
+EROSION V2 (25 Oct 05:20 UTC): claude/erosion-delta-v2 4ae9a58ad49ea02d72adc83128d6179aed0a53c2 on merge-793 cbe31f76; erosion_delta_v2.bin sha256 ac0df3cc0fc4cc54feb0cb3365d2022960c45690e8e84fa31b2963e8ee9e55c4 (two byte-identical Linux runs, cuts bit-identical). Spawn wall fill +7.5 to +12 m (was +49 to +77), delta slope there 0.15 (was 0.81), max fill 12, max cut 187. Caveat: bowl around the wall still has delta slope up to 1.26 at the -60 m cut face; needs an 8 m look after the bake. David3 compares the sha256 (low priority). Merges into merge-793 AFTER the speed-up, with bend swing, copper, river ore, before the final bake; v1 file removed in that commit. Still open from my reply: tile (3,4) water numbers and spawn/farmland shares on v2 (Sonny reports).
+
+SPEED-UP 3a MERGED into claude/merge-793 (25 Oct 05:30 UTC, fast-forward cbe31f76 to 690ee1716e5162f4187a2e4ccaaee68e5a7f83d1). Evidence: tile (3,4) md5 17ac06e31a7a36571d209702b2e98732, tile (4,4) md5 8a3a4ffa69d93f3e0612a965acad5726 equal for reference 5b9d9f9 and new build at 1 and 4 threads; Windows md5 4fc5650d; Linux 600-tick settle compare e35ba275; test_gen_core pass. Next into merge-793: bend swing 3e07fe38, copper 0701b96e, river ore 32e064e9, erosion v2 4ae9a58a (rebased), 3b when proven.
+3b-1(a): C++ core port of box blur and border search with GDScript fallback and test cases: accepted (see reply). Binaries rebuilt ONCE at the end of the 3b group, after the last proof.
+
+NEW HEADS ON merge-793 690ee171 (25 Oct 05:55 UTC, Sonny rebased; sent to David3): bend-swing-fade 5dffc0de82d7ab75e1d28b2d838715322310b88f, ore-near-rivers 313a172b88f34ab9018601f2f54b6129547b28a8, river-ore-guarantee 372f3ef4cd27df67bb6a40fa86d1c14b55be697f, sonny-test-fixes 3908aca3f23c476298e38db31ed3fbd3dba218d1, remove-old-builder 3a49753130e0bb4788147ee2bf65e549a3b8a1a3. These replace the older hashes for those branches. Merge only exact PASS ids into merge-793. erosion v2 4ae9a58a still to rebase on 690ee171.
+
+TORCH HEAD (25 Oct 06:55 UTC): claude/sal-torch-head c180a36fbc76c31bc3aa45b4c9897e2e4e51e249 (round 3; adds src/client/flame_up.gd, new small file, flame node keeps world-up; edit is no longer only inside _make_torch_model). Look-only, RUNTIME. Gate after Kathleen/Tyler pictures are judged; new .gd needs its .uid file committed (check at merge), parse_scan, warnings 233.
+
+PARALLEL GATE (25 Oct 07:25 UTC, BP-T77): Mike takes Sonny's merge-793 heads (bend-swing-fade 5dffc0de, ore-near-rivers 313a172b, river-ore-guarantee 372f3ef4, sonny-test-fixes 3908aca3, remove-old-builder 3a497531) while Dave's PC is free; David3 keeps hammer blueprints builds 1 and 2, torch, Sal B and C, Steve 45c994a3. If Dave starts playing, Mike stops and David3 takes the rest.

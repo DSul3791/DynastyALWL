@@ -23,17 +23,39 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
+const TOOL_TILT_SLIGHT_DEG := 23.0  # first person, hand tools: up from the fingers; the resting arm points 40 degrees below level (REST_PITCH_DEG 50), so the head is about 17 degrees down
 # Dave 2026-10-21: at rest the arms hang at the character's side, below the bottom of the screen, and the tool sits in the hand there,
 # fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
 # arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
-const REST_DOWN_M := 0.3
+const REST_DOWN_M := 0.3               # first-person arms at rest: root this far below the eye; the hands sit below a level view and show only when the player looks down about 30 to 45 degrees (Dave 2026-10-25)
 const REST_BACK_M := 0.05
-const REST_PITCH_DEG := 8.0
+const REST_PITCH_DEG := 50.0           # forearms hang forward and low (was 8, straight down; 35 showed no hands at 30 degrees down): hands about 56 degrees below level, so they enter the view when the player looks down 25 to 30 degrees
 const ARMS_FOLLOW_K := 9.0
+const ARMS_SCALE := 0.85               # first-person arms a little slimmer and shorter (hands11/arms_fix pictures: they filled the lower corners); the tool is scaled back up so it keeps its size
+const FIST_COLOR := Color(0.78, 0.62, 0.5)
 const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's middle sits over the shoulder, not behind it (Dave 2026-10-23)
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
+const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
+const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
+# A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
+# looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
+# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
+const HELD_LOOK_SCALE := 1.4
+const HELD_SPEAR_SCALE := 1.6
+const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
+const HELD_GRIP_FROM_END_M := 0.12
+const HELD_LOOK_TURN := {
+	"axe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"pick": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # haft forward (+y), head vertical with the pointed pick DOWN and the chisel up (Dave 2026-10-25: flip it 180 degrees about the haft), both ends bending toward the grip in the haft-and-head plane, so from the front the head is one straight bar
+	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"saw": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
+}
 const JAB_REACH := 0.7
 const JAB_S := 0.28
 const THROW_SPEED := 24.0
@@ -85,6 +107,7 @@ var _placement: Dictionary = {}              # structures.json: footprints, gaps
 var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
+var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const SWING_S := 0.55
 const HIT_STOP_S := 0.045
@@ -93,6 +116,7 @@ const REACH_M := 3.0
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -104,6 +128,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 
 	_tree_near = tree_near
 	_inv = inventory_view
+	blueprints.setup(_inv.table, _inv.inventory, hud_layer)
 	_net = terrain_net
 	_camera = camera
 	_root = world_root
@@ -124,6 +149,40 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
 	camera.add_child(_arms)
 	_arms.play("idle")
+	_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
+	_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
+
+	# Debug (Kathleen 2026-10-25: the first-person arms cast shadows but do not show): --arms-debug draws them in plain magenta, unlit and
+	# on top of everything, so a picture tells whether the mesh is drawn at all (then it is a colour or occlusion fault) or not (then culling).
+	if OS.get_cmdline_user_args().has("--arms-debug") and _arms.body_mesh != null:
+		var debug_material: StandardMaterial3D = StandardMaterial3D.new()
+		debug_material.albedo_color = Color(1.0, 0.0, 1.0)
+		debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		debug_material.no_depth_test = true
+		_arms.body_mesh.material_override = debug_material
+
+
+# A small skin-coloured, slightly flattened ball at a hand mount: with a tool it is the fist round the handle, without one it
+# gives the bare hand a shape.
+func _make_fist(mount: Node3D, at: Vector3) -> void:
+	if mount == null:
+		return
+
+	var fist: MeshInstance3D = MeshInstance3D.new()
+	fist.name = "Fist"
+	var ball: SphereMesh = SphereMesh.new()
+	ball.radius = 0.05
+	ball.height = 0.1
+	ball.radial_segments = 10
+	ball.rings = 5
+	var skin: StandardMaterial3D = StandardMaterial3D.new()
+	skin.albedo_color = FIST_COLOR
+	skin.roughness = 0.9
+	ball.material = skin
+	fist.mesh = ball
+	fist.scale = Vector3(1.0, 0.9, 1.25)
+	fist.position = at
+	mount.add_child(fist)
 
 
 # First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
@@ -222,6 +281,30 @@ func held_id() -> String:
 
 
 # Left-hand items: the item table marks them with "offhand": true (torch, shield, later a lantern).
+# True while a placement blueprint (ghost) is held; auto pickup stays off then.
+func placing() -> bool:
+	return _blueprint != null
+
+
+# A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
+func _blueprinting() -> bool:
+	return holding and blueprints.picked > 0 and _hammer_tier() > 0
+
+
+func _hammer_tier() -> int:
+	var entry: Dictionary = _inv.table.entry(held_id())
+	return int(entry.get("tier", 1)) if str(entry.get("tool_class", "")) == "hammer" else 0
+
+
+# R with a hammer in hand opens or shuts its blueprint list.
+func toggle_blueprints() -> bool:
+	if _hammer_tier() <= 0:
+		return false
+
+	blueprints.toggle(_hammer_tier())
+	return true
+
+
 func is_offhand(number: int) -> bool:
 	if number == 0:
 		return false
@@ -303,6 +386,20 @@ func _start_swing() -> void:
 
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
+	if blueprints.is_open:
+		blueprints.move(down, _hammer_tier())
+		return true
+
+	if _blueprinting():
+		var picked_def: Dictionary = PlacementRules.structure_of_kit(_placement, blueprints.kit_of(blueprints.picked))
+
+		if bool(picked_def.get("foundation", false)):
+			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
+			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+			return true
+
+		return false
+
 	if not holding or not _is_placeable():
 		return false
 
@@ -354,6 +451,9 @@ func _place_slot() -> int:
 
 
 func _placing_id() -> String:
+	if _blueprinting():
+		return blueprints.kit_of(blueprints.picked)
+
 	return _inv.table.id_of(_inv.inventory.numbers[_place_slot()])
 
 
@@ -362,6 +462,18 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
 		_inv.eat_slot(held_slot)
 		return true
+
+	if blueprints.is_open:
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			blueprints.choose(_hammer_tier())
+
+		return button == MOUSE_BUTTON_LEFT
+
+	if _blueprinting():
+		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
+			_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, blueprints.picked, lift_steps, _blueprint_yaw, _blueprint_at)
+
+		return button == MOUSE_BUTTON_LEFT
 
 	if _is_placeable():
 		if button == MOUSE_BUTTON_LEFT and pressed and _blueprint_ok:
@@ -381,6 +493,14 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return button == MOUSE_BUTTON_LEFT
 
 	if _is_other_tool():
+		# The shore net: hold the left button at the water's edge (about 20 s); letting go cancels (the server also cancels when you walk off).
+		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
+			if pressed:
+				_arm_play("use", 0.6)
+
+			_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0 if pressed else 1, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
+			return true
+
 		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
 		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
 			raise_mode = not raise_mode
@@ -632,7 +752,7 @@ func _place_arms(delta: float) -> void:
 	var side: Transform3D = eye.affine_inverse() * body_pose
 	var up_pos: Vector3 = ARMS_POS
 	var up_basis: Basis = Basis(Vector3.RIGHT, deg_to_rad(ARMS_PITCH_DEG))
-	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)), side.origin.lerp(up_pos, _arm_up))
+	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)).scaled(Vector3.ONE * ARMS_SCALE), side.origin.lerp(up_pos, _arm_up))
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
@@ -653,7 +773,10 @@ func _ghost_clean(node: Node) -> void:
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 func _update_blueprint() -> void:
-	if not _is_placeable():
+	if (blueprints.picked > 0 or blueprints.is_open) and _hammer_tier() <= 0:
+		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+
+	if not _is_placeable() and not _blueprinting():
 		if _blueprint != null:
 			_blueprint.visible = false
 
@@ -700,7 +823,7 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.foundation_rows())
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", "")) == "fire" else _inv.foundation_rows())
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -726,8 +849,8 @@ func _update_blueprint() -> void:
 		var covered: bool = footprint != Vector2.ZERO or (_cover_at.is_valid() and _cover_at.call(_blueprint_at))
 		blueprint_state = "covered" if covered else "open"
 
-	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water"
-	_blueprint_ok = _blueprint_ok and not blocked
+	var blocked: bool = blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "nofire" or blueprint_state == "taken"
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.can_afford(_hammer_tier()))
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
 
@@ -887,6 +1010,8 @@ func _other_tool_hint() -> String:
 	match str(_inv.table.entry(held_id()).get("tool_class", "")):
 		"rod":
 			return "Click at the water to cast, and click again when something bites"
+		"net":
+			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
 			return "The hoe treads a path (left click) and smooths the ground by moving dirt from high spots to low ones (right click). It uses no items, only its own wear"
 		"spade":
@@ -903,7 +1028,17 @@ func _caption() -> String:
 
 	var text: String = _inv.table.name_of(number)
 
-	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
+	if _blueprinting():
+		var short: bool = not blueprints.can_afford(_hammer_tier())
+		text = "%s blueprint" % blueprints.name_of(blueprints.picked)
+
+		if PlacementRules.reason_text(blueprint_state) != "":
+			text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+		elif short:
+			text += "   (red: not enough materials; R: the list)"
+		else:
+			text += "   (left click: build it with the materials in your pack; R: the list)"
+	elif _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
 		text += "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
 	elif _is_placeable():
 		text += "   (left click: place; under a tree it keeps dry, in the open rain puts it out)" if _blueprint_shape == Vector2.ZERO else "   (left click: place, it faces you)"
@@ -971,7 +1106,7 @@ func _mount_model() -> void:
 		return
 
 	_arms.hand_mount_r.add_child(_model)
-	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG))
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind in ["spear", "kit"] else TOOL_TILT_SLIGHT_DEG))
 	var turn: Basis = Basis.IDENTITY
 	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
 
@@ -979,17 +1114,17 @@ func _mount_model() -> void:
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
 	elif kind != "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
-		grip = Vector3(0.0, 0.0, -float(GRIP_ALONG_Y[kind]))
+		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
 
-	_model.basis = tilt * turn
-	_model.position = tilt * grip
+	_model.basis = (tilt * turn).scaled(Vector3.ONE / ARMS_SCALE)      # the hand mount is scaled with the arms
+	_model.position = tilt * grip / ARMS_SCALE
 
 
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
-	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(60.0))
-	var grip: Vector3 = Vector3(0.0, float(GRIP_ALONG_Y.get(kind, 0.0)), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
+	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if kind == "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
@@ -1218,9 +1353,36 @@ func _make_container_model() -> Node3D:
 
 
 # Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
+# The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
+# The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
+func _make_look_tool_model() -> Node3D:
+	var def: Dictionary = BasicLook.entry(held_id())
+	var shape: String = str(def.get("shape", ""))
+
+	if not HELD_LOOK_TURN.has(shape):
+		return null
+
+	var held: Mesh = BasicLook.mesh_for(held_id())
+	var length: float = held.get_aabb().size.x
+	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01))
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = held
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis).scaled(Vector3.ONE * held_scale)
+	node.add_child(mesh)
+	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
+
+	return node
+
+
 func _make_other_model() -> Node3D:
 	if str(_inv.table.entry(held_id()).get("kind", "")) == "container":
 		return _make_container_model()
+
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 	var node: Node3D = Node3D.new()
@@ -1284,6 +1446,11 @@ func _make_torch_model(id: String = "") -> Node3D:
 
 
 func _make_knife_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var knife: Node3D = Node3D.new()
 	var handle: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
@@ -1308,6 +1475,11 @@ func _make_knife_model() -> Node3D:
 
 
 func _make_axe_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var axe: Node3D = Node3D.new()
 	var handle: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
@@ -1332,6 +1504,11 @@ func _make_axe_model() -> Node3D:
 
 
 func _make_spear_model() -> Node3D:
+	var look: Node3D = _make_look_tool_model()
+
+	if look != null:
+		return look
+
 	var spear: Node3D = Node3D.new()
 	var shaft: MeshInstance3D = MeshInstance3D.new()
 	var rod: CylinderMesh = CylinderMesh.new()
