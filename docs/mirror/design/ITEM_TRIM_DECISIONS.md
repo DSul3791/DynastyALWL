@@ -12,7 +12,9 @@ Source cards: trim-a to trim-i, early-tools-uses, and the 24 Oct weight cards. T
 - E. Food and drink: NO. Keep every dish and tea; Dave wants a wide choice of foods for cooks and a reason to farm and gather. Nothing cut.
 - F. Forge: CHANGED. A forge is the furnace plus the anvil: one forge model that has both, upgraded in tiers. Not four separate forge items (Medium, Large, Master become upgrades of the one forge). Tongs and bellows not decided: not separate items for now.
 - H. Clothing and coins: NO. Keep all coins (copper, bronze, silver, gold). Dave wants the clothing list broken down and resubmitted: new card trim-h2.
-- G. Building pieces one set: Dave did not understand it. Resubmitted in plain words as card trim-g2. Until answered, nothing changes in thatch or wall pieces.
+- G. Building pieces: REJECTED (trim-g2, 17:32 UTC): every tier's wall, floor, roof, doorway and foundation is its own item with its own model. See BUILDING_TIERS_AUDIT.md. Rough plank (226) is NOT folded into lumber: it is the Plank tier's material.
+- H2 clothing: YES (17:32). Keep everything; add tunic, trousers and gloves (hide versions first). Coins stay. Mittens stay.
+- Shears, tongs, bellows: not answered; treat as No (Dave: unanswered may be rejected).
 
 ## Weights (answered 24 Oct 22:16-22:18 UTC, not yet applied)
 - Magic and fantasy materials weigh what the ordinary real thing weighs (magic ring like a ring, magic log like a log).
@@ -21,5 +23,4 @@ Source cards: trim-a to trim-i, early-tools-uses, and the 24 Oct weight cards. T
 - Wood block, lumber piece and beam: use real-world average weights (Sal looks them up and cites the source).
 
 ## What is still open for Dave
-- trim-g2 (building pieces) and trim-h2 (clothing breakdown).
-- Whether shears and tongs/bellows are wanted.
+- Nothing from the trim cards.
