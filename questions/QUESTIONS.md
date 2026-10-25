@@ -36,3 +36,8 @@ Note: Recommendation: Yes
 Note: Full list: design/ITEM_TRIM_LIST.md group B. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-c | Item trim C: Wood chain: one Lumber and one Beam, species kept as a tag (cut 15)
+Note: Full list: design/ITEM_TRIM_LIST.md group C. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
