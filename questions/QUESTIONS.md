@@ -33,3 +33,8 @@ Note: Recommendation: Yes
 Note: When 3 or more small branches are ready they go into one test run and one build every 1 to 2 hours; if it fails we split them. You pull once instead of 18 times a day. Full report: design/GATE_AUDIT.md.
 Note: Recommendation: Yes
 [check]
+
+## gates-d | Gates D: timing tests retry once; Mike's PC for Windows-only jobs
+Note: Tests that flake under load (animals, npcs, bed) run alone at the end with one automatic retry. Mike's PC keeps first start, feel, play and Windows pictures, plus overflow gates; data-only branches go through the box fast lane. Full report: design/GATE_AUDIT.md.
+Note: Recommendation: Yes
+[check]
