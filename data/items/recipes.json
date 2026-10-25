@@ -356,9 +356,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": false
 		},
 		"iron_pickaxe": {
 			"number": 18,
@@ -550,6 +548,7 @@
 				1
 			],
 			"craft_s": 10.0,
+			"station": "forge",
 			"known": false
 		},
 		"steel_spade": {
@@ -570,6 +569,7 @@
 				1
 			],
 			"craft_s": 12.0,
+			"station": "forge",
 			"known": false
 		},
 		"sewing_needle": {
@@ -606,9 +606,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": false
 		},
 		"energy_bar": {
 			"number": 31,
@@ -804,9 +802,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": false
 		},
 		"hide_boots": {
 			"number": 40,
@@ -826,8 +822,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": false
 		},
 		"hide_hood": {
 			"number": 41,
@@ -887,8 +882,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": false
 		},
 		"sinew_cord": {
 			"number": 44,
@@ -1170,8 +1164,7 @@
 				1
 			],
 			"craft_s": 30.0,
-			"known": true,
-			"station": "workbench"
+			"known": true
 		},
 		"stone_forge_kit": {
 			"number": 50,
@@ -2566,9 +2559,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"floor_section_kit": {
 			"number": 120,
@@ -2588,9 +2579,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"roof_section_kit": {
 			"number": 121,
@@ -2614,9 +2603,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"foundation_section_kit": {
 			"number": 122,
@@ -2636,9 +2623,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"doorway_section_kit": {
 			"number": 123,
@@ -2658,9 +2643,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"window_section_kit": {
 			"number": 124,
@@ -2680,9 +2663,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"timber_prop_kit": {
 			"number": 125,
@@ -2726,9 +2707,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"cut_stone_block": {
 			"number": 127,
@@ -2803,9 +2782,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1
+			"known": false
 		},
 		"wooden_spade_medium": {
 			"number": 131,
@@ -2924,6 +2901,7 @@
 				1
 			],
 			"craft_s": 14.0,
+			"station": "forge",
 			"known": false
 		},
 		"iron_spade_large": {
@@ -2944,6 +2922,7 @@
 				1
 			],
 			"craft_s": 20.0,
+			"station": "forge",
 			"known": false
 		},
 		"steel_spade_medium": {
@@ -2964,6 +2943,7 @@
 				1
 			],
 			"craft_s": 16.0,
+			"station": "forge",
 			"known": false
 		},
 		"steel_spade_large": {
@@ -2984,6 +2964,7 @@
 				1
 			],
 			"craft_s": 24.0,
+			"station": "forge",
 			"known": false
 		},
 		"wooden_hoe": {
@@ -3055,6 +3036,7 @@
 				1
 			],
 			"craft_s": 12.0,
+			"station": "forge",
 			"known": false
 		},
 		"steel_hoe": {
@@ -3075,6 +3057,7 @@
 				1
 			],
 			"craft_s": 14.0,
+			"station": "forge",
 			"known": false
 		},
 		"rough_plank": {
