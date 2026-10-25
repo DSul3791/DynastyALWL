@@ -10,3 +10,6 @@ Sal: items 276 snare, 277 snare_trap; recipe 177; world state 46 (structure kind
 
 ## Item cut (25 Oct, Tyler GO)
 Sal: items 278 beam, 279 sickle, 280 scythe (next 281); recipes 178 sickle, 179 scythe (next 180); blueprints 15 large forge, 16 master forge (next 17).
+
+## Building tiers (25 Oct, Tyler GO)
+Sal: items 350-399; recipes 180-186; blueprints 17-34; world states 47-75. Items 300-349 = Steve and Kathleen. Next free: items 400, recipes 187, blueprints 35, states 76.
