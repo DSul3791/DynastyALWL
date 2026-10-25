@@ -31,6 +31,7 @@ const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
 const LAKE_RADIUS_BASE_M := 190.0   # lake bowl radius = base + per_qs x spring flow, up to max (a 190 m bowl is 11 ha, a 400 m one 50 ha)
 const LAKE_RADIUS_PER_QS_M := 200.0
 const LAKE_RADIUS_MAX_M := 400.0
+const LAKE_MIN_GROUND_M := 6.0   # lake sites sit at least this high, so the bowl's lip stays above the sea
 const LAKE_RELAXED_SLOPE_DEG := 18.0 # a tile with no lake at all takes its flattest reach up to this slope
 const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
@@ -837,6 +838,9 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 		if in_tile_x < keep_m or in_tile_x > TILE_SIZE_M - keep_m or in_tile_z < keep_m or in_tile_z > TILE_SIZE_M - keep_m:
 			continue
+
+		if h[index] < LAKE_MIN_GROUND_M:
+			continue   # an estuary flat: a bowl there has its lip at sea level and is dropped later
 
 		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
 			relaxed_best = [slope, index]
