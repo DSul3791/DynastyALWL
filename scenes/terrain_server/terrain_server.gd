@@ -463,6 +463,9 @@ func _ready() -> void:
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	items.animals_near = func(point, radius): return animals.list_near(point, radius)
+	items.animal_snare = func(id): return animals.snare(id)
+	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)

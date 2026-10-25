@@ -277,6 +277,7 @@ var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
 const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const BowScript := preload("res://src/stream/server_bow.gd")
+const TrapsScript := preload("res://src/stream/server_traps.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
@@ -291,6 +292,10 @@ var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a
 var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
+var _traps = null                   # server_traps.gd (snares), made in setup
+var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
+var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
+var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var _bow = null                     # server_bow.gd, made at the first shot
 var _last_shot: Dictionary = {}     # peer -> msec
 var _flights: Array = []            # thrown things in the air: {number, pos, vel, age}
@@ -318,6 +323,8 @@ var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its it
 func setup(item_table, store_dir: String) -> void:
 	admin_mode_on = func(peer: int) -> bool: return not _admin_mode_off.has(peer)
 	table = item_table
+	_traps = TrapsScript.new()
+	_traps.host = self
 	recipes = RecipeTableScript.load_default(item_table)
 	_dir = store_dir
 	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string(STRUCTURES_PATH))
@@ -956,6 +963,7 @@ func tick(delta: float) -> void:
 		_fish_tick()
 		_remains_tick(spent)
 		_spoil_tick(spent)
+		_traps.tick(spent)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -1017,7 +1025,7 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), 0, str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", 0.0)), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0))])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0))])
 			continue
 
 		var row: Array = [int(it["number"]), int(it["count"]), it["pos"].x, it["pos"].y, it["pos"].z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
@@ -2763,6 +2771,12 @@ func _load_world_items() -> void:
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
 
+			if row.size() > 12 and _traps != null and str(row[9]) == str(_traps.cfg.get("kind", "snare_trap")):
+				entry["struct"]["owner"] = str(row[11])
+				entry["struct"]["seq"] = float(row[12])
+				_next_uid = maxi(_next_uid, int(row[12]) + 1)
+				entry["wear"] = int(row[8])
+
 			_items[_next_id] = entry
 			_next_id += 1
 			continue
@@ -4209,6 +4223,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if is_nan(spot.y):
 			return
 
+	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
+		return
+
 	var here_chunk: Vector2i = _chunk_of(spot)
 	var of_kind: int = 0
 
@@ -4246,6 +4263,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_items[_next_id] = entry
 	_next_id += 1
 	_add_roof(entry)
+
+	if _traps.is_kind(str(def["kind"])):
+		_traps.on_placed(peer, _next_id - 1)
 
 	if attaching:
 		_refresh_pots()   # the fire under it takes the firewood cap now
@@ -4350,7 +4370,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
 			return
-	elif inv.add(table.number_of(str(def["kit"])), 1) > 0:
+	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		return
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
