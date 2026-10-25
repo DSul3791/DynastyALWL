@@ -388,7 +388,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 	kept.resize(samples * samples)
 
 	# The wide ring first: a hollow 96 m across with a rim of pit_keep_rim_m or more is a real basin (Dave 24 Oct: lakes and
-	# ponds should be sizable). It stays, with its outlet cut at the lip (rim - 0.3 m) so it spills over a notch. Smaller pits drain.
+	# ponds should be sizable). It stays, with its outlet notch starting 0.1 m under the rim (the cut starts `drop` below the level it is given) so the pond holds nearly to the rim and spills over the notch. Smaller pits drain.
 	for ring: int in [6, 3]:
 		for row in range(ring, samples - ring):
 			for column in range(ring, samples - ring):
@@ -420,7 +420,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 					continue
 
 				var keep: bool = ring == 6 and rim - floor_m >= pit_keep_rim
-				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim - 1.0 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim + drop - 0.1 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
 				if pit_cut_result.has("skipped"):
 					pits_skipped += 1
 					continue
