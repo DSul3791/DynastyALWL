@@ -174,7 +174,7 @@ func _init() -> void:
 		if not trees.has(str(key_wood)):
 			fail("wood_species.json: key wood %s is not a tree in flora.json" % key_wood)
 
-		for prefix in ["log_", "lumber_", "beam_"]:
+		for prefix in ["log_"]:   # lumber and beam are one item each, the species is a tag (species_tags.json)
 			var key_item: Dictionary = items_file.get("items", {}).get(prefix + str(key_wood), {})
 
 			if key_item.is_empty() or bool(key_item.get("retired", false)):

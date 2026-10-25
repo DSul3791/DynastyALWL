@@ -2066,6 +2066,11 @@
    "size": 0.6,
    "placeholder": true
   }
-
+,
+  "beam": {
+   "shape": "beams",
+   "color": "#b98d57",
+   "size": 1.0
+  }
  }
 }

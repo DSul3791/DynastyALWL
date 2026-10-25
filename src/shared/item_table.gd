@@ -9,6 +9,7 @@ const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material p
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
 var _merged: Dictionary = {}      # int number of a retired item -> its merge target {"into": id, "tag": int} (items.json merged_into, merge_tag)
+var _species: Dictionary = {}     # species name -> tag value (data/items/species_tags.json), loaded on first use
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
 
@@ -58,6 +59,32 @@ func merged(number: int) -> Dictionary:
 		return {}
 
 	return {"number": current, "tag": tag}
+
+
+# Species tag values (data/items/species_tags.json): the number a stack of lumber or beam keeps in its wear field. 0 is "no species" (old stacks).
+func species_code(species: String) -> int:
+	_load_species()
+	return int(_species.get(species, 0))
+
+
+func species_name(code: int) -> String:
+	_load_species()
+
+	for name in _species:
+		if int(_species[name]) == code:
+			return str(name)
+
+	return ""
+
+
+func _load_species() -> void:
+	if not _species.is_empty():
+		return
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/species_tags.json"))
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		_species = parsed.get("species", {})
 
 
 # Does this item carry a tag in its slot's wear number (items.json "tag", e.g. "species" on lumber and beam)? Tagged stacks merge only with equal tags.

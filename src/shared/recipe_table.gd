@@ -48,7 +48,7 @@ func load_file(path: String, item_table) -> bool:
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
-			"wears_tool": str(row.get("wears_tool", "")),
+			"wears_tool": str(row.get("wears_tool", "")), "gives_tag": item_table.species_code(str(row.get("gives_tag", ""))),
 		}
 		_by_number[entry["number"]] = entry
 

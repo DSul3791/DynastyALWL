@@ -3246,6 +3246,9 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	var text: String = "%s x%d\n%s, stacks to %d" % [item_name, count, str(entry.get("kind", "item")), table.stack_of(number)]
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
+	if table.tag_kind(number) == "species":   # lumber and beam: the wear number is the species
+		text += "\nSpecies: %s" % (table.species_name(fill_ml).replace("_", " ") if fill_ml > 0 and table.species_name(fill_ml) != "" else "none noted")
+
 	if int(entry.get("capacity_ml", 0)) > 0:
 		text += "\nHolds %s of %s. Use (E) drinks from it; at the water, E fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"]))]
 

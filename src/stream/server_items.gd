@@ -625,7 +625,7 @@ func inventory_of(peer: int):
 
 # Puts items in a player's inventory. Whatever does not fit lies on the ground at their feet.
 # Returns how many went into the inventory. For harvesting and crafting.
-func give(peer: int, number: int, count: int) -> int:
+func give(peer: int, number: int, count: int, item_wear: int = 0) -> int:
 	var inv = inventory_of(peer)
 
 	if inv == null or number <= 0 or count <= 0 or table.id_of(number) == "":
@@ -636,7 +636,7 @@ func give(peer: int, number: int, count: int) -> int:
 
 	var before: Array = _snapshot(inv)
 	var fits: int = _fit(peer, inv, number, count)
-	var left: int = inv.add(number, fits) + (count - fits)
+	var left: int = inv.add(number, fits, item_wear) + (count - fits)
 	var was_src: String = _gain_source
 	_gain_source = SRC_GATHER if was_src == SRC_PICKUP else was_src
 	_send_changes(peer, inv, before)
@@ -644,7 +644,7 @@ func give(peer: int, number: int, count: int) -> int:
 	_dirty = true
 
 	if left > 0:
-		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO))
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear)
 
 	return count - left
 
@@ -7353,7 +7353,7 @@ func _craft_tick(spent: float) -> void:
 			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
 		else:
 			_gain_source = SRC_CRAFT
-			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
+			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]), int(recipe.get("gives_tag", 0)))   # sawn lumber and beam carry their log's species
 			_gain_source = SRC_PICKUP
 
 			if wears_tool != "" and not free_entry:

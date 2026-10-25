@@ -2843,5 +2843,41 @@ func _init() -> void:
 	var fold_server = make("user://test_server_items_fold")
 	check(fold_server._kind_now("vice") == "log_workbench", "a placed vice in an old save is a log workbench now")
 
+	# Lumber and beam: one item each, the species is a tag in the slot's wear number (item cut C).
+	var oak: int = fold_table.species_code("oak")
+	var birch: int = fold_table.species_code("birch")
+	check(oak > 0 and birch > 0 and oak != birch and fold_table.species_name(oak) == "oak", "species tags are numbered and named")
+	var wood_inv = load("res://src/shared/inventory.gd").new(fold_table)
+	wood_inv.from_json_array([[fold_table.number_of("lumber_oak"), 3, 0], [fold_table.number_of("beam_birch"), 2, 0], [fold_table.number_of("lumber"), 4, 0]])
+	check(wood_inv.numbers[0] == fold_table.number_of("lumber") and wood_inv.wear[0] == oak, "an old oak lumber stack loads as lumber tagged oak")
+	check(wood_inv.numbers[1] == fold_table.number_of("beam") and wood_inv.wear[1] == birch, "an old birch beam stack loads as a beam tagged birch")
+	check(wood_inv.numbers[2] == fold_table.number_of("lumber") and wood_inv.wear[2] == 0, "an old plain lumber stack stays lumber with no species")
+	wood_inv.add(fold_table.number_of("lumber"), 2, 0)
+	check(wood_inv.counts[2] == 6 and wood_inv.counts[0] == 3, "old and new lumber with no species merge with each other, not into oak")
+	wood_inv.add(fold_table.number_of("lumber"), 2, oak)
+	check(wood_inv.counts[0] == 5 and wood_inv.counts[2] == 6, "oak lumber joins oak lumber only")
+	wood_inv.add(fold_table.number_of("lumber"), 1, birch)
+	var birch_slots: int = 0
+
+	for i in wood_inv.SLOTS:
+		if wood_inv.numbers[i] == fold_table.number_of("lumber") and wood_inv.wear[i] == birch:
+			birch_slots += 1
+
+	check(birch_slots == 1, "birch lumber starts its own stack")
+	var saw_recipe: Dictionary = {}
+
+	for rn in make("user://test_server_items_fold").recipes.numbers():
+		if make("user://test_server_items_fold").recipes.recipe(rn)["id"] == "lumber_oak":
+			saw_recipe = make("user://test_server_items_fold").recipes.recipe(rn)
+			break
+
+	check(not saw_recipe.is_empty() and saw_recipe["gives"][0] == fold_table.number_of("lumber") and int(saw_recipe["gives_tag"]) == oak, "the oak sawmill recipe gives lumber tagged oak")
+	var tagged_server = make("user://test_server_items_fold")
+	tagged_server.peer_connected_hello(1, "taggedwood01")
+	tagged_server.give(1, fold_table.number_of("lumber"), 2, oak)
+	var tagged_inv = tagged_server.inventory_of(1)
+	var tagged_slot: int = tagged_inv.numbers.find(fold_table.number_of("lumber"))
+	check(tagged_slot >= 0 and tagged_inv.wear[tagged_slot] == oak and tagged_inv.counts[tagged_slot] == 2, "a sawn board gives the player lumber tagged with its species")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

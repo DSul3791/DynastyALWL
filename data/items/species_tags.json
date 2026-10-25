@@ -1,0 +1,30 @@
+{
+	"note": "Species tag values (Sal, item cut C). Lumber and beam are one item each; the species rides in the slot's wear number (items.json \"tag\": \"species\"). 0 = no species (old stacks). A merged species item names its value in items.json merge_tag; a sawmill recipe names its species in recipes.json gives_tag. Values are append-only.",
+	"species": {
+		"oak": 1,
+		"beech": 2,
+		"birch": 3,
+		"scots_pine": 4,
+		"spruce": 5,
+		"alder": 6,
+		"willow": 7,
+		"coconut_palm": 8,
+		"tropical_hardwood": 9,
+		"acacia": 10,
+		"mangrove": 11,
+		"rowan": 12,
+		"wild_apple": 13,
+		"wild_pear": 14,
+		"wild_cherry": 15,
+		"sweet_chestnut": 16,
+		"walnut": 17,
+		"date_palm": 18,
+		"mirrorbark": 19,
+		"wardpine": 20,
+		"hearthwood": 21,
+		"everember": 22,
+		"witness_tree": 23,
+		"balsam_fir": 24,
+		"maple": 25
+	}
+}
