@@ -1,0 +1,44 @@
+HEAD=5395e95dd5d04bb1df3f4cca32d2b3cda2c3571e
+parse_scan: parse_scan: 386 files, 0 problems
+spawn_column: Test done: 8 pass, 0 fail 
+--- 2-shot (normal join)
+Terrain client: 2026-10-25T02:51:16 [+22.1 s] JOIN: column answer 22.1 s after the welcome: ground 30.5 m, player 33.7 m, viewer y 33.7
+Terrain client: 2026-10-25T02:51:16 [+22.1 s] JOIN: column answer 22.1 s after the welcome: ground 31.2 m, player 33.7 m, viewer y 33.7
+shot runner: landed landA at y 32.7 (wanted 32.7) after 0.1 s
+shot runner: saved /out/column/landA.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
+shot runner: landed landB at y 32.7 (wanted 32.7) after 0.1 s
+shot runner: saved /out/column/landB.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
+--- forced failure
+shot runner: FAILED landF never landed (y 32.7, wanted 82.7)
+shot runner: saved /out/column/landF_FAILED.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
+--- start y=433
+Terrain client: 2026-10-25T02:57:46 [+1.5 s] JOIN: at the welcome: player y 433.0, viewer y 433.0
+Terrain client: 2026-10-25T02:58:00 [+14.7 s] JOIN: waiting for ground 14 s after the welcome: loads 1000, received 1547 (total 1547), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 433.0, viewer y 433.0
+Terrain client: 2026-10-25T02:58:05 [+20.6 s] JOIN: waiting for ground 20 s after the welcome: loads 1933, received 3172 (total 3172), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 433.0, viewer y 433.0
+Terrain client: 2026-10-25T02:58:06 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 31.3 m, player 433.0 m, viewer y 433.0
+Terrain client: 2026-10-25T02:58:06 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 31.2 m, player 433.0 m, viewer y 433.0
+Terrain client: 2026-10-25T02:58:10 [+25.0 s] JOIN: ground ready after 0 retries, test drops 0, player (53301.0, 433.0, 68427.0), viewer y 33.2
+Terrain client: 2026-10-25T02:58:10 [+25.6 s] JOIN: waiting for ground 25 s after the welcome: loads 2927, received 4662 (total 4662), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 432.8, viewer y 33.2
+Terrain client: 2026-10-25T02:58:15 [+30.6 s] JOIN: waiting for ground 30 s after the welcome: loads 7862, received 5496 (total 5496), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.2
+--- start y=1833
+Terrain client: 2026-10-25T03:00:26 [+1.7 s] JOIN: at the welcome: player y 1833.0, viewer y 1833.0
+Terrain client: 2026-10-25T03:00:40 [+15.7 s] JOIN: waiting for ground 15 s after the welcome: loads 1000, received 1562 (total 1562), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 1833.0, viewer y 1833.0
+Terrain client: 2026-10-25T03:00:45 [+20.9 s] JOIN: column answer 20.9 s after the welcome: ground 30.8 m, player 1833.0 m, viewer y 1833.0
+Terrain client: 2026-10-25T03:00:45 [+20.9 s] JOIN: column answer 20.9 s after the welcome: ground 31.2 m, player 1833.0 m, viewer y 1833.0
+Terrain client: 2026-10-25T03:00:45 [+20.9 s] JOIN: waiting for ground 20 s after the welcome: loads 1534, received 2626 (total 2626), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 1833.0, viewer y 1833.0
+Terrain client: 2026-10-25T03:00:49 [+24.8 s] JOIN: ground ready after 0 retries, test drops 0, player (53301.0, 1833.0, 68427.0), viewer y 33.2
+Terrain client: 2026-10-25T03:00:50 [+26.0 s] JOIN: waiting for ground 25 s after the welcome: loads 2432, received 4132 (total 4132), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 1832.7, viewer y 33.2
+Terrain client: 2026-10-25T03:00:56 [+31.0 s] JOIN: waiting for ground 31 s after the welcome: loads 7218, received 5511 (total 5511), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.2
+--- aerial agl 100 (shot: 49 s)
+Terrain client: 2026-10-25T03:03:20 [+16.1 s] JOIN: waiting for ground 16 s after the welcome: loads 1000, received 1529 (total 1529), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:03:25 [+21.3 s] JOIN: waiting for ground 21 s after the welcome: loads 1036, received 1790 (total 1790), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:03:31 [+26.7 s] JOIN: waiting for ground 26 s after the welcome: loads 2400, received 3646 (total 3646), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+shot runner: landed aerial100 at y 131.0 (wanted 131.0) after 0.1 s
+Terrain client: 2026-10-25T03:03:36 [+31.8 s] JOIN: waiting for ground 31 s after the welcome: loads 3104, received 5278 (total 5278), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 131.0, viewer y 33.7
+--- spawn x53316 z68476
+Terrain client: 2026-10-25T03:04:16 [+1.7 s] JOIN: at the welcome: player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:04:30 [+15.9 s] JOIN: waiting for ground 15 s after the welcome: loads 1000, received 1585 (total 1585), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:04:38 [+24.6 s] JOIN: waiting for ground 24 s after the welcome: loads 1687, received 3472 (total 3472), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:04:39 [+24.7 s] JOIN: column answer 24.7 s after the welcome: ground 30.5 m, player 33.7 m, viewer y 33.7
+Terrain client: 2026-10-25T03:04:39 [+24.7 s] JOIN: column answer 24.7 s after the welcome: ground 31.2 m, player 33.7 m, viewer y 33.7
+Terrain client: 2026-10-25T03:04:44 [+29.7 s] JOIN: waiting for ground 29 s after the welcome: loads 2486, received 4207 (total 4207), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7

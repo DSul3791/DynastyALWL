@@ -1,0 +1,103 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+libxkbcommon.so.0: cannot open shared object file: No such file or directory
+Vulkan 1.4.312 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce GTX 1050 Ti
+WARNING: Keeping screen on not supported by this display server.
+     at: screen_set_keep_on (servers/display/display_server.cpp:588)
+
+Terrain client: connecting to 127.0.0.1:7819
+Terrain client: welcome after 135 ms; world Modular Island World; spawn (53301.0, 33.18662, 68427.0); cache user://terrain_cache/Modular Island World/v41_7300d0bce1 (10240 MB)
+Terrain client: 2026-10-25T03:06:55 [+1.7 s] JOIN: at the welcome: player y 33.7, viewer y 33.7
+Terrain client: block line open
+Terrain client: the block line closed; blocks come over the game connection
+Terrain client: 2026-10-25T03:07:07 [+13.2 s] JOIN: waiting for ground 13 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: the water moved, asking again for 0 chunks
+Terrain client: 2026-10-25T03:07:12 [+18.2 s] JOIN: waiting for ground 18 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:07:17 [+23.2 s] JOIN: waiting for ground 23 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:07:22 [+28.3 s] JOIN: waiting for ground 28 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:07:27 [+33.3 s] JOIN: waiting for ground 33 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:07:32 [+38.3 s] JOIN: waiting for ground 38 s after the welcome: loads 2, received 1 (total 1), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 33.7, viewer y 33.7
+Terrain client: 2026-10-25T03:07:37 [+43.2 s] JOIN: ground retry, try 1 of 6: loads 2, received 1, timeouts 0, bad 0, zeroed 0, pending 1, player (53301.0, 400.0, 68427.0)
+Terrain client: 2026-10-25T03:07:37 [+43.3 s] JOIN: waiting for ground 43 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.7
+Terrain client: stopped flying at (53301.0, 400.0, 68427.0), loading the ground here
+Terrain client: 2026-10-25T03:07:42 [+48.4 s] JOIN: waiting for ground 48 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:07:47 [+53.4 s] JOIN: waiting for ground 53 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:07:52 [+58.4 s] JOIN: waiting for ground 58 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:07:57 [+63.2 s] JOIN: ground retry, try 2 of 6: loads 1, received 1, timeouts 0, bad 0, zeroed 0, pending 1, player (53301.0, 400.0, 68427.0)
+Terrain client: 2026-10-25T03:07:57 [+63.5 s] JOIN: waiting for ground 63 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:02 [+68.5 s] JOIN: waiting for ground 68 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:07 [+73.6 s] JOIN: waiting for ground 73 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:12 [+78.6 s] JOIN: waiting for ground 78 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:17 [+83.6 s] JOIN: waiting for ground 83 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:22 [+88.6 s] JOIN: waiting for ground 88 s after the welcome: loads 1, received 0 (total 1), failed total 0, pending 1, test drops 0, retries 2 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+Terrain client: 2026-10-25T03:08:27 [+93.2 s] JOIN: ground retry, try 3 of 6: loads 2, received 1, timeouts 1, bad 0, zeroed 0, pending 1, player (53301.0, 400.0, 68427.0)
+Terrain client: 2026-10-25T03:08:27 [+93.6 s] JOIN: waiting for ground 93 s after the welcome: loads 1, received 0 (total 1), failed total 1, pending 1, test drops 0, retries 3 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:32 [+98.7 s] JOIN: waiting for ground 98 s after the welcome: loads 1, received 0 (total 1), failed total 1, pending 1, test drops 0, retries 3 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: 2026-10-25T03:08:37 [+103.7 s] JOIN: waiting for ground 103 s after the welcome: loads 1, received 0 (total 1), failed total 1, pending 1, test drops 0, retries 3 (stall 2), ray down hits: false, player y 400.0, viewer y 400.0
+Terrain client: server left
+ERROR: Condition "!_is_active()" is true. Returning: nullptr
+   at: get_peer (modules/enet/enet_multiplayer_peer.cpp:460)
+   GDScript backtrace (most recent call first):
+       [0] _on_server_lost (res://scenes/terrain_client/terrain_client.gd:817)
+Crash report written: res://crash_reports/2026-10-25_03-08-40_build791.txt
+Terrain client: connection lost notice shown: the server stopped answering or closed the connection (server link: 0 bars, rtt 6446 ms, loss 3.8%, silent 93281 ms, LOST)
+Crash report written: res://crash_reports/2026-10-25_03-08-55_build791.txt
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: run (modules/voxel/streams/load_block_data_task.cpp:80)
