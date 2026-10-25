@@ -31,6 +31,8 @@ const REST_DOWN_M := 0.15              # first-person arms at rest: root this fa
 const REST_BACK_M := 0.05
 const REST_PITCH_DEG := 75.0           # arms reach forward, hands about 28 degrees below level, in the lower part of the view (was 8: hanging straight down)
 const ARMS_FOLLOW_K := 9.0
+const ARMS_SCALE := 0.85               # first-person arms a little slimmer and shorter (hands11/arms_fix pictures: they filled the lower corners); the tool is scaled back up so it keeps its size
+const FIST_COLOR := Color(0.78, 0.62, 0.5)
 const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's middle sits over the shoulder, not behind it (Dave 2026-10-23)
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
@@ -144,6 +146,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
 	camera.add_child(_arms)
 	_arms.play("idle")
+	_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
+	_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
 
 	# Debug (Kathleen 2026-10-25: the first-person arms cast shadows but do not show): --arms-debug draws them in plain magenta, unlit and
 	# on top of everything, so a picture tells whether the mesh is drawn at all (then it is a colour or occlusion fault) or not (then culling).
@@ -153,6 +157,29 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 		debug_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		debug_material.no_depth_test = true
 		_arms.body_mesh.material_override = debug_material
+
+
+# A small skin-coloured, slightly flattened ball at a hand mount: with a tool it is the fist round the handle, without one it
+# gives the bare hand a shape.
+func _make_fist(mount: Node3D, at: Vector3) -> void:
+	if mount == null:
+		return
+
+	var fist: MeshInstance3D = MeshInstance3D.new()
+	fist.name = "Fist"
+	var ball: SphereMesh = SphereMesh.new()
+	ball.radius = 0.05
+	ball.height = 0.1
+	ball.radial_segments = 10
+	ball.rings = 5
+	var skin: StandardMaterial3D = StandardMaterial3D.new()
+	skin.albedo_color = FIST_COLOR
+	skin.roughness = 0.9
+	ball.material = skin
+	fist.mesh = ball
+	fist.scale = Vector3(1.0, 0.9, 1.25)
+	fist.position = at
+	mount.add_child(fist)
 
 
 # First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
@@ -674,7 +701,7 @@ func _place_arms(delta: float) -> void:
 	var side: Transform3D = eye.affine_inverse() * body_pose
 	var up_pos: Vector3 = ARMS_POS
 	var up_basis: Basis = Basis(Vector3.RIGHT, deg_to_rad(ARMS_PITCH_DEG))
-	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)), side.origin.lerp(up_pos, _arm_up))
+	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)).scaled(Vector3.ONE * ARMS_SCALE), side.origin.lerp(up_pos, _arm_up))
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
@@ -1025,8 +1052,8 @@ func _mount_model() -> void:
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
 		grip = Vector3(0.0, 0.0, -float(_model.get_meta("grip_y", GRIP_ALONG_Y[kind])))
 
-	_model.basis = tilt * turn
-	_model.position = tilt * grip
+	_model.basis = (tilt * turn).scaled(Vector3.ONE / ARMS_SCALE)      # the hand mount is scaled with the arms
+	_model.position = tilt * grip / ARMS_SCALE
 
 
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
