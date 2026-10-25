@@ -1,0 +1,16 @@
+# Action plan: fine wood and lower by hand, only heavy things are blueprints (Sal, reworks hammer blueprints per Dave 25 Oct 09:06)
+Branch claude/sal-hand-fine-blueprint-stations (stacked on build 2, claude/sal-hammer-list). Label RESTART (data and server; protocol stays 78, no new action).
+Dave 25 Oct 09:06: "All foundations and other building items of fine wood or lower you can make by hand and place. No kits required. They are just like the chopping block; anything higher tier needs a blueprint placed from the hammer because they are too heavy to carry all the required materials."
+## Rule (building tiers plan, art/BUILDING_TIERS_PLAN.md)
+- Tiers 1 to 3 (basic thatch, plank, fine wood) and the standard foundation, ladder, timber set: made BY HAND, no station, known from the start, placed like the chopping block (the carried piece is the item; taking it down gives the piece back). No kit wording, no blueprint.
+- Heavy things (processing stations now; the log, cobblestone and mason tiers and their large foundations when they are built) are hammer blueprints, materials taken from the pack when placed.
+## What changes versus build 1 (merged as 800)
+1. Recipes 119-124, 126 and 130 (six section pieces, timber set, ladder) are live again: station and level removed, known true. The foundation (122) is back in open_recipes.json. Their old blueprint rows 1-8 stay in blueprints.json with "retired": true (numbers kept, not offered, not placed) and the server and list skip retired rows. Takedown of these gives the piece (not materials).
+2. New blueprints 9-12: stone forge, blacksmithy, saw mill, woodworking table. Costs equal the kit recipes (50, 51, 154, 155), which are now retired. Each keeps its workbench requirement with its level (new row field `station_level`, default 1): forge level 2, blacksmithy level 3 (the log workbench is level 2, a bench of too low a level refuses and takes nothing), saw mill and table level 1 (the saw mill still needs its tall foundation and running water: those rules run in the same place as before). Hammer tier per row stays 1.
+3. Hammer list (build 2) skips retired rows; shows the four stations.
+## Not changed
+Items stay (kit items keep their numbers and names, old packs and saves load; old kits still place). The thatch four and rough bed, chests and lean-to are untouched (hand crafts, awaiting the gate of sal-hand-crafts). Clay hearth and oven are blueprints in the separate hearth/oven plan. Tool rack and vice stay kit items made at a workbench (light; Tyler or Dave can move them to blueprints).
+## Tests
+test_blueprints rewritten (cost equals the retired kit recipe for the four stations; the six pieces, timber set and ladder are live by-hand recipes with no station; no hammer, no bench, short pack and a bench of too low a level each take nothing; a bench near and the materials place it and take exactly those; the row hammer tier; takedown refund; full pack keeps the piece; save and load), test_hammer_list (four rows), test_new_player (foundation known from the start again), test_stations, test_placement_rules, test_first_hour, test_first_town, test_inventory, validate_items, local_check 233.
+## Questions
+a. Tool rack and vice stay kit items, and the large and master forge wait for their recipes (decided by the coordinator 25 Oct 09:11, no open questions).

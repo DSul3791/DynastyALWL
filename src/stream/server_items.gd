@@ -4125,6 +4125,10 @@ func _load_blueprints() -> void:
 
 	for id in parsed.get("blueprints", {}):
 		var row: Dictionary = parsed["blueprints"][id].duplicate()
+
+		if bool(row.get("retired", false)):   # kept in the file for its number only
+			continue
+
 		row["id"] = id
 		_blueprints[int(row["number"])] = row
 		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
@@ -4146,7 +4150,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 		_say(peer, "This hammer is too light for that. A stone hammer or better.")
 		return false
 
-	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"])):
+	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
 		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
 		return false
 

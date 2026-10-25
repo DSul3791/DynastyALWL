@@ -1258,7 +1258,8 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"blacksmithy_kit": {
 			"number": 51,
@@ -1285,7 +1286,8 @@
 			"craft_s": 120.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"retired": true
 		},
 		"lumber_oak": {
 			"number": 52,
@@ -2696,10 +2698,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"floor_section_kit": {
 			"number": 120,
@@ -2720,10 +2719,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"roof_section_kit": {
 			"number": 121,
@@ -2748,10 +2744,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"foundation_section_kit": {
 			"number": 122,
@@ -2772,10 +2765,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"doorway_section_kit": {
 			"number": 123,
@@ -2796,10 +2786,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"window_section_kit": {
 			"number": 124,
@@ -2820,10 +2807,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"timber_prop_kit": {
 			"number": 125,
@@ -2869,10 +2853,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"cut_stone_block": {
 			"number": 127,
@@ -2951,10 +2932,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"wooden_spade_medium": {
 			"number": 131,
@@ -3417,7 +3395,8 @@
 			"craft_s": 60.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"woodworking_table_kit": {
 			"number": 155,
@@ -3428,7 +3407,8 @@
 			"craft_s": 30.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"rock_pile": {
 			"number": 151,
