@@ -1646,3 +1646,19 @@ Answered: 2026-10-25 00:15 UTC
 Answer: No: I’m not able to test this right now however it is in the works for you to have a system to allow you to check them yourself soon
 Answered: 2026-10-25 00:23 UTC
 
+## early-tools-uses | Add a wooden rake and a stone sickle for farming (iron scythe later)?
+Answer: No: We use the hoe for everything farming
+Answered: 2026-10-25 13:49 UTC
+
+## early-tools-uses | Add a wooden rake and a stone sickle for farming (iron scythe later)?
+Answer: No: We use the hoe for everything farming
+Answered: 2026-10-25 13:49 UTC
+
+## trim-a | Item trim A: Spade sizes: one spade per material (cut 8)
+Answer: Yes
+Answered: 2026-10-25 13:49 UTC
+
+## trim-b | Item trim B: Duplicate tools: one hammer, no vice, no needle (merge 4; wooden bowl KEPT per Dave)
+Answer: Yes
+Answered: 2026-10-25 13:50 UTC
+
