@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 273,
+	"next_number": 276,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3090,6 +3090,50 @@
 			"ammo_class": "arrow",
 			"ammo_capacity": 40,
 			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"oven": {
+			"number": 267,
+			"name": "Oven",
+			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"oven_kit": {
+			"number": 268,
+			"name": "Oven",
+			"description": "A brick oven, built with a hammer next to a clay hearth.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"flatbread": {
+			"number": 273,
+			"name": "Flatbread",
+			"description": "A flat cake baked on the hot clay. Plain and filling.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": []
+		},
+		"honey_loaf": {
+			"number": 274,
+			"name": "Honey loaf",
+			"description": "A sweet loaf baked in the oven. Keeps well.",
+			"kind": "food",
+			"stack": 10,
+			"value": 22,
+			"look_alikes": []
+		},
+		"roast_joint": {
+			"number": 275,
+			"name": "Rosemary joint",
+			"description": "Meat roasted whole in the oven with herbs.",
+			"kind": "food",
+			"stack": 10,
 			"value": 25,
 			"look_alikes": []
 		}

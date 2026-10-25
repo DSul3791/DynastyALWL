@@ -1,6 +1,6 @@
 {
 	"note": "Hammer blueprints (Dave 25 Oct): HEAVY placeables (processing stations now; log, cobblestone and mason tiers and their large foundations when they land) are placed from the hammer with the materials in the pack, no kit item, because they are too heavy to carry as materials. Building items of the fine wood tier or lower (thatch, plank, fine wood pieces, foundation, ladder, timber set) are made BY HAND and placed like the chopping block: no kit, no blueprint (Dave 25 Oct 09:06). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused), 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
-	"next_number": 13,
+	"next_number": 15,
 	"blueprints": {
 		"wall_section": {
 			"number": 1,
@@ -265,6 +265,24 @@
 			"hammer": 1,
 			"known": true,
 			"recipe": "woodworking_table_kit"
+		},
+		"clay_hearth": {
+			"number": 13,
+			"name": "Clay hearth",
+			"structure": "clay_hearth",
+			"cost": [["brick", 10], ["clay", 6], ["stone", 4]],
+			"hammer": 1,
+			"known": true
+		},
+		"oven": {
+			"number": 14,
+			"name": "Oven",
+			"structure": "oven",
+			"cost": [["brick", 24], ["clay", 10], ["stone", 8]],
+			"near": "clay_hearth",
+			"near_level": 2,
+			"hammer": 1,
+			"known": true
 		}
 	}
 }

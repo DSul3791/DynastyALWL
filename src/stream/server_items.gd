@@ -4154,6 +4154,10 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
 		return false
 
+	if str(row.get("near", "")) != "" and not station_near(peer, str(row["near"]), int(row.get("near_level", 1))):
+		_say(peer, "You need a %s close by." % str(row["near"]).replace("_", " "))
+		return false
+
 	for need in row["cost"]:
 		if inv.count_of(table.number_of(str(need[0]))) < int(need[1]):
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
@@ -6431,14 +6435,12 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 	if not _peer_pos.has(peer):
 		return false
 
-	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json), not at a placed structure
+	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json); a clay hearth or an oven beside you cooks them too ("also" in structures.json)
 		for id in _items:
 			var fire_item: Dictionary = _items[id]
 
 			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and _peer_pos[peer].distance_to(fire_item["pos"]) <= FIRE_USE_M + 1.0:
 				return true
-
-		return false
 
 	for id in _items:
 		var it: Dictionary = _items[id]

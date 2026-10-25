@@ -2,6 +2,7 @@
 """Turns data/items/dishes.json into items, recipes, food points, shelf life, weights and warmth. Safe to run again.
 
 Run from the repo root:  python3 tools/gen_dishes.py
+A dish may name a "station" (default campfire; clay_hearth or oven): the tiers are in structures.json "also", so an oven cooks what a hearth cooks and a hearth what a campfire cooks.
 Numbers are append-only: an existing dish keeps its item and recipe numbers; its other rows are rewritten from dishes.json.
 """
 import json
@@ -45,7 +46,7 @@ for dish_id, d in dishes.items():
     if not old_recipe:
         recipes_doc["next_number"] += 1
 
-    recipes["cook_" + dish_id] = {"number": recipe_number, "name": d["name"], "needs": d["needs"], "gives": [dish_id, d["gives"]], "craft_s": float(d["craft_s"]), "station": "campfire", "known": True}
+    recipes["cook_" + dish_id] = {"number": recipe_number, "name": d["name"], "needs": d["needs"], "gives": [dish_id, d["gives"]], "craft_s": float(d["craft_s"]), "station": d.get("station", "campfire"), "known": True}
     vitals["food"]["by_id"][dish_id] = d["kcal"]
     spoilage["by_id"][dish_id] = d["shelf_h"]
     weights["by_id"][dish_id] = 0.3

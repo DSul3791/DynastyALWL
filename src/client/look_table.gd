@@ -36,6 +36,7 @@ const LOOKS := {
 	"thatch_wall": {"builder": "thatch_wall", "args": []},
 	"tripod_pot": {"builder": "tripod_pot", "args": []},
 	"clay_hearth": {"builder": "clay_hearth", "args": []},
+	"oven": {"builder": "oven", "args": []},
 }
 
 static var _warned: Dictionary = {}
