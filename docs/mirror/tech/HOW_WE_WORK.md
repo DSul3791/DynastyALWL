@@ -65,3 +65,5 @@ If you are blocked or would wait too long, start the next thing on your list at 
 - BP-T49 ground tests: always look down at the spot (or step back and look down); never walk away from what you check. See BEST_PRACTICES.md.
 
 - Test recipe: see TEST_RECIPE.md (drop, look down, step back about 1 m, expect and stop). Player bot DECLINED 23 Oct.
+
+- NOTHING IS DELETED (Dave 25 Oct 17:58 UTC): nobody deletes messages, models, images, sounds, art, design docs, scenes, looks or code. If you decide not to use something, MOVE it to proposed_removals/<original path> (scripts, scenes, resources get .removed added) in the repo and in the project files, add one line to proposed_removals/REMOVALS.md (who, date, why, replaced by), and Dave approves it on a card. Retired items and looks stay in their data files marked retired. tools/merge_check.py fails the merge if such a file is gone and not in the folder.

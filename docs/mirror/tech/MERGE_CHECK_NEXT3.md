@@ -231,3 +231,7 @@ Branch claude/sal-hide-clothing, exact id 6bb00a5154f8aaa90d92162f51c7165469393c
 
 ## QUEUE 25 Oct 16:50 UTC: Kathleen looks (thatch roof locked)
 claude/kathleen-tool-pass exact id 9d8ba335d3b8e431ae3d3c4f98fd0723eebd3773 (thatch roof shape locked by Kathleen). Merge on David3 PASS, onto current generator-v2.
+
+## GATE REQUEST 25 Oct 17:56 UTC: Sal building tiers phase 0+1
+claude/sal-building-tiers-p1 exact id 5d42ec40a415629b9ac52e0130cb63ccc1244bb3 (on 822, RESTART). Run parse_scan, merge_check.py, marker grep, validate_items, test_tier_numbers, test_blueprints, test_server_items, test_craft_menu, local_check (227), full set (known-fail list empty). Report HEAD=<hash>.
+Also pending gates: item cut claude/sal-item-cut 6f2ae555 (sent), Kathleen claude/kathleen-tool-pass 43fac154, Steve traps (after warning fix), look shots.

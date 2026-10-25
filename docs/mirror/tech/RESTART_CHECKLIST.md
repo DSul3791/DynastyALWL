@@ -60,3 +60,7 @@ Launcher replace-old-server path never run end to end; "under the world after ro
 
 ## Decisions needed from Dave (question page)
 cl-bake (when the next bake happens), cl-tests (what to do with the 11 old checks).
+
+## Standing rule: nothing is deleted
+NOTHING IS DELETED (Dave 25 Oct 17:58 UTC): nobody deletes messages, models, images, sounds, art, design docs, scenes, looks or code. If you decide not to use something, MOVE it to proposed_removals/<original path> (scripts, scenes, resources get .removed added) in the repo and in the project files, add one line to proposed_removals/REMOVALS.md (who, date, why, replaced by), and Dave approves it on a card. Retired items and looks stay in their data files marked retired. tools/merge_check.py fails the merge if such a file is gone and not in the folder.
+Before you start: read proposed_removals/README.md. Before you push: run tools/merge_check.py.

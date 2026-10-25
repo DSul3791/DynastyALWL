@@ -13,3 +13,4 @@ Sal: items 278 beam, 279 sickle, 280 scythe (next 281); recipes 178 sickle, 179 
 
 ## Building tiers (25 Oct, Tyler GO)
 Sal: items 350-399; recipes 180-186; blueprints 17-34; world states 47-75. Items 300-349 = Steve and Kathleen. Next free: items 400, recipes 187, blueprints 35, states 76.
+25 Oct 17:55 UTC: Sal world state range extended to 47-76 (76 = thatch_doorway_open). Next free states 77. Merge note: item cut (next items 281, recipes 180) and building tiers p1 (items to 363, recipes to 186) both edit next_number; take the max (items 364, recipes 187) at merge.
