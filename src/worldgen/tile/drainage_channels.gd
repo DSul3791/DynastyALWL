@@ -28,6 +28,8 @@ const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell m
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
 const LAKE_MAX_SLOPE_DEG := 10.0     # lakes sit on flat reaches
+const LAKE_RELAXED_SLOPE_DEG := 14.0 # a tile with no lake at all takes its flattest reach up to this slope
+const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
 const STEEP_FROM_DEG := 12.0         # valley cuts shrink on ground steeper than this ...
 const STEEP_TO_DEG := 30.0           # ... down to (1 - STEEP_VALLEY_SHARE) of their size at this slope
@@ -41,6 +43,7 @@ var bed: PackedFloat32Array = PackedFloat32Array()
 var centre_depth: PackedFloat32Array = PackedFloat32Array()    # depth on the centre line, 0 elsewhere
 var surface: PackedFloat32Array = PackedFloat32Array()         # water level in channel cells, NAN elsewhere
 var basin_mask: PackedByteArray = PackedByteArray()          # 1 inside a carved pond or lake bowl (the pit pass leaves these alone)
+var lake_sites: Array = []   # [world x, world z, radius m] of each carved lake (for checks)
 var _along: PackedFloat32Array = PackedFloat32Array()
 var _root: PackedInt32Array = PackedInt32Array()
 var _seed: int = 0
@@ -737,11 +740,18 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: float, has_up: PackedByteArray, edge: int, cell_m: float, rules: Dictionary) -> void:
 	var lake_from: float = float(rules.get("lake_from_km2", 1.0))
 	var lake_share: float = float(rules.get("lake_block_share", 0.6))
-	var spacing: int = maxi(int(float(rules.get("lake_spacing_m", 1500.0)) / cell_m), 1)
+	var block_m: float = float(rules.get("lake_spacing_m", 1536.0))   # 10 blocks to a tile edge, so no block straddles two tiles
+	var relaxed_slope: float = tan(deg_to_rad(LAKE_RELAXED_SLOPE_DEG))
+	# The tile this frame was built for: its centre sample. Lake sites are decided only for that tile, and only where the whole
+	# bowl (twice the radius) stays inside the tile and inside its 1536 m block, so two frames never disagree along an edge.
+	var tile_x: int = floori((float(_origin.x) + 0.5 * float(size)) * cell_m / TILE_SIZE_M)
+	var tile_z: int = floori((float(_origin.y) + 0.5 * float(size)) * cell_m / TILE_SIZE_M)
+	var relaxed_best: Array = []   # [slope, index]: the tile's flattest reach, in case it gets no lake otherwise
 	var pond_slope: float = tan(deg_to_rad(POND_MAX_SLOPE_DEG))
 	var lake_slope: float = tan(deg_to_rad(LAKE_MAX_SLOPE_DEG))
 	basin_mask.resize(size * size)
 	basin_mask.fill(0)
+	lake_sites = []
 	var sites: Array = []   # [index, catchment km2, is_lake]
 	var lake_pick: Dictionary = {}   # block -> [slope, index]
 	var steep: int = 0
@@ -767,16 +777,44 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 			continue
 
+		if flow.discharge[index] < 0.5 * lake_from or slope > relaxed_slope:
+			continue
+
+		# Where is the whole bowl? Radius as in the carve below (catchment decides it).
+		var qs_here: float = clampf(SPRING_M3S_PER_KM2 * float(flow.discharge[index]), 0.01, 2.0)
+		var keep_m: float = 2.0 * clampf(80.0 + 80.0 * qs_here, 80.0, 250.0)
+		var wx: float = float(_origin.x + column) * cell_m
+		var wz: float = float(_origin.y + row) * cell_m
+
+		if floori(wx / TILE_SIZE_M) != tile_x or floori(wz / TILE_SIZE_M) != tile_z:
+			continue
+
+		var in_block_x: float = fposmod(wx, block_m)
+		var in_block_z: float = fposmod(wz, block_m)
+
+		if in_block_x < keep_m or in_block_x > block_m - keep_m or in_block_z < keep_m or in_block_z > block_m - keep_m:
+			continue
+
+		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
+			relaxed_best = [slope, index]
+
 		if flow.discharge[index] < lake_from or slope > lake_slope:
 			continue
 
-		var block: Vector2i = Vector2i(floori(float(_origin.x + column) / spacing), floori(float(_origin.y + row) / spacing))
+		var block: Vector2i = Vector2i(floori(wx / block_m), floori(wz / block_m))
 
 		if _hash(block.y * 100003 + block.x, _seed + 5151) > lake_share:
 			continue
 
 		if not lake_pick.has(block) or slope < float(lake_pick[block][0]):
 			lake_pick[block] = [slope, index]
+
+	var guaranteed: int = 0
+
+	if lake_pick.is_empty() and not relaxed_best.is_empty():
+		var chosen: int = int(relaxed_best[1])
+		sites.append([chosen, flow.discharge[chosen], true])
+		guaranteed = 1
 
 	for block in lake_pick:
 		var picked: int = int(lake_pick[block][1])
@@ -843,6 +881,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if is_lake:
 			lakes += 1
 			lake_cells += wet
+			lake_sites.append([float(_origin.x + column) * cell_m, float(_origin.y + row) * cell_m, radius])
 		else:
 			ponds += 1
 			pond_cells += wet
@@ -850,7 +889,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if verbose:
 			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
-	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, steep, POND_MAX_SLOPE_DEG])
+	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
 
 
 # Steepest rise per metre between a cell and its eight neighbours.
