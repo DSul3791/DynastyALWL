@@ -398,7 +398,7 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2}
+		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_dirty = true
 
 	if bool(_characters[key].get("new_player", false)):
@@ -505,6 +505,7 @@ func peer_left(peer: int) -> void:
 	_last_gather.erase(peer)
 	_last_use.erase(peer)
 	_last_eat.erase(peer)
+	_eat_warn.erase(peer)
 	_last_drink.erase(peer)
 	_exertion.erase(peer)
 	_motion.erase(peer)
@@ -3870,7 +3871,7 @@ func _cook(peer: int, inv, id: int) -> void:
 
 # Food that should have been cooked (cooking.json raw_sick, hours of sickness by item id or id suffix; Tyler: raw meat 24 h,
 # fiddleheads and beans 12, acorns and wild mushrooms mild at 6). It still feeds you; the stomach pays afterwards.
-func _raw_sickness(peer: int, item_id: String) -> void:
+func _raw_hours(item_id: String) -> float:
 	var cfg: Dictionary = _cooking.get("raw_sick", {})
 	var hours: float = float(cfg.get("by_id", {}).get(item_id, 0.0))
 
@@ -3880,9 +3881,96 @@ func _raw_sickness(peer: int, item_id: String) -> void:
 				hours = float(cfg["by_suffix"][suffix])
 				break
 
+	return hours
+
+
+func _raw_sickness(peer: int, item_id: String) -> void:
+	var hours: float = _raw_hours(item_id)
+
 	if hours > 0.0:
-		_say(peer, "That should have been cooked. Your stomach turns.")
-		make_sick(peer, hours)
+		_harm_bite(peer, item_id, hours, "That should have been cooked. Your stomach turns.")
+	else:
+		_learn_food(peer, item_id, "ok")
+
+
+# --- Eat-once learning (EARLY_GAME_PRINCIPLES 5, data/items/eat_memory.json) ---
+
+var _eat_cfg: Dictionary = {}
+var _eat_warn: Dictionary = {}      # peer -> {"item": id, "until": msec}: the harm warning the next press confirms
+
+
+func _eat_cfg_value(key: String, fallback: Variant) -> Variant:
+	if _eat_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/eat_memory.json"))
+		_eat_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	return _eat_cfg.get(key, fallback)
+
+
+func tried_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "" or not _characters.has(key):
+		return {}
+
+	if typeof(_characters[key].get("tried", null)) != TYPE_DICTIONARY:
+		_characters[key]["tried"] = {}
+
+	return _characters[key]["tried"]
+
+
+func grace_of(peer: int) -> float:
+	return float(_characters.get(str(_peer_key.get(peer, "")), {}).get("grace_s", 0.0))
+
+
+# A harm is never forgotten; "ok" only fills an unknown food.
+func _learn_food(peer: int, item_id: String, what: String) -> void:
+	var tried: Dictionary = tried_of(peer)
+
+	if str(tried.get(item_id, "")) == "harm" or str(tried.get(item_id, "")) == what:
+		return
+
+	if _characters.has(str(_peer_key.get(peer, ""))):
+		tried[item_id] = what
+		_dirty = true
+
+
+# A food that harms: in the first hour an unknown one costs food and water only, otherwise the stomach pays. Either way it is remembered.
+func _harm_bite(peer: int, item_id: String, hours: float, line: String) -> void:
+	var unknown: bool = not tried_of(peer).has(item_id)
+	_learn_food(peer, item_id, "harm")
+
+	if unknown and grace_of(peer) > 0.0:
+		var v: Dictionary = vitals_of(peer)
+		var cost: Dictionary = _eat_cfg_value("first_hour_cost", {})
+		v["fed"] = maxf(float(v["fed"]) - float(cost.get("fed_kcal", 150)), 0.0)
+		v["wet"] = maxf(float(v["wet"]) - float(cost.get("wet_ml", 150)), 0.0)
+		_say(peer, str(_eat_cfg_value("say_first_hour", "")))
+		_sync_vitals(peer, true)
+		return
+
+	if line != "":
+		_say(peer, line)
+
+	make_sick(peer, hours)
+
+
+# True when the bite must wait: a food that harmed this character before is stopped once, with a hint; a second press within
+# confirm_window_s eats it anyway.
+func _eat_stopped(peer: int, item_id: String, now: int) -> bool:
+	if str(tried_of(peer).get(item_id, "")) != "harm":
+		return false
+
+	var warn: Dictionary = _eat_warn.get(peer, {})
+
+	if str(warn.get("item", "")) == item_id and now <= int(warn.get("until", 0)):
+		_eat_warn.erase(peer)
+		return false
+
+	_eat_warn[peer] = {"item": item_id, "until": now + int(float(_eat_cfg_value("confirm_window_s", 5.0)) * 1000.0)}
+	_say(peer, str(_eat_cfg_value("say_warn", "")))
+	think(peer, "hint_harm")
+	return true
 
 
 # A hot meal or a hot drink lifts body warmth a little (cooking.json "warms", warmth points); the warmth tick then pulls it back.
@@ -4555,6 +4643,8 @@ func _become_new_player(peer: int) -> void:
 	_inventories[key].bag_from = 10
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
+	_characters[key]["tried"] = {}
+	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
@@ -5386,6 +5476,12 @@ func _vitals_tick(spent: float) -> void:
 
 		if v.is_empty():
 			continue
+
+		var crow: Dictionary = _characters.get(_peer_key[peer], {})
+
+		if float(crow.get("grace_s", 0.0)) > 0.0:   # online time only: this loop runs for connected peers
+			crow["grace_s"] = maxf(float(crow["grace_s"]) - spent, 0.0)
+			_dirty = _dirty or float(crow["grace_s"]) <= 0.0
 
 		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
 		var burn: float = burn_per_day * game_s / 86400.0
@@ -7214,12 +7310,22 @@ func _eat(peer: int, inv, slot: int) -> void:
 	var item_id: String = table.id_of(inv.numbers[slot])
 	var spoil: Dictionary = table.spoilage()
 
+	if _eat_stopped(peer, item_id, now):
+		_last_eat[peer] = now
+		return
+
 	if not spoil.is_empty() and item_id == str(spoil.get("rotten_item", "")):
 		_last_eat[peer] = now
 		inv.take_from_slot(slot, 1)
+
+		if not tried_of(peer).has(item_id) and grace_of(peer) > 0.0:
+			_harm_bite(peer, item_id, -1.0, "")
+			return
+
 		var sick: Dictionary = spoil.get("sick", {})
 		v["health"] = maxf(float(v["health"]) - float(sick.get("health", 0)), 1.0)
 		v["wet"] = maxf(float(v["wet"]) - float(sick.get("wet_ml", 0)), 0.0)
+		_learn_food(peer, item_id, "harm")
 		make_sick(peer)
 		_sync_vitals(peer, true)
 		return
@@ -7476,6 +7582,8 @@ func _load_characters() -> void:
 			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
+			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
+			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:

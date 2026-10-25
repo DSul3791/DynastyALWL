@@ -43,6 +43,7 @@ func _init() -> void:
 	var rotten: int = items.table.number_of("rotten_food")
 	var medicine: int = items.table.number_of("medicine")
 	items.peer_connected_hello(1, "sick-key-00001")
+	items._characters[items._peer_key[1]]["grace_s"] = 0.0   # eat-once: the first-hour protection has its own test
 	items.report_position(1, Vector3(10.0, 0.0, 10.0))
 	check(not items.is_sick(1) and hours.back() == 0, "a new character is well")
 	check(items.effort_of(1) < 0.1, "a resting well character is not working")

@@ -51,6 +51,7 @@ func _init() -> void:
 	items.season_now = func(): return "spring"
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "spoil-key-0001")
+	items._characters[items._peer_key[1]]["grace_s"] = 0.0   # eat-once: the first-hour protection has its own test
 	items.report_position(1, Vector3(10.0, 5.0, 10.0))
 	items.action(1, Net.ACT_ADMIN_GIVE, roast, 0, 4, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 4, Vector3.ZERO)

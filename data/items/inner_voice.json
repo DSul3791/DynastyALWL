@@ -31,5 +31,10 @@
 		"That sound was either a fart or a distant thunderstorm.",
 		"My guts are holding a very noisy meeting.",
 		"This is the kind of trouble that sits you down and doesn't let you up."
+	],
+	"hint_harm": [
+		"Careful. That one turned my stomach last time.",
+		"I remember this. I'd rather not do that again.",
+		"Last time that did not end well. Cook it, or be sure."
 	]
 }

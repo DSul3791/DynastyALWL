@@ -446,6 +446,7 @@ func _init() -> void:
 	f.rain_now = func(): return rain[0]
 	f.cover_at = func(p): return 1.0 if p.x > 100.0 else 0.0
 	f.peer_connected_hello(1, "abcdef123456")
+	f._characters[f._peer_key[1]]["grace_s"] = 0.0   # eat-once: the first-hour protection has its own test
 	f.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var kit: int = f.table.number_of("campfire_kit")
 	f.action(1, Net.ACT_ADMIN_GIVE, kit, 0, 3, Vector3.ZERO)

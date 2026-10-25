@@ -1,0 +1,8 @@
+{
+	"note": "Eat-once learning (EARLY_GAME_PRINCIPLES 5): a character remembers which foods harmed them. first_hour_s is online seconds of protection for a new character: an unknown harmful food then costs only food and water (first_hour_cost), never sickness or health. A food that harmed before is stopped once with a hint; a second press within confirm_window_s eats it anyway.",
+	"first_hour_s": 3600,
+	"first_hour_cost": {"fed_kcal": 150, "wet_ml": 150},
+	"confirm_window_s": 5,
+	"say_first_hour": "That did not sit right, but you got away with it. Now you know.",
+	"say_warn": "That made you ill before. Press again to eat it anyway."
+}
