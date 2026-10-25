@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
     --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
-    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; --turns) TURNS="$2"; shift 2;; --ground-settle) GSETTLE="$2"; shift 2;; --ground-max) GMAX="$2"; shift 2;; --realview) ADMIN="$ADMIN --shot-realview"; shift;; --elev) ADMIN="$ADMIN --shot-elev=$2"; shift 2;; --extra) ADMIN="$ADMIN $2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
+    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; --turns) TURNS="$2"; shift 2;; --ground-settle) GSETTLE="$2"; shift 2;; --ground-max) GMAX="$2"; shift 2;; --realview) ADMIN="$ADMIN --shot-realview"; shift;; --elev) ADMIN="$ADMIN --shot-elev=$2"; shift 2;; --orbits) ORBITS="$2"; shift 2;; --extra) ADMIN="$ADMIN $2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
 # --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
@@ -95,7 +95,11 @@ for _i in $(seq 1 60); do grep -q "listening" "$RIG/server.log" 2>/dev/null && b
 echo "rig timing: server listening after $(( $(date +%s) - T0 )) s"
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
-if [ "$TURNS" -gt 1 ]; then   # Dave 25 Oct: 3 shots per spot, turning left 90 degrees after each (yaw, yaw+90, yaw+180)
+if [ -n "$ORBITS" ]; then   # --orbits "0,45,90,315": a picture at each of these camera angles round a still body (right, front-right, front, back-right); letters a, b, c ...
+  IFS=, read -r -a _ORB <<< "$ORBITS"; TURNS=${#_ORB[@]}; SHOT=""; for _t in $(seq 0 $((TURNS - 1))); do
+    SHOT="${SHOT:+$SHOT;}${NAME}_${LETTERS:$_t:1}:$X,$AGL,$Z,$((YAW + ${_ORB[$_t]})),$PITCH,$HOUR,$WEATHER,$WALK"
+  done
+elif [ "$TURNS" -gt 1 ]; then   # Dave 25 Oct: 3 shots per spot, turning left 90 degrees after each (yaw, yaw+90, yaw+180)
   SHOT=""; for _t in $(seq 0 $((TURNS - 1))); do
     SHOT="${SHOT:+$SHOT;}${NAME}_${LETTERS:$_t:1}:$X,$AGL,$Z,$(python3 -c "print(($YAW) + 90 * $_t)" 2>/dev/null || python -c "print(($YAW) + 90 * $_t)"),$PITCH,$HOUR,$WEATHER,$WALK"
   done

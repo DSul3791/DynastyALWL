@@ -1,0 +1,27 @@
+branch kathleen-worn-clothing
+branch kathleen-flora-gaps
+branch steve-no-rose-berries
+branch sal-rose-petals
+branch sal-island-checks
+branch sal-building-looks
+branch steve-smoke-row
+branch kathleen-sound-1
+branch steve-sound-slots
+branch steve-worn-attach
+branch steve-shrub-lod
+branch kathleen-item-looks
+branch kathleen-building-looks
+branch kathleen-showroom-models
+branch kathleen-goal2-a
+test test_tunnel_watch
+test test_worn_sync
+test test_water_flow
+test test_server_items
+test test_placement_rules
+test test_structure_look
+test test_look_table
+test test_slot_sounds
+test validate_items
+rig item looks (all showroom rows) | --showroom all --name showroom_all
+rig flora gaps | --flora raspberry,bramble,blueberry,blackthorn,wild_rose --views "wide:8:-8:1.5;close:3:-10:0.5" --name flora_shrubs
+rig shrub lod | --flora blueberry --views "wide:8:-8:1.5;close:3:-10:0.5" --name shrub_lod

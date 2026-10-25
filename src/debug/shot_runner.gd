@@ -246,8 +246,11 @@ func _process(delta: float) -> void:
 		_dropped = true
 		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
-		var gy: float = _ground(bp.x, bp.z - drop_dist_m)
-		var at: Vector3 = Vector3(bp.x, bp.y - 1.0 if is_nan(gy) else gy, bp.z - drop_dist_m)
+		var fwd_drop: Vector3 = -client.body.global_transform.basis.z      # ahead of where the player faces, so a turned player still sees the item
+		var dx: float = bp.x + fwd_drop.x * drop_dist_m
+		var dz: float = bp.z + fwd_drop.z * drop_dist_m
+		var gy: float = _ground(dx, dz)
+		var at: Vector3 = Vector3(dx, bp.y - 1.0 if is_nan(gy) else gy, dz)
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
@@ -1073,6 +1076,9 @@ func _next(now: int) -> void:
 	_moved_msec = now
 
 	if real_view:
+		if client.hud != null and not admin_text:
+			client.hud.visible = false      # the build / fps / position / sound text; the hotbar, compass and hands stay
+
 		return
 
 	if client.hud != null and not admin_text:

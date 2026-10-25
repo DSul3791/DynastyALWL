@@ -1,0 +1,11 @@
+branch kathleen-sound-1
+branch steve-sound-slots
+branch steve-shrub-lod
+branch kathleen-goal2-a
+branch kathleen-showroom-rows
+test test_slot_sounds
+test test_worn_sync
+test test_water_flow
+test validate_items
+rig item looks (all showroom rows) | --showroom all --name showroom_all
+rig flora shrubs | --flora raspberry,bramble,blueberry,blackthorn,wild_rose --views "wide:8:-8:1.5;close:3:-10:0.5" --name flora_shrubs
