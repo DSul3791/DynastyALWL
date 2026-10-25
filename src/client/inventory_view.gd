@@ -4084,7 +4084,7 @@ func run_shoot_test(client) -> void:
 	await get_tree().create_timer(1.5).timeout
 	var arrows_after: int = inventory.count_of(table.number_of("stone_arrow"))
 	print("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
-	await get_tree().create_timer(6.0).timeout      # flight and landing
+	await get_tree().create_timer(15.0).timeout     # flight, landing and the world-item update
 	var landed: int = 0
 	var nearest: float = -1.0
 	var here: Vector3 = _player_position.call()

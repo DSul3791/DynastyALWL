@@ -1649,9 +1649,13 @@ func _arrow_fly(delta: float) -> void:
 			var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05
 
 			if fate(int(ar["peer"]), "arrow", 1.0 - _bow.lost_chance(str(ar["tip"]), hit_animal_now, wet)):
-				drop_in_world(int(ar["number"]), 1, at)
-			elif wet:
-				_say(int(ar["peer"]), str(_bow.cfg.get("say_lost", "")))
+				var kept: bool = drop_in_world(int(ar["number"]), 1, at)
+				print("server items: arrow landed at x%d z%d y%.1f after %.0f m (animal %s, water %s): %s" % [int(at.x), int(at.z), at.y, float(ar["flown"]), str(hit_animal_now), str(wet), "lying there" if kept else "NOT dropped (crowded or refused)"])
+			else:
+				print("server items: arrow landed at x%d z%d after %.0f m (animal %s, water %s): broke or lost" % [int(at.x), int(at.z), float(ar["flown"]), str(hit_animal_now), str(wet)])
+
+				if wet:
+					_say(int(ar["peer"]), str(_bow.cfg.get("say_lost", "")))
 
 
 func _fly(delta: float) -> void:
