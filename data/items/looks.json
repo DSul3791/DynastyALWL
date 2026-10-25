@@ -135,7 +135,8 @@
   "steel_pickaxe": {
    "shape": "pick",
    "color": "#9aa3ad",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["steel"]
   },
   "soil": {
    "shape": "clump",

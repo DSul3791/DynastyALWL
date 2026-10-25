@@ -276,6 +276,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box_rot(parts, Vector3(thick, thick, 0.08 - 0.01 * t), Vector3(0.27 - 0.006 * t * t, -0.006 - 0.022 * t * t * 0.5, side * (0.06 + 0.055 * t)), Vector3(side * (0.18 + 0.2 * t), 0.0, 0.0), color if seg < 3 else light)   # curves down, ends in a point
 				_cone_down(parts, 0.012, 0.05, Vector3(0.255, -0.075, side * 0.285), light)
 			_cyl(parts, 0.036, 0.025, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # a cord wrap under the eye
+			if bits.has("steel"):
+				# Steel (bits ["steel"]): a polished ridge along the top of the head, bright points and a brass collar, so it reads apart from dull iron.
+				_box(parts, Vector3(0.012, 0.012, 0.5), Vector3(0.27, 0.025, 0.0), light.lightened(0.2))
+				_cyl(parts, 0.04, 0.02, Vector3(0.23, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))
+			else:
+				# Iron: a darker, rougher head, with a dark scale band where it was forged.
+				_box(parts, Vector3(0.052, 0.05, 0.14), Vector3(0.27, -0.004, 0.0), dark)
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
 			_handle(parts, 0.75)
