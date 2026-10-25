@@ -793,6 +793,11 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var sites: Array = []   # [index, catchment km2, is_lake]
 	var lake_pick: Dictionary = {}   # block -> [slope, index]
 	var steep: int = 0
+	var lake_seen: int = 0   # river cells that reached the lake gate (in this tile, inside a block interior)
+	var lake_flat: int = 0   # of those, flat enough and wide enough a catchment
+	var lake_unlucky: int = 0   # of those, in a block that lost the lake_block_share draw
+	var skipped_edge: int = 0
+	var skipped_lip: int = 0
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or h[index] < 2.0:
@@ -836,12 +841,16 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
 			relaxed_best = [slope, index]
 
+		lake_seen += 1
+
 		if flow.discharge[index] < lake_from or slope > lake_slope:
 			continue
 
+		lake_flat += 1
 		var block: Vector2i = Vector2i(floori(wx / block_m), floori(wz / block_m))
 
 		if _hash(block.y * 100003 + block.x, _seed + 5151) > lake_share:
+			lake_unlucky += 1
 			continue
 
 		if not lake_pick.has(block) or slope < float(lake_pick[block][0]):
@@ -876,6 +885,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		var column: int = index % size
 
 		if row < reach or column < reach or row >= size - reach or column >= size - reach:
+			skipped_edge += 1
 			continue
 
 		var lip: float = INF
@@ -888,6 +898,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 					lip = minf(lip, bed[(row + dz) * size + column + dc])
 
 		if lip == INF or lip < 1.0:
+			skipped_lip += 1
 			continue
 
 		var wet: int = 0
@@ -927,6 +938,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if verbose:
 			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
+	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
 
 
