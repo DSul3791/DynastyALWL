@@ -210,6 +210,9 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 		centre_surface[index] = level
 
+	var jobs_i: PackedInt32Array = PackedInt32Array()      # per river cell: cell, span in cells
+	var jobs_f: PackedFloat64Array = PackedFloat64Array()  # per river cell: radius, sideways shift x and z, depth
+
 	for index in range(h.size()):
 		if flow.discharge[index] < threshold:
 			continue
@@ -251,6 +254,49 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			shift_z -= mx / mlen * swing
 
 		var span: int = reach + 2 + int(ceil(sqrt(shift_x * shift_x + shift_z * shift_z) / cell_m))
+		jobs_i.append(index)
+		jobs_i.append(span)
+		jobs_f.append_array(PackedFloat64Array([radius_m, shift_x, shift_z, depth_here]))
+
+	# The stamps run after the loop, in the same order (in C++ when GenCore is loaded): they only read h and centre_surface.
+	var stamped: Dictionary
+
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("stamp_channels"):
+		stamped = ClassDB.instantiate("GenCore").stamp_channels(bed, surface, h, centre_surface, size, cell_m, jobs_i, jobs_f)
+	else:
+		stamped = stamp_channels_script(bed, surface, h, centre_surface, size, cell_m, jobs_i, jobs_f)
+
+	bed = stamped["bed"]
+	surface = stamped["surface"]
+
+	for index in range(h.size()):
+		if flow.discharge[index] >= threshold:
+			bed[index] = minf(bed[index], centre_bed[index])
+
+	# Wide sections of deep downstream cells can reach upstream centres: lift those so the bed never rises downstream.
+	for index in fill.order:
+		var next: int = fill.receiver[index]
+
+		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
+			bed[index] = maxf(bed[index], bed[next])
+
+
+# The river stamps of _stamp, one after the other into copies of `bed_in` and `surface_in`: the GDScript the C++ GenCore.stamp_channels must match bit for bit.
+static func stamp_channels_script(bed_in: PackedFloat32Array, surface_in: PackedFloat32Array, h: PackedFloat32Array, centre_surface: PackedFloat32Array, size: int, cell_m: float, jobs_i: PackedInt32Array, jobs_f: PackedFloat64Array) -> Dictionary:
+	var bed_out: PackedFloat32Array = bed_in.duplicate()
+	var surface_out: PackedFloat32Array = surface_in.duplicate()
+
+	@warning_ignore("integer_division")
+	for job in range(jobs_i.size() / 2):
+		var index: int = jobs_i[job * 2]
+		var span: int = jobs_i[job * 2 + 1]
+		var radius_m: float = jobs_f[job * 4]
+		var shift_x: float = jobs_f[job * 4 + 1]
+		var shift_z: float = jobs_f[job * 4 + 2]
+		var depth_here: float = jobs_f[job * 4 + 3]
+		@warning_ignore("integer_division")
+		var row: int = index / size
+		var column: int = index % size
 
 		for dz in range(-span, span + 1):
 			for dc in range(-span, span + 1):
@@ -269,21 +315,12 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 
 				var target: float = h[index] - depth_here * (1.0 - t * t)
 				var neighbor: int = nr * size + nc
-				bed[neighbor] = minf(bed[neighbor], target)
+				bed_out[neighbor] = minf(bed_out[neighbor], target)
 
-				if target < centre_surface[index] and (is_nan(surface[neighbor]) or surface[neighbor] < centre_surface[index]):
-					surface[neighbor] = centre_surface[index]
+				if target < centre_surface[index] and (is_nan(surface_out[neighbor]) or surface_out[neighbor] < centre_surface[index]):
+					surface_out[neighbor] = centre_surface[index]
 
-	for index in range(h.size()):
-		if flow.discharge[index] >= threshold:
-			bed[index] = minf(bed[index], centre_bed[index])
-
-	# Wide sections of deep downstream cells can reach upstream centres: lift those so the bed never rises downstream.
-	for index in fill.order:
-		var next: int = fill.receiver[index]
-
-		if flow.discharge[index] >= threshold and next >= 0 and flow.discharge[next] >= threshold:
-			bed[index] = maxf(bed[index], bed[next])
+	return {"bed": bed_out, "surface": surface_out}
 
 
 # The spawn area stays as the land and the river stamp made it: valleys, canyons, gullies and heads fade out inside

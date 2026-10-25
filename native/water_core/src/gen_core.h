@@ -31,6 +31,13 @@ public:
 	// TileHeight._add_rock_beds border search: 1 where a cell `reach` samples away on an axis lies in another province.
 	PackedByteArray near_border(const PackedByteArray &province, int64_t samples, int64_t reach) const;
 
+	// DrainageChannels._stamp river stamps: {"bed", "surface"} (copies of the inputs with the stamps applied in order).
+	// jobs_i: per river cell [cell index, span in cells]. jobs_f: per river cell [radius_m, shift_x, shift_z, depth_here].
+	Dictionary stamp_channels(const PackedFloat32Array &bed, const PackedFloat32Array &surface, const PackedFloat32Array &h, const PackedFloat32Array &centre_surface, int64_t size, double cell_m, const PackedInt32Array &jobs_i, const PackedFloat64Array &jobs_f) const;
+
+	// TileClimate.classify_script: the per-sample climate loop. See tile_climate.gd for the meaning of `c`, `ids`, `soil_ids`.
+	Dictionary classify_climate(const Dictionary &c, const Dictionary &ids, const Dictionary &soil_ids, const PackedFloat64Array &soil_base, const PackedFloat32Array &heights, const PackedByteArray &water_class, const PackedFloat32Array &air, const PackedFloat32Array &fresh_distance, const PackedFloat32Array &ocean_distance, const PackedByteArray &moisture_noise, const PackedByteArray &temperature_noise, const PackedFloat32Array &sea_temperature, const PackedFloat32Array &row_wetness) const;
+
 protected:
 	static void _bind_methods();
 };
