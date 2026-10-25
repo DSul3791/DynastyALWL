@@ -25,7 +25,7 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
 const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
 const MATERIAL_ROCK := 32
-const TERRAIN_VERSION := 41
+const TERRAIN_VERSION := 42
 
 const ROCK_SEDIMENT := 1
 
@@ -41,6 +41,12 @@ static func tiles_stamp(tiles_dir: String) -> String:
 
 	for file in files:
 		parts.append("%s=%s" % [file, FileAccess.get_md5(tiles_dir + "/" + file)])
+
+	# The pre-carve file the tiles were baked from (next to world.json) is part of the fingerprint.
+	var delta_path: String = tiles_dir.get_base_dir() + "/erosion_delta_v2.bin"
+
+	if FileAccess.file_exists(delta_path):
+		parts.append("erosion_delta_v2.bin=%s" % FileAccess.get_sha256(delta_path))
 
 	return ",".join(parts).md5_text().substr(0, 10)
 

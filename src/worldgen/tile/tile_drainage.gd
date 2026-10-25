@@ -18,6 +18,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var sea: PackedByteArray = water._find_ocean()
 	var land: PackedFloat32Array = water.heights.duplicate()
 	var begun: int = Time.get_ticks_msec()
+	var clock: int = begun
 	var fill = FillScript.new()
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
@@ -30,7 +31,11 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		route_over = water.routing_raw
 
 	var routing: PackedFloat32Array = _routing_heights(route_over, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
+	_lap("routing noise", clock)
+	clock = Time.get_ticks_msec()
 	fill.build(routing, sea, samples, lake_min_depth)
+	_lap("fill", clock)
+	clock = Time.get_ticks_msec()
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
 	var unit: float = cell_m * cell_m * 1.0e-6   # discharge reads as catchment km2 until climate scales it
@@ -44,10 +49,15 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	if seeded_km2 > 0.0:
 		flow.build(fill, runoff)
+	_lap("flow + edge seed", clock)
+	clock = Time.get_ticks_msec()
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+	_lap("channels", clock)
+	clock = Time.get_ticks_msec()
 	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
 	_breach_outlets(water, fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
+	_lap("probe + breach", clock)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -57,6 +67,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	water.filled_cells = 0
 	water.lakes = []
 	var min_water_m: float = float(rules.get("water_min_depth_m", 0.05))
+	var basin_lake_cells: int = 0
 
 	for index in range(total):
 		if sea[index] == 1:
@@ -70,6 +81,13 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 			water.water_class[index] = water.RIVER
 			water.water_surface[index] = level
 			water.river_cells += 1
+
+			# Water standing in a carved pond or lake bowl, deeper than lake_min_depth_m, is a lake, not a river.
+			if channels.basin_mask[index] == 1 and level - channels.bed[index] >= float(rules.get("lake_min_depth_m", 0.5)):
+				water.water_class[index] = water.LAKE
+				basin_lake_cells += 1
+
+	print("  basin water: %d cells tagged lake (%.1f ha)" % [basin_lake_cells, basin_lake_cells * cell_m * cell_m / 10000.0])
 
 	var counts: PackedInt32Array = PackedInt32Array()
 	counts.resize(fill.lakes.size() + 1)
@@ -114,6 +132,11 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	water._ocean = sea
 	return {"ms": Time.get_ticks_msec() - begun, "lakes": fill.lakes.size(), "river_cells": water.river_cells}
+
+
+# Timing line for the bake log (measured stage seconds, tech/GENERATOR_SPEEDUP_REVIEW_25OCT.md).
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  drain timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
 
 
 # Flat ground drains in straight lines unless the routing surface wiggles a little: the ground plus a smooth noise of
@@ -359,13 +382,19 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 	var pit_min_rim: float = float(rules.get("pit_min_rim_m", 2.0))
 	var pit_max_cut: float = float(rules.get("pit_max_cut_m", 8.0))
 	var pits_skipped: int = 0
+	var pits_kept: int = 0
+	var pit_keep_rim: float = float(rules.get("pit_keep_rim_m", 1.5))
+	var kept: PackedByteArray = PackedByteArray()
+	kept.resize(samples * samples)
 
-	for ring: int in [3, 6]:
+	# The wide ring first: a hollow 96 m across with a rim of pit_keep_rim_m or more is a real basin (Dave 24 Oct: lakes and
+	# ponds should be sizable). It stays, with its outlet cut at the lip (rim - 0.3 m) so it spills over a notch. Smaller pits drain.
+	for ring: int in [6, 3]:
 		for row in range(ring, samples - ring):
 			for column in range(ring, samples - ring):
 				var index: int = row * samples + column
 
-				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment:
+				if sea[index] == 1 or fill.lake_id[index] > 0 or flow.discharge[index] < lake_min_catchment or channels.basin_mask[index] == 1 or kept[index] == 1:
 					continue
 
 				var floor_m: float = channels.bed[index]
@@ -390,19 +419,28 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 				if not is_pit or rim - floor_m < pit_min_rim:
 					continue
 
-				var pit_cut_result: Dictionary = _cut_outlet_path(index, floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
+				var keep: bool = ring == 6 and rim - floor_m >= pit_keep_rim
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim - 1.0 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
 				if pit_cut_result.has("skipped"):
 					pits_skipped += 1
 					continue
 
-				pits += 1
+				if keep:
+					pits_kept += 1
+
+					for kz in range(maxi(row - 8, 0), mini(row + 9, samples)):
+						for kc in range(maxi(column - 8, 0), mini(column + 9, samples)):
+							kept[kz * samples + kc] = 1
+				else:
+					pits += 1
+
 				pit_cells += int(pit_cut_result["cells"])
 				pit_cut = maxf(pit_cut, float(pit_cut_result["lowered"]))
 
 				if verbose:
 					print("  pit: floor %.1f m rim %.1f m at world %d,%d, %d cells, deepest cut %.1f m" % [floor_m, rim, (column + water._origin_sx) * 8, (row + water._origin_sz) * 8, int(pit_cut_result["cells"]), float(pit_cut_result["lowered"])])
 
-	print("  pits: %d drained, %d left (cut too deep), %d cells cut, deepest cut %.1f m" % [pits, pits_skipped, pit_cells, pit_cut])
+	print("  pits: %d drained, %d kept as basins (outlet cut at the lip), %d left (cut too deep), %d cells cut, deepest cut %.1f m" % [pits, pits_kept, pits_skipped, pit_cells, pit_cut])
 
 
 # Walks the routing receivers downstream from `at` and cuts a three-cell-wide channel whose bed starts just under `level`

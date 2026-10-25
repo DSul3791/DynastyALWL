@@ -580,7 +580,7 @@ func _ready() -> void:
 # Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
-const SPAWN_OVERRIDE := Vector2(53301.0, 68427.0)
+const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
 
 
 func _spawn_point(world_dir: String) -> Vector3:
