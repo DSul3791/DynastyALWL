@@ -101,6 +101,10 @@ func _init() -> void:
 	hand.peer_connected_hello(1, "thatchhand001")
 	var floor_recipe: Dictionary = hand.recipes.recipe(166)
 	check(bool(floor_recipe["known"]) and str(floor_recipe["station"]) == "", "the thatch floor recipe is known from the start and needs no bench")
+
+	for number in [166, 167, 168, 169]:   # floor, wall, roof, doorway: all made in the hand
+		var piece: Dictionary = hand.recipes.recipe(number)
+		check(bool(piece["known"]) and str(piece["station"]) == "", "thatch kit recipe %d (%s) is made in the hand, no bench" % [number, str(piece["name"])])
 	hand.action(1, Net.ACT_ADMIN_GIVE, hand.table.number_of("twine"), 0, 6, Vector3.ZERO)
 	hand.action(1, Net.ACT_ADMIN_GIVE, hand.table.number_of("thatch"), 0, 20, Vector3.ZERO)
 	hand._admin_mode_off[1] = true
