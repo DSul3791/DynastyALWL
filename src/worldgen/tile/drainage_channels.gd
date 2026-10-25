@@ -242,7 +242,8 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 			var slope: float = maxf(h[index] - h[next], 0.0) / maxf(_step_length(index, next, size, cell_m), 1.0)
 			var gentle: float = 1.0 - smoothstep(MEANDER_SLOPE_FULL, MEANDER_SLOPE_NONE, slope)
 			var width_m: float = 2.0 * radius_m
-			var swing: float = gentle * MEANDER_AMPLITUDE_WIDTHS * width_m * _swing_noise(index, size, cell_m, width_m)
+			# Bends already shift the deepest line to the outer bank above; the meander swing fades out on a bend so it does not hide that.
+			var swing: float = gentle * (1.0 - smoothstep(0.05, 0.3, absf(turn))) * MEANDER_AMPLITUDE_WIDTHS * width_m * _swing_noise(index, size, cell_m, width_m)
 			var mx: float = float(next % size - index % size)
 			@warning_ignore("integer_division")
 			var mz: float = float(next / size - index / size)
