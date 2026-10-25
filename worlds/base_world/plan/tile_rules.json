@@ -740,6 +740,12 @@
 				20
 			],
 			"salt_dome_resource": "salt",
+			"river_ore_resources": [
+				"tin",
+				"copper"
+			],
+			"river_ore_within_m": 1000,
+			"river_ore_min_river_cells": 400,
 			"placer_length_m": 3000,
 			"placer_thickness_m": [
 				1,
