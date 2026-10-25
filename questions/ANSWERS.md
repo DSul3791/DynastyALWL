@@ -1678,3 +1678,7 @@ Answered: 2026-10-25 13:54 UTC
 Answer: No: We need coins and we need clothing so breakdown the list of clothing and resubmit the list for clothing
 Answered: 2026-10-25 13:55 UTC
 
+## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
+Answer: No: We need coins and we need clothing so breakdown the list of clothing and resubmit the list for clothing
+Answered: 2026-10-25 13:55 UTC
+
