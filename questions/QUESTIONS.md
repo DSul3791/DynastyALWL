@@ -32,7 +32,7 @@ Note: Full list: design/ITEM_TRIM_LIST.md group A. Yes = we make this cut or mer
 Note: Recommendation: Yes
 [check]
 
-## trim-b | Item trim B: Duplicate tools: one hammer, no vice, needle or bowl (merge 5)
+## trim-b | Item trim B: Duplicate tools: one hammer, no vice, no needle (merge 4; wooden bowl KEPT per Dave)
 Note: Full list: design/ITEM_TRIM_LIST.md group B. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
@@ -42,7 +42,7 @@ Note: Full list: design/ITEM_TRIM_LIST.md group C. Yes = we make this cut or mer
 Note: Recommendation: Yes
 [check]
 
-## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins, driftwood (cut 6)
+## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins (cut 5; driftwood KEPT per Dave)
 Note: Full list: design/ITEM_TRIM_LIST.md group D. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]

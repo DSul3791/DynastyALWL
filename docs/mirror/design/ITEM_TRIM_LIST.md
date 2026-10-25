@@ -24,7 +24,7 @@ If Dave wants size choice, make it a held-tool setting, not an item.
 - Wooden vice (83): merge into log workbench (the bench already is the vice). Elsewhere: no game has a vice item.
 - Camp bench (73): merge into log workbench unless it is a seat only; Sal to say what it does. Dave's rule: benches only for weapons and tools.
 - Sewing needle (49): cut as an item; tailoring is by hand with knife and twine (Dave's by-hand rule). Elsewhere: MC, VH, Rust need no needle.
-- Wooden bowl (39): merge into clay pot (stew vessel). Elsewhere: MC bowl exists but only as the stew container; we have the pot.
+- Wooden bowl (39): KEEP (Dave 25 Oct 12:54 UTC: soup goes in it). Soup and stew dishes should be served in the bowl; Sal to wire that.
 
 ### C. Wood chain: cut per-species lumber and beams (14 items live), keep logs
 Oak, birch, pine, spruce, tropical, walnut, maple each have logs, lumber, beams (101-102, 107-108, 110-111, 113-114, 125-126, 149-150, 173-174).
@@ -36,7 +36,7 @@ Elsewhere: MC planks per species are cosmetic variants of one item; VH has wood,
 - Cobblestone (229) into Stone block. Stone shingle (230): cut; roofs are thatch, wood shingle or tile later.
 - Wooden pin (233): cut, nails and hinges cover it. Tar (231): hold until a roof or boat uses it (unused now).
 - Softwood firewood (236) into Firewood; Softwood block (237) into Wooden block. Same use, softer wood only changes burn time.
-- Driftwood (30): becomes a log or firewood when picked up, no own item.
+- Driftwood (30): KEEP (Dave 25 Oct 12:54 UTC): a wood that lies on the beach and gives generic Wood. Not cut.
 - Rotten food (55): keep only as the spoilage result, usable as compost; not a craftable.
 - Seeds, roots: keep only if farming uses them (Dave: farmland yes), mark them in the farming plan.
 
@@ -67,8 +67,8 @@ Wall, floor, roof, doorway, foundation, window wall (192-203) already exist; the
 Add: cooking station (Dave's rule), kiln only if clay pots and brick need it, scythe. Cut: tongs, bellows, anvil (forge parts, F), loom and tanning rack (by hand per Dave), toy, journal (merge into book). Defer: instruments (one flute and one drum first), dice, chess set, holy symbol, book.
 
 ## Numbers if every group is a Yes
-Cut or merged: A 8, B 5, C 15, D 6, E 4, F 3, G 8, H 1 (about 50 items), plus new items avoided: sickle, rake, shears, tongs, bellows, anvil, loom, tanning rack, toy, journal.
-Live items go from 210 to about 160.
+Cut or merged: A 8, B 4, C 15, D 5, E 4, F 3, G 8, H 1 (about 48 items), plus new items avoided: sickle, rake, shears, tongs, bellows, anvil, loom, tanning rack, toy, journal.
+Live items go from 210 to about 162.
 
 ## What happens after Dave's Yes
 One action plan to Sal (data, recipes, saves: old saves keep working because numbers stay reserved and old items convert to their merge target) and one to Steve if any game code reads these ids. Tyler replies once, threads do the rest (BP-T52/T53).
