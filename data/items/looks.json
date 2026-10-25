@@ -2071,6 +2071,18 @@
    "shape": "beams",
    "color": "#b98d57",
    "size": 1.0
+  },
+  "sickle": {
+   "shape": "axe",
+   "color": "#7d7a74",
+   "size": 0.8,
+   "placeholder": true
+  },
+  "scythe": {
+   "shape": "shaft",
+   "color": "#8a8d93",
+   "size": 1.2,
+   "placeholder": true
   }
  }
 }

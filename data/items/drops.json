@@ -340,6 +340,12 @@
 			}
 		}
 	},
+	"harvest_tools": {
+		"note": "Sal, item cut I: a scythe or a hand sickle on the hotbar multiplies the natural yield of these plant products when a plant is picked (the scythe first). Each use wears the blade.",
+		"yields": ["thatch", "straw", "reed_stems", "stormreed_stalks", "linseed", "seeds"],
+		"order": ["scythe", "sickle"],
+		"mult": {"scythe": 4, "sickle": 2}
+	},
 	"tool_rules": {
 		"note": "Natural yields of a picked plant need a tool when their item id ends with one of these words (Dave 2026-10-20: roots and bulbs need a spade, bark, gum, sap and resin a stone knife, wood an axe; berries, leaves, flowers and herbs are by hand). The tool must be in the pack. Fixed drops above (fibre, sticks) are always by hand.",
 		"suffixes": {

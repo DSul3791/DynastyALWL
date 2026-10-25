@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 279,
+	"next_number": 281,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3298,6 +3298,53 @@
 			"stack": 5,
 			"value": 36,
 			"tag": "species",
+			"look_alikes": []
+		},
+		"sickle": {
+			"number": 279,
+			"name": "Sickle",
+			"description": "A curved stone blade on a short handle. Cuts grass, reeds and seed heads for twice the yield.",
+			"kind": "tool",
+			"tool_class": "sickle",
+			"tier": 1,
+			"material": "stone",
+			"stack": 1,
+			"durability": 500,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 18,
+			"look_alikes": []
+		},
+		"scythe": {
+			"number": 280,
+			"name": "Scythe",
+			"description": "A long curved iron blade on a bent two-handled shaft. Cuts grass, reeds and grain for four times the yield.",
+			"kind": "tool",
+			"tool_class": "scythe",
+			"tier": 3,
+			"material": "iron",
+			"stack": 1,
+			"durability": 1500,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 90,
+			"future": true,
 			"look_alikes": []
 		}
 	}

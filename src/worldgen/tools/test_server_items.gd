@@ -2879,5 +2879,26 @@ func _init() -> void:
 	var tagged_slot: int = tagged_inv.numbers.find(fold_table.number_of("lumber"))
 	check(tagged_slot >= 0 and tagged_inv.wear[tagged_slot] == oak and tagged_inv.counts[tagged_slot] == 2, "a sawn board gives the player lumber tagged with its species")
 
+	# Sickle and scythe (item cut I): a blade on the hotbar multiplies the plant yields of grass, thatch and seed heads.
+	var cut_server = make("user://test_server_items_cut")
+	cut_server.peer_connected_hello(1, "cuttingkey01")
+	check(is_equal_approx(cut_server._cutting_mult(1, "thatch"), 1.0), "no blade: thatch yields as before")
+	var cut_inv = cut_server.inventory_of(1)
+	var cut_bag: int = cut_inv.bag_from
+	cut_inv.bag_from = 0   # the blades go on the hotbar, as an admin give would
+	cut_inv.add(cut_server.table.number_of("sickle"), 1)
+	check(is_equal_approx(cut_server._cutting_mult(1, "thatch"), 2.0) and is_equal_approx(cut_server._cutting_mult(1, "stone"), 1.0), "a sickle doubles thatch and nothing else")
+	check(cut_server.inventory_of(1).wear[cut_server.inventory_of(1).numbers.find(cut_server.table.number_of("sickle"))] >= 1, "cutting wears the sickle")
+	cut_inv.add(cut_server.table.number_of("scythe"), 1)
+	cut_inv.bag_from = cut_bag
+	check(is_equal_approx(cut_server._cutting_mult(1, "straw"), 4.0), "a scythe is used first and quadruples straw")
+	var tool_recipes: Dictionary = {}
+
+	for rn in cut_server.recipes.numbers():
+		tool_recipes[str(cut_server.recipes.recipe(rn)["id"])] = cut_server.recipes.recipe(rn)
+
+	check(int(tool_recipes["sickle"]["number"]) == 178 and str(tool_recipes["sickle"]["station"]) == "workbench" and bool(tool_recipes["sickle"]["known"]), "the sickle is a known workbench recipe (178)")
+	check(int(tool_recipes["scythe"]["number"]) == 179 and bool(cut_server.table.entry("scythe").get("future", false)), "the scythe is recipe 179 and waits for iron")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

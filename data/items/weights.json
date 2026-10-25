@@ -62,6 +62,8 @@
 		"log": 15.0,
 		"lumber": 4.0,
 		"beam": 12.0,
+		"sickle": 0.4,
+		"scythe": 2.5,
 		"marjoram": 0.02,
 		"mint": 0.02,
 		"morels": 0.03,

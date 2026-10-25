@@ -1119,7 +1119,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(roll_amount(peer, rng, int(row[1]), int(row[2]))) * more))))
 
 	if natural != "":
-		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
+		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more * _cutting_mult(peer, natural)))))
 
 	_picked[flora_key] = now_s
 	_dirty = true
@@ -3321,6 +3321,23 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
 	_next_id += 1
 	_dirty = true
+
+
+# A sickle or a scythe on the hotbar multiplies the yield of grass, thatch, reeds, straw and seed heads (drops.json harvest_tools; Dave: thatch needs plenty
+# of it). The better blade is used first and wears one use.
+func _cutting_mult(peer: int, yield_id: String) -> float:
+	var cfg: Dictionary = _drops.get("harvest_tools", {})
+	var inv = inventory_of(peer)
+
+	if inv == null or not (cfg.get("yields", []) as Array).has(yield_id):
+		return 1.0
+
+	for tool_class in cfg.get("order", []):
+		if _has_tool(inv, str(tool_class)):
+			_wear_tool(peer, inv, str(tool_class), "gather")
+			return float(cfg.get("mult", {}).get(str(tool_class), 1.0))
+
+	return 1.0
 
 
 func _has_tool(inv, tool_class: String) -> bool:
