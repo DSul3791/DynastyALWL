@@ -1387,7 +1387,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	wrap_material.roughness = 1.0   # matte
 	wrap_material.emission_enabled = true   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
 	wrap_material.emission = Color(0.5, 0.22, 0.08)
-	wrap_material.emission_energy_multiplier = 0.1
+	wrap_material.emission_energy_multiplier = 0.2
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var wrapping: CylinderMesh = CylinderMesh.new()
 	wrapping.top_radius = 0.052
@@ -1428,14 +1428,14 @@ func _make_torch_model(id: String = "") -> Node3D:
 		torch.add_child(band)
 
 	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 8 cm across at the base, a slim teardrop, a
-	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core, and an orange glow ring on the head.
+	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core.
 	# The two upper cones sway slowly so it does not read as one solid shape.
 	var rig: Node3D = Node3D.new()
 	rig.set_script(FlameUp)
 	rig.head_local = Vector3(0.0, 0.4, 0.0)
 	torch.add_child(rig)
 	var flames: Array = []
-	var layers: Array = [[0.042, 0.22, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.034, 0.27, Color(1.0, 0.68, 0.14, 0.9), 0.006], [0.019, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.004]]
+	var layers: Array = [[0.062, 0.3, Color(1.0, 0.45, 0.08, 0.2), 0.0], [0.042, 0.22, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.034, 0.27, Color(1.0, 0.68, 0.14, 0.9), 0.006], [0.019, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.004]]
 
 	for n in range(layers.size()):
 		var layer: Array = layers[n]
@@ -1446,7 +1446,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA   # the outer cones are see-through so the inner ones show through; the core glows added
 
-		if n == 2:
+		if n == 3 or n == 0:
 			glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 
 		var tongue: Node3D = Node3D.new()   # pivots at the base so the sway leans the tip
@@ -1458,23 +1458,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 		tongue.position = Vector3(float(layer[3]), 0.0, 0.0)
 		rig.add_child(tongue)
 
-		if n < 2:
+		if n == 1 or n == 2:
 			flames.append(tongue)
-
-	var halo: MeshInstance3D = MeshInstance3D.new()
-	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.05
-	disc.bottom_radius = 0.05
-	disc.height = 0.008
-	var halo_material: StandardMaterial3D = StandardMaterial3D.new()
-	halo_material.albedo_color = Color(1.0, 0.45, 0.1)
-	halo_material.emission_enabled = true
-	halo_material.emission = Color(1.0, 0.4, 0.05)
-	halo_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	disc.material = halo_material
-	halo.mesh = disc
-	halo.position = Vector3(0.0, -0.002, 0.0)
-	rig.add_child(halo)
 
 	for n in range(flames.size() if _root != null else 0):
 		var sway: Tween = _root.create_tween().set_loops()
@@ -1490,7 +1475,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.shadow_enabled = false
 	light.light_volumetric_fog_energy = 0.0
-	light.position = Vector3(0.0, 0.5, 0.0)
+	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
+	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
@@ -1499,8 +1485,14 @@ func _make_torch_model(id: String = "") -> Node3D:
 	hand_light.light_energy = 0.7
 	hand_light.shadow_enabled = false
 	hand_light.light_volumetric_fog_energy = 0.0   # no glowing ball in the fog around the hand
-	hand_light.position = Vector3(0.0, 0.15, 0.1)
+	hand_light.light_cull_mask = 0xFFFFFFFD
+	hand_light.position = Vector3(0.0, -0.05, 0.12)
 	torch.add_child(hand_light)
+
+	for child in torch.get_children():
+		if child is MeshInstance3D:
+			(child as MeshInstance3D).layers = 2   # see the light cull masks above
+
 	return torch
 
 
