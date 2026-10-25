@@ -1347,17 +1347,28 @@ func _make_other_model() -> Node3D:
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
 func _make_torch_model(id: String = "") -> Node3D:
 	var torch: Node3D = Node3D.new()
-	var stick: MeshInstance3D = MeshInstance3D.new()
-	var rod: CylinderMesh = CylinderMesh.new()
-	rod.top_radius = 0.025
-	rod.bottom_radius = 0.03
-	rod.height = 0.6
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.4, 0.27, 0.14)
+	var grime: StandardMaterial3D = StandardMaterial3D.new()   # the top of the stick is dark with handling and smoke
+	grime.albedo_color = Color(0.2, 0.14, 0.09)
+	var stick: MeshInstance3D = MeshInstance3D.new()
+	var rod: CylinderMesh = CylinderMesh.new()
+	rod.top_radius = 0.022
+	rod.bottom_radius = 0.031
+	rod.height = 0.6
 	rod.material = wood
 	stick.mesh = rod
 	torch.add_child(stick)
-	# The head: rag or bark wound round the top of the stick (fatter than the stick, bound with twine), with the flame standing on it.
+	var soot: MeshInstance3D = MeshInstance3D.new()
+	var soot_mesh: CylinderMesh = CylinderMesh.new()
+	soot_mesh.top_radius = 0.0225
+	soot_mesh.bottom_radius = 0.0255
+	soot_mesh.height = 0.2
+	soot_mesh.material = grime
+	soot.mesh = soot_mesh
+	soot.position = Vector3(0.0, 0.2, 0.0)
+	torch.add_child(soot)
+	# The head: rag or bark wound round the top of the stick, bound with twine. The only head part; the flame starts right above it.
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
 	wrap_material.albedo_color = Color(0.2, 0.15, 0.1)
 	var head: MeshInstance3D = MeshInstance3D.new()
@@ -1383,34 +1394,56 @@ func _make_torch_model(id: String = "") -> Node3D:
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
 
-	var glow: StandardMaterial3D = StandardMaterial3D.new()
-	glow.albedo_color = Color(1.0, 0.6, 0.2)
-	glow.emission_enabled = true
-	glow.emission = Color(1.0, 0.5, 0.1)
-	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	var flame: MeshInstance3D = MeshInstance3D.new()
-	flame.name = "Flame"
-	var drop: SphereMesh = SphereMesh.new()   # a teardrop: a round body with a tongue above it
-	drop.radius = 0.055
-	drop.height = 0.11
-	drop.material = glow
-	flame.mesh = drop
-	flame.position = Vector3(0.0, 0.41, 0.0)
-	torch.add_child(flame)
-	var tongue: MeshInstance3D = MeshInstance3D.new()
-	var tip: CylinderMesh = CylinderMesh.new()
-	tip.top_radius = 0.0
-	tip.bottom_radius = 0.045
-	tip.height = 0.14
-	var tip_material: StandardMaterial3D = StandardMaterial3D.new()
-	tip_material.albedo_color = Color(1.0, 0.82, 0.35)
-	tip_material.emission_enabled = true
-	tip_material.emission = Color(1.0, 0.7, 0.2)
-	tip_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	tip.material = tip_material
-	tongue.mesh = tip
-	tongue.position = Vector3(0.0, 0.52, 0.0)
-	torch.add_child(tongue)
+	# The flame: three emissive cones from one base, each narrower and taller than the one below, orange at the base to yellow at the tip,
+	# with an orange glow ring where it meets the wrap. The two upper cones sway slowly so it does not read as one solid shape.
+	var flames: Array = []
+	var layers: Array = [[0.062, 0.1, Color(1.0, 0.4, 0.08), 0.0], [0.045, 0.15, Color(1.0, 0.62, 0.14), 0.006], [0.027, 0.2, Color(1.0, 0.86, 0.35), -0.008]]
+
+	for n in range(layers.size()):
+		var layer: Array = layers[n]
+		var glow: StandardMaterial3D = StandardMaterial3D.new()
+		glow.albedo_color = layer[2]
+		glow.emission_enabled = true
+		glow.emission = layer[2]
+		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		var tongue: MeshInstance3D = MeshInstance3D.new()
+		var tip: CylinderMesh = CylinderMesh.new()
+		tip.top_radius = 0.0
+		tip.bottom_radius = float(layer[0])
+		tip.height = float(layer[1])
+		tip.radial_segments = 8
+		tip.material = glow
+		tongue.mesh = tip
+		tongue.name = "Flame%d" % n
+		tongue.position = Vector3(float(layer[3]), 0.375 + float(layer[1]) * 0.5, 0.0)
+		torch.add_child(tongue)
+
+		if n > 0:
+			flames.append(tongue)
+
+	var halo: MeshInstance3D = MeshInstance3D.new()
+	var disc: CylinderMesh = CylinderMesh.new()
+	disc.top_radius = 0.058
+	disc.bottom_radius = 0.058
+	disc.height = 0.008
+	var halo_material: StandardMaterial3D = StandardMaterial3D.new()
+	halo_material.albedo_color = Color(1.0, 0.45, 0.1)
+	halo_material.emission_enabled = true
+	halo_material.emission = Color(1.0, 0.4, 0.05)
+	halo_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	disc.material = halo_material
+	halo.mesh = disc
+	halo.position = Vector3(0.0, 0.378, 0.0)
+	torch.add_child(halo)
+
+	for n in range(flames.size() if _root != null else 0):
+		var sway: Tween = _root.create_tween().set_loops()
+		sway.bind_node(flames[n])
+		var lean: float = 0.1 + 0.04 * float(n)
+		var span: float = 0.55 + 0.17 * float(n)
+		sway.tween_property(flames[n], "rotation:z", lean, span).set_trans(Tween.TRANS_SINE)
+		sway.tween_property(flames[n], "rotation:z", -lean, span).set_trans(Tween.TRANS_SINE)
+
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
