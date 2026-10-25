@@ -34,7 +34,7 @@
   "stone_knife": {
    "shape": "knife",
    "color": "#8a8680",
-   "size": 1.0
+   "size": 1.35
   },
   "torch": {
    "shape": "torch",

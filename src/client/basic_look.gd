@@ -385,14 +385,22 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box_rot(parts, Vector3(0.012, 0.17, 0.1), Vector3(0.5, 0.0, 0.1), Vector3(0.0, -0.25, 0.0), color)           # the flat blade, wide across
 			_box_rot(parts, Vector3(0.012, 0.17, 0.015), Vector3(0.5, 0.0, 0.147), Vector3(0.0, -0.25, 0.0), light)       # the sharpened lower edge
 		"knife":
-			# A knife: a rounded grip, a small guard, and a blade with a thick back and a thin pointed edge.
-			_handle(parts, 0.14)
-			_box(parts, Vector3(0.015, 0.03, 0.045), Vector3(0.05, 0.0, 0.0), dark)                                 # guard
-			_box(parts, Vector3(0.1, 0.012, 0.03), Vector3(0.115, 0.0, 0.0), color)                                 # blade body
-			_box(parts, Vector3(0.1, 0.006, 0.012), Vector3(0.115, 0.0, 0.017), light)                              # the edge
-			_box(parts, Vector3(0.04, 0.011, 0.024), Vector3(0.185, 0.0, 0.003), color)                              # the blade narrows to the point, touching the body (no gap)
-			_box(parts, Vector3(0.03, 0.009, 0.012), Vector3(0.22, 0.0, 0.0), color)
-			_box(parts, Vector3(0.012, 0.006, 0.006), Vector3(0.241, 0.0, -0.002), light)                             # the tip
+			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
+			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
+			# chipped, about as long as the handle (about 23 cm overall). No sheen. Mesh axes: handle at -x, blade pointing +x.
+			var stone: Color = Color(0.19, 0.16, 0.115)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
+			var hide: Color = Color(0.22, 0.13, 0.07)
+			for k in range(4):
+				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.3, 0.2, 0.11), k, 0.14))
+			for k in range(3):
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.085 + 0.03 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide if k != 1 else hide.lightened(0.15))    # hide wraps
+			_cyl(parts, 0.0195, 0.016, Vector3(0.006, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide.darkened(0.1))                                      # the bound joint
+			var widths: Array = [0.022, 0.032, 0.038, 0.037, 0.03, 0.02, 0.01]                                                                          # leaf blade: width by slice
+			for k in range(widths.size()):
+				var w: float = widths[k]
+				_box(parts, Vector3(0.0175, 0.011 - 0.0008 * float(k), w), Vector3(0.014 + 0.0171 * float(k), 0.0, -0.019 + w * 0.5), _tone(stone, k, 0.1))
+			_box(parts, Vector3(0.1, 0.014, 0.006), Vector3(0.06, 0.0, -0.0185), stone.darkened(0.12))                                                  # the thick straight back
+			_box_rot(parts, Vector3(0.012, 0.012, 0.012), Vector3(0.05, 0.0, 0.021), Vector3(0.0, 0.5, 0.0), stone.darkened(0.2))                       # a chipped notch on the edge
 		"needle":
 			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 		"rod":

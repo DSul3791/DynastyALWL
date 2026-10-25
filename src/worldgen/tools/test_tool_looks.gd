@@ -39,6 +39,19 @@ func _init() -> void:
 		_check(box.size.x > 0.4 * scale and box.size.x < 0.9 * scale, id + ": haft along x, %.2f m long (size %.1f)" % [box.size.x, scale])
 		_check(box.size.z > 0.1 * scale, id + ": the head is wide across the haft (z %.3f)" % box.size.z)
 		_check(_width_near(mesh, 0.22 * scale, 0.1 * scale) > 0.1 * scale, id + ": the head sits at the haft's end (width %.3f near x 0.22)" % _width_near(mesh, 0.22 * scale, 0.1 * scale))
+	# Stone knife: about 23 cm overall at size 1, blade about as long as the handle, a leaf blade (widest in the middle, narrow at the tip), matt stone (not bright steel).
+	var knife: Mesh = BasicLook.mesh_for("stone_knife")
+	var knife_scale: float = float(BasicLook.entry("stone_knife").get("size", 1.0))
+	var length: float = knife.get_aabb().size.x / knife_scale
+	_check(knife.get_surface_count() == 1, "stone_knife: one plain surface, no metal sheen")
+	_check(length > 0.2 and length < 0.26, "stone_knife: about 23 cm overall (%.3f m)" % length)
+	_check(_width_near(knife, 0.06 * knife_scale, 0.015 * knife_scale) > 2.0 * _width_near(knife, 0.14 * knife_scale, 0.008 * knife_scale), "stone_knife: leaf-shaped blade, wide in the middle and narrow at the tip")
+	var brightest: float = 0.0
+
+	for v in (knife.surface_get_arrays(0)[Mesh.ARRAY_COLOR] as PackedColorArray):
+		brightest = maxf(brightest, v.get_luminance())
+
+	_check(brightest < 0.3, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
 	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
 
 	print("tool looks: %d failures" % failures)
