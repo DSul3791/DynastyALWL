@@ -46,3 +46,8 @@ Next: Kathleen stone before/after and pieces re-render with this setup; 793 sett
 
 [2026-10-25 02:57Z] Moved: Kathleen pose reshoots (13df38ae, e74bee00 arms fix, 350867a7) pushed to claude/mike-evidence-kathleen-13df38ae; rig now waits at ground level and presses G in real-view shots (rig branch claude/mike-rig-v4 50faef14+); cold join is ~85 s regardless, warm ~40 s per 3-picture run; warm server store changes nothing (server generates 0 blocks).
 Now: Windows proof for claude/generator-speedup 690ee171 in a separate checkout C:\GodotProjects\DynastyALWL_proof (reference cbe31f76 no-cache, then speedup no-cache, cache). Results go to E:\Software\godotDev\proof_results.txt.
+
+[2026-10-25 06:36Z] Moved since 04:31Z: held views for spades/hoes/saw/torch on Kathleen hashes (12e9cc38, ccf0c9c7, 97ae9633, 0aae4af6); Steve's item job (48f25d30, f16512e0) used for ground views of spades, hoes, saw, axe, hammers, knife, pickaxe, torch; Windows proof of generator-speedup 690ee171 done (tile 3,4 identical, 499 s to 341 s / 171 s). All pictures: branch claude/mike-evidence-kathleen-13df38ae under evidence/.
+Standing setup: tools/LOOK_RIG_SETUP.md (claude/mike-rig-v4/v5); rig windows closed only by recorded pid. Gotcha: a push script with an empty folder variable pushes an empty commit (torch 3c243ca9), check ls-tree after each push.
+David3 takeover: needs a clean clone per hash, baseline FAIL list results/20261025_baseline, results/david3_scripts ported to Windows; cannot reproduce Linux .so results.
+Next: any new Kathleen/Sal hashes; lantern when a hash comes; nightly backup 00:00Z (game closed first, Dave away so ok); 8 AM (11:00Z) handoff.
