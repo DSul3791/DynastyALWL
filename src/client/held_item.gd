@@ -23,13 +23,13 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
-const TOOL_TILT_SLIGHT_DEG := 48.0   # first person, hand tools: the arm is pitched 50 degrees down, so this much extra tilt up leaves the head about 17 degrees below level (Dave 2026-10-25: they hung 45, should be slightly down)
+const TOOL_TILT_SLIGHT_DEG := 0.0   # first person, hand tools: along the fingers; the resting arm points 15 degrees below level (REST_PITCH_DEG 75), so the head is slightly down (Dave 2026-10-25)
 # Dave 2026-10-21: at rest the arms hang at the character's side, below the bottom of the screen, and the tool sits in the hand there,
 # fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
 # arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
-const REST_DOWN_M := 0.3
+const REST_DOWN_M := 0.15              # first-person arms at rest: root this far below the eye (was 0.3: the hands hung below the view at a level look, Mike's arms_debug shots 2026-10-25)
 const REST_BACK_M := 0.05
-const REST_PITCH_DEG := 8.0
+const REST_PITCH_DEG := 75.0           # arms reach forward, hands about 28 degrees below level, in the lower part of the view (was 8: hanging straight down)
 const ARMS_FOLLOW_K := 9.0
 const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's middle sits over the shoulder, not behind it (Dave 2026-10-23)
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
