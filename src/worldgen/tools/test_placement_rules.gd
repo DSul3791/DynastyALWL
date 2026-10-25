@@ -257,18 +257,24 @@ func _init() -> void:
 	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stick")), fire_id, 3, Vector3.ZERO)
 	var box = items._chests.get(int(items._items[fire_id]["fire"].get("uid", 0)))
 	check(box != null and box.count_of(items.table.number_of("stick")) == 3 and box.count_of(items.table.number_of("stone_axe")) == 0, "a fire's store takes wood and refuses an axe")
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
 	items._items[fire_id]["fire"]["burn_left"] = 5.0
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
 	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
 	var pushed: Array = []
 	items.send_chest = func(peer: int, id: int, _bytes: PackedByteArray) -> void: pushed.append([peer, id])
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
 	items._items[fire_id]["fire"]["burn_left"] = 5.0
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
 	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 1, "wood in the store feeds a nearly-out fire")
 	check(pushed.size() == 1 and pushed[0][0] == 2 and pushed[0][1] == fire_id, "the player with the store open is sent the new contents")
 	items.action(2, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
 	items._items[fire_id]["fire"]["burn_left"] = 5.0
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
