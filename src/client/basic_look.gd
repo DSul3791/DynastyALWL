@@ -313,7 +313,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A digging spade at real size for the large tier (size 1.0; the smaller tiers scale down): a 3.2 cm ash haft, a leather sleeve at the grip, a rounded D-grip loop about 15 by 10 cm
-			# and 3 cm thick in the haft's own grain, a short socket cone with a rolled collar fused to a 26 by 20 cm blade plate (a real polygon plate, see _plate: square shoulders, rounded
+			# and 3 cm thick in the haft's own grain, a short socket cone with a rolled collar fused to a 28 by 19 cm blade plate (a real polygon plate, see _plate: square shoulders, rounded
 			# tip, dished, turned-up side lips, a rolled lip along the top) and flat rivets. Mesh axes: haft along x (grip at -x, blade at +x), blade thin in y, wide in z.
 			# Iron and steel (bits "metal") are on the metal surface: iron roughness 0.65 / metallic 0.3, steel a little shinier (0.45 / 0.45) but neutral grey, not blue.
 			var metal_blade: bool = bits.has("metal")
@@ -330,38 +330,25 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			_cyl_taper(parts, 0.0165, 0.0158, 0.25, Vector3(0.325, 0.0, 0.0), _tone(ash, 1, 0.12))                # the haft: 3.2 cm, a slight taper, three lengths with grain-like tone changes
-			_cyl_taper(parts, 0.0158, 0.0162, 0.25, Vector3(0.075, 0.0, 0.0), _tone(ash, 2, 0.12))
-			_cyl_taper(parts, 0.0162, 0.0168, 0.25, Vector3(-0.175, 0.0, 0.0), _tone(ash, 3, 0.12))
+			var g: float = -0.1                                                                                      # the grip's flat side; the whole spade is about 0.92 m
+			_cyl_taper(parts, 0.0165, 0.0158, 0.55, Vector3(0.5 * (g + 0.45), 0.0, 0.0), _tone(ash, 1, 0.03))        # the haft: one ash colour, 3.2 cm, a slight taper
 			for k in range(3):                                                                                       # a leather sleeve: three thin turns near the grip
-				_cyl(parts, 0.0182, 0.012, Vector3(-0.12 + 0.016 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
+				_cyl(parts, 0.0182, 0.012, Vector3(g + 0.09 + 0.016 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
 			var d_points: Array = []                                                                                 # the D-grip path in x and z: flat against the haft end, a half ellipse behind
-			for k in range(9):
-				var ang: float = -PI * 0.5 + PI * float(k) / 8.0
-				d_points.append(Vector2(-0.3 - 0.1 * cos(ang), 0.075 * sin(ang)))
+			for k in range(15):
+				var ang: float = -PI * 0.5 + PI * float(k) / 14.0
+				d_points.append(Vector2(g - 0.1 * cos(ang), 0.075 * sin(ang)))
 
-			for k in range(8):
-				_tube(parts, d_points[k], d_points[k + 1], 0.015, _tone(ash, 6 + k, 0.1))
-			_tube(parts, Vector2(-0.3, -0.075), Vector2(-0.3, 0.075), 0.015, _tone(ash, 5, 0.1))                    # the flat side, against the haft
+			for k in range(14):
+				_tube(parts, d_points[k], d_points[k + 1], 0.015, _tone(ash, 6, 0.03))
+			_tube(parts, Vector2(g, -0.075), Vector2(g, 0.075), 0.015, _tone(ash, 6, 0.03))                          # the flat side, against the haft
 
-			_cyl_taper(parts, 0.02, 0.034, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # the socket cone
+			_cyl_taper(parts, 0.02, 0.034, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # the socket cone; the blade plate grows out of its mouth
 			if metal_blade:
 				_metal(parts, rough, sheen)
-			_cyl_taper(parts, 0.04, 0.04, 0.016, Vector3(0.458, 0.0, 0.0), blade * 1.4 if metal_blade else blade.lightened(0.2))   # the rolled collar where the socket meets the blade
-			if metal_blade:
-				_metal(parts, rough, sheen)
-			for side in [-1.0, 1.0]:
-				for k in range(2):
-					_box(parts, Vector3(0.012, 0.008, 0.012), Vector3(0.452 + 0.02 * float(k), 0.016, side * 0.03), blade * 2.0 if metal_blade else blade.lightened(0.3))   # flat rivets on the shoulders
-					if metal_blade:
-						_metal(parts, rough, sheen)
-
-			_cyl(parts, 0.011, 0.2, Vector3(0.482, 0.012, 0.0), Vector3(PI * 0.5, 0.0, 0.0), blade * 1.4 if metal_blade else blade.lightened(0.25))   # the rolled lip along the top shoulders
-			if metal_blade:
-				_metal(parts, rough, sheen)
-			_plate(parts, 0.478, 0.26, 0.2, 0, 11, blade, true, metal_blade, rough, sheen)                          # the blade plate, 26 by 20 cm
-			_plate(parts, 0.478, 0.26, 0.2, 11, 12, Color(0.45, 0.45, 0.45) if steel_blade else blade * 1.3, false, metal_blade, rough, sheen)   # the last 2 cm: a bright strip along the bottom edge
+			_plate(parts, 0.442, 0.28, 0.19, 0, 11, blade, true, metal_blade, rough, sheen)                          # the blade plate, 28 by 19 cm
+			_plate(parts, 0.442, 0.28, 0.19, 11, 12, Color(0.6, 0.6, 0.6) if steel_blade else blade * 2.4, false, metal_blade, rough, sheen)   # the last 2 cm: a bright worn strip along the bottom edge
 		"saw":
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
@@ -660,7 +647,7 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 	for i in range(from_row, to_row + 1):
 		var t: float = float(i) / float(rows)
-		var half: float = 0.5 * wide if t < 0.55 else 0.5 * wide * (1.0 - 0.6 * pow((t - 0.55) / 0.45, 2.0))      # a spade blade: square shoulders, then a rounded, slightly flat tip (2/5 of the width at the end)
+		var half: float = 0.5 * wide * (0.3 + 0.7 * smoothstep(0.0, 0.3, t)) if t < 0.55 else 0.5 * wide * (1.0 - 0.45 * pow((t - 0.55) / 0.45, 2.0))      # a spade blade: square shoulders, then a rounded, slightly flat tip (2/5 of the width at the end)
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge

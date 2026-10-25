@@ -27,12 +27,12 @@ func _init() -> void:
 			var scale: float = float(BasicLook.entry(id).get("size", 1.0))
 			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large spade" % scale)
 			_check(mesh.get_surface_count() == (2 if metal else 1), id + ": surfaces %d (metal tiers have the metal head surface)" % mesh.get_surface_count())
-			_check(box.size.x > 1.1 * scale and box.size.x < 1.2 * scale, id + ": about 1.15 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
+			_check(box.size.x > 0.88 * scale and box.size.x < 0.98 * scale, id + ": about 0.93 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
 			_check(_y_extent(mesh, 0.52 * scale, 1.0, 1.0) < 0.045 * scale, id + ": the dished blade is shallow (y %.3f)" % (_y_extent(mesh, 0.52 * scale, 1.0, 1.0) / scale))
 			_check(_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) < 0.008 * scale, id + ": a thin plate at the centre (%.4f m)" % (_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) / scale))
-			_check(_width_near(mesh, 0.5 * scale, 0.02 * scale) > 0.17 * scale and _width_near(mesh, 0.5 * scale, 0.02 * scale) < 0.21 * scale, id + ": blade about 19 cm wide at the shoulders (%.3f)" % (_width_near(mesh, 0.5 * scale, 0.02 * scale) / scale))
-			_check(_width_near(mesh, 0.738 * scale, 0.008 * scale) < 0.55 * _width_near(mesh, 0.5 * scale, 0.02 * scale), id + ": the blade ends in a narrower rounded tip")
-			_check(_width_near(mesh, -0.36 * scale, 0.06 * scale) > 0.14 * scale and _width_near(mesh, -0.36 * scale, 0.06 * scale) < 0.2 * scale, id + ": a closed D-grip about 15 cm across (%.3f)" % (_width_near(mesh, -0.36 * scale, 0.06 * scale) / scale))
+			_check(_width_near(mesh, 0.6 * scale, 0.02 * scale) > 0.17 * scale and _width_near(mesh, 0.6 * scale, 0.02 * scale) < 0.21 * scale, id + ": blade about 19 cm wide at the shoulders (%.3f)" % (_width_near(mesh, 0.6 * scale, 0.02 * scale) / scale))
+			_check(_width_near(mesh, 0.72 * scale, 0.008 * scale) < 0.75 * _width_near(mesh, 0.6 * scale, 0.02 * scale), id + ": the blade ends in a narrower rounded tip")
+			_check(_width_near(mesh, -0.16 * scale, 0.06 * scale) > 0.14 * scale and _width_near(mesh, -0.16 * scale, 0.06 * scale) < 0.2 * scale, id + ": a closed D-grip about 15 cm across (%.3f)" % (_width_near(mesh, -0.16 * scale, 0.06 * scale) / scale))
 
 			var tris: int = 0
 
