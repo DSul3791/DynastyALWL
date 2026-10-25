@@ -74,7 +74,7 @@ static func centre_in_frame(box: AABB, cam: Vector3, forward: Vector3, up: Vecto
 static func fit_distance(box: AABB, dir: Vector3, up: Vector3, fov_deg: float, aspect: float) -> float:
 	var centre: Vector3 = box.get_center()
 	var lo: float = MIN_DIST
-	var hi: float = MAX_FIT_DIST
+	var hi: float = maxf(MAX_FIT_DIST, box.size.length() * 1.5)      # a long tool needs more room than 3 m (a 2.5 m spade seen end-on)
 
 	if float(frame_stats(box, centre + dir * lo, -dir, up, fov_deg, aspect)["extent"]) <= FIT_EXTENT:
 		return lo

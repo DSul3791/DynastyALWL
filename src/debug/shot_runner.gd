@@ -852,6 +852,9 @@ func _build_item_views(now: int) -> void:
 	_subject = centre
 	_subject_set = true
 	_item_built = true
+	client.flying = true
+	client.body.collision_mask = 0       # nothing may push the camera body away from the exact pose (every pose miss so far was on the long-item side views)
+	client.body.collision_layer = 0
 	print("shot runner: item %s at %s, box %s, %d views" % [give_item, str(centre), str(_item_box.size), views.size()])
 
 
@@ -956,7 +959,9 @@ func _run_view(now: int) -> void:
 		var size_now: Vector2 = get_viewport().get_visible_rect().size
 		var live: Dictionary = ItemCam.frame_stats(_item_box, cam_now.global_position, -cam_now.global_transform.basis.z, cam_now.global_transform.basis.y, cam_now.fov, size_now.x / maxf(size_now.y, 1.0))
 
-		if float(live["off"]) > 0.08 or not bool(live["inside"]) or float(live["extent"]) > 0.95:
+		var pose_miss: bool = cam_now.global_position.distance_to(view["cam"]) > 0.1
+
+		if float(live["off"]) > 0.08 or not bool(live["inside"]) or float(live["extent"]) > 0.95 or pose_miss:
 			_item_tries += 1
 			print("shot runner: item view %s try %d: box at %s size %s is %.0f %% off centre%s, aiming again" % [view["name"], _item_tries, str(_item_box.get_center()), str(_item_box.size), float(live["off"]) * 100.0, "" if bool(live["inside"]) else ", part outside"])
 			_view_msec = 0

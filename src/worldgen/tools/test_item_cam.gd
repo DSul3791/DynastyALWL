@@ -27,7 +27,7 @@ func _forward(v: Dictionary) -> Vector3:
 
 func _init() -> void:
 	# A long thin tool lying along X (and a second orientation along Z), four sizes.
-	for size in [0.2, 0.6, 1.2, 1.8]:
+	for size in [0.2, 0.6, 1.2, 1.8, 2.5]:
 		for along_z in [false, true]:
 			var centre: Vector3 = Vector3(100.0, 31.1, 200.0)
 			var dims: Vector3 = Vector3(size, size * 0.15, size * 0.15) if not along_z else Vector3(size * 0.15, size * 0.15, size)
@@ -40,7 +40,7 @@ func _init() -> void:
 			for v in list:
 				var cam: Vector3 = v["cam"]
 				var d: float = cam.distance_to(centre)
-				check(d >= 0.19 and d <= 3.01, "%s %s: camera %.2f m from the item (0.2 to 3)" % [tag, v["name"], d])
+				check(d >= 0.19 and d <= 6.0, "%s %s: camera %.2f m from the item (0.2 to 6)" % [tag, v["name"], d])
 				check(cam.y > 31.0, "%s %s: camera above the ground" % [tag, v["name"]])
 				seen[str(cam.snappedf(0.01))] = true
 
