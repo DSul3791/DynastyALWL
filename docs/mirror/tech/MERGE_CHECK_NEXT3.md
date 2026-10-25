@@ -180,3 +180,5 @@ kathleen-held-pose 3af62551: part 1 (heads, saw/hammer shapes) merges with kathl
 sal-thatch-floor-hand 28ce1937: GO split in two commits (1 hand-craft pieces/kits/clothing/thatch; 2 material recipes wait for Dave). See Sal_thatch_floor_hand_REPLY.md AUDIT ANSWER.
 
 HOLD LIFTED (25 Oct 03:00 UTC): Sal crafting gate (39a63cef thatch four, first bench, clothing, backpack, forge) may be gated again once Sal confirms the final hash. Blueprints are later tiers only.
+
+SPEED-UP STEP 3 (25 Oct 03:20 UTC): Windows proof of claude/generator-speedup 690ee171 is in (Mike, 1 thread, tile 3,4): all four bakes md5 4fc5650d, 9,157,910 bytes. Times: reference 499 s; new cache off 341 s; cache build 341 s; cache reuse 171 s. Peak memory about 1.2 GB. Details: claude/box-results results/20261025_speedup_proof. Merge into merge-793 still waits for David3's Linux proof (1 and 4 threads) and 600-tick settle compare.
