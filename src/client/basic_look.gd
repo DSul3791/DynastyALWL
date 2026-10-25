@@ -266,8 +266,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
 			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
-			# curving down (-y) in the head-and-droop plane: a long tapering pick at +z, a shorter flat-ended chisel at -z. Nothing bends sideways.
-			# SHAPE LOCKED (Dave 2026-10-25, 91827091): only smoother curves (more segments on the same outline) and material tones may change here.
+			# curving toward the grip (-x, the pommel end, as in Dave's reference) in the haft-and-head plane: a long tapering pick at +z, a shorter flat-ended chisel at -z.
+			# Nothing bends sideways (out of that plane). Held with the head vertical (points up and down); see HELD_LOOK_TURN.
 			# Test: src/worldgen/tools/test_pick_axes.gd.
 			var steel_head: bool = bits.has("steel")
 			var iron: Color = Color(0.4, 0.43, 0.48) if steel_head else Color(0.21, 0.2, 0.21)                            # aged dark iron (steel a paler, cleaner grey)
@@ -284,7 +284,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(3):                                                                                               # the collar's leather lashing, three turns
 				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
 			_cyl(parts, 0.026, 0.01, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))
-			var sweeps: Array = [[1.0, 0.5, 0.5, 10], [-1.0, 0.55, 0.36, 6]]                                             # side, sweep (rad), radius, segments: the long pick and the short chisel (twice the old segment count, same outline)
+			var sweeps: Array = [[1.0, 0.28, 0.9, 10], [-1.0, 0.3, 0.72, 6]]                                             # side, sweep (rad), radius, segments: the long pick and the short chisel (twice the old segment count, same outline)
 			for side in sweeps:
 				var sign: float = side[0]
 				var count: int = side[3]
@@ -295,11 +295,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var mid: float = 0.5 * (phi0 + phi1)
 					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * t
 					var length: float = side[2] * (phi1 - phi0) * 1.06
-					var at: Vector3 = Vector3(0.27, -side[2] * (1.0 - cos(mid)), sign * (0.04 + side[2] * sin(mid)))
+					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, sign * (0.04 + side[2] * sin(mid)))
 					var tone: Color = _tone(iron, seg + (0 if sign > 0.0 else 7), 0.2)                                      # hammered, pitted: each segment a little lighter or darker
 					if seg >= count - 2:
 						tone = tone.lightened(0.35)                                                                              # the worked, bright points and edge
-					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(sign * mid, 0.0, 0.0), tone)
+					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -sign * mid, 0.0), tone)
 			if steel_head:
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron.lightened(0.3))                  # steel: a polished ridge along the top of the head
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
