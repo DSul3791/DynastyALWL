@@ -99,3 +99,89 @@ static func apply(biome: PackedByteArray, heights: PackedFloat32Array, water_cla
 					counts["boreal" if belt_id == boreal_id else "belt"] += 1
 
 	return counts
+
+
+# Valley farmland (Dave 24 Oct: the valley up to where the evergreen belt ends, anywhere the player can walk): fertile, walkable,
+# low forest ground becomes temperate_grassland in field-sized patches (value noise over WORLD position, so tiles agree), and a
+# hedge strip, one coarse cell wide, of the old forest is left between fields. Hardwoods then stand in the woodlots and hedges.
+# Rules: tile_rules.json "land_types": field_m (patch size), field_threshold, farm_fertility_min, farm_min_m, farm_slope.
+static func farmland(biome: PackedByteArray, fertility: PackedByteArray, heights: PackedFloat32Array, water_class: PackedByteArray, side: int, spacing_m: float, origin_sx: int, origin_sz: int, rules: Dictionary, ids: Dictionary) -> int:
+	if rules.is_empty() or not bool(rules.get("enabled", true)) or not bool(rules.get("farmland", true)):
+		return 0
+
+	var forest_id: int = ids["temperate_forest"]
+	var grass_id: int = ids["temperate_grassland"]
+	var field_m: float = float(rules.get("field_m", 240.0))
+	var threshold: float = float(rules.get("field_threshold", 0.5))
+	var fertility_min: int = int(rules.get("farm_fertility_min", 90))
+	var farm_min_m: float = float(rules.get("farm_min_m", 10.0))
+	var farm_tan: float = float(rules.get("farm_slope", 0.3))
+	var field_seed: int = int(rules.get("field_seed", 7919))
+	# The noise is read on a grid two WORLD samples (16 m) apart, aligned to the world not the frame, so two tiles agree; that
+	# grid's cell is the hedge width.
+	var base_x: int = origin_sx >> 1
+	var base_z: int = origin_sz >> 1
+	var coarse: int = (side >> 1) + 2
+	var noise: PackedFloat32Array = PackedFloat32Array()
+	noise.resize(coarse * coarse)
+
+	for cj in range(coarse):
+		var z: float = float((base_z + cj) * 2) * spacing_m / field_m
+
+		for ci in range(coarse):
+			noise[cj * coarse + ci] = _value_noise(float((base_x + ci) * 2) * spacing_m / field_m, z, field_seed)
+
+	var inv_two: float = 1.0 / (2.0 * spacing_m)
+	var changed: int = 0
+
+	for j in range(side):
+		var cj: int = ((origin_sz + j) >> 1) - base_z
+
+		for i in range(side):
+			var index: int = j * side + i
+
+			if biome[index] != forest_id or water_class[index] != 0 or heights[index] < farm_min_m or fertility[index] < fertility_min:
+				continue
+
+			var ci: int = ((origin_sx + i) >> 1) - base_x
+			var here: float = noise[cj * coarse + ci]
+
+			if here < threshold:
+				continue
+
+			# Hedge: a coarse cell beside a non-field cell stays woodland.
+			if noise[cj * coarse + ci + 1] < threshold or noise[cj * coarse + maxi(ci - 1, 0)] < threshold \
+					or noise[(cj + 1) * coarse + ci] < threshold or noise[maxi(cj - 1, 0) * coarse + ci] < threshold:
+				continue
+
+			var gx: float = (heights[index + (1 if i < side - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv_two
+			var gz: float = (heights[index + (side if j < side - 1 else 0)] - heights[index - (side if j > 0 else 0)]) * inv_two
+
+			if sqrt(gx * gx + gz * gz) > farm_tan:
+				continue
+
+			biome[index] = grass_id
+			changed += 1
+
+	return changed
+
+
+# Smooth value noise in 0..1 at lattice coordinates (x, z).
+static func _value_noise(x: float, z: float, noise_seed: int) -> float:
+	var ix: int = int(floor(x))
+	var iz: int = int(floor(z))
+	var fx: float = x - float(ix)
+	var fz: float = z - float(iz)
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	var a: float = _lattice(ix, iz, noise_seed)
+	var b: float = _lattice(ix + 1, iz, noise_seed)
+	var c: float = _lattice(ix, iz + 1, noise_seed)
+	var d: float = _lattice(ix + 1, iz + 1, noise_seed)
+	return lerpf(lerpf(a, b, fx), lerpf(c, d, fx), fz)
+
+
+static func _lattice(ix: int, iz: int, noise_seed: int) -> float:
+	var h: int = (ix * 73856093) ^ (iz * 19349663) ^ (noise_seed * 83492791)
+	h = ((h ^ (h >> 13)) * 1274126177) & 0x7fffffff
+	return float((h ^ (h >> 16)) & 0xffff) / 65535.0

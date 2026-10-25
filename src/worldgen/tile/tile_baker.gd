@@ -294,8 +294,9 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		land_ids[name] = tables.id_of("biomes", name)
 
 	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules.get("land_types", {}), land_ids)
+	var field_cells: int = TileLandTypesScript.farmland(climate.biome, climate.fertility, water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules.get("land_types", {}), land_ids)
 	timings["land_types"] = Time.get_ticks_msec() - clock
-	print("  land types: %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt (%d ms)" % [land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], timings["land_types"]])
+	print("  land types (tile %s): %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt, %d field cells (%d ms)" % [str(tile), land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], field_cells, timings["land_types"]])
 
 	# Crop everything to the tile.
 	var ghost_heights: PackedFloat32Array = water.heights
