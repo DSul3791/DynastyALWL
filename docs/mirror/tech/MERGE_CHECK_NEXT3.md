@@ -123,3 +123,6 @@ Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one ha
 ## Generator speed-up (Tyler 00:20 UTC 25 Oct): base merge-793 5b9d9f9, merges into merge-793 only. Reply: ACTION_PLANS/Generator_speedup_REPLY.md. Proof bakes wait for Dave's go (box only). Cleanup branch separate.
 
 ## GO from Dave (25 Oct 00:09 UTC): generator speed-up and its proof re-bakes on the server box are cleared. Allowed bakes: tile (3,4) and one edge tile, 1 and 4 threads, with and without setup cache. EVERYTHING ELSE stays held (793, nine-tile bake, other settles). Windows proof run needs Mike's PC: ask Dave when the Linux proofs pass.
+
+## 792 ORDER (revised by Tyler 00:30 UTC 25 Oct, after Sal_campfire_pot_REPLY.md)
+shelter e2986139 -> fire tiers 9d911ec8 -> A sal-campfire-pot (pot + twine tests; fix the old state-1 check first) -> steve-rough-bed 6459b079 -> steve-sound-hookup fce8a304 -> B sal-craft-menu -> C sal-auto-craft (limits in the reply) -> no-stack caps 39a03c5c + weight audit 00502227. No bake item in any of them.
