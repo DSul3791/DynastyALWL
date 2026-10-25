@@ -21,3 +21,9 @@ Why the collision under the player takes 46+ s to appear while 10,000 blocks str
 
 ## Gate (BP-T57)
 Fresh-clone join on the box (David3) and a fresh start on Mike's Windows PC; test_ground_watchdog.gd; `--drop-ground-lods=4` still recovers; picture runs show no error text. Not run in Godot in the cloud.
+
+## Build notes (25 Oct)
+- ground_watchdog.gd: failure retry (idle 8 s + new failures), stall retry (max 2, from 30 s), BUSY rule removed; give up only on failures.
+- terrain_client.gd: totals carried across restarts; silent_server needs 0 received ever; JOIN line shows totals and ray.
+- shot_runner.gd waits up to 120 s for waiting_for_ground == false.
+- test_ground_watchdog.gd rewritten for step(..., failed). Needs David3 run.
