@@ -87,6 +87,7 @@ var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
+var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
@@ -874,6 +875,9 @@ func has_tool_class(tool_class: String) -> bool:
 
 
 func _on_notice(text: String) -> void:
+	if notice_event.is_valid():
+		notice_event.call(text)
+
 	_prompt.text = text
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 

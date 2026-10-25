@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 177,
+	"next_number": 178,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -636,9 +636,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": true
 		},
 		"energy_bar": {
 			"number": 31,
@@ -843,9 +841,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 2
+			"known": true
 		},
 		"hide_boots": {
 			"number": 40,
@@ -866,8 +862,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": true
 		},
 		"hide_hood": {
 			"number": 41,
@@ -888,7 +883,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_mittens": {
 			"number": 42,
@@ -909,7 +904,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_leggings": {
 			"number": 43,
@@ -930,8 +925,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
-			"station": "workbench"
+			"known": true
 		},
 		"sinew_cord": {
 			"number": 44,
@@ -3677,6 +3671,27 @@
 			],
 			"craft_s": 14.0,
 			"station": "oven",
+			"known": true
+		},
+		"snare": {
+			"number": 177,
+			"name": "Snare",
+			"category": "Tools",
+			"needs": [
+				[
+					"twine",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"snare",
+				1
+			],
+			"craft_s": 6.0,
 			"known": true
 		}
 	}

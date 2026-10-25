@@ -371,6 +371,12 @@ func work_type(recipe: Dictionary) -> String:
 
 func _start_work(items, number: int) -> void:
 	var kind: String = work_type(items.recipes.recipe(number))
+
+	var stage = get_parent()
+
+	if kind == "bind" and stage != null and stage.get("slots") != null and get_viewport().get_camera_3d() != null:
+		stage.slots.play("twine_lash", get_viewport().get_camera_3d().global_position)   # lashing with twine (R1 clip)
+
 	var list: Array = _variants("craft_" + kind)
 
 	if list.is_empty():

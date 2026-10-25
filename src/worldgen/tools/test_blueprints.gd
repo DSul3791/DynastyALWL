@@ -166,6 +166,15 @@ func _init() -> void:
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
 	check(_ids_standing("woodworking_table").size() == 1, "a full pack: the table stays up, nothing is lost")
 
+	# A snare: the kit places as the snare_trap structure and takes down into the kit.
+	_clear(1)
+	items.report_position(1, Vector3(240.0, 10.0, 240.0))
+	_give(1, "snare", 1)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("snare")), 0, 0, Vector3(240.0, 10.0, 242.0))
+	check(_ids_standing("snare_trap").size() == 1 and _have(1, "snare") == 0, "a snare is set on the ground")
+	items.action(1, Net.ACT_PICKUP, _ids_standing("snare_trap")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("snare_trap").is_empty() and _have(1, "snare") == 1, "and taken back into the snare item")
+
 	# Clay hearth (13) and oven (14): hammer blueprints; the oven needs a hearth within reach; the tiers cook what the lower tier cooks.
 	_clear(1)
 	_give(1, "wooden_hammer", 1)

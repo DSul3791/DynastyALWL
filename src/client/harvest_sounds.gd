@@ -81,6 +81,9 @@ static func rustle_kind(row: Dictionary) -> String:
 func pick(row: Dictionary, at: Vector3) -> bool:
 	var now: int = Time.get_ticks_msec()
 
+	if (row.get("yields", []) as Array).has("thatch") and _stage.slots != null:
+		return _stage.slots.play("thatch_pick", at)   # Kathleen's R1 clip (data/sound/batch3_slots.json)
+
 	if now - _last_msec < MIN_GAP_MSEC:
 		return false
 
