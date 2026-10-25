@@ -1,5 +1,6 @@
 {
 	"format_version": 1,
+	"precarve": {"summit_crowns": [[54776.0, 71352.0, 0.0015, 100.0, 150.0]], "summit_crowns_note": "[x, z, k, full_m, fade_m]: island 8 summit (1245 m) was a 120 m wide crown within 5 m of the top; this takes k x r^2 off the shoulders out to full_m so it reads under 100 m (island check)."},
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
 	"frame": {
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
