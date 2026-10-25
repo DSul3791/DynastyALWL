@@ -46,6 +46,7 @@ var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
 var _item_box: AABB = AABB()
 var _item_node: Node3D = null
+var _item_tries: int = 0
 var _item_views: Array = []
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
@@ -939,6 +940,20 @@ func _run_view(now: int) -> void:
 	if now - _view_msec < 2000:
 		return
 
+	# An item that moved or settled since the camera was set (Mike's runs: the top view off by 50 to 71 %, different each run) is aimed at again from where it is now:
+	# up to 4 more tries, each logged with the box, before the picture is taken and judged.
+	if item_mode and _item_node != null and is_instance_valid(_item_node) and _item_tries < 4:
+		_item_box = _node_aabb(_item_node)
+		var cam_now: Camera3D = client.camera
+		var size_now: Vector2 = get_viewport().get_visible_rect().size
+		var live: Dictionary = ItemCam.frame_stats(_item_box, cam_now.global_position, -cam_now.global_transform.basis.z, cam_now.global_transform.basis.y, cam_now.fov, size_now.x / maxf(size_now.y, 1.0))
+
+		if float(live["off"]) > 0.08 or not bool(live["inside"]) or float(live["extent"]) > 0.95:
+			_item_tries += 1
+			print("shot runner: item view %s try %d: box at %s size %s is %.0f %% off centre%s, aiming again" % [view["name"], _item_tries, str(_item_box.get_center()), str(_item_box.size), float(live["off"]) * 100.0, "" if bool(live["inside"]) else ", part outside"])
+			_view_msec = 0
+			return
+
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s_%s.png" % [dir, shots[_index]["name"], view["name"]]
 	image.save_png(path)
@@ -955,6 +970,7 @@ func _run_view(now: int) -> void:
 	print("shot runner: view %s saved %s build %d dist %.1f pitch %.0f above %.2f camera %s subject %s" % [view["name"], path, client.BUILD, float(view["dist"]), float(view["pitch"]), float(view["above"]), str(client.camera.global_position), str(_subject)])
 	_view_i += 1
 	_view_msec = 0
+	_item_tries = 0
 
 
 # Look rig diagnostics for --shot-flora: what the flora view holds for the row's chunk (level bits, drawn pieces and instances), per chunk.
