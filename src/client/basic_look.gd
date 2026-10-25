@@ -284,15 +284,16 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
 			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
 		"saw":
-			# A hand saw: a wooden pistol grip at -x, a long, thin steel blade that narrows toward the tip, and a row of teeth along the cutting edge (+z).
-			_box(parts, Vector3(0.1, 0.03, 0.045), Vector3(-0.3, 0.0, 0.0), Color(0.42, 0.3, 0.17))                  # grip
-			_box_rot(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.32, 0.0, -0.045), Vector3(0.0, 0.0, 0.0), Color(0.42, 0.3, 0.17))   # the grip's lower leg
-			_box(parts, Vector3(0.04, 0.02, 0.05), Vector3(-0.23, 0.0, 0.0), dark)                                    # the plate the blade is riveted to
-			_box(parts, Vector3(0.44, 0.008, 0.075), Vector3(0.02, 0.0, 0.0), color)                                  # blade, wide end
-			_box_rot(parts, Vector3(0.14, 0.008, 0.055), Vector3(0.3, 0.0, 0.004), Vector3(0.0, 0.0, 0.0), color)     # blade, narrower toward the tip
-			_box(parts, Vector3(0.58, 0.012, 0.01), Vector3(0.05, 0.0, -0.036), light)                                # the stiffened back
-			for k in range(24):
-				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.19 + 0.0205 * float(k), 0.0, 0.043 if k < 15 else 0.035), Vector3(0.0, 0.0, 0.7), light)   # teeth
+			# A hand saw: a wooden pistol grip at -x, a thin steel blade (about 0.55 m long) that narrows toward the tip, and a row of teeth along the cutting edge (+z).
+			var steel: Color = color.darkened(0.22)
+			_box(parts, Vector3(0.1, 0.03, 0.045), Vector3(-0.26, 0.0, 0.0), Color(0.34, 0.23, 0.13))                 # grip
+			_box(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.28, 0.0, -0.045), Color(0.34, 0.23, 0.13))               # the grip's lower leg
+			_box(parts, Vector3(0.04, 0.02, 0.05), Vector3(-0.19, 0.0, 0.0), dark)                                    # the plate the blade is riveted to
+			_box(parts, Vector3(0.3, 0.008, 0.075), Vector3(-0.02, 0.0, 0.0), steel)                                  # blade, wide end
+			_box(parts, Vector3(0.12, 0.008, 0.055), Vector3(0.19, 0.0, 0.004), steel)                                # blade, narrower toward the tip
+			_box(parts, Vector3(0.45, 0.012, 0.01), Vector3(0.0, 0.0, -0.036), dark)                                  # the stiffened back
+			for k in range(16):
+				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.15 + 0.0205 * float(k), 0.0, 0.043 if k < 10 else 0.035), Vector3(0.0, 0.0, 0.7), steel.lightened(0.15))   # teeth
 		"hammer":
 			# A stone hammer: a stick with a heavy blunt stone head lashed across the end, flat faces both sides (no edge).
 			_handle(parts, 0.45)
