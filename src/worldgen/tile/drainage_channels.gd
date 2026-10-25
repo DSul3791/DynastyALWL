@@ -768,6 +768,28 @@ func _ensure_centre_channel(fill, flow, threshold: float) -> void:
 	print("  centre line: %d cells deepened to keep the river continuous" % fixed)
 
 
+# Lowest ground on the ring of radius radius_m round a cell (the bowl's lip); INF when the ring leaves the frame.
+func _ring_lip(index: int, radius_m: float, size: int, cell_m: float) -> float:
+	var reach: int = int(ceil(2.0 * radius_m / cell_m)) + 1
+	@warning_ignore("integer_division")
+	var row: int = index / size
+	var column: int = index % size
+
+	if row < reach or column < reach or row >= size - reach or column >= size - reach:
+		return INF
+
+	var lip: float = INF
+
+	for dz in range(-reach, reach + 1):
+		for dc in range(-reach, reach + 1):
+			var ring: float = sqrt(float(dz * dz + dc * dc)) * cell_m
+
+			if ring >= radius_m and ring <= radius_m + 1.5 * cell_m:
+				lip = minf(lip, bed[(row + dz) * size + column + dc])
+
+	return lip
+
+
 # Dave 24 Oct: water sources start in natural catch basins, and ponds and lakes should be sizable. Sites: every river head (a
 # pond) and, on flat reaches of rivers with a catchment of lake_from_km2 or more, a few lakes (one candidate per lake_spacing_m
 # block, kept by a world-position hash so two tiles agree). Size follows the spring flow Qs = 0.1 x catchment km2 (0.01..2 m3/s):
@@ -841,6 +863,11 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 		if h[index] < LAKE_MIN_GROUND_M:
 			continue   # an estuary flat: a bowl there has its lip at sea level and is dropped later
+
+		var site_lip: float = _ring_lip(index, clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs_here, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M), size, cell_m)
+
+		if site_lip < 1.0:
+			continue   # the downstream channel or the sea is under 1 m on the ring: the carve would drop this bowl
 
 		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
 			relaxed_best = [slope, index]
