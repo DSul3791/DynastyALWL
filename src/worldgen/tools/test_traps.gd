@@ -96,7 +96,7 @@ func _init() -> void:
 	check(absf(float(on_trail) / 2000.0 - base) < 0.04, "a snare on a trail catches at the data rate (%d of 2000)" % on_trail)
 	strength = 0.0
 	var in_grass: int = catches(items, id, 2000)
-	check(in_grass < on_trail / 5, "open grass catches under a fifth of a trail (%d against %d)" % [in_grass, on_trail])
+	check(float(in_grass) < float(on_trail) / 5.0, "open grass catches under a fifth of a trail (%d against %d)" % [in_grass, on_trail])
 	strength = 0.6
 
 	# Night is likelier, a storm halves it, bait doubles it.
