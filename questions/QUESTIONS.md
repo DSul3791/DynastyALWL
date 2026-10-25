@@ -26,3 +26,48 @@ Note: Scythe (iron, later): the same in a wide sweep, only when iron tools come.
 Note: No stone pick, no adze, and the saw needs an iron blade (your earlier answers stay).
 Note: Recommendation: Yes for rake and sickle, scythe later, because farming needs a clear way to clean a plot and a better harvest than the bare hand before iron.
 [check]
+
+## trim-a | Item trim A: Spade sizes: one spade per material (cut 8)
+Note: Full list: design/ITEM_TRIM_LIST.md group A. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-b | Item trim B: Duplicate tools: one hammer, no vice, needle or bowl (merge 5)
+Note: Full list: design/ITEM_TRIM_LIST.md group B. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-c | Item trim C: Wood chain: one Lumber and one Beam, species kept as a tag (cut 15)
+Note: Full list: design/ITEM_TRIM_LIST.md group C. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins, driftwood (cut 6)
+Note: Full list: design/ITEM_TRIM_LIST.md group D. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-e | Item trim E: Food and drink: herbal tea, medicine, energy bar, nut paste (cut 4)
+Note: Full list: design/ITEM_TRIM_LIST.md group E. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-f | Item trim F: Forges: one forge with upgrades; no tongs, bellows, anvil (merge 3)
+Note: Full list: design/ITEM_TRIM_LIST.md group F. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-g | Item trim G: Building pieces: one set, material is a setting (merge 8)
+Note: Full list: design/ITEM_TRIM_LIST.md group G. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
+Note: Full list: design/ITEM_TRIM_LIST.md group H. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
+
+## trim-i | Item trim I: New tools: keep scythe, sickle merges in, no rake, no shears yet
+Note: Full list: design/ITEM_TRIM_LIST.md group I. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
