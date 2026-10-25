@@ -84,6 +84,7 @@ const MINE_CELL_M := 8.0                 # one outcrop patch
 const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
+const UPGRADE_AIM_M := 3.5               # an upgrade blueprint aimed this close to a placed piece of the tier below upgrades it
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const SKILLS_PATH := "res://data/items/skills.json"
@@ -2293,6 +2294,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var number: int = 0
 	var kit_id: String = ""
 
+	if not blueprint.is_empty() and str(blueprint.get("upgrade_of", "")) != "":   # a forge tier: the piece below is swapped in place
+		_upgrade_in_place(peer, inv, at, blueprint)
+		return
+
 	if not blueprint.is_empty():   # from the hammer: no kit item, the materials are checked here and taken with the piece
 		if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, blueprint):
 			return
@@ -4199,6 +4204,61 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 	return true
 
 
+# A blueprint row with "upgrade_of" (the forge tiers) does not add a piece: it turns the nearest placed piece of that kind within reach into
+# the next tier, keeping its spot, yaw, storage and everything else on its row, and takes the row's materials (Dave 25 Oct: one forge, upgraded).
+func _upgrade_in_place(peer: int, inv, at: Vector3, row: Dictionary) -> void:
+	if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, row):
+		return
+
+	var best: int = -1
+	var best_d: float = UPGRADE_AIM_M
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"]["kind"]) == str(row["upgrade_of"]) and (it["pos"] as Vector3).distance_to(at) <= best_d and _peer_pos[peer].distance_to(it["pos"]) <= PLACE_REACH_M:
+			best = id
+			best_d = (it["pos"] as Vector3).distance_to(at)
+
+	if best < 0:
+		_say(peer, "Aim at your %s to upgrade it." % str(_structures.get(str(row["upgrade_of"]), {}).get("item", row["upgrade_of"])).replace("_", " "))
+		return
+
+	_pay_blueprint(inv, row)
+	var to: Dictionary = _structures[str(row["structure"])]
+	_items[best]["number"] = table.number_of(str(to["item"]))
+	_items[best]["struct"]["kind"] = str(row["structure"])
+	_dirty = true
+
+
+# What a piece gives back on takedown: its own blueprint's materials plus every tier below it (upgrade_of), summed.
+func _refund_row(row: Dictionary) -> Dictionary:
+	var total: Dictionary = {}
+	var current: Dictionary = row
+	var hops: int = 0
+
+	while not current.is_empty() and hops < 8:
+		for need in current["cost"]:
+			total[str(need[0])] = int(total.get(str(need[0]), 0)) + int(need[1])
+
+		var below: String = str(current.get("upgrade_of", ""))
+		current = {}
+		hops += 1
+
+		if below != "":
+			for number in _blueprints:
+				if str(_blueprints[number]["structure"]) == below:
+					current = _blueprints[number]
+					break
+
+	var cost: Array = []
+
+	for id in total:
+		cost.append([id, total[id]])
+
+	return {"cost": cost}
+
+
 func _pay_blueprint(inv, row: Dictionary) -> void:
 	for need in row["cost"]:
 		inv.remove(table.number_of(str(need[0])), int(need[1]))
@@ -4381,7 +4441,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+		if not _refund_blueprint(peer, inv, _refund_row(_blueprints[int(_blueprint_of_kit[str(def["kit"])])])):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1) > 0:
 		return

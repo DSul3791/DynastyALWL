@@ -86,7 +86,7 @@ func _init() -> void:
 		check(bool(recipe.get("retired", false)), "%s: kit recipe %d is retired, not removed" % [id, int(recipe["number"])])
 		check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
 
-	check(live.size() == 6 and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations and the cooking tiers are the blueprints (%d)" % live.size())
+	check(live.size() == 8 and live.has("stone_forge") and live.has("blacksmithy") and live.has("large_forge") and live.has("master_forge") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations, the forge tiers and the cooking tiers are the blueprints (%d)" % live.size())
 
 	# Fine wood and lower are made by hand, no station: the section pieces, the foundation, the timber set, the ladder (and the thatch four).
 	for kit in ["wall_section_kit", "floor_section_kit", "roof_section_kit", "foundation_section_kit", "doorway_section_kit", "window_section_kit", "timber_set_kit", "ladder_kit"]:
@@ -174,6 +174,37 @@ func _init() -> void:
 	check(_ids_standing("snare_trap").size() == 1 and _have(1, "snare") == 0, "a snare is set on the ground")
 	items.action(1, Net.ACT_PICKUP, _ids_standing("snare_trap")[0], 0, 0, Vector3.ZERO)
 	check(_ids_standing("snare_trap").is_empty() and _have(1, "snare") == 1, "and taken back into the snare item")
+
+	# One forge, upgraded in place: the blueprint of the next tier swaps the placed piece, keeping its spot and yaw; a takedown refunds every stage.
+	_clear(1)
+	items.report_position(1, Vector3(250.0, 10.0, 250.0))
+	_give(1, "stone_forge_kit", 1)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("stone_forge_kit")), 0, 90, Vector3(250.0, 10.0, 253.0))
+	check(_ids_standing("stone_forge").size() == 1, "a forge stands")
+	var forge_id: int = _ids_standing("stone_forge")[0]
+	var forge_pos: Vector3 = items._items[forge_id]["pos"]
+	var forge_yaw: float = float(items._items[forge_id]["struct"]["yaw"])
+	_clear(1)
+	_give(1, "wooden_hammer", 1)
+	var medium: Dictionary = live["blacksmithy"]
+	var large: Dictionary = live["large_forge"]
+	var master: Dictionary = live["master_forge"]
+	check(int(large["number"]) == 15 and int(master["number"]) == 16 and str(medium["upgrade_of"]) == "stone_forge", "forge tiers are blueprints 10, 15 and 16, each an upgrade of the one below")
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(medium["number"]), 0, 0, forge_pos)
+	check(_ids_standing("blacksmithy").is_empty() and _ids_standing("stone_forge").size() == 1, "an upgrade without the materials changes nothing")
+
+	for step in [medium, large, master]:
+		for need in step["cost"]:
+			_give(1, str(need[0]), int(need[1]))
+
+		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(step["number"]), 0, 0, forge_pos + Vector3(0.5, 0.0, 0.0))
+		check(_ids_standing(str(step["structure"])).size() == 1, "the forge is upgraded to %s" % str(step["structure"]))
+
+	var upgraded: Dictionary = items._items[forge_id]
+	check(str(upgraded["struct"]["kind"]) == "master_forge" and upgraded["pos"] == forge_pos and float(upgraded["struct"]["yaw"]) == forge_yaw and int(upgraded["number"]) == items.table.number_of("master_forge"), "it is the same piece: same spot, same yaw, now the master forge")
+	check(_ids_standing("stone_forge").is_empty() and _ids_standing("blacksmithy").is_empty() and _have(1, "stone") == 0, "no second piece appeared and every material was taken")
+	items.action(1, Net.ACT_PICKUP, forge_id, 0, 0, Vector3.ZERO)
+	check(_ids_standing("master_forge").is_empty() and _have(1, "stone") == 36 + 30 + 45 + 68 and _have(1, "clay") == 10 + 10 + 15 + 23 and _have(1, "log") == 10 + 15 + 23 and _have(1, "hide") == 2, "taking the master forge down refunds every stage")
 
 	# Clay hearth (13) and oven (14): hammer blueprints; the oven needs a hearth within reach; the tiers cook what the lower tier cooks.
 	_clear(1)
