@@ -61,3 +61,8 @@ Note: Recommendation: Yes
 Note: Full list: design/ITEM_TRIM_LIST.md group G. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
+Note: Full list: design/ITEM_TRIM_LIST.md group H. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
