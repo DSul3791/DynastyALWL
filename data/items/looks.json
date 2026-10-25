@@ -90,7 +90,7 @@
   "wooden_spade": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.0
+   "size": 0.7
   },
   "lean_to_kit": {
    "shape": "kit",
@@ -210,18 +210,18 @@
   "stone_spade": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.0
+   "size": 0.7
   },
   "iron_spade": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.0,
+   "size": 0.7,
    "bits": ["metal"]
   },
   "steel_spade": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.0,
+   "size": 0.7,
    "bits": ["metal","steel"]
   },
   "bone": {
@@ -867,45 +867,45 @@
   "wooden_spade_medium": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.25
+   "size": 0.85
   },
   "wooden_spade_large": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.5
+   "size": 1.0
   },
   "stone_spade_medium": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.25
+   "size": 0.85
   },
   "stone_spade_large": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.5
+   "size": 1.0
   },
   "iron_spade_medium": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.25,
+   "size": 0.85,
    "bits": ["metal"]
   },
   "iron_spade_large": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.5,
+   "size": 1.0,
    "bits": ["metal"]
   },
   "steel_spade_medium": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.25,
+   "size": 0.85,
    "bits": ["metal","steel"]
   },
   "steel_spade_large": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.5,
+   "size": 1.0,
    "bits": ["metal","steel"]
   },
   "wooden_hoe": {
