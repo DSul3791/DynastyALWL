@@ -1654,3 +1654,7 @@ Answered: 2026-10-25 13:49 UTC
 Answer: No: We use the hoe for everything farming
 Answered: 2026-10-25 13:49 UTC
 
+## trim-a | Item trim A: Spade sizes: one spade per material (cut 8)
+Answer: Yes
+Answered: 2026-10-25 13:49 UTC
+
