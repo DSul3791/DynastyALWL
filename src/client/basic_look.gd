@@ -312,59 +312,45 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_metal(parts)
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
-			# A digging spade at real size for the large tier (size 1.0; the smaller tiers scale down): an 85 cm ash haft 3.5 cm thick with a slight taper to the grip and a
-			# darker smooth patch where the hands go, a closed rounded D-grip about 15 cm across, a 10 cm socket cone with a strap up each side and two rivets, a folded tread
-			# across square shoulders, and a smooth 28 by 19 cm blade that tapers to a rounded tip, dished across and curving forward at the socket. Mesh axes: haft along x
-			# (grip at -x, blade at +x), blade thin in y, wide in z. Iron and steel (bits "metal") are on the metal surface (roughness 0.55 so it never blows out to white).
+			# A digging spade at real size for the large tier (size 1.0; the smaller tiers scale down): an ash haft 3.5 cm thick with a slight taper to the grip and a clearly darker
+			# smooth patch where the hands go, a closed rounded D-grip about 15 cm across, a bold 10 cm socket cone with a contrasting strap up each side and two big rivets, a thick tread
+			# plate across the square shoulders, and a smooth 28 by 19 cm blade built as a real polygon plate (see _plate): thin, dished, with a rolled edge, tapering to a rounded tip.
+			# Mesh axes: haft along x (grip at -x, blade at +x), blade thin in y, wide in z. Iron and steel (bits "metal") are on the metal surface (roughness 0.55, metallic 0.6:
+			# it must not blow out to white or take the blue of the sky).
 			var metal_blade: bool = bits.has("metal")
 			var blade: Color = color
 			var ash: Color = Color(0.42, 0.3, 0.17)
 			var rough: float = 0.55
 
 			if metal_blade:
-				blade = Color(0.1, 0.1, 0.1) if bits.has("steel") else Color(0.04, 0.036, 0.032)     # steel: lighter neutral grey; iron: dark charcoal with a faint warm brown (linear values; no blue)
+				blade = Color(0.2, 0.2, 0.2) if bits.has("steel") else Color(0.08, 0.075, 0.068)       # steel: a neutral mid-grey, lighter than iron; iron: dark charcoal (linear values; no blue)
 			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
 				blade = _warm_stone(color)                                                                     # stone: darker and warmer than the table grey
 
-			_cyl_taper(parts, 0.0175, 0.0165, 0.25, Vector3(0.325, 0.0, 0.0), _tone(ash, 1, 0.05))                # the haft: three long tapering lengths, no banding
+			_cyl_taper(parts, 0.0175, 0.0165, 0.25, Vector3(0.325, 0.0, 0.0), _tone(ash, 1, 0.05))                # the haft: long tapering lengths, no banding
 			_cyl_taper(parts, 0.0165, 0.0175, 0.25, Vector3(0.075, 0.0, 0.0), _tone(ash, 2, 0.05))
 			_cyl_taper(parts, 0.0175, 0.0185, 0.25, Vector3(-0.175, 0.0, 0.0), _tone(ash, 3, 0.05))
-			_cyl_taper(parts, 0.0185, 0.0185, 0.12, Vector3(-0.06, 0.0, 0.0), ash.darkened(0.3))                 # the smooth darker patch where the hands go
-			_torus(parts, 0.065, 0.014, Vector3(-0.36, 0.0, 0.0), _tone(ash, 6, 0.06))                           # the closed, rounded D-grip, about 15 cm across
-			_cyl_taper(parts, 0.021, 0.03, 0.1, Vector3(0.4, 0.0, 0.0), blade * 0.9 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket: a short cone about 10 cm
+			_cyl_taper(parts, 0.0195, 0.0195, 0.16, Vector3(-0.06, 0.0, 0.0), ash.darkened(0.6))                 # the smooth, clearly darker patch where the hands go
+			_torus(parts, 0.065, 0.018, Vector3(-0.36, 0.0, 0.0), _tone(ash, 6, 0.06))                           # the closed, rounded D-grip, about 15 cm across
+			_box(parts, Vector3(0.026, 0.034, 0.13), Vector3(-0.297, 0.0, 0.0), _tone(ash, 7, 0.06))             # its flat side, closing the D against the haft
+			_cyl_taper(parts, 0.022, 0.036, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.5 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket: a short, bold cone about 10 cm
 			if metal_blade:
-				_metal(parts, rough)
+				_metal(parts, rough, 0.6)
 
 			for side in [-1.0, 1.0]:
-				_box(parts, Vector3(0.12, 0.012, 0.007), Vector3(0.42, 0.0, side * 0.027), blade * 1.2 if metal_blade else blade.darkened(0.15))   # the blade strap up each side of the socket
+				_box(parts, Vector3(0.13, 0.02, 0.014), Vector3(0.425, 0.0, side * 0.034), blade * 2.2 if metal_blade else blade.lightened(0.25))   # the strap up each side of the socket, in a lighter tone
 				if metal_blade:
-					_metal(parts, rough)
-				_sph(parts, 0.007, Vector3.ONE, Vector3(0.38, 0.0, side * 0.031), blade * 1.8 if metal_blade else blade.lightened(0.15), true)    # a rivet
-				if metal_blade:
-					_metal(parts, rough)
-
-			_box(parts, Vector3(0.02, 0.012, 0.19), Vector3(0.455, 0.0, 0.0), blade * 1.3 if metal_blade else blade.darkened(0.2))   # the folded tread across the square shoulders
-			if metal_blade:
-				_metal(parts, rough)
-			var slices: int = 14
-			var blade_len: float = 0.28
-			var blade_wide: float = 0.19
-
-			for k in range(slices):
-				var t: float = (float(k) + 0.5) / float(slices)                                                     # 0 at the shoulders, 1 at the tip
-				var half: float = 0.5 * blade_wide if t < 0.45 else 0.5 * blade_wide * sqrt(maxf(1.0 - pow((t - 0.45) / 0.55, 2.0), 0.02))   # flat shoulders, then an elliptical taper to a rounded tip
-				var x: float = 0.465 + blade_len * t
-				var y: float = 0.012 * pow(1.0 - t, 2.0)                                                            # curving forward at the socket
-				var tone: Color = _tone_mul(blade, k, 0.1) if metal_blade else _tone(blade, k, 0.05)
-				if metal_blade and bits.has("steel") and k >= slices - 3:
-					tone = Color(0.24, 0.24, 0.24)                                                                    # a bright edge at the bottom of a steel blade
-				_box(parts, Vector3(blade_len / float(slices) * 1.05, 0.006, half), Vector3(x, y, 0.0), tone)           # the middle of the slice
-				if metal_blade:
-					_metal(parts, rough)
-				for side in [-1.0, 1.0]:                                                                           # the dish: each wing tilted up a little
-					_box_rot(parts, Vector3(blade_len / float(slices) * 1.05, 0.006, half * 0.5), Vector3(x, y + 0.004, side * half * 0.75), Vector3(side * 0.16, 0.0, 0.0), tone)
+					_metal(parts, rough, 0.6)
+				for k in range(2):
+					_sph(parts, 0.011, Vector3.ONE, Vector3(0.38 + 0.05 * float(k), 0.012, side * 0.034), blade * 3.2 if metal_blade else blade.lightened(0.4), true)    # two big rivets
 					if metal_blade:
-						_metal(parts, rough)
+						_metal(parts, rough, 0.6)
+
+			_box(parts, Vector3(0.028, 0.02, 0.2), Vector3(0.46, 0.0, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.2))   # the thick tread plate across the square shoulders
+			if metal_blade:
+				_metal(parts, rough, 0.6)
+			_plate(parts, 0.474, 0.27, 0.19, 0, 9, blade, true, metal_blade, rough, 0.6)                          # the blade plate
+			_plate(parts, 0.474, 0.27, 0.19, 9, 12, Color(0.5, 0.5, 0.5) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.6)   # its last quarter: a bright strip along the bottom edge
 		"saw":
 			# A hand saw: a wooden pistol grip at -x, a thin steel blade (about 0.55 m long) that narrows toward the tip, and a row of teeth along the cutting edge (+z).
 			var steel: Color = color.darkened(0.22)
@@ -606,6 +592,71 @@ static func _wedge(parts: Array, base: float, out: float, along: float, at: Vect
 	parts.append([prism, Transform3D(Basis(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0)), at), color])
 
 
+# A spade blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
+# half width flat to 45 percent of the length (square shoulders) then an elliptical taper to a rounded tip, dished across (the edges lift 1.4 cm), curving forward at the
+# socket, 4 mm thin with a rolled (thicker) edge, smooth-shaded. `from_row` to `to_row` of 12 build one piece, so the tip can take its own colour.
+static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float) -> void:
+	var rows: int = 12
+	var cols: int = 3
+	var tool: SurfaceTool = SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	var top: Array = []
+	var bottom: Array = []
+
+	for i in range(from_row, to_row + 1):
+		var t: float = float(i) / float(rows)
+		var half: float = 0.5 * wide if t < 0.45 else 0.5 * wide * sqrt(maxf(1.0 - pow((t - 0.45) / 0.55, 2.0), 0.0))
+		half = maxf(half, 0.012)
+		var forward: float = 0.014 * pow(1.0 - t, 2.0)
+		var top_row: Array = []
+		var bottom_row: Array = []
+
+		for c in range(-cols, cols + 1):
+			var u: float = float(c) / float(cols)
+			var y: float = forward + 0.014 * u * u
+			var thick: float = 0.004 + 0.006 * pow(absf(u), 6.0)
+			top_row.append(Vector3(x0 + length * t, y, u * half))
+			bottom_row.append(Vector3(x0 + length * t, y - thick, u * half))
+
+		top.append(top_row)
+		bottom.append(bottom_row)
+
+	var width: int = cols * 2 + 1
+	var last: int = top.size() - 1
+
+	for r in range(last):
+		for c in range(width - 1):
+			_plate_quad(tool, top[r][c], top[r + 1][c], top[r + 1][c + 1], top[r][c + 1], Vector3.UP)
+			_plate_quad(tool, bottom[r][c], bottom[r][c + 1], bottom[r + 1][c + 1], bottom[r + 1][c], Vector3.DOWN)
+
+		_plate_quad(tool, top[r][0], bottom[r][0], bottom[r + 1][0], top[r + 1][0], Vector3(0.0, 0.0, -1.0))              # the rolled edge, both sides
+		_plate_quad(tool, top[r][width - 1], top[r + 1][width - 1], bottom[r + 1][width - 1], bottom[r][width - 1], Vector3(0.0, 0.0, 1.0))
+
+	for c in range(width - 1):                                                                                           # the end of the piece
+		_plate_quad(tool, top[last][c], top[last][c + 1], bottom[last][c + 1], bottom[last][c], Vector3.RIGHT)
+
+		if with_root:
+			_plate_quad(tool, top[0][c], bottom[0][c], bottom[0][c + 1], top[0][c + 1], Vector3.LEFT)
+
+	tool.index()
+	tool.generate_normals()
+	var piece: ArrayMesh = tool.commit()
+	parts.append([piece, Transform3D(Basis.IDENTITY, Vector3.ZERO), color])
+
+	if metal:
+		_metal(parts, rough, metallic)
+
+
+# A quad a, b, c, d wound clockwise (Godot's front face) as seen from `outward` (two triangles).
+static func _plate_quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, outward: Vector3) -> void:
+	var normal: Vector3 = (b - a).cross(c - a) + (c - a).cross(d - a)
+	var order: Array = [a, c, b, a, d, c] if normal.dot(outward) >= 0.0 else [a, b, c, a, c, d]
+
+	for v in order:
+		tool.add_vertex(v)
+
+
 # A cylinder along x (radius `back` at -x, `front` at +x) centred at `at`: a smooth tapering haft or socket cone.
 static func _cyl_taper(parts: Array, back: float, front: float, length: float, at: Vector3, color: Color) -> void:
 	var cyl: CylinderMesh = CylinderMesh.new()
@@ -692,8 +743,8 @@ static func _torus(parts: Array, ring: float, tube: float, at: Vector3, color: C
 
 
 # Marks the part just added as metal: it goes on its own surface with the metallic material (the pickaxe head so far).
-static func _metal(parts: Array, rough: float = 0.4) -> void:
-	(parts[parts.size() - 1] as Array).append(rough)
+static func _metal(parts: Array, rough: float = 0.4, metallic: float = 0.8) -> void:
+	(parts[parts.size() - 1] as Array).append(Vector2(rough, metallic))
 
 
 static func _combine(parts: Array, size: float) -> ArrayMesh:
@@ -702,10 +753,10 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 
 	for part in parts:
 		if (part as Array).size() > 3:
-			var rough: float = part[3]
-			var group: Array = metal.get(rough, [])
+			var kind: Vector2 = part[3]
+			var group: Array = metal.get(kind, [])
 			group.append(part)
-			metal[rough] = group
+			metal[kind] = group
 		else:
 			plain.append(part)
 
@@ -715,9 +766,9 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(plain, size))
 		result.surface_set_material(0, _shared_material())
 
-	for rough in metal:
-		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(metal[rough], size))
-		result.surface_set_material(result.get_surface_count() - 1, _metal_material(rough))
+	for kind in metal:
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(metal[kind], size))
+		result.surface_set_material(result.get_surface_count() - 1, _metal_material((kind as Vector2).x, (kind as Vector2).y))
 
 	return result
 
@@ -729,7 +780,7 @@ static func _surface_arrays(parts: Array, size: float) -> Array:
 	var indices: PackedInt32Array = PackedInt32Array()
 
 	for part in parts:
-		var arrays: Array = (part[0] as PrimitiveMesh).get_mesh_arrays()
+		var arrays: Array = (part[0] as ArrayMesh).surface_get_arrays(0) if part[0] is ArrayMesh else (part[0] as PrimitiveMesh).get_mesh_arrays()
 		var xform: Transform3D = part[1]
 		var color: Color = part[2]
 		var first: int = vertices.size()
@@ -754,15 +805,17 @@ static func _surface_arrays(parts: Array, size: float) -> Array:
 
 
 # One shared metal material, built once: the vertex colour is the metal's colour, smooth and shiny.
-static func _metal_material(rough: float = 0.4) -> StandardMaterial3D:
-	if not _metal_mats.has(rough):
+static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> StandardMaterial3D:
+	var key: Vector2 = Vector2(rough, metallic)
+
+	if not _metal_mats.has(key):
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.vertex_color_use_as_albedo = true
-		material.metallic = 0.8
+		material.metallic = metallic
 		material.roughness = rough
-		_metal_mats[rough] = material
+		_metal_mats[key] = material
 
-	return _metal_mats[rough]
+	return _metal_mats[key]
 
 
 static func _shared_material() -> StandardMaterial3D:
