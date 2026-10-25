@@ -1,0 +1,10 @@
+# Action plan: settle swap thread-safety (branch claude/steve-settle-sweep)
+
+Left over from Steve_thread_safety.md ("Settle swap in clear_generated has the same shape and is NOT covered: note for the next sweep"). RESTART change, no protocol, no ground, no save change.
+Problem: server_block_store.clear_generated (main thread) does `settle.close(); settle = GroundSettle.new(); ... _open_settle()` while worker threads read `settle` (try_load in the block load, server_block_store.gd:285) and the edit path calls `settle.consider` (:516, under _edit_mutex), and the exit path `settle.close()` (:546). A worker holding a half-swapped or freed reference is the same signal-11 family as the cache swap.
+Fix (same shape as the cache): `_settle` is read through `_settle_now()` under `_mutex` into a local at each use; `set_settle(s)` is the only writer. clear_generated builds the NEW GroundSettle fully (open the new files) before publishing it with set_settle, then closes the OLD one afterwards (workers still holding it finish on their local; close() is already safe to call once, a second try_load on a closed settle returns -1 = replay the log, the same ground). Public name `settle` stays as a read-only property returning _settle_now() so terrain_server.gd's summary line and tests keep compiling.
+Test (headless): test_settle_swap.gd, 3 worker threads call try_load on a prepared block 200 times while the main thread swaps 100 times: no crash, every result is -1 or a valid upto, "Test done: N pass, N fail". Plus local_check (baseline 227), parse_scan, join and --test-respawn on the box (David3).
+Risk: low; one accessor and one reorder inside clear_generated.
+
+## Build notes (Tyler GO)
+server_block_store.gd: `_settle` private, `settle` is now a getter (a fresh reference under _mutex), `_settle_now()`, `set_settle()`, `_open_settle(target)`; clear_generated closes the old object, purges, opens a NEW one fully and only then publishes it; load_block takes one local reference. test_settle_swap.gd(+uid). Not run in Godot here.
