@@ -1,0 +1,5 @@
+HEAD=51f7bbd49193997045c4a475082837d9c881b708 (lake-4-3)
+bake exit 0 seconds 203
+  lake gate: tile 4,3, 2830 river cells in block interiors, 1742 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 5 skipped at a low lip
+  basins: 25 head ponds (9.0 ha), 0 lakes (0.0 ha, 0 of them the tile's guaranteed lake), 1 heads skipped (ground steeper than 20 deg)
+L43DONE
