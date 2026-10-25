@@ -39,8 +39,8 @@ Keep the numbers as they are (renumbering would touch digging.json tier_extra, h
 | tier | rung | stays / new |
 |---|---|---|
 | 1 | wooden or first tool | wooden hammer, hoe, spade; stone axe, stone knife (no wooden axe or knife exists, so these are the first rung); torch, rod, net |
-| 2 | stone | stone hammer, hoe, spade, adze (exist); **new:** stone pick, stone saw |
+| 2 | stone | stone hammer, hoe, spade (exist). No stone pick and no adze (Dave, EARLY_GAME_LIST 15); the saw has no stone rung (planks come from a sawmill, hand saw needs an iron blade) |
 | 3 | iron | iron hoe, spade (future), hand saw (exists); iron pick (future) |
 | 4 | steel | steel hoe, spade, pick (future) |
 
-Not done on purpose: no copper or bronze rung until Dave asks for one. New early tools (stone saw, stone pick, sickle, scythe, rake) each come as their own plan from the reserved block (items 267-299, recipes 170-199), with the name sent to Kathleen first.
+Not done on purpose: no copper or bronze rung until Dave asks for one. The stone adze stays retired. The only open early tools are sickle, scythe and rake: nothing in the design says what they do yet, so each waits for a use (plan sent) and then its own build from the reserved block (items 267-299, recipes 170-199), with the name sent to Kathleen first.
