@@ -201,3 +201,21 @@ NEW HEADS ON merge-793 690ee171 (25 Oct 05:55 UTC, Sonny rebased; sent to David3
 TORCH HEAD (25 Oct 06:55 UTC): claude/sal-torch-head c180a36fbc76c31bc3aa45b4c9897e2e4e51e249 (round 3; adds src/client/flame_up.gd, new small file, flame node keeps world-up; edit is no longer only inside _make_torch_model). Look-only, RUNTIME. Gate after Kathleen/Tyler pictures are judged; new .gd needs its .uid file committed (check at merge), parse_scan, warnings 233.
 
 PARALLEL GATE (25 Oct 07:25 UTC, BP-T77): Mike takes Sonny's merge-793 heads (bend-swing-fade 5dffc0de, ore-near-rivers 313a172b, river-ore-guarantee 372f3ef4, sonny-test-fixes 3908aca3, remove-old-builder 3a497531) while Dave's PC is free; David3 keeps hammer blueprints builds 1 and 2, torch, Sal B and C, Steve 45c994a3. If Dave starts playing, Mike stops and David3 takes the rest.
+
+## Tile lake guarantee (25 Oct 07:13 UTC)
+claude/tile-lake-guarantee 13d874260bf9909d803676d84ddb16233b7aede8, BAKE label, on merge-793 690ee171. Gate: test_tile_lakes + baseline. Queue: after river-ore-guarantee, before erosion v2 rebase.
+
+## Hash updates (25 Oct 07:14 UTC, Sonny via Moderator)
+- tile-lake-guarantee now 3a94898e04b1739d63b21b9a3147ae9c1d6529e3 (replaces 13d87426)
+- river-ore-guarantee now 1d3182cc46db4079f811649a90a970a5b9c15073 (replaces 372f3ef4, adds a .uid)
+Both gated by Mike. Steve inner-voice-panel: waiting on rebased hash (was cut from e178903b).
+
+MERGE-793 UPDATE (25 Oct 08:50 UTC): Sonny pushed claude/merge-793 c4257494d2e20681a6c9a6c6ef8d5b09392b104c = 690ee171 + bend-swing-fade 5dffc0de, ore-near-rivers 313a172b, river-ore-guarantee 1d3182cc (all Mike Windows gate PASS). Next on merge-793 (Sonny rebases on c4257494, Mike gates): sonny-test-fixes 3908aca3, tile-lake-guarantee 3a94898e, remove-old-builder 3a497531; then erosion v2 rebased. This session cannot push merge-793 (permission); Sonny merges there.
+
+SPEED-UP 3b (25 Oct 09:38 UTC): claude/generator-speedup-3b c8fae6e75481a8e01add03988f5cf491517cc440, David3 Linux PASS (test_gen_core 0 fail; settle md5 e35ba275; tiles (3,4) 17ac06e3 and (4,4) 8a3a4ffa byte-identical in no-cache, cache build, cache reuse; reuse 95 s from 375 s). Waits on Mike's Windows md5 (must start 4fc5650d). On match: merge into claude/merge-793 (this session cannot push there: Sonny pushes) and tell the Moderator the hash for the final nine-tile bake.
+
+MERGE-793 (25 Oct 09:50 UTC): claude/merge-793 = a542988356be5d0d481cb233fddb8e73220d8e70 (Sonny push: 3b c8fae6e7 + sonny-test-fixes + tile-lake-guarantee + remove-old-builder on c4257494). NOT yet in it: erosion v2 (4ae9a58a, rebase on c4257494 needed; v1 delta still ships otherwise). Tile lakes label BAKE. Final bake needs Dave's PC free and Dave's OK (standing order); logged flag to Moderator.
+
+MERGE-793 FINAL (25 Oct 09:55 UTC): claude/merge-793 = 11f363d9e7e698a8c8cea24d885e6bd81133f530 (supersedes a5429883): 3b, sonny-test-fixes, tile-lake-guarantee, remove-old-builder, erosion v2 (erosion_delta_v2.bin sha256 ac0df3cc..., v1 removed). Mike starts the nine-tile bake from it (BP-T69 threads 9, step down 6 then 4). TERRAIN_VERSION 42 bake; merge into generator-v2 only after bake results and David3 gates.
+
+BAKE 793 DONE (25 Oct 10:22 UTC): nine-tile bake settled: claude/mike-bake-793 f6bbca1d on merge-793 11f363d9; bake 382 s, settle 554 s, no errors. Sal spawn recheck x53316 z68476: 31.6 m, 3.7 deg, dry, water 104 m, hard rock 424 m (fallback not needed). Sonny: no terrain blocker; open: lake size (lake-size 113507a9), outlet notches. PLAN for merging merge-793 into generator-v2 (build 806+, TERRAIN_VERSION 42, protocol unchanged 78): (1) Sonny lake-size lands on merge-793, (2) Steve's four-warning fix and the merge-793 warnings (erosion_delta.gd 1, water_settler 2) cleared so local_check is 233, (3) David3 full gate on the merged head (tests, warnings, spawn probe, baked tile check, sha256 of erosion_delta_v2.bin ac0df3cc...), (4) Mike Windows load check of the baked tiles, (5) merge --no-ff the tested id into generator-v2, Dave steps: close game and Godot, Fetch+Pull, Reset terrain edits, Clear blocks (reload from server); HUD reads build N and ground v42. Final merge only with Dave's PC free (baked tiles are large; his Pull).
