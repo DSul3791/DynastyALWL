@@ -190,6 +190,7 @@ var _ground_quality: int = -1       # quality the ground texture array was built
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
+var shot_lock: bool = false              # true while the shot runner takes pictures: mouse look is ignored so the pose it sets stays
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -480,6 +481,8 @@ func _ready() -> void:
 			shot_runner.name = "ShotRunner"
 			add_child(shot_runner)
 			shot_runner.setup(self, OS.get_cmdline_user_args())
+			shot_lock = true   # a picture run: the mouse must not turn the player between the pose and the shot (tech/CAMERA_TURN_RECIPE.md)
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			break
 	var host: String = "127.0.0.1"
 	var port: int = 24600
@@ -2107,7 +2110,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	_viewer = viewer
 
 	if DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 
 
 # Applies the current quality preset to ground view distance, flora distances
@@ -2267,7 +2270,7 @@ func _set_menu(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_show_menu_page("main")
 	elif DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 
 
 # "Clear saved ground": this client drops its own saved copy and reloads the
@@ -2823,7 +2826,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		return
 
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
@@ -2837,7 +2840,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
 		pass
 	elif event is InputEventMouseButton and event.pressed:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventKey and not event.pressed and event.keycode == KEY_E and items != null:
 		items.release_e()
 	elif event is InputEventKey and event.pressed and not event.echo:
