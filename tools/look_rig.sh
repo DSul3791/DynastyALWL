@@ -86,7 +86,7 @@ T0=$(date +%s)
 SP=$!
 if [ -n "$WIN" ] && [ -z "$NOWINDOW" ]; then   # Dave 25 Oct: a visible window shows the server log live; it stays open after the run, the next run closes it first
   taskkill //F //FI "WINDOWTITLE eq Test server*" > /dev/null 2>&1
-  cmd //c start "Test server" powershell -NoExit -Command "\$host.UI.RawUI.WindowTitle='Test server'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")'" > /dev/null 2>&1
+  cmd //c start "Test server" powershell -NoExit -Command "\$host.UI.RawUI.WindowTitle='Test server'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")' -ErrorAction SilentlyContinue; Write-Host '--- run finished ---'" > /dev/null 2>&1
 fi
 trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 for _i in $(seq 1 60); do grep -q "listening" "$RIG/server.log" 2>/dev/null && break; sleep 0.5; done   # was a fixed sleep 30: go as soon as the server prints its listening line (30 s at most)
