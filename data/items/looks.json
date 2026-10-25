@@ -2006,6 +2006,30 @@
    "shape": "kit",
    "color": "#a88d5a",
    "size": 1.0
+  },
+  "wooden_bow": {
+   "shape": "shaft",
+   "color": "#a8804a",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "wooden_arrow": {
+   "shape": "shaft",
+   "color": "#d8b070",
+   "size": 0.5,
+   "placeholder": true
+  },
+  "stone_arrow": {
+   "shape": "shaft",
+   "color": "#b8bcc4",
+   "size": 0.5,
+   "placeholder": true
+  },
+  "quiver": {
+   "shape": "sack",
+   "color": "#6b4c31",
+   "size": 1.0,
+   "placeholder": true
   }
  }
 }

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 267,
+	"next_number": 273,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3042,6 +3042,55 @@
 			"description": "A thatch doorway with a hanging door.",
 			"kind": "structure",
 			"stack": 1,
+			"look_alikes": []
+		},
+		"wooden_bow": {
+			"number": 269,
+			"name": "Wooden bow",
+			"description": "A bow of bent wood and twine. It needs arrows.",
+			"kind": "weapon",
+			"weapon_class": "bow",
+			"tier": 1,
+			"durability": 400,
+			"repair": [["twine", 1]],
+			"stack": 1,
+			"value": 30,
+			"look_alikes": []
+		},
+		"wooden_arrow": {
+			"number": 270,
+			"name": "Wooden arrow",
+			"description": "A straight stick with a fire-hardened tip and feather fletching.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 5.0,
+			"tip": "wood",
+			"stack": 20,
+			"value": 2,
+			"look_alikes": []
+		},
+		"stone_arrow": {
+			"number": 271,
+			"name": "Stone arrow",
+			"description": "An arrow tipped with a flaked stone point.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 8.0,
+			"tip": "stone",
+			"stack": 20,
+			"value": 4,
+			"look_alikes": []
+		},
+		"quiver": {
+			"number": 272,
+			"name": "Quiver",
+			"description": "A hide tube worn on the back. Holds 40 arrows.",
+			"kind": "gear",
+			"slot": "back",
+			"ammo_class": "arrow",
+			"ammo_capacity": 40,
+			"stack": 1,
+			"value": 25,
 			"look_alikes": []
 		}
 	}

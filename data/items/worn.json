@@ -9,6 +9,7 @@
 		"hide_mittens": {"builder": "mittens", "color": "#5b3f28", "layer": 1},
 		"grass_skirt": {"builder": "skirt", "color": "#8aa04a", "layer": 1},
 		"fibre_sandals": {"builder": "sandals", "color": "#b8a468", "layer": 1},
-		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3}
+		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3},
+		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3}
 	}
 }
