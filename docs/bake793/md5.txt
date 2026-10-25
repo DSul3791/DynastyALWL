@@ -1,0 +1,10 @@
+bake of merge-793 11f363d9e7e698a8c8cea24d885e6bd81133f530, 9 tiles on 4 threads in 382.4 s, peak memory 3729 MB, whole process 554 s
+tile_2_3.tile
+tile_2_4.tile
+tile_2_5.tile
+tile_3_3.tile
+tile_3_4.tile
+tile_3_5.tile
+tile_4_3.tile
+tile_4_4.tile
+tile_4_5.tile
