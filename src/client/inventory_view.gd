@@ -2212,12 +2212,10 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
-	if station == "campfire":   # a lit campfire (state 1) within reach
+	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
 		for fire_id in _world:
 			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
 				return true
-
-		return false
 
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
@@ -3527,7 +3525,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit"]
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
 	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
 
 	for id in admin_ids:

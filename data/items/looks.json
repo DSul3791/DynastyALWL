@@ -19,7 +19,8 @@
   "spear": {
    "shape": "shaft",
    "color": "#b8bcc4",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "campfire_kit": {
    "shape": "kit",
@@ -34,7 +35,7 @@
   "stone_knife": {
    "shape": "knife",
    "color": "#8a8680",
-   "size": 1.0
+   "size": 1.35
   },
   "torch": {
    "shape": "torch",
@@ -90,7 +91,7 @@
   "wooden_spade": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.0
+   "size": 0.7
   },
   "lean_to_kit": {
    "shape": "kit",
@@ -189,9 +190,10 @@
    "size": 1.0
   },
   "wooden_hammer": {
-   "shape": "axe",
+   "shape": "hammer",
    "color": "#8a6a3a",
    "size": 1.0,
+   "bits": ["wood"],
    "placeholder": true
   },
   "stone_hammer": {
@@ -204,22 +206,25 @@
    "shape": "saw",
    "color": "#8a8d93",
    "size": 1.0,
+   "bits": ["metal","steel"],
    "placeholder": true
   },
   "stone_spade": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.0
+   "size": 0.7
   },
   "iron_spade": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.0
+   "size": 0.7,
+   "bits": ["metal"]
   },
   "steel_spade": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.0
+   "size": 0.7,
+   "bits": ["metal","steel"]
   },
   "bone": {
    "shape": "bone",
@@ -864,62 +869,68 @@
   "wooden_spade_medium": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.25
+   "size": 0.85
   },
   "wooden_spade_large": {
    "shape": "spade",
    "color": "#8a6a3a",
-   "size": 1.5
+   "size": 1.0
   },
   "stone_spade_medium": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.25
+   "size": 0.85
   },
   "stone_spade_large": {
    "shape": "spade",
    "color": "#7d7a74",
-   "size": 1.5
+   "size": 1.0
   },
   "iron_spade_medium": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.25
+   "size": 0.85,
+   "bits": ["metal"]
   },
   "iron_spade_large": {
    "shape": "spade",
    "color": "#6c6f75",
-   "size": 1.5
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "steel_spade_medium": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.25
+   "size": 0.85,
+   "bits": ["metal","steel"]
   },
   "steel_spade_large": {
    "shape": "spade",
    "color": "#9aa3ad",
-   "size": 1.5
+   "size": 1.0,
+   "bits": ["metal","steel"]
   },
   "wooden_hoe": {
    "shape": "hoe",
    "color": "#8a6a3a",
-   "size": 1.2
+   "size": 1.0
   },
   "stone_hoe": {
    "shape": "hoe",
    "color": "#7d7a74",
-   "size": 1.2
+   "size": 1.0
   },
   "iron_hoe": {
    "shape": "hoe",
    "color": "#6c6f75",
-   "size": 1.2
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "steel_hoe": {
    "shape": "hoe",
    "color": "#9aa3ad",
-   "size": 1.2
+   "size": 1.0,
+   "bits": ["metal","steel"]
   },
   "rough_plank": {
    "shape": "planks",
@@ -959,7 +970,8 @@
   "wooden_pin": {
    "shape": "rod",
    "color": "#a88255",
-   "size": 0.35
+   "size": 0.35,
+   "bits": ["pin"]
   },
   "wooden_block": {
    "shape": "block",
@@ -2006,6 +2018,48 @@
    "shape": "kit",
    "color": "#a88d5a",
    "size": 1.0
+  },
+  "wooden_bow": {
+   "shape": "bow",
+   "color": "#a8804a",
+   "size": 0.55
+  },
+  "wooden_arrow": {
+   "shape": "arrow",
+   "color": "#d8b070",
+   "size": 0.55
+  },
+  "stone_arrow": {
+   "shape": "arrow",
+   "color": "#b8bcc4",
+   "size": 0.55,
+   "bits": ["stone"]
+  },
+  "quiver": {
+   "shape": "quiver",
+   "color": "#6b4c31",
+   "size": 0.55
+  },
+  "oven_kit": {
+   "shape": "kit",
+   "color": "#8a5a42",
+   "size": 1.0
+  },
+  "flatbread": {
+   "shape": "loaf",
+   "color": "#d9b87a",
+   "size": 0.8
+  },
+  "honey_loaf": {
+   "shape": "loaf",
+   "color": "#c98a3c",
+   "size": 1.0
+  },
+  "roast_joint": {
+   "shape": "chunk",
+   "color": "#8a4a2a",
+   "size": 1.0
   }
+
  }
 }

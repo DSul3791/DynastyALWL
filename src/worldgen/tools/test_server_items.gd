@@ -2773,5 +2773,45 @@ func _init() -> void:
 	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
 	check(vent_sent.size() == 4, "a returning player gets the vent again")
 
+	# Bow, arrows and quiver (recipes 170-173): arrows and the quiver by hand, the bow only at a workbench
+	var bw_dir: String = "user://test_server_items_bow"
+	DirAccess.make_dir_recursive_absolute(bw_dir)
+
+	for file in DirAccess.get_files_at(bw_dir):
+		DirAccess.remove_absolute(bw_dir + "/" + file)
+
+	var bw = make(bw_dir)
+	bw.send_craft_queue = func(_p, _e, _l): pass
+	bw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	bw.peer_connected_hello(1, "bowitemskey1")
+	var bw_rec: Dictionary = {}
+
+	for rn in bw.recipes.numbers():
+		bw_rec[bw.recipes.recipe(rn)["id"]] = bw.recipes.recipe(rn)
+
+	for rid in ["wooden_bow", "wooden_arrow", "stone_arrow", "quiver"]:
+		check(bw_rec.has(rid) and bool(bw_rec[rid].get("known", false)), "%s is a recipe known from the start" % rid)
+
+	check(int(bw.table.entry("wooden_arrow").get("damage", 0)) == 5 and str(bw.table.entry("stone_arrow").get("tip", "")) == "stone", "arrows carry damage and tip")
+	bw.give(1, bw.table.number_of("stick"), 10)
+	bw.give(1, bw.table.number_of("feather"), 10)
+	bw.give(1, bw.table.number_of("stone"), 4)
+	bw.give(1, bw.table.number_of("twine"), 10)
+	bw.give(1, bw.table.number_of("hide"), 2)
+	bw._last_queue_act.clear()
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
+	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a workbench")
+
+	for rid in ["wooden_arrow", "stone_arrow", "quiver"]:
+		bw._last_queue_act.clear()
+		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, Vector3.ZERO)
+
+		for n in 80:
+			bw._craft_tick(0.25)
+
+	check(bw.inventory_of(1).count_of(bw.table.number_of("wooden_arrow")) == 4, "wooden arrows come four at a time by hand")
+	check(bw.inventory_of(1).count_of(bw.table.number_of("stone_arrow")) == 4, "stone arrows come four at a time by hand")
+	check(bw.inventory_of(1).count_of(bw.table.number_of("quiver")) == 1, "a quiver by hand")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

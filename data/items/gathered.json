@@ -16,7 +16,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 98
+			"familiarity": 98,
+			"description": "Oak nuts, bitter raw. Soaked and mashed they make a poor but filling food."
 		},
 		"aloe_gel": {
 			"number": 1001,
@@ -29,7 +30,8 @@
 				"Pilgrim's cup",
 				"Water mint"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Cool clear gel from a split aloe leaf. Soothes burns and sun-reddened skin."
 		},
 		"amadou": {
 			"number": 1002,
@@ -40,7 +42,8 @@
 				"Morel",
 				"Giant puffball"
 			],
-			"familiarity": 35
+			"familiarity": 35,
+			"description": "Soft felt peeled from a tinder fungus. Dried, it takes a spark and holds an ember."
 		},
 		"angelica_roots": {
 			"number": 1003,
@@ -53,7 +56,8 @@
 				"Meadowsweet",
 				"Valerian"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "A thick aromatic root of angelica. Chewed or steeped as a warming remedy."
 		},
 		"angelica_stems": {
 			"number": 1004,
@@ -66,7 +70,8 @@
 				"Meadowsweet",
 				"Valerian"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "Hollow green stems of angelica, sweet and sharp. Eaten fresh or candied."
 		},
 		"arnica_flowers": {
 			"number": 1005,
@@ -78,7 +83,8 @@
 				"St John's wort",
 				"Marrowroot"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Bright yellow mountain daisies. Their salve eases bruises; never eat them."
 		},
 		"banana_leaves": {
 			"number": 1006,
@@ -89,7 +95,8 @@
 				"Coconut palm",
 				"Date palm"
 			],
-			"familiarity": 90
+			"familiarity": 90,
+			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs."
 		},
 		"bananas": {
 			"number": 1007,
@@ -100,7 +107,8 @@
 				"Coconut palm",
 				"Date palm"
 			],
-			"familiarity": 90
+			"familiarity": 90,
+			"description": "Short sweet wild bananas, full of seeds. Ripe ones are soft and yellow."
 		},
 		"bedding": {
 			"number": 1009,
@@ -128,7 +136,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Small three-sided beech nuts in prickly husks. Eaten roasted or pressed for oil."
 		},
 		"belladonna_berries": {
 			"number": 1011,
@@ -143,7 +152,8 @@
 				"Sunberry",
 				"Sleetberry"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Shiny black berries of deadly nightshade. Poisonous: do not eat."
 		},
 		"belladonna_leaves": {
 			"number": 1012,
@@ -158,7 +168,8 @@
 				"Sunberry",
 				"Sleetberry"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Dull green leaves of deadly nightshade. Poisonous: a healer's herb at best."
 		},
 		"birch_bark": {
 			"number": 1013,
@@ -171,7 +182,8 @@
 				"Mirrorbark",
 				"Everember"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Papery white bark that peels in sheets. Burns even when damp; useful as tinder or for containers."
 		},
 		"blackberries": {
 			"number": 1014,
@@ -185,7 +197,8 @@
 				"Sunsilver vine",
 				"Tanglewort"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Dark juicy brambles berries, sweet when fully black. Eaten fresh or cooked."
 		},
 		"blueberries": {
 			"number": 1015,
@@ -200,7 +213,8 @@
 				"Sleetberry",
 				"Deadly nightshade"
 			],
-			"familiarity": 95
+			"familiarity": 95,
+			"description": "Small blue berries from low bushes. Sweet, and they stain the fingers."
 		},
 		"brinebells": {
 			"number": 1016,
@@ -211,7 +225,8 @@
 				"Quenchbell",
 				"Dewlantern"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Salt-loving shore flowers that ring like little bells. Chewed, they taste of the sea."
 		},
 		"burdock_roots": {
 			"number": 1017,
@@ -225,7 +240,8 @@
 				"Gloomthistle",
 				"Alpine flowers"
 			],
-			"familiarity": 50
+			"familiarity": 50,
+			"description": "A long dark taproot, earthy and sweet when cooked. Dug from disturbed ground."
 		},
 		"burrs": {
 			"number": 1018,
@@ -239,7 +255,8 @@
 				"Gloomthistle",
 				"Alpine flowers"
 			],
-			"familiarity": 50
+			"familiarity": 50,
+			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener."
 		},
 		"cactus_pads": {
 			"number": 1019,
@@ -250,7 +267,8 @@
 				"Cactus",
 				"Aloe"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water."
 		},
 		"chamomile_flowers": {
 			"number": 1020,
@@ -261,7 +279,8 @@
 				"Feverfew",
 				"Yarrow"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "Small white daisies with yellow centres. A calming tea."
 		},
 		"chanterelles": {
 			"number": 1021,
@@ -273,7 +292,8 @@
 				"Fly agaric",
 				"Mushrooms"
 			],
-			"familiarity": 55
+			"familiarity": 55,
+			"description": "Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods."
 		},
 		"charcoal_wood": {
 			"number": 1022,
@@ -288,7 +308,8 @@
 				"Willow",
 				"Hag willow"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Alder wood fit for burning down to charcoal. Hotter and cleaner than a wood fire."
 		},
 		"cherries": {
 			"number": 1023,
@@ -300,7 +321,8 @@
 				"Wild pear",
 				"Hawthorn"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Small dark wild cherries, tart. Eaten fresh, or pitted and cooked."
 		},
 		"cherry_wood": {
 			"number": 1024,
@@ -312,7 +334,8 @@
 				"Wild pear",
 				"Hawthorn"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Reddish close-grained wood of the wild cherry. Takes a polish; makes fine small work."
 		},
 		"chestnuts": {
 			"number": 1025,
@@ -326,7 +349,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 80
+			"familiarity": 80,
+			"description": "Glossy brown nuts in spiny husks. Roasted, they are sweet and starchy."
 		},
 		"cinderfoot_caps": {
 			"number": 1026,
@@ -339,7 +363,8 @@
 				"Mirrorcap",
 				"Fly agaric"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified."
 		},
 		"cloudberries": {
 			"number": 1027,
@@ -350,7 +375,8 @@
 				"Wild strawberry",
 				"Wild rose"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Amber northern berries on low bogs. Rare, tart and prized."
 		},
 		"coconuts": {
 			"number": 1028,
@@ -361,7 +387,8 @@
 				"Date palm",
 				"Wild banana"
 			],
-			"familiarity": 95
+			"familiarity": 95,
+			"description": "A heavy husked nut with sweet water inside. Crack it open to drink."
 		},
 		"comfrey_leaves": {
 			"number": 1029,
@@ -375,7 +402,8 @@
 				"Nettle",
 				"Mugwort"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "Rough hairy leaves of comfrey. Bruised and bound on sprains as a poultice."
 		},
 		"comfrey_roots": {
 			"number": 1030,
@@ -389,7 +417,8 @@
 				"Nettle",
 				"Mugwort"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating."
 		},
 		"crab_apples": {
 			"number": 1031,
@@ -401,7 +430,8 @@
 				"Wild cherry",
 				"Hawthorn"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Hard sour little apples. Cooked down with honey they are good."
 		},
 		"cranberries": {
 			"number": 1032,
@@ -416,7 +446,8 @@
 				"Sleetberry",
 				"Deadly nightshade"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Tart red berries of the bog. They keep a long time."
 		},
 		"crowberries": {
 			"number": 1033,
@@ -431,7 +462,8 @@
 				"Cranberry",
 				"Sunberry"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Black berries of low moorland shrubs. Watery and mild; better than nothing."
 		},
 		"dandelion_flowers": {
 			"number": 1034,
@@ -443,7 +475,8 @@
 				"St John's wort",
 				"Marrowroot"
 			],
-			"familiarity": 99
+			"familiarity": 99,
+			"description": "Bright yellow flower heads. Fried or steeped for tea."
 		},
 		"dandelion_leaves": {
 			"number": 1035,
@@ -455,7 +488,8 @@
 				"St John's wort",
 				"Marrowroot"
 			],
-			"familiarity": 99
+			"familiarity": 99,
+			"description": "Bitter toothed leaves. Eaten as a spring salad or boiled."
 		},
 		"dandelion_roots": {
 			"number": 1036,
@@ -467,7 +501,8 @@
 				"St John's wort",
 				"Marrowroot"
 			],
-			"familiarity": 99
+			"familiarity": 99,
+			"description": "A long pale taproot, bitter. Roasted and ground as a coffee, or boiled."
 		},
 		"dates": {
 			"number": 1037,
@@ -478,7 +513,8 @@
 				"Coconut palm",
 				"Wild banana"
 			],
-			"familiarity": 95
+			"familiarity": 95,
+			"description": "Sticky sweet dates from a date palm. They keep well and travel well."
 		},
 		"drakethorn_berries": {
 			"number": 1038,
@@ -489,7 +525,8 @@
 				"Blackthorn",
 				"Hawthorn"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Dark red berries on a thorny shrub said to grow where drakes have lain. Handle with care until identified."
 		},
 		"duskmallow_flowers": {
 			"number": 1039,
@@ -504,7 +541,8 @@
 				"Nightcrown",
 				"Mournbloom"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Soft violet blooms that open at dusk. Their scent is calming."
 		},
 		"duskmallow_roots": {
 			"number": 1040,
@@ -519,7 +557,8 @@
 				"Nightcrown",
 				"Mournbloom"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Pale roots of duskmallow, slimy when boiled. Soothes a sore throat."
 		},
 		"dye": {
 			"number": 1041,
@@ -533,7 +572,8 @@
 				"Gloomthistle",
 				"Burdock"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "A pot of plant colour pressed from flowers and roots. Stains cloth and wood."
 		},
 		"echo_moss": {
 			"number": 1042,
@@ -546,7 +586,8 @@
 				"Staunchmoss",
 				"Whisperfern"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Springy grey-green moss that seems to muffle sound around it. Grows in damp hollows."
 		},
 		"elderberries": {
 			"number": 1043,
@@ -558,7 +599,8 @@
 				"Hawthorn",
 				"Honeyspindle"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Dark purple berries in drooping clusters. Cooked, they are good; raw they upset the stomach."
 		},
 		"elderflowers": {
 			"number": 1044,
@@ -570,7 +612,8 @@
 				"Hawthorn",
 				"Honeyspindle"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial."
 		},
 		"emberroots": {
 			"number": 1045,
@@ -582,7 +625,8 @@
 				"Marrowroot",
 				"Wild carrot"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Red-brown roots that stay warm to the touch. Said to be good fuel and a hot spice."
 		},
 		"everember_needles": {
 			"number": 1046,
@@ -594,7 +638,8 @@
 				"Scots pine",
 				"Wardpine"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "Needles of the everember tree, dark green and resinous. They smoulder rather than burn."
 		},
 		"everember_sap": {
 			"number": 1047,
@@ -606,7 +651,8 @@
 				"Scots pine",
 				"Wardpine"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "A sticky amber sap that smells of warm spice. Burns slowly."
 		},
 		"everember_wood": {
 			"number": 1048,
@@ -618,7 +664,8 @@
 				"Scots pine",
 				"Wardpine"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "Dense dark wood of the everember, slow to burn and warm to hold."
 		},
 		"feverfew": {
 			"number": 1049,
@@ -629,7 +676,8 @@
 				"Chamomile",
 				"Yarrow"
 			],
-			"familiarity": 15
+			"familiarity": 15,
+			"description": "Small daisy-like flowers with bitter leaves. A headache remedy."
 		},
 		"fibre": {
 			"number": 1050,
@@ -655,7 +703,8 @@
 				"Whisperfern",
 				"Echo moss"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Tightly curled young fern fronds. Cooked, they taste green and nutty."
 		},
 		"fine_wood": {
 			"number": 1052,
@@ -669,7 +718,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Well-grown timber chosen for its grain. Makes quality lumber and furniture."
 		},
 		"fly_agaric_caps": {
 			"number": 1053,
@@ -684,7 +734,8 @@
 				"Lumencap",
 				"Mirrorcap"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Bright red caps with white flecks. Poisonous: do not eat."
 		},
 		"fodder": {
 			"number": 1054,
@@ -695,7 +746,8 @@
 				"Juniper",
 				"Sea buckthorn"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Coarse leaves and twigs that animals will eat. No good for people."
 		},
 		"food": {
 			"number": 1055,
@@ -707,7 +759,8 @@
 				"Porcini",
 				"Fly agaric"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Plain edible things gathered in the wild. Eat to stay on your feet."
 		},
 		"foxglove_leaves": {
 			"number": 1056,
@@ -719,7 +772,8 @@
 				"Burdock",
 				"Wolfsbane"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Soft downy leaves of foxglove. Poisonous: a heart medicine in the right hands."
 		},
 		"frostglass_petals": {
 			"number": 1057,
@@ -731,7 +785,8 @@
 				"Sevenyear lily",
 				"Stillwater lotus"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Clear glassy petals of an orchid that grows on the frozen slopes. Brittle and cold to touch."
 		},
 		"gloaming_star": {
 			"number": 1058,
@@ -743,7 +798,8 @@
 				"Sevenyear lily",
 				"Stillwater lotus"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "A pale star-shaped flower that glows faintly at dusk. Picked, it fades by morning."
 		},
 		"gloomthistle_down": {
 			"number": 1059,
@@ -754,7 +810,8 @@
 				"Burdock",
 				"Alpine flowers"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Dark grey thistle fluff, soft and light. Fills pillows and burns quick."
 		},
 		"gloomthistle_heads": {
 			"number": 1060,
@@ -765,7 +822,8 @@
 				"Burdock",
 				"Alpine flowers"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Spiny dark thistle heads. Handle with gloves."
 		},
 		"greens": {
 			"number": 1061,
@@ -776,7 +834,8 @@
 				"Mugwort",
 				"Comfrey"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Mixed wild leaves, nettle and the like. Boiled they are a plain green food."
 		},
 		"gum": {
 			"number": 1062,
@@ -787,7 +846,8 @@
 				"Tropical hardwood",
 				"Mangrove"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Sticky tree gum, hardened in lumps. Chewed, or used as glue."
 		},
 		"hagwillow_bark": {
 			"number": 1063,
@@ -798,7 +858,8 @@
 				"Willow",
 				"Alder"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Grey twisted bark of the hag willow, bitter. Steeped it eases aches."
 		},
 		"hagwillow_withies": {
 			"number": 1064,
@@ -809,7 +870,8 @@
 				"Willow",
 				"Alder"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Springy shoots of the hag willow. Woven into baskets and fences."
 		},
 		"hard_wood": {
 			"number": 1065,
@@ -824,7 +886,8 @@
 				"Elder",
 				"Honeyspindle"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Heavy dense wood, slow to cut. Makes strong tool handles and posts."
 		},
 		"hardwood": {
 			"number": 1066,
@@ -838,7 +901,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 98
+			"familiarity": 98,
+			"description": "Heavy timber from broadleaf trees such as oak and beech. Strong, and slow to burn."
 		},
 		"haws": {
 			"number": 1067,
@@ -853,7 +917,8 @@
 				"Elder",
 				"Honeyspindle"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Small red berries of the hawthorn, mealy and mild. Cooked into jelly."
 		},
 		"hawthorn_blossom": {
 			"number": 1068,
@@ -868,7 +933,8 @@
 				"Elder",
 				"Honeyspindle"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic."
 		},
 		"hazelnuts": {
 			"number": 1069,
@@ -880,7 +946,8 @@
 				"Hawthorn",
 				"Honeyspindle"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Round hard-shelled nuts. Crack and eat; they keep well."
 		},
 		"hearthwood_logs": {
 			"number": 1070,
@@ -894,7 +961,8 @@
 				"Walnut",
 				"Witness tree"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Heavy logs of the hearthwood tree, said to burn all night and never spit."
 		},
 		"heartroots": {
 			"number": 1071,
@@ -906,7 +974,8 @@
 				"Emberroot",
 				"Wild carrot"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Red knotted roots shaped like fists. A hardy food and a warming remedy."
 		},
 		"henbane_leaves": {
 			"number": 1072,
@@ -917,7 +986,8 @@
 				"Deadly nightshade",
 				"Mugwort"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Sticky hairy leaves of henbane. Poisonous: do not eat."
 		},
 		"henbane_seeds": {
 			"number": 1073,
@@ -928,7 +998,8 @@
 				"Deadly nightshade",
 				"Mugwort"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Tiny grey seeds from a henbane pod. Poisonous: do not eat."
 		},
 		"herbs": {
 			"number": 1074,
@@ -942,7 +1013,8 @@
 				"Gloomthistle",
 				"Burdock"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "A bundle of mixed wild herbs. Flavours food."
 		},
 		"honey_flowers": {
 			"number": 1075,
@@ -956,7 +1028,8 @@
 				"Lavender",
 				"Duskmallow"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Heather flowers heavy with nectar. Bees love them; so does a good honey."
 		},
 		"honeyspindle_nectar": {
 			"number": 1076,
@@ -968,7 +1041,8 @@
 				"Elder",
 				"Hawthorn"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "A sweet golden nectar drained from honeyspindle flowers. Sweetens any dish."
 		},
 		"honeyspindle_pods": {
 			"number": 1077,
@@ -980,7 +1054,8 @@
 				"Elder",
 				"Hawthorn"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Slim pods of the honeyspindle, full of sweet seed. Good to chew."
 		},
 		"hushfern_fronds": {
 			"number": 1078,
@@ -993,7 +1068,8 @@
 				"Whisperfern",
 				"Echo moss"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Soft grey fronds that deaden footfalls. Poisonous: do not eat."
 		},
 		"juniper_berries": {
 			"number": 1079,
@@ -1004,7 +1080,8 @@
 				"Gorse",
 				"Sea buckthorn"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Dark blue aromatic berries. Flavour meats and ferment drinks."
 		},
 		"kindling": {
 			"number": 1080,
@@ -1015,7 +1092,8 @@
 				"Juniper",
 				"Sea buckthorn"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Thin dry twigs and shavings that catch quickly. The start of any fire."
 		},
 		"lantern_dew": {
 			"number": 1081,
@@ -1029,7 +1107,8 @@
 				"Brinebell",
 				"Quenchbell"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Glowing drops collected from the dewlantern plant. Faintly lights a dark corner."
 		},
 		"lavender_flowers": {
 			"number": 1082,
@@ -1044,7 +1123,8 @@
 				"Heather",
 				"Alpine flowers"
 			],
-			"familiarity": 90
+			"familiarity": 90,
+			"description": "Purple flower spikes with a clean scent. Dried they sweeten linen."
 		},
 		"lingonberries": {
 			"number": 1084,
@@ -1059,7 +1139,8 @@
 				"Sleetberry",
 				"Deadly nightshade"
 			],
-			"familiarity": 65
+			"familiarity": 65,
+			"description": "Small tart red berries. Keep well and cook well."
 		},
 		"linseed": {
 			"number": 1085,
@@ -1071,7 +1152,8 @@
 				"Cotton grass",
 				"Ribwort plantain"
 			],
-			"familiarity": 55
+			"familiarity": 55,
+			"description": "Small shiny brown flax seeds, rich in oil. Eaten or pressed."
 		},
 		"lumencap_caps": {
 			"number": 1086,
@@ -1084,7 +1166,8 @@
 				"Cinderfoot",
 				"Fly agaric"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Pale mushroom caps that glow softly in the dark. Not for eating until identified."
 		},
 		"marjoram": {
 			"number": 1087,
@@ -1097,7 +1180,8 @@
 				"Wild thyme",
 				"Water mint"
 			],
-			"familiarity": 55
+			"familiarity": 55,
+			"description": "A sweet herb with oval leaves. Flavours meat and stews."
 		},
 		"marrowroots": {
 			"number": 1088,
@@ -1112,7 +1196,8 @@
 				"Emberroot",
 				"Wild carrot"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Fat pale roots as thick as a wrist. Cooked, they are soft and filling."
 		},
 		"meadowsweet_flowers": {
 			"number": 1089,
@@ -1125,7 +1210,8 @@
 				"Yarrow",
 				"Valerian"
 			],
-			"familiarity": 30
+			"familiarity": 30,
+			"description": "Frothy cream flowers smelling of honey and almonds. A mild remedy for aches."
 		},
 		"mint": {
 			"number": 1090,
@@ -1140,7 +1226,8 @@
 				"Dewlantern",
 				"Pilgrim's cup"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Fresh green leaves with a cool sharp scent. Flavours food and tea."
 		},
 		"mirrorbark_bark": {
 			"number": 1091,
@@ -1153,7 +1240,8 @@
 				"Rowan",
 				"Everember"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Smooth silver bark that gleams like a mirror in sunlight. Peels in bright sheets."
 		},
 		"mirrorbark_wood": {
 			"number": 1092,
@@ -1166,7 +1254,8 @@
 				"Rowan",
 				"Everember"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Fine pale wood from the mirrorbark tree. Takes a bright polish."
 		},
 		"mirrorcap_caps": {
 			"number": 1093,
@@ -1179,7 +1268,8 @@
 				"Cinderfoot",
 				"Fly agaric"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Shiny silver-grey mushroom caps. Not for eating until identified."
 		},
 		"morels": {
 			"number": 1094,
@@ -1190,7 +1280,8 @@
 				"Tinder fungus",
 				"Giant puffball"
 			],
-			"familiarity": 35
+			"familiarity": 35,
+			"description": "Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw."
 		},
 		"mournbloom_petals": {
 			"number": 1095,
@@ -1202,7 +1293,8 @@
 				"Nightcrown",
 				"Duskmallow"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Dark petals of the mournbloom, grown over old graves. Not for eating."
 		},
 		"mugwort": {
 			"number": 1096,
@@ -1215,7 +1307,8 @@
 				"Nettle",
 				"Comfrey"
 			],
-			"familiarity": 25
+			"familiarity": 25,
+			"description": "Grey-green leaves with a bitter smell. A hardy herb, steeped or burned."
 		},
 		"nightcrown_blooms": {
 			"number": 1097,
@@ -1227,7 +1320,8 @@
 				"Duskmallow",
 				"Mournbloom"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Large pale flowers that open only at night. Scent heavy and sweet."
 		},
 		"oil": {
 			"number": 1098,
@@ -1238,7 +1332,8 @@
 				"Juniper",
 				"Gorse"
 			],
-			"familiarity": 35
+			"familiarity": 35,
+			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple."
 		},
 		"owlpetals": {
 			"number": 1099,
@@ -1250,7 +1345,8 @@
 				"Duskmallow",
 				"Mournbloom"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Round pale petals marked like eyes. Said to help one see in the dark."
 		},
 		"palm_fronds": {
 			"number": 1100,
@@ -1261,7 +1357,8 @@
 				"Date palm",
 				"Wild banana"
 			],
-			"familiarity": 95
+			"familiarity": 95,
+			"description": "Long woody fronds. Woven into mats and roofs."
 		},
 		"palm_wood": {
 			"number": 1101,
@@ -1272,7 +1369,8 @@
 				"Date palm",
 				"Wild banana"
 			],
-			"familiarity": 95
+			"familiarity": 95,
+			"description": "Fibrous trunk wood of palms. Soft to cut, poor for fuel."
 		},
 		"pilgrims_cup_pitchers": {
 			"number": 1102,
@@ -1283,7 +1381,8 @@
 				"Aloe",
 				"Water mint"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "The cup-shaped leaves of the pilgrim's cup, holding rain. Pick one to drink from."
 		},
 		"pilgrims_cup_water": {
 			"number": 1103,
@@ -1294,7 +1393,8 @@
 				"Aloe",
 				"Water mint"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Clear rainwater held in a pilgrim's cup leaf. Safe enough to drink."
 		},
 		"pine_tar": {
 			"number": 1104,
@@ -1305,7 +1405,8 @@
 				"Spruce",
 				"Wardpine"
 			],
-			"familiarity": 93
+			"familiarity": 93,
+			"description": "Thick black tar boiled from pine. Seals roofs and soaks wood against rot."
 		},
 		"plantain_leaves": {
 			"number": 1105,
@@ -1317,7 +1418,8 @@
 				"Cotton grass",
 				"Wild flax"
 			],
-			"familiarity": 55
+			"familiarity": 55,
+			"description": "Broad ribbed leaves of the common plantain. Chewed and applied to stings and cuts."
 		},
 		"poles": {
 			"number": 1106,
@@ -1329,7 +1431,8 @@
 				"Hawthorn",
 				"Honeyspindle"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "Long straight shoots cut for fencing and frames. Strong and light."
 		},
 		"porcini": {
 			"number": 1107,
@@ -1341,7 +1444,8 @@
 				"Fly agaric",
 				"Mushrooms"
 			],
-			"familiarity": 55
+			"familiarity": 55,
+			"description": "Fat brown-capped mushrooms with a thick pale stem. A fine meal."
 		},
 		"potash": {
 			"number": 1108,
@@ -1352,7 +1456,8 @@
 				"Samphire",
 				"Tideglass weed"
 			],
-			"familiarity": 30
+			"familiarity": 30,
+			"description": "Grey ash of salt-bush, rich in lye. Used for soap and glass."
 		},
 		"prickly_pears": {
 			"number": 1109,
@@ -1363,7 +1468,8 @@
 				"Cactus",
 				"Aloe"
 			],
-			"familiarity": 85
+			"familiarity": 85,
+			"description": "Red-purple fruit of the prickly pear, covered in fine spines. Peel before eating."
 		},
 		"puffball": {
 			"number": 1110,
@@ -1374,7 +1480,8 @@
 				"Morel",
 				"Tinder fungus"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "A round white mushroom the size of a head. Sliced and fried; spoils in a day."
 		},
 		"quenchbell_heads": {
 			"number": 1111,
@@ -1385,7 +1492,8 @@
 				"Brinebell",
 				"Dewlantern"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Blue bell-shaped flower heads holding a mouthful of sweet water."
 		},
 		"raspberries": {
 			"number": 1112,
@@ -1399,7 +1507,8 @@
 				"Sunsilver vine",
 				"Tanglewort"
 			],
-			"familiarity": 96
+			"familiarity": 96,
+			"description": "Soft red berries that crumble when picked. Sweet when fully ripe."
 		},
 		"raspberry_leaves": {
 			"number": 1113,
@@ -1413,7 +1522,8 @@
 				"Sunsilver vine",
 				"Tanglewort"
 			],
-			"familiarity": 96
+			"familiarity": 96,
+			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea."
 		},
 		"reed_stems": {
 			"number": 1114,
@@ -1439,7 +1549,8 @@
 				"Spruce",
 				"Wardpine"
 			],
-			"familiarity": 93
+			"familiarity": 93,
+			"description": "Sticky sap from conifers, hardened into amber lumps. Burns hot, seals wood, and sticks things."
 		},
 		"rimecap_caps": {
 			"number": 1116,
@@ -1452,7 +1563,8 @@
 				"Cinderfoot",
 				"Fly agaric"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified."
 		},
 		"riverbraid_stems": {
 			"number": 1117,
@@ -1466,7 +1578,8 @@
 				"Tidecrown",
 				"Wispbloom"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Long flexible stems of a river plant, easily plaited into rope and baskets."
 		},
 		"rose_hips": {
 			"number": 1118,
@@ -1481,7 +1594,8 @@
 				"Tanglewort",
 				"Wild strawberry"
 			],
-			"familiarity": 93
+			"familiarity": 93,
+			"description": "Bright red seed pods of the wild rose. Tart and full of seeds; boiled into syrup."
 		},
 		"rose_petals": {
 			"number": 1119,
@@ -1496,7 +1610,8 @@
 				"Tanglewort",
 				"Wild strawberry"
 			],
-			"familiarity": 93
+			"familiarity": 93,
+			"description": "Soft pink wild rose petals. Scent a room or steep in water."
 		},
 		"rosemary": {
 			"number": 1120,
@@ -1509,7 +1624,8 @@
 				"Wild thyme",
 				"Truthsage"
 			],
-			"familiarity": 88
+			"familiarity": 88,
+			"description": "A woody herb with narrow needle-like leaves and a strong resinous scent."
 		},
 		"rowan_berries": {
 			"number": 1121,
@@ -1522,7 +1638,8 @@
 				"Mirrorbark",
 				"Everember"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Bright orange-red berries in clusters. Bitter raw; fine cooked into jelly."
 		},
 		"sage": {
 			"number": 1122,
@@ -1535,7 +1652,8 @@
 				"Wild thyme",
 				"Truthsage"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Soft grey-green leaves with a musky scent. Flavours meat and a remedy for sore throats."
 		},
 		"samphire": {
 			"number": 1123,
@@ -1546,7 +1664,8 @@
 				"Saltbush",
 				"Tideglass weed"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Crisp salty green shoots of the shore. Eaten fresh, or pickled."
 		},
 		"sap": {
 			"number": 1124,
@@ -1559,7 +1678,8 @@
 				"Mirrorbark",
 				"Everember"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Sweet watery sap tapped from a tree. Boils down to syrup."
 		},
 		"sea_buckthorn_berries": {
 			"number": 1125,
@@ -1570,7 +1690,8 @@
 				"Juniper",
 				"Gorse"
 			],
-			"familiarity": 35
+			"familiarity": 35,
+			"description": "Bright orange berries on thorny shore bushes. Sour and oily, rich in vitamins."
 		},
 		"seeds": {
 			"number": 1126,
@@ -1585,7 +1706,8 @@
 				"Heartroot",
 				"Marrowroot"
 			],
-			"familiarity": 65
+			"familiarity": 65,
+			"description": "A handful of plant seeds. Eaten, or sown in a patch."
 		},
 		"sevenyear_blossoms": {
 			"number": 1127,
@@ -1597,7 +1719,8 @@
 				"Frostglass orchid",
 				"Stillwater lotus"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Rare white lily blooms, they flower once in seven years. Treasured."
 		},
 		"sevenyear_bulbs": {
 			"number": 1128,
@@ -1609,7 +1732,8 @@
 				"Frostglass orchid",
 				"Stillwater lotus"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "A pale bulb of the sevenyear lily. Said to wait years for its season."
 		},
 		"sleetberries": {
 			"number": 1129,
@@ -1624,7 +1748,8 @@
 				"Sunberry",
 				"Deadly nightshade"
 			],
-			"familiarity": 70
+			"familiarity": 70,
+			"description": "Small blue-white berries that ripen after the first frost. Sharp and sweet."
 		},
 		"sloes": {
 			"number": 1130,
@@ -1639,7 +1764,8 @@
 				"Tanglewort",
 				"Drakethorn"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Small hard blue-black plums of the blackthorn. Very sour; ripe after frost."
 		},
 		"softwood": {
 			"number": 1131,
@@ -1650,7 +1776,8 @@
 				"Spruce",
 				"Wardpine"
 			],
-			"familiarity": 93
+			"familiarity": 93,
+			"description": "Light timber from pine, spruce and fir. Easy to work, fast to burn."
 		},
 		"sorrel_leaves": {
 			"number": 1132,
@@ -1664,7 +1791,8 @@
 				"Water mint",
 				"Dewlantern"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Sharp lemony arrow-shaped leaves. Eaten fresh or cooked into soup."
 		},
 		"spines": {
 			"number": 1133,
@@ -1675,7 +1803,8 @@
 				"Prickly pear",
 				"Aloe"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Long sharp cactus spines. Used as needles and pins."
 		},
 		"st_johns_wort": {
 			"number": 1134,
@@ -1687,7 +1816,8 @@
 				"Arnica",
 				"Marrowroot"
 			],
-			"familiarity": 30
+			"familiarity": 30,
+			"description": "Yellow star flowers with dotted leaves. Steeped for a gentle remedy."
 		},
 		"staunchmoss": {
 			"number": 1135,
@@ -1700,7 +1830,8 @@
 				"Whisperfern",
 				"Echo moss"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Soft spongy moss that stops bleeding when packed on a wound."
 		},
 		"stillwater_petals": {
 			"number": 1136,
@@ -1712,7 +1843,8 @@
 				"Frostglass orchid",
 				"Sevenyear lily"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Pale petals of the stillwater lotus. Float on calm pools."
 		},
 		"stillwater_seeds": {
 			"number": 1137,
@@ -1724,7 +1856,8 @@
 				"Frostglass orchid",
 				"Sevenyear lily"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Round seeds of the stillwater lotus. Eaten roasted; keep well."
 		},
 		"stormreed_stalks": {
 			"number": 1138,
@@ -1738,7 +1871,8 @@
 				"Tidecrown",
 				"Wispbloom"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Tough hollow stalks of a reed that sings in a gale. Strong and flexible."
 		},
 		"straw": {
 			"number": 1139,
@@ -1765,7 +1899,8 @@
 				"Cloudberry",
 				"Wild rose"
 			],
-			"familiarity": 96
+			"familiarity": 96,
+			"description": "Small sweet red wild strawberries. Better than any garden berry."
 		},
 		"stuffing": {
 			"number": 1141,
@@ -1793,7 +1928,8 @@
 				"Sleetberry",
 				"Deadly nightshade"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Warm golden berries that grow in full sun. Sweet and juicy."
 		},
 		"sunsilver_leaves": {
 			"number": 1143,
@@ -1807,7 +1943,8 @@
 				"Blackthorn",
 				"Tanglewort"
 			],
-			"familiarity": 8
+			"familiarity": 8,
+			"description": "Silvery leaves of a vine that catch the sun. Said to be a good tonic."
 		},
 		"tanglewort_vines": {
 			"number": 1144,
@@ -1821,7 +1958,8 @@
 				"Blackthorn",
 				"Sunsilver vine"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Long wiry vines that snare ankles. Strong cord when stripped and twisted."
 		},
 		"tannin_bark": {
 			"number": 1145,
@@ -1832,7 +1970,8 @@
 				"Acacia",
 				"Tropical hardwood"
 			],
-			"familiarity": 65
+			"familiarity": 65,
+			"description": "Bark rich in tannin. Used for tanning hides."
 		},
 		"thatch": {
 			"number": 1146,
@@ -1861,7 +2000,8 @@
 				"Sunsilver vine",
 				"Tanglewort"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Long thorny bramble canes. Used for fencing and snares."
 		},
 		"thorny_wood": {
 			"number": 1148,
@@ -1876,7 +2016,8 @@
 				"Tanglewort",
 				"Drakethorn"
 			],
-			"familiarity": 60
+			"familiarity": 60,
+			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles."
 		},
 		"thyme": {
 			"number": 1149,
@@ -1891,7 +2032,8 @@
 				"Wild marjoram",
 				"Water mint"
 			],
-			"familiarity": 72
+			"familiarity": 72,
+			"description": "A small tough herb with tiny leaves. A fine flavour for meat and fish."
 		},
 		"tidecrown_pearls": {
 			"number": 1150,
@@ -1905,7 +2047,8 @@
 				"Tall grass",
 				"Wispbloom"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "Smooth pearly beads that grow on a tidal plant. Pretty and valued."
 		},
 		"tideglass_fronds": {
 			"number": 1151,
@@ -1916,7 +2059,8 @@
 				"Saltbush",
 				"Samphire"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Clear glassy sea fronds found at the tide line. Brittle; dry to a salt crust."
 		},
 		"timber": {
 			"number": 1152,
@@ -1930,7 +2074,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 80
+			"familiarity": 80,
+			"description": "Rough cut trunk wood for building. Squared up it becomes lumber."
 		},
 		"tinder": {
 			"number": 1153,
@@ -1955,7 +2100,8 @@
 				"Porcini",
 				"Fly agaric"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "A woody hoof-shaped fungus. Its inner flesh takes a spark."
 		},
 		"truthsage_leaves": {
 			"number": 1155,
@@ -1968,7 +2114,8 @@
 				"Wild sage",
 				"Wild thyme"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Silver-grey leaves with a clean sharp smell. Said to loosen the tongue."
 		},
 		"valerian_roots": {
 			"number": 1156,
@@ -1981,7 +2128,8 @@
 				"Yarrow",
 				"Meadowsweet"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Strong-smelling pale roots. Steeped to calm the nerves and help sleep."
 		},
 		"walnut_husks": {
 			"number": 1157,
@@ -1995,7 +2143,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Green-black husks of the walnut. Stain the hands brown; used as dye."
 		},
 		"walnuts": {
 			"number": 1158,
@@ -2009,7 +2158,8 @@
 				"Witness tree",
 				"Hearthwood"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Wrinkled walnut kernels in hard shells. Rich and oily; keep well."
 		},
 		"wardpine_resin": {
 			"number": 1159,
@@ -2020,7 +2170,8 @@
 				"Scots pine",
 				"Spruce"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Sweet clean resin of the wardpine, believed to keep ill luck away."
 		},
 		"wardpine_wood": {
 			"number": 1160,
@@ -2031,7 +2182,8 @@
 				"Scots pine",
 				"Spruce"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Straight clean wood of the wardpine, light and strongly scented."
 		},
 		"water": {
 			"number": 1161,
@@ -2042,7 +2194,8 @@
 				"Prickly pear",
 				"Aloe"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Plain water, gathered in a container. Drink it or cook with it."
 		},
 		"watercress": {
 			"number": 1162,
@@ -2054,7 +2207,8 @@
 				"Water mint",
 				"Dewlantern"
 			],
-			"familiarity": 75
+			"familiarity": 75,
+			"description": "Peppery green leaves from running water. Eaten raw or in soup."
 		},
 		"whisperfern_fronds": {
 			"number": 1163,
@@ -2067,7 +2221,8 @@
 				"Staunchmoss",
 				"Echo moss"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Long fronds that rustle in still air. Said to hear secrets."
 		},
 		"wild_carrot_roots": {
 			"number": 1164,
@@ -2082,7 +2237,8 @@
 				"Heartroot",
 				"Marrowroot"
 			],
-			"familiarity": 65
+			"familiarity": 65,
+			"description": "Thin pale roots of wild carrot, tough but sweet. Cooked or chewed raw."
 		},
 		"wild_garlic_bulbs": {
 			"number": 1165,
@@ -2093,7 +2249,8 @@
 				"Sorrel",
 				"Wild marjoram"
 			],
-			"familiarity": 78
+			"familiarity": 78,
+			"description": "Small white bulbs with a sharp smell. Flavour any dish."
 		},
 		"wild_garlic_leaves": {
 			"number": 1166,
@@ -2104,7 +2261,8 @@
 				"Sorrel",
 				"Wild marjoram"
 			],
-			"familiarity": 78
+			"familiarity": 78,
+			"description": "Broad green leaves smelling strongly of garlic. Eaten raw or cooked in spring."
 		},
 		"wild_pears": {
 			"number": 1167,
@@ -2116,7 +2274,8 @@
 				"Wild cherry",
 				"Hawthorn"
 			],
-			"familiarity": 80
+			"familiarity": 80,
+			"description": "Small hard pears, gritty and sour. Better cooked."
 		},
 		"willow_bark": {
 			"number": 1168,
@@ -2127,7 +2286,8 @@
 				"Alder",
 				"Hag willow"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Grey-brown bark of willow, bitter. Steeped it eases pain and fever."
 		},
 		"wispbloom_heads": {
 			"number": 1169,
@@ -2141,7 +2301,8 @@
 				"Tall grass",
 				"Tidecrown"
 			],
-			"familiarity": 20
+			"familiarity": 20,
+			"description": "Light seed heads that float away at a breath. Drifts on the wind."
 		},
 		"withies": {
 			"number": 1170,
@@ -2152,7 +2313,8 @@
 				"Alder",
 				"Hag willow"
 			],
-			"familiarity": 92
+			"familiarity": 92,
+			"description": "Long thin willow shoots. Woven into baskets and hurdles."
 		},
 		"witness_bark": {
 			"number": 1171,
@@ -2166,7 +2328,8 @@
 				"Walnut",
 				"Hearthwood"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "Deep-furrowed bark of the witness tree, said to carry old marks and scars."
 		},
 		"witness_leaves": {
 			"number": 1172,
@@ -2180,7 +2343,8 @@
 				"Walnut",
 				"Hearthwood"
 			],
-			"familiarity": 3
+			"familiarity": 3,
+			"description": "Dark leathery leaves of the old witness tree. Not for eating."
 		},
 		"wolfsbane_roots": {
 			"number": 1173,
@@ -2192,7 +2356,8 @@
 				"Comfrey",
 				"Burdock"
 			],
-			"familiarity": 18
+			"familiarity": 18,
+			"description": "Dark turnip-like roots of wolfsbane. Poisonous: do not eat."
 		},
 		"wood": {
 			"number": 1174,
@@ -2205,7 +2370,8 @@
 				"Mirrorbark",
 				"Everember"
 			],
-			"familiarity": 97
+			"familiarity": 97,
+			"description": "Plain cut branches and trunk wood. Burns, or is worked into tools and frames."
 		},
 		"yarrow": {
 			"number": 1175,
@@ -2220,7 +2386,8 @@
 				"Chamomile",
 				"Feverfew"
 			],
-			"familiarity": 40
+			"familiarity": 40,
+			"description": "Feathery leaves and flat white flower heads. Packed on a wound to slow bleeding."
 		}
 	}
 }

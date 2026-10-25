@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 170,
+	"next_number": 177,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -1258,7 +1258,8 @@
 			"craft_s": 60.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 2
+			"station_level": 2,
+			"retired": true
 		},
 		"blacksmithy_kit": {
 			"number": 51,
@@ -1285,7 +1286,8 @@
 			"craft_s": 120.0,
 			"known": true,
 			"station": "workbench",
-			"station_level": 3
+			"station_level": 3,
+			"retired": true
 		},
 		"lumber_oak": {
 			"number": 52,
@@ -2696,10 +2698,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"floor_section_kit": {
 			"number": 120,
@@ -2720,10 +2719,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"roof_section_kit": {
 			"number": 121,
@@ -2748,10 +2744,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"foundation_section_kit": {
 			"number": 122,
@@ -2772,10 +2765,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"doorway_section_kit": {
 			"number": 123,
@@ -2796,10 +2786,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"window_section_kit": {
 			"number": 124,
@@ -2820,10 +2807,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"timber_prop_kit": {
 			"number": 125,
@@ -2869,10 +2853,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"cut_stone_block": {
 			"number": 127,
@@ -2951,10 +2932,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"station": "workbench",
-			"station_level": 1,
-			"retired": true
+			"known": true
 		},
 		"wooden_spade_medium": {
 			"number": 131,
@@ -3417,7 +3395,8 @@
 			"craft_s": 60.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"woodworking_table_kit": {
 			"number": 155,
@@ -3428,7 +3407,8 @@
 			"craft_s": 30.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"rock_pile": {
 			"number": 151,
@@ -3573,6 +3553,130 @@
 				2
 			],
 			"craft_s": 24.0,
+			"known": true
+		},
+		"wooden_bow": {
+			"number": 170,
+			"name": "Wooden bow",
+			"category": "Tools",
+			"needs": [
+				["stick", 2],
+				["twine", 3]
+			],
+			"gives": ["wooden_bow", 1],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"wooden_arrow": {
+			"number": 171,
+			"name": "Wooden arrow",
+			"category": "Tools",
+			"needs": [
+				["stick", 2],
+				["feather", 2]
+			],
+			"gives": ["wooden_arrow", 4],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"stone_arrow": {
+			"number": 172,
+			"name": "Stone arrow",
+			"category": "Tools",
+			"needs": [
+				["stick", 2],
+				["feather", 2],
+				["stone", 2]
+			],
+			"gives": ["stone_arrow", 4],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"quiver": {
+			"number": 173,
+			"name": "Quiver",
+			"category": "Clothing",
+			"needs": [
+				["hide", 2],
+				["twine", 2]
+			],
+			"gives": ["quiver", 1],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"cook_flatbread": {
+			"number": 174,
+			"name": "Flatbread",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seeds",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"flatbread",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_honey_loaf": {
+			"number": 175,
+			"name": "Honey loaf",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seeds",
+					3
+				],
+				[
+					"hazelnuts",
+					1
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"honey_loaf",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_roast_joint": {
+			"number": 176,
+			"name": "Rosemary joint",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"rosemary",
+					1
+				],
+				[
+					"wild_garlic_bulbs",
+					1
+				]
+			],
+			"gives": [
+				"roast_joint",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
 			"known": true
 		}
 	}

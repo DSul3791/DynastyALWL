@@ -230,6 +230,39 @@ func target_along(origin: Vector3, dir: Vector3, reach: float) -> int:
 	return best
 
 
+# The first animal whose chest sphere the segment from -> to passes through (a flying arrow): {"id", "at"} or {} when none. Hidden animals are skipped.
+func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_t: float = INF
+	var seg: Vector3 = to - from
+	var len2: float = maxf(seg.length_squared(), 0.000001)
+
+	for id in animals:
+		if int(animals[id]["state"]) == HIDDEN:
+			continue
+
+		var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+		var t: float = clampf((centre - from).dot(seg) / len2, 0.0, 1.0)
+		var r: float = float(species_def(str(animals[id]["sp"])).get("hit_radius_m", radius))
+
+		if (from + seg * t).distance_to(centre) <= r and t < best_t:
+			best_t = t
+			best = {"id": int(id), "at": animals[id]["pos"]}
+
+	return best
+
+
+# A loud noise: every animal within `radius` of the point that is not already running bolts away from it.
+func alarm_near(point: Vector3, radius: float) -> void:
+	for id in animals:
+		var a: Dictionary = animals[id]
+
+		if int(a["state"]) == HIDDEN or int(a["state"]) == FLEE or int(a["state"]) >= WARN or a["pos"].distance_to(point) > radius or a.has("pack"):
+			continue
+
+		_bolt(a, point, species_def(str(a["sp"])))
+
+
 func _graze_time(def: Dictionary) -> float:
 	var span: Array = def.get("graze_s", [3.0, 10.0])
 	return rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how long an animal grazes
@@ -708,6 +741,11 @@ func _to_burrow(a: Dictionary, away: Vector2, def: Dictionary) -> void:
 func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int) -> float:
 	var sen: Dictionary = cfg.get("senses", {})
 	var f: float = 1.0
+
+	# Stances 4 and 5 are lying on a covered rough bed and lying in a closed room (server_items.peer_stances, bed.json): lying, and harder to sense.
+	if stance >= 4:
+		f *= float(sen.get("bed_mult", 0.7)) if stance == 4 else float(sen.get("hidden_mult", 0.05))
+		stance = 3
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d

@@ -1646,3 +1646,63 @@ Answered: 2026-10-25 00:15 UTC
 Answer: No: I’m not able to test this right now however it is in the works for you to have a system to allow you to check them yourself soon
 Answered: 2026-10-25 00:23 UTC
 
+## early-tools-uses | Add a wooden rake and a stone sickle for farming (iron scythe later)?
+Answer: No: We use the hoe for everything farming
+Answered: 2026-10-25 13:49 UTC
+
+## early-tools-uses | Add a wooden rake and a stone sickle for farming (iron scythe later)?
+Answer: No: We use the hoe for everything farming
+Answered: 2026-10-25 13:49 UTC
+
+## trim-a | Item trim A: Spade sizes: one spade per material (cut 8)
+Answer: Yes
+Answered: 2026-10-25 13:49 UTC
+
+## trim-b | Item trim B: Duplicate tools: one hammer, no vice, no needle (merge 4; wooden bowl KEPT per Dave)
+Answer: Yes
+Answered: 2026-10-25 13:50 UTC
+
+## trim-c | Item trim C: Wood chain: one Lumber and one Beam, species kept as a tag (cut 15)
+Answer: Yes
+Answered: 2026-10-25 13:50 UTC
+
+## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins (cut 5; driftwood KEPT per Dave)
+Answer: No: I think we need shingles and cobblestones
+Answered: 2026-10-25 13:53 UTC
+
+## trim-f | Item trim F: Forges: one forge with upgrades; no tongs, bellows, anvil (merge 3)
+Answer: No: Technically, a Forge is the furnace plus the anvil you have to have both. So the model should have both of them in it and then you can upgrade it.
+Answered: 2026-10-25 13:54 UTC
+
+## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
+Answer: No: We need coins and we need clothing so breakdown the list of clothing and resubmit the list for clothing
+Answered: 2026-10-25 13:55 UTC
+
+## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
+Answer: No: We need coins and we need clothing so breakdown the list of clothing and resubmit the list for clothing
+Answered: 2026-10-25 13:55 UTC
+
+## trim-i | Item trim I: New tools: keep scythe, sickle merges in, no rake, no shears yet
+Answer: No: Yes, go with the scythe the nice big old-fashioned one and have a hand sickle
+Answered: 2026-10-25 13:56 UTC
+
+## trim-i | Item trim I: New tools: keep scythe, sickle merges in, no rake, no shears yet
+Answer: No: Yes, go with the scythe the nice big old-fashioned one and have a hand sickle
+Answered: 2026-10-25 13:56 UTC
+
+## trim-g | Item trim G: Building pieces: one set, material is a setting (merge 8)
+Answer: No: I’m not sure what this means
+Answered: 2026-10-25 13:56 UTC
+
+## trim-g | Item trim G: Building pieces: one set, material is a setting (merge 8)
+Answer: No: I’m not sure what this means
+Answered: 2026-10-25 13:56 UTC
+
+## trim-e | Item trim E: Food and drink: herbal tea, medicine, energy bar, nut paste (cut 4)
+Answer: No: No, we want a nice well-rounded plethora of items that we can use for food and give people who like cooking and creating foods something to do in a reason for farming and gathering
+Answered: 2026-10-25 13:57 UTC
+
+## trim-e | Item trim E: Food and drink: herbal tea, medicine, energy bar, nut paste (cut 4)
+Answer: No: No, we want a nice well-rounded plethora of items that we can use for food and give people who like cooking and creating foods something to do in a reason for farming and gathering
+Answered: 2026-10-25 13:57 UTC
+

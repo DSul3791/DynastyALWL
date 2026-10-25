@@ -29,7 +29,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null) -> void:
 		for id in parsed.get("blueprints", {}):
 			var row: Dictionary = parsed["blueprints"][id].duplicate()
 
-			if not bool(row.get("known", true)) or not kinds.has(str(row["structure"])):
+			if bool(row.get("retired", false)) or not bool(row.get("known", true)) or not kinds.has(str(row["structure"])):
 				continue
 
 			row["id"] = id

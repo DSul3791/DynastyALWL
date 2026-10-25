@@ -1,0 +1,33 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+seam (2, 3) | (3, 3): 37 edge cells changed
+seam (2, 3) | (2, 4): 0 edge cells changed
+seam (3, 3) | (4, 3): 0 edge cells changed
+seam (3, 3) | (3, 4): 0 edge cells changed
+seam (4, 3) | (4, 4): 0 edge cells changed
+seam (2, 4) | (3, 4): 0 edge cells changed
+seam (2, 4) | (2, 5): 0 edge cells changed
+seam (3, 4) | (4, 4): 26 edge cells changed
+seam (3, 4) | (3, 5): 11 edge cells changed
+seam (4, 4) | (4, 5): 14 edge cells changed
+seam (2, 5) | (3, 5): 0 edge cells changed
+seam (3, 5) | (4, 5): 22 edge cells changed
+seam (2, 3) | (3, 3): 0 edge cells changed
+seam (2, 3) | (2, 4): 0 edge cells changed
+seam (3, 3) | (4, 3): 0 edge cells changed
+seam (3, 3) | (3, 4): 0 edge cells changed
+seam (4, 3) | (4, 4): 0 edge cells changed
+seam (2, 4) | (3, 4): 0 edge cells changed
+seam (2, 4) | (2, 5): 0 edge cells changed
+seam (3, 4) | (4, 4): 0 edge cells changed
+seam (3, 4) | (3, 5): 0 edge cells changed
+seam (4, 4) | (4, 5): 0 edge cells changed
+seam (2, 5) | (3, 5): 0 edge cells changed
+seam (3, 5) | (4, 5): 0 edge cells changed
+saved tile (2, 3): 2289 wet cells
+saved tile (3, 3): 40992 wet cells
+saved tile (3, 4): 89786 wet cells
+saved tile (4, 4): 11602 wet cells
+saved tile (3, 5): 2763 wet cells
+saved tile (4, 5): 74280 wet cells
+stitch done: 9 tiles read, 110 edge cells changed in 6 tiles

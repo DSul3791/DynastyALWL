@@ -63,110 +63,155 @@ func _init() -> void:
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))
 	var recipes: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"]
+	var live: Dictionary = {}
 	var numbers: Dictionary = {}
 
-	# Data: each blueprint costs exactly what its retired kit recipe did, the recipe is retired, the number is its own.
+	# Data: each live blueprint costs what its retired kit recipe did, the recipe is retired, the number is its own.
 	for id in parsed["blueprints"]:
 		var row: Dictionary = parsed["blueprints"][id]
 		check(not numbers.has(int(row["number"])) and int(row["number"]) < int(parsed["next_number"]), "%s: blueprint number is its own and below next_number" % id)
 		numbers[int(row["number"])] = true
+
+		if bool(row.get("retired", false)):
+			check(not bool(recipes[str(row["recipe"])].get("retired", false)), "%s: the hand-made recipe is live again (fine wood or lower is by hand)" % id)
+			continue
+
+		live[id] = row
 		check(items._structures.has(str(row["structure"])), "%s: names a structure" % id)
+
+		if not row.has("recipe"):   # the clay hearth and the oven never had a kit recipe
+			continue
+
 		var recipe: Dictionary = recipes[str(row["recipe"])]
 		check(bool(recipe.get("retired", false)), "%s: kit recipe %d is retired, not removed" % [id, int(recipe["number"])])
 		check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
-		check(items.recipes.number_of_id(str(row["recipe"])) == 0 if items.recipes.has_method("number_of_id") else true, "%s: kit recipe is not craftable" % id)
 
-	check(parsed["blueprints"].size() == 8, "build 1: six section kits, the timber set and the ladder (%d)" % parsed["blueprints"].size())
-	check(not parsed["blueprints"].has("lean_to") and not parsed["blueprints"].has("rough_bed") and not parsed["blueprints"].has("thatch_wall") and not parsed["blueprints"].has("chest"), "nothing in the first tier is a blueprint")
+	check(live.size() == 6 and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations and the cooking tiers are the blueprints (%d)" % live.size())
 
-	# Place: needs a hammer of the row's tier and every material; a short pack takes nothing.
-	var wall: Dictionary = parsed["blueprints"]["wall_section"]
-	var spot: Vector3 = Vector3(200.0, 10.0, 202.0)
+	# Fine wood and lower are made by hand, no station: the section pieces, the foundation, the timber set, the ladder (and the thatch four).
+	for kit in ["wall_section_kit", "floor_section_kit", "roof_section_kit", "foundation_section_kit", "doorway_section_kit", "window_section_kit", "timber_set_kit", "ladder_kit"]:
+		var made: Dictionary = recipes[kit]
+		check(not bool(made.get("retired", false)) and str(made.get("station", "")) == "" and bool(made.get("known", false)), "%s: a hand craft known from the start" % kit)
+
+	# Place: a hammer, the station near at its level, every material; a short pack takes nothing.
+	var table_bp: Dictionary = live["woodworking_table"]
+	var spot: Vector3 = Vector3(200.0, 10.0, 205.0)
+	items.report_position(1, Vector3(200.0, 10.0, 204.0))
 	_clear(1)
 	var before: int = items.world_item_count()
-	_give(1, "lumber", 4)
-	_give(1, "twine", 1)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 4, "no hammer: nothing placed, nothing taken")
+	_give(1, "lumber", 12)
+	_give(1, "nails", 60)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
+	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no hammer: nothing placed, nothing taken")
 	_give(1, "wooden_hammer", 1)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before + 1 and _have(1, "lumber") == 0, "a wooden hammer is enough (tier 1 default)")
-	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
-	check(_have(1, "lumber") == 4, "taken down again for the next steps")
-	# A row can ask for a better hammer (data field per row).
-	items._blueprints[int(wall["number"])]["hammer"] = 2
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 4, "a row with hammer 2 refuses the wooden hammer")
-	items._blueprints[int(wall["number"])]["hammer"] = 1
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
+	check(items.world_item_count() == before and _have(1, "lumber") == 12, "no workbench near: nothing placed, nothing taken")
+	_give(1, "log_workbench_kit", 1)
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("log_workbench_kit")), 0, 0, Vector3(200.0, 10.0, 202.0))
+	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
 	_clear(1)
-	_give(1, "stone_hammer", 1)
-	_give(1, "lumber", 3)
-	_give(1, "twine", 1)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 3 and _have(1, "twine") == 1, "a short pack places nothing and takes nothing")
-	_give(1, "lumber", 2)
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before + 1 and _ids_standing("wall_section").size() == 1, "with the hammer and the materials the wall stands")
-	check(_have(1, "lumber") == 1 and _have(1, "twine") == 0 and _have(1, "wall_section_kit") == 0, "exactly the materials were taken, no kit item (lumber %d, twine %d)" % [_have(1, "lumber"), _have(1, "twine")])
-	check(_have(1, "stone_hammer") == 1, "the hammer is kept")
+	_give(1, "wooden_hammer", 1)
+	_give(1, "lumber", 11)
+	_give(1, "nails", 60)
+	var with_bench: int = items.world_item_count()
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
+	check(items.world_item_count() == with_bench and _have(1, "lumber") == 11 and _have(1, "nails") == 60, "a short pack places nothing and takes nothing")
+	_give(1, "lumber", 1)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
+	check(items.world_item_count() == with_bench + 1 and _ids_standing("woodworking_table").size() == 1, "with the hammer, the bench and the materials the table stands")
+	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "woodworking_table_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
-	# A blocked spot takes nothing (over water).
-	_give(1, "twine", 1)
-	_give(1, "lumber", 3)
-	var lumber_before: int = _have(1, "lumber")
-	items.water_depth_at = func(_pos: Vector3) -> float: return 1.0
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, Vector3(204.0, 10.0, 204.0))
-	items.water_depth_at = func(_pos: Vector3) -> float: return 0.0
-	check(_ids_standing("wall_section").size() == 1 and _have(1, "lumber") == lumber_before and _have(1, "twine") == 1, "a blocked spot takes nothing")
+	# A station level the bench cannot give: the blacksmithy needs level 4, the log workbench is level 2.
+	var smith: Dictionary = live["blacksmithy"]
+	_give(1, "stone", 30)
+	_give(1, "log", 10)
+	_give(1, "clay", 10)
+	var smith_before: int = items.world_item_count()
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(smith["number"]), 0, 0, Vector3(204.0, 10.0, 205.0))
+	check(items.world_item_count() == smith_before and _have(1, "stone") == 30, "a bench of too low a level places nothing and takes nothing")
+
+	# Row hammer tier: a row asking for hammer 2 refuses the wooden hammer.
+	items._blueprints[int(table_bp["number"])]["hammer"] = 2
+	_give(1, "lumber", 12)
+	_give(1, "nails", 60)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
+	check(_ids_standing("woodworking_table").size() == 1 and _have(1, "lumber") == 12, "a row with hammer 2 refuses the wooden hammer")
+	items._blueprints[int(table_bp["number"])]["hammer"] = 1
 
 	# Take down: every material back, no kit.
-	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("wall_section").is_empty() and _have(1, "lumber") == lumber_before + 4 and _have(1, "twine") == 2 and _have(1, "wall_section_kit") == 0, "taking it down gives the materials back (lumber %d, twine %d)" % [_have(1, "lumber"), _have(1, "twine")])
+	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("woodworking_table").is_empty() and _have(1, "lumber") == 24 and _have(1, "nails") == 120 and _have(1, "woodworking_table_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d)" % [_have(1, "lumber"), _have(1, "nails")])
 
-	# An old kit still places, and takes down into the materials.
+	# An old kit still places and takes down into a kit (the old way), and a by-hand piece takes down into its piece.
 	_clear(1)
 	_give(1, "wall_section_kit", 1)
-	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, spot)
-	check(_ids_standing("wall_section").size() == 1 and _have(1, "wall_section_kit") == 0, "an old kit item still places")
+	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("wall_section_kit")), 0, 0, Vector3(200.0, 10.0, 207.0))
+	check(_ids_standing("wall_section").size() == 1 and _have(1, "wall_section_kit") == 0, "a hand-made wall piece places")
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
-	check(_have(1, "lumber") == 4 and _have(1, "twine") == 1, "a kit-placed wall takes down into its materials")
+	check(_have(1, "wall_section_kit") == 1, "and takes down into the piece, no blueprint refund")
 
-	# Every blueprint places with its own materials (a stone hammer, a foundation under what needs one is not required for these).
-	var spots: Dictionary = {"wall_section": 0, "floor_section": 1, "roof_section": 2, "foundation_section": 3, "doorway_section": 4, "window_section": 5, "timber_set": 6, "ladder": 7}
-
-	items.report_position(1, Vector3(200.0, 10.0, 210.0))
-
-	for id in parsed["blueprints"]:
-		var row: Dictionary = parsed["blueprints"][id]
-		_clear(1)
-		_give(1, "stone_hammer", 1)
-
-		for need in row["cost"]:
-			_give(1, str(need[0]), int(need[1]))
-
-		var at: Vector3 = Vector3(195.5 + 3.0 * float(spots[id] % 4), 10.0, 208.0 + 4.0 * float(spots[id] / 4))
-		var standing: int = _ids_standing(str(row["structure"])).size()
-		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(row["number"]), 0, 0, at)
-		check(_ids_standing(str(row["structure"])).size() == standing + 1, "%s places from the hammer" % id)
-
-		for need in row["cost"]:
-			check(_have(1, str(need[0])) == 0, "%s: %s all taken" % [id, str(need[0])])
-
-	# Takedown into a full pack keeps the piece.
-	var ladder_ids: Array = _ids_standing("ladder")
-	check(not ladder_ids.is_empty(), "a ladder stands to take down")
+	# Takedown into a full pack keeps the blueprint piece.
 	_clear(1)
+	_give(1, "wooden_hammer", 1)
+	_give(1, "lumber", 12)
+	_give(1, "nails", 60)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
+	check(_ids_standing("woodworking_table").size() == 1, "the table stands again")
 	var inv = items.inventory_of(1)
 
 	for slot in range(inv.SLOTS):
 		inv.numbers[slot] = items.table.number_of("stone")
 		inv.counts[slot] = items.table.stack_of(items.table.number_of("stone"))
 
-	if ladder_ids.is_empty():
-		ladder_ids.append(0)
+	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("woodworking_table").size() == 1, "a full pack: the table stays up, nothing is lost")
 
-	items.action(1, Net.ACT_PICKUP, ladder_ids[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("ladder").size() == ladder_ids.size(), "a full pack: the ladder stays up, nothing is lost")
+	# Clay hearth (13) and oven (14): hammer blueprints; the oven needs a hearth within reach; the tiers cook what the lower tier cooks.
+	_clear(1)
+	_give(1, "wooden_hammer", 1)
+	_give(1, "brick", 24)
+	_give(1, "clay", 10)
+	_give(1, "stone", 8)
+	items.report_position(1, Vector3(230.0, 10.0, 230.0))
+	var oven_bp: Dictionary = live["oven"]
+	var hearth_bp: Dictionary = live["clay_hearth"]
+	check(int(hearth_bp["number"]) == 13 and int(oven_bp["number"]) == 14, "hearth is blueprint 13, oven 14")
+	var oven_before: int = items.world_item_count()
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
+	check(items.world_item_count() == oven_before and _have(1, "brick") == 24, "an oven without a hearth near places nothing and takes nothing")
+	check(not items.station_near(1, "campfire"), "no fire, no hearth: nothing cooks")
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(hearth_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
+	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 4, "the hearth stands for 10 brick, 6 clay, 4 stone")
+	check(items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire") and not items.station_near(1, "oven", 3), "a hearth cooks what a campfire cooks, not oven dishes")
+	var dish_nums: Dictionary = {}
+
+	for rn in items.recipes.numbers():
+		dish_nums[str(items.recipes.recipe(rn)["id"])] = rn
+
+	check(str(items.recipes.recipe(dish_nums["cook_flatbread"]).get("station", "")) == "clay_hearth" and str(items.recipes.recipe(dish_nums["cook_honey_loaf"]).get("station", "")) == "oven", "the new dishes name their station")
+	_give(1, "seeds", 6)
+	_give(1, "water", 2)
+	_give(1, "hazelnuts", 1)
+	_give(1, "honeyspindle_nectar", 1)
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	check(items.craft_queue_of(1).is_empty(), "a honey loaf is refused at a hearth (oven dish)")
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_flatbread"]), 0, 1, Vector3.ZERO)
+	check(not items.craft_queue_of(1).is_empty(), "flatbread is accepted at a hearth")
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	_give(1, "brick", 10)
+	_give(1, "clay", 6)
+	_give(1, "stone", 4)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(234.0, 10.0, 230.0))
+	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven stands for 24 brick, 10 clay, 8 stone")
+	check(items.station_near(1, "oven", 3) and items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire"), "an oven cooks what a hearth and a campfire cook")
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	check(not items.craft_queue_of(1).is_empty(), "a honey loaf is accepted at the oven")
+	items.report_position(1, Vector3(233.0, 10.0, 231.0))
+	items.action(1, Net.ACT_PICKUP, _ids_standing("oven")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("oven").is_empty() and _have(1, "brick") == 24 and _have(1, "oven_kit") == 0, "taking the oven down gives the materials back")
 
 	# Save and load: placed pieces come back.
 	items.save()
@@ -177,6 +222,6 @@ func _init() -> void:
 	again.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	again.ground_height = func(_x, _z): return 10.0
 	again.setup(ItemTableScript.load_default(), dir)
-	check(again.world_item_count() == items.world_item_count(), "an old-style save with blueprint pieces loads")
+	check(again.world_item_count() == items.world_item_count(), "a save with blueprint pieces loads")
 	print("test_blueprints: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
