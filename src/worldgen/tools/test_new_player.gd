@@ -65,15 +65,8 @@ func _init() -> void:
 	var table = ItemTableScript.load_default()
 	var recipes = RecipeScript.load_default(table)
 	check(recipes.open_unknown.is_empty(), "every id in open_recipes.json is a recipe: %s" % str(recipes.open_unknown))
-	var opened: bool = false
-
-	for number in recipes.numbers():
-		var row: Dictionary = recipes.recipe(number)
-
-		if str(row.get("id", "")) == "foundation_section_kit":
-			opened = bool(row.get("known", false))
-
-	check(opened, "foundation_section_kit is known from the start")
+	var blueprints: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]
+	check(bool(blueprints["foundation_section"].get("known", false)), "the foundation blueprint is known from the start (it was an open kit recipe)")
 
 	if failures == 0:
 		print("Test done: all pass")
