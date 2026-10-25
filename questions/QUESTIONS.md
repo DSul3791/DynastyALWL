@@ -23,8 +23,3 @@ Note: Recommendation: Yes it is better: ground now has photo detail, bumps and a
 Note: Full list: design/ITEM_TRIM_LIST.md group E. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
-
-## trim-g | Item trim G: Building pieces: one set, material is a setting (merge 8)
-Note: Full list: design/ITEM_TRIM_LIST.md group G. Yes = we make this cut or merge. Old saves convert to the merge target.
-Note: Recommendation: Yes
-[check]
