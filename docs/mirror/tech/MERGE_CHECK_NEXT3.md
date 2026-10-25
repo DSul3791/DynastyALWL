@@ -121,3 +121,5 @@ Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one ha
 ## BAKE HOLD (Tyler 00:15 UTC 25 Oct, Dave): no bakes or settles until the generator build is done. David3: cancel/skip the settle-past-9000 job. 792 items proceed (none needs a bake). Water R1 settler v7 waits for the bake; classifier/button/dam test code may go earlier only as a separate branch.
 
 ## Generator speed-up (Tyler 00:20 UTC 25 Oct): base merge-793 5b9d9f9, merges into merge-793 only. Reply: ACTION_PLANS/Generator_speedup_REPLY.md. Proof bakes wait for Dave's go (box only). Cleanup branch separate.
+
+## GO from Dave (25 Oct 00:09 UTC): generator speed-up and its proof re-bakes on the server box are cleared. Allowed bakes: tile (3,4) and one edge tile, 1 and 4 threads, with and without setup cache. EVERYTHING ELSE stays held (793, nine-tile bake, other settles). Windows proof run needs Mike's PC: ask Dave when the Linux proofs pass.
