@@ -1,0 +1,33 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Setup (world elevation, wet air, river network, tables) in 127144 ms; 15887 river cells in 3743 chains
+  height timing: frame cubic 1293 ms
+  height timing: shape valleys 2537 ms
+  height timing: add detail 4815 ms
+  height timing: beds: blur 80 ms
+  height timing: beds: per-sample beds 5651 ms
+  height timing: beds: border search 25 ms
+  height timing: beds: border blend 1538 ms
+  drain timing: routing noise 2889 ms
+  drain timing: fill 1092 ms
+  drain timing: flow + edge seed 3570 ms
+  channel timing: centre line 3781 ms
+  channel timing: stamp 5841 ms
+  channel timing: canyon map + valleys 4095 ms
+  channel timing: canyons 1060 ms
+  gullies: 12579, dead ends: 0
+  channel timing: gullies 2290 ms
+  lake gate: tile 3,4, 3339 river cells in block interiors, 1349 flat enough, 43 in blocks that lost the draw, 0 sites skipped at the frame edge, 13 skipped at a low lip
+  basins: 59 head ponds (21.6 ha), 14 lakes (71.0 ha, 0 of them the tile's guaranteed lake), 15 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 3258 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 967 ms
+  drain timing: channels 21292 ms
+  breach: 11 lakes, 178 cells cut, deepest cut 7.6 m
+  pits: 5 drained, 8 kept as basins (outlet cut at the lip), 5 left (cut too deep), 654 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 2738 ms
+  basin water: 12476 cells tagged lake (79.8 ha)
+  water: drainage mode, 63 lakes, 58570 river cells in 35600 ms
+  climate timing: coarse grids + chamfer + air 1452 ms
+  climate timing: per-sample loop 793 ms
+Tile (3, 4) baked in 88.8 s: 8.74 MB, stages { "height": 15980, "erosion": 9580, "ledges": 7545, "scree": 3893, "water": 38288, "climate": 2246, "geology": 8972, "sites": 571 } -> /work/o6_3_4/tile_3_4.tile
