@@ -1,0 +1,5 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+ok   the pond holds water (level 27.72 m)
+FAIL the river runs deep enough to show from the pond's edge down (too thin at: 220 m (0.11 m), 224 m (0.11 m), 228 m (0.09 m))
+pond outlet: 1 failures

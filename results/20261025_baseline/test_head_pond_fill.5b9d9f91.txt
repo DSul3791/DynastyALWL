@@ -1,0 +1,5 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+ok   tile (3, 4) has springs inside ponds (1)
+FAIL spring at sample 2553975: pond 19.4 m deep, filled to 0.0 m after 10800 s
+head pond fill: 1 failures

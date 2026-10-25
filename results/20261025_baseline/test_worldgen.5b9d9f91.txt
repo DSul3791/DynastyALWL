@@ -1,0 +1,65 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+matrix generated in 4856 ms
+ocean tiles: 138 of 441 (31%)
+tiles identical after locking two tiles: 437 of 441
+coarse elevation built in 10368 ms
+seam step east-west 44.6 m vs beside it 45.7 m; north-south 40.3 m vs beside it 38.7 m
+land share 4.8% in 350 islands
+starter (-3, -4) landmass 80.1 km2
+starter (-6, -6) landmass 138.8 km2
+starter (-3, 4) landmass 53.8 km2
+starter (-6, 6) landmass 71.7 km2
+starter (3, -4) landmass 87.8 km2
+starter (6, -6) landmass 80.7 km2
+starter (3, 4) landmass 95.9 km2
+starter (6, 6) landmass 148.4 km2
+tile height map built in 6651 ms
+tile edge mismatch east 0.0000 m, south 0.0000 m
+tile land 116.5 km2 vs world map 116.4 km2
+tile erosion in 85550 ms: deepest cut 25.0 m
+  gullies: 15681, dead ends: 0
+  basins: 65 head ponds (24.0 ha), 17 lakes (34.6 ha), 9 heads skipped (ground steeper than 20 deg)
+  centre line: 0 cells deepened to keep the river continuous
+  breach: 28 lakes, 160 cells cut, deepest cut 1.6 m
+  pits: 7 drained, 13 kept as basins (outlet cut at the lip), 0 left (cut too deep), 908 cells cut, deepest cut 8.0 m
+  basin water: 8277 cells tagged lake (53.0 ha)
+  water: drainage mode, 130 lakes, 41408 river cells in 102527 ms
+tile water built in 104363 ms: 41408 river cells, 28 lakes
+river surface over ground at most 26.4 m, under at most 0.00 m, bad cells 0
+  gullies: 15681, dead ends: 0
+  basins: 65 head ponds (24.0 ha), 17 lakes (34.6 ha), 9 heads skipped (ground steeper than 20 deg)
+  centre line: 0 cells deepened to keep the river continuous
+  breach: 28 lakes, 160 cells cut, deepest cut 1.6 m
+  pits: 7 drained, 13 kept as basins (outlet cut at the lip), 0 left (cut too deep), 908 cells cut, deepest cut 8.0 m
+  basin water: 8277 cells tagged lake (53.0 ha)
+  water: drainage mode, 130 lakes, 41408 river cells in 86173 ms
+tile climate built in 12138 ms, fertile land 3.6 km2
+tile geology built in 9479 ms: 31 provinces, 53 features, 71 ore bodies
+tile sites built in 746 ms: 19 caves, 15 lairs
+  caves 19, exposing ore 6, unknown ore 0, ore steering { "near": 8, "level": 6, "blocked": 0, "reached": 6, "above": 84 }
+tile file written in 329 ms: 9078566 bytes
+server: terrain or tile files changed, old generated ground thrown away
+server: 0 ground edits loaded from digs.dat
+server: 1 ground edits loaded from digs.dat
+ERROR: attempt to write a readonly database
+   at: save_block (modules/voxel/streams/sqlite/connection.cpp:506)
+   GDScript backtrace (most recent call first):
+       [0] _test_runtime_terrain (res://src/worldgen/tools/test_worldgen.gd:1808)
+       [1] _test_tile_climate (res://src/worldgen/tools/test_worldgen.gd:1274)
+       [2] _test_tile_water (res://src/worldgen/tools/test_worldgen.gd:1212)
+       [3] _test_sketch (res://src/worldgen/tools/test_worldgen.gd:951)
+       [4] _init (res://src/worldgen/tools/test_worldgen.gd:51)
+ERROR: attempt to write a readonly database
+   at: save_block (modules/voxel/streams/sqlite/connection.cpp:506)
+   GDScript backtrace (most recent call first):
+       [0] _test_runtime_terrain (res://src/worldgen/tools/test_worldgen.gd:1808)
+       [1] _test_tile_climate (res://src/worldgen/tools/test_worldgen.gd:1274)
+       [2] _test_tile_water (res://src/worldgen/tools/test_worldgen.gd:1212)
+       [3] _test_sketch (res://src/worldgen/tools/test_worldgen.gd:951)
+       [4] _init (res://src/worldgen/tools/test_worldgen.gd:51)
+Tree belt (conifer/broadleaf by slope band <0.10, 0.10-0.20, 0.20-0.35, >0.35): [[58, 2], [137, 5], [349, 15], [236, 5]]
+server flora: layout 5 is not 4, saved removals cleared
+server flora: layout 1 is not 4, saved removals cleared
+
+885 passed, 0 failed
