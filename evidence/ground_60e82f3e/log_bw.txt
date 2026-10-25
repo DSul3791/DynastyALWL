@@ -1,0 +1,12 @@
+== wooden_bow exit 0
+shot runner: FAILED no ground at this spot: item wooden_bow never showed up on the ground near (53301.0, 30.0, 68426.0) (water, or the ground there is not loaded)
+shot runner: done (item pictures FAILED)
+== wooden_arrow exit 0
+shot runner: FAILED no ground at this spot: item wooden_arrow never showed up on the ground near (53301.0, 30.0, 68426.0) (water, or the ground there is not loaded)
+shot runner: done (item pictures FAILED)
+== stone_arrow exit 0
+shot runner: FAILED no ground at this spot: item stone_arrow never showed up on the ground near (53301.0, 30.0, 68426.0) (water, or the ground there is not loaded)
+shot runner: done (item pictures FAILED)
+== quiver exit 0
+shot runner: FAILED no ground at this spot: item quiver never showed up on the ground near (53301.0, 30.0, 68426.0) (water, or the ground there is not loaded)
+shot runner: done (item pictures FAILED)
