@@ -163,7 +163,8 @@ func _init() -> void:
 	for k in 40:
 		lowest = minf(lowest, float(fish.factor_at(1100.0 + float(k) * 17.0, 20.0 + float(k) * 13.0, 7, "summer", 0.0, stock_fn)["factor"]))
 
-	check(is_equal_approx(lowest, 0.15), "away from every school: 0.15 (lowest seen %.2f)" % lowest)
+	var far_factor: float = float(fish.cfg["factor"]["far"])
+	check(is_equal_approx(lowest, far_factor), "away from every school: %.2f (lowest seen %.2f)" % [far_factor, lowest])
 
 	# Cost: 17 factor lookups (one rod cast) with warm caches.
 	var t0: int = Time.get_ticks_usec()

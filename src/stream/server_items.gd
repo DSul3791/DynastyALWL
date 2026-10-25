@@ -6417,7 +6417,15 @@ func fish_stock(cell: Vector2i) -> int:
 	var best: int = mini(int(cfg.get("stock_base", 4)) + _cell_hash(cell) % maxi(int(cfg.get("stock_extra", 8)), 1), int(cfg.get("stock_max", 12)))
 	var key: String = "%d,%d" % [cell.x, cell.y]
 	var row: Array = _fish_stock.get(key, [best, _unix()])
-	var back: int = int(floor((_unix() - float(row[1])) / maxf(float(cfg.get("regrow_s", 3600.0)), 1.0)))
+	var regrow_s: float = float(cfg.get("regrow_s", 3600.0))
+
+	if water_kind_at.is_valid() and cfg.has("regrow_s_sea"):
+		var size: float = float(cfg.get("cell_m", 128.0))
+
+		if str(water_kind_at.call((float(cell.x) + 0.5) * size, (float(cell.y) + 0.5) * size).get("kind", "")).begins_with("sea"):
+			regrow_s = float(cfg["regrow_s_sea"])   # sea water refills faster (balance plan 5b)
+
+	var back: int = int(floor((_unix() - float(row[1])) / maxf(regrow_s, 1.0)))
 	var now_n: int = mini(int(row[0]) + back, best)
 	_fish_stock[key] = [now_n, _unix() if back > 0 else float(row[1])]
 	return now_n
@@ -6487,7 +6495,7 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) 
 		chance *= float(cfg.get("bait_mult", 1.5))
 
 	chance *= float(hit.get("factor", 1.0))   # plan C: inside a school 1.0, near it 0.5, away from every school 0.15
-	return clampf(chance, 0.02, float(cfg.get("max_chance", 0.93)))
+	return clampf(chance, float(cfg.get("min_chance", 0.02)), float(cfg.get("max_chance", 0.93)))
 
 
 func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
@@ -6634,7 +6642,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 	var cell_key: String = "%d,%d" % [cell.x, cell.y]
 	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
 	var hit: Dictionary = school_hit(state["spot"], float(cfg.get("reach_m", 5.0)))
-	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), 0.02, float(cfg.get("max_chance", 0.95)))
+	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
 
 	for n in want:
