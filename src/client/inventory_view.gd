@@ -4067,6 +4067,10 @@ func run_shoot_test(client) -> void:
 		if inventory.numbers.has(table.number_of("wooden_bow")) and inventory.count_of(table.number_of("stone_arrow")) >= 3:
 			break
 
+		if n == 16 and not inventory.numbers.has(table.number_of("wooden_bow")) and inventory.count_of(table.number_of("stone_arrow")) == 0:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("wooden_bow"), 0, 1, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
+
 	var bow_slot: int = inventory.numbers.find(table.number_of("wooden_bow"))
 	var arrows_before: int = inventory.count_of(table.number_of("stone_arrow"))
 	print("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
@@ -4111,6 +4115,9 @@ func run_foundation_test(client) -> void:
 
 		if inventory.numbers.has(kit):
 			break
+
+		if n == 16:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
 
 	var slot: int = inventory.numbers.find(kit)
 
