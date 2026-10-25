@@ -46,3 +46,8 @@ Note: Recommendation: Yes
 Note: Full list: design/ITEM_TRIM_LIST.md group D. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-e | Item trim E: Food and drink: herbal tea, medicine, energy bar, nut paste (cut 4)
+Note: Full list: design/ITEM_TRIM_LIST.md group E. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
