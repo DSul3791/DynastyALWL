@@ -1,0 +1,68 @@
+HEAD=c8fae6e75481a8e01add03988f5cf491517cc440 (generator-speedup-3b) ref=merge-793 5b9d9f9 tiles md5 3_4=17ac06e31a7a36571d209702b2e98732 4_4=8a3a4ffa69d93f3e0612a965acad5726
+imported
+test_gen_core: climate seed 42: 15 biomes hit, 17 fertile cells, identical height loops seed 21: identical height loops seed 22: identical Test done: 0 fail 
+SETTLE new exit 0 seconds 30 md5 e35ba2758d8b8d3fe06cefe22a339c43 (reference old .so e35ba2758d8b8d3fe06cefe22a339c43)
+RUN nc threads 4 exit 0 seconds 216 peak_ram_MB 3586
+  tile_3_4 md5 17ac06e31a7a36571d209702b2e98732
+  tile_4_4 md5 8a3a4ffa69d93f3e0612a965acad5726
+  height timing: frame cubic 1293 ms
+  height timing: frame cubic 1294 ms
+  height timing: shape valleys 2359 ms
+  height timing: shape valleys 2504 ms
+  height timing: add detail 4614 ms
+  height timing: add detail 4656 ms
+  height timing: beds: blur 78 ms
+  height timing: beds: blur 79 ms
+  height timing: beds: per-sample beds 5027 ms
+  height timing: beds: border search 24 ms
+  height timing: beds: border blend 1488 ms
+  height timing: beds: per-sample beds 5921 ms
+  height timing: beds: border search 24 ms
+  height timing: beds: border blend 1528 ms
+  climate timing: coarse grids + chamfer + air 1468 ms
+  climate timing: per-sample loop 787 ms
+  climate timing: coarse grids + chamfer + air 1451 ms
+  climate timing: per-sample loop 815 ms
+RUN cachebuild threads 4 exit 0 seconds 216 peak_ram_MB 3756
+  tile_3_4 md5 17ac06e31a7a36571d209702b2e98732
+  tile_4_4 md5 8a3a4ffa69d93f3e0612a965acad5726
+  height timing: frame cubic 1271 ms
+  height timing: frame cubic 1265 ms
+  height timing: shape valleys 2284 ms
+  height timing: shape valleys 2480 ms
+  height timing: add detail 4563 ms
+  height timing: add detail 4590 ms
+  height timing: beds: blur 79 ms
+  height timing: beds: blur 79 ms
+  height timing: beds: per-sample beds 5122 ms
+  height timing: beds: border search 25 ms
+  height timing: beds: border blend 1486 ms
+  height timing: beds: per-sample beds 5997 ms
+  height timing: beds: border search 24 ms
+  height timing: beds: border blend 1528 ms
+  climate timing: coarse grids + chamfer + air 1476 ms
+  climate timing: per-sample loop 784 ms
+  climate timing: coarse grids + chamfer + air 1457 ms
+  climate timing: per-sample loop 812 ms
+RUN cachereuse threads 4 exit 0 seconds 95 peak_ram_MB 3784
+  tile_3_4 md5 17ac06e31a7a36571d209702b2e98732
+  tile_4_4 md5 8a3a4ffa69d93f3e0612a965acad5726
+  height timing: frame cubic 1269 ms
+  height timing: frame cubic 1285 ms
+  height timing: shape valleys 2308 ms
+  height timing: shape valleys 2502 ms
+  height timing: add detail 4597 ms
+  height timing: add detail 4649 ms
+  height timing: beds: blur 79 ms
+  height timing: beds: blur 80 ms
+  height timing: beds: per-sample beds 5049 ms
+  height timing: beds: border search 25 ms
+  height timing: beds: border blend 1500 ms
+  height timing: beds: per-sample beds 5971 ms
+  height timing: beds: border search 24 ms
+  height timing: beds: border blend 1522 ms
+  climate timing: coarse grids + chamfer + air 1603 ms
+  climate timing: per-sample loop 787 ms
+  climate timing: coarse grids + chamfer + air 1552 ms
+  climate timing: per-sample loop 816 ms
+GS3CDONE

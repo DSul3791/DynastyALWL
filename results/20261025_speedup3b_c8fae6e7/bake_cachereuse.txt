@@ -1,0 +1,63 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Setup restored from the cache setup_3ec51235ba0c6dc1.bin
+Setup (world elevation, wet air, river network, tables) in 411 ms; 15887 river cells in 3743 chains
+  height timing: frame cubic 1269 ms
+  height timing: frame cubic 1285 ms
+  height timing: shape valleys 2308 ms
+  height timing: shape valleys 2502 ms
+  height timing: add detail 4597 ms
+  height timing: add detail 4649 ms
+  height timing: beds: blur 79 ms
+  height timing: beds: blur 80 ms
+  height timing: beds: per-sample beds 5049 ms
+  height timing: beds: border search 25 ms
+  height timing: beds: border blend 1500 ms
+  height timing: beds: per-sample beds 5971 ms
+  height timing: beds: border search 24 ms
+  height timing: beds: border blend 1522 ms
+  drain timing: routing noise 2491 ms
+  drain timing: fill 1033 ms
+  drain timing: routing noise 3121 ms
+  drain timing: flow + edge seed 3577 ms
+  drain timing: fill 1075 ms
+  drain timing: flow + edge seed 4395 ms
+  channel timing: centre line 4528 ms
+  channel timing: centre line 4759 ms
+  channel timing: stamp 7724 ms
+  channel timing: stamp 7313 ms
+  channel timing: canyon map + valleys 4396 ms
+  channel timing: canyons 1217 ms
+  gullies: 7602, dead ends: 0
+  channel timing: gullies 2260 ms
+  channel timing: canyon map + valleys 4413 ms
+  channel timing: canyons 1241 ms
+  basins: 32 head ponds (9.7 ha), 4 lakes (4.5 ha), 6 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 3544 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1130 ms
+  drain timing: channels 24799 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  gullies: 10417, dead ends: 0
+  channel timing: gullies 2774 ms
+  pits: 9 drained, 2 kept as basins (outlet cut at the lip), 0 left (cut too deep), 453 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 2751 ms
+  basins: 52 head ponds (19.6 ha), 12 lakes (21.5 ha), 18 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 3681 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1319 ms
+  drain timing: channels 25501 ms
+  breach: 3 lakes, 4 cells cut, deepest cut 0.5 m
+  basin water: 2016 cells tagged lake (12.9 ha)
+  water: drainage mode, 32 lakes, 42342 river cells in 39477 ms
+  pits: 6 drained, 7 kept as basins (outlet cut at the lip), 5 left (cut too deep), 429 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 2972 ms
+  climate timing: coarse grids + chamfer + air 1603 ms
+  climate timing: per-sample loop 787 ms
+  basin water: 5218 cells tagged lake (33.4 ha)
+  water: drainage mode, 37 lakes, 51872 river cells in 41097 ms
+  climate timing: coarse grids + chamfer + air 1552 ms
+  climate timing: per-sample loop 816 ms
+Tile (3, 4): 8.73 MB, stages { "height": 16211, "erosion": 8440, "ledges": 7847, "scree": 3831, "water": 43855, "climate": 2369, "geology": 8673, "sites": 557 } -> /work/o4_cachereuse/tile_3_4.tile
+Tile (4, 4): 5.83 MB, stages { "height": 15543, "erosion": 7432, "ledges": 6899, "scree": 3382, "water": 42228, "climate": 2390, "geology": 7570, "sites": 94 } -> /work/o4_cachereuse/tile_4_4.tile
+2 tiles on 4 threads in 94.0 s
