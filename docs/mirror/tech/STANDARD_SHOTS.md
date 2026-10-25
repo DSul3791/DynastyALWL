@@ -8,26 +8,31 @@ Owner of the loop: Tyler (spec, gate, daily handoff). Pictures: David3. Review: 
 4. **Critiques become tasks**: each severity 2-3 line is posted to the coordinator once as a task (owner, branch, pictures to compare); the next batch must show before/after of the fixed ones. Kathleen's roadmap is art/PHOTOREAL_ROADMAP.md and PHOTOREAL_RESEARCH_24OCT.md (first step: terrain material pass).
 5. **Daily handoff:** the 20:00 ADT handoff lists last review date, open critiques by owner, and the three worst pictures.
 
-## STANDARD SET v2 (Kathleen's set, 25 Oct 00:17; replaces v1). JPEG 1280x720, UI off, depth of field off, fixed scatter seeds
-README per batch: build number, commit id, hash, hour, weather, renderer, and the FRAME TIME in ms from the probe for every shot. Same spots and framing every build so before/after compares cleanly; coordinates live in tools/docker/shots.txt (David3 writes them from Kathleen's spots; any change to a spot = a new line in this file).
-| id | Shot | Camera | Time |
-|---|---|---|---|
-| K01 | spawn meadow, looking east | eye 1.7 m | noon |
-| K02 | spawn meadow, looking west | eye 1.7 m | noon |
-| K03 | spawn meadow, east | eye 1.7 m | dusk |
-| K04 | spawn meadow, west | eye 1.7 m | dusk |
-| K05 | ground close-up, stone + stick + plant centred | 0.35 m, pitch -45 | sun |
-| K06 | same, in shade | 0.35 m, pitch -45 | shade |
-| K07 | conifer stand, one tree | 2 m from the tree | noon |
-| K08 | shrub and fern | 1.5 m | noon |
-| K09 | autumn forest aerial over the bowl | ~130 m up | noon |
-| K10 | forest edge, eye-height view | 1.7 m | noon |
-| K11 | river bank | 1.7 m | noon |
-| K12 | pond edge | 1.7 m | noon |
-| K13-K18 | held tools first person against plain sky: axe, pickaxe, hoe, spade, knife, spear | first person | noon |
-| K19-K21 | one placed piece each: wall, bed, hearth | 3 m | noon |
-Optional per build (my v1 extras, not required): shelter with a lit fire at dusk, coast, cave mouth, island aerial.
-Budget: 21 shots in one server start: about 40 to 60 minutes on the 1050 Ti box. A QUICK SET of 6 runs on every merge candidate (K01, K03, K05, K07, K11, K13); the FULL set runs once per merged build and nightly. Pieces K19-K21 need the 792 content (wall, bed, hearth), so until 792 lands they are skipped and marked "n/a" in the README.
+## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
+Unit = a SPOT (position, height, hour, weather). Each spot gets THREE pictures: view a at the spot's start yaw, view b after turning LEFT 90 degrees, view c after turning left another 90 (yaw, yaw+90, yaw+180; left = counter-clockwise seen from above, +90 in Godot rotation.y; David3 checks on the first batch that b shows what was left of a). JPEG 1280x720, UI off, depth of field off, fixed scatter seeds. Ids: K01a, K01b, K01c, K02a ...
+Kathleen reads a spot's three pictures together as one place ("front, left, behind-left") and writes ONE critique line per spot, naming the view letters; she may add a line for one view.
+| spot | Where | Camera | Time | Start yaw |
+|---|---|---|---|---|
+| K01 | spawn meadow | eye 1.7 m | noon | east (a=E, b=N, c=W) |
+| K02 | spawn meadow | eye 1.7 m | dusk | east |
+| K03 | ground close-up, stone + stick + plant centred | 0.35 m, pitch -45 | sun | east |
+| K04 | same, in shade | 0.35 m, pitch -45 | shade | east |
+| K05 | conifer stand, 2 m from one tree | eye 1.7 m | noon | toward the tree |
+| K06 | shrub and fern | 1.5 m | noon | toward the shrub |
+| K07 | autumn forest aerial over the bowl | ~130 m up | noon | east |
+| K08 | forest edge | eye 1.7 m | noon | into the forest |
+| K09 | river bank | eye 1.7 m | noon | across the river |
+| K10 | pond edge | eye 1.7 m | noon | across the pond |
+| K11 | wall piece (placed) | 3 m | noon | at the piece |
+| K12 | bed (placed) | 3 m | noon | at the piece |
+| K13 | hearth (placed) | 3 m | noon | at the piece |
+| K14-K19 | held tools first person against plain sky: axe, pickaxe, hoe, spade, knife, spear | first person | noon | ONE picture each, no rotation (the view is the hand) |
+Total full set: 13 spots x 3 = 39 pictures + 6 tools = 45. Spots K11-K13 need the 792 content: until it lands they are skipped ("n/a" in README).
+Optional per build: shelter with a lit fire at dusk, coast, cave mouth, island aerial (each 3 views).
+QUICK SET on every merge candidate: K01, K03, K05, K09 (12 pictures) + K14 (1) = 13 pictures.
+TIME ESTIMATE (replaces the old 40 to 60 min): per spot one teleport + ground ready + 10 s, then three shots with two 90 degree turns and about 2 s render settle after each turn, so a spot costs only about 20 s more than the single shot did; full set 19 positions (13 spots + 6 tools) = about 30 to 50 minutes on the 1050 Ti box (measured value to be printed in the first README); quick set about 10 to 14 minutes. One server start per batch.
+shots.txt columns: id, view_count (3, or 1 for tools), x, z, eye_or_alt, yaw_deg (start), pitch_deg, hour, weather. Turn rule is in the script, not in the file.
+Duplicate rule (above) applies per picture across the whole batch: the three views of one spot must differ from each other too (yaw read-back differs by 90 degrees between views, else the batch fails).
 
 ## Who does what / when
 - David3: add the `shots` job and shot file (tools/docker/shots.txt with coordinates), publish script, index line format. Build: first complete batch with the 792 run (spawn and hands first: S01, S02, S08).

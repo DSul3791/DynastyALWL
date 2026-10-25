@@ -142,3 +142,5 @@ remove-old-builder 930447aa (base merge-793 5b9d9f91): merges into merge-793 AFT
 RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL 40-character hash; David3's first result line is `HEAD=<git rev-parse HEAD>` and a mismatch with the job aborts the run before any test starts. No result without that line counts as a PASS.
 
 ## PICTURE WAIT (Dave 25 Oct 01:24): shoot ground-ready + 10 s (SETTLE=10, WAIT=60 max, "ground not ready" mark). David3: change tools/docker/shot.sh and the batch runner (branch claude/docker-test-box) and report the new values; Mike: same rule in look_rig.sh when Dave's PC is free. Spec: STANDARD_SHOTS.md "Wait time".
+
+## SHOTS v3 (Dave 25 Oct 01:26): 3 views per spot, turn left 90 degrees after each shot; spec STANDARD_SHOTS.md. David3: update shots.txt/batch runner (view column, yaw read-back differs by 90 between views, tools single view).
