@@ -1,0 +1,47 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+  channel timing: centre line 2619 ms
+  channel timing: stamp 3677 ms
+  channel timing: canyon map + valleys 657 ms
+  channel timing: canyons 0 ms
+  channel timing: gullies 0 ms
+  lake gate: tile 3,4, 4072 river cells in block interiors, 1564 flat enough, 12 in blocks that lost the draw, 0 sites skipped at the frame edge, 1 skipped at a low lip
+  basins: 51 head ponds (16.0 ha), 21 lakes (47.8 ha, 0 of them the tile's guaranteed lake), 21 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 10458 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 696 ms
+ok   tile (3, 4) has at least one carved lake (21)
+ok   lake at 57816,74144 (radius 211 m) lies inside its tile
+ok   lake at 57976,71120 (radius 219 m) lies inside its tile
+ok   lake at 50760,72440 (radius 226 m) lies inside its tile
+ok   lake at 58064,69856 (radius 223 m) lies inside its tile
+ok   lake at 56096,67080 (radius 215 m) lies inside its tile
+ok   lake at 51456,70144 (radius 229 m) lies inside its tile
+ok   lake at 52552,69016 (radius 264 m) lies inside its tile
+ok   lake at 50776,72136 (radius 212 m) lies inside its tile
+ok   lake at 58384,73056 (radius 216 m) lies inside its tile
+ok   lake at 52664,69144 (radius 253 m) lies inside its tile
+ok   lake at 55208,75280 (radius 223 m) lies inside its tile
+ok   lake at 53592,74184 (radius 215 m) lies inside its tile
+ok   lake at 58168,73240 (radius 211 m) lies inside its tile
+ok   lake at 55216,75232 (radius 223 m) lies inside its tile
+ok   lake at 55712,75248 (radius 212 m) lies inside its tile
+ok   lake at 52728,73200 (radius 225 m) lies inside its tile
+ok   lake at 55536,75296 (radius 214 m) lies inside its tile
+ok   lake at 50008,68520 (radius 214 m) lies inside its tile
+ok   lake at 57016,67000 (radius 213 m) lies inside its tile
+ok   lake at 58504,63544 (radius 210 m) lies inside its tile
+ok   lake at 55744,67584 (radius 210 m) lies inside its tile
+ok   every lake bowl stays inside its tile (margin 1183 m)
+  channel timing: centre line 2618 ms
+  channel timing: stamp 3885 ms
+  channel timing: canyon map + valleys 660 ms
+  channel timing: canyons 0 ms
+  channel timing: gullies 0 ms
+  lake gate: tile 3,4, 4072 river cells in block interiors, 1564 flat enough, 12 in blocks that lost the draw, 0 sites skipped at the frame edge, 1 skipped at a low lip
+  basins: 51 head ponds (16.0 ha), 21 lakes (47.8 ha, 0 of them the tile's guaranteed lake), 21 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 10447 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 686 ms
+ok   a second build gives the same lakes
+tile lakes: 0 failures
