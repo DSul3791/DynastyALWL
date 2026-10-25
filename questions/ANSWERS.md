@@ -1666,3 +1666,7 @@ Answered: 2026-10-25 13:50 UTC
 Answer: Yes
 Answered: 2026-10-25 13:50 UTC
 
+## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins (cut 5; driftwood KEPT per Dave)
+Answer: No: I think we need shingles and cobblestones
+Answered: 2026-10-25 13:53 UTC
+
