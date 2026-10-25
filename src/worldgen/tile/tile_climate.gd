@@ -71,6 +71,7 @@ func use_world_fresh_water(points: PackedVector2Array) -> void:
 # A frame wider than a tile (a margin) must start on a multiple of the
 # coarse step, so neighboring frames share the same coarse grid.
 func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx: int, origin_sz: int) -> void:
+	var clock: int = Time.get_ticks_msec()
 	_origin_sx = origin_sx
 	_origin_sz = origin_sz
 	samples = int(round(sqrt(float(heights.size()))))
@@ -129,6 +130,8 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 	var fresh_distance: PackedFloat32Array = _chamfer(fresh_mask, coarse, cell_m)
 	var air: PackedFloat32Array = _world_air_grid(coarse, step) if not _air_field.is_empty() else _wet_air(coarse_height, coarse, cell_m, tile_row_of(z0))
 
+	print("  climate timing: coarse grids + chamfer + air %d ms" % (Time.get_ticks_msec() - clock))
+	clock = Time.get_ticks_msec()
 	# Noise so boundaries are organic.
 	var noise_rules: Dictionary = _rules["noise"]
 	var moisture_noise: PackedByteArray = _noise("climate_moisture", float(noise_rules["moisture_wavelength_m"]))
@@ -187,92 +190,48 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 	var zero_low: float = float(rules_fertility["temperature_zero_low_c"])
 	var zero_high: float = float(rules_fertility["temperature_zero_high_c"])
 
-	biome.resize(total)
-	soil.resize(total)
-	fertility.resize(total)
-	moisture.resize(total)
-	temperature_c.resize(total)
+	var inv_two_spacing: float = 1.0 / (2.0 * spacing_m)
 	biome_cells = {}
 	soil_cells = {}
-	var biome_counts: PackedInt32Array = PackedInt32Array()
-	biome_counts.resize(256)
-	var soil_counts: PackedInt32Array = PackedInt32Array()
-	soil_counts.resize(256)
-	var fertile_cells: int = 0
-	var inv_two_spacing: float = 1.0 / (2.0 * spacing_m)
+	var soil_base_by_id: PackedFloat64Array = PackedFloat64Array()
+	soil_base_by_id.resize(256)
 
-	for j in range(samples):
-		var v: float = float(j) / float(step)
-		var r0: int = mini(int(v), coarse - 2)
-		var tv: float = v - float(r0)
+	for id in soil_base:
+		soil_base_by_id[int(id)] = float(soil_base[id])
 
-		for i in range(samples):
-			var index: int = j * samples + i
-			var h: float = heights[index]
-			var kind: int = water_class[index]
-			var u: float = float(i) / float(step)
-			var c0: int = mini(int(u), coarse - 2)
-			var tu: float = u - float(c0)
-			var base_cell: int = r0 * coarse + c0
+	var consts: Dictionary = {
+		"samples": samples, "step": step, "coarse": coarse, "ocean_kind": OCEAN, "lake_kind": LAKE,
+		"lapse": lapse, "temperature_amplitude": temperature_amplitude, "fresh_bonus": fresh_bonus, "near_fresh": near_fresh,
+		"moisture_amplitude": moisture_amplitude, "inv_two_spacing": inv_two_spacing,
+		"rock_tan": rock_tan, "scree_tan": scree_tan, "marsh_tan": marsh_tan, "flood_tan": flood_tan, "stony_tan": stony_tan, "zero_tan": zero_tan,
+		"hot_min": hot_min, "warm_min": warm_min, "cold_min": cold_min, "snow_max": snow_max, "glacier_max": glacier_max,
+		"peak": peak, "width": width, "best_low": best_low, "best_high": best_high, "zero_low": zero_low, "zero_high": zero_high,
+		"beach_height_m": float(rules_biome["beach_height_m"]), "beach_distance_m": float(rules_biome["beach_distance_m"]),
+		"marsh_height_m": float(rules_biome["marsh_height_m"]), "marsh_moisture": float(rules_biome["marsh_moisture"]),
+		"alpine_min_height_m": float(rules_biome["alpine_min_height_m"]), "boreal_moisture": float(rules_biome["boreal_moisture"]),
+		"desert_moisture": float(rules_biome["desert_moisture"]), "scrub_moisture": float(rules_biome["scrub_moisture"]),
+		"savanna_moisture": float(rules_biome["savanna_moisture"]), "grassland_moisture": float(rules_biome["grassland_moisture"]),
+		"mixed_moisture": float(rules_biome["mixed_moisture"]), "cool_forest_below_c": float(rules_biome["cool_forest_below_c"]),
+		"floodplain_distance_m": float(rules_soil["floodplain_distance_m"]), "sand_moisture": float(rules_soil["sand_moisture"]),
+		"clay_moisture": float(rules_soil["clay_moisture"]), "clay_edge_m": float(rules_soil.get("clay_edge_m", 160.0)),
+	}
+	var result: Dictionary
 
-			# Temperature and moisture (bilinear from the coarse grid).
-			var temperature: float = sea_temperature[j] - lapse * maxf(h, 0.0)
-			temperature += temperature_amplitude * (float(temperature_noise[index]) / 127.5 - 1.0)
-			temperature_c[index] = temperature
-			var air_here: float = lerpf(
-				lerpf(air[base_cell], air[base_cell + 1], tu),
-				lerpf(air[base_cell + coarse], air[base_cell + coarse + 1], tu), tv
-			)
-			var fresh_here: float = fresh_distance[(r0 + (1 if tv > 0.5 else 0)) * coarse + c0 + (1 if tu > 0.5 else 0)]
-			var wet: float = row_wetness[j] * (0.4 + 0.9 * air_here)
-			wet += fresh_bonus * clampf(1.0 - fresh_here / near_fresh, 0.0, 1.0)
-			wet += moisture_amplitude * (float(moisture_noise[index]) / 127.5 - 1.0)
-			wet = clampf(wet, 0.0, 1.0)
-			moisture[index] = int(round(wet * 255.0))
+	# The per-sample loop runs in C++ when GenCore is loaded (same arithmetic; classify_script is the reference).
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("classify_climate"):
+		result = ClassDB.instantiate("GenCore").classify_climate(consts, ids, soil_ids, soil_base_by_id, heights, water_class, air, fresh_distance, ocean_distance, moisture_noise, temperature_noise, sea_temperature, row_wetness)
+	else:
+		result = classify_script(consts, ids, soil_ids, soil_base_by_id, heights, water_class, air, fresh_distance, ocean_distance, moisture_noise, temperature_noise, sea_temperature, row_wetness)
 
-			if kind != 0:
-				var water_soil: int = soil_ids["sand"] if kind == OCEAN else (soil_ids["silt"] if kind == LAKE else soil_ids["gravel"])
-				biome[index] = ids["ocean"]
-				soil[index] = water_soil
-				fertility[index] = 0
-				biome_counts[ids["ocean"]] += 1
-				soil_counts[water_soil] += 1
-				continue
-
-			# Slope as a tangent.
-			var gx: float = (heights[index + (1 if i < samples - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv_two_spacing
-			var gz: float = (heights[index + (samples if j < samples - 1 else 0)] - heights[index - (samples if j > 0 else 0)]) * inv_two_spacing
-			var slope: float = sqrt(gx * gx + gz * gz)
-			var ocean_here: float = ocean_distance[(r0 + (1 if tv > 0.5 else 0)) * coarse + c0 + (1 if tu > 0.5 else 0)]
-
-			var chosen: int = _pick_biome(
-				ids, rules_biome, temperature, wet, h, slope, ocean_here, fresh_here,
-				hot_min, warm_min, cold_min, snow_max, glacier_max, rock_tan, marsh_tan
-			)
-			var picked_soil: int = _pick_soil(
-				soil_ids, rules_soil, ids, chosen, wet, h, slope, fresh_here, ocean_here,
-				flood_tan, stony_tan, scree_tan, rock_tan, float(rules_biome["beach_distance_m"])
-			)
-			biome[index] = chosen
-			soil[index] = picked_soil
-			biome_counts[chosen] += 1
-			soil_counts[picked_soil] += 1
-
-			# Fertility.
-			var moisture_factor: float = clampf(1.0 - absf(wet - peak) / width, 0.0, 1.0)
-			var temperature_factor: float = 1.0
-
-			if temperature < best_low:
-				temperature_factor = clampf((temperature - zero_low) / (best_low - zero_low), 0.0, 1.0)
-			elif temperature > best_high:
-				temperature_factor = clampf((zero_high - temperature) / (zero_high - best_high), 0.0, 1.0)
-
-			var slope_factor: float = clampf(1.0 - slope / zero_tan, 0.0, 1.0)
-			var value: float = soil_base[picked_soil] * (0.35 + 0.65 * moisture_factor) * temperature_factor * slope_factor
-			fertility[index] = clampi(int(round(value)), 0, 255)
-
-			if value >= 150.0:
-				fertile_cells += 1
+	temperature_c = result["temperature_c"]
+	moisture = result["moisture"]
+	biome = result["biome"]
+	soil = result["soil"]
+	fertility = result["fertility"]
+	var biome_counts: PackedInt32Array = result["biome_counts"]
+	var soil_counts: PackedInt32Array = result["soil_counts"]
+	var fertile_cells: int = result["fertile_cells"]
+	print("  climate timing: per-sample loop %d ms" % (Time.get_ticks_msec() - clock))
 
 	for entry in _tables.get_entries("biomes"):
 		var count: int = biome_counts[int(entry["id"])]
@@ -289,75 +248,184 @@ func build(heights: PackedFloat32Array, water_class: PackedByteArray, origin_sx:
 	fertile_km2 = float(fertile_cells) * spacing_m * spacing_m / 1.0e6
 
 
-func _pick_biome(
-	ids: Dictionary, rules: Dictionary, temperature: float, wet: float, h: float, slope: float,
-	ocean_distance: float, fresh_distance: float, hot_min: float, warm_min: float, cold_min: float,
-	snow_max: float, glacier_max: float, rock_tan: float, marsh_tan: float
-) -> int:
+# Tests set this to compare classify_script with GenCore's classify_climate (test_gen_core.gd); false in the bake.
+static var force_script: bool = false
+
+
+# The per-sample climate loop of build(): temperature, moisture, biome, soil and fertility for every sample. `c` holds the numbers
+# the loop used to read from build()'s locals (all doubles, same names); GenCore.classify_climate must match this bit for bit.
+static func classify_script(c: Dictionary, ids: Dictionary, soil_ids: Dictionary, soil_base: PackedFloat64Array, heights: PackedFloat32Array, water_class: PackedByteArray, air: PackedFloat32Array, fresh_distance: PackedFloat32Array, ocean_distance: PackedFloat32Array, moisture_noise: PackedByteArray, temperature_noise: PackedByteArray, sea_temperature: PackedFloat32Array, row_wetness: PackedFloat32Array) -> Dictionary:
+	var side: int = int(c["samples"])
+	var step: int = int(c["step"])
+	var coarse: int = int(c["coarse"])
+	var total: int = side * side
+	var temperature_c_out: PackedFloat32Array = PackedFloat32Array()
+	var moisture_out: PackedByteArray = PackedByteArray()
+	var biome_out: PackedByteArray = PackedByteArray()
+	var soil_out: PackedByteArray = PackedByteArray()
+	var fertility_out: PackedByteArray = PackedByteArray()
+	temperature_c_out.resize(total)
+	moisture_out.resize(total)
+	biome_out.resize(total)
+	soil_out.resize(total)
+	fertility_out.resize(total)
+	var biome_counts: PackedInt32Array = PackedInt32Array()
+	biome_counts.resize(256)
+	var soil_counts: PackedInt32Array = PackedInt32Array()
+	soil_counts.resize(256)
+	var fertile_cells: int = 0
+	var lapse: float = c["lapse"]
+	var inv_two_spacing: float = c["inv_two_spacing"]
+	var zero_tan: float = c["zero_tan"]
+	var peak: float = c["peak"]
+	var width: float = c["width"]
+	var best_low: float = c["best_low"]
+	var best_high: float = c["best_high"]
+	var zero_low: float = c["zero_low"]
+	var zero_high: float = c["zero_high"]
+
+	for j in range(side):
+		var v: float = float(j) / float(step)
+		var r0: int = mini(int(v), coarse - 2)
+		var tv: float = v - float(r0)
+
+		for i in range(side):
+			var index: int = j * side + i
+			var h: float = heights[index]
+			var kind: int = water_class[index]
+			var u: float = float(i) / float(step)
+			var c0: int = mini(int(u), coarse - 2)
+			var tu: float = u - float(c0)
+			var base_cell: int = r0 * coarse + c0
+
+			# Temperature and moisture (bilinear from the coarse grid).
+			var temperature: float = sea_temperature[j] - lapse * maxf(h, 0.0)
+			temperature += float(c["temperature_amplitude"]) * (float(temperature_noise[index]) / 127.5 - 1.0)
+			temperature_c_out[index] = temperature
+			var air_here: float = lerpf(
+				lerpf(air[base_cell], air[base_cell + 1], tu),
+				lerpf(air[base_cell + coarse], air[base_cell + coarse + 1], tu), tv
+			)
+			var fresh_here: float = fresh_distance[(r0 + (1 if tv > 0.5 else 0)) * coarse + c0 + (1 if tu > 0.5 else 0)]
+			var wet: float = row_wetness[j] * (0.4 + 0.9 * air_here)
+			wet += float(c["fresh_bonus"]) * clampf(1.0 - fresh_here / float(c["near_fresh"]), 0.0, 1.0)
+			wet += float(c["moisture_amplitude"]) * (float(moisture_noise[index]) / 127.5 - 1.0)
+			wet = clampf(wet, 0.0, 1.0)
+			moisture_out[index] = int(round(wet * 255.0))
+
+			if kind != 0:
+				var water_soil: int = soil_ids["sand"] if kind == int(c["ocean_kind"]) else (soil_ids["silt"] if kind == int(c["lake_kind"]) else soil_ids["gravel"])
+				biome_out[index] = ids["ocean"]
+				soil_out[index] = water_soil
+				fertility_out[index] = 0
+				biome_counts[ids["ocean"]] += 1
+				soil_counts[water_soil] += 1
+				continue
+
+			# Slope as a tangent.
+			var gx: float = (heights[index + (1 if i < side - 1 else 0)] - heights[index - (1 if i > 0 else 0)]) * inv_two_spacing
+			var gz: float = (heights[index + (side if j < side - 1 else 0)] - heights[index - (side if j > 0 else 0)]) * inv_two_spacing
+			var slope: float = sqrt(gx * gx + gz * gz)
+			var ocean_here: float = ocean_distance[(r0 + (1 if tv > 0.5 else 0)) * coarse + c0 + (1 if tu > 0.5 else 0)]
+			var chosen: int = pick_biome(ids, c, temperature, wet, h, slope, ocean_here)
+			var picked_soil: int = pick_soil(soil_ids, c, ids, chosen, wet, h, slope, fresh_here)
+			biome_out[index] = chosen
+			soil_out[index] = picked_soil
+			biome_counts[chosen] += 1
+			soil_counts[picked_soil] += 1
+
+			# Fertility.
+			var moisture_factor: float = clampf(1.0 - absf(wet - peak) / width, 0.0, 1.0)
+			var temperature_factor: float = 1.0
+
+			if temperature < best_low:
+				temperature_factor = clampf((temperature - zero_low) / (best_low - zero_low), 0.0, 1.0)
+			elif temperature > best_high:
+				temperature_factor = clampf((zero_high - temperature) / (zero_high - best_high), 0.0, 1.0)
+
+			var slope_factor: float = clampf(1.0 - slope / zero_tan, 0.0, 1.0)
+			var value: float = soil_base[picked_soil] * (0.35 + 0.65 * moisture_factor) * temperature_factor * slope_factor
+			fertility_out[index] = clampi(int(round(value)), 0, 255)
+
+			if value >= 150.0:
+				fertile_cells += 1
+
+	return {
+		"temperature_c": temperature_c_out, "moisture": moisture_out, "biome": biome_out, "soil": soil_out, "fertility": fertility_out,
+		"biome_counts": biome_counts, "soil_counts": soil_counts, "fertile_cells": fertile_cells,
+	}
+
+
+static func pick_biome(ids: Dictionary, c: Dictionary, temperature: float, wet: float, h: float, slope: float, ocean_distance: float) -> int:
+	var hot_min: float = c["hot_min"]
+	var warm_min: float = c["warm_min"]
+	var cold_min: float = c["cold_min"]
+	var marsh_tan: float = c["marsh_tan"]
+
 	# Shores and wet lowlands first.
-	if h < float(rules["beach_height_m"]) and ocean_distance < float(rules["beach_distance_m"]):
+	if h < float(c["beach_height_m"]) and ocean_distance < float(c["beach_distance_m"]):
 		if temperature >= hot_min and wet >= 0.6 and slope < marsh_tan:
 			return ids["mangrove"]
 
 		return ids["beach"]
 
-	if h < float(rules["marsh_height_m"]) and slope < marsh_tan and wet >= float(rules["marsh_moisture"]) \
+	if h < float(c["marsh_height_m"]) and slope < marsh_tan and wet >= float(c["marsh_moisture"]) \
 			and temperature > cold_min:
 		return ids["marsh"]
 
 	# Cold and high.
-	if temperature < glacier_max and h > 150.0:
+	if temperature < float(c["glacier_max"]) and h > 150.0:
 		return ids["glacier"]
 
-	if temperature < snow_max:
+	if temperature < float(c["snow_max"]):
 		return ids["snowfield"]
 
-	if slope > rock_tan:
+	if slope > float(c["rock_tan"]):
 		return ids["bare_rock"]
 
 	if temperature < cold_min:
 		return ids["tundra"]
 
-	if h > float(rules["alpine_min_height_m"]) and temperature < warm_min + 3.0:
+	if h > float(c["alpine_min_height_m"]) and temperature < warm_min + 3.0:
 		return ids["alpine_meadow"]
 
 	if temperature < warm_min:
-		return ids["boreal_forest"] if wet >= float(rules["boreal_moisture"]) else ids["tundra"]
+		return ids["boreal_forest"] if wet >= float(c["boreal_moisture"]) else ids["tundra"]
 
 	# Hot.
 	if temperature >= hot_min:
-		if wet < float(rules["desert_moisture"]):
+		if wet < float(c["desert_moisture"]):
 			return ids["hot_desert"]
 
-		if wet < float(rules["scrub_moisture"]):
+		if wet < float(c["scrub_moisture"]):
 			return ids["dry_scrub"]
 
-		if wet < float(rules["savanna_moisture"]):
+		if wet < float(c["savanna_moisture"]):
 			return ids["savanna"]
 
 		return ids["tropical_forest"]
 
 	# Temperate.
-	if wet < float(rules["desert_moisture"]):
+	if wet < float(c["desert_moisture"]):
 		return ids["dry_scrub"]
 
-	if wet < float(rules["grassland_moisture"]):
+	if wet < float(c["grassland_moisture"]):
 		return ids["temperate_grassland"]
 
-	if wet < float(rules["mixed_moisture"]):
-		return ids["mixed_forest"] if temperature < float(rules["cool_forest_below_c"]) else ids["temperate_forest"]
+	if wet < float(c["mixed_moisture"]):
+		return ids["mixed_forest"] if temperature < float(c["cool_forest_below_c"]) else ids["temperate_forest"]
 
-	if ocean_distance < 600.0 and slope > 0.0 and temperature < float(rules["cool_forest_below_c"]) + 2.0:
+	if ocean_distance < 600.0 and slope > 0.0 and temperature < float(c["cool_forest_below_c"]) + 2.0:
 		return ids["heath"]
 
 	return ids["temperate_forest"]
 
 
-func _pick_soil(
-	soil_ids: Dictionary, rules: Dictionary, ids: Dictionary, chosen: int, wet: float, h: float, slope: float,
-	fresh_distance: float, ocean_distance: float, flood_tan: float, stony_tan: float, scree_tan: float,
-	rock_tan: float, beach_distance: float
-) -> int:
+static func pick_soil(soil_ids: Dictionary, c: Dictionary, ids: Dictionary, chosen: int, wet: float, h: float, slope: float, fresh_distance: float) -> int:
+	var rock_tan: float = c["rock_tan"]
+	var flood_tan: float = c["flood_tan"]
+	var stony_tan: float = c["stony_tan"]
+
 	if chosen == ids["bare_rock"] or slope > rock_tan:
 		return soil_ids["bare_rock"]
 
@@ -376,19 +444,19 @@ func _pick_soil(
 	if chosen == ids["tundra"]:
 		return soil_ids["stony_soil"] if slope > stony_tan else soil_ids["gravel"]
 
-	if slope > scree_tan:
+	if slope > float(c["scree_tan"]):
 		return soil_ids["stony_soil"]
 
-	if fresh_distance < float(rules["floodplain_distance_m"]) and slope < flood_tan:
+	if fresh_distance < float(c["floodplain_distance_m"]) and slope < flood_tan:
 		return soil_ids["alluvium"]
 
-	if chosen == ids["hot_desert"] or (wet < float(rules["sand_moisture"]) and h < 40.0):
+	if chosen == ids["hot_desert"] or (wet < float(c["sand_moisture"]) and h < 40.0):
 		return soil_ids["sand"]
 
 	if slope > stony_tan:
 		return soil_ids["stony_soil"]
 
-	if wet >= float(rules["clay_moisture"]) and slope < flood_tan and fresh_distance < float(rules.get("clay_edge_m", 160.0)):
+	if wet >= float(c["clay_moisture"]) and slope < flood_tan and fresh_distance < float(c["clay_edge_m"]):
 		return soil_ids["clay"]
 
 	if chosen == ids["temperate_forest"] or chosen == ids["mixed_forest"] or chosen == ids["boreal_forest"] \

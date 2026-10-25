@@ -25,7 +25,7 @@ func _init() -> void:
 	var ticks: int = 7200   # 600 left the river middle dry (still filling); 7200 is settled (23 Oct tests)
 	var rate: float = 10.0
 	var picture: String = ""
-	var multiplier: float = 1.0
+	var multiplier: float = 10.0
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):

@@ -15,6 +15,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
+const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
@@ -23,6 +24,7 @@ const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SetupCacheScript := preload("res://src/worldgen/tile/setup_cache.gd")
 
 var settings
 var tile_rules: Dictionary = {}
@@ -33,6 +35,8 @@ var world_dir: String = ""
 var plan_cells: Dictionary = {}      # "x,z" -> cell of tile_plan.json
 var world_air: Dictionary = {}       # wet-air field for the whole world
 var river_network                    # the world's rivers (RiverNetwork)
+var erosion_delta                    # whole-island pre-carve (ErosionDelta), or null: then each tile erodes itself
+var use_cache: bool = false         # bake_tiles.gd sets this (unless --no-cache): reuse the once-per-run setup (setup_cache.gd)
 var margin: int = 80                 # samples built beyond each tile edge, then cropped
 
 
@@ -55,13 +59,32 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 
 	sketch = parsed
 	elevation = ElevationScript.new()
-	elevation.build(settings, rules, sketch, elevation_cell_m)
-	margin = int(tile_rules["frame"]["margin_samples"])
-	world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
 	river_network = RiverNetworkScript.new()
-	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
-	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
-	river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+	margin = int(tile_rules["frame"]["margin_samples"])
+	var cache_key: String = SetupCacheScript.key(world_dir, elevation_cell_m) if use_cache else ""
+	var cache_path: String = SetupCacheScript.path_for(world_dir, cache_key) if use_cache else ""
+
+	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air, sketch):
+		elevation.settings = settings
+		print("Setup restored from the cache %s" % cache_path.get_file())
+	else:
+		elevation.build(settings, rules, sketch, elevation_cell_m)
+		world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
+		river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
+		river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
+		river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+
+		if use_cache:
+			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air, sketch)
+
+	# BAKE: a pre-carved island (erosion_delta_v2.bin next to world.json) replaces the per-tile erosion below.
+	erosion_delta = ErosionDeltaScript.new()
+
+	if not erosion_delta.load_file(world_dir + "/erosion_delta_v2.bin"):
+		erosion_delta = null
+	else:
+		erosion_delta.crowns = tile_rules.get("precarve", {}).get("summit_crowns", [])
+
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
 
@@ -163,7 +186,7 @@ static func _pin_spawn_pad(heights: PackedFloat32Array, n: int, spacing_m: float
 
 
 
-func bake(tile: Vector2i) -> Dictionary:
+func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var timings: Dictionary = {}
 	var tile_samples: int = int(settings.tile_size_m / settings.map_spacing_m)
 	var core: int = tile_samples + 1
@@ -179,7 +202,11 @@ func bake(tile: Vector2i) -> Dictionary:
 	)
 
 	# Valleys reach this far from a river, so rivers just outside the frame shape it too.
-	if tile_rules.has("valleys"):
+	# With a pre-carve, tile_rules precarve.valley_guides decides whether the old valley shaping stays (it must match
+	# the heights the pre-carve was run on: tools/export_raw_heights.gd uses the same switch).
+	var use_guides: bool = erosion_delta == null or bool(tile_rules.get("precarve", {}).get("valley_guides", true))
+
+	if tile_rules.has("valleys") and use_guides:
 		frame_height.valley_guides = river_network.guides_in(frame_rect.grow(float(tile_rules["valleys"]["half_width_max_m"])), 4.0)
 
 	# The rock under the frame (positions only), so erosion and ledges follow the real layers.
@@ -193,18 +220,27 @@ func bake(tile: Vector2i) -> Dictionary:
 	var raw_heights: PackedFloat32Array = crop(frame_height.heights, n, core)
 	var raw_frame: PackedFloat32Array = frame_height.heights.duplicate()   # before erosion: the same world function in every frame
 
+	# The 42 build is baked from the pre-carve file only: no file is an error, never a silent per-tile fallback.
+	if erosion_delta == null and not raw_only:
+		push_error("erosion_delta_v2.bin is missing next to world.json (terrain version 42 needs the pre-carve)")
+		return {"error": "erosion_delta_v2.bin missing", "timings": timings}
+
+	# Export tools want the ground as it stands before erosion (the input of TileErosion) and nothing else.
+	if raw_only:
+		return {"raw_heights": raw_heights, "core": core, "timings": timings}
+
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
-	var core_height = TileHeightScript.new()
-	core_height.samples = core
-	core_height.spacing_m = frame_height.spacing_m
-	core_height.origin_sx = origin_sx + margin
-	core_height.origin_sz = origin_sz + margin
-	core_height.heights = raw_heights
-	var erosion = TileErosionScript.new()
-	erosion.setup(settings, tile_rules)
-	erosion.build(core_height, frame_rock, margin, n)
-	frame_height.heights = paste(frame_height.heights, n, erosion.heights, core)
+	var min_land: float = float(tile_rules["erosion"]["min_land_m"])
+	var erosion = TileErosionScript.new()   # only carries the cropped heights now (the old per-tile erosion is not run)
+
+	# The pre-carve change, by world position, on the whole frame (margin included) and on the pre-erosion copy water
+	# routes over, so frames agree along their edges and rivers see the carved valleys.
+	var delta_field: PackedFloat64Array = erosion_delta.delta_field(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
+	frame_height.heights = erosion_delta.apply_field(frame_height.heights, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	raw_frame = erosion_delta.apply_field(raw_frame, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	erosion.heights = crop(frame_height.heights, n, core)
+
 	timings["erosion"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
 	frame_height.add_strata()

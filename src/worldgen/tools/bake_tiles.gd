@@ -8,6 +8,7 @@ extends SceneTree
 #   --tiles=X,Z;X,Z   tiles to bake (default 3,4)
 #   --world=DIR       world folder (default res://worlds/base_world)
 #   --out=DIR         folder for the files (default <world>/tiles)
+#   --no-cache        do the whole setup instead of reusing <world>/setup_cache (same tile bytes either way)
 #   --threads=N       bake N tiles at the same time (default 1; each tile is baked whole on one thread, so the
 #                     files are byte-identical to a one-thread bake)
 #
@@ -24,6 +25,7 @@ func _init() -> void:
 	var world_dir: String = "res://worlds/base_world"
 	var out_dir: String = ""
 	var threads: int = 1
+	var use_cache: bool = true
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tiles="):
@@ -36,6 +38,8 @@ func _init() -> void:
 			world_dir = argument.trim_prefix("--world=")
 		elif argument.begins_with("--out="):
 			out_dir = argument.trim_prefix("--out=")
+		elif argument == "--no-cache":
+			use_cache = false
 		elif argument.begins_with("--threads="):
 			threads = maxi(int(argument.trim_prefix("--threads=")), 1)
 
@@ -43,7 +47,7 @@ func _init() -> void:
 	# (the server waits while this lock is there, then reloads the ground once).
 	var lock_path: String = (out_dir if out_dir != "" else world_dir + "/tiles") + "/" + LOCK_NAME
 	_touch(lock_path)
-	var code: int = _run(world_dir, out_dir, tiles, lock_path, threads)
+	var code: int = _run(world_dir, out_dir, tiles, lock_path, threads, use_cache)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(lock_path))
 	quit(code)
 
@@ -56,8 +60,9 @@ func _touch(path: String) -> void:
 		file.close()
 
 
-func _run(world_dir: String, out_dir: String, tiles: Array, lock_path: String, threads: int) -> int:
+func _run(world_dir: String, out_dir: String, tiles: Array, lock_path: String, threads: int, use_cache: bool) -> int:
 	var baker = TileBakerScript.new()
+	baker.use_cache = use_cache
 	var started: int = Time.get_ticks_msec()
 	var problem: String = baker.setup(world_dir)
 
