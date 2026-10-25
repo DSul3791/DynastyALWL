@@ -53,5 +53,10 @@ for name, text in ALWAYS_KNOWN.items():
         known[name]["familiarity"] = 100
         known[name]["description"] = text
 
+# Inspect texts written by hand (data/items/gathered_text.json); the always-known texts above win.
+for name, text in json.load(open("data/items/gathered_text.json"))["descriptions"].items():
+    if name in known and not known[name].get("description"):
+        known[name]["description"] = text
+
 table["next_number"] = next_number
 json.dump(table, open(path, "w"), indent="\t")

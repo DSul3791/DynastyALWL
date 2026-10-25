@@ -4,3 +4,6 @@ What: tools/item_master_list.py reads items.json, recipes.json, structures.json,
 Result today: 206 core items (not retired), 0 empty cells. 174 gathered items (gathered.json, made by gen_gathered_items.py) have no inspect text: 167 are listed in the file and are the next step (descriptions from the flora table, a generator change, one more small plan).
 Cost: none in the game (the new json is not read by the game). Tests: validate_items 0 errors; local_check 233; the script's --check in the branch notes.
 Ask: Tyler GO to merge the list and the uses file; GO on the gathered descriptions step.
+
+## Step 2 (same branch, 25 Oct): gathered item inspect texts
+data/items/gathered_text.json holds 167 hand-written one-line texts (what it is, how it is used; poisonous plants say so; fantasy plants are described by look and name only, no new mechanics). tools/gen_gathered_items.py merges them into gathered.json where no description exists (the first-hour ALWAYS_KNOWN texts win). gathered.json diff: 167 added "description" lines. Result: master list 0 empty cells, 0 of 174 gathered items without a text. validate_items 0 errors, test_inventory, test_first_hour, test_server_items pass. Cost: 167 short strings (about 10 KB) loaded with the item table.
