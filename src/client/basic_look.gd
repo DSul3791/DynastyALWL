@@ -543,7 +543,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# An arrow (items 270 wooden, 271 stone-headed with bits ["stone"]), real size 0.7 m: a straight ash shaft, a nock at the back (-x), three feather vanes (one darker cock feather)
 			# and a point at +x: the wooden arrow is sharpened and fire-hardened, the stone arrow has a flaked leaf head lashed on with twine.
 			var shaft_wood: Color = Color(0.5, 0.36, 0.18)
-			_cyl_taper(parts, 0.0042, 0.0042, 0.62, Vector3(-0.04, 0.0, 0.0), _tone(shaft_wood, 1, 0.05), 8)
+			_cyl_taper(parts, 0.0056, 0.0056, 0.62, Vector3(-0.04, 0.0, 0.0), _tone(shaft_wood, 1, 0.05), 8)
 
 			for k in range(3):                                                                                            # the three feather vanes, 120 degrees apart
 				var ang: float = TAU * float(k) / 3.0
@@ -552,11 +552,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.355, 0.0, 0.0), Color(0.12, 0.08, 0.05))               # the nock
 
 			if bits.has("stone"):
-				_plate(parts, 0.29, 0.075, 0.03, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 4, 1.4)
+				_plate(parts, 0.285, 0.1, 0.05, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 4, 1.6)
 				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
 				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
 			else:
-				_cone(parts, 0.0042, 0.06, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
+				_cone(parts, 0.0056, 0.07, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
 		"quiver":
 			# A hide quiver (item 272), about 55 cm: a tapering leather tube with a darker rim and seam, a carrying strap loop and the feathered ends of four arrows standing out of the mouth.
 			# Mesh axes: tube along x, mouth at +x.
