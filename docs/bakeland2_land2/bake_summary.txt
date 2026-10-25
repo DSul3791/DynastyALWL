@@ -1,0 +1,10 @@
+Tile (2, 3): 5.86 MB, stages { "height": 22726, "erosion": 7544, "ledges": 7714, "scree": 3977, "water": 67446, "climate": 3649, "land_types": 8219, "geology": 11542, "sites": 187 } -> E:/Software/godotDev/pl_land2/tiles/tile_2_3.tile
+Tile (3, 3): 6.59 MB, stages { "height": 23931, "erosion": 12301, "ledges": 10089, "scree": 5054, "water": 73982, "climate": 4191, "land_types": 8377, "geology": 12805, "sites": 286 } -> E:/Software/godotDev/pl_land2/tiles/tile_3_3.tile
+Tile (4, 3): 6.73 MB, stages { "height": 23123, "erosion": 11051, "ledges": 9104, "scree": 4576, "water": 72516, "climate": 3572, "land_types": 8099, "geology": 11959, "sites": 302 } -> E:/Software/godotDev/pl_land2/tiles/tile_4_3.tile
+Tile (2, 4): 4.50 MB, stages { "height": 21521, "erosion": 3397, "ledges": 4885, "scree": 2903, "water": 61731, "climate": 3549, "land_types": 7471, "geology": 9918, "sites": 95 } -> E:/Software/godotDev/pl_land2/tiles/tile_2_4.tile
+Tile (3, 4): 8.81 MB, stages { "height": 26111, "erosion": 16432, "ledges": 13910, "scree": 6511, "water": 86993, "climate": 3715, "land_types": 10455, "geology": 14141, "sites": 962 } -> E:/Software/godotDev/pl_land2/tiles/tile_3_4.tile
+Tile (4, 4): 5.85 MB, stages { "height": 23903, "erosion": 14425, "ledges": 11935, "scree": 5581, "water": 76458, "climate": 3760, "land_types": 9769, "geology": 12116, "sites": 169 } -> E:/Software/godotDev/pl_land2/tiles/tile_4_4.tile
+Tile (2, 5): 3.87 MB, stages { "height": 20318, "erosion": 1568, "ledges": 3291, "scree": 2449, "water": 55112, "climate": 3527, "land_types": 6952, "geology": 9736, "sites": 85 } -> E:/Software/godotDev/pl_land2/tiles/tile_2_5.tile
+Tile (3, 5): 4.87 MB, stages { "height": 22442, "erosion": 6591, "ledges": 7303, "scree": 3676, "water": 71239, "climate": 3484, "land_types": 7242, "geology": 10750, "sites": 111 } -> E:/Software/godotDev/pl_land2/tiles/tile_3_5.tile
+Tile (4, 5): 7.56 MB, stages { "height": 22883, "erosion": 12177, "ledges": 11570, "scree": 4655, "water": 57730, "climate": 3025, "land_types": 7189, "geology": 10478, "sites": 263 } -> E:/Software/godotDev/pl_land2/tiles/tile_4_5.tile
+9 tiles on 4 threads in 387.7 s
