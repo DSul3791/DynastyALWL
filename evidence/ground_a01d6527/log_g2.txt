@@ -1,27 +1,46 @@
 == wooden_hoe exit 0
-shot runner: FAILED no ground at this spot: item wooden_hoe never showed up on the ground near (53301.0, 31.0, 68426.0) (water, or the ground there is not loaded)
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 3: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 4: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 90 % off, PART OUTSIDE THE FRAME
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 51 % of the frame, centre 0 % off, all inside the frame
 shot runner: done (item pictures FAILED)
 == stone_hoe exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 56 % off, PART OUTSIDE THE FRAME
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53301.2, 31.29188, 68425.8) size (2.46875, 0.324001, 1.179688) is 89 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53301.2, 31.29188, 68425.8) size (2.46875, 0.324001, 1.179688) is 89 % off centre, part outside, aiming again
+shot runner: item view side try 3: box at (53301.2, 31.29188, 68425.8) size (2.46875, 0.324001, 1.179688) is 89 % off centre, part outside, aiming again
+shot runner: item view side try 4: box at (53301.2, 31.29188, 68425.8) size (2.46875, 0.324001, 1.179688) is 89 % off centre, part outside, aiming again
+shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 89 % off, PART OUTSIDE THE FRAME
 shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 14 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 51 % of the frame, centre 0 % off, all inside the frame
 shot runner: done (item pictures FAILED)
 == iron_hoe exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 58 % off, PART OUTSIDE THE FRAME
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 3: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 4: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 90 % off, PART OUTSIDE THE FRAME
 shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 14 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 51 % of the frame, centre 0 % off, all inside the frame
 shot runner: done (item pictures FAILED)
 == steel_hoe exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 58 % off, PART OUTSIDE THE FRAME
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side try 1: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 2: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 3: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side try 4: box at (53301.2, 31.29188, 68425.79) size (2.453125, 0.324001, 1.171875) is 90 % off centre, part outside, aiming again
+shot runner: item view side FAILED: pose off by 1.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 90 % off, PART OUTSIDE THE FRAME
 shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 14 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 51 % of the frame, centre 0 % off, all inside the frame
 shot runner: done (item pictures FAILED)
 == hand_saw exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 64 % of the frame, centre 16 % off, all inside the frame
-shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 76 % off, PART OUTSIDE THE FRAME
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 68 % of the frame, centre 11 % off, all inside the frame
-shot runner: done (item pictures FAILED)
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 64 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53301.79, 31.22526, 68426.0) size (1.148438, 0.388174, 0.648438) is 72 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 89 % of the frame, centre 1 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 59 % of the frame, centre 0 % off, all inside the frame
