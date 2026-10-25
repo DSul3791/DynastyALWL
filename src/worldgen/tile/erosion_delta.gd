@@ -16,6 +16,9 @@ var origin_z: float = 0.0
 var file_seed: int = 0
 var params_hash: int = 0
 var data: PackedFloat32Array = PackedFloat32Array()
+# Summit crowns: [x_m, z_m, k, full_m, fade_m]. Lowers the shoulders of a rounded summit by k x r^2 out to full_m, fading to
+# nothing at full_m + fade_m, so the top (r = 0) keeps its height but the flat crown tightens.
+var crowns: Array = []
 
 
 # True when the file was read.
@@ -43,6 +46,30 @@ func load_file(path: String) -> bool:
 # Change in metres at a world position: bicubic (Catmull-Rom) on the 32 m grid, so there are no slope kinks at the
 # cell lines for the 8 m water routing to find. 0 outside the grid.
 func sample(x_m: float, z_m: float) -> float:
+	return _grid_sample(x_m, z_m) - _crown_drop(x_m, z_m)
+
+
+# Metres the summit crowns take off at a world position.
+func _crown_drop(x_m: float, z_m: float) -> float:
+	var drop: float = 0.0
+
+	for crown in crowns:
+		var distance: float = Vector2(x_m - float(crown[0]), z_m - float(crown[1])).length()
+		var full_m: float = float(crown[3])
+		var reach_m: float = full_m + float(crown[4])
+
+		if distance >= reach_m:
+			continue
+
+		if distance <= full_m:
+			drop += float(crown[2]) * distance * distance
+		else:
+			drop += float(crown[2]) * full_m * full_m * (1.0 - smoothstep(full_m, reach_m, distance))
+
+	return drop
+
+
+func _grid_sample(x_m: float, z_m: float) -> float:
 	var u: float = (x_m - origin_x) / cell_m
 	var v: float = (z_m - origin_z) / cell_m
 

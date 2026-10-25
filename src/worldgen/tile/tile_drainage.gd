@@ -420,7 +420,7 @@ static func _breach_outlets(water, fill, flow, channels, land: PackedFloat32Arra
 					continue
 
 				var keep: bool = ring == 6 and rim - floor_m >= pit_keep_rim
-				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim - 0.3 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
+				var pit_cut_result: Dictionary = _cut_outlet_path(index, rim - 1.0 if keep else floor_m, fill, channels, land, sea, samples, drop, fall, depth_m, longest, pit_max_cut, pit_max_cut)
 				if pit_cut_result.has("skipped"):
 					pits_skipped += 1
 					continue

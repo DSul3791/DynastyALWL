@@ -1,0 +1,10 @@
+Tile (2, 3): 5.84 MB, stages { "height": 23853, "erosion": 7709, "ledges": 8580, "scree": 4191, "water": 71446, "climate": 3969, "geology": 12570, "sites": 176 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_2_3.tile
+Tile (3, 3): 6.56 MB, stages { "height": 24992, "erosion": 12757, "ledges": 11003, "scree": 5189, "water": 74125, "climate": 3743, "geology": 13549, "sites": 280 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_3_3.tile
+Tile (4, 3): 6.68 MB, stages { "height": 25102, "erosion": 12389, "ledges": 11261, "scree": 5492, "water": 76871, "climate": 4080, "geology": 13962, "sites": 310 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_4_3.tile
+Tile (2, 4): 4.50 MB, stages { "height": 22770, "erosion": 3533, "ledges": 6042, "scree": 2966, "water": 65309, "climate": 4003, "geology": 10636, "sites": 98 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_2_4.tile
+Tile (3, 4): 8.74 MB, stages { "height": 27076, "erosion": 18064, "ledges": 14915, "scree": 7034, "water": 83562, "climate": 5282, "geology": 15627, "sites": 1081 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_3_4.tile
+Tile (4, 4): 5.83 MB, stages { "height": 26432, "erosion": 15626, "ledges": 13038, "scree": 6019, "water": 80568, "climate": 4312, "geology": 12816, "sites": 170 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_4_4.tile
+Tile (2, 5): 3.87 MB, stages { "height": 21255, "erosion": 1778, "ledges": 3930, "scree": 2658, "water": 57939, "climate": 3891, "geology": 10423, "sites": 86 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_2_5.tile
+Tile (3, 5): 4.86 MB, stages { "height": 24228, "erosion": 7260, "ledges": 7497, "scree": 4037, "water": 75676, "climate": 4091, "geology": 11979, "sites": 121 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_3_5.tile
+Tile (4, 5): 7.54 MB, stages { "height": 23798, "erosion": 12789, "ledges": 10302, "scree": 4667, "water": 55387, "climate": 2992, "geology": 10522, "sites": 278 } -> E:/Software/godotDev/pl_lake2a2b/tiles/tile_4_5.tile
+9 tiles on 4 threads in 377.4 s

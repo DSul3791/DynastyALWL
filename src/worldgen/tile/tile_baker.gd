@@ -82,6 +82,8 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 
 	if not erosion_delta.load_file(world_dir + "/erosion_delta_v2.bin"):
 		erosion_delta = null
+	else:
+		erosion_delta.crowns = tile_rules.get("precarve", {}).get("summit_crowns", [])
 
 	tables = TableSetScript.new()
 	var table_problems: Array = tables.load_directory()
