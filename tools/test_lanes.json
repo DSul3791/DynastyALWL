@@ -1,8 +1,8 @@
 {
 	"version": 1,
 	"note": "Hand-kept rules for tools/tests_for_diff.py and tools/run_tests.sh (gate fix, Tyler 25 Oct 2026; owners Sal, Kathleen, Sonny review their parts). Test names are src/worldgen/tools/<name>.gd without .gd. A name that does not exist is reported by `tests_for_diff.py --check-lanes`. The selector adds to these by following the files each test loads (preload, load, res:// strings, class_name use, directories); anything it cannot place means MORE tests, never fewer.",
-	"timing": ["test_animals", "test_npcs", "test_bed"],
-	"retry": ["test_animals", "test_npcs", "test_bed"],
+	"timing": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
+	"retry": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
 	"serial_extra": [],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
 	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
