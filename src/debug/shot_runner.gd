@@ -45,6 +45,7 @@ var _item_built: bool = false
 var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
 var _item_box: AABB = AABB()
+var _item_node: Node3D = null
 var _item_views: Array = []
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
@@ -832,11 +833,12 @@ func _build_item_views(now: int) -> void:
 		if now - _drop_msec > 25000:
 			_item_failed = true
 			_item_built = true
-			print("shot runner: FAILED item %s never showed up on the ground near %s" % [give_item, str(_item_spot)])
+			print("shot runner: FAILED no ground at this spot: item %s never showed up on the ground near %s (water, or the ground there is not loaded)" % [give_item, str(_item_spot)])
 
 		return
 
-	_item_box = _node_aabb(best["node"])
+	_item_node = best["node"]
+	_item_box = _node_aabb(_item_node)
 
 	if _item_box.size == Vector3.ZERO:
 		_item_box = AABB((best["pos"] as Vector3) - Vector3(0.1, 0.0, 0.1), Vector3(0.2, 0.2, 0.2))
@@ -850,6 +852,23 @@ func _build_item_views(now: int) -> void:
 	_subject_set = true
 	_item_built = true
 	print("shot runner: item %s at %s, box %s, %d views" % [give_item, str(centre), str(_item_box.size), views.size()])
+
+
+# The item may still have been settling when its box was first measured (it tumbles or snaps to the ground): each view measures the box again just before it is
+# set up and aims at where the item really is now.
+func _remake_item_view(view: Dictionary) -> Dictionary:
+	_item_box = _node_aabb(_item_node)
+	var centre: Vector3 = _item_box.get_center()
+	var ground: float = _ground(centre.x, centre.z)
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	var fresh: Array = ItemCam.views(centre, maxf(_item_box.size.x, _item_box.size.z), client.camera.fov, centre.y - 0.1 if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+
+	for v in fresh:
+		if v["name"] == view["name"]:
+			views[_view_i] = v
+			return v
+
+	return view
 
 
 func _node_aabb(node: Node) -> AABB:
@@ -879,18 +898,27 @@ func _check_item_view(view: Dictionary) -> void:
 	var yaw_err: float = absf(wrapf(rad_to_deg(atan2(-forward.x, -forward.z)) - float(view["yaw"]), -180.0, 180.0)) if absf(float(view["pitch"])) < 80.0 else 0.0
 	var pitch_err: float = absf(rad_to_deg(asin(clampf(forward.y, -1.0, 1.0))) - float(view["pitch"]))
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	var fill: float = ItemCam.fill_fraction(_item_box, cam.global_position, forward, cam.global_transform.basis.y, cam.fov, size.x / maxf(size.y, 1.0))
-	var ok: bool = pos_err <= 0.1 and yaw_err <= 2.0 and pitch_err <= 2.0 and fill >= 0.32
+	if _item_node != null and is_instance_valid(_item_node):
+		_item_box = _node_aabb(_item_node)      # where the item is now, not where it was when the view was set up
+
+	var stats: Dictionary = ItemCam.frame_stats(_item_box, cam.global_position, forward, cam.global_transform.basis.y, cam.fov, size.x / maxf(size.y, 1.0))
+	var fill: float = stats["fill"]
+	var off: float = stats["off"]
+	var inside: bool = stats["inside"]
+	var ok: bool = pos_err <= 0.1 and yaw_err <= 2.0 and pitch_err <= 2.0 and fill >= 0.32 and off <= 0.1 and inside
 
 	if not ok:
 		_item_failed = true
 
-	print("shot runner: item view %s %s: pose off by %.2f m, yaw %.1f, pitch %.1f degrees; item fills %.0f %% of the frame" % [view["name"], "ok" if ok else "FAILED", pos_err, yaw_err, pitch_err, fill * 100.0])
+	print("shot runner: item view %s %s: pose off by %.2f m, yaw %.1f, pitch %.1f degrees; item fills %.0f %% of the frame, centre %.0f %% off, %s" % [view["name"], "ok" if ok else "FAILED", pos_err, yaw_err, pitch_err, fill * 100.0, off * 100.0, "all inside the frame" if inside else "PART OUTSIDE THE FRAME"])
 
 
 # One view per call: set the camera, let it settle 2 s, save the frame, go on to the next; the normal picture follows the last view.
 func _run_view(now: int) -> void:
 	var view: Dictionary = views[_view_i]
+
+	if _view_msec == 0 and item_mode and _item_node != null and is_instance_valid(_item_node):
+		view = _remake_item_view(view)
 
 	if _view_msec == 0:
 		if not _subject_set:

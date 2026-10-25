@@ -56,6 +56,27 @@ func _init() -> void:
 		var fill: float = ItemCam.fill_fraction(box, cam, forward, Vector3.UP, FOV, ASPECT)
 		check(fill >= 0.32, "size %.1f m tool fills %.0f %% of the frame (needs a third)" % [size, fill * 100.0])
 
+	# Centring: for every view the box centre sits in the middle of the frame and the whole box is inside it (sizes up to 1.2 m).
+	for size in [0.2, 0.6, 1.2]:
+		var centre: Vector3 = Vector3(5.0, 1.0, 5.0)
+		var box: AABB = AABB(centre - Vector3(size, size * 0.15, size * 0.15) * 0.5, Vector3(size, size * 0.15, size * 0.15))
+
+		for v in ItemCam.views(centre, size, FOV, 0.9):
+			var yaw: float = deg_to_rad(float(v["yaw"]))
+			var pitch: float = deg_to_rad(float(v["pitch"]))
+			var forward: Vector3 = Vector3(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch))
+			var stats: Dictionary = ItemCam.frame_stats(box, v["cam"], forward, Vector3.UP if v["name"] != "top" else Vector3(0.0, 0.0, -1.0), FOV, ASPECT)
+			check(float(stats["off"]) <= 0.05, "size %.1f %s: box centre %.1f %% off the frame centre" % [size, v["name"], float(stats["off"]) * 100.0])
+			check(bool(stats["inside"]), "size %.1f %s: the whole box is inside the frame" % [size, v["name"]])
+
+	# An item that moved 0.4 m after the camera was set is off centre and the check says so.
+	var moved: AABB = AABB(Vector3(5.4, 0.9, 5.0), Vector3(0.6, 0.1, 0.1))
+	var front: Dictionary = ItemCam.views(Vector3(5.0, 1.0, 5.0), 0.6, FOV, 0.9)[0]
+	var fy: float = deg_to_rad(float(front["yaw"]))
+	var fp: float = deg_to_rad(float(front["pitch"]))
+	var shifted: Dictionary = ItemCam.frame_stats(moved, front["cam"], Vector3(-sin(fy) * cos(fp), sin(fp), -cos(fy) * cos(fp)), Vector3.UP, FOV, ASPECT)
+	check(float(shifted["off"]) > 0.1, "an item that moved 0.4 m is off centre (%.0f %%)" % (float(shifted["off"]) * 100.0))
+
 	check(ItemCam.fill_fraction(AABB(Vector3(0.0, 0.0, 5.0), Vector3.ONE), Vector3.ZERO, Vector3.FORWARD, Vector3.UP, FOV, ASPECT) == 0.0, "an item behind the camera fills nothing")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(0.0, 0.0, 1.0), Vector3.ZERO), 0.0), "from the south facing north: yaw 0")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(1.0, 0.0, 0.0), Vector3.ZERO), 90.0), "from the east facing west: yaw 90")

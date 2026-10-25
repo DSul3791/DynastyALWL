@@ -56,9 +56,10 @@ static func _top(centre: Vector3, d: float, ground_y: float) -> Dictionary:
 	return {"name": "top", "dist": d, "cam": cam, "yaw": 0.0, "pitch": TOP_PITCH, "cam_x": cam.x, "cam_z": cam.z, "above": cam.y - ground_y}
 
 
-# The fraction of the frame (the larger of width and height) the corners of `box` cover seen from `cam` looking along `forward`, `up` up; the vertical field of view and
-# aspect define the frame. 0 when the box is behind the camera.
-static func fill_fraction(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> float:
+# Where the corners of `box` land in the frame seen from `cam` looking along `forward`, `up` up (vertical field of view and aspect define the frame):
+# {"fill": larger of the width and height fractions, "off": how far the box centre is from the frame centre as a fraction of the frame size (larger of x and y),
+# "inside": every corner is in the frame}. fill 0 and inside false when any corner is behind the camera.
+static func frame_stats(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> Dictionary:
 	var right: Vector3 = forward.cross(up).normalized()
 	var true_up: Vector3 = right.cross(forward).normalized()
 	var t: float = tan(deg_to_rad(fov_deg) * 0.5)
@@ -71,10 +72,15 @@ static func fill_fraction(box: AABB, cam: Vector3, forward: Vector3, up: Vector3
 		var depth: float = rel.dot(forward)
 
 		if depth <= 0.01:
-			return 0.0
+			return {"fill": 0.0, "off": 1.0, "inside": false}
 
 		var screen: Vector2 = Vector2(rel.dot(right) / (depth * t * aspect), rel.dot(true_up) / (depth * t))     # -1..1 across the frame
 		lo = Vector2(minf(lo.x, screen.x), minf(lo.y, screen.y))
 		hi = Vector2(maxf(hi.x, screen.x), maxf(hi.y, screen.y))
 
-	return maxf(minf(hi.x - lo.x, 2.0) * 0.5, minf(hi.y - lo.y, 2.0) * 0.5)
+	var centre: Vector2 = (lo + hi) * 0.5
+	return {"fill": maxf(minf(hi.x - lo.x, 2.0) * 0.5, minf(hi.y - lo.y, 2.0) * 0.5), "off": maxf(absf(centre.x), absf(centre.y)) * 0.5, "inside": lo.x >= -1.0 and lo.y >= -1.0 and hi.x <= 1.0 and hi.y <= 1.0}
+
+
+static func fill_fraction(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> float:
+	return float(frame_stats(box, cam, forward, up, fov_deg, aspect)["fill"])
