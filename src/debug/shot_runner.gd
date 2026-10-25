@@ -24,6 +24,14 @@ var shots: Array = []
 var dir: String = "user://shots"
 var wait_s: float = 60.0
 var settle_s: float = 25.0
+var ground_settle_s: float = -1.0   # --shot-ground-settle=S: shoot S seconds after the client's ground is ready (Dave 25 Oct); -1 keeps the old fixed --shot-settle
+var ground_max_s: float = 60.0       # --shot-ground-max=S: longest wait for the ground; on timeout the picture is taken and marked GROUND NOT READY
+var turn_settle_s: float = 2.0       # settle after a turn on the same spot (the 3-views rule)
+var real_view: bool = false          # the player's real view: hand, held tool and HUD on, the look-down set as a pose (the client ignores the mouse in a shots run)
+var side_elev_deg: float = 0.0       # --shot-elev=DEG: the side camera orbits at this elevation above the subject (80 = from the top)
+var wait_y: float = 400.0            # --shot-wait-y=: the height the player waits at while the ground loads (at ground level so the ground under it loads first)
+var _ground_ok_msec: int = 0
+var _ground_late: bool = false
 
 var _index: int = -1
 var _placed: bool = false
@@ -180,6 +188,16 @@ func setup(owner_client, args: Array) -> void:
 			wait_s = float(argument.trim_prefix("--shot-wait="))
 		elif argument.begins_with("--shot-settle="):
 			settle_s = float(argument.trim_prefix("--shot-settle="))
+		elif argument.begins_with("--shot-ground-settle="):
+			ground_settle_s = float(argument.trim_prefix("--shot-ground-settle="))
+		elif argument.begins_with("--shot-wait-y="):
+			wait_y = float(argument.trim_prefix("--shot-wait-y="))
+		elif argument.begins_with("--shot-elev="):
+			side_elev_deg = float(argument.trim_prefix("--shot-elev="))
+		elif argument == "--shot-realview":
+			real_view = true
+		elif argument.begins_with("--shot-ground-max="):
+			ground_max_s = float(argument.trim_prefix("--shot-ground-max="))
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 
@@ -208,7 +226,7 @@ func _process(delta: float) -> void:
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
 
-		if client.held != null:
+		if client.held != null and not real_view:
 			client.held.set_first_person(false)
 
 		if client._avatar != null and float(shots[_index]["walk"]) < 0.0:
@@ -261,15 +279,50 @@ func _process(delta: float) -> void:
 		var ground: float = _ground(shot_pos.x, shot_pos.z)
 
 		if is_nan(ground) and now - _ground_wait_msec < 300000:
-			client.body.global_position = Vector3(shot_pos.x, 400.0, shot_pos.z)
+			client.body.global_position = Vector3(shot_pos.x, wait_y, shot_pos.z)
 			return
 
 		_placed = true
 		_moved_msec = now
 		client.body.global_position = Vector3(shot_pos.x, -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y), shot_pos.z)
+
+		if real_view and client.flying:
+			# The player's own key: G turns flying off, so the player stands.
+			for pressed in [true, false]:
+				var key: InputEventKey = InputEventKey.new()
+				key.keycode = KEY_G
+				key.physical_keycode = KEY_G
+				key.pressed = pressed
+				Input.parse_input_event(key)
+
 		return
 
-	if now - _moved_msec < int(settle_s * 1000.0):
+	# Something in the client turns the body while it settles (shot c came out at -143 for 180): hold the asked yaw and pitch every frame.
+	if ground_settle_s >= 0.0:
+		client.body.rotation.y = deg_to_rad(_body_yaw(_index))
+		client.pitch = deg_to_rad(float(shots[_index]["pitch"]))
+		client.camera.rotation.x = client.pitch
+
+	if ground_settle_s >= 0.0:
+		var same_spot: bool = _index > 0 and shots[_index - 1]["pos"] == shots[_index]["pos"]
+
+		if same_spot:
+			if now - _moved_msec < int(turn_settle_s * 1000.0):
+				return
+		else:
+			if client.waiting_for_ground and now - _moved_msec < int(ground_max_s * 1000.0):
+				_ground_ok_msec = 0
+				return
+
+			if client.waiting_for_ground:
+				_ground_late = true
+				_ground_ok_msec = _moved_msec
+			elif _ground_ok_msec == 0:
+				_ground_ok_msec = now
+
+			if now - _ground_ok_msec < int(ground_settle_s * 1000.0):
+				return
+	elif now - _moved_msec < int(settle_s * 1000.0):
 		return
 
 	if dig_steps > 0 and now - client.connected_msec > 12000:
@@ -410,9 +463,14 @@ func _process(delta: float) -> void:
 		_print_flora_row()
 
 	var image: Image = get_viewport().get_texture().get_image()
-	var path: String = "%s/%s.png" % [dir, shots[_index]["name"]]
+	var path: String = "%s/%s%s.png" % [dir, shots[_index]["name"], "_FAILED_ground_not_ready" if _ground_late else ""]
 	image.save_png(path)
 	var p: Vector3 = client.body.global_position
+	var want_yaw: float = _body_yaw(_index)
+	var got_yaw: float = rad_to_deg(client.body.rotation.y)
+	var dyaw: float = absf(fposmod(got_yaw - want_yaw + 180.0, 360.0) - 180.0)
+	var dpitch: float = absf(rad_to_deg(client.pitch) - float(shots[_index]["pitch"]))
+	print("shot runner: pose %s pos %.2f,%.2f,%.2f yaw %.1f (asked %.1f) pitch %.1f (asked %.1f)%s%s" % [shots[_index]["name"], p.x, p.y, p.z, got_yaw, want_yaw, rad_to_deg(client.pitch), float(shots[_index]["pitch"]), (" POSE MISMATCH" if (dyaw > 0.5 or dpitch > 0.5) else "") + (" camera orbit %.0f" % _orbit_deg(_index)), " GROUND NOT READY" if _ground_late else ""])
 	if client.held != null and give_item != "":
 		print("shot runner: held id %s holding %s model %s mounted %s" % [client.held.held_id(), str(client.held.holding), str(client.held._model != null), str(client.held._mounted)])
 		var hm = client.held._model
@@ -856,13 +914,14 @@ func _side_view(walk: float) -> void:
 
 	client.third_person = true
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
-	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
+	var left: Vector3 = Basis(Vector3.UP, deg_to_rad(_orbit_deg(_index))) * (client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0))
 	var aim: Vector3 = origin
 
 	if side_dist < 2.0 and client.held != null and client.held._model != null:
 		aim = client.held._model.global_position
 
-	client.view_cam.global_position = aim + left * side_dist * side_sign + Vector3(0.0, 0.1, 0.0)
+	var elev: float = deg_to_rad(side_elev_deg)
+	client.view_cam.global_position = aim + left * side_dist * side_sign * cos(elev) + Vector3(0.0, 0.1 + side_dist * sin(elev), 0.0)
 	client.view_cam.look_at(aim, Vector3.UP)
 
 
@@ -1003,7 +1062,8 @@ func _next(now: int) -> void:
 	client.flying = true
 	_placed = false
 	_ground_wait_msec = now
-	client.body.global_position = Vector3(shot["pos"].x, 400.0, shot["pos"].z)
+	_ground_ok_msec = 0
+	client.body.global_position = Vector3(shot["pos"].x, wait_y, shot["pos"].z)
 	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
 	client.pitch = deg_to_rad(float(shot["pitch"]))
 	client.camera.rotation.x = client.pitch
@@ -1011,6 +1071,9 @@ func _next(now: int) -> void:
 	_hour = float(shot["hour"])
 	_weather = str(shot["weather"])
 	_moved_msec = now
+
+	if real_view:
+		return
 
 	if client.hud != null and not admin_text:
 		client.hud.visible = false
@@ -1030,3 +1093,26 @@ func _next(now: int) -> void:
 
 	if client.hotbar_strip != null and client.hotbar_strip.has_method("hide"):
 		client.hotbar_strip.hide()
+
+
+# The first shot of this spot (turn shots share a position).
+func _spot_first(i: int) -> int:
+	while i > 0 and shots[i - 1]["pos"] == shots[i]["pos"]:
+		i -= 1
+
+	return i
+
+
+# Side views keep the character still and orbit the camera round it; first-person shots turn the body.
+func _body_yaw(i: int) -> float:
+	if float(shots[i]["walk"]) >= 0.0:
+		return float(shots[_spot_first(i)]["yaw"])
+
+	return float(shots[i]["yaw"])
+
+
+func _orbit_deg(i: int) -> float:
+	if float(shots[i]["walk"]) >= 0.0:
+		return float(shots[i]["yaw"]) - float(shots[_spot_first(i)]["yaw"])
+
+	return 0.0

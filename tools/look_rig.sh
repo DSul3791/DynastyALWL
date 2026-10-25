@@ -36,13 +36,13 @@ if [ -n "$WIN" ]; then
 else
   GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
 fi
-CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
+LETTERS=abcdefgh; TURNS=1; GSETTLE=10; GMAX=60; CLOSE=""; CH=0.35; CD=0.9; CP=-45; PIECES=""; ITEM=""; GROUND=""; GY=31.0; COUNT=1; CAM=first; AT="53301,68427"; AGL=1.7; YAW=0; PITCH=0; HOUR=12; WEATHER=clear; ADMIN=""; NAME=""; OUT="$DEFOUT"; WAIT=""; SETTLE=""; DDIST=1.0
 while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; shift 2;; --at) AT="$2"; shift 2;;
     --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
     --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
-    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
+    --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; --turns) TURNS="$2"; shift 2;; --ground-settle) GSETTLE="$2"; shift 2;; --ground-max) GMAX="$2"; shift 2;; --realview) ADMIN="$ADMIN --shot-realview"; shift;; --elev) ADMIN="$ADMIN --shot-elev=$2"; shift 2;; --extra) ADMIN="$ADMIN $2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
   esac
 done
 # --ground-close: the camera numbers are flags (--close-height, --close-dist, --close-pitch); later --agl/--drop-dist/--look-down still win.
@@ -61,10 +61,11 @@ if [ -n "$PIECES" ]; then
   done
 fi
 [ -z "$NAME" ] && NAME="${ITEM:-empty}_${CAM}"
-if [ -n "$WIN" ]; then WAIT="${WAIT:-25}"; SETTLE="${SETTLE:-12}"; else WAIT="${WAIT:-120}"; SETTLE="${SETTLE:-20}"; fi
+if [ -n "$WIN" ]; then WAIT="${WAIT:-3}"; SETTLE="${SETTLE:-12}"; else WAIT="${WAIT:-3}"; SETTLE="${SETTLE:-20}"; fi
 X="${AT%,*}"; Z="${AT#*,}"
-RIG=$(mktemp -d); STORE="$RIG/store"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then UD="$RIG/appdata/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
+RIG=$(mktemp -d); STORE="$RIG/store"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then AD="/e/Software/godotDev/rig_appdata"; UD="$AD/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
 mkdir -p "$STORE" "$UD" "$OUT"
+WARM="/e/Software/godotDev/rig_warm_store"; mkdir -p "$WARM"; cp -p "$WARM"/* "$STORE"/ 2>/dev/null   # Dave 25 Oct: the generated ground is kept between runs; the server throws it away itself when the terrain version or the tile files change (terrain_version.txt in the store)
 KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 if [ -n "$ITEM" ]; then
   NUM=$($PY tools/item_numbers.py "$ITEM") || { echo "item tables: duplicate name or number (see above)"; exit 2; }
@@ -80,16 +81,28 @@ if [ -n "$GROUND" ]; then
   GID="${GROUND%%:*}"; GCOUNT="${GROUND#*:}"; [ "$GCOUNT" = "$GROUND" ] && GCOUNT=1
   $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
 fi
-PORT=$((7800 + RANDOM % 150))
+PORT=$((7800 + RANDOM % 150)); while netstat -an 2>/dev/null | grep -q ":$PORT "; do PORT=$((7800 + RANDOM % 150)); done   # a port nobody holds
+T0=$(date +%s)
 "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 > "$RIG/server.log" 2>&1 &
 SP=$!
-trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
-sleep 30
+if [ -n "$WIN" ] && [ -z "$NOWINDOW" ]; then   # Dave 25 Oct: a visible window shows the server log live; it stays open after the run, the next run closes it first
+  taskkill //F //FI "WINDOWTITLE eq Test server*" > /dev/null 2>&1
+  cmd //c start "Test server" powershell -NoExit -Command "\$host.UI.RawUI.WindowTitle='Test server'; Get-Content -Wait -Tail 60 -LiteralPath '$(cygpath -w "$RIG/server.log")' -ErrorAction SilentlyContinue; Write-Host '--- run finished ---'" > /dev/null 2>&1
+fi
+trap 'kill $SP 2>/dev/null; sleep 2; cp -p "$STORE"/generated* "$STORE"/terrain_version.txt "$STORE"/settled* "$WARM"/ 2>/dev/null; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
+for _i in $(seq 1 60); do grep -q "listening" "$RIG/server.log" 2>/dev/null && break; sleep 0.5; done   # was a fixed sleep 30: go as soon as the server prints its listening line (30 s at most)
+echo "rig timing: server listening after $(( $(date +%s) - T0 )) s"
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
-CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"})
+if [ "$TURNS" -gt 1 ]; then   # Dave 25 Oct: 3 shots per spot, turning left 90 degrees after each (yaw, yaw+90, yaw+180)
+  SHOT=""; for _t in $(seq 0 $((TURNS - 1))); do
+    SHOT="${SHOT:+$SHOT;}${NAME}_${LETTERS:$_t:1}:$X,$AGL,$Z,$(python3 -c "print(($YAW) + 90 * $_t)" 2>/dev/null || python -c "print(($YAW) + 90 * $_t)"),$PITCH,$HOUR,$WEATHER,$WALK"
+  done
+fi
+WAITY=""; [ "$(python3 -c "print(1 if $AGL <= 5 else 0)" 2>/dev/null || echo 1)" = "1" ] && WAITY="--shot-wait-y=$GY"   # Dave 25 Oct: wait at ground level, not at 400 m; aerial shots (agl over 5 m) keep their own height
+CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE --shot-ground-settle=$GSETTLE --shot-ground-max=$GMAX $WAITY $ADMIN ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
-  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
+  APPDATA="$(cygpath -w "$AD")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 else
   # NVIDIA Vulkan file when nvidia-smi works (found by looking), else Mesa lavapipe; own HOME so Dave's settings are never touched.
   ICD=""; REND=software
@@ -101,5 +114,13 @@ else
   echo "renderer: $REND ($ICD)"; [ "$REND" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
+echo "rig timing: client run (join to last picture) $(( $(date +%s) - T0 )) s since the server started"
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
+grep -E "shot runner: pose" "$RIG/client.log" | cut -c1-220   # the pose read back at each capture (POSE MISMATCH / GROUND NOT READY are flagged on the line)
+if grep -q "GROUND NOT READY" "$RIG/client.log"; then echo "FAILED: ground not ready at the shot (pictures are named _FAILED_ground_not_ready, do not use them)"; exit 4; fi
+if [ "$TURNS" -gt 1 ]; then   # no two pictures of one run may be identical (STANDARD_SHOTS rule)
+  _SUMS=$(for _t in $(seq 0 $((TURNS - 1))); do md5sum "$OUT/${NAME}_${LETTERS:$_t:1}.png" 2>/dev/null; done | cut -d' ' -f1)
+  _N=$(echo "$_SUMS" | grep -c .); _D=$(echo "$_SUMS" | sort -u | grep -c .)
+  echo "duplicate check: $_N pictures, $_D distinct"; [ "$_N" != "$_D" ] && { echo "DUPLICATE PICTURES: the batch fails"; exit 3; }
+fi
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
