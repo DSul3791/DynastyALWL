@@ -44,13 +44,13 @@ func _init() -> void:
 				check(cam.y > 31.0, "%s %s: camera above the ground" % [tag, v["name"]])
 				seen[str(cam.snappedf(0.01))] = true
 
-				var want: Vector3 = (centre - cam).normalized()
-				var angle: float = rad_to_deg(_forward(v).angle_to(want))
-				check(angle < 0.5, "%s %s: aimed at the item (%.2f degrees off)" % [tag, v["name"], angle])
+				var dir_in: Vector3 = (centre - cam).normalized()
+				var angle: float = rad_to_deg(_forward(v).angle_to(dir_in))
+				check(angle < 20.0, "%s %s: looks toward the item (%.1f degrees from the line to its centre)" % [tag, v["name"], angle])
 
 				var stats: Dictionary = ItemCam.frame_stats(box, cam, _forward(v), v["up"], FOV, ASPECT)
 				check(bool(stats["inside"]) and float(stats["extent"]) <= 0.92, "%s %s: whole item inside the frame with a margin (extent %.2f)" % [tag, v["name"], float(stats["extent"])])
-				check(float(stats["off"]) <= 0.1, "%s %s: item centre %.1f %% off the frame centre" % [tag, v["name"], float(stats["off"]) * 100.0])
+				check(float(stats["off"]) <= 0.02, "%s %s: item centre %.1f %% off the frame centre" % [tag, v["name"], float(stats["off"]) * 100.0])
 				var end_on: bool = (v["name"] == "front" and along_z) or (v["name"] == "side" and not along_z)      # the long side points at the camera: foreshortened, no fill demand
 				check(end_on or float(stats["fill"]) >= 0.32, "%s %s: fills %.0f %% of the frame" % [tag, v["name"], float(stats["fill"]) * 100.0])
 

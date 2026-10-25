@@ -36,12 +36,37 @@ static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16
 		var dir: Vector3 = Vector3(sin(bearing) * cos(elevation), sin(elevation), cos(bearing) * cos(elevation))
 		var up: Vector3 = Vector3.UP if float(spec[2]) < 89.0 else Vector3(0.0, 0.0, -1.0)
 		var d: float = fit_distance(box, dir, up, fov_deg, aspect)
-		var cam: Vector3 = centre + dir * d
+		var aim_from: Vector3 = centre + dir * d      # the orientation is the one of the unshifted camera; centre_in_frame only slides the camera
+		var cam: Vector3 = centre_in_frame(box, aim_from, -dir, up, fov_deg, aspect)
 		var top: bool = float(spec[2]) >= 89.0
-		out.append({"name": spec[0], "dist": d, "cam": cam, "yaw": 0.0 if top else yaw_to(cam, centre), "pitch": TOP_PITCH if top else pitch_to(cam, centre),
+		out.append({"name": spec[0], "dist": d, "cam": cam, "yaw": 0.0 if top else yaw_to(aim_from, centre), "pitch": TOP_PITCH if top else pitch_to(aim_from, centre),
 			"cam_x": cam.x, "cam_z": cam.z, "above": cam.y - ground_y, "up": up})
 
 	return out
+
+
+# Perspective makes the projected box lean away from the projection of its centre point (the near corners spread wider), so aiming at the 3D centre leaves the picture
+# of a close item off centre. The camera is slid sideways (orientation unchanged) until the middle of the projected box is the middle of the frame.
+static func centre_in_frame(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> Vector3:
+	var right: Vector3 = forward.cross(up).normalized()
+	var true_up: Vector3 = right.cross(forward).normalized()
+	var t: float = tan(deg_to_rad(fov_deg) * 0.5)
+	var depth: float = (box.get_center() - cam).dot(forward)
+
+	for n in range(8):
+		var b: Dictionary = frame_stats(box, cam, forward, up, fov_deg, aspect)
+
+		if not b.has("centre"):
+			return cam
+
+		var c: Vector2 = b["centre"]
+
+		if absf(c.x) < 0.002 and absf(c.y) < 0.002:
+			break
+
+		cam += right * c.x * t * aspect * depth + true_up * c.y * t * depth
+
+	return cam
 
 
 # The smallest distance along `dir` from the box centre (aiming back at it) at which every corner lies within FIT_MARGIN of the frame edges (bisection: the fit only
@@ -88,7 +113,7 @@ static func frame_stats(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, 
 		hi = Vector2(maxf(hi.x, screen.x), maxf(hi.y, screen.y))
 
 	var centre: Vector2 = (lo + hi) * 0.5
-	return {"fill": maxf(minf(hi.x - lo.x, 2.0) * 0.5, minf(hi.y - lo.y, 2.0) * 0.5), "off": maxf(absf(centre.x), absf(centre.y)) * 0.5, "inside": lo.x >= -1.0 and lo.y >= -1.0 and hi.x <= 1.0 and hi.y <= 1.0, "extent": maxf(maxf(absf(lo.x), absf(hi.x)), maxf(absf(lo.y), absf(hi.y)))}
+	return {"fill": maxf(minf(hi.x - lo.x, 2.0) * 0.5, minf(hi.y - lo.y, 2.0) * 0.5), "off": maxf(absf(centre.x), absf(centre.y)) * 0.5, "centre": centre, "inside": lo.x >= -1.0 and lo.y >= -1.0 and hi.x <= 1.0 and hi.y <= 1.0, "extent": maxf(maxf(absf(lo.x), absf(hi.x)), maxf(absf(lo.y), absf(hi.y)))}
 
 
 static func fill_fraction(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> float:

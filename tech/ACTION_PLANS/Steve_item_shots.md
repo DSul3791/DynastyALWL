@@ -16,3 +16,6 @@ Run: godot ... -- --shots="item:X,1.7,Z,0,-30,12" --shot-item=iron_pickaxe --sho
 
 ## Fit-first (25 Oct, Mike's 1.2 m spade run)
 Camera distance is now the smallest at which every box corner lies within 90 % of the half-frame (bisection, 0.2 to 3 m), per view, aimed at the box centre; elevations 25 / 25 / 90 / 35 degrees for front / side / top / diag. test_item_cam.gd covers 0.2, 0.6, 1.2, 1.8 m items along X and Z in all four views plus a tall post, centring (<= 10 %), inside-with-margin, fill (>= 32 % unless the item points at the camera).
+
+## Perspective centring (25 Oct, David3: 13-15 % off in test_item_cam, pose exact)
+Cause: perspective. Looking at the 3D centre of a close box, the near corners spread wider than the far ones, so the middle of the projected box leans away from the frame centre (a 0.6 m item at 0.4-0.5 m: 13-15 %, matching David3's numbers; checked in a separate numeric mirror). Fix: item_cam.centre_in_frame slides the camera sideways (orientation unchanged) until the middle of the projected box is the middle of the frame; 8 iterations, converges to under 0.1 %. test_item_cam now demands the centre within 2 %.
