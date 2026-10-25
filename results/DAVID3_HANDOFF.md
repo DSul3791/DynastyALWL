@@ -17,3 +17,15 @@ Work copies (export folders, not git worktrees): /work/bake (bake clone, tests),
 4. Pending Dave: memory 15 GB (steps sent), standard picture set K01-K19 (quick set K01 K03 K05 K09 + a tool) once Tyler names a build; picture wait rule: shoot after landing check (needs the fix in the spawn-column line).
 ## Known issues
 - shot_runner landing check false failure was fixed in later heads. Column answer takes about 20 s after the welcome in my rig. Server crash: _plateau_cache race (fixed by flora-mutex). bowl 1 hill picture thin-sheet unexplained.
+
+## How to run each gate (for MikeW, if David3 is lost). Scripts are copies in results/david3_scripts/ (they use Linux paths /work/..., /opt/godot; on Windows use tools/look_rig.sh and the editor exe from tools/godot).
+- Always: first result line `HEAD=<full 40-char hash>`; check out exactly that commit in a clean copy (on the box I used git archive <hash> into a folder, because untracked .uid files blocked checkouts in /work/repo). Import once (`godot --headless --path . --import`), then:
+- Standard gate: `python3 tools/parse_scan.py` (expect 0 problems); `bash tools/local_check.sh` (expect "no new warnings against baseline (233 total)"; on Linux put a `godot` link on PATH and set GODOT_EXE); all `src/worldgen/tools/test_*.gd` via `godot --headless --path . --script res://src/worldgen/tools/<name>.gd` (script gateN2.sh loops them: pass = exit 0 and no "N fail"/FAIL/SCRIPT ERROR). A branch passes if it adds no failure beyond the base list in results/20261025_baseline (test_pond_outlet retired by Dave's OK).
+- Duplicate sweep: python over data/items/items.json and recipes.json (keys are names; check "number" unique, next_number > max); expected items max 266 next 267, recipes max 169 next 170 at the time.
+- Pictures: shot_land2.sh (server GPU, Xvfb, own temp store, server --threads=4 default via SRVARGS) with SHOTSPEC="name:x,agl,z,yaw,pitch,hour,weather,-1;..." and EXTRA flags; look for "landed" lines; picture wait: --wait 40 --settle 10..15 while the landing check is trusted. Check duplicates with pubcheck.sh before publishing; publish with run_jobs.sh publish (PNG in <dir>/shots become JPEGs in box-results).
+- Spawn/crash gates: two.sh (thread-safety dba07947 then spawn-column bbb4977d), mutex.sh (hybrid flora file swap); the client hangs forever if the server dies: wd2.sh kills it.
+- Generator proofs: su2.sh (bake_tiles 3,4;4,4 with/without cache, md5 against /work/out_base made from merge-793 5b9d9f9, memory sampled from the cgroup), gs2.sh (600-tick settle .water md5, old vs new .so), test_gen_core.gd. No bakes without Dave's go.
+## Caveats
+- taskset pinning (`taskset -c 0-3`) was used in the mutex/thread-safety/two.sh runs until 04:50 UTC; now a no-op shim and server --threads=4 instead. The mutex 10-run proof used a hybrid tree (spawn-column 82e01b1a with flora_placer.gd swapped) and printed no SPAWNTEST lines.
+- Pictures taken with 10 s waits (before the landing fix) can be mid-air; use heads with the landing check.
+- The box cannot compile the C++ .so; the Linux .so used is the one committed in the branch.
