@@ -84,3 +84,4 @@ PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goe
 
 ## DAILY AUDIT (Dave 25 Oct 2026, permanent)
 Every day at the 20:00 ADT handoff: tech/DAILY_AUDIT_<date>.md (what we did wrong, what we do better, owner for each, what went well). BP-T67.
+- Daily handoff also lists the LOOK REVIEW LOOP state: last batch (build), last review, open critiques by owner, three worst pictures (BP-T68, tech/STANDARD_SHOTS.md).
