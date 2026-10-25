@@ -79,7 +79,7 @@ func _init() -> void:
 	check(parsed["blueprints"].size() == 8, "build 1: six section kits, the timber set and the ladder (%d)" % parsed["blueprints"].size())
 	check(not parsed["blueprints"].has("lean_to") and not parsed["blueprints"].has("rough_bed") and not parsed["blueprints"].has("thatch_wall") and not parsed["blueprints"].has("chest"), "nothing in the first tier is a blueprint")
 
-	# Place: needs a hammer, a stone one at that, and every material; a short pack takes nothing.
+	# Place: needs a hammer of the row's tier and every material; a short pack takes nothing.
 	var wall: Dictionary = parsed["blueprints"]["wall_section"]
 	var spot: Vector3 = Vector3(200.0, 10.0, 202.0)
 	_clear(1)
@@ -90,7 +90,14 @@ func _init() -> void:
 	check(items.world_item_count() == before and _have(1, "lumber") == 4, "no hammer: nothing placed, nothing taken")
 	_give(1, "wooden_hammer", 1)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
-	check(items.world_item_count() == before and _have(1, "lumber") == 4, "a wooden hammer is too light for a later-tier blueprint")
+	check(items.world_item_count() == before + 1 and _have(1, "lumber") == 0, "a wooden hammer is enough (tier 1 default)")
+	items.action(1, Net.ACT_PICKUP, _ids_standing("wall_section")[0], 0, 0, Vector3.ZERO)
+	check(_have(1, "lumber") == 4, "taken down again for the next steps")
+	# A row can ask for a better hammer (data field per row).
+	items._blueprints[int(wall["number"])]["hammer"] = 2
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, spot)
+	check(items.world_item_count() == before and _have(1, "lumber") == 4, "a row with hammer 2 refuses the wooden hammer")
+	items._blueprints[int(wall["number"])]["hammer"] = 1
 	_clear(1)
 	_give(1, "stone_hammer", 1)
 	_give(1, "lumber", 3)

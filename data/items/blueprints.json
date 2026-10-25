@@ -1,5 +1,5 @@
 {
-	"note": "Hammer blueprints (Dave 25 Oct, plan Sal_hammer_blueprints): later-tier placeables are placed from the hammer with the materials in the pack, no kit item. 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near, 'hammer' the minimum tool tier of the hammer held on the hotbar (1 wooden, 2 stone), 'recipe' the retired kit recipe (kept so its number is never reused). Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
+	"note": "Hammer blueprints (Dave 25 Oct, plan Sal_hammer_blueprints): later-tier placeables are placed from the hammer with the materials in the pack, no kit item. 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1, higher only where Dave says so), 'recipe' the retired kit recipe (kept so its number is never reused). Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
 	"next_number": 9,
 	"blueprints": {
 		"wall_section": {
@@ -17,7 +17,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "wall_section_kit"
 		},
@@ -36,7 +36,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "floor_section_kit"
 		},
@@ -59,7 +59,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "roof_section_kit"
 		},
@@ -78,7 +78,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "foundation_section_kit"
 		},
@@ -97,7 +97,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "doorway_section_kit"
 		},
@@ -116,7 +116,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "window_section_kit"
 		},
@@ -139,7 +139,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "timber_set_kit"
 		},
@@ -158,7 +158,7 @@
 				]
 			],
 			"station": "",
-			"hammer": 2,
+			"hammer": 1,
 			"known": true,
 			"recipe": "ladder_kit"
 		}
