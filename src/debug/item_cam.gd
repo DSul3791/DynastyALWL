@@ -70,23 +70,51 @@ static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16
 static func centre_in_frame(box: AABB, cam: Vector3, forward: Vector3, up: Vector3, fov_deg: float, aspect: float) -> Vector3:
 	var right: Vector3 = forward.cross(up).normalized()
 	var true_up: Vector3 = right.cross(forward).normalized()
-	var t: float = tan(deg_to_rad(fov_deg) * 0.5)
-	var depth: float = (box.get_center() - cam).dot(forward)
+	var step: float = maxf(box.size.length() * 0.02, 0.005)
+	var best: Vector3 = cam
+	var best_err: float = INF
 
-	for n in range(8):
+	# Newton on the two sideways slides with a measured 2x2 slope: a long thin item aimed along a diagonal has corners at very different depths, so a plain
+	# "slide by the offset" step overshoots or crawls (iron hoe diag stuck at 8 to 11 percent). Keeps the best camera seen.
+	for n in range(24):
 		var b: Dictionary = frame_stats(box, cam, forward, up, fov_deg, aspect)
 
 		if not b.has("centre"):
-			return cam
+			return best
 
 		var c: Vector2 = b["centre"]
+		var err: float = maxf(absf(c.x), absf(c.y))
 
-		if absf(c.x) < 0.002 and absf(c.y) < 0.002:
+		if err < best_err:
+			best_err = err
+			best = cam
+
+		if err < 0.002:
 			break
 
-		cam += right * c.x * t * aspect * depth + true_up * c.y * t * depth
+		var bx: Dictionary = frame_stats(box, cam + right * step, forward, up, fov_deg, aspect)
+		var by: Dictionary = frame_stats(box, cam + true_up * step, forward, up, fov_deg, aspect)
 
-	return cam
+		if not bx.has("centre") or not by.has("centre"):
+			return best
+
+		var cx: Vector2 = (bx["centre"] as Vector2 - c) / step      # d(centre)/d(slide right)
+		var cy: Vector2 = (by["centre"] as Vector2 - c) / step      # d(centre)/d(slide up)
+		var det: float = cx.x * cy.y - cy.x * cx.y
+
+		if absf(det) < 1.0e-9:
+			break
+
+		var dx: float = -(c.x * cy.y - c.y * cy.x) / det
+		var dy: float = -(cx.x * c.y - cx.y * c.x) / det
+		cam += right * dx + true_up * dy
+
+	var last: Dictionary = frame_stats(box, cam, forward, up, fov_deg, aspect)
+
+	if last.has("centre") and maxf(absf((last["centre"] as Vector2).x), absf((last["centre"] as Vector2).y)) < best_err:
+		best = cam
+
+	return best
 
 
 # The normal of the item's largest flat surfaces: the dominant direction of the area-weighted triangle normals (power iteration on sum(area x n nT)), pointing up (or,

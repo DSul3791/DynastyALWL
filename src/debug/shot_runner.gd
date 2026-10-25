@@ -44,6 +44,8 @@ var item_at: Vector2 = Vector2(INF, INF)
 var _item_built: bool = false
 var _item_spot: Vector3 = Vector3.ZERO
 var _item_failed: bool = false
+var _item_checked: int = 0         # item views judged; a run that ends with fewer than ITEM_VIEWS is a failure, not a silent pass
+const ITEM_VIEWS := 4
 var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
@@ -942,6 +944,7 @@ func _check_item_view(view: Dictionary) -> void:
 	if _item_node != null and is_instance_valid(_item_node):
 		_item_box = _node_aabb(_item_node)      # where the item is now, not where it was when the view was set up
 
+	_item_checked += 1
 	var stats: Dictionary = ItemCam.frame_stats(_item_box, cam.global_position, forward, cam.global_transform.basis.y, cam.fov, size.x / maxf(size.y, 1.0))
 	var fill: float = stats["fill"]
 	var off: float = stats["off"]
@@ -1207,6 +1210,10 @@ func _next(now: int) -> void:
 	_index += 1
 
 	if _index >= shots.size():
+		if item_mode and not _item_failed and _item_checked < ITEM_VIEWS:
+			_item_failed = true
+			print("shot runner: FAILED only %d of %d item views were judged (the run ended early)" % [_item_checked, ITEM_VIEWS])
+
 		print("shot runner: done%s" % (" (item pictures FAILED)" if _item_failed else ""))
 		get_tree().quit(1 if _item_failed else 0)
 		return

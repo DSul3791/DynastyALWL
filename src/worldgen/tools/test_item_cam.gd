@@ -115,6 +115,15 @@ func _init() -> void:
 	var es: Dictionary = ItemCam.frame_stats(flat_box, d_edge["cam"], _forward(d_edge), d_edge["up"], FOV, ASPECT)
 	check(bool(es["inside"]) and float(es["off"]) <= 0.02, "the edge-on diag view is centred and fits")
 
+	# Hoe-like boxes (long shaft with a head hanging off one end), every blade direction and plate normal: the diag view must converge to the centre.
+	for dims in [Vector3(1.4, 0.35, 0.08), Vector3(0.08, 0.35, 1.4), Vector3(1.0, 0.5, 0.5), Vector3(1.6, 0.12, 0.12)]:
+		for blade in [Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.7, -0.7)]:
+			for normal in [Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0)]:
+				var hoe: AABB = AABB(Vector3(10.0, 2.0, 20.0) - dims * 0.5, dims)
+				var hv: Dictionary = ItemCam.views(hoe, FOV, 1.0, ASPECT, blade, normal)[3]
+				var hs: Dictionary = ItemCam.frame_stats(hoe, hv["cam"], _forward(hv), hv["up"], FOV, ASPECT)
+				check(float(hs["off"]) <= 0.02, "hoe-like %s blade %s normal %s: diag %.1f %% off" % [str(dims), str(blade), str(normal), float(hs["off"]) * 100.0])
+
 	check(ItemCam.fill_fraction(AABB(Vector3(0.0, 0.0, 5.0), Vector3.ONE), Vector3.ZERO, Vector3.FORWARD, Vector3.UP, FOV, ASPECT) == 0.0, "an item behind the camera fills nothing")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(0.0, 0.0, 1.0), Vector3.ZERO), 0.0), "from the south facing north: yaw 0")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(1.0, 0.0, 0.0), Vector3.ZERO), 90.0), "from the east facing west: yaw 90")
