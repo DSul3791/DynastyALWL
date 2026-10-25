@@ -1,0 +1,87 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+libxkbcommon.so.0: cannot open shared object file: No such file or directory
+Vulkan 1.4.312 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce GTX 1050 Ti
+WARNING: Keeping screen on not supported by this display server.
+     at: screen_set_keep_on (servers/display/display_server.cpp:588)
+
+Terrain client: connecting to 127.0.0.1:7932
+Terrain client: welcome after 135 ms; world Modular Island World; spawn (53301.0, 33.18662, 68427.0); cache user://terrain_cache/Modular Island World/v41_7300d0bce1 (10240 MB)
+Terrain client: block line open
+Terrain client: 2026-10-25T02:02:25 [+14.4 s] JOIN: waiting for ground 14 s after the welcome: loads 1000, received 1544 (total 1544), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 0 chunks
+Terrain client: ground under (53292, 68438) is at 31.5 m
+Terrain client: the water moved, asking again for 5 chunks
+Terrain client: ground under (53301, 68427) is at 31.2 m
+Terrain client: 2026-10-25T02:02:30 [+19.6 s] JOIN: waiting for ground 19 s after the welcome: loads 1001, received 1544 (total 1544), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: stopped flying at (53301.0, 400.0, 68427.0), loading the ground here
+Terrain client: ground detail levels 1
+Terrain client: the water moved, asking again for 13 chunks
+Terrain client: ground detail levels 7
+Terrain client: 2026-10-25T02:02:35 [+24.7 s] JOIN: waiting for ground 24 s after the welcome: loads 1527, received 2730 (total 2730), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:02:40 [+29.7 s] JOIN: waiting for ground 29 s after the welcome: loads 2262, received 4115 (total 4115), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:02:45 [+34.7 s] JOIN: waiting for ground 34 s after the welcome: loads 3342, received 5586 (total 5586), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:02:50 [+39.8 s] JOIN: waiting for ground 39 s after the welcome: loads 4288, received 7012 (total 7012), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:02:55 [+44.8 s] JOIN: waiting for ground 44 s after the welcome: loads 5471, received 8564 (total 8564), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:00 [+49.8 s] JOIN: waiting for ground 49 s after the welcome: loads 6817, received 10066 (total 10066), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:05 [+54.9 s] JOIN: waiting for ground 54 s after the welcome: loads 8280, received 11566 (total 11566), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:10 [+59.9 s] JOIN: waiting for ground 59 s after the welcome: loads 9785, received 13081 (total 13081), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:15 [+64.9 s] JOIN: waiting for ground 64 s after the welcome: loads 12828, received 15052 (total 15052), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:20 [+70.0 s] JOIN: waiting for ground 70 s after the welcome: loads 14397, received 18237 (total 18237), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:25 [+75.1 s] JOIN: waiting for ground 75 s after the welcome: loads 16093, received 20497 (total 20497), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:30 [+80.1 s] JOIN: waiting for ground 80 s after the welcome: loads 17812, received 23127 (total 23127), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:35 [+85.2 s] JOIN: waiting for ground 85 s after the welcome: loads 19668, received 24925 (total 24925), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:40 [+90.2 s] JOIN: waiting for ground 90 s after the welcome: loads 19668, received 24925 (total 24925), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:45 [+95.2 s] JOIN: waiting for ground 95 s after the welcome: loads 19668, received 24925 (total 24925), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:51 [+100.3 s] JOIN: waiting for ground 100 s after the welcome: loads 19668, received 24925 (total 24925), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:03:54 [+104.1 s] JOIN: ground retry, try 1 of 6: loads 19668, received 24925, timeouts 0, bad 0, zeroed 0, pending 0, player (53301.0, 400.0, 68427.0)
+Terrain client: 2026-10-25T02:03:56 [+105.3 s] JOIN: waiting for ground 105 s after the welcome: loads 5544, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:04:01 [+110.3 s] JOIN: waiting for ground 110 s after the welcome: loads 10744, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:04:06 [+115.4 s] JOIN: waiting for ground 115 s after the welcome: loads 10744, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:04:11 [+120.4 s] JOIN: waiting for ground 120 s after the welcome: loads 10744, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: true
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: stopped flying at (53301.0, 33.0, 68427.0), loading the ground here
+Terrain client: 2026-10-25T02:04:14 [+124.1 s] JOIN: ground retry, try 2 of 6: loads 10744, received 24925, timeouts 0, bad 0, zeroed 0, pending 0, player (53301.0, 32.7, 68427.0)
+Terrain client: the water moved, asking again for 17 chunks
+Terrain client: 2026-10-25T02:04:16 [+125.4 s] JOIN: waiting for ground 125 s after the welcome: loads 5328, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 2 (stall 2), ray down hits: false
+Terrain client: the water moved, asking again for 17 chunks
+shot runner: state: expect ""; player (53301.0, 32.7, 68427.0) pitch 0; 4 loose items within 6 m: wooden_spade x1 server y 30.90 drawn y 30.91 collision ground 30.91 voxel ground 30.00 gap 0.91 dist 4.0; stone_spade x1 server y 30.96 drawn y 30.96 collision ground 30.96 voxel ground 30.00 gap 0.96 dist 4.3; iron_spade x1 server y 31.02 drawn y 31.02 collision ground 31.02 voxel ground 31.00 gap 0.02 dist 5.0; wooden_spade_medium x1 server y 30.87 drawn y 30.86 collision ground 30.86 voxel ground 30.00 gap 0.86 dist 6.0
+shot runner: saved /out/fresh_join/fresh_join.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
+Terrain client: 2026-10-25T02:04:22 [+131.8 s] JOIN: waiting for ground 131 s after the welcome: loads 10744, received 0 (total 24925), failed total 0, pending 0, test drops 0, retries 2 (stall 2), ray down hits: true
+Terrain client: the water moved, asking again for 17 chunks
+shot runner: cost normal: 4030 k primitives, 641 draw calls, 691 objects
+shot runner: done
+WARNING: 14 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

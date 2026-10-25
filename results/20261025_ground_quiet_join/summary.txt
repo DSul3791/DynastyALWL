@@ -1,0 +1,5 @@
+HEAD=2a1d3fc67c732854fe8947d678c441046f50db1a
+parse_scan: parse_scan: 384 files, 0 problems
+Test done: 17 pass, 0 fail
+shot: 139 s
+shot runner: saved /out/fresh_join/fresh_join.png (2880x1620) at (53301.0, 32.7, 68427.0), ground 31.0
