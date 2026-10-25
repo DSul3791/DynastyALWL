@@ -47,6 +47,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.4
 const HELD_SPEAR_SCALE := 1.6
+const HELD_ROD_SCALE := 1.0      # a fishing rod is held at its ground size (1.6 m): scaling it down to HELD_LOOK_MAX_M made the cane a thin grey stick with the reel lost
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -1313,7 +1314,7 @@ func _make_look_tool_model() -> Node3D:
 
 	var held: Mesh = BasicLook.mesh_for(held_id())
 	var length: float = held.get_aabb().size.x
-	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01))
+	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_ROD_SCALE if shape == "rod" else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
 	var node: Node3D = Node3D.new()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = held
