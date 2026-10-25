@@ -43,3 +43,8 @@ Note: Recommendation: Yes
 Note: Tyler gets a script that does merge, checks, build number, logs, push and verify in about 1 minute instead of 5 and cannot silently fail. Drop the duplicate number sweeps and the item master warning from gate output. Keeps QA card before merge and the CI guard. Full report: design/GATE_AUDIT.md.
 Note: Recommendation: Yes
 [check]
+
+## gates-f | Gates F: warm test folders instead of a fresh import each gate
+Note: Each gate starts in a new folder, so Godot imports everything again: 2 to 5 minutes of a 15 minute gate. Keep a few warm folders and just switch them to the hash being tested; once a week one run in a fresh folder to prove the results match. Full report: design/GATE_AUDIT.md section 8.
+Note: Recommendation: Yes
+[check]
