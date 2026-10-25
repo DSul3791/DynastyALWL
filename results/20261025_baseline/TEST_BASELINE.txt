@@ -1,0 +1,20 @@
+# Test baseline, David3, 25 Oct 2026
+
+## merge-793 5b9d9f915c014bb6591b30275da1f86a2b77f873 (full output, run in the box, headless)
+- test_drainage_flow: 2 failures
+    FAIL bed never rises downstream (417 rises of 8274 cells)
+    FAIL outer bank at least 1.3x the inner bank depth   (outer/inner depth ratio 1.07, 153 bends)
+- test_head_pond_fill: 1 failure
+    FAIL spring at sample 2553975: pond 19.4 m deep, filled to 0.0 m after 10800 s
+- test_pond_outlet: 1 failure
+    FAIL the river runs deep enough to show from the pond's edge down (too thin at: 220 m (0.11 m), 224 m (0.11 m), 228 m (0.09 m))
+- test_worldgen: 885 passed, 0 failed (two "ERROR: attempt to write a readonly database" lines in the log, no FAIL).
+Full logs: *.5b9d9f91.txt next to this file.
+
+## Base 47f7af7f (generator-v2 at the time), from my gate summary lines (only the first FAIL lines were kept, no context)
+- test_drainage_flow: FAIL outer bank at least 1.3x the inner bank depth (1 failure on 47f7af7f; merge-793 has 2)
+- test_head_pond_fill: FAIL (no text kept)
+- test_pond_outlet: FAIL river too thin at 220 m (0.11 m), 224 m, 228 m
+- test_worldgen: FAIL: some caves expose ore bodies (0), plus "attempt to write a readonly database"
+- also test_showroom (FakeView has no property 'net') and test_water_soak (tile (3,4) held 4472 m3, saved 3282 m3, error 26.6 percent, bound 331 m3).
+Not run on 47f7af7f again for full output; the commit where each first failed is unknown (no bisect).
