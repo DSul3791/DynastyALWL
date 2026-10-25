@@ -177,3 +177,4 @@ kathleen-held-pose 3af62551: part 1 (heads, saw/hammer shapes) merges with kathl
 
 ## sal-thatch-floor-hand de011546 (recipe 166 by hand): after spawn-column; ACTION_PLANS/Sal_thatch_floor_hand_REPLY.md.
 ## Generator speed-up step 3a (C++ GenCore) claude/generator-speedup 690ee171: proof per Generator_speedup_REPLY.md: md5 equality FOUR runs (Linux 1 thread, Linux 4 threads, Windows 1 thread via Mike, reference), -fno-fast-math -ffp-contract=off identical flags on both platforms, GDScript fallback kept, water tests unchanged; binaries committed once per stage group. Merges into merge-793 only.
+sal-thatch-floor-hand 28ce1937: GO split in two commits (1 hand-craft pieces/kits/clothing/thatch; 2 material recipes wait for Dave). See Sal_thatch_floor_hand_REPLY.md AUDIT ANSWER.
