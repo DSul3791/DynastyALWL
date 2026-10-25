@@ -29,6 +29,7 @@ var _index: int = -1
 var _placed: bool = false
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
 var _land_failed: bool = false
+var force_land_fail: bool = false  # --shot-force-land-fail: the wanted height is 50 m off what the body is given, so the landing check must report FAILED (a test of the check)
 var _want_y: float = 0.0
 var _placed_msec: int = 0
 var _ground_wait_msec: int = 0
@@ -182,6 +183,8 @@ func setup(owner_client, args: Array) -> void:
 			client.debug_hud.enabled = true
 		elif argument.begins_with("--shot-wait="):
 			wait_s = float(argument.trim_prefix("--shot-wait="))
+		elif argument == "--shot-force-land-fail":
+			force_land_fail = true
 		elif argument.begins_with("--shot-settle="):
 			settle_s = float(argument.trim_prefix("--shot-settle="))
 
@@ -275,6 +278,7 @@ func _process(delta: float) -> void:
 		_moved_msec = now
 		_want_y = -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y)
 		client.body.global_position = Vector3(shot_pos.x, _want_y, shot_pos.z)
+		_want_y += 50.0 if force_land_fail else 0.0
 		return
 
 	# 25 Oct (David3: a picture taken at 64.7 m over forest): the settle time starts only when the camera has landed, i.e. the ground is ready, the body is within
