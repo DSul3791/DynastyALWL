@@ -45,14 +45,13 @@ func probe(x: float, z: float) -> Array:
 
 func _init() -> void:
 	var fw = FishWater.new(probe)
-	var kinds: Dictionary = {}
 
 	for spec in [[-45.0, "sea_shallow", 3.0], [-200.0, "sea_mid", 13.0], [-600.0, "sea_deep", 40.0]]:
 		var at: Dictionary = fw.water_kind_at(float(spec[0]), 50.0, now)
 		check(at["kind"] == spec[1] and absf(float(at["depth"]) - float(spec[2])) < 6.0, "x %.0f is %s (%s, %.1f m)" % [float(spec[0]), spec[1], at["kind"], float(at["depth"])])
 
 	check(fw.water_kind_at(-40.0, 50.0, now)["kind"] == "sea_shallow", "3 m of sea is shallow")
-	check(fw.water_kind_at(104.0, 400.0, now)["kind"] == "brook", "a one-cell shallow river is a brook")
+	check(fw.water_kind_at(100.5, 400.0, now)["kind"] == "brook", "a one-cell shallow river is a brook")
 	check(fw.water_kind_at(312.0, 400.0, now)["kind"] == "river", "a wide deep river is a river")
 	check(fw.water_kind_at(1400.0, 400.0, now)["kind"] == "lake", "a big baked lake is a lake")
 	check(fw.water_kind_at(3012.0, 12.0, now)["kind"] == "pond", "a small baked lake is a pond")
