@@ -29,11 +29,6 @@ Note: Full list: design/ITEM_TRIM_LIST.md group G. Yes = we make this cut or mer
 Note: Recommendation: Yes
 [check]
 
-## trim-h | Item trim H: Clothing and coins: bronze coin, mittens (cut 1)
-Note: Full list: design/ITEM_TRIM_LIST.md group H. Yes = we make this cut or merge. Old saves convert to the merge target.
-Note: Recommendation: Yes
-[check]
-
 ## trim-i | Item trim I: New tools: keep scythe, sickle merges in, no rake, no shears yet
 Note: Full list: design/ITEM_TRIM_LIST.md group I. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
