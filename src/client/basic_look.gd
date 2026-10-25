@@ -547,12 +547,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			for k in range(3):                                                                                            # the three feather vanes, 120 degrees apart
 				var ang: float = TAU * float(k) / 3.0
-				_box_rot(parts, Vector3(0.08, 0.014, 0.0025), Vector3(-0.3, 0.011 * cos(ang), 0.011 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.62, 0.55, 0.44) if k != 0 else Color(0.28, 0.22, 0.17))
+				_box_rot(parts, Vector3(0.08, 0.014, 0.0025), Vector3(-0.3, 0.011 * cos(ang), 0.011 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.5, 0.4, 0.3) if k != 0 else Color(0.25, 0.19, 0.14))
 
 			_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.355, 0.0, 0.0), Color(0.12, 0.08, 0.05))               # the nock
 
 			if bits.has("stone"):
-				_plate(parts, 0.285, 0.085, 0.026, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 3, 1.2)
+				_plate(parts, 0.29, 0.075, 0.03, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 4, 1.4)
 				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
 				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
 			else:
@@ -785,6 +785,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
+		elif mode == 4:
+			half = 0.5 * wide * pow(1.0 - t, 0.8) * (0.55 + 0.45 * smoothstep(0.0, 0.2, t))                               # an arrowhead: widest just above the base, tapering straight to a sharp point
 		elif mode == 3:
 			half = 0.5 * wide * pow(sin(PI * pow(t, 0.8)), 0.8)                                                             # a spear leaf: swelling, then a sharp point
 		elif mode == 2:
@@ -795,8 +797,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		half = maxf(half, 0.012)
 		var forward: float = 0.006 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
-		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else (-0.007 if mode == 3 else 0.0))) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
-		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else (0.003 if mode == 3 else 0.0025))
+		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else (-0.007 if mode in [3, 4] else 0.0))) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
+		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else (0.003 if mode in [3, 4] else 0.0025))
 
 		if mode == 1:
 			base += 0.007 * smoothstep(0.35, 0.7, t) * (1.0 - 0.8 * smoothstep(0.8, 1.0, t))                           # a hoe's edge thickens, then bevels to a thin cutting edge
