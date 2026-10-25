@@ -265,34 +265,36 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for wrap in [0.165, 0.19, 0.28]:
 				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
-			# A pickaxe (a pick mattock, also called a grub hoe), axes in mesh space: haft along x (grip at -x, head at x = 0.27), head along z. One end (+z)
-			# is a pick: a tapering square bar that bends toward the grip (-x) and ends in a point. The other end (-z) is a broad flat blade, width along y,
-			# its outer part bent toward the grip the same way. The bends are in the haft-and-head plane, so seen along the haft (from the front) the head is
-			# one straight bar and seen from the side it is a curve. Test: src/worldgen/tools/test_pick_axes.gd.
-			_handle(parts, 0.6, 0.021, Color(0.3, 0.2, 0.11))
-			_box(parts, Vector3(0.06, 0.07, 0.07), Vector3(0.27, 0.0, 0.0), dark)                                   # the eye the head sits in
-			_cyl(parts, 0.036, 0.025, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # a cord wrap under the eye
-			var radius: float = 0.35
-			var sweep: float = 0.55
-
-			for seg in range(4):                                                                                      # the pick, +z
-				var phi0: float = sweep * float(seg) / 4.0
-				var phi1: float = sweep * float(seg + 1) / 4.0
-				var mid: float = 0.5 * (phi0 + phi1)
-				var thick: float = 0.05 * (1.0 - 0.75 * float(seg) / 3.0) + 0.01
-				var length: float = radius * (phi1 - phi0) * 1.12 + (0.025 if seg == 3 else 0.0)
-				var at: Vector3 = Vector3(0.27 - radius * (1.0 - cos(mid)), 0.0, 0.035 + radius * sin(mid))
-				_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -mid, 0.0), light if seg == 3 else color)
-
-			_box(parts, Vector3(0.014, 0.1, 0.1), Vector3(0.27, 0.0, -0.085), color)                                  # the blade, near part
-			_box_rot(parts, Vector3(0.012, 0.15, 0.12), Vector3(0.265 - 0.012, 0.0, -0.19), Vector3(0.0, 0.2, 0.0), color)   # its outer part, wider, bent toward the grip
-			_box_rot(parts, Vector3(0.01, 0.16, 0.03), Vector3(0.246 - 0.012, 0.0, -0.255), Vector3(0.0, 0.2, 0.0), light)   # the sharpened edge
-
+			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
+			# curving down (-y) in the head-and-droop plane: a long tapering pick at +z, a shorter flat-ended chisel at -z. Nothing bends sideways.
+			# Test: src/worldgen/tools/test_pick_axes.gd.
+			var wood: Color = Color(0.36, 0.24, 0.13)
+			var leather: Color = Color(0.3, 0.17, 0.09)
+			_handle(parts, 0.6, 0.02, wood)
+			_cyl(parts, 0.03, 0.07, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), wood)                       # the flared pommel
+			_cyl(parts, 0.0235, 0.16, Vector3(-0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather)                  # the leather grip wrap
+			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
+			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), dark)                                   # the iron eye block the haft passes into
+			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), wood)                                     # the haft's end, standing proud of the head
+			_cyl(parts, 0.028, 0.03, Vector3(0.215, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather)                   # the collar's leather lashing
+			_cyl(parts, 0.026, 0.01, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))
+			var sweeps: Array = [[1.0, 0.5, 0.5, 5], [-1.0, 0.55, 0.36, 3]]                                              # side, sweep (rad), radius, segments: the long pick and the short chisel
+			for side in sweeps:
+				var sign: float = side[0]
+				var count: int = side[3]
+				for seg in range(count):
+					var phi0: float = side[1] * float(seg) / float(count)
+					var phi1: float = side[1] * float(seg + 1) / float(count)
+					var mid: float = 0.5 * (phi0 + phi1)
+					var thick: float = 0.045 * (1.0 - float(seg) / float(count) * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * float(seg) / float(count)
+					var length: float = side[2] * (phi1 - phi0) * 1.06
+					var reach: float = 0.04 + side[2] * sin(mid) if seg > 0 else 0.04 + side[2] * sin(mid)
+					var at: Vector3 = Vector3(0.27, -side[2] * (1.0 - cos(mid)), sign * reach)
+					var tone: Color = color.lightened(0.15) if seg == count - 1 else color
+					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(sign * mid, 0.0, 0.0), tone)
 			if bits.has("steel"):
-				_box(parts, Vector3(0.012, 0.012, 0.16), Vector3(0.3, 0.0, 0.0), light.lightened(0.2))              # steel: a polished ridge along the top of the head
-				_cyl(parts, 0.04, 0.02, Vector3(0.23, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass collar
-			else:
-				_box(parts, Vector3(0.052, 0.06, 0.14), Vector3(0.27, -0.004, 0.0), dark)                          # iron: a dark forged band
+				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), color.lightened(0.3))                # steel: a polished ridge along the top of the head
+				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
 			_handle(parts, 0.75)
