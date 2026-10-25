@@ -5,6 +5,7 @@ extends SceneTree
 # Exits 1 on any difference.
 
 const ChannelsScript := preload("res://src/worldgen/tile/drainage_channels.gd")
+const HeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const FillScript := preload("res://src/worldgen/tile/drainage_fill.gd")
 
 
@@ -21,6 +22,8 @@ func _init() -> void:
 	failures += _fill(11, 200)
 	failures += _fill(12, 130)
 	failures += _fill(13, 311)
+	failures += _height(21, 97)
+	failures += _height(22, 160)
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -90,4 +93,31 @@ func _fill(seed_value: int, size: int) -> int:
 		and script_fill._parent == native_fill._parent and script_fill.receiver == native_fill.receiver and script_fill.order == native_fill.order \
 		and script_fill.lake_id == native_fill.lake_id
 	print("fill seed %d: %d cells in order, %d lakes, %s" % [seed_value, native_fill.order.size(), native_fill.lakes.size(), "identical" if same else "DIFFERENT"])
+	return 0 if same else 1
+
+
+# Box blur and the province-border search of the ledges code, the GDScript against C++.
+func _height(seed_value: int, side: int) -> int:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var field: PackedFloat32Array = PackedFloat32Array()
+	var province: PackedByteArray = PackedByteArray()
+	field.resize(side * side)
+	province.resize(side * side)
+
+	for j in range(side):
+		for i in range(side):
+			field[j * side + i] = rng.randf_range(-20.0, 900.0)
+			province[j * side + i] = (floori(float(i) / 17.0) + 2 * floori(float(j) / 23.0)) % 4
+
+	var core = ClassDB.instantiate("GenCore")
+	var same: bool = true
+
+	for radius in [0, 1, 3]:
+		same = same and HeightScript.box_blur_script(field, side, radius).to_byte_array() == core.box_blur(field, side, radius).to_byte_array()
+
+	for reach in [1, 4]:
+		same = same and HeightScript.near_border_script(province, side, reach) == core.near_border(province, side, reach)
+
+	print("height loops seed %d: %s" % [seed_value, "identical" if same else "DIFFERENT"])
 	return 0 if same else 1

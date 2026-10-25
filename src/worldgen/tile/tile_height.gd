@@ -589,20 +589,11 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 	var reach: int = int(rules.get("border_blend_samples", 4))
 	var province: PackedByteArray = rock.province
 	var near_border: PackedByteArray = PackedByteArray()
-	near_border.resize(total)
 
-	for j in range(samples):
-		for i in range(samples):
-			var index: int = j * samples + i
-			var p: int = province[index]
-
-			for step in [Vector2i(reach, 0), Vector2i(-reach, 0), Vector2i(0, reach), Vector2i(0, -reach)]:
-				var ni: int = clampi(i + step.x, 0, samples - 1)
-				var nj: int = clampi(j + step.y, 0, samples - 1)
-
-				if province[nj * samples + ni] != p:
-					near_border[index] = 1
-					break
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("near_border"):
+		near_border = ClassDB.instantiate("GenCore").near_border(province, samples, reach)
+	else:
+		near_border = near_border_script(province, samples, reach)
 
 	_lap("beds: border search", clock)
 	clock = Time.get_ticks_msec()
@@ -637,6 +628,28 @@ func _add_rock_beds(detail_scale: PackedFloat32Array) -> void:
 	for index in range(total):
 		if delta[index] != 0.0:
 			heights[index] += delta[index]
+
+
+# 1 where a sample `reach` samples away on an axis (clamped to the frame) lies in another province: the cells whose bed change is blurred.
+static func near_border_script(province: PackedByteArray, side: int, reach: int) -> PackedByteArray:
+	var near_border: PackedByteArray = PackedByteArray()
+	near_border.resize(side * side)
+	var steps: Array = [Vector2i(reach, 0), Vector2i(-reach, 0), Vector2i(0, reach), Vector2i(0, -reach)]
+
+	for j in range(side):
+		for i in range(side):
+			var index: int = j * side + i
+			var p: int = province[index]
+
+			for step in steps:
+				var ni: int = clampi(i + step.x, 0, side - 1)
+				var nj: int = clampi(j + step.y, 0, side - 1)
+
+				if province[nj * side + ni] != p:
+					near_border[index] = 1
+					break
+
+	return near_border
 
 
 # Cumulative bed edges (0 to 1) of a rock layer split into `count` beds of uneven thickness; the same for every
@@ -697,6 +710,18 @@ func _dip_shift(layer_number: int, index: int, seed_value: int, rules: Dictionar
 
 # A box blur of `field` (samples x samples) over (2 radius + 1) squared, two passes.
 func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
+	if not force_script and ClassDB.class_exists("GenCore") and ClassDB.instantiate("GenCore").has_method("box_blur"):
+		return ClassDB.instantiate("GenCore").box_blur(field, samples, radius)
+
+	return box_blur_script(field, samples, radius)
+
+
+# Tests set this to compare the GDScript loops here with GenCore's (test_gen_core.gd); false in the bake.
+static var force_script: bool = false
+
+
+# The two-pass box blur in GDScript: the reference GenCore.box_blur must match bit for bit.
+static func box_blur_script(field: PackedFloat32Array, side: int, radius: int) -> PackedFloat32Array:
 	if radius <= 0:
 		return field.duplicate()
 
@@ -705,8 +730,8 @@ func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
 	for axis in range(2):
 		var source: PackedFloat32Array = out.duplicate()
 
-		for j in range(samples):
-			for i in range(samples):
+		for j in range(side):
+			for i in range(side):
 				var sum: float = 0.0
 				var count: int = 0
 
@@ -714,12 +739,12 @@ func _box_blur(field: PackedFloat32Array, radius: int) -> PackedFloat32Array:
 					var ni: int = i + (k if axis == 0 else 0)
 					var nj: int = j + (k if axis == 1 else 0)
 
-					if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+					if ni < 0 or nj < 0 or ni >= side or nj >= side:
 						continue
 
-					sum += source[nj * samples + ni]
+					sum += source[nj * side + ni]
 					count += 1
 
-				out[j * samples + i] = sum / float(count)
+				out[j * side + i] = sum / float(count)
 
 	return out

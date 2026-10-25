@@ -26,6 +26,11 @@ public:
 	// DrainageFill._route: {"receiver": PackedInt32Array, "order": PackedInt32Array}.
 	Dictionary route(const PackedFloat32Array &h, const PackedByteArray &sea, const PackedFloat32Array &filled, const PackedInt32Array &parent, int64_t size) const;
 
+	// TileHeight._box_blur: two passes of a box blur of radius `radius` over a samples x samples field.
+	PackedFloat32Array box_blur(const PackedFloat32Array &field, int64_t samples, int64_t radius) const;
+	// TileHeight._add_rock_beds border search: 1 where a cell `reach` samples away on an axis lies in another province.
+	PackedByteArray near_border(const PackedByteArray &province, int64_t samples, int64_t reach) const;
+
 protected:
 	static void _bind_methods();
 };

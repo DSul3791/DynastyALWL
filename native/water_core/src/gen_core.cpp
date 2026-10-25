@@ -16,6 +16,8 @@ static inline double gd_smoothstep(double from, double to, double x) {
 }
 
 void GenCore::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("box_blur", "field", "samples", "radius"), &GenCore::box_blur);
+	ClassDB::bind_method(D_METHOD("near_border", "province", "samples", "reach"), &GenCore::near_border);
 	ClassDB::bind_method(D_METHOD("flood", "h", "sea", "size"), &GenCore::flood);
 	ClassDB::bind_method(D_METHOD("route", "h", "sea", "filled", "parent", "size"), &GenCore::route);
 	ClassDB::bind_method(D_METHOD("carve_valleys", "cut", "h", "size", "cell_m", "jobs_i", "jobs_f"), &GenCore::carve_valleys);
@@ -277,4 +279,77 @@ Dictionary GenCore::route(const PackedFloat32Array &p_h, const PackedByteArray &
 	result["receiver"] = receiver_out;
 	result["order"] = order_out;
 	return result;
+}
+
+
+PackedFloat32Array GenCore::box_blur(const PackedFloat32Array &field, int64_t p_samples, int64_t p_radius) const {
+	const int samples = (int)p_samples;
+	const int radius = (int)p_radius;
+	PackedFloat32Array out = field.duplicate();
+
+	if (radius <= 0) {
+		return out;
+	}
+
+	float *dst = out.ptrw();
+	std::vector<float> source((size_t)samples * (size_t)samples);
+
+	for (int axis = 0; axis < 2; axis++) {
+		for (size_t k = 0; k < source.size(); k++) {
+			source[k] = dst[k];
+		}
+
+		for (int j = 0; j < samples; j++) {
+			for (int i = 0; i < samples; i++) {
+				double sum = 0.0;
+				int count = 0;
+
+				for (int k = -radius; k <= radius; k++) {
+					const int ni = i + (axis == 0 ? k : 0);
+					const int nj = j + (axis == 1 ? k : 0);
+
+					if (ni < 0 || nj < 0 || ni >= samples || nj >= samples) {
+						continue;
+					}
+
+					sum += (double)source[(size_t)nj * samples + ni];
+					count++;
+				}
+
+				dst[(size_t)j * samples + i] = (float)(sum / (double)count);
+			}
+		}
+	}
+
+	return out;
+}
+
+PackedByteArray GenCore::near_border(const PackedByteArray &province, int64_t p_samples, int64_t p_reach) const {
+	const int samples = (int)p_samples;
+	const int reach = (int)p_reach;
+	PackedByteArray out;
+	out.resize((int64_t)samples * samples);
+	out.fill(0);
+	uint8_t *near = out.ptrw();
+	const uint8_t *prov = province.ptr();
+	const int steps[4][2] = { { reach, 0 }, { -reach, 0 }, { 0, reach }, { 0, -reach } };
+
+	for (int j = 0; j < samples; j++) {
+		for (int i = 0; i < samples; i++) {
+			const int index = j * samples + i;
+			const uint8_t p = prov[index];
+
+			for (int s = 0; s < 4; s++) {
+				const int ni = clamp_int(i + steps[s][0], 0, samples - 1);
+				const int nj = clamp_int(j + steps[s][1], 0, samples - 1);
+
+				if (prov[nj * samples + ni] != p) {
+					near[index] = 1;
+					break;
+				}
+			}
+		}
+	}
+
+	return out;
 }
