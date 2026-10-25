@@ -1670,3 +1670,7 @@ Answered: 2026-10-25 13:50 UTC
 Answer: No: I think we need shingles and cobblestones
 Answered: 2026-10-25 13:53 UTC
 
+## trim-f | Item trim F: Forges: one forge with upgrades; no tongs, bellows, anvil (merge 3)
+Answer: No: Technically, a Forge is the furnace plus the anvil you have to have both. So the model should have both of them in it and then you can upgrade it.
+Answered: 2026-10-25 13:54 UTC
+
