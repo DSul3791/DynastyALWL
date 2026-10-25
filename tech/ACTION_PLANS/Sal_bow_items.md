@@ -2,13 +2,13 @@
 
 Items and recipes only; Steve's `claude/steve-bow-shoot` (f1e56758) does shooting, hit and damage, and reads these item fields. Label RESTART (new items and recipes, no code, no protocol change).
 
-## Items (from my reserved block 267-299)
+## Items (from my reserved block; 267 and 268 are taken by the oven and oven kit, so these start at 269)
 | # | id | kind | notes |
 |---|---|---|---|
-| 267 | wooden_bow | weapon, weapon_class "bow", tier 1 | durability 400, damage 0 (the arrow carries damage), draw_s 1.0, range_m 40; repair 1 twine |
-| 268 | wooden_arrow | material, ammo "arrow", stack 20 | sharpened stick tip, fire-hardened; arrow_damage 5.0, retrieve_chance 0.5 |
-| 269 | stone_arrow | material, ammo "arrow", stack 20 | arrow_damage 8.0, retrieve_chance 0.6 (stone point lasts) |
-| 270 | quiver | gear, slot "back", carries 40 arrows | fields only; Steve's shooting reads `ammo` and takes from the quiver first, then the pack |
+| 269 | wooden_bow | weapon, weapon_class "bow", tier 1 | durability 400, damage 0 (the arrow carries damage), draw_s 1.0, range_m 40; repair 1 twine |
+| 270 | wooden_arrow | material, ammo "arrow", stack 20 | sharpened stick tip, fire-hardened; arrow_damage 5.0, retrieve_chance 0.5 |
+| 271 | stone_arrow | material, ammo "arrow", stack 20 | arrow_damage 8.0, retrieve_chance 0.6 (stone point lasts) |
+| 272 | quiver | gear, slot "back", carries 40 arrows | fields only; Steve's shooting reads `ammo` and takes from the quiver first, then the pack |
 
 ## Recipes (from 170)
 | # | gives | needs | where |
