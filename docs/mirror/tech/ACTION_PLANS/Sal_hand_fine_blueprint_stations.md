@@ -13,4 +13,4 @@ Items stay (kit items keep their numbers and names, old packs and saves load; ol
 ## Tests
 test_blueprints rewritten (cost equals the retired kit recipe for the four stations; the six pieces, timber set and ladder are live by-hand recipes with no station; no hammer, no bench, short pack and a bench of too low a level each take nothing; a bench near and the materials place it and take exactly those; the row hammer tier; takedown refund; full pack keeps the piece; save and load), test_hammer_list (four rows), test_new_player (foundation known from the start again), test_stations, test_placement_rules, test_first_hour, test_first_town, test_inventory, validate_items, local_check 233.
 ## Questions
-a. Tool rack and vice: kit items (my proposal) or blueprints?  b. Large and master forge have no live recipe; they come in as blueprints when their recipes do.
+a. Tool rack and vice stay kit items, and the large and master forge wait for their recipes (decided by the coordinator 25 Oct 09:11, no open questions).
