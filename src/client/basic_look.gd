@@ -382,8 +382,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
 			var steel_blade: Color = Color(0.3, 0.285, 0.25)
-			var grip_wood: Color = Color(0.3, 0.2, 0.11)
-			var brass: Color = Color(0.45, 0.32, 0.08)
+			var grip_wood: Color = Color(0.38, 0.25, 0.13)
+			var brass: Color = Color(0.13, 0.115, 0.1)
 			_box(parts, Vector3(0.025, 0.026, 0.13), Vector3(-0.3, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                 # the rear of the grip, the bar the hand closes round
 			_box(parts, Vector3(0.14, 0.026, 0.025), Vector3(-0.23, 0.0, -0.052), _tone(grip_wood, 2, 0.1))             # the top bar
 			_box(parts, Vector3(0.14, 0.026, 0.025), Vector3(-0.23, 0.0, 0.052), _tone(grip_wood, 3, 0.1))              # the bottom bar, closing the finger hole against the blade
@@ -401,8 +401,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
 			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
 			var mallet: bool = bits.has("wood")
-			var haft_wood: Color = Color(0.3, 0.2, 0.11)
-			var thong: Color = Color(0.3, 0.17, 0.09)
+			var haft_wood: Color = Color(0.4, 0.27, 0.14)                                                            # wood brown, so the haft does not read dark grey in the hand
+			var thong: Color = Color(0.5, 0.38, 0.2)                                                                 # rope / hide colour
 			for k in range(9):
 				_cyl(parts, 0.021, 0.05, Vector3(-0.225 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.06))
 			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))
@@ -414,9 +414,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				color = _warm_stone(color)
 				dark = color.darkened(0.3)
-				_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                 # the head
-				_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)   # a worn, darker striking face
-				_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
+				_box_rot(parts, Vector3(0.07, 0.06, 0.11), Vector3(0.2, 0.0, 0.0), Vector3(0.1, 0.15, 0.08), color)             # the head: a rough lump about half the old slab
+				_box_rot(parts, Vector3(0.06, 0.05, 0.08), Vector3(0.205, 0.008, -0.01), Vector3(-0.2, -0.3, 0.12), _tone(color, 5, 0.12))   # a second, uneven face so the lump is not a clean block
+				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, 0.065), Vector3(0.0, 0.0, 0.15), dark)    # a worn, darker striking face
+				_box_rot(parts, Vector3(0.05, 0.05, 0.035), Vector3(0.2, 0.0, -0.065), Vector3(0.0, 0.0, -0.15), dark)
 			for k in range(4):                                                                                       # leather thong lashing either side of the head
 				_cyl(parts, 0.03, 0.01, Vector3(0.135 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.03, 0.01, Vector3(0.255 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
