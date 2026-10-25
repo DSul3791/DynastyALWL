@@ -5,3 +5,5 @@ Queue for David3: spawn column (rebase on 794), B, C, bed + respawn, sound hooku
 Holds: no bakes except speed-up proofs; final bake needs Dave's PC and OK; five material recipes open with Dave; weight cards open.
 Rules new today: BP-T72 (+ addenda), BP-T73 shared caches, BP-T74 tool-look review.
 Tool looks: knife batch 1 and spade batches 2 and 3 reviewed; Kathleen works from the lists.
+
+Dave 25 Oct 04:56: the 8 AM timer now includes a BACKUP (by MikeW) before anyone codes again; put it first in the 11:00 UTC handoff.
