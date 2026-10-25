@@ -437,9 +437,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			_cyl_taper(parts, 0.0195, 0.0185, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.1))
-			_cyl_taper(parts, 0.0185, 0.0195, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.1))
-			_cyl_taper(parts, 0.0195, 0.021, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.1))
+			_cyl_taper(parts, 0.0195, 0.0185, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.1), 10)
+			_cyl_taper(parts, 0.0185, 0.0195, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.1), 10)
+			_cyl_taper(parts, 0.0195, 0.021, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.1), 10)
 			_wrap(parts, -0.28, -0.12, 0.0202)                                                                        # a dark leather wrap with visible spiral turns where the hands go
 			_sph(parts, 0.021, Vector3(0.8, 1.0, 1.0), Vector3(-0.815, 0.0, 0.0), _tone(ash, 4, 0.06))           # the rounded end
 			var stone_blade: bool = bits.is_empty() and absf(color.r - color.b) < 0.1
@@ -458,14 +458,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_metal(parts, rough, 0.3)
 
 			if bits.is_empty() and absf(color.r - color.b) < 0.1:
-				for k in range(4):                                                                              # a stone blade is tied on: four turns of twine wound round the neck, slanted, in two tones
+				for k in range(3):                                                                              # a stone blade is tied on: three turns of twine wound round the neck, slanted, in two tones
 					var along: Vector3 = Vector3(cos(0.6), 0.0, sin(0.6))
 					var turn: Basis = Basis(Vector3.UP, -0.6) * Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5 + 0.25))
 					parts.append([_twine_band(), Transform3D(turn, Vector3(0.49, 0.0, 0.015) + along * 0.013 * float(k)), Color(0.55, 0.42, 0.2) if k % 2 == 0 else Color(0.38, 0.28, 0.13)])
 
 			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
 			_plate(parts, 0.0, 0.13, 0.18, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1, 2.6 if stone_blade else 1.0)   # the blade plate, hanging toward +z, wide across y (a chunky stone head is thicker)
-			_plate(parts, 0.0, 0.13, 0.18, 8, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3, frame, 1)   # its bright cutting edge
+			_plate(parts, 0.0, 0.13, 0.18, 8, 12, Color(0.55, 0.55, 0.52) if bits.has("steel") else blade * 1.9, false, metal_blade, rough, 0.3, frame, 1)   # its bright, worn cutting edge
 		"knife":
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
@@ -473,14 +473,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var stone: Color = Color(0.3, 0.26, 0.19)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			for k in range(4):
-				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.3, 0.2, 0.11), k, 0.14))
-			for k in range(3):
-				_cyl(parts, 0.0185, 0.014, Vector3(-0.085 + 0.03 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide if k != 1 else hide.lightened(0.15))    # hide wraps
+				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
+			for k in range(2):
+				_cyl(parts, 0.0185, 0.016, Vector3(-0.07 + 0.04 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.1, 0.06, 0.03))    # two darker rope stripes
 			_cyl(parts, 0.0195, 0.016, Vector3(0.006, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), hide.darkened(0.1))                                      # the bound joint
-			var widths: Array = [0.022, 0.032, 0.038, 0.037, 0.03, 0.02, 0.01]                                                                          # leaf blade: width by slice
-			for k in range(widths.size()):
-				var w: float = widths[k]
-				_box(parts, Vector3(0.0175, 0.011 - 0.0008 * float(k), w), Vector3(0.014 + 0.0171 * float(k), 0.0, -0.019 + w * 0.5), _tone(stone, k, 0.1))
+			_plate(parts, 0.012, 0.125, 0.042, 0, 12, stone, true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3(0.0, 0.0, 0.0)), 3, 2.4)   # one flaked leaf blade (a real plate: a ridge down the middle, thin edges both sides, a pointed tip)
 			_box(parts, Vector3(0.1, 0.014, 0.006), Vector3(0.06, 0.0, -0.0185), stone.darkened(0.12))                                                  # the thick straight back
 			_box_rot(parts, Vector3(0.012, 0.012, 0.012), Vector3(0.05, 0.0, 0.021), Vector3(0.0, 0.5, 0.0), stone.darkened(0.2))                       # a chipped notch on the edge
 		"needle":
@@ -521,6 +518,59 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var to: Vector2 = line[k + 1]
 					var span: Vector2 = to - from
 					_cyl(parts, 0.0014, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.85, 0.82, 0.72))
+		"bow":
+			# A self bow (item 269), real size 1.2 m, strung: a stave of bent wood thick at the grip and fine at the tips, curving toward +z with the straight string along z = 0,
+			# a leather grip wrap and bone nocks at the tips. Mesh axes: limbs along x, belly toward +z, flat in y. Drawn small because held and ground looks are enlarged 1.8x.
+			var stave: Color = Color(0.42, 0.28, 0.14)
+			var pts: Array = []
+
+			for k in range(11):
+				var u: float = -1.0 + 0.2 * float(k)
+				pts.append(Vector2(0.55 * u, 0.17 * (1.0 - u * u)))
+
+			for k in range(10):
+				var mid: float = absf(-0.9 + 0.2 * float(k))
+				_tube(parts, pts[k], pts[k + 1], 0.0185 - 0.010 * mid, _tone(stave, k, 0.03), 8)
+
+			for k in range(3):
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.02 + 0.02 * float(k), 0.0, 0.17), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.14, 0.08, 0.04) if k != 1 else Color(0.22, 0.13, 0.07))   # the leather grip wrap
+
+			for end in [-1.0, 1.0]:
+				_cone(parts, 0.009, 0.03, Vector3(end * 0.575, 0.0, 0.0), Color(0.75, 0.7, 0.6))                         # a bone nock at each tip
+
+			_cyl(parts, 0.0013, 1.1, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))      # the string
+		"arrow":
+			# An arrow (items 270 wooden, 271 stone-headed with bits ["stone"]), real size 0.7 m: a straight ash shaft, a nock at the back (-x), three feather vanes (one darker cock feather)
+			# and a point at +x: the wooden arrow is sharpened and fire-hardened, the stone arrow has a flaked leaf head lashed on with twine.
+			var shaft_wood: Color = Color(0.5, 0.36, 0.18)
+			_cyl_taper(parts, 0.0056, 0.0056, 0.62, Vector3(-0.04, 0.0, 0.0), _tone(shaft_wood, 1, 0.05), 8)
+
+			for k in range(3):                                                                                            # the three feather vanes, 120 degrees apart
+				var ang: float = TAU * float(k) / 3.0
+				_box_rot(parts, Vector3(0.08, 0.014, 0.0025), Vector3(-0.3, 0.011 * cos(ang), 0.011 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.5, 0.4, 0.3) if k != 0 else Color(0.25, 0.19, 0.14))
+
+			_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.355, 0.0, 0.0), Color(0.12, 0.08, 0.05))               # the nock
+
+			if bits.has("stone"):
+				_plate(parts, 0.285, 0.1, 0.05, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 4, 1.6)
+				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
+				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
+			else:
+				_cone(parts, 0.0056, 0.07, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
+		"quiver":
+			# A hide quiver (item 272), about 55 cm: a tapering leather tube with a darker rim and seam, a carrying strap loop and the feathered ends of four arrows standing out of the mouth.
+			# Mesh axes: tube along x, mouth at +x.
+			var hide_q: Color = Color(0.3, 0.17, 0.08)
+			_cyl_taper(parts, 0.045, 0.06, 0.5, Vector3(0.0, 0.0, 0.0), _tone(hide_q, 1, 0.05), 12)
+			_cyl_taper(parts, 0.063, 0.063, 0.02, Vector3(0.245, 0.0, 0.0), hide_q.darkened(0.3), 12)                      # the rim
+			_cyl_taper(parts, 0.046, 0.046, 0.03, Vector3(-0.25, 0.0, 0.0), hide_q.darkened(0.2), 12)                    # the base cap
+			_box(parts, Vector3(0.48, 0.004, 0.01), Vector3(0.0, 0.058, 0.0), hide_q.darkened(0.4))                      # the stitched seam
+			_torus_v(parts, 0.1, 0.006, Vector3(0.05, 0.0, 0.0), Color(0.2, 0.12, 0.06))                                 # the carrying strap loop
+
+			for k in range(4):
+				var off: Vector2 = Vector2(cos(float(k) * 1.7), sin(float(k) * 1.7)) * 0.02
+				_cyl(parts, 0.0035, 0.22, Vector3(0.34 + 0.01 * float(k), off.x, off.y), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.18))
+				_box_rot(parts, Vector3(0.07, 0.02, 0.003), Vector3(0.42 + 0.01 * float(k), off.x, off.y), Vector3(float(k) * 1.0, 0.0, 0.0), Color(0.85, 0.82, 0.74) if k != 2 else Color(0.35, 0.3, 0.26))   # fletching
 		"torch":
 			# Unlit: the stick with a wrapped head and twine bands, no flame. The vertex colours are linear, the held torch's materials are sRGB, so
 			# the same look goes through _lin (held_item.gd's torch has these colours and proportions).
@@ -735,6 +785,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
+		elif mode == 4:
+			half = 0.5 * wide * pow(1.0 - t, 0.8) * (0.55 + 0.45 * smoothstep(0.0, 0.2, t))                               # an arrowhead: widest just above the base, tapering straight to a sharp point
 		elif mode == 3:
 			half = 0.5 * wide * pow(sin(PI * pow(t, 0.8)), 0.8)                                                             # a spear leaf: swelling, then a sharp point
 		elif mode == 2:
@@ -745,8 +797,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 		half = maxf(half, 0.012)
 		var forward: float = 0.006 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
-		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else (-0.007 if mode == 3 else 0.0))) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
-		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else (0.003 if mode == 3 else 0.0025))
+		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else (-0.007 if mode in [3, 4] else 0.0))) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
+		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else (0.003 if mode in [3, 4] else 0.0025))
 
 		if mode == 1:
 			base += 0.007 * smoothstep(0.35, 0.7, t) * (1.0 - 0.8 * smoothstep(0.8, 1.0, t))                           # a hoe's edge thickens, then bevels to a thin cutting edge
