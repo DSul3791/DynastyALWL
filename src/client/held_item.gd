@@ -49,7 +49,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.4
 const HELD_SPEAR_SCALE := 1.6
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -62,6 +62,9 @@ const HELD_LOOK_TURN := {
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
+	"bow": Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0)),   # the bow stands upright in the hand (limbs up and down, belly forward, string toward the archer)
+	"arrow": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"quiver": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 }
 const JAB_REACH := 0.7
 const JAB_S := 0.28
@@ -1393,6 +1396,9 @@ func _make_look_tool_model() -> Node3D:
 	mesh.basis = (HELD_LOOK_TURN[shape] as Basis).scaled(Vector3.ONE * held_scale)
 	node.add_child(mesh)
 	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
+
+	if shape == "bow":
+		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
 
 	return node
 

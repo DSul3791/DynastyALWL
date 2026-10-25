@@ -526,14 +526,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			for k in range(11):
 				var u: float = -1.0 + 0.2 * float(k)
-				pts.append(Vector2(0.55 * u, 0.1 * (1.0 - u * u)))
+				pts.append(Vector2(0.55 * u, 0.17 * (1.0 - u * u)))
 
 			for k in range(10):
 				var mid: float = absf(-0.9 + 0.2 * float(k))
-				_tube(parts, pts[k], pts[k + 1], 0.016 - 0.009 * mid, _tone(stave, k, 0.06), 8)
+				_tube(parts, pts[k], pts[k + 1], 0.0185 - 0.010 * mid, _tone(stave, k, 0.03), 8)
 
 			for k in range(3):
-				_cyl(parts, 0.0185, 0.014, Vector3(-0.02 + 0.02 * float(k), 0.0, 0.1), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.14, 0.08, 0.04) if k != 1 else Color(0.22, 0.13, 0.07))   # the leather grip wrap
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.02 + 0.02 * float(k), 0.0, 0.17), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.14, 0.08, 0.04) if k != 1 else Color(0.22, 0.13, 0.07))   # the leather grip wrap
 
 			for end in [-1.0, 1.0]:
 				_cone(parts, 0.009, 0.03, Vector3(end * 0.575, 0.0, 0.0), Color(0.75, 0.7, 0.6))                         # a bone nock at each tip
@@ -547,12 +547,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			for k in range(3):                                                                                            # the three feather vanes, 120 degrees apart
 				var ang: float = TAU * float(k) / 3.0
-				_box_rot(parts, Vector3(0.1, 0.022, 0.003), Vector3(-0.3, 0.014 * cos(ang), 0.014 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.85, 0.82, 0.74) if k != 0 else Color(0.35, 0.3, 0.26))
+				_box_rot(parts, Vector3(0.08, 0.014, 0.0025), Vector3(-0.3, 0.011 * cos(ang), 0.011 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.62, 0.55, 0.44) if k != 0 else Color(0.28, 0.22, 0.17))
 
 			_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.355, 0.0, 0.0), Color(0.12, 0.08, 0.05))               # the nock
 
 			if bits.has("stone"):
-				_plate(parts, 0.28, 0.07, 0.03, 0, 12, _warm_stone(Color(0.54, 0.54, 0.52)), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 3, 2.0)
+				_plate(parts, 0.285, 0.085, 0.026, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 3, 1.2)
 				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
 				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
 			else:
