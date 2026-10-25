@@ -228,3 +228,6 @@ QUEUE REFRESH (25 Oct 11:30 UTC, gate hashes current): fish C 03db354a2caa3260cb
 
 ## GATE REQUEST 25 Oct 16:45 UTC: Sal hide clothing
 Branch claude/sal-hide-clothing, exact id 6bb00a5154f8aaa90d92162f51c7165469393cdb (on generator-v2 819+, RESTART, data only, no protocol). Run: parse_scan, merge_check.py, marker grep, validate_items, test_server_items, test_new_player, test_craft_menu, local_check (baseline 227), full test set (baseline list is empty). Report first line HEAD=<hash>.
+
+## QUEUE 25 Oct 16:50 UTC: Kathleen looks (thatch roof locked)
+claude/kathleen-tool-pass exact id 9d8ba335d3b8e431ae3d3c4f98fd0723eebd3773 (thatch roof shape locked by Kathleen). Merge on David3 PASS, onto current generator-v2.
