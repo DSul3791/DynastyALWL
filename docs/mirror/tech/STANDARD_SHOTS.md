@@ -31,7 +31,7 @@ Kathleen reads a spot's three pictures together as one place ("front, left, behi
 | K11 | wall piece (placed) | 3 m | noon | at the piece |
 | K12 | bed (placed) | 3 m | noon | at the piece |
 | K13 | hearth (placed) | 3 m | noon | at the piece |
-| K14-K20 | held tools first person against plain sky: axe, pickaxe, hoe, spade, knife, spear, shore net (K20, added 25 Oct) | first person | noon | ONE picture each, no rotation (the view is the hand) |
+| K14-K22 | held tools first person against plain sky: axe, pickaxe, hoe, spade, knife, spear, shore net (K20), saw (K21), hammer (K22) (K20-K22 added 25 Oct) | first person | noon | ONE picture each, no rotation (the view is the hand) |
 Total full set: 13 spots x 3 = 39 pictures + 6 tools = 45. Spots K11-K13 need the 792 content: until it lands they are skipped ("n/a" in README).
 Optional per build: shelter with a lit fire at dusk, coast, cave mouth, island aerial (each 3 views).
 QUICK SET on every merge candidate: K01, K03, K05, K09 (12 pictures) + K14 (1) = 13 pictures.
