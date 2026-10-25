@@ -276,7 +276,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
 			var thong: Color = Color(0.3, 0.17, 0.09)
 			for k in range(10):                                                                                      # weathered grain along the haft
-				_cyl(parts, 0.021, 0.05, Vector3(-0.25 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.14))
+				_cyl(parts, 0.021, 0.05, Vector3(-0.25 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.06))
 			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))   # the haft swells where the head sits
 			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), _tone(dark, 1, 0.12))                 # the poll block the wedge sits on
 			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), _tone(color, 4, 0.08))                      # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
@@ -381,7 +381,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"saw":
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
-			var steel_blade: Color = Color(0.25, 0.25, 0.25)
+			var steel_blade: Color = Color(0.3, 0.285, 0.25)
 			var grip_wood: Color = Color(0.3, 0.2, 0.11)
 			var brass: Color = Color(0.45, 0.32, 0.08)
 			_box(parts, Vector3(0.025, 0.026, 0.13), Vector3(-0.3, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                 # the rear of the grip, the bar the hand closes round
@@ -404,7 +404,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
 			var thong: Color = Color(0.3, 0.17, 0.09)
 			for k in range(9):
-				_cyl(parts, 0.021, 0.05, Vector3(-0.225 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.14))
+				_cyl(parts, 0.021, 0.05, Vector3(-0.225 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.06))
 			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))
 			if mallet:
 				var grain: Color = Color(0.42, 0.3, 0.17)                                                            # a turned wooden barrel head, banded with leather at both ends
@@ -644,7 +644,7 @@ static func _tone(color: Color, k: int, spread: float) -> Color:
 
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
 static func _warm_stone(color: Color) -> Color:
-	return color.darkened(0.22).lerp(Color(0.5, 0.42, 0.34), 0.3)
+	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
 
 
 # A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
