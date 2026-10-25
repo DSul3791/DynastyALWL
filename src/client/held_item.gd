@@ -34,6 +34,8 @@ const SHOULDER_LOG_FWD := 0.45            # metres ahead of the eye: the log's m
 const SHOULDER_LOG_X := 0.5               # first person: the log's side of the body, metres right of the eye
 const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, "kit": 0.0}   # model +Y runs handle to head: the grip's distance from the model origin
 const SPEAR_GRIP_Z := 0.3
+const THIRD_LEAN_DEG := 78.0     # third person: the tool leans well forward, so its head is not up beside the skull (hands11 picture: the head stood level with the eyes)
+const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
@@ -1020,8 +1022,8 @@ func _mount_model() -> void:
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
-	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(60.0))
-	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
+	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if kind == "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
