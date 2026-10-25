@@ -1,5 +1,3 @@
-> **Retired 25 Oct 2026.** The `--role=builder` island baker and `src/builder` were deleted (Dave: "delete them"). Tiles are baked by `src/worldgen/tile/tile_baker.gd` (see `src/worldgen/tools/bake_tiles.gd`). The text below describes the old generator and is kept for history only.
-
 # Modular Island Generation Guide
 
 > **Old generator.** This file describes the earlier volumetric generator (10 by 10 region tiles, 10,240 m). It stays accurate for that code, which remains in the repository until the new generator replaces it (plan step 19 in `GENERATOR_V2_PLAN.md`). For the current design see `DESIGN_IDEAS.md` and `WORLD_FORMAT_SPEC.md`.
