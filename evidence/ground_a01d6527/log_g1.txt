@@ -1,12 +1,12 @@
 == iron_spade_large exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 80 % of the frame, centre 4 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 81 % of the frame, centre 21 % off, PART OUTSIDE THE FRAME
-shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 28 % off, PART OUTSIDE THE FRAME
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 17 % off, PART OUTSIDE THE FRAME
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 16 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 50 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 72 % of the frame, centre 9 % off, all inside the frame
 shot runner: done (item pictures FAILED)
 == steel_spade_large exit 0
-shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 80 % of the frame, centre 4 % off, all inside the frame
-shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 81 % of the frame, centre 21 % off, PART OUTSIDE THE FRAME
-shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 63 % of the frame, centre 27 % off, PART OUTSIDE THE FRAME
-shot runner: item view diag FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 17 % off, PART OUTSIDE THE FRAME
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 5 % off, all inside the frame
+shot runner: item view side FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 58 % of the frame, centre 16 % off, all inside the frame
+shot runner: item view top FAILED: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 100 % of the frame, centre 71 % off, PART OUTSIDE THE FRAME
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 79 % of the frame, centre 6 % off, all inside the frame
 shot runner: done (item pictures FAILED)
