@@ -51,3 +51,8 @@ Note: Recommendation: Yes
 Note: Full list: design/ITEM_TRIM_LIST.md group E. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-f | Item trim F: Forges: one forge with upgrades; no tongs, bellows, anvil (merge 3)
+Note: Full list: design/ITEM_TRIM_LIST.md group F. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
