@@ -319,18 +319,37 @@ static func saw_mill() -> Node3D:
 	return root
 
 
-# A water wheel 2 m across, lying with its axle along z: a hub, a rim of eight spokes and a paddle at the end of each.
+# A water wheel 2 m across, lying with its axle along z: a long axle, two wheel frames (ten spokes each, joined by a rim of ten
+# segments) and ten angled paddle boards between them. The old one was a hub with eight spokes and a paddle on each, which read as a star.
 static func water_wheel() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(0.2, 0.2, 1.1), Vector3.ZERO, _frame)
+	_box(root, Vector3(0.14, 0.14, 1.5), Vector3.ZERO, _frame)       # the axle, poking out of both frames
 
-	for i in 8:
-		var spoke: Node3D = Node3D.new()
-		spoke.rotation = Vector3(0.0, 0.0, TAU * float(i) / 8.0)
-		_box(spoke, Vector3(0.08, 0.9, 0.1), Vector3(0.0, 0.5, 0.0), _frame)
-		_box(spoke, Vector3(0.45, 0.1, 0.9), Vector3(0.0, 0.95, 0.0), _planks)
-		root.add_child(spoke)
+	for side in [-0.42, 0.42]:
+		_box(root, Vector3(0.3, 0.3, 0.12), Vector3(0.0, 0.0, side), _frame)           # a hub block on the axle
+
+		for i in 10:
+			var angle: float = TAU * float(i) / 10.0
+			var spoke: Node3D = Node3D.new()
+			spoke.rotation = Vector3(0.0, 0.0, angle)
+			_box(spoke, Vector3(0.07, 0.86, 0.08), Vector3(0.0, 0.5, side), _frame)
+			var rim: Node3D = Node3D.new()
+			rim.rotation = Vector3(0.0, 0.0, angle + PI / 10.0)
+			_box(rim, Vector3(0.64, 0.09, 0.09), Vector3(0.0, 0.93, side), _frame)   # a rim segment between two spoke ends
+			root.add_child(spoke)
+			root.add_child(rim)
+
+	for i in 10:
+		var paddle: Node3D = Node3D.new()
+		paddle.rotation = Vector3(0.0, 0.0, TAU * float(i) / 10.0)
+		var slant: Node3D = Node3D.new()
+		slant.position = Vector3(0.0, 0.98, 0.0)
+		slant.rotation = Vector3(0.0, 0.0, deg_to_rad(18.0))                               # slanted, so it scoops
+		_box(slant, Vector3(0.1, 0.34, 0.9), Vector3.ZERO, _planks)
+		paddle.add_child(slant)
+		root.add_child(paddle)
+
 	return root
 
 
