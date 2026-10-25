@@ -57,6 +57,18 @@ func note(animal_id: int, species: String, pos: Vector3) -> void:
 	dirty = true
 
 
+# How worn the grass is at a point, 0 to max_strength (0 where no animal has walked).
+func strength_at(x: float, z: float) -> float:
+	var cell: Vector2i = _cell_of(x, z)
+	var per: int = int(cfg.get("block_cells", 64))
+	var key: Vector2i = Vector2i(int(floor(float(cell.x) / float(per))), int(floor(float(cell.y) / float(per))))
+
+	if not blocks.has(key):
+		return 0.0
+
+	return float(blocks[key]["cells"].get((cell.x - key.x * per) + (cell.y - key.y * per) * per, 0.0))
+
+
 func forget(animal_id: int) -> void:
 	_last_cell.erase(animal_id)
 

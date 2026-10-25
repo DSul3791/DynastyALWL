@@ -263,6 +263,40 @@ func alarm_near(point: Vector3, radius: float) -> void:
 		_bolt(a, point, species_def(str(a["sp"])))
 
 
+# The animals a snare can reach: [{id, sp, pos}] within radius of the point (flat distance), burrowed ones left out.
+func list_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for id in animals:
+		var a: Dictionary = animals[id]
+
+		if int(a["state"]) != HIDDEN and Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length() <= radius:
+			out.append({"id": id, "sp": str(a["sp"]), "pos": a["pos"]})
+
+	return out
+
+
+# A snare closes on the animal: it leaves the world without a death (the snare module lays the carcass). One bird of a flock goes.
+func snare(id: int) -> bool:
+	if not animals.has(id):
+		return false
+
+	var a: Dictionary = animals[id]
+
+	if species_def(str(a["sp"])).has("flock"):
+		a["birds"] = int(a.get("birds", 8)) - 1
+
+		if int(a["birds"]) > 0:
+			return true
+
+	animals.erase(id)
+
+	if trails != null:
+		trails.forget(id)
+
+	return true
+
+
 func _graze_time(def: Dictionary) -> float:
 	var span: Array = def.get("graze_s", [3.0, 10.0])
 	return rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how long an animal grazes
