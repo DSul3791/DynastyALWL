@@ -2834,5 +2834,14 @@ func _init() -> void:
 
 	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and twine")
 
+	# Retired items folded into another (merged_into): an old save loads as the target, a placed vice becomes a log workbench.
+	var fold_table = ItemTableScript.load_default()
+	var fold_inv = load("res://src/shared/inventory.gd").new(fold_table)
+	fold_inv.from_json_array([[fold_table.number_of("stone_spade_medium"), 1, 0], [fold_table.number_of("vice_kit"), 1, 0], [fold_table.number_of("stone"), 5, 0]])
+	check(fold_inv.numbers[0] == fold_table.number_of("stone_spade") and fold_inv.numbers[1] == fold_table.number_of("log_workbench_kit") and fold_inv.numbers[2] == fold_table.number_of("stone") and fold_inv.counts[2] == 5, "an old save's medium spade and vice kit load as the small spade and a log workbench kit")
+	check(fold_table.merged(fold_table.number_of("stone")).is_empty(), "an item that stands is not folded")
+	var fold_server = make("user://test_server_items_fold")
+	check(fold_server._kind_now("vice") == "log_workbench", "a placed vice in an old save is a log workbench now")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

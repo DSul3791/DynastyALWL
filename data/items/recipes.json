@@ -1199,7 +1199,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"log_workbench_kit": {
 			"number": 49,
@@ -2949,7 +2950,8 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": true
+			"known": true,
+			"retired": true
 		},
 		"wooden_spade_large": {
 			"number": 132,
@@ -2977,7 +2979,8 @@
 			],
 			"craft_s": 9.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_spade_medium": {
 			"number": 133,
@@ -3003,7 +3006,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_spade_large": {
 			"number": 134,
@@ -3029,7 +3033,8 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"iron_spade_medium": {
 			"number": 135,
@@ -3050,7 +3055,8 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": false,
+			"retired": true
 		},
 		"iron_spade_large": {
 			"number": 136,
@@ -3071,7 +3077,8 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false
+			"known": false,
+			"retired": true
 		},
 		"steel_spade_medium": {
 			"number": 137,
@@ -3092,7 +3099,8 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false
+			"known": false,
+			"retired": true
 		},
 		"steel_spade_large": {
 			"number": 138,
@@ -3113,7 +3121,8 @@
 				1
 			],
 			"craft_s": 24.0,
-			"known": false
+			"known": false,
+			"retired": true
 		},
 		"wooden_hoe": {
 			"number": 139,

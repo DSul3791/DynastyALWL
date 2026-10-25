@@ -1017,7 +1017,9 @@
 			"kind": "placeable",
 			"stack": 1,
 			"value": 25,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"merged_into": "log_workbench_kit"
 		},
 		"vice": {
 			"number": 84,
@@ -1025,7 +1027,9 @@
 			"description": "A wooden vice. Beside a camp bench it raises the bench a level.",
 			"kind": "structure",
 			"stack": 1,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"merged_into": "log_workbench"
 		},
 		"log_workbench_kit": {
 			"number": 85,
@@ -2392,7 +2396,9 @@
 			],
 			"value": 37,
 			"spade_size": "medium",
-			"tier": 1
+			"tier": 1,
+			"retired": true,
+			"merged_into": "wooden_spade"
 		},
 		"wooden_spade_large": {
 			"number": 214,
@@ -2411,7 +2417,9 @@
 			],
 			"value": 67,
 			"spade_size": "large",
-			"tier": 1
+			"tier": 1,
+			"retired": true,
+			"merged_into": "wooden_spade"
 		},
 		"stone_spade_medium": {
 			"number": 215,
@@ -2435,7 +2443,9 @@
 			],
 			"value": 75,
 			"look_alikes": [],
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"merged_into": "stone_spade"
 		},
 		"stone_spade_large": {
 			"number": 216,
@@ -2459,7 +2469,9 @@
 			],
 			"value": 135,
 			"look_alikes": [],
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"merged_into": "stone_spade"
 		},
 		"iron_spade_medium": {
 			"number": 217,
@@ -2485,7 +2497,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"merged_into": "iron_spade"
 		},
 		"iron_spade_large": {
 			"number": 218,
@@ -2511,7 +2525,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"merged_into": "iron_spade"
 		},
 		"steel_spade_medium": {
 			"number": 219,
@@ -2537,7 +2553,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"merged_into": "steel_spade"
 		},
 		"steel_spade_large": {
 			"number": 220,
@@ -2563,7 +2581,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"merged_into": "steel_spade"
 		},
 		"wooden_hoe": {
 			"number": 221,

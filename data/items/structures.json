@@ -118,18 +118,6 @@
 			"sound": "",
 			"clears_grass": true
 		},
-		"vice": {
-			"kit": "vice_kit",
-			"item": "vice",
-			"state": 15,
-			"footprint_x": 0.5,
-			"footprint_z": 0.5,
-			"cap_per_chunk": 6,
-			"addon_of": "workbench",
-			"look": "vice",
-			"sound": "",
-			"clears_grass": true
-		},
 		"log_workbench": {
 			"kit": "log_workbench_kit",
 			"item": "log_workbench",
@@ -139,6 +127,7 @@
 			"cap_per_chunk": 3,
 			"station": "workbench",
 			"station_level": 2,
+			"legacy_kinds": ["vice"],
 			"tier": "medium",
 			"reach_m": 4.5,
 			"addon_reach_m": 5.0,
