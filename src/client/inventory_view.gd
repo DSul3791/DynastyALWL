@@ -3455,7 +3455,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "tripod_pot_kit", "clay_hearth_kit"]
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit"]
 	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
 
 	for id in admin_ids:
