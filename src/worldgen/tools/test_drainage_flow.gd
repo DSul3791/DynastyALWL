@@ -14,6 +14,7 @@ const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const STEP := 1                # 8 m cells (channels are 24 m wide and up)
 const RIVER_CELLS_KM2 := 0.5   # river_start_km2 of today's world network
 const NEAR_CELLS := 8          # 64 m
+const NOTCH_CELLS := 6         # the outlet notch behind a kept pit's rim
 const LAKE_NEAR_CELLS := 3     # a rise within 3 cells of a baked lake cell (water_class 2) is the lake outlet, not a river
 
 var failures: int = 0
@@ -48,6 +49,24 @@ func _lake_or_bowl_side(data, channels, index: int, next: int, side: int) -> boo
 
 				if column >= 0 and column < side and row >= 0 and row < side and channels.basin_mask[row * side + column] != 0:
 					return true
+
+	return false
+
+
+# A kept pit: the bed climbs to its rim and the outlet notch falls away behind it. A rise is no fault when within the next NOTCH_CELLS cells downstream the bed
+# falls by at least the rise (Sonny, 25 Oct); a rise with no drop after it still fails.
+func _crest_with_notch(channels, fill, index: int, next: int) -> bool:
+	var rise: float = channels.bed[next] - channels.bed[index]
+	var at: int = next
+
+	for step in NOTCH_CELLS:
+		at = fill.receiver[at]
+
+		if at < 0:
+			return false
+
+		if channels.bed[next] - channels.bed[at] >= rise:
+			return true
 
 	return false
 
@@ -92,7 +111,7 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 		# A carved pond or lake bowl dips below its outlet on purpose (the lip is the outlet), so its cells are not rises.
 		# Build 810 tiles: lake cells (baked water_class 2) and the cells beside a carved bowl rise or dip on purpose too.
 		if next >= 0 and flow.discharge[next] >= RIVER_CELLS_KM2 and channels.bed[next] > channels.bed[index] + 0.001 and channels.basin_mask[index] == 0 and channels.basin_mask[next] == 0 \
-				and not _lake_or_bowl_side(data, channels, index, next, side):
+				and not _lake_or_bowl_side(data, channels, index, next, side) and not _crest_with_notch(channels, fill, index, next):
 			rising += 1
 
 			if rises.size() < 80:
