@@ -270,7 +270,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# Nothing bends sideways (out of that plane). Held with the head vertical (points up and down); see HELD_LOOK_TURN.
 			# Test: src/worldgen/tools/test_pick_axes.gd.
 			var steel_head: bool = bits.has("steel")
-			var iron: Color = Color(0.3, 0.31, 0.34) if steel_head else Color(0.15, 0.155, 0.17)   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal)
+			var iron: Color = Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042)   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
 			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
@@ -279,7 +279,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(8):                                                                                               # the leather grip wrap: alternating bound bands
 				_cyl(parts, 0.0235, 0.02, Vector3(-0.27 + 0.02 * float(k) + 0.01, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(leather, k, 0.22) if k % 2 == 0 else leather.darkened(0.3))
 			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
-			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron.darkened(0.25))                    # the iron eye block the haft passes into
+			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron * 0.75)                    # the iron eye block the haft passes into
 			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), _tone(wood, 5, 0.1))                      # the haft's end, standing proud of the head
 			for k in range(3):                                                                                               # the collar's leather lashing, three turns
 				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
@@ -296,12 +296,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * t
 					var length: float = side[2] * (phi1 - phi0) * 1.06
 					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, sign * (0.04 + side[2] * sin(mid)))
-					var tone: Color = _tone(iron, seg + (0 if sign > 0.0 else 7), 0.2)                                      # hammered, pitted: each segment a little lighter or darker
+					var tone: Color = _tone_mul(iron, seg + (0 if sign > 0.0 else 7), 0.3)                                     # hammered, pitted: each segment a little lighter or darker
 					if seg >= count - 2:
-						tone = tone.lightened(0.22)                                                                              # the worked, bright points and edge
+						tone = tone * 1.45                                                                              # the worked, bright points and edge
 					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -sign * mid, 0.0), tone)
 			if steel_head:
-				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron.lightened(0.3))                  # steel: a polished ridge along the top of the head
+				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
@@ -462,6 +462,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.08, Vector3.ONE, Vector3.ZERO, color)
 
 	return _combine(parts, size)
+
+
+# A colour scaled by a repeatable pseudo-random factor (1 +- spread): the same idea as _tone, but it keeps very dark colours dark (lightened() lerps toward white).
+static func _tone_mul(color: Color, k: int, spread: float) -> Color:
+	var n: float = fposmod(sin(float(k) * 12.9898 + 4.1) * 43758.5453, 1.0) * 2.0 - 1.0
+	return Color(color.r * (1.0 + n * spread), color.g * (1.0 + n * spread), color.b * (1.0 + n * spread), color.a)
 
 
 # A colour nudged lighter or darker by a repeatable pseudo-random amount (up to `spread`), for weathered grain and hammered iron.
