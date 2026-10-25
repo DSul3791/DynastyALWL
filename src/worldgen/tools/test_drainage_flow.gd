@@ -14,6 +14,7 @@ const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const STEP := 1                # 8 m cells (channels are 24 m wide and up)
 const RIVER_CELLS_KM2 := 0.5   # river_start_km2 of today's world network
 const NEAR_CELLS := 8          # 64 m
+const LAKE_NEAR_CELLS := 3     # a rise within 3 cells of a baked lake cell (water_class 2) is the lake outlet, not a river
 
 var failures: int = 0
 
@@ -25,15 +26,20 @@ func _check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-# True when the cell or its receiver is a baked lake cell, or either has a carved bowl cell among its 8 neighbours.
+# True when the cell or its receiver has a baked lake cell (water_class 2) within LAKE_NEAR_CELLS, or a carved bowl cell among its 8 neighbours.
 func _lake_or_bowl_side(data, channels, index: int, next: int, side: int) -> bool:
 	for cell in [index, next]:
 		@warning_ignore("integer_division")
 		var cell_row: int = cell / side
 		var cell_column: int = cell % side
 
-		if data.water_class[cell_row * STEP * data.samples + cell_column * STEP] == 2:
-			return true
+		for dz in range(-LAKE_NEAR_CELLS, LAKE_NEAR_CELLS + 1):
+			for dx in range(-LAKE_NEAR_CELLS, LAKE_NEAR_CELLS + 1):
+				var lake_column: int = cell_column + dx
+				var lake_row: int = cell_row + dz
+
+				if lake_column >= 0 and lake_column < side and lake_row >= 0 and lake_row < side and data.water_class[lake_row * STEP * data.samples + lake_column * STEP] == 2:
+					return true
 
 		for dz in range(-1, 2):
 			for dx in range(-1, 2):
@@ -53,6 +59,7 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 	channels.build(h, fill, flow, side, cell_m, RIVER_CELLS_KM2, rules, 17)
 	var took: float = float(Time.get_ticks_msec() - begun) / 1000.0
 	var rising: int = 0
+	var rises: Array = []
 	var centres: int = 0
 	var outer_sum: float = 0.0
 	var inner_sum: float = 0.0
@@ -71,6 +78,10 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 				and not _lake_or_bowl_side(data, channels, index, next, side):
 			rising += 1
 
+			if rises.size() < 12:
+				@warning_ignore("integer_division")
+				rises.append(Vector2(data.x0 + float(index % side) * cell_m, data.z0 + float(index / side) * cell_m))
+
 		var turn: float = channels.curvature[index]
 
 		if absf(turn) > 0.3 and flow.discharge[index] > 2.0 and next >= 0:
@@ -88,6 +99,9 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 				apexes += 1
 
 	print("channel cells %d, bends %d, outer/inner depth ratio %.2f, %.1f s" % [centres, apexes, outer_sum / maxf(inner_sum, 0.001), took])
+	if rising > 0:
+		print("first rises at world x, z: ", rises)
+
 	_check(rising == 0, "bed never rises downstream (%d rises of %d cells)" % [rising, centres])
 	_check(apexes >= 20, "at least 20 bends (%d)" % apexes)
 	_check(outer_sum >= 1.3 * inner_sum, "outer bank at least 1.3x the inner bank depth")
