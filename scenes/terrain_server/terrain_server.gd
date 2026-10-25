@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -316,6 +317,18 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
+		var water: Array = _water_at(Vector3(x, 0.0, z))
+		var baked: int = 0
+
+		if generator.tile_cached(x, z):
+			var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+			if not tile_data.placeholder and not tile_data.water_class.is_empty():
+				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
+
+		return [water[0], water[1], baked])
+	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)

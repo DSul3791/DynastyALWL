@@ -1,0 +1,12 @@
+{
+	"note": "Fishing water kinds (design/FISH_AND_FISHING_PLAN.md, plan B). Numbers for src/server/server_fish_water.gd. sea bands are metres of water over the sea floor. A river whose narrowest run of wet cells is no wider than brook_max_width_m and shallower than river_min_depth_m is a brook. A baked lake (or loose water) of no more than pond_max_cells joined wet cells is a pond.",
+	"step_m": 8.0,
+	"sea_shallow_max_m": 5.0,
+	"sea_mid_max_m": 30.0,
+	"brook_max_width_m": 8.0,
+	"river_min_depth_m": 1.0,
+	"pond_max_cells": 40,
+	"width_scan_cells": 6,
+	"cache_ttl_s": 20.0,
+	"cache_max": 20000
+}
