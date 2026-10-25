@@ -19,6 +19,7 @@ const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
+const TileLandTypesScript := preload("res://src/worldgen/tile/tile_land_types.gd")
 const TileGeologyScript := preload("res://src/worldgen/tile/tile_geology.gd")
 const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
@@ -284,6 +285,17 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	climate.use_world_fresh_water(fresh_points)
 	climate.build(water.heights, water.water_class, origin_sx, origin_sz)
 	timings["climate"] = Time.get_ticks_msec() - clock
+
+	# Land types: shore marsh, treeline and the evergreen belt over the climate biomes (no tree stands at a lake any more).
+	clock = Time.get_ticks_msec()
+	var land_ids: Dictionary = {}
+
+	for name in ["marsh", "alpine_meadow", "bare_rock", "mixed_forest", "boreal_forest", "temperate_grassland", "temperate_forest", "heath"]:
+		land_ids[name] = tables.id_of("biomes", name)
+
+	var land_counts: Dictionary = TileLandTypesScript.apply(climate.biome, water.heights, water.water_class, water.water_surface, n, frame_height.spacing_m, tile_rules.get("land_types", {}), land_ids)
+	timings["land_types"] = Time.get_ticks_msec() - clock
+	print("  land types: %d marsh/shore cells, %d alpine meadow, %d mixed-forest belt, %d boreal belt (%d ms)" % [land_counts["marsh"], land_counts["alpine"], land_counts["belt"], land_counts["boreal"], timings["land_types"]])
 
 	# Crop everything to the tile.
 	var ghost_heights: PackedFloat32Array = water.heights
