@@ -152,14 +152,20 @@ func _edit(center: Vector3, radius: float, filled: bool) -> void:
 
 # New drawing levels from the water thread, or empty when there is nothing new.
 func take_levels() -> PackedFloat32Array:
+	return take_pair()[0]
+
+
+# The new levels and the matching fall levels as one pair, both read inside the lock (the hub used to read fall_levels after it).
+func take_pair() -> Array:
 	_mutex.lock()
 	var levels: PackedFloat32Array = _pending
 	_pending = PackedFloat32Array()
 
 	if not levels.is_empty():
 		fall_levels = _pending_falls
+	var falls: PackedFloat32Array = fall_levels
 	_mutex.unlock()
-	return levels
+	return [levels, falls]
 
 
 # One tick on the water thread at `multiplier` times the spring rate; publishes drawing levels
