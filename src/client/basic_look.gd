@@ -437,9 +437,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			_cyl_taper(parts, 0.0195, 0.0185, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.1))
-			_cyl_taper(parts, 0.0185, 0.0195, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.1))
-			_cyl_taper(parts, 0.0195, 0.021, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.1))
+			_cyl_taper(parts, 0.0195, 0.0185, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.1), 10)
+			_cyl_taper(parts, 0.0185, 0.0195, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.1), 10)
+			_cyl_taper(parts, 0.0195, 0.021, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.1), 10)
 			_wrap(parts, -0.28, -0.12, 0.0202)                                                                        # a dark leather wrap with visible spiral turns where the hands go
 			_sph(parts, 0.021, Vector3(0.8, 1.0, 1.0), Vector3(-0.815, 0.0, 0.0), _tone(ash, 4, 0.06))           # the rounded end
 			var stone_blade: bool = bits.is_empty() and absf(color.r - color.b) < 0.1
@@ -458,14 +458,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_metal(parts, rough, 0.3)
 
 			if bits.is_empty() and absf(color.r - color.b) < 0.1:
-				for k in range(4):                                                                              # a stone blade is tied on: four turns of twine wound round the neck, slanted, in two tones
+				for k in range(3):                                                                              # a stone blade is tied on: three turns of twine wound round the neck, slanted, in two tones
 					var along: Vector3 = Vector3(cos(0.6), 0.0, sin(0.6))
 					var turn: Basis = Basis(Vector3.UP, -0.6) * Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5 + 0.25))
 					parts.append([_twine_band(), Transform3D(turn, Vector3(0.49, 0.0, 0.015) + along * 0.013 * float(k)), Color(0.55, 0.42, 0.2) if k % 2 == 0 else Color(0.38, 0.28, 0.13)])
 
 			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
 			_plate(parts, 0.0, 0.13, 0.18, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1, 2.6 if stone_blade else 1.0)   # the blade plate, hanging toward +z, wide across y (a chunky stone head is thicker)
-			_plate(parts, 0.0, 0.13, 0.18, 8, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3, frame, 1)   # its bright cutting edge
+			_plate(parts, 0.0, 0.13, 0.18, 8, 12, Color(0.55, 0.55, 0.52) if bits.has("steel") else blade * 1.9, false, metal_blade, rough, 0.3, frame, 1)   # its bright, worn cutting edge
 		"knife":
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
