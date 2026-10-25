@@ -1710,3 +1710,7 @@ Answered: 2026-10-25 13:57 UTC
 Answer: No: The answer is yes, a wooden wall, a basic wall and a cobblestone wall and a mason wall are all different things. They are different items with their own models. They just follow all the same rules the same as foundations and if we have this mixed up, you should fix it foundations or all their own type, a basic foundation, a wood foundation, a fine wood foundation, a cobblestone foundation, a mason foundation. These are all different foundations with their own separate rules. Go look back in our design documents in our previous sheets that regard the decisions that we previously made go through them all and recheck them all again because it seems like everybody is forgetting them.
 Answered: 2026-10-25 17:32 UTC
 
+## trim-g2 | Building pieces: one wall for every material?
+Answer: No: The answer is yes, a wooden wall, a basic wall and a cobblestone wall and a mason wall are all different things. They are different items with their own models. They just follow all the same rules the same as foundations and if we have this mixed up, you should fix it foundations or all their own type, a basic foundation, a wood foundation, a fine wood foundation, a cobblestone foundation, a mason foundation. These are all different foundations with their own separate rules. Go look back in our design documents in our previous sheets that regard the decisions that we previously made go through them all and recheck them all again because it seems like everybody is forgetting them.
+Answered: 2026-10-25 17:32 UTC
+
