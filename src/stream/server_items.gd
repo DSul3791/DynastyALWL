@@ -84,6 +84,7 @@ const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spe
 const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
+const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
@@ -168,6 +169,8 @@ var _drops: Dictionary = {}
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
+var _blueprints: Dictionary = {}    # blueprints.json: number -> row (with its "id"), placed from the hammer instead of a kit item
+var _blueprint_of_kit: Dictionary = {}   # kit item id -> blueprint number (a piece takes down into its materials, not a kit)
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
@@ -317,6 +320,7 @@ func setup(item_table, store_dir: String) -> void:
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
 
+	_load_blueprints()
 	var skills_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SKILLS_PATH))
 	_skills_cfg = skills_parsed if typeof(skills_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
@@ -847,6 +851,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_hoe_grade(peer, inv, at)
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
+	elif kind == Net.ACT_PLACE_BLUEPRINT:
+		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
 	elif kind == Net.ACT_STRIKE:
@@ -2165,13 +2171,21 @@ func _foundation_rows() -> Array:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
-func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0) -> void:
-	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
-		return
+func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0, blueprint: Dictionary = {}) -> void:
+	var number: int = 0
+	var kit_id: String = ""
 
-	var number: int = inv.numbers[slot]
+	if not blueprint.is_empty():   # from the hammer: no kit item, the materials are checked here and taken with the piece
+		if not _peer_pos.has(peer) or not _can_blueprint(peer, inv, blueprint):
+			return
 
-	var kit_id: String = table.id_of(number)
+		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
+	else:
+		if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+			return
+
+		number = inv.numbers[slot]
+		kit_id = table.id_of(number)
 
 	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
 		return
@@ -3905,6 +3919,73 @@ func _fire_in_reach(peer: int, id: int) -> Dictionary:
 
 # --- Placed structures (data/items/structures.json): lean-to shelter now, storage chest next ---
 
+func _load_blueprints() -> void:
+	_blueprints.clear()
+	_blueprint_of_kit.clear()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(BLUEPRINTS_PATH))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for id in parsed.get("blueprints", {}):
+		var row: Dictionary = parsed["blueprints"][id].duplicate()
+		row["id"] = id
+		_blueprints[int(row["number"])] = row
+		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
+
+
+# Whether this blueprint can go down now: a hammer of enough tier on the hotbar, the station near when it needs one, every material in the pack.
+# Says why when it cannot, and takes nothing.
+func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
+	if not bool(row.get("known", true)) or _structures.get(str(row["structure"]), {}).is_empty():
+		return false
+
+	var hammer: int = _tool_slot(inv, "hammer")
+
+	if hammer < 0:
+		_say(peer, "You need a hammer in your hand bar to build from a blueprint.")
+		return false
+
+	if int(table.entry(table.id_of(inv.numbers[hammer])).get("tier", 1)) < int(row.get("hammer", 1)):
+		_say(peer, "This hammer is too light for that. A stone hammer or better.")
+		return false
+
+	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"])):
+		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
+		return false
+
+	for need in row["cost"]:
+		if inv.count_of(table.number_of(str(need[0]))) < int(need[1]):
+			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
+			return false
+
+	return true
+
+
+func _pay_blueprint(inv, row: Dictionary) -> void:
+	for need in row["cost"]:
+		inv.remove(table.number_of(str(need[0])), int(need[1]))
+
+
+# All the materials back into the pack, or none (with a word) when they do not fit.
+func _refund_blueprint(peer: int, inv, row: Dictionary) -> bool:
+	var given: Array = []
+
+	for need in row["cost"]:
+		var number: int = table.number_of(str(need[0]))
+		var left: int = inv.add(number, int(need[1]))
+		given.append([number, int(need[1]) - left])
+
+		if left > 0:
+			for put in given:
+				inv.remove(int(put[0]), int(put[1]))
+
+			_say(peer, "Make room in your pack first.")
+			return false
+
+	return true
+
+
 func _structure_of_kit(kit_id: String) -> Dictionary:
 	for kind in _structures:
 		if str(_structures[kind]["kit"]) == kit_id:
@@ -3946,7 +4027,11 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		_say(peer, "Too many of these stand here already.")
 		return
 
-	inv.take_from_slot(slot, 1)
+	if slot < 0:
+		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])])
+	else:
+		inv.take_from_slot(slot, 1)
+
 	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
 
 	if int(def.get("slots", 0)) > 0:
@@ -4058,9 +4143,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take down what stands on it first.")
 		return
 
-	var kit: int = table.number_of(str(def["kit"]))
-
-	if inv.add(kit, 1) > 0:
+	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])]):
+			return
+	elif inv.add(table.number_of(str(def["kit"])), 1) > 0:
 		return
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
