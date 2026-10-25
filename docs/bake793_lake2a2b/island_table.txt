@@ -1,0 +1,79 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+
+== baked tiles: 9 in res://worlds/base_world/tiles
+CHECK seam (2,3) east to (3,3) | 0 hard failures | 0 | PASS
+CHECK seam (2,3) south to (2,4) | 0 hard failures | 0 | PASS
+CHECK seam (2,4) east to (3,4) | 0 hard failures | 0 | PASS
+CHECK seam (2,4) south to (2,5) | 0 hard failures | 0 | PASS
+CHECK seam (2,5) east to (3,5) | 0 hard failures | 0 | PASS
+CHECK seam (2,5) south to (2,6) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (3,3) east to (4,3) | 0 hard failures | 0 | PASS
+CHECK seam (3,3) south to (3,4) | 0 hard failures | 0 | PASS
+CHECK seam (3,4) east to (4,4) | 0 hard failures | 0 | PASS
+CHECK seam (3,4) south to (3,5) | 0 hard failures | 0 | PASS
+CHECK seam (3,5) east to (4,5) | 0 hard failures | 0 | PASS
+CHECK seam (3,5) south to (3,6) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,3) east to (5,3) | neighbor not baked; neighbor is an ocean placeholder: 287 of 1921 edge samples are not ocean | ocean edge | INFO
+CHECK seam (4,3) south to (4,4) | 0 hard failures | 0 | PASS
+CHECK seam (4,4) east to (5,4) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,4) south to (4,5) | 0 hard failures | 0 | PASS
+CHECK seam (4,5) east to (5,5) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,5) south to (4,6) | neighbor not baked; neighbor is an ocean placeholder: 220 of 1921 edge samples are not ocean | ocean edge | INFO
+CHECK dead-end gullies share (sink, not lake or sea, within 3 km) | 0 of 48139 gullies, 0.0000 per km2 | max 0.02 | PASS
+CHECK spawn (53316, 68476) tile (3,4) max slope in 30 m | 0.0 deg over 45 samples (8 m map) | max 7.0 | PASS
+CHECK spawn (53316, 68476) tile (3,4) height range | 0.00 m (31.00 to 31.00) | max 1.5 | PASS
+CHECK spawn (53316, 68476) tile (3,4) water samples | 0 | max 0.0 | PASS
+CHECK spawn candidates within 300 m (6 pads pass) | x 53300 z 68460 (23 m away, 0.7 deg, 31 m high) | - | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 72864 z 55072 | 65 river samples, lowest water at 20.5 m; ground keeps falling to the sea after 0.6 km (10 wet cells on the way): the river should continue; drop 20.2 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 59712 z 62880 | 83 river samples, lowest water at 278.0 m; ground keeps falling to the sea after 1.2 km (14 wet cells on the way): the river should continue; drop 144.2 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 60032 z 68224 | 36 river samples, lowest water at 26.8 m; ground keeps falling to the sea after 0.3 km (0 wet cells on the way): the river should continue; drop 30.8 m over 500 m | reaches sea | INFO
+CHECK rivers reach the sea (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) | 62 river bodies, 3 do not touch the sea (old count), 3 of those end naturally (lake, head hollow, or water continues; 1 settled-only heads with no painted river), 0 end inland | 0 inland within 128 m gaps | PASS
+CHECK river ends naturally (painted rivers, 32 m map) near x 52544 z 50688 | 60 river samples, lowest water at 4.6 m; ground stops falling at 4.6 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 50368 z 51328 | 46 river samples, lowest water at 339.4 m; ground stops falling at 78.3 m after 1.9 km: a closed basin (pit); drop 112.8 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 52576 z 69024 | 62 river samples, lowest water at 11.1 m; ground stops falling at 11.1 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 51808 z 69152 | 56 river samples, lowest water at -3.0 m; ground keeps falling to the sea after 0.0 km (0 wet cells on the way): the river should continue; drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 57120 z 71136 | 31 river samples, lowest water at 132.3 m; ground stops falling at 24.7 m after 0.9 km: a closed basin (pit); drop 64.9 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 69184 z 81088 | 39 river samples, lowest water at 10.2 m; ground keeps falling to the sea after 0.3 km (2 wet cells on the way): the river should continue; drop 10.5 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 68192 z 82688 | 72 river samples, lowest water at 19.1 m; ground keeps falling to the sea after 0.5 km (6 wet cells on the way): the river should continue; drop 19.1 m over 500 m | reaches sea | INFO
+CHECK rivers reach the sea (painted rivers, 32 m map) | 29 river bodies, 7 do not touch the sea (old count), 7 of those end naturally (lake, head hollow, or water continues; 0 settled-only heads with no painted river), 0 end inland | 0 inland within 128 m gaps | PASS
+CHECK tile landmass near x 30752 z 46112 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 86.3% of land is farmable, 4.3 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 30752 z 46112 farmland (10-400 m, slope at or under 9 deg) | 51.8% farmable, 29.4% rolling, 4861 cells of 32 m | report | INFO
+CHECK tile landmass near x 38656 z 47008 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 100.0% of land is farmable, 3.8 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 38656 z 47008 farmland (10-400 m, slope at or under 9 deg) | 96.9% farmable, 31.2% rolling, 3711 cells of 32 m | report | INFO
+CHECK tile landmass near x 44832 z 48032 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 78.0% of land is farmable, 38.1 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 44832 z 48032 farmland (10-400 m, slope at or under 9 deg) | 48.9% farmable, 28.3% rolling, 42121 cells of 32 m | report | INFO
+CHECK tile landmass near x 71456 z 53568 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 86.9% of land is farmable, 59.6 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 71456 z 53568 farmland (10-400 m, slope at or under 9 deg) | 63.6% farmable, 23.0% rolling, 66215 cells of 32 m | report | INFO
+CHECK tile landmass near x 58912 z 65888 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 64.9% of land is farmable, 54.7 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 58912 z 65888 farmland (10-400 m, slope at or under 9 deg) | 58.1% farmable, 28.1% rolling, 62193 cells of 32 m | report | INFO
+CHECK tile landmass near x 71712 z 73152 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 75.5% of land is farmable, 65.1 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 71712 z 73152 farmland (10-400 m, slope at or under 9 deg) | 51.9% farmable, 31.5% rolling, 71547 cells of 32 m | report | INFO
+CHECK tile landmass near x 66528 z 88224 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 100.0% of land is farmable, 0.6 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 66528 z 88224 farmland (10-400 m, slope at or under 9 deg) | 100.0% farmable, 0.0% rolling, 596 cells of 32 m | report | INFO
+CHECK tile landmass near x 75392 z 91488 farmland up to the evergreen belt (slope at or under 16.7 deg, walkable up to 25 deg) | 100.0% of land is farmable, 0.8 km2, 100% of it walkable | report | INFO
+CHECK tile landmass near x 75392 z 91488 farmland (10-400 m, slope at or under 9 deg) | 99.9% farmable, 20.5% rolling, 799 cells of 32 m | report | INFO
+CHECK landmass near x 32487 z 46901 hard routes | 6.4 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 38840 z 48157 hard routes | 6.1 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 48658 z 51213 hard routes | 59.7 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 70435 z 52889 hard routes | 0.4 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66123 z 59446 hard routes | 89.5 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 58003 z 55461 hard routes | 1.3 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 76608 z 57736 hard routes | 0.6 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 49237 z 59559 hard routes | 1.6 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 53778 z 70510 hard routes | 94.7 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66275 z 78854 hard routes | 99.3 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66425 z 88914 hard routes | 2.9 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 75073 z 91682 hard routes | 1.8 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK spawn in the main region of its landmass | main region | main region | PASS
+CHECK isolated regions (hard class, 32 m map) | 0 listed, 0 flagged | 0 flagged | PASS
+CHECK dry land farther than 2000 m from an easy route or coast | 0.0% (0.0 km2 of 364.5 km2); 10 easy regions over 1.0 km2 | max 0.02 | PASS
+CHECK island 1 tile summit | island 1 is not in the baked tiles | - | INFO
+CHECK island 8 tile summit plateau (within 5 m of the top) | top 1245 m at x 54776 z 71352, flat area 88 m across (62 cells) | max 100.0 | PASS
+CHECK island 8 tile summit plateau (within 20 m of the top) | top 1245 m at x 54776 z 71352, flat area 168 m across (248 cells) | max 200.0 | PASS
+CHECK island 8 tile slope map | E:/Software/godotDev/pl_lake2a2b/pic/island_8_tile_slopemap.png | green easy, orange hard, red steeper, blue water, 1 km grid | INFO
+CHECK island 8 tile slope classes (8 m maps, 6 km window) | easy 81%, hard 15%, over 45 deg 4.0% | report | INFO
+CHECK island 8 tile canyon share (floor 15 m under the 60 m ring) | 0.4% of land | none set | INFO
+CHECK island 8 tile picture | E:/Software/godotDev/pl_lake2a2b/pic/island_8_bearings_tile.png | 6 bearing sections, grid 1 km x 200 m, colour = slope | PASS
+
+73 checks, 0 FAIL
