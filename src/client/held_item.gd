@@ -1357,20 +1357,60 @@ func _make_torch_model(id: String = "") -> Node3D:
 	rod.material = wood
 	stick.mesh = rod
 	torch.add_child(stick)
-	var flame: MeshInstance3D = MeshInstance3D.new()
-	var cone: CylinderMesh = CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = 0.07
-	cone.height = 0.22
+	# The head: rag or bark wound round the top of the stick (fatter than the stick, bound with twine), with the flame standing on it.
+	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
+	wrap_material.albedo_color = Color(0.2, 0.15, 0.1)
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var wrap: CylinderMesh = CylinderMesh.new()
+	wrap.top_radius = 0.05
+	wrap.bottom_radius = 0.036
+	wrap.height = 0.15
+	wrap.material = wrap_material
+	head.mesh = wrap
+	head.position = Vector3(0.0, 0.3, 0.0)
+	torch.add_child(head)
+	var twine_material: StandardMaterial3D = StandardMaterial3D.new()
+	twine_material.albedo_color = Color(0.62, 0.5, 0.3)
+
+	for band_y in [0.26, 0.31]:
+		var band: MeshInstance3D = MeshInstance3D.new()
+		var ring: CylinderMesh = CylinderMesh.new()
+		ring.top_radius = 0.047 if band_y > 0.28 else 0.041
+		ring.bottom_radius = ring.top_radius
+		ring.height = 0.012
+		ring.material = twine_material
+		band.mesh = ring
+		band.position = Vector3(0.0, band_y, 0.0)
+		torch.add_child(band)
+
 	var glow: StandardMaterial3D = StandardMaterial3D.new()
 	glow.albedo_color = Color(1.0, 0.6, 0.2)
 	glow.emission_enabled = true
 	glow.emission = Color(1.0, 0.5, 0.1)
 	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	cone.material = glow
-	flame.mesh = cone
-	flame.position = Vector3(0.0, 0.4, 0.0)
+	var flame: MeshInstance3D = MeshInstance3D.new()
+	flame.name = "Flame"
+	var drop: SphereMesh = SphereMesh.new()   # a teardrop: a round body with a tongue above it
+	drop.radius = 0.055
+	drop.height = 0.11
+	drop.material = glow
+	flame.mesh = drop
+	flame.position = Vector3(0.0, 0.41, 0.0)
 	torch.add_child(flame)
+	var tongue: MeshInstance3D = MeshInstance3D.new()
+	var tip: CylinderMesh = CylinderMesh.new()
+	tip.top_radius = 0.0
+	tip.bottom_radius = 0.045
+	tip.height = 0.14
+	var tip_material: StandardMaterial3D = StandardMaterial3D.new()
+	tip_material.albedo_color = Color(1.0, 0.82, 0.35)
+	tip_material.emission_enabled = true
+	tip_material.emission = Color(1.0, 0.7, 0.2)
+	tip_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	tip.material = tip_material
+	tongue.mesh = tip
+	tongue.position = Vector3(0.0, 0.52, 0.0)
+	torch.add_child(tongue)
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
