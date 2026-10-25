@@ -365,6 +365,34 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)
 			_box(parts, Vector3(0.02, 0.13, 0.21), Vector3(0.0, 0.0, 0.0), light)
+			# An emblem on the lid (bits[0]) tells the kits apart: saw, table, bench, anvil, rack, vice. No bits: the plain box.
+			var emblem: String = str(bits[0]) if bits.size() > 0 else ""
+			var tag: Color = Color(0.82, 0.8, 0.76)
+
+			match emblem:
+				"saw":
+					_box(parts, Vector3(0.2, 0.006, 0.05), Vector3(0.0, 0.053, 0.0), Color(0.62, 0.64, 0.68))
+					for k in range(8):
+						_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.085 + 0.024 * float(k), 0.054, 0.03), Color(0.62, 0.64, 0.68))
+					_box(parts, Vector3(0.05, 0.012, 0.03), Vector3(-0.12, 0.056, 0.0), Color(0.34, 0.23, 0.13))
+				"table":
+					_box(parts, Vector3(0.18, 0.012, 0.1), Vector3(0.0, 0.076, 0.0), tag)
+					for leg in [[-0.075, -0.04], [0.075, -0.04], [-0.075, 0.04], [0.075, 0.04]]:
+						_box(parts, Vector3(0.012, 0.03, 0.012), Vector3(float(leg[0]), 0.056, float(leg[1])), tag)
+				"bench":
+					_cyl(parts, 0.008, 0.12, Vector3(0.0, 0.058, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.34, 0.23, 0.13))
+					_box(parts, Vector3(0.05, 0.04, 0.04), Vector3(0.07, 0.06, 0.0), Color(0.5, 0.5, 0.52))
+				"anvil":
+					_box(parts, Vector3(0.14, 0.03, 0.06), Vector3(0.0, 0.07, 0.0), Color(0.3, 0.3, 0.32))
+					_box(parts, Vector3(0.06, 0.04, 0.05), Vector3(0.0, 0.045, 0.0), Color(0.26, 0.26, 0.28))
+					_cone(parts, 0.025, 0.07, Vector3(0.1, 0.07, 0.0), Color(0.3, 0.3, 0.32))
+				"rack":
+					for k in range(3):
+						_cyl(parts, 0.006, 0.1, Vector3(-0.07 + 0.07 * float(k), 0.07, 0.0), Vector3(PI * 0.5, 0.0, 0.0), tag)
+					_box(parts, Vector3(0.2, 0.012, 0.012), Vector3(0.0, 0.1, 0.0), Color(0.34, 0.23, 0.13))
+				"vice":
+					_box(parts, Vector3(0.1, 0.05, 0.04), Vector3(0.0, 0.07, 0.0), Color(0.4, 0.4, 0.42))
+					_box(parts, Vector3(0.02, 0.05, 0.06), Vector3(0.06, 0.07, 0.0), Color(0.5, 0.5, 0.52))
 		"flower":
 			# A flower head on a short stem: three crossed flat petal blades, a centre and a green stem (about 80 triangles). bits[0] is the centre colour.
 			var centre: Color = Color.html(str(bits[0])) if bits.size() > 0 else Color(0.88, 0.7, 0.12)

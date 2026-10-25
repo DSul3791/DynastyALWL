@@ -351,7 +351,8 @@
   "workbench_kit": {
    "shape": "kit",
    "color": "#8a6a3a",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["bench"]
   },
   "shore_net": {
    "shape": "cloth",
@@ -411,32 +412,38 @@
   "tool_rack_kit": {
    "shape": "kit",
    "color": "#7a5a35",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["rack"]
   },
   "vice_kit": {
    "shape": "kit",
    "color": "#7a5a35",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["vice"]
   },
   "stone_forge_kit": {
    "shape": "kit",
    "color": "#7d7a74",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "blacksmithy_kit": {
    "shape": "kit",
    "color": "#6c6f75",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "large_forge_kit": {
    "shape": "kit",
    "color": "#5c5f65",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "master_forge_kit": {
    "shape": "kit",
    "color": "#44474d",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "lumber_oak": {
    "shape": "planks",
@@ -982,12 +989,14 @@
   "saw_mill_kit": {
    "shape": "kit",
    "color": "#8a6a3a",
-   "size": 1.2
+   "size": 1.2,
+   "bits": ["saw"]
   },
   "woodworking_table_kit": {
    "shape": "kit",
    "color": "#7a5430",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["table"]
   },
   "rock_pile": {
    "shape": "pile",
