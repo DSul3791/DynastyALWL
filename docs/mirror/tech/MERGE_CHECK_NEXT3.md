@@ -156,3 +156,5 @@ RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL
 ## water-soak test fix (claude/water-soak, base 5b9d9f91): David3 diff per BP-T71. Check: (1) the widened bound is COMPUTED from the actual volume of films under 4 mm in that run (not a constant percentage), (2) the 0.5 cm per cell term is unchanged, (3) deliberate break: change the save to drop 20 percent more water and the test must fail. Then remove test_water_soak from TEST_BASELINE.md and merge on PASS. The base for this branch is merge-793 (5b9d9f91), so it merges there; generator-v2 gets it with 793 unless the water thread rebases it onto generator-v2 (cheaper: ask them for that, the test file is independent of the bake).
 
 ## steve-ground-quiet (BUG-001/002): see ACTION_PLANS/Steve_ground_quiet_REPLY.md. Independent of 792; David3 priority 2 after the speed-up re-proof (it fixes every join and the picture runs). Stall rule test required.
+
+steve-ground-quiet built: c836fa4a (hash for David3's HEAD= line). Merge only that exact hash on PASS.
