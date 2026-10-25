@@ -1,3 +1,6 @@
+## 2026-10-25 Mike (Windows rig): world pictures on generator-v2 build 810 (9f55bbf0) with the c30d6d5f bake
+Branch claude/mike-evidence-kathleen-13df38ae, folder evidence/world_810/: world_spawn_a-d (spawn four directions), world_river_a-d, world_farmland_slope, second_pass_world_biglake_3_4 and second_pass_world_lake_4_3, aerial_world_biglake_3_4_aerial (x52552 z69016, 465 m up, pitch -60) and aerial_world_biglake_3_4_aerial_top. Finding: both lakes carry trees standing in the water (forest blocks with square edges inside the (3,4) lake).
+
 # Pictures index (newest first). One line per set: folder, topic, build, notes.
 All pictures: server GPU (GTX 1050 Ti), JPEG 1280x720, 1.7 m eye unless noted. Details in each folder's README.md or summary.txt.
 
