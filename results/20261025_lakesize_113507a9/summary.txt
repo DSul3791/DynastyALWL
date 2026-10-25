@@ -1,0 +1,6 @@
+HEAD=113507a96008c3ad2f3309509ba93e6eeca47b80 (lake-size)
+test_tile_lakes exit 0: ok   tile (3, 4) has at least one carved lake (12) ok   lake at 56232,66928 (radius 151 m) lies inside its tile ok   lake at 52872,68488 (radius 153 m) lies inside its tile ok   lake at 57272,71432 (radius 145 m) lies inside its tile ok   lake at 57976,70160 (radius 147 m) lies inside its tile ok   lake at 58056,73376 (radius 177 m) lies inside its tile ok   lake at 52776,69528 (radius 144 m) lies
+bake exit 0 seconds 213
+  lake gate: tile 3,4, 1891 river cells in block interiors, 621 flat enough, 20 in blocks that lost the draw, 0 sites skipped at the frame edge, 12 skipped at a low lip
+  basins: 59 head ponds (21.6 ha), 8 lakes (25.7 ha, 0 of them the tile's guaranteed lake), 15 heads skipped (ground steeper than 20 deg)
+LSZDONE
