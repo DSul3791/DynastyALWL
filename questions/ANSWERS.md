@@ -1694,3 +1694,7 @@ Answered: 2026-10-25 13:56 UTC
 Answer: No: I’m not sure what this means
 Answered: 2026-10-25 13:56 UTC
 
+## trim-g | Item trim G: Building pieces: one set, material is a setting (merge 8)
+Answer: No: I’m not sure what this means
+Answered: 2026-10-25 13:56 UTC
+
