@@ -1292,6 +1292,7 @@ func _welcome_body(info: Dictionary) -> void:
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
 
 
 
@@ -1524,7 +1525,7 @@ func _water_ahead() -> bool:
 func _arrive_on_ground() -> void:
 	if connected_msec > 0 and not _ground_logged:
 		_ground_logged = true
-		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position)])
+		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
 	var ground: float = _ground_below(body.global_position)
 
@@ -1972,6 +1973,10 @@ func _update_anchor(now: int, delta: float) -> void:
 		_viewer.global_position = _anchor if is_nan(_viewer_ground_y) else Vector3(_anchor.x, _viewer_ground_y, _anchor.z)
 
 
+func _viewer_y_text() -> String:
+	return "?" if _viewer == null else "%.1f" % _viewer.global_position.y
+
+
 # A collider under the player within 3000 m (the ground there has loaded).
 func _collider_below(p: Vector3) -> bool:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p, p + Vector3(0.0, -3000.0, 0.0))
@@ -1989,7 +1994,7 @@ func _on_surface_received(x: float, z: float, y: float) -> void:
 	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
 
 	if waiting_for_ground and connected_msec > 0:
-		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y])
+		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m, viewer y %s" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y, _viewer_y_text()])
 
 
 # After a stop high up only the finest STAGE_LODS levels are built (the engine builds the coarsest first, so
@@ -2389,7 +2394,7 @@ func _run_ground_watchdog() -> void:
 	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
 	if waiting_for_ground and now - _ground_log_msec >= 5000:
 		_ground_log_msec = now
-		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits())])
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s, player y %.1f, viewer y %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits()), body.global_position.y, _viewer_y_text()])
 
 	if action == "":
 		return
