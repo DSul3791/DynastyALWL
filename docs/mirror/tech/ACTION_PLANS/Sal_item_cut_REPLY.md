@@ -7,3 +7,4 @@ GO on A, B, C, F, I, W as written (decisions in design/ITEM_TRIM_DECISIONS.md). 
 5. Keep the commits separable (A/B/W data, merge mechanism, C, F, I). One head is fine; if David3 fails one group you revert that group, not the lot.
 6. Tool recipes at the workbench is correct (Dave's rule: benches for weapons and tools). Sickle and scythe stay out of cut-list D/E; shears, tongs, bellows stay out.
 Before you send the hash: merge_check.py, marker grep, build on generator-v2 822+.
+7. UPDATE 25 Oct 17:55 (Dave 17:32, trim-g2 rejected): keep rough plank (226) as its own item and recipe 143 live; it is the Plank tier's material. Everything in C about lumber and beam stays. Building pieces are not merged anywhere. See design/BUILDING_TIERS_AUDIT.md. Also do not retire the thatch pieces. Clothing: trim-h2 YES means a later plan adds hide tunic, trousers and gloves; not in this branch.
