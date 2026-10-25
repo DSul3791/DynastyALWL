@@ -37,7 +37,7 @@ func _init() -> void:
 			var tris: int = 0
 
 			for surface in mesh.get_surface_count():
-				tris += (mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+				tris += int((mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
 
 			_check(tris <= 1200, id + ": %d triangles (budget 1200)" % tris)
 
@@ -89,7 +89,7 @@ func _init() -> void:
 		var tris: int = 0
 
 		for surface in mesh.get_surface_count():
-			tris += (mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			tris += int((mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
 
 		_check(mesh.get_surface_count() == (2 if tier in ["iron", "steel"] else 1), id + ": surfaces %d" % mesh.get_surface_count())
 		_check(box.size.x > 1.3 and box.size.x < 1.45, id + ": about 1.37 m overall (%.2f)" % box.size.x)
@@ -106,7 +106,7 @@ func _init() -> void:
 	var saw_tris: int = 0
 
 	for surface in saw.get_surface_count():
-		saw_tris += (saw.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		saw_tris += int((saw.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
 
 	_check(saw_tris <= 1200, "hand_saw: %d triangles" % saw_tris)
 	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "hand_saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
