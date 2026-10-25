@@ -253,8 +253,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A stone axe: a stick with a wedge-headed blade lashed to the end. The wedge is thick at the stick and thins to a sharp edge, sticking out
 			# sideways, so from the side the whole thing reads like a hoe. The edge is ground wider than the body and one corner is chipped, so the
 			# head is not a plain box; a thicker haft end and three wraps of cord hold it on.
-			_handle(parts, 0.5)
-			_cyl(parts, 0.022, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))   # the haft swells where the head sits
+			color = _warm_stone(color)                                                                              # darker and warmer: in sunlight the plain grey read pale blue
+			dark = color.darkened(0.3)
+			light = color.lightened(0.18)
+			_handle(parts, 0.5, 0.021, Color(0.3, 0.2, 0.11))                                                       # a thicker, darker haft
+			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))     # the haft swells where the head sits
 			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), dark)                                # the poll block the wedge sits on
 			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), color)                                     # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
 			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
@@ -263,7 +266,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
 			# A pickaxe: eye block on the haft and a long head that sweeps down in a curve to a point at each end (four segments a side, thinning).
-			_handle(parts, 0.6)
+			_handle(parts, 0.6, 0.021, Color(0.3, 0.2, 0.11))
 			_box(parts, Vector3(0.06, 0.06, 0.07), Vector3(0.27, 0.0, 0.0), dark)                                   # the eye the head sits in
 			_box(parts, Vector3(0.05, 0.05, 0.1), Vector3(0.27, 0.0, 0.0), color)                                   # middle of the head
 			for side in [-1.0, 1.0]:
@@ -296,8 +299,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.15 + 0.0205 * float(k), 0.0, 0.043 if k < 10 else 0.035), Vector3(0.0, 0.0, 0.7), steel.lightened(0.15))   # teeth
 		"hammer":
 			# A stone hammer: a stick with a heavy blunt stone head lashed across the end, flat faces both sides (no edge).
-			_handle(parts, 0.45)
-			_cyl(parts, 0.022, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+			color = _warm_stone(color)
+			dark = color.darkened(0.3)
+			_handle(parts, 0.45, 0.021, Color(0.3, 0.2, 0.11))
+			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))
 			_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                     # the head
 			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)       # a worn, darker striking face
 			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
@@ -404,9 +409,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 	return _combine(parts, size)
 
 
+# A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
+static func _warm_stone(color: Color) -> Color:
+	return color.darkened(0.22).lerp(Color(0.5, 0.42, 0.34), 0.3)
+
+
 # A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
-static func _handle(parts: Array, length: float) -> void:
-	_cyl(parts, 0.016, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+static func _handle(parts: Array, length: float, radius: float = 0.016, wood: Color = Color(0.42, 0.3, 0.17)) -> void:
+	_cyl(parts, radius, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), wood)
 
 
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:
