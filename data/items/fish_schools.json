@@ -1,0 +1,18 @@
+{
+	"note": "Fish schools (plan C, design/FISH_AND_FISHING_PLAN.md section 2 and 4): computed from a hash of (cell, slot, game day), never saved, never an entity. count_weights = chance of 0, 1, 2, 3 schools in a 128 m cell that has water. A school is placed on a point whose water kind (server_fish_water.gd) suits its species, up to place_tries tries, else it does not exist. Radius 3 to 8 m. The centre drifts drift_m metres around its base over drift_period_game_s and is held at the base when the drift would leave suitable water. factor: 1.0 inside the radius, 0.5 within 2x, far (0.03) outside (balance plan 5b: 0.15 gave about 19 fish an hour at midday to a net hauler standing outside every school; the aim is 1 to 8). species_by_kind: species names must exist as items; one that does not (salmon until the fish items land) is left out. only_in: species -> seasons it appears in.",
+	"count_weights": [0.25, 0.35, 0.25, 0.15],
+	"place_tries": 6,
+	"radius_m": [3.0, 8.0],
+	"drift_m": 12.0,
+	"drift_period_game_s": 21600.0,
+	"cache_max": 2000,
+	"factor": {"inside": 1.0, "near": 0.5, "far": 0.03, "near_radii": 2.0},
+	"species_by_kind": {
+		"brook": [["trout", 1.0]],
+		"river": [["trout", 0.6], ["salmon", 0.4]],
+		"lake": [["perch", 0.4], ["pike", 0.3], ["carp", 0.3]],
+		"pond": [["carp", 0.6], ["perch", 0.4]],
+		"sea_shallow": [["herring", 0.4], ["mackerel", 0.3], ["smelt", 0.3]]
+	},
+	"only_in": {"salmon": ["autumn"], "mackerel": ["summer"]}
+}

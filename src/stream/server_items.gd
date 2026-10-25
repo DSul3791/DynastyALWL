@@ -273,6 +273,7 @@ var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the w
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
 const CHEST_REACH_M := 4.0
+const FishSchoolsScript := preload("res://src/server/server_fish.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const GAME_RATE := 24.0                 # game seconds per real second
@@ -6416,13 +6417,57 @@ func fish_stock(cell: Vector2i) -> int:
 	var best: int = mini(int(cfg.get("stock_base", 4)) + _cell_hash(cell) % maxi(int(cfg.get("stock_extra", 8)), 1), int(cfg.get("stock_max", 12)))
 	var key: String = "%d,%d" % [cell.x, cell.y]
 	var row: Array = _fish_stock.get(key, [best, _unix()])
-	var back: int = int(floor((_unix() - float(row[1])) / maxf(float(cfg.get("regrow_s", 3600.0)), 1.0)))
+	var regrow_s: float = float(cfg.get("regrow_s", 3600.0))
+
+	if water_kind_at.is_valid() and cfg.has("regrow_s_sea"):
+		var size: float = float(cfg.get("cell_m", 128.0))
+
+		if str(water_kind_at.call((float(cell.x) + 0.5) * size, (float(cell.y) + 0.5) * size).get("kind", "")).begins_with("sea"):
+			regrow_s = float(cfg["regrow_s_sea"])   # sea water refills faster (balance plan 5b)
+
+	var back: int = int(floor((_unix() - float(row[1])) / maxf(regrow_s, 1.0)))
 	var now_n: int = mini(int(row[0]) + back, best)
 	_fish_stock[key] = [now_n, _unix() if back > 0 else float(row[1])]
 	return now_n
 
 
-func _fish_chance(peer: int, _cell: Vector2i, bait: bool) -> float:
+var _schools = null     # server_fish.gd, made when the first cast needs it and the water kind hook is set
+
+
+# The best school factor for a line or net thrown from `pos` with `reach` m of reach: the stand point and eight directions at half and full reach
+# (the water is somewhere out there, the shore is under the feet). {"factor", "species", "active"}; factor 1.0 and not active when plan C has nothing to say.
+func school_hit(pos: Vector3, reach: float) -> Dictionary:
+	var none: Dictionary = {"factor": 1.0, "species": "", "active": false}
+
+	if not water_kind_at.is_valid():
+		return none
+
+	if _schools == null:
+		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
+		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
+
+	var day: int = int(floor(_now_game_s() / 86400.0))
+	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
+	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
+	var best: Dictionary = none
+	var memo: Dictionary = {}
+
+	for k in 17:
+		var at: Vector3 = pos
+
+		if k > 0:
+			var a: float = float((k - 1) % 8) * TAU / 8.0
+			at = pos + Vector3(cos(a), 0.0, sin(a)) * (reach if k > 8 else reach * 0.5)
+
+		var got: Dictionary = _schools.factor_at(at.x, at.z, day, season, _now_game_s(), stock, memo)
+
+		if bool(got["active"]) and (not bool(best["active"]) or float(got["factor"]) > float(best["factor"])):
+			best = got
+
+	return best
+
+
+func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) -> float:
 	var cfg: Dictionary = _fishing_data()
 	var chance: float = float(cfg.get("base_chance", 0.55)) * skill_factor(peer, "fish")
 	var hour: float = fposmod(float(game_seconds.call()), 86400.0) / 3600.0 if game_seconds.is_valid() else 12.0
@@ -6449,11 +6494,15 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool) -> float:
 	if bait:
 		chance *= float(cfg.get("bait_mult", 1.5))
 
-	return clampf(chance, 0.02, float(cfg.get("max_chance", 0.93)))
+	chance *= float(hit.get("factor", 1.0))   # plan C: inside a school 1.0, near it 0.5, away from every school 0.15
+	return clampf(chance, float(cfg.get("min_chance", 0.02)), float(cfg.get("max_chance", 0.93)))
 
 
-func _fish_species(cell: Vector2i) -> String:
+func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
 	var cfg: Dictionary = _fishing_data()
+
+	if str(hit.get("species", "")) != "":
+		return str(hit["species"])   # the school the line or net is in or near
 	var types: Array = cfg.get("types", ["pond"])
 	@warning_ignore("integer_division")
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
@@ -6514,7 +6563,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 
 	var cell: Vector2i = _fish_cell(_peer_pos[peer])
 	var bait_slot: int = _fish_bait_slot(inv, cfg)
-	var chance: float = _fish_chance(peer, cell, bait_slot >= 0) * (float(cfg.get("ice", {}).get("ice_mult", 0.8)) if icy else 1.0)
+	var hit: Dictionary = school_hit(_peer_pos[peer], float(cfg.get("reach_m", 8.0)))
+	var chance: float = _fish_chance(peer, cell, bait_slot >= 0, hit) * (float(cfg.get("ice", {}).get("ice_mult", 0.8)) if icy else 1.0)
 
 	if bait_slot >= 0:
 		inv.take_from_slot(bait_slot, 1)
@@ -6523,7 +6573,7 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
 	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
-	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites}
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", ""))}
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
@@ -6591,7 +6641,8 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 	var cell: Vector2i = state["cell"]
 	var cell_key: String = "%d,%d" % [cell.x, cell.y]
 	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
-	var chance: float = clampf(_fish_chance(peer, cell, false) * float(cfg.get("chance_mult", 1.0)), 0.02, float(cfg.get("max_chance", 0.95)))
+	var hit: Dictionary = school_hit(state["spot"], float(cfg.get("reach_m", 5.0)))
+	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
 
 	for n in want:
@@ -6600,7 +6651,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 		if fate(peer, "fish", chance):
 			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
-			var species: String = _fish_species(cell)
+			var species: String = _fish_species(cell, hit)
 			var left: int = inv.add(table.number_of(species), 1)
 
 			if left > 0:
@@ -6768,7 +6819,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		return
 
 	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-	var species: String = _fish_species(cell)
+	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))})
 	var left: int = inv.add(table.number_of(species), 1)
 
 	if left > 0:
