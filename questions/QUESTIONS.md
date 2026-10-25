@@ -28,3 +28,8 @@ Note: Recommendation: Yes
 Note: Owners say 'final' once and stop changing a branch in the queue (work in progress goes on a separate branch). The gate runs on the branch merged with the current main branch, so conflicts show before the PASS. Today one branch was re-tested 5 times and 4 of 18 merges hit conflicts the gate could not see. Full report: design/GATE_AUDIT.md.
 Note: Recommendation: Yes
 [check]
+
+## gates-c | Gates C: batch small branches, fewer builds
+Note: When 3 or more small branches are ready they go into one test run and one build every 1 to 2 hours; if it fails we split them. You pull once instead of 18 times a day. Full report: design/GATE_AUDIT.md.
+Note: Recommendation: Yes
+[check]
