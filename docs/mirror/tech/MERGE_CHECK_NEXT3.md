@@ -140,3 +140,5 @@ remove-old-builder 930447aa (base merge-793 5b9d9f91): merges into merge-793 AFT
 3. B sal-craft-menu, 4. C sal-auto-craft.
 5. Bed 6459b079 then bed-respawn, 6. old-builder 930447aa (after the speed-up proof, as agreed), 7. sound hookup fce8a304, 8. no-stack caps + weight audit.
 RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL 40-character hash; David3's first result line is `HEAD=<git rev-parse HEAD>` and a mismatch with the job aborts the run before any test starts. No result without that line counts as a PASS.
+
+## PICTURE WAIT (Dave 25 Oct 01:24): shoot ground-ready + 10 s (SETTLE=10, WAIT=60 max, "ground not ready" mark). David3: change tools/docker/shot.sh and the batch runner (branch claude/docker-test-box) and report the new values; Mike: same rule in look_rig.sh when Dave's PC is free. Spec: STANDARD_SHOTS.md "Wait time".

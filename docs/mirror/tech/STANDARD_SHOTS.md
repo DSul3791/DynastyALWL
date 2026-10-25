@@ -41,5 +41,10 @@ Budget: 21 shots in one server start: about 40 to 60 minutes on the 1050 Ti box.
 3. **Camera must have settled**: each shot waits for the pose read-back to match the requested pose (within 0.05 m, 0.5 degrees) before capture, with a maximum wait; a mismatch is reported, never silently shot.
 4. **Failure policy**: duplicates or pose mismatches fail the PICTURE batch (reported as a problem on the test result) but not the build gate (BP-T68 unchanged), and the batch is not indexed as reviewed for Kathleen until it passes.
 
-## Wait time in tools/docker/shot.sh (Dave wants faster tests)
-Decision: FOLLOW David3's shorter wait (120 s to 60 s and 30 s to its new value), committed to the repo's shot.sh so repo and box agree. Condition: the fixed time is only a MAXIMUM. The script polls the client log for the ground-ready line (HUD "ground vNN" known, watchdog quiet) and shoots as soon as it appears; if not ready at the maximum it shoots anyway and marks the picture "ground not ready" in the README so Kathleen does not critique an unloaded view. The earlier thin dark sheet in the bowl render happened at long waits, so waiting longer is not the cure; the ready line is.
+## Wait time (Dave 25 Oct 01:24: "just wait for the ground and then 10 seconds") - replaces the earlier wait policy
+Rule for every picture script (David3's box script tools/docker/shot.sh and its batch runner, Mike's look_rig.sh): shoot 10 SECONDS after the ground-ready line appears in the client log (HUD "ground vNN" known, watchdog quiet). Nothing else is a fixed wait.
+- shot.sh values: SETTLE=10 (seconds after ground ready), WAIT = maximum time to wait for ground ready (60; raise per run only with a reason in the README).
+- If ground is not ready at WAIT, shoot anyway and mark the picture "ground not ready" in the README (Kathleen does not critique it, and the duplicate check treats it as a problem).
+- The server start: replace the fixed `sleep 30` in shot.sh by polling the server log for its listening line (maximum 30 s), so a fast start saves time.
+- Check that --shot-wait is the maximum for ground and --shot-settle is the extra seconds after it in the client (David3 reads src/ for the flags and states the semantics in the README of the script); if the client counts the settle from the start instead of from ground ready, fix the client side in the same change (client flag only, RUNTIME).
+- Poses and duplicate rules above still apply. Log the measured time per shot so we see the saving.
