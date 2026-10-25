@@ -670,7 +670,7 @@ static func thatch_floor() -> Node3D:
 
 
 # A clay hearth (cooking station tier 2), about 1.2 m by 0.9 m, 0.6 m high: a round bowl of fired clay on a ring of stones with a sooty hollow and ash for the fire,
-# a curved clay back wall behind it, and two thin forked posts holding a spit.
+# and a curved clay back wall behind it.
 static func clay_hearth() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
@@ -697,10 +697,6 @@ static func clay_hearth() -> Node3D:
 		var a: float = PI * (1.25 + 0.25 * float(k))
 		_box_rot(root, Vector3(0.4, 0.5, 0.12), Vector3(cos(a) * 0.45, 0.62, sin(a) * 0.45), Vector3(0.0, -a - PI * 0.5, 0.0), _clay)   # the curved back wall, three flat facets
 
-	for x in [-0.55, 0.55]:
-		_rod(root, Vector3(x, 0.0, 0.3), Vector3(x, 0.85, 0.3), 0.035, _frame)
-
-	_rod(root, Vector3(-0.6, 0.85, 0.3), Vector3(0.6, 0.85, 0.3), 0.025, _frame)           # the spit
 	_solid(root, Vector3(1.2, 0.6, 0.9), Vector3(0.0, 0.3, 0.0))
 	return root
 
