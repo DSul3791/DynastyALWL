@@ -34,11 +34,11 @@ func _geology(samples: int):
 
 
 # Distance from a point to the nearest river cell of the arrays.
-func _near_river(point: Array, water_class: PackedByteArray, samples: int, x0: float, z0: float) -> float:
+func _near_river(point: Array, water_class: PackedByteArray, samples: int, x0: float, z0: float, lake_too: bool = false) -> float:
 	var best: float = INF
 
 	for index in range(samples * samples):
-		if water_class[index] == TileGeologyScript.RIVER:
+		if water_class[index] == TileGeologyScript.RIVER or (lake_too and water_class[index] == 2):   # build 810: carved ponds on a river are lake class
 			@warning_ignore("integer_division")
 			var spot: Vector2 = Vector2(x0 + float(index % samples) * 8.0, z0 + float(index / samples) * 8.0)
 			best = minf(best, spot.distance_to(Vector2(float(point[0]), float(point[1]))))
@@ -134,7 +134,7 @@ func _real_tile(tile: Vector2i) -> void:
 		var wet: int = 0
 
 		for point in body["points"]:
-			if _near_river(point, data.water_class, data.samples, data.x0, data.z0) <= 16.0:
+			if _near_river(point, data.water_class, data.samples, data.x0, data.z0, true) <= 16.0:
 				wet += 1
 
 		_check(body["points"].size() >= 3 and wet == body["points"].size(), "%s placer: %d points, %d on a river" % [body["resource"], body["points"].size(), wet])

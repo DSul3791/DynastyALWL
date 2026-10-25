@@ -25,7 +25,28 @@ func _check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float) -> void:
+# True when the cell or its receiver is a baked lake cell, or either has a carved bowl cell among its 8 neighbours.
+func _lake_or_bowl_side(data, channels, index: int, next: int, side: int) -> bool:
+	for cell in [index, next]:
+		@warning_ignore("integer_division")
+		var cell_row: int = cell / side
+		var cell_column: int = cell % side
+
+		if data.water_class[cell_row * STEP * data.samples + cell_column * STEP] == 2:
+			return true
+
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var column: int = cell_column + dx
+				var row: int = cell_row + dz
+
+				if column >= 0 and column < side and row >= 0 and row < side and channels.basin_mask[row * side + column] != 0:
+					return true
+
+	return false
+
+
+func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data) -> void:
 	var rules: Dictionary = {"width_m_per_sqrt_q": 6.0, "min_width_m": 24.0, "depth_m_per_sqrt_q": 1.0, "min_depth_m": 1.5, "max_depth_m": 8.0}
 	var begun: int = Time.get_ticks_msec()
 	var channels = DrainageChannelsScript.new()
@@ -45,7 +66,9 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float) -> v
 		var next: int = fill.receiver[index]
 
 		# A carved pond or lake bowl dips below its outlet on purpose (the lip is the outlet), so its cells are not rises.
-		if next >= 0 and flow.discharge[next] >= RIVER_CELLS_KM2 and channels.bed[next] > channels.bed[index] + 0.001 and channels.basin_mask[index] == 0 and channels.basin_mask[next] == 0:
+		# Build 810 tiles: lake cells (baked water_class 2) and the cells beside a carved bowl rise or dip on purpose too.
+		if next >= 0 and flow.discharge[next] >= RIVER_CELLS_KM2 and channels.bed[next] > channels.bed[index] + 0.001 and channels.basin_mask[index] == 0 and channels.basin_mask[next] == 0 \
+				and not _lake_or_bowl_side(data, channels, index, next, side):
 			rising += 1
 
 		var turn: float = channels.curvature[index]
@@ -160,6 +183,6 @@ func _init() -> void:
 
 	print("today's river cells %d, within 64 m of a drainage channel: %d (%.0f%%), %.1f s" % [rivers, agree, 100.0 * float(agree) / maxf(float(rivers), 1.0), took])
 	_check(took < 30.0, "fill and flow under 30 s per tile (%.1f s)" % took)
-	_channels(h, fill, flow, side, cell_m)
+	_channels(h, fill, flow, side, cell_m, data)
 	print("drainage flow: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
