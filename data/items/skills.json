@@ -91,6 +91,10 @@
 		"dress_carcass": {
 			"skill": "hunting",
 			"effect": "yield"
+		},
+		"bow": {
+			"skill": "hunting",
+			"effect": "yield"
 		}
 	},
 	"skills": {

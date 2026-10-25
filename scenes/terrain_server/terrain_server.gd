@@ -455,6 +455,15 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
 	@warning_ignore("confusable_local_declaration")
+	items.hit_animal_path = func(peer, from, to, amount) -> Dictionary:
+		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
+
+		if found.is_empty():
+			return {}
+
+		animals.damage(int(found["id"]), amount, peer, "arrow")
+		return found
+	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
 		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)

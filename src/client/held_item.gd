@@ -97,6 +97,7 @@ var _avatar_rig                          # the full body (ragdoll_body.gd) drawn
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
+var _draw_t: float = -1.0                 # a bow being drawn: seconds since the left button went down, -1 when not
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
@@ -340,6 +341,10 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "spear"
 
 
+func _is_bow() -> bool:
+	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "bow" and not _inv.is_broken(held_slot)
+
+
 func _is_placeable() -> bool:
 	return str(_inv.table.entry(held_id()).get("kind", "")) == "placeable"
 
@@ -499,6 +504,20 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return button == MOUSE_BUTTON_LEFT
 
+	if _is_bow():
+		# The bow: hold the left button to draw, let go to loose the arrow along the view; the server clamps the draw time (data/items/bow.json).
+		if button == MOUSE_BUTTON_LEFT:
+			if pressed:
+				_draw_t = 0.0
+				_arm_play("use", 0.6)
+			elif _draw_t >= 0.0:
+				_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, int(_draw_t * 1000.0), 0, -_camera.global_transform.basis.z)
+				_draw_t = -1.0
+
+			return true
+
+		return false
+
 	if _is_other_tool():
 		# The shore net: hold the left button at the water's edge (about 20 s); letting go cancels (the server also cancels when you walk off).
 		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
@@ -622,6 +641,9 @@ func _process(delta: float) -> void:
 
 
 func _process_body(delta: float) -> void:
+	if _draw_t >= 0.0:
+		_draw_t = _draw_t + delta if _is_bow() else -1.0   # putting the bow away lets the draw go
+
 	_update_blueprint()
 	_hoe_repeat(delta)
 
@@ -691,6 +713,9 @@ func _process_body(delta: float) -> void:
 	elif _model != null:
 		var target: Vector3 = AIMED if aiming else REST
 		var offset: Vector3 = target
+
+		if _draw_t >= 0.0:
+			offset += Vector3(0.0, 0.0, minf(_draw_t, 1.2) * 0.1)   # the hand comes back as the string is drawn
 
 		if _jab_t >= 0.0:
 			_jab_t += delta
