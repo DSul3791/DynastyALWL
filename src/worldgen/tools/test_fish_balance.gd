@@ -30,11 +30,17 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
-func fish_count(items) -> int:
+# Takes the fish out of the pack and returns how many there were (a full pack would drop them on the ground, uncounted).
+func take_fish(items) -> int:
 	var n: int = 0
 
 	for fish in ["trout", "perch", "carp", "pike"]:
-		n += items.inventory_of(1).count_of(items.table.number_of(fish))
+		var number: int = items.table.number_of(fish)
+		var have: int = items.inventory_of(1).count_of(number)
+
+		if have > 0:
+			items.inventory_of(1).remove(number, have)
+			n += have
 
 	return n
 
@@ -67,14 +73,15 @@ func run(hour_of_day: float, factor: float, hours: int, key: String) -> Array:
 	items.peer_connected_hello(1, "bal-key-0000001")
 	items.report_position(1, Vector3(5.0, 10.0, 5.0))
 	var net_no: int = items.table.number_of("shore_net")
-	items.action(1, Net.ACT_ADMIN_GIVE, net_no, 0, 40, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, net_no, 0, 1, Vector3.ZERO)
 	var slot: int = items.inventory_of(1).numbers.find(net_no)
+	check(slot >= 0, "the shore net is in the pack")
 	var water: Vector3 = Vector3(8.0, 9.5, 5.0)
 	var per_hour: Array = []
 	var haul_s: float = float(items._fishing_data()["net"]["hold_s"]) + float(items._fishing_data()["cooldown_s"])
 
 	for _hour in hours:
-		var before: int = fish_count(items)
+		var caught: int = 0
 		var spent: float = 0.0
 
 		while spent < 3600.0:
@@ -87,11 +94,10 @@ func run(hour_of_day: float, factor: float, hours: int, key: String) -> Array:
 				items._fishing[1]["at"] = Time.get_ticks_msec() - 1
 				items._fish_tick()
 
-			if items.inventory_of(1).numbers[slot] != net_no:      # a worn-out net: a new one from the admin bag
-				items.action(1, Net.ACT_ADMIN_GIVE, net_no, 0, 1, Vector3.ZERO)
-				slot = items.inventory_of(1).numbers.find(net_no)
+			items.inventory_of(1).wear[slot] = 0      # a worn-out net is a new one: wear is not what is measured here
+			caught += take_fish(items)
 
-		per_hour.append(fish_count(items) - before)
+		per_hour.append(caught)
 
 	return per_hour
 
