@@ -109,15 +109,19 @@ func _init() -> void:
 		var held: float = live.sim.total_volume()
 		var raw: PackedFloat32Array = live.sim.get_depth()
 		var wet: int = 0
+		var film_m3: float = 0.0
 
 		for k in range(raw.size()):
 			if live.data.heights[k] > 0.0 and raw[k] > 0.004:
 				wet += 1
+			elif live.data.heights[k] > 0.0:
+				film_m3 += raw[k] * 64.0
 
 		live.unload()
 		var saved: float = _volume("%s/tile_%d_%d.water" % [dir, tile.x, tile.y], 1921, live.data.heights)
-		# The file keeps centimetres (0.5 cm either way per wet cell) and drops films under 4 mm: that is the error bound.
-		var bound: float = float(wet) * 0.005 * 64.0 + 20.0
+		# The file keeps centimetres (0.5 cm either way per wet cell) and drops films under 4 mm: that is the error bound. The dropped films are counted
+		# at their own volume (film_m3): a dry-start sim spreads thin sheets over many cells (the v9 settle rules pour more water), and the old bound left them out.
+		var bound: float = float(wet) * 0.005 * 64.0 + film_m3 + 20.0
 		worst_drift = maxf(worst_drift, absf(saved - held) / bound)
 		print("tile %s: held %.0f m3, saved %.0f m3, %d wet cells, error %.0f m3 (bound %.0f m3, %.3f percent of held)" % [str(tile), held, saved, wet, absf(saved - held), bound, 100.0 * absf(saved - held) / maxf(held, 1.0)])
 		round_trips += 1
