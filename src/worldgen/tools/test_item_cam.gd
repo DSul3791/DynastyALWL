@@ -139,5 +139,7 @@ func _init() -> void:
 	check(float(ItemCam.views(wall_box, FOV, 1.0, ASPECT, Vector2.ZERO, Vector3.ZERO, 6.0)[0]["dist"]) >= float(ItemCam.views(wall_box, FOV, 1.0, ASPECT)[0]["dist"]), "a wall may stand off further than an item view allows, never less")
 	var bed_box: AABB = AABB(Vector3(10.0, 1.0, 20.0), Vector3(1.0, 0.3, 2.0))
 	check(float(ItemCam.views(bed_box, FOV, 1.0, ASPECT, Vector2.ZERO, Vector3.ZERO, 6.0, true)[0]["pitch"]) < float(ItemCam.views(bed_box, FOV, 1.0, ASPECT)[0]["pitch"]), "a low piece is looked at more steeply from above")
+	check(is_equal_approx(ItemCam.pick_ground(31.2, 30.85), 31.2), "a piece stands on the physics hit, not the lower voxel hit")
+	check(is_equal_approx(ItemCam.pick_ground(NAN, 30.85), 30.85) and is_nan(ItemCam.pick_ground(NAN, NAN)), "without a collider the voxel hit is used, and no ground stays no ground")
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

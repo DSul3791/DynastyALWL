@@ -673,7 +673,7 @@ func _show_pieces(now: int) -> void:
 	for n in range(models.size()):
 		var model: Node3D = models[n][2]
 		x += float(widths[n]) * 0.5
-		var g: float = _ground(x, z)
+		var g: float = _piece_ground(x, z)
 
 		if is_nan(g):
 			g = p.y - 1.5
@@ -726,7 +726,7 @@ func _build_piece_views() -> void:
 		return
 
 	var centre: Vector3 = box.get_center()
-	var ground: float = _ground(centre.x, centre.z)
+	var ground: float = _piece_ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
 	var low: bool = box.size.y < 0.6 * maxf(box.size.x, box.size.z)
 	_item_node = node
@@ -1248,6 +1248,12 @@ func _tally(root: Node, eye: Vector3) -> void:
 
 
 # The ground height under x, z from the voxel data (no collision needed), NAN while it is not loaded.
+# Where a building piece stands: the physics ground the game's own placement ghost uses, the voxel raycast only when no collider is built there yet.
+func _piece_ground(x: float, z: float) -> float:
+	var from_y: float = client.body.global_position.y
+	return ItemCam.pick_ground(float(client._ground_below(Vector3(x, from_y, z))), _ground(x, z))
+
+
 func _ground(x: float, z: float) -> float:
 	var tool = client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF

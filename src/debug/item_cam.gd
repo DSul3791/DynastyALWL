@@ -10,6 +10,12 @@ const MIN_FILL := 1.0 / 3.0
 const TOP_PITCH := -90.0
 
 
+# The height a piece stands on: the physics hit (what the game's own placement ghost uses, the smooth drawn surface) when there is one, otherwise the voxel
+# raycast on the SDF channel, which lies 0.3 to 0.4 m below that surface and sank low pieces out of sight. NAN when neither found ground.
+static func pick_ground(physics_y: float, voxel_y: float) -> float:
+	return voxel_y if is_nan(physics_y) else physics_y
+
+
 # Yaw (degrees) that faces from `from` to `to` on the ground plane.
 static func yaw_to(from: Vector3, to: Vector3) -> float:
 	var d: Vector3 = to - from
