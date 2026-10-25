@@ -320,44 +320,47 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var steel_blade: bool = bits.has("steel")
 			var blade: Color = color
 			var ash: Color = Color(0.38, 0.24, 0.11)                                                                 # warm ash
-			var rough: float = 0.45 if steel_blade else 0.65
+			var rough: float = 0.35 if steel_blade else 0.65
 			var sheen: float = 0.45 if steel_blade else 0.3
 
 			if metal_blade:
-				blade = Color(0.25, 0.25, 0.25) if steel_blade else Color(0.1, 0.095, 0.088)                  # steel: neutral mid-grey (about sRGB 137); iron: dark charcoal (about 89); linear values
+				blade = Color(0.26, 0.25, 0.225) if steel_blade else Color(0.11, 0.1, 0.082)                  # steel: neutral mid-grey (about sRGB 137); iron: dark charcoal (about 89); linear values
 			elif absf(color.r - color.b) < 0.1:
 				blade = Color(0.19, 0.16, 0.115)                                                               # stone: matt grey-brown
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			var g: float = -0.05                                                                                     # the grip's flat side; the whole spade is about 0.92 m
-			var cuts: Array = [0.0, 0.27, 0.5]                                                      # the haft in uneven lengths: subtle grain-like tone changes, no hard seam
+			var g: float = 0.05                                                                                     # the grip's flat side; the whole spade is about 0.8 m
+			var cuts: Array = [0.0, 0.3, 0.5]                                                      # the haft in uneven lengths: subtle grain-like tone changes, no hard seam
 			for k in range(2):
 				var x0: float = g + cuts[k] * (0.45 - g) / 0.5
 				var x1: float = g + cuts[k + 1] * (0.45 - g) / 0.5
-				_cyl_taper(parts, 0.0165 - 0.0007 * cuts[k] / 0.5, 0.0165 - 0.0007 * cuts[k + 1] / 0.5, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(ash, 1 + k * 3, 0.07))
+				_cyl_taper(parts, 0.0165 - 0.0007 * cuts[k] / 0.5, 0.0165 - 0.0007 * cuts[k + 1] / 0.5, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(ash, 1 + k * 3, 0.11))
 			for k in range(2):                                                                                       # a leather sleeve: three thin turns near the grip
 				_cyl(parts, 0.0182, 0.012, Vector3(g + 0.09 + 0.016 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
 			var d_points: Array = []                                                                                 # the D-grip path in x and z: flat against the haft end, a half ellipse behind
-			for k in range(13):
-				var ang: float = -PI * 0.5 + PI * float(k) / 12.0
+			for k in range(9):
+				var ang: float = -PI * 0.5 + PI * float(k) / 8.0
 				d_points.append(Vector2(g - 0.1 * cos(ang), 0.075 * sin(ang)))
 
-			for k in range(12):
-				_tube(parts, d_points[k], d_points[k + 1], 0.015, _tone(ash, 6, 0.04), 7)
-			_tube(parts, Vector2(g, -0.075), Vector2(g, 0.075), 0.015, _tone(ash, 6, 0.04), 7)                       # the flat side, against the haft
+			for k in range(8):
+				_tube(parts, d_points[k], d_points[k + 1], 0.012, _tone(ash, 6, 0.04), 8)
+			_tube(parts, Vector2(g, -0.075), Vector2(g, 0.075), 0.009, _tone(ash, 6, 0.04), 8)                       # the flat side, against the haft
 
 			_cyl_taper(parts, 0.02, 0.034, 0.06, Vector3(0.41, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # a short socket cone
 			if metal_blade:
 				_metal(parts, rough, sheen)
+			_cyl(parts, 0.037, 0.008, Vector3(0.438, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), blade * 1.5 if metal_blade else blade.lightened(0.2))   # a raised round collar at the socket mouth
+			if metal_blade:
+				_metal(parts, rough, sheen)
 			_plate(parts, 0.44, 0.3, 0.2, 0, 11, blade, true, metal_blade, rough, sheen)                             # the blade plate, 30 by 20 cm
-			_plate(parts, 0.44, 0.3, 0.2, 11, 12, Color(0.6, 0.6, 0.6) if steel_blade else blade * 2.4, false, metal_blade, rough, sheen)   # the tip edge: a bright worn strip
+			_plate(parts, 0.44, 0.3, 0.2, 11, 12, Color(0.34, 0.33, 0.3) if steel_blade else blade * 1.6, false, metal_blade, rough, sheen)   # the tip edge: a bright worn strip
 			_box(parts, Vector3(0.03, 0.01, 0.17), Vector3(0.46, 0.013, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.2))   # the step plate across the shoulders
 			if metal_blade:
 				_metal(parts, rough, sheen)
 			for side in [-1.0, 1.0]:
-				_box(parts, Vector3(0.012, 0.008, 0.012), Vector3(0.46, 0.021, side * 0.05), blade * 2.0 if metal_blade else blade.lightened(0.3))   # two rivets
+				_sph(parts, 0.007, Vector3(1.0, 0.5, 1.0), Vector3(0.46, 0.019, side * 0.05), blade * 1.5 if metal_blade else blade.lightened(0.3), true)   # two round domed rivets
 				if metal_blade:
 					_metal(parts, rough, sheen)
 		"saw":
@@ -649,7 +652,7 @@ static func _wedge(parts: Array, base: float, out: float, along: float, at: Vect
 # socket, 4 mm thin with a rolled (thicker) edge, smooth-shaded. `from_row` to `to_row` of 12 build one piece, so the tip can take its own colour.
 static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float, xform: Transform3D = Transform3D.IDENTITY, mode: int = 0) -> void:
 	var rows: int = 12
-	var cols: int = 3
+	var cols: int = 2 if mode == 0 else 3
 	var tool: SurfaceTool = SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 
