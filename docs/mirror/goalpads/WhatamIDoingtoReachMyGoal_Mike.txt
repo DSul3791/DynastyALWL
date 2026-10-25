@@ -36,3 +36,6 @@ DONE
 07:34 v30b stitched water pushed: claude/mike-bake-v30b 9acf3c64 (seam rows OK).
 11:05 v31 bake pushed: claude/mike-bake-v31 0e8f64fb (418df97b, 67 checks 1 FAIL).
 23:40 Handoff written; raw heights export pushed (mike-raw-heights); 793 bake running.
+
+[2026-10-25 01:53Z] Moved since last check: held-tool reshoot rig fixed on claude/mike-rig-v4 (uncommitted in my clone): third-person shots orbit the camera 0/+90/+180 round a still body (proved on one spot, 3 different views), per-frame pose hold, ground-late shots saved as _FAILED_ground_not_ready (look_rig exit 4), warm client cache between runs, free-port check, timing lines, visible 'Test server' log window, --realview mode. Join log of the ground-wait bug pushed (logs/join_ground_fail_2026-10-24.txt, 3dc47918), Steve owns the bug.
+Stuck: cold ground join takes 80-130 s and the watchdog gives up; real first-person hand/tool picture still not obtained (needs Steve's join fix or a longer ground max). Next: one real-view shot, then the six tools.
