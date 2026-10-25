@@ -19,11 +19,6 @@ Note: 3. Is the ground more real than before, or does it show repeating tiles, t
 Note: Recommendation: Yes it is better: ground now has photo detail, bumps and a soil sheen near the eye.
 [picture]
 
-## trim-b | Item trim B: Duplicate tools: one hammer, no vice, no needle (merge 4; wooden bowl KEPT per Dave)
-Note: Full list: design/ITEM_TRIM_LIST.md group B. Yes = we make this cut or merge. Old saves convert to the merge target.
-Note: Recommendation: Yes
-[check]
-
 ## trim-c | Item trim C: Wood chain: one Lumber and one Beam, species kept as a tag (cut 15)
 Note: Full list: design/ITEM_TRIM_LIST.md group C. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
