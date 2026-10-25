@@ -1,0 +1,4 @@
+﻿ref merge-793 cbe31f76 no-cache exit= seconds=499 peakMB=1210 files: tile_3_4.tile 4FC5650D 9157910
+speedup 690ee171 no-cache exit= seconds=341 peakMB=1209 files: tile_3_4.tile 4FC5650D 9157910
+speedup 690ee171 cache (first) exit= seconds=341 peakMB=1211 files: tile_3_4.tile 4FC5650D 9157910
+speedup 690ee171 cache (second) exit= seconds=171 peakMB=1231 files: tile_3_4.tile 4FC5650D 9157910
