@@ -72,6 +72,34 @@ func _init() -> void:
 	var shifted: Dictionary = ItemCam.frame_stats(moved, front["cam"], _forward(front), front["up"], FOV, ASPECT)
 	check(float(shifted["off"]) > 0.1, "an item that moved 0.4 m is off centre (%.0f %%)" % (float(shifted["off"]) * 100.0))
 
+	# The heavy end of a long tool and the diag view that looks from it.
+	var spade_box: AABB = AABB(Vector3(-1.3, 0.0, -0.1), Vector3(1.6, 0.1, 0.2))      # a handle from x -1.3 to 0.3 ...
+	var faces: PackedVector3Array = PackedVector3Array()
+	faces.append_array(PackedVector3Array([Vector3(-1.3, 0, -0.02), Vector3(0.0, 0, -0.02), Vector3(0.0, 0, 0.02)]))                 # thin handle
+	faces.append_array(PackedVector3Array([Vector3(0.0, 0, -0.1), Vector3(0.3, 0, -0.1), Vector3(0.3, 0, 0.1)]))                      # wide plate at +X
+	faces.append_array(PackedVector3Array([Vector3(0.0, 0, -0.1), Vector3(0.3, 0, 0.1), Vector3(0.0, 0, 0.1)]))
+	check(ItemCam.heavy_end(faces, spade_box) == Vector2(1.0, 0.0), "heavy end of a spade with its plate at +X is +X")
+	var flipped: PackedVector3Array = PackedVector3Array()
+
+	for v in faces:
+		flipped.append(Vector3(-v.x - 1.0, v.y, v.z))
+
+	check(ItemCam.heavy_end(flipped, spade_box) == Vector2(-1.0, 0.0), "the mirrored spade has its heavy end at -X")
+	var along_z: PackedVector3Array = PackedVector3Array()
+
+	for v in faces:
+		along_z.append(Vector3(v.z, v.y, -v.x))
+
+	check(ItemCam.heavy_end(along_z, AABB(Vector3(-0.1, 0.0, -0.3), Vector3(0.2, 0.1, 1.6))) == Vector2(0.0, -1.0), "a spade lying along Z with its plate at -Z: heavy end -Z")
+	check(ItemCam.heavy_end(faces, AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 0.1, 0.8))) == Vector2.ZERO, "an item that is not long has no heavy end")
+	var diag_default: Dictionary = ItemCam.views(spade_box, FOV, 0.0, ASPECT)[3]
+	var diag_blade: Dictionary = ItemCam.views(spade_box, FOV, 0.0, ASPECT, Vector2(1.0, 0.0))[3]
+	check((diag_blade["cam"] as Vector3).x > spade_box.get_center().x + 0.3, "the blade-side diag camera stands beyond the +X end (x %.2f)" % (diag_blade["cam"] as Vector3).x)
+	check(float(diag_blade["pitch"]) < -35.0 and float(diag_blade["pitch"]) > -55.0, "the blade-side diag camera looks down at about 45 degrees (%.0f)" % float(diag_blade["pitch"]))
+	var bs: Dictionary = ItemCam.frame_stats(spade_box, diag_blade["cam"], _forward(diag_blade), diag_blade["up"], FOV, ASPECT)
+	check(bool(bs["inside"]) and float(bs["off"]) <= 0.02 and float(bs["extent"]) <= 0.92, "the blade-side diag view is centred and fits (off %.1f %%, extent %.2f)" % [float(bs["off"]) * 100.0, float(bs["extent"])])
+	check(diag_default["name"] == "diag", "without a blade direction the diag view is as before")
+
 	check(ItemCam.fill_fraction(AABB(Vector3(0.0, 0.0, 5.0), Vector3.ONE), Vector3.ZERO, Vector3.FORWARD, Vector3.UP, FOV, ASPECT) == 0.0, "an item behind the camera fills nothing")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(0.0, 0.0, 1.0), Vector3.ZERO), 0.0), "from the south facing north: yaw 0")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(1.0, 0.0, 0.0), Vector3.ZERO), 90.0), "from the east facing west: yaw 90")

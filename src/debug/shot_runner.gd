@@ -847,7 +847,7 @@ func _build_item_views(now: int) -> void:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box))
 	_item_views = views
 	_subject = centre
 	_subject_set = true
@@ -865,7 +865,7 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0))
+	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box))
 
 	for v in fresh:
 		if v["name"] == view["name"]:
@@ -873,6 +873,25 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 			return v
 
 	return view
+
+
+# The direction from the middle of a long tool to its heavy end (item_cam.heavy_end) from the world-space triangles of its drawn meshes.
+func _blade_dir(node: Node, box: AABB) -> Vector2:
+	var faces: PackedVector3Array = PackedVector3Array()
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+
+		if n is MeshInstance3D and (n as MeshInstance3D).mesh != null and (n as MeshInstance3D).is_visible_in_tree():
+			var xf: Transform3D = (n as MeshInstance3D).global_transform
+
+			for v in (n as MeshInstance3D).mesh.get_faces():
+				faces.append(xf * v)
+
+		stack.append_array(n.get_children())
+
+	return ItemCam.heavy_end(faces, box)
 
 
 func _node_aabb(node: Node) -> AABB:

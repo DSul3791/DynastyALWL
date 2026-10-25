@@ -25,9 +25,13 @@ static func pitch_to(from: Vector3, to: Vector3) -> float:
 # The four views of the item whose drawn box is `box`, on ground at `ground_y`: front, side, top, diag. Each looks at the box centre from the closest distance (MIN_DIST to
 # MAX_FIT_DIST) at which the whole box sits inside the frame with FIT_MARGIN to spare, so a long tool backs off and a small one comes close. Each: name, dist, cam (world
 # position), yaw, pitch, cam_x, cam_z, above (camera metres above the ground, for the runner's view setup), up (the camera's up vector, for the framing maths).
-static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0) -> Array:
+static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0, blade_dir: Vector2 = Vector2.ZERO) -> Array:
 	var centre: Vector3 = box.get_center()
 	var specs: Array = [["front", 0.0, 25.0], ["side", 90.0, 25.0], ["top", 0.0, 90.0], ["diag", 45.0, 35.0]]
+
+	# A long tool with a heavy end (spade, hoe, axe): the diag view looks down at 45 degrees from beyond that end, so the blade is the near, large thing.
+	if blade_dir.length() > 0.5:
+		specs[3] = ["diag", rad_to_deg(atan2(blade_dir.x, blade_dir.y)), 45.0]
 	var out: Array = []
 
 	for spec in specs:
@@ -67,6 +71,37 @@ static func centre_in_frame(box: AABB, cam: Vector3, forward: Vector3, up: Vecto
 		cam += right * c.x * t * aspect * depth + true_up * c.y * t * depth
 
 	return cam
+
+
+# Which end of a long tool is the heavy one (blade, head): the area-weighted centroid of its triangles against the middle of its box, along the box's longer horizontal side.
+# Returns the unit horizontal direction from the middle to that end (x, z), or zero when the item is not long (under 2 : 1) or the two ends weigh the same.
+static func heavy_end(faces: PackedVector3Array, box: AABB) -> Vector2:
+	var long_x: bool = box.size.x >= box.size.z
+	var longest: float = maxf(box.size.x, box.size.z)
+	var shortest: float = maxf(minf(box.size.x, box.size.z), 0.001)
+
+	if longest / shortest < 2.0 or faces.size() < 3:
+		return Vector2.ZERO
+
+	var centre: Vector3 = box.get_center()
+	var weight: float = 0.0
+	var moment: float = 0.0
+
+	for k in range(0, faces.size() - 2, 3):
+		var area: float = (faces[k + 1] - faces[k]).cross(faces[k + 2] - faces[k]).length() * 0.5
+		var mid: Vector3 = (faces[k] + faces[k + 1] + faces[k + 2]) / 3.0
+		weight += area
+		moment += area * ((mid.x - centre.x) if long_x else (mid.z - centre.z))
+
+	if weight <= 0.0:
+		return Vector2.ZERO
+
+	var offset: float = moment / weight
+
+	if absf(offset) < longest * 0.03:
+		return Vector2.ZERO
+
+	return Vector2(signf(offset), 0.0) if long_x else Vector2(0.0, signf(offset))
 
 
 # The smallest distance along `dir` from the box centre (aiming back at it) at which every corner lies within FIT_MARGIN of the frame edges (bisection: the fit only
