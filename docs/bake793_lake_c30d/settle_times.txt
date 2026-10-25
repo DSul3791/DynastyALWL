@@ -1,0 +1,11 @@
+tile 2,3 exit 0 35 s
+tile 4,3 exit 0 66 s
+tile 3,3 exit 0 167 s
+tile 2,4 exit 0 28 s
+tile 4,4 exit 0 66 s
+tile 3,4 exit 0 373 s
+tile 2,5 exit 0 27 s
+tile 3,5 exit 0 38 s
+tile 4,5 exit 0 196 s
+all settled 736 s
+stitch exit 0 5 s
