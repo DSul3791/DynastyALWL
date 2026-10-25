@@ -454,7 +454,6 @@ func _ready() -> void:
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
-	@warning_ignore("confusable_local_declaration")
 	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
 		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
 
@@ -464,6 +463,7 @@ func _ready() -> void:
 		animals.damage(int(found["id"]), amount, shooter, "arrow")
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
 		return target != 0 and (animals.damage(target, amount, peer, "spear") or true)
