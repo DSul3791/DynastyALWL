@@ -52,7 +52,7 @@ Duplicate rule (above) applies per picture across the whole batch: the three vie
 4. **Failure policy**: duplicates or pose mismatches fail the PICTURE batch (reported as a problem on the test result) but not the build gate (BP-T68 unchanged), and the batch is not indexed as reviewed for Kathleen until it passes.
 
 ## Wait time (Dave 25 Oct 01:24: "just wait for the ground and then 10 seconds") - replaces the earlier wait policy
-Rule for every picture script (David3's box script tools/docker/shot.sh and its batch runner, Mike's look_rig.sh): shoot 10 SECONDS after the ground-ready line appears in the client log (HUD "ground vNN" known, watchdog quiet). Nothing else is a fixed wait.
+Rule for every picture script (David3's box script tools/docker/shot.sh and its batch runner, Mike's look_rig.sh): shoot 10 SECONDS after the camera has LANDED: ground ready (waiting_for_ground == false) AND the camera at ground + eye height within 0.3 m of the requested height (read back; a first "ground under" line is not enough: one short-wait picture was taken at 64.7 m). If it never lands within the maximum, the picture is marked FAILED (not just "ground not ready") and the batch reports it. Nothing else is a fixed wait.
 - shot.sh values: SETTLE=10 (seconds after ground ready), WAIT = maximum time to wait for ground ready (60; raise per run only with a reason in the README).
 - If ground is not ready at WAIT, shoot anyway and mark the picture "ground not ready" in the README (Kathleen does not critique it, and the duplicate check treats it as a problem).
 - The server start: replace the fixed `sleep 30` in shot.sh by polling the server log for its listening line (maximum 30 s), so a fast start saves time.
