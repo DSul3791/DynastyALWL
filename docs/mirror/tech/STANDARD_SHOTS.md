@@ -58,3 +58,5 @@ Rule for every picture script (David3's box script tools/docker/shot.sh and its 
 - The server start: replace the fixed `sleep 30` in shot.sh by polling the server log for its listening line (maximum 30 s), so a fast start saves time.
 - Check that --shot-wait is the maximum for ground and --shot-settle is the extra seconds after it in the client (David3 reads src/ for the flags and states the semantics in the README of the script); if the client counts the settle from the start instead of from ground ready, fix the client side in the same change (client flag only, RUNTIME).
 - Poses and duplicate rules above still apply. Log the measured time per shot so we see the saving.
+
+AERIAL EXCEPTION (25 Oct): a shot more than 40 m above ground (K07, the island aerial) skips the ground-collision/landing wait (nothing is standing on the ground); the ground-ready + 10 s rule still applies to the streamed view being loaded. Ground-level shots keep the 0.5 m landing rule.

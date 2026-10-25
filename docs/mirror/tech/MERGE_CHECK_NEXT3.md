@@ -170,3 +170,5 @@ kathleen-held-pose 3af62551: part 1 (heads, saw/hammer shapes) merges with kathl
 ## BUILD 793 MERGED (A = shelter + fire tiers + campfire pot, d79a4a44). Next in order: B 15616045 (craft menu), C b9c6afb8 (auto-make), rough bed 6459b079 + bed-respawn, sound hookup fce8a304, no-stack caps + weight audit, shore-net look, held-tools + held-pose, showroom-test, water-soak. B and C gate after the shot-landing check; each is rebased by its owner on 793 first (A is now in).
 
 ## steve-spawn-column dc3ab9cf (stacked on shot-landing 3bc42417): priority 1 for David3 (after nothing else; independent). Reply: ACTION_PLANS/Steve_spawn_column_REPLY.md. One gate, one build.
+
+## spawn-column head moved: ceffb385 (was dc3ab9cf/a2b54143; includes shot-runner change: aerial shots more than 40 m above ground skip the ground-collision wait; ground-level shots keep the 0.5 m landing rule; landing check no longer requires a collider under a flying body). David3 gates ceffb385 ONCE with HEAD= line. K07 (forest aerial ~130 m) now takes the aerial path: STANDARD_SHOTS.md rule "aerial = more than 40 m above ground" applies to K07 only.
