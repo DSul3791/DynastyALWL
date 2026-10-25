@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 261,
+	"next_number": 267,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2832,6 +2832,29 @@
 			"look_alikes": [],
 			"value": 45
 		},
+		"wooden_hammer": {
+			"number": 247,
+			"name": "Wooden hammer",
+			"description": "A wooden head on a stick. The weakest hammer; it wears out fast. Nails and building still to come.",
+			"kind": "tool",
+			"tool_class": "hammer",
+			"material": "wood",
+			"tier": 1,
+			"stack": 1,
+			"durability": 1500,
+			"repair": [
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 10,
+			"look_alikes": []
+		},
 		"stone_hammer": {
 			"number": 244,
 			"name": "Stone hammer",
@@ -2899,7 +2922,8 @@
 				]
 			],
 			"value": 30,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true
 		},
 		"rough_bed_kit": {
 			"number": 250,
@@ -2935,19 +2959,19 @@
 			"stack": 1,
 			"look_alikes": []
 		},
-		"tripod_pot_kit": {
+		"campfire_pot_kit": {
 			"number": 254,
-			"name": "Tripod pot",
-			"description": "Three long sticks, a chain and a clay pot. Hang it over a fire to cook stews and teas.",
+			"name": "Campfire pot",
+			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 10,
 			"look_alikes": []
 		},
-		"tripod_pot": {
+		"campfire_pot": {
 			"number": 255,
-			"name": "Tripod pot",
-			"description": "A tripod pot. Cook stews and teas here beside a lit fire.",
+			"name": "Campfire pot",
+			"description": "A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
@@ -2965,6 +2989,57 @@
 			"number": 257,
 			"name": "Clay hearth",
 			"description": "A clay hearth with a spit.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_floor_kit": {
+			"number": 261,
+			"name": "Thatch floor",
+			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_floor": {
+			"number": 262,
+			"name": "Thatch floor",
+			"description": "A thatch floor on stakes. Walls and roofs stand on it.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_roof_kit": {
+			"number": 263,
+			"name": "Thatch roof",
+			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_roof": {
+			"number": 264,
+			"name": "Thatch roof",
+			"description": "A thatch roof. It keeps the rain off.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_doorway_kit": {
+			"number": 265,
+			"name": "Thatch doorway",
+			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_doorway": {
+			"number": 266,
+			"name": "Thatch doorway",
+			"description": "A thatch doorway with a hanging door.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []

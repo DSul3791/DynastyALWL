@@ -529,6 +529,11 @@ func _init() -> void:
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
 			obtainable[String(id)] = true
 
+	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
+	for kind in _read("structures.json").get("structures", {}):
+		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
+			obtainable["wooden_block"] = true
+
 	var changed: bool = true
 
 	while changed:

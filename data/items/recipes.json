@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 164,
+	"next_number": 170,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -29,11 +29,15 @@
 			"needs": [
 				[
 					"stone",
-					2
+					1
 				],
 				[
 					"stick",
 					1
+				],
+				[
+					"twine",
+					5
 				]
 			],
 			"gives": [
@@ -70,15 +74,17 @@
 			"name": "Stone spear",
 			"needs": [
 				[
-					"stone",
-					2
-				],
-				[
-					"stick",
+					"wooden_spear",
 					1
 				],
 				[
 					"twine",
+					5
+				]
+			],
+			"keeps": [
+				[
+					"stone",
 					1
 				]
 			],
@@ -135,11 +141,11 @@
 			"needs": [
 				[
 					"stick",
-					20
+					6
 				],
 				[
 					"stone",
-					10
+					3
 				]
 			],
 			"gives": [
@@ -901,7 +907,7 @@
 			"known": false
 		},
 		"rough_bed_kit": {
-			"number": 160,
+			"number": 162,
 			"name": "Rough bed",
 			"needs": [
 				[
@@ -923,6 +929,126 @@
 			],
 			"craft_s": 10.0,
 			"known": true
+		},
+		"campfire_pot_kit": {
+			"number": 165,
+			"name": "Campfire pot",
+			"needs": [
+				[
+					"stick",
+					3
+				],
+				[
+					"twine",
+					5
+				],
+				[
+					"clay_pot",
+					1
+				]
+			],
+			"gives": [
+				"campfire_pot_kit",
+				1
+			],
+			"craft_s": 15.0,
+			"known": true
+		},
+		"thatch_floor_kit": {
+			"number": 166,
+			"name": "Thatch floor",
+			"needs": [
+				[
+					"twine",
+					6
+				],
+				[
+					"thatch",
+					20
+				]
+			],
+			"gives": [
+				"thatch_floor_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_wall_kit": {
+			"number": 167,
+			"name": "Thatch wall",
+			"needs": [
+				[
+					"twine",
+					20
+				],
+				[
+					"thatch",
+					50
+				],
+				[
+					"stick",
+					15
+				]
+			],
+			"gives": [
+				"thatch_wall_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_roof_kit": {
+			"number": 168,
+			"name": "Thatch roof",
+			"needs": [
+				[
+					"twine",
+					10
+				],
+				[
+					"thatch",
+					40
+				],
+				[
+					"stick",
+					12
+				]
+			],
+			"gives": [
+				"thatch_roof_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_doorway_kit": {
+			"number": 169,
+			"name": "Thatch doorway",
+			"needs": [
+				[
+					"twine",
+					12
+				],
+				[
+					"thatch",
+					25
+				],
+				[
+					"stick",
+					12
+				]
+			],
+			"gives": [
+				"thatch_doorway_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
 		},
 		"workbench_kit": {
 			"number": 45,
@@ -2007,7 +2133,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_nut_paste": {
@@ -2028,7 +2154,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_roast_roots": {
@@ -2070,7 +2196,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_baked_apples": {
@@ -2270,7 +2396,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_forager_stew": {
@@ -2299,7 +2425,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_fish_stew": {
@@ -2328,7 +2454,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_trail_bread": {
@@ -2390,7 +2516,7 @@
 				3
 			],
 			"craft_s": 14.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_feast_roast": {
@@ -3151,13 +3277,37 @@
 			"craft_s": 20.0,
 			"known": true
 		},
+		"wooden_hammer": {
+			"number": 161,
+			"name": "Wooden hammer",
+			"needs": [
+				[
+					"wooden_block",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wooden_hammer",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true
+		},
 		"stone_hammer": {
 			"number": 156,
 			"name": "Stone hammer",
 			"needs": [
 				[
 					"stone",
-					2
+					1
 				],
 				[
 					"stick",
@@ -3224,7 +3374,8 @@
 			],
 			"craft_s": 6.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"lumber_by_hand": {
 			"number": 159,

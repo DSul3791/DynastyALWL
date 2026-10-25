@@ -486,7 +486,7 @@ func _probe_fire() -> Dictionary:
 			if fuel_event.is_valid():
 				fuel_event.call()}
 
-	if state == 1:
+	if _lit_state(state):
 		found["hold"] = cook_nearest
 	elif state == 9:
 		found["hold"] = fuel_nearest
@@ -595,7 +595,7 @@ func open_container() -> bool:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -1624,7 +1624,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var node: Node3D
 		var light: OmniLight3D = null
 
-		if state >= 5 and state != 8 and state != 9:   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
+		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
@@ -1644,7 +1644,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			continue
 
-		if state >= 3:
+		if state >= 3 and not _lit_state(state):
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
@@ -1660,7 +1660,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
 		else:
-			node = _make_fire(state == 1, state == 9)
+			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
@@ -1766,7 +1766,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21:
+		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -2170,13 +2170,22 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 	return _chain_to(node, ancestor).origin
 
 
+# Is a lit fire (any tier) within r metres of a point? Display only.
+func _lit_fire_near(pos: Vector3, r: float) -> bool:
+	for fire_id in _world:
+		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
 	if station == "campfire":   # a lit campfire (state 1) within reach
 		for fire_id in _world:
-			if int(_world[fire_id]["state"]) == 1 and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
 				return true
 
 		return false
@@ -2188,6 +2197,9 @@ func station_near(station: String, level: int = 1) -> bool:
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
+				continue   # the pot cooks only while the fire it hangs over is lit
+
 			return true
 
 		if int(def.get("also", {}).get(station, 0)) >= level:
@@ -2296,8 +2308,17 @@ func ghost_model(state: int) -> Node3D:
 	return _model_for_state(state)
 
 
-func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
-	return BuildingLook.fire(lit, loaded)
+func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
+	return BuildingLook.fire(lit, loaded, tier)
+
+
+# Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
+static func _lit_state(state: int) -> bool:
+	return state == 1 or state == 40 or state == 41
+
+
+static func _fire_tier(state: int) -> int:
+	return 1 if state == 40 else (3 if state == 41 else 2)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
@@ -3434,7 +3455,7 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "tripod_pot_kit", "clay_hearth_kit"]
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit"]
 	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
 
 	for id in admin_ids:
