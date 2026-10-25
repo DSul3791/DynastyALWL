@@ -1383,10 +1383,11 @@ func _make_torch_model(id: String = "") -> Node3D:
 	# The head: rag or bark wound round the top of the stick and bound with twine, about 2.5 times the stick's width and 15 cm long; dark
 	# brown, the top third charred and glowing. The same colours as the unlit torch on the ground (basic_look.gd).
 	var wrap_material: StandardMaterial3D = StandardMaterial3D.new()
-	wrap_material.albedo_color = Color(0.34, 0.22, 0.13)
-	wrap_material.emission_enabled = true   # a little warm light of its own so the head never goes black in the dark
-	wrap_material.emission = Color(0.6, 0.25, 0.08)
-	wrap_material.emission_energy_multiplier = 0.25
+	wrap_material.albedo_color = Color(0.26, 0.17, 0.1)
+	wrap_material.roughness = 1.0   # matte
+	wrap_material.emission_enabled = true   # a trace of warm light of its own so the head is brown, not black, in the dark (and not orange at noon)
+	wrap_material.emission = Color(0.5, 0.22, 0.08)
+	wrap_material.emission_energy_multiplier = 0.1
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var wrapping: CylinderMesh = CylinderMesh.new()
 	wrapping.top_radius = 0.052
@@ -1397,10 +1398,11 @@ func _make_torch_model(id: String = "") -> Node3D:
 	head.position = Vector3(0.0, 0.325, 0.0)
 	torch.add_child(head)
 	var char_material: StandardMaterial3D = StandardMaterial3D.new()
-	char_material.albedo_color = Color(0.22, 0.13, 0.08)
+	char_material.albedo_color = Color(0.16, 0.1, 0.065)
+	char_material.roughness = 1.0
 	char_material.emission_enabled = true
 	char_material.emission = Color(0.9, 0.3, 0.05)
-	char_material.emission_energy_multiplier = 0.9
+	char_material.emission_energy_multiplier = 0.35
 	var charred: MeshInstance3D = MeshInstance3D.new()
 	var char_mesh: CylinderMesh = CylinderMesh.new()
 	char_mesh.top_radius = 0.0525
@@ -1411,7 +1413,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 	charred.position = Vector3(0.0, 0.375, 0.0)
 	torch.add_child(charred)
 	var twine_material: StandardMaterial3D = StandardMaterial3D.new()
-	twine_material.albedo_color = Color(0.6, 0.5, 0.32)
+	twine_material.albedo_color = Color(0.34, 0.26, 0.17)   # dark rope, not cream
+	twine_material.roughness = 1.0
 
 	for band_y in [0.28, 0.335]:
 		var band: MeshInstance3D = MeshInstance3D.new()
@@ -1424,7 +1427,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 		band.position = Vector3(0.0, band_y, 0.0)
 		torch.add_child(band)
 
-	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 10 cm across at the base, a
+	# The flame rises from the top of the head whichever way the stick points (flame_up.gd): about 25 cm tall and 8 cm across at the base, a slim teardrop, a
 	# teardrop of three emissive cones, orange at the base to yellow at the tip with a short pale core, and an orange glow ring on the head.
 	# The two upper cones sway slowly so it does not read as one solid shape.
 	var rig: Node3D = Node3D.new()
@@ -1432,7 +1435,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	rig.head_local = Vector3(0.0, 0.4, 0.0)
 	torch.add_child(rig)
 	var flames: Array = []
-	var layers: Array = [[0.05, 0.22, Color(1.0, 0.38, 0.06, 0.8), 0.0], [0.036, 0.27, Color(1.0, 0.68, 0.14, 0.85), 0.009], [0.02, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.006]]
+	var layers: Array = [[0.04, 0.2, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.029, 0.25, Color(1.0, 0.68, 0.14, 0.9), 0.007], [0.016, 0.13, Color(1.0, 0.95, 0.65, 1.0), -0.005]]
 
 	for n in range(layers.size()):
 		var layer: Array = layers[n]
@@ -1466,8 +1469,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 
 	var halo: MeshInstance3D = MeshInstance3D.new()
 	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.056
-	disc.bottom_radius = 0.056
+	disc.top_radius = 0.05
+	disc.bottom_radius = 0.05
 	disc.height = 0.008
 	var halo_material: StandardMaterial3D = StandardMaterial3D.new()
 	halo_material.albedo_color = Color(1.0, 0.45, 0.1)
@@ -1494,6 +1497,14 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.shadow_enabled = false
 	light.position = Vector3(0.0, 0.5, 0.0)
 	torch.add_child(light)
+	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
+	hand_light.name = "HandLight"
+	hand_light.light_color = Color(1.0, 0.6, 0.28)
+	hand_light.omni_range = 1.6
+	hand_light.light_energy = 0.7
+	hand_light.shadow_enabled = false
+	hand_light.position = Vector3(0.0, 0.15, 0.1)
+	torch.add_child(hand_light)
 	return torch
 
 
