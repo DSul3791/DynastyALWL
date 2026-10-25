@@ -72,8 +72,16 @@ func _init() -> void:
 	crafter.add(table.number_of("stone"), 3)
 	check(recipes.craft(5, crafter) and crafter.count_of(table.number_of("wooden_spear")) == 1, "wooden spear made")
 	check(crafter.count_of(table.number_of("stone")) == 3 and crafter.count_of(table.number_of("stick")) == 2, "the sharpening stone is kept, the stick is used")
+	crafter.add(table.number_of("plant_fibre"), 30)
+	var twined: int = 0
+
+	for n in range(10):   # twine is twisted by hand from fibre, no bench or tool (recipe 1, known from the start)
+		twined += 1 if recipes.craft(1, crafter) else 0
+
+	check(twined == 10 and recipes.recipe(1).get("station", "") == "" and bool(recipes.recipe(1).get("known", false)), "ten twine twisted by hand from fibre")
+	var twine_before: int = crafter.count_of(table.number_of("twine"))
 	check(recipes.craft(3, crafter) and crafter.count_of(table.number_of("spear")) == 1, "stone spear made")
-	check(crafter.count_of(table.number_of("stone")) == 1 and crafter.count_of(table.number_of("twine")) == 1 and crafter.count_of(table.number_of("stick")) == 1, "stone spear used 2 stones, 1 stick, 1 twine")
+	check(crafter.count_of(table.number_of("twine")) == twine_before - 5 and crafter.count_of(table.number_of("wooden_spear")) == 0, "stone spear used the wooden spear and 5 twine")
 	crafter.add(table.number_of("stone"), 1)
 	check(recipes.craft(2, crafter) and crafter.count_of(table.number_of("stone_axe")) == 1, "stone axe made")
 	var packed = Inventory.new(table)

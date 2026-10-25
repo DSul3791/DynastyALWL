@@ -95,14 +95,19 @@ func _init() -> void:
 		var around: Vector3 = Vector3(cos(float(n) * TAU / 6.0), 0.0, sin(float(n) * TAU / 6.0))   # lying more than a metre apart, or they would merge into one heap
 		items.drop_in_world(items.table.number_of("stone"), 4, Vector3(0.0, 10.0, 0.0) + around * 1.5)
 		items.drop_in_world(items.table.number_of("stick"), 5, Vector3(0.0, 10.0, 0.0) + around * 2.2)
-		items.drop_in_world(items.table.number_of("plant_fibre"), 3, Vector3(0.0, 10.0, 0.0) + around * 2.9)
+		items.drop_in_world(items.table.number_of("plant_fibre"), 8, Vector3(0.0, 10.0, 0.0) + around * 2.9)
 		items.drop_in_world(items.table.number_of("stick"), 1, Vector3(0.0, 10.0, 0.0) + around.rotated(Vector3.UP, 0.5) * 2.6)
 
 	pass_time(120.0, 0.3)
-	check(pick_up_everything_near() == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 18, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
+	var heaps: int = pick_up_everything_near()
+	pick_up_everything_near()   # a heap gives a handful at a time: the fibre heaps (8 each) need a second pass
+	check(heaps == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 48, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
 	note("gathering")
 
-	# 2. Hand-craft a stone axe (two stones and a stick, 4 s).
+	# 2. Twist five twine from fibre by hand, then craft a stone axe (a stone, a stick and 5 twine).
+	queue(1, 5)
+	pass_time(20.0, 0.2)
+	check(count("twine") == 5, "five twine are twisted by hand from fibre")
 	queue(2, 1)
 	pass_time(10.0, 0.2)
 	check(count("stone_axe") == 1, "the stone axe is made by hand")
@@ -147,9 +152,9 @@ func _init() -> void:
 	var lit: int = 0
 
 	for k in items._items:
-		lit += 1 if items._items[k].has("fire") and int(items._items[k]["fire"]["state"]) == 1 else 0
+		lit += 1 if items._items[k].has("fire") else 0
 
-	check(lit == 1, "the campfire is placed and burning")
+	check(lit == 1, "the campfire is placed (laid; lighting is the fire-tiers gate)")
 	note("making a campfire")
 
 	# 5. Drink at the water's edge: no water, no drink; at the edge the thirst bar fills.
