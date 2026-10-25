@@ -222,10 +222,10 @@ func _init() -> void:
 
 	for id in items._items:
 		if items._items[id].has("fire"):
-			items._items[id]["fire"]["state"] = 1   # a placed fire is laid (fire tiers): lighting it is tested in the fire tests, this step cooks on it
+			items.action(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)   # a placed fire is laid (fire tiers): light it with tinder from the pack
 			fire = id
 
-	check(fire != 0, "the campfire burns")
+	check(fire != 0 and items.fire_is_lit(int(items._items[fire]["fire"]["state"])), "the campfire burns")
 	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("raw_meat"), 0, 2, Vector3.ZERO)
 	items.report_position(1, items._items[fire]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items._last_cook.clear()

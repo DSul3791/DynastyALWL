@@ -178,6 +178,10 @@ func _init() -> void:
 	# old saves: a tripod pot row loads as the campfire pot; an old state 1 fire loads
 	var old_dir: String = "user://test_campfire_pot_old"
 	DirAccess.make_dir_recursive_absolute(old_dir)
+
+	for file in DirAccess.get_files_at(old_dir):   # a fresh folder: earlier runs left their save here
+		DirAccess.remove_absolute(old_dir + "/" + file)
+
 	var old = make(old_dir)
 	old._items[1] = {"number": 255, "count": 1, "pos": Vector3(500.0, 10.0, 500.0), "left": 1.0e9, "struct": {"kind": "tripod_pot", "yaw": 0.0}}
 	old._items[2] = {"number": 1, "count": 1, "pos": Vector3(500.0, 10.0, 500.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 600.0, "covered": false, "recheck": 5.0}}

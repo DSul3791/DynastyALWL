@@ -152,9 +152,13 @@ func _init() -> void:
 	var lit: int = 0
 
 	for k in items._items:
-		lit += 1 if items._items[k].has("fire") else 0
+		if items._items[k].has("fire"):
+			items.action(1, Net.ACT_LIGHT, k, 0, 0, Vector3.ZERO)   # a placed fire is laid (fire tiers): light it with tinder from the pack
 
-	check(lit == 1, "the campfire is placed (laid; lighting is the fire-tiers gate)")
+	for k in items._items:
+		lit += 1 if items._items[k].has("fire") and items.fire_is_lit(int(items._items[k]["fire"]["state"])) else 0
+
+	check(lit == 1, "the campfire is placed and burning")
 	note("making a campfire")
 
 	# 5. Drink at the water's edge: no water, no drink; at the edge the thirst bar fills.
