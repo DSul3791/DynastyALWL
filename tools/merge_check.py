@@ -98,6 +98,29 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
     if f.endswith((".gd", ".tscn", ".shader", ".gdshader")) and not os.path.exists(f + ".uid") and f.endswith(".gd"):
         bad("new script without .uid: %s (commit its .uid)" % f)
 
+
+# 7. Dave's rule (25 Oct 2026): nothing is deleted. A model, image, sound, art, design, scene, resource or code file that was in BASE and
+#    is gone from the tree must be present under proposed_removals/ (scripts, scenes, resources with ".removed" added) with a line in REMOVALS.md.
+KEEP_EXT = (".glb", ".gltf", ".obj", ".fbx", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".tga", ".exr", ".hdr", ".dds", ".ogg", ".wav", ".mp3",
+            ".tscn", ".tres", ".gd", ".gdshader", ".shader", ".md")
+KEEP_DIRS = ("art/", "assets/", "design/", "docs/", "items/", "src/", "scenes/", "worlds/", "data/")
+SKIP_PREFIX = ("proposed_removals/", "docs/mirror/", "docs/archive/", "questions/", "evidence/", "results/")
+if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
+    for f in sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines():
+        if f.startswith(SKIP_PREFIX) or not (f.endswith(KEEP_EXT) and f.startswith(KEEP_DIRS)):
+            continue
+        suffix = ".removed" if f.endswith((".gd", ".tscn", ".tres", ".uid")) else ""
+        if not (os.path.isfile("proposed_removals/" + f + suffix) or os.path.isfile("proposed_removals/" + f)):
+            bad("deleted without approval (Dave's rule): %s (move it to proposed_removals/%s%s and add a line to proposed_removals/REMOVALS.md)" % (f, f, suffix))
+    # looks: a look entry that was in BASE must still be in data/items/looks.json
+    try:
+        old = json.loads(sh("git", "show", BASE + ":data/items/looks.json"))["items"]
+        new = json.load(open("data/items/looks.json", encoding="utf-8"))["items"]
+        for k in sorted(set(old) - set(new)):
+            bad("look removed from data/items/looks.json: %s (retire it, do not delete it)" % k)
+    except Exception:
+        pass
+
 dupes = subprocess.run([sys.executable, "tools/check_dupe_names.py"], capture_output=True, text=True)
 if dupes.returncode != 0:
     for line in dupes.stdout.splitlines():
