@@ -31,7 +31,7 @@ func _init() -> void:
 			_check(_y_extent(mesh, 0.52 * scale, 1.0, 1.0) < 0.045 * scale, id + ": the dished blade is shallow (y %.3f)" % (_y_extent(mesh, 0.52 * scale, 1.0, 1.0) / scale))
 			_check(_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) < 0.008 * scale, id + ": a thin plate at the centre (%.4f m)" % (_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) / scale))
 			_check(_width_near(mesh, 0.6 * scale, 0.02 * scale) > 0.17 * scale and _width_near(mesh, 0.6 * scale, 0.02 * scale) < 0.21 * scale, id + ": blade about 19 cm wide at the shoulders (%.3f)" % (_width_near(mesh, 0.6 * scale, 0.02 * scale) / scale))
-			_check(_width_near(mesh, 0.72 * scale, 0.008 * scale) < 0.75 * _width_near(mesh, 0.6 * scale, 0.02 * scale), id + ": the blade ends in a narrower rounded tip")
+			_check(_width_near(mesh, 0.74 * scale, 0.008 * scale) < 0.75 * _width_near(mesh, 0.6 * scale, 0.02 * scale), id + ": the blade ends in a narrower rounded tip")
 			_check(_width_near(mesh, -0.16 * scale, 0.06 * scale) > 0.14 * scale and _width_near(mesh, -0.16 * scale, 0.06 * scale) < 0.2 * scale, id + ": a closed D-grip about 15 cm across (%.3f)" % (_width_near(mesh, -0.16 * scale, 0.06 * scale) / scale))
 
 			var tris: int = 0

@@ -330,25 +330,36 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			var g: float = -0.1                                                                                      # the grip's flat side; the whole spade is about 0.92 m
-			_cyl_taper(parts, 0.0165, 0.0158, 0.55, Vector3(0.5 * (g + 0.45), 0.0, 0.0), _tone(ash, 1, 0.03))        # the haft: one ash colour, 3.2 cm, a slight taper
-			for k in range(3):                                                                                       # a leather sleeve: three thin turns near the grip
+			var g: float = -0.05                                                                                     # the grip's flat side; the whole spade is about 0.92 m
+			var cuts: Array = [0.0, 0.27, 0.5]                                                      # the haft in uneven lengths: subtle grain-like tone changes, no hard seam
+			for k in range(2):
+				var x0: float = g + cuts[k] * (0.45 - g) / 0.5
+				var x1: float = g + cuts[k + 1] * (0.45 - g) / 0.5
+				_cyl_taper(parts, 0.0165 - 0.0007 * cuts[k] / 0.5, 0.0165 - 0.0007 * cuts[k + 1] / 0.5, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(ash, 1 + k * 3, 0.07))
+			for k in range(2):                                                                                       # a leather sleeve: three thin turns near the grip
 				_cyl(parts, 0.0182, 0.012, Vector3(g + 0.09 + 0.016 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.1, 0.05, 0.025) if k != 1 else Color(0.16, 0.09, 0.045))
 
 			var d_points: Array = []                                                                                 # the D-grip path in x and z: flat against the haft end, a half ellipse behind
-			for k in range(15):
-				var ang: float = -PI * 0.5 + PI * float(k) / 14.0
+			for k in range(13):
+				var ang: float = -PI * 0.5 + PI * float(k) / 12.0
 				d_points.append(Vector2(g - 0.1 * cos(ang), 0.075 * sin(ang)))
 
-			for k in range(14):
-				_tube(parts, d_points[k], d_points[k + 1], 0.015, _tone(ash, 6, 0.03))
-			_tube(parts, Vector2(g, -0.075), Vector2(g, 0.075), 0.015, _tone(ash, 6, 0.03))                          # the flat side, against the haft
+			for k in range(12):
+				_tube(parts, d_points[k], d_points[k + 1], 0.015, _tone(ash, 6, 0.04), 7)
+			_tube(parts, Vector2(g, -0.075), Vector2(g, 0.075), 0.015, _tone(ash, 6, 0.04), 7)                       # the flat side, against the haft
 
-			_cyl_taper(parts, 0.02, 0.034, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # the socket cone; the blade plate grows out of its mouth
+			_cyl_taper(parts, 0.02, 0.034, 0.06, Vector3(0.41, 0.0, 0.0), blade * 1.2 if metal_blade else ash.darkened(0.3))   # a short socket cone
 			if metal_blade:
 				_metal(parts, rough, sheen)
-			_plate(parts, 0.442, 0.28, 0.19, 0, 11, blade, true, metal_blade, rough, sheen)                          # the blade plate, 28 by 19 cm
-			_plate(parts, 0.442, 0.28, 0.19, 11, 12, Color(0.6, 0.6, 0.6) if steel_blade else blade * 2.4, false, metal_blade, rough, sheen)   # the last 2 cm: a bright worn strip along the bottom edge
+			_plate(parts, 0.44, 0.3, 0.2, 0, 11, blade, true, metal_blade, rough, sheen)                             # the blade plate, 30 by 20 cm
+			_plate(parts, 0.44, 0.3, 0.2, 11, 12, Color(0.6, 0.6, 0.6) if steel_blade else blade * 2.4, false, metal_blade, rough, sheen)   # the tip edge: a bright worn strip
+			_box(parts, Vector3(0.03, 0.01, 0.17), Vector3(0.46, 0.013, 0.0), blade * 1.5 if metal_blade else blade.lightened(0.2))   # the step plate across the shoulders
+			if metal_blade:
+				_metal(parts, rough, sheen)
+			for side in [-1.0, 1.0]:
+				_box(parts, Vector3(0.012, 0.008, 0.012), Vector3(0.46, 0.021, side * 0.05), blade * 2.0 if metal_blade else blade.lightened(0.3))   # two rivets
+				if metal_blade:
+					_metal(parts, rough, sheen)
 		"saw":
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
@@ -647,7 +658,7 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 	for i in range(from_row, to_row + 1):
 		var t: float = float(i) / float(rows)
-		var half: float = 0.5 * wide * (0.3 + 0.7 * smoothstep(0.0, 0.3, t)) if t < 0.55 else 0.5 * wide * (1.0 - 0.45 * pow((t - 0.55) / 0.45, 2.0))      # a spade blade: square shoulders, then a rounded, slightly flat tip (2/5 of the width at the end)
+		var half: float = 0.5 * wide * (1.0 - 0.15 * t / 0.6) if t < 0.6 else 0.5 * wide * 0.85 * sqrt(maxf(1.0 - pow((t - 0.6) / 0.4, 2.0), 0.0))   # a spade blade: widest at the shoulders under the socket, gently tapering sides, a round arched tip
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
@@ -658,8 +669,8 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 				half *= sqrt(maxf(1.0 - pow((t - 0.9) / 0.1, 2.0) * 0.9, 0.0))                                      # rounded toe
 
 		half = maxf(half, 0.012)
-		var forward: float = 0.014 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
-		var dish: float = (0.014 if mode == 0 else (0.008 if mode == 1 else 0.0)) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
+		var forward: float = 0.006 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
+		var dish: float = (0.018 if mode == 0 else (0.008 if mode == 1 else 0.0)) * half / (0.5 * wide)               # the dish follows the local width, so the narrow tip does not curl into a hook
 		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else 0.0025)
 
 		if mode == 1:
@@ -723,13 +734,13 @@ static func _wrap(parts: Array, x0: float, x1: float, radius: float) -> void:
 
 
 # A round tube between two points in the x-z plane (the grip's D path), radius `radius`, six sided.
-static func _tube(parts: Array, from: Vector2, to: Vector2, radius: float, color: Color) -> void:
+static func _tube(parts: Array, from: Vector2, to: Vector2, radius: float, color: Color, sides: int = 6) -> void:
 	var along: Vector3 = Vector3(to.x - from.x, 0.0, to.y - from.y)
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = radius
 	cyl.bottom_radius = radius
 	cyl.height = along.length() + radius * 0.8
-	cyl.radial_segments = 6
+	cyl.radial_segments = sides
 	cyl.rings = 1
 	var y_axis: Vector3 = along.normalized()
 	var x_axis: Vector3 = Vector3.UP
