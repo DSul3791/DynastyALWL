@@ -148,12 +148,13 @@ func _init() -> void:
 	var stalled = WatchdogScript.new()
 	var stall_at: int = -1
 
-	for t in range(1, 400):
+	for t in range(1, 500):
 		var got: int = mini(t, 30)   # blocks arrive for 3 s, then nothing, one still outstanding
 		if stalled.step(t * 100, true, 1, got) == "retry" and stall_at < 0:
 			stall_at = t * 100
 
-	check(stall_at >= 10900 and stall_at <= 11200, "delivery stops at 3 s with a block outstanding: retry 8 s later (%.1f s)" % (float(stall_at) * 0.001))
+	# 25 Oct design (Tyler's stall retry): with nothing failed, a dead stream is restarted only once ground has been wanted 30 s (no block for 20 s).
+	check(stall_at >= 29900 and stall_at <= 30300, "delivery stops at 3 s, nothing failed: stall retry at 30 s (%.1f s)" % (float(stall_at) * 0.001))
 
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
