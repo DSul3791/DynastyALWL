@@ -518,6 +518,59 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var to: Vector2 = line[k + 1]
 					var span: Vector2 = to - from
 					_cyl(parts, 0.0014, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.85, 0.82, 0.72))
+		"bow":
+			# A self bow (item 269), real size 1.2 m, strung: a stave of bent wood thick at the grip and fine at the tips, curving toward +z with the straight string along z = 0,
+			# a leather grip wrap and bone nocks at the tips. Mesh axes: limbs along x, belly toward +z, flat in y. Drawn small because held and ground looks are enlarged 1.8x.
+			var stave: Color = Color(0.42, 0.28, 0.14)
+			var pts: Array = []
+
+			for k in range(11):
+				var u: float = -1.0 + 0.2 * float(k)
+				pts.append(Vector2(0.55 * u, 0.1 * (1.0 - u * u)))
+
+			for k in range(10):
+				var mid: float = absf(-0.9 + 0.2 * float(k))
+				_tube(parts, pts[k], pts[k + 1], 0.016 - 0.009 * mid, _tone(stave, k, 0.06), 8)
+
+			for k in range(3):
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.02 + 0.02 * float(k), 0.0, 0.1), Vector3(0.0, 0.0, PI * 0.5 + 0.25), Color(0.14, 0.08, 0.04) if k != 1 else Color(0.22, 0.13, 0.07))   # the leather grip wrap
+
+			for end in [-1.0, 1.0]:
+				_cone(parts, 0.009, 0.03, Vector3(end * 0.575, 0.0, 0.0), Color(0.75, 0.7, 0.6))                         # a bone nock at each tip
+
+			_cyl(parts, 0.0013, 1.1, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.85, 0.82, 0.72))      # the string
+		"arrow":
+			# An arrow (items 270 wooden, 271 stone-headed with bits ["stone"]), real size 0.7 m: a straight ash shaft, a nock at the back (-x), three feather vanes (one darker cock feather)
+			# and a point at +x: the wooden arrow is sharpened and fire-hardened, the stone arrow has a flaked leaf head lashed on with twine.
+			var shaft_wood: Color = Color(0.5, 0.36, 0.18)
+			_cyl_taper(parts, 0.0042, 0.0042, 0.62, Vector3(-0.04, 0.0, 0.0), _tone(shaft_wood, 1, 0.05), 8)
+
+			for k in range(3):                                                                                            # the three feather vanes, 120 degrees apart
+				var ang: float = TAU * float(k) / 3.0
+				_box_rot(parts, Vector3(0.1, 0.022, 0.003), Vector3(-0.3, 0.014 * cos(ang), 0.014 * sin(ang)), Vector3(ang, 0.0, 0.0), Color(0.85, 0.82, 0.74) if k != 0 else Color(0.35, 0.3, 0.26))
+
+			_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.355, 0.0, 0.0), Color(0.12, 0.08, 0.05))               # the nock
+
+			if bits.has("stone"):
+				_plate(parts, 0.28, 0.07, 0.03, 0, 12, _warm_stone(Color(0.54, 0.54, 0.52)), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 3, 2.0)
+				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
+				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
+			else:
+				_cone(parts, 0.0042, 0.06, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
+		"quiver":
+			# A hide quiver (item 272), about 55 cm: a tapering leather tube with a darker rim and seam, a carrying strap loop and the feathered ends of four arrows standing out of the mouth.
+			# Mesh axes: tube along x, mouth at +x.
+			var hide_q: Color = Color(0.3, 0.17, 0.08)
+			_cyl_taper(parts, 0.045, 0.06, 0.5, Vector3(0.0, 0.0, 0.0), _tone(hide_q, 1, 0.05), 12)
+			_cyl_taper(parts, 0.063, 0.063, 0.02, Vector3(0.245, 0.0, 0.0), hide_q.darkened(0.3), 12)                      # the rim
+			_cyl_taper(parts, 0.046, 0.046, 0.03, Vector3(-0.25, 0.0, 0.0), hide_q.darkened(0.2), 12)                    # the base cap
+			_box(parts, Vector3(0.48, 0.004, 0.01), Vector3(0.0, 0.058, 0.0), hide_q.darkened(0.4))                      # the stitched seam
+			_torus_v(parts, 0.1, 0.006, Vector3(0.05, 0.0, 0.0), Color(0.2, 0.12, 0.06))                                 # the carrying strap loop
+
+			for k in range(4):
+				var off: Vector2 = Vector2(cos(float(k) * 1.7), sin(float(k) * 1.7)) * 0.02
+				_cyl(parts, 0.0035, 0.22, Vector3(0.34 + 0.01 * float(k), off.x, off.y), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.18))
+				_box_rot(parts, Vector3(0.07, 0.02, 0.003), Vector3(0.42 + 0.01 * float(k), off.x, off.y), Vector3(float(k) * 1.0, 0.0, 0.0), Color(0.85, 0.82, 0.74) if k != 2 else Color(0.35, 0.3, 0.26))   # fletching
 		"torch":
 			_handle(parts, 0.5)
 			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
