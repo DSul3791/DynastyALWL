@@ -25,7 +25,7 @@ static func pitch_to(from: Vector3, to: Vector3) -> float:
 # The four views of the item whose drawn box is `box`, on ground at `ground_y`: front, side, top, diag. Each looks at the box centre from the closest distance (MIN_DIST to
 # MAX_FIT_DIST) at which the whole box sits inside the frame with FIT_MARGIN to spare, so a long tool backs off and a small one comes close. Each: name, dist, cam (world
 # position), yaw, pitch, cam_x, cam_z, above (camera metres above the ground, for the runner's view setup), up (the camera's up vector, for the framing maths).
-static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0, blade_dir: Vector2 = Vector2.ZERO, face_normal: Vector3 = Vector3.ZERO) -> Array:
+static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0, blade_dir: Vector2 = Vector2.ZERO, plate_normal: Vector3 = Vector3.ZERO) -> Array:
 	var centre: Vector3 = box.get_center()
 	var specs: Array = [["front", 0.0, 25.0], ["side", 90.0, 25.0], ["top", 0.0, 90.0], ["diag", 45.0, 35.0]]
 
@@ -36,8 +36,8 @@ static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16
 	# The item's flat face (the normal of its largest surfaces) decides where the diag camera stands, so a blade that came to rest on its side is still seen face-on.
 	var diag_dir: Vector3 = Vector3.ZERO
 
-	if face_normal.length() > 0.5:
-		var n: Vector3 = face_normal.normalized()
+	if plate_normal.length() > 0.5:
+		var n: Vector3 = plate_normal.normalized()
 
 		if absf(n.y) > 0.8:
 			var h: Vector2 = blade_dir if blade_dir.length() > 0.5 else Vector2(0.0, 1.0)
@@ -119,7 +119,7 @@ static func face_normal(faces: PackedVector3Array) -> Vector3:
 
 	var v: Vector3 = Vector3(0.3, 1.0, 0.2).normalized()
 
-	for n in range(40):
+	for _step in range(40):
 		v = Vector3(xx * v.x + xy * v.y + xz * v.z, xy * v.x + yy * v.y + yz * v.z, xz * v.x + yz * v.y + zz * v.z).normalized()
 
 	if v.y < -0.05 or (absf(v.y) <= 0.05 and v.x + v.z < 0.0):

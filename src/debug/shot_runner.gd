@@ -1001,7 +1001,7 @@ func _run_view(now: int) -> void:
 
 		var pose_miss: bool = cam_now.global_position.distance_to(view["cam"]) > 0.1
 
-		if float(live["off"]) > 0.08 or not bool(live["inside"]) or float(live["extent"]) > 0.95 or pose_miss:
+		if float(live["off"]) > 0.04 or not bool(live["inside"]) or float(live["extent"]) > 0.95 or pose_miss:
 			_item_tries += 1
 			print("shot runner: item view %s try %d: box at %s size %s is %.0f %% off centre%s, aiming again" % [view["name"], _item_tries, str(_item_box.get_center()), str(_item_box.size), float(live["off"]) * 100.0, "" if bool(live["inside"]) else ", part outside"])
 			_view_msec = 0
