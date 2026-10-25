@@ -96,5 +96,17 @@ func _init() -> void:
 		newest = maxi(newest, int(id))
 
 	check(newest > top_id, "new ids keep counting up after the reload")
+	# The thatch floor is made by hand (Dave 25 Oct): known from the start, no bench, 6 twine and 20 thatch.
+	var hand = make("user://test_thatch_hand")
+	hand.peer_connected_hello(1, "thatchhand001")
+	var floor_recipe: Dictionary = hand.recipes.recipe(166)
+	check(bool(floor_recipe["known"]) and str(floor_recipe["station"]) == "", "the thatch floor recipe is known from the start and needs no bench")
+	hand.action(1, Net.ACT_ADMIN_GIVE, hand.table.number_of("twine"), 0, 6, Vector3.ZERO)
+	hand.action(1, Net.ACT_ADMIN_GIVE, hand.table.number_of("thatch"), 0, 20, Vector3.ZERO)
+	hand._admin_mode_off[1] = true
+	hand._last_queue_act.clear()
+	hand.action(1, Net.ACT_CRAFT_QUEUE, 166, 0, 1, Vector3.ZERO)
+	check(not hand._craft_queues[hand._peer_key[1]]["entries"].is_empty(), "6 twine and 20 thatch queue a thatch floor with no bench nearby")
+
 	print("thatch pieces tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
