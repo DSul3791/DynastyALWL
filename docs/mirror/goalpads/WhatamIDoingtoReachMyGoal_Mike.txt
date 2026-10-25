@@ -39,3 +39,7 @@ DONE
 
 [2026-10-25 01:53Z] Moved since last check: held-tool reshoot rig fixed on claude/mike-rig-v4 (uncommitted in my clone): third-person shots orbit the camera 0/+90/+180 round a still body (proved on one spot, 3 different views), per-frame pose hold, ground-late shots saved as _FAILED_ground_not_ready (look_rig exit 4), warm client cache between runs, free-port check, timing lines, visible 'Test server' log window, --realview mode. Join log of the ground-wait bug pushed (logs/join_ground_fail_2026-10-24.txt, 3dc47918), Steve owns the bug.
 Stuck: cold ground join takes 80-130 s and the watchdog gives up; real first-person hand/tool picture still not obtained (needs Steve's join fix or a longer ground max). Next: one real-view shot, then the six tools.
+
+[2026-10-25 02:09Z] DONE: held-tool batch (6 tools + empty hand, 3 pictures each, 21 pictures, no failed-ground, 3 distinct each) on branch claude/mike-evidence-hands10 (60e10ccd); index + sheets on claude/box-results (9f782eb1).
+STANDING SETUP (Dave: keep, do not change without his say): tools/LOOK_RIG_SETUP.md on claude/mike-rig-v4 (d8c3f00e): ground-ready +10 s (max 120 s), camera orbits 0/+90/+180 round a still body, failed-ground shots marked _FAILED and exit 4, warm client cache E:\Software\godotDev\rig_appdata, visible 'Test server' window, merged with steve-shot-lock and steve-ground-quiet. A 3-picture run takes about 40 s.
+Next: Kathleen stone before/after and pieces re-render with this setup; 793 settle once Dave allows bakes.
