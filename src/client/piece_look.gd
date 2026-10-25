@@ -612,19 +612,151 @@ static func tripod_pot() -> Node3D:
 	return root
 
 
-# A clay hearth (cooking station tier 2), 1.2 m by 0.9 m, 0.6 m high: a block of fired clay with a hollow on top for the fire, a low back wall,
-# and two forked posts holding a spit across the hollow.
+static func _cyl(parent: Node3D, radius: float, height: float, at: Vector3, material: StandardMaterial3D, sides: int = 14, top_radius: float = -1.0) -> MeshInstance3D:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: CylinderMesh = CylinderMesh.new()
+	shape.top_radius = radius if top_radius < 0.0 else top_radius
+	shape.bottom_radius = radius
+	shape.height = height
+	shape.radial_segments = sides
+	shape.rings = 1
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = at
+	parent.add_child(mesh)
+	return mesh
+
+
+# A clay dome: the upper half of a sphere squashed to `scale`, resting on y = at.y.
+static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, material: StandardMaterial3D) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: SphereMesh = SphereMesh.new()
+	shape.radius = radius
+	shape.height = radius
+	shape.is_hemisphere = true
+	shape.radial_segments = 16
+	shape.rings = 6
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = at
+	mesh.scale = scale
+	parent.add_child(mesh)
+
+
+# A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, a timber frame round the gap,
+# and a door leaf of lashed sticks with twine bands and a rope pull.
+static func thatch_doorway() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 2.4, 0.18), Vector3(x, 1.2, 0.0), _frame)
+
+	for x in [-0.5, 0.5]:
+		_box(root, Vector3(0.1, 2.0, 0.2), Vector3(x, 1.0, 0.0), _frame)         # the gap's jambs
+
+	_box(root, Vector3(2.0, 0.1, 0.18), Vector3(0.0, 2.35, 0.0), _frame)
+
+	for k in 8:
+		var y: float = 0.15 + 0.3 * float(k)
+		var shift: float = 0.04 * float((k * 5) % 3 - 1)
+		var depth: float = 0.25 + 0.02 * float(k % 2)
+
+		if y < 2.0:
+			for x in [-0.725, 0.725]:
+				_box(root, Vector3(0.4, 0.3, depth), Vector3(x + shift * 0.5, y, 0.0), _thatch)        # the straw either side
+		else:
+			_box(root, Vector3(1.9, 0.3, depth), Vector3(shift, y, 0.0), _thatch)                        # and over the gap
+
+	_box(root, Vector3(1.0, 0.1, 0.22), Vector3(0.0, 2.05, 0.0), _frame)            # the lintel
+
+	for k in 7:
+		_box(root, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
+
+	for y in [0.4, 1.0, 1.6]:
+		_box(root, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
+
+	_box(root, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
+	_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A thatch roof (2.4 m square, ridge 2.8 m up) on four posts: two sloping slabs of straw bundles meeting at a ridge, rafters under them, a shaggy eave on every side.
+static func thatch_roof() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-1.1, 1.1]:
+		for z in [-1.1, 1.1]:
+			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+
+	for side in [-1.0, 1.0]:
+		_box_rot(root, Vector3(1.4, 0.16, 2.5), Vector3(side * 0.62, 2.62, 0.0), Vector3(0.0, 0.0, -side * 0.3), _thatch)       # a sloping slab
+		_box_rot(root, Vector3(0.1, 0.1, 2.4), Vector3(side * 0.62, 2.5, 0.0), Vector3(0.0, 0.0, -side * 0.3), _frame)          # a rafter under it
+
+		for k in 6:
+			_box_rot(root, Vector3(0.16, 0.18, 0.14), Vector3(side * 1.22, 2.45, -1.15 + 0.46 * float(k)), Vector3(0.0, 0.0, -side * 0.3), _thatch)   # the shaggy eave
+
+	_box(root, Vector3(0.26, 0.16, 2.5), Vector3(0.0, 2.82, 0.0), _thatch)          # the ridge bundle
+	_box(root, Vector3(0.1, 0.1, 2.4), Vector3(0.0, 2.7, 0.0), _frame)               # the ridge pole
+	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
+	return root
+
+
+# A thatch floor (tier 1 foundation, Dave and Tyler 24 Oct), 4 m square, 0.1 m high, on stakes: a dark timber sub-floor, straw bundles laid side by side, each a
+# little out of line, a log along every edge and a stake at each corner.
+static func thatch_floor() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(3.9, 0.04, 3.9), Vector3(0.0, 0.02, 0.0), _frame)
+
+	for k in 8:
+		var z: float = -1.75 + 0.5 * float(k)
+		var shift: float = 0.04 * float((k * 5) % 3 - 1)
+		_box(root, Vector3(3.8, 0.05 + 0.01 * float(k % 2), 0.5), Vector3(shift, 0.05, z), _thatch)
+
+	for z in [-1.96, 1.96]:
+		_box(root, Vector3(4.0, 0.1, 0.08), Vector3(0.0, 0.05, z), _log)
+
+	for x in [-1.96, 1.96]:
+		_box(root, Vector3(0.08, 0.1, 3.84), Vector3(x, 0.05, 0.0), _log)
+
+	for x in [-1.96, 1.96]:
+		for z in [-1.96, 1.96]:
+			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.06, z), _frame)
+
+	_solid(root, Vector3(4.0, 0.1, 4.0), Vector3(0.0, 0.05, 0.0))
+	return root
+
+
+# A clay hearth (cooking station tier 2), about 1.2 m by 0.9 m, 0.6 m high: a round bowl of fired clay on a ring of stones with a sooty hollow and ash for the fire,
+# and a curved clay back wall behind it.
 static func clay_hearth() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(1.2, 0.5, 0.9), Vector3(0.0, 0.25, 0.0), _clay)
-	_box(root, Vector3(0.8, 0.1, 0.5), Vector3(0.0, 0.5, 0.0), _tar)                # the soot-black hollow, flush with the top
-	_box(root, Vector3(1.2, 0.35, 0.12), Vector3(0.0, 0.68, -0.39), _clay)          # back wall
+	_cyl(root, 0.5, 0.12, Vector3(0.0, 0.06, 0.0), _stone, 12)                           # the stone base
+	_cyl(root, 0.46, 0.22, Vector3(0.0, 0.23, 0.0), _clay, 12, 0.4)                       # the clay bowl, narrowing up
+	var rim: MeshInstance3D = MeshInstance3D.new()
+	var ring: TorusMesh = TorusMesh.new()
+	ring.inner_radius = 0.3
+	ring.outer_radius = 0.44
+	ring.rings = 12
+	ring.ring_segments = 5
+	rim.mesh = ring
+	rim.material_override = _clay
+	rim.position = Vector3(0.0, 0.36, 0.0)
+	root.add_child(rim)                                                                   # the rolled rim
+	_cyl(root, 0.33, 0.02, Vector3(0.0, 0.34, 0.0), _tar, 14)                              # the soot-black hollow
+	_cyl(root, 0.2, 0.02, Vector3(0.0, 0.355, 0.0), _earth, 10)                            # the ash bed
 
-	for x in [-0.5, 0.5]:
-		_box(root, Vector3(0.08, 0.5, 0.08), Vector3(x, 0.75, 0.2), _frame)
+	for k in 7:
+		var a: float = TAU * float(k) / 7.0 + 0.2
+		_stone_at(root, Vector3(cos(a) * 0.52, 0.07, sin(a) * 0.52), a)
 
-	_rod(root, Vector3(-0.58, 0.98, 0.2), Vector3(0.58, 0.98, 0.2), 0.035, _frame)      # the spit
+	for k in 3:
+		var a: float = PI * (1.25 + 0.25 * float(k))
+		_box_rot(root, Vector3(0.4, 0.5, 0.12), Vector3(cos(a) * 0.45, 0.62, sin(a) * 0.45), Vector3(0.0, -a - PI * 0.5, 0.0), _clay)   # the curved back wall, three flat facets
+
 	_solid(root, Vector3(1.2, 0.6, 0.9), Vector3(0.0, 0.3, 0.0))
 	return root
 
@@ -639,14 +771,35 @@ static func snare_trap() -> Node3D:
 	return root
 
 
-# A brick oven (cooking station tier 3), 1.8 m by 1.4 m, 1.2 m high: a brick body, a clay arch over a dark mouth, a flue on top. Stub look until Kathleen's art.
+static func _stone_at(parent: Node3D, at: Vector3, angle: float) -> void:
+	_box_rot(parent, Vector3(0.2, 0.14, 0.14), at, Vector3(0.0, -angle, 0.0), _stone)
+
+
+static func _box_rot(parent: Node3D, size: Vector3, at: Vector3, rotation: Vector3, material: StandardMaterial3D) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: BoxMesh = BoxMesh.new()
+	shape.size = size
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = at
+	mesh.rotation = rotation
+	parent.add_child(mesh)
+
+
+# A brick oven (cooking station tier 3), 1.8 m by 1.4 m, 1.2 m high: a base of fitted stone, a clay dome over it, an arched dark mouth with a stone surround at the front,
+# and a round stone flue on top at the back.
 static func oven() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(1.8, 0.7, 1.4), Vector3(0.0, 0.35, 0.0), _stone)
-	_box(root, Vector3(1.5, 0.4, 1.2), Vector3(0.0, 0.9, 0.0), _clay)
-	_box(root, Vector3(0.7, 0.4, 0.06), Vector3(0.0, 0.5, 0.71), _tar)               # the mouth
-	_box(root, Vector3(0.9, 0.08, 0.1), Vector3(0.0, 0.74, 0.71), _clay)             # the lintel
-	_box(root, Vector3(0.22, 0.4, 0.22), Vector3(0.45, 1.3, -0.3), _stone)           # the flue
+	_box(root, Vector3(1.8, 0.5, 1.4), Vector3(0.0, 0.25, 0.0), _stone)
+	_box(root, Vector3(1.86, 0.06, 1.46), Vector3(0.0, 0.53, 0.0), _stone)                 # a lip round the top of the base
+	_dome(root, 0.7, Vector3(0.0, 0.56, 0.0), Vector3(1.2, 0.95, 0.95), _clay)             # the clay dome
+	_box(root, Vector3(0.62, 0.34, 0.1), Vector3(0.0, 0.76, 0.66), _tar)                   # the mouth
+	_box_rot(root, Vector3(0.3, 0.3, 0.1), Vector3(0.0, 0.92, 0.66), Vector3(0.0, 0.0, PI * 0.25), _tar)   # its rounded top, a turned square
+	_box(root, Vector3(0.82, 0.07, 0.14), Vector3(0.0, 0.57, 0.66), _stone)                # the sill
+	_box(root, Vector3(0.1, 0.45, 0.14), Vector3(-0.38, 0.76, 0.65), _stone)              # the jambs
+	_box(root, Vector3(0.1, 0.45, 0.14), Vector3(0.38, 0.76, 0.65), _stone)
+	_cyl(root, 0.13, 0.4, Vector3(0.35, 1.1, -0.25), _stone, 10)                           # the flue
+	_cyl(root, 0.09, 0.02, Vector3(0.35, 1.31, -0.25), _tar, 10)
 	_solid(root, Vector3(1.8, 1.1, 1.4), Vector3(0.0, 0.55, 0.0))
 	return root
