@@ -8,3 +8,6 @@ Change (RUNTIME, debug only, src/debug/shot_runner.gd, no protocol):
 3. The existing "settle seconds" then run from the landing moment.
 Test: run the 2-shot recipe with --shot-settle=10; the log must show a "landed" line before each "saved" line and heights within 0.6 m. Parse scan + check_controls.
 Risk: none to the game; shot runs only.
+
+## Build notes
+Tyler GO: 0.5 m, 90 s, checked once per spot. Built in shot_runner.gd: _landed/_land_failed/_want_y/_placed_msec; log lines "shot runner: landed <name> at y .. (wanted ..) after .. s" and "shot runner: FAILED <name> never landed (y, wanted y)"; failed picture saved as <name>_FAILED.png. Branch also merges claude/steve-ground-quiet (same file). Force a failure by passing a shot whose y is wanted far above where the body can stand, e.g. a 2 m-wide ledge request is not needed: simplest is the test hook below.
