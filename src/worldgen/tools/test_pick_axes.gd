@@ -24,7 +24,15 @@ func _check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	for id in ["iron_pickaxe", "steel_pickaxe"]:
-		var vertices: PackedVector3Array = BasicLook.mesh_for(id).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var mesh: Mesh = BasicLook.mesh_for(id)
+		var vertices: PackedVector3Array = PackedVector3Array()
+
+		for surface in mesh.get_surface_count():                                # the head is on its own metal surface, so read them all
+			vertices.append_array(mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX])
+
+		_check(mesh.get_surface_count() == 2, id + ": two surfaces, wood and leather plus the metal head (%d)" % mesh.get_surface_count())
+		_check((mesh.surface_get_material(1) as StandardMaterial3D).metallic > 0.5 and (mesh.surface_get_material(0) as StandardMaterial3D).metallic < 0.1, id + ": the head surface is metallic, the haft's is not")
+		_check(mesh.surface_get_material(1) == BasicLook.mesh_for(id).surface_get_material(1), id + ": the metal material is shared, not made per mesh")
 		var turn: Basis = HeldItem.HELD_LOOK_TURN["pick"]
 		_check_frame(id + " held", vertices, turn)
 		_check_frame(id + " third person", vertices, Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_LEAN_DEG)) * turn)
