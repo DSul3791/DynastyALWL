@@ -1,0 +1,3 @@
+# Tyler reply (once, 25 Oct 02:55 UTC): Sal thatch floor by hand - GO
+Approved: claude/sal-thatch-floor-hand de011546 (base generator-v2 bb520939): recipe 166 thatch floor kit becomes a hand craft (6 twine + 20 thatch, no bench); wall, roof, doorway stay at the camp bench. One-line data change, RESTART. Recipe number 166 unchanged.
+Gate: David3 test_thatch_pieces (add one case: the floor kit is craftable with no station near, the wall kit is not), validate_items, dup sweep, local_check 233. Merges as a small build after the spawn-column line; independent of B and C (it only touches recipe 166; if B adds a "category" to recipes.json, the one-line edit may conflict: whoever merges second rebases, one line).
