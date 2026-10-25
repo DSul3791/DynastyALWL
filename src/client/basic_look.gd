@@ -457,8 +457,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_metal(parts, rough, 0.3)
 
 			if bits.is_empty() and absf(color.r - color.b) < 0.1:
-				for k in range(3):                                                                              # a stone blade is tied on: three twine wraps round the neck
-					_box_rot(parts, Vector3(0.014, 0.04, 0.04), Vector3(0.505 + 0.016 * float(k), 0.0, 0.03 + 0.01 * float(k)), Vector3(0.0, -0.4, 0.0), Color(0.55, 0.42, 0.2) if k != 1 else Color(0.4, 0.29, 0.13))
+				for k in range(4):                                                                              # a stone blade is tied on: four turns of twine wound round the neck, slanted, in two tones
+					var along: Vector3 = Vector3(cos(0.6), 0.0, sin(0.6))
+					var turn: Basis = Basis(Vector3.UP, -0.6) * Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5 + 0.25))
+					parts.append([_twine_band(), Transform3D(turn, Vector3(0.49, 0.0, 0.015) + along * 0.013 * float(k)), Color(0.55, 0.42, 0.2) if k % 2 == 0 else Color(0.38, 0.28, 0.13)])
 
 			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
 			_plate(parts, 0.0, 0.13, 0.18, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1, 2.6 if stone_blade else 1.0)   # the blade plate, hanging toward +z, wide across y (a chunky stone head is thicker)
@@ -800,6 +802,17 @@ static func _tube(parts: Array, from: Vector2, to: Vector2, radius: float, color
 	var y_axis: Vector3 = along.normalized()
 	var x_axis: Vector3 = Vector3.UP
 	parts.append([cyl, Transform3D(Basis(x_axis, y_axis, x_axis.cross(y_axis)), Vector3(0.5 * (from.x + to.x), 0.0, 0.5 * (from.y + to.y))), color])
+
+
+# One turn of twine round a neck (a short fat ring of cylinder).
+static func _twine_band() -> CylinderMesh:
+	var band: CylinderMesh = CylinderMesh.new()
+	band.top_radius = 0.022
+	band.bottom_radius = 0.022
+	band.height = 0.012
+	band.radial_segments = 8
+	band.rings = 1
+	return band
 
 
 # The fishing rod's cane radius at x along the rod: a blank 1.5 times thicker than a thin cane, fine at the tip.
