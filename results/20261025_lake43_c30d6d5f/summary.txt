@@ -1,0 +1,9 @@
+HEAD=c30d6d5ffb9b71a16064abac732392aba858bda6 (lake-4-3)
+test_tile_lakes exit 0: 25 ok lines; FAIL lines: tile lakes: 0 failures 
+tile 3,4 bake exit 0 seconds 224
+  [3,4]   lake gate: tile 3,4, 2802 river cells in block interiors, 1064 flat enough, 18 in blocks that lost the draw, 0 sites skipped at the frame edge, 5 skipped at a low lip
+  [3,4]   basins: 59 head ponds (21.6 ha), 18 lakes (82.0 ha, 0 of them the tile's guaranteed lake), 15 heads skipped (ground steeper than 20 deg)
+tile 4,3 bake exit 0 seconds 78
+  [4,3]   lake gate: tile 4,3, 230 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 2 skipped at a low lip
+  [4,3]   basins: 25 head ponds (9.0 ha), 1 lakes (8.5 ha, 1 of them the tile's guaranteed lake), 1 heads skipped (ground steeper than 20 deg)
+L43CDONE
