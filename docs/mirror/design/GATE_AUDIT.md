@@ -61,3 +61,10 @@ Typical code branch: gate 15 minutes to about 5; typical data branch: to about 2
 
 ## 7. Data I still want (to firm up the numbers)
 David3: wall time per step of one typical full gate (clone and import, parse_scan, local_check, tests, sweeps, K picture set, publish); how many gates ran today and how many were re-runs; whether the tests run serially. Mike: the same breakdown for one 25-30 minute run on the PC, and whether the Godot import cache survives between runs.
+
+## 8. David3's numbers (18:40 UTC) and what they change
+- Full gate measured 13 to 18 minutes (796, 815 and 1062 seconds). His estimated split: export and fresh import 2 to 5 min (every gate uses a new folder, so Godot imports everything each time), parse_scan under 1, local_check 1 to 3, the 100+ tests 8 to 12 (water_soak about 5, worldgen about 3, head_pond_fill and drainage 1 to 2 each), sweeps and publish under 1. Pictures: about 2.5 min per shot run, about 3 min per piece with 4 views; tile bake 3.5 to 6 min.
+- Tests run SERIALLY inside a gate; he runs 2 to 4 gates at once; one test uses 0.8 to 0.95 of a core. This confirms the diagnosis in section 1.
+- Reruns: 63 gate result files today plus 6 earlier; about 36 of them were reruns of a branch already gated (land types 5 runs, bow shoot 3, two each for test re-pin, sound hookup, traps, fish balance, eat-once, hearth/oven, bow items), many because the hash moved during the run. That is more than half of all gate work. R2 (one result per final hash, work in progress on another branch) is therefore the biggest single saving: roughly half the gate load disappears.
+- New finding: the fresh import (2 to 5 min per gate, a quarter of the time) is avoidable. R9: keep warm clones (one per lane) whose Godot import cache persists, and `git checkout <hash>` into them; the import then only redoes files that changed. Needs a check that results are identical to a fresh clone once a week.
+Revised expectation with R1, R2, R3 and R9: a typical code gate about 4 minutes, a data gate about 2, and the load on the box about half of today's.
