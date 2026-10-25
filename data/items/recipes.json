@@ -996,7 +996,6 @@
 				1
 			],
 			"craft_s": 20.0,
-			"station": "workbench",
 			"known": false
 		},
 		"thatch_roof_kit": {
@@ -1021,7 +1020,6 @@
 				1
 			],
 			"craft_s": 20.0,
-			"station": "workbench",
 			"known": false
 		},
 		"thatch_doorway_kit": {
@@ -1046,7 +1044,6 @@
 				1
 			],
 			"craft_s": 20.0,
-			"station": "workbench",
 			"known": false
 		},
 		"workbench_kit": {
