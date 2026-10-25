@@ -1435,7 +1435,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	rig.head_local = Vector3(0.0, 0.4, 0.0)
 	torch.add_child(rig)
 	var flames: Array = []
-	var layers: Array = [[0.04, 0.2, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.029, 0.25, Color(1.0, 0.68, 0.14, 0.9), 0.007], [0.016, 0.13, Color(1.0, 0.95, 0.65, 1.0), -0.005]]
+	var layers: Array = [[0.042, 0.22, Color(1.0, 0.38, 0.06, 0.85), 0.0], [0.034, 0.27, Color(1.0, 0.68, 0.14, 0.9), 0.006], [0.019, 0.14, Color(1.0, 0.95, 0.65, 1.0), -0.004]]
 
 	for n in range(layers.size()):
 		var layer: Array = layers[n]
@@ -1451,14 +1451,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 
 		var tongue: Node3D = Node3D.new()   # pivots at the base so the sway leans the tip
 		var mesh_node: MeshInstance3D = MeshInstance3D.new()
-		var tip: CylinderMesh = CylinderMesh.new()
-		tip.top_radius = 0.0
-		tip.bottom_radius = float(layer[0])
-		tip.height = float(layer[1])
-		tip.radial_segments = 10
-		tip.material = glow
-		mesh_node.mesh = tip
-		mesh_node.position = Vector3(0.0, float(layer[1]) * 0.5, 0.0)
+		glow.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mesh_node.mesh = _teardrop_mesh(float(layer[1]), float(layer[0]), glow)
 		tongue.add_child(mesh_node)
 		tongue.name = "Flame%d" % n
 		tongue.position = Vector3(float(layer[3]), 0.0, 0.0)
@@ -1495,6 +1489,7 @@ func _make_torch_model(id: String = "") -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
 	light.shadow_enabled = false
+	light.light_volumetric_fog_energy = 0.0
 	light.position = Vector3(0.0, 0.5, 0.0)
 	torch.add_child(light)
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
@@ -1503,9 +1498,40 @@ func _make_torch_model(id: String = "") -> Node3D:
 	hand_light.omni_range = 1.6
 	hand_light.light_energy = 0.7
 	hand_light.shadow_enabled = false
+	hand_light.light_volumetric_fog_energy = 0.0   # no glowing ball in the fog around the hand
 	hand_light.position = Vector3(0.0, 0.15, 0.1)
 	torch.add_child(hand_light)
 	return torch
+
+
+# A flame's teardrop: round and fullest about a third of the way up, closing to a point at the tip and to a point at the base.
+func _teardrop_mesh(height: float, radius: float, material: Material) -> ArrayMesh:
+	var surface: SurfaceTool = SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings: int = 12
+	var sides: int = 16
+
+	for ring in range(rings):
+		var t0: float = float(ring) / float(rings)
+		var t1: float = float(ring + 1) / float(rings)
+		var r0: float = radius * sin(PI * pow(t0, 0.7))
+		var r1: float = radius * sin(PI * pow(t1, 0.7))
+
+		for side in range(sides):
+			var a0: float = TAU * float(side) / float(sides)
+			var a1: float = TAU * float(side + 1) / float(sides)
+			var p00: Vector3 = Vector3(cos(a0) * r0, t0 * height, sin(a0) * r0)
+			var p10: Vector3 = Vector3(cos(a1) * r0, t0 * height, sin(a1) * r0)
+			var p01: Vector3 = Vector3(cos(a0) * r1, t1 * height, sin(a0) * r1)
+			var p11: Vector3 = Vector3(cos(a1) * r1, t1 * height, sin(a1) * r1)
+
+			for corner in [p00, p10, p11, p00, p11, p01]:
+				surface.add_vertex(corner)
+
+	surface.generate_normals()
+	var mesh: ArrayMesh = surface.commit()
+	mesh.surface_set_material(0, material)
+	return mesh
 
 
 func _make_knife_model() -> Node3D:
