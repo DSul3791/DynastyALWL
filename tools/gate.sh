@@ -56,10 +56,11 @@ cd "$DIR" || exit 2
 export HOME="$ROOT/home$N"; export XDG_DATA_HOME="$HOME/data"; mkdir -p "$XDG_DATA_HOME"
 git merge --abort >/dev/null 2>&1
 git fetch -q origin '+refs/heads/claude/generator-v2:refs/remotes/origin/claude/generator-v2' 2>"$LOG/fetch.log"
+case "$BASE" in origin/*) git fetch -q origin "+refs/heads/${BASE#origin/}:refs/remotes/$BASE" 2>>"$LOG/fetch.log";; esac
 git cat-file -e "$HASH^{commit}" 2>/dev/null || git fetch -q origin "$HASH" 2>>"$LOG/fetch.log"
 git cat-file -e "$HASH^{commit}" 2>/dev/null || git fetch -q origin '+refs/heads/claude/*:refs/remotes/origin/claude/*' 2>>"$LOG/fetch.log"
 if ! git cat-file -e "$HASH^{commit}" 2>/dev/null; then say "FAIL hash $HASH not found on origin (fetch log: $LOG/fetch.log)"; exit 1; fi
-git checkout -q -f --detach "$BASE" 2>>"$LOG/fetch.log"
+git checkout -q -f --detach "$BASE" 2>>"$LOG/fetch.log" || { say "FAIL cannot check out base $BASE (see $LOG/fetch.log)"; exit 1; }
 git clean -fdxq -e /.godot 2>>"$LOG/fetch.log"     # no stale tile or test files from a previous hash; the import cache stays
 BASEHASH=$(git rev-parse HEAD)
 say "BASE=$BASEHASH ($BASE)"
