@@ -222,3 +222,5 @@ BP-T73 (25 Oct): shared caches in code that server worker threads call need a Mu
 BP-T74 (25 Oct, Dave): tool-look review without Dave: Mike shoots, Moderator and Tyler each give an opinion on what to change, Tyler looks up the real tool (shape, photo reference, dimensions, source named) when unsure; Moderator sends one combined list to Kathleen, who works from it without waiting for Dave. Dave approves later; pickaxe 5ef0b60e is the quality bar.
 
 BP-T75 (Dave 25 Oct 04:58): if the game server box goes down and David3 is lost, MikeW takes over everything David3 does (gates and picture jobs) on Dave's PC. His gate results use the same format: HEAD=<40-char hash> first line, parse_scan, local_check 233, the tests. I merge only on those results. The Moderator tells me when David3 is down.
+
+BP-T76 (25 Oct, Tyler's own slip): after a merge push, read the origin build.gd NUMBER and the tested hash on origin BEFORE telling anyone it is merged; a pull --rebase over a merge commit can stop in a conflict and leave the push undone. Use plain push after a merge commit (no rebase) when origin has not moved.
