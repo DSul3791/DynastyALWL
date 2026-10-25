@@ -911,6 +911,9 @@ func _check_item_view(view: Dictionary) -> void:
 	if not ok:
 		_item_failed = true
 
+	if pos_err > 0.1:
+		print("shot runner: item view %s pose: asked camera %s, camera is at %s, body at %s, ground there %s" % [view["name"], str(want_pos), str(cam.global_position), str(client.body.global_position), str(_ground(cam.global_position.x, cam.global_position.z))])
+
 	print("shot runner: item view %s %s: pose off by %.2f m, yaw %.1f, pitch %.1f degrees; item fills %.0f %% of the frame, centre %.0f %% off, %s" % [view["name"], "ok" if ok else "FAILED", pos_err, yaw_err, pitch_err, fill * 100.0, off * 100.0, "all inside the frame" if inside else "PART OUTSIDE THE FRAME"])
 
 
@@ -931,7 +934,12 @@ func _run_view(now: int) -> void:
 		var cam_z: float = float(view["cam_z"]) if view.has("cam_z") else _subject.z + float(view["dist"])
 		var ground: float = _ground(cam_x, cam_z)
 		client.body.rotation.y = deg_to_rad(float(view.get("yaw", 0.0)))
-		client.body.global_position = Vector3(cam_x, (_subject.y if is_nan(ground) else ground) + float(view["above"]) - client.camera.position.y, cam_z)
+		var body_y: float = (_subject.y if is_nan(ground) else ground) + float(view["above"]) - client.camera.position.y
+
+		if view.has("cam"):
+			body_y = (view["cam"] as Vector3).y - client.camera.position.y      # an item view has an exact camera: the ground under the camera (a slope, a bank) must not move it (hoes: pose off by 1.00 m)
+
+		client.body.global_position = Vector3(cam_x, body_y, cam_z)
 		client.pitch = deg_to_rad(float(view["pitch"]))
 		client.camera.rotation.x = client.pitch
 		_view_msec = now
