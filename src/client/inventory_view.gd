@@ -4060,7 +4060,13 @@ func run_shoot_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("wooden_bow"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
-	await get_tree().create_timer(1.5).timeout
+
+	for n in 30:   # a cold join gets its pack late: poll up to 15 s
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("wooden_bow")) and inventory.count_of(table.number_of("stone_arrow")) >= 3:
+			break
+
 	var bow_slot: int = inventory.numbers.find(table.number_of("wooden_bow"))
 	var arrows_before: int = inventory.count_of(table.number_of("stone_arrow"))
 	print("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
@@ -4070,7 +4076,8 @@ func run_shoot_test(client) -> void:
 		return
 
 	var camera: Camera3D = client.camera
-	var forward: Vector3 = -camera.global_transform.basis.z
+	var level: Vector3 = -camera.global_transform.basis.z
+	var forward: Vector3 = (Vector3(level.x, 0.0, level.z).normalized() + Vector3(0.0, -0.12, 0.0)).normalized()   # a little downward: lands about 30 m off, inside the rows the server sends
 	var started: int = Time.get_ticks_msec()
 	await get_tree().create_timer(1.2).timeout      # a full draw
 	net.inventory_action.rpc_id(1, Net.ACT_SHOOT, bow_slot, Time.get_ticks_msec() - started, 0, forward)
@@ -4079,13 +4086,16 @@ func run_shoot_test(client) -> void:
 	print("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
 	await get_tree().create_timer(6.0).timeout      # flight and landing
 	var landed: int = 0
+	var nearest: float = -1.0
 	var here: Vector3 = _player_position.call()
 
 	for id in _world:
-		if _world[id]["number"] == table.number_of("stone_arrow") and (_world[id]["pos"] as Vector3).distance_to(here) < 90.0:
-			landed += 1
+		if _world[id]["number"] == table.number_of("stone_arrow"):
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(here)
+			landed += 1 if d < 90.0 else 0
+			nearest = d if nearest < 0.0 or d < nearest else nearest
 
-	print("SHOOT TEST: %d arrow(s) lying within 90 m after the flight (an arrow can break, so 0 is possible)" % landed)
+	print("SHOOT TEST: %d arrow(s) lying within 90 m after the flight, nearest %.1f m, %d world rows in all (an arrow can break, so 0 is possible; a stone arrow breaks about a fifth of the time)" % [landed, nearest, _world.size()])
 	print("SHOOT TEST %s" % ("PASS" if arrows_after == arrows_before - 1 else "FAILED: the shot did not take an arrow"))
 
 
@@ -4095,7 +4105,13 @@ func run_foundation_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	var kit: int = table.number_of("thatch_floor_kit")
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.5).timeout
+
+	for n in 30:   # a cold join gets its pack late: poll up to 15 s
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(kit):
+			break
+
 	var slot: int = inventory.numbers.find(kit)
 
 	if slot < 0:
