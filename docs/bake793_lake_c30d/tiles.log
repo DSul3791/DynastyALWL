@@ -1,0 +1,670 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+Setup (world elevation, wet air, river network, tables) in 179554 ms; 15887 river cells in 3743 chains
+  height timing: frame cubic 1843 ms
+  height timing: frame cubic 2053 ms
+  height timing: frame cubic 2020 ms
+  height timing: frame cubic 1847 ms
+  height timing: shape valleys 3403 ms
+  height timing: shape valleys 4128 ms
+  height timing: shape valleys 3960 ms
+  height timing: shape valleys 3970 ms
+  height timing: add detail 6506 ms
+  height timing: add detail 7131 ms
+  height timing: beds: blur 57 ms
+  height timing: add detail 7359 ms
+  height timing: add detail 6829 ms
+  height timing: beds: per-sample beds 1470 ms
+  height timing: beds: border search 20 ms
+  height timing: beds: border blend 2462 ms
+  height timing: beds: blur 75 ms
+  height timing: beds: blur 58 ms
+  height timing: beds: per-sample beds 4885 ms
+  height timing: beds: border search 30 ms
+  height timing: beds: blur 62 ms
+  drain timing: routing noise 990 ms
+  height timing: beds: border blend 2653 ms
+  drain timing: fill 1069 ms
+  height timing: beds: per-sample beds 6771 ms
+  height timing: beds: border search 31 ms
+  height timing: beds: per-sample beds 6964 ms
+  height timing: beds: border search 27 ms
+  drain timing: flow + edge seed 4679 ms
+  height timing: beds: border blend 2706 ms
+  height timing: beds: border blend 2430 ms
+  channel timing: centre line 5331 ms
+  drain timing: routing noise 2550 ms
+  drain timing: fill 1218 ms
+  channel timing: stamp 9929 ms
+  drain timing: flow + edge seed 6251 ms
+  drain timing: routing noise 4100 ms
+  drain timing: routing noise 4042 ms
+  drain timing: fill 1295 ms
+  drain timing: fill 1644 ms
+  channel timing: canyon map + valleys 3973 ms
+  channel timing: canyons 2099 ms
+  channel timing: centre line 7520 ms
+  drain timing: flow + edge seed 6639 ms
+  drain timing: flow + edge seed 6914 ms
+  gullies: 361, dead ends: 0
+  channel timing: gullies 4133 ms
+  basin pond: world 47104,69472 radius 37 depth 2.2 lip 6.7 wet 0.44 ha
+  basin pond: world 48888,66792 radius 36 depth 2.1 lip 1.3 wet 0.44 ha
+  basin pond: world 46848,68464 radius 37 depth 2.2 lip 9.8 wet 0.44 ha
+  basin pond: world 48000,70872 radius 36 depth 2.2 lip 13.9 wet 0.44 ha
+  basin pond: world 47344,69024 radius 36 depth 2.2 lip 26.1 wet 0.44 ha
+  basin pond: world 48568,70800 radius 37 depth 2.2 lip 31.2 wet 0.18 ha
+  basin pond: world 48960,71584 radius 38 depth 2.2 lip 14.5 wet 0.44 ha
+  lake gate: tile 2,4, 0 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 0 skipped at a low lip
+  basins: 7 head ponds (2.8 ha), 0 lakes (0.0 ha, 0 of them the tile's guaranteed lake), 0 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 6511 ms
+  channel timing: centre line 7500 ms
+  channel timing: centre line 7797 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1990 ms
+  drain timing: channels 34412 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  channel timing: stamp 12703 ms
+  pits: 0 drained, 0 kept as basins (outlet cut at the lip), 0 left (cut too deep), 0 cells cut, deepest cut 0.0 m
+  drain timing: probe + breach 3891 ms
+  channel timing: canyon map + valleys 4582 ms
+  channel timing: canyons 2222 ms
+  basin water: 329 cells tagged lake (2.1 ha)
+  channel timing: stamp 12335 ms
+  water: drainage mode, 0 lakes, 1798 river cells in 52870 ms
+  channel timing: stamp 12672 ms
+  gullies: 2527, dead ends: 0
+  channel timing: gullies 4233 ms
+  channel timing: canyon map + valleys 4222 ms
+  climate timing: coarse grids + chamfer + air 2496 ms
+  climate timing: per-sample loop 944 ms
+  channel timing: canyons 2048 ms
+  channel timing: canyon map + valleys 5309 ms
+  basin pond: world 30912,47712 radius 36 depth 2.2 lip 4.6 wet 0.44 ha
+  basin pond: world 31008,47576 radius 37 depth 2.2 lip 9.3 wet 0.44 ha
+  basin pond: world 49104,49464 radius 37 depth 2.2 lip 26.1 wet 0.44 ha
+  basin pond: world 34368,44488 radius 36 depth 2.2 lip 2.2 wet 0.44 ha
+  basin pond: world 33824,43872 radius 37 depth 2.2 lip 4.3 wet 0.44 ha
+  basin pond: world 33984,44064 radius 37 depth 2.2 lip 4.7 wet 0.44 ha
+  basin pond: world 33152,47160 radius 37 depth 2.2 lip 16.9 wet 0.44 ha
+  basin pond: world 30344,44128 radius 36 depth 2.2 lip 5.3 wet 0.44 ha
+  basin pond: world 31968,43808 radius 36 depth 2.2 lip 17.9 wet 0.44 ha
+  basin pond: world 29672,46336 radius 36 depth 2.1 lip 15.4 wet 0.44 ha
+  basin pond: world 29784,44544 radius 37 depth 2.2 lip 4.4 wet 0.44 ha
+  channel timing: canyons 2226 ms
+  basin pond: world 48560,53032 radius 36 depth 2.2 lip 87.7 wet 0.13 ha
+  basin pond: world 30016,44480 radius 37 depth 2.2 lip 6.2 wet 0.44 ha
+  basin pond: world 30400,44480 radius 36 depth 2.1 lip 24.2 wet 0.44 ha
+  basin pond: world 31784,44272 radius 37 depth 2.2 lip 64.5 wet 0.44 ha
+  basin pond: world 47296,49464 radius 37 depth 2.2 lip 48.2 wet 0.30 ha
+  basin pond: world 48432,50192 radius 37 depth 2.2 lip 123.5 wet 0.13 ha
+  basin pond: world 46144,49152 radius 36 depth 2.2 lip 116.8 wet 0.22 ha
+  basin pond: world 47520,52528 radius 37 depth 2.2 lip 119.9 wet 0.17 ha
+  basin pond: world 46552,51880 radius 37 depth 2.2 lip 166.1 wet 0.09 ha
+  basin pond: world 47160,52160 radius 37 depth 2.2 lip 169.3 wet 0.10 ha
+  basin pond: world 47536,50152 radius 36 depth 2.2 lip 158.6 wet 0.02 ha
+  basin lake: world 33176,47256 radius 202 depth 6.2 lip 1.9 wet 5.00 ha
+  lake gate: tile 2,3, 8 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 3 skipped at a low lip
+  basins: 22 head ponds (7.3 ha), 1 lakes (5.0 ha, 1 of them the tile's guaranteed lake), 1 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 7716 ms
+  gullies: 4731, dead ends: 0
+  channel timing: gullies 4112 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 2078 ms
+  drain timing: channels 41586 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  gullies: 5883, dead ends: 0
+  channel timing: gullies 4311 ms
+  pits: 0 drained, 0 kept as basins (outlet cut at the lip), 0 left (cut too deep), 0 cells cut, deepest cut 0.0 m
+  drain timing: probe + breach 5282 ms
+  basin pond: world 51888,53208 radius 37 depth 2.2 lip 31.7 wet 0.42 ha
+  basin pond: world 51480,51192 radius 36 depth 2.2 lip 111.6 wet 0.44 ha
+  basin pond: world 48560,53032 radius 37 depth 2.2 lip 87.7 wet 0.13 ha
+  basin pond: world 63336,44776 radius 36 depth 2.2 lip 38.7 wet 0.44 ha
+  basin pond: world 49968,49104 radius 36 depth 2.2 lip 18.1 wet 0.44 ha
+  basin pond: world 49800,51168 radius 37 depth 2.2 lip 420.6 wet 0.44 ha
+  basin pond: world 51176,51808 radius 36 depth 2.2 lip 129.2 wet 0.24 ha
+  basin pond: world 61816,62480 radius 37 depth 2.2 lip 47.8 wet 0.06 ha
+  basin pond: world 62176,44544 radius 36 depth 2.2 lip 16.7 wet 0.44 ha
+  basin pond: world 49176,49856 radius 37 depth 2.2 lip 71.5 wet 0.19 ha
+  basin pond: world 47296,49464 radius 37 depth 2.2 lip 48.2 wet 0.30 ha
+  basin pond: world 61472,43672 radius 37 depth 2.2 lip 7.5 wet 0.44 ha
+  basin pond: world 50760,52600 radius 37 depth 2.2 lip 220.1 wet 0.33 ha
+  basin pond: world 61064,64240 radius 36 depth 2.2 lip 108.2 wet 0.08 ha
+  basin pond: world 48432,50192 radius 37 depth 2.2 lip 123.5 wet 0.13 ha
+  basin pond: world 46144,49152 radius 36 depth 2.2 lip 116.8 wet 0.22 ha
+  basin pond: world 58904,63704 radius 38 depth 2.2 lip 129.2 wet 0.20 ha
+  basin pond: world 50328,48632 radius 36 depth 2.1 lip 5.3 wet 0.44 ha
+  basin pond: world 47520,52528 radius 37 depth 2.2 lip 119.9 wet 0.17 ha
+  basin pond: world 49256,53296 radius 36 depth 2.2 lip 125.6 wet 0.18 ha
+  basin pond: world 60976,63864 radius 37 depth 2.2 lip 130.1 wet 0.04 ha
+  basin pond: world 46552,51880 radius 37 depth 2.2 lip 166.1 wet 0.09 ha
+  basin pond: world 62264,43424 radius 36 depth 2.2 lip 82.2 wet 0.28 ha
+  basin pond: world 47160,52160 radius 37 depth 2.2 lip 169.3 wet 0.10 ha
+  basin pond: world 47536,50152 radius 36 depth 2.2 lip 158.6 wet 0.02 ha
+  basin lake: world 52656,51240 radius 259 depth 7.9 lip 1.7 wet 6.47 ha
+  basin lake: world 51720,51552 radius 243 depth 7.6 lip 81.0 wet 2.11 ha
+  basin lake: world 50336,51320 radius 212 depth 6.7 lip 298.2 wet 0.00 ha
+  basin lake: world 48280,53784 radius 224 depth 7.1 lip 1.7 wet 6.47 ha
+  basin lake: world 48056,49216 radius 213 depth 6.7 lip 2.5 wet 5.16 ha
+  lake gate: tile 3,3, 1077 river cells in block interiors, 325 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 3 skipped at a low lip
+  basins: 25 head ponds (6.2 ha), 5 lakes (20.2 ha, 0 of them the tile's guaranteed lake), 4 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 10158 ms
+  basin water: 1609 cells tagged lake (10.3 ha)
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 2001 ms
+  drain timing: channels 42626 ms
+  breach: lake level 428.8 m, outlet world 49976,51192, 3 cells, deepest cut 0.0 m
+  breach: lake level 431.0 m, outlet world 49720,51240, 10 cells, deepest cut 0.5 m
+  breach: lake level 429.5 m, outlet world 49784,51184, 2 cells, deepest cut 0.0 m
+  breach: lake level 97.9 m, outlet world 51720,51400, 2 cells, deepest cut 0.0 m
+  breach: lake level 454.9 m, outlet world 49640,51592, 2 cells, deepest cut 0.0 m
+  breach: lake level 454.8 m, outlet world 49664,51600, 1 cells, deepest cut 0.0 m
+  breach: lake level 455.0 m, outlet world 49600,51608, 8 cells, deepest cut 1.0 m
+  breach: lake level 463.9 m, outlet world 49384,51800, 6 cells, deepest cut 16.5 m
+  breach: lake level 459.1 m, outlet world 49488,51848, 5 cells, deepest cut 5.3 m
+  breach: lake level 332.7 m, outlet world 60200,62440, 4 cells, deepest cut 5.3 m
+  breach: lake level 334.1 m, outlet world 60232,62472, 9 cells, deepest cut 4.0 m
+  breach: lake level 380.4 m, outlet world 59864,63400, 1 cells, deepest cut 0.5 m
+  breach: lake level 384.5 m, outlet world 59920,63400, 2 cells, deepest cut 0.7 m
+  breach: lake level 383.7 m, outlet world 59864,63608, 2 cells, deepest cut 0.6 m
+  breach: 14 lakes, 140 cells cut, deepest cut 16.5 m
+  basin pond: world 68136,59680 radius 37 depth 2.2 lip 21.8 wet 0.44 ha
+  basin pond: world 72024,55400 radius 36 depth 2.2 lip 12.6 wet 0.44 ha
+  basin pond: world 72720,59400 radius 37 depth 2.2 lip 17.8 wet 0.44 ha
+  basin pond: world 71656,55656 radius 37 depth 2.2 lip 17.3 wet 0.44 ha
+  basin pond: world 74624,57776 radius 36 depth 2.2 lip 14.6 wet 0.44 ha
+  basin pond: world 64832,43680 radius 37 depth 2.2 lip 17.8 wet 0.44 ha
+  basin pond: world 64856,43776 radius 38 depth 2.2 lip 14.1 wet 0.44 ha
+  basin pond: world 73880,56072 radius 37 depth 2.2 lip 7.0 wet 0.44 ha
+  basin pond: world 63336,44776 radius 36 depth 2.2 lip 38.7 wet 0.44 ha
+  basin pond: world 74264,56264 radius 36 depth 2.2 lip 8.0 wet 0.44 ha
+  basin pond: world 70608,57424 radius 36 depth 2.1 lip 43.8 wet 0.44 ha
+  basin pond: world 61816,62480 radius 37 depth 2.2 lip 47.8 wet 0.06 ha
+  basin pond: world 72256,59280 radius 36 depth 2.2 lip 43.8 wet 0.44 ha
+  pit: floor 35.8 m rim 38.1 m at world 52112,50840, 17 cells, deepest cut 3.6 m
+  basin pond: world 62176,44544 radius 36 depth 2.2 lip 16.7 wet 0.44 ha
+  basin pond: world 61472,43672 radius 37 depth 2.2 lip 7.5 wet 0.44 ha
+  pit: floor 90.7 m rim 93.2 m at world 51656,51256, 170 cells, deepest cut 8.0 m
+  basin pond: world 70296,57224 radius 36 depth 2.2 lip 14.4 wet 0.44 ha
+  pit: floor 428.2 m rim 432.8 m at world 49744,51464, 44 cells, deepest cut 3.5 m
+  basin pond: world 70232,58944 radius 36 depth 2.2 lip 7.4 wet 0.44 ha
+  basin pond: world 71392,57896 radius 37 depth 2.2 lip 172.2 wet 0.06 ha
+  pit: floor 448.8 m rim 453.4 m at world 49496,51808, 201 cells, deepest cut 8.0 m
+  basin pond: world 61064,64240 radius 36 depth 2.2 lip 108.2 wet 0.08 ha
+  basin pond: world 58904,63704 radius 38 depth 2.2 lip 129.2 wet 0.20 ha
+  basin pond: world 60976,63864 radius 37 depth 2.2 lip 130.1 wet 0.04 ha
+  basin pond: world 73016,58656 radius 36 depth 2.2 lip 87.3 wet 0.40 ha
+  basin pond: world 62264,43424 radius 36 depth 2.2 lip 82.2 wet 0.28 ha
+  basin pond: world 73016,56656 radius 36 depth 2.2 lip 104.3 wet 0.37 ha
+  basin pond: world 65128,43432 radius 37 depth 2.2 lip 10.2 wet 0.44 ha
+  basin lake: world 70232,58000 radius 206 depth 6.4 lip 1.0 wet 8.51 ha
+  lake gate: tile 4,3, 230 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 2 skipped at a low lip
+  basins: 25 head ponds (9.0 ha), 1 lakes (8.5 ha, 1 of them the tile's guaranteed lake), 1 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 11110 ms
+  water: drainage mode, 6 lakes, 7585 river cells in 64507 ms
+  pit: floor 421.5 m rim 426.5 m at world 49880,51360, 35 cells, deepest cut 6.4 m
+  pit: floor 29.8 m rim 33.4 m at world 52376,51456, 58 cells, deepest cut 8.0 m
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1946 ms
+  drain timing: channels 46405 ms
+  breach: lake level 10.9 m, outlet world 78680,54872, 5 cells, deepest cut 0.3 m
+  pit: floor 250.1 m rim 254.3 m at world 50600,52552, 29 cells, deepest cut 6.8 m
+  breach: lake level 377.9 m, outlet world 72152,57600, 3 cells, deepest cut 0.7 m
+  pit: floor 245.8 m rim 249.0 m at world 50616,52552, 37 cells, deepest cut 4.4 m
+  breach: lake level 332.7 m, outlet world 60200,62440, 4 cells, deepest cut 5.3 m
+  pit: floor 240.6 m rim 244.5 m at world 50656,52560, 30 cells, deepest cut 8.0 m
+  breach: lake level 334.1 m, outlet world 60232,62472, 9 cells, deepest cut 4.0 m
+  pit: floor 208.4 m rim 210.5 m at world 50824,52624, 40 cells, deepest cut 8.0 m
+  breach: lake level 380.4 m, outlet world 59864,63400, 1 cells, deepest cut 0.5 m
+  breach: lake level 384.5 m, outlet world 59920,63400, 2 cells, deepest cut 0.7 m
+  breach: lake level 383.7 m, outlet world 59864,63608, 2 cells, deepest cut 0.6 m
+  breach: 7 lakes, 95 cells cut, deepest cut 5.3 m
+  climate timing: coarse grids + chamfer + air 2691 ms
+  pits: 6 drained, 4 kept as basins (outlet cut at the lip), 8 left (cut too deep), 661 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 5793 ms
+  climate timing: per-sample loop 1072 ms
+  pit: floor 115.7 m rim 117.8 m at world 72584,58752, 56 cells, deepest cut 2.9 m
+  pit: floor 66.7 m rim 68.9 m at world 64856,42984, 38 cells, deepest cut 6.4 m
+  height timing: frame cubic 1962 ms
+  basin water: 4158 cells tagged lake (26.6 ha)
+  pits: 1 drained, 1 kept as basins (outlet cut at the lip), 0 left (cut too deep), 94 cells cut, deepest cut 6.4 m
+  drain timing: probe + breach 5384 ms
+  water: drainage mode, 65 lakes, 14385 river cells in 67448 ms
+  basin water: 2292 cells tagged lake (14.7 ha)
+  height timing: shape valleys 4406 ms
+  climate timing: coarse grids + chamfer + air 2377 ms
+  water: drainage mode, 44 lakes, 23626 river cells in 71191 ms
+  climate timing: per-sample loop 1027 ms
+  climate timing: coarse grids + chamfer + air 2744 ms
+  climate timing: per-sample loop 1075 ms
+  height timing: add detail 6818 ms
+  height timing: frame cubic 2074 ms
+  height timing: beds: blur 57 ms
+  height timing: shape valleys 4179 ms
+  height timing: frame cubic 1901 ms
+  height timing: add detail 7126 ms
+  height timing: shape valleys 3445 ms
+  height timing: beds: per-sample beds 10379 ms
+  height timing: beds: border search 26 ms
+  height timing: frame cubic 2042 ms
+  height timing: beds: border blend 2410 ms
+  height timing: shape valleys 4094 ms
+  height timing: add detail 6638 ms
+  height timing: beds: blur 86 ms
+  height timing: beds: per-sample beds 384 ms
+  height timing: beds: border search 26 ms
+  height timing: beds: border blend 2510 ms
+  height timing: add detail 7098 ms
+  height timing: beds: blur 81 ms
+  drain timing: routing noise 5222 ms
+  height timing: beds: blur 91 ms
+  drain timing: fill 1366 ms
+  drain timing: routing noise 485 ms
+  drain timing: fill 1067 ms
+  height timing: beds: per-sample beds 9549 ms
+  height timing: beds: border search 21 ms
+  height timing: beds: per-sample beds 4213 ms
+  height timing: beds: border search 21 ms
+  drain timing: flow + edge seed 3028 ms
+  height timing: beds: border blend 2626 ms
+  drain timing: flow + edge seed 5690 ms
+  height timing: beds: border blend 2663 ms
+  channel timing: centre line 6212 ms
+  channel timing: centre line 7284 ms
+  drain timing: routing noise 2574 ms
+  drain timing: fill 1231 ms
+  drain timing: routing noise 4934 ms
+  channel timing: stamp 11090 ms
+  drain timing: fill 1518 ms
+  channel timing: stamp 11494 ms
+  channel timing: canyon map + valleys 4087 ms
+  drain timing: flow + edge seed 6449 ms
+  channel timing: canyons 2146 ms
+  drain timing: flow + edge seed 6811 ms
+  channel timing: canyon map + valleys 6643 ms
+  gullies: 0, dead ends: 0
+  channel timing: gullies 3935 ms
+  channel timing: canyons 2244 ms
+  channel timing: centre line 7858 ms
+  channel timing: centre line 8316 ms
+  lake gate: tile 2,5, 0 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 0 skipped at a low lip
+  basins: 0 head ponds (0.0 ha), 0 lakes (0.0 ha, 0 of them the tile's guaranteed lake), 0 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 6334 ms
+  gullies: 12579, dead ends: 0
+  channel timing: gullies 4941 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 2045 ms
+  drain timing: channels 36114 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  pits: 0 drained, 0 kept as basins (outlet cut at the lip), 0 left (cut too deep), 0 cells cut, deepest cut 0.0 m
+  drain timing: probe + breach 3655 ms
+  channel timing: stamp 12269 ms
+  basin water: 0 cells tagged lake (0.0 ha)
+  water: drainage mode, 0 lakes, 0 river cells in 51232 ms
+  channel timing: stamp 12644 ms
+  basin pond: world 57800,70256 radius 36 depth 2.1 lip 62.0 wet 0.44 ha
+  basin pond: world 57976,71128 radius 37 depth 2.2 lip 26.6 wet 0.44 ha
+  basin pond: world 58424,72632 radius 37 depth 2.2 lip 15.9 wet 0.44 ha
+  basin pond: world 52632,73448 radius 38 depth 2.2 lip 38.8 wet 0.44 ha
+  basin pond: world 57952,73136 radius 37 depth 2.2 lip 65.7 wet 0.44 ha
+  basin pond: world 55872,75224 radius 38 depth 2.2 lip 87.9 wet 0.44 ha
+  basin pond: world 53704,74784 radius 38 depth 2.2 lip 23.8 wet 0.44 ha
+  basin pond: world 56648,67144 radius 37 depth 2.2 lip 21.5 wet 0.44 ha
+  basin pond: world 54936,75328 radius 38 depth 2.2 lip 35.3 wet 0.44 ha
+  basin pond: world 51808,69184 radius 38 depth 2.2 lip 6.4 wet 0.44 ha
+  basin pond: world 55888,67592 radius 37 depth 2.2 lip 48.2 wet 0.38 ha
+  basin pond: world 58144,78416 radius 36 depth 2.1 lip 4.4 wet 0.44 ha
+  basin pond: world 55776,75184 radius 36 depth 2.2 lip 86.2 wet 0.44 ha
+  basin pond: world 61200,76544 radius 37 depth 2.2 lip 12.2 wet 0.42 ha
+  basin pond: world 51536,73064 radius 36 depth 2.2 lip 25.6 wet 0.44 ha
+  basin pond: world 54832,67384 radius 38 depth 2.2 lip 61.1 wet 0.44 ha
+  basin pond: world 57512,73040 radius 37 depth 2.2 lip 98.0 wet 0.28 ha
+  basin pond: world 52920,67840 radius 37 depth 2.2 lip 2.4 wet 0.44 ha
+  basin pond: world 51936,69200 radius 36 depth 2.2 lip 10.0 wet 0.44 ha
+  basin pond: world 53344,68368 radius 36 depth 2.1 lip 22.6 wet 0.44 ha
+  basin pond: world 57984,69440 radius 40 depth 2.2 lip 54.7 wet 0.43 ha
+  basin pond: world 57000,67000 radius 38 depth 2.2 lip 11.5 wet 0.44 ha
+  basin pond: world 47104,69472 radius 37 depth 2.2 lip 6.7 wet 0.44 ha
+  basin pond: world 56904,67240 radius 37 depth 2.2 lip 28.2 wet 0.44 ha
+  basin pond: world 54432,75168 radius 37 depth 2.2 lip 24.9 wet 0.44 ha
+  basin pond: world 58688,68776 radius 38 depth 2.2 lip 36.0 wet 0.29 ha
+  basin pond: world 52920,72920 radius 37 depth 2.2 lip 97.9 wet 0.17 ha
+  basin pond: world 58872,69152 radius 37 depth 2.2 lip 4.6 wet 0.44 ha
+  basin pond: world 48888,66792 radius 36 depth 2.1 lip 1.3 wet 0.44 ha
+  basin pond: world 46848,68464 radius 37 depth 2.2 lip 9.8 wet 0.44 ha
+  basin pond: world 62056,78080 radius 36 depth 2.2 lip 12.1 wet 0.44 ha
+  basin pond: world 50272,68552 radius 38 depth 2.2 lip 4.4 wet 0.44 ha
+  basin pond: world 52896,69792 radius 36 depth 2.2 lip 113.9 wet 0.23 ha
+  basin pond: world 53008,67544 radius 37 depth 2.2 lip 5.8 wet 0.44 ha
+  basin pond: world 49728,67416 radius 37 depth 2.2 lip 3.0 wet 0.44 ha
+  basin pond: world 61552,77528 radius 36 depth 2.2 lip 59.1 wet 0.44 ha
+  basin pond: world 58232,69000 radius 37 depth 2.2 lip 49.8 wet 0.44 ha
+  basin pond: world 61816,62480 radius 37 depth 2.2 lip 47.8 wet 0.06 ha
+  basin pond: world 60376,76800 radius 36 depth 2.2 lip 96.5 wet 0.40 ha
+  basin pond: world 49160,71504 radius 37 depth 2.2 lip 30.2 wet 0.44 ha
+  basin pond: world 48000,70872 radius 36 depth 2.2 lip 13.9 wet 0.44 ha
+  basin pond: world 51296,69792 radius 38 depth 2.2 lip 51.5 wet 0.44 ha
+  basin pond: world 61064,64240 radius 37 depth 2.2 lip 108.2 wet 0.08 ha
+  basin pond: world 57080,74560 radius 36 depth 2.2 lip 98.7 wet 0.44 ha
+  basin pond: world 47344,69024 radius 36 depth 2.2 lip 26.1 wet 0.44 ha
+  basin pond: world 62424,79288 radius 39 depth 2.2 lip 97.7 wet 0.44 ha
+  basin pond: world 50736,72216 radius 37 depth 2.2 lip 29.6 wet 0.44 ha
+  basin pond: world 61312,78016 radius 36 depth 2.2 lip 83.7 wet 0.41 ha
+  basin pond: world 58904,63704 radius 38 depth 2.2 lip 129.2 wet 0.20 ha
+  channel timing: canyon map + valleys 5805 ms
+  basin pond: world 51376,72248 radius 37 depth 2.2 lip 69.3 wet 0.16 ha
+  basin pond: world 48568,70800 radius 37 depth 2.2 lip 31.2 wet 0.18 ha
+  basin pond: world 49856,68792 radius 37 depth 2.2 lip 39.8 wet 0.40 ha
+  basin pond: world 50344,69312 radius 37 depth 2.2 lip 47.2 wet 0.44 ha
+  basin pond: world 49744,68296 radius 37 depth 2.2 lip 22.8 wet 0.09 ha
+  basin pond: world 60976,63864 radius 37 depth 2.2 lip 130.1 wet 0.04 ha
+  basin pond: world 54712,73384 radius 36 depth 2.1 lip 586.1 wet 0.11 ha
+  basin pond: world 57000,74688 radius 37 depth 2.2 lip 102.4 wet 0.44 ha
+  basin pond: world 52928,70656 radius 36 depth 2.2 lip 583.1 wet 0.01 ha
+  basin pond: world 53568,71984 radius 36 depth 2.1 lip 647.7 wet 0.04 ha
+  basin lake: world 58264,72088 radius 224 depth 7.1 lip 7.2 wet 5.30 ha
+  basin lake: world 54848,75536 radius 221 depth 7.0 lip 7.4 wet 3.16 ha
+  basin lake: world 58096,70592 radius 213 depth 6.7 lip 9.9 wet 3.66 ha
+  basin lake: world 58376,72056 radius 225 depth 7.1 lip 2.7 wet 6.12 ha
+  basin lake: world 55832,67128 radius 230 depth 7.2 lip 8.6 wet 3.35 ha
+  climate timing: coarse grids + chamfer + air 2495 ms
+  basin lake: world 53104,68424 radius 235 depth 7.4 lip 8.4 wet 8.35 ha
+  basin lake: world 58520,72552 radius 231 depth 7.3 lip 1.1 wet 4.23 ha
+  basin lake: world 52608,74200 radius 214 depth 6.7 lip 1.2 wet 9.58 ha
+  basin lake: world 52664,69144 radius 243 depth 7.6 lip 13.6 wet 2.76 ha
+  basin lake: world 52264,73552 radius 257 depth 7.9 lip 2.1 wet 4.70 ha
+  basin lake: world 58328,72744 radius 220 depth 6.9 lip 3.5 wet 0.00 ha
+  basin lake: world 55400,75472 radius 215 depth 6.8 lip 34.2 wet 0.00 ha
+  basin lake: world 57128,74520 radius 210 depth 6.6 lip 95.3 wet 12.89 ha
+  basin lake: world 55792,67608 radius 210 depth 6.6 lip 24.4 wet 0.00 ha
+  basin lake: world 51848,69224 radius 228 depth 7.2 lip 2.9 wet 10.00 ha
+  basin lake: world 50680,72920 radius 239 depth 7.5 lip 1.3 wet 6.80 ha
+  basin lake: world 50824,72624 radius 215 depth 6.8 lip 4.4 wet 0.00 ha
+  basin lake: world 58440,63536 radius 210 depth 6.6 lip 11.5 wet 1.07 ha
+  lake gate: tile 3,4, 2802 river cells in block interiors, 1064 flat enough, 18 in blocks that lost the draw, 0 sites skipped at the frame edge, 5 skipped at a low lip
+  basins: 59 head ponds (21.6 ha), 18 lakes (82.0 ha, 0 of them the tile's guaranteed lake), 15 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 16436 ms
+  climate timing: per-sample loop 958 ms
+  channel timing: canyons 2149 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1969 ms
+  drain timing: channels 51270 ms
+  breach: lake level 332.7 m, outlet world 60200,62440, 4 cells, deepest cut 5.3 m
+  breach: lake level 334.1 m, outlet world 60232,62472, 9 cells, deepest cut 4.0 m
+  breach: lake level 380.4 m, outlet world 59864,63400, 1 cells, deepest cut 0.5 m
+  breach: lake level 384.5 m, outlet world 59920,63400, 2 cells, deepest cut 0.7 m
+  breach: lake level 383.7 m, outlet world 59864,63608, 2 cells, deepest cut 0.6 m
+  breach: lake level 858.3 m, outlet world 54112,70944, 6 cells, deepest cut 7.6 m
+  breach: lake level 978.0 m, outlet world 54536,71672, 6 cells, deepest cut 6.8 m
+  breach: lake level 679.0 m, outlet world 53792,72096, 1 cells, deepest cut 0.2 m
+  breach: lake level 21.8 m, outlet world 50824,72624, 5 cells, deepest cut 0.0 m
+  breach: lake level 22.2 m, outlet world 50856,72632, 7 cells, deepest cut 0.0 m
+  breach: lake level 0.8 m, outlet world 50352,73192, 1 cells, deepest cut 0.5 m
+  breach: 11 lakes, 178 cells cut, deepest cut 7.6 m
+  channel timing: canyon map + valleys 5842 ms
+  pit: floor 43.5 m rim 45.8 m at world 49560,68360, 2 cells, deepest cut 2.2 m
+  pit: floor 39.9 m rim 41.9 m at world 57992,69864, 80 cells, deepest cut 7.3 m
+  pit: floor 859.8 m rim 862.8 m at world 54120,70976, 0 cells, deepest cut 0.0 m
+  pit: floor 52.9 m rim 55.1 m at world 57752,72120, 64 cells, deepest cut 6.7 m
+  pit: floor 95.8 m rim 98.5 m at world 55280,74752, 0 cells, deepest cut 0.0 m
+  pit: floor 85.6 m rim 88.6 m at world 55272,74840, 0 cells, deepest cut 0.0 m
+  pit: floor 78.9 m rim 81.8 m at world 55256,74952, 31 cells, deepest cut 3.0 m
+  channel timing: canyons 2265 ms
+  gullies: 4915, dead ends: 0
+  pit: floor 57.1 m rim 60.0 m at world 55232,75152, 38 cells, deepest cut 5.0 m
+  channel timing: gullies 4190 ms
+  pit: floor 55.9 m rim 58.1 m at world 59792,68064, 40 cells, deepest cut 8.0 m
+  pit: floor 147.3 m rim 150.2 m at world 52040,72424, 36 cells, deepest cut 7.7 m
+  pit: floor 92.3 m rim 95.1 m at world 57336,74400, 269 cells, deepest cut 8.0 m
+  pit: floor 109.3 m rim 111.7 m at world 56056,75048, 41 cells, deepest cut 6.9 m
+  pits: 4 drained, 8 kept as basins (outlet cut at the lip), 5 left (cut too deep), 601 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 6743 ms
+  gullies: 8413, dead ends: 0
+  channel timing: gullies 4721 ms
+  basin pond: world 58144,78416 radius 36 depth 2.1 lip 4.4 wet 0.44 ha
+  basin pond: world 61200,76544 radius 37 depth 2.2 lip 12.2 wet 0.42 ha
+  basin pond: world 61136,80368 radius 36 depth 2.2 lip 104.3 wet 0.44 ha
+  basin pond: world 54936,75328 radius 37 depth 2.2 lip 35.3 wet 0.44 ha
+  basin pond: world 55872,75224 radius 37 depth 2.2 lip 87.9 wet 0.44 ha
+  basin pond: world 55712,75256 radius 36 depth 2.2 lip 78.0 wet 0.44 ha
+  basin pond: world 54432,75168 radius 37 depth 2.2 lip 24.9 wet 0.44 ha
+  basin pond: world 62056,78080 radius 36 depth 2.2 lip 12.1 wet 0.44 ha
+  basin pond: world 63536,82688 radius 37 depth 2.2 lip 72.8 wet 0.20 ha
+  basin pond: world 61552,77528 radius 36 depth 2.2 lip 59.1 wet 0.44 ha
+  basin pond: world 63008,79472 radius 37 depth 2.2 lip 79.0 wet 0.16 ha
+  basin pond: world 60376,76800 radius 36 depth 2.2 lip 96.5 wet 0.40 ha
+  basin pond: world 62048,82040 radius 37 depth 2.2 lip 15.8 wet 0.44 ha
+  basin pond: world 62424,79288 radius 39 depth 2.2 lip 97.7 wet 0.44 ha
+  basin pond: world 53704,74784 radius 40 depth 2.2 lip 23.8 wet 0.44 ha
+  basin pond: world 57080,74560 radius 36 depth 2.2 lip 98.7 wet 0.44 ha
+  basin pond: world 61312,78016 radius 36 depth 2.2 lip 83.7 wet 0.41 ha
+  basin pond: world 64136,79968 radius 37 depth 2.2 lip 153.6 wet 0.30 ha
+  basin pond: world 63584,80024 radius 36 depth 2.2 lip 124.6 wet 0.17 ha
+  basin pond: world 53064,74616 radius 36 depth 2.1 lip 4.2 wet 0.44 ha
+  basin pond: world 57000,74688 radius 37 depth 2.2 lip 102.4 wet 0.44 ha
+  basin pond: world 57384,73856 radius 36 depth 2.2 lip 106.0 wet 0.44 ha
+  basin lake: world 60776,80840 radius 203 depth 6.3 lip 1.5 wet 2.42 ha
+  lake gate: tile 3,5, 20 river cells in block interiors, 0 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 1 skipped at a low lip
+  basins: 22 head ponds (8.7 ha), 1 lakes (2.4 ha, 1 of them the tile's guaranteed lake), 2 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 7429 ms
+  basin water: 14150 cells tagged lake (90.6 ha)
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 2056 ms
+  drain timing: channels 42603 ms
+  breach: 0 lakes, 0 cells cut, deepest cut 0.0 m
+  pit: floor 92.0 m rim 95.3 m at world 57336,74400, 152 cells, deepest cut 8.0 m
+  pit: floor 94.5 m rim 97.0 m at world 57256,74448, 63 cells, deepest cut 5.7 m
+  pit: floor 95.8 m rim 98.4 m at world 55280,74752, 0 cells, deepest cut 0.0 m
+  pit: floor 85.6 m rim 88.6 m at world 55272,74840, 0 cells, deepest cut 0.0 m
+  pit: floor 78.9 m rim 81.8 m at world 55256,74952, 30 cells, deepest cut 3.0 m
+  pit: floor 72.0 m rim 74.7 m at world 55664,75360, 40 cells, deepest cut 4.6 m
+  water: drainage mode, 63 lakes, 60016 river cells in 78104 ms
+  basin pond: world 69704,79784 radius 37 depth 2.2 lip 7.9 wet 0.44 ha
+  pit: floor 24.5 m rim 27.0 m at world 52920,74000, 46 cells, deepest cut 8.0 m
+  basin pond: world 68136,59680 radius 37 depth 2.2 lip 21.8 wet 0.44 ha
+  pit: floor 189.3 m rim 192.9 m at world 54408,74024, 30 cells, deepest cut 6.8 m
+  basin pond: world 69032,79672 radius 36 depth 2.2 lip 74.3 wet 0.30 ha
+  pit: floor 21.5 m rim 23.9 m at world 53088,74208, 52 cells, deepest cut 5.0 m
+  basin pond: world 67592,75296 radius 36 depth 2.2 lip 3.7 wet 0.44 ha
+  basin pond: world 69952,78464 radius 38 depth 2.2 lip 1.9 wet 0.44 ha
+  basin pond: world 61200,76544 radius 37 depth 2.2 lip 12.2 wet 0.42 ha
+  pit: floor 109.4 m rim 111.8 m at world 56056,75048, 41 cells, deepest cut 6.9 m
+  basin pond: world 67144,75872 radius 37 depth 2.2 lip 19.6 wet 0.44 ha
+  basin pond: world 58688,68776 radius 38 depth 2.2 lip 36.2 wet 0.29 ha
+  basin pond: world 62056,78080 radius 36 depth 2.2 lip 12.1 wet 0.44 ha
+  basin pond: world 68056,77224 radius 36 depth 2.2 lip 333.0 wet 0.03 ha
+  basin pond: world 61552,77528 radius 36 depth 2.2 lip 59.1 wet 0.44 ha
+  basin pond: world 61816,62480 radius 37 depth 2.2 lip 47.8 wet 0.06 ha
+  basin pond: world 73280,76416 radius 36 depth 2.2 lip 14.6 wet 0.44 ha
+  basin pond: world 60376,76800 radius 36 depth 2.2 lip 96.5 wet 0.40 ha
+  basin pond: world 70232,58944 radius 36 depth 2.2 lip 7.4 wet 0.44 ha
+  basin pond: world 61064,64240 radius 37 depth 2.2 lip 108.2 wet 0.08 ha
+  basin pond: world 68832,78352 radius 36 depth 2.2 lip 122.8 wet 0.08 ha
+  basin pond: world 62424,79288 radius 39 depth 2.2 lip 97.7 wet 0.44 ha
+  basin pond: world 61312,78016 radius 36 depth 2.2 lip 83.7 wet 0.41 ha
+  basin pond: world 58904,63704 radius 38 depth 2.2 lip 129.2 wet 0.20 ha
+  basin pond: world 65776,79416 radius 36 depth 2.2 lip 338.8 wet 0.01 ha
+  basin pond: world 68296,78744 radius 36 depth 2.2 lip 236.9 wet 0.03 ha
+  basin pond: world 70424,75648 radius 38 depth 2.2 lip 2.2 wet 0.44 ha
+  basin pond: world 69064,76424 radius 36 depth 2.2 lip 65.4 wet 0.44 ha
+  basin pond: world 72720,59400 radius 37 depth 2.2 lip 17.8 wet 0.44 ha
+  basin pond: world 68040,79032 radius 36 depth 2.1 lip 328.1 wet 0.02 ha
+  basin pond: world 60976,63864 radius 37 depth 2.2 lip 130.1 wet 0.04 ha
+  basin pond: world 73152,74488 radius 36 depth 2.2 lip 3.3 wet 0.44 ha
+  basin pond: world 70288,77904 radius 36 depth 2.2 lip 10.0 wet 0.44 ha
+  basin pond: world 72264,59288 radius 36 depth 2.2 lip 43.4 wet 0.44 ha
+  basin pond: world 67128,77648 radius 36 depth 2.1 lip 480.9 wet 0.44 ha
+  basin pond: world 73016,58656 radius 37 depth 2.2 lip 85.5 wet 0.29 ha
+  basin lake: world 71184,75488 radius 212 depth 6.7 lip 17.1 wet 2.10 ha
+  basin lake: world 67104,75528 radius 236 depth 7.4 lip 2.7 wet 11.11 ha
+  basin lake: world 68656,75768 radius 215 depth 6.8 lip 3.9 wet 3.05 ha
+  lake gate: tile 4,4, 411 river cells in block interiors, 218 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 2 skipped at a low lip
+  climate timing: coarse grids + chamfer + air 2361 ms
+  basins: 32 head ponds (10.2 ha), 3 lakes (16.3 ha, 0 of them the tile's guaranteed lake), 6 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 9152 ms
+  pits: 4 drained, 6 kept as basins (outlet cut at the lip), 4 left (cut too deep), 454 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 4941 ms
+  climate timing: per-sample loop 1063 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1781 ms
+  drain timing: channels 45820 ms
+  breach: lake level 332.7 m, outlet world 60200,62440, 4 cells, deepest cut 5.3 m
+  breach: lake level 334.1 m, outlet world 60232,62472, 9 cells, deepest cut 4.0 m
+  breach: lake level 380.4 m, outlet world 59864,63400, 1 cells, deepest cut 0.5 m
+  breach: lake level 384.5 m, outlet world 59920,63400, 2 cells, deepest cut 0.7 m
+  breach: lake level 383.7 m, outlet world 59864,63608, 2 cells, deepest cut 0.6 m
+  breach: lake level 478.9 m, outlet world 67672,77600, 2 cells, deepest cut 0.0 m
+  breach: lake level 494.6 m, outlet world 67512,77648, 3 cells, deepest cut 0.3 m
+  breach: lake level 486.2 m, outlet world 67096,77624, 2 cells, deepest cut 0.0 m
+  breach: lake level 488.1 m, outlet world 67144,77664, 6 cells, deepest cut 0.0 m
+  breach: lake level 489.6 m, outlet world 67144,77712, 1 cells, deepest cut 0.0 m
+  breach: lake level 503.9 m, outlet world 67536,77808, 7 cells, deepest cut 9.1 m
+  breach: 11 lakes, 137 cells cut, deepest cut 9.1 m
+  pit: floor 115.5 m rim 117.8 m at world 72584,58752, 54 cells, deepest cut 2.9 m
+  pit: floor 65.9 m rim 67.9 m at world 71656,75536, 42 cells, deepest cut 7.5 m
+  pit: floor 66.3 m rim 70.3 m at world 71728,75584, 49 cells, deepest cut 8.0 m
+  pit: floor 66.8 m rim 78.1 m at world 71800,75624, 15 cells, deepest cut 2.7 m
+  basin water: 1414 cells tagged lake (9.0 ha)
+  pit: floor 39.0 m rim 41.6 m at world 69136,76240, 52 cells, deepest cut 8.0 m
+  height timing: frame cubic 1901 ms
+  pit: floor 55.9 m rim 58.1 m at world 59792,68064, 40 cells, deepest cut 8.0 m
+  pit: floor 69.2 m rim 72.1 m at world 66112,75712, 38 cells, deepest cut 8.0 m
+  water: drainage mode, 4 lakes, 34884 river cells in 65143 ms
+  pit: floor 43.0 m rim 45.4 m at world 68512,76088, 47 cells, deepest cut 4.5 m
+  pit: floor 205.2 m rim 208.7 m at world 68216,76808, 44 cells, deepest cut 6.1 m
+  pit: floor 299.1 m rim 302.2 m at world 68160,79016, 48 cells, deepest cut 6.6 m
+  pits: 5 drained, 5 kept as basins (outlet cut at the lip), 0 left (cut too deep), 429 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 6843 ms
+  climate timing: coarse grids + chamfer + air 2722 ms
+  height timing: shape valleys 4395 ms
+  climate timing: per-sample loop 1003 ms
+  basin water: 3787 cells tagged lake (24.2 ha)
+  water: drainage mode, 60 lakes, 45110 river cells in 72536 ms
+  climate timing: coarse grids + chamfer + air 2418 ms
+  height timing: add detail 6763 ms
+  climate timing: per-sample loop 1042 ms
+  height timing: beds: blur 55 ms
+  height timing: beds: per-sample beds 7136 ms
+  height timing: beds: border search 17 ms
+  height timing: beds: border blend 2048 ms
+  drain timing: routing noise 3205 ms
+  drain timing: fill 1186 ms
+  drain timing: flow + edge seed 3880 ms
+  channel timing: centre line 5009 ms
+  channel timing: stamp 7400 ms
+  channel timing: canyon map + valleys 4692 ms
+  channel timing: canyons 1488 ms
+  gullies: 8730, dead ends: 0
+  channel timing: gullies 4013 ms
+  basin pond: world 69704,79784 radius 37 depth 2.2 lip 7.9 wet 0.44 ha
+  basin pond: world 69032,79672 radius 36 depth 2.2 lip 74.3 wet 0.30 ha
+  basin pond: world 67592,75296 radius 36 depth 2.2 lip 3.7 wet 0.44 ha
+  basin pond: world 69952,78464 radius 38 depth 2.2 lip 1.9 wet 0.44 ha
+  basin pond: world 61200,76544 radius 37 depth 2.2 lip 12.2 wet 0.42 ha
+  basin pond: world 64928,83448 radius 37 depth 2.2 lip 71.2 wet 0.19 ha
+  basin pond: world 61136,80368 radius 36 depth 2.2 lip 104.3 wet 0.44 ha
+  basin pond: world 65912,83328 radius 36 depth 2.2 lip 119.6 wet 0.24 ha
+  basin pond: world 67144,75872 radius 37 depth 2.2 lip 19.6 wet 0.44 ha
+  basin pond: world 64936,80064 radius 36 depth 2.2 lip 219.5 wet 0.03 ha
+  basin pond: world 64136,79968 radius 36 depth 2.2 lip 153.6 wet 0.30 ha
+  basin pond: world 62056,78080 radius 36 depth 2.2 lip 12.1 wet 0.44 ha
+  basin pond: world 66464,84272 radius 36 depth 2.1 lip 5.6 wet 0.44 ha
+  basin pond: world 65528,79944 radius 39 depth 2.2 lip 308.0 wet 0.01 ha
+  basin pond: world 63568,82640 radius 36 depth 2.2 lip 81.5 wet 0.23 ha
+  basin pond: world 68056,77224 radius 36 depth 2.2 lip 333.0 wet 0.03 ha
+  basin pond: world 67928,83840 radius 36 depth 2.2 lip 6.1 wet 0.44 ha
+  basin pond: world 61552,77528 radius 36 depth 2.2 lip 59.1 wet 0.44 ha
+  basin pond: world 63008,79472 radius 37 depth 2.2 lip 79.0 wet 0.16 ha
+  basin pond: world 66136,81200 radius 37 depth 2.2 lip 681.3 wet 0.44 ha
+  basin pond: world 76656,92528 radius 36 depth 2.2 lip 8.5 wet 0.44 ha
+  basin pond: world 67824,81688 radius 36 depth 2.2 lip 174.9 wet 0.00 ha
+  basin pond: world 67552,83040 radius 36 depth 2.2 lip 80.5 wet 0.44 ha
+  basin pond: world 73280,76416 radius 36 depth 2.2 lip 14.6 wet 0.44 ha
+  basin pond: world 60376,76800 radius 36 depth 2.2 lip 96.5 wet 0.40 ha
+  basin pond: world 62048,82040 radius 37 depth 2.2 lip 15.8 wet 0.44 ha
+  basin pond: world 78064,93784 radius 38 depth 2.2 lip 7.5 wet 0.44 ha
+  basin pond: world 62424,79288 radius 39 depth 2.2 lip 97.7 wet 0.44 ha
+  basin pond: world 63816,80272 radius 37 depth 2.2 lip 174.1 wet 0.10 ha
+  basin pond: world 68832,78352 radius 36 depth 2.2 lip 122.8 wet 0.08 ha
+  basin pond: world 67688,81040 radius 36 depth 2.2 lip 297.4 wet 0.02 ha
+  basin pond: world 61312,78016 radius 36 depth 2.2 lip 83.7 wet 0.41 ha
+  basin pond: world 65776,79416 radius 36 depth 2.2 lip 338.8 wet 0.01 ha
+  basin pond: world 68296,78744 radius 36 depth 2.2 lip 236.9 wet 0.03 ha
+  basin pond: world 70424,75648 radius 38 depth 2.2 lip 2.2 wet 0.44 ha
+  basin pond: world 77672,92704 radius 36 depth 2.1 lip 5.2 wet 0.44 ha
+  basin pond: world 69064,76424 radius 36 depth 2.2 lip 65.4 wet 0.44 ha
+  basin pond: world 79000,94296 radius 38 depth 2.2 lip 9.5 wet 0.44 ha
+  basin pond: world 68040,79032 radius 36 depth 2.1 lip 328.1 wet 0.02 ha
+  basin pond: world 76840,94816 radius 37 depth 2.2 lip 10.1 wet 0.44 ha
+  basin pond: world 63584,80024 radius 36 depth 2.2 lip 124.6 wet 0.17 ha
+  basin pond: world 73152,74488 radius 36 depth 2.2 lip 3.3 wet 0.44 ha
+  basin pond: world 70288,77904 radius 36 depth 2.2 lip 10.0 wet 0.44 ha
+  basin pond: world 74848,95008 radius 36 depth 2.1 lip 1.5 wet 0.44 ha
+  basin pond: world 67128,77648 radius 36 depth 2.1 lip 480.9 wet 0.44 ha
+  basin lake: world 68312,82792 radius 231 depth 7.3 lip 1.2 wet 7.71 ha
+  basin lake: world 67552,82256 radius 219 depth 6.9 lip 79.1 wet 0.20 ha
+  basin lake: world 69152,81096 radius 226 depth 7.1 lip 1.3 wet 5.36 ha
+  basin lake: world 68888,81032 radius 223 depth 7.0 lip 4.7 wet 0.00 ha
+  basin lake: world 64304,79032 radius 276 depth 8.3 lip 6.0 wet 1.48 ha
+  basin lake: world 69616,78848 radius 226 depth 7.1 lip 1.5 wet 6.30 ha
+  basin lake: world 65152,78192 radius 210 depth 6.6 lip 76.7 wet 0.55 ha
+  basin lake: world 64520,79336 radius 219 depth 6.9 lip 29.7 wet 0.00 ha
+  basin lake: world 62224,77920 radius 244 depth 7.6 lip 5.4 wet 11.84 ha
+  basin lake: world 69080,78872 radius 222 depth 7.0 lip 21.2 wet 0.00 ha
+  basin lake: world 63328,83320 radius 216 depth 6.8 lip 2.2 wet 6.46 ha
+  basin lake: world 62864,78936 radius 215 depth 6.8 lip 6.6 wet 0.18 ha
+  lake gate: tile 4,5, 1835 river cells in block interiors, 678 flat enough, 0 in blocks that lost the draw, 0 sites skipped at the frame edge, 4 skipped at a low lip
+  basins: 45 head ponds (14.2 ha), 12 lakes (40.1 ha, 0 of them the tile's guaranteed lake), 5 heads skipped (ground steeper than 20 deg)
+  channel timing: heads + basins 10291 ms
+  centre line: 0 cells deepened to keep the river continuous
+  channel timing: centre fix + spawn 1348 ms
+  drain timing: channels 34677 ms
+  breach: lake level 478.9 m, outlet world 67672,77600, 2 cells, deepest cut 0.0 m
+  breach: lake level 494.6 m, outlet world 67512,77648, 3 cells, deepest cut 0.3 m
+  breach: lake level 486.2 m, outlet world 67096,77624, 2 cells, deepest cut 0.0 m
+  breach: lake level 488.1 m, outlet world 67144,77664, 6 cells, deepest cut 0.0 m
+  breach: lake level 489.6 m, outlet world 67144,77712, 1 cells, deepest cut 0.0 m
+  breach: lake level 503.9 m, outlet world 67536,77808, 7 cells, deepest cut 9.1 m
+  breach: lake level 717.1 m, outlet world 66128,80928, 1 cells, deepest cut 0.7 m
+  breach: lake level 713.2 m, outlet world 66104,80992, 7 cells, deepest cut 3.7 m
+  breach: lake level 704.5 m, outlet world 66400,81184, 1 cells, deepest cut 0.0 m
+  breach: lake level 681.3 m, outlet world 66336,81344, 2 cells, deepest cut 0.0 m
+  breach: lake level 693.9 m, outlet world 66200,81440, 1 cells, deepest cut 0.5 m
+  breach: lake level 708.6 m, outlet world 65992,81528, 1 cells, deepest cut 0.0 m
+  breach: lake level 713.5 m, outlet world 65888,81520, 1 cells, deepest cut 0.0 m
+  breach: 13 lakes, 114 cells cut, deepest cut 9.1 m
+  pit: floor 65.4 m rim 70.3 m at world 71584,75520, 17 cells, deepest cut 3.7 m
+  pit: floor 65.9 m rim 67.9 m at world 71656,75536, 104 cells, deepest cut 7.5 m
+  pit: floor 66.3 m rim 70.3 m at world 71728,75584, 49 cells, deepest cut 8.0 m
+  pit: floor 66.8 m rim 78.1 m at world 71800,75624, 15 cells, deepest cut 2.7 m
+  pit: floor 39.0 m rim 41.6 m at world 69136,76240, 52 cells, deepest cut 8.0 m
+  pit: floor 712.9 m rim 715.0 m at world 66104,80992, 0 cells, deepest cut 0.0 m
+  pit: floor 293.1 m rim 296.4 m at world 67736,81072, 38 cells, deepest cut 3.7 m
+  pit: floor 32.6 m rim 34.6 m at world 71192,75488, 32 cells, deepest cut 8.0 m
+  pit: floor 36.9 m rim 39.5 m at world 71232,75488, 32 cells, deepest cut 6.6 m
+  pit: floor 45.6 m rim 47.7 m at world 71320,75496, 52 cells, deepest cut 8.0 m
+  pit: floor 69.2 m rim 72.1 m at world 66112,75712, 38 cells, deepest cut 8.0 m
+  pit: floor 24.9 m rim 27.5 m at world 68616,75872, 49 cells, deepest cut 6.2 m
+  pit: floor 205.2 m rim 208.7 m at world 68216,76808, 44 cells, deepest cut 6.1 m
+  pit: floor 299.1 m rim 302.2 m at world 68160,79016, 48 cells, deepest cut 6.6 m
+  pit: floor 509.3 m rim 511.7 m at world 67472,80416, 35 cells, deepest cut 8.0 m
+  pit: floor 507.0 m rim 509.2 m at world 67480,80424, 43 cells, deepest cut 2.3 m
+  pit: floor 666.9 m rim 669.7 m at world 66392,81440, 27 cells, deepest cut 4.1 m
+  pit: floor 300.7 m rim 306.8 m at world 67552,81504, 40 cells, deepest cut 8.0 m
+  pits: 11 drained, 7 kept as basins (outlet cut at the lip), 0 left (cut too deep), 715 cells cut, deepest cut 8.0 m
+  drain timing: probe + breach 5229 ms
+  basin water: 8783 cells tagged lake (56.2 ha)
+  water: drainage mode, 41 lakes, 49123 river cells in 53639 ms
+  climate timing: coarse grids + chamfer + air 2044 ms
+  climate timing: per-sample loop 902 ms
+Tile (2, 3): 5.84 MB, stages { "height": 23544, "erosion": 7809, "ledges": 8155, "scree": 4281, "water": 70396, "climate": 3870, "geology": 11794, "sites": 177 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_2_3.tile
+Tile (3, 3): 6.56 MB, stages { "height": 24317, "erosion": 12373, "ledges": 9994, "scree": 4924, "water": 73073, "climate": 4832, "geology": 12996, "sites": 246 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_3_3.tile
+Tile (4, 3): 6.68 MB, stages { "height": 24075, "erosion": 11988, "ledges": 10103, "scree": 5111, "water": 77192, "climate": 3869, "geology": 13438, "sites": 259 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_4_3.tile
+Tile (2, 4): 4.50 MB, stages { "height": 20780, "erosion": 3141, "ledges": 4492, "scree": 2937, "water": 59626, "climate": 3507, "geology": 9834, "sites": 95 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_2_4.tile
+Tile (3, 4): 8.74 MB, stages { "height": 25291, "erosion": 16175, "ledges": 13862, "scree": 6400, "water": 83158, "climate": 3549, "geology": 14011, "sites": 993 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_3_4.tile
+Tile (4, 4): 5.83 MB, stages { "height": 25379, "erosion": 14638, "ledges": 12796, "scree": 5798, "water": 78484, "climate": 4169, "geology": 11754, "sites": 174 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_4_4.tile
+Tile (2, 5): 3.87 MB, stages { "height": 20079, "erosion": 1752, "ledges": 4060, "scree": 2622, "water": 58351, "climate": 3513, "geology": 10328, "sites": 94 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_2_5.tile
+Tile (3, 5): 4.86 MB, stages { "height": 23336, "erosion": 7078, "ledges": 7472, "scree": 3945, "water": 71806, "climate": 3913, "geology": 11185, "sites": 113 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_3_5.tile
+Tile (4, 5): 7.53 MB, stages { "height": 23977, "erosion": 11495, "ledges": 11111, "scree": 4675, "water": 58017, "climate": 3217, "geology": 10525, "sites": 264 } -> E:/Software/godotDev/pl_lake_c30d/tiles/tile_4_5.tile
+9 tiles on 4 threads in 375.9 s
