@@ -139,6 +139,7 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
+const GroundColumn := preload("res://src/client/ground_column.gd")
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
 const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
@@ -1949,7 +1950,7 @@ func _update_anchor(now: int, delta: float) -> void:
 
 		_viewer_ground_y = NAN
 
-		if column and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
+		if GroundColumn.dive(column, _ground_below_y, here.y):
 			_viewer_ground_y = _ground_below_y + 2.0
 
 			# Only when the ground below has no collider yet: staging drops every coarse level, so over ground that is

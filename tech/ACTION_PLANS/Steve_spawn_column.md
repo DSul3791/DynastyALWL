@@ -15,3 +15,4 @@ Risk: dive for a waiting walker uses the existing server surface answer (one req
 ## Build notes (Tyler GO, conditions 1-5)
 Built: `column = flying or waiting_for_ground` gates the dive in _update_anchor (viewer back to the player when not waiting: _viewer_ground_y reset each follow, stage view cleared); dive needs ground more than 40 m below, so a normal +28 m join, walker, go-to-spawn, respawn, and a player in a cave/tunnel (below the surface) are unchanged; _ground_ready ray 3000 m; join window adds "The ground is taking long: N blocks received, N failed, N still arriving, player height" after 60 s; JOIN log "column answer N s after the welcome".
 David3 test: start at 400 m and 1500 m above the spawn (--start), expect "ground ready" within 10 s of the welcome; normal join unchanged.
+Cave rule covered by headless test_spawn_column.gd (src/client/ground_column.gd dive rule); expect 'Test done: 8 pass, 0 fail'.
