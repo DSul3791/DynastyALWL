@@ -218,3 +218,5 @@ BP-T72 addendum (25 Oct, Dave): no kit items for building pieces or station kits
 BP-T72 addendum 2 (25 Oct 03:00): first-tier things are hand-crafted items, never hammer blueprints; blueprints are later tiers only.
 
 BP-T73 (25 Oct): shared caches in code that server worker threads call need a Mutex (or per-thread copies). A server crash fix ships as its own small build ahead of feature builds, cut on its own branch off the merged head. Owners sweep their code for other shared caches after a thread-safety crash.
+
+BP-T74 (25 Oct, Dave): tool-look review without Dave: Mike shoots, Moderator and Tyler each give an opinion on what to change, Tyler looks up the real tool (shape, photo reference, dimensions, source named) when unsure; Moderator sends one combined list to Kathleen, who works from it without waiting for Dave. Dave approves later; pickaxe 5ef0b60e is the quality bar.
