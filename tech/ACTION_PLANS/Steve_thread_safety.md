@@ -13,3 +13,7 @@ Tests (headless, no Godot scene, "Test done: N pass, N fail"):
 Gate for David3: the three tests, local_check 233, join, --test-respawn=10 and --test-go-to-spawn=10 on 4 threads x10, fly big moves, no signal 11.
 Not changed: items 4 (failed_tiles, errs to "not ready") and 5 (benign counters) stay as notes. ground_ops (own mutex on 24 sites) looked fine; block_link client side only reads _state unlocked (benign).
 Risk: low; readers get a copy-on-write array, so snapshots cost no memory unless the writer replaces it.
+
+## Build notes (Tyler GO)
+Files touched: tile_terrain_data.gd (+set_sim, sim_snapshot, falls_snapshot, _sim_mutex), terrain_server.gd (2 readers, the writer), water_grid.gd (4 one-line reader swaps), water_flow.gd (1), flora_placer.gd (2 readers), water_live.gd (+take_pair, take_levels calls it), water_hub.gd (take_updates uses take_pair), server_block_store.gd (_cache_now, set_cache; 4 uses). Overlaps: water files only by small hunks (water_live take_levels body, water_hub take_updates body, water_grid lines 42/61/765/805).
+Tests: test_sim_levels_threads.gd (4 readers vs 3 s of writes, take_pair, timing line "sim_snapshot + index N us per call", must be under 5 us), test_block_cache_swap.gd (3 workers vs 200 swaps). Settle swap in clear_generated (store.settle = GroundSettle.new()) has the same shape and is NOT covered here: note for the next sweep.

@@ -644,8 +644,10 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> float:
 		if not is_nan(data.water_surface[k]):
 			level = maxf(level, data.water_surface[k])
 
-		if not data.sim_levels.is_empty() and not is_nan(data.sim_levels[k]):
-			level = maxf(level, data.sim_levels[k])
+		var sim: PackedFloat32Array = data.sim_snapshot()
+
+		if not sim.is_empty() and not is_nan(sim[k]):
+			level = maxf(level, sim[k])
 
 		if y < level + WET_FOOT_M:
 			return NAN
@@ -834,7 +836,9 @@ func _near_water(data, x: float, z: float) -> bool:
 		if data.water_class[k] > 1 and not is_nan(data.water_surface[k]):
 			return true
 
-		if not data.sim_levels.is_empty() and not is_nan(data.sim_levels[k]):
+		var sim_here: PackedFloat32Array = data.sim_snapshot()
+
+		if not sim_here.is_empty() and not is_nan(sim_here[k]):
 			return true
 
 	return false

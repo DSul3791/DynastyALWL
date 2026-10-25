@@ -228,12 +228,27 @@ func clear_generated() -> void:
 		file.store_string(str(_generation))
 		file.close()
 
-	_cache = _open_generated()
+	set_cache(_open_generated())
 	# The settled copies were made over the ground just thrown away: new files for the new generation, the old ones deleted.
 	settle.close()
 	settle = GroundSettle.new()
 	_purge_old_settled()
 	_open_settle()
+
+
+# The generated-ground cache is swapped on the main thread (clear_generated) while workers read it: workers take their own reference under _mutex, so a worker that
+# started with the old stream finishes with it (refcounted) and never uses a freed one.
+func _cache_now() -> VoxelStreamSQLite:
+	_mutex.lock()
+	var stream: VoxelStreamSQLite = _cache
+	_mutex.unlock()
+	return stream
+
+
+func set_cache(stream: VoxelStreamSQLite) -> void:
+	_mutex.lock()
+	_cache = stream
+	_mutex.unlock()
 
 
 func revision_of(tile: Vector2i) -> int:
@@ -297,7 +312,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		_count("zeroed_edit")
 		print("server: ZEROED BLOCK %s LOD %d from the saved edits (generating it again)" % [str(block), lod])
 
-	var cache: VoxelStreamSQLite = _cache
+	var cache: VoxelStreamSQLite = _cache_now()
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
@@ -347,7 +362,7 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
-	var cache: VoxelStreamSQLite = _cache
+	var cache: VoxelStreamSQLite = _cache_now()
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
@@ -406,7 +421,7 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	lines.append("server: freshly generated: " + _cell_text(fresh, local))
 	var cached: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _cache.load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_now().load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
 		lines.append("server: generated-ground cache: " + _cell_text(cached, local) + ("" if _is_sane(cached, block, 0) else "   <-- FAILS THE SANITY CHECK"))
 	else:
 		lines.append("server: generated-ground cache: no copy of this block")
@@ -519,7 +534,7 @@ func save_revisions() -> void:
 func flush() -> void:
 	settle.close()
 	save_revisions()
-	_cache.flush()
+	_cache_now().flush()
 	_edits.flush()
 
 

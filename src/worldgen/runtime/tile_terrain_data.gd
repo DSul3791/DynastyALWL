@@ -33,6 +33,9 @@ var sim_levels: PackedFloat32Array = PackedFloat32Array()
 # sim_levels plus the thin water on the baked channels that is not drawn (a film down a
 # cliff face): only the fall finder (water_falls.gd) reads it. Empty when not running.
 var fall_levels: PackedFloat32Array = PackedFloat32Array()
+# The server's main thread replaces both arrays while worker threads read them (a whole-array assignment under a reader freed the old array: same crash family as the
+# flora cache, 25 Oct). Once a tile is shared, write with set_sim() and read with sim_snapshot() / falls_snapshot(): the reader keeps its own copy for check and index.
+var _sim_mutex: Mutex = Mutex.new()
 var cover: PackedByteArray = PackedByteArray()          # raw x 0.25 m
 var province: PackedByteArray = PackedByteArray()
 var layer_offset: PackedInt32Array = PackedInt32Array()  # raw x 0.1 m
@@ -241,6 +244,27 @@ func _load_sim_water(path: String) -> void:
 	for k in range(samples * samples):
 		if depth[k] >= WetMeters:
 			sim_levels[k] = heights[k] + depth[k]
+
+
+func set_sim(levels: PackedFloat32Array, falls: PackedFloat32Array) -> void:
+	_sim_mutex.lock()
+	sim_levels = levels
+	fall_levels = falls
+	_sim_mutex.unlock()
+
+
+func sim_snapshot() -> PackedFloat32Array:
+	_sim_mutex.lock()
+	var copy: PackedFloat32Array = sim_levels
+	_sim_mutex.unlock()
+	return copy
+
+
+func falls_snapshot() -> PackedFloat32Array:
+	_sim_mutex.lock()
+	var copy: PackedFloat32Array = fall_levels
+	_sim_mutex.unlock()
+	return copy
 
 
 # An ocean tile with no file: a flat sea floor.
