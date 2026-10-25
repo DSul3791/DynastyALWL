@@ -41,7 +41,7 @@ func _is_flat_water(data, k: int, surface: float) -> bool:
 			if data.water_class[n] > 1 and not is_nan(level) and absf(level - surface) < 0.5:
 				same += 1
 
-	return same >= 20   # a carved head ppond is 25 m across at the least (about 30 cells in this window), not the old 50 m
+	return same >= 20   # a carved head pond is 25 m across at the least (about 30 cells in this window), not the old 50 m
 
 
 func _init() -> void:
