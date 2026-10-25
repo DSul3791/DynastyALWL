@@ -117,3 +117,5 @@ Coupled with fire tiers (step 2), so steps 2 and 3 are tested TOGETHER on one ha
  5. Remove/destroy: fire keeps burning; no dangling attachment id; saving and reloading with the pot attached, detached and with the fire out all give the same state.
  6. Old saves: state-1 fires and a tripod structure from before load without errors.
  7. Standard: validate_items, full dup sweep (recipes highest 169 then 165 is reserved), parse_scan, local_check 233.
+
+## BAKE HOLD (Tyler 00:15 UTC 25 Oct, Dave): no bakes or settles until the generator build is done. David3: cancel/skip the settle-past-9000 job. 792 items proceed (none needs a bake). Water R1 settler v7 waits for the bake; classifier/button/dam test code may go earlier only as a separate branch.
