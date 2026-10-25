@@ -52,6 +52,23 @@ func _lake_or_bowl_side(data, channels, index: int, next: int, side: int) -> boo
 	return false
 
 
+# True when a baked lake cell (water_class 2) lies within `cells` cells of the cell.
+func _lake_within(data, index: int, side: int, cells: int) -> bool:
+	@warning_ignore("integer_division")
+	var cell_row: int = index / side
+	var cell_column: int = index % side
+
+	for dz in range(-cells, cells + 1):
+		for dx in range(-cells, cells + 1):
+			var column: int = cell_column + dx
+			var row: int = cell_row + dz
+
+			if column >= 0 and column < side and row >= 0 and row < side and data.water_class[row * STEP * data.samples + column * STEP] == 2:
+				return true
+
+	return false
+
+
 func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data) -> void:
 	var rules: Dictionary = {"width_m_per_sqrt_q": 6.0, "min_width_m": 24.0, "depth_m_per_sqrt_q": 1.0, "min_depth_m": 1.5, "max_depth_m": 8.0}
 	var begun: int = Time.get_ticks_msec()
@@ -78,9 +95,14 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 				and not _lake_or_bowl_side(data, channels, index, next, side):
 			rising += 1
 
-			if rises.size() < 12:
+			if rises.size() < 80:
 				@warning_ignore("integer_division")
-				rises.append(Vector2(data.x0 + float(index % side) * cell_m, data.z0 + float(index / side) * cell_m))
+				var at_row: int = index / side
+				@warning_ignore("integer_division")
+				var next_row: int = next / side
+				rises.append("x %.0f z %.0f rise %.2f m, class %d -> %d, discharge %.1f km2, basin %d -> %d, lake within 8 cells %s" % [data.x0 + float(index % side) * cell_m, data.z0 + float(at_row) * cell_m,
+					channels.bed[next] - channels.bed[index], data.water_class[at_row * STEP * data.samples + (index % side) * STEP], data.water_class[next_row * STEP * data.samples + (next % side) * STEP],
+					flow.discharge[index], channels.basin_mask[index], channels.basin_mask[next], str(_lake_within(data, index, side, 8))])
 
 		var turn: float = channels.curvature[index]
 
@@ -100,7 +122,10 @@ func _channels(h: PackedFloat32Array, fill, flow, side: int, cell_m: float, data
 
 	print("channel cells %d, bends %d, outer/inner depth ratio %.2f, %.1f s" % [centres, apexes, outer_sum / maxf(inner_sum, 0.001), took])
 	if rising > 0:
-		print("first rises at world x, z: ", rises)
+		print("rises (first %d): " % rises.size())
+
+		for line in rises:
+			print("  ", line)
 
 	_check(rising == 0, "bed never rises downstream (%d rises of %d cells)" % [rising, centres])
 	_check(apexes >= 20, "at least 20 bends (%d)" % apexes)
