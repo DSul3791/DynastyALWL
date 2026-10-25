@@ -643,6 +643,66 @@ static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, ma
 	parent.add_child(mesh)
 
 
+# A thatch doorway (Dave 24 Oct: the thatch wall with a gap), 2 m by 2.4 m, 0.25 m thick: straw courses either side of a one metre gap and over it, a timber frame round the gap,
+# and a door leaf of lashed sticks with twine bands and a rope pull.
+static func thatch_doorway() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 2.4, 0.18), Vector3(x, 1.2, 0.0), _frame)
+
+	for x in [-0.5, 0.5]:
+		_box(root, Vector3(0.1, 2.0, 0.2), Vector3(x, 1.0, 0.0), _frame)         # the gap's jambs
+
+	_box(root, Vector3(2.0, 0.1, 0.18), Vector3(0.0, 2.35, 0.0), _frame)
+
+	for k in 8:
+		var y: float = 0.15 + 0.3 * float(k)
+		var shift: float = 0.04 * float((k * 5) % 3 - 1)
+		var depth: float = 0.25 + 0.02 * float(k % 2)
+
+		if y < 2.0:
+			for x in [-0.725, 0.725]:
+				_box(root, Vector3(0.4, 0.3, depth), Vector3(x + shift * 0.5, y, 0.0), _thatch)        # the straw either side
+		else:
+			_box(root, Vector3(1.9, 0.3, depth), Vector3(shift, y, 0.0), _thatch)                        # and over the gap
+
+	_box(root, Vector3(1.0, 0.1, 0.22), Vector3(0.0, 2.05, 0.0), _frame)            # the lintel
+
+	for k in 7:
+		_box(root, Vector3(0.06, 2.0, 0.05), Vector3(-0.42 + 0.14 * float(k), 1.0, 0.02), _log)   # the door's sticks
+
+	for y in [0.4, 1.0, 1.6]:
+		_box(root, Vector3(0.96, 0.04, 0.06), Vector3(0.0, y, 0.05), _frame)      # lashed cross-rails
+
+	_box(root, Vector3(0.04, 0.2, 0.05), Vector3(0.35, 1.0, 0.09), _thatch)       # the rope pull
+	_solid(root, Vector3(2.0, 2.4, 0.25), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A thatch roof (2.4 m square, ridge 2.8 m up) on four posts: two sloping slabs of straw bundles meeting at a ridge, rafters under them, a shaggy eave on every side.
+static func thatch_roof() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-1.1, 1.1]:
+		for z in [-1.1, 1.1]:
+			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+
+	for side in [-1.0, 1.0]:
+		_box_rot(root, Vector3(1.4, 0.16, 2.5), Vector3(side * 0.62, 2.62, 0.0), Vector3(0.0, 0.0, -side * 0.3), _thatch)       # a sloping slab
+		_box_rot(root, Vector3(0.1, 0.1, 2.4), Vector3(side * 0.62, 2.5, 0.0), Vector3(0.0, 0.0, -side * 0.3), _frame)          # a rafter under it
+
+		for k in 6:
+			_box_rot(root, Vector3(0.16, 0.18, 0.14), Vector3(side * 1.22, 2.45, -1.15 + 0.46 * float(k)), Vector3(0.0, 0.0, -side * 0.3), _thatch)   # the shaggy eave
+
+	_box(root, Vector3(0.26, 0.16, 2.5), Vector3(0.0, 2.82, 0.0), _thatch)          # the ridge bundle
+	_box(root, Vector3(0.1, 0.1, 2.4), Vector3(0.0, 2.7, 0.0), _frame)               # the ridge pole
+	_solid(root, Vector3(2.4, 0.2, 2.4), Vector3(0.0, 2.6, 0.0))
+	return root
+
+
 # A thatch floor (tier 1 foundation, Dave and Tyler 24 Oct), 4 m square, 0.1 m high, on stakes: a dark timber sub-floor, straw bundles laid side by side, each a
 # little out of line, a log along every edge and a stake at each corner.
 static func thatch_floor() -> Node3D:
