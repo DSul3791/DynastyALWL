@@ -73,6 +73,28 @@ func _init() -> void:
 		_check(box.size.x > 0.4 * scale and box.size.x < 0.9 * scale, id + ": haft along x, %.2f m long (size %.1f)" % [box.size.x, scale])
 		_check(box.size.z > 0.1 * scale, id + ": the head is wide across the haft (z %.3f)" % box.size.z)
 		_check(_width_near(mesh, 0.22 * scale, 0.1 * scale) > 0.1 * scale, id + ": the head sits at the haft's end (width %.3f near x 0.22)" % _width_near(mesh, 0.22 * scale, 0.1 * scale))
+	# Hoes (size 1.0): a 1.25 m haft along x, the blade hanging toward +z, thin in x, wide across y, widening toward the edge; metal tiers on the metal surface.
+	for tier in ["wooden", "stone", "iron", "steel"]:
+		var id: String = tier + "_hoe"
+		var mesh: Mesh = BasicLook.mesh_for(id)
+		var box: AABB = mesh.get_aabb()
+		var tris: int = 0
+
+		for surface in mesh.get_surface_count():
+			tris += (mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+
+		_check(mesh.get_surface_count() == (2 if tier in ["iron", "steel"] else 1), id + ": surfaces %d" % mesh.get_surface_count())
+		_check(box.size.x > 1.3 and box.size.x < 1.45, id + ": about 1.37 m overall (%.2f)" % box.size.x)
+		_check(box.size.y > 0.15 and box.size.y < 0.19 and box.end.z > 0.15, id + ": the blade is wide across y (%.3f) and hangs toward +z (to %.3f)" % [box.size.y, box.end.z])
+		_check(tris <= 1200, id + ": %d triangles" % tris)
+
+	# Hand saw: about 60 cm overall, a thin blade (z extent 11 cm at the heel), narrower at the toe, on the metal surface.
+	var saw: Mesh = BasicLook.mesh_for("hand_saw")
+	_check(saw.get_surface_count() == 2, "hand_saw: wooden grip plus the metal blade surface")
+	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "hand_saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
+	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "hand_saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
+	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "hand_saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
+
 	# Stone knife: about 23 cm overall at size 1, blade about as long as the handle, a leaf blade (widest in the middle, narrow at the tip), matt stone (not bright steel).
 	var knife: Mesh = BasicLook.mesh_for("stone_knife")
 	var knife_scale: float = float(BasicLook.entry("stone_knife").get("size", 1.0))

@@ -352,16 +352,22 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_plate(parts, 0.474, 0.27, 0.19, 0, 9, blade, true, metal_blade, rough, 0.6)                          # the blade plate
 			_plate(parts, 0.474, 0.27, 0.19, 9, 12, Color(0.5, 0.5, 0.5) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.6)   # its last quarter: a bright strip along the bottom edge
 		"saw":
-			# A hand saw: a wooden pistol grip at -x, a thin steel blade (about 0.55 m long) that narrows toward the tip, and a row of teeth along the cutting edge (+z).
-			var steel: Color = color.darkened(0.22)
-			_box(parts, Vector3(0.1, 0.03, 0.045), Vector3(-0.26, 0.0, 0.0), Color(0.34, 0.23, 0.13))                 # grip
-			_box(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.28, 0.0, -0.045), Color(0.34, 0.23, 0.13))               # the grip's lower leg
-			_box(parts, Vector3(0.04, 0.02, 0.05), Vector3(-0.19, 0.0, 0.0), dark)                                    # the plate the blade is riveted to
-			_box(parts, Vector3(0.3, 0.008, 0.075), Vector3(-0.02, 0.0, 0.0), steel)                                  # blade, wide end
-			_box(parts, Vector3(0.12, 0.008, 0.055), Vector3(0.19, 0.0, 0.004), steel)                                # blade, narrower toward the tip
-			_box(parts, Vector3(0.45, 0.012, 0.01), Vector3(0.0, 0.0, -0.036), dark)                                  # the stiffened back
-			for k in range(16):
-				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.15 + 0.0205 * float(k), 0.0, 0.043 if k < 10 else 0.035), Vector3(0.0, 0.0, 0.7), steel.lightened(0.15))   # teeth
+			# A hand saw (modelled on a real panel saw): a wooden pistol grip with brass rivets at -x, a thin steel blade plate (a real polygon plate, 45 cm, 11 cm at the heel
+			# narrowing to 7 cm at the toe) with a row of teeth along the cutting edge (+z), blade on the metal surface in a neutral grey.
+			var steel_blade: Color = Color(0.2, 0.2, 0.2)
+			var grip_wood: Color = Color(0.3, 0.2, 0.11)
+			_box(parts, Vector3(0.1, 0.03, 0.05), Vector3(-0.26, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                  # grip
+			_box(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.28, 0.0, -0.05), _tone(grip_wood, 2, 0.1))               # the grip's lower leg
+			_box(parts, Vector3(0.05, 0.034, 0.012), Vector3(-0.215, 0.0, 0.035), _tone(grip_wood, 3, 0.1))            # the grip's upper horn
+			_box(parts, Vector3(0.04, 0.02, 0.07), Vector3(-0.19, 0.0, 0.0), Color(0.12, 0.11, 0.1))                  # the plate the blade is riveted to
+			_metal(parts, 0.5, 0.6)
+			for k in range(3):
+				_sph(parts, 0.007, Vector3.ONE, Vector3(-0.205 + 0.015 * float(k), 0.016, 0.0), Color(0.5, 0.38, 0.12), true)   # brass rivets
+			_plate(parts, -0.17, 0.45, 0.11, 0, 12, steel_blade, true, true, 0.5, 0.6, Transform3D(Basis.IDENTITY, Vector3.ZERO), 2)
+			for k in range(26):                                                                                       # teeth along the cutting edge
+				var t: float = (float(k) + 0.5) / 26.0
+				_wedge(parts, 0.006, 0.013, 0.0145, Vector3(-0.17 + 0.45 * t, 0.0, 0.055 * (1.0 - 0.35 * t) + 0.0055), steel_blade * 1.4)
+				_metal(parts, 0.5, 0.6)
 		"hammer":
 			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
 			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
@@ -386,12 +392,39 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.03, 0.01, Vector3(0.135 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.03, 0.01, Vector3(0.255 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
 		"hoe":
-			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
-			_handle(parts, 0.85)
-			_cyl(parts, 0.022, 0.08, Vector3(0.38, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)                           # socket
-			_box_rot(parts, Vector3(0.03, 0.025, 0.12), Vector3(0.44, 0.0, 0.045), Vector3(0.0, 0.35, 0.0), dark)         # the neck bends out
-			_box_rot(parts, Vector3(0.012, 0.17, 0.1), Vector3(0.5, 0.0, 0.1), Vector3(0.0, -0.25, 0.0), color)           # the flat blade, wide across
-			_box_rot(parts, Vector3(0.012, 0.17, 0.015), Vector3(0.5, 0.0, 0.147), Vector3(0.0, -0.25, 0.0), light)       # the sharpened lower edge
+			# A garden draw hoe (modelled on a real long-handled hoe; tools to the pickaxe standard): a 1.25 m ash haft with a slight taper, a darker patch where the hands go and a rounded
+			# end, a socket cone, a goose-neck that bends down from it, and a thin trapezoid blade plate (a real polygon plate, dished, rolled edge) set a little back toward the grip.
+			# Mesh axes: haft along x (grip at -x), blade hangs toward +z and is wide across y. Iron and steel (bits "metal") are on the metal surface like the spades.
+			var metal_blade: bool = bits.has("metal")
+			var blade: Color = color
+			var ash: Color = Color(0.42, 0.3, 0.17)
+			var rough: float = 0.55
+
+			if metal_blade:
+				blade = Color(0.2, 0.2, 0.2) if bits.has("steel") else Color(0.08, 0.075, 0.068)
+			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
+				blade = _warm_stone(color)
+
+			_cyl_taper(parts, 0.0175, 0.0165, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.05))
+			_cyl_taper(parts, 0.0165, 0.0175, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.05))
+			_cyl_taper(parts, 0.0175, 0.019, 0.42, Vector3(-0.6, 0.0, 0.0), _tone(ash, 3, 0.05))
+			_cyl_taper(parts, 0.0195, 0.0195, 0.16, Vector3(-0.2, 0.0, 0.0), ash.darkened(0.6))                   # the darker patch where the hands go
+			_sph(parts, 0.021, Vector3(0.8, 1.0, 1.0), Vector3(-0.815, 0.0, 0.0), _tone(ash, 4, 0.06))           # the rounded end
+			_cyl_taper(parts, 0.022, 0.034, 0.1, Vector3(0.4, 0.0, 0.0), blade * 1.5 if metal_blade else Color(0.3, 0.2, 0.11))   # the socket cone
+			if metal_blade:
+				_metal(parts, rough, 0.6)
+
+			var reach: Vector3 = Vector3(0.45, 0.0, 0.0)
+
+			for k in range(3):                                                                                        # the goose-neck: a 70 degree bend toward +z
+				var phi: float = (float(k) + 0.5) * deg_to_rad(70.0) / 3.0
+				_box_rot(parts, Vector3(0.045, 0.024, 0.024), Vector3(0.45 + 0.08 * sin(phi), 0.0, 0.08 * (1.0 - cos(phi))), Vector3(0.0, -phi, 0.0), blade * 1.5 if metal_blade else blade.darkened(0.2))
+				if metal_blade:
+					_metal(parts, rough, 0.6)
+
+			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
+			_plate(parts, 0.0, 0.14, 0.17, 0, 8, blade, true, metal_blade, rough, 0.6, frame, 1)                       # the blade plate, hanging toward +z, wide across y
+			_plate(parts, 0.0, 0.14, 0.17, 8, 12, Color(0.5, 0.5, 0.5) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.6, frame, 1)   # its bright cutting edge
 		"knife":
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
@@ -595,7 +628,7 @@ static func _wedge(parts: Array, base: float, out: float, along: float, at: Vect
 # A spade blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
 # half width flat to 45 percent of the length (square shoulders) then an elliptical taper to a rounded tip, dished across (the edges lift 1.4 cm), curving forward at the
 # socket, 4 mm thin with a rolled (thicker) edge, smooth-shaded. `from_row` to `to_row` of 12 build one piece, so the tip can take its own colour.
-static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float) -> void:
+static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float, xform: Transform3D = Transform3D.IDENTITY, mode: int = 0) -> void:
 	var rows: int = 12
 	var cols: int = 3
 	var tool: SurfaceTool = SurfaceTool.new()
@@ -607,15 +640,24 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 	for i in range(from_row, to_row + 1):
 		var t: float = float(i) / float(rows)
 		var half: float = 0.5 * wide if t < 0.45 else 0.5 * wide * sqrt(maxf(1.0 - pow((t - 0.45) / 0.55, 2.0), 0.0))
+
+		if mode == 1:
+			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
+		elif mode == 2:
+			half = 0.5 * wide * (1.0 - 0.35 * t)                                                                      # a saw blade: tapering gently to the toe
+
 		half = maxf(half, 0.012)
-		var forward: float = 0.014 * pow(1.0 - t, 2.0)
+		var forward: float = 0.014 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
+		var dish: float = 0.014 if mode == 0 else (0.008 if mode == 1 else 0.0)
+		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else 0.0025)
+		var rim: float = 0.006 if mode != 2 else 0.0
 		var top_row: Array = []
 		var bottom_row: Array = []
 
 		for c in range(-cols, cols + 1):
 			var u: float = float(c) / float(cols)
-			var y: float = forward + 0.014 * u * u
-			var thick: float = 0.004 + 0.006 * pow(absf(u), 6.0)
+			var y: float = forward + dish * u * u
+			var thick: float = base + rim * pow(absf(u), 6.0)
 			top_row.append(Vector3(x0 + length * t, y, u * half))
 			bottom_row.append(Vector3(x0 + length * t, y - thick, u * half))
 
@@ -642,7 +684,7 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 	tool.index()
 	tool.generate_normals()
 	var piece: ArrayMesh = tool.commit()
-	parts.append([piece, Transform3D(Basis.IDENTITY, Vector3.ZERO), color])
+	parts.append([piece, xform, color])
 
 	if metal:
 		_metal(parts, rough, metallic)

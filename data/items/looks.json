@@ -205,6 +205,7 @@
    "shape": "saw",
    "color": "#8a8d93",
    "size": 1.0,
+   "bits": ["metal","steel"],
    "placeholder": true
   },
   "stone_spade": {
@@ -911,22 +912,24 @@
   "wooden_hoe": {
    "shape": "hoe",
    "color": "#8a6a3a",
-   "size": 1.2
+   "size": 1.0
   },
   "stone_hoe": {
    "shape": "hoe",
    "color": "#7d7a74",
-   "size": 1.2
+   "size": 1.0
   },
   "iron_hoe": {
    "shape": "hoe",
    "color": "#6c6f75",
-   "size": 1.2
+   "size": 1.0,
+   "bits": ["metal"]
   },
   "steel_hoe": {
    "shape": "hoe",
    "color": "#9aa3ad",
-   "size": 1.2
+   "size": 1.0,
+   "bits": ["metal","steel"]
   },
   "rough_plank": {
    "shape": "planks",
