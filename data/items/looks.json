@@ -2020,28 +2020,26 @@
    "size": 1.0
   },
   "wooden_bow": {
-   "shape": "shaft",
+   "shape": "bow",
    "color": "#a8804a",
-   "size": 1.0,
-   "placeholder": true
+   "size": 0.55
   },
   "wooden_arrow": {
-   "shape": "shaft",
+   "shape": "arrow",
    "color": "#d8b070",
-   "size": 0.5,
-   "placeholder": true
+   "size": 0.55
   },
   "stone_arrow": {
-   "shape": "shaft",
+   "shape": "arrow",
    "color": "#b8bcc4",
-   "size": 0.5,
-   "placeholder": true
+   "size": 0.55,
+   "bits": ["stone"]
   },
   "quiver": {
-   "shape": "sack",
+   "shape": "quiver",
    "color": "#6b4c31",
-   "size": 1.0,
-   "placeholder": true
+   "size": 0.55
   }
+
  }
 }
