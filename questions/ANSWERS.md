@@ -1686,3 +1686,7 @@ Answered: 2026-10-25 13:55 UTC
 Answer: No: Yes, go with the scythe the nice big old-fashioned one and have a hand sickle
 Answered: 2026-10-25 13:56 UTC
 
+## trim-i | Item trim I: New tools: keep scythe, sickle merges in, no rake, no shears yet
+Answer: No: Yes, go with the scythe the nice big old-fashioned one and have a hand sickle
+Answered: 2026-10-25 13:56 UTC
+
