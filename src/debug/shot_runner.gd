@@ -281,11 +281,12 @@ func _process(delta: float) -> void:
 		_want_y += 50.0 if force_land_fail else 0.0
 		return
 
-	# 25 Oct (David3: a picture taken at 64.7 m over forest): the settle time starts only when the camera has landed, i.e. the ground is ready, the body is within
-	# 0.5 m of the height the shot wants and (over real ground) a collider is under it. Never landed in 90 s: the shot is saved as <name>_FAILED.png and the run goes on.
+	# 25 Oct (David3: a picture taken at 64.7 m over forest): the settle time starts only when the camera has landed, i.e. the body is within
+	# 0.5 m of the height the shot wants (the join gate above already waited for ground). Never landed in 90 s: the shot is saved as <name>_FAILED.png and the run goes on.
 	if not _landed:
 		var at: Vector3 = client.body.global_position
-		var ready: bool = not client.waiting_for_ground and absf(at.y - _want_y) <= 0.5 and (shot_pos.y < 0.0 or client._collider_below(at))
+		# The shot flies (client.flying), so waiting_for_ground is a stale value from the last walking frame and there may be no collider under a flier: height only.
+		var ready: bool = absf(at.y - _want_y) <= 0.5 and (client.flying or not client.waiting_for_ground)
 
 		if not ready and now - _placed_msec < 90000:
 			return
