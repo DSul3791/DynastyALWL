@@ -627,3 +627,16 @@ static func clay_hearth() -> Node3D:
 	_rod(root, Vector3(-0.58, 0.98, 0.2), Vector3(0.58, 0.98, 0.2), 0.035, _frame)      # the spit
 	_solid(root, Vector3(1.2, 0.6, 0.9), Vector3(0.0, 0.3, 0.0))
 	return root
+
+
+# A brick oven (cooking station tier 3), 1.8 m by 1.4 m, 1.2 m high: a brick body, a clay arch over a dark mouth, a flue on top. Stub look until Kathleen's art.
+static func oven() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.8, 0.7, 1.4), Vector3(0.0, 0.35, 0.0), _stone)
+	_box(root, Vector3(1.5, 0.4, 1.2), Vector3(0.0, 0.9, 0.0), _clay)
+	_box(root, Vector3(0.7, 0.4, 0.06), Vector3(0.0, 0.5, 0.71), _tar)               # the mouth
+	_box(root, Vector3(0.9, 0.08, 0.1), Vector3(0.0, 0.74, 0.71), _clay)             # the lintel
+	_box(root, Vector3(0.22, 0.4, 0.22), Vector3(0.45, 1.3, -0.3), _stone)           # the flue
+	_solid(root, Vector3(1.8, 1.1, 1.4), Vector3(0.0, 0.55, 0.0))
+	return root

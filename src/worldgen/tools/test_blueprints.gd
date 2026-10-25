@@ -78,11 +78,15 @@ func _init() -> void:
 
 		live[id] = row
 		check(items._structures.has(str(row["structure"])), "%s: names a structure" % id)
+
+		if not row.has("recipe"):   # the clay hearth and the oven never had a kit recipe
+			continue
+
 		var recipe: Dictionary = recipes[str(row["recipe"])]
 		check(bool(recipe.get("retired", false)), "%s: kit recipe %d is retired, not removed" % [id, int(recipe["number"])])
 		check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
 
-	check(live.size() == 4 and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table"), "the heavy processing stations are the blueprints (%d)" % live.size())
+	check(live.size() == 6 and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations and the cooking tiers are the blueprints (%d)" % live.size())
 
 	# Fine wood and lower are made by hand, no station: the section pieces, the foundation, the timber set, the ladder (and the thatch four).
 	for kit in ["wall_section_kit", "floor_section_kit", "roof_section_kit", "foundation_section_kit", "doorway_section_kit", "window_section_kit", "timber_set_kit", "ladder_kit"]:
@@ -161,6 +165,53 @@ func _init() -> void:
 
 	items.action(1, Net.ACT_PICKUP, _ids_standing("woodworking_table")[0], 0, 0, Vector3.ZERO)
 	check(_ids_standing("woodworking_table").size() == 1, "a full pack: the table stays up, nothing is lost")
+
+	# Clay hearth (13) and oven (14): hammer blueprints; the oven needs a hearth within reach; the tiers cook what the lower tier cooks.
+	_clear(1)
+	_give(1, "wooden_hammer", 1)
+	_give(1, "brick", 24)
+	_give(1, "clay", 10)
+	_give(1, "stone", 8)
+	items.report_position(1, Vector3(230.0, 10.0, 230.0))
+	var oven_bp: Dictionary = live["oven"]
+	var hearth_bp: Dictionary = live["clay_hearth"]
+	check(int(hearth_bp["number"]) == 13 and int(oven_bp["number"]) == 14, "hearth is blueprint 13, oven 14")
+	var oven_before: int = items.world_item_count()
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
+	check(items.world_item_count() == oven_before and _have(1, "brick") == 24, "an oven without a hearth near places nothing and takes nothing")
+	check(not items.station_near(1, "campfire"), "no fire, no hearth: nothing cooks")
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(hearth_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
+	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 4, "the hearth stands for 10 brick, 6 clay, 4 stone")
+	check(items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire") and not items.station_near(1, "oven", 3), "a hearth cooks what a campfire cooks, not oven dishes")
+	var dish_nums: Dictionary = {}
+
+	for rn in items.recipes.numbers():
+		dish_nums[str(items.recipes.recipe(rn)["id"])] = rn
+
+	check(str(items.recipes.recipe(dish_nums["cook_flatbread"]).get("station", "")) == "clay_hearth" and str(items.recipes.recipe(dish_nums["cook_honey_loaf"]).get("station", "")) == "oven", "the new dishes name their station")
+	_give(1, "seeds", 6)
+	_give(1, "water", 2)
+	_give(1, "hazelnuts", 1)
+	_give(1, "honeyspindle_nectar", 1)
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	check(items.craft_queue_of(1).is_empty(), "a honey loaf is refused at a hearth (oven dish)")
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_flatbread"]), 0, 1, Vector3.ZERO)
+	check(not items.craft_queue_of(1).is_empty(), "flatbread is accepted at a hearth")
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	_give(1, "brick", 10)
+	_give(1, "clay", 6)
+	_give(1, "stone", 4)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(234.0, 10.0, 230.0))
+	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven stands for 24 brick, 10 clay, 8 stone")
+	check(items.station_near(1, "oven", 3) and items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire"), "an oven cooks what a hearth and a campfire cook")
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	check(not items.craft_queue_of(1).is_empty(), "a honey loaf is accepted at the oven")
+	items.report_position(1, Vector3(233.0, 10.0, 231.0))
+	items.action(1, Net.ACT_PICKUP, _ids_standing("oven")[0], 0, 0, Vector3.ZERO)
+	check(_ids_standing("oven").is_empty() and _have(1, "brick") == 24 and _have(1, "oven_kit") == 0, "taking the oven down gives the materials back")
 
 	# Save and load: placed pieces come back.
 	items.save()

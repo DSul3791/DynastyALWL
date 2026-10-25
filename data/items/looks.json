@@ -2042,6 +2042,26 @@
    "color": "#6b4c31",
    "size": 1.0,
    "placeholder": true
+  },
+  "oven_kit": {
+   "shape": "kit",
+   "color": "#8a5a42",
+   "size": 1.0
+  },
+  "flatbread": {
+   "shape": "loaf",
+   "color": "#d9b87a",
+   "size": 0.8
+  },
+  "honey_loaf": {
+   "shape": "loaf",
+   "color": "#c98a3c",
+   "size": 1.0
+  },
+  "roast_joint": {
+   "shape": "chunk",
+   "color": "#8a4a2a",
+   "size": 1.0
   }
  }
 }
