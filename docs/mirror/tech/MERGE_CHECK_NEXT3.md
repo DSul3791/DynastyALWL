@@ -129,3 +129,5 @@ shelter e2986139 -> fire tiers 9d911ec8 -> A sal-campfire-pot (pot + twine tests
 
 ## PENDING RULE BP-T69 (Dave 25 Oct 00:49): bake thread count on the server box
 Waiting for David3's step-down result (highest thread count that completes inside the container memory limit, swap 0). Report must give: thread count, memory limit, peak RAM (from the shot/bake log "peak memory"), time per tile. When it arrives Tyler writes BP-T69 into BEST_PRACTICES.md and the bake instructions (tools/docker/README.md, DAVID3_HANDOVER.md "bakes"): fixed thread count, memory limit, peak RAM, and the step-down rule (run killed with exit 137 or OOM = repeat once with one fewer thread, never more than the proven count; log which count worked), then tells Mike and Sonny.
+
+792: steve-bed-respawn (cut from steve-rough-bed 6459b079) merges right after the rough bed. See ACTION_PLANS/Steve_bed_respawn_REPLY.md (free landing, no death loop).
