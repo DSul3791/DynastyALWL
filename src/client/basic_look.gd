@@ -324,8 +324,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			if metal_blade:
 				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)        # steel: a neutral mid-grey (about sRGB 137), lighter than iron; iron: dark charcoal, neutral to faintly warm (about sRGB 89); linear values, no blue
-			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
-				blade = _warm_stone(color)                                                                     # stone: darker and warmer than the table grey
+			elif absf(color.r - color.b) < 0.1:
+				blade = Color(0.19, 0.16, 0.115)                                                               # stone: matt grey-brown
+			else:
+				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
 			_cyl_taper(parts, 0.0175, 0.0165, 0.25, Vector3(0.325, 0.0, 0.0), _tone(ash, 1, 0.05))                # the haft: long tapering lengths, no banding
 			_cyl_taper(parts, 0.0165, 0.0175, 0.25, Vector3(0.075, 0.0, 0.0), _tone(ash, 2, 0.05))
@@ -359,22 +361,24 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_plate(parts, 0.474, 0.31, 0.18, 0, 11, blade, true, metal_blade, rough, 0.3)                          # the blade plate, 31 by 18 cm
 			_plate(parts, 0.474, 0.31, 0.18, 11, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3)   # the last 2.5 cm: a bright strip along the bottom edge
 		"saw":
-			# A hand saw (modelled on a real panel saw): a wooden pistol grip with brass rivets at -x, a thin steel blade plate (a real polygon plate, 45 cm, 11 cm at the heel
-			# narrowing to 7 cm at the toe) with a row of teeth along the cutting edge (+z), blade on the metal surface in a neutral grey.
-			var steel_blade: Color = Color(0.2, 0.2, 0.2)
+			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
+			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
+			var steel_blade: Color = Color(0.25, 0.25, 0.25)
 			var grip_wood: Color = Color(0.3, 0.2, 0.11)
-			_box(parts, Vector3(0.1, 0.03, 0.05), Vector3(-0.26, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                  # grip
-			_box(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.28, 0.0, -0.05), _tone(grip_wood, 2, 0.1))               # the grip's lower leg
-			_box(parts, Vector3(0.05, 0.034, 0.012), Vector3(-0.215, 0.0, 0.035), _tone(grip_wood, 3, 0.1))            # the grip's upper horn
-			_box(parts, Vector3(0.04, 0.02, 0.07), Vector3(-0.19, 0.0, 0.0), Color(0.12, 0.11, 0.1))                  # the plate the blade is riveted to
-			_metal(parts, 0.5, 0.6)
+			var brass: Color = Color(0.45, 0.32, 0.08)
+			_box(parts, Vector3(0.025, 0.026, 0.13), Vector3(-0.3, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                 # the rear of the grip, the bar the hand closes round
+			_box(parts, Vector3(0.14, 0.026, 0.025), Vector3(-0.23, 0.0, -0.052), _tone(grip_wood, 2, 0.1))             # the top bar
+			_box(parts, Vector3(0.14, 0.026, 0.025), Vector3(-0.23, 0.0, 0.052), _tone(grip_wood, 3, 0.1))              # the bottom bar, closing the finger hole against the blade
+			_box(parts, Vector3(0.05, 0.007, 0.13), Vector3(-0.165, 0.0, 0.0), brass)                                    # the brass plate the grip is riveted to the blade through
 			for k in range(3):
-				_sph(parts, 0.007, Vector3.ONE, Vector3(-0.205 + 0.015 * float(k), 0.016, 0.0), Color(0.5, 0.38, 0.12), true)   # brass rivets
-			_plate(parts, -0.17, 0.45, 0.11, 0, 12, steel_blade, true, true, 0.5, 0.6, Transform3D(Basis.IDENTITY, Vector3.ZERO), 2)
-			for k in range(26):                                                                                       # teeth along the cutting edge
-				var t: float = (float(k) + 0.5) / 26.0
-				_wedge(parts, 0.006, 0.013, 0.0145, Vector3(-0.17 + 0.45 * t, 0.0, 0.055 * (1.0 - 0.35 * t) + 0.0055), steel_blade * 1.4)
-				_metal(parts, 0.5, 0.6)
+				_sph(parts, 0.008, Vector3.ONE, Vector3(-0.18 + 0.014 * float(k), 0.006, 0.0), brass.lightened(0.3), true)   # brass rivets
+			_plate(parts, -0.17, 0.5, 0.14, 0, 12, steel_blade, true, true, 0.65, 0.3, Transform3D(Basis.IDENTITY, Vector3.ZERO), 2)
+			_box_rot(parts, Vector3(0.5, 0.007, 0.007), Vector3(0.08, 0.0, -0.0475), Vector3(0.0, -0.09, 0.0), Color(0.07, 0.07, 0.07))   # a thin dark spine along the top
+			_metal(parts, 0.65, 0.3)
+			for k in range(28):                                                                                       # fine teeth along the cutting edge
+				var t: float = (float(k) + 0.5) / 30.0
+				_wedge(parts, 0.006, 0.012, 0.0155, Vector3(-0.17 + 0.5 * t, 0.0, 0.07 * (1.0 - 0.64 * t) + 0.0055), steel_blade * 1.3)
+				_metal(parts, 0.65, 0.3)
 		"hammer":
 			# A hafted hammer (modelled on a real stone club hammer; a wooden mallet when bits has "wood"): a short ash haft with weathered grain, a heavy blunt head across
 			# the end with flat faces both sides (no edge), worn darker striking faces, and leather thong lashing either side of the head. Mesh axes: haft along x, head along z.
@@ -409,8 +413,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			if metal_blade:
 				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)
-			elif color.get_luminance() < 0.7 and absf(color.r - color.b) < 0.1:
-				blade = _warm_stone(color)
+			elif absf(color.r - color.b) < 0.1:
+				blade = Color(0.19, 0.16, 0.115)                                                               # stone: matt grey-brown, tied on with twine below
+			else:
+				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
 			_cyl_taper(parts, 0.0175, 0.0165, 0.42, Vector3(0.24, 0.0, 0.0), _tone(ash, 1, 0.05))
 			_cyl_taper(parts, 0.0165, 0.0175, 0.42, Vector3(-0.18, 0.0, 0.0), _tone(ash, 2, 0.05))
@@ -421,7 +427,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			if metal_blade:
 				_metal(parts, rough, 0.3)
 
-			var reach: Vector3 = Vector3(0.45, 0.0, 0.0)
+			_cyl_taper(parts, 0.03, 0.03, 0.02, Vector3(0.455, 0.0, 0.0), blade * 1.3 if metal_blade else Color(0.3, 0.2, 0.11))   # the small socket flange where the neck enters
+			if metal_blade:
+				_metal(parts, rough, 0.3)
 
 			for k in range(3):                                                                                        # the goose-neck: a 70 degree bend toward +z
 				var phi: float = (float(k) + 0.5) * deg_to_rad(70.0) / 3.0
@@ -429,9 +437,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				if metal_blade:
 					_metal(parts, rough, 0.3)
 
+			if bits.is_empty() and absf(color.r - color.b) < 0.1:
+				for k in range(3):                                                                              # a stone blade is tied on: three twine wraps round the neck
+					_box_rot(parts, Vector3(0.012, 0.034, 0.034), Vector3(0.505 + 0.016 * float(k), 0.0, 0.03 + 0.01 * float(k)), Vector3(0.0, -0.4, 0.0), Color(0.45, 0.33, 0.15))
+
 			var frame: Transform3D = Transform3D(Basis(Vector3.UP, -0.2) * Basis(Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0), Vector3(0.0, 1.0, 0.0)), Vector3(0.522, 0.0, 0.05))
-			_plate(parts, 0.0, 0.14, 0.17, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1)                       # the blade plate, hanging toward +z, wide across y
-			_plate(parts, 0.0, 0.14, 0.17, 8, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3, frame, 1)   # its bright cutting edge
+			_plate(parts, 0.0, 0.13, 0.18, 0, 8, blade, true, metal_blade, rough, 0.3, frame, 1)                       # the blade plate, hanging toward +z, wide across y
+			_plate(parts, 0.0, 0.13, 0.18, 8, 12, Color(0.45, 0.45, 0.45) if bits.has("steel") else blade * 1.3, false, metal_blade, rough, 0.3, frame, 1)   # its bright cutting edge
 		"knife":
 			# A stone knife (Dave 2026-10-25: tools to the pickaxe standard; review: matt stone, wrapped handle, leaf blade): a short ash handle wrapped in three dark hide bands,
 			# a bound joint where the blade is set straight into it, and a leaf-shaped knapped stone blade, thick straight back along -z, curved cutting edge toward +z, slightly
@@ -651,12 +663,18 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
 		elif mode == 2:
-			half = 0.5 * wide * (1.0 - 0.35 * t)                                                                      # a saw blade: tapering gently to the toe
+			half = 0.5 * wide * (1.0 - 0.64 * t)                                                                      # a saw blade: 14 cm at the heel tapering to 5 cm at the toe
+
+			if t > 0.9:
+				half *= sqrt(maxf(1.0 - pow((t - 0.9) / 0.1, 2.0) * 0.9, 0.0))                                      # rounded toe
 
 		half = maxf(half, 0.012)
 		var forward: float = 0.014 * pow(1.0 - t, 2.0) if mode == 0 else 0.0
 		var dish: float = 0.014 if mode == 0 else (0.008 if mode == 1 else 0.0)
 		var base: float = 0.004 if mode == 0 else (0.005 if mode == 1 else 0.0025)
+
+		if mode == 1:
+			base += 0.007 * smoothstep(0.35, 0.7, t) * (1.0 - 0.8 * smoothstep(0.8, 1.0, t))                           # a hoe's edge thickens, then bevels to a thin cutting edge
 		var rim: float = 0.006 if mode != 2 else 0.0
 		var top_row: Array = []
 		var bottom_row: Array = []

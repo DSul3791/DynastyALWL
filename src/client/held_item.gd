@@ -39,6 +39,8 @@ const GRIP_ALONG_Y := {"axe": 0.25, "torch": 0.25, "knife": 0.05, "other": 0.3, 
 const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
 const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
+const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
+const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
@@ -1063,8 +1065,14 @@ func _mount_model_third(kind: String) -> void:
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
 	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
-	if str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+
+	if carried == "spade":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SPADE_PITCH_DEG))
+	elif carried == "hoe":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_HOE_PITCH_DEG))
+	elif carried == "saw":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SAW_PITCH_DEG))
 
 	if kind == "spear":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))

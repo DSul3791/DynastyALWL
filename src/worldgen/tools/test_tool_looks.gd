@@ -57,6 +57,14 @@ func _init() -> void:
 	_check(absf((BasicLook.mesh_for("iron_pickaxe").surface_get_material(1) as StandardMaterial3D).roughness - 0.4) < 0.001, "the locked pickaxe keeps metal roughness 0.4")
 	_check(BasicLook.mesh_for("iron_spade_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_spade_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "spade and pickaxe use separate shared metal materials")
 
+	# Carry in third person: a hoe blade-down (haft 45 to 60 degrees below horizontal), a saw by the handle with the blade down and back about 30 degrees.
+	var hoe_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_HOE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["hoe"] * Vector3(1.0, 0.0, 0.0)
+	var saw_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SAW_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["saw"] * Vector3(1.0, 0.0, 0.0)
+	var hoe_below: float = rad_to_deg(asin(clampf(-hoe_dir.z, -1.0, 1.0)))
+	print("carried hoe haft ", hoe_dir, " is ", hoe_below, " degrees below horizontal; saw blade ", saw_dir)
+	_check(hoe_below >= 45.0 and hoe_below <= 60.0, "the carried hoe's haft is %.0f degrees below horizontal (45 to 60)" % hoe_below)
+	_check(saw_dir.z < -0.8 and saw_dir.y < -0.3, "the carried saw's blade points down and back (%.2f, %.2f)" % [saw_dir.y, saw_dir.z])
+
 	# Carry: a spade carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
 	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SPADE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["spade"]
 	var blade_dir: Vector3 = carry * Vector3(1.0, 0.0, 0.0)
@@ -93,6 +101,14 @@ func _init() -> void:
 	_check(saw.get_surface_count() == 2, "hand_saw: wooden grip plus the metal blade surface")
 	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "hand_saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
 	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "hand_saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
+	_check(_width_near(saw, -0.1, 0.015) > 0.12 and _width_near(saw, -0.1, 0.015) < 0.16, "hand_saw: about 14 cm across at the heel (%.3f)" % _width_near(saw, -0.1, 0.015))
+	_check(_width_near(saw, 0.32, 0.012) < 0.06, "hand_saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
+	var saw_tris: int = 0
+
+	for surface in saw.get_surface_count():
+		saw_tris += (saw.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+
+	_check(saw_tris <= 1200, "hand_saw: %d triangles" % saw_tris)
 	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "hand_saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
 
 	# Stone knife: about 23 cm overall at size 1, blade about as long as the handle, a leaf blade (widest in the middle, narrow at the tip), matt stone (not bright steel).
