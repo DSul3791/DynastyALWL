@@ -226,9 +226,6 @@ func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, thresho
 		var q: float = sqrt(flow.discharge[index])
 		var radius_m: float = 0.5 * maxf(float(rules["width_m_per_sqrt_q"]) * q, float(rules["min_width_m"]))
 		var reach: int = maxi(int(ceil(radius_m / cell_m)), 1)
-		@warning_ignore("integer_division")
-		var row: int = index / size
-		var column: int = index % size
 		var turn: float = curvature[index]
 		var depth_here: float = h[index] - centre_bed[index]
 		var shift_x: float = 0.0
