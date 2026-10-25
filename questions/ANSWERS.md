@@ -1638,3 +1638,7 @@ Answered: 2026-10-24 22:18 UTC
 Answer: No: The wind has no sound at all when I turned the volume down for nature sounds. I lose everything even with the wind volume all the way up I still don’t have any wind sound. I think it’s all incorporated into nature so break them apart.
 Answered: 2026-10-24 22:18 UTC
 
+## sound-duck-vetted | Duck quacks and sand footsteps (build 752)
+Answer: Yes
+Answered: 2026-10-25 00:15 UTC
+
