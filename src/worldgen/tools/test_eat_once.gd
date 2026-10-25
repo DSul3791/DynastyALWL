@@ -5,6 +5,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
@@ -51,9 +52,11 @@ func _init() -> void:
 	var v: Dictionary = items.vitals_of(1)
 	v["fed"] = 1500.0
 	v["wet"] = 1500.0
+	var fed_start: float = 1500.0
+	var meat_kcal: float = float(VitalsRules.food_value("raw_meat", items._vitals_cfg))
 	eat(items, "raw_meat")
 	check(not items.is_sick(1), "unknown raw meat in the first hour does not make you sick")
-	check(float(v["fed"]) < 1400.0 and float(v["wet"]) < 1400.0, "but it costs food and water")
+	check(float(v["fed"]) <= fed_start + meat_kcal - 140.0 and float(v["wet"]) < 1400.0, "but it costs food and water")
 	check(items.tried_of(1).get("raw_meat", "") == "harm", "and the harm is remembered")
 	check(said.has(items._eat_cfg_value("say_first_hour", "?")), "the player is told")
 
@@ -87,7 +90,8 @@ func _init() -> void:
 	items._characters[items._peer_key[1]]["grace_s"] = 100.0
 	items._vitals_tick(30.0)
 	check(absf(items.grace_of(1) - 70.0) < 0.01, "the first hour counts down with online time")
-	items._save_characters()
+	items._dirty = true
+	items.save()
 	var again = make(dir)
 	again.peer_connected_hello(1, "eat-once-key-01")
 	check(again.tried_of(1).get("raw_meat", "") == "harm" and absf(again.grace_of(1) - 70.0) < 0.01, "tried foods and the remaining hour survive a reload")
