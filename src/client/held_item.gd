@@ -23,13 +23,13 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
-const TOOL_TILT_SLIGHT_DEG := 0.0   # first person, hand tools: along the fingers; the resting arm points 15 degrees below level (REST_PITCH_DEG 75), so the head is slightly down (Dave 2026-10-25)
+const TOOL_TILT_SLIGHT_DEG := 11.0  # first person, hand tools: up from the fingers; the resting arm points 28 degrees below level (REST_PITCH_DEG 62), so the head is about 17 degrees down (Dave 2026-10-25)
 # Dave 2026-10-21: at rest the arms hang at the character's side, below the bottom of the screen, and the tool sits in the hand there,
 # fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
 # arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
 const REST_DOWN_M := 0.15              # first-person arms at rest: root this far below the eye (was 0.3: the hands hung below the view at a level look, Mike's arms_debug shots 2026-10-25)
 const REST_BACK_M := 0.05
-const REST_PITCH_DEG := 75.0           # arms reach forward, hands about 28 degrees below level, in the lower part of the view (was 8: hanging straight down)
+const REST_PITCH_DEG := 62.0           # arms reach forward but hang low: hands in front and a little down (Dave 2026-10-25), forearms in the lower view; hands about 39 degrees below level
 const ARMS_FOLLOW_K := 9.0
 const ARMS_SCALE := 0.85               # first-person arms a little slimmer and shorter (hands11/arms_fix pictures: they filled the lower corners); the tool is scaled back up so it keeps its size
 const FIST_COLOR := Color(0.78, 0.62, 0.5)
