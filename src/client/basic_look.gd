@@ -10,6 +10,7 @@ const LOOKS_PATH := "res://data/items/looks.json"
 static var _table: Dictionary = {}
 static var _loaded: bool = false
 static var _material: StandardMaterial3D
+static var _metal_mat: StandardMaterial3D
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
@@ -280,6 +281,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.0235, 0.02, Vector3(-0.27 + 0.02 * float(k) + 0.01, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(leather, k, 0.22) if k % 2 == 0 else leather.darkened(0.3))
 			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
 			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron * 0.75)                    # the iron eye block the haft passes into
+			_metal(parts)
 			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), _tone(wood, 5, 0.1))                      # the haft's end, standing proud of the head
 			for k in range(3):                                                                                               # the collar's leather lashing, three turns
 				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
@@ -300,8 +302,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					if seg >= count - 2:
 						tone = tone * 1.45                                                                              # the worked, bright points and edge
 					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -sign * mid, 0.0), tone)
+					_metal(parts)
 			if steel_head:
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
+				_metal(parts)
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
@@ -606,7 +610,35 @@ static func _torus(parts: Array, ring: float, tube: float, at: Vector3, color: C
 	parts.append([torus, Transform3D(Basis.IDENTITY, at), color])
 
 
+# Marks the part just added as metal: it goes on its own surface with the metallic material (the pickaxe head so far).
+static func _metal(parts: Array) -> void:
+	(parts[parts.size() - 1] as Array).append(true)
+
+
 static func _combine(parts: Array, size: float) -> ArrayMesh:
+	var plain: Array = []
+	var metal: Array = []
+
+	for part in parts:
+		if (part as Array).size() > 3:
+			metal.append(part)
+		else:
+			plain.append(part)
+
+	var result: ArrayMesh = ArrayMesh.new()
+
+	if not plain.is_empty() or metal.is_empty():
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(plain, size))
+		result.surface_set_material(0, _shared_material())
+
+	if not metal.is_empty():
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(metal, size))
+		result.surface_set_material(result.get_surface_count() - 1, _metal_material())
+
+	return result
+
+
+static func _surface_arrays(parts: Array, size: float) -> Array:
 	var vertices: PackedVector3Array = PackedVector3Array()
 	var normals: PackedVector3Array = PackedVector3Array()
 	var colors: PackedColorArray = PackedColorArray()
@@ -634,10 +666,18 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 	out[Mesh.ARRAY_NORMAL] = normals
 	out[Mesh.ARRAY_COLOR] = colors
 	out[Mesh.ARRAY_INDEX] = indices
-	var result: ArrayMesh = ArrayMesh.new()
-	result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
-	result.surface_set_material(0, _shared_material())
-	return result
+	return out
+
+
+# One shared metal material, built once: the vertex colour is the metal's colour, smooth and shiny.
+static func _metal_material() -> StandardMaterial3D:
+	if _metal_mat == null:
+		_metal_mat = StandardMaterial3D.new()
+		_metal_mat.vertex_color_use_as_albedo = true
+		_metal_mat.metallic = 0.8
+		_metal_mat.roughness = 0.4
+
+	return _metal_mat
 
 
 static func _shared_material() -> StandardMaterial3D:
