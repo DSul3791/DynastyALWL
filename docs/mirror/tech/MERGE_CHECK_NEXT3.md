@@ -133,3 +133,10 @@ Waiting for David3's step-down result (highest thread count that completes insid
 792: steve-bed-respawn (cut from steve-rough-bed 6459b079) merges right after the rough bed. See ACTION_PLANS/Steve_bed_respawn_REPLY.md (free landing, no death loop).
 
 remove-old-builder 930447aa (base merge-793 5b9d9f91): merges into merge-793 AFTER the speed-up proof bakes. Reply: ACTION_PLANS/Sonny_remove_old_builder_REPLY.md. Build note line for Dave: close game and Godot editor, Pull, open the project once to re-import.
+
+## DAVID3 JOB ORDER (Tyler 01:30 UTC 25 Oct; he is the single gate, one job at a time)
+1. A = Sal's merge e405038b (campfire pot + the four test fixes; it must contain shelter e2986139: check with git merge-base --is-ancestor; if it does, A's PASS is the shelter's PASS and the shelter is not run separately; if not, A is not mergeable and goes back to Sal).
+2. Speed-up re-proof (unblocks Dave's no-bakes hold).
+3. B sal-craft-menu, 4. C sal-auto-craft.
+5. Bed 6459b079 then bed-respawn, 6. old-builder 930447aa (after the speed-up proof, as agreed), 7. sound hookup fce8a304, 8. no-stack caps + weight audit.
+RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL 40-character hash; David3's first result line is `HEAD=<git rev-parse HEAD>` and a mismatch with the job aborts the run before any test starts. No result without that line counts as a PASS.
