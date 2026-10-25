@@ -116,7 +116,6 @@ func _init() -> void:
 	var total: int = 400
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 1, Vector3.ZERO)
 	var landed: int = 0
-	var before_world: int = items._items.size()
 
 	for n in total:
 		items.inventory_of(1).add(items.table.number_of("stone_arrow"), 1)
