@@ -7,3 +7,6 @@ Change (RUNTIME, debug tooling only, no game rule, no protocol):
 3. Names tag (Label3D) and the piece's size line stay as in `_show_pieces`; a piece that draws nothing says FAIL; a `planned` piece is skipped with a line. Snare: if structures.json has no snare_trap yet (Sal's branch not merged) it prints "skipped: not in structures.json" instead of failing the run.
 4. Tests: test_item_cam.gd gets piece cases (flat bed AABB 1.0x0.3x2.0, tall wall 4x3x0.3, lean_to 4x3x4: fit distance in 3..6, fill >= 1/3, all corners inside); parse_scan; David3 runs `--shot-piece=rough_bed,thatch_floor,clay_hearth,oven,lean_to,snare` on the box and I read the pictures. Kathleen reviews.
 Risk: low (debug-only code path; the normal game is untouched). Merge order: any time after build 817.
+
+## Build notes (Tyler GO)
+Flag is `--shot-piece-views` (look_rig: `--piece-views NAME`, one piece per run, name checked against structures.json before launch). item_cam.views/fit_distance got optional max_fit (6.0 for pieces; items keep 3.0) and low_piece (higher orbit: 40/40/90/50 degrees). shot_runner._build_piece_views runs after the piece row is built; a missing or planned piece prints "piece-views skipped" and the run ends with the row pictures; each view is judged by the item check (fill, centre, inside). test_item_cam piece cases added. Not run in Godot here.

@@ -25,9 +25,13 @@ static func pitch_to(from: Vector3, to: Vector3) -> float:
 # The four views of the item whose drawn box is `box`, on ground at `ground_y`: front, side, top, diag. Each looks at the box centre from the closest distance (MIN_DIST to
 # MAX_FIT_DIST) at which the whole box sits inside the frame with FIT_MARGIN to spare, so a long tool backs off and a small one comes close. Each: name, dist, cam (world
 # position), yaw, pitch, cam_x, cam_z, above (camera metres above the ground, for the runner's view setup), up (the camera's up vector, for the framing maths).
-static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0, blade_dir: Vector2 = Vector2.ZERO, plate_normal: Vector3 = Vector3.ZERO) -> Array:
+static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16.0 / 9.0, blade_dir: Vector2 = Vector2.ZERO, plate_normal: Vector3 = Vector3.ZERO, max_fit: float = MAX_FIT_DIST, low_piece: bool = false) -> Array:
 	var centre: Vector3 = box.get_center()
 	var specs: Array = [["front", 0.0, 25.0], ["side", 90.0, 25.0], ["top", 0.0, 90.0], ["diag", 45.0, 35.0]]
+
+	# A low building piece (bed, floor, hearth, snare; the piece shot job): the orbit stands higher so the top of it shows.
+	if low_piece:
+		specs = [["front", 0.0, 40.0], ["side", 90.0, 40.0], ["top", 0.0, 90.0], ["diag", 45.0, 50.0]]
 
 	# A long tool with a heavy end (spade, hoe, axe): the diag view looks down at 45 degrees from beyond that end, so the blade is the near, large thing.
 	if blade_dir.length() > 0.5:
@@ -55,7 +59,7 @@ static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16
 			dir = diag_dir
 
 		var up: Vector3 = Vector3.UP if float(spec[2]) < 89.0 else Vector3(0.0, 0.0, -1.0)
-		var d: float = fit_distance(box, dir, up, fov_deg, aspect)
+		var d: float = fit_distance(box, dir, up, fov_deg, aspect, max_fit)
 		var aim_from: Vector3 = centre + dir * d      # the orientation is the one of the unshifted camera; centre_in_frame only slides the camera
 		var cam: Vector3 = centre_in_frame(box, aim_from, -dir, up, fov_deg, aspect)
 		var top: bool = float(spec[2]) >= 89.0
@@ -189,10 +193,10 @@ static func heavy_end(faces: PackedVector3Array, box: AABB) -> Vector2:
 
 # The smallest distance along `dir` from the box centre (aiming back at it) at which every corner lies within FIT_MARGIN of the frame edges (bisection: the fit only
 # improves with distance). Capped at MAX_FIT_DIST.
-static func fit_distance(box: AABB, dir: Vector3, up: Vector3, fov_deg: float, aspect: float) -> float:
+static func fit_distance(box: AABB, dir: Vector3, up: Vector3, fov_deg: float, aspect: float, max_fit: float = MAX_FIT_DIST) -> float:
 	var centre: Vector3 = box.get_center()
 	var lo: float = MIN_DIST
-	var hi: float = maxf(MAX_FIT_DIST, box.size.length() * 1.5)      # a long tool needs more room than 3 m (a 2.5 m spade seen end-on)
+	var hi: float = maxf(max_fit, box.size.length() * 1.5)      # a long tool needs more room than 3 m (a 2.5 m spade seen end-on)
 
 	if float(frame_stats(box, centre + dir * lo, -dir, up, fov_deg, aspect)["extent"]) <= FIT_EXTENT:
 		return lo
