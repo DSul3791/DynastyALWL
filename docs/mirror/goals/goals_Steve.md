@@ -9,6 +9,9 @@ Your first goal below is the ONLY thing that matters until it is done. Scratch p
 Completed: parse_scan, water_flow_at, sunny switch (build 771)
 
 
+## Critique tasks (Dave 25 Oct, LOOK REVIEW LOOP)
+When Kathleen's art/CRITIQUES/<build>.md names you as owner of a flaw, the Moderator relays it once; add it here as a step "Critique <build>-<n>: <flaw>" with branch and before/after pictures, and mention it in your 30-minute check line. It does not replace your goal 1 unless a critique is severity 3 and Tyler says so.
+
 ## Goals completed
 parse_scan, water_flow_at, sunny switch (build 771)
 (Move a goal here ONLY when its Done-when check is true and Tyler confirms.)

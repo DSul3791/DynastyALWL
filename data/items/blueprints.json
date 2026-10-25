@@ -1,0 +1,166 @@
+{
+	"note": "Hammer blueprints (Dave 25 Oct, plan Sal_hammer_blueprints): later-tier placeables are placed from the hammer with the materials in the pack, no kit item. 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near, 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1, higher only where Dave says so), 'recipe' the retired kit recipe (kept so its number is never reused). Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
+	"next_number": 9,
+	"blueprints": {
+		"wall_section": {
+			"number": 1,
+			"name": "Wall section",
+			"structure": "wall_section",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "wall_section_kit"
+		},
+		"floor_section": {
+			"number": 2,
+			"name": "Floor section",
+			"structure": "floor_section",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "floor_section_kit"
+		},
+		"roof_section": {
+			"number": 3,
+			"name": "Roof section",
+			"structure": "roof_section",
+			"cost": [
+				[
+					"lumber",
+					5
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "roof_section_kit"
+		},
+		"foundation_section": {
+			"number": 4,
+			"name": "Foundation",
+			"structure": "foundation_section",
+			"cost": [
+				[
+					"stone",
+					8
+				],
+				[
+					"clay",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "foundation_section_kit"
+		},
+		"doorway_section": {
+			"number": 5,
+			"name": "Doorway",
+			"structure": "doorway_section",
+			"cost": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "doorway_section_kit"
+		},
+		"window_section": {
+			"number": 6,
+			"name": "Window wall",
+			"structure": "window_section",
+			"cost": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "window_section_kit"
+		},
+		"timber_set": {
+			"number": 7,
+			"name": "Timber set",
+			"structure": "timber_set",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "timber_set_kit"
+		},
+		"ladder": {
+			"number": 8,
+			"name": "Ladder",
+			"structure": "ladder",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "ladder_kit"
+		}
+	}
+}

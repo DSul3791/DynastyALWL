@@ -19,6 +19,7 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -304,8 +305,10 @@ func _ready() -> void:
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 
-			if not tile_data.sim_levels.is_empty():
-				if not is_nan(tile_data.sim_levels[k]):
+			var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+			if not sim.is_empty():
+				if not is_nan(sim[k]):
 					return true
 			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
 				return true
@@ -314,6 +317,18 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
+		var water: Array = _water_at(Vector3(x, 0.0, z))
+		var baked: int = 0
+
+		if generator.tile_cached(x, z):
+			var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+			if not tile_data.placeholder and not tile_data.water_class.is_empty():
+				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
+
+		return [water[0], water[1], baked])
+	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
@@ -677,8 +692,10 @@ func _water_at(position: Vector3) -> Array:
 	elif water_live != null:
 		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
 
-		if tile_data != null and not tile_data.sim_levels.is_empty():
-			surface = tile_data.sim_levels[tile_data.nearest(position.x, position.z)]
+		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
+
+		if not sim.is_empty():
+			surface = sim[tile_data.nearest(position.x, position.z)]
 
 	return [surface, ground]
 
@@ -952,8 +969,7 @@ func _poll_water() -> void:
 			if tile_data == null:
 				continue
 
-			tile_data.sim_levels = update[1]
-			tile_data.fall_levels = update[2]
+			tile_data.set_sim(update[1], update[2])
 
 			if update[0] == water_live.centre:
 				_centre_levels = update[1]
@@ -980,6 +996,9 @@ func _cover_at(point: Vector3) -> float:
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			flora.chunk_bytes(home + Vector2i(dx, dz), false)
+
+	if flora.roofed(point):
+		return 2.0   # under a built roof: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
 

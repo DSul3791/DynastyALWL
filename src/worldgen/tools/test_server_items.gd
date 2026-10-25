@@ -446,6 +446,7 @@ func _init() -> void:
 	f.rain_now = func(): return rain[0]
 	f.cover_at = func(p): return 1.0 if p.x > 100.0 else 0.0
 	f.peer_connected_hello(1, "abcdef123456")
+	f._characters[f._peer_key[1]]["grace_s"] = 0.0   # eat-once: the first-hour protection has its own test
 	f.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var kit: int = f.table.number_of("campfire_kit")
 	f.action(1, Net.ACT_ADMIN_GIVE, kit, 0, 3, Vector3.ZERO)
@@ -471,12 +472,19 @@ func _init() -> void:
 
 	f.action(1, Net.ACT_PICKUP, open_id, 0, 0, Vector3.ZERO)
 	check(f._items.has(open_id), "a fire cannot be picked up")
+	check(f._items[open_id]["fire"]["state"] == 9 and f._items[covered_id]["fire"]["state"] == 9, "a placed fire is laid, not lit")
+	f.report_position(1, Vector3(2.0, 10.0, 0.0))
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("plant_fibre"), 0, 2, Vector3.ZERO)
+	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
+	f.report_position(1, Vector3(121.0, 10.0, 0.0))
+	f.action(1, Net.ACT_LIGHT, covered_id, 0, 0, Vector3.ZERO)
+	check(f._items[open_id]["fire"]["state"] == 40 and f._items[covered_id]["fire"]["state"] == 40, "lit by hand with fibre: four sticks make a survival fire")
 	f.tick(10.0)
-	check(f._items[open_id]["fire"]["state"] == 1 and f._items[covered_id]["fire"]["state"] == 1, "dry weather: both burn")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and ItemsScript.fire_is_lit(int(f._items[covered_id]["fire"]["state"])), "dry weather: both burn")
 	rain[0] = 0.6
 	f.tick(1.0)
 	check(f._items[open_id]["fire"]["state"] == 9, "rain puts out the open fire (loaded, unlit)")
-	check(f._items[covered_id]["fire"]["state"] == 1, "the covered fire survives rain")
+	check(ItemsScript.fire_is_lit(int(f._items[covered_id]["fire"]["state"])), "the covered fire survives rain")
 	f.report_position(1, Vector3(2.0, 10.0, 0.0))
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
@@ -485,7 +493,7 @@ func _init() -> void:
 	check(f._items[open_id]["fire"]["state"] == 9 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 1, "rain will not let an open fire light")
 	rain[0] = 0.0
 	f.action(1, Net.ACT_LIGHT, open_id, 0, 0, Vector3.ZERO)
-	check(f._items[open_id]["fire"]["state"] == 1 and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
+	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
 	var berries: int = f.table.number_of("blueberries") if f.table.has_id("blueberries") else 0
@@ -557,6 +565,51 @@ func _init() -> void:
 
 	check(fires_left == 0, "a dead fire is cleared away")
 
+	# Fire tiers (Dave 24 Oct): the biggest wood burns first, 3 pieces of a class set the tier and hold it until that wood is gone.
+	var rate: float = ItemsScript.GAME_RATE
+	var tf: Dictionary = {"state": 9, "burn_left": 0.0}
+
+	for n in range(3):
+		f._fire_add(tf, "log")
+
+	f._fire_add(tf, "stick")
+	tf["state"] = f._fire_best_state(tf)
+	check(tf["state"] == ItemsScript.FIRE_STATE_BONFIRE, "three logs make a bonfire")
+	f._fire_burn(tf, 7200.0 / rate + 1.0)
+	check(tf["state"] == ItemsScript.FIRE_STATE_BONFIRE, "a bonfire keeps its size with two logs left")
+	f._fire_burn(tf, 2.0 * 7200.0 / rate)
+	check(tf["state"] == ItemsScript.FIRE_STATE_SURVIVAL and float(tf["burn_left"]) > 0.0, "with the logs gone it drops to the survival fire on its sticks")
+	var tg: Dictionary = {"state": 9, "burn_left": 0.0}
+	f._fire_add(tg, "log")
+	f._fire_add(tg, "log")
+
+	for n in range(3):
+		f._fire_add(tg, "firewood")
+
+	check(f._fire_best_state(tg) == 1, "two logs and three firewood make a campfire")
+	f._fire_add(tg, "firewood_soft")
+	f._fire_burn(tg, 7200.0 / rate * 2.0)
+	check(float(tg["wood"]["log"]) <= 0.001 and float(tg["wood"]["firewood"]) > 0.0, "logs burn before firewood")
+	var tfw: Dictionary = {"state": 9, "burn_left": 0.0}
+	f._fire_add(tfw, "firewood")
+	f._fire_add(tfw, "stick")
+	check(f._fire_best_state(tfw) == ItemsScript.FIRE_STATE_SURVIVAL, "one firewood is only a survival fire")
+
+	# Campfire pot (Dave 24 Oct): a station that hangs over a fire and cooks only while that fire is lit.
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	items.report_position(7, Vector3(300.0, 5.0, 300.0))
+	var tri_id: int = 900801
+	items._items[tri_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(301.0, 5.0, 300.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
+	check(not items.station_near(7, "campfire_pot"), "a campfire pot with no fire under it is not a station")
+	items._items[900802] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": Vector3(302.0, 5.0, 300.0), "left": 1.0e9, "fire": {"state": 40, "burn_left": 100.0, "covered": false, "recheck": 5.0}}
+	check(not items.station_near(7, "campfire_pot"), "a lit fire 1 m beside the pot is not the pot's fire")
+	items._items[900802]["pos"] = Vector3(301.0, 5.0, 300.0)
+	check(items.station_near(7, "campfire_pot"), "a campfire pot over a lit fire is a station")
+	items._items[900802]["fire"]["state"] = 9
+	check(not items.station_near(7, "campfire_pot"), "a laid fire that is not lit does not cook")
+	items._items.erase(tri_id)
+	items._items.erase(900802)
+
 	# Mining rock with the axe.
 	var m = make("user://test_server_items_e")
 	m.ground_height = func(x, z): return 10.0
@@ -584,7 +637,7 @@ func _init() -> void:
 	m._last_mine.clear()
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
-	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 1
+	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 5
 
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
 	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(-6.0, 10.0, 0.0))
@@ -1048,12 +1101,13 @@ func _init() -> void:
 		wr._last_mine.clear()
 		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 
-	check(wr.inventory_of(1).wear[0] >= 2 and wr.inventory_of(1).wear[0] <= 3, "each effective blow wears the axe one use (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
+	check(wr.inventory_of(1).wear[0] >= 13 and wr.inventory_of(1).wear[0] <= 16, "each effective blow on rock wears the axe five uses (drops.json tool_wear) (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
 	wr.inventory_of(1).wear[0] = durability - 1
 	wr._last_mine.clear()
 	wr._mined.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
 	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
+	wr.inventory_of(1).wear[0] = durability   # a rock blow wears five uses, so the last one can overshoot
 	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
 	wr._last_mine.clear()
 	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
@@ -1974,14 +2028,14 @@ func _init() -> void:
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
 	check(saw_slot >= 0 and saw_slot < 10 and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
 
-	for rid in ["stone_hammer", "stone_adze"]:
+	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}
 
 		for rn in hs.recipes.numbers():
 			if hs.recipes.recipe(rn)["id"] == rid:
 				rec = hs.recipes.recipe(rn)
 
-		var live: bool = not rec.is_empty() and rec["station"] == "workbench"
+		var live: bool = not rec.is_empty()
 
 		for row in rec.get("needs", []):
 			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
@@ -2236,7 +2290,7 @@ func _init() -> void:
 
 	bank_cfg["bank"]["driftwood"] = 0.12
 	check(wood_n != 0 and wood_after >= wood_before + 8, "bank spots can hold driftwood (%d new)" % (wood_after - wood_before))
-	check(float(sc._cooking["fuel"].get("driftwood", 0.0)) > float(sc._cooking["fuel"]["stick"]) and sc._cooking["fuel_order"].has("driftwood"), "driftwood is fuel, longer than a stick")
+	check(float(sc._cooking["fuel"].get("driftwood", 0.0)) >= float(sc._cooking["fuel"]["stick"]) and sc._cooking["fuel_order"].has("driftwood"), "driftwood is fuel, as long as a stick")
 
 	# Fall damage and refusal events (job 62).
 	DirAccess.make_dir_recursive_absolute(qd + "_fall")

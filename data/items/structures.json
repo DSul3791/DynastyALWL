@@ -534,6 +534,13 @@
 			"clears_grass": true,
 			"walkover": true
 		},
+		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true},
+		"thatch_wall": {"kit": "thatch_wall_kit", "item": "thatch_wall", "state": 37, "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "look": "thatch_wall", "sound": "thump", "clears_grass": false, "piece": true, "piece_kind": "wall", "variant_group": "wall", "material": "thatch", "max_rise_m": 0.6},
+		"campfire_pot": {"kit": "campfire_pot_kit", "item": "campfire_pot", "state": 38, "attach_to": "fire", "legacy_kinds": ["tripod_pot"], "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 6, "look": "tripod_pot", "sound": "thump", "clears_grass": true, "station": "campfire_pot", "station_level": 1, "reach_m": 3.0},
+		"clay_hearth": {"kit": "clay_hearth_kit", "item": "clay_hearth", "state": 39, "footprint_x": 1.6, "footprint_z": 1.2, "cap_per_chunk": 4, "look": "clay_hearth", "sound": "stone", "clears_grass": true, "station": "clay_hearth", "station_level": 2, "reach_m": 3.0},
+		"thatch_floor": {"kit": "thatch_floor_kit", "item": "thatch_floor", "state": 42, "piece": true, "material": "thatch", "foundation": true, "footprint_x": 4.0, "footprint_z": 4.0, "cap_per_chunk": 60, "max_rise_m": 0.6, "snap_m": 2.0, "top_m": 0.1, "anchors": {"wall": [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]], "floor": [[-1, -1], [1, -1], [-1, 1], [1, 1]], "roof": [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]}, "note": "Tier 1 foundation (Dave and Tyler 24 Oct): a thatch floor on stakes, 4 m square, 0.1 m high; walls, roofs and floors snap to it like the stone foundation. Look is the foundation's until Kathleen's thatch floor lands.", "look": "foundation", "sound": "thump", "clears_grass": true},
+		"thatch_roof": {"kit": "thatch_roof_kit", "item": "thatch_roof", "state": 43, "piece": true, "material": "thatch", "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "cap_per_chunk": 100, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "roof", "sound": "thump", "clears_grass": false},
+		"thatch_doorway": {"kit": "thatch_doorway_kit", "item": "thatch_doorway", "state": 44, "piece": true, "material": "thatch", "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "door_shut", "sound": "thump", "clears_grass": false, "use": "door", "toggle": "door_open", "use_pace_ms": 400, "use_reach_m": 3.0},
 		"rock_pile": {
 			"kit": "rock_pile",
 			"item": "rock_pile",

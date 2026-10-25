@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 160,
+	"next_number": 170,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -10,6 +10,7 @@
 		"twine": {
 			"number": 1,
 			"name": "Twine",
+			"category": "Materials",
 			"needs": [
 				[
 					"plant_fibre",
@@ -26,14 +27,19 @@
 		"stone_axe": {
 			"number": 2,
 			"name": "Stone axe",
+			"category": "Tools",
 			"needs": [
 				[
 					"stone",
-					2
+					1
 				],
 				[
 					"stick",
 					1
+				],
+				[
+					"twine",
+					5
 				]
 			],
 			"gives": [
@@ -46,6 +52,7 @@
 		"wooden_spear": {
 			"number": 5,
 			"name": "Wooden spear",
+			"category": "Weapons",
 			"needs": [
 				[
 					"stick",
@@ -68,17 +75,20 @@
 		"spear": {
 			"number": 3,
 			"name": "Stone spear",
+			"category": "Weapons",
 			"needs": [
 				[
-					"stone",
-					2
-				],
-				[
-					"stick",
+					"wooden_spear",
 					1
 				],
 				[
 					"twine",
+					5
+				]
+			],
+			"keeps": [
+				[
+					"stone",
 					1
 				]
 			],
@@ -92,6 +102,7 @@
 		"stone_knife": {
 			"number": 6,
 			"name": "Stone knife",
+			"category": "Tools",
 			"needs": [
 				[
 					"stone",
@@ -112,6 +123,7 @@
 		"torch": {
 			"number": 7,
 			"name": "Basic torch",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -132,14 +144,15 @@
 		"campfire": {
 			"number": 4,
 			"name": "Campfire",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"stick",
-					20
+					6
 				],
 				[
 					"stone",
-					10
+					3
 				]
 			],
 			"gives": [
@@ -152,6 +165,7 @@
 		"poultice_plantain": {
 			"number": 8,
 			"name": "Plantain poultice",
+			"category": "Medicine",
 			"needs": [
 				[
 					"plantain_leaves",
@@ -171,6 +185,7 @@
 		"poultice_comfrey": {
 			"number": 9,
 			"name": "Comfrey poultice",
+			"category": "Medicine",
 			"needs": [
 				[
 					"comfrey_leaves",
@@ -190,6 +205,7 @@
 		"bandage_plantain": {
 			"number": 10,
 			"name": "Leaf bandage",
+			"category": "Medicine",
 			"needs": [
 				[
 					"plantain_leaves",
@@ -213,6 +229,7 @@
 		"bandage_staunchmoss": {
 			"number": 11,
 			"name": "Mossy bandage",
+			"category": "Medicine",
 			"needs": [
 				[
 					"staunchmoss",
@@ -236,6 +253,7 @@
 		"wooden_spade": {
 			"number": 12,
 			"name": "Wooden spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -258,6 +276,7 @@
 		"lean_to_kit": {
 			"number": 13,
 			"name": "Small shelter",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"stick",
@@ -282,6 +301,7 @@
 		"chest_kit": {
 			"number": 14,
 			"name": "Woven chest",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"stick",
@@ -302,6 +322,7 @@
 		"chopping_block": {
 			"number": 15,
 			"name": "Chopping block",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"log",
@@ -318,6 +339,7 @@
 		"lumber": {
 			"number": 16,
 			"name": "Lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log",
@@ -335,6 +357,7 @@
 		"plank_chest_kit": {
 			"number": 17,
 			"name": "Plank chest",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"lumber",
@@ -357,6 +380,7 @@
 		"iron_pickaxe": {
 			"number": 18,
 			"name": "Iron pickaxe",
+			"category": "Tools",
 			"needs": [
 				[
 					"iron_ingot",
@@ -378,6 +402,7 @@
 		"steel_pickaxe": {
 			"number": 19,
 			"name": "Steel pickaxe",
+			"category": "Tools",
 			"needs": [
 				[
 					"steel_ingot",
@@ -400,6 +425,7 @@
 		"wooden_bowl": {
 			"number": 20,
 			"name": "Wooden bowl",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"firewood",
@@ -416,6 +442,7 @@
 		"clay_pot": {
 			"number": 21,
 			"name": "Clay pot",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"clay",
@@ -432,6 +459,7 @@
 		"bucket": {
 			"number": 22,
 			"name": "Bucket",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"lumber",
@@ -452,6 +480,7 @@
 		"waterskin": {
 			"number": 23,
 			"name": "Waterskin",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"hide",
@@ -472,6 +501,7 @@
 		"twine_bark": {
 			"number": 24,
 			"name": "Bark twine",
+			"category": "Materials",
 			"needs": [
 				[
 					"bark",
@@ -488,6 +518,7 @@
 		"rope": {
 			"number": 25,
 			"name": "Rope",
+			"category": "Materials",
 			"needs": [
 				[
 					"twine",
@@ -504,6 +535,7 @@
 		"stone_spade": {
 			"number": 26,
 			"name": "Stone spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"wooden_spade",
@@ -529,6 +561,7 @@
 		"iron_spade": {
 			"number": 27,
 			"name": "Iron spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"iron_ingot",
@@ -549,6 +582,7 @@
 		"steel_spade": {
 			"number": 28,
 			"name": "Steel spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"steel_ingot",
@@ -569,6 +603,7 @@
 		"sewing_needle": {
 			"number": 29,
 			"name": "Sewing needle",
+			"category": "Tools",
 			"needs": [
 				[
 					"bone",
@@ -585,6 +620,7 @@
 		"backpack": {
 			"number": 30,
 			"name": "Backpack",
+			"category": "Containers and furniture",
 			"needs": [
 				[
 					"hide",
@@ -607,6 +643,7 @@
 		"energy_bar": {
 			"number": 31,
 			"name": "Energy bar",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"hazelnuts",
@@ -631,6 +668,7 @@
 		"herbal_tea": {
 			"number": 32,
 			"name": "Herbal tea",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"mint",
@@ -647,6 +685,7 @@
 		"stomach_tea": {
 			"number": 33,
 			"name": "Stomach tea",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"mint",
@@ -677,6 +716,7 @@
 		"chamomile_tea": {
 			"number": 34,
 			"name": "Chamomile tea",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"chamomile_flowers",
@@ -702,6 +742,7 @@
 		"willow_bark_tea": {
 			"number": 35,
 			"name": "Willow bark tea",
+			"category": "Food and drink",
 			"needs": [
 				[
 					"willow_bark",
@@ -727,6 +768,7 @@
 		"grass_skirt": {
 			"number": 36,
 			"name": "Grass skirt",
+			"category": "Clothing",
 			"needs": [
 				[
 					"plant_fibre",
@@ -743,6 +785,7 @@
 		"grass_cloak": {
 			"number": 37,
 			"name": "Grass cloak",
+			"category": "Clothing",
 			"needs": [
 				[
 					"plant_fibre",
@@ -763,6 +806,7 @@
 		"fibre_sandals": {
 			"number": 38,
 			"name": "Fibre sandals",
+			"category": "Clothing",
 			"needs": [
 				[
 					"plant_fibre",
@@ -783,6 +827,7 @@
 		"hide_cloak": {
 			"number": 39,
 			"name": "Hide cloak",
+			"category": "Clothing",
 			"needs": [
 				[
 					"hide",
@@ -805,6 +850,7 @@
 		"hide_boots": {
 			"number": 40,
 			"name": "Hide boots",
+			"category": "Clothing",
 			"needs": [
 				[
 					"hide",
@@ -826,6 +872,7 @@
 		"hide_hood": {
 			"number": 41,
 			"name": "Hide hood",
+			"category": "Clothing",
 			"needs": [
 				[
 					"hide",
@@ -846,6 +893,7 @@
 		"hide_mittens": {
 			"number": 42,
 			"name": "Hide mittens",
+			"category": "Clothing",
 			"needs": [
 				[
 					"hide",
@@ -866,6 +914,7 @@
 		"hide_leggings": {
 			"number": 43,
 			"name": "Hide leggings",
+			"category": "Clothing",
 			"needs": [
 				[
 					"hide",
@@ -887,6 +936,7 @@
 		"sinew_cord": {
 			"number": 44,
 			"name": "Sinew cord",
+			"category": "Materials",
 			"needs": [
 				[
 					"sinew",
@@ -900,9 +950,160 @@
 			"craft_s": 6.0,
 			"known": false
 		},
+		"rough_bed_kit": {
+			"number": 162,
+			"name": "Rough bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"thatch",
+					10
+				],
+				[
+					"stick",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"rough_bed_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"campfire_pot_kit": {
+			"number": 165,
+			"name": "Campfire pot",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"stick",
+					3
+				],
+				[
+					"twine",
+					5
+				],
+				[
+					"clay_pot",
+					1
+				]
+			],
+			"gives": [
+				"campfire_pot_kit",
+				1
+			],
+			"craft_s": 15.0,
+			"known": true
+		},
+		"thatch_floor_kit": {
+			"number": 166,
+			"name": "Thatch floor",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"twine",
+					6
+				],
+				[
+					"thatch",
+					20
+				]
+			],
+			"gives": [
+				"thatch_floor_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_wall_kit": {
+			"number": 167,
+			"name": "Thatch wall",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"twine",
+					20
+				],
+				[
+					"thatch",
+					50
+				],
+				[
+					"stick",
+					15
+				]
+			],
+			"gives": [
+				"thatch_wall_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_roof_kit": {
+			"number": 168,
+			"name": "Thatch roof",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"twine",
+					10
+				],
+				[
+					"thatch",
+					40
+				],
+				[
+					"stick",
+					12
+				]
+			],
+			"gives": [
+				"thatch_roof_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
+		},
+		"thatch_doorway_kit": {
+			"number": 169,
+			"name": "Thatch doorway",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"twine",
+					12
+				],
+				[
+					"thatch",
+					25
+				],
+				[
+					"stick",
+					12
+				]
+			],
+			"gives": [
+				"thatch_doorway_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "workbench",
+			"known": false
+		},
 		"workbench_kit": {
 			"number": 45,
 			"name": "Camp bench",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"stick",
@@ -920,9 +1121,31 @@
 			"craft_s": 12.0,
 			"known": true
 		},
+		"shore_net": {
+			"number": 163,
+			"name": "Shore net",
+			"category": "Tools",
+			"needs": [
+				[
+					"twine",
+					20
+				],
+				[
+					"stone",
+					4
+				]
+			],
+			"gives": [
+				"shore_net",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false
+		},
 		"fishing_rod": {
 			"number": 46,
 			"name": "Fishing rod",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -943,6 +1166,7 @@
 		"tool_rack_kit": {
 			"number": 47,
 			"name": "Tool rack",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"stick",
@@ -964,6 +1188,7 @@
 		"vice_kit": {
 			"number": 48,
 			"name": "Wooden vice",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"stick",
@@ -985,6 +1210,7 @@
 		"log_workbench_kit": {
 			"number": 49,
 			"name": "Log workbench",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"log",
@@ -1010,6 +1236,7 @@
 		"stone_forge_kit": {
 			"number": 50,
 			"name": "Basic Forge",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"stone",
@@ -1036,6 +1263,7 @@
 		"blacksmithy_kit": {
 			"number": 51,
 			"name": "Medium Forge",
+			"category": "Workshops and stations",
 			"needs": [
 				[
 					"stone",
@@ -1062,6 +1290,7 @@
 		"lumber_oak": {
 			"number": 52,
 			"name": "Oak lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_oak",
@@ -1079,6 +1308,7 @@
 		"beams_oak": {
 			"number": 53,
 			"name": "Oak beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_oak",
@@ -1096,6 +1326,7 @@
 		"lumber_beech": {
 			"number": 54,
 			"name": "Beech lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_beech",
@@ -1114,6 +1345,7 @@
 		"beams_beech": {
 			"number": 55,
 			"name": "Beech beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_beech",
@@ -1132,6 +1364,7 @@
 		"lumber_birch": {
 			"number": 56,
 			"name": "Birch lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_birch",
@@ -1149,6 +1382,7 @@
 		"beams_birch": {
 			"number": 57,
 			"name": "Birch beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_birch",
@@ -1166,6 +1400,7 @@
 		"lumber_scots_pine": {
 			"number": 58,
 			"name": "Scots pine lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_scots_pine",
@@ -1183,6 +1418,7 @@
 		"beams_scots_pine": {
 			"number": 59,
 			"name": "Scots pine beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_scots_pine",
@@ -1200,6 +1436,7 @@
 		"lumber_spruce": {
 			"number": 60,
 			"name": "Spruce lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_spruce",
@@ -1217,6 +1454,7 @@
 		"beams_spruce": {
 			"number": 61,
 			"name": "Spruce beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_spruce",
@@ -1234,6 +1472,7 @@
 		"lumber_alder": {
 			"number": 62,
 			"name": "Alder lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_alder",
@@ -1252,6 +1491,7 @@
 		"beams_alder": {
 			"number": 63,
 			"name": "Alder beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_alder",
@@ -1270,6 +1510,7 @@
 		"lumber_willow": {
 			"number": 64,
 			"name": "Willow lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_willow",
@@ -1288,6 +1529,7 @@
 		"beams_willow": {
 			"number": 65,
 			"name": "Willow beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_willow",
@@ -1306,6 +1548,7 @@
 		"lumber_coconut_palm": {
 			"number": 66,
 			"name": "Coconut palm lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_coconut_palm",
@@ -1324,6 +1567,7 @@
 		"beams_coconut_palm": {
 			"number": 67,
 			"name": "Coconut palm beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_coconut_palm",
@@ -1342,6 +1586,7 @@
 		"lumber_tropical_hardwood": {
 			"number": 68,
 			"name": "Tropical hardwood lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_tropical_hardwood",
@@ -1359,6 +1604,7 @@
 		"beams_tropical_hardwood": {
 			"number": 69,
 			"name": "Tropical hardwood beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_tropical_hardwood",
@@ -1376,6 +1622,7 @@
 		"lumber_acacia": {
 			"number": 70,
 			"name": "Acacia lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_acacia",
@@ -1394,6 +1641,7 @@
 		"beams_acacia": {
 			"number": 71,
 			"name": "Acacia beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_acacia",
@@ -1412,6 +1660,7 @@
 		"lumber_mangrove": {
 			"number": 72,
 			"name": "Mangrove lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_mangrove",
@@ -1430,6 +1679,7 @@
 		"beams_mangrove": {
 			"number": 73,
 			"name": "Mangrove beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_mangrove",
@@ -1448,6 +1698,7 @@
 		"lumber_rowan": {
 			"number": 74,
 			"name": "Rowan lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_rowan",
@@ -1466,6 +1717,7 @@
 		"beams_rowan": {
 			"number": 75,
 			"name": "Rowan beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_rowan",
@@ -1484,6 +1736,7 @@
 		"lumber_wild_apple": {
 			"number": 76,
 			"name": "Crab apple lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_apple",
@@ -1502,6 +1755,7 @@
 		"beams_wild_apple": {
 			"number": 77,
 			"name": "Crab apple beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_apple",
@@ -1520,6 +1774,7 @@
 		"lumber_wild_pear": {
 			"number": 78,
 			"name": "Wild pear lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_pear",
@@ -1538,6 +1793,7 @@
 		"beams_wild_pear": {
 			"number": 79,
 			"name": "Wild pear beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_pear",
@@ -1556,6 +1812,7 @@
 		"lumber_wild_cherry": {
 			"number": 80,
 			"name": "Wild cherry lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_cherry",
@@ -1574,6 +1831,7 @@
 		"beams_wild_cherry": {
 			"number": 81,
 			"name": "Wild cherry beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wild_cherry",
@@ -1592,6 +1850,7 @@
 		"lumber_sweet_chestnut": {
 			"number": 82,
 			"name": "Sweet chestnut lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_sweet_chestnut",
@@ -1610,6 +1869,7 @@
 		"beams_sweet_chestnut": {
 			"number": 83,
 			"name": "Sweet chestnut beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_sweet_chestnut",
@@ -1628,6 +1888,7 @@
 		"lumber_walnut": {
 			"number": 84,
 			"name": "Walnut lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_walnut",
@@ -1645,6 +1906,7 @@
 		"beams_walnut": {
 			"number": 85,
 			"name": "Walnut beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_walnut",
@@ -1662,6 +1924,7 @@
 		"lumber_date_palm": {
 			"number": 86,
 			"name": "Date palm lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_date_palm",
@@ -1680,6 +1943,7 @@
 		"beams_date_palm": {
 			"number": 87,
 			"name": "Date palm beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_date_palm",
@@ -1698,6 +1962,7 @@
 		"lumber_mirrorbark": {
 			"number": 88,
 			"name": "Mirrorbark lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_mirrorbark",
@@ -1716,6 +1981,7 @@
 		"beams_mirrorbark": {
 			"number": 89,
 			"name": "Mirrorbark beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_mirrorbark",
@@ -1734,6 +2000,7 @@
 		"lumber_wardpine": {
 			"number": 90,
 			"name": "Wardpine lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wardpine",
@@ -1752,6 +2019,7 @@
 		"beams_wardpine": {
 			"number": 91,
 			"name": "Wardpine beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_wardpine",
@@ -1770,6 +2038,7 @@
 		"lumber_hearthwood": {
 			"number": 92,
 			"name": "Hearthwood lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_hearthwood",
@@ -1788,6 +2057,7 @@
 		"beams_hearthwood": {
 			"number": 93,
 			"name": "Hearthwood beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_hearthwood",
@@ -1806,6 +2076,7 @@
 		"lumber_everember": {
 			"number": 94,
 			"name": "Everember lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_everember",
@@ -1824,6 +2095,7 @@
 		"beams_everember": {
 			"number": 95,
 			"name": "Everember beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_everember",
@@ -1842,6 +2114,7 @@
 		"lumber_witness_tree": {
 			"number": 96,
 			"name": "Witness tree lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_witness_tree",
@@ -1860,6 +2133,7 @@
 		"beams_witness_tree": {
 			"number": 97,
 			"name": "Witness tree beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_witness_tree",
@@ -1878,6 +2152,7 @@
 		"lumber_balsam_fir": {
 			"number": 98,
 			"name": "Balsam fir lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_balsam_fir",
@@ -1896,6 +2171,7 @@
 		"beams_balsam_fir": {
 			"number": 99,
 			"name": "Balsam fir beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_balsam_fir",
@@ -1914,6 +2190,7 @@
 		"lumber_maple": {
 			"number": 100,
 			"name": "Sugar maple lumber",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_maple",
@@ -1931,6 +2208,7 @@
 		"beams_maple": {
 			"number": 101,
 			"name": "Sugar maple beams",
+			"category": "Materials",
 			"needs": [
 				[
 					"log_maple",
@@ -1948,6 +2226,7 @@
 		"cook_berry_compote": {
 			"number": 102,
 			"name": "Berry compote",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"blueberries",
@@ -1963,12 +2242,13 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_nut_paste": {
 			"number": 103,
 			"name": "Nut paste",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"hazelnuts",
@@ -1984,12 +2264,13 @@
 				2
 			],
 			"craft_s": 6.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_roast_roots": {
 			"number": 104,
 			"name": "Roast Roots",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"burdock_roots",
@@ -2011,6 +2292,7 @@
 		"cook_acorn_mash": {
 			"number": 105,
 			"name": "Acorn mash",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"acorns",
@@ -2026,12 +2308,13 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_baked_apples": {
 			"number": 106,
 			"name": "Baked apples",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"crab_apples",
@@ -2053,6 +2336,7 @@
 		"cook_mushroom_skewer": {
 			"number": 107,
 			"name": "Mushroom skewer",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"porcini",
@@ -2078,6 +2362,7 @@
 		"cook_herb_fish": {
 			"number": 108,
 			"name": "Herb fish",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"trout",
@@ -2103,6 +2388,7 @@
 		"cook_garlic_meat": {
 			"number": 109,
 			"name": "Garlic meat",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"raw_meat",
@@ -2128,6 +2414,7 @@
 		"cook_chestnut_cakes": {
 			"number": 110,
 			"name": "Chestnut cakes",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"chestnuts",
@@ -2153,6 +2440,7 @@
 		"cook_fruit_leather": {
 			"number": 111,
 			"name": "Fruit leather",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"crab_apples",
@@ -2178,6 +2466,7 @@
 		"cook_smoked_fish": {
 			"number": 112,
 			"name": "Smoked fish",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"pike",
@@ -2203,6 +2492,7 @@
 		"cook_hunters_stew": {
 			"number": 113,
 			"name": "Hunter's stew",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"raw_meat",
@@ -2226,12 +2516,13 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_forager_stew": {
 			"number": 114,
 			"name": "Forager's stew",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"greens",
@@ -2255,12 +2546,13 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_fish_stew": {
 			"number": 115,
 			"name": "Fish stew",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"perch",
@@ -2284,12 +2576,13 @@
 				2
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_trail_bread": {
 			"number": 116,
 			"name": "Trail bread",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"linseed",
@@ -2319,6 +2612,7 @@
 		"cook_hearty_pottage": {
 			"number": 117,
 			"name": "Hearty pottage",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"seeds",
@@ -2346,12 +2640,13 @@
 				3
 			],
 			"craft_s": 14.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_feast_roast": {
 			"number": 118,
 			"name": "Roast Beast",
+			"category": "Fire and cooking",
 			"needs": [
 				[
 					"raw_meat",
@@ -2385,6 +2680,7 @@
 		"wall_section_kit": {
 			"number": 119,
 			"name": "Wall section",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2402,11 +2698,13 @@
 			"craft_s": 8.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"floor_section_kit": {
 			"number": 120,
 			"name": "Floor section",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2424,11 +2722,13 @@
 			"craft_s": 8.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"roof_section_kit": {
 			"number": 121,
 			"name": "Roof section",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2450,11 +2750,13 @@
 			"craft_s": 10.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"foundation_section_kit": {
 			"number": 122,
 			"name": "Foundation",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"stone",
@@ -2472,11 +2774,13 @@
 			"craft_s": 12.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"doorway_section_kit": {
 			"number": 123,
 			"name": "Doorway",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2494,11 +2798,13 @@
 			"craft_s": 8.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"window_section_kit": {
 			"number": 124,
 			"name": "Window wall",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2516,11 +2822,13 @@
 			"craft_s": 8.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"timber_prop_kit": {
 			"number": 125,
 			"name": "Timber prop",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"log",
@@ -2541,6 +2849,7 @@
 		"timber_set_kit": {
 			"number": 126,
 			"name": "Timber set",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2562,11 +2871,13 @@
 			"craft_s": 10.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"cut_stone_block": {
 			"number": 127,
 			"name": "Stone block",
+			"category": "Materials",
 			"needs": [
 				[
 					"stone",
@@ -2585,6 +2896,7 @@
 		"brick": {
 			"number": 128,
 			"name": "Brick",
+			"category": "Materials",
 			"needs": [
 				[
 					"clay",
@@ -2602,6 +2914,7 @@
 		"mortar": {
 			"number": 129,
 			"name": "Mortar",
+			"category": "Materials",
 			"needs": [
 				[
 					"sand",
@@ -2622,6 +2935,7 @@
 		"ladder_kit": {
 			"number": 130,
 			"name": "Ladder",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"lumber",
@@ -2639,11 +2953,13 @@
 			"craft_s": 10.0,
 			"known": false,
 			"station": "workbench",
-			"station_level": 1
+			"station_level": 1,
+			"retired": true
 		},
 		"wooden_spade_medium": {
 			"number": 131,
 			"name": "Medium wooden spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -2666,6 +2982,7 @@
 		"wooden_spade_large": {
 			"number": 132,
 			"name": "Large wooden spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -2693,6 +3010,7 @@
 		"stone_spade_medium": {
 			"number": 133,
 			"name": "Medium stone spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"wooden_spade_medium",
@@ -2718,6 +3036,7 @@
 		"stone_spade_large": {
 			"number": 134,
 			"name": "Large stone spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"wooden_spade_large",
@@ -2743,6 +3062,7 @@
 		"iron_spade_medium": {
 			"number": 135,
 			"name": "Medium iron spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"iron_ingot",
@@ -2763,6 +3083,7 @@
 		"iron_spade_large": {
 			"number": 136,
 			"name": "Large iron spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"iron_ingot",
@@ -2783,6 +3104,7 @@
 		"steel_spade_medium": {
 			"number": 137,
 			"name": "Medium steel spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"steel_ingot",
@@ -2803,6 +3125,7 @@
 		"steel_spade_large": {
 			"number": 138,
 			"name": "Large steel spade",
+			"category": "Tools",
 			"needs": [
 				[
 					"steel_ingot",
@@ -2823,6 +3146,7 @@
 		"wooden_hoe": {
 			"number": 139,
 			"name": "Wooden hoe",
+			"category": "Tools",
 			"needs": [
 				[
 					"stick",
@@ -2849,6 +3173,7 @@
 		"stone_hoe": {
 			"number": 140,
 			"name": "Stone hoe",
+			"category": "Tools",
 			"needs": [
 				[
 					"wooden_hoe",
@@ -2874,6 +3199,7 @@
 		"iron_hoe": {
 			"number": 141,
 			"name": "Iron hoe",
+			"category": "Tools",
 			"needs": [
 				[
 					"iron_ingot",
@@ -2894,6 +3220,7 @@
 		"steel_hoe": {
 			"number": 142,
 			"name": "Steel hoe",
+			"category": "Tools",
 			"needs": [
 				[
 					"steel_ingot",
@@ -2914,6 +3241,7 @@
 		"rough_plank": {
 			"number": 143,
 			"name": "Rough plank",
+			"category": "Materials",
 			"needs": [
 				[
 					"log",
@@ -2932,6 +3260,7 @@
 		"fine_board": {
 			"number": 144,
 			"name": "Fine board",
+			"category": "Materials",
 			"needs": [
 				[
 					"lumber",
@@ -2950,6 +3279,7 @@
 		"nails": {
 			"number": 145,
 			"name": "Nails",
+			"category": "Materials",
 			"needs": [
 				[
 					"iron_ingot",
@@ -2967,6 +3297,7 @@
 		"cobblestone": {
 			"number": 146,
 			"name": "Cobblestone",
+			"category": "Materials",
 			"needs": [
 				[
 					"stone",
@@ -2985,6 +3316,7 @@
 		"stone_shingle": {
 			"number": 147,
 			"name": "Stone shingle",
+			"category": "Materials",
 			"needs": [
 				[
 					"stone",
@@ -3003,6 +3335,7 @@
 		"tar": {
 			"number": 148,
 			"name": "Tar",
+			"category": "Materials",
 			"needs": [
 				[
 					"pine_tar",
@@ -3020,6 +3353,7 @@
 		"hinges": {
 			"number": 149,
 			"name": "Hinges",
+			"category": "Materials",
 			"needs": [
 				[
 					"iron_ingot",
@@ -3037,6 +3371,7 @@
 		"wooden_pin": {
 			"number": 150,
 			"name": "Wooden pin",
+			"category": "Materials",
 			"needs": [
 				[
 					"lumber",
@@ -3055,6 +3390,7 @@
 		"saw_blade": {
 			"number": 152,
 			"name": "Saw blades",
+			"category": "Materials",
 			"needs": [["iron_ingot", 2]],
 			"gives": ["saw_blade", 1],
 			"craft_s": 20.0,
@@ -3064,6 +3400,7 @@
 		"water_wheel": {
 			"number": 153,
 			"name": "Water wheel",
+			"category": "Workshops and stations",
 			"needs": [["lumber", 20], ["nails", 80]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
@@ -3074,6 +3411,7 @@
 		"saw_mill_kit": {
 			"number": 154,
 			"name": "Sawmill",
+			"category": "Workshops and stations",
 			"needs": [["lumber", 40], ["nails", 100], ["saw_blade", 1], ["water_wheel", 1]],
 			"gives": ["saw_mill_kit", 1],
 			"craft_s": 60.0,
@@ -3084,6 +3422,7 @@
 		"woodworking_table_kit": {
 			"number": 155,
 			"name": "Woodworking table",
+			"category": "Workshops and stations",
 			"needs": [["lumber", 12], ["nails", 60]],
 			"gives": ["woodworking_table_kit", 1],
 			"craft_s": 30.0,
@@ -3094,6 +3433,7 @@
 		"rock_pile": {
 			"number": 151,
 			"name": "Rock pile",
+			"category": "Shelter and building",
 			"needs": [
 				[
 					"stone",
@@ -3107,13 +3447,39 @@
 			"craft_s": 20.0,
 			"known": true
 		},
+		"wooden_hammer": {
+			"number": 161,
+			"name": "Wooden hammer",
+			"category": "Tools",
+			"needs": [
+				[
+					"wooden_block",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wooden_hammer",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true
+		},
 		"stone_hammer": {
 			"number": 156,
 			"name": "Stone hammer",
+			"category": "Tools",
 			"needs": [
 				[
 					"stone",
-					2
+					1
 				],
 				[
 					"stick",
@@ -3135,6 +3501,7 @@
 		"hand_saw": {
 			"number": 157,
 			"name": "Hand saw",
+			"category": "Tools",
 			"needs": [
 				[
 					"saw_blade",
@@ -3160,6 +3527,7 @@
 		"stone_adze": {
 			"number": 158,
 			"name": "Stone adze",
+			"category": "Tools",
 			"needs": [
 				[
 					"stone",
@@ -3180,11 +3548,13 @@
 			],
 			"craft_s": 6.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"lumber_by_hand": {
 			"number": 159,
 			"name": "Lumber by hand",
+			"category": "Materials",
 			"needs": [
 				[
 					"log",

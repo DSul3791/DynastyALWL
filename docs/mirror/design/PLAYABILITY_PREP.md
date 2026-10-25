@@ -129,3 +129,60 @@ Order: A, B, C, G first, then D and E, then F, then H throughout. NOTE for the f
 ## Final bake plan (Sonny, 24 Oct 19:44; replaces the 792 line)
 Build 792 = ONE bake: branch claude/sonny-final from sonny-outlets 4f2d2497, with ONE TERRAIN_VERSION bump, and ONLY the spawn move (after Sal's spawn search). A clean chute and plunge pool in drainage mode only if Dave wants it. Sonny withdrew the ore clamp and the stepped cascade (Dave's 21 Oct rule: no steps). Hill face stays as it is unless Mike's ground-level render of the baked tiles looks ugly. BP-T53 and BP-T54 apply (bake by MikeW, David3 overflow; tiles via git; island table with the code commit id). Tyler merges code and tiles together on a PASS.
 Status 19:55 UTC: build 788 merged (BUG-001 join fix, look_rig Linux). Plans answered: fish A, B, C, G, water Plan 1, steve-new-player (789), steve-shore-net (790). Still to answer when pushed: sal-r1-recipes, sal-rough-bed, sal-camp-bench, sal-cooking-stations.
+
+### Final bake additions (Tyler, 24 Oct 19:58 UTC; Sonny's pond/hole causes) - branch claude/sonny-final
+a) river_start 0.15 km2 where slope is over 25 degrees (rivers start lower on steep reaches).
+b) inland crest cuts capped at 6 m; 20 m only within about 600 m of the sea.
+c) valley freeboard 1.0 m (was 0.4 m) on flat reaches (fall under 2%), plus basin carve at springs (water Plan 1 item 6: 0.5 m below the 3-cell ring).
+d) river heads only where slope is under 10 degrees.
+Order: Sonny first reads Mike's dump from the 5a5745de bake to see if the wall/pit predate the caps. NO bake until Tyler schedules it. Island table must carry the code commit id (BP-T54).
+QA check after bake (David3 headless, Mike picture): pond at x 53840 z 68520 no longer spreads over the flat floor; no 20 m step or 20-25 m 3x3 pit in the crest gorge (max depth scan); every spring passes the catch-basin test; settle test clean; island_checks as before.
+e) (Tyler, 24 Oct 20:03 UTC) CAUSE of Dave's pit/cliff: since river_start 0.35 km2 (v30) this stream became a river; farm-valley cut + channel stamp cut a 25+ m trench into a 60-degree hill face. Fix sonny-final 17401b10 (valley cut size shrinks with ground steepness), UNTESTED (no Godot in cloud). Gate: Mike bakes tile (3,4) from 17401b10 in the second clone; Sonny compares the same window; David3 runs the max-depth scan. Only on a clean compare does it join the 792 bake (TERRAIN_VERSION bump once, BP-T54 island table with the code commit id).
+
+## MIKE HOLD (Tyler, 24 Oct 20:08 UTC; Dave is playing on his PC)
+Until Dave says done: Mike runs NO tests, renders or bakes. All tests and pictures go to David3 (server box). Merge only on a David3 PASS. WAITING ON MIKE: tile (3,4) bake from sonny-final 17401b10 (item e), Sonny's heads bake, Kathleen piece re-render, Windows look_rig checks, first-hour stopwatch play test (gate after 790; David3 headless test_first_hour stands in for logic, Mike still needed for feel). Mike may still do non-PC help: docs, plans, building/data work other threads ask for.
+
+### Final bake source update (Tyler, 24 Oct 20:33 UTC)
+Bake source is now claude/sonny-final 22a9ff02 (UNTESTED), replacing 72d60408 and 17401b10 (item e): forced channel to the sea, freeboard 1.0 m, smaller meander swing, head basins, steep-valley fix. Same gate: Mike bakes only when Dave's PC is free; David3 headless checks first; island table carries the code commit id (BP-T54); one TERRAIN_VERSION bump.
+SPAWN (decision for Dave AFTER the bake): Sal found no spot with hard rock within 300 m. Sonny recommends spot 1 = x 53304 z 68464 (37 m from old spawn), stone rule relaxed to 450 m, plus a small bake-time knoll at x 53450 z 68460. Dave picks the spawn after seeing the baked result; QA card then.
+
+### Final bake source correction (Tyler, 24 Oct 20:37 UTC)
+claude/sonny-final is now 22585d73 (72d60408 and 22a9ff02 did not parse; restored). Adds _carve_basins (head ponds depth 2-8 m radius 25-120 m; lakes about 2-18 ha on flat reaches, sized by Qs = 0.1 x catchment km2) on top of forced channel to the sea, freeboard 1.0 m, steep-valley fix. Gate in order: David3 parse check; Mike's (3,4) bake (when Dave's PC is free); Sonny reads the tile (pit/cliff window, dead ends, river reaches the sea, basin counts); water thread's basin check. Then the full 792 bake.
+Bake source now claude/sonny-final c2eeb8e3 (Tyler 20:42 UTC; supersedes 22585d73); same gates. Water R1 settler v7 merges together with it.
+
+## MERGE ORDER UPDATE (Tyler 24 Oct 22:50 UTC; Dave approved the erosion carve "make it so")
+791 = bundle claude/tyler-791a (thatch, unknown-item, bed recipe, shore net, auto pickup, held tools, forest beds, sound guard, wind-surf)
+792 = fire tiers + tripod pot (recipe 165) + no-stack caps + weight audit (after Dave's four weight cards)
+793 = EROSION CARVE + FINAL BAKE as ONE bake: erosion thread's BAKE plan (tile_baker.gd delta, valley_guides off, nine-tile rebake together) on top of claude/sonny-final c2eeb8e3 (basins, freeboard, spawn move), water R1 settler v7 together; ONE TERRAIN_VERSION bump. Reason: two bakes would mean two bumps and two rebakes of the same nine tiles, and Sonny's pit/cliff fixes act on the same terrain the carve changes.
+794 = water P1b + fish C/G (was 794 as 793-799 shifted by one): water order unchanged, each number +1.
+Gates for 793: erosion plan answered once on arrival; macro-height raster in git with the run command and seed (byte-identical on two runs, David3); David3 headless checks first; Mike bakes in the second clone when Dave's PC is free; island table with the code commit id (BP-T54); Sonny reads the tiles; Mike ground-level render; merge code + tiles together on PASS.
+
+SPAWN for 793 (Sal, 24 Oct 23:08 UTC): x 53316 z 68476 (flat 4.1 deg, dry, sandstone ~428 m, river 30 m, clay close). Sonny pins it in the merged bake branch; bake gate re-checks flat+dry after the erosion carve. Dave still confirms after the bake (QA card).
+
+## FIRST-HOUR OWNERS (Tyler 24 Oct 23:15 UTC; Dave: "these are not Sonny jobs, somebody get them done")
+One plan per branch (BP-T52). Build numbers assume 792 = fire tiers/tripod/stack/weight, 793 = erosion + final bake; these land in 792b / 794+ so the bake is not delayed.
+| # | Item | Owner | Branch | Lands in |
+|---|---|---|---|---|
+| 1 | Thatch wall, roof, doorway pieces, openable recipes (first shelter) | Sal (data + pieces), Steve only if a new placement rule is needed | sal-thatch-shelter | 792 |
+| 2 | Clay hearth, oven, camp bench rename | Sal | sal-hearth-oven-bench | 792 |
+| 3 | Rough bed FUNCTION: lie down, health, exhaustion, weather and animal safety, roof rule | Steve (server rules); Sal only the item hooks | steve-rough-bed | 792 (after thatch roof exists) |
+| 4a | Hunting basics DESIGN list: which animals near spawn, drops (meat, hide, bone, sinew), butchering with knife/stone | Steve (animals and drops), Sal (items) | steve-hunt-drops | 794 |
+| 4b | Bow, arrows (wood bow, stone-tip arrow, quiver), shooting, hit/damage, retrieve arrows | Sal items + Steve shooting rules (two branches, two plans) | sal-bow-items, steve-bow-shoot | 795 |
+| 4c | Hide, hide clothing, traps | Sal items, Steve trap rules | after 4b (796) | 796 |
+| 5a | Hammer ladder menu (wood-wood-twine, stone, copper, bronze, iron, steel; no adze) | Sal (already on batch 2) | sal-tools-batch2 8600df50 | 792 |
+| 5b | Fishing balance (bite chance, school size, net/bow/spear factors, fish per hour target) | Steve (numbers) with Sal data; target set from fish plan: 8 to 20 small fish per hour at the shore with the net | steve-fish-balance | 794, after the water/fish A,B,C lands |
+Order of work for each owner: plan file first (one per branch, 1-5 small things), I answer once, then David3 gates. Kathleen supplies looks (bow, arrow, thatch pieces, hearth); Mike plays the first hour with a stopwatch after 792 when Dave's PC is free.
+Rule: Sonny stays on terrain only (erosion, final bake).
+
+## BAKE HOLD (Dave 25 Oct 00:06 UTC): "no more bakes until the generator build is done"
+- HELD: the 793 bake (erosion carve + final bake + spawn pin), every tile bake, every settle run (including David3's settle-past-9000 check and Sonny's tile (3,4) test bake). The 33 MB erosion delta stays on its branch (claude/erosion-delta-real); do not commit it to generator-v2 yet.
+- 792 has NO bake item: thatch shelter, fire tiers, campfire pot, rough bed, sound hookup, no-stack caps + weight audit are code/data only (RESTART at most). Merge order unchanged.
+- Water R1: the classifier, overlay button and dam test code are not bake work, but the settler rules v7 act on the settle (bake time): they wait for the bake. If the water thread wants R1 code in 792 without settler v7, say so; I need the split in two branches.
+- Will the nine baked tiles need redoing after the generator speed-up build? Rule: they are redone if that build changes anything the baker writes (height, rivers, water, flora, ledges, stamps) OR the code commit id the tile stamp/island table records. The speed-up is allowed to keep today's tiles ONLY if it is proven output-identical: David3 re-bakes tile (3,4) with the new code and the .tile file is byte-identical to the current bake (BP-T54 table lists the old commit id). If the speed-up changes the stamp (TERRAIN_VERSION or code hash in the stamp), old tiles are refused and all nine are redone, in one go, with 793. Default assumption until the generator thread shows the byte-compare: YES, redo, and that is why 793 waits for the generator build: one bake after it, not two.
+- Needed from the generator thread: its plan (one, BAKE or RUNTIME label), whether the stamp changes, and the byte-compare result on tile (3,4).
+
+## NAMED ITEM: LOOK REVIEW LOOP (Dave 25 Oct 00:16) - spec in tech/STANDARD_SHOTS.md
+David3 shoots a fixed set with every build test (K01..K19 (3 views per spot, Dave 25 Oct), Kathleen's set v2), publishes to claude/box-results with an index line, Kathleen reviews each batch (art/CRITIQUES/<build>.md), critiques of severity 2-3 become tasks with an owner. First batch with the 792 test run. Owners: David3 pictures, Kathleen reviews, Tyler checks at each merge (BP-T68).
+
+## ADDED ITEM (Tyler 25 Oct 02:05 UTC): SPAWN COLUMN FIRST / time to stand on the ground
+Mike's log: collision under the player appears 46+ s after join while about 10,000 blocks stream in. Steve's ground-quiet fix (claude/steve-ground-quiet) makes the join not fail; the next plan measures the wait and sends the spawn column first. Owner Steve, lands in the build after ground-quiet; target: standing on the ground within 10 s of the welcome on the box and on Mike's PC.

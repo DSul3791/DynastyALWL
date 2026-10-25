@@ -445,6 +445,11 @@ func forget_prefetch() -> void:
 
 
 # Blocks asked for and not yet answered.
+# Blocks that failed for good so far (timed out, damaged, zeroed, or dropped by the test): the join watchdog restarts a stream only on NEW failures.
+func failed_total() -> int:
+	return timeouts + bad_blocks + zeroed_blocks + drops_made
+
+
 func pending() -> int:
 	_mutex.lock()
 	var count: int = _waiting.size()
