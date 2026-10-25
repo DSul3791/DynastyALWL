@@ -144,3 +144,5 @@ RULE (BP-T70, after 40 min lost to a wrong-commit run): every job names the FULL
 ## PICTURE WAIT (Dave 25 Oct 01:24): shoot ground-ready + 10 s (SETTLE=10, WAIT=60 max, "ground not ready" mark). David3: change tools/docker/shot.sh and the batch runner (branch claude/docker-test-box) and report the new values; Mike: same rule in look_rig.sh when Dave's PC is free. Spec: STANDARD_SHOTS.md "Wait time".
 
 ## SHOTS v3 (Dave 25 Oct 01:26): 3 views per spot, turn left 90 degrees after each shot; spec STANDARD_SHOTS.md. David3: update shots.txt/batch runner (view column, yaw read-back differs by 90 between views, tools single view).
+
+## CAMERA TURN (Dave 25 Oct 01:37): recipe in tech/CAMERA_TURN_RECIPE.md (mouse look rewrites the pose; shot_lock flag + pose read-back + body.rotation.y += PI/2 for a left turn). Steve plans the 3-line client flag; David3 tests on the box first.
