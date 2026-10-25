@@ -18,3 +18,6 @@ Folder: /mnt/project-files/goals/ (mirrored in git at docs/mirror/goals/): goals
 
 ## Half-hour reminder text (coordinator sends)
 "Awake? Not idle. Open your goals_<YourName>.md, work the FIRST goal above all else, hand break-offs to Sal or Mike, and update your WhatamIDoingtoReachMyGoal pad."
+
+## LOOK REVIEW LOOP in the goals system (Dave 25 Oct, BP-T68)
+Kathleen: standing step under goal 1 in goals_Kathleen.md (review each David3 batch, art/CRITIQUES/<build>.md). Owners named in a critique: section "Critique tasks" in goals_Sal.md, goals_Steve.md, goals_Sonny.md, goals_Mike.md and a mention in the 30-minute check line. Moderator: standing step under goal 2 in goals_Moderator.md (relay critiques once, check before/after). Tyler: standing check in goals_Tyler.md. David3 (no goals file): standing duty in tech/DAVID3_HANDOVER.md. Pads: WhatamIDoingtoReachMyGoal_<Name>.txt get a line "Critique <build>-<n>" when a task starts and ends.

@@ -135,7 +135,8 @@
   "steel_pickaxe": {
    "shape": "pick",
    "color": "#9aa3ad",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["steel"]
   },
   "soil": {
    "shape": "clump",
@@ -187,22 +188,22 @@
    "color": "#a98f52",
    "size": 1.0
   },
-  "stone_hammer": {
+  "wooden_hammer": {
    "shape": "axe",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "stone_hammer": {
+   "shape": "hammer",
    "color": "#7d7a74",
    "size": 1.0,
    "placeholder": true
   },
   "hand_saw": {
-   "shape": "spade",
+   "shape": "saw",
    "color": "#8a8d93",
    "size": 1.0,
-   "placeholder": true
-  },
-  "stone_adze": {
-   "shape": "axe",
-   "color": "#7d7a74",
-   "size": 0.9,
    "placeholder": true
   },
   "stone_spade": {
@@ -350,6 +351,12 @@
   "workbench_kit": {
    "shape": "kit",
    "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": ["bench"]
+  },
+  "shore_net": {
+   "shape": "cloth",
+   "color": "#a89a78",
    "size": 1.0
   },
   "fishing_rod": {
@@ -405,32 +412,38 @@
   "tool_rack_kit": {
    "shape": "kit",
    "color": "#7a5a35",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["rack"]
   },
   "vice_kit": {
    "shape": "kit",
    "color": "#7a5a35",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["vice"]
   },
   "stone_forge_kit": {
    "shape": "kit",
    "color": "#7d7a74",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "blacksmithy_kit": {
    "shape": "kit",
    "color": "#6c6f75",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "large_forge_kit": {
    "shape": "kit",
    "color": "#5c5f65",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "master_forge_kit": {
    "shape": "kit",
    "color": "#44474d",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["anvil"]
   },
   "lumber_oak": {
    "shape": "planks",
@@ -976,12 +989,14 @@
   "saw_mill_kit": {
    "shape": "kit",
    "color": "#8a6a3a",
-   "size": 1.2
+   "size": 1.2,
+   "bits": ["saw"]
   },
   "woodworking_table_kit": {
    "shape": "kit",
    "color": "#7a5430",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["table"]
   },
   "rock_pile": {
    "shape": "pile",
@@ -1956,6 +1971,41 @@
    "bits": [
     "#e0b020"
    ]
+  },
+  "rough_bed_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_wall_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "campfire_pot_kit": {
+   "shape": "kit",
+   "color": "#4a3a2a",
+   "size": 1.0
+  },
+  "clay_hearth_kit": {
+   "shape": "kit",
+   "color": "#9a6a4a",
+   "size": 1.0
+  },
+  "thatch_floor_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "thatch_roof_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_doorway_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
+   "size": 1.0
   }
  }
 }

@@ -10,6 +10,7 @@ const LOOKS_PATH := "res://data/items/looks.json"
 static var _table: Dictionary = {}
 static var _loaded: bool = false
 static var _material: StandardMaterial3D
+static var _metal_mat: StandardMaterial3D
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
@@ -149,6 +150,26 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hide":
 			_sph(parts, 0.17, Vector3(1.0, 0.08, 0.75), Vector3(0.0, -0.05, 0.0), color)
 			_sph(parts, 0.1, Vector3(1.0, 0.09, 0.6), Vector3(0.04, -0.03, 0.0), dark)
+		"net":
+			# A shore net, folded: a flat round of crossing twine strands (a grid of thin bars) with a ring of small stone weights round the rim.
+			for k in 9:
+				var off: float = (float(k) - 4.0) * 0.022
+				_box(parts, Vector3(0.2, 0.006, 0.006), Vector3(0.0, -0.02, off), color)
+				_box(parts, Vector3(0.006, 0.006, 0.2), Vector3(off, -0.02, 0.0), dark)
+
+			for k in 10:
+				var a: float = TAU * float(k) / 10.0
+				_sph(parts, 0.014, Vector3(1.0, 0.8, 1.0), Vector3(cos(a) * 0.1, -0.015, sin(a) * 0.1), light)
+		"basket":
+			# A stick basket: a round open pot of woven sticks, three darker weave bands and a rim, a loop handle of one bent stick.
+			_cyl(parts, 0.09, 0.14, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
+			_cyl(parts, 0.075, 0.13, Vector3(0.0, 0.012, 0.0), Vector3.ZERO, dark)
+			_torus(parts, 0.09, 0.012, Vector3(0.0, 0.07, 0.0), light)
+
+			for k in 3:
+				_torus(parts, 0.09, 0.008, Vector3(0.0, -0.045 + 0.045 * float(k), 0.0), dark)
+
+			_torus(parts, 0.07, 0.01, Vector3(0.0, 0.09, 0.0), color)
 		"coil":
 			_torus(parts, 0.07, 0.02, Vector3(0.0, -0.03, 0.0), color)
 			_torus(parts, 0.07, 0.02, Vector3(0.0, 0.0, 0.0), dark)
@@ -231,21 +252,61 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.024, 0.04, Vector3(0.43, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # the binding below the head
 		"axe":
 			# A stone axe: a stick with a wedge-headed blade lashed to the end. The wedge is thick at the stick and thins to a sharp edge, sticking out
-			# sideways, so from the side the whole thing reads like a hoe.
-			_handle(parts, 0.5)
-			_box(parts, Vector3(0.1, 0.06, 0.06), Vector3(0.22, 0.0, 0.0), dark)                                   # the poll block the wedge sits on
-			_wedge(parts, 0.06, 0.15, 0.12, Vector3(0.22, 0.0, 0.05), color)                                        # the wedge: base 6 cm, 15 cm out, 12 cm of edge
-			_wedge(parts, 0.024, 0.05, 0.125, Vector3(0.22, 0.0, 0.1), light)                                       # the ground, sharpened edge
-			_cyl(parts, 0.034, 0.03, Vector3(0.19, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))   # lashing
-			_cyl(parts, 0.034, 0.03, Vector3(0.25, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.8, 0.7, 0.4))
+			# sideways, so from the side the whole thing reads like a hoe. The edge is ground wider than the body and one corner is chipped, so the
+			# head is not a plain box; a thicker haft end and three wraps of cord hold it on.
+			color = _warm_stone(color)                                                                              # darker and warmer: in sunlight the plain grey read pale blue
+			dark = color.darkened(0.3)
+			light = color.lightened(0.18)
+			_handle(parts, 0.5, 0.021, Color(0.3, 0.2, 0.11))                                                       # a thicker, darker haft
+			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))     # the haft swells where the head sits
+			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), dark)                                # the poll block the wedge sits on
+			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), color)                                     # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
+			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
+			_box_rot(parts, Vector3(0.03, 0.03, 0.035), Vector3(0.285, 0.0, 0.12), Vector3(0.0, 0.5, 0.0), dark)  # a chipped corner
+			for wrap_x in [0.165, 0.19, 0.28]:
+				_cyl(parts, 0.034, 0.02, Vector3(wrap_x, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
-			# A pickaxe: eye block on the haft, a long head that curves down to a point at each end, and a wedge at the haft's end.
-			_handle(parts, 0.6)
-			_box(parts, Vector3(0.05, 0.05, 0.06), Vector3(0.27, 0.0, 0.0), dark)                                   # the eye the head sits in
-			_box(parts, Vector3(0.04, 0.04, 0.16), Vector3(0.27, 0.0, 0.0), color)                                  # middle of the head
-			for side in [-1.0, 1.0]:
-				_box_rot(parts, Vector3(0.035, 0.035, 0.1), Vector3(0.265, -0.012, side * 0.12), Vector3(side * 0.35, 0.0, 0.0), color)   # head sweeps down
-				_box_rot(parts, Vector3(0.018, 0.018, 0.07), Vector3(0.25, -0.045, side * 0.195), Vector3(side * 0.6, 0.0, 0.0), light)   # the points
+			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
+			# curving toward the grip (-x, the pommel end, as in Dave's reference) in the haft-and-head plane: a long tapering pick at +z, a shorter flat-ended chisel at -z.
+			# Nothing bends sideways (out of that plane). Held with the head vertical (points up and down); see HELD_LOOK_TURN.
+			# Test: src/worldgen/tools/test_pick_axes.gd.
+			var steel_head: bool = bits.has("steel")
+			var iron: Color = Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042)   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
+			var wood: Color = Color(0.3, 0.2, 0.11)
+			var leather: Color = Color(0.3, 0.17, 0.09)
+			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
+				_cyl(parts, 0.02, 0.05, Vector3(-0.33 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(wood, k, 0.12))
+			_cyl(parts, 0.03, 0.07, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(wood, 3, 0.1))              # the flared pommel
+			for k in range(8):                                                                                               # the leather grip wrap: alternating bound bands
+				_cyl(parts, 0.0235, 0.02, Vector3(-0.27 + 0.02 * float(k) + 0.01, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(leather, k, 0.22) if k % 2 == 0 else leather.darkened(0.3))
+			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
+			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron * 0.75)                    # the iron eye block the haft passes into
+			_metal(parts)
+			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), _tone(wood, 5, 0.1))                      # the haft's end, standing proud of the head
+			for k in range(3):                                                                                               # the collar's leather lashing, three turns
+				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
+			_cyl(parts, 0.026, 0.01, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))
+			var sweeps: Array = [[1.0, 0.28, 0.9, 10], [-1.0, 0.3, 0.72, 6]]                                             # side, sweep (rad), radius, segments: the long pick and the short chisel (twice the old segment count, same outline)
+			for side in sweeps:
+				var dir: float = side[0]
+				var count: int = side[3]
+				for seg in range(count):
+					var t: float = float(seg) / float(count)
+					var phi0: float = side[1] * t
+					var phi1: float = side[1] * float(seg + 1) / float(count)
+					var mid: float = 0.5 * (phi0 + phi1)
+					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if dir > 0.0 else 0.04 - 0.008 * t
+					var length: float = side[2] * (phi1 - phi0) * 1.06
+					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, dir * (0.04 + side[2] * sin(mid)))
+					var tone: Color = _tone_mul(iron, seg + (0 if dir > 0.0 else 7), 0.3)                                     # hammered, pitted: each segment a little lighter or darker
+					if seg >= count - 2:
+						tone = tone * 1.45                                                                              # the worked, bright points and edge
+					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -dir * mid, 0.0), tone)
+					_metal(parts)
+			if steel_head:
+				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
+				_metal(parts)
+				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
 			_handle(parts, 0.75)
@@ -256,6 +317,28 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.14, 0.012, 0.19), Vector3(0.4, 0.0, 0.0), color)                                     # blade, square part
 			_box_rot(parts, Vector3(0.13, 0.012, 0.13), Vector3(0.47, 0.0, 0.0), Vector3(0.0, PI * 0.25, 0.0), color)  # blade, pointed tip
 			_box(parts, Vector3(0.1, 0.016, 0.02), Vector3(0.36, 0.0, 0.0), light)                                     # centre rib
+		"saw":
+			# A hand saw: a wooden pistol grip at -x, a thin steel blade (about 0.55 m long) that narrows toward the tip, and a row of teeth along the cutting edge (+z).
+			var steel: Color = color.darkened(0.22)
+			_box(parts, Vector3(0.1, 0.03, 0.045), Vector3(-0.26, 0.0, 0.0), Color(0.34, 0.23, 0.13))                 # grip
+			_box(parts, Vector3(0.1, 0.03, 0.03), Vector3(-0.28, 0.0, -0.045), Color(0.34, 0.23, 0.13))               # the grip's lower leg
+			_box(parts, Vector3(0.04, 0.02, 0.05), Vector3(-0.19, 0.0, 0.0), dark)                                    # the plate the blade is riveted to
+			_box(parts, Vector3(0.3, 0.008, 0.075), Vector3(-0.02, 0.0, 0.0), steel)                                  # blade, wide end
+			_box(parts, Vector3(0.12, 0.008, 0.055), Vector3(0.19, 0.0, 0.004), steel)                                # blade, narrower toward the tip
+			_box(parts, Vector3(0.45, 0.012, 0.01), Vector3(0.0, 0.0, -0.036), dark)                                  # the stiffened back
+			for k in range(16):
+				_box_rot(parts, Vector3(0.012, 0.01, 0.014), Vector3(-0.15 + 0.0205 * float(k), 0.0, 0.043 if k < 10 else 0.035), Vector3(0.0, 0.0, 0.7), steel.lightened(0.15))   # teeth
+		"hammer":
+			# A stone hammer: a stick with a heavy blunt stone head lashed across the end, flat faces both sides (no edge).
+			color = _warm_stone(color)
+			dark = color.darkened(0.3)
+			_handle(parts, 0.45, 0.021, Color(0.3, 0.2, 0.11))
+			_cyl(parts, 0.027, 0.1, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.3, 0.2, 0.11))
+			_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                     # the head
+			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)       # a worn, darker striking face
+			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
+			for wrap_x in [0.155, 0.245]:
+				_cyl(parts, 0.04, 0.02, Vector3(wrap_x, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))
 		"hoe":
 			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
 			_handle(parts, 0.85)
@@ -269,15 +352,24 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.015, 0.03, 0.045), Vector3(0.05, 0.0, 0.0), dark)                                 # guard
 			_box(parts, Vector3(0.1, 0.012, 0.03), Vector3(0.115, 0.0, 0.0), color)                                 # blade body
 			_box(parts, Vector3(0.1, 0.006, 0.012), Vector3(0.115, 0.0, 0.017), light)                              # the edge
-			_cone(parts, 0.016, 0.05, Vector3(0.2, 0.0, 0.0), color)                                                # the point
+			_box(parts, Vector3(0.04, 0.011, 0.024), Vector3(0.185, 0.0, 0.003), color)                              # the blade narrows to the point, touching the body (no gap)
+			_box(parts, Vector3(0.03, 0.009, 0.012), Vector3(0.22, 0.0, 0.0), color)
+			_box(parts, Vector3(0.012, 0.006, 0.006), Vector3(0.241, 0.0, -0.002), light)                             # the tip
 		"needle":
 			_cyl(parts, 0.004, 0.12, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), color)
 		"rod":
 			_cyl(parts, 0.008, 0.9, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.4, 0.3, 0.18))
 			_cyl(parts, 0.025, 0.04, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color)
 		"torch":
-			_handle(parts, 0.5)
-			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
+			# Unlit: the stick with a wrapped head and twine bands, no flame. The vertex colours are linear, the held torch's materials are sRGB, so
+			# the same look goes through _lin (held_item.gd's torch has these colours and proportions).
+			_cyl_fine(parts, 0.016, 0.44, Vector3(-0.022, 0.0, 0.0), Color(0.42, 0.3, 0.17))                   # the stick
+			_cyl_fine(parts, 0.0185, 0.17, Vector3(0.1, 0.0, 0.0), Color(0.2, 0.14, 0.09))                      # the grimy top of the stick
+			_cyl_fine(parts, 0.045, 0.14, Vector3(0.17, 0.0, 0.0), Color(0.26, 0.17, 0.1))                      # the wrapped head
+			_cyl_fine(parts, 0.0455, 0.047, Vector3(0.2115, 0.0, 0.0), Color(0.16, 0.1, 0.065))                 # the charred top third
+			_cyl_fine(parts, 0.047, 0.015, Vector3(0.235, 0.0, 0.0), Color(0.1, 0.06, 0.04))                    # soot on the very top
+			_cyl_fine(parts, 0.0475, 0.012, Vector3(0.125, 0.0, 0.0), Color(0.34, 0.26, 0.17))                  # dark rope bands
+			_cyl_fine(parts, 0.0485, 0.012, Vector3(0.19, 0.0, 0.0), Color(0.34, 0.26, 0.17))
 		"pot":
 			# A clay cooking pot: round belly, narrow neck, flared rim and two small lug handles.
 			_sph(parts, 0.11, Vector3(1.0, 0.85, 1.0), Vector3(0.0, -0.025, 0.0), color)
@@ -306,6 +398,34 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)
 			_box(parts, Vector3(0.02, 0.13, 0.21), Vector3(0.0, 0.0, 0.0), light)
+			# An emblem on the lid (bits[0]) tells the kits apart: saw, table, bench, anvil, rack, vice. No bits: the plain box.
+			var emblem: String = str(bits[0]) if bits.size() > 0 else ""
+			var tag: Color = Color(0.82, 0.8, 0.76)
+
+			match emblem:
+				"saw":
+					_box(parts, Vector3(0.2, 0.006, 0.05), Vector3(0.0, 0.053, 0.0), Color(0.62, 0.64, 0.68))
+					for k in range(8):
+						_box(parts, Vector3(0.012, 0.012, 0.012), Vector3(-0.085 + 0.024 * float(k), 0.054, 0.03), Color(0.62, 0.64, 0.68))
+					_box(parts, Vector3(0.05, 0.012, 0.03), Vector3(-0.12, 0.056, 0.0), Color(0.34, 0.23, 0.13))
+				"table":
+					_box(parts, Vector3(0.18, 0.012, 0.1), Vector3(0.0, 0.076, 0.0), tag)
+					for leg in [[-0.075, -0.04], [0.075, -0.04], [-0.075, 0.04], [0.075, 0.04]]:
+						_box(parts, Vector3(0.012, 0.03, 0.012), Vector3(float(leg[0]), 0.056, float(leg[1])), tag)
+				"bench":
+					_cyl(parts, 0.008, 0.12, Vector3(0.0, 0.058, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.34, 0.23, 0.13))
+					_box(parts, Vector3(0.05, 0.04, 0.04), Vector3(0.07, 0.06, 0.0), Color(0.5, 0.5, 0.52))
+				"anvil":
+					_box(parts, Vector3(0.14, 0.03, 0.06), Vector3(0.0, 0.07, 0.0), Color(0.3, 0.3, 0.32))
+					_box(parts, Vector3(0.06, 0.04, 0.05), Vector3(0.0, 0.045, 0.0), Color(0.26, 0.26, 0.28))
+					_cone(parts, 0.025, 0.07, Vector3(0.1, 0.07, 0.0), Color(0.3, 0.3, 0.32))
+				"rack":
+					for k in range(3):
+						_cyl(parts, 0.006, 0.1, Vector3(-0.07 + 0.07 * float(k), 0.07, 0.0), Vector3(PI * 0.5, 0.0, 0.0), tag)
+					_box(parts, Vector3(0.2, 0.012, 0.012), Vector3(0.0, 0.1, 0.0), Color(0.34, 0.23, 0.13))
+				"vice":
+					_box(parts, Vector3(0.1, 0.05, 0.04), Vector3(0.0, 0.07, 0.0), Color(0.4, 0.4, 0.42))
+					_box(parts, Vector3(0.02, 0.05, 0.06), Vector3(0.06, 0.07, 0.0), Color(0.5, 0.5, 0.52))
 		"flower":
 			# A flower head on a short stem: three crossed flat petal blades, a centre and a green stem (about 80 triangles). bits[0] is the centre colour.
 			var centre: Color = Color.html(str(bits[0])) if bits.size() > 0 else Color(0.88, 0.7, 0.12)
@@ -357,9 +477,37 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 	return _combine(parts, size)
 
 
+# A colour scaled by a repeatable pseudo-random factor (1 +- spread): the same idea as _tone, but it keeps very dark colours dark (lightened() lerps toward white).
+static func _tone_mul(color: Color, k: int, spread: float) -> Color:
+	var n: float = fposmod(sin(float(k) * 12.9898 + 4.1) * 43758.5453, 1.0) * 2.0 - 1.0
+	return Color(color.r * (1.0 + n * spread), color.g * (1.0 + n * spread), color.b * (1.0 + n * spread), color.a)
+
+
+# A colour nudged lighter or darker by a repeatable pseudo-random amount (up to `spread`), for weathered grain and hammered iron.
+static func _tone(color: Color, k: int, spread: float) -> Color:
+	var n: float = fposmod(sin(float(k) * 12.9898 + 4.1) * 43758.5453, 1.0) * 2.0 - 1.0
+	return color.lightened(n * spread) if n > 0.0 else color.darkened(-n * spread)
+
+
+# A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
+static func _warm_stone(color: Color) -> Color:
+	return color.darkened(0.22).lerp(Color(0.5, 0.42, 0.34), 0.3)
+
+
 # A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
-static func _handle(parts: Array, length: float) -> void:
-	_cyl(parts, 0.016, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+static func _handle(parts: Array, length: float, radius: float = 0.016, wood: Color = Color(0.42, 0.3, 0.17)) -> void:
+	_cyl(parts, radius, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), wood)
+
+
+# A round cylinder along X with its colour given as sRGB (like a StandardMaterial3D albedo), 16 sides.
+static func _cyl_fine(parts: Array, radius: float, length: float, at: Vector3, color: Color) -> void:
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
+	cyl.height = length
+	cyl.radial_segments = 16
+	cyl.rings = 1
+	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), at), color.srgb_to_linear()])
 
 
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:
@@ -387,6 +535,17 @@ static func _cone(parts: Array, radius: float, length: float, at: Vector3, color
 	cone.radial_segments = 6
 	cone.rings = 1
 	parts.append([cone, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
+
+
+# A cone pointing down (-y), for the points of a pick.
+static func _cone_down(parts: Array, radius: float, length: float, at: Vector3, color: Color) -> void:
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = radius
+	cone.bottom_radius = 0.0
+	cone.height = length
+	cone.radial_segments = 6
+	cone.rings = 1
+	parts.append([cone, Transform3D(Basis.IDENTITY, at), color])
 
 
 # A wedge for an axe head: `base` wide (y), `out` long (z) from its base to the edge, `along` long (x, the length of the edge). Thick at z - out/2, edge at +z.
@@ -471,7 +630,35 @@ static func _torus(parts: Array, ring: float, tube: float, at: Vector3, color: C
 	parts.append([torus, Transform3D(Basis.IDENTITY, at), color])
 
 
+# Marks the part just added as metal: it goes on its own surface with the metallic material (the pickaxe head so far).
+static func _metal(parts: Array) -> void:
+	(parts[parts.size() - 1] as Array).append(true)
+
+
 static func _combine(parts: Array, size: float) -> ArrayMesh:
+	var plain: Array = []
+	var metal: Array = []
+
+	for part in parts:
+		if (part as Array).size() > 3:
+			metal.append(part)
+		else:
+			plain.append(part)
+
+	var result: ArrayMesh = ArrayMesh.new()
+
+	if not plain.is_empty() or metal.is_empty():
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(plain, size))
+		result.surface_set_material(0, _shared_material())
+
+	if not metal.is_empty():
+		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, _surface_arrays(metal, size))
+		result.surface_set_material(result.get_surface_count() - 1, _metal_material())
+
+	return result
+
+
+static func _surface_arrays(parts: Array, size: float) -> Array:
 	var vertices: PackedVector3Array = PackedVector3Array()
 	var normals: PackedVector3Array = PackedVector3Array()
 	var colors: PackedColorArray = PackedColorArray()
@@ -499,10 +686,18 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 	out[Mesh.ARRAY_NORMAL] = normals
 	out[Mesh.ARRAY_COLOR] = colors
 	out[Mesh.ARRAY_INDEX] = indices
-	var result: ArrayMesh = ArrayMesh.new()
-	result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
-	result.surface_set_material(0, _shared_material())
-	return result
+	return out
+
+
+# One shared metal material, built once: the vertex colour is the metal's colour, smooth and shiny.
+static func _metal_material() -> StandardMaterial3D:
+	if _metal_mat == null:
+		_metal_mat = StandardMaterial3D.new()
+		_metal_mat.vertex_color_use_as_albedo = true
+		_metal_mat.metallic = 0.8
+		_metal_mat.roughness = 0.4
+
+	return _metal_mat
 
 
 static func _shared_material() -> StandardMaterial3D:

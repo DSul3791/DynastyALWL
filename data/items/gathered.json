@@ -113,7 +113,8 @@
 				"Whisperfern",
 				"Echo moss"
 			],
-			"familiarity": 97
+			"familiarity": 100,
+			"description": "Soft dry stuff to lie on. A bed is stuffed with it."
 		},
 		"beechnuts": {
 			"number": 1010,
@@ -640,7 +641,8 @@
 				"Cotton grass",
 				"Ribwort plantain"
 			],
-			"familiarity": 55
+			"familiarity": 100,
+			"description": "Tough plant strands. Twisted into twine."
 		},
 		"fiddleheads": {
 			"number": 1051,
@@ -1425,7 +1427,8 @@
 				"Tidecrown",
 				"Wispbloom"
 			],
-			"familiarity": 93
+			"familiarity": 100,
+			"description": "Long hollow stems of reed. Woven or bundled."
 		},
 		"resin": {
 			"number": 1115,
@@ -1750,7 +1753,8 @@
 				"Wispbloom",
 				"Cotton grass"
 			],
-			"familiarity": 99
+			"familiarity": 100,
+			"description": "Dry grass stalks. Good for bedding and thatch."
 		},
 		"strawberries": {
 			"number": 1140,
@@ -1773,7 +1777,8 @@
 				"Ribwort plantain",
 				"Wild flax"
 			],
-			"familiarity": 50
+			"familiarity": 100,
+			"description": "Soft fluff for filling a bed or a pack."
 		},
 		"sunberries": {
 			"number": 1142,
@@ -1841,7 +1846,8 @@
 				"Lavender",
 				"Duskmallow"
 			],
-			"familiarity": 88
+			"familiarity": 100,
+			"description": "Dried grass, reed or bark in bundles. Roofs and walls are made of it."
 		},
 		"thorny_canes": {
 			"number": 1147,
@@ -1936,7 +1942,8 @@
 				"Ribwort plantain",
 				"Wild flax"
 			],
-			"familiarity": 50
+			"familiarity": 100,
+			"description": "Fine dry stuff that takes a spark."
 		},
 		"tinder_fungus": {
 			"number": 1154,

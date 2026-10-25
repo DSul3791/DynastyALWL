@@ -127,5 +127,22 @@
 		"say_miss": "You miss.",
 		"say_move": "Stand still a moment, the fish are watching.",
 		"say_ice": "Spear fishing needs open water."
+	},
+	"net": {
+		"note": "The shore net (list step 9, Dave yes): stand at the water's edge, hold the left button hold_s seconds, then up to catch[1] tries (1 to 3 wanted) each limited by the cell's stock and the fishing chance (dawn and dusk best, hour_mult). reach_m: how far the water point may be; depth_m: wading-depth water only; move_cancel_m: walking further than this cancels. Wear 1 per haul (item durability = uses).",
+		"reach_m": 5.0,
+		"depth_m": [0.3, 1.2],
+		"hold_s": 20.0,
+		"catch": [1, 3],
+		"chance_mult": 1.0,
+		"max_chance": 0.95,
+		"move_cancel_m": 2.0,
+		"say_start": "You spread the net in the shallows. Hold still.",
+		"say_cancel": "You pull the net back in.",
+		"say_nothing": "The net comes up empty.",
+		"say_no_water": "Stand at the water's edge and face the water.",
+		"say_shallow": "The water is too shallow for a net.",
+		"say_deep": "The water is too deep to net from here.",
+		"say_frozen": "The water is frozen."
 	}
 }

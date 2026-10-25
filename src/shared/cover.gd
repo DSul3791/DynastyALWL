@@ -298,6 +298,15 @@ class Index:
 		return best
 
 
+	# Under a built roof only (a crown is rain and sun cover, not wind shelter: Dave 24 Oct, Tyler's ruling).
+	func roofed(pos: Vector3) -> bool:
+		for key in _roof_cells.get(Vector2i(int(floor(pos.x / CELL_M)), int(floor(pos.z / CELL_M))), []):
+			if _roof_covers(_roofs[key], pos):
+				return true
+
+		return false
+
+
 	func covers(pos: Vector3) -> bool:
 		var cx: int = int(floor(pos.x / CELL_M))
 		var cz: int = int(floor(pos.z / CELL_M))

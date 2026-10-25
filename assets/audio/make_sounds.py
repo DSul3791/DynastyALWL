@@ -313,10 +313,10 @@ def wind_loop(rng, seconds, layer):
         spec = np.fft.rfft(white[idx] * window)
         pink = 1.0 / np.sqrt(np.maximum(f, 20.0))
         if layer == "low":
-            # A soft airy hush, not a roar: little below 150 Hz.
-            cut = 500 + 500 * g
-            # Mostly lulls: a steady hush sounded like a river (owner 2026-10-20).
-            gain = pink * lowpass(f, cut, 2) * highpass(f, 150, 2) * (0.25 + 0.75 * g ** 3)
+            # A soft airy hush, not a roar and not surf (Dave, build 789: "sounds like an ocean surf again"): the old body sat at 441 Hz
+            # with an 11.8 dB swell, which reads as waves. Nothing below 350 Hz, the top rolled off higher, and the swell only about 6 dB.
+            cut = 1100 + 700 * g
+            gain = pink * lowpass(f, cut, 2) * highpass(f, 350, 3) * (0.5 + 0.5 * g ** 2)
         else:
             # Leaves and grass stirring: airy, faint whistle only at the peaks.
             center = 1500 + 900 * g
@@ -324,7 +324,7 @@ def wind_loop(rng, seconds, layer):
             for j, c in enumerate(whistle_cycles):
                 wf = 700 + 260 * j + 120 * np.sin(2 * np.pi * c * x + phases[j])
                 gain = gain + 0.08 * pink * band(f, wf, 0.04) * g ** 3
-            gain = gain * (0.22 + 0.78 * g ** 2.5)
+            gain = gain * (0.45 + 0.55 * g ** 2.5)         # a shallower swell (Dave, build 789): was 0.22 to 1, about 13 dB
         frame = np.fft.irfft(spec * gain, win) * window
         out[idx] += frame
     out /= 1.5  # hann squared at quarter hop sums to 1.5

@@ -13,6 +13,9 @@ Your first goal below is the ONLY thing that matters until it is done. Scratch p
 Completed: showroom real items (build 773, Dave to confirm in game); ISLAND JOB (island checks table runs on every bake, v28/v29/v30b, 67 checks 0 FAIL, wired into local_check.sh, Tyler confirmed 24 Oct 07:51 UTC)
 
 
+## Critique tasks (Dave 25 Oct, LOOK REVIEW LOOP)
+When Kathleen's art/CRITIQUES/<build>.md names you as owner of a flaw, the Moderator relays it once; add it here as a step "Critique <build>-<n>: <flaw>" with branch and before/after pictures, and mention it in your 30-minute check line. It does not replace your goal 1 unless a critique is severity 3 and Tyler says so.
+
 ## Goals completed
 showroom real items (build 773, Dave to confirm in game)
 ISLAND JOB: island checks table runs on every bake (Tyler confirmed 24 Oct 07:51 UTC; BP-T54: every bake commit carries docs/bakeNN/island_table.txt)

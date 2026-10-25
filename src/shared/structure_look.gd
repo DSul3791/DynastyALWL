@@ -3,7 +3,7 @@ extends RefCounted
 # its model function, not edits in four files. States 1, 8 and 9 are the campfire (lit, cold, loaded); 12 is old remains. States are never renumbered.
 
 const PATH := "res://data/items/structures.json"
-const CAMPFIRE_STATES := [1, 8, 9]
+const CAMPFIRE_STATES := [1, 8, 9, 40, 41]
 
 static var _table: Dictionary = {}
 

@@ -156,7 +156,7 @@ func setup(stage, ambient) -> void:
 
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.stream = list[0]
-		player.bus = "Weather"
+		player.bus = "Wind" if sound_name.begins_with("wind") else "Weather"   # the storm wind follows the Wind slider, not Nature (Dave 24 Oct)
 		player.volume_db = -80.0
 		add_child(player)
 

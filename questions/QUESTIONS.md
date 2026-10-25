@@ -11,7 +11,10 @@
 
 
 
-## sound-duck-vetted | Duck quacks and sand footsteps (build 752)
-Note: 1. Start the game (MikeW has pulled the new build). 2. Esc > Settings > Sound test > creature calls > duck. Listen: does it sound like a real duck and is it quiet enough? 3. Walk and run on sand: is running only a little louder than walking?
-Note: Recommendation: Yes after listening, because the duck clips are real recordings that passed the team check and the sand run is now only about 5 dB over walk, as you asked.
-[test]
+
+## ground-pbr-790 | Does the ground look more real up close?
+Note: 1. Pull branch claude/kathleen-photoreal-batch1 and press F6 (Godot imports the new textures once; wait for it).
+Note: 2. Stand in the meadow and look down at the grass, then at a gravel bank and a rock face; take one picture of each.
+Note: 3. Is the ground more real than before, or does it show repeating tiles, too much bump or wrong colour? Say which.
+Note: Recommendation: Yes it is better: ground now has photo detail, bumps and a soil sheen near the eye.
+[picture]

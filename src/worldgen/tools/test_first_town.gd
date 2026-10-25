@@ -134,13 +134,14 @@ func _init() -> void:
 	for n in range(4):
 		items.drop_in_world(table.number_of("stone"), 4, camp + Vector3(float(n) * 0.3, 0.0, 1.0))
 		items.drop_in_world(table.number_of("stick"), 6, camp + Vector3(float(n) * 0.3, 0.0, -1.0))
-		items.drop_in_world(table.number_of("plant_fibre"), 3, camp + Vector3(float(n) * 0.3, 0.0, 1.5))
+		items.drop_in_world(table.number_of("plant_fibre"), 6, camp + Vector3(float(n) * 0.3, 0.0, 1.5))
 
 	for _pass in range(12):   # the drops merged into heaps; a heap gives a handful at a time
 		for id in items._items.keys():
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	check(count("stone") >= 14 and count("stick") >= 20 and count("log") == 2, "gathering fills the pack (%d stones, %d sticks, %d logs)" % [count("stone"), count("stick"), count("log")])
+	craft(1, 5)   # twine is twisted by hand from fibre
 	craft(2, 1)
 	craft(6, 1)
 	craft(15, 1)
@@ -220,10 +221,11 @@ func _init() -> void:
 	var fire: int = 0
 
 	for id in items._items:
-		if items._items[id].has("fire") and int(items._items[id]["fire"]["state"]) == 1:
+		if items._items[id].has("fire"):
+			items.action(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)   # a placed fire is laid (fire tiers): light it with tinder from the pack
 			fire = id
 
-	check(fire != 0, "the campfire burns")
+	check(fire != 0 and items.fire_is_lit(int(items._items[fire]["fire"]["state"])), "the campfire burns")
 	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("raw_meat"), 0, 2, Vector3.ZERO)
 	items.report_position(1, items._items[fire]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items._last_cook.clear()

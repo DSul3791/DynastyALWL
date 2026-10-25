@@ -32,6 +32,10 @@ const LOOKS := {
 	"saw_mill": {"builder": "saw_mill", "args": []},
 	"water_wheel": {"builder": "water_wheel", "args": []},
 	"woodworking_table": {"builder": "woodworking_table", "args": []},
+	"rough_bed": {"builder": "rough_bed", "args": []},
+	"thatch_wall": {"builder": "thatch_wall", "args": []},
+	"tripod_pot": {"builder": "tripod_pot", "args": []},
+	"clay_hearth": {"builder": "clay_hearth", "args": []},
 }
 
 static var _warned: Dictionary = {}

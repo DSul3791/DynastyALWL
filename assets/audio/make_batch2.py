@@ -54,16 +54,55 @@ def swell(n, cycles, phases, weights):
 
 
 # ------------------------------------------------------------ beds (loops)
+def _wrap_add(out, x, at):
+    """Add x into the loop at sample `at`, wrapping around the loop end (so the bed stays seamless)."""
+    out[(at + np.arange(len(x))) % len(out)] += x
+
+
+def _rustle(rng, length_s, lo, hi, peak):
+    """One leaf rustle: a short band of crackly noise with a soft swell and fall, not a steady wash."""
+    m = int(length_s * SR)
+    x = noise(rng, m, lambda f: highpass(f, lo, 2) * lowpass(f, hi, 2))
+    x = x / (np.max(np.abs(x)) + 1e-9)
+    crackle = 0.5 + 0.5 * np.clip(noise(rng, m, lambda f: lowpass(f, 40, 2)) / 0.02, -1, 1)   # irregular flutter, so it crackles instead of hissing
+    return x * crackle * np.sin(np.pi * np.arange(m) / m) ** 2 * peak
+
+
 def bed_forest_day(rng):
-    """Leaves and grass stirring, a soft airy hush with slow lulls (spring, summer, autumn by day)."""
-    return wind_loop(rng, BED_S, "gust") * 0.7 + wind_loop(rng, BED_S, "low") * 0.5
+    """Dave 2026-10-24: the old bed was steady broadband noise and read as ocean surf. Now a near-silent floor, separate leaf rustles
+    (a short gust through leaves, 0.6 to 2.2 s each, with long calm between) and a few far-off bird calls. No continuous wash, no swell."""
+    n = BED_S * SR
+    out = 0.004 * noise(rng, n, lambda f: lowpass(f, 500, 2) * highpass(f, 60, 2) / np.sqrt(np.maximum(f, 40.0)))   # almost nothing under it
+
+    for k in range(11):
+        _wrap_add(out, _rustle(rng, rng.uniform(0.6, 2.2), rng.uniform(1500, 2600), rng.uniform(5000, 7500), rng.uniform(0.15, 0.5)), int(rng.integers(0, n)))
+
+    for k in range(4):
+        call = bird_tweet(rng) if k % 2 == 0 else bird_whistle(rng)
+        _wrap_add(out, lowpass_sig(call, 5200) * rng.uniform(0.18, 0.4), int(rng.integers(0, n)))
+
+    return out
+
+
+def lowpass_sig(x, cutoff):
+    """A distant call: the same sound with the top end taken off."""
+    return np.fft.irfft(np.fft.rfft(x) * lowpass(np.fft.rfftfreq(len(x), 1.0 / SR), cutoff, 2), len(x))
 
 
 def bed_forest_winter(rng):
-    """Bare branches: a thin, sparse wind with long calm."""
-    x = wind_loop(rng, BED_S, "low")
-    n = len(x)
-    return x * (0.15 + 0.85 * swell(n, [1, 2], [0.4, 2.0], [0.7, 0.3]) ** 2)
+    """Bare branches: long calm with a few dry twig ticks and one thin brush of wind, no steady noise."""
+    n = BED_S * SR
+    out = 0.002 * noise(rng, n, lambda f: lowpass(f, 400, 2) * highpass(f, 60, 2) / np.sqrt(np.maximum(f, 40.0)))
+
+    for k in range(3):
+        _wrap_add(out, _rustle(rng, rng.uniform(1.2, 2.6), 900, 2600, rng.uniform(0.08, 0.2)), int(rng.integers(0, n)))
+
+    for k in range(7):
+        tick = noise(rng, int(0.03 * SR), lambda f: highpass(f, 1800, 2) * lowpass(f, 6000, 2))
+        tick = tick / (np.max(np.abs(tick)) + 1e-9) * env(len(tick), 0.001, 0.008) * rng.uniform(0.15, 0.4)
+        _wrap_add(out, tick, int(rng.integers(0, n)))
+
+    return out
 
 
 def bed_night(rng):

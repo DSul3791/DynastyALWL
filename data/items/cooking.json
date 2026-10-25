@@ -46,23 +46,41 @@
 		"hearty_pottage": 30,
 		"feast_roast": 30
 	},
-	"fuel_note": "Burn times in GAME seconds (clock is 24:1): a stick 2 game minutes, driftwood 15, firewood 30, a log 2 game hours. A placed campfire starts lit with 20 sticks of fuel.",
+	"fuel_note": "Burn times in GAME seconds (clock is 24:1; a game hour is 2.5 real minutes), Dave 24 Oct: a stick, driftwood piece or bundle of kindling is a small fire's wood (stick 15 game minutes, driftwood 15, kindling 7.5), firewood 1 game hour (soft firewood 30 minutes), a log 2 game hours. A fire placed from a kit is laid with 4 sticks and lit by hand with plant fibre.",
 	"fuel": {
-		"stick": 120.0,
+		"stick": 900.0,
+		"kindling": 450.0,
 		"log": 7200.0,
-		"firewood": 1800.0,
-		"firewood_soft": 900.0,
+		"firewood": 3600.0,
+		"firewood_soft": 1800.0,
 		"driftwood": 900.0
 	},
-	"start_burn_game_s": 2400.0,
-	"max_burn_game_s": 43200.0,
+	"fuel_class": {
+		"stick": "weak",
+		"kindling": "weak",
+		"driftwood": "weak",
+		"firewood": "firewood",
+		"firewood_soft": "firewood",
+		"log": "log"
+	},
+	"fire_tiers_note": "Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
+	"fire_tiers": {
+		"weak": {"tier": 1, "state": 40, "light_m": 6.0, "light_energy": 0.7, "heat_c": 8.0, "heat_radius_m": 2.5},
+		"firewood": {"tier": 2, "state": 1, "light_m": 12.0, "light_energy": 1.6, "heat_c": 20.0, "heat_radius_m": 4.0},
+		"log": {"tier": 3, "state": 41, "light_m": 14.0, "light_energy": 1.8, "heat_c": 25.0, "heat_radius_m": 5.0}
+	},
+	"min_pieces": 3,
+	"start_burn_game_s": 3600.0,
+	"max_burn_game_s": 86400.0,
 	"fuel_order": [
 		"firewood",
 		"firewood_soft",
 		"driftwood",
 		"stick",
+		"kindling",
 		"log"
 	],
+	"rain_light_chance": {"note": "Lighting a fire in light rain (under puts_out strength) can fail: chance = max(min_chance, 1 - rain / puts_out x loss). The tinder is used either way.", "puts_out": 0.2, "loss": 0.8, "min_chance": 0.2},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
 		"trout": "roast_fish",

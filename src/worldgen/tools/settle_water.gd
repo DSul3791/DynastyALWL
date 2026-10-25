@@ -98,6 +98,9 @@ func _init() -> void:
 		supplied += spring_rate * sim.dt
 		t += 1
 
+		if t % 15 == 0:
+			sim.level_map()   # drains the native core's list of changed squares (it grows by every touched square each tick, about 160 KB a tick, until level_map runs: bad_alloc near tick 8000 without this); the live water thread calls it every publish
+
 		if t in [1, 2, 5, 10, 20]:
 			print("  early tick %d: stored %.0f m3 (start %.0f), sea %.0f, dried %.0f, supplied %.0f, wet %d" % [t, sim.total_volume(), start_volume, sim.sea_m3, sim.evaporated_m3, supplied, sim.wet_cells()])
 

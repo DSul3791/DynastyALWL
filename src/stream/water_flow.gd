@@ -42,7 +42,7 @@ static func runs(generator, tile_data, a: Vector3, b: Vector3, rules: Dictionary
 static func _speeds(generator, tile_data, points: Array) -> Array:
 	var out: Array = []
 
-	if tile_data == null or tile_data.placeholder or tile_data.sim_levels.is_empty():
+	if tile_data == null or tile_data.placeholder or tile_data.sim_snapshot().is_empty():
 		for p in points:
 			out.append(NO_WATER)
 
