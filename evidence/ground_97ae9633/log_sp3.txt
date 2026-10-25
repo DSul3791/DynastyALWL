@@ -1,0 +1,14 @@
+== iron_spade_large exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 59 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53301.46, 30.89525, 68425.83) size (1.273438, 1.337193, 0.726562) is 61 % off centre, part outside, aiming again
+shot runner: item view top try 2: box at (53299.84, 31.22978, 68426.42) size (1.671875, 0.614576, 0.882812) is 93 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 60 % of the frame, centre 0 % off, all inside the frame
+== steel_spade_large exit 0
+shot runner: item view front ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view side ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 59 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view top try 1: box at (53301.34, 31.1117, 68425.88) size (1.683594, 0.569393, 0.882812) is 43 % off centre, part outside, aiming again
+shot runner: item view top try 2: box at (53299.83, 31.4578, 68426.43) size (1.699219, 0.469097, 0.890625) is 124 % off centre, part outside, aiming again
+shot runner: item view top ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 90 % of the frame, centre 0 % off, all inside the frame
+shot runner: item view diag ok: pose off by 0.00 m, yaw 0.0, pitch 0.0 degrees; item fills 56 % of the frame, centre 0 % off, all inside the frame
