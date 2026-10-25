@@ -1,7 +1,8 @@
 extends SceneTree
 
 # No flora on water: runs the runtime flora placer over every chunk that holds or touches water on a tile (settled water
-# file and painted lakes and rivers), and counts the instances that stand on a wet cell or one cell beside it. Must be 0.
+# file and painted lakes and rivers), and counts the instances that stand on a wet cell (any species but reeds and the other
+# water species) or, for trees and shrubs, one cell beside it. Must be 0.
 #   godot --headless --path . --script res://src/worldgen/tools/test_flora_wet.gd [-- --tile=3,4 | --all]
 # Needs the baked tiles and their water files (worlds/base_world/tiles, worlds/base_world/water).
 
@@ -118,14 +119,22 @@ func _tile(generator, placer, settings, tile: Vector2i) -> void:
 
 		for n in range(positions.size()):
 			var p: Vector3 = positions[n]
+			var species: Dictionary = placer.species_by_id(int(items["ids"][n]))
 			total += 1
 
-			if _wet_near(data, sim, p.x, p.z):
+			# Reeds and the other species that list water classes may stand in or at the water; the rest may not.
+			if str(species.get("shape", "")) == "reed" or int(species.get("water_mask", 0)) != 0:
+				continue
+
+			var on_cell: bool = _wet(data, sim, data.nearest(p.x, p.z))
+			var beside: bool = species["kind"] != PlacerScript.KIND_PLANT and _wet_near(data, sim, p.x, p.z)
+
+			if on_cell or beside:
 				on_water += 1
 
 				if shown < 8:
 					shown += 1
-					print("  flora %d at %.0f,%.0f (height %.1f) stands on or beside water" % [items["ids"][n], p.x, p.z, p.y])
+					print("  flora %d (%s) at %.0f,%.0f (height %.1f) %s" % [items["ids"][n], str(species.get("name", "?")), p.x, p.z, p.y, "on a wet cell" if on_cell else "beside water"])
 
 	print("tile %s: settled water file %s, %d wet chunks, %d flora instances there, %d on or beside water" % [str(tile), "yes" if not sim.is_empty() else "NO", wet_chunks.size(), total, on_water])
 	_check(not sim.is_empty(), "tile %s has its settled water loaded when flora is placed" % str(tile))
