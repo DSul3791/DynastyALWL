@@ -4054,6 +4054,72 @@ func run_leanto_test(_client) -> void:
 	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
 
 
+# Headless check (--shoot): get a bow and arrows, draw fully and loose one arrow along the view, then say what the pack and the ground show.
+# Prints SHOOT TEST lines; the last one is PASS or FAILED. No key presses, no animals needed (a hit is checked by test_bow on the server).
+func run_shoot_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("wooden_bow"), 0, 1, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
+	await get_tree().create_timer(1.5).timeout
+	var bow_slot: int = inventory.numbers.find(table.number_of("wooden_bow"))
+	var arrows_before: int = inventory.count_of(table.number_of("stone_arrow"))
+	print("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
+
+	if bow_slot < 0 or arrows_before < 1:
+		print("SHOOT TEST FAILED: the pack did not get the bow or the arrows")
+		return
+
+	var camera: Camera3D = client.camera
+	var forward: Vector3 = -camera.global_transform.basis.z
+	var started: int = Time.get_ticks_msec()
+	await get_tree().create_timer(1.2).timeout      # a full draw
+	net.inventory_action.rpc_id(1, Net.ACT_SHOOT, bow_slot, Time.get_ticks_msec() - started, 0, forward)
+	await get_tree().create_timer(1.5).timeout
+	var arrows_after: int = inventory.count_of(table.number_of("stone_arrow"))
+	print("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
+	await get_tree().create_timer(6.0).timeout      # flight and landing
+	var landed: int = 0
+	var here: Vector3 = _player_position.call()
+
+	for id in _world:
+		if _world[id]["number"] == table.number_of("stone_arrow") and (_world[id]["pos"] as Vector3).distance_to(here) < 90.0:
+			landed += 1
+
+	print("SHOOT TEST: %d arrow(s) lying within 90 m after the flight (an arrow can break, so 0 is possible)" % landed)
+	print("SHOOT TEST %s" % ("PASS" if arrows_after == arrows_before - 1 else "FAILED: the shot did not take an arrow"))
+
+
+# Headless check (--place-foundation): a hand-made foundation (thatch floor) is given and placed 3 m ahead; says what the world shows there.
+# Prints FOUNDATION TEST lines; the last one is PASS or FAILED.
+func run_foundation_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var kit: int = table.number_of("thatch_floor_kit")
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
+	await get_tree().create_timer(1.5).timeout
+	var slot: int = inventory.numbers.find(kit)
+
+	if slot < 0:
+		print("FOUNDATION TEST FAILED: no thatch floor kit in the pack")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 3.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	var rows_before: int = _world.size()
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, slot, 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var near: Array = []
+
+	for id in _world:
+		if (_world[id]["pos"] as Vector3).distance_to(spot) < 2.5:
+			near.append(table.id_of(int(_world[id]["number"])))
+
+	var kit_left: int = inventory.count_of(kit)
+	print("FOUNDATION TEST: spot %s, kit left %d, world rows %d -> %d, near the spot: %s" % [str(spot), kit_left, rows_before, _world.size(), str(near)])
+	print("FOUNDATION TEST %s" % ("PASS" if kit_left == 0 and not near.is_empty() else "FAILED: the floor was not placed"))
+
+
 # Headless check (--eat): eat a roast and apply a poultice.
 func run_eat_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
