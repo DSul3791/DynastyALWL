@@ -100,6 +100,21 @@ func _init() -> void:
 	check(bool(bs["inside"]) and float(bs["off"]) <= 0.02 and float(bs["extent"]) <= 0.92, "the blade-side diag view is centred and fits (off %.1f %%, extent %.2f)" % [float(bs["off"]) * 100.0, float(bs["extent"])])
 	check(diag_default["name"] == "diag", "without a blade direction the diag view is as before")
 
+	# The face normal decides the diag camera: a plate lying flat is seen from above, one on its edge from the side its face points to.
+	var flat: PackedVector3Array = PackedVector3Array([Vector3(0, 0, 0), Vector3(0.4, 0, 0), Vector3(0, 0, 0.3), Vector3(0.4, 0, 0), Vector3(0.4, 0, 0.3), Vector3(0, 0, 0.3), Vector3(-1.0, 0, 0), Vector3(0, 0, 0.01), Vector3(0, 0, 0)])
+	var n_flat: Vector3 = ItemCam.face_normal(flat)
+	check(n_flat.y > 0.95, "a plate lying flat has a normal pointing up (%s)" % str(n_flat))
+	var edge: PackedVector3Array = PackedVector3Array([Vector3(0, 0, 0), Vector3(0, 0.3, 0), Vector3(0.4, 0, 0), Vector3(0.4, 0, 0), Vector3(0, 0.3, 0), Vector3(0.4, 0.3, 0)])
+	var n_edge: Vector3 = ItemCam.face_normal(edge)
+	check(absf(n_edge.z) > 0.95 and n_edge.z > 0.0, "a plate standing on its edge has a horizontal normal (+z side) (%s)" % str(n_edge))
+	var flat_box: AABB = AABB(Vector3(-1.3, 0.0, -0.1), Vector3(1.6, 0.1, 0.2))
+	var d_flat: Dictionary = ItemCam.views(flat_box, FOV, 0.0, ASPECT, Vector2(1.0, 0.0), Vector3(0.0, 1.0, 0.0))[3]
+	check(float(d_flat["pitch"]) < -40.0, "flat blade: the diag camera looks steeply down (%.0f degrees)" % float(d_flat["pitch"]))
+	var d_edge: Dictionary = ItemCam.views(flat_box, FOV, 0.0, ASPECT, Vector2(1.0, 0.0), Vector3(0.0, 0.0, 1.0))[3]
+	check((d_edge["cam"] as Vector3).z > flat_box.get_center().z + 0.3 and float(d_edge["pitch"]) > -30.0, "blade on its edge facing +z: the diag camera stands on the +z side, a little above (pitch %.0f)" % float(d_edge["pitch"]))
+	var es: Dictionary = ItemCam.frame_stats(flat_box, d_edge["cam"], _forward(d_edge), d_edge["up"], FOV, ASPECT)
+	check(bool(es["inside"]) and float(es["off"]) <= 0.02, "the edge-on diag view is centred and fits")
+
 	check(ItemCam.fill_fraction(AABB(Vector3(0.0, 0.0, 5.0), Vector3.ONE), Vector3.ZERO, Vector3.FORWARD, Vector3.UP, FOV, ASPECT) == 0.0, "an item behind the camera fills nothing")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(0.0, 0.0, 1.0), Vector3.ZERO), 0.0), "from the south facing north: yaw 0")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(1.0, 0.0, 0.0), Vector3.ZERO), 90.0), "from the east facing west: yaw 90")

@@ -847,7 +847,7 @@ func _build_item_views(now: int) -> void:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box))
+	views = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box), _face_normal(_item_node))
 	_item_views = views
 	_subject = centre
 	_subject_set = true
@@ -865,7 +865,7 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 	var centre: Vector3 = _item_box.get_center()
 	var ground: float = _ground(centre.x, centre.z)
 	var size: Vector2 = get_viewport().get_visible_rect().size
-	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box))
+	var fresh: Array = ItemCam.views(_item_box, client.camera.fov, _item_box.position.y if is_nan(ground) else ground, size.x / maxf(size.y, 1.0), _blade_dir(_item_node, _item_box), _face_normal(_item_node))
 
 	for v in fresh:
 		if v["name"] == view["name"]:
@@ -875,8 +875,17 @@ func _remake_item_view(view: Dictionary) -> Dictionary:
 	return view
 
 
+func _face_normal(node: Node) -> Vector3:
+	return ItemCam.face_normal(_world_faces(node))
+
+
 # The direction from the middle of a long tool to its heavy end (item_cam.heavy_end) from the world-space triangles of its drawn meshes.
 func _blade_dir(node: Node, box: AABB) -> Vector2:
+	return ItemCam.heavy_end(_world_faces(node), box)
+
+
+# The triangles of every visible mesh under `node`, in world space.
+func _world_faces(node: Node) -> PackedVector3Array:
 	var faces: PackedVector3Array = PackedVector3Array()
 	var stack: Array = [node]
 
@@ -891,7 +900,16 @@ func _blade_dir(node: Node, box: AABB) -> Vector2:
 
 		stack.append_array(n.get_children())
 
-	return ItemCam.heavy_end(faces, box)
+	return faces
+
+
+# Every other loose thing on the ground (leftovers of earlier runs, the showroom rows) is hidden, so the picture holds the one item.
+func _hide_other_items() -> void:
+	for id in client.items._world:
+		var node: Variant = client.items._world[id].get("node")
+
+		if node is Node3D and node != _item_node:
+			(node as Node3D).visible = false
 
 
 func _node_aabb(node: Node) -> AABB:
@@ -945,6 +963,9 @@ func _run_view(now: int) -> void:
 
 	if _view_msec == 0 and item_mode and _item_node != null and is_instance_valid(_item_node):
 		view = _remake_item_view(view)
+
+	if _view_msec == 0 and item_mode:
+		_hide_other_items()
 
 	if _view_msec == 0:
 		if not _subject_set:
