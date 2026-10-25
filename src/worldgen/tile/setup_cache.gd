@@ -62,8 +62,8 @@ static func _state(object: Object) -> Dictionary:
 	return state
 
 
-# True when `path` held a cache with this key and the state was put back into the objects; `world_air` comes back in the dictionary.
-static func load_into(path: String, cache_key: String, elevation: Object, river_network: Object, world_air: Dictionary) -> bool:
+# True when `path` held a cache with this key and the state was put back into the objects; `world_air` and `sketch` (as the setup leaves it) come back in the dictionaries.
+static func load_into(path: String, cache_key: String, elevation: Object, river_network: Object, world_air: Dictionary, sketch: Dictionary) -> bool:
 	if not FileAccess.file_exists(path):
 		return false
 
@@ -80,10 +80,13 @@ static func load_into(path: String, cache_key: String, elevation: Object, river_
 
 	world_air.clear()
 	world_air.merge(parsed["world_air"])
+	# elevation.build writes into the sketch (the starter mounts get bay_center and bay_radius_m), and tile bakes read it back.
+	sketch.clear()
+	sketch.merge(parsed["sketch"])
 	return true
 
 
-static func save(path: String, cache_key: String, elevation: Object, river_network: Object, world_air: Dictionary) -> void:
+static func save(path: String, cache_key: String, elevation: Object, river_network: Object, world_air: Dictionary, sketch: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var temp: String = path + ".tmp"
 	var file: FileAccess = FileAccess.open(temp, FileAccess.WRITE)
@@ -92,6 +95,6 @@ static func save(path: String, cache_key: String, elevation: Object, river_netwo
 		push_warning("setup cache not written: %s" % temp)
 		return
 
-	file.store_buffer(var_to_bytes({"key": cache_key, "elevation": _state(elevation), "river_network": _state(river_network), "world_air": world_air}))
+	file.store_buffer(var_to_bytes({"key": cache_key, "elevation": _state(elevation), "river_network": _state(river_network), "world_air": world_air, "sketch": sketch}))
 	file.close()
 	DirAccess.rename_absolute(temp, path)

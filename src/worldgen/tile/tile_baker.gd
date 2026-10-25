@@ -64,7 +64,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 	var cache_key: String = SetupCacheScript.key(world_dir, elevation_cell_m) if use_cache else ""
 	var cache_path: String = SetupCacheScript.path_for(world_dir, cache_key) if use_cache else ""
 
-	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air):
+	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air, sketch):
 		elevation.settings = settings
 		print("Setup restored from the cache %s" % cache_path.get_file())
 	else:
@@ -75,7 +75,7 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 		river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
 
 		if use_cache:
-			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air)
+			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air, sketch)
 
 	# BAKE: a pre-carved island (erosion_delta_v1.bin next to world.json) replaces the per-tile erosion below.
 	erosion_delta = ErosionDeltaScript.new()
