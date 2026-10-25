@@ -267,33 +267,41 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"pick":
 			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
 			# curving down (-y) in the head-and-droop plane: a long tapering pick at +z, a shorter flat-ended chisel at -z. Nothing bends sideways.
+			# SHAPE LOCKED (Dave 2026-10-25, 91827091): only smoother curves (more segments on the same outline) and material tones may change here.
 			# Test: src/worldgen/tools/test_pick_axes.gd.
-			var wood: Color = Color(0.36, 0.24, 0.13)
+			var steel_head: bool = bits.has("steel")
+			var iron: Color = Color(0.4, 0.43, 0.48) if steel_head else Color(0.21, 0.2, 0.21)                            # aged dark iron (steel a paler, cleaner grey)
+			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
-			_handle(parts, 0.6, 0.02, wood)
-			_cyl(parts, 0.03, 0.07, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), wood)                       # the flared pommel
-			_cyl(parts, 0.0235, 0.16, Vector3(-0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather)                  # the leather grip wrap
+			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
+				_cyl(parts, 0.02, 0.05, Vector3(-0.33 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(wood, k, 0.12))
+			_cyl(parts, 0.03, 0.07, Vector3(-0.3, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(wood, 3, 0.1))              # the flared pommel
+			for k in range(8):                                                                                               # the leather grip wrap: alternating bound bands
+				_cyl(parts, 0.0235, 0.02, Vector3(-0.27 + 0.02 * float(k) + 0.01, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(leather, k, 0.22) if k % 2 == 0 else leather.darkened(0.3))
 			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
-			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), dark)                                   # the iron eye block the haft passes into
-			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), wood)                                     # the haft's end, standing proud of the head
-			_cyl(parts, 0.028, 0.03, Vector3(0.215, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather)                   # the collar's leather lashing
+			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron.darkened(0.25))                    # the iron eye block the haft passes into
+			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), _tone(wood, 5, 0.1))                      # the haft's end, standing proud of the head
+			for k in range(3):                                                                                               # the collar's leather lashing, three turns
+				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
 			_cyl(parts, 0.026, 0.01, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))
-			var sweeps: Array = [[1.0, 0.5, 0.5, 5], [-1.0, 0.55, 0.36, 3]]                                              # side, sweep (rad), radius, segments: the long pick and the short chisel
+			var sweeps: Array = [[1.0, 0.5, 0.5, 10], [-1.0, 0.55, 0.36, 6]]                                             # side, sweep (rad), radius, segments: the long pick and the short chisel (twice the old segment count, same outline)
 			for side in sweeps:
 				var sign: float = side[0]
 				var count: int = side[3]
 				for seg in range(count):
-					var phi0: float = side[1] * float(seg) / float(count)
+					var t: float = float(seg) / float(count)
+					var phi0: float = side[1] * t
 					var phi1: float = side[1] * float(seg + 1) / float(count)
 					var mid: float = 0.5 * (phi0 + phi1)
-					var thick: float = 0.045 * (1.0 - float(seg) / float(count) * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * float(seg) / float(count)
+					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * t
 					var length: float = side[2] * (phi1 - phi0) * 1.06
-					var reach: float = 0.04 + side[2] * sin(mid) if seg > 0 else 0.04 + side[2] * sin(mid)
-					var at: Vector3 = Vector3(0.27, -side[2] * (1.0 - cos(mid)), sign * reach)
-					var tone: Color = color.lightened(0.15) if seg == count - 1 else color
+					var at: Vector3 = Vector3(0.27, -side[2] * (1.0 - cos(mid)), sign * (0.04 + side[2] * sin(mid)))
+					var tone: Color = _tone(iron, seg + (0 if sign > 0.0 else 7), 0.2)                                      # hammered, pitted: each segment a little lighter or darker
+					if seg >= count - 2:
+						tone = tone.lightened(0.35)                                                                              # the worked, bright points and edge
 					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(sign * mid, 0.0, 0.0), tone)
-			if bits.has("steel"):
-				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), color.lightened(0.3))                # steel: a polished ridge along the top of the head
+			if steel_head:
+				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron.lightened(0.3))                  # steel: a polished ridge along the top of the head
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
 		"spade":
 			# A real garden spade: long shaft, D-shaped grip, a socket, and a flat blade that narrows to a point.
@@ -454,6 +462,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.08, Vector3.ONE, Vector3.ZERO, color)
 
 	return _combine(parts, size)
+
+
+# A colour nudged lighter or darker by a repeatable pseudo-random amount (up to `spread`), for weathered grain and hammered iron.
+static func _tone(color: Color, k: int, spread: float) -> Color:
+	var n: float = fposmod(sin(float(k) * 12.9898 + 4.1) * 43758.5453, 1.0) * 2.0 - 1.0
+	return color.lightened(n * spread) if n > 0.0 else color.darkened(-n * spread)
 
 
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
