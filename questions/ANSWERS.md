@@ -1642,3 +1642,7 @@ Answered: 2026-10-24 22:18 UTC
 Answer: Yes
 Answered: 2026-10-25 00:15 UTC
 
+## r1-pieces-look | Do the rough bed, thatch wall, tripod pot and clay hearth look right?
+Answer: No: I’m not able to test this right now however it is in the works for you to have a system to allow you to check them yourself soon
+Answered: 2026-10-25 00:23 UTC
+
