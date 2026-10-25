@@ -6,11 +6,12 @@
 	"serial_extra": [],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
 	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
-	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**", "plan/*.json"],
+	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"always": ["test_inventory", "test_server_items", "test_items_persistence", "test_save_compat", "test_structure_look", "test_placement_rules", "test_new_player", "test_skills", "test_first_hour", "test_block_roundtrip"],
 	"item_group": {
+		"checks": ["validate_items"],
 		"paths": ["data/items/**", "src/shared/item_table.gd", "src/shared/recipe_table.gd"],
-		"name_patterns": ["items", "inventory", "craft", "recipe", "blueprint", "structure", "bed", "eat", "fish", "bow", "traps", "carcass", "hunt", "vitals", "shore", "dishes", "sickness", "spoilage", "stations", "trade", "worn", "offhand", "pick_axes", "thatch", "campfire", "hammer", "auto_", "first_hour", "new_player", "coin", "tool_looks", "showroom", "forge", "ladder", "persistence", "save_compat", "placed_clearing", "placement"]
+		"name_patterns": ["items", "inventory", "craft", "recipe", "blueprint", "structure", "bed", "eat", "fish", "bow", "traps", "carcass", "hunt", "vitals", "shore", "dishes", "sickness", "spoilage", "stations", "trade", "worn", "offhand", "pick_axes", "thatch", "campfire", "hammer", "auto_", "first_hour", "new_player", "coin", "tool_looks", "showroom", "forge", "ladder", "tier", "persistence", "save_compat", "placed_clearing", "placement"]
 	},
 	"path_rules": [
 		{
@@ -33,7 +34,7 @@
 	"extra_inputs": [
 		{
 			"why": "Sonny: baked tiles, water and plan inputs",
-			"paths": ["worlds/base_world/tiles/**", "water/**", "plan/*.json", "data/water_settle.json", "addons/**"],
+			"paths": ["worlds/base_world/tiles/**", "worlds/base_world/water/**", "worlds/base_world/plan/*.json", "data/water_settle.json", "addons/**"],
 			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core"],
 			"pin": true
 		}
@@ -41,7 +42,7 @@
 	"shared_all": ["project.godot", "tools/warning_baseline.txt", "tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/tests_for_diff.py"],
 	"bake_regex": "^(src/worldgen/(tile|plan|sketch|tables|matrix|settings)/|src/worldgen/runtime/(terrain_layout|terrain_generator|flora_placer|tile_terrain_data)\\.gd|worlds/base_world/)|(world_elevation|river_network)\\.gd$",
 	"docs_globs": ["docs/**", "tech/**", "design/**", "proposed_removals/**", "art/**/*.md", "*.md", "**/*.md", "*.txt", "**/*.txt"],
-	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "plan/", "water/", "art/", ".github/"],
+	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "art/", ".github/"],
 	"known_files": ["project.godot", "export_presets.cfg", ".gitignore", ".gitattributes", "icon.svg", "icon.svg.import"],
 	"picture_paths": ["data/items/looks.json", "data/items/clothing.json", "data/look/**", "src/client/*_look.gd", "src/client/avatar*", "src/client/inventory_view.gd", "src/client/held_item.gd", "src/debug/item_cam.gd", "assets/models/**"],
 	"timeout_s": {"fast": 300, "timing": 300, "slow": 1500}

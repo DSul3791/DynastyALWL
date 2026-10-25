@@ -221,6 +221,9 @@ def select(paths, lanes, force_all=False):
     if any(matches(p, lanes["item_group"]["paths"]) for p in live):
         pats = lanes["item_group"]["name_patterns"]
         add([t for t in tests if any(x in t for x in pats)], "item data changed: whole item group")
+        for c in lanes["item_group"].get("checks", []):
+            if c not in result["checks"]:
+                result["checks"].append(c)
 
     for rule in lanes["path_rules"] + lanes["extra_inputs"]:
         hit = next((p for p in live if matches(p, rule["paths"])), None)
