@@ -81,3 +81,6 @@ One-page map of the team, BP-T22 to T25 (cross-talk, priority, ideas, design rea
 
 ## PICTURES (Tyler 24 Oct 2026)
 PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goes to David3 on the server box); the pictures live on branch claude/box-results: results/PICTURES_INDEX.md (what exists), results/PICTURE_REQUESTS.md (what is asked), a README in each folder. Read there first; do not ask Mike for pictures while Dave's PC is busy.
+
+## DAILY AUDIT (Dave 25 Oct 2026, permanent)
+Every day at the 20:00 ADT handoff: tech/DAILY_AUDIT_<date>.md (what we did wrong, what we do better, owner for each, what went well). BP-T67.

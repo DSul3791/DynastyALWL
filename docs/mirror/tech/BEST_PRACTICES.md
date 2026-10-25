@@ -195,3 +195,16 @@ Audit scope note (2026-10-22): this first pass is a document-level audit of PROC
 - BP-T55 (24 Oct 13:25 UTC, Tyler): TOOLING branches (look_rig, python tools, scripts) carry their own syntax checks in the commit message (python -m py_compile, bash -n, parse_scan) and print the values of any default they change, so a picture taken before and after cannot be mistaken for a game change. Evidence pictures never go into generator-v2 (repo is 1.5 GB); they live on the QA page or in /mnt/project-files/evidence/.
 
 - BP-T56 (24 Oct): PICTURES (Dave 24 Oct): ask for any game picture through the coordinator (it goes to David3 on the server box); the pictures live on branch claude/box-results: results/PICTURES_INDEX.md (what exists), results/PICTURE_REQUESTS.md (what is asked), a README in each folder. Read there first; do not ask Mike for pictures while Dave's PC is busy.
+
+## Added from the 24 Oct audit (Tyler, 25 Oct 00:10 UTC; see DAILY_AUDIT_2026-10-24.md)
+- BP-T57: a build that touches ground, stream or join must pass a fresh-clone join test (David3) before merge.
+- BP-T58: each branch's QA card must exist on the QA page (count line moves) before I merge it; no card = not merged.
+- BP-T59: never report "pushed" or "merged" without the printed remote hash.
+- BP-T60: tooling for the box ships with a self-test that fails on a deliberate break; memory is measured before sizing limits.
+- BP-T61: every plan states its BASE hash; item and recipe numbers are reserved in tech/NUMBER_RESERVATIONS.md before coding.
+- BP-T62: before a branch goes to David3, run merge_check, validate_items and parse_scan on a trial merge with current generator-v2; send the failures to the owner, do not patch their branch.
+- BP-T63: before any tiles reach Dave: pit/cliff scan (max depth, max step, pond width at springs) as a PASS gate in island_checks.
+- BP-T64: sound complaints get one diagnosis (F3 loudest-voice lines) and one note before any change.
+- BP-T65: every build note says how to get out of trouble for each new feature (go to spawn, New player, Clear blocks); escape tools come first.
+- BP-T66: move tests, pictures and overflow bakes to David3; Mike keeps only feel tests and the primary bake.
+- BP-T67: the daily audit (what we did wrong, what we do better, owner for each) is written to DAILY_AUDIT_<date>.md and is part of the 20:00 ADT handoff.
