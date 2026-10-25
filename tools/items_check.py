@@ -32,6 +32,7 @@ UNITS = [
     ("fishing", "src/worldgen/tools/test_fishing.gd"),
     ("shore net", "src/worldgen/tools/test_shore_net.gd"),
     ("bed", "src/worldgen/tools/test_bed.gd"),
+    ("bed respawn", "src/worldgen/tools/test_bed_respawn.gd"),
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
     ("skills", "src/worldgen/tools/test_skills.gd"),

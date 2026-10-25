@@ -9,5 +9,13 @@
 	"asleep_ground_mult": 0.7,
 	"warmth_bonus": 0.1,
 	"walls_needed": 3,
-	"walls_radius_m": 3.0
+	"walls_radius_m": 3.0,
+	"respawn": {
+		"landing_m": 1.2,
+		"search_m": 3.0,
+		"window_s": 600.0,
+		"max_in_window": 2,
+		"say_claim": "You will wake here when you die.",
+		"say_gone": "Your bed is gone."
+	}
 }

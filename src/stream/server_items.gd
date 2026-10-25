@@ -4258,6 +4258,8 @@ func _become_new_player(peer: int) -> void:
 	_inventories[key].bag_from = 10
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
+	_characters[key].erase("bed")
+	_characters[key].erase("shelter")
 	_vitals[key] = _new_vitals()
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
@@ -4342,6 +4344,8 @@ func _set_stance(peer: int, wanted: int) -> void:
 
 		if wanted != 3:
 			_end_sleep(peer)
+		else:
+			_claim_bed(peer)
 
 	_strain_sent.erase(peer)
 
@@ -4578,8 +4582,113 @@ func _note_shelter(peer: int) -> void:
 		_dirty = true
 
 
-# Where this character comes back: just in front of their last shelter if it still stands, else the world spawn.
-func respawn_for(peer: int) -> Vector3:
+# Lying on a good bed claims it: it is where this character comes back (bed.json respawn; one bed at a time, the newest claim wins).
+func _claim_bed(peer: int) -> void:
+	if _bed_cfg.is_empty() or not on_good_bed(peer) or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var p: Vector3 = _items[_bed_of(peer)]["pos"]
+	var row: Dictionary = _characters[_peer_key[peer]]
+
+	if row.get("bed", []) != [p.x, p.y, p.z]:
+		row["bed"] = [p.x, p.y, p.z]
+		_dirty = true
+		_say(peer, str(_bed_cfg.get("respawn", {}).get("say_claim", "")))
+
+
+var _bed_deaths: Dictionary = {}    # player key -> msecs of the recent respawns at their bed
+
+
+# A free place beside the bed to stand: a ring around it from landing_m out to 3 m, nearest first, never inside a structure and never where
+# there is no ground; with none, the bed's own spot. Never the void.
+func _bed_landing(bed: Vector3) -> Vector3:
+	var cfg: Dictionary = _bed_cfg.get("respawn", {})
+	var r: float = float(cfg.get("landing_m", 1.2))
+	var max_r: float = float(cfg.get("search_m", 3.0))
+
+	while r <= max_r + 0.001:
+		for k in 8:
+			var a: float = TAU * float(k) / 8.0
+			var spot: Vector3 = bed + Vector3(cos(a) * r, 0.0, sin(a) * r)
+			var ground: float = float(ground_height.call(spot.x, spot.z)) if ground_height.is_valid() else bed.y
+
+			if not is_nan(ground) and absf(ground - bed.y) < 2.0 and not _blocked_spot(spot):
+				return Vector3(spot.x, ground, spot.z)
+
+		r += 0.5
+
+	return bed
+
+
+func _blocked_spot(spot: Vector3) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or absf(it["pos"].y - spot.y) > 3.0:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {})
+
+		if bool(def.get("walkover", false)):
+			continue
+
+		var half: float = maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5 + 0.35
+
+		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() < half:
+			return true
+
+	return false
+
+
+# The claimed bed still standing (the world item is there) with cover over it, else "" (and the claim is dropped).
+func _bed_respawn_spot(peer: int, dying: bool) -> Vector3:
+	var key: String = str(_peer_key.get(peer, ""))
+	var saved: Array = _characters.get(key, {}).get("bed", [])
+
+	if saved.size() != 3:
+		return Vector3.INF
+
+	var spot := Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
+	var standing: bool = false
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"].get("kind", "")) == "rough_bed" and it["pos"].distance_to(spot) <= 0.5:
+			standing = true
+			break
+
+	if not standing:
+		_characters[key].erase("bed")
+		_dirty = true
+
+		if dying:
+			_say(peer, str(_bed_cfg.get("respawn", {}).get("say_gone", "")))
+
+		return Vector3.INF
+
+	if dying:
+		var now: int = Time.get_ticks_msec()
+		var window_ms: int = int(float(_bed_cfg.get("respawn", {}).get("window_s", 600.0)) * 1000.0)
+		var recent: Array = (_bed_deaths.get(key, []) as Array).filter(func(t): return now - int(t) < window_ms)
+
+		if recent.size() >= int(_bed_cfg.get("respawn", {}).get("max_in_window", 2)):
+			_bed_deaths[key] = recent
+			return Vector3.INF   # the danger is still there: the third respawn in the window falls through to the shelter or the world spawn
+
+		recent.append(now)
+		_bed_deaths[key] = recent
+
+	return _bed_landing(spot)
+
+
+# Where this character comes back: their claimed bed if it still stands, else just in front of their last shelter if it still stands, else the world spawn.
+func respawn_for(peer: int, dying: bool = false) -> Vector3:
+	var at_bed: Vector3 = _bed_respawn_spot(peer, dying)
+
+	if at_bed != Vector3.INF:
+		return at_bed
+
 	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("shelter", [])
 
 	if saved.size() != 3:
@@ -5815,7 +5924,7 @@ func kill(peer: int, cause: String) -> bool:
 	_cold_level.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
-	var back: Vector3 = respawn_for(peer)
+	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
@@ -5826,7 +5935,7 @@ func kill(peer: int, cause: String) -> bool:
 		send_died.call(peer, cause, back)
 
 	if back != respawn_point:
-		_say(peer, "You come back at your shelter")
+		_say(peer, "You come back at your bed" if _characters.get(_peer_key.get(peer, ""), {}).has("bed") and back.distance_to(Vector3(float(_characters[_peer_key[peer]]["bed"][0]), float(_characters[_peer_key[peer]]["bed"][1]), float(_characters[_peer_key[peer]]["bed"][2]))) <= float(_bed_cfg.get("respawn", {}).get("search_m", 3.0)) + 0.1 else "You come back at your shelter")
 
 	return true
 
@@ -7232,6 +7341,7 @@ func _load_characters() -> void:
 			"coins": maxi(int(parsed["players"][key].get("coins", 0)), 0),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
+			"bed": parsed["players"][key].get("bed", []) if typeof(parsed["players"][key].get("bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("bed", []) as Array).size() == 3 else [],
 		}
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:

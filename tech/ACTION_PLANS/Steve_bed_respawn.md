@@ -19,3 +19,6 @@ No bed: spawn or shelter as today. Lying on a covered bed claims it. Death retur
 
 ## Cost and risk
 One saved array and one lookup at respawn. Risk: low. Not run in Godot in the cloud (Mike).
+
+## Build notes (25 Oct, Tyler GO + two safety additions)
+Built: `_claim_bed` (on lying down on a covered bed), `respawn_for(peer, dying)` order bed > shelter > spawn, `_bed_landing` (ring 1.2 to 3 m in 0.5 steps, 8 angles, needs ground, not inside a structure, falls back to the bed's own spot, never the void), third respawn inside bed.json respawn.window_s (600 s, max_in_window 2) falls through, claim dropped with one line when the bed is gone, `bed` saved and loaded, cleared by the new-player switch. Numbers in data/items/bed.json "respawn". Test: src/worldgen/tools/test_bed_respawn.gd (in items_check). Branch also merges steve-new-player (for the clear) so merge that first. Not run in Godot in the cloud.
