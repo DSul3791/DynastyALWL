@@ -265,6 +265,10 @@ func _process(delta: float) -> void:
 	var shot_pos: Vector3 = shots[_index]["pos"]
 	_side_view(float(shots[_index]["walk"]))
 
+	# A join still waiting for collision under the player (a slow stream: Mike's log, 46+ s) is waited for, up to 120 s after the welcome, before any shot is placed.
+	if client.waiting_for_ground and client.connected_msec > 0 and now - client.connected_msec < 120000:
+		return
+
 	if not _placed:
 		var ground: float = _ground(shot_pos.x, shot_pos.z)
 

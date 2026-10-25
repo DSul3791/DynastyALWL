@@ -10,12 +10,17 @@ Owner of the loop: Tyler (spec, gate, daily handoff). Pictures: David3. Review: 
 
 ## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
 Unit = a SPOT (position, height, hour, weather). Each spot gets THREE pictures: view a at the spot's start yaw, view b after turning LEFT 90 degrees, view c after turning left another 90 (yaw, yaw+90, yaw+180; left = counter-clockwise seen from above, +90 in Godot rotation.y; David3 checks on the first batch that b shows what was left of a). JPEG 1280x720, UI off, depth of field off, fixed scatter seeds. Ids: K01a, K01b, K01c, K02a ...
+**Two kinds of spot (Dave 25 Oct 01:42: turning the body also turns the camera with the character, so a shot of the character got the same view every time):**
+- **PANORAMA spot** (first person, look outward): the view turns in place left 90 degrees after each shot. K01, K02, K07, K08, K09, K10.
+- **SUBJECT spot** (the picture is of a thing: a tree, shrub, ground items, a placed piece, or the character in third person): the thing stays put and the CAMERA ORBITS it, 90 degrees around per shot at the same distance and height, always looking at the subject (a, b = 90 degrees, c = 180 degrees around). K03, K04, K05, K06, K11, K12, K13, and any third-person shot of the character. Turning the body is never used for these: it would swing the view away from the subject, or (third person) turn the camera with the character.
+- **Tools K14 to K19:** one picture each, first person, no turn.
+
 Kathleen reads a spot's three pictures together as one place ("front, left, behind-left") and writes ONE critique line per spot, naming the view letters; she may add a line for one view.
 | spot | Where | Camera | Time | Start yaw |
 |---|---|---|---|---|
 | K01 | spawn meadow | eye 1.7 m | noon | east (a=E, b=N, c=W) |
 | K02 | spawn meadow | eye 1.7 m | dusk | east |
-| K03 | ground close-up, stone + stick + plant centred | 0.35 m, pitch -45 | sun | east |
+| K03 | ground close-up, stone + stick + plant centred (SUBJECT: orbit) | 0.35 m, pitch -45 | sun | east |
 | K04 | same, in shade | 0.35 m, pitch -45 | shade | east |
 | K05 | conifer stand, 2 m from one tree | eye 1.7 m | noon | toward the tree |
 | K06 | shrub and fern | 1.5 m | noon | toward the shrub |
