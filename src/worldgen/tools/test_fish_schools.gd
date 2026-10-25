@@ -169,8 +169,10 @@ func _init() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	for n in 200:
+		var memo: Dictionary = {}
+
 		for k in 17:
-			fish.factor_at(1100.0 + float(k) * 3.0, 100.0, 7, "summer", 0.0, stock_fn)
+			fish.factor_at(1100.0 + float(k) * 3.0, 100.0, 7, "summer", 0.0, stock_fn, memo)
 
 	var per_cast_ms: float = float(Time.get_ticks_usec() - t0) / 200.0 / 1000.0
 	check(per_cast_ms < 1.0, "a cast's 17 lookups cost %.3f ms (limit 1)" % per_cast_ms)

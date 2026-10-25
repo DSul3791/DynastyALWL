@@ -6442,6 +6442,7 @@ func school_hit(pos: Vector3, reach: float) -> Dictionary:
 	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
 	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
 	var best: Dictionary = none
+	var memo: Dictionary = {}
 
 	for k in 17:
 		var at: Vector3 = pos
@@ -6450,7 +6451,7 @@ func school_hit(pos: Vector3, reach: float) -> Dictionary:
 			var a: float = float((k - 1) % 8) * TAU / 8.0
 			at = pos + Vector3(cos(a), 0.0, sin(a)) * (reach if k > 8 else reach * 0.5)
 
-		var got: Dictionary = _schools.factor_at(at.x, at.z, day, season, _now_game_s(), stock)
+		var got: Dictionary = _schools.factor_at(at.x, at.z, day, season, _now_game_s(), stock, memo)
 
 		if bool(got["active"]) and (not bool(best["active"]) or float(got["factor"]) > float(best["factor"])):
 			best = got

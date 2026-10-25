@@ -168,8 +168,9 @@ func _lives_in(species: String, kind: String) -> bool:
 	return false
 
 
-# The school factor at a point: {"factor", "species" of the school it is in or near ("" when none), "active"}. stock_fn: (cell) -> int.
-func factor_at(x: float, z: float, day: int, season: String, now_s: float, stock_fn: Callable) -> Dictionary:
+# The school factor at a point: {"factor", "species" of the school it is in or near ("" when none), "active"}. stock_fn: (cell) -> int. memo: pass one empty
+# Dictionary for all the lookups of one cast so each cell is worked out once.
+func factor_at(x: float, z: float, day: int, season: String, now_s: float, stock_fn: Callable, memo: Dictionary = {}) -> Dictionary:
 	var f: Dictionary = cfg.get("factor", {})
 	var kind: String = _kind_at(x, z)
 
@@ -186,7 +187,10 @@ func factor_at(x: float, z: float, day: int, season: String, now_s: float, stock
 		for dx in [-1, 0, 1]:
 			var cell: Vector2i = home + Vector2i(dx, dz)
 
-			for s in schools(cell, day, season, int(stock_fn.call(cell)), now_s):
+			if not memo.has(cell):   # one cast looks at the same few cells again and again: the caller's memo keeps each cell's schools for the cast
+				memo[cell] = schools(cell, day, season, int(stock_fn.call(cell)), now_s)
+
+			for s in memo[cell]:
 				var d: float = at.distance_to(s["centre"])
 				var radius: float = float(s["radius"])
 				var got: float = float(f.get("far", 0.15))
