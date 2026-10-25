@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SkillWebCheck := preload("res://src/shared/skill_web.gd")
+const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 
 # Item data validator: items.json, gathered.json, recipes.json, drops.json, cooking.json.
 # Checks numbers, unknown ids, orphan core items and recipes that can never be made.
@@ -17,6 +18,7 @@ const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scro
 
 const DAVE_NAMES := ["Roast Beast", "Roast Meat", "Roast Fish", "Roast Roots"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
 
+const RECIPE_CATEGORIES := RecipeFilter.CATEGORIES
 var errors: int = 0
 var warnings: int = 0
 
@@ -472,6 +474,9 @@ func _init() -> void:
 
 		recipe_numbers[n] = rid
 		_check_name(String(r.get("name", "")), "recipes.json: recipe '%s'" % rid)
+
+		if not RECIPE_CATEGORIES.has(String(r.get("category", ""))):   # the craft menu's category tabs (Dave 25 Oct)
+			fail("recipes.json: recipe '%s' has category '%s', not one of %s" % [rid, String(r.get("category", "")), str(RECIPE_CATEGORIES)])
 
 		# Ingredients (DESIGN_IDEAS 5.3, Dave 2026-10-21): three-ingredient hand recipes stay, and later recipes take four or more;
 		# the more ingredients, the better the item. So there is no rule below MAX_INGREDIENTS, only an info line.
