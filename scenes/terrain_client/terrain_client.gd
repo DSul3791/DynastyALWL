@@ -36,6 +36,7 @@ extends Node
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
@@ -194,6 +195,7 @@ var _ground_quality: int = -1       # quality the ground texture array was built
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
+var _was_lying: bool = false
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -1036,7 +1038,10 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
-	stance.changed.connect(func(new_stance: int): sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)]))
+	stance.changed.connect(func(new_stance: int):
+		sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)])
+		sound.slots.play("bed_lie" if new_stance == 3 else ("bed_rise" if _was_lying else ""), body.global_position)
+		_was_lying = new_stance == 3)
 	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
@@ -1202,6 +1207,11 @@ func _welcome_body(info: Dictionary) -> void:
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and held.placing())
 	items.stance_event = _on_stance_from_server
+	items.notice_event = func(text: String):
+		var cue: String = SlotSoundsScript.net_cue(text)
+
+		if cue != "" and sound != null and body != null:
+			sound.slots.play(cue, body.global_position - body.global_transform.basis.z * 1.5)
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
 	items.sort_index = display.sort_index
