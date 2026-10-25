@@ -197,7 +197,15 @@ func _init() -> void:
 				fail("recipes.json: live recipe %s names the retired item %s" % [rid, ref])
 
 	for file_name in ["drops.json", "structures.json"]:
-		for ref in JSON.stringify(_read(file_name)).split("\""):
+		var scanned: Variant = _read(file_name)
+
+		if file_name == "structures.json":   # legacy_kinds names old placed kinds on purpose (the vice folded into the log workbench)
+			scanned = (scanned as Dictionary).duplicate(true)
+
+			for kind in scanned.get("structures", {}):
+				scanned["structures"][kind].erase("legacy_kinds")
+
+		for ref in JSON.stringify(scanned).split("\""):
 			if retired_ids.has(ref):
 				fail("%s names the retired item %s" % [file_name, ref])
 
@@ -634,7 +642,7 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not bool(entry.get("retired", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)

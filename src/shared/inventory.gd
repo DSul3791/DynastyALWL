@@ -28,12 +28,15 @@ func _mergeable(number: int, wear_a: int, wear_b: int) -> bool:
 	if table == null:
 		return true
 
+	if table.tag_kind(number) != "":   # lumber and beam: the wear number is the species, only equal species join (0 = no species, old stacks)
+		return wear_a == wear_b
+
 	var life: int = table.shelf_units(number)
 	return life == 0 or absi(wear_a - wear_b) <= int(float(life) * float(table.spoilage().get("merge_gap", 0.1)))
 
 
 func _joined_age(number: int, wear_a: int, count_a: int, wear_b: int, count_b: int) -> int:
-	if table == null or table.shelf_units(number) == 0:
+	if table == null or table.shelf_units(number) == 0 or table.tag_kind(number) != "":
 		return wear_a
 
 	return int(round(float(wear_a * count_a + wear_b * count_b) / float(maxi(count_a + count_b, 1))))
@@ -174,8 +177,27 @@ func from_bytes(bytes: PackedByteArray) -> bool:
 		numbers[i] = bytes.decode_u32(1 + i * 8)
 		counts[i] = bytes.decode_u16(1 + i * 8 + 4)
 		wear[i] = bytes.decode_u16(1 + i * 8 + 6)
+		_fold(i)
 
 	return true
+
+
+# A retired item folded into another (items.json merged_into): the slot becomes the target, and takes its tag as the wear number when it has one.
+func _fold(i: int) -> void:
+	if table == null or numbers[i] == 0:
+		return
+
+	var m: Dictionary = table.merged(numbers[i])
+
+	if m.is_empty():
+		return
+
+	numbers[i] = int(m["number"])
+
+	if table.tag_kind(numbers[i]) != "":
+		wear[i] = int(m["tag"])
+	elif table.stack_of(numbers[i]) < counts[i]:
+		counts[i] = table.stack_of(numbers[i])
 
 
 # JSON form for the server save file: [[number, count, wear], ...] with empty slots as [0, 0, 0]. Version 1
@@ -194,3 +216,4 @@ func from_json_array(data: Array) -> void:
 		numbers[i] = int(data[i][0])
 		counts[i] = int(data[i][1])
 		wear[i] = int(data[i][2]) if data[i].size() > 2 else 0
+		_fold(i)

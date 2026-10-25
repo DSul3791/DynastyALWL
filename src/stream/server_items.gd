@@ -2752,6 +2752,10 @@ func _load_world_items() -> void:
 
 	for row in parsed["items"]:
 		var entry: Dictionary = {"number": int(row[0]), "count": int(row[1]), "pos": Vector3(row[2], row[3], row[4]), "left": float(row[5])}
+		var folded: Dictionary = table.merged(int(row[0]))   # a retired item folded into another keeps working in an old save
+
+		if not folded.is_empty():
+			entry["number"] = int(folded["number"])
 
 		if row.size() > 9 and int(row[6]) >= 5 and typeof(row[9]) == TYPE_STRING:
 			entry["struct"] = {"kind": _kind_now(str(row[9])), "yaw": float(row[7])}
@@ -2778,6 +2782,9 @@ func _load_world_items() -> void:
 
 		if row.size() > 8:
 			entry["wear"] = int(row[8])
+
+		if not folded.is_empty() and table.tag_kind(int(entry["number"])) != "":
+			entry["wear"] = int(folded["tag"])
 
 		if row.size() > 7 and int(row[6]) != 0:
 			var saved_state: int = int(row[6])

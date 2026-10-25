@@ -8,6 +8,7 @@ const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material p
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
+var _merged: Dictionary = {}      # int number of a retired item -> its merge target {"into": id, "tag": int} (items.json merged_into, merge_tag)
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
 
@@ -34,7 +35,34 @@ func load_file(path: String) -> bool:
 		_by_id[id] = entry
 		_by_number[entry["number"]] = entry
 
+		if str(entry.get("merged_into", "")) != "":
+			_merged[entry["number"]] = {"into": str(entry["merged_into"]), "tag": int(entry.get("merge_tag", 0))}
+
 	return true
+
+
+# A retired item that was folded into another (items.json "merged_into"): {"number": target number, "tag": the target's tag value, 0 for none},
+# or {} for an item that stands. Saves keep the old number; the server calls this where a number comes in from disk (inventories, chests, world items).
+func merged(number: int) -> Dictionary:
+	var hops: int = 0
+	var tag: int = 0
+	var current: int = number
+
+	while _merged.has(current) and hops < 4:
+		var step: Dictionary = _merged[current]
+		current = number_of(str(step["into"]))
+		tag = int(step["tag"]) if int(step["tag"]) > 0 else tag
+		hops += 1
+
+	if current == number or current == 0:
+		return {}
+
+	return {"number": current, "tag": tag}
+
+
+# Does this item carry a tag in its slot's wear number (items.json "tag", e.g. "species" on lumber and beam)? Tagged stacks merge only with equal tags.
+func tag_kind(number: int) -> String:
+	return str(_by_number.get(number, {}).get("tag", ""))
 
 
 func has_id(id: String) -> bool:
