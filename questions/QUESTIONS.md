@@ -41,3 +41,8 @@ Note: Recommendation: Yes
 Note: Full list: design/ITEM_TRIM_LIST.md group C. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-d | Item trim D: Misc materials: cobblestone, shingle, pin, softwood twins, driftwood (cut 6)
+Note: Full list: design/ITEM_TRIM_LIST.md group D. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
