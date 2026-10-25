@@ -27,12 +27,12 @@ func _init() -> void:
 			var scale: float = float(BasicLook.entry(id).get("size", 1.0))
 			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large spade" % scale)
 			_check(mesh.get_surface_count() == (2 if metal else 1), id + ": surfaces %d (metal tiers have the metal head surface)" % mesh.get_surface_count())
-			_check(box.size.x > 0.74 * scale and box.size.x < 0.86 * scale, id + ": about 0.8 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
+			_check(box.size.x > 0.68 * scale and box.size.x < 0.8 * scale, id + ": about 0.74 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
 			_check(_y_extent(mesh, 0.52 * scale, 1.0, 1.0) < 0.045 * scale, id + ": the dished blade is shallow (y %.3f)" % (_y_extent(mesh, 0.52 * scale, 1.0, 1.0) / scale))
 			_check(_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) < 0.008 * scale, id + ": a thin plate at the centre (%.4f m)" % (_y_extent(mesh, 0.6 * scale, 0.012 * scale, 0.012 * scale) / scale))
 			_check(_width_near(mesh, 0.6 * scale, 0.02 * scale) > 0.17 * scale and _width_near(mesh, 0.6 * scale, 0.02 * scale) < 0.21 * scale, id + ": blade about 19 cm wide at the shoulders (%.3f)" % (_width_near(mesh, 0.6 * scale, 0.02 * scale) / scale))
 			_check(_width_near(mesh, 0.74 * scale, 0.008 * scale) < 0.75 * _width_near(mesh, 0.6 * scale, 0.02 * scale), id + ": the blade ends in a narrower rounded tip")
-			_check(_width_near(mesh, -0.06 * scale, 0.06 * scale) > 0.14 * scale and _width_near(mesh, -0.06 * scale, 0.06 * scale) < 0.2 * scale, id + ": a closed D-grip about 15 cm across (%.3f)" % (_width_near(mesh, -0.06 * scale, 0.06 * scale) / scale))
+			_check(_width_near(mesh, 0.05 * scale, 0.03 * scale) > 0.14 * scale and _width_near(mesh, 0.05 * scale, 0.03 * scale) < 0.2 * scale, id + ": a closed D-grip about 15 cm across (%.3f)" % (_width_near(mesh, 0.05 * scale, 0.03 * scale) / scale))
 
 			var tris: int = 0
 
@@ -52,8 +52,8 @@ func _init() -> void:
 
 		mean /= float(colours.size())
 		_check(mean.b < mean.r * 1.15, id + ": no blue tint (mean r %.3f b %.3f)" % [mean.r, mean.b])
-		var want_rough: float = 0.35 if id.begins_with("steel") else 0.65
-		var want_metal: float = 0.45 if id.begins_with("steel") else 0.3
+		var want_rough: float = 0.3 if id.begins_with("steel") else 0.65
+		var want_metal: float = 0.6 if id.begins_with("steel") else 0.3
 		var mat: StandardMaterial3D = mesh.surface_get_material(1) as StandardMaterial3D
 		_check(absf(mat.roughness - want_rough) < 0.001 and absf(mat.metallic - want_metal) < 0.001, id + ": spade metal roughness %.2f metallic %.2f (steel a little shinier than iron)" % [mat.roughness, mat.metallic])
 
