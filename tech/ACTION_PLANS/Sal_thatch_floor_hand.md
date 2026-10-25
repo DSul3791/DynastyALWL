@@ -12,3 +12,6 @@ Iron and steel spades and hoes (27, 28, 135-138, 141, 142) had no station: now "
 Material recipes stay at their processing stations (saw mill, forge, woodworking table, campfire).
 Commit 2 (waits for Dave's answer, reverts alone): rough plank (143), cut stone block (127), cobblestone (146), stone shingle (147), wooden pin (150) by hand. The early-game list says "No planks (sawmill only)".
 Per-class test: test_recipe_stations.gd (by-hand recipes queue with no station; stone tools and processing station kits refuse without a bench; iron and steel tools refuse without a forge; prints the class table).
+
+## Re-cut (Tyler 03:05, Dave 03:00: nothing in the first tier is a blueprint)
+Branch claude/sal-hand-crafts: by hand are the thatch four (166-169), plank chest (17), backpack (30), hide cloak, boots, leggings (39, 40, 43) and the log workbench (49); iron and steel spades and hoes at the forge. The section kits (119-124), timber set (126) and ladder (130) are back at the bench as they were: they become hammer blueprints in a later build.

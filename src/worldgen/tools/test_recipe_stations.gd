@@ -8,7 +8,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const BY_HAND := [166, 167, 168, 169, 17, 30, 39, 40, 43, 49, 119, 120, 121, 122, 123, 124, 126, 130]   # 49 is the log workbench itself: the first bench cannot need a bench
+const BY_HAND := [166, 167, 168, 169, 17, 30, 39, 40, 43, 49]   # 49 is the log workbench itself: the first bench cannot need a bench
 const BENCH := [26, 140, 156, 158, 47, 48, 50, 51, 153, 154, 155]   # stone tools and the processing station kits (tool rack, vice, stone forge, blacksmithy, water wheel, saw mill, woodworking table): made at a bench
 const FORGE := [27, 28, 135, 136, 137, 138, 141, 142]   # iron and steel spades and hoes: made at a forge
 

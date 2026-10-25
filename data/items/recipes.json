@@ -2559,7 +2559,9 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"floor_section_kit": {
 			"number": 120,
@@ -2579,7 +2581,9 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"roof_section_kit": {
 			"number": 121,
@@ -2603,7 +2607,9 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"foundation_section_kit": {
 			"number": 122,
@@ -2623,7 +2629,9 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"doorway_section_kit": {
 			"number": 123,
@@ -2643,7 +2651,9 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"window_section_kit": {
 			"number": 124,
@@ -2663,7 +2673,9 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"timber_prop_kit": {
 			"number": 125,
@@ -2707,7 +2719,9 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"cut_stone_block": {
 			"number": 127,
@@ -2782,7 +2796,9 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
 		},
 		"wooden_spade_medium": {
 			"number": 131,
