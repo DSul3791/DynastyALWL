@@ -263,8 +263,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), color)                                     # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
 			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
 			_box_rot(parts, Vector3(0.03, 0.03, 0.035), Vector3(0.285, 0.0, 0.12), Vector3(0.0, 0.5, 0.0), dark)  # a chipped corner
-			for wrap in [0.165, 0.19, 0.28]:
-				_cyl(parts, 0.034, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
+			for wrap_x in [0.165, 0.19, 0.28]:
+				_cyl(parts, 0.034, 0.02, Vector3(wrap_x, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))   # cord wraps
 		"pick":
 			# A pickaxe (Dave's reference rendering), mesh axes: haft along x (pommel at -x, head at x = 0.27), head along z. One straight iron head with both ends
 			# curving toward the grip (-x, the pommel end, as in Dave's reference) in the haft-and-head plane: a long tapering pick at +z, a shorter flat-ended chisel at -z.
@@ -288,20 +288,20 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.026, 0.01, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))
 			var sweeps: Array = [[1.0, 0.28, 0.9, 10], [-1.0, 0.3, 0.72, 6]]                                             # side, sweep (rad), radius, segments: the long pick and the short chisel (twice the old segment count, same outline)
 			for side in sweeps:
-				var sign: float = side[0]
+				var dir: float = side[0]
 				var count: int = side[3]
 				for seg in range(count):
 					var t: float = float(seg) / float(count)
 					var phi0: float = side[1] * t
 					var phi1: float = side[1] * float(seg + 1) / float(count)
 					var mid: float = 0.5 * (phi0 + phi1)
-					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if sign > 0.0 else 0.04 - 0.008 * t
+					var thick: float = 0.045 * (1.0 - t * 0.8) + 0.004 if dir > 0.0 else 0.04 - 0.008 * t
 					var length: float = side[2] * (phi1 - phi0) * 1.06
-					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, sign * (0.04 + side[2] * sin(mid)))
-					var tone: Color = _tone_mul(iron, seg + (0 if sign > 0.0 else 7), 0.3)                                     # hammered, pitted: each segment a little lighter or darker
+					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, dir * (0.04 + side[2] * sin(mid)))
+					var tone: Color = _tone_mul(iron, seg + (0 if dir > 0.0 else 7), 0.3)                                     # hammered, pitted: each segment a little lighter or darker
 					if seg >= count - 2:
 						tone = tone * 1.45                                                                              # the worked, bright points and edge
-					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -sign * mid, 0.0), tone)
+					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -dir * mid, 0.0), tone)
 					_metal(parts)
 			if steel_head:
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
@@ -337,8 +337,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.09, 0.08, 0.2), Vector3(0.2, 0.0, 0.0), color)                                     # the head
 			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, 0.1), Vector3(0.0, 0.0, 0.12), dark)       # a worn, darker striking face
 			_box_rot(parts, Vector3(0.095, 0.07, 0.06), Vector3(0.2, 0.0, -0.1), Vector3(0.0, 0.0, -0.12), dark)
-			for wrap in [0.155, 0.245]:
-				_cyl(parts, 0.04, 0.02, Vector3(wrap, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))
+			for wrap_x in [0.155, 0.245]:
+				_cyl(parts, 0.04, 0.02, Vector3(wrap_x, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.78, 0.66, 0.38))
 		"hoe":
 			# A garden hoe: long handle, a socket, a neck that bends out sideways, and a flat wide blade angled back toward the handle's end.
 			_handle(parts, 0.85)
