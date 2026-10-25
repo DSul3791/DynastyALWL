@@ -146,6 +146,34 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("fishing_rod").get_aabb().size.x > 1.5 and BasicLook.mesh_for("fishing_rod").get_aabb().size.x < 1.7, "fishing rod: about 1.6 m")
 	_check(BasicLook.mesh_for("wooden_pin").get_aabb().size.x < 0.15, "wooden pin: a short peg")
 
+
+	for id in ["wooden_spade", "stone_spade_medium", "iron_spade_large"]:                                              # the blade plate is present at every size (not collapsed or missing)
+		var plate_mesh: Mesh = BasicLook.mesh_for(id)
+		var plate_scale: float = float(BasicLook.entry(id).get("size", 1.0))
+		var plate_tris: int = 0
+		var lo: Vector3 = Vector3(1e9, 1e9, 1e9)
+		var hi: Vector3 = Vector3(-1e9, -1e9, -1e9)
+
+		for si in plate_mesh.get_surface_count():
+			var arrays: Array = plate_mesh.surface_get_arrays(si)
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+
+			for k in range(0, idx.size(), 3):
+				var c: Vector3 = (verts[idx[k]] + verts[idx[k + 1]] + verts[idx[k + 2]]) / 3.0
+
+				if c.x > 0.5 * plate_scale and absf(c.z) > 0.03 * plate_scale:      # the plate beyond the socket
+					plate_tris += 1
+
+			for v in verts:
+				if v.x > 0.5 * plate_scale:
+					lo = lo.min(v)
+					hi = hi.max(v)
+
+		print("plate ", id, ": ", plate_tris, " triangles beyond the socket, aabb size ", hi - lo)
+		_check(plate_tris > 100, id + ": the blade plate has %d triangles beyond the socket" % plate_tris)
+		_check(hi.z - lo.z > 0.17 * plate_scale and hi.x - lo.x > 0.2 * plate_scale and hi.y - lo.y > 0.008 * plate_scale, id + ": the plate is %.3f wide, %.3f long, %.3f deep" % [(hi.z - lo.z) / plate_scale, (hi.x - lo.x) / plate_scale, (hi.y - lo.y) / plate_scale])
+
 	quit(1 if failures > 0 else 0)
 
 

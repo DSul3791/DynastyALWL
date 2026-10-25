@@ -260,8 +260,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head * 0.8)                       # the socket cone
 				_metal(parts, 0.5, 0.5)
 				_plate(parts, 0.545, 0.3, 0.07, 0, 12, iron_head * 1.35, true, true, 0.5, 0.5, Transform3D.IDENTITY, 3)   # a flat leaf blade with a ridge down the middle (the midrib) and a sharp point
-				_cyl(parts, 0.0255, 0.018, Vector3(0.455, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.16))   # the twine binding below the socket
-				_cyl(parts, 0.0255, 0.012, Vector3(0.475, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.38, 0.27, 0.12))
+				for k in range(5):                                                                                   # the twine binding below the socket: slanted turns in two tones, a visible wrap
+					_cyl(parts, 0.0245, 0.014, Vector3(0.43 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.35), Color(0.55, 0.4, 0.18) if k % 2 == 0 else Color(0.34, 0.24, 0.1))
 			else:
 				var stops: Array = [[0.45, 0.58, 0.0155, 0.0112, 0.1], [0.58, 0.7, 0.0112, 0.0062, 0.25], [0.7, 0.8, 0.0062, 0.0022, 0.42], [0.8, 0.84, 0.0022, 0.0004, 0.58]]   # the whittled point, darkening softly to a fire-hardened tip
 				for stop in stops:
@@ -485,41 +485,39 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"rod":
 			# A fishing rod (item 75) or a wooden pin (bits "pin", item 233). The rod: a tapering ash cane 1.6 m, a leather-wrapped handle at the butt (-x), a small reel on a seat below it,
 			# three guide rings and a pale line running to the tip. The pin: a short tapered peg with a rounded head.
-			var cane: Color = Color(0.38, 0.25, 0.12)
+			var cane: Color = Color(0.46, 0.3, 0.14)                                                                 # the warm brown of the ground rod
 			if bits.has("pin"):
-				_cyl_taper(parts, 0.011, 0.016, 0.1, Vector3(0.1, 0.0, 0.0), _tone(color, 1, 0.05))
-				_cyl_taper(parts, 0.004, 0.011, 0.18, Vector3(-0.04, 0.0, 0.0), _tone(color, 2, 0.05))
+				_cyl_taper(parts, 0.011, 0.016, 0.1, Vector3(0.1, 0.0, 0.0), _tone(color, 1, 0.05), 14)
+				_cyl_taper(parts, 0.004, 0.011, 0.18, Vector3(-0.04, 0.0, 0.0), _tone(color, 2, 0.05), 14)
 				_sph(parts, 0.0175, Vector3(0.9, 1.0, 1.0), Vector3(0.155, 0.0, 0.0), _tone(color, 3, 0.05))
 			else:
 				for k in range(3):                                                                                   # the cane in three clear tones, thick at the butt and fine at the tip
 					var x0: float = -0.55 + 0.45 * float(k)
 					var x1: float = x0 + 0.45 if k < 2 else 0.8
-					var r0: float = 0.0105 - 0.0035 * (x0 + 0.55) / 1.35
-					var r1: float = 0.0105 - 0.0035 * (x1 + 0.55) / 1.35
-					_cyl_taper(parts, r0, r1, x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(cane, [2, 5, 8][k], 0.16))
-				_cyl(parts, 0.0122, 0.06, Vector3(-0.6, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), cane.darkened(0.15))   # the butt under the wrap
-				_wrap(parts, -0.8, -0.58, 0.0142)                                                                    # the leather handle, one continuous spiral wrap
-				_box(parts, Vector3(0.05, 0.012, 0.016), Vector3(-0.46, -0.0165, 0.0), cane.darkened(0.3))            # the reel seat on the cane, just above the reel
-				_cyl(parts, 0.022, 0.02, Vector3(-0.46, -0.044, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.14, 0.11, 0.09))   # a small dark iron reel drum
-				_cyl(parts, 0.026, 0.004, Vector3(-0.46, -0.044, 0.012), Vector3(PI * 0.5, 0.0, 0.0), Color(0.2, 0.17, 0.14))   # its side plate
-				var line: Array = [Vector2(-0.46, -0.024)]                                                           # the line: reel top, up to each guide, on to the tip
+					_cyl_taper(parts, _cane_r(x0), _cane_r(x1), x1 - x0, Vector3(0.5 * (x0 + x1), 0.0, 0.0), _tone(cane, [2, 5, 8][k], 0.16))
+				_cyl(parts, 0.017, 0.06, Vector3(-0.6, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), cane.darkened(0.15))   # the butt under the wrap
+				_wrap(parts, -0.8, -0.58, 0.019)                                                                      # the leather handle, one continuous spiral wrap
+				_box(parts, Vector3(0.05, 0.012, 0.02), Vector3(-0.46, -0.0215, 0.0), cane.darkened(0.3))             # the reel seat on the cane
+				_cyl(parts, 0.022, 0.02, Vector3(-0.46, -0.049, -0.012), Vector3(PI * 0.5, 0.0, 0.0), Color(0.16, 0.12, 0.09))   # a small dark iron reel drum, set toward the near side
+				_cyl(parts, 0.027, 0.004, Vector3(-0.46, -0.049, -0.026), Vector3(PI * 0.5, 0.0, 0.0), Color(0.26, 0.2, 0.15))   # its side plate, facing the viewer
+				var line: Array = [Vector2(-0.46, -0.027)]                                                           # the line: reel top, up to each guide, on to the tip
 				for k in range(4):
 					var gx: float = -0.1 + 0.28 * float(k) if k < 3 else 0.78
-					var gy: float = -(0.0105 - 0.0035 * (gx + 0.55) / 1.35 + 0.006)
+					var gy: float = -(_cane_r(gx) + 0.005)
 					var ring: TorusMesh = TorusMesh.new()
-					ring.inner_radius = 0.0045
+					ring.inner_radius = 0.0055
 					ring.outer_radius = 0.0075
 					ring.rings = 6
 					ring.ring_segments = 3
 					parts.append([ring, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(gx, gy, 0.0)), Color(0.3, 0.28, 0.25)])
 					line.append(Vector2(gx, gy))
-				line.append(Vector2(0.8, -0.002))
+				line.append(Vector2(0.8, 0.0))
 
 				for k in range(line.size() - 1):
 					var from: Vector2 = line[k]
 					var to: Vector2 = line[k + 1]
 					var span: Vector2 = to - from
-					_cyl(parts, 0.0012, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.8, 0.78, 0.7))
+					_cyl(parts, 0.0014, span.length(), Vector3(0.5 * (from.x + to.x), 0.5 * (from.y + to.y), 0.0), Vector3(0.0, 0.0, atan2(span.y, span.x) - PI * 0.5), Color(0.85, 0.82, 0.72))
 		"torch":
 			_handle(parts, 0.5)
 			_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.27, 0.0, 0.0), color)
@@ -804,13 +802,18 @@ static func _tube(parts: Array, from: Vector2, to: Vector2, radius: float, color
 	parts.append([cyl, Transform3D(Basis(x_axis, y_axis, x_axis.cross(y_axis)), Vector3(0.5 * (from.x + to.x), 0.0, 0.5 * (from.y + to.y))), color])
 
 
+# The fishing rod's cane radius at x along the rod: a blank 1.5 times thicker than a thin cane, fine at the tip.
+static func _cane_r(x: float) -> float:
+	return 0.0155 - 0.0105 * (x + 0.55) / 1.35
+
+
 # A cylinder along x (radius `back` at -x, `front` at +x) centred at `at`: a smooth tapering haft or socket cone.
-static func _cyl_taper(parts: Array, back: float, front: float, length: float, at: Vector3, color: Color) -> void:
+static func _cyl_taper(parts: Array, back: float, front: float, length: float, at: Vector3, color: Color, sides: int = 8) -> void:
 	var cyl: CylinderMesh = CylinderMesh.new()
 	cyl.top_radius = front
 	cyl.bottom_radius = back
 	cyl.height = length
-	cyl.radial_segments = 8
+	cyl.radial_segments = sides
 	cyl.rings = 1
 	parts.append([cyl, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
 
