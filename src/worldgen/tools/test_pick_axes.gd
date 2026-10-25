@@ -37,14 +37,14 @@ func _init() -> void:
 		_check_frame(id + " held", vertices, turn)
 		_check_frame(id + " third person", vertices, Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_LEAN_DEG)) * turn)
 		_check_frame(id + " first person", vertices, Basis(Vector3.RIGHT, deg_to_rad(HeldItem.TOOL_TILT_SLIGHT_DEG)) * Basis(Vector3.RIGHT, deg_to_rad(-90.0)) * turn)
-		_check_frame(id + " ground", vertices, Basis.IDENTITY, true)
+		_check_frame(id + " ground", vertices, Basis.IDENTITY)
 
 	print("pick axes: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
 
-# `basis` takes mesh space to the frame under test; `ground` means the mesh frame itself (haft along x, head along z, bend toward -x).
-func _check_frame(label: String, vertices: PackedVector3Array, basis: Basis, ground: bool = false) -> void:
+# `basis` takes mesh space to the frame under test; the identity basis is the ground model itself (haft along x, head along z, bend toward -x).
+func _check_frame(label: String, vertices: PackedVector3Array, basis: Basis) -> void:
 	var head_axis: Vector3 = basis * Vector3(0.0, 0.0, 1.0)         # mesh z: the head's length, pick end positive
 	var bend: Vector3 = basis * Vector3(-1.0, 0.0, 0.0)             # mesh -x: toward the grip
 	var haft: Vector3 = basis * Vector3(1.0, 0.0, 0.0)              # mesh x: handle to head
