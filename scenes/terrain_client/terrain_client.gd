@@ -3386,6 +3386,7 @@ func _update_bob(delta: float) -> void:
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	var shake: Dictionary = quake_view.step(delta)
 	camera.position += shake["offset"]
 	camera.rotation.z += deg_to_rad(float(shake["roll"]))

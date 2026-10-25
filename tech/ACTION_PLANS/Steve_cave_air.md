@@ -28,3 +28,6 @@ No new rays or buses. One distance integration per frame, bus volumes set only w
 
 ## Open for Tyler (one answer)
 The depth table numbers above are my first guess (full silence at 25 to 40 m). GO as written?
+
+## Build notes (25 Oct)
+cave_sounds.gd: depth_m (walked inside rock; teleport/first scan starts at the cap or 0), air dB/low-pass per bus from data/sound/cave_air.json (min with the old enclosure cut), wet from the leak gap held 20 s (note_gap, called from terrain_client next to sound.wet.update), drips only when wet (>= 0.2) and on the Foley bus, reverb wet x0.5 in a dry cave. Flags --cave-depth=M, --cave-wet=0..1. Test: src/worldgen/tools/test_cave_air.gd (pure functions, 23 checks). Dave's ear card: walk 30 m in, then out; wet cave drips, dry does not.
