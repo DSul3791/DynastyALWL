@@ -11,3 +11,7 @@ c. JOIN log line adds "column: asked at +N s, answer +N s, collider +N s" so a s
 d. Test (test_spawn_column.gd, headless, no Godot scene): pure helper `column_wanted(flying, waiting, anchor_set, answered)` and ray length; plus a David3 run: start at 400 m and at 1500 m above the spawn (--start=x,y,z), expect ready under 10 s after the welcome and 0 "waiting for ground" after.
 Shot runner: unaffected (it already waits for waiting_for_ground == false); the landing check in claude/steve-shot-landing treats an airborne start as "not landed" until the arrival drop, then counts the settle time from there, so the picture is never taken in the air. Branch is cut from steve-shot-landing for that reason.
 Risk: dive for a waiting walker uses the existing server surface answer (one request per stop). Ray 3000 m costs one ray per frame while waiting only.
+
+## Build notes (Tyler GO, conditions 1-5)
+Built: `column = flying or waiting_for_ground` gates the dive in _update_anchor (viewer back to the player when not waiting: _viewer_ground_y reset each follow, stage view cleared); dive needs ground more than 40 m below, so a normal +28 m join, walker, go-to-spawn, respawn, and a player in a cave/tunnel (below the surface) are unchanged; _ground_ready ray 3000 m; join window adds "The ground is taking long: N blocks received, N failed, N still arriving, player height" after 60 s; JOIN log "column answer N s after the welcome".
+David3 test: start at 400 m and 1500 m above the spawn (--start), expect "ground ready" within 10 s of the welcome; normal join unchanged.

@@ -756,7 +756,7 @@ func _update_connect_window() -> void:
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
-		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else ""])
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else "", ("\n\nThe ground is taking long: %d blocks received, %d failed, %d still arriving, player height %.0f m." % [_ground_received(), _ground_failed(), stream.pending() if stream != null else 0, body.global_position.y]) if since > 60 and body != null else ""])
 		return
 
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
@@ -1919,9 +1919,12 @@ func _update_anchor(now: int, delta: float) -> void:
 	# Stopped in the air (Dave, 2026-10-21): the ground straight below is built first. The server says where the
 	# ground is under the player (protocol 45), the streaming viewer goes down to it and only the finest level is built
 	# to a short distance until the ground under the player has a collider; then the rest follows.
-	if follow and flying and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
+	# 25 Oct (Dave: a start in the air never built the ground under it): the same dive runs for a player who is not flying but waiting for ground.
+	var column: bool = flying or waiting_for_ground
+
+	if follow and column and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
 		pass
-	elif follow and flying and _anchor_set:
+	elif follow and column and _anchor_set:
 		if _surface_asked_msec == 0:
 			_surface_asked_msec = now
 			_ground_below_y = NAN
@@ -1946,7 +1949,7 @@ func _update_anchor(now: int, delta: float) -> void:
 
 		_viewer_ground_y = NAN
 
-		if flying and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
+		if column and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
 			_viewer_ground_y = _ground_below_y + 2.0
 
 			# Only when the ground below has no collider yet: staging drops every coarse level, so over ground that is
@@ -1983,6 +1986,9 @@ func _on_surface_received(x: float, z: float, y: float) -> void:
 	_ground_below_y = y
 	_surface_answered_msec = Time.get_ticks_msec()
 	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
+
+	if waiting_for_ground and connected_msec > 0:
+		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y])
 
 
 # After a stop high up only the finest STAGE_LODS levels are built (the engine builds the coarsest first, so
@@ -4861,7 +4867,7 @@ func _walk_step() -> void:
 func _ground_ready() -> bool:
 	var here: Vector3 = body.global_position
 	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
-	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -300.0, 0.0))
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -3000.0, 0.0))   # 3000 m: a start high in the air finds the collider once the column below is built
 	down.exclude = [body.get_rid()]
 
 	if not space.intersect_ray(down).is_empty():
