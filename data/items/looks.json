@@ -188,13 +188,13 @@
    "size": 1.0
   },
   "stone_hammer": {
-   "shape": "axe",
+   "shape": "hammer",
    "color": "#7d7a74",
    "size": 1.0,
    "placeholder": true
   },
   "hand_saw": {
-   "shape": "spade",
+   "shape": "saw",
    "color": "#8a8d93",
    "size": 1.0,
    "placeholder": true
