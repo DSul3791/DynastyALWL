@@ -23,3 +23,8 @@ Note: Recommendation: Yes it is better: ground now has photo detail, bumps and a
 Note: Every branch gets the quick checks and the 106 fast tests in parallel (about 2 minutes). The 3 slow tests (worldgen, water soak, head pond) and pictures run only when the branch touches terrain, water or looks, and once a day on the main branch. Today one gate takes 13 to 18 minutes; this makes most take 2 to 5. Full report: design/GATE_AUDIT.md.
 Note: Recommendation: Yes
 [check]
+
+## gates-b | Gates B: one result per final version, test the merged result
+Note: Owners say 'final' once and stop changing a branch in the queue (work in progress goes on a separate branch). The gate runs on the branch merged with the current main branch, so conflicts show before the PASS. Today one branch was re-tested 5 times and 4 of 18 merges hit conflicts the gate could not see. Full report: design/GATE_AUDIT.md.
+Note: Recommendation: Yes
+[check]
