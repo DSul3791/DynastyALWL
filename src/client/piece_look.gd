@@ -629,6 +629,16 @@ static func clay_hearth() -> Node3D:
 	return root
 
 
+# A set snare (a trap kind), 0.4 m wide, 0.55 m high: a bent stick with a twine loop lying on the path. Stub look until Kathleen's art.
+static func snare_trap() -> Node3D:
+	_materials()
+	var root: Node3D = Node3D.new()
+	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.55, 0.0), 0.02, _log)             # the bent stick
+	_rod(root, Vector3(-0.2, 0.55, 0.0), Vector3(0.2, 0.35, 0.0), 0.012, _frame)           # the arm over the path
+	_box(root, Vector3(0.22, 0.012, 0.22), Vector3(0.2, 0.1, 0.0), _thatch)                # the loop on the ground
+	return root
+
+
 # A brick oven (cooking station tier 3), 1.8 m by 1.4 m, 1.2 m high: a brick body, a clay arch over a dark mouth, a flue on top. Stub look until Kathleen's art.
 static func oven() -> Node3D:
 	_materials()

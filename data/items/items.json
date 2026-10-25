@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 276,
+	"next_number": 278,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3135,6 +3135,30 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 25,
+			"look_alikes": []
+		},
+		"snare": {
+			"number": 276,
+			"name": "Snare",
+			"description": "A loop of twine on a bent stick. Set it on a worn animal path.",
+			"kind": "placeable",
+			"stack": 5,
+			"durability": 20,
+			"repair": [
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 6,
+			"look_alikes": []
+		},
+		"snare_trap": {
+			"number": 277,
+			"name": "Snare",
+			"description": "A snare set on the ground.",
+			"kind": "structure",
+			"stack": 1,
 			"look_alikes": []
 		}
 	}
