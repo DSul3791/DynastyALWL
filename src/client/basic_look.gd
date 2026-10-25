@@ -270,7 +270,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# Nothing bends sideways (out of that plane). Held with the head vertical (points up and down); see HELD_LOOK_TURN.
 			# Test: src/worldgen/tools/test_pick_axes.gd.
 			var steel_head: bool = bits.has("steel")
-			var iron: Color = Color(0.4, 0.43, 0.48) if steel_head else Color(0.21, 0.2, 0.21)                            # aged dark iron (steel a paler, cleaner grey)
+			var iron: Color = Color(0.3, 0.31, 0.34) if steel_head else Color(0.15, 0.155, 0.17)   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal)
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
 			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
@@ -298,7 +298,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					var at: Vector3 = Vector3(0.27 - side[2] * (1.0 - cos(mid)), 0.0, sign * (0.04 + side[2] * sin(mid)))
 					var tone: Color = _tone(iron, seg + (0 if sign > 0.0 else 7), 0.2)                                      # hammered, pitted: each segment a little lighter or darker
 					if seg >= count - 2:
-						tone = tone.lightened(0.35)                                                                              # the worked, bright points and edge
+						tone = tone.lightened(0.22)                                                                              # the worked, bright points and edge
 					_box_rot(parts, Vector3(thick, thick, length), at, Vector3(0.0, -sign * mid, 0.0), tone)
 			if steel_head:
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron.lightened(0.3))                  # steel: a polished ridge along the top of the head
