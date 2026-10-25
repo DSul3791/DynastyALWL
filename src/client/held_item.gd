@@ -360,7 +360,8 @@ func _is_knife() -> bool:
 # animation on left click, so nothing silently fails to be held.
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
-	return kind in ["tool", "weapon", "container"] and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
+	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
