@@ -24,6 +24,7 @@ const TileSitesScript := preload("res://src/worldgen/tile/tile_sites.gd")
 const RiverNetworkScript := preload("res://src/worldgen/sketch/river_network.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SetupCacheScript := preload("res://src/worldgen/tile/setup_cache.gd")
 
 var settings
 var tile_rules: Dictionary = {}
@@ -35,6 +36,7 @@ var plan_cells: Dictionary = {}      # "x,z" -> cell of tile_plan.json
 var world_air: Dictionary = {}       # wet-air field for the whole world
 var river_network                    # the world's rivers (RiverNetwork)
 var erosion_delta                    # whole-island pre-carve (ErosionDelta), or null: then each tile erodes itself
+var use_cache: bool = false         # bake_tiles.gd sets this (unless --no-cache): reuse the once-per-run setup (setup_cache.gd)
 var margin: int = 80                 # samples built beyond each tile edge, then cropped
 
 
@@ -57,13 +59,24 @@ func setup(world_directory: String, elevation_cell_m: float = 0.0) -> String:
 
 	sketch = parsed
 	elevation = ElevationScript.new()
-	elevation.build(settings, rules, sketch, elevation_cell_m)
-	margin = int(tile_rules["frame"]["margin_samples"])
-	world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
 	river_network = RiverNetworkScript.new()
-	river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
-	river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
-	river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+	margin = int(tile_rules["frame"]["margin_samples"])
+	var cache_key: String = SetupCacheScript.key(world_dir, elevation_cell_m) if use_cache else ""
+	var cache_path: String = SetupCacheScript.path_for(world_dir, cache_key) if use_cache else ""
+
+	if use_cache and SetupCacheScript.load_into(cache_path, cache_key, elevation, river_network, world_air):
+		elevation.settings = settings
+		print("Setup restored from the cache %s" % cache_path.get_file())
+	else:
+		elevation.build(settings, rules, sketch, elevation_cell_m)
+		world_air = TileClimateScript.build_world_air(settings, tile_rules, elevation)
+		river_network.build(elevation, float(tile_rules["water"]["river_start_km2"]))
+		river_network.set_meander(tile_rules["water"].get("network_meander", []), SeedUtil.rng_for(settings.master_seed, "river_meander"))
+		river_network.place_ponds(tile_rules["water"], tile_rules.get("valleys", {}))
+
+		if use_cache:
+			SetupCacheScript.save(cache_path, cache_key, elevation, river_network, world_air)
+
 	# BAKE: a pre-carved island (erosion_delta_v1.bin next to world.json) replaces the per-tile erosion below.
 	erosion_delta = ErosionDeltaScript.new()
 
