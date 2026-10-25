@@ -18,6 +18,7 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	var sea: PackedByteArray = water._find_ocean()
 	var land: PackedFloat32Array = water.heights.duplicate()
 	var begun: int = Time.get_ticks_msec()
+	var clock: int = begun
 	var fill = FillScript.new()
 	var lake_min_depth: float = float(rules.get("lake_min_depth_m", 0.5))
 	var lake_min_catchment: float = float(rules.get("lake_min_catchment_km2", 0.05))
@@ -30,7 +31,11 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		route_over = water.routing_raw
 
 	var routing: PackedFloat32Array = _routing_heights(route_over, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
+	_lap("routing noise", clock)
+	clock = Time.get_ticks_msec()
 	fill.build(routing, sea, samples, lake_min_depth)
+	_lap("fill", clock)
+	clock = Time.get_ticks_msec()
 	var runoff: PackedFloat32Array = PackedFloat32Array()
 	runoff.resize(total)
 	var unit: float = cell_m * cell_m * 1.0e-6   # discharge reads as catchment km2 until climate scales it
@@ -44,10 +49,15 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	if seeded_km2 > 0.0:
 		flow.build(fill, runoff)
+	_lap("flow + edge seed", clock)
+	clock = Time.get_ticks_msec()
 	var channels = ChannelsScript.new()
 	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+	_lap("channels", clock)
+	clock = Time.get_ticks_msec()
 	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
 	_breach_outlets(water, fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
+	_lap("probe + breach", clock)
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
@@ -122,6 +132,11 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 
 	water._ocean = sea
 	return {"ms": Time.get_ticks_msec() - begun, "lakes": fill.lakes.size(), "river_cells": water.river_cells}
+
+
+# Timing line for the bake log (measured stage seconds, tech/GENERATOR_SPEEDUP_REVIEW_25OCT.md).
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  drain timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
 
 
 # Flat ground drains in straight lines unless the routing surface wiggles a little: the ground plus a smooth noise of

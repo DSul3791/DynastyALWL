@@ -221,8 +221,9 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 
 	# The pre-carve change, by world position, on the whole frame (margin included) and on the pre-erosion copy water
 	# routes over, so frames agree along their edges and rivers see the carved valleys.
-	frame_height.heights = erosion_delta.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
-	raw_frame = erosion_delta.apply(raw_frame, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	var delta_field: PackedFloat64Array = erosion_delta.delta_field(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
+	frame_height.heights = erosion_delta.apply_field(frame_height.heights, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
+	raw_frame = erosion_delta.apply_field(raw_frame, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
 	erosion.heights = crop(frame_height.heights, n, core)
 
 	timings["erosion"] = Time.get_ticks_msec() - clock

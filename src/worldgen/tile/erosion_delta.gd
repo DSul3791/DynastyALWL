@@ -84,3 +84,47 @@ func apply(heights: PackedFloat32Array, n: int, spacing_m: float, origin_sx: int
 			out[index] = maxf(original + sample(float(origin_sx + i) * spacing_m, z), minf(original, min_land_m))
 
 	return out
+
+
+# The change at every land cell of the frame, computed once so two height maps over the same frame (the ground and its
+# pre-erosion copy) share it: the same sample() at the same positions, so the result is identical to apply().
+# NAN where the cell is sea (<= 0) in `heights`.
+func delta_field(heights: PackedFloat32Array, n: int, spacing_m: float, origin_sx: int, origin_sz: int) -> PackedFloat64Array:
+	var field: PackedFloat64Array = PackedFloat64Array()
+	field.resize(n * n)
+	field.fill(NAN)
+
+	for j in range(n):
+		var z: float = float(origin_sz + j) * spacing_m
+
+		for i in range(n):
+			var index: int = j * n + i
+
+			if heights[index] > 0.0:
+				field[index] = sample(float(origin_sx + i) * spacing_m, z)
+
+	return field
+
+
+# apply() with the change taken from a delta_field() of the same frame (a cell the field left NAN is sampled here).
+func apply_field(heights: PackedFloat32Array, field: PackedFloat64Array, n: int, spacing_m: float, origin_sx: int, origin_sz: int, min_land_m: float) -> PackedFloat32Array:
+	var out: PackedFloat32Array = heights.duplicate()
+
+	for j in range(n):
+		var z: float = float(origin_sz + j) * spacing_m
+
+		for i in range(n):
+			var index: int = j * n + i
+			var original: float = heights[index]
+
+			if original <= 0.0:
+				continue
+
+			var change: float = field[index]
+
+			if is_nan(change):
+				change = sample(float(origin_sx + i) * spacing_m, z)
+
+			out[index] = maxf(original + change, minf(original, min_land_m))
+
+	return out

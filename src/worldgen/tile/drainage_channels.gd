@@ -53,6 +53,7 @@ var curvature: PackedFloat32Array = PackedFloat32Array()       # signed turn at 
 # `rules`: depth_m_per_sqrt_q, min_depth_m, max_depth_m, width_m_per_sqrt_q, min_width_m.
 func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary, seed_value: int, origin: Vector2i = Vector2i.ZERO) -> void:
 	_origin = origin
+	var clock: int = Time.get_ticks_msec()
 	var total: int = size * size
 	bed = h.duplicate()
 	centre_depth.resize(total)
@@ -132,15 +133,33 @@ func build(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshol
 		centre_depth[index] = depth * shape * jitter
 
 	_along = along
+	_lap("centre line", clock)
+	clock = Time.get_ticks_msec()
 	_stamp(h, fill, flow, size, cell_m, threshold, rules)
+	_lap("stamp", clock)
+	clock = Time.get_ticks_msec()
 	var stamped: PackedFloat32Array = bed.duplicate()
 	_canyon_map(h, fill, flow, size, cell_m, rules)
 	_valleys(h, fill, flow, size, cell_m, rules)
+	_lap("canyon map + valleys", clock)
+	clock = Time.get_ticks_msec()
 	_canyons(h, fill, flow, size, cell_m, rules)
+	_lap("canyons", clock)
+	clock = Time.get_ticks_msec()
 	_gullies(h, fill, flow, size, cell_m, rules)
+	_lap("gullies", clock)
+	clock = Time.get_ticks_msec()
 	_heads(h, fill, flow, size, cell_m, threshold, rules)
+	_lap("heads + basins", clock)
+	clock = Time.get_ticks_msec()
 	_ensure_centre_channel(fill, flow, threshold)
 	_keep_spawn_clear(stamped, size, cell_m, rules)
+	_lap("centre fix + spawn", clock)
+
+
+# Timing line for the bake log.
+static func _lap(stage: String, since_ms: int) -> void:
+	print("  channel timing: %s %d ms" % [stage, Time.get_ticks_msec() - since_ms])
 
 
 func _stamp(h: PackedFloat32Array, fill, flow, size: int, cell_m: float, threshold: float, rules: Dictionary) -> void:
