@@ -31,3 +31,8 @@ Note: Recommendation: Yes for rake and sickle, scythe later, because farming nee
 Note: Full list: design/ITEM_TRIM_LIST.md group A. Yes = we make this cut or merge. Old saves convert to the merge target.
 Note: Recommendation: Yes
 [check]
+
+## trim-b | Item trim B: Duplicate tools: one hammer, no vice, needle or bowl (merge 5)
+Note: Full list: design/ITEM_TRIM_LIST.md group B. Yes = we make this cut or merge. Old saves convert to the merge target.
+Note: Recommendation: Yes
+[check]
