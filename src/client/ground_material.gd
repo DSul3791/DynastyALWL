@@ -16,12 +16,15 @@ shader_type spatial;
 uniform vec3 palette[64];
 // Ground detail (ART_DIRECTION.md step 2): six tileable surface textures in one array
 // (0 turf, 1 forest litter, 2 gravel, 3 mud and clay, 4 sand, 5 rock). R is a brightness
-// detail the soil colour is multiplied by, G and B a bump, A the height. Each palette
+// detail the soil colour is multiplied by, G and B a bump, A the height (the photo sets of
+// assets/pbr/ground, packed by tools/pack_ground_pbr.py: R brightness, G and B the normal, A roughness). Each palette
 // entry names the layer it uses; a mix of materials mixes the layers.
 uniform sampler2DArray ground_detail : filter_linear_mipmap, repeat_enable;
 uniform float layer_of[64];
 uniform float layer_mean[6];
 uniform float layer_strength[6];
+uniform float layer_bump[6];            // how hard each layer's normal map tilts the surface
+uniform bool has_pbr = false;           // the photo sets are loaded (A is roughness); false keeps the old tiles and the flat 0.92
 uniform float tile_m = 3.0;             // metres one texture tile covers
 uniform bool triplanar = true;          // Low skips the side projections
 uniform float wet = 0.0;                // 0 dry, 1 soaked by rain: darker and glossier (weather_look.gd)
@@ -141,6 +144,8 @@ void fragment() {
 	float detail = 0.0;
 	float contrast = 0.0;
 	vec2 slope_push = vec2(0.0);
+	float tex_rough = 0.0;
+	float rough_w = 0.0;
 	vec2 uv_top = world_pos.xz / tile_m;
 	vec2 uv_x = world_pos.zy / tile_m;
 	vec2 uv_z = world_pos.xy / tile_m;
@@ -155,7 +160,9 @@ void fragment() {
 			d = d * tw.y + texture(ground_detail, vec3(uv_x, float(k))).r * tw.x + texture(ground_detail, vec3(uv_z, float(k))).r * tw.z;
 		}
 		detail += (d - layer_mean[k]) * layer_strength[k] * lw[k];
-		slope_push += b * tw.y * layer_strength[k] * lw[k];
+		slope_push += b * tw.y * layer_bump[k] * lw[k];
+		tex_rough += t.a * lw[k];
+		rough_w += lw[k];
 	}
 	color *= 1.0 + detail * closeness;
 	// Grassy ground takes the colour of the grass drawn on it (grass_view.gd), so the meadow reads
@@ -243,7 +250,9 @@ void fragment() {
 	color = mix(color, vec3(0.88, 0.9, 0.94), lying);
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
-	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
+	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
+	ROUGHNESS = mix(mix(base_rough, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 }
 """
 
@@ -268,7 +277,12 @@ const SOIL_LAYER := [5, 4, 2, 0, 3, 0, 1, 0, 1, 2, 2, 4, 4, 4, 4, 4, 3]
 const LAYER_FILES := ["layer_0_turf", "layer_1_litter", "layer_2_gravel", "layer_3_mud", "layer_4_sand", "layer_5_rock"]
 const LAYER_MEAN := [0.48, 0.46, 0.56, 0.58, 0.50, 0.68]       # average of each texture's R, so detail is centred
 const LAYER_STRENGTH := [0.9, 1.3, 1.1, 0.8, 0.5, 1.1]         # how hard each layer's detail pushes the colour
-const TEXTURE_PX := [256, 512, 512, 512]                         # per quality level (Low, Medium, High, Ultra)
+# The photo sets (Kathleen 2026-10-25, ambientCG CC0, packed by tools/pack_ground_pbr.py): mud and sand share one set (the palette colour makes mud dark).
+const PBR_FILES := ["turf", "litter", "gravel", "mud_sand", "mud_sand", "rock"]
+const PBR_MEAN := [0.309, 0.513, 0.841, 0.591, 0.591, 0.451]
+const PBR_STRENGTH := [3.5, 1.9, 3.5, 3.1, 1.9, 2.2]           # photo brightness varies less than the old tiles, so it is pushed harder
+const PBR_BUMP := [0.9, 1.1, 1.0, 0.8, 0.7, 1.1]
+const TEXTURE_PX := [256, 512, 1024, 1024]                       # per quality level (Low, Medium, High, Ultra)
 
 
 static func layers() -> PackedFloat32Array:
@@ -282,13 +296,24 @@ static func layers() -> PackedFloat32Array:
 	return out
 
 
+# True when every photo pack is in the project (then detail_array uses them).
+static func pbr_ready() -> bool:
+	for name in PBR_FILES:
+		if not ResourceLoader.exists("res://assets/pbr/ground/%s_pack.png" % name):
+			return false
+
+	return true
+
+
 # The six textures as one array, at the size the quality level allows.
 static func detail_array(quality: int) -> Texture2DArray:
 	var px: int = TEXTURE_PX[clampi(quality, 0, TEXTURE_PX.size() - 1)]
 	var images: Array[Image] = []
+	var photo: bool = pbr_ready()
 
-	for name in LAYER_FILES:
-		var path: String = "res://assets/ground/%s.png" % name
+	for k in range(LAYER_FILES.size()):
+		var name: String = LAYER_FILES[k]
+		var path: String = "res://assets/pbr/ground/%s_pack.png" % PBR_FILES[k] if photo else "res://assets/ground/%s.png" % name
 		var image: Image = null
 
 		if ResourceLoader.exists(path):
@@ -327,11 +352,18 @@ static func make(tables, quality: int = 2) -> ShaderMaterial:
 	material.shader = shader
 	material.set_shader_parameter("palette", palette(tables))
 	material.set_shader_parameter("layer_of", layers())
-	material.set_shader_parameter("layer_mean", PackedFloat32Array(LAYER_MEAN))
-	material.set_shader_parameter("layer_strength", PackedFloat32Array(LAYER_STRENGTH))
+	set_layer_params(material)
 	material.set_shader_parameter("ground_detail", detail_array(quality))
 	material.set_shader_parameter("triplanar", quality >= 1)
 	return material
+
+
+static func set_layer_params(material: ShaderMaterial) -> void:
+	var photo: bool = pbr_ready()
+	material.set_shader_parameter("has_pbr", photo)
+	material.set_shader_parameter("layer_mean", PackedFloat32Array(PBR_MEAN if photo else LAYER_MEAN))
+	material.set_shader_parameter("layer_strength", PackedFloat32Array(PBR_STRENGTH if photo else LAYER_STRENGTH))
+	material.set_shader_parameter("layer_bump", PackedFloat32Array(PBR_BUMP if photo else LAYER_STRENGTH))
 
 
 # Quality change: new texture size, side projections on or off.
