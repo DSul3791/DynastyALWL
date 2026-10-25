@@ -2062,6 +2062,12 @@
    "shape": "chunk",
    "color": "#8a4a2a",
    "size": 1.0
+  },
+  "snare": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.6,
+   "placeholder": true
   }
  }
 }
