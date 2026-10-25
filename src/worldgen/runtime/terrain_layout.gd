@@ -43,10 +43,10 @@ static func tiles_stamp(tiles_dir: String) -> String:
 		parts.append("%s=%s" % [file, FileAccess.get_md5(tiles_dir + "/" + file)])
 
 	# The pre-carve file the tiles were baked from (next to world.json) is part of the fingerprint.
-	var delta_path: String = tiles_dir.get_base_dir() + "/erosion_delta_v1.bin"
+	var delta_path: String = tiles_dir.get_base_dir() + "/erosion_delta_v2.bin"
 
 	if FileAccess.file_exists(delta_path):
-		parts.append("erosion_delta_v1.bin=%s" % FileAccess.get_sha256(delta_path))
+		parts.append("erosion_delta_v2.bin=%s" % FileAccess.get_sha256(delta_path))
 
 	return ",".join(parts).md5_text().substr(0, 10)
 

@@ -1,7 +1,7 @@
 """Whole-island pre-carve on real heights. Usage:
   python3 precarve.py RAW_DIR OUT_DIR [json params]
 RAW_DIR has raw_X_Z.f32 (1921x1921 float32, shared edges) for tiles 2..4 x 3..5 (or raw_manifest.json lists them).
-Writes OUT_DIR/erosion_delta_v1.bin (ERD1), before_after.png, stats.json."""
+Writes OUT_DIR/erosion_delta_v2.bin (ERD1), before_after.png, stats.json."""
 import sys, json, os, time, numpy as np, struct
 import numba as nb
 import lem
@@ -12,7 +12,7 @@ from matplotlib.colors import LightSource
 
 raw_dir, out_dir = sys.argv[1], sys.argv[2]
 P = dict(U=1.2e-3, K=4e-6, D=0.25, dep=0.03, off=0.6, sub=1.5, coast_pow=2.2, basins=14, years=1e6, dt=4000.0,
-         X0=2, Z0=3, X1=4, Z1=5, edge_fade_m=1500.0, S=4, ramp_m=12000.0, balance=1.0, bal_smooth=3.0, lowboost=8.0, tarn=True)
+         X0=2, Z0=3, X1=4, Z1=5, edge_fade_m=1500.0, fill_max=12.0, dslope=0.25, S=4, ramp_m=12000.0, balance=1.0, bal_smooth=3.0, lowboost=8.0, tarn=True)
 if len(sys.argv) > 3: P.update(json.loads(sys.argv[3]))
 os.makedirs(out_dir, exist_ok=True)
 T = 1920
@@ -39,6 +39,18 @@ st, h, sea, fill, area, secs = lem.run_from(c, dx, years=P['years'], dt=P['dt'],
                                            off=P['off'], coast_pow=P['coast_pow'], basins=P['basins'], sub=P['sub'], ramp_m=P['ramp_m'], balance=P['balance'], bal_smooth=P['bal_smooth'], lowboost=P['lowboost'], tarn=P['tarn'])
 delta = (h-start)
 delta[start <= 0] = 0.0
+# Sonny 25 Oct: a +65 m fill at a hill foot is too much. Soft-cap fill, then smooth the delta where its own slope is above dslope.
+fm = P['fill_max']
+orig_delta = delta.copy()
+delta = np.where(delta > 0, fm*np.tanh(delta/fm), delta)
+from scipy.ndimage import gaussian_filter as _gf
+for _ in range(6):
+    gy_, gx_ = np.gradient(delta, dx)
+    wgt = np.clip((np.hypot(gx_, gy_)-0.6*P['dslope'])/(0.6*P['dslope']), 0, 1)
+    wgt = _gf(wgt, 2.0)
+    delta = delta*(1-wgt)+_gf(delta, 3.0)*wgt
+delta = np.where(orig_delta > 0, np.maximum(delta, 0.0), orig_delta)   # cuts stay bit-identical: only fill cells take the smoothed value
+delta[start <= 0] = 0.0
 # fade to zero toward the grid edge so outside frames see no step
 yy, xx = np.mgrid[0:n, 0:n]
 edge = np.minimum(np.minimum(yy, xx), np.minimum(n-1-yy, n-1-xx)).astype(float)
@@ -47,7 +59,7 @@ delta = (delta*f).astype(np.float32)
 # land stays land
 newh = np.where(start > 0, np.maximum(start+delta, np.minimum(start, 0.05)), start)
 delta = (newh-start).astype(np.float32)
-with open(f'{out_dir}/erosion_delta_v1.bin', 'wb') as fh:
+with open(f'{out_dir}/erosion_delta_v2.bin', 'wb') as fh:
     import zlib
     ph = zlib.crc32(json.dumps(P, sort_keys=True).encode()) & 0x7fffffff
     fh.write(b'ERD1'); fh.write(struct.pack('<iiffffii', n, n, dx, P['X0']*T*8.0, P['Z0']*T*8.0, 0.0, 0, ph))
@@ -56,7 +68,7 @@ with open(f'{out_dir}/erosion_delta_v1.bin', 'wb') as fh:
 import hashlib, platform, numba, scipy
 man = dict(params=P, python=platform.python_version(), numpy=np.__version__, numba=numba.__version__, scipy=scipy.__version__,
            input_sha256={f: hashlib.sha256(open(f'{raw_dir}/{f}', 'rb').read()).hexdigest() for f in sorted(os.listdir(raw_dir)) if f.endswith('.f32')},
-           delta_sha256=hashlib.sha256(open(f'{out_dir}/erosion_delta_v1.bin', 'rb').read()).hexdigest())
+           delta_sha256=hashlib.sha256(open(f'{out_dir}/erosion_delta_v2.bin', 'rb').read()).hexdigest())
 json.dump(man, open(f'{out_dir}/erosion_delta_manifest.json', 'w'), indent=1)
 # stats at 8 m: bilinear delta on the fine map
 dz = zoom(delta, S, order=3)[:fine.shape[0], :fine.shape[1]]

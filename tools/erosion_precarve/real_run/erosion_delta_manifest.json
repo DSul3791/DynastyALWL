@@ -15,6 +15,8 @@
   "X1": 4,
   "Z1": 5,
   "edge_fade_m": 1500.0,
+  "fill_max": 12.0,
+  "dslope": 0.25,
   "S": 2,
   "ramp_m": 12000.0,
   "balance": 0.9,
@@ -37,5 +39,5 @@
   "raw_4_4.f32": "1a4b20b8780c062b72a6c774771ef351e4d01eaeb79092c053030d71bd5fef1e",
   "raw_4_5.f32": "a3a72dfeb04c021917f39a26276b27707624d9a56f1861c8224bf510cf12f270"
  },
- "delta_sha256": "88d5f0751a27e1bf449754860eaa5bc6057be28c8069186dcee23a566b109892"
+ "delta_sha256": "ac0df3cc0fc4cc54feb0cb3365d2022960c45690e8e84fa31b2963e8ee9e55c4"
 }
