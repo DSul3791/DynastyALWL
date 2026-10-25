@@ -127,5 +127,19 @@ func _init() -> void:
 	check(ItemCam.fill_fraction(AABB(Vector3(0.0, 0.0, 5.0), Vector3.ONE), Vector3.ZERO, Vector3.FORWARD, Vector3.UP, FOV, ASPECT) == 0.0, "an item behind the camera fills nothing")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(0.0, 0.0, 1.0), Vector3.ZERO), 0.0), "from the south facing north: yaw 0")
 	check(is_equal_approx(ItemCam.yaw_to(Vector3(1.0, 0.0, 0.0), Vector3.ZERO), 90.0), "from the east facing west: yaw 90")
+	# Building pieces (the piece shot job): the fit distance may reach 6 m, items keep 3 m; every view fits and fills a third; a low piece is seen from higher up.
+	for piece in [["bed", Vector3(1.0, 0.3, 2.0), true], ["wall", Vector3(4.0, 3.0, 0.3), false], ["lean_to", Vector3(4.0, 3.0, 4.0), false], ["snare", Vector3(0.6, 0.3, 0.6), true]]:
+		var pbox: AABB = AABB(Vector3(10.0, 1.0, 20.0), piece[1])
+
+		for v in ItemCam.views(pbox, FOV, 1.0, ASPECT, Vector2.ZERO, Vector3.ZERO, 6.0, bool(piece[2])):
+			var ps: Dictionary = ItemCam.frame_stats(pbox, v["cam"], _forward(v), v["up"], FOV, ASPECT)
+			check(bool(ps["inside"]) and (float(ps["fill"]) >= 0.32 or float(v["dist"]) >= 5.99), "piece %s view %s fits (%.1f m, fill %.0f %%)" % [piece[0], v["name"], float(v["dist"]), float(ps["fill"]) * 100.0])
+
+	var wall_box: AABB = AABB(Vector3(10.0, 1.0, 20.0), Vector3(4.0, 3.0, 0.3))
+	check(float(ItemCam.views(wall_box, FOV, 1.0, ASPECT, Vector2.ZERO, Vector3.ZERO, 6.0)[0]["dist"]) >= float(ItemCam.views(wall_box, FOV, 1.0, ASPECT)[0]["dist"]), "a wall may stand off further than an item view allows, never less")
+	var bed_box: AABB = AABB(Vector3(10.0, 1.0, 20.0), Vector3(1.0, 0.3, 2.0))
+	check(float(ItemCam.views(bed_box, FOV, 1.0, ASPECT, Vector2.ZERO, Vector3.ZERO, 6.0, true)[0]["pitch"]) < float(ItemCam.views(bed_box, FOV, 1.0, ASPECT)[0]["pitch"]), "a low piece is looked at more steeply from above")
+	check(is_equal_approx(ItemCam.pick_ground(31.2, 30.85), 31.2), "a piece stands on the physics hit, not the lower voxel hit")
+	check(is_equal_approx(ItemCam.pick_ground(NAN, 30.85), 30.85) and is_nan(ItemCam.pick_ground(NAN, NAN)), "without a collider the voxel hit is used, and no ground stays no ground")
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
