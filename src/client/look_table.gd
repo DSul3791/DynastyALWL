@@ -41,6 +41,15 @@ const LOOKS := {
 	"thatch_floor": {"builder": "thatch_floor", "args": []},
 	"thatch_roof": {"builder": "thatch_roof", "args": []},
 	"thatch_doorway": {"builder": "thatch_doorway", "args": []},
+	"thatch_window": {"builder": "window_wall", "args": []},
+	"thatch_doorway_open": {"builder": "doorway", "args": [true]},
+	"plank_wall": {"builder": "wall", "args": []},
+	"plank_door": {"builder": "doorway", "args": [false]},
+	"plank_door_open": {"builder": "doorway", "args": [true]},
+	"plank_window": {"builder": "window_wall", "args": []},
+	"plank_floor": {"builder": "ceiling", "args": []},
+	"plank_roof": {"builder": "roof", "args": []},
+	"plank_foundation": {"builder": "foundation", "args": []},
 }
 
 static var _warned: Dictionary = {}

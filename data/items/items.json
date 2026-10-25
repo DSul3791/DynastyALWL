@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 278,
+	"next_number": 364,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2179,8 +2179,8 @@
 		},
 		"wall_section_kit": {
 			"number": 192,
-			"name": "Wall section",
-			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"name": "Fine wood wall",
+			"description": "A fine wood wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2188,8 +2188,8 @@
 		},
 		"wall_section": {
 			"number": 193,
-			"name": "Wall section",
-			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"name": "Fine wood wall",
+			"description": "A fine wood wall, two metres wide. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2198,8 +2198,8 @@
 		},
 		"floor_section_kit": {
 			"number": 194,
-			"name": "Floor section",
-			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"name": "Fine wood floor",
+			"description": "A fine wood floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2207,8 +2207,8 @@
 		},
 		"floor_section": {
 			"number": 195,
-			"name": "Floor section",
-			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"name": "Fine wood floor",
+			"description": "A fine wood floor, two metres square. Set pieces edge to edge to build a house.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2217,8 +2217,8 @@
 		},
 		"roof_section_kit": {
 			"number": 196,
-			"name": "Roof section",
-			"description": "A plank roof on four posts, to set over walls and floors.",
+			"name": "Fine wood roof",
+			"description": "A fine wood roof on four posts, to set over walls and floors.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2226,8 +2226,8 @@
 		},
 		"roof_section": {
 			"number": 197,
-			"name": "Roof section",
-			"description": "A plank roof on four posts, to set over walls and floors.",
+			"name": "Fine wood roof",
+			"description": "A fine wood roof on four posts, to set over walls and floors.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2236,7 +2236,7 @@
 		},
 		"foundation_section_kit": {
 			"number": 198,
-			"name": "Foundation",
+			"name": "Fine wood foundation",
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "placeable",
 			"stack": 1,
@@ -2245,7 +2245,7 @@
 		},
 		"foundation_section": {
 			"number": 199,
-			"name": "Foundation",
+			"name": "Fine wood foundation",
 			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
 			"kind": "structure",
 			"stack": 1,
@@ -2255,8 +2255,8 @@
 		},
 		"doorway_section_kit": {
 			"number": 200,
-			"name": "Doorway",
-			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"name": "Fine wood doorway",
+			"description": "A fine wood wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2264,8 +2264,8 @@
 		},
 		"doorway_section": {
 			"number": 201,
-			"name": "Doorway",
-			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"name": "Fine wood doorway",
+			"description": "A fine wood wall with a gap you can walk through, one metre wide and two high.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -2274,8 +2274,8 @@
 		},
 		"window_section_kit": {
 			"number": 202,
-			"name": "Window wall",
-			"description": "A plank wall with an opening at chest height to see through.",
+			"name": "Fine wood window wall",
+			"description": "A fine wood wall with an opening at chest height to see through.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -2283,8 +2283,8 @@
 		},
 		"window_section": {
 			"number": 203,
-			"name": "Window wall",
-			"description": "A plank wall with an opening at chest height to see through.",
+			"name": "Fine wood window wall",
+			"description": "A fine wood wall with an opening at chest height to see through.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": [],
@@ -3151,6 +3151,125 @@
 			"number": 277,
 			"name": "Snare",
 			"description": "A snare set on the ground.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_window_kit": {
+			"number": 350,
+			"name": "Thatch window wall",
+			"description": "A thatch wall with an opening at chest height. Set it up in your wall.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_window": {
+			"number": 351,
+			"name": "Thatch window wall",
+			"description": "A thatch window wall.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_wall_kit": {
+			"number": 352,
+			"name": "Plank wall",
+			"description": "A bark-faced rough plank wall, two metres wide.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_wall": {
+			"number": 353,
+			"name": "Plank wall",
+			"description": "A bark-faced rough plank wall, two metres wide.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_doorway_kit": {
+			"number": 354,
+			"name": "Plank doorway",
+			"description": "A rough plank wall with a gap and a plank door you can swing open.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_doorway": {
+			"number": 355,
+			"name": "Plank doorway",
+			"description": "A rough plank wall with a gap and a plank door you can swing open.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_window_kit": {
+			"number": 356,
+			"name": "Plank window wall",
+			"description": "A rough plank wall with an opening at chest height.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_window": {
+			"number": 357,
+			"name": "Plank window wall",
+			"description": "A rough plank wall with an opening at chest height.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_floor_kit": {
+			"number": 358,
+			"name": "Plank floor",
+			"description": "A rough plank floor, two metres square.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_floor": {
+			"number": 359,
+			"name": "Plank floor",
+			"description": "A rough plank floor, two metres square.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_roof_kit": {
+			"number": 360,
+			"name": "Plank roof",
+			"description": "A rough plank roof on four posts, to set over walls and floors.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_roof": {
+			"number": 361,
+			"name": "Plank roof",
+			"description": "A rough plank roof on four posts, to set over walls and floors.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"plank_foundation_kit": {
+			"number": 362,
+			"name": "Plank foundation",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"plank_foundation": {
+			"number": 363,
+			"name": "Plank foundation",
+			"description": "A stone and clay slab, four metres square.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []

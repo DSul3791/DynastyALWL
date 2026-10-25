@@ -2066,6 +2066,48 @@
    "size": 0.6,
    "placeholder": true
   }
-
+,
+  "thatch_window_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_wall_kit": {
+   "shape": "kit",
+   "color": "#a67b4f",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_doorway_kit": {
+   "shape": "kit",
+   "color": "#a67b4f",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_window_kit": {
+   "shape": "kit",
+   "color": "#a67b4f",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_floor_kit": {
+   "shape": "kit",
+   "color": "#a67b4f",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_roof_kit": {
+   "shape": "kit",
+   "color": "#a67b4f",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "plank_foundation_kit": {
+   "shape": "kit",
+   "color": "#8d8a84",
+   "size": 1.0,
+   "placeholder": true
+  }
  }
 }
