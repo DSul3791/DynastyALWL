@@ -76,6 +76,15 @@ func _kind_at(x: float, z: float) -> String:
 func placements(cell: Vector2i, day: int, season: String) -> Array:
 	var key: Array = [cell, day, season]
 
+	# Invalidate stale entries (older than max_cache_age_days).
+	# This prevents unbounded memory growth when the server runs for months.
+	if not cfg.is_empty():
+		var max_age_days: int = cfg.get("max_cache_age_days", 30)
+		for k in _cache.keys():
+			var cached_day: int = k[1]
+			if day - cached_day > max_age_days:
+				_cache.erase(k)
+
 	if _cache.has(key):
 		return _cache[key]
 

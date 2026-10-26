@@ -1,5 +1,4 @@
-class_name LocalRegionProvider
-extends RefCounted
+class_name LocalRegionProvider extends BakedWorldInit
 
 
 const RegionCatalogScript := preload(
@@ -11,32 +10,19 @@ const RegionMapperScript := preload(
 )
 
 
-var _catalog = null
-var _mapper = null
+var _catalog: Object = null
+var _mapper: Object = null
 
 var _region_directory: String = ""
 var _is_ready: bool = false
 
 
-# ==================================================
-# INITIALIZATION
-# ==================================================
-
-func initialize(
-	world_path: String = AppConfig.DEFAULT_WORLD_PATH
-) -> bool:
-	reset()
-
-	_region_directory = world_path.path_join(
-		"regions"
-	)
-
+func set_dependency(world_path: String = AppConfig.DEFAULT_WORLD_PATH) -> void:
+	_region_directory = world_path.path_join("regions")
 
 	_catalog = RegionCatalogScript.new()
 
-	if not _catalog.scan(
-		_region_directory
-	):
+	if not _catalog.scan(_region_directory):
 		push_error(
 			"LocalRegionProvider could not scan baked regions."
 		)
@@ -47,9 +33,7 @@ func initialize(
 
 	_mapper = RegionMapperScript.new()
 
-	if not _mapper.configure(
-		_catalog
-	):
+	if not _mapper.configure(_catalog):
 		push_error(
 			"LocalRegionProvider could not configure region mapper."
 		)
@@ -73,6 +57,12 @@ func initialize(
 
 
 	return true
+
+
+func initialize(
+	world_path: String = AppConfig.DEFAULT_WORLD_PATH
+) -> bool:
+	return super.initialize(self, "region provider", false)
 
 
 # ==================================================
@@ -213,8 +203,9 @@ func get_region_directory() -> String:
 # ==================================================
 
 func reset() -> void:
+	super.reset()
+
 	_catalog = null
 	_mapper = null
 
 	_region_directory = ""
-	_is_ready = false

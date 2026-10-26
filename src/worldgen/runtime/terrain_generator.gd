@@ -79,7 +79,7 @@ var _mud: int = -1
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
-
+var _crossfade_cache: Dictionary = {}   # (ix * 256 + iz) -> [cx, sx, cz, sz] precomputed crossfade weights
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
 func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) -> void:
@@ -262,6 +262,7 @@ func prefetch_around(x: float, z: float, margin: float = 2000.0) -> void:
 func forget_tiles() -> void:
 	_mutex.lock()
 	_tiles.clear()
+	_crossfade_cache.clear()
 	_mutex.unlock()
 
 
@@ -364,6 +365,21 @@ func _wrapped_noise(noise: FastNoiseLite, x: float, z: float, band: float) -> fl
 
 	if tx == 0.0 and tz == 0.0:
 		return noise.get_noise_2d(x, z)
+
+	# Precomputed crossfade weights in a 16x16 grid per octave.
+	# Index = (floor(tx * 16), floor(tz * 16)), value = [cx, sx, cz, sz].
+	var cache_key: int = int(floor(tx * 16.0)) * 256 + int(floor(tz * 16.0))
+
+	# Build the global crossfade cache once per tile load.
+	if not _crossfade_cache.has(cache_key):
+		var ix: int = int(floor(tx * 16.0)) % 16
+		var iz: int = int(floor(tz * 16.0)) % 16
+		_crossfade_cache[cache_key] = [cos(tx * PI * 0.5), sin(tx * PI * 0.5), cos(tz * PI * 0.5), sin(tz * PI * 0.5)]
+	else:
+		var entry: Array = _crossfade_cache[cache_key]
+		if entry != null and entry.size() >= 4:
+			return entry[2] * noise.get_noise_2d(x, z) + entry[3] * noise.get_noise_2d(x - period_m, z)
+			+ entry[0] * noise.get_noise_2d(x, z - period_m) + entry[1] * noise.get_noise_2d(x - period_m, z - period_m)
 
 	var cx: float = cos(tx * PI * 0.5)
 	var sx: float = sin(tx * PI * 0.5)

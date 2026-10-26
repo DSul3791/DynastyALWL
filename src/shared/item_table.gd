@@ -74,9 +74,17 @@ func spoilage() -> Dictionary:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/spoilage.json"))
 		_spoil = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
+	# Populate the suffix cache for shelf_units lookup.
+	# This is a class variable so it's shared across all instances and only computed once.
+	if _spoil.has("by_suffix") and not _suffix_cfg.is_empty():
+		var by_suffix: Dictionary = _spoil["by_suffix"]
+		for suffix in by_suffix:
+			_suffix_cfg[suffix] = float(by_suffix[suffix])
+
 	return _spoil
 
 
+@class_var static var _suffix_cfg: Dictionary = {}  # parsed once at load time from spoilage.json.by_suffix
 var _shelf_cache: Dictionary = {}   # item number -> shelf life in units (the spoilage tick asks for every slot of every pack)
 
 
@@ -96,7 +104,13 @@ func _shelf_units_uncached(number: int) -> int:
 		return 0
 
 	var id: String = id_of(number)
-	var hours: float = float(cfg.get("by_id", {}).get(id, 0.0))
+
+	# Check the specific id first; fall through to suffix only if not found.
+	var hours: float = -1.0
+	if _suffix_cfg.has(id):
+		hours = float(_suffix_cfg[id])
+	elif cfg.has("by_id") and cfg["by_id"].has(id) and not cfg["by_id"][id] == null:
+		hours = float(cfg["by_id"][id])
 
 	if hours <= 0.0:
 		for suffix in cfg.get("by_suffix", {}):

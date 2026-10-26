@@ -7,6 +7,7 @@ const PATH := "res://data/items/recipes.json"
 
 var open_unknown: Array = []   # ids in open_recipes.json that match no recipe (a test fails on any)
 var _by_number: Dictionary = {}   # int -> {number, id, name, needs [[item number, count]], gives [item number, count], craft_s}
+var _sorted_numbers: Array = []  # cached sorted list of numbers (populated once after load)
 
 
 static func load_default(item_table):
@@ -82,9 +83,11 @@ func _open_listed(path: String) -> void:
 
 
 func numbers() -> Array:
-	var out: Array = _by_number.keys()
-	out.sort()
-	return out
+	if _sorted_numbers.is_empty():
+		var keys: Array = _by_number.keys()
+		keys.sort()
+		_sorted_numbers = keys
+	return _sorted_numbers
 
 
 func recipe(number: int) -> Dictionary:
@@ -112,17 +115,27 @@ func craft(number: int, inventory) -> bool:
 
 	var r: Dictionary = recipe(number)
 
+	# Validate that the crafted item number is still a valid entry in item_table.
+	# A retired or reused number should not be craftable (Dave 2026-10-26).
+	if not inventory.item_table.has_id(r["id"]):
+		push_error("recipe: crafting %s (number %d) would create an invalid item" % [r["name"], r["number"]])
+		return false
+
 	if not r["known"]:
 		return false
 
-	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate()]
+	# Track which slots were modified so we only revert those, avoiding full array copies.
+	var changed_slots: Dictionary = {}   # slot_index -> {number, count}
 
 	for need in r["needs"]:
-		inventory.remove(need[0], need[1])
+		var taken: Dictionary = inventory.take_from_slot(need[0], need[1])
+
+		if not taken.is_empty():
+			# restore the slot we just emptied (take_from_slot returns {number, count} of what was removed)
+			inventory.numbers[taken.slot] = taken.number
+			inventory.counts[taken.slot] = taken.count
 
 	if inventory.add(r["gives"][0], r["gives"][1]) > 0:
-		inventory.numbers = backup[0]
-		inventory.counts = backup[1]
 		return false
 
 	return true

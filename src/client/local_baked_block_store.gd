@@ -1,5 +1,4 @@
-class_name LocalBakedBlockStore
-extends RefCounted
+class_name LocalBakedBlockStore extends BakedWorldInit
 
 
 const RegionReaderScript = preload(
@@ -23,7 +22,7 @@ const COLUMN_SEARCH_RADIUS := 8
 const COLUMN_MIN_EVIDENCE := 4
 
 
-var _region_provider = null
+var _region_provider: Object = null
 
 
 # source_region -> {
@@ -45,45 +44,14 @@ var _column_air_start_cache: Dictionary = {}
 var _column_air_start_cache_mutex := Mutex.new()
 
 
-var _is_ready: bool = false
+func set_dependency(region_provider) -> void:
+	_region_provider = region_provider
 
-
-# ==================================================
-# INITIALIZATION
-# ==================================================
 
 func initialize(
 	region_provider
 ) -> bool:
-	close()
-
-
-	if region_provider == null:
-		push_error(
-			"LocalBakedBlockStore received a null region provider."
-		)
-
-		return false
-
-
-	if not region_provider.is_ready():
-		push_error(
-			"LocalBakedBlockStore received a region provider that is not ready."
-		)
-
-		return false
-
-
-	_region_provider = region_provider
-	_is_ready = true
-
-
-	print(
-		"LocalBakedBlockStore ready."
-	)
-
-
-	return true
+	return super.initialize(region_provider, "region provider", true)
 
 
 # ==================================================
@@ -557,6 +525,24 @@ func _get_or_open_reader_bundle(
 			% str(
 				source_region
 			)
+		)
+
+
+		return {}
+
+	# Validate the file actually exists before opening.
+	if not FileAccess.file_exists(region_path):
+		_reader_bundles_mutex.unlock()
+
+
+		push_error(
+			(
+				"No local baked region file at %s for source region %s."
+			)
+			% [
+				region_path,
+				str(source_region),
+			]
 		)
 
 

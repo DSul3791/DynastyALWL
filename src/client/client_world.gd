@@ -59,9 +59,13 @@ var _loading_start_msec: int = 0
 # INITIALIZATION
 # ==================================================
 
+var _is_ready: bool = false
+
 func initialize(
 	block_store
 ) -> bool:
+	_is_ready = false  # reset so a failed init doesn't silently skip work next time
+
 	if block_store == null:
 		push_error(
 			"ClientWorld received a null block store."
