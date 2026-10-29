@@ -31,6 +31,11 @@ Why this shape: everything is a function of world position and the seed, so neig
 Low ground bumpiness (1 to 30 m): 0.33 / 0.53 / 0.98 / 2.1 m at lags 8 / 16 / 32 / 64, against 0.16 / 0.31 / 0.67 / 1.6 baseline: about twice the bumps at 8 to 16 m and 1.5 times at 32 m, and not rougher above 30 m. Reverted (rules file unchanged). A first reading of "no change" was wrong (blind metric, see above).
 Reading: the height-based calming is a real cause of smooth low land, and it is a crude tool: it also smooths hills that are low but not coastal. Better: calm by distance to the coast, and by the island's character profile.
 
+## Experiment 2 (kept on branch DailyDev_20261029, in `tile_rules.json`): `detail.full_above_m` 120 to 25, `detail.hill_min_share` 0.3 to 0.5
+Low ground (1 to 30 m) bumpiness: 0.35 / 0.61 / 1.16 / 2.3 m at lags 8 / 16 / 32 / 64 (baseline 0.16 / 0.31 / 0.67 / 1.6): about twice as bumpy, close to the rolling-meadow target of about 0.7 / 1.3 / 2.7 at 16 / 32 / 64. Ground above 30 m is unchanged (it is already full strength there). Buildable ground in 300 m town circles: 82 to 93% at or under 8% slope (baseline 95 to 100%), 90th percentile slope 7 to 9.5%, relief 1.3 to 2 m. 24 of 24 selected tests pass. It is a BAKE change: tiles on disk are old until a re-bake, and TERRAIN_VERSION must be bumped with that bake (rule: a version change ships only with a bake).
+Why these two numbers: calming by height ends where the ground stops being coastal plain, and the hill octaves (300, 100, 35 m) are what a walking player sees as swells; at 0.3 share they were nearly invisible on low ground.
+Targets used (m off a straight line, lags 16 / 32 / 64 m): flat 0.3 / 0.7 / 1.6 (the old low ground), rolling 0.7 / 1.3 / 2.7, rugged about twice rolling.
+
 ## Open items
 - Island character profiles (flat, rolling, rugged) setting target bumpiness by scale.
 - Human-scale detail (2 to 16 m bumps) at the 1 m voxel stage, as a function of world position.

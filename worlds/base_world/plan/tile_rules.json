@@ -30,9 +30,9 @@
 				"amplitude_m": 0.45
 			}
 		],
-		"hill_from_m": 150, "hill_to_m": 420, "hill_min_share": 0.3,
+		"hill_from_m": 150, "hill_to_m": 420, "hill_min_share": 0.5,
 		"calm_below_m": 4,
-		"full_above_m": 120,
+		"full_above_m": 25,
 		"calm_strength": 0.12,
 		"sea_strength": 0.05,
 		"coast_ragged_m": 1.6
