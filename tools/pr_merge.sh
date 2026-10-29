@@ -10,7 +10,9 @@ HEAD_BR=${1:?usage: tools/pr_merge.sh <head branch> "<title>" ["<body>"]}; TITLE
 REPO=${REPO:-DSul3791/DynastyALWL}; BASE=${PR_BASE:-main}
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
 	URL=$(gh pr list -R "$REPO" --head "$HEAD_BR" --base "$BASE" --state open --json url --jq '.[0].url' 2>/dev/null)
-	[ -z "$URL" ] && URL=$(gh pr create -R "$REPO" --base "$BASE" --head "$HEAD_BR" --title "$TITLE" --body "$BODY") || { echo "PR create failed"; exit 1; }
+	if [ -z "$URL" ]; then
+		URL=$(gh pr create -R "$REPO" --base "$BASE" --head "$HEAD_BR" --title "$TITLE" --body "$BODY") || { echo "PR create failed"; exit 1; }
+	fi
 	gh pr merge -R "$REPO" "$URL" --merge --subject "$TITLE" >/dev/null 2>&1 || { echo "PR merge refused: $URL"; exit 1; }
 	echo "MERGED $URL"; exit 0
 fi
