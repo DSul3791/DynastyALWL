@@ -95,3 +95,18 @@ Caveat on earlier tests: the water tests that read `worlds/base_world/water/tile
 - Island character profiles (flat, rolling, rugged) setting target bumpiness by scale.
 - Human-scale detail (2 to 16 m bumps) at the 1 m voxel stage, as a function of world position.
 - Per-island results (the scan is per tile today).
+
+## Rain-fed inflow along the rivers (live water, 2026-10-29)
+
+What changed: `water_settler.gd` `_add_lateral_inflows` (rules: `data/water_settle.json` "lateral"). The runoff of every land cell is routed downhill over the CURRENT bed (DrainageFill, so a dig or dam changes the catchment) and each river or lake cell takes what reaches it; that is poured in as springs, one per 8x8-cell block (about 1,700 on tile 3,4, 4 s to build). Rate is `m3s_per_km2` times the x10 flow key.
+
+Why not the stored flow map: it is a log scale in 6 percent steps, so one cell's runoff cannot be told from the next (my first two attempts double-counted and gave 14,000 m3/s).
+
+Six simulated hours from dry on tile 3,4 (water_spread_report):
+
+| inflow | wet channel cells | spill outside channels |
+| none (springs only) | 47% | 0.71 km2 |
+| 0.3 m3/s per km2 | 51% | 0.79 km2 |
+| 3.0 m3/s per km2 | 67% | 1.35 km2 |
+
+Reading: more rain wets more of the channel but the spill grows too, and even at low rain spill is above the no-inflow baseline. The channels are too shallow or leaky for the water they must carry, so the next work is the CARVING (width and depth from flow, banks higher than the water, bed without lips), not the water volume. Set to 1.0 for now. Dry channel cells at 3.0 are still 33%: look at whether those are upstream stubs of short brooks.

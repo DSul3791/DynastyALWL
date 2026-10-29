@@ -8,6 +8,7 @@ const WaterSim := preload("res://src/water/water_sim.gd")
 
 const RIVER := 3
 const LAKE := 2
+const OCEAN := 1
 const HEAD_RADIUS := 10           # cells (80 m): a river cell this high among the river cells around it is a head
 const PLATEAU_SEARCH := 15        # cells (120 m) to look for flat high ground near a head
 const POND_FULL_FLOW_M := 125.0   # a head pond this wide or smaller gets the base spring flow
@@ -15,6 +16,7 @@ const PLATEAU_RANGE_M := 3.0      # height range on the ring that counts as flat
 const RULES_PATH := "res://data/water_settle.json"
 const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const DrainageFill := preload("res://src/worldgen/tile/drainage_fill.gd")
 const VERSION := 9                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
@@ -146,8 +148,79 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 	_add_feeders(sim, data, generator, side, placed, rate, heads)
 	_add_hollow_springs(sim, data, flow_all, side, placed)
 	_add_edge_inflows(sim, data, flow_all, side, placed)
+	_add_lateral_inflows(sim, data, side)
 	sim.wake_all_wet()
 	return sim
+
+
+# Lateral inflow (rain on the catchment): the water the hillsides shed straight into a river or lake, not only what its head spring pours. The rain on
+# every land cell is routed downhill over the ground as it is NOW (the baked bed, or the bed after a player's dig or dam), so the catchment follows the
+# land. At every river or lake cell the drained area minus the area its river and lake neighbours already carry is ground that drains into it right
+# there; that runoff (m3s_per_km2 x km2, the same rate as a head) is poured in, gathered per block of block_cells x block_cells so the spring list stays
+# short. Without it the water below a head is only what the head pours and the lower reaches run dry or spill (GENERATOR_NOTES.md, live water report).
+# The tile's stored flow map is not used: it is a log scale in 6 percent steps, too coarse to tell one cell's runoff from the next.
+static func _add_lateral_inflows(sim, data, side: int) -> int:
+	var cfg: Dictionary = rules().get("lateral", {})
+
+	if not bool(cfg.get("enabled", false)):
+		return 0
+
+	var begun: int = Time.get_ticks_msec()
+	var block: int = int(cfg.get("block_cells", 8))
+	var per_km2: float = float(cfg.get("m3s_per_km2", rules().get("catchment", {}).get("m3s_per_km2", 3.0)))
+	var cell_km2: float = data.spacing_m * data.spacing_m / 1.0e6
+	var sea: PackedByteArray = PackedByteArray()
+	sea.resize(side * side)
+
+	for k in range(side * side):
+		sea[k] = 1 if data.water_class[k] == OCEAN else 0
+
+	var fill = DrainageFill.new()
+	fill.build(data.heights, sea, side, float(cfg.get("lake_min_depth_m", 0.5)))
+	# Runoff not yet taken by a river or lake: each land cell starts with its own rain and passes it downhill; a river or lake cell takes everything
+	# that reaches it (its pour-in) and passes nothing on, because the water itself carries it from there.
+	var pending: PackedFloat32Array = PackedFloat32Array()
+	pending.resize(side * side)
+
+	for k in range(side * side):
+		pending[k] = 0.0 if sea[k] == 1 else 1.0
+
+	var sums: Dictionary = {}
+	var spots: Dictionary = {}
+
+	for n in range(fill.order.size() - 1, -1, -1):
+		var k: int = fill.order[n]
+		var kind: int = data.water_class[k]
+
+		if kind == RIVER or kind == LAKE:
+			@warning_ignore("integer_division")
+			var key: int = ((k / side) / block) * 100000 + (k % side) / block
+			sums[key] = float(sums.get(key, 0.0)) + pending[k]
+
+			if not spots.has(key) or pending[k] > pending[spots[key]]:
+				spots[key] = k
+
+			continue
+
+		var next: int = fill.receiver[k]
+
+		if next >= 0:
+			pending[next] += pending[k]
+
+	var added: int = 0
+	var total: float = 0.0
+
+	for key in sums:
+		var k: int = spots[key]
+		var q: float = float(sums[key]) * cell_km2 * per_km2
+		total += q
+		@warning_ignore("integer_division")
+		sim.add_spring(k % side, k / side, q)
+		last_kinds.append("lateral")
+		added += 1
+
+	print("  lateral inflow: %d springs, %.2f m3/s at the x1 flow key, %d ms" % [added, total, Time.get_ticks_msec() - begun])
+	return added
 
 
 # Hollow springs (v7, Sonny 24 Oct 2026: otherwise a bowl with no river stays dry). Every natural hollow or carved bowl of min_depth_m and min_area_m2 or more
