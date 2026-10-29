@@ -73,6 +73,14 @@ Test limits changed for the new format: read-back checks allow half a 0.125 m st
 ## Giant heights, corrected (final)
 First version only changed the height inside `_band_table`, which only starter islands use; ordinary islands take their height from the mount's `peak` in the sketch. Now `_roll_giants` sets `mount["peak"]` itself: `max(peak x height multiplier, lerp(extreme_floor_m 2000, max_summit_m 3400, share))` capped at 3400, where share runs 0 to 1 as the island half-length goes from `extreme_from_a_m` (2500 m) to `extreme_to_a_m` (10000 m). Only the biggest islands reach extreme heights, so slopes stay gentle (3,400 m over 11.6 km is about 16 degrees). Census: 185 non-starter islands, 19 giants (sizes a 864 to 11,603 m), 111 summits found, tallest map summit 3,494 m; with the spire capped at 3,950 m the highest tips reach about 3,950 m. 44 of 44 selected tests pass. Census script: `NerdRunner/work/giant_census.gd`.
 
+## River report, tile 3,4 (`src/worldgen/tools/river_report.gd`, read-only; 29 Oct 2026)
+`godot --headless --path . --script res://src/worldgen/tools/river_report.gd -- --tile=3,4` (about 6 minutes). On the baked rules before any water change:
+- 60,625 river cells in 286 pieces; only 5 small pieces (167 cells) end on dry land, so the bake's rivers do reach the sea, a lake or the tile edge. Drawn channels are not where rivers "spread out": that happens in the live water simulation, which this report cannot see (to do: run the runtime sim on the tile and measure where water leaves the channels).
+- River depth does NOT grow with flow: mean depth is about 3 m (p90 about 10 m) from the smallest streams (flow 1 to 2) up to flow 16,000, then 4 m, then about 2 m at the biggest. A real river deepens and widens downstream (depth about the 0.4 power of discharge, width about the 0.5 power). The 3 m average includes falls and chutes, so the absolute numbers need care, but the lack of any trend is the finding.
+- Lakes: 10 in 148 km2, 1.4 ha in all, none at least 0.5 ha and 1 m deep. There are practically no lakes, so springs and streams start on the hillside with no pond or tarn to collect them.
+- Marsh: 2.6 km2 of 148 km2 of land (1.8%), peat 2.6 km2, so the "wetlands everywhere" Dave saw come from the live simulation spilling out of undersized channels, not from the bake's classification.
+- Head ponds made by this tile's water build: 0 (the world pond list has some, the water build did not stamp them here).
+
 ## Open items
 - Island character profiles (flat, rolling, rugged) setting target bumpiness by scale.
 - Human-scale detail (2 to 16 m bumps) at the 1 m voxel stage, as a function of world position.
