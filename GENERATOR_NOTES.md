@@ -36,6 +36,11 @@ Low ground (1 to 30 m) bumpiness: 0.35 / 0.61 / 1.16 / 2.3 m at lags 8 / 16 / 32
 Why these two numbers: calming by height ends where the ground stops being coastal plain, and the hill octaves (300, 100, 35 m) are what a walking player sees as swells; at 0.3 share they were nearly invisible on low ground.
 Targets used (m off a straight line, lags 16 / 32 / 64 m): flat 0.3 / 0.7 / 1.6 (the old low ground), rolling 0.7 / 1.3 / 2.7, rugged about twice rolling.
 
+## Island texture (branch DailyDev_20261029): each island type sets how bumpy its ground is
+`sketch_rules.json` `island_types.<type>.texture` (1 = the tile detail rules as written): prairie 0.5, volcano 0.8, temperate_hills and middle_peak 1.0, moor_highland 1.25, three_peak_ridge 1.5; atoll 0.4 (`atoll_texture`); everything else (shelf hills, seamounts) 1.0.
+How: `world_elevation.gd` fills a per-cell `texture` map while it raises each island (`_texture_of`, `texture_at_m`); `tile_height.gd` `_add_detail` multiplies the detail strength by it (`_island_texture_rows`, blended between 160 m cells). It is a function of the world map only, so tiles agree on shared edges. Census of land cells: 1.0 for 154,778; 1.5 for 21,251; 0.8 for 11,913; 0.5 for 3,768; 1.25 for 2,858; 0.4 for 799. Starters: tile (-3,-4) and (6,-6) are volcano, (6,6) is a rugged ridge, (3,4) is middle_peak.
+26 of 26 selected tests pass. Needs a bake like the rules change; the setup cache rebuilds by itself because its key hashes the code and rules.
+
 ## Open items
 - Island character profiles (flat, rolling, rugged) setting target bumpiness by scale.
 - Human-scale detail (2 to 16 m bumps) at the 1 m voxel stage, as a function of world position.

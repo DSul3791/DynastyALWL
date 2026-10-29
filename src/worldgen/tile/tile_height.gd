@@ -361,6 +361,8 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 	var hill_from: float = float(detail.get("hill_from_m", 0.0))
 	var hill_to: float = float(detail.get("hill_to_m", 0.0))
 	var hill_min: float = float(detail.get("hill_min_share", 1.0))
+	# Each island's own bumpiness (world map, so every tile agrees): flat prairie, rolling hills, rugged ridge.
+	var island_texture: PackedFloat32Array = _island_texture_rows()
 
 	for index in range(total):
 		var h: float = heights[index]
@@ -375,6 +377,8 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 		if not detail_scale.is_empty():
 			strength *= detail_scale[index]
 
+		strength *= island_texture[index]
+
 		var hill: float = 1.0
 
 		if hill_to > hill_from:
@@ -387,6 +391,39 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 			value += 0.5 * ragged * ((field[index] + fine[index]) / 20.0)
 
 		heights[index] = value
+
+
+# The island texture factor (WorldElevation.texture) for every sample of this frame.
+func _island_texture_rows() -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(samples * samples)
+	var cell: float = _elevation.cell_m
+	var x0: float = float(origin_sx) * spacing_m
+	var z0: float = float(origin_sz) * spacing_m
+	var column_cell: PackedInt32Array = PackedInt32Array()
+	var column_frac: PackedFloat32Array = PackedFloat32Array()
+	column_cell.resize(samples)
+	column_frac.resize(samples)
+
+	for i in range(samples):
+		var u: float = (x0 + float(i) * spacing_m - _elevation.origin_x) / cell - 0.5
+		column_cell[i] = int(floor(u))
+		column_frac[i] = u - floor(u)
+
+	for j in range(samples):
+		var v: float = (z0 + float(j) * spacing_m - _elevation.origin_z) / cell - 0.5
+		var row: int = int(floor(v))
+		var fv: float = v - floor(v)
+		var out_base: int = j * samples
+
+		for i in range(samples):
+			var c: int = column_cell[i]
+			var fu: float = column_frac[i]
+			var top: float = lerpf(_elevation.texture[_elevation.index_of(c, row)], _elevation.texture[_elevation.index_of(c + 1, row)], fu)
+			var bottom: float = lerpf(_elevation.texture[_elevation.index_of(c, row + 1)], _elevation.texture[_elevation.index_of(c + 1, row + 1)], fu)
+			out[out_base + i] = lerpf(top, bottom, fv)
+
+	return out
 
 
 func height_at(i: int, j: int) -> float:

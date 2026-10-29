@@ -32,6 +32,7 @@ var origin_z: float = 0.0
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 var owners: PackedInt32Array = PackedInt32Array()     # feature index per cell
+var texture: PackedFloat32Array = PackedFloat32Array()   # how bumpy the ground is made here, 1 = the tile detail rules as written (island_types "texture")
 var special: PackedByteArray = PackedByteArray()      # lava and the like
 var feature_ids: Array = []
 
@@ -125,6 +126,34 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 # INDEXING AND NOISE
 # ==================================================
 
+# How bumpy the land of one island is made: the island type's "texture" in sketch_rules.json
+# (prairie low, ridges high); 1 for everything else. The tile detail noise is multiplied by it,
+# so a flat island stays flat and a rugged one rolls harder, and every tile reads the same map.
+func _texture_of(mount: Dictionary, mount_type: String) -> float:
+	if mount_type == "atoll":
+		return float(rules.get("atoll_texture", 0.4))
+
+	if mount_type != "island" and mount_type != "starter":
+		return 1.0
+
+	var config: Dictionary = _island_config(mount)
+	var entry: Dictionary = rules.get("island_types", {}).get(str(config.get("type", "")), {})
+	return float(entry.get("texture", 1.0))
+
+
+# The texture factor at a world position, blended between the 160 m cells.
+func texture_at_m(x_m: float, z_m: float) -> float:
+	var u: float = (x_m - origin_x) / cell_m - 0.5
+	var v: float = (z_m - origin_z) / cell_m - 0.5
+	var column: int = int(floor(u))
+	var row: int = int(floor(v))
+	var fu: float = u - float(column)
+	var fv: float = v - float(row)
+	var top: float = lerpf(texture[index_of(column, row)], texture[index_of(column + 1, row)], fu)
+	var bottom: float = lerpf(texture[index_of(column, row + 1)], texture[index_of(column + 1, row + 1)], fu)
+	return lerpf(top, bottom, fv)
+
+
 func index_of(column: int, row: int) -> int:
 	return posmod(row, size_z) * size_x + posmod(column, size_x)
 
@@ -189,6 +218,8 @@ func _build_sea_floor() -> void:
 	owners.resize(count)
 	special.resize(count)
 	owners.fill(OWNER_NONE)
+	texture.resize(count)
+	texture.fill(1.0)
 	special.fill(SPECIAL_NONE)
 
 	for index in range(count):
@@ -398,6 +429,7 @@ func _raise_ridge(feature: Dictionary, owner_index: int) -> void:
 
 func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 	var mount_type: String = str(mount["type"])
+	var island_texture: float = _texture_of(mount, mount_type)
 	var a: float = float(mount["a"])
 	var b: float = float(mount["b"])
 	var shore: float = float(mount.get("shore", 600))
@@ -487,6 +519,7 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 
 			if raised > heights[index] and raised > 0.0:
 				owners[index] = owner_index
+				texture[index] = island_texture
 
 			heights[index] = combined
 
