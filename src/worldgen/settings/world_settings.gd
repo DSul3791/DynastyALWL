@@ -25,7 +25,7 @@ var tiles_x: int = 21
 var tiles_z: int = 21
 var voxel_size_m: float = 1.0
 var world_bottom_m: int = -4000
-var world_top_m: int = 2048
+var world_top_m: int = 4000
 var sea_level_m: int = 0
 
 # Climate

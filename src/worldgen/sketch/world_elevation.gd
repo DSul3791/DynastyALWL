@@ -32,6 +32,7 @@ var origin_z: float = 0.0
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 var owners: PackedInt32Array = PackedInt32Array()     # feature index per cell
+var crater_zones: Array = []                         # [x_m, z_m, radius_m] of every carved crater: no spire is added there (it would fill the crater)
 var summits: Array = []                               # [x_m, z_m, height_m] of every prominent peak (see _find_summits); the tile detail step sharpens each into a real peak
 var texture: PackedFloat32Array = PackedFloat32Array()   # how bumpy the ground is made here, 1 = the tile detail rules as written (island_types "texture")
 var special: PackedByteArray = PackedByteArray()      # lava and the like
@@ -91,6 +92,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 		index += 1
 
+	_roll_giants(sketch)
 	index = 0
 
 	for feature in sketch.get("features", []):
@@ -122,6 +124,35 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
 	_find_summits()
+
+
+# Now and then an island (never a starter) is a giant: `giant_peaks` in sketch_rules.json gives the chance, a size
+# multiplier range, a height multiplier range (both picked by one roll, so a taller mountain is also a bigger island and
+# stays liveable) and a cap on the summit before the spire. The roll comes from the island's position, so the seed fixes it.
+func _roll_giants(sketch: Dictionary) -> void:
+	var giant: Dictionary = rules.get("giant_peaks", {})
+
+	if giant.is_empty():
+		return
+
+	var size_range: Array = giant.get("size_multiplier", [1.0, 1.0])
+	var height_range: Array = giant.get("height_multiplier", [1.0, 1.0])
+
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) != "island" or mount.has("starter") or mount.has("giant_h"):
+				continue
+
+			var roll: float = float(absi((int(mount["x"]) * 73856093) ^ (int(mount["z"]) * 19349663)) % 10007) / 10007.0
+
+			if roll >= float(giant.get("chance", 0.0)):
+				continue
+
+			var spread: float = float(absi((int(mount["x"]) * 83492791) ^ (int(mount["z"]) * 49979687)) % 10007) / 10007.0
+			var size: float = lerpf(float(size_range[0]), float(size_range[1]), spread)
+			mount["a"] = float(mount["a"]) * size
+			mount["b"] = float(mount["b"]) * size
+			mount["giant_h"] = lerpf(float(height_range[0]), float(height_range[1]), spread)
 
 
 # The 160 m map cannot hold a point, and the cubic upsampling rounds off the top, so every island's
@@ -158,7 +189,15 @@ func _find_summits() -> void:
 
 			if highest:
 				var centre: Vector2 = cell_center_m(column, row)
-				summits.append([centre.x, centre.y, h])
+				var in_crater: bool = false
+
+				for zone in crater_zones:
+					if centre.distance_to(Vector2(float(zone[0]), float(zone[1]))) < float(zone[2]):
+						in_crater = true
+						break
+
+				if not in_crater:
+					summits.append([centre.x, centre.y, h])
 
 
 # ==================================================
@@ -259,6 +298,7 @@ func _build_sea_floor() -> void:
 	owners.fill(OWNER_NONE)
 	texture.resize(count)
 	texture.fill(1.0)
+	crater_zones.clear()
 	special.fill(SPECIAL_NONE)
 
 	for index in range(count):
@@ -704,6 +744,11 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 	var peak_range: Array = starter_rules.get("peak_m", [300, 560])
 	var t: float = clampf((float(mount["peak"]) - float(peak_range[0])) / maxf(float(peak_range[1]) - float(peak_range[0]), 1.0), 0.0, 1.0)
 	var summit: float = lerpf(float(summit_range[0]), float(summit_range[1]), t)
+	# Giant islands (see _roll_giants) are taller by this factor, the island itself bigger, so the beaches and lowlands
+	# keep their shape and grow with the mountain.
+	if mount.has("giant_h"):
+		summit = minf(summit * float(mount["giant_h"]), float(rules.get("giant_peaks", {}).get("max_summit_m", summit)))
+
 	# The spire sits on top of the bands (so the summit is a peak, not the end of a smooth curve): the bands end at
 	# (1 - spire_share) of the summit height and the spire adds the rest over the last (1 - spire_start) of the distance to the sea.
 	var spire: float = float(starter_rules.get("spire_share", 0.0)) * summit
@@ -1584,6 +1629,7 @@ func _raise_cone_exact(cone: Dictionary, owner_index: int) -> void:
 func _carve_crater(
 	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary, lava: bool = true, raise_rim: bool = false
 ) -> void:
+	crater_zones.append([center.x, center.y, radius * 2.0])
 	var floor_height: float = rim_height - depth
 	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
 	var breach_direction: Vector2 = Vector2(sin(bearing), -cos(bearing))

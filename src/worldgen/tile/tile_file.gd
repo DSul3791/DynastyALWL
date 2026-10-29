@@ -26,7 +26,7 @@ extends RefCounted
 # them with filter "planes2"; the checksum covers the plane layout.
 #
 # Map encodings (all little endian)
-#   height, water_surface   uint16, raw x 0.1 m - 4,000 m (water_surface raw 0 = no water)
+#   height, water_surface   uint16, raw x 0.125 m - 4,000 m, so +4,000 m is the top (water_surface raw 0 = no water)
 #   water_class             uint8   0 none, 1 ocean, 2 lake, 3 river, 4 marsh
 #   flow                    uint8   raw = round(11 x log2(drainage cells)); cells = 2^(raw / 11); 0 below the river start size
 #   biome, soil, fertility, moisture, province   uint8
@@ -46,6 +46,8 @@ const PREAMBLE_BYTES := 16
 const GENERATOR_VERSION := 1
 const LOW_RES_STEP := 4
 const HEIGHT_BASE_M := -4000.0
+const HEIGHT_STEP_M := 0.125         # one raw step: 8,000 m of world height in 16 bits (was 0.1 m for a 6,553 m range)
+const HEIGHT_STEPS_PER_M := 8.0
 const FLOW_STEPS_PER_OCTAVE := 11.0
 
 const ZSTD := FileAccess.COMPRESSION_ZSTD
@@ -62,7 +64,7 @@ static func encode_height(values: PackedFloat32Array) -> PackedByteArray:
 	out.resize(count * 2)
 
 	for i in range(count):
-		var raw: int = clampi(roundi((values[i] - HEIGHT_BASE_M) * 10.0), 0, 65535)
+		var raw: int = clampi(roundi((values[i] - HEIGHT_BASE_M) * HEIGHT_STEPS_PER_M), 0, 65535)
 		out[i] = raw & 255
 		out[count + i] = raw >> 8
 
@@ -75,7 +77,7 @@ static func decode_height(bytes: PackedByteArray) -> PackedFloat32Array:
 	out.resize(count)
 
 	for i in range(count):
-		out[i] = float(bytes[i] | (bytes[count + i] << 8)) * 0.1 + HEIGHT_BASE_M
+		out[i] = float(bytes[i] | (bytes[count + i] << 8)) * HEIGHT_STEP_M + HEIGHT_BASE_M
 
 	return out
 
@@ -90,7 +92,7 @@ static func encode_water_surface(values: PackedFloat32Array, water_class: Packed
 		var raw: int = 0
 
 		if water_class[i] != 0:
-			raw = clampi(roundi((values[i] - HEIGHT_BASE_M) * 10.0), 1, 65535)
+			raw = clampi(roundi((values[i] - HEIGHT_BASE_M) * HEIGHT_STEPS_PER_M), 1, 65535)
 
 		out[i] = raw & 255
 		out[count + i] = raw >> 8
@@ -105,7 +107,7 @@ static func decode_water_surface(bytes: PackedByteArray) -> PackedFloat32Array:
 
 	for i in range(count):
 		var raw: int = bytes[i] | (bytes[count + i] << 8)
-		out[i] = NAN if raw == 0 else float(raw) * 0.1 + HEIGHT_BASE_M
+		out[i] = NAN if raw == 0 else float(raw) * HEIGHT_STEP_M + HEIGHT_BASE_M
 
 	return out
 
