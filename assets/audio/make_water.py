@@ -30,7 +30,7 @@ def write_ogg(name, x):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis",
+        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis",
                         "-q:a", "4", os.path.join(OUT, name + ".ogg")], check=True)
 
 
@@ -116,9 +116,9 @@ def brook(rng, n):
 
 def river(rng, n):
     """Fuller but smooth: a wide soft rush from 300 Hz up, no rumble, no bubbles at all."""
-    body = flow(rng, n, 300, 5000, 0.2)
-    top = flow(rng, n, 1500, 7000, 0.3)
-    x = (body + 0.35 * top) * drift(rng, n, 0.05)
+    body = flow(rng, n, 300, 3600, 0.35)      # Dave 2026-10-24: wide bright rush read as ocean surf; dulled
+    top = flow(rng, n, 1500, 5200, 0.4)
+    x = (body + 0.25 * top) * drift(rng, n, 0.05)
     return normalize(x)
 
 
@@ -140,9 +140,9 @@ def pond(rng, n):
 
 def fall(rng, n):
     """A smooth wide rush with a soft low body: no rhythm, no pulses."""
-    body = flow(rng, n, 150, 6500, 0.2)
+    body = flow(rng, n, 200, 3000, 0.6)      # Dave 2026-10-24: wide bright fall read as ocean surf; dull and steady
     low = flow(rng, n, 80, 400, 0.0)
-    x = (body + 0.15 * low) * drift(rng, n, 0.04)
+    x = (body + 0.1 * low) * drift(rng, n, 0.04)
     return normalize(x)
 
 

@@ -1,0 +1,2 @@
+# Reply: Sal hide clothing (Tyler, 25 Oct 2026)
+GO as written: items 63-67 and 50 live, recipes 39-43 and 30 known from the start and by hand (Dave's rule). RESTART, no protocol, no new numbers. Build on generator-v2 (819+), merge_check.py and marker grep before sending the hash. Note: Dave's item trim list proposes calling mittens "gloves" (rename only, pending Dave's Yes on card H); do not rename now.

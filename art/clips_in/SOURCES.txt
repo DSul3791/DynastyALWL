@@ -1,0 +1,38 @@
+Animal clips, source log (MikeW_LocalAgent, 2026-10-23). All from Pixabay, license: Pixabay Content License (not CC0).
+Vetting was automatic (decoded in browser: peak, clipping, noise floor, pitch track); nobody has listened yet. Kathleen: run tools/clip_check.py and give them a listen.
+
+PASS wolf_howl_01_universfield_140235.mp3  7.2 s  https://pixabay.com/sound-effects/nature-wolf-howl-140235/
+  Single falling-pitch howl, peak -8 dB, no clipping, clean fade-out to silence.
+PASS wolf_howl_02_dragonstudio_359873.mp3  7.9 s  https://pixabay.com/sound-effects/nature-wolf-howl-359873/
+  One sustained howl, peak -15 dB, no clipping, smooth decay, no second voice in pitch track.
+PASS wolf_howl_03_freesoundcommunity_6310.mp3  7.6 s  https://pixabay.com/sound-effects/nature-wolf-howl-6310/
+  Silent lead-in (-80 dB), one steady howl, peak -20 dB, quiet (may need gain).
+PASS wolf_howl_04_dragonstudio_515269.mp3  7.1 s  https://pixabay.com/sound-effects/horror-haunting-wolf-song-515269/
+  Single howl, peak -1 dB (hot, no clipping), clean fade. Title says "haunting"; check for reverb by ear.
+
+FAIL horror-spooky-wolf-howl-410547 (4.1 s): clipping, 752 samples at 0 dB.
+FAIL horror-wolf-howl-2-359870 (7.9 s): noisy start, pitch track jumps to 1.4-1.5 kHz (hiss or other sound).
+FAIL nature-wolf-howl-268619 (8.1 s): long noisy tail at -40 dB, pitch track breaks up.
+FAIL nature-a-lone-wolf-cries-359871 (7.9 s): reserve; irregular pitch (about 550 Hz then jumps), possible second animal.
+
+--- FOX (2026-10-23) ---
+PASS fox_01_angry_46664.mp3  7.4 s  https://pixabay.com/sound-effects/nature-26-angry-fox-46664/
+  One bark/growl phrase, peak -4 dB, no clipping, noise floor -59 dB (silent lead-in). Grumbly; check by ear.
+PASS-NEEDS-TRIM fox_02_screeching_64051_needs_trim.mp3  21.6 s  https://pixabay.com/sound-effects/nature-red-fox-screeching-64051/
+  Quiet floor (-64 dB), no clipping, peak -15 dB, but about 6 separate screeches; cut one for a 4-8 s clip.
+FAIL nature-fox-calling-243999 (16.7 s): about 20 repeated barks, floor -49 dB.
+FAIL nature-fox-scream-in-the-forest-26634 (18.8 s): constant background bed at -42 dB.
+FAIL nature-rubah-220043 (2 s): cut off abruptly at -14 dB, too short.
+FAIL film-special-effects-high-pitched-fox-yip-and-brush-rustle-540362: brush rustle.
+FAIL fox-scream 65022/27647 (53 s), fox-mating-call 23459 (102 s), red-fox-calls-at-night 59627 (142 s, clipping), fox-in-spring-night 59832 (146 s), urban-fox-call 26795 (48 s), crows-alarm 27554: too long, other animals or noise bed.
+
+--- BEAR, DEER, MOOSE, HORSE (2026-10-23; automatic vetting only, nobody has listened) ---
+PASS bear_01_growling_379127.mp3  6.1 s  https://pixabay.com/sound-effects/nature-growling-bear-379127/  one growl, peak -3 dB, no clipping, floor -45 dB (some room tone).
+PASS-NEEDS-TRIM bear_02_growling_hd_263159_needs_trim.mp3  10.0 s  https://pixabay.com/sound-effects/nature-sound-of-growling-bear-hd-263159/  one growl, floor -58 dB, peak -4 dB; trim to 8 s.
+FAIL bear-growl-191995 (1.3 s too short); bear-roar-cinematic-375396 (processed, two events); angry-beast-6172 (13 s, not a bear); bear-356010 (2 s, floor -19 dB).
+PASS deer_01_grunt_472371.mp3  2.0 s  https://pixabay.com/sound-effects/horror-deer-grunt-472371/  one grunt, peak -9 dB, floor -62 dB. Short, under the 4-8 s ask.
+FAIL deer-snort-472365 (clipping), red-stag-145885 (clipping, 30 samples), fawn-bleats-98384 (3 separate bleats, 9 s).
+MOOSE: Pixabay has no real moose call. STAND-IN, not a moose: elk_01_bugle_172146_moose_standin.mp3  7.4 s  https://pixabay.com/sound-effects/nature-elk-bugle-172146/  peak -13 dB, floor -66 dB, two bugle events. Needs Dave's/Kathleen's OK or OpenGameArt search.
+PASS horse_01_neigh_261131.mp3  2.3 s  https://pixabay.com/sound-effects/nature-horse-neigh-261131/  one neigh, peak -4 dB, floor -79 dB.
+PASS horse_02_neigh_123780.mp3  2.3 s  https://pixabay.com/sound-effects/nature-horse-neigh-123780/  one neigh, peak -4 dB, floor -84 dB.
+FAIL horse-neigh 515279 and gentle-whinny 499650 (clipping); 390297/390299 (floor -21 to -29 dB, noisy); horse-whinnies-339730 (4 whinnies); horse-neigh-sfx-373051 (3 events).

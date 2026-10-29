@@ -90,10 +90,17 @@ func build(height_map, rock = null, margin: int = 0, frame_samples: int = 0) -> 
 			by_id[id] = soft * pow(hard / soft, float(_hardness.get(name, 0.5)))
 
 	_k_value = float(_rules["stream_k"])
+	var band_rows: Array = _rules.get("hardness_by_height", [])
 
 	for iteration in range(int(_rules["iterations"])):
 		if not by_id.is_empty() and iteration % refresh == 0:
 			_refresh_erodibility(erodibility, by_id, current, rock, coarse, step, margin, frame_samples)
+
+			# Hard cores hold the high ground, soft rock wears into valleys and prairie: erodibility is also scaled by
+			# the height the ground started at (`hardness_by_height`, [metres, multiplier] rows).
+			if not band_rows.is_empty():
+				for index in range(coarse * coarse):
+					erodibility[index] *= _band_factor(band_rows, start[index])
 
 		_erode_once(current, sea, coarse, dx, erodibility)
 
@@ -220,6 +227,18 @@ func _thermal(h: PackedFloat32Array, sea: PackedByteArray, size: int, dx: float,
 
 
 # The erodibility of every coarse point from the rock at its current height.
+static func _band_factor(rows: Array, height: float) -> float:
+	if height <= float(rows[0][0]):
+		return float(rows[0][1])
+
+	for i in range(1, rows.size()):
+		if height <= float(rows[i][0]):
+			var t: float = (height - float(rows[i - 1][0])) / maxf(float(rows[i][0]) - float(rows[i - 1][0]), 0.001)
+			return lerpf(float(rows[i - 1][1]), float(rows[i][1]), t)
+
+	return float(rows[rows.size() - 1][1])
+
+
 func _refresh_erodibility(erodibility: PackedFloat32Array, by_id: PackedFloat32Array, current: PackedFloat32Array, rock, coarse: int, step: int, margin: int, frame_samples: int) -> void:
 	for row in range(coarse):
 		for column in range(coarse):

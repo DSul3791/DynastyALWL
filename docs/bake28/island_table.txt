@@ -1,0 +1,109 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+
+== baked tiles: 9 in E:/Software/godotDev/island_world_4532cf61/tiles
+CHECK seam (2,3) east to (3,3) | 0 hard failures | 0 | PASS
+CHECK seam (2,3) south to (2,4) | 0 hard failures | 0 | PASS
+CHECK seam (2,4) east to (3,4) | 0 hard failures | 0 | PASS
+CHECK seam (2,4) south to (2,5) | 0 hard failures | 0 | PASS
+CHECK seam (2,5) east to (3,5) | 0 hard failures | 0 | PASS
+CHECK seam (2,5) south to (2,6) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (3,3) east to (4,3) | 0 hard failures | 0 | PASS
+CHECK seam (3,3) south to (3,4) | 0 hard failures | 0 | PASS
+CHECK seam (3,4) east to (4,4) | 1 hard failures | 0 | FAIL
+   height              0 of 1921 differ worst 0.00 m
+   water_class         0 of 1921 differ 
+   water_surface       0 of 1921 differ worst 0.00 m
+   province            0 of 1921 differ 
+   layer_offset        0 of 1921 differ 
+   river crossings: 4 in A, 4 in B, 0 unmatched
+   flow                2 of 1921 differ (0.1%) worst 2 steps   FAIL
+   biome               0 of 1921 differ (0.0%) worst 0
+   soil                0 of 1921 differ (0.0%) worst 0
+   fertility           0 of 1921 differ (0.0%) worst 0
+   moisture            0 of 1921 differ (0.0%) worst 0
+   cover               0 of 1921 differ (0.0%) worst 0
+CHECK seam (3,4) south to (3,5) | 0 hard failures | 0 | PASS
+CHECK seam (3,5) east to (4,5) | 3 hard failures | 0 | FAIL
+   height             44 of 1921 differ worst 0.10 m   FAIL
+   water_class         0 of 1921 differ 
+   water_surface       0 of 1921 differ worst 0.00 m
+   province            0 of 1921 differ 
+   layer_offset        0 of 1921 differ 
+   river crossings: 2 in A, 2 in B, 0 unmatched
+   flow                1 of 1921 differ (0.1%) worst 2 steps   FAIL
+   biome               0 of 1921 differ (0.0%) worst 0
+   soil                0 of 1921 differ (0.0%) worst 0
+   fertility          11 of 1921 differ (0.6%) worst 1   FAIL
+   moisture            0 of 1921 differ (0.0%) worst 0
+   cover               0 of 1921 differ (0.0%) worst 0
+CHECK seam (3,5) south to (3,6) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,3) east to (5,3) | neighbor not baked; neighbor is an ocean placeholder: 286 of 1921 edge samples are not ocean | ocean edge | INFO
+CHECK seam (4,3) south to (4,4) | 0 hard failures | 0 | PASS
+CHECK seam (4,4) east to (5,4) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,4) south to (4,5) | 8 hard failures | 0 | FAIL
+   height              9 of 1921 differ worst 7.10 m   FAIL
+   water_class         1 of 1921 differ    FAIL
+   water_surface       1 of 1921 differ worst 0.00 m   FAIL
+   province            0 of 1921 differ 
+   layer_offset        0 of 1921 differ 
+   river crossings: 0 in A, 1 in B, 1 unmatched
+   flow                0 of 1921 differ (0.0%) worst 0 steps
+   biome               2 of 1921 differ (0.1%) worst 9   FAIL
+   soil                4 of 1921 differ (0.2%) worst 8   FAIL
+   fertility          12 of 1921 differ (0.6%) worst 103   FAIL
+   moisture            0 of 1921 differ (0.0%) worst 0
+   cover               9 of 1921 differ (0.5%) worst 16   FAIL
+CHECK seam (4,5) east to (5,5) | neighbor not baked; neighbor is an ocean placeholder: 0 of 1921 edge samples are not ocean | ocean edge | PASS
+CHECK seam (4,5) south to (4,6) | neighbor not baked; neighbor is an ocean placeholder: 221 of 1921 edge samples are not ocean | ocean edge | INFO
+CHECK spawn (53301, 68427) tile (3,4) max slope in 30 m | 1.4 deg over 45 samples (8 m map) | max 7.0 | PASS
+CHECK spawn (53301, 68427) tile (3,4) height range | 0.60 m (30.40 to 31.00) | max 1.5 | PASS
+CHECK spawn (53301, 68427) tile (3,4) water samples | 0 | max 0.0 | PASS
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 49632 z 51616 | 60 river samples, lowest water at 434.1 m; ground stops falling at 412.3 m after 0.4 km: a closed basin (pit); drop 21.8 m over 500 m | reaches sea | INFO
+CHECK river ends inland (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 50432 z 52288 | 48 river samples, lowest water at 301.7 m; ground stops falling at 105.3 m after 1.4 km: a closed basin (pit); drop 82.3 m over 500 m | reaches sea | FAIL
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 69280 z 54336 | 102 river samples, lowest water at 37.0 m; ground keeps falling to the sea after 0.7 km (9 wet cells on the way): the river should continue; drop 27.7 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 65056 z 59264 | 38 river samples, lowest water at 30.3 m; ground stops falling at 30.3 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 60480 z 61600 | 34 river samples, lowest water at 246.7 m; ground keeps falling to the sea after 1.6 km (20 wet cells on the way): the river should continue; drop 126.9 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 57056 z 64224 | 33 river samples, lowest water at 46.4 m; ground stops falling at 46.4 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends inland (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 47648 z 66944 | 44 river samples, lowest water at 58.2 m; ground keeps falling to the sea after 1.0 km (0 wet cells on the way): the river should continue; drop 32.9 m over 500 m | reaches sea | FAIL
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 54656 z 70240 | 85 river samples, lowest water at 903.4 m; ground stops falling at 846.7 m after 0.5 km: a closed basin (pit); drop 51.9 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 52832 z 70656 | 33 river samples, lowest water at 816.8 m; ground keeps falling to the sea after 2.2 km (35 wet cells on the way): the river should continue; drop 381.1 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 55648 z 71456 | 44 river samples, lowest water at 924.6 m; ground stops falling at 924.6 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 52960 z 73632 | 63 river samples, lowest water at 121.7 m; ground stops falling at 23.5 m after 0.7 km: a closed basin (pit); drop 85.8 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 67968 z 77472 | 38 river samples, lowest water at 419.2 m; ground stops falling at 233.1 m after 0.8 km: a closed basin (pit); drop 91.2 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) near x 67136 z 77728 | 43 river samples, lowest water at 459.6 m; ground stops falling at 459.6 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK rivers reach the sea (settled water, wet over 0.05 m, film over 0.005 m, 32 m map) | 85 river bodies, 13 do not touch the sea (old count), 11 of those end naturally (lake, head hollow, or water continues), 2 end inland | 0 inland within 128 m gaps | FAIL
+CHECK river ends naturally (painted rivers, 32 m map) near x 68256 z 59968 | 98 river samples, lowest water at 12.1 m; ground keeps falling to the sea after 0.3 km (3 wet cells on the way): the river should continue; drop 12.2 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 58336 z 68960 | 54 river samples, lowest water at 55.6 m; ground stops falling at 55.6 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends inland (painted rivers, 32 m map) near x 58720 z 69696 | 32 river samples, lowest water at 15.6 m; ground keeps falling to the sea after 0.2 km (0 wet cells on the way): the river should continue; drop 16.7 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 55232 z 73920 | 198 river samples, lowest water at 743.7 m; ground stops falling at 157.3 m after 1.0 km: a closed basin (pit); drop 344.2 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 55584 z 75680 | 41 river samples, lowest water at 75.5 m; ground stops falling at 75.5 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 71264 z 74816 | 44 river samples, lowest water at 41.3 m; ground stops falling at 41.3 m after 0.0 km: a closed basin (pit); drop 0.0 m over 500 m | reaches sea | INFO
+CHECK river ends inland (painted rivers, 32 m map) near x 67424 z 75776 | 48 river samples, lowest water at 46.3 m; ground keeps falling to the sea after 0.8 km (8 wet cells on the way): the river should continue; drop 35.8 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 68992 z 81248 | 41 river samples, lowest water at 24.9 m; ground keeps falling to the sea after 0.5 km (8 wet cells on the way): the river should continue; drop 25.6 m over 500 m | reaches sea | INFO
+CHECK river ends naturally (painted rivers, 32 m map) near x 65472 z 83904 | 51 river samples, lowest water at 48.5 m; ground stops falling at 9.9 m after 0.6 km: a closed basin (pit); drop 34.2 m over 500 m | reaches sea | INFO
+CHECK rivers reach the sea (painted rivers, 32 m map) | 47 river bodies, 9 do not touch the sea (old count), 7 of those end naturally (lake, head hollow, or water continues), 2 end inland | 0 inland within 128 m gaps | INFO
+CHECK landmass near x 32486 z 46903 hard routes | 6.5 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 38840 z 48158 hard routes | 6.1 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 48650 z 51214 hard routes | 59.6 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 70437 z 52888 hard routes | 0.4 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66171 z 59408 hard routes | 89.8 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 58004 z 55462 hard routes | 1.3 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 76608 z 57737 hard routes | 0.6 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 49236 z 59558 hard routes | 1.6 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 53769 z 70515 hard routes | 94.5 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66252 z 78854 hard routes | 99.7 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 66424 z 88915 hard routes | 2.9 km2 land, main region 100%, 1 hard regions | 1 region (isolated over 5% flagged) | INFO
+CHECK landmass near x 75071 z 91682 hard routes | 1.8 km2 land, main region 100%, 1 hard regions (touches the unbaked edge, partly unknown) | 1 region (isolated over 5% flagged) | INFO
+CHECK spawn in the main region of its landmass | main region | main region | PASS
+CHECK isolated regions (hard class, 32 m map) | 0 listed, 0 flagged | 0 flagged | PASS
+CHECK dry land farther than 2000 m from an easy route or coast | 0.0% (0.1 km2 of 365.1 km2); 10 easy regions over 1.0 km2 | max 0.02 | PASS
+CHECK island 1 tile summit | island 1 is not in the baked tiles | - | INFO
+CHECK island 8 tile summit plateau (within 5 m of the top) | top 1268 m at x 54784 z 71368, flat area 96 m across (39 cells) | max 100.0 | PASS
+CHECK island 8 tile summit plateau (within 20 m of the top) | top 1268 m at x 54784 z 71368, flat area 176 m across (185 cells) | max 200.0 | PASS
+CHECK island 8 tile slope map | E:/Software/godotDev/island_world_4532cf61/pics/island_8_tile_slopemap.png | green easy, orange hard, red steeper, blue water, 1 km grid | INFO
+CHECK island 8 tile slope classes (8 m maps, 6 km window) | easy 71%, hard 21%, over 45 deg 7.2% | report | INFO
+CHECK island 8 tile canyon share (floor 15 m under the 60 m ring) | 1.4% of land | none set | INFO
+CHECK island 8 tile picture | E:/Software/godotDev/island_world_4532cf61/pics/island_8_bearings_tile.png | 6 bearing sections, grid 1 km x 200 m, colour = slope | PASS
+
+67 checks, 6 FAIL

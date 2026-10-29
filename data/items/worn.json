@@ -1,0 +1,15 @@
+{
+	"_about": "Worn clothing (Kathleen, goal 1f). One row per wearable item: builder (src/client/worn_look.gd), colour, layer (0 base, 1 clothing, 2 outer, 3 pack; each layer stands 1.5 cm further out), optional params. Pieces hang on named body bones (BoneAttachment3D); a new wearable = one row here. tools/validate_items.gd checks every item with a slot has a row and every row names a known builder.",
+	"items": {
+		"hide_cloak": {"builder": "cloak", "color": "#6b4c31", "layer": 2},
+		"grass_cloak": {"builder": "cloak", "color": "#7f9a47", "layer": 2, "fringe": true},
+		"hide_hood": {"builder": "hood", "color": "#6b4c31", "layer": 2},
+		"hide_boots": {"builder": "boots", "color": "#5b3f28", "layer": 1},
+		"hide_leggings": {"builder": "leggings", "color": "#7a5a3c", "layer": 1},
+		"hide_mittens": {"builder": "mittens", "color": "#5b3f28", "layer": 1},
+		"grass_skirt": {"builder": "skirt", "color": "#8aa04a", "layer": 1},
+		"fibre_sandals": {"builder": "sandals", "color": "#b8a468", "layer": 1},
+		"backpack": {"builder": "pack", "color": "#7a5a3a", "layer": 3},
+		"quiver": {"builder": "pack", "color": "#6b4c31", "layer": 3}
+	}
+}

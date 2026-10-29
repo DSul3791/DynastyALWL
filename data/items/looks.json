@@ -1,0 +1,2071 @@
+{
+ "_about": "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model.",
+ "items": {
+  "plant_fibre": {
+   "shape": "fibre",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "twine": {
+   "shape": "coil",
+   "color": "#b8a46a",
+   "size": 0.8
+  },
+  "stone_axe": {
+   "shape": "axe",
+   "color": "#7d7a74",
+   "size": 1.6
+  },
+  "spear": {
+   "shape": "shaft",
+   "color": "#b8bcc4",
+   "size": 1.0,
+   "bits": ["metal"]
+  },
+  "campfire_kit": {
+   "shape": "kit",
+   "color": "#6a4a2a",
+   "size": 1.0
+  },
+  "wooden_spear": {
+   "shape": "shaft",
+   "color": "#d8b070",
+   "size": 1.0
+  },
+  "stone_knife": {
+   "shape": "knife",
+   "color": "#8a8680",
+   "size": 1.35
+  },
+  "torch": {
+   "shape": "torch",
+   "color": "#e08a2a",
+   "size": 1.0
+  },
+  "bark": {
+   "shape": "bark",
+   "color": "#5a4330",
+   "size": 1.0
+  },
+  "leaves": {
+   "shape": "leaves",
+   "color": "#5a8a3a",
+   "size": 1.0
+  },
+  "roast_forage": {
+   "shape": "stew",
+   "color": "#b5793a",
+   "size": 1.4,
+   "bits": [
+    "#f07f13",
+    "#4f9a2c",
+    "#f2e3b5",
+    "#a98467",
+    "#d8352a"
+   ]
+  },
+  "seed_bundle": {
+   "shape": "sack",
+   "color": "#a08a52",
+   "size": 0.6
+  },
+  "poultice": {
+   "shape": "mound",
+   "color": "#4f7a3a",
+   "size": 1.4,
+   "bits": [
+    "#2f6a2a",
+    "#7a9a3a"
+   ]
+  },
+  "bandage": {
+   "shape": "coil",
+   "color": "#f4f4f4",
+   "size": 0.8
+  },
+  "tree_roots": {
+   "shape": "bundle",
+   "color": "#6a4a2e",
+   "size": 1.0
+  },
+  "wooden_spade": {
+   "shape": "spade",
+   "color": "#8a6a3a",
+   "size": 0.7
+  },
+  "lean_to_kit": {
+   "shape": "kit",
+   "color": "#6a8a3a",
+   "size": 1.0
+  },
+  "chest_kit": {
+   "shape": "kit",
+   "color": "#9a7a45",
+   "size": 1.0
+  },
+  "firewood": {
+   "shape": "bundle",
+   "color": "#8a5e36",
+   "size": 1.0
+  },
+  "lumber": {
+   "shape": "planks",
+   "color": "#b98d57",
+   "size": 1.0
+  },
+  "plank_chest_kit": {
+   "shape": "kit",
+   "color": "#a07a45",
+   "size": 1.0
+  },
+  "iron_ingot": {
+   "shape": "ingot",
+   "color": "#6c6f75",
+   "size": 1.0
+  },
+  "steel_ingot": {
+   "shape": "ingot",
+   "color": "#9aa3ad",
+   "size": 1.0
+  },
+  "iron_pickaxe": {
+   "shape": "pick",
+   "color": "#6c6f75",
+   "size": 1.0
+  },
+  "steel_pickaxe": {
+   "shape": "pick",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["steel"]
+  },
+  "soil": {
+   "shape": "clump",
+   "color": "#4a3322",
+   "size": 1.0
+  },
+  "clay": {
+   "shape": "clump",
+   "color": "#a0603c",
+   "size": 1.0
+  },
+  "sand": {
+   "shape": "grit",
+   "color": "#d6c18b",
+   "size": 1.0
+  },
+  "gravel": {
+   "shape": "grit",
+   "color": "#8d8a84",
+   "size": 1.0
+  },
+  "wooden_bowl": {
+   "shape": "bowl",
+   "color": "#9a6b38",
+   "size": 1.3
+  },
+  "clay_pot": {
+   "shape": "pot",
+   "color": "#ff7f11",
+   "size": 1.0
+  },
+  "bucket": {
+   "shape": "bucket",
+   "color": "#b88a50",
+   "size": 1.0
+  },
+  "waterskin": {
+   "shape": "skin",
+   "color": "#ff4fa3",
+   "size": 1.0
+  },
+  "hide": {
+   "shape": "hide",
+   "color": "#8a6a4a",
+   "size": 1.0
+  },
+  "rope": {
+   "shape": "coil",
+   "color": "#a98f52",
+   "size": 1.0
+  },
+  "wooden_hammer": {
+   "shape": "hammer",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": ["wood"],
+   "placeholder": true
+  },
+  "stone_hammer": {
+   "shape": "hammer",
+   "color": "#7d7a74",
+   "size": 1.0,
+   "placeholder": true
+  },
+  "hand_saw": {
+   "shape": "saw",
+   "color": "#8a8d93",
+   "size": 1.0,
+   "bits": ["metal","steel"],
+   "placeholder": true
+  },
+  "stone_spade": {
+   "shape": "spade",
+   "color": "#7d7a74",
+   "size": 0.7
+  },
+  "iron_spade": {
+   "shape": "spade",
+   "color": "#6c6f75",
+   "size": 0.7,
+   "bits": ["metal"]
+  },
+  "steel_spade": {
+   "shape": "spade",
+   "color": "#9aa3ad",
+   "size": 0.7,
+   "bits": ["metal","steel"]
+  },
+  "bone": {
+   "shape": "bone",
+   "color": "#b3a98f",
+   "size": 1.0
+  },
+  "sewing_needle": {
+   "shape": "needle",
+   "color": "#c8c8cc",
+   "size": 1.2
+  },
+  "backpack": {
+   "shape": "backpack",
+   "color": "#8a6a4a",
+   "size": 1.4
+  },
+  "energy_bar": {
+   "shape": "bar",
+   "color": "#c9a15b",
+   "size": 1.0,
+   "bits": [
+    "#6b4423",
+    "#4a1f4a",
+    "#e9e2c8",
+    "#c0392b",
+    "#f4d03f"
+   ]
+  },
+  "herbal_tea": {
+   "shape": "bottle",
+   "color": "#b6e61a",
+   "size": 0.8
+  },
+  "magic_tonic": {
+   "shape": "bottle",
+   "color": "#9b30ff",
+   "size": 0.8
+  },
+  "rotten_food": {
+   "shape": "pile",
+   "color": "#4f5a2c",
+   "size": 0.8
+  },
+  "medicine": {
+   "shape": "bottle",
+   "color": "#e01e1e",
+   "size": 0.8
+  },
+  "stomach_tea": {
+   "shape": "bottle",
+   "color": "#18d0d0",
+   "size": 0.8
+  },
+  "chamomile_tea": {
+   "shape": "bottle",
+   "color": "#ffd800",
+   "size": 0.8
+  },
+  "willow_bark_tea": {
+   "shape": "bottle",
+   "color": "#8a4b1e",
+   "size": 0.8
+  },
+  "grass_skirt": {
+   "shape": "cloth",
+   "color": "#8aa04a",
+   "size": 1.0
+  },
+  "grass_cloak": {
+   "shape": "cloth",
+   "color": "#7a9a45",
+   "size": 1.2
+  },
+  "fibre_sandals": {
+   "shape": "cloth",
+   "color": "#b8a468",
+   "size": 0.7
+  },
+  "hide_cloak": {
+   "shape": "cloth",
+   "color": "#7a5a3c",
+   "size": 1.2
+  },
+  "hide_boots": {
+   "shape": "cloth",
+   "color": "#6a4a30",
+   "size": 0.8
+  },
+  "hide_hood": {
+   "shape": "cloth",
+   "color": "#7a5a3c",
+   "size": 0.8
+  },
+  "hide_mittens": {
+   "shape": "cloth",
+   "color": "#6a4a30",
+   "size": 0.6
+  },
+  "hide_leggings": {
+   "shape": "cloth",
+   "color": "#7a5a3c",
+   "size": 1.0
+  },
+  "raw_meat": {
+   "shape": "meat",
+   "color": "#a8403a",
+   "size": 1.0
+  },
+  "roast_meat": {
+   "shape": "joint",
+   "color": "#6e3a1c",
+   "size": 0.9
+  },
+  "sinew": {
+   "shape": "bundle",
+   "color": "#d0b898",
+   "size": 0.6
+  },
+  "animal_fat": {
+   "shape": "chunk",
+   "color": "#f1ead2",
+   "size": 0.8
+  },
+  "feather": {
+   "shape": "feather",
+   "color": "#b9b4a8",
+   "size": 1.0
+  },
+  "workbench_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": ["bench"]
+  },
+  "shore_net": {
+   "shape": "cloth",
+   "color": "#a89a78",
+   "size": 1.0
+  },
+  "fishing_rod": {
+   "shape": "rod",
+   "color": "#9a9a9e",
+   "size": 1.0
+  },
+  "trout": {
+   "shape": "fish",
+   "color": "#8a9a7a",
+   "size": 1.0
+  },
+  "perch": {
+   "shape": "fish",
+   "color": "#6f8a4a",
+   "size": 0.9
+  },
+  "carp": {
+   "shape": "fish",
+   "color": "#a09060",
+   "size": 1.2
+  },
+  "pike": {
+   "shape": "fish",
+   "color": "#5a7a3a",
+   "size": 1.4
+  },
+  "roast_fish": {
+   "shape": "fish",
+   "color": "#a8703a",
+   "size": 1.0
+  },
+  "coin_copper": {
+   "shape": "coin",
+   "color": "#b0653a",
+   "size": 1.0
+  },
+  "coin_bronze": {
+   "shape": "coin",
+   "color": "#9c7a3a",
+   "size": 1.0
+  },
+  "coin_silver": {
+   "shape": "coin",
+   "color": "#c4c8cc",
+   "size": 1.0
+  },
+  "coin_gold": {
+   "shape": "coin",
+   "color": "#e0b83a",
+   "size": 1.0
+  },
+  "tool_rack_kit": {
+   "shape": "kit",
+   "color": "#7a5a35",
+   "size": 1.0,
+   "bits": ["rack"]
+  },
+  "vice_kit": {
+   "shape": "kit",
+   "color": "#7a5a35",
+   "size": 1.0,
+   "bits": ["vice"]
+  },
+  "stone_forge_kit": {
+   "shape": "kit",
+   "color": "#7d7a74",
+   "size": 1.0,
+   "bits": ["anvil"]
+  },
+  "blacksmithy_kit": {
+   "shape": "kit",
+   "color": "#6c6f75",
+   "size": 1.0,
+   "bits": ["anvil"]
+  },
+  "large_forge_kit": {
+   "shape": "kit",
+   "color": "#5c5f65",
+   "size": 1.0,
+   "bits": ["anvil"]
+  },
+  "master_forge_kit": {
+   "shape": "kit",
+   "color": "#44474d",
+   "size": 1.0,
+   "bits": ["anvil"]
+  },
+  "lumber_oak": {
+   "shape": "planks",
+   "color": "#8a6a3d",
+   "size": 1.0
+  },
+  "beam_oak": {
+   "shape": "beams",
+   "color": "#8a6a3d",
+   "size": 1.0
+  },
+  "lumber_beech": {
+   "shape": "planks",
+   "color": "#b79869",
+   "size": 1.0
+  },
+  "beam_beech": {
+   "shape": "beams",
+   "color": "#b79869",
+   "size": 1.0
+  },
+  "lumber_birch": {
+   "shape": "planks",
+   "color": "#d9c7a3",
+   "size": 1.0
+  },
+  "beam_birch": {
+   "shape": "beams",
+   "color": "#d9c7a3",
+   "size": 1.0
+  },
+  "lumber_scots_pine": {
+   "shape": "planks",
+   "color": "#c99a5b",
+   "size": 1.0
+  },
+  "beam_scots_pine": {
+   "shape": "beams",
+   "color": "#c99a5b",
+   "size": 1.0
+  },
+  "lumber_spruce": {
+   "shape": "planks",
+   "color": "#d3b583",
+   "size": 1.0
+  },
+  "beam_spruce": {
+   "shape": "beams",
+   "color": "#d3b583",
+   "size": 1.0
+  },
+  "lumber_alder": {
+   "shape": "planks",
+   "color": "#b5733f",
+   "size": 1.0
+  },
+  "beam_alder": {
+   "shape": "beams",
+   "color": "#b5733f",
+   "size": 1.0
+  },
+  "lumber_willow": {
+   "shape": "planks",
+   "color": "#c9b486",
+   "size": 1.0
+  },
+  "beam_willow": {
+   "shape": "beams",
+   "color": "#c9b486",
+   "size": 1.0
+  },
+  "lumber_coconut_palm": {
+   "shape": "planks",
+   "color": "#a98a5a",
+   "size": 1.0
+  },
+  "beam_coconut_palm": {
+   "shape": "beams",
+   "color": "#a98a5a",
+   "size": 1.0
+  },
+  "lumber_tropical_hardwood": {
+   "shape": "planks",
+   "color": "#6b3f27",
+   "size": 1.0
+  },
+  "beam_tropical_hardwood": {
+   "shape": "beams",
+   "color": "#6b3f27",
+   "size": 1.0
+  },
+  "lumber_acacia": {
+   "shape": "planks",
+   "color": "#9a6a3a",
+   "size": 1.0
+  },
+  "beam_acacia": {
+   "shape": "beams",
+   "color": "#9a6a3a",
+   "size": 1.0
+  },
+  "lumber_mangrove": {
+   "shape": "planks",
+   "color": "#7a4a2c",
+   "size": 1.0
+  },
+  "beam_mangrove": {
+   "shape": "beams",
+   "color": "#7a4a2c",
+   "size": 1.0
+  },
+  "lumber_rowan": {
+   "shape": "planks",
+   "color": "#c08e63",
+   "size": 1.0
+  },
+  "beam_rowan": {
+   "shape": "beams",
+   "color": "#c08e63",
+   "size": 1.0
+  },
+  "lumber_wild_apple": {
+   "shape": "planks",
+   "color": "#b47f55",
+   "size": 1.0
+  },
+  "beam_wild_apple": {
+   "shape": "beams",
+   "color": "#b47f55",
+   "size": 1.0
+  },
+  "lumber_wild_pear": {
+   "shape": "planks",
+   "color": "#c4936a",
+   "size": 1.0
+  },
+  "beam_wild_pear": {
+   "shape": "beams",
+   "color": "#c4936a",
+   "size": 1.0
+  },
+  "lumber_wild_cherry": {
+   "shape": "planks",
+   "color": "#a85a3a",
+   "size": 1.0
+  },
+  "beam_wild_cherry": {
+   "shape": "beams",
+   "color": "#a85a3a",
+   "size": 1.0
+  },
+  "lumber_sweet_chestnut": {
+   "shape": "planks",
+   "color": "#a67b45",
+   "size": 1.0
+  },
+  "beam_sweet_chestnut": {
+   "shape": "beams",
+   "color": "#a67b45",
+   "size": 1.0
+  },
+  "lumber_walnut": {
+   "shape": "planks",
+   "color": "#5c3b24",
+   "size": 1.0
+  },
+  "beam_walnut": {
+   "shape": "beams",
+   "color": "#5c3b24",
+   "size": 1.0
+  },
+  "lumber_date_palm": {
+   "shape": "planks",
+   "color": "#b39465",
+   "size": 1.0
+  },
+  "beam_date_palm": {
+   "shape": "beams",
+   "color": "#b39465",
+   "size": 1.0
+  },
+  "lumber_mirrorbark": {
+   "shape": "planks",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "beam_mirrorbark": {
+   "shape": "beams",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "lumber_wardpine": {
+   "shape": "planks",
+   "color": "#8f7a4f",
+   "size": 1.0
+  },
+  "beam_wardpine": {
+   "shape": "beams",
+   "color": "#8f7a4f",
+   "size": 1.0
+  },
+  "lumber_hearthwood": {
+   "shape": "planks",
+   "color": "#a0452b",
+   "size": 1.0
+  },
+  "beam_hearthwood": {
+   "shape": "beams",
+   "color": "#a0452b",
+   "size": 1.0
+  },
+  "lumber_everember": {
+   "shape": "planks",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "beam_everember": {
+   "shape": "beams",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "lumber_witness_tree": {
+   "shape": "planks",
+   "color": "#7b6a56",
+   "size": 1.0
+  },
+  "beam_witness_tree": {
+   "shape": "beams",
+   "color": "#7b6a56",
+   "size": 1.0
+  },
+  "lumber_balsam_fir": {
+   "shape": "planks",
+   "color": "#cdb78b",
+   "size": 1.0
+  },
+  "beam_balsam_fir": {
+   "shape": "beams",
+   "color": "#cdb78b",
+   "size": 1.0
+  },
+  "lumber_maple": {
+   "shape": "planks",
+   "color": "#d0a46f",
+   "size": 1.0
+  },
+  "beam_maple": {
+   "shape": "beams",
+   "color": "#d0a46f",
+   "size": 1.0
+  },
+  "berry_compote": {
+   "shape": "stew",
+   "color": "#9a1f3f",
+   "size": 1.4,
+   "bits": [
+    "#4a1030",
+    "#c0204a",
+    "#4a1030"
+   ]
+  },
+  "nut_paste": {
+   "shape": "mound",
+   "color": "#b08a55",
+   "size": 1.4,
+   "bits": [
+    "#6a4a22",
+    "#d8b27a"
+   ]
+  },
+  "roast_roots": {
+   "shape": "bundle",
+   "color": "#ff9f1c",
+   "size": 0.7
+  },
+  "acorn_mash": {
+   "shape": "mound",
+   "color": "#8a6a3a",
+   "size": 1.4,
+   "bits": [
+    "#6a4a22",
+    "#a98a55"
+   ]
+  },
+  "baked_apples": {
+   "shape": "fruit",
+   "color": "#ff5a36",
+   "size": 1.0
+  },
+  "mushroom_skewer": {
+   "shape": "skewer",
+   "color": "#f5e6ff",
+   "size": 1.0
+  },
+  "herb_fish": {
+   "shape": "fish",
+   "color": "#9a7a3a",
+   "size": 1.0
+  },
+  "garlic_meat": {
+   "shape": "joint",
+   "color": "#6a3c20",
+   "size": 0.9
+  },
+  "chestnut_cakes": {
+   "shape": "loaf",
+   "color": "#5d3a1a",
+   "size": 0.8
+  },
+  "fruit_leather": {
+   "shape": "cloth",
+   "color": "#00a8a8",
+   "size": 0.7
+  },
+  "smoked_fish": {
+   "shape": "fish",
+   "color": "#6e4a2a",
+   "size": 1.0
+  },
+  "hunters_stew": {
+   "shape": "stew",
+   "color": "#6b3a1e",
+   "size": 1.4,
+   "bits": [
+    "#8c4a2f",
+    "#8c4a2f",
+    "#f07f13",
+    "#f2e3b5"
+   ]
+  },
+  "forager_stew": {
+   "shape": "stew",
+   "color": "#7a9a3a",
+   "size": 1.4,
+   "bits": [
+    "#2f7a2a",
+    "#e8dcb0",
+    "#a98467",
+    "#2f7a2a"
+   ]
+  },
+  "fish_stew": {
+   "shape": "stew",
+   "color": "#e8c870",
+   "size": 1.4,
+   "bits": [
+    "#f4b5a0",
+    "#f4b5a0",
+    "#3f9a3a",
+    "#f2e3b5"
+   ]
+  },
+  "trail_bread": {
+   "shape": "loaf",
+   "color": "#e8b96a",
+   "size": 1.0
+  },
+  "hearty_pottage": {
+   "shape": "stew",
+   "color": "#d9a640",
+   "size": 1.4,
+   "bits": [
+    "#7a5a2a",
+    "#f0e0a0",
+    "#7a5a2a"
+   ]
+  },
+  "feast_roast": {
+   "shape": "joint",
+   "color": "#62301a",
+   "size": 1.5
+  },
+  "wall_section_kit": {
+   "shape": "kit",
+   "color": "#9a7a45",
+   "size": 1.2
+  },
+  "floor_section_kit": {
+   "shape": "kit",
+   "color": "#a98350",
+   "size": 1.2
+  },
+  "roof_section_kit": {
+   "shape": "kit",
+   "color": "#6a4a2a",
+   "size": 1.2
+  },
+  "foundation_section_kit": {
+   "shape": "kit",
+   "color": "#7d7a74",
+   "size": 1.2
+  },
+  "doorway_section_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2
+  },
+  "window_section_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2
+  },
+  "cut_stone_block": {
+   "shape": "block",
+   "color": "#8a8780",
+   "size": 1.5
+  },
+  "brick": {
+   "shape": "brick",
+   "color": "#a8452e",
+   "size": 1.4
+  },
+  "mortar": {
+   "shape": "pile",
+   "color": "#a89c85",
+   "size": 1.0
+  },
+  "wooden_spade_medium": {
+   "shape": "spade",
+   "color": "#8a6a3a",
+   "size": 0.85
+  },
+  "wooden_spade_large": {
+   "shape": "spade",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_spade_medium": {
+   "shape": "spade",
+   "color": "#7d7a74",
+   "size": 0.85
+  },
+  "stone_spade_large": {
+   "shape": "spade",
+   "color": "#7d7a74",
+   "size": 1.0
+  },
+  "iron_spade_medium": {
+   "shape": "spade",
+   "color": "#6c6f75",
+   "size": 0.85,
+   "bits": ["metal"]
+  },
+  "iron_spade_large": {
+   "shape": "spade",
+   "color": "#6c6f75",
+   "size": 1.0,
+   "bits": ["metal"]
+  },
+  "steel_spade_medium": {
+   "shape": "spade",
+   "color": "#9aa3ad",
+   "size": 0.85,
+   "bits": ["metal","steel"]
+  },
+  "steel_spade_large": {
+   "shape": "spade",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["metal","steel"]
+  },
+  "wooden_hoe": {
+   "shape": "hoe",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_hoe": {
+   "shape": "hoe",
+   "color": "#7d7a74",
+   "size": 1.0
+  },
+  "iron_hoe": {
+   "shape": "hoe",
+   "color": "#6c6f75",
+   "size": 1.0,
+   "bits": ["metal"]
+  },
+  "steel_hoe": {
+   "shape": "hoe",
+   "color": "#9aa3ad",
+   "size": 1.0,
+   "bits": ["metal","steel"]
+  },
+  "rough_plank": {
+   "shape": "planks",
+   "color": "#a8875a",
+   "size": 1.0
+  },
+  "fine_board": {
+   "shape": "planks",
+   "color": "#d4b57a",
+   "size": 1.0
+  },
+  "nails": {
+   "shape": "needle",
+   "color": "#5e6166",
+   "size": 0.5
+  },
+  "cobblestone": {
+   "shape": "chunk",
+   "color": "#8b8982",
+   "size": 0.8
+  },
+  "stone_shingle": {
+   "shape": "chunk",
+   "color": "#6d7076",
+   "size": 0.7
+  },
+  "tar": {
+   "shape": "pile",
+   "color": "#1c1814",
+   "size": 0.8
+  },
+  "hinges": {
+   "shape": "ingot",
+   "color": "#4f5359",
+   "size": 0.45
+  },
+  "wooden_pin": {
+   "shape": "rod",
+   "color": "#a88255",
+   "size": 0.35,
+   "bits": ["pin"]
+  },
+  "wooden_block": {
+   "shape": "block",
+   "color": "#a67c4a",
+   "size": 0.9
+  },
+  "firewood_soft": {
+   "shape": "bundle",
+   "color": "#9a7a4a",
+   "size": 1.0
+  },
+  "wooden_block_soft": {
+   "shape": "block",
+   "color": "#b8905a",
+   "size": 0.9
+  },
+  "saw_blade": {
+   "shape": "bar",
+   "color": "#8f9296",
+   "size": 1.6
+  },
+  "water_wheel": {
+   "shape": "coil",
+   "color": "#7a5a36",
+   "size": 1.4
+  },
+  "saw_mill_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.2,
+   "bits": ["saw"]
+  },
+  "woodworking_table_kit": {
+   "shape": "kit",
+   "color": "#7a5430",
+   "size": 1.0,
+   "bits": ["table"]
+  },
+  "rock_pile": {
+   "shape": "pile",
+   "color": "#7d7a74",
+   "size": 1.8
+  },
+  "blackberries": {
+   "shape": "berries",
+   "color": "#2a1830",
+   "size": 1.0
+  },
+  "blueberries": {
+   "shape": "round_berries",
+   "color": "#27335c",
+   "size": 1.0
+  },
+  "raspberries": {
+   "shape": "berries",
+   "color": "#8e0f1c",
+   "size": 1.0
+  },
+  "sloes": {
+   "shape": "round_berries",
+   "color": "#2a2c46",
+   "size": 1.0
+  },
+  "strawberries": {
+   "shape": "berries",
+   "color": "#c8202a",
+   "size": 1.0
+  },
+  "acorns": {
+   "shape": "nut",
+   "color": "#8a6a34",
+   "size": 1.0
+  },
+  "aloe_gel": {
+   "shape": "bowl",
+   "color": "#a8e0a0",
+   "size": 0.8
+  },
+  "amadou": {
+   "shape": "chunk",
+   "color": "#a8825a",
+   "size": 0.8
+  },
+  "angelica_roots": {
+   "shape": "root",
+   "color": "#d8c9a0",
+   "size": 1.0
+  },
+  "angelica_stems": {
+   "shape": "bundle",
+   "color": "#9ab45a",
+   "size": 1.0
+  },
+  "arnica_flowers": {
+   "shape": "flower",
+   "color": "#f2b01e",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "banana_leaves": {
+   "shape": "frond",
+   "color": "#3f8a2a",
+   "size": 1.6
+  },
+  "bananas": {
+   "shape": "fruit",
+   "color": "#f2d34a",
+   "size": 1.3
+  },
+  "bedding": {
+   "shape": "bundle",
+   "color": "#c9b46a",
+   "size": 1.0
+  },
+  "beechnuts": {
+   "shape": "nut",
+   "color": "#7a5028",
+   "size": 1.0
+  },
+  "belladonna_berries": {
+   "shape": "round_berries",
+   "color": "#1a1020",
+   "size": 1.0
+  },
+  "belladonna_leaves": {
+   "shape": "frond",
+   "color": "#4a7a30",
+   "size": 1.0
+  },
+  "birch_bark": {
+   "shape": "bark",
+   "color": "#e8dcc0",
+   "size": 1.0
+  },
+  "brinebells": {
+   "shape": "flower",
+   "color": "#6aa0d8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "burdock_roots": {
+   "shape": "root",
+   "color": "#6a4a30",
+   "size": 1.0
+  },
+  "burrs": {
+   "shape": "chunk",
+   "color": "#7a5a3a",
+   "size": 0.8
+  },
+  "cactus_pads": {
+   "shape": "chunk",
+   "color": "#4f8a4a",
+   "size": 0.8
+  },
+  "chamomile_flowers": {
+   "shape": "flower",
+   "color": "#f4f1e6",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "chanterelles": {
+   "shape": "cap",
+   "color": "#e0a028",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "charcoal_wood": {
+   "shape": "chunk",
+   "color": "#2a2826",
+   "size": 0.8
+  },
+  "cherries": {
+   "shape": "fruit",
+   "color": "#a0102a",
+   "size": 0.6
+  },
+  "cherry_wood": {
+   "shape": "beams",
+   "color": "#a85a3a",
+   "size": 1.0
+  },
+  "chestnuts": {
+   "shape": "nut",
+   "color": "#6a3a1c",
+   "size": 1.0
+  },
+  "cinderfoot_caps": {
+   "shape": "cap",
+   "color": "#8a2a1a",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "cloudberries": {
+   "shape": "berries",
+   "color": "#f0a030",
+   "size": 1.0
+  },
+  "coconuts": {
+   "shape": "nut",
+   "color": "#5a3c22",
+   "size": 2.2
+  },
+  "comfrey_leaves": {
+   "shape": "frond",
+   "color": "#4d7a35",
+   "size": 1.0
+  },
+  "comfrey_roots": {
+   "shape": "root",
+   "color": "#3a2a20",
+   "size": 1.0
+  },
+  "crab_apples": {
+   "shape": "fruit",
+   "color": "#c8a02e",
+   "size": 0.7
+  },
+  "cranberries": {
+   "shape": "round_berries",
+   "color": "#b01c2e",
+   "size": 1.0
+  },
+  "crowberries": {
+   "shape": "round_berries",
+   "color": "#15101c",
+   "size": 1.0
+  },
+  "dandelion_flowers": {
+   "shape": "flower",
+   "color": "#f7d117",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "dandelion_leaves": {
+   "shape": "frond",
+   "color": "#5a9a35",
+   "size": 1.0
+  },
+  "dandelion_roots": {
+   "shape": "root",
+   "color": "#8a6a48",
+   "size": 1.0
+  },
+  "dates": {
+   "shape": "fruit",
+   "color": "#6a3a1e",
+   "size": 0.5
+  },
+  "drakethorn_berries": {
+   "shape": "round_berries",
+   "color": "#a82a2a",
+   "size": 1.0
+  },
+  "duskmallow_flowers": {
+   "shape": "flower",
+   "color": "#7a4aa8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "duskmallow_roots": {
+   "shape": "root",
+   "color": "#7a5a8a",
+   "size": 1.0
+  },
+  "dye": {
+   "shape": "bottle",
+   "color": "#8a2a6a",
+   "size": 0.8
+  },
+  "echo_moss": {
+   "shape": "pile",
+   "color": "#6a8a8a",
+   "size": 1.0
+  },
+  "elderberries": {
+   "shape": "round_berries",
+   "color": "#2a1a3a",
+   "size": 1.0
+  },
+  "elderflowers": {
+   "shape": "flower",
+   "color": "#f1ecd8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "emberroots": {
+   "shape": "root",
+   "color": "#d4501e",
+   "size": 1.0
+  },
+  "everember_needles": {
+   "shape": "frond",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "everember_sap": {
+   "shape": "bottle",
+   "color": "#e0602a",
+   "size": 0.8
+  },
+  "everember_wood": {
+   "shape": "beams",
+   "color": "#c4683a",
+   "size": 1.0
+  },
+  "feverfew": {
+   "shape": "flower",
+   "color": "#f1efe2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "fibre": {
+   "shape": "bundle",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "fiddleheads": {
+   "shape": "frond",
+   "color": "#6a9a3a",
+   "size": 1.0
+  },
+  "fine_wood": {
+   "shape": "beams",
+   "color": "#b99062",
+   "size": 1.0
+  },
+  "fly_agaric_caps": {
+   "shape": "cap",
+   "color": "#d02a1e",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "fodder": {
+   "shape": "bundle",
+   "color": "#b8a85a",
+   "size": 1.0
+  },
+  "food": {
+   "shape": "bowl",
+   "color": "#c9a05a",
+   "size": 0.9
+  },
+  "foxglove_leaves": {
+   "shape": "frond",
+   "color": "#4f8a45",
+   "size": 1.0
+  },
+  "frostglass_petals": {
+   "shape": "flower",
+   "color": "#bfe6f2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "gloaming_star": {
+   "shape": "flower",
+   "color": "#e8e0ff",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "gloomthistle_down": {
+   "shape": "pile",
+   "color": "#cfc8d8",
+   "size": 1.0
+  },
+  "gloomthistle_heads": {
+   "shape": "flower",
+   "color": "#6a3a7a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "greens": {
+   "shape": "frond",
+   "color": "#4f9a30",
+   "size": 1.0
+  },
+  "gum": {
+   "shape": "chunk",
+   "color": "#c9a05a",
+   "size": 0.8
+  },
+  "hagwillow_bark": {
+   "shape": "bark",
+   "color": "#5a4a3a",
+   "size": 1.0
+  },
+  "hagwillow_withies": {
+   "shape": "bundle",
+   "color": "#6a5a3a",
+   "size": 1.0
+  },
+  "hard_wood": {
+   "shape": "beams",
+   "color": "#7a5230",
+   "size": 1.0
+  },
+  "hardwood": {
+   "shape": "beams",
+   "color": "#7a5230",
+   "size": 1.0
+  },
+  "haws": {
+   "shape": "round_berries",
+   "color": "#b0221e",
+   "size": 1.0
+  },
+  "hawthorn_blossom": {
+   "shape": "flower",
+   "color": "#f7ece8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "hazelnuts": {
+   "shape": "nut",
+   "color": "#b8864a",
+   "size": 1.0
+  },
+  "hearthwood_logs": {
+   "shape": "bundle",
+   "color": "#a0452b",
+   "size": 1.0
+  },
+  "heartroots": {
+   "shape": "root",
+   "color": "#b02a3a",
+   "size": 1.0
+  },
+  "henbane_leaves": {
+   "shape": "frond",
+   "color": "#6b8a45",
+   "size": 1.0
+  },
+  "henbane_seeds": {
+   "shape": "grit",
+   "color": "#4a3a2a",
+   "size": 0.8
+  },
+  "herbs": {
+   "shape": "frond",
+   "color": "#6a8a3a",
+   "size": 1.0
+  },
+  "honey_flowers": {
+   "shape": "flower",
+   "color": "#f0c24a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "honeyspindle_nectar": {
+   "shape": "bottle",
+   "color": "#f0c24a",
+   "size": 0.8
+  },
+  "honeyspindle_pods": {
+   "shape": "bundle",
+   "color": "#b8a050",
+   "size": 1.0
+  },
+  "hushfern_fronds": {
+   "shape": "frond",
+   "color": "#3a7a4a",
+   "size": 1.0
+  },
+  "juniper_berries": {
+   "shape": "round_berries",
+   "color": "#3a4a6a",
+   "size": 1.0
+  },
+  "kindling": {
+   "shape": "bundle",
+   "color": "#a8845a",
+   "size": 0.6
+  },
+  "lantern_dew": {
+   "shape": "bottle",
+   "color": "#a8f0e0",
+   "size": 0.8
+  },
+  "lavender_flowers": {
+   "shape": "flower",
+   "color": "#8f77c4",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "lingonberries": {
+   "shape": "round_berries",
+   "color": "#c0202a",
+   "size": 1.0
+  },
+  "linseed": {
+   "shape": "grit",
+   "color": "#7a4a2a",
+   "size": 0.8
+  },
+  "lumencap_caps": {
+   "shape": "cap",
+   "color": "#7ad8c0",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "marjoram": {
+   "shape": "frond",
+   "color": "#6f8f4a",
+   "size": 1.0
+  },
+  "marrowroots": {
+   "shape": "root",
+   "color": "#e8dcc0",
+   "size": 1.0
+  },
+  "meadowsweet_flowers": {
+   "shape": "flower",
+   "color": "#f1e8c6",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "mint": {
+   "shape": "frond",
+   "color": "#4f9a45",
+   "size": 1.0
+  },
+  "mirrorbark_bark": {
+   "shape": "bark",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "mirrorbark_wood": {
+   "shape": "beams",
+   "color": "#9fa6a8",
+   "size": 1.0
+  },
+  "mirrorcap_caps": {
+   "shape": "cap",
+   "color": "#c4ccd0",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "morels": {
+   "shape": "cap",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "mournbloom_petals": {
+   "shape": "flower",
+   "color": "#3a2a4a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "mugwort": {
+   "shape": "frond",
+   "color": "#7a8a6a",
+   "size": 1.0
+  },
+  "nightcrown_blooms": {
+   "shape": "flower",
+   "color": "#3a2e6a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "oil": {
+   "shape": "bottle",
+   "color": "#c9a82a",
+   "size": 0.8
+  },
+  "owlpetals": {
+   "shape": "flower",
+   "color": "#c9b8d8",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "palm_fronds": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.6
+  },
+  "palm_wood": {
+   "shape": "beams",
+   "color": "#b39465",
+   "size": 1.0
+  },
+  "pilgrims_cup_pitchers": {
+   "shape": "bottle",
+   "color": "#8aa04a",
+   "size": 1.0
+  },
+  "pilgrims_cup_water": {
+   "shape": "bottle",
+   "color": "#5a9ad4",
+   "size": 0.8
+  },
+  "pine_tar": {
+   "shape": "pile",
+   "color": "#2a2018",
+   "size": 1.0
+  },
+  "plantain_leaves": {
+   "shape": "frond",
+   "color": "#4f8f3a",
+   "size": 1.0
+  },
+  "poles": {
+   "shape": "bundle",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "porcini": {
+   "shape": "cap",
+   "color": "#8a5a34",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "potash": {
+   "shape": "pile",
+   "color": "#c8c4b8",
+   "size": 1.0
+  },
+  "prickly_pears": {
+   "shape": "fruit",
+   "color": "#c0402e",
+   "size": 0.9
+  },
+  "puffball": {
+   "shape": "cap",
+   "color": "#f0ead8",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "quenchbell_heads": {
+   "shape": "flower",
+   "color": "#4a7ad0",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "raspberry_leaves": {
+   "shape": "frond",
+   "color": "#5a8a3a",
+   "size": 1.0
+  },
+  "reed_stems": {
+   "shape": "bundle",
+   "color": "#b8a860",
+   "size": 1.0
+  },
+  "resin": {
+   "shape": "chunk",
+   "color": "#c98a2a",
+   "size": 0.8
+  },
+  "rimecap_caps": {
+   "shape": "cap",
+   "color": "#a8d4e4",
+   "size": 1.0,
+   "bits": [
+    "#efe6d0"
+   ]
+  },
+  "riverbraid_stems": {
+   "shape": "bundle",
+   "color": "#6a9a8a",
+   "size": 1.0
+  },
+  "rose_hips": {
+   "shape": "fruit",
+   "color": "#d4381e",
+   "size": 0.5
+  },
+  "rose_petals": {
+   "shape": "flower",
+   "color": "#d4476a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "rosemary": {
+   "shape": "frond",
+   "color": "#4a6a3a",
+   "size": 1.0
+  },
+  "rowan_berries": {
+   "shape": "round_berries",
+   "color": "#e0481e",
+   "size": 1.0
+  },
+  "sage": {
+   "shape": "frond",
+   "color": "#8a9a7a",
+   "size": 1.0
+  },
+  "samphire": {
+   "shape": "frond",
+   "color": "#5a9a5a",
+   "size": 1.0
+  },
+  "sap": {
+   "shape": "bottle",
+   "color": "#c9a05a",
+   "size": 0.8
+  },
+  "sea_buckthorn_berries": {
+   "shape": "round_berries",
+   "color": "#f0961e",
+   "size": 1.0
+  },
+  "seeds": {
+   "shape": "grit",
+   "color": "#c9b57a",
+   "size": 0.8
+  },
+  "sevenyear_blossoms": {
+   "shape": "flower",
+   "color": "#e9a3c2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "sevenyear_bulbs": {
+   "shape": "root",
+   "color": "#d8b080",
+   "size": 1.0
+  },
+  "sleetberries": {
+   "shape": "round_berries",
+   "color": "#9ac4e0",
+   "size": 1.0
+  },
+  "softwood": {
+   "shape": "beams",
+   "color": "#d3b583",
+   "size": 1.0
+  },
+  "sorrel_leaves": {
+   "shape": "frond",
+   "color": "#6aa03a",
+   "size": 1.0
+  },
+  "spines": {
+   "shape": "bundle",
+   "color": "#6a5a44",
+   "size": 1.0
+  },
+  "st_johns_wort": {
+   "shape": "flower",
+   "color": "#f2d11a",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "staunchmoss": {
+   "shape": "pile",
+   "color": "#4f7a3a",
+   "size": 1.0
+  },
+  "stillwater_petals": {
+   "shape": "flower",
+   "color": "#7ec8d9",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "stillwater_seeds": {
+   "shape": "grit",
+   "color": "#7ec8d9",
+   "size": 0.8
+  },
+  "stormreed_stalks": {
+   "shape": "bundle",
+   "color": "#8a8a6a",
+   "size": 1.0
+  },
+  "straw": {
+   "shape": "bundle",
+   "color": "#d8c070",
+   "size": 1.0
+  },
+  "stuffing": {
+   "shape": "pile",
+   "color": "#e8e0d0",
+   "size": 1.0
+  },
+  "sunberries": {
+   "shape": "round_berries",
+   "color": "#f2c21e",
+   "size": 1.0
+  },
+  "sunsilver_leaves": {
+   "shape": "frond",
+   "color": "#c4ccd4",
+   "size": 1.0
+  },
+  "tanglewort_vines": {
+   "shape": "bundle",
+   "color": "#4f7a3a",
+   "size": 1.0
+  },
+  "tannin_bark": {
+   "shape": "bark",
+   "color": "#6a4a2a",
+   "size": 1.0
+  },
+  "thatch": {
+   "shape": "bundle",
+   "color": "#c4a860",
+   "size": 1.0
+  },
+  "thorny_canes": {
+   "shape": "bundle",
+   "color": "#4a3322",
+   "size": 1.0
+  },
+  "thorny_wood": {
+   "shape": "beams",
+   "color": "#5a3a24",
+   "size": 1.0
+  },
+  "thyme": {
+   "shape": "frond",
+   "color": "#6a7a4a",
+   "size": 1.0
+  },
+  "tidecrown_pearls": {
+   "shape": "round_berries",
+   "color": "#e8f0f4",
+   "size": 1.0
+  },
+  "tideglass_fronds": {
+   "shape": "frond",
+   "color": "#7ac4c0",
+   "size": 1.0
+  },
+  "timber": {
+   "shape": "beams",
+   "color": "#a67c4a",
+   "size": 1.0
+  },
+  "tinder": {
+   "shape": "pile",
+   "color": "#a89878",
+   "size": 1.0
+  },
+  "tinder_fungus": {
+   "shape": "chunk",
+   "color": "#8a7a5a",
+   "size": 0.8
+  },
+  "truthsage_leaves": {
+   "shape": "frond",
+   "color": "#8aa07a",
+   "size": 1.0
+  },
+  "valerian_roots": {
+   "shape": "root",
+   "color": "#9a7a50",
+   "size": 1.0
+  },
+  "walnut_husks": {
+   "shape": "nut",
+   "color": "#4f7a32",
+   "size": 1.0
+  },
+  "walnuts": {
+   "shape": "nut",
+   "color": "#8a6a44",
+   "size": 1.0
+  },
+  "wardpine_resin": {
+   "shape": "chunk",
+   "color": "#7a9a5a",
+   "size": 0.8
+  },
+  "wardpine_wood": {
+   "shape": "beams",
+   "color": "#8f7a4f",
+   "size": 1.0
+  },
+  "water": {
+   "shape": "bottle",
+   "color": "#5a9ad4",
+   "size": 0.8
+  },
+  "watercress": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.0
+  },
+  "whisperfern_fronds": {
+   "shape": "frond",
+   "color": "#5a8a6a",
+   "size": 1.0
+  },
+  "wild_carrot_roots": {
+   "shape": "root",
+   "color": "#f0e0d0",
+   "size": 1.0
+  },
+  "wild_garlic_bulbs": {
+   "shape": "root",
+   "color": "#efe7d8",
+   "size": 1.0
+  },
+  "wild_garlic_leaves": {
+   "shape": "frond",
+   "color": "#3f8a3a",
+   "size": 1.0
+  },
+  "wild_pears": {
+   "shape": "fruit",
+   "color": "#b8c04a",
+   "size": 0.9
+  },
+  "willow_bark": {
+   "shape": "bark",
+   "color": "#8a7a52",
+   "size": 1.0
+  },
+  "wispbloom_heads": {
+   "shape": "flower",
+   "color": "#a8f0e0",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "withies": {
+   "shape": "bundle",
+   "color": "#9a8a52",
+   "size": 1.0
+  },
+  "witness_bark": {
+   "shape": "bark",
+   "color": "#7b6a56",
+   "size": 1.0
+  },
+  "witness_leaves": {
+   "shape": "frond",
+   "color": "#7b8a56",
+   "size": 1.0
+  },
+  "wolfsbane_roots": {
+   "shape": "root",
+   "color": "#5a4a3a",
+   "size": 1.0
+  },
+  "wood": {
+   "shape": "beams",
+   "color": "#a07a4a",
+   "size": 1.0
+  },
+  "yarrow": {
+   "shape": "flower",
+   "color": "#f1efe2",
+   "size": 1.0,
+   "bits": [
+    "#e0b020"
+   ]
+  },
+  "rough_bed_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_wall_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "campfire_pot_kit": {
+   "shape": "kit",
+   "color": "#4a3a2a",
+   "size": 1.0
+  },
+  "clay_hearth_kit": {
+   "shape": "kit",
+   "color": "#9a6a4a",
+   "size": 1.0
+  },
+  "thatch_floor_kit": {
+   "shape": "kit",
+   "color": "#b8a46a",
+   "size": 1.0
+  },
+  "thatch_roof_kit": {
+   "shape": "kit",
+   "color": "#c9bb7a",
+   "size": 1.0
+  },
+  "thatch_doorway_kit": {
+   "shape": "kit",
+   "color": "#a88d5a",
+   "size": 1.0
+  },
+  "wooden_bow": {
+   "shape": "bow",
+   "color": "#a8804a",
+   "size": 0.55
+  },
+  "wooden_arrow": {
+   "shape": "arrow",
+   "color": "#d8b070",
+   "size": 0.55
+  },
+  "stone_arrow": {
+   "shape": "arrow",
+   "color": "#b8bcc4",
+   "size": 0.55,
+   "bits": ["stone"]
+  },
+  "quiver": {
+   "shape": "quiver",
+   "color": "#6b4c31",
+   "size": 0.55
+  },
+  "oven_kit": {
+   "shape": "kit",
+   "color": "#8a5a42",
+   "size": 1.0
+  },
+  "flatbread": {
+   "shape": "loaf",
+   "color": "#d9b87a",
+   "size": 0.8
+  },
+  "honey_loaf": {
+   "shape": "loaf",
+   "color": "#c98a3c",
+   "size": 1.0
+  },
+  "roast_joint": {
+   "shape": "chunk",
+   "color": "#8a4a2a",
+   "size": 1.0
+  },
+  "snare": {
+   "shape": "kit",
+   "color": "#8a7040",
+   "size": 0.6,
+   "placeholder": true
+  }
+
+ }
+}

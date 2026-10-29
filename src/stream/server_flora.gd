@@ -16,6 +16,8 @@ extends RefCounted
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
+const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
+const LAYOUT_KEY := "layout"        # flora_removed.json: the flora layout version the marks were made under (flora_layout.gd)
 const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
@@ -23,6 +25,7 @@ const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest d
 var placer
 var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
+var layout_cleared: bool = false            # true when setup dropped saved removals because the flora layout changed
 var memory_hits: int = 0
 
 var _path: String = ""
@@ -88,7 +91,17 @@ func setup(flora_placer, store_dir: String) -> void:
 		push_error("server flora: %s is not valid JSON" % _path)
 		return
 
+	# Removals made under another layout point at plants that no longer stand there: start clean (a file without a stamp is version 1).
+	if int(parsed.get(LAYOUT_KEY, 1)) != LayoutScript.VERSION:
+		layout_cleared = true
+		_removed_dirty = true
+		print("server flora: layout %d is not %d, saved removals cleared" % [int(parsed.get(LAYOUT_KEY, 1)), LayoutScript.VERSION])
+		return
+
 	for key in parsed:
+		if str(key) == LAYOUT_KEY:
+			continue
+
 		var parts: PackedStringArray = str(key).split(",")
 		var ids: Dictionary = {}
 
@@ -160,6 +173,13 @@ func covered(pos: Vector3) -> bool:
 	return yes
 
 
+func roofed(pos: Vector3) -> bool:
+	_mutex.lock()
+	var yes: bool = cover.roofed(pos)
+	_mutex.unlock()
+	return yes
+
+
 # Roofs (lean-tos) live in the same cover index as the tree crowns.
 func add_roof(roof: Array) -> int:
 	_mutex.lock()
@@ -209,7 +229,7 @@ func save_removed(force: bool = false) -> void:
 
 	_removed_dirty = false
 	_removed_saved_msec = now
-	var copy: Dictionary = {}
+	var copy: Dictionary = {LAYOUT_KEY: LayoutScript.VERSION}
 
 	for key in _removed:
 		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()

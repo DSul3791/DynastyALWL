@@ -24,6 +24,7 @@ extends Node
 # (make_weather.py); recordings in assets/audio/recorded/weather/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
 const GENERATED_DIR := "res://assets/audio/weather/"
 const RECORDED_DIR := "res://assets/audio/recorded/weather/"
 
@@ -55,7 +56,7 @@ const KINDS := {
 	"blizzard": {"rain": 0.0, "wind": 1.0, "hush": 0.3, "thunder": 0.0, "calls": 0.0, "frogs": 0.0},
 	"fog": {"rain": 0.0, "wind": 0.0, "hush": 0.2, "thunder": 0.0, "calls": 0.8, "frogs": 0.8},
 }
-const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_roof": -14.0, "rain_water": -17.0, "wind_storm": -18.0,
+const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_woodroof_light": -14.0, "rain_woodroof_heavy": -13.0, "rain_water": -17.0, "wind_storm": -18.0,
 	"rain_stone": -14.0, "rain_mud": -15.0, "rain_litter": -16.0, "rain_snow": -23.0}
 # Rain on the ground under the player (open sky only; under a canopy the leaves take it): how much of the plain
 # open-ground bed (rain_light / rain_heavy) stays when that ground has its own loop.
@@ -111,7 +112,7 @@ var _streams: Dictionary = {}
 var _thunder_in: float = 20.0
 var ground_class: String = "soft"       # what the rain falls on under the player (HUD): stone, mud, litter, snow or soft
 var _ground_w: Dictionary = {"stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0}
-var _pending: Array = []                # [seconds left, AudioStreamPlayer, stream] thunder waiting for its delay
+var _pending: Array = []                # [seconds left, AudioStreamPlayer3D] thunder waiting for its delay
 var _cover_in: float = 0.0
 var _tick_acc: float = 0.0
 var _cover_target: float = 0.0
@@ -155,7 +156,7 @@ func setup(stage, ambient) -> void:
 
 		var player: AudioStreamPlayer = AudioStreamPlayer.new()
 		player.stream = list[0]
-		player.bus = "Weather"
+		player.bus = "Wind" if sound_name.begins_with("wind") else "Weather"   # the storm wind follows the Wind slider, not Nature (Dave 24 Oct)
 		player.volume_db = -80.0
 		add_child(player)
 
@@ -264,7 +265,9 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	_loop("rain_light", light * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
 	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
 	_loop("rain_leaves", minf(rain * 1.6, 1.0) * (cover - roof))
-	_loop("rain_roof", minf(rain * 1.6, 1.0) * roof)
+	# Rain on a wooden roof: the clacky loops (Dave 2026-10-23, they sound like rain on a metal roof in the open).
+	_loop("rain_woodroof_light", light * roof)
+	_loop("rain_woodroof_heavy", heavy * roof)
 	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
 	_thunder(delta)
@@ -379,7 +382,7 @@ func _thunder(delta: float) -> void:
 		_pending[n][0] -= delta
 
 		if _pending[n][0] <= 0.0:
-			var voice: AudioStreamPlayer = _pending[n][1]
+			var voice: AudioStreamPlayer3D = _pending[n][1]
 			voice.play()
 			_pending.remove_at(n)
 
@@ -410,17 +413,20 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 	if list.is_empty():
 		return false
 
-	var voice: AudioStreamPlayer = AudioStreamPlayer.new()
+	# Directional: the thunder comes from the strike's side, panned only (its level and dulling already follow the distance, volume_db and the
+	# band bus). A strike close overhead sounds from above, centred. Far thunder is darker still: the distance filter falls from 8 kHz to 2.5 kHz.
+	var voice: AudioStreamPlayer3D = Sound3D.make(self, _thunder_bus(distance_m), 100.0, 0.0, lerpf(8000.0, 2500.0, clampf(distance_m / 400.0, 0.0, 1.0)), false, false)
 	voice.stream = list[_rng.randi_range(0, list.size() - 1)]
-	voice.bus = _thunder_bus(distance_m)
 	voice.volume_db = THUNDER_DB - distance_m / 400.0 + (3.0 if distance_m < THUNDER_NEAR_M else 0.0) + _rng.randf_range(-2.0, 1.0)
 	voice.pitch_scale = _rng.randf_range(0.9, 1.1)
-	add_child(voice)
 	voice.finished.connect(voice.queue_free)
 
 	if angle < 0.0:
 		angle = _rng.randf() * TAU
 
+	var camera: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
+	var listener: Vector3 = camera.global_position if camera != null else Vector3.ZERO
+	voice.global_position = listener + (Vector3(cos(angle), 0.0, sin(angle)) * 100.0 if distance_m >= THUNDER_NEAR_M else Vector3(0.0, 60.0, 0.0))
 	lightning.emit(Vector3(cos(angle) * distance_m, 0.0, sin(angle) * distance_m), distance_m)
 	_pending.append([thunder_delay(distance_m), voice])
 	thunders_played += 1

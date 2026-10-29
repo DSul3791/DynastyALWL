@@ -1,0 +1,32 @@
+extends SceneTree
+const G := preload("res://src/worldgen/runtime/terrain_generator.gd")
+const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+var g
+var b: VoxelBuffer
+func pass_ms(shortcuts: bool) -> float:
+	g.buried_bodies_skipped = shortcuts
+	g.ore_columns_skipped = shortcuts
+	g.bodies_prepared = shortcuts
+	g.lookups_shared = shortcuts
+	var t0 := Time.get_ticks_usec()
+	for bx in range(4):
+		for bz in range(4):
+			g.generate(b, Vector3i(53760 + bx * 32, 416, 69120 + bz * 32), 0)
+	return float(Time.get_ticks_usec() - t0) / 1000.0
+func _init() -> void:
+	var errors: Array = []
+	var settings = load("res://src/worldgen/settings/world_settings.gd").load_from_file("res://worlds/base_world/world.json", errors)
+	var rules = load("res://src/worldgen/tile/tile_height.gd").load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
+	var tables = load("res://src/worldgen/tables/table_set.gd").new()
+	tables.load_directory()
+	g = G.new()
+	g.setup(settings, rules, tables, "res://worlds/base_world/tiles")
+	b = Layout.make_buffer()
+	pass_ms(false)
+	var best_off := 1e12
+	var best_on := 1e12
+	for r in range(8):
+		best_off = minf(best_off, pass_ms(false))
+		best_on = minf(best_on, pass_ms(true))
+	print("per block: reference %.2f ms, shortcuts %.2f ms (%.2fx)" % [best_off / 16.0, best_on / 16.0, best_off / best_on])
+	quit()

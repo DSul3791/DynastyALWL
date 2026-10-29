@@ -1,7 +1,14 @@
 extends Node
+const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
-const PieceLook := preload("res://src/client/piece_look.gd")
+const LogLookScript := preload("res://src/client/log_look.gd")
+const LookTable := preload("res://src/client/look_table.gd")
+const PileLookScript := preload("res://src/client/pile_look.gd")
+const CarcassLook := preload("res://src/client/carcass_look.gd")
+const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
+const BasicLook := preload("res://src/client/basic_look.gd")
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -12,6 +19,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const StructureLook := preload("res://src/shared/structure_look.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -20,6 +28,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
+const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
 const COLUMNS := 6
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
@@ -78,6 +87,7 @@ var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
+var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
@@ -85,6 +95,8 @@ var _death_msec: int = 0                    # when the last death arrived, 0 whe
 var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
 var memory: int = 0
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
+const InnerSettingsScript := preload("res://src/client/inner_voice_settings.gd")
+var inner_settings = InnerSettingsScript.new()   # Esc > Settings > Inner voice: hints and dialogue switches (inner_voice_settings.gd)
 var thought_event: Callable = Callable()     # (line id, kind) when the inner voice speaks: Sounds plays inner_voice/<line id>.ogg if it exists
 var _thought_label: Label
 var _thought_until_msec: int = 0
@@ -116,6 +128,7 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
+var _shoulder_put: Button                     # chest window: puts the shoulder log in (ACT_CHEST_PUT slot -1)
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -132,6 +145,7 @@ var _queue_box: VBoxContainer
 var _queue_head_button: Button
 var _queue_next_msec: int = 0
 var _world: Dictionary = {}        # id -> {node, number, count, pos}
+var ladders: Dictionary = {}       # id -> {pos, yaw} of every placed ladder (state 31), for ladder_climb.gd
 var _prompt_next_msec: int = 0
 var _notice_until_msec: int = 0
 var _collide: Array = []              # [node, StaticBody3D] trunks whose collider is on only near the player
@@ -139,6 +153,7 @@ var _meshes: Dictionary = {}       # item number -> Mesh
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const AutoPickupScript := preload("res://src/client/auto_pickup.gd")
 
 func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_position: Callable, ground_below: Callable) -> void:
 	net = terrain_net
@@ -168,6 +183,9 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
 
+		if chest_mode:
+			_refresh_chest()
+
 		if _weight_label != null:
 			_refresh_weight())
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
@@ -186,11 +204,32 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
 	_build_vitals_hud()
+	auto_pickup = AutoPickupScript.new()
+	_auto_label = Label.new()
+	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_auto_label.anchor_top = 0.38
+	_auto_label.anchor_bottom = 0.38
+	_auto_label.offset_top = -30.0
+	_auto_label.offset_bottom = 30.0
+	_auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_auto_label.add_theme_font_size_override("font_size", 36)
+	_auto_label.add_theme_constant_override("outline_size", 8)
+	_auto_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+	_auto_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_layer.add_child(_auto_label)
 	_prompt = Label.new()
-	_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Below the crosshair, top-aligned and wrapping downward; the name (terrain_client.gd _inspect_label) is bottom-aligned above the crosshair.
+	_prompt.anchor_left = 0.0
+	_prompt.anchor_right = 1.0
+	_prompt.anchor_top = 0.5
+	_prompt.anchor_bottom = 1.0
+	_prompt.offset_left = 0.0
+	_prompt.offset_right = 0.0
+	_prompt.offset_top = 24.0
+	_prompt.offset_bottom = 0.0
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_prompt.offset_top = 90.0   # just below the crosshair
+	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_prompt.add_theme_font_size_override("font_size", 30)
 	_prompt.add_theme_constant_override("outline_size", 6)
 	_prompt.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
@@ -452,7 +491,7 @@ func _probe_fire() -> Dictionary:
 			if fuel_event.is_valid():
 				fuel_event.call()}
 
-	if state == 1:
+	if _lit_state(state):
 		found["hold"] = cook_nearest
 	elif state == 9:
 		found["hold"] = fuel_nearest
@@ -472,18 +511,38 @@ func _probe_structure() -> Dictionary:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	if state == 11 or state == 12:
-		return {"prompt": "Press E to search the remains", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)}
+		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
 
 	if state == 6:
-		return {"prompt": "Press F to open", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO), "hold": take_down}
+		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
 		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
+
+	if state == 33:
+		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if state == 26 or state == 28:
+		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	var station_def: Dictionary = _structure_by_state(state)
+
+	if str(station_def.get("station", "")) != "":
+		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
 
 	return {"prompt": "Hold E to take down the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
 
 func press_e() -> bool:
+	# In the crafting window, E over a recipe crafts one of it (Dave 2026-10-23).
+	if open and not chest_mode and _hover_recipe != 0:
+		if _can_craft(_hover_recipe):
+			_start_craft(_hover_recipe, 1)
+		else:
+			_on_notice("You do not have what that needs")
+
+		return true
+
 	var found: Dictionary = current_interaction()
 
 	if found.is_empty():
@@ -531,7 +590,7 @@ func _fire_prompt(state: int) -> String:
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
-# True when a chest, remains or campfire lay within reach and the server was asked to open it.
+# True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
 func open_container() -> bool:
 	var here: Vector3 = _player_position.call()
 	var best: int = 0
@@ -539,16 +598,27 @@ func open_container() -> bool:
 
 	for id in _world:
 		var state: int = int(_world[id]["state"])
+		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (state == 6 or state == 11 or state == 12 or state == 1 or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
 	if best == 0:
 		return false
 
-	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, best, 0, 0, Vector3.ZERO)
+	if str(_structure_by_state(int(_world[best]["state"])).get("station", "")) != "":
+		_open_station()
+		return true
+
+	_ask_open(best)
 	return true
+
+
+# A workbench or forge has no slots of its own: using it opens the crafting screen, which greys what the station cannot make.
+func _open_station() -> void:
+	if not open:
+		toggle()
 
 
 # True when something lay within reach and the server was asked for it.
@@ -562,7 +632,7 @@ func pick_up_nearest() -> bool:
 		return false
 
 	if _world[id]["state"] == 6 and not Input.is_key_pressed(KEY_SHIFT):
-		net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+		_ask_open(id)
 		return true
 
 	if _world[id]["state"] == 7 and not Input.is_key_pressed(KEY_SHIFT):
@@ -592,7 +662,10 @@ func _process(_delta: float) -> void:
 
 func _process_body(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
+	_roll_tick(_delta, now)
+	_snap_tick(now)
 	_hold_e_check()
+	_auto_pickup_tick(now)
 
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
@@ -621,6 +694,33 @@ func _process_body(_delta: float) -> void:
 
 
 
+# P (terrain_client.gd): auto pickup on or off, announced slightly above the middle of the screen.
+var auto_pickup: RefCounted
+var auto_pickup_blocked: Callable = Callable()   # () -> true while swimming or placing a blueprint (set by the terrain client)
+var _auto_label: Label
+
+
+func toggle_auto_pickup() -> void:
+	_auto_label.text = auto_pickup.toggle(Time.get_ticks_msec())
+
+
+func _auto_pickup_tick(now: int) -> void:
+	if _auto_label != null and _auto_label.text != "":
+		var left: int = auto_pickup.announce_until_msec - now
+		_auto_label.modulate.a = clampf(float(left) / 500.0, 0.0, 1.0)
+
+		if left <= 0:
+			_auto_label.text = ""
+
+	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
+		return
+
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+
+	if id != 0:
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+
+
 # Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
 func hold_use() -> bool:
 	var id: int = _nearest_struct()
@@ -644,7 +744,7 @@ func _nearest_struct() -> int:
 	var best_d: float = 3.0
 
 	for id in _world:
-		if _world[id]["state"] >= 5 and here.distance_to(_world[id]["pos"]) <= best_d:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -717,6 +817,22 @@ func carcass_near(point: Vector3) -> int:
 	return best
 
 
+# A log lying loose on the ground within 1.5 m of the point (a short log or a large one put down), 0 when none: the axe chops it into wooden blocks.
+func loose_log_near(point: Vector3) -> int:
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry["state"]) != 0 or not entry.has("number") or int(entry["number"]) == 0:
+			continue
+
+		var item_id: String = table.id_of(int(entry["number"]))
+
+		if (item_id == "log" or str(table.entry(item_id).get("carry", "")) == "shoulder") and entry["pos"].distance_to(point) < 1.5:
+			return id
+
+	return 0
+
+
 func felled_trunk_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]
@@ -759,6 +875,9 @@ func has_tool_class(tool_class: String) -> bool:
 
 
 func _on_notice(text: String) -> void:
+	if notice_event.is_valid():
+		notice_event.call(text)
+
 	_prompt.text = text
 	_notice_until_msec = Time.get_ticks_msec() + 4000
 
@@ -1326,7 +1445,20 @@ func eat_slot(slot: int) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
 
 
+# Asks the server to open a container. The server also pushes fresh contents while it is open (a fire eating wood); a push that arrives when
+# no window is open and none was asked for in the last 2 s is ignored, so closing the window is not undone.
+var _open_asked_msec: int = -100000
+
+
+func _ask_open(id: int) -> void:
+	_open_asked_msec = Time.get_ticks_msec()
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+
+
 func _on_chest(id: int, bytes: PackedByteArray) -> void:
+	if not chest_mode and Time.get_ticks_msec() - _open_asked_msec > 2000:
+		return
+
 	if chest_inv == null:
 		chest_inv = InventoryScript.new(table)
 
@@ -1349,6 +1481,8 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 
 func _close_chest() -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
 	if chest_event.is_valid() and _world.has(chest_id):
 		chest_event.call("close", _world[chest_id]["pos"])
 
@@ -1425,6 +1559,13 @@ func _build_chest_panel() -> void:
 			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
 	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	chest_outer.add_child(transfer)
+	_shoulder_put = Button.new()
+	_shoulder_put.text = "Put the log from your shoulder in"
+	_shoulder_put.tooltip_text = "The large log on your shoulder goes into the container (take it out again the same way, one log at a time)"
+	_style(_shoulder_put, BODY_PX)
+	_shoulder_put.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO))
+	_shoulder_put.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	chest_outer.add_child(_shoulder_put)
 	_layer.add_child(_chest_panel)
 
 
@@ -1445,6 +1586,9 @@ func _on_chest_slot(chest_side: bool, slot: int) -> void:
 func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
+
+	if _shoulder_put != null:
+		_shoulder_put.visible = shoulder_id != ""
 
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
 
@@ -1473,6 +1617,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
+			_refresh_pile(id)
+
+			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
+				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				_snap_loose(id)
 
 			if _world[id]["state"] == state:
 				continue
@@ -1482,9 +1632,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		var node: Node3D
 		var light: OmniLight3D = null
 
-		if state >= 5 and state != 8 and state != 9:   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
+		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
-			node = _make_leanto() if state == 5 else (_make_chest() if state == 6 else (_make_remains(float(row[5].get("age", 0.0)) if row.size() > 5 else 0.0) if (state == 11 or state == 12) else (_make_bench() if state == 13 else (_make_rack() if state == 14 else (_make_vice() if state == 15 else (_make_log_bench() if state == 16 else (_make_forge() if state == 17 else (_make_smithy() if state == 18 else (_make_big_forge(state) if (state == 20 or state == 21) else (PieceLook.wall() if state == 22 else (PieceLook.floor_piece() if state == 23 else (PieceLook.roof() if state == 24 else (PieceLook.foundation() if state == 25 else (PieceLook.doorway() if state == 26 else (PieceLook.window_wall() if state == 27 else (_make_carcass(str(row[5].get("sp", "")) if row.size() > 5 else "") if state == 19 else _make_block()))))))))))))))))
+			node = _model_for_state(state, row[5] if row.size() > 5 else {})
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1495,10 +1645,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key}
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key, "yaw": rad_to_deg(yaw)}
+
+			if StructureLook.look_of(state) == "ladder":
+				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
+
 			continue
 
-		if state >= 3:
+		if state >= 3 and not _lit_state(state):
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
@@ -1514,7 +1668,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
 		else:
-			node = _make_fire(state == 1, state == 9)
+			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
 			light = node.get_node_or_null("Light")
 
@@ -1523,6 +1677,82 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+		_refresh_pile(id)
+		_snap_loose(id)
+
+
+# The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
+# lump could hang in the air (Dave 2026-10-23, rig: 0.40 m). A loose item within 1 m of the drawn ground rests on it; one whose chunk is not
+# drawn yet is tried again each second.
+const SNAP_UP_M := 0.6               # the drawn ground may be this far above the server's height (a lump rests on a rim)
+const SNAP_DOWN_M := 8.0             # and an item that hangs this far above the ground comes down to it (a deep shaft: the rig saw 1.6 and 4.3 m)
+const SNAP_TRIES := 10               # looked at again each second this many times: the collision ground under a fresh dig or fill is rebuilt a moment later
+var _snap_next_msec: int = 0
+var _unsnapped: Dictionary = {}      # world item id -> tries left
+
+
+func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
+	var entry: Dictionary = _world.get(id, {})
+
+	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
+		_unsnapped.erase(id)
+		return
+
+	var at: Vector3 = entry["pos"]
+	var ground: float = float(_ground_below.call(at - Vector3(0.0, 1.5, 0.0)))      # the probe starts 2 m above its point: 0.5 m above the item, so a tunnel roof is not hit
+
+	if is_nan(ground) or ground > at.y + SNAP_UP_M or ground < at.y - SNAP_DOWN_M:
+		_unsnapped[id] = tries - 1 if tries > 1 else 0
+		return
+
+	_unsnapped[id] = tries - 1
+	var node: Node3D = entry["node"]
+	node.position = Vector3(at.x, ground + 0.12, at.z)
+
+
+func _snap_tick(now: int) -> void:
+	if _unsnapped.is_empty() or now < _snap_next_msec:
+		return
+
+	_snap_next_msec = now + 1000
+
+	for id in _unsnapped.keys():
+		var left: int = int(_unsnapped[id])
+
+		if not _world.has(id) or left <= 0:
+			_unsnapped.erase(id)
+		else:
+			_snap_loose(id, left)
+
+
+# A heap of six or more stones (or soil, clay, sand, gravel) is drawn as one pile built from its count (PileLook); fewer are single items.
+func _refresh_pile(id: int) -> void:
+	var entry: Dictionary = _world[id]
+	var box: MeshInstance3D = entry["node"] as MeshInstance3D
+	var item_id: String = table.id_of(int(entry["number"]))
+
+	if box == null or int(entry.get("state", 0)) != 0:
+		return
+
+	if PileLookScript.is_pile(table.entry(item_id), int(entry["count"])):
+		box.mesh = PileLookScript.mesh_for(item_id, table.entry(item_id), int(entry["count"]), id)
+		box.scale = Vector3.ONE
+		box.rotation = Vector3.ZERO
+		entry["pile"] = true
+	elif entry.get("pile", false):
+		entry["pile"] = false
+		box.mesh = _mesh_for(int(entry["number"]))
+
+
+# One loose item as it is drawn on the ground, for the admin showroom: the node sits at the origin (the caller moves it), nothing is
+# registered in _world, so it cannot be picked up or counted.
+func make_display_item(number: int, seed_id: int) -> Node3D:
+	var box: MeshInstance3D = MeshInstance3D.new()
+	var real: Mesh = _natural_mesh(number, seed_id)
+	box.mesh = real if real != null else _mesh_for(number)
+	box.position = Vector3(0.0, 0.12, 0.0)
+	_dress_item(box, number, seed_id, real != null)
+	return box
 
 
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
@@ -1530,8 +1760,10 @@ func foundation_rows() -> Array:
 	var rows: Array = []
 
 	for id in _world:
-		if int(_world[id]["state"]) == 25:
-			rows.append({"pos": _world[id]["pos"], "state": 25})
+		var state: int = int(_world[id]["state"])
+
+		if state >= 22 and state <= 28 and _world[id].has("yaw"):
+			rows.append({"pos": _world[id]["pos"], "state": state, "yaw": _world[id]["yaw"]})
 
 	return rows
 
@@ -1542,7 +1774,7 @@ func placed_rows() -> Array:
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 
-		if state == 1 or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21:
+		if _lit_state(state) or state == 5 or state == 6 or state == 7 or state == 8 or state == 9 or state == 13 or state == 14 or state == 15 or state == 16 or state == 17 or state == 18 or state == 20 or state == 21 or state == 38:
 			rows.append({"pos": _world[id]["pos"], "state": state})
 
 	return rows
@@ -1611,7 +1843,78 @@ func boulder_near(point: Vector3) -> int:
 	return 0
 
 
+# Loose items roll a little when walked over (Dave 2026-10-23, keep-item-roll): a few times a second the loose singles within ROLL_TRIGGER_M of a
+# moving player get a push away from them; each rolls on its own with friction, settles on the ground and turns as it goes. Drawing only:
+# the server still knows the item at its spot (a roll never goes more than ROLL_MAX_M from it, inside pickup reach), so nothing is sent.
+const ROLL_TRIGGER_M := 0.7
+const ROLL_MAX_M := 0.8
+const ROLL_FRICTION := 3.5
+const ROLL_MIN_SPEED := 0.08
+var _roll_last_msec: int = 0
+var _roll_prev: Vector3 = Vector3.ZERO
+var _roll_speed: float = 0.0
+var _rolling: Dictionary = {}   # world id -> {"vel": Vector2, "off": Vector2}
+
+
+func _roll_tick(delta: float, now: int) -> void:
+	if not _player_position.is_valid() or _world.is_empty() and _rolling.is_empty():
+		return
+
+	if now - _roll_last_msec >= 100:
+		var here: Vector3 = _player_position.call()
+		var dt: float = float(now - _roll_last_msec) / 1000.0
+		_roll_speed = Vector2(here.x - _roll_prev.x, here.z - _roll_prev.z).length() / maxf(dt, 0.001) if _roll_last_msec > 0 and dt < 1.0 else 0.0
+		_roll_prev = here
+		_roll_last_msec = now
+
+		if _roll_speed > 0.5 and _roll_speed < 15.0:
+			for id in _world:
+				var entry: Dictionary = _world[id]
+
+				if int(entry["state"]) != 0 or entry.get("pile", false) or int(entry["count"]) > 5 or _rolling.has(id):
+					continue
+
+				var apart: Vector2 = Vector2(entry["pos"].x - here.x, entry["pos"].z - here.z)
+
+				if apart.length() < ROLL_TRIGGER_M:
+					var away: Vector2 = apart.normalized() if apart.length() > 0.01 else Vector2(1.0, 0.0)
+					_rolling[id] = {"vel": away * (0.9 + 0.35 * _roll_speed), "off": Vector2.ZERO}
+
+	for id in _rolling.keys():
+		var roll: Dictionary = _rolling[id]
+		var entry: Dictionary = _world.get(id, {})
+
+		if entry.is_empty():
+			_rolling.erase(id)
+			continue
+
+		var node: Node3D = entry["node"]
+		var vel: Vector2 = roll["vel"]
+		var off: Vector2 = roll["off"] + vel * delta
+		var travelled: float = off.length()
+
+		if travelled > ROLL_MAX_M:
+			off = off * (ROLL_MAX_M / travelled)
+			vel = Vector2.ZERO
+
+		vel *= exp(-ROLL_FRICTION * delta)
+		roll["vel"] = vel
+		roll["off"] = off
+		var spot: Vector3 = entry["pos"] + Vector3(off.x, 0.0, off.y)
+		var ground: float = float(_ground_below.call(spot)) if _ground_below.is_valid() else NAN
+		node.position = Vector3(spot.x, (ground if not is_nan(ground) else entry["pos"].y) + 0.12, spot.z)
+
+		if vel.length() > 0.01:
+			node.rotate(Vector3(vel.y, 0.0, -vel.x).normalized(), vel.length() * delta / 0.12)
+
+		if vel.length() < ROLL_MIN_SPEED:
+			_rolling.erase(id)
+
+
 func _forget(id: int) -> void:
+	_rolling.erase(id)
+	_unsnapped.erase(id)
+
 	if _boulders.has(id):
 		_boulders[id]["node"].queue_free()
 		_boulders.erase(id)
@@ -1627,6 +1930,7 @@ func _forget(id: int) -> void:
 
 	entry["node"].queue_free()
 	_world.erase(id)
+	ladders.erase(id)
 
 
 # The look of what is built lives in building_look.gd (Art direction); these keep the call sites and the "Light" child.
@@ -1688,8 +1992,45 @@ func _make_vice() -> Node3D:
 	return root
 
 
+# Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
+var admin_craft: bool = true    # Esc > Admin > Admin mode switch (on by default)
+
+
+func _free_craft() -> bool:
+	return admin_craft or not AdminScript.check_enabled()
+
+
+func _can_craft(number: int) -> bool:
+	return _free_craft() or recipes.can_make(number, inventory) or bool(_parts_plan(number)["ok"])
+
+
+var _plan_cache: Dictionary = {}   # recipe number -> its auto-make plan, cleared on every refresh
+
+
+# What the server would queue if you picked this recipe short of a part it can make (Dave 25 Oct): {"ok", "made": [[item, count]], "ambiguous", "msg"}.
+func _parts_plan(number: int) -> Dictionary:
+	if _plan_cache.has(number):
+		return _plan_cache[number]
+
+	var plan: Dictionary = {"ok": false, "steps": [], "made": [], "ambiguous": 0, "msg": ""}
+
+	if not recipes.can_make(number, inventory):
+		var ctx: Dictionary = {
+			"have": func(item: int) -> int: return inventory.count_of(item),
+			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
+			"free": false,
+		}
+		plan = CraftPlanner.plan(recipes, table, number, 1, ctx)
+
+		if bool(plan["ok"]) and (plan["steps"] as Array).size() < 2:
+			plan["ok"] = false
+
+	_plan_cache[number] = plan
+	return plan
+
+
 func _station_ok(r: Dictionary) -> bool:
-	return str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
+	return _free_craft() or str(r.get("station", "")) == "" or station_near(str(r["station"]), int(r.get("station_level", 1)))
 
 
 func _station_label(r: Dictionary) -> String:
@@ -1862,16 +2203,23 @@ func _local_to(node: Node3D, ancestor: Node3D) -> Vector3:
 	return _chain_to(node, ancestor).origin
 
 
+# Is a lit fire (any tier) within r metres of a point? Display only.
+func _lit_fire_near(pos: Vector3, r: float) -> bool:
+	for fire_id in _world:
+		if _lit_state(int(_world[fire_id]["state"])) and pos.distance_to(_world[fire_id]["pos"]) <= r:
+			return true
+
+	return false
+
+
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
 func station_near(station: String, level: int = 1) -> bool:
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 
-	if station == "campfire":   # a lit campfire (state 1) within reach
+	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
 		for fire_id in _world:
-			if int(_world[fire_id]["state"]) == 1 and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
+			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= 4.5:
 				return true
-
-		return false
 
 	for id in _world:
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
@@ -1880,6 +2228,9 @@ func station_near(station: String, level: int = 1) -> bool:
 			continue
 
 		if str(def.get("station", "")) == station and int(def.get("station_level", 1)) + _addons_near(id, station, float(def.get("addon_reach_m", 5.0))) >= level:
+			if str(def.get("attach_to", "")) == "fire" and not _lit_fire_near(_world[id]["pos"], 0.3):
+				continue   # the pot cooks only while the fire it hangs over is lit
+
 			return true
 
 		if int(def.get("also", {}).get(station, 0)) >= level:
@@ -1920,23 +2271,7 @@ func _make_chest() -> Node3D:
 # `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
 # A dead animal lying on its side: a brown ellipsoid sized by species (rabbit 0.45 m).
 func _make_carcass(species: String) -> Node3D:
-	var root: Node3D = Node3D.new()
-	var length: float = 0.45 if species == "rabbit" else 1.2
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0
-	material.albedo_color = Color(0.4, 0.31, 0.22)
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var ball: SphereMesh = SphereMesh.new()
-	ball.radius = 0.5
-	ball.height = 1.0
-	ball.radial_segments = 8
-	ball.rings = 4
-	body.mesh = ball
-	body.material_override = material
-	body.scale = Vector3(length * 0.5, length * 0.28, length)
-	body.position = Vector3(0.0, length * 0.14, 0.0)
-	root.add_child(body)
-	return root
+	return CarcassLook.build(species)
 
 
 func _make_remains(age: float) -> Node3D:
@@ -1962,48 +2297,59 @@ func _make_remains(age: float) -> Node3D:
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
-# The model of a placeable as it stands in the world, for the placement ghost (held_item.gd): the same builders the world draws with.
-func ghost_model(state: int) -> Node3D:
-	if state == 1:
-		return _make_fire(false)
+# The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
+# `extra` is the row's extras (remains age, carcass species).
+func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
+	var look: String = StructureLook.look_of(state)
 
-	match state:
-		5:
+	if LookTable.has_look(look):
+		return LookTable.build(look)   # building pieces: one table in look_table.gd
+
+	match look:
+		"campfire":
+			return _make_fire(false, state == 9)
+		"lean_to":
 			return _make_leanto()
-		6:
+		"chest":
 			return _make_chest()
-		13:
+		"remains":
+			return _make_remains(float(extra.get("age", 0.0)))
+		"workbench":
 			return _make_bench()
-		14:
+		"tool_rack":
 			return _make_rack()
-		15:
+		"vice":
 			return _make_vice()
-		16:
+		"log_workbench":
 			return _make_log_bench()
-		17:
+		"stone_forge":
 			return _make_forge()
-		18:
+		"blacksmithy":
 			return _make_smithy()
-		20, 21:
+		"big_forge":
 			return _make_big_forge(state)
-		22:
-			return PieceLook.wall()
-		23:
-			return PieceLook.floor_piece()
-		24:
-			return PieceLook.roof()
-		25:
-			return PieceLook.foundation()
-		26:
-			return PieceLook.doorway()
-		27:
-			return PieceLook.window_wall()
+		"carcass":
+			return _make_carcass(str(extra.get("sp", "")))
 
-	return _make_block()
+	return _make_block()   # the chopping block (and any name nobody drew yet) is a plain block
 
 
-func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
-	return BuildingLook.fire(lit, loaded)
+# The ghost's model: a lit campfire is shown cold.
+func ghost_model(state: int) -> Node3D:
+	return _model_for_state(state)
+
+
+func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
+	return BuildingLook.fire(lit, loaded, tier)
+
+
+# Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
+static func _lit_state(state: int) -> bool:
+	return state == 1 or state == 40 or state == 41
+
+
+static func _fire_tier(state: int) -> int:
+	return 1 if state == 40 else (3 if state == 41 else 2)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
@@ -2011,22 +2357,29 @@ func _make_fire(lit: bool, loaded: bool = false) -> Node3D:
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
 		var id: String = table.id_of(number)
+
+		if id == "chopping_block" or id == "chopping_block_kit":
+			_meshes[number] = BuildingLook.block_mesh()      # the heavy block you carry is the placed model, nothing else
+			return _meshes[number]
+
+		var basic: Mesh = BasicLook.mesh_for(id)      # stage-one look from data/items/looks.json (src/client/basic_look.gd)
+
+		if basic != null:
+			_meshes[number] = basic
+			return basic
+
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.roughness = 1.0
 		var mesh: Mesh
 
 		if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood" or id.begins_with("log_"):
 			var dims: Array = {"driftwood": [0.9, 0.06, 0.05, 0.01], "stick": [0.6, 0.02, 0.011, 0.07], "plant_fibre": [0.3, 0.012, 0.006, 0.05], "firewood": [0.4, 0.05, 0.045, 0.01], "log": [1.0, 0.13, 0.11, 0.02]}.get(id, [2.5, 0.28, 0.22, 0.02])   # a species log is the full-size 2.5 m length
-			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, Color(0.33, 0.24, 0.16))
+			material.albedo_color = {"stick": Color(0.38, 0.27, 0.17), "plant_fibre": Color(0.72, 0.68, 0.45), "firewood": Color(0.5, 0.36, 0.22), "driftwood": Color(0.62, 0.58, 0.5), "log": Color(0.33, 0.24, 0.16)}.get(id, LogLookScript.color_of(id))
 			mesh = _branch_mesh(float(dims[0]), float(dims[1]), float(dims[2]), float(dims[3]))
 		elif id == "stone":
-			var rock: SphereMesh = SphereMesh.new()
-			rock.radius = 0.11
-			rock.height = 0.15
-			rock.radial_segments = 8
-			rock.rings = 4
-			material.albedo_color = Color(0.47, 0.46, 0.44)
-			mesh = rock
+			mesh = RockLook.mesh()      # an irregular faceted lump with its own vertex colours (src/client/rock_look.gd)
+			material.vertex_color_use_as_albedo = true
+			material.albedo_color = Color.WHITE
 		elif str(table.entry(id).get("kind", "")) in ["placeable", "structure", "tool", "weapon"]:
 			var crate: BoxMesh = BoxMesh.new()
 			crate.size = Vector3(0.3, 0.12, 0.2)
@@ -2100,6 +2453,11 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 		return
 
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
+
+	if BasicLook.has_look(id):
+		node.scale = Vector3.ONE * BASIC_DROP_SCALE      # big enough to find in the tall grass (the natural stones and sticks are 3 times)
+		node.position.y += 0.04
+		return
 
 	if id == "stick" or id == "plant_fibre" or id == "firewood" or id == "log" or id == "driftwood":
 		node.scale = Vector3(rng.randf_range(0.7, 1.3), 1.0, 1.0)
@@ -2219,9 +2577,13 @@ const BODY_PX := 30
 const TITLE_PX := 40
 
 var _search: LineEdit
+var _recipe_search: LineEdit             # the search box at the top of the Make list: filters recipes by name as you type
+var _recipe_category: String = ""        # "" = All
+var _category_buttons: Dictionary = {}   # category name -> its tab button
 var _recipe_list: VBoxContainer
 var _detail: VBoxContainer
 var _selected_recipe: int = 0
+var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
 var _quantity: SpinBox
 var _qty: int = 1
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
@@ -2318,7 +2680,9 @@ func _build_bars_row() -> HBoxContainer:
 
 # The character died (protocol 34): a message and a fade out and in over death.json respawn_delay_s. The terrain client moves the body.
 func _on_died(cause: String, _spawn: Vector3) -> void:
-	_death_msec = Time.get_ticks_msec()
+	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
+		_death_msec = Time.get_ticks_msec()
+
 	show_notice("You died: %s" % cause)
 
 
@@ -2334,6 +2698,9 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 
 # The inner voice (protocol 38): the text as a subtitle for a few seconds; Sounds plays the line's recording when there is one.
 func _on_thought(line_id: String, text: String, kind: String) -> void:
+	if not inner_settings.allows(kind):
+		return      # the player switched this kind of line off (the symptom message itself is not a line of the voice)
+
 	_thought_label.text = "(%s)" % text
 	_thought_until_msec = Time.get_ticks_msec() + 5500
 
@@ -2516,7 +2883,7 @@ func _build_panel() -> void:
 		top.add_child(size_button)
 
 	_search = LineEdit.new()
-	_search.placeholder_text = "Search recipes and items"
+	_search.placeholder_text = "Search items"
 	_search.custom_minimum_size = Vector2(_px(120), 0.0)
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search.size_flags_stretch_ratio = 1.0
@@ -2539,6 +2906,7 @@ func _build_panel() -> void:
 	left_title.text = "Make"
 	_style(left_title, TITLE_PX - 6)
 	left.add_child(left_title)
+	left.add_child(_build_recipe_filter())
 	var list_scroll: ScrollContainer = ScrollContainer.new()
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -2759,7 +3127,7 @@ func _craft_selected() -> void:
 
 
 func _start_craft(number: int, count: int = 1) -> void:
-	if not recipes.can_make(number, inventory):
+	if not _can_craft(number):
 		return
 
 	for item in recipes.recipe(number).get("identify", []):
@@ -2771,6 +3139,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
+	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -2938,8 +3307,41 @@ func _drop_selected(whole: bool) -> void:
 	var here: Vector3 = _player_position.call()
 	var ground: float = _ground_below.call(here)
 	var at: Vector3 = Vector3(here.x, ground if not is_nan(ground) else here.y - 1.0, here.z)
+	auto_pickup.note_drop(inventory.numbers[_selected], at, Time.get_ticks_msec())   # auto pickup leaves it alone for 15 s
 	net.inventory_action.rpc_id(1, Net.ACT_DROP, _selected, 0, inventory.counts[_selected] if whole else 1, at)
 	_selected = -1
+
+
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name; a tab shows one category.
+func _build_recipe_filter() -> Control:
+	var holder: VBoxContainer = VBoxContainer.new()
+	_recipe_search = LineEdit.new()
+	_recipe_search.placeholder_text = "Search what you can make"
+	_recipe_search.clear_button_enabled = true
+	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style(_recipe_search, BODY_PX)
+	_recipe_search.text_changed.connect(func(_text): _refresh())
+	holder.add_child(_recipe_search)
+	var tabs: HFlowContainer = HFlowContainer.new()
+	holder.add_child(tabs)
+	_category_buttons.clear()
+
+	for label in [""] + RecipeFilter.CATEGORIES:
+		var tab: Button = Button.new()
+		tab.text = "All" if label == "" else str(label)
+		tab.toggle_mode = true
+		_style(tab, BODY_PX - 6)
+		tab.pressed.connect(func():
+			_recipe_category = str(label)
+			_refresh())
+		tabs.add_child(tab)
+		_category_buttons[str(label)] = tab
+
+	return holder
+
+
+func _recipe_shown(r: Dictionary) -> bool:
+	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "")
 
 
 func _matches(text: String, filter: String) -> bool:
@@ -3027,6 +3429,7 @@ func _refresh() -> void:
 		return
 
 	_note_acquired()
+	_plan_cache.clear()
 	_arrange_slots()
 
 	if _weight_label != null:
@@ -3066,29 +3469,37 @@ func _refresh() -> void:
 			button.text += "   %s" % _litres(inventory.wear[i])
 
 	# Recipes: makeable first, then the rest, each alphabetical.
+	_hover_recipe = 0
+
 	for child in _recipe_list.get_children():
 		child.queue_free()
 
 	var can: Array = []
 	var cannot: Array = []
 
+	for tab_name in _category_buttons:
+		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
 
-		if not r["known"] or not _recipe_matches(r, filter):
+		if (not r["known"] and not _free_craft()) or not _recipe_shown(r):
 			continue
 
-		(can if recipes.can_make(number, inventory) and _station_ok(r) else cannot).append(r)
+		(can if _can_craft(number) and _station_ok(r) else cannot).append(r)
 
-	var by_name: Callable = func(a, b): return str(a["name"]) < str(b["name"])
+	# One alphabetical list, case-insensitive by display name (Dave 24 Oct); the green and grey colours say what can be made now.
+	var by_name: Callable = func(a, b): return str(a["name"]).naturalnocasecmp_to(str(b["name"])) < 0
+	var shown_recipes: Array = can + cannot
+	shown_recipes.sort_custom(by_name)
 	can.sort_custom(by_name)
 	cannot.sort_custom(by_name)
 
 	if _selected_recipe == 0 or recipes.recipe(_selected_recipe).is_empty():
 		_selected_recipe = can[0]["number"] if not can.is_empty() else (cannot[0]["number"] if not cannot.is_empty() else 0)
 
-	for r in can + cannot:
-		var makeable: bool = recipes.can_make(r["number"], inventory) and _station_ok(r)
+	for r in shown_recipes:
+		var makeable: bool = _can_craft(r["number"]) and _station_ok(r)
 		var entry: Button = Button.new()
 		entry.text = str(r["name"]) + (("   (needs %s)" % _station_label(r)) if not _station_ok(r) else "")
 		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -3098,6 +3509,8 @@ func _refresh() -> void:
 		entry.flat = r["number"] != _selected_recipe
 		_style(entry, BODY_PX)
 		entry.pressed.connect(_select_recipe.bind(r["number"]))
+		entry.mouse_entered.connect(func(): _hover_recipe = int(r["number"]))
+		entry.mouse_exited.connect(func(): _hover_recipe = 0 if _hover_recipe == int(r["number"]) else _hover_recipe)
 		_recipe_list.add_child(entry)
 
 	_add_admin_builds()
@@ -3116,7 +3529,10 @@ func _add_admin_builds() -> void:
 	head.modulate = Color(1.0, 0.8, 0.4)
 	_recipe_list.add_child(head)
 
-	for id in ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit"]:
+	var admin_ids: Array = ["foundation_section_kit", "wall_section_kit", "doorway_section_kit", "window_section_kit", "floor_section_kit", "roof_section_kit", "ladder_kit", "campfire_kit", "lean_to_kit", "chest_kit", "workbench_kit", "rough_bed_kit", "thatch_wall_kit", "campfire_pot_kit", "clay_hearth_kit", "oven_kit"]
+	admin_ids.sort_custom(func(a, b): return table.name_of(table.number_of(str(a))).naturalnocasecmp_to(table.name_of(table.number_of(str(b)))) < 0)
+
+	for id in admin_ids:
 		var number: int = table.number_of(id)
 
 		if number == 0:
@@ -3157,6 +3573,22 @@ func _refresh_detail() -> void:
 		_style(where, BODY_PX)
 		_detail.add_child(where)
 
+	var parts: Dictionary = _parts_plan(_selected_recipe)
+
+	if bool(parts["ok"]):
+		var made: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], table.name_of(m[0]).to_lower()])
+		var auto_line: Label = Label.new()
+		auto_line.text = "Makes %s first" % " and ".join(made)
+		auto_line.modulate = Color(0.55, 1.0, 0.55)
+		_style(auto_line, BODY_PX)
+		_detail.add_child(auto_line)
+	elif int(parts["ambiguous"]) != 0:
+		var choose_line: Label = Label.new()
+		choose_line.text = str(parts["msg"])
+		choose_line.modulate = Color(1.0, 0.8, 0.4)
+		_style(choose_line, BODY_PX)
+		_detail.add_child(choose_line)
+
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
 		var have: int = inventory.count_of(need[0])
@@ -3182,7 +3614,7 @@ func _refresh_detail() -> void:
 	row.add_child(_quantity)
 	var make: Button = Button.new()
 	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (recipes.can_make(_selected_recipe, inventory) and _station_ok(r))
+	make.disabled = not (_can_craft(_selected_recipe) and _station_ok(r))
 	make.custom_minimum_size = Vector2(_px(240), _px(64))
 	_style(make, BODY_PX)
 	make.pressed.connect(_craft_selected)
@@ -3206,7 +3638,7 @@ func run_test() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	toggle()
-	_search.text = "stone"
+	_recipe_search.text = "stone"
 	_refresh()
 	var shown: int = 0
 
@@ -3215,10 +3647,10 @@ func run_test() -> void:
 			shown += 1
 
 	print("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
-	_search.text = ""
+	_recipe_search.text = ""
 	_refresh()
 	toggle()
-	print("Items test: crafted, cordage %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("cordage")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
+	print("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
 
 
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
@@ -3626,6 +4058,259 @@ func run_leanto_test(_client) -> void:
 	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
 
 
+# Headless check (--shoot): get a bow and arrows, draw fully and loose one arrow along the view, then say what the pack and the ground show.
+# Prints SHOOT TEST lines; the last one is PASS or FAILED. No key presses, no animals needed (a hit is checked by test_bow on the server).
+func run_shoot_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("wooden_bow"), 0, 1, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
+
+	for n in 30:   # a cold join gets its pack late: poll up to 15 s
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("wooden_bow")) and inventory.count_of(table.number_of("stone_arrow")) >= 3:
+			break
+
+		if n == 16 and not inventory.numbers.has(table.number_of("wooden_bow")) and inventory.count_of(table.number_of("stone_arrow")) == 0:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("wooden_bow"), 0, 1, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone_arrow"), 0, 3, Vector3.ZERO)
+
+	var bow_slot: int = inventory.numbers.find(table.number_of("wooden_bow"))
+	var arrows_before: int = inventory.count_of(table.number_of("stone_arrow"))
+	print("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
+
+	if bow_slot < 0 or arrows_before < 1:
+		print("SHOOT TEST FAILED: the pack did not get the bow or the arrows")
+		return
+
+	var camera: Camera3D = client.camera
+	var level: Vector3 = -camera.global_transform.basis.z
+	var forward: Vector3 = (Vector3(level.x, 0.0, level.z).normalized() + Vector3(0.0, -0.12, 0.0)).normalized()   # a little downward: lands about 30 m off, inside the rows the server sends
+	var started: int = Time.get_ticks_msec()
+	await get_tree().create_timer(1.2).timeout      # a full draw
+	net.inventory_action.rpc_id(1, Net.ACT_SHOOT, bow_slot, Time.get_ticks_msec() - started, 0, forward)
+	await get_tree().create_timer(1.5).timeout
+	var arrows_after: int = inventory.count_of(table.number_of("stone_arrow"))
+	print("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
+	await get_tree().create_timer(15.0).timeout     # flight, landing and the world-item update
+	var landed: int = 0
+	var nearest: float = -1.0
+	var here: Vector3 = _player_position.call()
+
+	for id in _world:
+		if _world[id]["number"] == table.number_of("stone_arrow"):
+			var d: float = (_world[id]["pos"] as Vector3).distance_to(here)
+			landed += 1 if d < 90.0 else 0
+			nearest = d if nearest < 0.0 or d < nearest else nearest
+
+	print("SHOOT TEST: %d arrow(s) lying within 90 m after the flight, nearest %.1f m, %d world rows in all (an arrow can break, so 0 is possible; a stone arrow breaks about a fifth of the time)" % [landed, nearest, _world.size()])
+	print("SHOOT TEST %s" % ("PASS" if arrows_after == arrows_before - 1 else "FAILED: the shot did not take an arrow"))
+
+
+# Headless check (--place-foundation): a hand-made foundation (thatch floor) is given and placed 3 m ahead; says what the world shows there.
+# Prints FOUNDATION TEST lines; the last one is PASS or FAILED.
+func run_foundation_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var kit: int = table.number_of("thatch_floor_kit")
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
+
+	for n in 30:   # a cold join gets its pack late: poll up to 15 s
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(kit):
+			break
+
+		if n == 16:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, kit, 0, 1, Vector3.ZERO)
+
+	var slot: int = inventory.numbers.find(kit)
+
+	if slot < 0:
+		print("FOUNDATION TEST FAILED: no thatch floor kit in the pack")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 3.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	var rows_before: int = _world.size()
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, slot, 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var near: Array = []
+
+	for id in _world:
+		if (_world[id]["pos"] as Vector3).distance_to(spot) < 2.5:
+			near.append(table.id_of(int(_world[id]["number"])))
+
+	var kit_left: int = inventory.count_of(kit)
+	print("FOUNDATION TEST: spot %s, kit left %d, world rows %d -> %d, near the spot: %s" % [str(spot), kit_left, rows_before, _world.size(), str(near)])
+	print("FOUNDATION TEST %s" % ("PASS" if kit_left == 0 and not near.is_empty() else "FAILED: the floor was not placed"))
+
+
+# Waits up to 15 s for `count` of an item to show in the pack after an admin give; the give is sent once more at 8 s when nothing came
+# (a cold join on a busy server loses the first). Returns true when it arrived.
+func _smoke_give(id: String, count: int) -> bool:
+	var number: int = table.number_of(id)
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, count, Vector3.ZERO)
+
+	for n in 30:
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.count_of(number) >= count:
+			return true
+
+		if n == 16 and inventory.count_of(number) == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, count, Vector3.ZERO)
+
+	return false
+
+
+# The nearest world row within `reach` of a spot with a given item id (and, when states is not empty, one of those states): its id, or -1.
+func _smoke_row_near(spot: Vector3, item_id: String, reach: float, states: Array = []) -> int:
+	var best: int = -1
+	var best_d: float = reach
+
+	for id in _world:
+		if table.id_of(int(_world[id]["number"])) != item_id or (not states.is_empty() and not states.has(int(_world[id]["state"]))):
+			continue
+
+		var d: float = (_world[id]["pos"] as Vector3).distance_to(spot)
+
+		if d <= best_d:
+			best = id
+			best_d = d
+
+	return best
+
+
+# Headless check (--cook): a campfire is laid and lit, raw meat is roasted on it and eaten. Prints COOK TEST lines; the last one is PASS or FAILED.
+func run_cook_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+	var meat: int = table.number_of("raw_meat")
+
+	for pair in [["campfire_kit", 1], ["plant_fibre", 3], ["raw_meat", 2]]:
+		if not await _smoke_give(str(pair[0]), int(pair[1])):
+			print("COOK TEST FAILED: the pack did not get %s" % str(pair[0]))
+			return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 2.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("campfire_kit")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var fire: int = -1
+
+	for id in _world:
+		if (_world[id]["pos"] as Vector3).distance_to(spot) < 2.0 and int(_world[id]["state"]) in [9, 1, 40, 41]:
+			fire = id
+
+	print("COOK TEST: fire row %d, state %s" % [fire, str(_world[fire]["state"]) if fire >= 0 else "none"])
+
+	if fire < 0:
+		print("COOK TEST FAILED: the fire was not laid")
+		return
+
+	for n in 3:   # a damp tinder can fail: up to three tries
+		if _lit_state(int(_world[fire]["state"])):
+			break
+
+		net.inventory_action.rpc_id(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+		await get_tree().create_timer(2.0).timeout
+
+	if not _lit_state(int(_world[fire]["state"])):
+		print("COOK TEST FAILED: the fire did not light (state %s)" % str(_world[fire]["state"]))
+		return
+
+	net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(2.5).timeout
+	var roast: int = table.number_of("roast_meat")
+	print("COOK TEST: raw meat %d -> %d, roast meat %d" % [2, inventory.count_of(meat), inventory.count_of(roast)])
+
+	if inventory.count_of(roast) < 1:
+		print("COOK TEST FAILED: nothing was roasted")
+		return
+
+	var fed_before: int = hunger
+	eat_slot(inventory.numbers.find(roast))
+	await get_tree().create_timer(2.0).timeout
+	print("COOK TEST: hunger %d -> %d, roast meat left %d" % [fed_before, hunger, inventory.count_of(roast)])
+	print("COOK TEST %s" % ("PASS" if inventory.count_of(roast) == 0 and hunger >= fed_before else "FAILED: the roast was not eaten"))
+
+
+# Headless check (--sleep): a rough bed is set down beside the player, they lie on it, fall asleep for a few seconds and wake. Prints SLEEP TEST lines.
+func run_sleep_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+
+	if not await _smoke_give("rough_bed_kit", 1):
+		print("SLEEP TEST FAILED: the pack did not get the rough bed")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 0.9
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("rough_bed_kit")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var bed: int = _smoke_row_near(spot, "rough_bed", 2.0)
+	print("SLEEP TEST: bed row %d (no roof here is fine: it then behaves as ground)" % bed)
+
+	if bed < 0:
+		print("SLEEP TEST FAILED: the bed was not set down")
+		return
+
+	var energy_before: int = energy
+	request_stance(3)
+	await get_tree().create_timer(1.5).timeout
+	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(6.0).timeout
+	var slept: bool = asleep
+	var stance_in_sleep: int = stance_confirmed
+	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
+	await get_tree().create_timer(2.0).timeout
+	request_stance(0)
+	await get_tree().create_timer(1.5).timeout
+	print("SLEEP TEST: lying %d, asleep %s, energy %d -> %d, after waking asleep %s" % [stance_in_sleep, str(slept), energy_before, energy, str(asleep)])
+	print("SLEEP TEST %s" % ("PASS" if slept and not asleep and energy >= energy_before else "FAILED: sleep did not start, did not end, or energy fell"))
+
+
+# Headless check (--snare): a snare is set down and left; passes when a carcass lies by it (server checks every 30 s; run the server with traps.json test_chance above 0,
+# otherwise this only waits for a rabbit to walk by). Prints SNARE TEST lines.
+func run_snare_test(client) -> void:
+	await get_tree().create_timer(6.0).timeout
+
+	if not await _smoke_give("snare", 1):
+		print("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
+		return
+
+	var forward: Vector3 = -client.camera.global_transform.basis.z
+	var here: Vector3 = _player_position.call()
+	var ahead: Vector3 = here + Vector3(forward.x, 0.0, forward.z).normalized() * 3.0
+	var spot: Vector3 = Vector3(ahead.x, float(_ground_below.call(ahead)), ahead.z)
+	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("snare")), 0, 0, spot)
+	await get_tree().create_timer(2.5).timeout
+	var snare: int = _smoke_row_near(spot, "snare_trap", 2.0)
+
+	if snare < 0:
+		snare = _smoke_row_near(spot, "snare", 2.0)
+
+	print("SNARE TEST: snare row %d" % snare)
+
+	if snare < 0:
+		print("SNARE TEST FAILED: the snare was not set down")
+		return
+
+	for n in 40:   # up to 200 s: the server looks every 30 s
+		await get_tree().create_timer(5.0).timeout
+
+		if _smoke_row_near(spot, "carcass", 3.0) >= 0:
+			print("SNARE TEST: a carcass lies by the snare after %d s" % ((n + 1) * 5))
+			print("SNARE TEST PASS")
+			return
+
+	print("SNARE TEST FAILED: no catch in 200 s (the server needs traps.json test_chance above 0 for a sure run)")
+
+
 # Headless check (--eat): eat a roast and apply a poultice.
 func run_eat_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
@@ -3657,7 +4342,7 @@ func run_eat_test(client) -> void:
 
 		print("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
 
-	# Crafting queue: three cordage line up, the screen shows the entry, pressing it cancels and refunds.
+	# Crafting queue: three twine line up, the screen shows the entry, pressing it cancels and refunds.
 	var fibre: int = table.number_of("plant_fibre")
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, fibre, 0, 12, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
@@ -3757,7 +4442,7 @@ func run_chest_test(client) -> void:
 		if _world[k]["state"] == 6:
 			id = k
 
-	net.inventory_action.rpc_id(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	_ask_open(id)
 
 	for wait in 60:   # the cloud is slow: give the chest up to 6 s to open
 		if chest_inv != null:

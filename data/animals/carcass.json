@@ -1,0 +1,12 @@
+{
+	"_about": "Carcass looks per species (Kathleen, goal 2 batch A): lying on its side. len/width/height = body metres, legs = leg length, head = head length, neck = neck length, coat/pale colours, tail length, antlers true/false, beak true for the duck. Used by src/client/carcass_look.gd; a species with no row falls back to the deer row.",
+	"species": {
+		"rabbit": {"len": 0.45, "width": 0.16, "height": 0.16, "legs": 0.16, "head": 0.09, "neck": 0.04, "tail": 0.04, "coat": "#73593f", "pale": "#ebe5d8", "antlers": false, "beak": false},
+		"deer": {"len": 1.4, "width": 0.45, "height": 0.5, "legs": 0.62, "head": 0.28, "neck": 0.4, "tail": 0.12, "coat": "#85613d", "pale": "#e5dccb", "antlers": true, "beak": false},
+		"wolf": {"len": 1.1, "width": 0.32, "height": 0.38, "legs": 0.46, "head": 0.24, "neck": 0.18, "tail": 0.38, "coat": "#716b60", "pale": "#b6ae9e", "antlers": false, "beak": false},
+		"moose": {"len": 2.5, "width": 0.85, "height": 0.95, "legs": 1.15, "head": 0.65, "neck": 0.6, "tail": 0.1, "coat": "#33241a", "pale": "#665444", "antlers": true, "beak": false},
+		"fox": {"len": 0.7, "width": 0.2, "height": 0.24, "legs": 0.26, "head": 0.15, "neck": 0.09, "tail": 0.42, "coat": "#b85620", "pale": "#ede0cc", "antlers": false, "beak": false},
+		"duck": {"len": 0.42, "width": 0.2, "height": 0.2, "legs": 0.07, "head": 0.08, "neck": 0.14, "tail": 0.07, "coat": "#665738", "pale": "#d9d2bc", "antlers": false, "beak": true},
+		"horse": {"len": 2.0, "width": 0.6, "height": 0.7, "legs": 0.9, "head": 0.55, "neck": 0.7, "tail": 0.6, "coat": "#5c3319", "pale": "#a1624a", "antlers": false, "beak": false}
+	}
+}

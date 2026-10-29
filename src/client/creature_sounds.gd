@@ -15,7 +15,7 @@ extends Node
 # "threat" (angry or hurt: a danger cue, always allowed even when the voice budget is full).
 # Sounds: generated in assets/audio/creatures/ (make_creatures.py); recordings in
 # assets/audio/recorded/creatures/ win. Names: deer_grunt, deer_snort, rabbit_thump, rabbit_squeak,
-# fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar (_N variants).
+# fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar, moose_grunt/snort/bellow, horse_snort/whinny, duck_quack (_N variants).
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/creatures/"
@@ -34,6 +34,12 @@ const KINDS := {
 		"zones": {"forest": 1.0, "meadow": 0.6, "highland": 0.3}, "hours": [20.0, 5.0], "every": [200.0, 500.0], "cutoff": 8000.0, "seasons": {"winter": 1.3, "autumn": 1.0, "spring": 1.0, "summer": 0.8}},
 	"wolf": {"calls": {"idle": "wolf_howl", "alert": "wolf_growl", "threat": "wolf_growl"}, "db": -5.0, "dist": [150.0, 520.0], "reach": 950.0, "unit": 40.0,
 		"zones": {"highland": 1.0, "forest": 0.6, "meadow": 0.2}, "hours": [21.0, 5.0], "every": [240.0, 600.0], "cutoff": 6000.0, "seasons": {"winter": 1.6, "autumn": 1.0, "spring": 0.7, "summer": 0.4}},
+	"moose": {"calls": {"idle": "moose_grunt", "alert": "moose_snort", "threat": "moose_bellow"}, "db": -4.0, "dist": [30.0, 120.0], "reach": 300.0, "unit": 14.0,
+		"zones": {"forest": 0.8, "water": 0.8}, "hours": [5.0, 22.0], "every": [500.0, 1000.0], "cutoff": 6000.0},
+	"horse": {"calls": {"idle": "horse_snort", "alert": "horse_snort", "threat": "horse_whinny"}, "db": -6.0, "dist": [20.0, 90.0], "reach": 220.0, "unit": 10.0,
+		"zones": {"meadow": 1.0}, "hours": [5.0, 21.0], "every": [500.0, 1100.0], "cutoff": 7000.0},
+	"duck": {"calls": {"idle": "duck_quack", "alert": "duck_quack", "threat": "duck_quack"}, "db": -10.0, "dist": [10.0, 50.0], "reach": 120.0, "unit": 6.0,
+		"zones": {"water": 1.0}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 7000.0},
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }

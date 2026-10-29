@@ -1,0 +1,19 @@
+# Kathleen: building piece looks (one batch, whole class)
+Goal: finish the building-piece looks Dave listed: log wall notches (copy a real log cabin: round logs stacked, corner saddle notches, ends overhanging), doors (no bottom edge, handles not knobs, steel handle, no black band), ceiling and flat tarred roof, brace looks (3 sizes).
+Files: src/client/piece_look.gd (builders), data/items/structures.json (look names), looks.json for the kits. Client only.
+How: same pattern as the sawmill (PieceLook functions, shared materials, textured planks/logs, no new classes); keep each piece under about 300 triangles; collision unchanged except where Sal's design says so.
+Test: validate_items 0 errors, headless compile, Mike one batch picture of all pieces in a row (BATCH RULE).
+Label: RUNTIME. Needs Dave: none; pictures go to a card with the recommendation.
+Order inside the batch: 1 notched log wall, 2 doors, 3 ceiling and flat tarred roof, 4 braces. Ferns/reeds/herbs/skull follow as the next plan.
+
+## Tyler reply (00:35 UTC 24 Oct, once; BP-T52). GO for the whole batch, one branch (claude/kathleen-building-looks), order as you wrote it.
+Best-practice suggestions:
+1. **Follow Dave's answers, they override "copy a real cabin" where they clash** (DECISIONS 22-23 Oct): log wall shows only ITS OWN logs, NO logs protruding past the piece, and leaves an open space (a saddle-notch gap) where a connecting wall's logs pass. So the corner look comes from saddle notches cut into the log tops/bottoms and the alternating log ends flush at the piece edge, never overhanging into the neighbour cell. Round logs ~0.25-0.3 m diameter, 8 courses for the 2.4 m wall, slight per-log variation in length and tone (seeded from the piece position so it never changes between frames).
+2. **Doors:** no bottom edge across a double door, no knobs anywhere (handles, no latch), steel door has a steel handle and NO black band, basic door has no knob, wrought iron door per Sal's data. One door builder with parameters (width, leaf count, handle kind, material) instead of one function per door.
+3. **Braces:** 3 sizes as Sal's design, split-log brace around the bottom edge in quarters for wall and ceiling pieces. NO brace on any stone piece (Dave: "Stone floors don't need a sill edge"). Floor = foundation, upstairs = ceiling pieces; never write "floor" as an item.
+4. **Ceiling and flat tarred roof:** ceiling shows planks from below and above (one mesh, two faces ok); flat roof is a thin slab with tar-black rough material and a slight edge lip; keep collision as is. The 65-degree roof stays the LOW roof (Dave).
+5. **Performance:** build each mesh ONCE per variant and cache it (ArrayMesh/dictionary by variant key); shared materials only, no per-piece materials; budget 300 triangles near, and a cheaper version (5-sided logs, no notch detail) beyond about 30 m chosen by distance in the same builder; no per-frame work. State the numbers per piece in your report. F2 Low frame time check with a full row in view (Ctrl+Shift+G).
+6. **Safe-place and Dave's vocabulary:** no wording that divides people; names in the game stay as in structures.json.
+7. **Test (groupable, TEST_RECIPE rule 1):** ONE labelled row of all pieces: log wall (each tier), doors (each kind), ceiling, flat roof, 3 braces, in the spawn showroom pieces row (data only). If the showroom cannot draw structures yet, put the row in your REQUEST as NEEDS and Sal's showroom branch will cover it; do not write a new rig. PASS IF each piece shows its own look in one wide picture plus one close view of the log corner; validate_items 0 errors; parse_scan clear.
+8. **Card:** one card with the picture, "Tyler recommends" line, Yes/No. Do not post a card per piece.
+Label RUNTIME. Merge: next hourly batch after your push (the list is built from git).

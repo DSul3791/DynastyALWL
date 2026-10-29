@@ -39,7 +39,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 
 	# Settled simulated water is already continuous: no hole closing. Running
 	# water gets a finer surface laid on the real ground (_fine_cells).
-	if not data.sim_levels.is_empty():
+	if not data.sim_snapshot().is_empty():
 		_flatten_lakes(generator, data, origin, count, spacing, levels)
 		var still: PackedFloat32Array = _calm_still_water(count, spacing, levels)
 		var sea_near: PackedFloat32Array = _ease_into_sea(generator, data, origin, count, spacing, levels, still)
@@ -58,7 +58,7 @@ static func chunk_levels(generator, origin: Vector2, chunk_m: float) -> Dictiona
 					vel[k * 2 + 1] *= calm
 
 		var fall_grid: PackedFloat32Array = _fall_grid(generator, data, origin, count, spacing, levels)
-		var has_falls: bool = fall_grid.size() == levels.size() and not data.fall_levels.is_empty()
+		var has_falls: bool = fall_grid.size() == levels.size() and not data.falls_snapshot().is_empty()
 		var fall_vel: PackedFloat32Array = _velocities(generator, data, origin, count, spacing, fall_grid) if has_falls else vel
 		var falls: Array = FallsScript.find(generator, origin, count, spacing, fall_grid, fall_vel, func(x: float, z: float) -> float: return _fine_ground(generator, x, z), levels if has_falls else PackedFloat32Array(), vel)
 		return {"count": count, "spacing": spacing, "levels": levels, "wet": wet, "edge": edge, "fine": _fine_cells(generator, origin, count, spacing, levels, edge), "vel": vel, "falls": falls}
@@ -762,7 +762,7 @@ static func moved(old: Dictionary, new: Dictionary, limit: float) -> bool:
 # baked channels (TileTerrainData.fall_levels), so a film down a cliff still makes a fall.
 static func _fall_grid(_generator, data, origin: Vector2, count: int, spacing: float, levels: PackedFloat32Array) -> PackedFloat32Array:
 	# The main thread swaps data.fall_levels while this runs on a worker: read it once.
-	var fall_source: PackedFloat32Array = data.fall_levels
+	var fall_source: PackedFloat32Array = data.falls_snapshot()
 
 	if fall_source.size() != data.samples * data.samples:
 		return levels
@@ -802,7 +802,7 @@ static func _level_at(generator, data, x: float, z: float, spacing: float) -> fl
 
 	# A tile with settled simulated water draws that; the painted classes only
 	# stand in for tiles that have not been settled yet.
-	var sim_source: PackedFloat32Array = source.sim_levels
+	var sim_source: PackedFloat32Array = source.sim_snapshot()
 
 	if not sim_source.is_empty():
 		return sim_source[k] if source.heights[k] > 0.0 else NAN

@@ -210,16 +210,19 @@ const FULL_MIN_M := 30.0   # full-detail trees reach at least this far, even whe
 const CONTACT_M := 30.0    # full models cast the sun shadow only this near; farther full trees cast it from their far model
 const TIER_FULL_LIT := 4   # plan keys only: a full model that does not cast (its shadow is the proxy's)
 const TIER_PROXY := 5      # plan keys only: the far model drawn into the sun's shadow pass alone
+const CLOSE_CELL_M := 32.0  # shrubs and plants with their own near distance (flora.json "near_m") choose full or far model per cell of this size
 const PROXY_BIT := 7       # level bits 7 and up: one per 64 m cell, set where a full-model cell is past CONTACT_M
 const MID_MIN_TRIANGLES := 500   # trees with fewer triangles than this keep their full model at every near distance
 const MID_LOD_SCALE_MIN := 25.0  # ImporterMesh.generate_lods merge angle (degrees)
 const FAR_SHADOWS := [false, false, false, false]   # far-model trees cast no sun shadow (build 453: their shadows fall past the 90 m shadow range, and a part's whole MultiMesh is drawn into every cascade it touches)
 
+var keep_all: bool = false   # look rig (--shot-flora): no plant is removed for placed things or lying logs, so a row always shows what was asked for
 var chunk_m: float = 256.0
 var view_m: PackedFloat32Array = PackedFloat32Array([900.0, 300.0, 120.0])
 var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
+var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -268,6 +271,15 @@ var fall_cap: int = 4
 # Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
 # fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
 var ground_ready: Callable = Callable()
+var stripped: Dictionary = {}          # chunk -> {plant id -> true}: berry bushes that are bare this season (set_stripped); they are drawn bare ("bare" models, when a species has them)
+var _setup_entries: Array = []         # the flora table rows, kept for the seasonal models
+var fruiting: Dictionary = {}          # species name -> true: the berry bushes (drops.json "berry_yield"), drawn per season and stripped (set_fruiting)
+var _seasonal: Dictionary = {}         # "season|stripped 0/1" -> {species id -> [near models, far models]} built on a worker for the current season
+var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over by apply_built (guarded by _seasonal_mutex)
+var _seasonal_mutex: Mutex = Mutex.new()
+var _seasonal_task: int = -1
+var _seasonal_for: String = ""         # the season the running or last worker builds
+var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
@@ -294,6 +306,17 @@ var water_hidden: bool = false
 func toggle_water_visible() -> void:
 	water_hidden = not water_hidden
 	get_tree().call_group("water_draw", "set_visible", not water_hidden)
+
+
+# Ctrl+Shift+V colours the water by what the shader sees: red running, blue still, green foam (debug for odd patches).
+var water_debug: bool = false
+
+
+func toggle_water_debug() -> void:
+	water_debug = not water_debug
+
+	if _water_material != null:
+		_water_material.set_shader_parameter("debug_flow", 1.0 if water_debug else 0.0)
 
 
 func water_material() -> Material:
@@ -400,6 +423,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_foam_material = WaterFallsScript.make_foam_material()
 
 	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_entries = _setup_queue.duplicate()
 	_setup_total = _setup_queue.size()
 	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
 
@@ -412,9 +436,10 @@ func _models_task(entries: Array) -> void:
 		var reference: float = 0.5 * (float(height[0]) + float(height[1]))
 		var kind: int = KINDS.find(str(entry["kind"]))
 		var shape: String = str(entry["shape"])
-		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+		var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus", "mushroom"]
 		var near_meshes: Array = []
 		var far_meshes: Array = []
+		var mid_built: Array = []         # the middle model (flora.json "mid_m"): Kathleen's build(mid=true), about 900 vertices
 
 		if not built:
 			var plain: ArrayMesh = _make_mesh(entry, reference)
@@ -425,16 +450,20 @@ func _models_task(entries: Array) -> void:
 			for v in range(2):
 				var model: ArrayMesh = TreeBuilder.build(entry, reference, v, false, _tree_materials)
 				near_meshes.append(model)
-				far_meshes.append(model)
+				# The low berry and herb plants (TreeBuilder.GROUND_LOOKS, and the plant-sized blueberry) have a cheaper far model: a patch of 15 to 30 draws it beyond near_m.
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials) if (TreeBuilder.GROUND_LOOKS.has(str(entry["name"])) or TreeBuilder.SHRUB_LOOKS.has(str(entry["name"]))) else model)
 		else:
 			for v in range(TreeBuilder.VARIANTS):
 				near_meshes.append(TreeBuilder.build(entry, reference, v, false, _tree_materials))
 				far_meshes.append(TreeBuilder.build(entry, reference, v, true, _tree_materials))
 
+				if entry.has("mid_m"):
+					mid_built.append(TreeBuilder.build(entry, reference, v, false, _tree_materials, "", false, true))
+
 			_override_models(str(entry["name"]), near_meshes, far_meshes)
 
 		_models_mutex.lock()
-		_models_ready[int(entry["id"])] = [near_meshes, far_meshes]
+		_models_ready[int(entry["id"])] = [near_meshes, far_meshes, mid_built]
 		_models_mutex.unlock()
 
 
@@ -552,7 +581,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 	_display[int(entry["id"])] = str(entry.get("display", entry.get("name", "")))
 	var kind: int = KINDS.find(str(entry["kind"]))
 	var shape: String = str(entry["shape"])
-	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus"]
+	var built: bool = kind != KIND_PLANT or shape in ["grass", "reed", "fern", "flower", "shrub", "cactus", "mushroom"]
 	# The models come from the worker (_models_task); wait for this species' turn.
 	_models_mutex.lock()
 	var models: Array = _models_ready.get(int(entry["id"]), [])
@@ -563,9 +592,23 @@ func _setup_entry(entry: Dictionary) -> bool:
 
 	var near_meshes: Array = models[0]
 	var far_meshes: Array = models[1]
+	var mid_from_builder: Array = models[2] if models.size() > 2 else []
+
+	if OS.has_environment("FLORA_DEBUG"):
+		var counts: Array = []
+
+		for mesh in near_meshes:
+			var total: int = 0
+
+			for s in range(mesh.get_surface_count()):
+				total += (mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+			counts.append(total)
+
+		print("FLORA_DEBUG ", entry["name"], " id=", entry["id"], " kind=", entry["kind"], " shape=", shape, " model=", entry.get("model", "-"), " height=", reference, " near_vertices=", counts, " built=", built)
 
 	# The mid model starts as the full model; _decimate_task swaps in the simplified one when ready.
-	var mid_meshes: Array = near_meshes.duplicate()
+	var mid_meshes: Array = mid_from_builder if not mid_from_builder.is_empty() else near_meshes.duplicate()
 	if kind == KIND_TREE and built:
 		for v in range(near_meshes.size()):
 			_mid_wanted.append([int(entry["id"]), v, near_meshes[v]])
@@ -587,6 +630,14 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
 	}
+
+	if entry.has("near_m") and kind != KIND_TREE:
+		_species[int(entry["id"])]["close_m"] = float(entry["near_m"])   # data/tables/flora.json "near_m": full model only this close (default: the kind's near distance)
+		_close_ms[float(entry["near_m"])] = true
+
+	if entry.has("mid_m") and not mid_from_builder.is_empty() and entry.has("near_m") and kind != KIND_TREE:
+		_species[int(entry["id"])]["mid_m"] = float(entry["mid_m"])   # flora.json "mid_m": the full model only within this, the mid model out to near_m, the far model beyond
+		_close_ms[float(entry["mid_m"])] = true
 
 	if entry.has("young_below_m"):
 		_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
@@ -744,6 +795,30 @@ func species_near(point: Vector3, radius: float) -> int:
 	return found
 
 
+# The nearest plant instance to a point as [chunk, id], or [] when none is within `radius` (species_near, but which one).
+func instance_near(point: Vector3, radius: float) -> Array:
+	var chunk: Vector2i = Vector2i(int(floor(point.x / chunk_m)), int(floor(point.z / chunk_m)))
+
+	if not _chunks.has(chunk):
+		return []
+
+	var items: Dictionary = _chunks[chunk]["items"]
+	var best: float = radius * radius
+	var found: int = -1
+	var positions: PackedVector3Array = items["positions"]
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(positions.size()):
+		var d: Vector3 = positions[n] - point
+		var squared: float = d.x * d.x + d.z * d.z + 0.25 * d.y * d.y
+
+		if squared < best:
+			best = squared
+			found = ids[n]
+
+	return [] if found < 0 else [chunk, found]
+
+
 # The chunks to have, nearest first: every chunk within tree view distance.
 func wanted_chunks(from_position: Vector3) -> Array:
 	var reach: int = int(ceil(view_m[KIND_TREE] / chunk_m))
@@ -794,6 +869,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 		return
 
 	_ease.erase(chunk)
+	entry["water_in"] = int(entry.get("water_in", 0)) + 1      # for water_dump_text: how many water patches this chunk has had, and when the last came
+	entry["water_in_msec"] = Time.get_ticks_msec()
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
 
@@ -888,29 +965,37 @@ func _draw_ice(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	var old: MeshInstance3D = entry.get("water")
 
+	# The new surface goes into the SAME node (Dave 2026-10-23, lake surface flickering): freeing the old node and adding a new one drew both
+	# for a frame (queue_free works at the end of the frame), a flash on the clear water each time a chunk was redrawn.
 	if old != null:
 		water_chunks -= 1
 		water_cells -= old.mesh.surface_get_array_index_len(0) / 6
-		old.queue_free()
-		entry["water"] = null
 
 	entry["grid"] = water
+	var mesh: ArrayMesh = null
 
 	if int(water.get("wet", 0)) > 0:
-		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
+		mesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
-		if mesh.get_surface_count() > 0:
-			var draw: MeshInstance3D = MeshInstance3D.new()
-			draw.mesh = mesh
+	if mesh != null and mesh.get_surface_count() > 0:
+		var draw: MeshInstance3D = old
+
+		if draw == null:
+			draw = MeshInstance3D.new()
 			draw.position = Vector3(float(chunk.x) * chunk_m, 0.0, float(chunk.y) * chunk_m)
 			draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			draw.visible = not water_hidden
 			draw.add_to_group("water_draw")
 			add_child(draw)
-			entry["water"] = draw
-			water_chunks += 1
-			@warning_ignore("integer_division")
-			water_cells += mesh.surface_get_array_index_len(0) / 6
+
+		draw.mesh = mesh
+		draw.visible = not water_hidden
+		entry["water"] = draw
+		water_chunks += 1
+		@warning_ignore("integer_division")
+		water_cells += mesh.surface_get_array_index_len(0) / 6
+	elif old != null:
+		old.queue_free()
+		entry["water"] = null
 
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
@@ -1077,6 +1162,37 @@ func water_surface_at(x: float, z: float) -> float:
 	return total / weight if weight > 0.5 else NAN
 
 
+# For Esc > Admin > Dump water here: what this client holds for the water at a point (the patch's grid values round it, how many patches
+# the chunk has had and how long ago the last one came), to set beside the server's dump of the same spot (dry river, 2026-10-23).
+func water_dump_text(x: float, z: float) -> String:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return "client water at x %.0f z %.0f: chunk %s is not held" % [x, z, str(chunk)]
+
+	var grid: Dictionary = entry.get("grid", {})
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("client water at x %.1f z %.1f: chunk %s, patches received %d, last %.1f s ago, wet cells %d, surface_at %.2f, level_at %.2f" % [x, z, str(chunk), int(entry.get("water_in", 0)), float(Time.get_ticks_msec() - int(entry.get("water_in_msec", 0))) / 1000.0, int(grid.get("wet", 0)), water_surface_at(x, z), water_level_at(x, z)])
+
+	if int(grid.get("wet", 0)) > 0:
+		var spacing: float = float(grid["spacing"])
+		var count: int = int(grid["count"])
+		var ci: int = clampi(int(floor((x - float(chunk.x) * chunk_m) / spacing)), 0, count - 1)
+		var cj: int = clampi(int(floor((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
+		lines.append("grid spacing %.1f m, count %d, point square %d,%d; levels (rows z, columns x, nan = dry):" % [spacing, count, ci, cj])
+
+		for j in range(maxi(cj - 3, 0), mini(cj + 5, count)):
+			var row: PackedStringArray = PackedStringArray()
+
+			for i in range(maxi(ci - 3, 0), mini(ci + 5, count)):
+				row.append("%.2f" % float(grid["levels"][j * count + i]))
+
+			lines.append("z %.0f: %s" % [float(chunk.y) * chunk_m + float(j) * spacing, " ".join(row)])
+
+	return "\n".join(lines)
+
+
 # The speed of the water current (m/s) at the nearest wet grid point, -1 where there is no water
 # or the chunk carries no current. Cheap: one chunk lookup and one point (used by the water sounds).
 func water_speed_at(x: float, z: float) -> float:
@@ -1189,6 +1305,119 @@ func remove_item(chunk: Vector2i, id: int, from_position: Vector3) -> void:
 
 # The placed things of the world: no shrubs or small plants within radius of any of them (trees stay; felling is the server's).
 # Items already held are filtered now, and later chunks as they arrive.
+# The server says these plants of a chunk are bare this season (berries picked): they redraw bare.
+func set_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
+	if not stripped.has(chunk):
+		stripped[chunk] = {}
+
+	for id in ids:
+		stripped[chunk][int(id)] = true
+
+	_redraw(chunk)
+
+
+func is_stripped(chunk: Vector2i, id: int) -> bool:
+	return (stripped.get(chunk, {}) as Dictionary).has(id)
+
+
+# The berry bush species (names from drops.json "berry_yield"), set once by the client.
+func set_fruiting(names: Array) -> void:
+	fruiting = {}
+
+	for plant_name in names:
+		fruiting[str(plant_name)] = true
+
+	if season != "":
+		_start_seasonal()
+
+
+# The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
+# are built on a worker; the chunks redraw when they are ready.
+func set_season(now_season: String) -> void:
+	if now_season == season:
+		return
+
+	season = now_season
+	_start_seasonal()
+
+	if stripped.is_empty():
+		return
+
+	var held: Array = stripped.keys()
+	stripped = {}
+
+	for chunk in held:
+		_redraw(chunk)
+
+
+func _start_seasonal() -> void:
+	if fruiting.is_empty() or season == "" or _setup_entries.is_empty() or _seasonal_task != -1 or _seasonal_for == season:
+		return
+
+	_seasonal_for = season
+	var wanted: Array = _setup_entries.filter(func(entry): return fruiting.has(str(entry["name"])))
+	_seasonal_task = WorkerThreadPool.add_task(_seasonal_models_task.bind(wanted, season, _tree_materials), false, "flora seasonal models")
+
+
+# Worker: each berry bush species' near and far models for one season, ripe and picked bare (Kathleen's build(season, stripped)).
+func _seasonal_models_task(entries: Array, for_season: String, materials: Dictionary) -> void:
+	for bare: bool in [false, true]:
+		var models_set: Dictionary = {}
+
+		for entry in entries:
+			var height: Array = entry["height_m"]
+			var reference: float = 0.5 * (float(height[0]) + float(height[1]))
+			var near_meshes: Array = []
+			var far_meshes: Array = []
+			var mid_meshes: Array = []
+
+			for v in range(2 if str(entry["kind"]) == "plant" else TreeBuilder.VARIANTS):
+				near_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare))
+				far_meshes.append(TreeBuilder.build(entry, reference, v, true, materials, for_season, bare))
+
+				if entry.has("mid_m"):
+					mid_meshes.append(TreeBuilder.build(entry, reference, v, false, materials, for_season, bare, true))
+
+			models_set[int(entry["id"])] = [near_meshes, far_meshes, mid_meshes]
+
+		_seasonal_mutex.lock()
+		_seasonal_ready["%s|%d" % [for_season, 1 if bare else 0]] = models_set
+		_seasonal_mutex.unlock()
+
+
+# Takes over a finished worker's sets and redraws the chunks that hold berry bushes.
+func _take_seasonal() -> void:
+	if _seasonal_task == -1 or not WorkerThreadPool.is_task_completed(_seasonal_task):
+		return
+
+	WorkerThreadPool.wait_for_task_completion(_seasonal_task)
+	_seasonal_task = -1
+	_seasonal_mutex.lock()
+
+	for key in _seasonal_ready:
+		_seasonal[key] = _seasonal_ready[key]
+
+	_seasonal_ready = {}
+	_seasonal_mutex.unlock()
+
+	for chunk in _chunks.keys():
+		_redraw(chunk)
+
+	if _seasonal_for != season:
+		_start_seasonal()
+
+
+func _redraw(chunk: Vector2i) -> void:
+	var entry: Dictionary = _chunks.get(chunk, {})
+
+	if entry.is_empty():
+		return
+
+	entry["level"] = -1
+	entry.erase("building")
+	_refresh(chunk, _last_position)
+
+
 func set_cleared(spots: Array, radius: float) -> void:
 	cleared = spots
 	clear_m = radius
@@ -1221,7 +1450,7 @@ func _under_trunk(p: Vector3) -> bool:
 func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
-	if entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
+	if keep_all or entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
 		return
 
 	var items: Dictionary = entry["items"]
@@ -1382,12 +1611,14 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 
 	var entry: Dictionary = _chunks[chunk]
 	var level: int = _level(chunk, from_position)
+	var masks: Dictionary = _close_masks(chunk, from_position)
 
-	if level == entry["level"] or level == entry.get("building", -2):
+	if (level == entry["level"] and masks == entry.get("masks", {})) or (level == entry.get("building", -2) and masks == entry.get("building_masks", {})):
 		return
 
 	_serial += 1
 	entry["building"] = level
+	entry["building_masks"] = masks
 	entry["serial"] = _serial
 	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
 	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
@@ -1396,13 +1627,44 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	for key in entry["items"]:
 		var value = entry["items"][key]
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
-	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items), false, "flora chunk"))
+
+	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
-func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary) -> void:
-	var plan: Dictionary = _plan(items, level)
+# For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
+# distance of the player. Only non-zero masks are kept, so far chunks compare equal and are not redrawn when the player moves.
+func _close_masks(chunk: Vector2i, from_position: Vector3) -> Dictionary:
+	var masks: Dictionary = {}
+
+	if _close_ms.is_empty():
+		return masks
+
+	var cells: int = int(chunk_m / CLOSE_CELL_M)
+	var x0: float = float(chunk.x) * chunk_m
+	var z0: float = float(chunk.y) * chunk_m
+
+	for close_m in _close_ms:
+		var mask: int = 0
+
+		for cz in range(cells):
+			for cx in range(cells):
+				var dx: float = maxf(maxf(x0 + float(cx) * CLOSE_CELL_M - from_position.x, from_position.x - (x0 + float(cx + 1) * CLOSE_CELL_M)), 0.0)
+				var dz: float = maxf(maxf(z0 + float(cz) * CLOSE_CELL_M - from_position.z, from_position.z - (z0 + float(cz + 1) * CLOSE_CELL_M)), 0.0)
+
+				if sqrt(dx * dx + dz * dz) <= float(close_m):
+					mask |= 1 << (cz * cells + cx)
+
+		if mask != 0:
+			masks[close_m] = mask
+
+	return masks
+
+
+func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary, masks: Dictionary) -> void:
+	var plan: Dictionary = _plan(items, level, masks)
 	_built_mutex.lock()
-	_built.append([chunk, serial, level, plan])
+	_built.append([chunk, serial, level, plan, masks])
 	_built_mutex.unlock()
 
 
@@ -1412,6 +1674,8 @@ func _plan_task(chunk: Vector2i, serial: int, level: int, items: Dictionary) -> 
 func apply_built(budget_usec: int = 3000) -> void:
 	if not _setup_done:
 		_setup_step()
+
+	_take_seasonal()
 
 	var still: Array = []
 
@@ -1439,7 +1703,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			var node: Node3D = Node3D.new()
 			node.name = "Chunk_%d_%d" % [next[0].x, next[0].y]
 			add_child(node)
-			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "plan": next[3], "node": node, "draw": 0, "shape": 0})
+			_jobs.append({"chunk": next[0], "serial": next[1], "level": next[2], "masks": next[4], "plan": next[3], "node": node, "draw": 0, "shape": 0})
 
 	var started: int = Time.get_ticks_usec()
 
@@ -1457,7 +1721,9 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry["node"] = job["node"]
 			job["node"].visible = bool(entry.get("ground", true))
 			entry["level"] = job["level"]
+			entry["masks"] = job["masks"]
 			entry.erase("building")
+			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
 
@@ -1495,7 +1761,7 @@ func finish_tasks() -> void:
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
-func _plan(items: Dictionary, level: int) -> Dictionary:
+func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
@@ -1522,6 +1788,18 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 		var proxy: bool = false
 		var is_near: int = 1 if (int(info["kind"]) != KIND_PLANT and (level & (16 << int(info["kind"]))) != 0) else 0
 
+		if info.has("close_m") and int(info["kind"]) != KIND_TREE:
+			# A species with its own near distance: the full model only in the cells within it (_close_masks), the far model elsewhere.
+			var close_cells: int = int(chunk_m / CLOSE_CELL_M)
+			var close_x: int = posmod(int(floor(p.x / CLOSE_CELL_M)), close_cells)
+			var close_z: int = posmod(int(floor(p.z / CLOSE_CELL_M)), close_cells)
+			var within: int = int(masks.get(info["close_m"], 0)) >> (close_z * close_cells + close_x)
+			is_near = 1 if within & 1 != 0 else 0
+
+			if info.has("mid_m") and is_near == 1:
+				# Full only inside mid_m, the middle model between mid_m and near_m (Kathleen's ~900-vertex model), the far model beyond.
+				is_near = 1 if (int(masks.get(info["mid_m"], 0)) >> (close_z * close_cells + close_x)) & 1 != 0 else TIER_MID
+
 		if int(info["kind"]) == KIND_TREE:
 			# The model of this tree's 64 m cell (see _level): far 0, full 1, impostor 2, mid 3.
 			var cells: int = int(chunk_m / CELL_M)
@@ -1543,7 +1821,8 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			if is_near == TIER_FAR:
 				variant = 0
 
-		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near]
+		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
+		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
 		if not groups.has(key):
 			groups[key] = PackedInt32Array()
@@ -1602,8 +1881,9 @@ func _plan(items: Dictionary, level: int) -> Dictionary:
 			var n: int = indices[m]
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var axes: Basis = Basis(Vector3.UP, float(items["yaws"][n])).scaled(Vector3.ONE * size_scale)
-			# Sunk a little so slopes do not show a gap under the trunk.
-			var origin: Vector3 = items["positions"][n] - Vector3(0.0, 0.15, 0.0)
+			# Sunk a little so slopes do not show a gap under the trunk; the sink shrinks with the plant (0.15 m for anything 1.9 m or taller), so a
+			# 0.3 m blueberry keeps its height (Dave/Kathleen 2026-10-23).
+			var origin: Vector3 = items["positions"][n] - Vector3(0.0, minf(0.15, 0.08 * float(items["heights"][n])), 0.0)
 			var o: int = m * stride
 			buffer[o] = axes.x.x
 			buffer[o + 1] = axes.y.x
@@ -1686,6 +1966,16 @@ func _apply_step(job: Dictionary) -> bool:
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	var proxy_pass: bool = key[4] == TIER_PROXY
 	var models: Array = info["near"] if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (info["mid"] if key[4] == TIER_MID else info["far"])
+	# A berry bush draws the models of the game's season (ripe berries, blossom, bare canes) and, once picked, the stripped ones (TreeBuilder.build's
+	# season and stripped flags, Kathleen). Until the worker has built a season's models the plain ones above are used.
+	if fruiting.has(str(_slugs.get(key[0], ""))):
+		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if bool(key[5]) else 0], {})
+
+		if seasonal.has(key[0]):
+			var wanted_set: Array = seasonal[key[0]]
+			var which: int = 0 if (key[4] == TIER_FULL or key[4] == TIER_FULL_LIT) else (2 if key[4] == TIER_MID and not (wanted_set[2] as Array).is_empty() else (0 if key[4] == TIER_MID else 1))
+			models = wanted_set[which]
+
 	multimesh.mesh = _impostors[key[0]]["mesh"] if key[4] == TIER_IMPOSTOR and _impostors.has(key[0]) else models[key[3] % models.size()]
 	multimesh.use_custom_data = bool(info["tinted"])
 	multimesh.instance_count = int(draw_plan[1])
@@ -1697,6 +1987,8 @@ func _apply_step(job: Dictionary) -> bool:
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY if proxy_pass else (GeometryInstance3D.SHADOW_CASTING_SETTING_ON if casts else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 	draw.set_meta("kind", int(info["kind"]))      # for the GPU probe (src/debug/gpu_probe.gd)
 	draw.set_meta("casts", casts)
+	draw.set_meta("tier", int(key[4]))               # for the look rig (0 far, 1 full, 3 mid)
+	draw.set_meta("species", str(_slugs.get(key[0], "")))
 	node.add_child(draw)
 	instances += 0 if proxy_pass else int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
@@ -1870,6 +2162,9 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 
 	if shape == "flower":
 		return base * 1.9
+
+	if shape == "mushroom":
+		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
 
 	return _natural(base) * 1.5
 

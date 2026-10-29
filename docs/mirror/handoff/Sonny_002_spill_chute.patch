@@ -1,0 +1,264 @@
+diff --git a/src/worldgen/runtime/terrain_layout.gd b/src/worldgen/runtime/terrain_layout.gd
+index ef8c7cb..13ee6ba 100644
+--- a/src/worldgen/runtime/terrain_layout.gd
++++ b/src/worldgen/runtime/terrain_layout.gd
+@@ -25,7 +25,7 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
+ const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
+ const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
+ const MATERIAL_ROCK := 32
+-const TERRAIN_VERSION := 25
++const TERRAIN_VERSION := 26
+ 
+ const ROCK_SEDIMENT := 1
+ 
+diff --git a/src/worldgen/tile/tile_water.gd b/src/worldgen/tile/tile_water.gd
+index 31df083..4c210c2 100644
+--- a/src/worldgen/tile/tile_water.gd
++++ b/src/worldgen/tile/tile_water.gd
+@@ -51,6 +51,8 @@ var _settings
+ var _rules: Dictionary = {}
+ var _legacy_rivers: bool = true
+ var _ocean: PackedByteArray = PackedByteArray()
++var _spill_mode: bool = false        # cutting a spill chute (a pool's second outlet), not a world river
++var spill_chutes_made: int = 0
+ var _chute_feet: Array = []   # per river: where each clean chute lands ({point, bed, width}), for its plunge pool
+ var _origin_sx: int = 0       # world sample index of sample 0 (set by build)
+ var _origin_sz: int = 0
+@@ -566,7 +568,13 @@ func _carve_guides(rivers: Array) -> void:
+ 	var ponds_placed: Array = []          # [centre, rim height] of every head pond so far
+ 	river_cells = 0
+ 
+-	for river in rivers:
++	var river_at: int = 0
++
++	# A while loop: a pool that leaks over its own rim adds its spill chute to the end of the list as it is cut.
++	while river_at < rivers.size():
++		var river: Dictionary = rivers[river_at]
++		river_at += 1
++		_spill_mode = bool(river.get("spill", false))
+ 		var points: PackedVector2Array = river["points"]
+ 		var areas: PackedFloat32Array = river["areas"]
+ 
+@@ -651,6 +659,9 @@ func _carve_guides(rivers: Array) -> void:
+ 			# Dave (2026-10-21, build 483): at the x10 spring flow a channel one or two cells wide piled the water up
+ 			# 2 m above its own banks. A river is never narrower than river_min_width_m (3 cells).
+ 			width = maxf(width, float(_rules.get("river_min_width_m", 0.0)))
++
++			if _spill_mode:
++				width = float(_rules.get("spill_chute_width_m", 16.0))
+ 			widths[k] = width
+ 			depths[k] = depth
+ 
+@@ -921,6 +932,13 @@ func _carve_guides(rivers: Array) -> void:
+ 			_stamp_at(carved, foot["point"], chute_pool, chute_depth, float(foot["bed"]) - chute_depth * 0.9, float(_rules.get("terrace_bank", 2.0)), areas[0] / cell_km2, best_flow)
+ 			_wash_foot(carved, foot["point"], chute_pool * 0.5 + float(_rules.get("fall_wash_m", 24.0)))
+ 
++			if bool(_rules.get("spill_chutes", false)) and not _spill_mode:
++				var spill: Dictionary = _find_spill(carved, foot["point"], points, areas[0])
++
++				if not spill.is_empty():
++					spill_chutes_made += 1
++					rivers.append(spill)
++
+ 		var run_start: int = -1
+ 
+ 		for k in range(count - 2):
+@@ -1100,6 +1118,168 @@ func _pond_flow(radius_m: float) -> float:
+ 	return maxf(2.0 * radius_m / float(_rules.get("spring_full_pond_diameter_m", 125.0)), 1.0)
+ 
+ 
++# A plunge pool that is not closed: its water would rise to the lowest rim around it, and when that
++# rim is not the river's own way out it spills a second way (build 617: the south valley below the
++# head pond, a 300 m fall of thin water down bare slope). Finds that lowest other rim by a minimax
++# flood from the pool (the highest ground on the cheapest way out in each direction) and, when it
++# is about as low as the river's own way out, returns a river dictionary for a clean chute from
++# that saddle down the fall line; else {}.
++func _find_spill(carved: PackedFloat32Array, centre: Vector2, points: PackedVector2Array, parent_area: float) -> Dictionary:
++	var reach: int = int(round(float(_rules.get("spill_radius_m", 96.0)) / spacing_m))
++	var margin: int = 24
++	var ci: int = int(round(centre.x))
++	var cj: int = int(round(centre.y))
++
++	if ci - reach < margin or cj - reach < margin or ci + reach >= samples - margin or cj + reach >= samples - margin:
++		return {}
++
++	# The river's way on, as a bearing from the pool.
++	var downstream: Vector2 = Vector2.ZERO
++
++	for point in points:
++		if point.distance_to(centre) * spacing_m > float(_rules.get("spill_radius_m", 96.0)) * 0.6 and (point - centre).dot(downstream) >= 0.0:
++			downstream = (point - centre).normalized()
++			break
++
++	if downstream == Vector2.ZERO:
++		return {}
++
++	var side: int = reach * 2 + 1
++	var cost: PackedFloat32Array = PackedFloat32Array()
++	cost.resize(side * side)
++	cost.fill(INF)
++	var parent: PackedInt32Array = PackedInt32Array()
++	parent.resize(side * side)
++	parent.fill(-1)
++	var done: PackedByteArray = PackedByteArray()
++	done.resize(side * side)
++	var start: int = reach * side + reach
++	cost[start] = carved[cj * samples + ci]
++
++	while true:
++		var pick: int = -1
++		var pick_cost: float = INF
++
++		for n in range(side * side):
++			if done[n] == 0 and cost[n] < pick_cost:
++				pick_cost = cost[n]
++				pick = n
++
++		if pick < 0:
++			break
++
++		done[pick] = 1
++		var px: int = pick % side
++		var pz: int = floori(float(pick) / float(side))
++
++		for dz in range(-1, 2):
++			for dx in range(-1, 2):
++				var qx: int = px + dx
++				var qz: int = pz + dz
++
++				if (dx == 0 and dz == 0) or qx < 0 or qz < 0 or qx >= side or qz >= side:
++					continue
++
++				var q: int = qz * side + qx
++				var through: float = maxf(pick_cost, carved[(cj + qz - reach) * samples + ci + qx - reach])
++
++				if done[q] == 0 and through < cost[q]:
++					cost[q] = through
++					parent[q] = pick
++
++	var min_angle: float = cos(deg_to_rad(float(_rules.get("spill_min_angle_deg", 75.0))))
++	var exit_cost: float = INF
++	var best: int = -1
++	var best_cost: float = INF
++
++	for n in range(side * side):
++		var nx: int = n % side - reach
++		var nz: int = floori(float(n) / float(side)) - reach
++
++		if maxi(absi(nx), absi(nz)) != reach or is_inf(cost[n]):
++			continue
++
++		var along: float = Vector2(float(nx), float(nz)).normalized().dot(downstream)
++
++		if along > min_angle:
++			exit_cost = minf(exit_cost, cost[n])
++		elif cost[n] < best_cost:
++			best_cost = cost[n]
++			best = n
++
++	if best < 0 or best_cost > exit_cost + float(_rules.get("spill_margin_m", 3.0)):
++		return {}
++
++	# The saddle: the highest cell on the cheapest way out.
++	var saddle: int = best
++	var walk: int = best
++
++	while walk >= 0:
++		if carved[(cj + floori(float(walk) / float(side)) - reach) * samples + ci + walk % side - reach] >= carved[(cj + floori(float(saddle) / float(side)) - reach) * samples + ci + saddle % side - reach]:
++			saddle = walk
++
++		walk = parent[walk]
++
++	var here: Vector2i = Vector2i(ci + saddle % side - reach, cj + floori(float(saddle) / float(side)) - reach)
++	var path: PackedVector2Array = PackedVector2Array([Vector2(here)])
++	var seen: Dictionary = {here: true}
++	var flat_slope: float = float(_rules.get("spill_flat_slope", 0.04))
++	var window: int = 12
++
++	for step in range(int(_rules.get("spill_max_cells", 400))):
++		var lowest: Vector2i = here
++		var best_drop: float = 0.0
++		var here_h: float = carved[here.y * samples + here.x]
++
++		for dz in range(-1, 2):
++			for dx in range(-1, 2):
++				var next: Vector2i = here + Vector2i(dx, dz)
++
++				if (dx == 0 and dz == 0) or seen.has(next):
++					continue
++
++				var drop: float = (here_h - carved[next.y * samples + next.x]) / (1.41421 if dx != 0 and dz != 0 else 1.0)
++
++				if drop > best_drop:
++					best_drop = drop
++					lowest = next
++
++		if lowest == here:
++			break
++
++		here = lowest
++		seen[here] = true
++		path.append(Vector2(here))
++		var idx: int = here.y * samples + here.x
++
++		if here.x < margin or here.y < margin or here.x >= samples - margin or here.y >= samples - margin or water_class[idx] != 0 or _ocean[idx] == 1:
++			break
++
++		if path.size() > window + 8:
++			var back: Vector2 = path[path.size() - 1 - window]
++			var fall: float = (carved[int(back.y) * samples + int(back.x)] - carved[idx]) / (float(window) * spacing_m)
++
++			if fall < flat_slope:
++				break
++
++	if path.size() < 16:
++		return {}
++
++	# Smooth the staircase of the grid path.
++	for _pass in range(3):
++		var soft: PackedVector2Array = path.duplicate()
++
++		for k in range(1, path.size() - 1):
++			soft[k] = (path[k - 1] + path[k] * 2.0 + path[k + 1]) * 0.25
++
++		path = soft
++
++	var areas: PackedFloat32Array = PackedFloat32Array()
++	areas.resize(path.size())
++	areas.fill(maxf(parent_area * float(_rules.get("spill_area_share", 0.4)), float(_rules.get("river_start_km2", 0.05))))
++	return {"points": path, "areas": areas, "source": false, "spill": true}
++
++
+ func _stream_depth(depth: float, width: float, flow_factor: float = 1.0) -> float:
+ 	var q_max: float = float(_rules.get("spring_base_m3s", 3.0)) * float(_rules.get("spring_rate_max", 20.0)) * flow_factor
+ 	var flow_depth: float = pow(q_max / (1.7 * maxf(width, 1.0)), 2.0 / 3.0)
+@@ -1380,6 +1560,10 @@ func _terrace(
+ 	var face_slope: float = float(_rules.get("terrace_face_bank", 30.0))
+ 	var width_min: float = float(_rules.get("terrace_width_min_m", 16.0))
+ 	var width_max: float = float(_rules.get("terrace_width_max_m", 24.0))
++
++	if _spill_mode:
++		width_min = spacing_m
++		width_max = float(_rules.get("spill_chute_width_m", 16.0))
+ 	var used: PackedInt32Array = PackedInt32Array()
+ 
+ 	for k in range(points.size()):
+diff --git a/worlds/base_world/plan/tile_rules.json b/worlds/base_world/plan/tile_rules.json
+index 6490ea9..9495029 100644
+--- a/worlds/base_world/plan/tile_rules.json
++++ b/worlds/base_world/plan/tile_rules.json
+@@ -160,6 +160,14 @@
+ 		"terrace_width_min_m": 16.0,
+ 		"terrace_width_max_m": 64.0,
+ 		"chute_foot_land_m": 10.0,
++		"spill_chutes": true,
++		"spill_chute_width_m": 16.0,
++		"spill_radius_m": 96.0,
++		"spill_margin_m": 3.0,
++		"spill_min_angle_deg": 75.0,
++		"spill_area_share": 0.4,
++		"spill_max_cells": 400,
++		"spill_flat_slope": 0.04,
+ 		"chute_face_max_m": 90.0,
+ 		"terrace_note": "WIDTH (Dave 2026-10-21, TERRAIN_VERSION 25): a chute is as wide as the river that feeds it (the river width at its lip, whole cells, terrace_width_max_m only a safety cap), one constant width down the run. NEVER STEPS (Dave 2026-10-21): terrace_single_chute makes each steep run ONE clean chute (one face from the lip to the foot level, a plunge pool 0.4 x drop deep, capped 4 m, at its foot where the land is within chute_foot_land_m of the bed); a cliff onto a plateau is followed by a river reach and the next chute. Older text: Owner (2026-10-21, Dave): with the sim drawing the water, waterfalls must be flat and straight down until they hit the ground, and a cascade needs several. Where the bed falls faster than terrace_slope (m per m, over terrace_window_m) it becomes a staircase of flat treads and one-sample vertical faces: steps about terrace_drop_m high (taller on steeper ground, since a step is never shorter than terrace_step_min_m of run), the channel a multiple of 8 m wide between terrace_width_min_m and _max_m, banks terrace_bank (and terrace_face_bank beside the faces, near vertical). TileWater._terrace.",
+ 		"estuary_m": 300.0,

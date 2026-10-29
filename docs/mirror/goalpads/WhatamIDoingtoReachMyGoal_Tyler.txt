@@ -1,0 +1,45 @@
+WhatamIDoingtoReachMyGoal (Tyler)
+ULTIMATE (Dave 01:32): provide accurate, up-to-date, best-practice improved action plans to anyone creating a new branch.
+GOAL 1: Every plan answered once, fast, with evidence (3+ concrete sourced improvements, within the hour).
+Rules for this pad: ordered steps, each with a DONE-CHECK. Work top to bottom. If a step waits, start the next. When fewer than 5 open steps remain, add the next 10 from goals_Tyler.md. Never idle.
+
+STEPS (open)
+1. Check /mnt/project-files/tech/ACTION_PLANS/ for any plan whose "Tyler reply" says (pending). Done-check: grep finds none. (Repeat every 15 min.)
+2. For each new plan: read it, read DECISIONS.md + the design section it touches, write 3+ improvements with sources, mark GO/NO-GO, mirror to docs/mirror, tell the coordinator in one line. Done-check: reply file section exists and mirror pushed.
+3. Merge list 2 (tech/MERGE_CHECK_NEXT2.md): when Mike reports PASS, merge the passing branches, bump build to 774, BUILD_LOG + HANDOFF + DAY_LOG. Done-check: head build 774 on origin and number sent to coordinator.
+4. Trial-merge every newly pushed branch against head and add clean ones to the next merge list. Done-check: list file updated within 30 minutes of each push.
+8. Add dates and sources to the 10 most-used best-practice entries (BP-T31, T44-T53, C23). Done-check: each has a date and source line.
+10. Refill JOBS.md queues from goals_<Name>.md so every thread has 3+ next lines. Done-check: each queue has 3+ open lines.
+11. Verify one best practice per week against current official docs (Godot, Voxel Tools, git); log the check. Done-check: a dated line in tech/LESSONS.md.
+12. Daily audit for 24 Oct against the efficiency plan targets (tech/AUDITS/AUDIT_2026-10-24.md) at 20:00 ADT. Done-check: file exists with 7 pass/fail lines.
+
+HANDED OFF
+(none)
+
+DONE
+- 13:05 UTC Steve rig-item and Sal tools-batch-1 plans answered GO; BP-T55 added; gate 8 = steve-rig-item a15eeecc + sal-tools-batch1 4ec83436 (clean on 786); no plan pending
+- 12:35 UTC build 786 (vent anchor, protocol 77) merged; ore fix 4f2d2497 proven, held for the final bake (waits on Dave's notes); no plan pending
+- 12:00 UTC build 785 (biome lookup, protocol 76) merged; gate 8 = steve-vent 4d0d68a8 (protocol 77) waits for local_check; ore fix 4f2d2497 goes in the final bake; no plan pending
+- 12:30 UTC builds 783 (v31 bake TV41) and 784 (gates 6+7, 5 branches) merged; cave-dark and biome-lookup plans answered; biome-lookup 7347ac36 waits for Mike's local_check (785); no plan pending
+- 10:58 UTC 8 AM handoff written (DAILY_HANDOFF.md top), LAPTOP_SETUP.md, BAKE_31_MERGE.md; goal2-c queued as gate 7
+- 10:25 UTC Sal item-master plan answered GO (aa7023df in gate 6); no plan pending; handoff at 11:00 UTC
+- 09:55 UTC checked: no plan pending; sonny-outlets (TV40) and kathleen-biome-fix trial clean; waiting on gate 6
+- 09:22 UTC checked: no plan pending, no new PASS; waiting on gate 6 (island-checks c88cc1a8, sound-batch2 018f30ed)
+- 08:50 UTC sound batch 2 plans (Kathleen, Steve) answered GO; gate list 6 = sal-island-checks c88cc1a8 + steve-sound-batch2 018f30ed; no plan pending; 11:00 UTC handoff next
+- 08:18 UTC Steve river seams plan answered GO; BP-T54 (every bake carries the island table) added; Sal goal 1 confirmed; gate list 6 = sal-island-checks c88cc1a8; no plan pending
+- 07:58 UTC builds 781 (v30 bake, TV36) and 782 (water seams) merged with Dave's steps; BAKE_30_MERGE.md; no plan pending
+- 07:15 UTC builds 779 (key-woods, goal2-b, tree-belts, slot-test-warning) and 780 (harvest-field) merged; no plan pending
+- 06:45 UTC checked: no plan pending, gate list 5 tips unchanged (ae925848, 2bf75e66, 1b1cd8a0, 21c5f838); waiting on Mike's PASS
+- 06:12 UTC plan GOs: Kathleen goal2 batch B, Sal key woods; gate list 5 = harvest-field ae925848, key-woods 2bf75e66, goal2-b 1b1cd8a0, slot-test-warning 21c5f838 (clean on 778); no plan pending
+- 05:40 UTC build 778 merged (v29b bake, TV34, spawn PASS); Steve harvest-field plan answered GO; gate list 5 = harvest-field 16cbafa2; no plan pending
+- 05:10 UTC build 777 merged (gate list 4, 5 branches); bake build renumbered 778 and held for spawn gate; mixed tile stamps answered (fine); no plan pending
+- 04:40 UTC overnight plan (tech/OVERNIGHT_PLAN_2026-10-24.md) and bake 29 merge plan (tech/BAKE_29_MERGE.md, river-settle final fa7bdadc) written; tyler-seam32 built; no plan pending
+- 04:05 UTC plan GOs: Kathleen tree belts (flora VERSION 4), Sonny gullies to sea; Dave working all night logged; no plan pending; list 4 waits on Mike
+- 03:50 UTC plan GO: Sonny seam edge flow (160 m coarse, content-hash cache, conservation rows); builds 775 (v28 bake) and 776 (gate list 3, 8 branches) merged; gate list 4 final (6 branches, clean on 776), river-settle held
+- 04:25 UTC plan GOs: smoke/frametime, sound slots; tyler-bake28 refreshed (river-settle 1f51ac07); wild rose chain (no-rose-berries + rose-petals + flora-gaps) trial-merged clean; gate list 3 updated; rose_hips kept
+- 03:45 UTC step 9: tech/DESIGN_COVERAGE.md written (every DESIGN_IDEAS section with owner, status, next goal; gaps marked 'none yet')
+- 03:40 UTC step 6 and 7: LESSONS line for builds 771-774 written; BP-C23, BP-T33, BP-T50 marked superseded/amended. Build 774 merged (6 branches), BAKE_28_MERGE.md ready, waiting on Mike's v28 bake and Sal's table PASS.
+- 03:10 UTC plan GO replies: Kathleen flora gaps, Steve river settle, Kathleen worn clothing, Steve worn attach (no plan pending); merge list 3 written (2 conflicts flagged to Steve); steve-stamp-items added to list 2
+- 02:55 UTC step 5: tech/PLAN_CHECKLISTS.md written (six kinds, 4-8 questions each)
+- 00:35-02:45 UTC plan GO replies: Kathleen building looks, Sal showroom, Sal look names, Steve rig pieces, Sonny foothills, Sal island checks, Kathleen item looks, Kathleen flora gaps, Steve river settle, Kathleen worn clothing
+- 01:00-01:35 UTC builds 771, 772, 773 merged; goals files split; reminder text improved; moderator goals created

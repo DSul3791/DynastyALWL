@@ -11,10 +11,15 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | W A S D | Walk (1.4 m/s) |
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
 | Shift + W | Run (6 m/s) |
+| B (held with a shield in the off hand) | Block with the shield while held |
+| Shift + right click with a hoe | Sets grade point A, then B (stakes show); a third click starts a new line |
+| Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |
-| Space | Jump (walking) or go up (flying) |
+| Space | Jump (walking) or go up (flying); on a ladder, let go and drop back |
+| Ladder (W / S) | Walk up to a placed ladder facing it and hold W to grab on and climb (1.1 m/s); S climbs down and steps off at the bottom; at the top W steps you onto the edge |
 | Ctrl | Go down (flying) |
 | G | Switch between walking and flying |
+| P | Auto pickup on or off (toggle, default off, remembered). "Auto pickup ON/OFF" shows slightly above the middle of the screen for 1.5 s. When on, loose items within reach and in view are picked up, one at a time, 4 a second (the server still refuses what is too heavy or needs a tool); what you just dropped is left alone for 15 s. Off while swimming, placing a blueprint, asleep, dead or with a screen open |
 | F | Open the chest or remains beside you (your pack left, its contents right; T moves the selected stack across) |
 | / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic). What you see depends on what your character knows: it may say Unknown or Might be (a wrong guess). Flying (admin) always shows the truth |
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x40; every pond starts at x10 = 100 m3/s; above x10 rivers and ponds turn muddy brown). Shows "Water flow rate: x10.00 = 100.0 m3/s per spring (1,585,000 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
@@ -35,15 +40,18 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | F3 | Debug details on or off (the long diagnostic list; default HUD is only build, position, last sound). Also Esc > Settings. Threads add lines with `debug_hud.add_line(name, callable)`. |
 | Esc > Advanced > Measure this machine | About 1 minute: stands still and slowly turns at Low, Medium and High and shows fps, 1% low, worst frame, CPU and GPU ms, draw calls and video memory per tier; saved to machine_run.txt in the game data folder. Press it again to stop or to close the table |
 | Ctrl+Shift+G | GPU probe: stand still, press once; after about 20 s it lists what each piece (grass, trees, ground, sea, shadows, SSAO, glow, fog, anti-aliasing) costs in GPU ms; also saved to gpu_probe.txt in the game data folder |
+| Ctrl+Shift+V | Colour the water by what the shader sees (debug): red = running water, blue = still, green = foam; press again to go back |
 | Ctrl+Shift+W | Hide or show every river and lake drawing (debug: if an odd patch stays with the water hidden, it is ground, not water) |
 | J | Float jitter test: fly to the next far-from-origin spot (admin test, build 68) |
 | Esc > Controls | One screen listing every hotkey (Dave 2026-10-21); keep its text (HELP_TEXT in terrain_client.gd) in step with this file |
-| Esc | Options menu: Resume, Controls (every hotkey), Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear saved ground, which takes effect at once), Quit game. Esc again resumes |
+| Esc | Options menu: Resume, Controls (every hotkey), Settings (quality, Resolution 1280x720 to 1920x1080, Window: windowed or fullscreen windowed, VSync, sound volume 100/75/50/25 % or off), Advanced (Clear blocks (was Clear saved ground), which takes effect at once), Quit game. Esc again resumes |
 | I | Open or close the crafting and inventory screen (about 3/4 of the screen): recipes on the left (the ones you can make now lit and on top, the rest greyed out, each alphabetical), inventory on the right, one search box filtering both; pick a recipe to see what it needs (have / need), choose how many and press Craft: the crafts line up in a queue under the recipe list (name, count, time left on the first) and run on the server even with the screen closed. Click an entry in the queue to cancel it and get its ingredients back. Click a slot, then another, to move; Drop stack / Drop one. Esc closes it first |
 | 1 to 9, 0 | The hotbar: hold what is in pack slot 1 to 10 (the first ten slots, shown as a strip along the bottom of the screen with the held one lit). The same key again puts it away, empty hands. Drag an item from the inventory (or another slot) onto a hotbar box to put it there. Tools must be on the hotbar to work. In the inventory, Use (E) on a tool, weapon or kit holds it (moving it into a free hotbar slot first if it is deeper in the pack) and again puts it away |
 | Tab | Open or close the character screen: health, exertion, beating heart, food, water, attributes (luck) and skills. Esc closes it first |
 | Left click | Use the held item (spear: jab; stone axe: swing, with the hit sound of what it strikes, and a blow on bare rock gives a stone; a held torch lights the way; on a tree trunk, repeated blows fell the tree into a trunk and a stump) |
 | Right click (hold) | Spear: aim a throw; then left click throws. Letting go returns to the normal stance |
+| Right click with a spade held | Switches the spade between Dig and Raise mode (the held name shows which) |
+| Left click with a spade in Raise mode | Adds ground at the point under the crosshair, using shovelfuls of soil, sand, gravel, clay or stone from your pack: 1 for a small spade, 4 medium, 8 large (a 0.9 m heap each, wider for bigger spades) |
 | Left click with a spade held | Digs the ground under the crosshair within 3 m: a 0.9 m hole each swing (every 0.7 s), the sound, grass and pebbles there vanish. The server checks the spade, wears it, keeps the hole through restarts and re-bakes |
 | Left click with a campfire kit held | Place the fire where the ring shows: yellow ring = open ground (rain puts the fire out), green = under a tree's crown (the fire survives rain) |
 | Left click with a lean-to kit held | Place the lean-to where the ghost shows; its open front faces you. E near it takes it down (kit back). Anyone under its roof counts as under cover (fires survive rain) |

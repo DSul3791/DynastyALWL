@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 204,
+	"next_number": 278,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -11,7 +11,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
 			"number": 2,
@@ -40,9 +41,9 @@
 			"look_alikes": [],
 			"value": 4
 		},
-		"cordage": {
+		"twine": {
 			"number": 5,
-			"name": "Cordage",
+			"name": "Twine",
 			"description": "Twisted plant fibre, strong enough to bind a tool or weave a chest.",
 			"kind": "material",
 			"stack": 20,
@@ -67,7 +68,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -92,7 +93,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -144,7 +145,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -156,6 +157,7 @@
 			"description": "A stick wrapped in fibre that burns for a while and lights your way.",
 			"kind": "tool",
 			"tool_class": "torch",
+			"offhand": true,
 			"tier": 1,
 			"stack": 1,
 			"light_m": 9.0,
@@ -182,8 +184,8 @@
 		},
 		"roast_forage": {
 			"number": 15,
-			"name": "Roasted forage",
-			"description": "Foraged food cooked over a fire.",
+			"name": "Campfire Stew",
+			"description": "A bowl of chunky vegetable soup, simmered over a fire.",
 			"kind": "food",
 			"stack": 20,
 			"look_alikes": [],
@@ -284,19 +286,21 @@
 		"chopping_block_kit": {
 			"number": 24,
 			"name": "Chopping block",
-			"description": "A log set on end to split wood on, ready to set down.",
+			"description": "Retired: the chopping block itself is now the carried item (Dave 2026-10-22).",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
-			"value": 20
+			"value": 20,
+			"retired": true
 		},
 		"chopping_block": {
 			"number": 25,
 			"name": "Chopping block",
-			"description": "A chopping block. Split logs into firewood here.",
-			"kind": "structure",
+			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
+			"kind": "placeable",
 			"stack": 1,
-			"look_alikes": []
+			"look_alikes": [],
+			"value": 20
 		},
 		"driftwood": {
 			"number": 30,
@@ -423,7 +427,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.55, "squash": 0.7}
 		},
 		"clay": {
 			"number": 36,
@@ -432,7 +437,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.55, "squash": 0.7}
 		},
 		"sand": {
 			"number": 37,
@@ -441,7 +447,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
 		},
 		"gravel": {
 			"number": 38,
@@ -450,7 +457,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 1
+			"value": 1,
+			"pile": {"shape": "mound", "handful": 5, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
 		},
 		"wooden_bowl": {
 			"number": 39,
@@ -506,7 +514,7 @@
 		"rope": {
 			"number": 44,
 			"name": "Rope",
-			"description": "Twisted cordage, strong enough to haul and to lash a frame.",
+			"description": "Twisted twine, strong enough to haul and to lash a frame.",
 			"kind": "material",
 			"stack": 20,
 			"value": 4,
@@ -528,7 +536,7 @@
 					1
 				],
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
@@ -620,7 +628,6 @@
 			"kind": "gear",
 			"stack": 1,
 			"value": 40,
-			"future": true,
 			"look_alikes": [],
 			"slot": "back",
 			"carry_bonus_kg": 12
@@ -748,7 +755,6 @@
 			"slot": "body",
 			"warmth": 0.3,
 			"stack": 1,
-			"future": true,
 			"value": 25,
 			"look_alikes": []
 		},
@@ -760,7 +766,6 @@
 			"slot": "feet",
 			"warmth": 0.15,
 			"stack": 1,
-			"future": true,
 			"value": 20,
 			"look_alikes": []
 		},
@@ -772,7 +777,6 @@
 			"slot": "head",
 			"warmth": 0.1,
 			"stack": 1,
-			"future": true,
 			"value": 15,
 			"look_alikes": []
 		},
@@ -784,7 +788,6 @@
 			"slot": "hands",
 			"warmth": 0.08,
 			"stack": 1,
-			"future": true,
 			"value": 12,
 			"look_alikes": []
 		},
@@ -796,7 +799,6 @@
 			"slot": "legs",
 			"warmth": 0.12,
 			"stack": 1,
-			"future": true,
 			"value": 18,
 			"look_alikes": []
 		},
@@ -812,7 +814,7 @@
 		},
 		"roast_meat": {
 			"number": 69,
-			"name": "Roasted meat",
+			"name": "Roast Meat",
 			"description": "Meat cooked over a fire. Filling, and it keeps a couple of days.",
 			"kind": "food",
 			"stack": 10,
@@ -876,12 +878,29 @@
 			"durability": 360,
 			"repair": [
 				[
-					"cordage",
+					"twine",
 					1
 				]
 			],
 			"stack": 1,
 			"value": 10,
+			"look_alikes": []
+		},
+		"shore_net": {
+			"number": 260,
+			"name": "Shore net",
+			"description": "A weighted twine net. Hold the left button at the water's edge for about 20 seconds.",
+			"kind": "tool",
+			"tool_class": "net",
+			"durability": 20,
+			"repair": [
+				[
+					"twine",
+					4
+				]
+			],
+			"stack": 1,
+			"value": 12,
 			"look_alikes": []
 		},
 		"trout": {
@@ -926,7 +945,7 @@
 		},
 		"roast_fish": {
 			"number": 80,
-			"name": "Roasted fish",
+			"name": "Roast Fish",
 			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
 			"kind": "food",
 			"stack": 10,
@@ -1103,7 +1122,7 @@
 		},
 		"log_oak": {
 			"number": 100,
-			"name": "Oak log",
+			"name": "Oak logs",
 			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1137,7 +1156,7 @@
 		},
 		"log_beech": {
 			"number": 103,
-			"name": "Beech log",
+			"name": "Beech logs",
 			"description": "A full-size beech log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1145,7 +1164,8 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_beech": {
 			"number": 104,
@@ -1156,7 +1176,8 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_beech": {
 			"number": 105,
@@ -1167,11 +1188,12 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_birch": {
 			"number": 106,
-			"name": "Birch log",
+			"name": "Birch logs",
 			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1205,7 +1227,7 @@
 		},
 		"log_scots_pine": {
 			"number": 109,
-			"name": "Scots pine log",
+			"name": "Scots pine logs",
 			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1239,7 +1261,7 @@
 		},
 		"log_spruce": {
 			"number": 112,
-			"name": "Spruce log",
+			"name": "Spruce logs",
 			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1273,7 +1295,7 @@
 		},
 		"log_alder": {
 			"number": 115,
-			"name": "Alder log",
+			"name": "Alder logs",
 			"description": "A full-size alder log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1281,7 +1303,8 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_alder": {
 			"number": 116,
@@ -1292,7 +1315,8 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_alder": {
 			"number": 117,
@@ -1303,11 +1327,12 @@
 			"species": "alder",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_willow": {
 			"number": 118,
-			"name": "Willow log",
+			"name": "Willow logs",
 			"description": "A full-size willow log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1315,7 +1340,8 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_willow": {
 			"number": 119,
@@ -1326,7 +1352,8 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_willow": {
 			"number": 120,
@@ -1337,11 +1364,12 @@
 			"species": "willow",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_coconut_palm": {
 			"number": 121,
-			"name": "Coconut palm log",
+			"name": "Coconut palm logs",
 			"description": "A full-size coconut palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1349,7 +1377,8 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_coconut_palm": {
 			"number": 122,
@@ -1360,7 +1389,8 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_coconut_palm": {
 			"number": 123,
@@ -1371,11 +1401,12 @@
 			"species": "coconut_palm",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_tropical_hardwood": {
 			"number": 124,
-			"name": "Tropical hardwood log",
+			"name": "Tropical hardwood logs",
 			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1409,7 +1440,7 @@
 		},
 		"log_acacia": {
 			"number": 127,
-			"name": "Acacia log",
+			"name": "Acacia logs",
 			"description": "A full-size acacia log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1417,7 +1448,8 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_acacia": {
 			"number": 128,
@@ -1428,7 +1460,8 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_acacia": {
 			"number": 129,
@@ -1439,11 +1472,12 @@
 			"species": "acacia",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_mangrove": {
 			"number": 130,
-			"name": "Mangrove log",
+			"name": "Mangrove logs",
 			"description": "A full-size mangrove log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1451,7 +1485,8 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_mangrove": {
 			"number": 131,
@@ -1462,7 +1497,8 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_mangrove": {
 			"number": 132,
@@ -1473,11 +1509,12 @@
 			"species": "mangrove",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_rowan": {
 			"number": 133,
-			"name": "Rowan log",
+			"name": "Rowan logs",
 			"description": "A full-size rowan log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1485,7 +1522,8 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_rowan": {
 			"number": 134,
@@ -1496,7 +1534,8 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_rowan": {
 			"number": 135,
@@ -1507,11 +1546,12 @@
 			"species": "rowan",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_apple": {
 			"number": 136,
-			"name": "Crab apple log",
+			"name": "Crab apple logs",
 			"description": "A full-size crab apple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1519,7 +1559,8 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_apple": {
 			"number": 137,
@@ -1530,7 +1571,8 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_apple": {
 			"number": 138,
@@ -1541,11 +1583,12 @@
 			"species": "wild_apple",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_pear": {
 			"number": 139,
-			"name": "Wild pear log",
+			"name": "Wild pear logs",
 			"description": "A full-size wild pear log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1553,7 +1596,8 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_pear": {
 			"number": 140,
@@ -1564,7 +1608,8 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_pear": {
 			"number": 141,
@@ -1575,11 +1620,12 @@
 			"species": "wild_pear",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wild_cherry": {
 			"number": 142,
-			"name": "Wild cherry log",
+			"name": "Wild cherry logs",
 			"description": "A full-size wild cherry log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1587,7 +1633,8 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wild_cherry": {
 			"number": 143,
@@ -1598,7 +1645,8 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wild_cherry": {
 			"number": 144,
@@ -1609,11 +1657,12 @@
 			"species": "wild_cherry",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_sweet_chestnut": {
 			"number": 145,
-			"name": "Sweet chestnut log",
+			"name": "Sweet chestnut logs",
 			"description": "A full-size sweet chestnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1621,7 +1670,8 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_sweet_chestnut": {
 			"number": 146,
@@ -1632,7 +1682,8 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_sweet_chestnut": {
 			"number": 147,
@@ -1643,11 +1694,12 @@
 			"species": "sweet_chestnut",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_walnut": {
 			"number": 148,
-			"name": "Walnut log",
+			"name": "Walnut logs",
 			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1681,7 +1733,7 @@
 		},
 		"log_date_palm": {
 			"number": 151,
-			"name": "Date palm log",
+			"name": "Date palm logs",
 			"description": "A full-size date palm log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1689,7 +1741,8 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_date_palm": {
 			"number": 152,
@@ -1700,7 +1753,8 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 6,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_date_palm": {
 			"number": 153,
@@ -1711,11 +1765,12 @@
 			"species": "date_palm",
 			"look_alikes": [],
 			"value": 18,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_mirrorbark": {
 			"number": 154,
-			"name": "Mirrorbark log",
+			"name": "Mirrorbark logs",
 			"description": "A full-size mirrorbark log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1723,7 +1778,8 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_mirrorbark": {
 			"number": 155,
@@ -1734,7 +1790,8 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_mirrorbark": {
 			"number": 156,
@@ -1745,11 +1802,12 @@
 			"species": "mirrorbark",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_wardpine": {
 			"number": 157,
-			"name": "Wardpine log",
+			"name": "Wardpine logs",
 			"description": "A full-size wardpine log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1757,7 +1815,8 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_wardpine": {
 			"number": 158,
@@ -1768,7 +1827,8 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_wardpine": {
 			"number": 159,
@@ -1779,11 +1839,12 @@
 			"species": "wardpine",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_hearthwood": {
 			"number": 160,
-			"name": "Hearthwood log",
+			"name": "Hearthwood logs",
 			"description": "A full-size hearthwood log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1791,7 +1852,8 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_hearthwood": {
 			"number": 161,
@@ -1802,7 +1864,8 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_hearthwood": {
 			"number": 162,
@@ -1813,11 +1876,12 @@
 			"species": "hearthwood",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_everember": {
 			"number": 163,
-			"name": "Everember log",
+			"name": "Everember logs",
 			"description": "A full-size everember log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1825,7 +1889,8 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_everember": {
 			"number": 164,
@@ -1836,7 +1901,8 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_everember": {
 			"number": 165,
@@ -1847,11 +1913,12 @@
 			"species": "everember",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_witness_tree": {
 			"number": 166,
-			"name": "Witness tree log",
+			"name": "Witness tree logs",
 			"description": "A full-size witness tree log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1859,7 +1926,8 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 48,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_witness_tree": {
 			"number": 167,
@@ -1870,7 +1938,8 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 12,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_witness_tree": {
 			"number": 168,
@@ -1881,11 +1950,12 @@
 			"species": "witness_tree",
 			"look_alikes": [],
 			"value": 36,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_balsam_fir": {
 			"number": 169,
-			"name": "Balsam fir log",
+			"name": "Balsam fir logs",
 			"description": "A full-size balsam fir log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1893,7 +1963,8 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 32,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"lumber_balsam_fir": {
 			"number": 170,
@@ -1904,7 +1975,8 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 8,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"beam_balsam_fir": {
 			"number": 171,
@@ -1915,11 +1987,12 @@
 			"species": "balsam_fir",
 			"look_alikes": [],
 			"value": 24,
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		"log_maple": {
 			"number": 172,
-			"name": "Sugar maple log",
+			"name": "Sugar maple logs",
 			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
 			"kind": "material",
 			"stack": 1,
@@ -1971,7 +2044,7 @@
 		},
 		"roast_roots": {
 			"number": 177,
-			"name": "Embered roots",
+			"name": "Roast Roots",
 			"description": "Roots baked in the embers. Plain and filling.",
 			"kind": "food",
 			"stack": 10,
@@ -2097,7 +2170,7 @@
 		},
 		"feast_roast": {
 			"number": 191,
-			"name": "Feast roast",
+			"name": "Roast Beast",
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"kind": "food",
 			"stack": 10,
@@ -2217,6 +2290,870 @@
 			"look_alikes": [],
 			"material": "planks",
 			"note": "Building piece: row state 27; sits on a 1 m grid, turns in quarter circles."
+		},
+		"timber_prop_kit": {
+			"number": 204,
+			"name": "Timber prop",
+			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 8
+		},
+		"timber_prop": {
+			"number": 205,
+			"name": "Timber prop",
+			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "wood",
+			"note": "Bracing support."
+		},
+		"timber_set_kit": {
+			"number": 206,
+			"name": "Timber set",
+			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 40
+		},
+		"timber_set": {
+			"number": 207,
+			"name": "Timber set",
+			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "wood",
+			"note": "Bracing support."
+		},
+		"cut_stone_block": {
+			"number": 208,
+			"name": "Stone block",
+			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
+			"kind": "material",
+			"stack": 4,
+			"look_alikes": [],
+			"value": 25
+		},
+		"brick": {
+			"number": 209,
+			"name": "Brick",
+			"description": "A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 4
+		},
+		"mortar": {
+			"number": 210,
+			"name": "Mortar",
+			"description": "A bucketful of sand and clay paste that binds stone blocks and bricks.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 6
+		},
+		"ladder_kit": {
+			"number": 211,
+			"name": "Ladder",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 35
+		},
+		"ladder": {
+			"number": 212,
+			"name": "Ladder",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "wood",
+			"note": "Building piece: row state 31."
+		},
+		"wooden_spade_medium": {
+			"number": 213,
+			"name": "Medium wooden spade",
+			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"stack": 1,
+			"look_alikes": [],
+			"durability": 3037,
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 37,
+			"spade_size": "medium",
+			"tier": 1
+		},
+		"wooden_spade_large": {
+			"number": 214,
+			"name": "Large wooden spade",
+			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"stack": 1,
+			"look_alikes": [],
+			"durability": 4050,
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 67,
+			"spade_size": "large",
+			"tier": 1
+		},
+		"stone_spade_medium": {
+			"number": 215,
+			"name": "Medium stone spade",
+			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 6075,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 75,
+			"look_alikes": [],
+			"spade_size": "medium"
+		},
+		"stone_spade_large": {
+			"number": 216,
+			"name": "Large stone spade",
+			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 8100,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 135,
+			"look_alikes": [],
+			"spade_size": "large"
+		},
+		"iron_spade_medium": {
+			"number": 217,
+			"name": "Medium iron spade",
+			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 30375,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 225,
+			"future": true,
+			"look_alikes": [],
+			"repair_station": "forge",
+			"spade_size": "medium"
+		},
+		"iron_spade_large": {
+			"number": 218,
+			"name": "Large iron spade",
+			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 40500,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 405,
+			"future": true,
+			"look_alikes": [],
+			"repair_station": "forge",
+			"spade_size": "large"
+		},
+		"steel_spade_medium": {
+			"number": 219,
+			"name": "Medium steel spade",
+			"description": "Medium spade: moves 4 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "steel",
+			"tier": 4,
+			"stack": 1,
+			"durability": 60750,
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 350,
+			"future": true,
+			"look_alikes": [],
+			"repair_station": "forge",
+			"spade_size": "medium"
+		},
+		"steel_spade_large": {
+			"number": 220,
+			"name": "Large steel spade",
+			"description": "Large spade: moves 8 pieces of ground at a time.",
+			"kind": "tool",
+			"tool_class": "spade",
+			"material": "steel",
+			"tier": 4,
+			"stack": 1,
+			"durability": 81000,
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 630,
+			"future": true,
+			"look_alikes": [],
+			"repair_station": "forge",
+			"spade_size": "large"
+		},
+		"wooden_hoe": {
+			"number": 221,
+			"name": "Wooden hoe",
+			"description": "A flat blade lashed to a long handle. Paths the ground and smooths it.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"stack": 1,
+			"durability": 2025,
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 15,
+			"look_alikes": []
+		},
+		"stone_hoe": {
+			"number": 222,
+			"name": "Stone hoe",
+			"description": "A hoe with a flat stone blade. Lasts longer than bare wood.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 4050,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
+		},
+		"iron_hoe": {
+			"number": 223,
+			"name": "Iron hoe",
+			"description": "A hoe with an iron blade.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 20250,
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 90,
+			"look_alikes": [],
+			"future": true,
+			"repair_station": "forge"
+		},
+		"steel_hoe": {
+			"number": 224,
+			"name": "Steel hoe",
+			"description": "A hoe with a steel blade.",
+			"kind": "tool",
+			"tool_class": "hoe",
+			"material": "steel",
+			"tier": 4,
+			"stack": 1,
+			"durability": 40500,
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 140,
+			"look_alikes": [],
+			"future": true,
+			"repair_station": "forge"
+		},
+		"path_patch": {
+			"number": 225,
+			"name": "Path",
+			"description": "Trodden ground, a metre of path.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "earth",
+			"note": "Hoe path: row state 32; no kit, cannot be picked up."
+		},
+		"rough_plank": {
+			"number": 226,
+			"name": "Rough plank",
+			"description": "A plank split from a log: rough, smooth on one side, bark on the other.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 6
+		},
+		"fine_board": {
+			"number": 227,
+			"name": "Fine board",
+			"description": "A smooth board planed from sawn lumber. For fine woodwork.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"nails": {
+			"number": 228,
+			"name": "Nails",
+			"description": "Iron nails, bought and used by the handful.",
+			"kind": "material",
+			"stack": 200,
+			"look_alikes": [],
+			"value": 1
+		},
+		"cobblestone": {
+			"number": 229,
+			"name": "Cobblestone",
+			"description": "A rounded stone, dressed to lay in a wall or a floor.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 3
+		},
+		"stone_shingle": {
+			"number": 230,
+			"name": "Stone shingle",
+			"description": "A thin flat slab of stone for a roof.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 2
+		},
+		"tar": {
+			"number": 231,
+			"name": "Tar",
+			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 10
+		},
+		"hinges": {
+			"number": 232,
+			"name": "Hinges",
+			"description": "A pair of iron hinges for a door.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"wooden_pin": {
+			"number": 233,
+			"name": "Wooden pin",
+			"description": "A hardwood pin or dowel that joins logs and beams without iron.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 1
+		},
+		"wooden_block": {
+			"number": 234,
+			"name": "Wooden block",
+			"description": "A short round of log, about 30 cm long. Split it on a chopping block.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 3
+		},
+		"firewood_soft": {
+			"number": 236,
+			"name": "Softwood firewood",
+			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
+			"kind": "material",
+			"stack": 40,
+			"look_alikes": [],
+			"value": 1
+		},
+		"wooden_block_soft": {
+			"number": 237,
+			"name": "Softwood block",
+			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 2
+		},
+		"saw_blade": {
+			"number": 238,
+			"name": "Saw blades",
+			"description": "A pair of iron saw blades for a sawmill frame.",
+			"kind": "material",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 60,
+			"future": true
+		},
+		"water_wheel": {
+			"number": 239,
+			"name": "Water wheel",
+			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
+			"kind": "material",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 120
+		},
+		"saw_mill_kit": {
+			"number": 240,
+			"name": "Sawmill",
+			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 400,
+			"look_alikes": []
+		},
+		"saw_mill": {
+			"number": 241,
+			"name": "Sawmill",
+			"description": "A water-driven sawmill. Stand near it to saw logs into lumber.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"woodworking_table_kit": {
+			"number": 242,
+			"name": "Woodworking table",
+			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 150,
+			"look_alikes": []
+		},
+		"woodworking_table": {
+			"number": 243,
+			"name": "Woodworking table",
+			"description": "A woodworking table. Stand near it to plane lumber into fine boards.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"rock_pile": {
+			"number": 235,
+			"name": "Rock pile",
+			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
+			"kind": "placeable",
+			"stack": 1,
+			"look_alikes": [],
+			"value": 45
+		},
+		"wooden_hammer": {
+			"number": 247,
+			"name": "Wooden hammer",
+			"description": "A wooden head on a stick. The weakest hammer; it wears out fast. Nails and building still to come.",
+			"kind": "tool",
+			"tool_class": "hammer",
+			"material": "wood",
+			"tier": 1,
+			"stack": 1,
+			"durability": 1500,
+			"repair": [
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 10,
+			"look_alikes": []
+		},
+		"stone_hammer": {
+			"number": 244,
+			"name": "Stone hammer",
+			"description": "A hafted stone hammer. It does nothing yet: nails and finishing work are still to come.",
+			"kind": "tool",
+			"tool_class": "hammer",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 4350,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": []
+		},
+		"hand_saw": {
+			"number": 245,
+			"name": "Hand saw",
+			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
+			"kind": "tool",
+			"tool_class": "saw",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"durability": 2500,
+			"repair": [
+				[
+					"twine",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 70,
+			"look_alikes": []
+		},
+		"stone_adze": {
+			"number": 246,
+			"name": "Stone adze",
+			"description": "A hafted stone blade with a curved edge. It does nothing yet: smoothing beams is still to come.",
+			"kind": "tool",
+			"tool_class": "adze",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"durability": 3400,
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 30,
+			"look_alikes": [],
+			"retired": true
+		},
+		"rough_bed_kit": {
+			"number": 250,
+			"name": "Rough bed",
+			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"rough_bed": {
+			"number": 251,
+			"name": "Rough bed",
+			"description": "A rough bed of thatch. Lie on it to rest properly.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_wall_kit": {
+			"number": 252,
+			"name": "Thatch wall",
+			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_wall": {
+			"number": 253,
+			"name": "Thatch wall",
+			"description": "A thatch wall.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"campfire_pot_kit": {
+			"number": 254,
+			"name": "Campfire pot",
+			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"campfire_pot": {
+			"number": 255,
+			"name": "Campfire pot",
+			"description": "A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"clay_hearth_kit": {
+			"number": 256,
+			"name": "Clay hearth",
+			"description": "Stones and clay built into a low hearth with a spit. Cooks better than an open fire.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"clay_hearth": {
+			"number": 257,
+			"name": "Clay hearth",
+			"description": "A clay hearth with a spit.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_floor_kit": {
+			"number": 261,
+			"name": "Thatch floor",
+			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_floor": {
+			"number": 262,
+			"name": "Thatch floor",
+			"description": "A thatch floor on stakes. Walls and roofs stand on it.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_roof_kit": {
+			"number": 263,
+			"name": "Thatch roof",
+			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_roof": {
+			"number": 264,
+			"name": "Thatch roof",
+			"description": "A thatch roof. It keeps the rain off.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"thatch_doorway_kit": {
+			"number": 265,
+			"name": "Thatch doorway",
+			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"thatch_doorway": {
+			"number": 266,
+			"name": "Thatch doorway",
+			"description": "A thatch doorway with a hanging door.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"wooden_bow": {
+			"number": 269,
+			"name": "Wooden bow",
+			"description": "A bow of bent wood and twine. It needs arrows.",
+			"kind": "weapon",
+			"weapon_class": "bow",
+			"tier": 1,
+			"durability": 400,
+			"repair": [["twine", 1]],
+			"stack": 1,
+			"value": 30,
+			"look_alikes": []
+		},
+		"wooden_arrow": {
+			"number": 270,
+			"name": "Wooden arrow",
+			"description": "A straight stick with a fire-hardened tip and feather fletching.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 5.0,
+			"tip": "wood",
+			"stack": 20,
+			"value": 2,
+			"look_alikes": []
+		},
+		"stone_arrow": {
+			"number": 271,
+			"name": "Stone arrow",
+			"description": "An arrow tipped with a flaked stone point.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 8.0,
+			"tip": "stone",
+			"stack": 20,
+			"value": 4,
+			"look_alikes": []
+		},
+		"quiver": {
+			"number": 272,
+			"name": "Quiver",
+			"description": "A hide tube worn on the back. Holds 40 arrows.",
+			"kind": "gear",
+			"slot": "back",
+			"ammo_class": "arrow",
+			"ammo_capacity": 40,
+			"stack": 1,
+			"value": 25,
+			"look_alikes": []
+		},
+		"oven": {
+			"number": 267,
+			"name": "Oven",
+			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"oven_kit": {
+			"number": 268,
+			"name": "Oven",
+			"description": "A brick oven, built with a hammer next to a clay hearth.",
+			"kind": "placeable",
+			"stack": 1,
+			"value": 10,
+			"look_alikes": []
+		},
+		"flatbread": {
+			"number": 273,
+			"name": "Flatbread",
+			"description": "A flat cake baked on the hot clay. Plain and filling.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": []
+		},
+		"honey_loaf": {
+			"number": 274,
+			"name": "Honey loaf",
+			"description": "A sweet loaf baked in the oven. Keeps well.",
+			"kind": "food",
+			"stack": 10,
+			"value": 22,
+			"look_alikes": []
+		},
+		"roast_joint": {
+			"number": 275,
+			"name": "Rosemary joint",
+			"description": "Meat roasted whole in the oven with herbs.",
+			"kind": "food",
+			"stack": 10,
+			"value": 25,
+			"look_alikes": []
+		},
+		"snare": {
+			"number": 276,
+			"name": "Snare",
+			"description": "A loop of twine on a bent stick. Set it on a worn animal path.",
+			"kind": "placeable",
+			"stack": 5,
+			"durability": 20,
+			"repair": [
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 6,
+			"look_alikes": []
+		},
+		"snare_trap": {
+			"number": 277,
+			"name": "Snare",
+			"description": "A snare set on the ground.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
 		}
 	}
 }

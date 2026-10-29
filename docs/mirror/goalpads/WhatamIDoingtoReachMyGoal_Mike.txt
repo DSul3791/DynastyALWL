@@ -1,0 +1,39 @@
+WhatamIDoingtoReachMyGoal (Mike)
+ULTIMATE (Dave 01:34): support everyone else as Dave's computer operator: combine tests, move files, provide and push tile builds, manage backups per plan.
+GOAL 1: One combined batch at a time (every thread's REQUESTs in one launch sequence, one report with a PASS/FAIL line per request)
+
+How to use (Dave 01:26): scratch pad. Finer steps toward goal 1 only. Update at job start, each step done, every half-hour reminder. Never delete done lines; mark DONE with the time (UTC). If a step waits on someone, start the next. When fewer than 5 steps remain, add the next 10 from goals_Mike.md.
+
+STEPS NOW (each has a done check)  [handoff written 24 Oct 11:07 UTC]
+1. Rerun test_worldgen on sonny-outlets 4c355b99 (ore fix 2). Cave sites ARE baked in the tile files, so (3,4) must be re-baked from 4c355b99 first (about 9 min). DONE WHEN: ore steering line and totals sent.
+2. Cave light check: godot --headless --path . --script res://tools/check_cave_light.gd on claude/project-thread-yttwff 6e40ee76 + one daytime tunnel picture. DONE WHEN: pass/fail counts sent.
+3. Kathleen close-ups 1.5 m from the side: B1 (pickaxe, knife), K1 (flowers), K12 (workshop parts), later K2-K11; push to claude/mike-evidence-goal2b. DONE WHEN: hash sent.
+4. Sound batch 2 gate (steve-sound-batch2 018f30ed): parse_scan, test_slot_sounds, frame time at F2 Low. DONE WHEN: PASS/FAIL sent.
+5. Kathleen goal2-c 538976f7: merge-test on generator-v2, parse_scan, test_flora_budget.gd, before/after pictures at 1.5 m, frame time Low and Ultra. DONE WHEN: reported.
+6. local_check on mike-bake-v31 (418df97b); the island_checks table has 1 FAIL (seam 4,4-4,5 height 0.10 m). DONE WHEN: result sent.
+7. Nightly backup 9 pm ADT (tools/nightly_backup.py in Dave's folder, game closed, retry 3x). DONE WHEN: Backup done line logged.
+
+MID-RUN ON THE PC AT HANDOFF: nothing important. Old folder C:\GodotProjects\DynastyALWL_test may still have a finished a6bb422a re-bake (island_world_v31b) and v31 settle: ignore them (obsolete).
+CLONES: second clone C:\GodotProjects\DynastyALWL_test (detached, busy tree, many checked-out tool files) and a fresh copy E:\Software\godotDev\DynastyALWL_test2 (418df97b + steve river tools + Sal island_checks, tiles from the v31 bake in worlds/base_world). Dave's folder is untouched.
+KEY FOLDERS (E:\Software\godotDev): island_world_418df97b (v31 bake, water, docs), island_world_e8eb25fd (v30), island_world_f49a1033 (v29), DynastyALWL_Evidence (pictures), DynastyALWL_ProjectBackups.
+BRANCHES I PUSHED: mike-bake-v28 117c2025, v29 ba9b7d27, v29b 76f82042, v30 6e4c338a, v30b 9acf3c64, v31 0e8f64fb, mike-bake-3adc 8fc83cca, mike-bake-e23c af96d1f3, mike-evidence-goal2b 78ae4e85, mike-seam-test e4ad1f31 and later, mike-goalpad.
+RULES I FOUND: kill of Godot processes is refused (cannot stop a running bake); sleep chains are blocked, use until-loops in the background; editor exe needed for scripts that use Voxel; cave sites live in tile files; tile files carry no TERRAIN_VERSION stamp.
+
+HANDED OFF
+(none)
+
+DONE
+(UTC 24 Oct 2026)
+01:38 Pad location set: this file on claude/mike-goalpad.
+01:50 v27 tile bake (build 772) pushed earlier as claude/mike-bake-9tile-v27 68bd63d0.
+02:07 Island bake 7c9655fb tile 3,4, settled water, island_checks and picture sent.
+02:19 6 water_window spots and river_settle_report sent.
+03:11 Gate list 2 (build 774) and list 3 reported.
+03:42 v28 bake pushed: claude/mike-bake-v28 117c2025 (build 775).
+04:44 v29 bake pushed: claude/mike-bake-v29 ba9b7d27; 05:10 v29b with spawn fix: 76f82042.
+03:51 Nightly backup 00:51 ADT done: 1597 MB, restore test OK.
+05:20 Tree-belt run, probes for Sonny (claude/mike-seam-test), gate list 4 (9 pass) and 5 reported.
+06:50 harvest-field 5100acbf passed test_server_items on build 779.
+07:00 v30 bake pushed: claude/mike-bake-v30 6e4c338a (e8eb25fd, 66 checks 0 FAIL).
+07:34 v30b stitched water pushed: claude/mike-bake-v30b 9acf3c64 (seam rows OK).
+11:05 v31 bake pushed: claude/mike-bake-v31 0e8f64fb (418df97b, 67 checks 1 FAIL).

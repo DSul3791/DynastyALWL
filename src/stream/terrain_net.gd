@@ -19,6 +19,9 @@ extends Node
 #                                      so the server makes the ground ahead of and under them first
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   server -> client  flora_cut        a flora item was removed
+#   server -> client  vent             the nearest volcanic vent within 1500 m (x, y, z), or INF when none: the volcano rumble bed sits there
+#   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
+#   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
 #   server -> client  inventory_full    the whole inventory, at hello only
@@ -28,7 +31,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 68
+const PROTOCOL_VERSION := 79
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -42,11 +45,15 @@ signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByte
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
+signal flora_stripped_received(chunk: Vector2i, ids: PackedInt32Array)
+signal zone_received(biome_id: int)
+signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
 signal water_rate_received(rate: float, busy: bool, spring_m3_s: float)
 signal water_changed_received()
 signal pulse_received()
 signal quake_received(stage: int, strength: float, point: Vector3)
+signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
@@ -86,6 +93,10 @@ signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
+signal logout_requested(peer_id: int)
+signal tunnel_setting_requested(peer_id: int, on: bool, cave_in_s: int)
+signal tunnel_settings_received(on: bool, cave_in_s: int)
+signal start_at_received(position: Vector3)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
 signal inventory_full_received(bytes: PackedByteArray)
 signal inventory_slots_received(bytes: PackedByteArray)
@@ -124,8 +135,23 @@ const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots)
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
+const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
+const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
+const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
+const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one hoe stroke brings the ground within 1.5 m toward the straight ramp from A to B (0.25 m at most, no items)
+const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
+const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
+const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
+const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
+const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
+const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)
 const ACT_STRIKE := 32     # a = slot of a weapon, at = aim direction: one jab at an animal in front (the server checks reach, pace and the weapon)
+const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the loose dropped items within it of the player; no protocol change, just a new kind
+const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch; while on, an admin crafts anything free (no protocol change)
+const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
+const ACT_DUMP_WATER := 41   # at = the point (admin only): the server writes the live water cells in a 40 m box there to a text file in its store
+const ACT_LAND_TYPES := 46   # at = the point (admin only): the server classifies the land round it from the live water (lake, river, marsh, swamp, bog, floodplain), checks the springs near it and writes land_types_X_Z.txt (water land types, R1)
 const ACT_THROW := 5      # a = slot, at = aim direction (the server starts the throw from the player)
 
 
@@ -189,6 +215,21 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 	flora_cut_received.emit(chunk, id)
 
 
+@rpc("authority", "call_remote", "reliable")
+func flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
+	flora_stripped_received.emit(chunk, ids)
+
+
+@rpc("authority", "call_remote", "reliable")
+func zone(biome_id: int) -> void:
+	zone_received.emit(biome_id)
+
+
+@rpc("authority", "call_remote", "reliable")
+func vent(at: Vector3) -> void:
+	vent_received.emit(at)
+
+
 @rpc("any_peer", "call_remote", "unreliable_ordered")
 func report_position(position: Vector3, velocity: Vector3) -> void:
 	if multiplayer.is_server():
@@ -216,6 +257,13 @@ func pulse() -> void:
 # Earth shaking in an excavation that needs bracing (tech/EXCAVATION_BRACING_GROUND_DESIGN.md section 3): stage 2 creak, 3 shake,
 # 4 throes (the collapse follows), strength 0..1000 per mille, point = the working cluster. The server sends it twice a second to
 # players within 40 m of a cluster in stage 2 or later; nothing sends it yet (the tunnel timers are switched off until the bracing items exist).
+# Dripping ceilings (protocol 73, Dave 2026-10-23): the ceiling points near the player with water within 4 m above them, nearest first
+# (at most 24), and how close the water is (0..255). Twice a second, only while there are any. Drawn and heard on the client; no water is simulated.
+@rpc("authority", "call_remote", "unreliable")
+func leak(points: PackedVector3Array, closeness: PackedByteArray) -> void:
+	leak_received.emit(points, closeness)
+
+
 @rpc("authority", "call_remote", "unreliable")
 func quake(stage: int, strength_pm: int, point: Vector3) -> void:
 	quake_received.emit(stage, float(strength_pm) * 0.001, point)
@@ -269,6 +317,33 @@ func surface(x: float, z: float, y: float) -> void:
 func deliver_water(chunk: Vector2i, water: PackedByteArray) -> void:
 	water_received.emit(chunk, water)
 
+
+
+# A deliberate quit (Quit game, window close): sent before the connection ends. No such message = a disconnect (protocol 69).
+@rpc("any_peer", "call_remote", "reliable")
+func logout() -> void:
+	if multiplayer.is_server():
+		logout_requested.emit(multiplayer.get_remote_sender_id())
+
+
+# Tunnel collapse switch (protocol 72, Dave 2026-10-23): an admin asks to turn it on or off and sets the cave-in duration (seconds, the
+# server clamps to 120..1200); the server answers everyone with the settings now in force (also sent after hello).
+@rpc("any_peer", "call_remote", "reliable")
+func tunnel_setting(on: bool, cave_in_s: int) -> void:
+	if multiplayer.is_server():
+		tunnel_setting_requested.emit(multiplayer.get_remote_sender_id(), on, cave_in_s)
+
+
+@rpc("authority", "call_remote", "reliable")
+func tunnel_settings(on: bool, cave_in_s: int) -> void:
+	tunnel_settings_received.emit(on, cave_in_s)
+
+
+# Where this character resumes (protocol 69): sent after hello when the player has a saved place (their last spot, or the nearest
+# rest or shelter after a long disconnect). Without it the player stays at the world spawn.
+@rpc("authority", "call_remote", "reliable")
+func start_at(position: Vector3) -> void:
+	start_at_received.emit(position)
 
 
 @rpc("any_peer", "call_remote", "reliable")

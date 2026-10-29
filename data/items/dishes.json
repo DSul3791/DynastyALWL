@@ -3,7 +3,7 @@
 	"dishes": {
 		"berry_compote": {"name": "Berry compote", "needs": [["blueberries", 2], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 350, "shelf_h": 96, "warms": 4, "craft_s": 6, "description": "Sweet stewed berries. Light, quick energy."},
 		"nut_paste": {"name": "Nut paste", "needs": [["hazelnuts", 3], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 450, "shelf_h": 240, "warms": 0, "craft_s": 6, "description": "Ground hazelnuts and honey. Keeps well."},
-		"roast_roots": {"name": "Embered roots", "needs": [["burdock_roots", 2], ["wild_carrot_roots", 2]], "gives": 2, "kcal": 400, "shelf_h": 96, "warms": 8, "craft_s": 8, "description": "Roots baked in the embers. Plain and filling."},
+		"roast_roots": {"name": "Roast Roots", "needs": [["burdock_roots", 2], ["wild_carrot_roots", 2]], "gives": 2, "kcal": 400, "shelf_h": 96, "warms": 8, "craft_s": 8, "description": "Roots baked in the embers. Plain and filling."},
 		"acorn_mash": {"name": "Acorn mash", "needs": [["acorns", 3], ["water", 1]], "gives": 2, "kcal": 380, "shelf_h": 72, "warms": 6, "craft_s": 8, "description": "Leached acorns boiled to a mash. Famine food."},
 		"baked_apples": {"name": "Baked apples", "needs": [["crab_apples", 3], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 420, "shelf_h": 72, "warms": 8, "craft_s": 8, "description": "Crab apples baked sweet in the ashes."},
 		"mushroom_skewer": {"name": "Mushroom skewer", "needs": [["porcini", 2], ["chanterelles", 1], ["wild_garlic_leaves", 1]], "gives": 2, "kcal": 560, "shelf_h": 60, "warms": 10, "craft_s": 8, "description": "Mushrooms and wild garlic grilled on a stick."},
@@ -17,6 +17,9 @@
 		"fish_stew": {"name": "Fish stew", "needs": [["perch", 1], ["watercress", 1], ["wild_carrot_roots", 1], ["sage", 1]], "gives": 2, "kcal": 880, "shelf_h": 60, "warms": 22, "craft_s": 12, "description": "Perch, cress and root in a sage broth."},
 		"trail_bread": {"name": "Trail bread", "needs": [["linseed", 2], ["hazelnuts", 2], ["dates", 1], ["animal_fat", 1]], "gives": 3, "kcal": 950, "shelf_h": 480, "warms": 0, "craft_s": 12, "description": "Dense seed and nut loaves. Barely spoils."},
 		"hearty_pottage": {"name": "Hearty pottage", "needs": [["seeds", 2], ["wild_carrot_roots", 1], ["dandelion_leaves", 1], ["marjoram", 1], ["animal_fat", 1]], "gives": 3, "kcal": 1050, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "A rich pot of seeds, roots, herbs and fat. Fills and warms."},
-		"feast_roast": {"name": "Feast roast", "needs": [["raw_meat", 2], ["wild_garlic_bulbs", 1], ["thyme", 1], ["rosemary", 1], ["animal_fat", 1]], "gives": 2, "kcal": 1200, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "Spiced, fat-basted roast. The best meal a campfire makes."}
+		"feast_roast": {"name": "Roast Beast", "needs": [["raw_meat", 2], ["wild_garlic_bulbs", 1], ["thyme", 1], ["rosemary", 1], ["animal_fat", 1]], "gives": 2, "kcal": 1200, "shelf_h": 96, "warms": 30, "craft_s": 14, "description": "Spiced, fat-basted roast. The best meal a campfire makes."},
+		"flatbread": {"name": "Flatbread", "station": "clay_hearth", "needs": [["seeds", 3], ["water", 1]], "gives": 2, "kcal": 420, "shelf_h": 120, "warms": 4, "craft_s": 8, "description": "A flat cake baked on the hot clay. Plain and filling."},
+		"honey_loaf": {"name": "Honey loaf", "station": "oven", "needs": [["seeds", 3], ["hazelnuts", 1], ["honeyspindle_nectar", 1]], "gives": 2, "kcal": 620, "shelf_h": 240, "warms": 4, "craft_s": 12, "description": "A sweet loaf baked in the oven. Keeps well."},
+		"roast_joint": {"name": "Rosemary joint", "station": "oven", "needs": [["raw_meat", 2], ["rosemary", 1], ["wild_garlic_bulbs", 1]], "gives": 2, "kcal": 700, "shelf_h": 96, "warms": 10, "craft_s": 14, "description": "Meat roasted whole in the oven with herbs."}
 	}
 }

@@ -19,8 +19,10 @@ extends Node
 #
 # Clients start at the starter spawn point of tile (3,4).
 
+const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
+const BuildInfo := preload("res://src/shared/build.gd")
 const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
 const WATER_CHUNKS_MAX := 64              # flora chunks answered per water request
 const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled at most this often
@@ -60,6 +62,8 @@ const KEY_BURST := 8000                # block keys one peer may ask for at once
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
+const WaterFlowScript := preload("res://src/stream/water_flow.gd")
+const LandTypeScript := preload("res://src/water/land_type.gd")
 const WEATHER_SWELL := 1.0              # a big storm makes every spring run this much stronger (x2 in all: the x10 start flow becomes x20; Dave 2026-10-20)
 const DRY_SHRINK := 0.7                 # full dry heat takes this share off the spring flow (a trickle is left); the floor below
 const RUNOFF_FLOOR := 0.2               # rivers never shrink below this share of the start flow
@@ -242,6 +246,8 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_world_items = func(peer, added, removed): net.world_items.rpc_id(peer, added, removed)
 	items.dig_ground = _dig_ground
+	tunnels.support_strength = items.support_strength_at      # bracing holds a tunnel up (called from the watch's own thread; the support list is mutex-guarded)
+	items.support_changed = func(at: Vector3) -> void: tunnels.support_changed(at, Time.get_ticks_msec())
 	items.dig_refusal = _dig_refusal
 	items.fill_ground = _fill_ground
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
@@ -299,8 +305,10 @@ func _ready() -> void:
 		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 
-			if not tile_data.sim_levels.is_empty():
-				if not is_nan(tile_data.sim_levels[k]):
+			var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+			if not sim.is_empty():
+				if not is_nan(sim[k]):
 					return true
 			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
 				return true
@@ -309,8 +317,58 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
+		var water: Array = _water_at(Vector3(x, 0.0, z))
+		var baked: int = 0
+
+		if generator.tile_cached(x, z):
+			var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+			if not tile_data.placeholder and not tile_data.water_class.is_empty():
+				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
+
+		return [water[0], water[1], baked])
+	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
 	@warning_ignore("confusable_local_declaration")
-	items.send_reject = func(peer, reason): net.reject.rpc_id(peer, reason)
+	@warning_ignore("confusable_local_declaration")
+	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
+	items.zone_at = func(pos: Vector3) -> int:
+		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if tile_data.placeholder or tile_data.biome.is_empty():
+			return -1
+
+		return int(tile_data.biome[tile_data.nearest(pos.x, pos.z)])
+	items.send_vent = func(peer_id, at: Vector3): net.vent.rpc_id(peer_id, at)
+	items.vent_near = func(pos: Vector3) -> Vector3:
+		var best: Vector3 = Vector3.INF
+		var best_d: float = items.VENT_RANGE_M
+		var tile_size: float = generator.tile_size_m
+
+		for dz in [-1, 0, 1]:
+			for dx in [-1, 0, 1]:
+				var px: float = pos.x + float(dx) * tile_size
+				var pz: float = pos.z + float(dz) * tile_size
+
+				# The tile under the player is read if needed; a neighbour only when it is already in memory (a read takes over a second).
+				if (dx != 0 or dz != 0) and not generator.tile_cached(px, pz):
+					continue
+
+				var tile_data = generator.get_tile(generator.tile_of(px, pz))
+
+				for body in tile_data.bodies:
+					if int(body["kind"]) != 1:
+						continue
+
+					var c: Vector2 = body["center"]
+					var d: float = Vector2(c.x - pos.x, c.y - pos.z).length()
+
+					if d < best_d:
+						best_d = d
+						best = Vector3(c.x, float(body["top"]), c.y)
+
+		return best
+	items.send_reject = func(peer_id, reason): net.reject.rpc_id(peer_id, reason)
 	@warning_ignore("confusable_local_declaration")
 	items.send_craft_queue = func(peer, entries, left_ms): net.craft_queue.rpc_id(peer, entries, left_ms)
 	@warning_ignore("confusable_local_declaration")
@@ -319,6 +377,7 @@ func _ready() -> void:
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.game_seconds = func(): return game_clock.seconds
 	items.season_now = func(): return game_clock.season()
+	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -345,6 +404,12 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
 	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
+	items.reset_terrain_edits = _reset_terrain_edits
+	items.floor_below = _floor_below
+	items.water_flow_at = _water_flow_at
+	items.water_flow_runs = _water_flow_runs
+	items.dump_water = _dump_water
+	items.land_types = _land_types
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
@@ -389,6 +454,18 @@ func _ready() -> void:
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
+	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
+		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
+
+		if found.is_empty():
+			return {}
+
+		animals.damage(int(found["id"]), amount, shooter, "arrow")
+		return found
+	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+	items.animals_near = func(point, radius): return animals.list_near(point, radius)
+	items.animal_snare = func(id): return animals.snare(id)
+	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
 		var target: int = animals.target_along(origin, dir, reach)
@@ -473,7 +550,13 @@ func _ready() -> void:
 			return
 
 		items.peer_connected_hello(peer, identity.store_key(account))
-		net.npc_roster.rpc_id(peer, npcs.roster()))
+		net.npc_roster.rpc_id(peer, npcs.roster())
+		var resume: Array = items.start_position_for(peer)
+
+		if resume.size() == 3:
+			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
+	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
+	net.tunnel_setting_requested.connect(_on_tunnel_setting)
 	net.admin_place_requested.connect(_on_admin_place)
 	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
@@ -509,7 +592,7 @@ func _ready() -> void:
 # Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
-const SPAWN_OVERRIDE := Vector2(53301.0, 68427.0)
+const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
 
 
 func _spawn_point(world_dir: String) -> Vector3:
@@ -561,12 +644,15 @@ func _on_peer_connected(peer_id: int) -> void:
 	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
+		"server_build": BuildInfo.NUMBER,       # the build id: a client on another commit says so plainly (empty commit = unknown = match)
+		"server_commit": GitStamp.short_commit(),
 		"world_name": settings.world_name,
 		"master_seed": settings.master_seed,
 		"tile_size_m": settings.tile_size_m,
 		"min_tile": settings.min_tile,
 		"tiles_per_side": settings.tiles_x,
 		"revisions": store.revisions(),
+		"tunnels": {"on": tunnels.enabled, "cave_in_s": int(tunnels.cave_in_s)},
 		"spawn": spawn,
 		"terrain_version": Layout.TERRAIN_VERSION,
 		"tiles_stamp": store.tiles_stamp,
@@ -618,8 +704,10 @@ func _water_at(position: Vector3) -> Array:
 	elif water_live != null:
 		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
 
-		if tile_data != null and not tile_data.sim_levels.is_empty():
-			surface = tile_data.sim_levels[tile_data.nearest(position.x, position.z)]
+		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
+
+		if not sim.is_empty():
+			surface = sim[tile_data.nearest(position.x, position.z)]
 
 	return [surface, ground]
 
@@ -893,8 +981,7 @@ func _poll_water() -> void:
 			if tile_data == null:
 				continue
 
-			tile_data.sim_levels = update[1]
-			tile_data.fall_levels = update[2]
+			tile_data.set_sim(update[1], update[2])
 
 			if update[0] == water_live.centre:
 				_centre_levels = update[1]
@@ -921,6 +1008,9 @@ func _cover_at(point: Vector3) -> float:
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
 			flora.chunk_bytes(home + Vector2i(dx, dz), false)
+
+	if flora.roofed(point):
+		return 2.0   # under a built roof: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
 
@@ -1018,9 +1108,19 @@ func _flora_changed(chunk: Vector2i) -> void:
 	for peer in items.peers_near(centre, 600.0):
 		var water_cached: bool = flora.water_ready(chunk)
 		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk) if water_cached else PackedByteArray(), true)
+		_send_stripped(peer, chunk)
 
 		if not water_cached:
 			_queue_water(peer, chunk)
+
+
+# The plants of a chunk that are bare this season, for a client that just got the chunk (berry picking keeps the bush standing).
+func _send_stripped(peer: int, chunk: Vector2i) -> void:
+	var home: Vector2i = flora.placer.normalize(chunk)
+	var ids: PackedInt32Array = items.stripped_ids("%d,%d" % [home.x, home.y])
+
+	if not ids.is_empty():
+		net.flora_stripped.rpc_id(peer, chunk, ids)
 
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
@@ -1058,9 +1158,11 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var key: String = "%d,%d,%d" % [home.x, home.y, id]
 
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
-	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at])
+	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
-	if gave and flora.cut(chunk, id):
+	if gave and items.plant_stays:
+		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
+	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
 
 
@@ -1101,13 +1203,233 @@ func _dig_refusal() -> String:
 func _start_tunnels() -> void:
 	var path: String = "res://data/tunnels.json"
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else {}
-	tunnels.configure(data if typeof(data) == TYPE_DICTIONARY else {})
+	var merged: Dictionary = (data as Dictionary).duplicate() if typeof(data) == TYPE_DICTIONARY else {}
+	var saved_path: String = _store_path + "/tunnel_settings.json"      # the in-game switch (Esc > Settings, admin) wins over data/tunnels.json
+
+	if FileAccess.file_exists(saved_path):
+		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(saved_path))
+
+		if typeof(saved) == TYPE_DICTIONARY:
+			merged["enabled"] = bool(saved.get("on", merged.get("enabled", false)))
+			merged["collapse"] = merged["enabled"]
+			merged["cave_in_s"] = float(saved.get("cave_in_s", merged.get("cave_in_s", 1200.0)))
+
+	tunnels.configure(merged)
+	tunnels.load_natural = func(block: Vector3i) -> VoxelBuffer:
+		var buffer: VoxelBuffer = Layout.make_buffer(16)
+		store.load_natural(buffer, block)
+		return buffer
 	tunnels.load_block = func(block: Vector3i) -> VoxelBuffer:
 		var buffer: VoxelBuffer = Layout.make_buffer(16)
 		store.load_block(buffer, block, 0)
 		return buffer
+	tunnels.water_above = func(x: float, z: float) -> float:      # the sea is 0 m; a river or lake is its live level (read on the watch's own thread)
+		return float(_water_at(Vector3(x, 0.0, z))[0])
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
+
+
+# Writes the live water cells in a 40 m box around (x, z) to <store>/water_dump_X_Z.txt (outside the repo): per 8 m cell the baked ground, the
+# sim ground, depth, drawn level and the flow across its faces, plus the sim's totals. For the dry-river hunt (Dave 2026-10-23).
+# Triggered by an admin (Esc > Admin > Dump water here) or by a file water_dump.now in the store holding "x z".
+func _dump_water(x: float, z: float) -> String:
+	var tile: Vector2i = generator.tile_of(x, z)
+	var data = water_live.data_of(tile) if water_live != null else null
+	var sim = water_live.sim_of(tile) if water_live != null else null
+
+	if data == null or sim == null:
+		return "no running water sim for the tile at %d, %d" % [int(x), int(z)]
+
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("water dump at x %.1f z %.1f, tile %s, sim side %d spacing %.1f, data samples %d x0 %.1f z0 %.1f" % [x, z, str(tile), sim.side, sim.spacing_m, data.samples, data.x0, data.z0])
+	lines.append("sim %s core, ticks %d, seconds %.0f, evaporated %.0f m3, to sea %.0f m3, flow key x%.2f, volume %.0f m3 in %d wet cells" % ["C++" if sim.native() else "GDScript", sim.ticks, sim.seconds, sim.evaporated_m3, sim.sea_m3, sim.spring_multiplier, sim.total_volume(), sim.wet_cells()])
+	lines.append("cell i j | x z | baked_ground sim_ground depth level(sim_levels) | flow_x flow_z")
+	var near_springs: Array = []
+
+	for spring in sim.springs:
+		var si: int = int(spring[0]) % sim.side
+		@warning_ignore("integer_division")
+		var sj: int = int(spring[0]) / sim.side
+		var sx: float = data.x0 + float(si) * sim.spacing_m
+		var sz: float = data.z0 + float(sj) * sim.spacing_m
+
+		if absf(sx - x) <= 200.0 and absf(sz - z) <= 200.0:
+			near_springs.append("spring cell %d,%d at x %.0f z %.0f: %.3f m3/s" % [si, sj, sx, sz, float(spring[1])])
+
+	lines.append("springs within 200 m: %s" % (", ".join(PackedStringArray(near_springs)) if not near_springs.is_empty() else "none"))
+
+	for j in range(maxi(int(floor((z - 20.0 - data.z0) / sim.spacing_m)), 0), mini(int(ceil((z + 20.0 - data.z0) / sim.spacing_m)), sim.side - 1) + 1):
+		for i in range(maxi(int(floor((x - 20.0 - data.x0) / sim.spacing_m)), 0), mini(int(ceil((x + 20.0 - data.x0) / sim.spacing_m)), sim.side - 1) + 1):
+			var n: int = j * sim.side + i
+			var level: float = data.sim_levels[n] if n < data.sim_levels.size() else NAN
+			# The C++ core keeps depth inside itself (sim.depth_at) and does not give the flows to GDScript: they print as nan.
+			var flow_x: float = sim.flow_x[n] if n < sim.flow_x.size() else NAN
+			var flow_z: float = sim.flow_z[n] if n < sim.flow_z.size() else NAN
+			var ground_here: float = sim.ground[n] if n < sim.ground.size() else NAN
+			lines.append("%d %d | %.0f %.0f | %.2f %.2f %.3f %.2f | %.3f %.3f" % [i, j, data.x0 + float(i) * sim.spacing_m, data.z0 + float(j) * sim.spacing_m, data.heights[n] if n < data.heights.size() else NAN, ground_here, sim.depth_at(n), level, flow_x, flow_z])
+
+	var path: String = _store_path + "/water_dump_%d_%d.txt" % [int(x), int(z)]
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		return "cannot write " + path
+
+	file.store_string("\n".join(lines) + "\n")
+	file.close()
+	print("server: water dump written to ", path)
+	return path
+
+
+# Water land types, R1 (design/WATER_LAND_TYPES.md): classifies the 200 m box round (x, z) from the live water (instant reading; the running
+# 30 day signature is not wired into the water thread yet), draws it as letters (. dry, L lake, R river, M marsh, S swamp, B bog, F floodplain,
+# * spring that passes the catch-basin rule, ! spring that fails it) and writes <store>/land_types_X_Z.txt. Admin button "Land types here".
+func _land_types(x: float, z: float) -> String:
+	var tile: Vector2i = generator.tile_of(x, z)
+	var data = water_live.data_of(tile) if water_live != null else null
+	var sim = water_live.sim_of(tile) if water_live != null else null
+
+	if data == null or sim == null:
+		return "no running water sim for the tile at %d, %d" % [int(x), int(z)]
+
+	var half: int = 12
+	var ci: int = int(round((x - data.x0) / sim.spacing_m))
+	var cj: int = int(round((z - data.z0) / sim.spacing_m))
+	var depth: PackedFloat32Array = sim.get_depth()
+	var letters: String = ".LRMSBF"
+	var counts: Array = [0, 0, 0, 0, 0, 0, 0]
+	var rows: PackedStringArray = PackedStringArray()
+	var spring_at: Dictionary = {}
+	var passing: int = 0
+	var failing: int = 0
+
+	for spring in sim.springs:
+		var report: Dictionary = LandTypeScript.basin_report(sim.ground, data.water_class, sim.side, int(spring[0]))
+		spring_at[int(spring[0])] = bool(report["ok"])
+
+	for j in range(maxi(cj - half, 1), mini(cj + half, sim.side - 2) + 1):
+		var row: String = ""
+
+		for i in range(maxi(ci - half, 1), mini(ci + half, sim.side - 2) + 1):
+			var n: int = j * sim.side + i
+			var t: int = LandTypeScript.DRY
+
+			if depth[n] >= 0.01 or data.water_class[n] == 2 or data.water_class[n] == 3:
+				var peaty: bool = n < data.soil.size() and data.soil[n] == 6
+				var warm: bool = n < data.biome.size() and data.biome[n] == 10 and not peaty
+				var wet: float = 1.0 if depth[n] >= LandTypeScript.WET_M else 0.0
+				t = LandTypeScript.classify_cell(depth[n], LandTypeScript.speed_cell(sim.ground, depth, sim.side, sim.spacing_m, n), wet, data.water_class[n], peaty, warm)
+
+			counts[t] += 1
+			row += letters[t]
+
+			if spring_at.has(n):
+				row = row.substr(0, row.length() - 1) + ("*" if spring_at[n] else "!")
+
+				if spring_at[n]:
+					passing += 1
+				else:
+					failing += 1
+
+		rows.append(row)
+
+	var summary: String = "tile %s: dry %d, lake %d, river %d, marsh %d, swamp %d, bog %d, floodplain %d; springs in the box: %d pass the basin rule, %d fail" % [str(tile), counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], passing, failing]
+	var path: String = _store_path + "/land_types_%d_%d.txt" % [int(x), int(z)]
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		return summary + " (cannot write " + path + ")"
+
+	file.store_string("land types at x %.0f z %.0f (8 m cells, north up, 25 x 25)\n. dry L lake R river M marsh S swamp B bog F floodplain * spring in a basin ! spring NOT in a basin\n%s\n%s\n" % [x, z, "\n".join(rows), summary])
+	file.close()
+	print("server: land types written to ", path)
+	return summary
+
+
+# Running water for placement rules (src/stream/water_flow.gd): the speed in m/s of the settled water at a point (-1 none, 0 still), and whether
+# the span a to b runs at least data/water_flow.json min_speed_m_s all along.
+func _water_flow_at(point: Vector3) -> float:
+	if water_live == null:
+		return WaterFlowScript.NO_WATER
+
+	return WaterFlowScript.speed_at(generator, water_live.data_of(generator.tile_of(point.x, point.z)), point.x, point.z)
+
+
+func _water_flow_runs(a: Vector3, b: Vector3) -> bool:
+	if water_live == null:
+		return false
+
+	var rules: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/water_flow.json"))
+	return WaterFlowScript.runs(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, rules if typeof(rules) == TYPE_DICTIONARY else {})
+
+
+# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the
+# saved digs and fills laid over it, in order (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them).
+# Natural caves are not known to this probe (only the surface height and the edits are), so an item dropped inside a natural cave
+# keeps its height. Returns the resting height, or NAN when there is no ground within 24 m below.
+func _floor_below(from: Vector3) -> float:
+	var edits: Array = store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0)   # every edit touching the 24 m column, oldest first
+	var surface: float = generator.surface_height(from.x, from.z)
+	var y: float = from.y + 0.05
+
+	for step in range(480):   # 0.05 m steps, 24 m
+		var p: Vector3 = Vector3(from.x, y, from.z)
+		var solid: bool = p.y < surface
+
+		for op in edits:
+			if p.distance_to(op[1]) <= float(op[2]):
+				solid = int(op[0]) == 1
+
+		if solid:
+			return y + 0.05
+
+		y -= 0.05
+
+	return NAN
+
+
+# Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
+# baked tiles, the tunnel clocks start clean and every player reloads. Buildings, items and plants are not touched.
+func _reset_terrain_edits() -> void:
+	var error: String = store.ops.reset()
+
+	if error != "":
+		print("server: reset of terrain edits failed: ", error)
+		return
+
+	store.clear_generated()
+	flora.clear_memory()
+	generator.forget_tiles()
+	WaterGridScript.forget_ground()
+
+	if water_live != null:
+		water_live.stop()
+		water_live = null
+
+	_start_water()
+
+	if tunnels != null:
+		tunnels.set_enabled(tunnels.enabled)
+
+	net.ground_reset.rpc(store.tiles_stamp, _starter_stamp())
+
+
+# An admin turns the tunnel collapse on or off and sets the cave-in duration from Esc > Settings; saved beside the world, told to everyone.
+func _on_tunnel_setting(peer: int, on: bool, cave_in_s: int) -> void:
+	if not admin.is_admin(items.key_of(peer)):
+		net.notice.rpc_id(peer, "Only an admin can change the tunnel collapse.")
+		net.tunnel_settings.rpc_id(peer, tunnels.enabled, int(tunnels.cave_in_s))
+		return
+
+	tunnels.set_cave_in_s(float(cave_in_s), Time.get_ticks_msec())
+	tunnels.set_enabled(on)
+	var file: FileAccess = FileAccess.open(_store_path + "/tunnel_settings.json", FileAccess.WRITE)
+
+	if file != null:
+		file.store_string(JSON.stringify({"on": on, "cave_in_s": int(tunnels.cave_in_s)}))
+		file.close()
+
+	print("Tunnel collapse %s, cave-in %d s (peer %d)" % ["on" if on else "off", int(tunnels.cave_in_s), peer])
+	net.tunnel_settings.rpc(on, int(tunnels.cave_in_s))
 
 
 func _tunnel_tick() -> void:
@@ -1126,6 +1448,9 @@ func _tunnel_tick() -> void:
 
 	for quake in result["quake"]:
 		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
+
+	for leak in result["leak"]:
+		net.leak.rpc_id(leak[0], leak[1], leak[2])
 
 	for collapse in result["collapse"]:
 		_events.event("tunnel collapse: %d cells, %d fills, victims %s" % [int(collapse["cells"]), (collapse["fills"] as Array).size(), str(collapse["victims"])])
@@ -1448,6 +1773,7 @@ func _process(delta: float) -> void:
 
 		if entry.size() > 3:
 			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
+			_send_stripped(entry[0], entry[1])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()
 			continue
 
@@ -1487,6 +1813,15 @@ func _process(delta: float) -> void:
 
 	if now >= _flag_check_msec:
 		_flag_check_msec = now + 3000
+
+		var dump_flag: String = _store_path + "/water_dump.now"
+
+		if FileAccess.file_exists(dump_flag):
+			var spot: PackedStringArray = FileAccess.get_file_as_string(dump_flag).strip_edges().split(" ", false)
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(dump_flag))
+
+			if spot.size() >= 2:
+				print("server: water dump asked for: ", _dump_water(float(spot[0]), float(spot[1])))
 
 		if FileAccess.file_exists(flag_path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(flag_path))

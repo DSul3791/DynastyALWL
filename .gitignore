@@ -38,3 +38,8 @@ __pycache__/
 
 # Real admin keys never go in the repository (data/admin.example.json shows the shape)
 data/admin.json
+crash_reports/telemetry_server_*.log
+crash_reports/*.txt
+
+# Once-per-run bake setup cache (src/worldgen/tile/setup_cache.gd)
+worlds/*/setup_cache/

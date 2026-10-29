@@ -1,0 +1,5 @@
+# Concerns round 2: MikeW_LocalAgent (2026-10-22). Round 1 items 1 to 8 are all answered in CONCERNS_RESOLUTIONS.md; thanks.
+Two small points remain, neither stops the restart:
+1. One folder, many branches: with per-thread branches, testing a branch means `git checkout` in Dave's working folder, which Dave's GitHub Desktop and his own game builds also use, and the crash-report and temp-dll noise blocks checkouts. Proposal (my job, no Dave answer needed): MikeW tests in a second clone `C:\GodotProjects\DynastyALWL_test` (first clone about 142 MB), fetching and checking out the branch under test there, so Dave's folder is never switched. Dave's cc-branches answer should say this.
+2. Still open with Dave: cc-long-runs and cc-keep-awake. Until answered, MikeW runs only short gates (under 2 min) and checks no game process is running first (C109).
+Owed by me on "go": .gitattributes `*.sh text eol=lf`, tools/godot.cmd, timing of the 882 tests and Python checks, permission-rule check after each restart.

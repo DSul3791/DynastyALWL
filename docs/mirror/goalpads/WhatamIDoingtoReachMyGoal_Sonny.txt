@@ -1,0 +1,65 @@
+WhatamIDoingtoReachMyGoal (Sonny)
+GOAL 1: ISLAND TERRAIN: grand, varied, unpredictable islands (ranges, passes, canyons, volcanoes, beaches, polar shores, peak layout per island)
+
+How to use (Dave 01:26): scratch pad. Update when a job starts, a step is done, and at every half-hour reminder. Never delete done lines, mark DONE with UTC time. If I break off, write who got it (Sal or Mike) and what. Never idle: when a step waits, start the next; when fewer than 5 steps remain, add 10 more from goals_Sonny.md.
+
+STEP LIST (ordered; each has a done check)
+ 1. Warnings on my files = baseline (check_warnings --changed, only generator-v2 baseline left). Check: no new warning in my files.  [DONE 02:20]
+ 2. Volcano type: central cone + crater lake/vent on a starter island (types row "volcano": cone height 900-1500 m, crater 300-600 m, ash slopes, lava canyon), using the layout machinery. Check: Sal's island_checks peak count 1, crater below rim, walkable.
+ 3. Shelf islands 2, 5, 7, 11 (peaks 401-465 m, no starter mount): give them a mount-like height-band table by size (low rolling or moor/temperate). Check: peaks 450-900 m, flat share 15-30%, all walkable.
+ 4. Beach types by climate: sprawling sand beaches on hot islands, rocky shore on polar, mixed temperate (terrace width / cliff height per type). Check: beach width per type row in island_checks.
+ 5. Passes and saddles between ridge peaks (three_peak_ridge): lowest saddle height 35-55% of peaks, slope under 25 degrees. Check: Sal's route check easy class connects the peaks.
+ 6. Polar and hot-sandy types rows (climate lookup by tile latitude) + fjord/marsh/jungle rows from Kathleen's list. Check: each row rolls on at least one island or is documented unused.
+ 7. Pits and flat river gaps in the drainage step (terrain half): rivers continuous across flats; head hollows read as lake, not pit. Check: river_ends.gd 0 inland at 24 m gap on tile 3,4; Sal's settled check 0 terrain-caused ends.
+ 8. Re-bake tile 3,4 (Mike) from the newest head; island_profile + island_checks + picture; fix what fails.
+ 9. ONE 9-tile bake (Mike, second clone), settle (Steve/Mike), Dave resets terrain edits + Clear blocks, Dave looks. Check: Sal's table passes, Dave approves island 1.
+10. Handoff note: ISLAND_SHAPE_PLAN.md section 8 (what was built, parameters, how to tune), tell Tyler for DECISIONS.
+11. Tuning round from Dave's look (peak heights, canyon depth, flat share) in data only.
+12. Start goal 2 prep only when goal 1 Done-when is true.
+
+HANDED OFF
+- Steve: water-sim half of the river job: rivers that stop after the settle at (47648,66944), (52832,70656), (53184,73856), dry-river symptom. Files: water_settler.gd, settle_water.gd, water_store.gd; tools water_window.gd, river_ends.gd. He does not touch drainage_channels.gd / tile_drainage.gd.
+- Sal: island_checks.json per-type rows, summit_plateau limits, settled-water river gate, 20% flat check, two-class walkability.
+- Mike: bakes, 6 window printouts, picture batch.
+- Kathleen: island type descriptions (ISLAND_TYPES_Kathleen.md) DONE.
+
+DONE
+- 23:20 23 Oct v27 valleys + river heads (6d0a53e0), merged.
+- 01:25 24 Oct stage 1 bands/foothills/mountain core; 01:35 spire; 01:37 types table 2a; hardness by height; 02:10 canyons (c192706a); 02:20 tool fixes + warning fixes (cb3f03b7).
+
+UPDATE 02:35 UTC 24 Oct
+- DONE 02:20 step 2 volcano type (crater no lava, 640 m wide, 300 m deep, breach) b05415dc.
+- DONE 02:30 step 3 shelf islands: coast profile + 2x relief away from starters (peaks 450-1020 m); step 5 partly: peak picker puts 3 peaks on interior ridge.
+- NEXT: step 4 beaches by climate, step 7 pits (terrain half), 9-tile bake from b05415dc requested.
+- 882 tests running on b05415dc.
+
+- 02:40 UTC step 4 started: starters already have beach_dir (sand side) and rocky_cliff_m (pole side); shelf islands have neither. Plan: _shape_shelf_coasts takes a climate-by-latitude beach/rocky blend (hot=wide sand terrace, polar=cliff), local only until Mike tile 3,4 flow check passes.
+- 02:50 UTC: volcano rim ring + breach notch and summit cap pushed 4532cf61 (TERRAIN_VERSION 29). Step 4 (shelf beach/cliff blend) still open.
+- 03:00 UTC step 4: shelf climate shores coded LOCAL (not pushed, waits for 9-tile table): sand apron rows<=2, rocky cliff rows>=7 via sketch_rules shelves.climate_shores. Next: measure beach width per row with island_profile, then push with next bake.
+- 03:35 UTC seam (4,4)-(4,5): cause = catchment truncated at frame edge on upstream side (v26 1 bad, v27 119, v28 9, worst 7.1 m cols 846-855). Fix plan: seed edge inflow from river network guides; needs 2-tile test bake by Mike + rebake. Waiting for decision but starting design.
+- 03:35 UTC seam fix d539520d pushed (edge inflow from world river network, TERRAIN_VERSION 30), untested until Mike 2-tile bake. Beaches by climate still local. Next: conservation rows with Sal, pit x50432 z52288 via water_window.
+- 03:45 UTC Dave approved mountainous style ("more gullies carved by river systems running to the ocean"). Added step 13: more/deeper valleys+canyons along drainage network, tied to rock hardness; ONE action plan to Tyler when started; rides with seam fix + beaches in next rebake. Seam: waiting for Mike DRAINAGE_PROBE run (1bda5ed1).
+- 04:00 UTC LOCAL commit (unpushed): gully tier, farmland valleys (farm_* keys), shelf climate shores, "gullies: N, dead ends: M" log line. Seam fix e4919569 (margin 400) pushed, waiting on Mike 2-tile result.
+- 04:05 UTC seam: margin 400 (e4919569) did not fix; probe 064ed181 walks the stream upstream to find the first cell where (4,4) and (4,5) discharge differ (offset ~490 cells). Gullies/farm valleys/shelf beaches committed locally, unpushed.
+- 04:25 UTC seam FIXED (bc7282c5 route over pre-erosion ground, Mike 2-tile PASS). Pushed f49a1033 TERRAIN_VERSION 33: gully tier, English farmland valleys, shelf climate shores, gully count line, on tyler-seam32. Waiting on ONE 9-tile rebake; then Sal tables, Dave look. Next: tune from the table.
+- 04:30 UTC pit x50432 z52288: v28 tile (3,3) window shows steady slope, no basin at that spot (the pit is ~1.4 km down the river, other bake). Re-check on the f49a1033 bake table instead of guessing.
+- 04:40 UTC 9-tile bake f49a1033 done (895 s, 57 MB, gullies 0..23966/tile, dead ends 0); settle running. Local 0bffca61: flatter bands (island 8 66.1/32.7 PASS), warnings 233. Next: tune from tile table, then ONE rebake.
+- 05:12 UTC spawn fix a1824d00 (river routing over pinned raw ground + valleys/gullies off within 450-1100 m of spawn, TERRAIN_VERSION 34), Mike rebakes (3,4) only. Pits: x56480 z69728 looks like settle gap on mountain face. Local 90bd0c35 flatter bands held for the single tuned rebake.
+- 05:40 UTC river end x48800 z70976: painted river stops ~700 m short of sea (not only settle); probe bake of (3,4) at 48728,71600 requested from Mike.
+- 05:55 UTC farm tune LOCAL: farm gully depth 0.3 / wall 0.14, hill_only detail octaves (300/100/35 m fade out below 150-420 m, min 0.3). Test suite running. Held for the single final rebake.
+- 06:12 UTC farm tune pushed 68b1a660 (claude/sonny-farmland-tune), Mike test-baking (3,4). River end: probe b73d9e9a (walks downstream) requested for 48728,71600; head/up-walk looked normal (river heads at 7812 cells).
+- 06:25 UTC river end x48800 z70976: probe + painted map show the river at x48728 z71600 runs continuously to the sea (mouth x48560 z71872, c all the way). Painted head sits ~450 m south of Sal end spot. Asked Sal for exact end cell + painted-vs-settled.
+- 06:45 UTC local: 3f1b0a48 river start 0.5->0.35 km2 (separate commit), test fix (drainage-mode lake min). Test suite running (0 FAIL so far). Waiting Mike (3,4) farmland bake + Sal river-end row.
+- 07:00 UTC FINAL REBAKE CANDIDATE e8eb25fd (TERRAIN_VERSION 36) pushed on claude/sonny-foothills: flatter bands + farm tune + river start 0.35 + test fix. Waiting Mike 9-tile bake, then Sal tables, then Dave look. Test suite re-running.
+- 07:16 UTC Mike 9-tile bake of e8eb25fd done (953 s, ~57 MB, gullies 0..17701, dead ends 0); settle then Sal table. Merged test head fc383875 (claude/sonny-merged-test): suite 884 pass, 1 flora spacing fail (2 crowns too close) - positions coming from rerun.
+- 07:25 UTC final bake claude/mike-bake-v30 6e4c338a: 66 checks 0 FAIL, spawn PASS; farmland info 60.2/26.7 spawn landmass. Decision: no more tuning before Dave looks. Flora test rerun with Kathleen fix running (b3149129). Tyler to merge e8eb25fd + generator-v2.
+- 07:35 UTC suite PASS 885/0 on claude/sonny-merged-test b3149129. Waiting: Tyler merge, Dave look at island. Then goal 1 done-when check (Sal table passes + Dave approves baked island).
+- 07:55 UTC lake outlet breach coded: claude/sonny-outlets 9f1d7fdb (TERRAIN_VERSION 37), test branch only; fed pond x53144 z73544 + inland ends. Needs Mike (3,4) test bake later.
+- 07:50 UTC outlet breach log pushed (13902742, claude/sonny-outlets); suite PASS 885/0 on merged head b3149129; final bake v30 0 FAIL. Waiting Mike (3,4) outlet test bake + Dave look at 782.
+
+[08:18 UTC] Moved: general crest-cut (gorge) pass pushed TV38; merged generator-v2 into claude/sonny-outlets 3af736b7. Waiting on Mike: test_worldgen on 3af736b7 + baseline, (3,4) bake vs pond x53144 z73544.
+[08:50 UTC] Moved: pit-drain pass (fed ponds) pushed 2bd88521 TV39; painted cross-section left as is (Steve: no real climbs); test diagnostics 4da8771b. Waiting on Mike: (3,4) bake pit lines + test_worldgen output for flora/caves failures.
+[09:21 UTC] Moved: pit drain bounded (max cut 8 m, rim 2 m, 6-ring) e23c5f99 TV40; Kathleen test fix cherry-picked; final candidate claude/sonny-outlets 5a5745de. Waiting on Mike: (3,4) rebake pits summary + pond x53144 z73544.
+[09:53 UTC] Moved: terrain frozen 5a5745de; Dave notes written (tech/SONNY_notes_for_Dave_build783.md); caves-ore diagnostic pushed 6da4dafd. Waiting on Mike: test_worldgen ore steering line + 9-tile bake (~10:05).
+[10:24 UTC] Moved: hard caps on every cut stage + sea-floor pits skipped + ore roof fix; bake candidate claude/sonny-outlets 418df97b (TV41). Waiting on Mike: 9-tile bake, pits summary (deepest <= 8 m expected), test_worldgen ore line.
+[10:57 UTC] Moved: Mike 9-tile bake of 418df97b done (pit cuts <= 8 m, breach max 13.7 m, 0 dead-end gullies). Waiting on Mike: settle/stitch/island table, test_worldgen ore line.

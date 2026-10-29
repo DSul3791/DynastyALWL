@@ -31,7 +31,7 @@ def write_ogg(name, x):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis",
+        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis",
                         "-q:a", "4", os.path.join(OUT, name + ".ogg")], check=True)
 
 
@@ -115,6 +115,46 @@ def craft_start(rng):
     return finish(out, 0.45)
 
 
+CLASSES = ["wood", "stone", "metal", "cloth", "soft", "food", "glass", "bone"]
+
+
+def class_sound(rng, cls, kind):
+    """Placeholder pick-up and put-down sound for a material class (stage one: about eight classes cover every item)."""
+    out = np.zeros(int(0.4 * SR))
+    drop_k = kind == "drop"
+    low = 0.6 if drop_k else 1.0
+
+    if cls == "wood":
+        add(out, thump(rng.uniform(260, 340) * low, 0.12, 0.03) * 0.9, 0.0)
+        add(out, burst(rng, 0.08, rng.uniform(1200, 1800), 1.0, 0.001, 0.02) * 0.4, 0.01)
+    elif cls == "stone":
+        add(out, burst(rng, 0.05, rng.uniform(1800, 2600) * low, 1.0, 0.0005, 0.012) * 0.9, 0.0)
+        add(out, thump(rng.uniform(150, 220), 0.1, 0.025) * 0.5, 0.0)
+        add(out, burst(rng, 0.04, 3200, 1.0, 0.0005, 0.01) * 0.4, rng.uniform(0.05, 0.1))
+    elif cls == "metal":
+        add(out, tone(rng.uniform(2000, 2600) * low, 0.3, 0.09) * 0.8, 0.0)
+        add(out, tone(rng.uniform(3600, 4300) * low, 0.2, 0.05) * 0.4, 0.0)
+    elif cls == "cloth":
+        add(out, burst(rng, 0.25, rng.uniform(2200, 3200), 1.5, 0.05, 0.1, 600) * 0.5, 0.0)
+
+        if drop_k:
+            add(out, thump(90, 0.12, 0.04) * 0.5, 0.0)
+    elif cls == "soft":
+        add(out, thump(rng.uniform(80, 120), 0.15, 0.04) * 0.8, 0.0)
+        add(out, burst(rng, 0.15, rng.uniform(500, 800), 1.0, 0.01, 0.05, 100) * 0.5, 0.0)
+    elif cls == "food":
+        add(out, burst(rng, 0.1, rng.uniform(800, 1100), 1.0, 0.004, 0.03, 200) * 0.7, 0.0)
+        add(out, thump(rng.uniform(100, 150), 0.08, 0.02) * 0.4, 0.0)
+    elif cls == "glass":
+        add(out, tone(rng.uniform(3200, 4200), 0.25, 0.06) * 0.6, 0.0)
+        add(out, thump(rng.uniform(200, 260), 0.06, 0.015) * 0.4, 0.0)
+    else:
+        add(out, burst(rng, 0.04, rng.uniform(1200, 1700), 1.0, 0.0005, 0.01) * 0.9, 0.0)
+        add(out, burst(rng, 0.03, 2500, 1.0, 0.0005, 0.008) * 0.4, 0.05)
+
+    return finish(out, 0.5)
+
+
 def main():
     rng = np.random.default_rng(20261026)
     rng_ui = np.random.default_rng(20261124)      # its own stream: the older item sounds stay as they were
@@ -129,7 +169,14 @@ def main():
         write_ogg("hotbar_tick_%d" % v, hotbar_tick(rng_ui))
         write_ogg("craft_start_%d" % v, craft_start(rng_ui))
 
-    print("Wrote %d item sounds to %s" % (VARIANTS * 8, OUT))
+    rng_cls = np.random.default_rng(20261022)      # own stream again: nothing above changes
+
+    for cls in CLASSES:
+        for kind in ("pickup", "drop"):
+            for v in range(VARIANTS):
+                write_ogg("item_%s_%s_%d" % (kind, cls, v), class_sound(rng_cls, cls, kind))
+
+    print("Wrote %d item sounds to %s" % (VARIANTS * 8 + len(CLASSES) * 2 * VARIANTS, OUT))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,6 @@
+# Reply to Sonny: bend swing fade + copper placers (one reply, 25 Oct 04:58 UTC)
+GO on claude/bend-swing-fade 3e07fe38e878f10afe2bc596372aa6622912ccf6. BAKE label, merges into claude/merge-793 only, AFTER the generator speed-up, BEFORE the final nine-tile bake. Not into generator-v2 on its own.
+1. COPPER (claude/ore-near-rivers 0701b96e00c2698452e157203cf5b0548d306b10): no separate plan. Rides in the same merge-793 step as the bend swing (two commits, two hashes, one David3 gate pass). It is a one-line data change; the plan is this reply.
+2. Proof by David3: test_drainage_flow passes (print the ratio, 1.3 or more; this removes one of the six baseline failures, BP-T71 note it in TEST_BASELINE); tile (3,4) river continuity unchanged (painted pieces in z75053-75780 stays 1); island table no new FAIL; copper: count of copper placer cells per tile on (3,4), at least one near a river, none in the sea or on a steep slope, and no change to tin or gold counts; local_check 233.
+3. Check before merge that both branches carry nothing but their own line: they were cut from merge-793 cbe31f76, which is before the later water commits in merge-793. Sonny rebases both on the current merge-793 head and names the hashes (BP-T59).
+4. The final bake needs the speed-up proof done, Dave's PC free and his OK; unchanged.

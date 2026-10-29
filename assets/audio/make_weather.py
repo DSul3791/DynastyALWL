@@ -7,6 +7,7 @@ rain_snow (rain on that ground under the player), wind_storm (a howling
 gale), and three one-shot thunder_N rolls. Recordings go in assets/audio/recorded/weather/
 under the same names (thunder_N and the loops may have _N variants); the game prefers them.
 """
+import copy
 import os
 import subprocess
 import sys
@@ -32,12 +33,12 @@ def write_ogg(name, x):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis",
+        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis",
                         "-q:a", "4", os.path.join(OUT, name + ".ogg")], check=True)
 
 
-def drops(rng, n, rate, center, octaves, decay, gain=1.0):
-    """Tiny noise ticks (rain drops hitting something), wrapped around the loop end."""
+def drops(rng, n, rate, center, octaves, decay, gain=1.0, cap=None):
+    """Tiny noise ticks (rain drops hitting something), wrapped around the loop end. `cap` limits the loudest drops (the heavy-tailed level)."""
     out = np.zeros(n)
     m = int(decay * 6 * SR)
     t = np.arange(m) / SR
@@ -45,7 +46,8 @@ def drops(rng, n, rate, center, octaves, decay, gain=1.0):
     for _ in range(int(rate * n / SR)):
         tick = shaped_noise(rng, m, lambda f: band(f, center * rng.uniform(0.7, 1.4), octaves)) * np.exp(-t / decay)
         idx = (rng.integers(0, n) + np.arange(m)) % n
-        out[idx] += tick * rng.pareto(4.0) * gain
+        level = rng.pareto(4.0)
+        out[idx] += tick * (level if cap is None else min(level, cap)) * gain
 
     return out
 
@@ -54,22 +56,39 @@ def drops(rng, n, rate, center, octaves, decay, gain=1.0):
 # hiss bed under the drops (4.5 to 5.5 kHz noise). The beds are gone: rain is now only drops (many fine
 # ticks and some larger plops, random in time and level), plus a low soft body in heavy rain.
 
-def rain_light(rng, n):
-    fine = drops(rng, n, 420, 4200, 1.0, 0.003)
+def _rain_light(rng, n, cap):
+    fine = drops(rng, n, 420, 4200, 1.0, 0.003, cap=cap)
     fine /= np.std(fine) + 1e-9
-    plops = drops(rng, n, 60, 2200, 0.8, 0.009)
+    plops = drops(rng, n, 60, 2200, 0.8, 0.009, cap=cap)
     plops /= np.std(plops) + 1e-9
     return normalize((0.8 * fine + 0.5 * plops) * slow_swell(rng, n, 0.12, (2, 4, 7)))
 
 
-def rain_heavy(rng, n):
-    fine = drops(rng, n, 1000, 3600, 1.1, 0.003)
+def _rain_heavy(rng, n, cap):
+    fine = drops(rng, n, 1000, 3600, 1.1, 0.003, cap=cap)
     fine /= np.std(fine) + 1e-9
-    plops = drops(rng, n, 160, 2000, 0.8, 0.008)
+    plops = drops(rng, n, 160, 2000, 0.8, 0.008, cap=cap)
     plops /= np.std(plops) + 1e-9
     body = shaped_noise(rng, n, lambda f: band(f, 300, 1.0) * highpass(f, 90, 2))
     body /= np.std(body)
     return normalize((0.8 * fine + 0.6 * plops + 0.25 * body) * slow_swell(rng, n, 0.15, (2, 5, 9)))
+
+
+# Dave 2026-10-23: in the open the rain sounded like rain on a metal roof because of its loudest clacks; the background was perfect. The open versions
+# cap the loudest drops and keep the old loudness (RMS), so only the clack goes. The old, clacky versions are saved as rain_woodroof_light/heavy
+# (rain on a wooden roof). The same random stream as before is drawn, so every other sound is unchanged.
+def _like(old, new):
+    return new * (np.sqrt(np.mean(old ** 2)) / (np.sqrt(np.mean(new ** 2)) + 1e-9))
+
+
+def rain_light(rng, n):
+    old = _rain_light(copy.deepcopy(rng), n, None)
+    return _like(old, _rain_light(rng, n, 1.2))
+
+
+def rain_heavy(rng, n):
+    old = _rain_heavy(copy.deepcopy(rng), n, None)
+    return _like(old, _rain_heavy(rng, n, 1.2))
 
 
 def rain_leaves(rng, n):

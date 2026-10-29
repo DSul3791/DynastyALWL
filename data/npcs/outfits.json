@@ -1,0 +1,5 @@
+{
+	"_note": "What an NPC outfit wears on top of the ragdoll's coat and trousers (src/client/worn_sync.gd). Outfit name (the roster's 'outfit') -> item ids that have a row in data/items/worn.json. An unknown id logs once and is skipped. Client only, no protocol.",
+	"merchant": ["hide_boots", "backpack"],
+	"guard": ["hide_boots", "hide_leggings", "hide_hood"]
+}

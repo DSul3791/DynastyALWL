@@ -1,6 +1,9 @@
 {
-	"enabled": false,
-	"collapse": false,
+	"enabled": true,
+	"collapse": true,
+	"note": "Test world (Dave 2026-10-22, collapse-on yes): about quiet_s of quiet after a dug space wider than ~2 m, then cave_in_s of rumbling (min 120, max 1200 s) before it falls. The shaking part never gets shorter than 90 s.",
+	"quiet_s": 600,
+	"cave_in_s": 300,
 	"base_grace_s": 1800,
 	"min_grace_s": 225,
 	"max_grace_s": 3600,

@@ -1,0 +1,70 @@
+WhatamIDoingtoReachMyGoal (Sal)
+GOAL 1: ISLAND JOB (dedicated to Sonny's island terrain: checks, types tables, per-island layouts, sub-jobs from Sonny)
+
+How to use (Dave 01:26): this is your scratch pad. Finer steps toward goal 1 only. Update it when you start a job, when you finish a step, and at every half-hour reminder. Never delete done lines, mark them DONE with the time (UTC). If you break off, write who you handed it to (Sal or Mike) and what.
+
+STEPS NOW (ordered; done check in brackets; mark DONE with UTC time in the DONE list)
+1. Report to Sonny: shelf islands 2, 5, 7, 11 (peaks 400-465 m, no starter mount, flat share 18-23%, mountain 0%) are untouched by stages 1-2; ask which type each should get. [Sonny answers; rows added to island_checks.json]
+2. Add rows for islands 2, 5, 7, 11 and every island >= 80 km2 once their types exist (summit range, peak count, flat share). [check table prints a type per island, no "none set" summit]
+3. Run island_checks --tiles-only (+ settled water + picture) on each new re-bake Mike makes; post the table first. [table posted within 10 minutes of the bake landing]
+4. Volcano type checks: crater rim ring, lava, rim height vs cone; limits by type once Sonny's volcano type lands. [rows exist and pass on a test island]
+5. Add the hardness_by_height / canyon checks: canyon share, canyon depth and length from tile heights vs tile_rules canyon_*. [rows print measured depth and share]
+6. Fine-grid (8 m) slope share per class on the baked tile: easy/hard share of land, longest easy route to the coast. [two rows per baked island]
+7. 8 m picture for each baked island in the table row (island_<id>_bearings_tile.png) and a top-down slope-colour map (one PNG). [PNG saved by --picture]
+8. Call island_checks from tools/local_check.sh under CHANGE_LABEL=BAKE (non-zero exit blocks) and add it to Mike's bake checklist. [local_check BAKE runs it]
+9. Re-run my 882-test and warnings pass on every Sonny push (editor import first); send findings as a numbered list. [list sent within 15 minutes of the push]
+10. Three-peak / multi-peak layout check: peak positions along the axis match the layout rows (spacing, order, relative heights). [row per layout peak]
+11. Track the numbers across bakes: append one line per bake (date, build, fails, key numbers) to tech/island_checks_log.md. [log has one line per bake]
+12. Ask for the next 10 from goals_Sal.md goal 1 follow-ups (islands 2, 3, ... one per day) when fewer than 5 steps remain.
+
+HANDED OFF
+(none)
+
+DONE
+- 00:49 UTC plan to Tyler, GO with 8 suggestions (tech/ACTION_PLANS/Sal_island_checks.md)
+- 01:00 UTC island_checks.gd + island_checks.json pushed (claude/sal-island-checks): profiles, peaks, terrain mix, spawn gate, seams, rivers, routes (32 m and 8 m --fine)
+- 01:12 UTC flat share, band table check, peak matching after sketch moves
+- 01:25 UTC --picture: 6 bearing sections (sketch and 8 m tile), summit plateau rows
+- 01:36 UTC per-type rows (summit ranges, three-peak count), plateau limits 100/200 m (3943e7b)
+- 01:45 UTC river diagnosis (gap 128 m: 4 of 41 end inland; check-rule issue mostly), rows say why (eaebe0d); my tool at zero warnings with fresh class cache (6886021)
+- 01:55 UTC review of Sonny d9ba220 sent (warnings list, needs editor import first)
+- 01:56 UTC settled-water river gate pushed (a7f00b8): reads tile_X_Z.water, painted version INFO; Mike's run commands sent
+- 02:25 UTC step list built (12 steps); step 1 asked Sonny; step 8 DONE: local_check.sh prints island check FAILs on BAKE (ISLAND_GATE=1 blocks), pushed
+- 02:27 UTC step 11 DONE: tech/island_checks_log.md started (4 lines)
+- 02:35 UTC steps 5 and 6 DONE: slope classes (easy/hard/over) and canyon share rows on the 8 m maps, limits canyon_share / slope_window_m in island_checks.json (v27 tile: easy 93%, hard 6%, canyon 0.2%)
+- 02:45 UTC step 7 DONE: --picture also writes island_<id>_tile_slopemap.png (top-down slope colours, 1 km grid) (pushed)
+- 03:05 UTC step 10 DONE (layout peak rows), step 4 DONE (volcano crater depth and breach rows), Sonny's natural-river-end rule adopted (a2071d6); ran sketch check on 4372d0a (islands 2,3,5,7,11,12,13) and reported
+- 02:50 UTC step 2 DONE for shelf islands (shelf_hills rows, auto type); river gate counts film and steep falls (c3ddbff); sal-building-looks warning fixed (60a0aed). Next: refine breach row (lowest rim point = downhill side), step 3 on next re-bake, step 9 per push.
+- 02:58 UTC breach row measured along the designed compass bearing (fa9491d + unused-local fix); result: breach NOT where designed on islands 12 and 13 (wall 91% and 158% of mean at 160 deg; lowest walls at 90 and 30 deg) - sent to Sonny
+- 03:15 UTC crater rows use crater_at (Sonny a7921d8): islands 12 and 13 depth and breach PASS; island 3 summit 1577 m PASS; sketch table 0 FAIL on a7921d8. Waiting for Mike's 9-tile rebake (step 3).
+- 03:25 UTC wild rose fix (Dave): claude/sal-no-rose-berries 1174dd9, berry_yield removed, rose_petals harvest; reported
+- 03:30 UTC (check) breach rows exact with crater_at (a7921d8), sketch table 0 FAIL; wild rose petals branch claude/sal-rose-petals 8bd7f9c; Mike's command for island_world_4532cf61 sent; waiting for his table (step 3)
+- 03:28 UTC wood key-set QA card wood-key-set posted; waits Dave. Then: one plan to Tyler, remove 18 woods' beam/lumber items+recipes.
+- 03:32 UTC moved: wood key-set card posted (quick job for Dave); island checks waiting on next bake table.
+- 03:43 UTC Dave: working all night; ignore wrap-up. Farmland rows pushed 90b6920; waiting Sonny on limits + gully row.
+- 03:47 UTC farmland+too-hilly+dead-end gully rows pushed 85cabd2 (island 8 limits). Next: run table on next bake with --bakelog; review Sonny pushes.
+- 04:04 UTC check: nothing new since 85cabd2; waiting next Sonny push / Mike bake.
+- 04:05 UTC goal 2 step 1: tools/item_master.py + tech/ITEM_MASTER.md (242 items, gaps). Branch claude/sal-item-master.
+- 04:21 UTC reviewed f49a1033: sketch 45 checks, 2 FAIL (island 8 farm rows on sketch 43%/18%), warnings 235 (+2, one tile_drainage.gd:161 d539520d), parse_scan clean. Waiting Mike's 9-tile bake for tile half with --bakelog.
+- 04:35 UTC farm row explained (older world data on my branch), island 8 farm min 0.6, check_warnings fails without godot; 095408f. Waiting Mike's bake.
+- 04:36 UTC check: reviewed f49a1033 sketch, farm row fixed (095408f); waiting Mike's 9-tile bake for tile table.
+- 04:48 UTC v29 tiles table: spawn candidates + tile farmland rows (3aaa08a). Sent to coordinator.
+- 05:08 UTC check: nothing new since 3aaa08a; waiting next Sonny push / Mike bake / Dave answer on wood card.
+- 05:41 UTC Dave said Yes to wood key set (03:51). Edit of items.json blocked by classifier; waiting go. Plan: tech/ACTION_PLANS/Sal_key_woods.md. Branch claude/sal-key-woods (no changes yet).
+- 05:46 UTC key woods DONE on claude/sal-key-woods 2bf75e6 (retired 54 items + 36 recipes, logic, validator, test). Goal 1: Sonny a1824d0 awaits Mike bake.
+- 05:47 UTC v29b (76f8204) tile table: 75 checks, FAIL only 3 inland river ends + rivers-reach-sea; spawn passes; farmland landmass 42.0/20.5 unchanged (only tile 3,4 rebaked).
+- 06:11 UTC check: nothing new since v29b table (76f8204) and key woods 2bf75e6; waiting Sonny/Mike.
+- 06:16 UTC river end 48800,70976 probe: painted 0 at flagged cell, settled depth 0.71 pool, 14 dry cells then water resumes; --probe pushed 734b162. Sent to coordinator for Steve.
+- 06:43 UTC check: river probe result sent (734b162); waiting Steve fix / next bake.
+- 06:53 UTC river head rule 7949ec2: 48800,70976 natural; 2 pit ends remain (57888,66624; 56480,69728).
+- 06:57 UTC river_ends: settled-only bodies = heads; v29b 0 inland ends; 5fec5a8.
+- 06:59 UTC e8eb25f sketch: 45 checks 0 FAIL, warnings 233, parse clean; island 8 farm 66.1/32.7. Waiting Mike 9-tile bake for tile table.
+- 07:15 UTC check: waiting Mike's e8eb25f bake for tile table.
+- 07:50 UTC v30b tile table: 67 checks 0 FAIL; gullies 62810 dead 0; spawn passes; farm spawn landmass 60.2/26.7. commit bf in island-checks.
+- 07:51 UTC GOAL 1 COMPLETED (Tyler 07:51). Now goal 2 ITEM LIST AND COMPLETENESS (tools/item_master.py exists, branch claude/sal-item-master). Keep running table on every bake incl Sonny 3adc876b.
+- 08:18 UTC check: goal 2 step: review the 19 unused materials and 25 no-value structures from ITEM_MASTER.md, propose uses. No new bake yet.
+- 08:50 UTC goal 2: wrote tech/ITEM_ORPHANS.md (19 unused materials grouped by what they wait on).
+- 09:22 UTC 3adc876b test bake (3,4) table: 70 checks, 6 FAIL all seams (1-tile bake vs old neighbours), rivers 0 inland, spawn passes.
+- 09:47 UTC goal 2: no-value gap was only placed structures (not traded) - tool fixed f297ced, real value gaps now 0. Waiting v31 bake for 9-tile table (docs/bake31).
+- 09:55 UTC goal 2: Tyler's item_master suggestions applied aa7023d. 29 design names missing (see ITEM_MASTER.md Design needs). Next: own plan for first missing tools batch. Waiting v31 bake table.
+- 10:24 UTC check: v31 bake not pushed yet; goal 2 plan for first missing tools batch next.

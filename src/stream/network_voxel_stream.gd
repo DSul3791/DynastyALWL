@@ -49,6 +49,10 @@ var _closing: bool = false
 var zeroed_blocks: int = 0
 var _refused_key: Vector4i = Vector4i(0, 0, 0, -1)   # the last block refused (damaged, zeroed, not ready): _load asks again
 var paused: bool = false              # main thread: requests are held (flying), so waits do not time out
+var drop_lods: int = 0                # test only (--drop-ground-lods=N): every block of LOD 0 .. N-1 in the column drop_xz fails for good, as a refused block does, so the join hang can be forced
+var drop_xz: Vector2 = Vector2(NAN, NAN)  # the column (world x,z) the test drop applies to
+var drops_made: int = 0               # distinct blocks dropped so far
+var _dropped: Dictionary = {}         # Vector4i -> true: the blocks dropped for that test
 var only_urgent: bool = false         # main thread: a bake runs, no prefetch is asked for
 var link = null                       # BlockLink: when ready, misses are asked for straight from the loader thread
 var watch_on: bool = false            # headless --fly check: note when the column under watch_xz loads
@@ -117,6 +121,9 @@ func column_loaded(x: float, z: float) -> bool:
 
 
 func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	if _drop_for_test(Vector4i(block.x, block.y, block.z, lod)):
+		return RESULT_ERROR
+
 	var found: int = _load_inner(out_buffer, block, lod)
 
 	# A block that arrived damaged, zeroed or "not ready" is asked for again right here (up to 3 tries in all), so the
@@ -141,6 +148,28 @@ func _load(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 		_note_column(block, lod)
 
 	return found
+
+
+func _drop_for_test(key: Vector4i) -> bool:
+	if drop_lods <= 0 or key.w >= drop_lods or not drop_xz.is_finite():
+		return false
+
+	var size: float = float(16 << key.w)
+
+	if key.x != int(floor(drop_xz.x / size)) or key.z != int(floor(drop_xz.y / size)):
+		return false
+
+	_mutex.lock()
+
+	if not _dropped.has(key):
+		_dropped[key] = true
+		drops_made += 1
+
+		if drops_made <= 12:
+			print("client: test drop (--drop-ground-lods) block %s LOD %d (%d so far)" % [str(Vector3i(key.x, key.y, key.z)), key.w, drops_made])
+
+	_mutex.unlock()
+	return true
 
 
 func _load_inner(out_buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
@@ -416,6 +445,11 @@ func forget_prefetch() -> void:
 
 
 # Blocks asked for and not yet answered.
+# Blocks that failed for good so far (timed out, damaged, zeroed, or dropped by the test): the join watchdog restarts a stream only on NEW failures.
+func failed_total() -> int:
+	return timeouts + bad_blocks + zeroed_blocks + drops_made
+
+
 func pending() -> int:
 	_mutex.lock()
 	var count: int = _waiting.size()

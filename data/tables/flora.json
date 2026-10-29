@@ -1,8 +1,8 @@
 {
 	"table": "flora",
 	"format_version": 1,
-	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). canopy (trees): \"dense\" (default; little light below) or \"light\" (birch, alder, pines, fruit trees); young trees grow under a light canopy only. shade_tolerant: young ones grow fully under a light canopy (firs, beech). stand: dense stands of this species inside circles on a world grid (every_m, chance, radius_m, spacing_m apart, fill share, height scale), on top of the per-hectare trees (owner, 2026-10-18: birch in groups of hundreds about 10 ft apart; alder and young firs in thickets at least 6 ft apart). thicket_chance and thicket_fill in a stand: that share of the circles are thickets filled that full (hazel, owner 2026-10-19: mostly groups of 3 to 12 clumps, sometimes thickets of 20 to 50). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
-	"next_id": 127,
+	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). canopy (trees): \"dense\" (default; little light below) or \"light\" (birch, alder, pines, fruit trees); young trees grow under a light canopy only. shade_tolerant: young ones grow fully under a light canopy (firs, beech). stand: dense stands of this species inside circles on a world grid (every_m, chance, radius_m, spacing_m apart, fill share, height scale), on top of the per-hectare trees (owner, 2026-10-18: birch in groups of hundreds about 10 ft apart; alder and young firs in thickets at least 6 ft apart). thicket_chance and thicket_fill in a stand: that share of the circles are thickets filled that full (hazel, owner 2026-10-19: mostly groups of 3 to 12 clumps, sometimes thickets of 20 to 50). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. patch (herbs, berry bushes): plants grow in patches close together (Dave 2026-10-23): every_m and chance pick patch cells like a stand, count [min, max] plants per patch, radius_m the patch radius and spacing_m the gap between plants at scale 1, scale [min, max] one size multiplier per patch (1 = the model as drawn, 3 = three times as big, the same for every plant of the patch; radius and spacing grow with it). near_m: the full model only this close (metres), then the far model. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
+	"next_id": 128,
 	"entries": [
 		{
 			"id": 0,
@@ -719,11 +719,15 @@
 			"display": "Bramble",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "bramble",
+			"patch": {"every_m": 70, "chance": 0.4, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
+			"near_m": 60,
+			"mid_m": 30,
 			"height_m": [
-				0.8,
-				1.8
+				1.2,
+				2.4
 			],
-			"crown_m": 1.2,
+			"crown_m": 1.0,
 			"trunk_m": 0.05,
 			"color": [
 				0.25,
@@ -778,6 +782,7 @@
 			"display": "Juniper",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				4
@@ -835,6 +840,7 @@
 			"display": "Gorse",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1,
 				2.5
@@ -887,6 +893,7 @@
 			"display": "Dwarf birch",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.4,
 				1.2
@@ -934,6 +941,7 @@
 			"display": "Saltbush",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.5
@@ -985,6 +993,7 @@
 			"display": "Cactus",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				1,
 				5
@@ -1035,6 +1044,7 @@
 			"display": "Fern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.5,
 				1.2
@@ -1090,7 +1100,8 @@
 			"name": "heather",
 			"display": "Heather",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -1098,9 +1109,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.5,
 				0.3,
-				0.45
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"heath": 500,
@@ -1149,6 +1160,7 @@
 			"display": "Reeds",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.5,
 				3
@@ -1207,7 +1219,8 @@
 			"name": "flax",
 			"display": "Wild flax",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				0.9
@@ -1215,9 +1228,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.4,
-				0.5,
-				0.7
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 40,
@@ -1261,6 +1274,7 @@
 			"display": "Tall grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.5,
 				1.0
@@ -1321,17 +1335,19 @@
 			"name": "nettle",
 			"display": "Nettle",
 			"kind": "plant",
-			"shape": "fern",
+			"shape": "shrub",
+			"model": "herb_nettle",
+			"patch": {"every_m": 45, "chance": 0.55, "count": [10, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.7},
 			"height_m": [
-				0.5,
-				1.2
+				0.9,
+				1.5
 			],
-			"crown_m": 0.4,
+			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.25,
-				0.42,
-				0.18
+				0.18,
+				0.36,
+				0.12
 			],
 			"per_hectare": {
 				"temperate_forest": 30,
@@ -1379,6 +1395,7 @@
 			"display": "Cotton grass",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.2,
 				0.5
@@ -1430,6 +1447,7 @@
 			"display": "Alpine flowers",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -1534,16 +1552,19 @@
 			"display": "Blueberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "blueberry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 3.0, "scale": [1, 2], "spacing_m": 0.7},
+			"near_m": 8,
 			"height_m": [
-				0.3,
-				0.7
+				0.25,
+				0.5
 			],
-			"crown_m": 0.5,
+			"crown_m": 0.35,
 			"trunk_m": 0.0,
 			"color": [
-				0.22,
-				0.32,
-				0.45
+				0.28,
+				0.42,
+				0.18
 			],
 			"per_hectare": {
 				"heath": 60,
@@ -1594,6 +1615,9 @@
 			"display": "Lingonberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "ground_berry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 2.5, "scale": [1, 2], "spacing_m": 0.5},
+			"near_m": 8,
 			"height_m": [
 				0.1,
 				0.3
@@ -1653,6 +1677,9 @@
 			"display": "Cranberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 2.5, "scale": [1, 2], "spacing_m": 0.5},
+			"near_m": 8,
 			"height_m": [
 				0.1,
 				0.2
@@ -1713,6 +1740,9 @@
 			"display": "Cloudberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 2.5, "scale": [1, 2], "spacing_m": 0.5},
+			"near_m": 8,
 			"height_m": [
 				0.1,
 				0.25
@@ -1768,6 +1798,9 @@
 			"display": "Wild strawberry",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "ground_berry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 2.5, "scale": [1, 2], "spacing_m": 0.5},
+			"near_m": 8,
 			"height_m": [
 				0.1,
 				0.25
@@ -1824,16 +1857,20 @@
 			"display": "Raspberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "raspberry",
+			"patch": {"every_m": 60, "chance": 0.45, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
+			"near_m": 60,
+			"mid_m": 30,
 			"height_m": [
-				1.0,
-				2.0
+				1.5,
+				2.5
 			],
-			"crown_m": 0.7,
+			"crown_m": 1.0,
 			"trunk_m": 0.02,
 			"color": [
-				0.55,
-				0.25,
-				0.28
+				0.33,
+				0.46,
+				0.19
 			],
 			"per_hectare": {
 				"temperate_forest": 14,
@@ -1874,7 +1911,7 @@
 				"tanglewort"
 			],
 			"properties": [
-				"womens_health"
+				"soothing"
 			]
 		},
 		{
@@ -1883,6 +1920,9 @@
 			"display": "Crowberry",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "ground_berry",
+			"patch": {"every_m": 50, "chance": 0.5, "count": [10, 20], "radius_m": 2.5, "scale": [1, 2], "spacing_m": 0.5},
+			"near_m": 8,
 			"height_m": [
 				0.1,
 				0.3
@@ -1937,6 +1977,7 @@
 			"display": "Elder",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2069,11 +2110,15 @@
 			"display": "Wild rose",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "wild_rose",
+			"patch": {"every_m": 70, "chance": 0.4, "count": [8, 15], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.4},
+			"near_m": 60,
+			"mid_m": 30,
 			"height_m": [
-				1,
-				2.5
+				1.2,
+				2.6
 			],
-			"crown_m": 1.0,
+			"crown_m": 1.6,
 			"trunk_m": 0.03,
 			"color": [
 				0.4,
@@ -2096,12 +2141,11 @@
 			],
 			"water": [],
 			"yields": [
-				"rose_hips",
 				"rose_petals"
 			],
 			"season": [
-				"summer",
-				"autumn"
+				"spring",
+				"summer"
 			],
 			"rarity": "common",
 			"familiarity": 93,
@@ -2130,11 +2174,15 @@
 			"display": "Blackthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "blackthorn",
+			"patch": {"every_m": 80, "chance": 0.4, "count": [8, 15], "radius_m": 5.0, "scale": [1, 3], "spacing_m": 1.6},
+			"near_m": 60,
+			"mid_m": 30,
 			"height_m": [
 				2,
-				4
+				3.6
 			],
-			"crown_m": 1.5,
+			"crown_m": 2.4,
 			"trunk_m": 0.08,
 			"color": [
 				0.25,
@@ -2188,6 +2236,7 @@
 			"display": "Hawthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				3,
 				7
@@ -2249,6 +2298,7 @@
 			"display": "Sea buckthorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.5
@@ -2617,7 +2667,9 @@
 			"name": "wild_garlic",
 			"display": "Wild garlic",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
+			"patch": {"every_m": 60, "chance": 0.5, "count": [12, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.45},
 			"height_m": [
 				0.2,
 				0.45
@@ -2626,8 +2678,8 @@
 			"trunk_m": 0.0,
 			"color": [
 				0.3,
-				0.55,
-				0.25
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_forest": 60,
@@ -2673,6 +2725,8 @@
 			"display": "Wild thyme",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
+			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.4},
 			"height_m": [
 				0.05,
 				0.15
@@ -2734,7 +2788,9 @@
 			"name": "wild_mint",
 			"display": "Water mint",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
+			"patch": {"every_m": 60, "chance": 0.4, "count": [10, 20], "radius_m": 2.5, "scale": [1, 1.5], "spacing_m": 0.5},
 			"height_m": [
 				0.2,
 				0.6
@@ -2742,9 +2798,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.35,
-				0.55,
-				0.35
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 40,
@@ -2798,6 +2854,7 @@
 			"display": "Sorrel",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.6
@@ -2851,7 +2908,8 @@
 			"name": "dandelion",
 			"display": "Dandelion",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -2859,9 +2917,9 @@
 			"crown_m": 0.25,
 			"trunk_m": 0.0,
 			"color": [
-				0.85,
-				0.75,
-				0.15
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 80,
@@ -2911,7 +2969,8 @@
 			"name": "wild_carrot",
 			"display": "Wild carrot",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -2919,9 +2978,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.88,
-				0.88,
-				0.82
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 15,
@@ -2967,6 +3026,7 @@
 			"display": "Watercress",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -3026,6 +3086,7 @@
 			"display": "Samphire",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.3
@@ -3079,7 +3140,8 @@
 			"name": "wild_marjoram",
 			"display": "Wild marjoram",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -3087,9 +3149,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.65,
+				0.3,
 				0.45,
-				0.6
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 10,
@@ -3134,6 +3196,7 @@
 			"display": "Wild sage",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.7
@@ -3193,6 +3256,7 @@
 			"display": "Rosemary",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.6,
 				1.5
@@ -3248,7 +3312,8 @@
 			"name": "lavender",
 			"display": "Lavender",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3256,9 +3321,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.55,
+				0.3,
 				0.45,
-				0.75
+				0.2
 			],
 			"per_hectare": {
 				"dry_scrub": 20,
@@ -3307,7 +3372,8 @@
 			"name": "yarrow",
 			"display": "Yarrow",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -3315,9 +3381,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.9,
-				0.88,
-				0.8
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 30,
@@ -3367,6 +3433,7 @@
 			"display": "Ribwort plantain",
 			"kind": "plant",
 			"shape": "grass",
+			"model": "grass_tuft",
 			"height_m": [
 				0.1,
 				0.4
@@ -3423,7 +3490,9 @@
 			"name": "chamomile",
 			"display": "Chamomile",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
+			"near_m": 8,
 			"height_m": [
 				0.2,
 				0.5
@@ -3431,9 +3500,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.95,
-				0.95,
-				0.85
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 20,
@@ -3479,6 +3548,8 @@
 			"display": "Comfrey",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
+			"patch": {"every_m": 80, "chance": 0.4, "count": [10, 14], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 1.0},
 			"height_m": [
 				0.5,
 				1.2
@@ -3541,7 +3612,8 @@
 			"name": "st_johns_wort",
 			"display": "St John's wort",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.8
@@ -3549,8 +3621,8 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.9,
-				0.8,
+				0.3,
+				0.45,
 				0.2
 			],
 			"per_hectare": {
@@ -3597,7 +3669,8 @@
 			"name": "valerian",
 			"display": "Valerian",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.5
@@ -3605,9 +3678,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.92,
-				0.82,
-				0.85
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 10,
@@ -3654,7 +3727,8 @@
 			"name": "meadowsweet",
 			"display": "Meadowsweet",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.2
@@ -3662,9 +3736,9 @@
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
 			"color": [
-				0.93,
-				0.92,
-				0.8
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 30,
@@ -3713,7 +3787,9 @@
 			"name": "feverfew",
 			"display": "Feverfew",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
+			"near_m": 8,
 			"height_m": [
 				0.3,
 				0.6
@@ -3721,9 +3797,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.92,
-				0.92,
-				0.7
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_grassland": 6,
@@ -3766,6 +3842,8 @@
 			"display": "Burdock",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
+			"patch": {"every_m": 80, "chance": 0.4, "count": [10, 14], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 1.0},
 			"height_m": [
 				0.6,
 				1.5
@@ -3823,6 +3901,8 @@
 			"display": "Mugwort",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
+			"patch": {"every_m": 70, "chance": 0.4, "count": [10, 16], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.8},
 			"height_m": [
 				0.6,
 				1.5
@@ -3879,7 +3959,9 @@
 			"name": "arnica",
 			"display": "Arnica",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
+			"near_m": 8,
 			"height_m": [
 				0.2,
 				0.5
@@ -3887,9 +3969,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.95,
-				0.7,
-				0.15
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 25,
@@ -3932,7 +4014,8 @@
 			"name": "angelica",
 			"display": "Angelica",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				1,
 				2
@@ -3940,9 +4023,9 @@
 			"crown_m": 0.5,
 			"trunk_m": 0.0,
 			"color": [
-				0.75,
-				0.85,
-				0.6
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"marsh": 6,
@@ -3994,6 +4077,7 @@
 			"display": "Aloe",
 			"kind": "plant",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.3,
 				0.8
@@ -4048,7 +4132,8 @@
 			"name": "foxglove",
 			"display": "Foxglove",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.5
@@ -4056,9 +4141,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.72,
-				0.35,
-				0.62
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"temperate_forest": 6,
@@ -4104,6 +4189,7 @@
 			"display": "Deadly nightshade",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.5,
 				1.5
@@ -4162,7 +4248,8 @@
 			"name": "wolfsbane",
 			"display": "Wolfsbane",
 			"kind": "plant",
-			"shape": "flower",
+			"shape": "shrub",
+			"model": "wildflower",
 			"height_m": [
 				0.5,
 				1.2
@@ -4170,9 +4257,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.35,
 				0.3,
-				0.7
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 6,
@@ -4217,6 +4304,7 @@
 			"display": "Henbane",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "leafy_herb",
 			"height_m": [
 				0.3,
 				0.8
@@ -4693,6 +4781,7 @@
 			"display": "Prickly pear",
 			"kind": "shrub",
 			"shape": "cactus",
+			"model": "succulent",
 			"height_m": [
 				0.8,
 				2.5
@@ -4746,6 +4835,7 @@
 			"display": "Owlpetal",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.5
@@ -4801,6 +4891,7 @@
 			"display": "Staunchmoss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.03,
 				0.1
@@ -4858,6 +4949,7 @@
 			"display": "Emberroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -4972,6 +5064,7 @@
 			"display": "Wispbloom",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.4,
 				1.0
@@ -5032,6 +5125,7 @@
 			"display": "Drakethorn",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.8,
 				2.0
@@ -5147,6 +5241,7 @@
 			"display": "Sunberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.5,
 				1.4
@@ -5208,6 +5303,7 @@
 			"display": "Hushfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.3,
 				0.9
@@ -5386,6 +5482,7 @@
 			"display": "Hag willow",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				2,
 				4
@@ -5444,6 +5541,7 @@
 			"display": "Heartroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5501,6 +5599,7 @@
 			"display": "Tideglass weed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.3,
 				0.8
@@ -5557,6 +5656,7 @@
 			"display": "Gloomthistle",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.4
@@ -5614,6 +5714,7 @@
 			"display": "Dewlantern",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -5673,6 +5774,7 @@
 			"display": "Honeyspindle",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.0,
 				2.2
@@ -5731,6 +5833,7 @@
 			"display": "Marrowroot",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -5789,6 +5892,7 @@
 			"display": "Riverbraid",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.8,
 				1.6
@@ -5852,6 +5956,7 @@
 			"display": "Brinebell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -5908,6 +6013,7 @@
 			"display": "Sleetberry",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.8
@@ -5967,6 +6073,7 @@
 			"display": "Quenchbell",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6020,6 +6127,7 @@
 			"display": "Whisperfern",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.4,
 				1.0
@@ -6132,6 +6240,7 @@
 			"display": "Duskmallow",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.4,
 				1.0
@@ -6193,6 +6302,7 @@
 			"display": "Tanglewort",
 			"kind": "plant",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				0.3,
 				0.9
@@ -6250,6 +6360,7 @@
 			"display": "Stormreed",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				1.2,
 				2.4
@@ -6308,6 +6419,7 @@
 			"display": "Truthsage",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.6
@@ -6416,6 +6528,7 @@
 			"display": "Echo moss",
 			"kind": "plant",
 			"shape": "fern",
+			"model": "fern_rosette",
 			"height_m": [
 				0.02,
 				0.06
@@ -6530,6 +6643,7 @@
 			"display": "Nightcrown",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.35
@@ -6584,6 +6698,7 @@
 			"display": "Mournbloom",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6639,6 +6754,7 @@
 			"display": "Pilgrim's cup",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.3,
 				0.7
@@ -6696,6 +6812,7 @@
 			"display": "Sunsilver vine",
 			"kind": "shrub",
 			"shape": "shrub",
+			"model": "cane_shrub",
 			"height_m": [
 				1.5,
 				3.0
@@ -6754,6 +6871,7 @@
 			"display": "Frostglass orchid",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.15,
 				0.3
@@ -6808,6 +6926,7 @@
 			"display": "Sevenyear lily",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.6,
 				1.2
@@ -6865,6 +6984,7 @@
 			"display": "Stillwater lotus",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.1,
 				0.3
@@ -6925,6 +7045,7 @@
 			"display": "Gloaming star",
 			"kind": "plant",
 			"shape": "flower",
+			"model": "wildflower",
 			"height_m": [
 				0.2,
 				0.4
@@ -7104,6 +7225,7 @@
 			"display": "Tidecrown",
 			"kind": "plant",
 			"shape": "reed",
+			"model": "reed_stand",
 			"height_m": [
 				0.2,
 				0.5
@@ -7297,6 +7419,31 @@
 				"beech",
 				"hearthwood"
 			],
+			"properties": []
+		},
+		{
+			"id": 127,
+			"name": "thatch_grass",
+			"display": "Thatching grass",
+			"kind": "plant",
+			"shape": "grass",
+			"model": "grass_tuft",
+			"patch": {"every_m": 100, "chance": 0.04, "count": [10, 20], "radius_m": 4.0, "scale": [1, 3], "spacing_m": 0.8},
+			"height_m": [0.8, 1.4],
+			"crown_m": 0.45,
+			"trunk_m": 0.0,
+			"color": [0.72, 0.62, 0.3],
+			"per_hectare": {"temperate_grassland": 1, "temperate_forest": 1, "mixed_forest": 1, "boreal_forest": 1, "heath": 1, "alpine_meadow": 1, "savanna": 1, "marsh": 1},
+			"moisture": [40, 255],
+			"max_slope_deg": 35,
+			"altitude_m": [0.5, 1800],
+			"water": [],
+			"yields": ["thatch", "plant_fibre"],
+			"season": ["all"],
+			"rarity": "common",
+			"familiarity": 70,
+			"uses": ["thatch", "fibre", "bedding"],
+			"look_alikes": ["tall_grass", "reeds", "cotton_grass"],
 			"properties": []
 		}
 	]

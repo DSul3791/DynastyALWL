@@ -1,6 +1,7 @@
 extends SceneTree
 
 const SkillWebCheck := preload("res://src/shared/skill_web.gd")
+const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 
 # Item data validator: items.json, gathered.json, recipes.json, drops.json, cooking.json.
 # Checks numbers, unknown ids, orphan core items and recipes that can never be made.
@@ -15,6 +16,9 @@ const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle",
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
+const DAVE_NAMES := ["Roast Beast", "Roast Meat", "Roast Fish", "Roast Roots"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
+
+const RECIPE_CATEGORIES := RecipeFilter.CATEGORIES
 var errors: int = 0
 var warnings: int = 0
 
@@ -64,6 +68,9 @@ func _check_name(name: String, where: String) -> void:
 		return
 
 	var first: String = words[0].to_lower()
+
+	if name in DAVE_NAMES:
+		return
 
 	if first in VERB_FIRST_WORDS or first in ["a", "an", "the"]:
 		fail("%s: name '%s' starts with a verb or an article (names are plain nouns)" % [where, name])
@@ -134,9 +141,88 @@ func _init() -> void:
 
 	var weights: Dictionary = _read("weights.json")
 
+	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
+	var wood_file: Dictionary = _read("wood_species.json")
+
+	for cls in wood_file.get("class_items", {}):
+		for step in ["firewood", "block"]:
+			if not items_file.get("items", {}).has(String(wood_file["class_items"][cls].get(step, ""))):
+				fail("wood_species.json: class %s needs an existing %s item" % [cls, step])
+
+	for sp in wood_file.get("species", {}):
+		if not wood_file.get("class_items", {}).has(String(wood_file["species"][sp].get("class", ""))):
+			fail("wood_species.json: species %s has a class without class_items" % sp)
+
+	# Key woods (Dave 24 Oct): each is a tree with live log, lumber and beam items; no live recipe, drop table or building cost names a retired item.
+	var trees: Dictionary = {}
+	var biome_key: Dictionary = {}
+	var biome_any: Dictionary = {}
+
+	for entry in _read("../tables/flora.json").get("entries", []):
+		if str(entry.get("kind", "")) != "tree":
+			continue
+
+		trees[str(entry["name"])] = true
+
+		for biome in entry.get("per_hectare", {}):
+			biome_any[biome] = true
+
+			if (wood_file.get("key_woods", []) as Array).has(str(entry["name"])):
+				biome_key[biome] = true
+
+	for key_wood in wood_file.get("key_woods", []):
+		if not trees.has(str(key_wood)):
+			fail("wood_species.json: key wood %s is not a tree in flora.json" % key_wood)
+
+		for prefix in ["log_", "lumber_", "beam_"]:
+			var key_item: Dictionary = items_file.get("items", {}).get(prefix + str(key_wood), {})
+
+			if key_item.is_empty() or bool(key_item.get("retired", false)):
+				fail("wood_species.json: key wood %s needs a live %s%s item" % [key_wood, prefix, key_wood])
+
+	var retired_ids: Array = []
+
+	for id in items_file.get("items", {}):
+		if bool(items_file["items"][id].get("retired", false)):
+			retired_ids.append(str(id))
+
+	for rid in recipes_file.get("recipes", {}):
+		var recipe: Dictionary = recipes_file["recipes"][rid]
+
+		if bool(recipe.get("retired", false)):
+			continue
+
+		for ref in JSON.stringify(recipe).split("\""):
+			if retired_ids.has(ref):
+				fail("recipes.json: live recipe %s names the retired item %s" % [rid, ref])
+
+	for file_name in ["drops.json", "structures.json"]:
+		for ref in JSON.stringify(_read(file_name)).split("\""):
+			if retired_ids.has(ref):
+				fail("%s names the retired item %s" % [file_name, ref])
+
+	var no_key: Array = []
+
+	for biome in biome_any:
+		if not biome_key.has(biome):
+			no_key.append(biome)
+
+	no_key.sort()
+	print("info: biomes whose trees include no key wood (they give firewood and sticks only): ", ", ".join(no_key))
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
+
+		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "shield"].has(String(item.get("tool_class", "")))):
+			fail("items.json: '%s' is marked offhand but is not a tool or weapon of class torch or shield (the left-hand models)" % id)
+
+		if item.has("pile"):   # bulk items drawn as a pile on the ground (PileLook) and taken by the handful
+			var pile: Dictionary = item["pile"]
+			var tint: Array = pile.get("color", [])
+
+			if not ["pyramid", "mound"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
+				fail("items.json: '%s' pile row needs shape pyramid or mound, handful 1 or more, color [r, g, b], rock and squash above 0" % id)
 
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):
@@ -159,6 +245,57 @@ func _init() -> void:
 
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
+
+	var yield_scale: Dictionary = drops.get("yield_scale", {})
+
+	if not yield_scale.is_empty() and (float(yield_scale.get("min", 1.0)) < 0.1 or float(yield_scale.get("max", 1.0)) < float(yield_scale.get("min", 1.0)) or float(yield_scale.get("max", 1.0)) > 5.0):
+		fail("drops.json yield_scale: min 0.1 or more, max at least min and at most 5")
+
+	# The showroom (data/items/showroom.json) fills the world with REAL items: every row entry must be an existing item with a description to inspect.
+	for row in _read("showroom.json").get("rows", []):
+		for entry in row.get("items", []):
+			var show_id: String = String(entry[0])
+			var show_item: Dictionary = items_file.get("items", {}).get(show_id, gathered_file.get("items", {}).get(show_id, {}))
+
+			if show_item.is_empty():
+				fail("showroom.json row %s: unknown item '%s'" % [String(row.get("label", "")), show_id])
+			elif String(show_item.get("kind", "")) == "structure":
+				fail("showroom.json row %s: '%s' is a placed structure, use its kit" % [String(row.get("label", "")), show_id])
+
+	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
+	for key in drops.get("berry_yield", {}):
+		var berry: Dictionary = drops["berry_yield"][key]
+		var berry_id: String = String(berry.get("item", ""))
+
+		if not species.has(key):
+			fail("drops.json berry_yield: unknown flora species '%s'" % key)
+
+		want_item.call(berry_id, "drops.json berry_yield.%s" % key)
+
+		if int(berry.get("count", 0)) < 1:
+			fail("drops.json berry_yield.%s: count must be 1 or more" % key)
+
+		if int(gathered_file.get("items", {}).get(berry_id, items_file.get("items", {}).get(berry_id, {})).get("stack", 1)) < 100:
+			fail("drops.json berry_yield.%s: %s needs a stack of 100 or more" % [key, berry_id])
+
+	# One source of truth: a species is in berry_yield or harvest_yield, never both (the helper would silently pick the berry row).
+	for key in drops.get("berry_yield", {}):
+		if (drops.get("harvest_yield", {}) as Dictionary).has(key):
+			fail("drops.json: '%s' is in both berry_yield and harvest_yield" % key)
+
+	# Harvest per plant beyond berries (drops.json harvest_yield): same shape, and a harvest takes at most 3 pack slots.
+	for key in drops.get("harvest_yield", {}):
+		var harvest: Dictionary = drops["harvest_yield"][key]
+		var harvest_id: String = String(harvest.get("item", ""))
+
+		if not species.has(key):
+			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
+
+		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+
+		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
+			fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
 
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
@@ -338,6 +475,9 @@ func _init() -> void:
 		recipe_numbers[n] = rid
 		_check_name(String(r.get("name", "")), "recipes.json: recipe '%s'" % rid)
 
+		if not RECIPE_CATEGORIES.has(String(r.get("category", ""))):   # the craft menu's category tabs (Dave 25 Oct)
+			fail("recipes.json: recipe '%s' has category '%s', not one of %s" % [rid, String(r.get("category", "")), str(RECIPE_CATEGORIES)])
+
 		# Ingredients (DESIGN_IDEAS 5.3, Dave 2026-10-21): three-ingredient hand recipes stay, and later recipes take four or more;
 		# the more ingredients, the better the item. So there is no rule below MAX_INGREDIENTS, only an info line.
 		if String(r.get("station", "")) == "" and bool(r.get("known", false)) and r.get("needs", []).size() > 2:
@@ -361,10 +501,43 @@ func _init() -> void:
 	if int(recipes_file.get("next_number", 0)) <= highest_recipe:
 		fail("recipes.json: next_number is not above the highest recipe number")
 
+	# The hand saw sits between the axe and the sawmill (Tyler, tools batch 1): its recipe must match the balance row at the top of recipes.json.
+	var balance: Dictionary = recipes_file.get("hand_saw_balance", {})
+
+	if not balance.is_empty():
+		var by_hand: Dictionary = recipes_file["recipes"].get("lumber_by_hand", {})
+		var saw_row: Dictionary = balance.get("hand_saw", {})
+		var mill_row: Dictionary = balance.get("sawmill", {})
+		var mill_recipe: Dictionary = recipes_file["recipes"].get("lumber", {})
+
+		if by_hand.is_empty() or int(by_hand["gives"][1]) != int(saw_row.get("lumber_per_log", -1)) or absf(float(by_hand.get("craft_s", 0.0)) - float(saw_row.get("craft_s", -1.0))) > 0.001:
+			fail("recipes.json: lumber_by_hand does not match hand_saw_balance.hand_saw")
+
+		if int(mill_recipe.get("gives", ["", 0])[1]) != int(mill_row.get("lumber_per_log", -1)) or absf(float(mill_recipe.get("craft_s", 0.0)) - float(mill_row.get("craft_s", -1.0))) > 0.001:
+			fail("recipes.json: lumber does not match hand_saw_balance.sawmill")
+
+		if int(saw_row.get("lumber_per_log", 0)) >= int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
+			fail("recipes.json: the hand saw must give less and take longer than the sawmill")
+
+	for rid in recipes_file["recipes"]:
+		var wt: String = String(recipes_file["recipes"][rid].get("wears_tool", ""))
+		var wt_ok: bool = wt == ""
+
+		for row in recipes_file["recipes"][rid].get("keeps", []):
+			wt_ok = wt_ok or String(items_file["items"].get(String(row[0]), {}).get("tool_class", "")) == wt
+
+		if not wt_ok:
+			fail("recipe '%s': wears_tool '%s' is not the tool_class of any kept tool" % [rid, wt])
+
 	# Core materials marked "future": true (iron and steel ingots until smelting exists) count as sources for the recipe check.
 	for id in items_file.get("items", {}):
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
 			obtainable[String(id)] = true
+
+	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
+	for kind in _read("structures.json").get("structures", {}):
+		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
+			obtainable["wooden_block"] = true
 
 	var changed: bool = true
 
@@ -400,7 +573,8 @@ func _init() -> void:
 		var def: Dictionary = structures[kind]
 
 		if not bool(def.get("take_only", false)):   # remains have no kit: nobody takes them down
-			want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
+			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
+				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 
 
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
@@ -417,6 +591,14 @@ func _init() -> void:
 		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
 		obtainable[String(def.get("item", ""))] = true
+
+		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
+			obtainable["wooden_block"] = true
+
+		if def.has("blocks_per_log"):   # softwood logs give the softwood block and its firewood (wood_species.json class_items)
+			for cls in wood_file.get("class_items", {}):
+				for step in wood_file["class_items"][cls]:
+					obtainable[String(wood_file["class_items"][cls][step])] = true
 
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
 	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.
@@ -456,6 +638,22 @@ func _init() -> void:
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
+
+	# A player can never be asked to craft with something the game calls "Unknown" (Dave 24 Oct): an ingredient of a kit or twine recipe known from the start,
+	# must be fully familiar.
+	var gathered_items: Dictionary = gathered_file.get("items", {})
+	var must_know: Dictionary = {}
+
+	for rid in recipes:
+		if bool(recipes[rid].get("known", false)) and (String(recipes[rid].get("gives", [""])[0]).ends_with("_kit") or String(recipes[rid].get("gives", [""])[0]) == "twine"):   # kits and twine; herbs and dishes are what inspection mode is for
+			for row in recipes[rid].get("needs", []):
+				must_know[String(row[0])] = true
+
+	for id in must_know:
+		var g_entry: Dictionary = gathered_items.get(id, {})
+
+		if not g_entry.is_empty() and not (g_entry.get("look_alikes", []) as Array).is_empty() and int(g_entry.get("familiarity", 100)) < 100:
+			fail("gathered.json: '%s' is an ingredient of a recipe known from the start but its familiarity is %d (it would read Unknown); add it to ALWAYS_KNOWN in tools/gen_gathered_items.py" % [id, int(g_entry.get("familiarity", 100))])
 
 	var used: Dictionary = {}
 
@@ -506,6 +704,86 @@ func _init() -> void:
 			gathered_unused += 1
 
 	print("graph: %d core items: %d gatherable plain materials feed %d craftable items; %d marked future (%s); %d gathered materials have no use yet" % [items_file.get("items", {}).size(), gatherable.size(), craftable.size(), future.size(), ", ".join(future), gathered_unused])
+
+	# data/items/looks.json (client-only, Kathleen's data-driven item models): every key is a real item and every look has shape, colour and size.
+	if FileAccess.file_exists("res://data/items/looks.json"):
+		var looks: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/looks.json"))
+		var basic_source: String = FileAccess.get_file_as_string("res://src/client/basic_look.gd")
+
+		if typeof(looks) != TYPE_DICTIONARY:
+			fail("looks.json is not a JSON object")
+		else:
+			var entries: Dictionary = looks.get("items", looks) if looks.get("items") is Dictionary else looks
+
+			for id in entries:
+				if String(id).begins_with("_") or String(id) == "note":
+					continue
+
+				if not items_file.get("items", {}).has(id) and not gathered_file.get("items", {}).has(id):
+					fail("looks.json: '%s' is not an item in items.json or gathered.json" % id)
+					continue
+
+				var look: Variant = entries[id]
+
+				if typeof(look) != TYPE_DICTIONARY or typeof(look.get("shape", null)) != TYPE_STRING or not look.has("color") or float(look.get("size", 0.0)) <= 0.0:
+					fail("looks.json: '%s' needs shape (text), color and size (a number above 0)" % id)
+				elif basic_source.find("\t\t\"%s\":" % String(look["shape"])) < 0:
+					fail("looks.json: '%s' names an unknown shape '%s' (not in basic_look.gd)" % [id, look["shape"]])
+
+			# Goal 1c: the GENERIC count. Every loose material, food, medicine, clothing, gear, coin or weapon item has a look unless it is drawn by its own model (logs, stone, stick, driftwood).
+			var generic: Array = []
+
+			for table_file in [items_file, gathered_file]:
+				for id in table_file.get("items", {}):
+					var kind: String = String(table_file["items"][id].get("kind", ""))
+					var own_model: bool = String(id) in ["stone", "stick", "log", "driftwood"] or String(id).begins_with("log_")
+
+					if kind in ["material", "food", "medicine", "clothing", "gear", "coin", "weapon"] and not own_model and not entries.has(id):
+						generic.append(String(id))
+
+			print("looks: %d GENERIC items remaining%s" % [generic.size(), (" (" + ", ".join(generic) + ")") if generic.size() > 0 else ""])
+
+			if generic.size() > 0:
+				fail("%d items have no looks.json row (run tools/gen_looks.py): %s" % [generic.size(), ", ".join(generic)])
+
+	# data/items/worn.json (goal 1f): every item with a body slot has a row, every row names a real item and a known builder.
+	if FileAccess.file_exists("res://data/items/worn.json"):
+		var worn: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/worn.json"))
+		var worn_source: String = FileAccess.get_file_as_string("res://src/client/worn_look.gd")
+
+		if typeof(worn) != TYPE_DICTIONARY or not (worn.get("items") is Dictionary):
+			fail("worn.json is not an object with items")
+		else:
+			var rows: Dictionary = worn["items"]
+
+			for id in rows:
+				if not items_file.get("items", {}).has(id):
+					fail("worn.json: '%s' is not an item in items.json" % id)
+				elif worn_source.find("\t\t\"%s\":" % String(rows[id].get("builder", ""))) < 0:
+					fail("worn.json: '%s' names an unknown builder '%s'" % [id, rows[id].get("builder", "")])
+
+			for id in items_file.get("items", {}):
+				var slot: String = String(items_file["items"][id].get("slot", ""))
+
+				if slot in ["head", "body", "legs", "feet", "hands", "back"] and not rows.has(id):
+					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
+
+	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
+	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):
+		var outfits: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/outfits.json"))
+		var worn_rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/worn.json"))
+		var wearable: Dictionary = worn_rows.get("items", {}) if typeof(worn_rows) == TYPE_DICTIONARY else {}
+
+		if typeof(outfits) != TYPE_DICTIONARY:
+			fail("outfits.json is not an object")
+		else:
+			for outfit in outfits:
+				if str(outfit).begins_with("_"):
+					continue
+
+				for id in outfits[outfit]:
+					if not wearable.has(id):
+						fail("outfits.json: outfit '%s' wears '%s', which has no worn.json row" % [outfit, id])
 
 	print("items: %d core, %d gathered, %d recipes" % [items_file.get("items", {}).size(), gathered_file.get("items", {}).size(), recipes.size()])
 	print("item validator: %d errors, %d warnings" % [errors, warnings])

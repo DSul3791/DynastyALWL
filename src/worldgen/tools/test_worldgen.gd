@@ -31,6 +31,7 @@ const ClientCacheScript := preload("res://src/stream/client_block_cache.gd")
 const NetworkStreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const FloraPlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const ServerFloraScript := preload("res://src/stream/server_flora.gd")
+const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 
 const WORLD_PATH := "res://worlds/base_world/world.json"
 const RULES_PATH := "res://worlds/base_world/plan/matrix_rules.json"
@@ -1152,7 +1153,8 @@ func _test_tile_water(settings, elevation, sketch: Dictionary) -> void:
 		if float(lake["surface_m"]) < float(tile_rules["water"]["lake_min_surface_m"]):
 			low_lake = true
 
-	_check(not low_lake, "lakes only form above the minimum height")
+	# Drainage mode (Dave 2026-10-23): any hollow that collects water holds it, at any height, so the old minimum does not apply.
+	_check(not low_lake or bool(tile_rules["water"].get("drainage_mode", false)), "lakes only form above the minimum height")
 
 	# River water is never below its bed (waterfalls on steep cliffs may sit well above the carved ground); ocean water is at sea level.
 	var bad_surface: int = 0
@@ -1499,6 +1501,7 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 	_check(thin_roof == 0, "cave passages stay under the ground away from entrances (%d too shallow)" % thin_roof)
 	_check(bad_links == 0, "cave segments join real nodes with known types")
 	_check(bad_tiers == 0, "starter tile dens are low tier (1 or 2)")
+	print("  caves %d, exposing ore %d, unknown ore %d, ore steering %s" % [sites.caves.size(), exposed, unknown_ore, str(sites.ore_report)])
 	_check(exposed > 0 and unknown_ore == 0, "some caves expose ore bodies (%d)" % exposed)
 	_check(near_town == 0, "no cave opens near the starter spawn or town block")
 	_check(duplicate_ids == 0, "site ids do not clash with geology ids")
@@ -1843,6 +1846,11 @@ func _test_ground_material(generator, data, tables) -> void:
 		var column_same: bool = material == buffer.get_voxel(4, 6, 4, TerrainLayout.CHANNEL_MATERIAL)
 		columns += 1
 
+		# Bank bands beside water repaint the soil (mud, clay, alluvium): tested with the water.
+		if data.near_water()[data.nearest(float(origin.x + 4), float(origin.z + 4))] > 0:
+			right += 1
+			continue
+
 		if soil > 0:
 			if material == soil and column_same:
 				right += 1
@@ -2082,12 +2090,24 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 
 		if p.x < origin.x or p.z < origin.y or p.x >= origin.x + placer.chunk_m or p.z >= origin.y + placer.chunk_m:
 			ok_place = false
+			print("  flora outside chunk: item %d at %.1f,%.1f" % [ids[n], p.x, p.z])
 
-		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or item["per_biome"][data.biome[k]] <= 0.0:
+		# The placer picks the biome sample from the exact double position; the item keeps a float32 one, which can fall on the other side of a
+		# half-spacing border (round() ties). Accept a spot whose biome is allowed at the sample under the position nudged by 1 cm either way.
+		var biome_ok: bool = false
+
+		for nudge in [Vector2(0.0, 0.0), Vector2(0.01, 0.0), Vector2(-0.01, 0.0), Vector2(0.0, 0.01), Vector2(0.0, -0.01)]:
+			if item["per_biome"][data.biome[data.nearest(p.x + nudge.x, p.z + nudge.y)]] > 0.0:
+				biome_ok = true
+				break
+
+		if absf(p.y - generator.surface_height(p.x, p.z)) > 0.01 or not biome_ok:
 			ok_place = false
+			print("  flora ground/biome: item %d at %.1f,%.1f,%.1f ground %.2f biome %d" % [ids[n], p.x, p.y, p.z, generator.surface_height(p.x, p.z), data.biome[k]])
 
 		if data.water_class[k] != 0 and (item["water_mask"] & (1 << data.water_class[k])) == 0:
 			ok_place = false
+			print("  flora water class: item %d at %.1f,%.1f water class %d" % [ids[n], p.x, p.z, data.water_class[k]])
 
 	_check(ids.size() > 500 and trees > 20, "a land chunk holds trees and plants (%d items, %d trees)" % [ids.size(), trees])
 	_check(ok_place, "flora sits on the ground inside its chunk, in a biome and water class it allows")
@@ -2106,16 +2126,43 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 			if sb["kind"] == FloraPlacerScript.KIND_PLANT:
 				continue
 
-			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
-			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE else 0.0
+			# Two members of one berry-shrub patch sit as close as the patch's own spacing says (the placer's patch mode, not the crown rule).
+			if not sa.has("stand") and (ids[a] >> 16) == (ids[b] >> 16) and (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE:
+				continue
+
+			var stand_a: float = float(sa["stand"]["spacing_m"]) if (ids[a] & 0xffff) >= FloraPlacerScript.STAND_BASE and sa.has("stand") else 0.0
+			var stand_b: float = float(sb["stand"]["spacing_m"]) if (ids[b] & 0xffff) >= FloraPlacerScript.STAND_BASE and sb.has("stand") else 0.0
 			var gap: float = FloraPlacerScript.min_gap(sa["kind"], FloraPlacerScript.spacing_radius(sa, items["heights"][a]), stand_a, ids[a] >> 16, sb["kind"], FloraPlacerScript.spacing_radius(sb, items["heights"][b]), stand_b, ids[b] >> 16)
 			var pa: Vector3 = items["positions"][a]
 			var pb: Vector3 = items["positions"][b]
 
 			if Vector2(pa.x - pb.x, pa.z - pb.z).length() < gap - 0.01:
 				crowded += 1
+				print("  too close: ids %d/%d at (%.1f, %.1f, %.1f) and (%.1f, %.1f, %.1f), %.2f m apart, wanted %.2f m" % [ids[a], ids[b], pa.x, pa.y, pa.z, pb.x, pb.y, pb.z, Vector2(pa.x - pb.x, pa.z - pb.z).length(), gap])
 
 	_check(crowded == 0, "tree and shrub crowns keep apart (%d too close)" % crowded)
+
+	# Softwood belt (Dave 2026-10-24): trees per ground slope band (rise over run across 4 m), conifers against broadleaves.
+	var bands: Array = [0.1, 0.2, 0.35, 99.0]
+	var belt: Array = [[0, 0], [0, 0], [0, 0], [0, 0]]
+
+	for n in range(ids.size()):
+		var tree: Dictionary = placer.species_of(ids[n])
+
+		if tree["kind"] != FloraPlacerScript.KIND_TREE or not (tree["shape"] in ["conifer", "broadleaf"]):
+			continue
+
+		var tp: Vector3 = items["positions"][n]
+		var rise: float = Vector2(generator.surface_height(tp.x + 2.0, tp.z) - generator.surface_height(tp.x - 2.0, tp.z), generator.surface_height(tp.x, tp.z + 2.0) - generator.surface_height(tp.x, tp.z - 2.0)).length() / 4.0
+		var band: int = 0
+
+		while rise >= float(bands[band]):
+			band += 1
+
+		belt[band][0 if tree["shape"] == "conifer" else 1] += 1
+
+	print("Tree belt (conifer/broadleaf by slope band <0.10, 0.10-0.20, 0.20-0.35, >0.35): %s" % str(belt))
+	_check(belt[0][0] + belt[0][1] + belt[1][0] + belt[1][1] + belt[2][0] + belt[2][1] + belt[3][0] + belt[3][1] > 0, "the tree belt table counts trees in every slope band it reaches")
 	var again: Dictionary = placer.chunk_items(best)
 	_check(again["ids"] == ids and again["positions"] == items["positions"], "a chunk's flora is the same every time")
 	var period_chunks: int = int(round(generator.period_m / placer.chunk_m))
@@ -2138,9 +2185,24 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	_check(server.cut(best, ids[0]) and not server.cut(best, ids[0]) and not server.cut(best, 12345678), "the server cuts a real item once and refuses unknown ones")
 	var after: Dictionary = FloraPlacerScript.decode(server.chunk_bytes(best), origin)
 	_check(after["ids"].size() == before - 1 and after["ids"].find(ids[0]) < 0, "a cut item is gone from the chunk sent to clients")
+	server.save_removed(true)       # since build 597 the server writes removals on its tick (at most once a second) and at exit, not per cut
 	var restarted = ServerFloraScript.new()
 	restarted.setup(placer, root)
-	_check(restarted.removed_in(best) == [ids[0]], "flora removals survive a server restart")
+	_check(restarted.removed_in(best) == [ids[0]] and not restarted.layout_cleared, "flora removals survive a server restart")
+	# A save made under another flora layout is dropped (patches move plants); a save without a stamp counts as the first layout.
+	var stale: Dictionary = {"layout": FloraLayoutScript.VERSION + 1, "%d,%d" % [best.x, best.y]: [ids[0]]}
+	var stale_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	stale_file.store_string(JSON.stringify(stale))
+	stale_file.close()
+	var moved = ServerFloraScript.new()
+	moved.setup(placer, root)
+	_check(moved.layout_cleared and moved.removed_in(best).is_empty(), "removals made under another flora layout are cleared")
+	var bare_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	bare_file.store_string(JSON.stringify({"%d,%d" % [best.x, best.y]: [ids[0]]}))
+	bare_file.close()
+	var unstamped = ServerFloraScript.new()
+	unstamped.setup(placer, root)
+	_check(FloraLayoutScript.VERSION != 1 or (not unstamped.layout_cleared and unstamped.removed_in(best) == [ids[0]]), "an unstamped save counts as layout 1")
 	_remove_tree(root)
 
 

@@ -1,0 +1,288 @@
+{
+	"note": "Hammer blueprints (Dave 25 Oct): HEAVY placeables (processing stations now; log, cobblestone and mason tiers and their large foundations when they land) are placed from the hammer with the materials in the pack, no kit item, because they are too heavy to carry as materials. Building items of the fine wood tier or lower (thatch, plank, fine wood pieces, foundation, ladder, timber set) are made BY HAND and placed like the chopping block: no kit, no blueprint (Dave 25 Oct 09:06). 'structure' is a structures.json kind, 'cost' [item, count] is taken all or nothing (the retired kit recipe's ingredients), 'station' empty or a placed station that must be near (with 'station_level'), 'hammer' the minimum tier of the hammer on the hotbar (1 wooden, 2 stone; default 1), 'recipe' the retired kit recipe (kept so its number is never reused), 'retired' rows are kept for their numbers and are not offered or placed. Taking the piece down gives the cost back. Ids are the blueprint's own, append only.",
+	"next_number": 15,
+	"blueprints": {
+		"wall_section": {
+			"number": 1,
+			"name": "Wall section",
+			"structure": "wall_section",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "wall_section_kit",
+			"retired": true
+		},
+		"floor_section": {
+			"number": 2,
+			"name": "Floor section",
+			"structure": "floor_section",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "floor_section_kit",
+			"retired": true
+		},
+		"roof_section": {
+			"number": 3,
+			"name": "Roof section",
+			"structure": "roof_section",
+			"cost": [
+				[
+					"lumber",
+					5
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "roof_section_kit",
+			"retired": true
+		},
+		"foundation_section": {
+			"number": 4,
+			"name": "Foundation",
+			"structure": "foundation_section",
+			"cost": [
+				[
+					"stone",
+					8
+				],
+				[
+					"clay",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "foundation_section_kit",
+			"retired": true
+		},
+		"doorway_section": {
+			"number": 5,
+			"name": "Doorway",
+			"structure": "doorway_section",
+			"cost": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "doorway_section_kit",
+			"retired": true
+		},
+		"window_section": {
+			"number": 6,
+			"name": "Window wall",
+			"structure": "window_section",
+			"cost": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "window_section_kit",
+			"retired": true
+		},
+		"timber_set": {
+			"number": 7,
+			"name": "Timber set",
+			"structure": "timber_set",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "timber_set_kit",
+			"retired": true
+		},
+		"ladder": {
+			"number": 8,
+			"name": "Ladder",
+			"structure": "ladder",
+			"cost": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"station": "",
+			"hammer": 1,
+			"known": true,
+			"recipe": "ladder_kit",
+			"retired": true
+		},
+		"stone_forge": {
+			"number": 9,
+			"name": "Basic Forge",
+			"structure": "stone_forge",
+			"cost": [
+				[
+					"stone",
+					36
+				],
+				[
+					"clay",
+					10
+				],
+				[
+					"hide",
+					2
+				]
+			],
+			"station": "workbench",
+			"station_level": 2,
+			"hammer": 1,
+			"known": true,
+			"recipe": "stone_forge_kit"
+		},
+		"blacksmithy": {
+			"number": 10,
+			"name": "Medium Forge",
+			"structure": "blacksmithy",
+			"cost": [
+				[
+					"stone",
+					30
+				],
+				[
+					"log",
+					10
+				],
+				[
+					"clay",
+					10
+				]
+			],
+			"station": "workbench",
+			"station_level": 3,
+			"hammer": 1,
+			"known": true,
+			"recipe": "blacksmithy_kit"
+		},
+		"saw_mill": {
+			"number": 11,
+			"name": "Sawmill",
+			"structure": "saw_mill",
+			"cost": [
+				[
+					"lumber",
+					40
+				],
+				[
+					"nails",
+					100
+				],
+				[
+					"saw_blade",
+					1
+				],
+				[
+					"water_wheel",
+					1
+				]
+			],
+			"station": "workbench",
+			"station_level": 1,
+			"hammer": 1,
+			"known": true,
+			"recipe": "saw_mill_kit"
+		},
+		"woodworking_table": {
+			"number": 12,
+			"name": "Woodworking table",
+			"structure": "woodworking_table",
+			"cost": [
+				[
+					"lumber",
+					12
+				],
+				[
+					"nails",
+					60
+				]
+			],
+			"station": "workbench",
+			"station_level": 1,
+			"hammer": 1,
+			"known": true,
+			"recipe": "woodworking_table_kit"
+		},
+		"clay_hearth": {
+			"number": 13,
+			"name": "Clay hearth",
+			"structure": "clay_hearth",
+			"cost": [["brick", 10], ["clay", 6], ["stone", 4]],
+			"hammer": 1,
+			"known": true
+		},
+		"oven": {
+			"number": 14,
+			"name": "Oven",
+			"structure": "oven",
+			"cost": [["brick", 24], ["clay", 10], ["stone", 8]],
+			"near": "clay_hearth",
+			"near_level": 2,
+			"hammer": 1,
+			"known": true
+		}
+	}
+}

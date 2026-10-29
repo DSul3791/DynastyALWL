@@ -1,9 +1,10 @@
 {
 	"format_version": 1,
+	"precarve": {"summit_crowns": [[54776.0, 71352.0, 0.0015, 100.0, 150.0]], "summit_crowns_note": "[x, z, k, full_m, fade_m]: island 8 summit (1245 m) was a 120 m wide crown within 5 m of the top; this takes k x r^2 off the shoulders out to full_m so it reads under 100 m (island check)."},
 	"note": "Rules for turning the 160 m world elevation map into one tile's 8 m height map: smooth cubic upsampling plus fine detail noise that is continuous across tile borders. Rerun tools/build_tile.gd after editing.",
 	"frame": {
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
-		"margin_samples": 80
+		"margin_samples": 400
 	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
@@ -13,15 +14,15 @@
 				"amplitude_m": 14
 			},
 			{
-				"wavelength_m": 300,
+				"wavelength_m": 300, "hill_only": true,
 				"amplitude_m": 7
 			},
 			{
-				"wavelength_m": 100,
+				"wavelength_m": 100, "hill_only": true,
 				"amplitude_m": 3.0
 			},
 			{
-				"wavelength_m": 35,
+				"wavelength_m": 35, "hill_only": true,
 				"amplitude_m": 1.2
 			},
 			{
@@ -29,6 +30,7 @@
 				"amplitude_m": 0.45
 			}
 		],
+		"hill_from_m": 150, "hill_to_m": 420, "hill_min_share": 0.3,
 		"calm_below_m": 4,
 		"full_above_m": 120,
 		"calm_strength": 0.12,
@@ -77,6 +79,7 @@
 		"soft_rate": 2.0,
 		"hard_rate": 0.1,
 		"rock_refresh_iterations": 5,
+		"hardness_by_height": [[0, 1.3], [150, 1.1], [400, 0.8], [800, 0.5], [1200, 0.35]],
 		"mountain_note": "Tyler (2026-10-21, M1): a second, stronger run (stream_k, iterations) blended in on high ground (from_m to full_m) (Dave 2026-10-21: height rule only, no place-specific masks): carves ridges and gullies in the mountains without moving lowlands, rivers, ponds or bays.",
 		"mountain": {
 			"stream_k": 0.02,
@@ -115,9 +118,37 @@
 		"hardness": {"sediment": 0.05, "shale": 0.15, "coal": 0.15, "tuff": 0.3, "chalk": 0.35, "slate": 0.6, "sandstone": 0.65, "limestone": 0.7, "marble": 0.8, "basalt": 0.85, "granite": 0.95},
 		"ledges": {"sandstone": 1.0, "limestone": 1.0, "basalt": 0.9, "chalk": 0.6, "marble": 0.6, "slate": 0.5, "tuff": 0.3}
 	},
+	"spawn_pad": {"note": "Spawn moved 24 Oct to x 53316, z 68476 (Sal search; was Dave's x 53301, z 68427) and the showroom beside it: level inside flat_radius_m, blended into the land over blend_m. Level is the old spawn ground.", "x": 53316, "z": 68476, "level_m": 31.0, "flat_radius_m": 40, "blend_m": 70},
 	"water": {
+		"drainage_mode": true,
+		"drainage": {
+			"river_start_km2": 0.35,
+			"lake_min_depth_m": 0.5,
+			"lake_min_catchment_km2": 0.05,
+			"routing_noise_m": 0.25,
+			"water_min_depth_m": 0.05,
+			"valley_start_km2": 1.0,
+			"valley_radius_widths": 12.0,
+			"valley_side_slope": 0.06,
+			"valley_max_radius_m": 400.0,
+			"farm_height_from_m": 120.0, "farm_height_to_m": 250.0, "farm_valley_start_km2": 0.4, "farm_valley_radius_widths": 24.0, "farm_valley_max_radius_m": 600.0, "farm_valley_cut_max_m": 25.0, "farm_valley_side_slope": 0.10, "spawn_x": 53316, "spawn_z": 68476, "spawn_keep_m": 450, "spawn_blend_m": 650, "gully_start_km2": 0.08, "gully_end_km2": 1.2, "gully_depth_m_per_sqrt_q": 12.0, "gully_max_m": 10.0, "gully_wall_slope": 0.55, "gully_slope_from": 0.105, "gully_slope_to": 0.176, "canyon_start_km2": 0.6,
+			"canyon_cut_max_m": 90.0,
+			"canyon_wall_slope": 1.1,
+			"canyon_rim_max_m": 160.0,
+			"canyon_noise_from": -0.5,
+			"canyon_min_ground_m": 40.0,
+			"head_radius_m": 56.0,
+			"head_side_slope": 0.12,
+			"head_cut_max_m": 8.0,
+			"width_m_per_sqrt_q": 6.0,
+			"min_width_m": 24.0,
+			"depth_m_per_sqrt_q": 1.0,
+			"min_depth_m": 1.5,
+			"max_depth_m": 8.0,
+			"seed": 17
+		},
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
-		"river_start_km2": 0.5,
+		"river_start_km2": 0.35,
 		"bed_window_m": 500,
 		"head_note": "A river head gets a spring pond and a narrowing first stretch; a steep drop gets a plunge pool at its foot (owner, 2026-10-17).",
 		"head_taper_m": 140,
@@ -710,6 +741,12 @@
 				20
 			],
 			"salt_dome_resource": "salt",
+			"river_ore_resources": [
+				"tin",
+				"copper"
+			],
+			"river_ore_within_m": 1000,
+			"river_ore_min_river_cells": 400,
 			"placer_length_m": 3000,
 			"placer_thickness_m": [
 				1,
@@ -759,6 +796,7 @@
 			"placer_resources": [
 				"gold",
 				"tin",
+				"copper",
 				"diamond",
 				"ruby",
 				"sapphire",

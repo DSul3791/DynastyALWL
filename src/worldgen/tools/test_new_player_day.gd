@@ -84,9 +84,10 @@ func _init() -> void:
 		items.drop_in_world(items.table.number_of("stick"), 6, Vector3(float(n) * 0.3, 10.0, -1.0))
 		items.drop_in_world(items.table.number_of("plant_fibre"), 3, Vector3(float(n) * 0.3, 10.0, 1.5))
 
-	for id in items._items.keys():
-		if not items._items[id].has("scatter"):
-			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+	for _pass in range(12):   # the drops merged into heaps; a heap gives a handful at a time
+		for id in items._items.keys():
+			if not items._items[id].has("scatter"):
+				items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 	check(count("stone") >= 30 and count("stick") >= 40, "gathering fills the pack (%d stones, %d sticks)" % [count("stone"), count("stick")])
 
@@ -115,9 +116,10 @@ func _init() -> void:
 	var fire: int = 0
 
 	for id in items._items:
-		fire = id if items._items[id].has("fire") and int(items._items[id]["fire"]["state"]) == 1 else fire
+		fire = id if items._items[id].has("fire") else fire
 
-	check(fire != 0, "the campfire is placed and burning")
+	items.action(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)   # a placed fire is laid (fire tiers): light it with tinder from the pack
+	check(fire != 0 and items.fire_is_lit(int(items._items[fire]["fire"]["state"])), "the campfire is placed and burning")
 
 	# Hunt: a rabbit three metres off, a spear jab, a carcass, the knife.
 	var rabbit: int = zoo.spawn("rabbit", 3.0, 0.0)

@@ -16,6 +16,7 @@ extends RefCounted
 
 const WrapNoiseScript := preload("res://src/worldgen/tile/wrap_noise.gd")
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const TileDrainageScript := preload("res://src/worldgen/tile/tile_drainage.gd")
 
 const NONE := 0
 const OCEAN := 1
@@ -52,6 +53,8 @@ var _rules: Dictionary = {}
 var _legacy_rivers: bool = true
 var _ocean: PackedByteArray = PackedByteArray()
 var _chute_feet: Array = []   # per river: where each clean chute lands ({point, bed, width}), for its plunge pool
+var routing_raw: PackedFloat32Array = PackedFloat32Array()   # frame heights before erosion (drainage routes water over these so tiles agree)
+var world_network = null      # RiverNetwork: catchments beyond the frame (drainage mode seeds the frame edge with them)
 var _origin_sx: int = 0       # world sample index of sample 0 (set by build)
 var _origin_sz: int = 0
 
@@ -89,6 +92,11 @@ func build(height_map, starter: Dictionary = {}, guides: Variant = null, world_p
 
 	# Pass 1 finds the lakes; the starter river is then cut from the biggest
 	# highland lake to the bay head and the whole thing is run again.
+	if bool(_rules.get("drainage_mode", false)):
+		var summary: Dictionary = TileDrainageScript.apply(self, _rules.get("drainage", {}))
+		print("  water: drainage mode, %d lakes, %d river cells in %d ms" % [summary["lakes"], summary["river_cells"], summary["ms"]])
+		return
+
 	var original: PackedFloat32Array = heights.duplicate()
 	var clock: int = Time.get_ticks_msec()
 	_hydrology({})

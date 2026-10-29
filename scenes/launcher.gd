@@ -1,6 +1,5 @@
 extends Node
 
-const GitStamp := preload("res://src/debug/git_stamp.gd")
 const RUN_NOTE := "user://server_run.json"
 
 
@@ -84,8 +83,9 @@ func _host_and_play() -> void:
 	get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
 
 
-# The port is held. Read the note the old server left (server_run.json): one from another checkout is stopped; one that is closing is
-# waited for (it stops answering blocks while it saves). A healthy server of this same checkout is kept and joined.
+# The port is held. Read the note the old server left (server_run.json): one that is closing is waited for (it stops answering
+# blocks while it saves). Nothing is killed: a server from another checkout is named by the join screen (the welcome carries
+# its build id) and the player closes the game and presses Play again.
 func _clear_old_server(port: int) -> void:
 	var note: Dictionary = {}
 
@@ -95,18 +95,7 @@ func _clear_old_server(port: int) -> void:
 		if parsed is Dictionary:
 			note = parsed
 
-	if note.is_empty() or int(note.get("port", 0)) != port:
-		return
-
-	var mine: String = GitStamp.short_commit()
-	var old_commit: String = str(note.get("commit", ""))
-	var stale: bool = old_commit != "" and mine != "" and old_commit != mine
-	var closing: bool = str(note.get("state", "")) == "closing"
-
-	if stale and int(note.get("pid", 0)) > 0:
-		print("Play: the server on port %d is from commit %s, this game is %s: stopping it" % [port, old_commit, mine])
-		OS.kill(int(note["pid"]))
-	elif not closing:
+	if note.is_empty() or int(note.get("port", 0)) != port or str(note.get("state", "")) != "closing":
 		return
 
 	var waited: int = 0

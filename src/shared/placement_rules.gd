@@ -7,6 +7,8 @@ extends RefCounted
 const PATH := "res://data/items/structures.json"
 const CHUNK_M := 256.0
 const FIRE_STATES := [1, 8, 9]
+const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes on (not the bonfire, 41)
+const POT_ATTACH_M := 2.0
 const STRUCTURE_STATES := [5, 6, 7]
 const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
 
@@ -35,6 +37,9 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 # Returns [spot, yaw in degrees, on_foundation].
 static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, rows: Array = []) -> Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if str(def.get("attach_to", "")) == "fire":
+		return [pot_spot(spot, rows), yaw_deg, false]
 
 	if def.is_empty() or not bool(def.get("piece", false)):
 		return [spot, yaw_deg, false]
@@ -68,11 +73,85 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 				var yaw_at: int = int(best[2]) if best.size() > 2 else turned
 				return [Vector3(row["pos"].x + float(best[0]), row["pos"].y + float(base.get("top_m", 0.3)), row["pos"].z + float(best[1])), yaw_at, true]
 
+	var joined: Array = _join(cfg, piece_kind, spot, rows)
+
+	if not joined.is_empty():
+		return [Vector3(joined[0].x, spot.y, joined[0].z), int(joined[1]), false]
+
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
 
 
+# Joins a piece to the pieces already standing (rows with "yaw", in degrees): a wall continues a wall end to end or turns the corner
+# at its end, and also stands on the edge of a floor; a floor or roof sits edge to edge against its own kind. Returns [spot, yaw] of the
+# candidate within JOIN_REACH_M of the cursor, or [] when none is near.
+const JOIN_REACH_M := 1.5
+
+# A foundation set on the ground can be lifted by the mouse wheel in LIFT_STEP_M steps, up to LIFT_MAX_STEPS of them.
+const LIFT_STEP_M := 0.1
+const LIFT_MAX_STEPS := 10
+
+static func _join(cfg: Dictionary, piece_kind: String, spot: Vector3, rows: Array) -> Array:
+	if piece_kind == "":
+		return []
+
+	var best: Array = []
+	var best_d: float = JOIN_REACH_M
+
+	for row in rows:
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if base.is_empty() or bool(base.get("foundation", false)) or not bool(base.get("piece", false)) or not row.has("yaw"):
+			continue
+
+		var turn: float = deg_to_rad(float(row["yaw"]))
+		var along: Vector3 = Vector3(cos(turn), 0.0, -sin(turn))
+		var across: Vector3 = Vector3(sin(turn), 0.0, cos(turn))
+		var other: String = str(base.get("piece_kind", ""))
+		var yaw_row: int = posmod(int(round(float(row["yaw"]))), 360)
+		var yaw_turned: int = posmod(yaw_row + 90, 360)
+		var candidates: Array = []
+
+		if piece_kind == "wall" and other == "wall":
+			for s in [-1.0, 1.0]:
+				candidates.append([row["pos"] + along * (2.0 * s), yaw_row])
+
+				for t in [-1.0, 1.0]:
+					candidates.append([row["pos"] + along * s + across * t, yaw_turned])
+		elif piece_kind == "wall" and other == "floor":
+			for s in [-1.0, 1.0]:
+				candidates.append([row["pos"] + along * s, yaw_turned])
+				candidates.append([row["pos"] + across * s, yaw_row])
+		elif piece_kind == other and (piece_kind == "floor" or piece_kind == "roof"):
+			for s in [-2.0, 2.0]:
+				candidates.append([row["pos"] + along * s, yaw_row])
+				candidates.append([row["pos"] + across * s, yaw_row])
+
+		for c in candidates:
+			var d: float = Vector2(spot.x - c[0].x, spot.z - c[0].z).length()
+
+			if d < best_d:
+				best_d = d
+				best = c
+
+	return best
+
+
 # The structure definition drawn as world-item state `state` (its row with "kind" added), {} when none.
+# A campfire pot snaps to the nearest small fire in `rows` ({"pos","state"}) within POT_ATTACH_M; with none it stays where it is
+# (and blocked() says "nofire").
+static func pot_spot(spot: Vector3, rows: Array) -> Vector3:
+	var best: Vector3 = spot
+	var best_d: float = POT_ATTACH_M
+
+	for row in rows:
+		if POT_FIRE_STATES.has(int(row["state"])) and (row["pos"] as Vector3).distance_to(spot) <= best_d:
+			best = row["pos"]
+			best_d = (row["pos"] as Vector3).distance_to(spot)
+
+	return best
+
+
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
 	for kind in cfg.get("structures", {}):
 		var def: Dictionary = cfg["structures"][kind]
@@ -108,6 +187,20 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
+
+	if str(def.get("attach_to", "")) == "fire":
+		var over_fire: bool = false
+
+		for row in rows:
+			if POT_FIRE_STATES.has(int(row["state"])) and (row["pos"] as Vector3).distance_to(spot) < 0.3:
+				over_fire = true
+			elif int(row["state"]) == int(def.get("state", -1)) and (row["pos"] as Vector3).distance_to(spot) < 0.3:
+				return "taken"
+
+		if not over_fire:
+			return "nofire"
+
+		return ""
 
 	for row in rows:
 		var state: int = int(row["state"])
@@ -169,6 +262,10 @@ static func reason_text(state: String) -> String:
 			return "the ground is too steep here"
 		"water":
 			return "you cannot build in water"
+		"nofire":
+			return "the pot goes on a small fire: lay one first"
+		"taken":
+			return "that fire already has a pot"
 
 	return ""
 

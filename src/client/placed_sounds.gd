@@ -32,7 +32,7 @@ const NAMES := {
 	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
-const STATE_KIND := {5: "leanto", 6: "chest", 7: "thump", 1: "thump", 8: "thump", 9: "thump", 22: "timber", 23: "timber", 24: "timber", 25: "foundation"}   # 1, 8, 9: a campfire set down (lit, empty or loaded)
+const StructureLook := preload("res://src/shared/structure_look.gd")   # which states make a placed sound, and which kind, is data (structures.json "sound")
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
@@ -134,20 +134,55 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 	for id in world:
 		var row: Dictionary = world[id]
 
-		if STATE_KIND.has(int(row["state"])):
-			seen[id] = [STATE_KIND[int(row["state"])], row["pos"]]
+		var kind: String = StructureLook.sound_of(int(row["state"]))
+
+		if kind != "":
+			seen[id] = [kind, row["pos"], int(row["state"])]
 
 	if _primed:
+		var swung: Dictionary = {}      # row ids already heard as a door opening or closing (not as a thing placed or taken up)
+
 		for id in seen:
-			if not _rows.has(id) and here.distance_to(seen[id][1]) <= NEAR_M:
+			if _rows.has(id) and _rows[id][2] != seen[id][2] and _is_door(seen[id][2]) and _is_door(_rows[id][2]):
+				swung[id] = true         # the same row flipped between the shut and open door
+				_swing(seen[id], here)
+
+		for id in seen:
+			if not _rows.has(id) and _is_door(seen[id][2]):
+				for old_id in _rows:
+					if not seen.has(old_id) and not swung.has(old_id) and _is_door(_rows[old_id][2]) and _rows[old_id][2] != seen[id][2] and Vector3(_rows[old_id][1]).distance_to(seen[id][1]) < 0.6:
+						swung[id] = true          # the open door is a new row where the shut one vanished (or the other way round)
+						swung[old_id] = true
+						_swing(seen[id], here)
+						break
+
+		for id in seen:
+			if not _rows.has(id) and not swung.has(id) and here.distance_to(seen[id][1]) <= NEAR_M:
 				place(str(seen[id][0]), seen[id][1])
 
 		for id in _rows:
-			if not seen.has(id) and here.distance_to(_rows[id][1]) <= NEAR_M:
+			if not seen.has(id) and not swung.has(id) and here.distance_to(_rows[id][1]) <= NEAR_M:
 				pick_up(_rows[id][1])
 
 	_rows = seen
 	_primed = true
+
+
+# A door piece (structures.json look door_shut or door_open).
+func _is_door(state: int) -> bool:
+	return StructureLook.look_of(state) in ["door_shut", "door_open"]
+
+
+# A door swung: heard as the door opening (state look door_open) or shutting.
+func _swing(row: Array, here: Vector3) -> void:
+	if here.distance_to(row[1]) > NEAR_M:
+		return
+
+	var opened: bool = StructureLook.look_of(int(row[2])) == "door_open"
+	var slot: String = "door_%s_%s" % [StructureLook.material_of(int(row[2])), "open" if opened else "close"]      # the door's own material (data), the clips are Kathleen's slots
+
+	if not _stage.slots.play(slot, row[1], here):
+		use("door", opened, row[1])
 
 
 func watch_open(world: Dictionary, here: Vector3) -> void:

@@ -1,0 +1,16 @@
+# Kathleen: goal 2 batch C (ground plants and trees)
+Class: upgrade flora models one detail step, same species ids, heights and crown radii (spacing and layout unchanged, so no layout VERSION bump).
+1. Grass and ferns: tuft blade count and taper, bent tips, fern frond curl and pinnae; keeps 600 near / 150 far vertices.
+2. Common trees (oak, beech, birch, Scots pine, spruce): trunk flare and root swell, branch fork shape, bark colour variation, leaf cluster shapes by season; budgets per Steve (near 4000, far 800 for shrubs; trees keep the current tier budgets).
+Test: tools/test flora vertex count table per species (fails over budget), one showroom row per family, one before/after picture group, one card to Dave.
+Branch claude/kathleen-goal2-c. Label RUNTIME. Tyler reply: see below (GO)
+
+## Tyler reply (24 Oct 10:35 UTC) GO, branch claude/kathleen-goal2-c, label RUNTIME (answered once)
+1. Layout must stay byte-identical: the placer reads height, crown radius and spacing from data; the new meshes must keep the SAME bounding size per species. Add a test row that builds each species and checks height and crown radius within 3 percent of the data row, and that flora_layout VERSION (now 4) is unchanged in the diff. If any species needs a different crown radius, that is a layout change and goes to a separate plan.
+2. Impostors and LOD together: a tree has three states (full mesh, mid, far impostor). New detail only raises the full mesh; the impostor atlas (render_trees.py, export_tree_meshes.gd) must be rebuilt from the NEW mesh in the same commit, or the far tree will pop to a different shape at the switch distance. Test: one picture pair at the switch distance (new full vs impostor) per species, labelled.
+3. Vertex budgets as a failing table test per species and per LOD (grass 600/150 as you wrote; trees: current tier budgets, no increase; shrubs near 4000, far 800 per Steve). Report the total vertex count in a forest scene with look_rig --flora, and frame time (--frametime) at F2 Low and Ultra: more detail on the commonest plants is the cheapest way to lose frames.
+4. Seasons: the leaf cluster shapes by season must come from data (season tint and leaf share) not new files per season; autumn and winter must keep the bare-branch look Dave approved (no leaves in winter on deciduous). Scots pine and spruce stay evergreen with only tint changes. Check all four seasons in the one picture.
+5. Wind and animation: if trees sway by a vertex shader on height, keep the vertex colour or UV channel that the shader reads; a rebuilt mesh without it stands stiff. Test one tree in wind.
+6. Real references, 2 to 3 lines per species in MODEL_INVENTORY (oak: broad crown, deep fissured bark; beech: smooth grey bark, buttress; birch: white bark with black marks, drooping twigs; Scots pine: orange upper bark, flat crown; spruce: conical, drooping branches). Cite pages (CC or museum) for any new reference photo.
+7. One commit per family (grass and ferns; deciduous five; conifers) so a family reverts alone; one showroom row per family, one before/after picture group, one card to Dave with "Tyler recommends" and Yes/No per family. Sequence conifers last since they cover most hills after the tree belts (flora VERSION 4).
+Go. Merge in the next hourly batch after each family passes the budget and size tests.

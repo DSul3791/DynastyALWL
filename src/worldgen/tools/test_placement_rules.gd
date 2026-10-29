@@ -63,7 +63,7 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "placekey00001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var kits: Array = ["campfire_kit", "chest_kit", "lean_to_kit", "chopping_block_kit"]
+	var kits: Array = ["campfire_kit", "chest_kit", "lean_to_kit", "chopping_block"]
 	var agree: int = 0
 	var total: int = 0
 	var spots: Array = []
@@ -112,7 +112,23 @@ func _init() -> void:
 	check(bool(Rules.snap(cfg, "floor_section_kit", Vector3(50.9, 10.0, 49.2), 0, base_rows)[2]), "a floor snaps onto the foundation")
 	check(not bool(Rules.snap(cfg, "wall_section_kit", Vector3(60.0, 10.0, 60.0), 0, base_rows)[2]), "far from the foundation a wall uses the plain grid")
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.0, 50.0), 0, base_rows)[2]), "a foundation does not snap onto a foundation")
+	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
+	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
+	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.1), "a thatch wall snaps onto the thatch floor, the tier 1 foundation (%s)" % str(on_thatch))
+	check(bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]) and bool(Rules.snap(cfg, "thatch_doorway_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)[2]), "a thatch roof and doorway snap onto it too")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
+
+	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors and roofs meet edge to edge.
+	var wall_rows: Array = [{"pos": Vector3(20.0, 10.0, 20.0), "state": 22, "yaw": 0.0}]
+	var straight: Array = Rules.snap(cfg, "wall_section_kit", Vector3(22.3, 10.0, 20.2), 0, wall_rows)
+	check(is_equal_approx(straight[0].x, 22.0) and is_equal_approx(straight[0].z, 20.0) and int(straight[1]) == 0, "a wall continues a wall end to end (%s)" % str(straight))
+	var corner: Array = Rules.snap(cfg, "wall_section_kit", Vector3(21.2, 10.0, 21.6), 0, wall_rows)
+	check(is_equal_approx(corner[0].x, 21.0) and is_equal_approx(corner[0].z, 21.0) and int(corner[1]) == 90, "a wall turns the corner at the end of a wall (%s)" % str(corner))
+	var floor_rows: Array = [{"pos": Vector3(30.0, 10.0, 30.0), "state": 23, "yaw": 0.0}]
+	var beside: Array = Rules.snap(cfg, "floor_section_kit", Vector3(32.4, 10.0, 30.3), 90, floor_rows)
+	check(is_equal_approx(beside[0].x, 32.0) and is_equal_approx(beside[0].z, 30.0) and int(beside[1]) == 0, "a floor meets a floor edge to edge (%s)" % str(beside))
+	var on_edge: Array = Rules.snap(cfg, "wall_section_kit", Vector3(31.2, 10.0, 30.1), 0, floor_rows)
+	check(is_equal_approx(on_edge[0].x, 31.0) and int(on_edge[1]) == 90, "a wall stands on a floor edge (%s)" % str(on_edge))
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var walls_before: int = items.world_item_count()
 
@@ -151,12 +167,73 @@ func _init() -> void:
 			wall_y = maxf(wall_y, items._items[id]["pos"].y)
 
 	check(items.world_item_count() == base_before + 2 and is_equal_approx(wall_y, 10.3), "a wall beside it stands on the foundation top (y %.2f)" % wall_y)
+	# The mouse wheel lifts a foundation off the ground in 0.1 m steps (b = steps, at = the lifted spot); more than 10 steps counts as 10.
+	items.report_position(2, Vector3(300.0, 10.0, 300.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 3, 0, Vector3(300.0, 10.3, 302.0))
+	var lifted_y: float = -1.0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section" and items._items[id]["pos"].distance_to(Vector3(300.0, 10.3, 302.0)) < 1.0:
+			lifted_y = items._items[id]["pos"].y
+
+	check(is_equal_approx(lifted_y, 10.3), "a foundation lifted 3 steps stands 0.3 m above the ground (y %.2f)" % lifted_y)
+	# The wood chain stations: the woodworking table and the sawmill place like other stations.
+	var before_stations: Vector3 = items._peer_pos[2]
+	items.report_position(2, Vector3(800.0, 10.0, 800.0))
+
+	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0]]:
+		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
+		items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of(str(station_kit[0]))), 0, 0, Vector3(800.0, 10.0, float(station_kit[2])))
+		var station_found: bool = false
+
+		for id in items._items:
+			if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == str(station_kit[1]):
+				station_found = true
+
+		check(station_found, "a %s is placed" % str(station_kit[1]))
+
+	items.report_position(2, before_stations)
+	# The sawmill needs a foundation lifted 0.5 m or more under it and running water at its wheel.
+	items.ground_height = func(_x, _z): return 10.0
+	var flows: Array = [true]
+	items.water_flow_runs = func(_a: Vector3, _b: Vector3) -> bool: return flows[0]
+	items.report_position(2, Vector3(900.0, 10.0, 900.0))
+	var saw_kit: int = items.table.number_of("saw_mill_kit")
+	var saw_count = func() -> int:
+		var n: int = 0
+
+		for it in items._items.values():
+			if it.has("struct") and it["struct"]["kind"] == "saw_mill":
+				n += 1
+
+		return n
+	items.action(2, Net.ACT_ADMIN_GIVE, saw_kit, 0, 4, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	check(int(saw_count.call()) == 0, "a sawmill is refused on bare ground (needs a tall foundation)")
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("foundation_section_kit"), 0, 2, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 2, 0, Vector3(900.0, 12.0, 902.0))
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 902.0))
+	check(int(saw_count.call()) == 0, "a foundation lifted only 0.2 m is too low")
+	items.report_position(2, Vector3(900.0, 10.0, 910.0))
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("foundation_section_kit")), 6, 0, Vector3(900.0, 10.6, 910.0))
+	flows[0] = false
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	check(int(saw_count.call()) == 0, "a sawmill without running water at its wheel is refused")
+	flows[0] = true
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(saw_kit), 0, 0, Vector3(900.0, 10.0, 910.0))
+	check(int(saw_count.call()) == 1, "a sawmill on a foundation lifted 0.6 m with running water is placed")
+	items.ground_height = Callable()
+	items.water_flow_runs = Callable()
+	items.report_position(2, before_stations)
+
+	check(str(Rules.structure_of_kit(cfg, "wall_section_kit").get("variant_group", "x")) == "wall" and str(Rules.structure_of_kit(cfg, "doorway_section_kit").get("variant_group", "y")) == "wall" and str(Rules.structure_of_kit(cfg, "window_section_kit").get("variant_group", "z")) == "wall", "wall, doorway and window share a wheel group")
 	# A doorway and a window wall snap onto the foundation like a wall; the foundation stays while they stand on it.
 	check(bool(Rules.snap(cfg, "doorway_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]) and bool(Rules.snap(cfg, "window_section_kit", Vector3(48.9, 10.0, 47.6), 0, base_rows)[2]), "doorway and window walls snap to the foundation anchors")
 	var base_id: int = 0
 
 	for id in items._items:
-		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section":
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "foundation_section" and items._items[id]["pos"].distance_to(Vector3(400.0, 10.0, 402.0)) < 2.0:
 			base_id = id
 
 	var found_before: int = items.world_item_count()
@@ -180,10 +257,98 @@ func _init() -> void:
 	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stick")), fire_id, 3, Vector3.ZERO)
 	var box = items._chests.get(int(items._items[fire_id]["fire"].get("uid", 0)))
 	check(box != null and box.count_of(items.table.number_of("stick")) == 3 and box.count_of(items.table.number_of("stone_axe")) == 0, "a fire's store takes wood and refuses an axe")
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
 	items._items[fire_id]["fire"]["burn_left"] = 5.0
 	items._items[fire_id]["fire"]["tend"] = 0.0
 	items._fires(0.1)
 	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
+	var pushed: Array = []
+	items.send_chest = func(peer: int, id: int, _bytes: PackedByteArray) -> void: pushed.append([peer, id])
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
+	items._items[fire_id]["fire"]["burn_left"] = 5.0
+	items._items[fire_id]["fire"]["tend"] = 0.0
+	items._fires(0.1)
+	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 1, "wood in the store feeds a nearly-out fire")
+	check(pushed.size() == 1 and pushed[0][0] == 2 and pushed[0][1] == fire_id, "the player with the store open is sent the new contents")
+	items.action(2, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
+	items._items[fire_id]["fire"]["burn_left"] = 5.0
+	items._items[fire_id]["fire"]["tend"] = 0.0
+	items._fires(0.1)
+	check(pushed.size() == 1, "after the window is closed nothing more is pushed")
+	# Rest points: a lean-to you built and a fire you slept by are places to come back to, the nearest one wins; none left means the old rule.
+	items.report_position(2, Vector3(500.0, 10.0, 500.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(500.0, 10.0, 503.0))
+	var rest_key: String = str(items._peer_key[2])
+	check(items._characters[rest_key].get("rests", []).size() == 1, "building a lean-to records a rest point")
+	var near_lean: Vector3 = items.rest_point_for(2, Vector3(500.0, 10.0, 520.0))
+	check(near_lean.distance_to(Vector3(500.0, 10.0, 503.0)) < 5.0, "a dropped player comes back beside the lean-to (%s)" % str(near_lean))
+	items._record_rest(rest_key, items._items[fire_id]["pos"], "fire")
+	var fire_back: Vector3 = items.rest_point_for(2, Vector3(450.0, 10.0, 470.0))
+	check(fire_back.distance_to(items._items[fire_id]["pos"]) < 3.0, "from beside the campfire the campfire is the nearest rest point (%s)" % str(fire_back))
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
+	# A door: E opens and shuts it (the structure swaps its kind), and taking it down gives the doorway kit back.
+	items.report_position(2, Vector3(600.0, 10.0, 600.0))
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("doorway_section_kit"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("doorway_section_kit")), 0, 0, Vector3(600.0, 10.0, 602.0))
+	var door_id: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "doorway_section" and items._items[id]["pos"].distance_to(Vector3(600.0, 10.0, 602.0)) < 1.0:
+			door_id = id
+
+	check(door_id != 0, "a door is placed")
+	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
+	check(items._items[door_id]["struct"]["kind"] == "door_open" and items._struct_state(items._items[door_id]) == 28, "E opens the door")
+	OS.delay_msec(450)
+	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
+	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "E shuts it again")
+	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
+	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
+	# A rock pile: placed from the item, E gives back all 45 stones.
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("rock_pile")), 0, 0, Vector3(600.0, 10.0, 606.0))
+	var pile_id: int = 0
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "rock_pile":
+			pile_id = id
+
+	check(pile_id != 0, "a rock pile is placed")
+	items.report_position(2, Vector3(600.0, 10.0, 604.5))
+	var stone_n: int = items.table.number_of("stone")
+	var on_ground = func() -> int:
+		var pile_total: int = 0
+
+		for it in items._items.values():
+			if int(it["number"]) == stone_n and not it.has("struct") and it["pos"].distance_to(Vector3(600.0, 10.0, 606.0)) < 10.0:
+				pile_total += int(it["count"])
+
+		return pile_total
+	var stones_before: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
+	items.action(2, Net.ACT_USE_STRUCT, pile_id, 0, 0, Vector3.ZERO)
+	var stones_after: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
+	check(not items._items.has(pile_id) and stones_after == stones_before + 45, "E on a rock pile gives all 45 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
+	# Bracing supports are spheres of influence (Dave 2026-10-22): a prop holds everything within 5 m, the radius shrinks with its condition, spheres overlap.
+	items.report_position(2, Vector3(700.0, 10.0, 700.0))
+	var told: Array = []
+	items.support_changed = func(at: Vector3) -> void: told.append(at)
+	items.game_seconds = func() -> float: return 1000.0
+	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("timber_prop_kit"), 0, 2, Vector3.ZERO)
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 702.0))
+	check(told.size() == 1 and items.support_strength_at(Vector3(700.0, 10.0, 702.0)) == 1.0, "a new prop holds its own spot and tells the tunnel watch")
+	check(items.support_strength_at(Vector3(704.9, 10.0, 702.0)) == 1.0 and items.support_strength_at(Vector3(705.1, 10.0, 702.0)) == 0.0, "it holds everything inside its 5 m sphere and nothing outside")
+	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 0.0, "a spot 5.5 m away is not held by one prop")
+	items.action(2, Net.ACT_PLACE, items.inventory_of(2).numbers.find(items.table.number_of("timber_prop_kit")), 0, 0, Vector3(700.0, 10.0, 705.0))
+	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0, "a second prop beside it extends the held area (overlapping spheres)")
+	var half_s: float = 1000.0 + 30.0 * 86400.0
+	check(items.support_strength_at(Vector3(702.0, 10.0, 702.0), half_s) == 1.0 and items.support_strength_at(Vector3(704.0, 10.0, 702.0), half_s) == 0.0, "at about half health the sphere is about half as wide")
+	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(451.0, 10.0, 450.0))

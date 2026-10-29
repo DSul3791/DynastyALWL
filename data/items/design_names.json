@@ -1,0 +1,16 @@
+{
+	"note": "Items the design says the world needs (goals_Sal.md goals 3-7, ITEMS_DESIGN.md). names: item id -> category. aliases: a design name -> the item id that already covers it. tools/item_master.py matches by exact id or alias only and lists the rest as missing. Sal extends this list as the design grows.",
+	"names": {
+		"axe": "tool", "pickaxe": "tool", "spade": "tool", "hoe": "tool", "sickle": "tool", "scythe": "tool", "hammer": "tool", "saw": "tool",
+		"knife": "tool", "shears": "tool", "fishing_rod": "tool", "tongs": "tool", "bellows": "tool", "anvil": "workbench", "forge": "workbench",
+		"loom": "workbench", "kiln": "workbench", "tanning_rack": "workbench", "cooking_station": "workbench", "sawmill": "workbench", "woodworking_table": "workbench",
+		"lute": "instrument", "flute": "instrument", "drum": "instrument", "harp": "instrument",
+		"tunic": "clothing", "trousers": "clothing", "boots": "clothing", "cloak": "clothing", "hood": "clothing", "gloves": "clothing", "backpack": "clothing",
+		"book": "culture", "journal": "culture", "dice": "culture", "chess_set": "culture", "toy": "culture", "holy_symbol": "culture"
+	},
+	"aliases": {
+		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "spade": ["stone_spade", "wooden_spade"], "knife": ["stone_knife"], "hoe": ["wooden_hoe", "stone_hoe", "iron_hoe", "steel_hoe"],
+		"hammer": ["wooden_hammer", "stone_hammer"], "saw": ["hand_saw"],
+		"forge": ["stone_forge"], "boots": ["hide_boots"], "cloak": ["hide_cloak", "grass_cloak"], "hood": ["hide_hood"]
+	}
+}

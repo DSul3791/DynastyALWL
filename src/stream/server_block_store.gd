@@ -49,7 +49,10 @@ var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
 var settle_enabled: bool = true         # data/network.json "settled_ground": 0 turns settled copies off (every load replays the whole log)
-var settle = GroundSettle.new()        # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth
+var _settle = GroundSettle.new()       # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth. Swapped by clear_generated under _mutex: read it as `settle` (a fresh reference each time)
+var settle:
+	get:
+		return _settle_now()
 var ops = GroundOps.new()               # the ground edit log (digs.dat, DIGS2): digs and fills replayed over every block
 
 
@@ -81,6 +84,8 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
+	_warm(_cache)
+	_warm(_edits)
 	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
 
 	if ops_error != "":
@@ -183,12 +188,28 @@ func _purge_old_settled() -> void:
 			DirAccess.remove_absolute(folder + "/" + file)
 
 
-func _open_settle() -> String:
-	settle.ops = ops
-	settle.base_loader = _load_base_lod0
-	settle.guard = _settled_ok
-	ops.settled_upto = settle.upto_of
-	return settle.open(_settled_stem())
+func _open_settle(target = null) -> String:
+	var fresh = target if target != null else _settle
+	fresh.ops = ops
+	fresh.base_loader = _load_base_lod0
+	fresh.guard = _settled_ok
+	ops.settled_upto = fresh.upto_of
+	return fresh.open(_settled_stem())
+
+
+# Same shape as the generated-ground cache: workers read the settled copies through one reference taken under _mutex, the main thread publishes a new one
+# under the same mutex, and a worker that holds the old one finishes with it (refcounted).
+func _settle_now():
+	_mutex.lock()
+	var current = _settle
+	_mutex.unlock()
+	return current
+
+
+func set_settle(fresh) -> void:
+	_mutex.lock()
+	_settle = fresh
+	_mutex.unlock()
 
 
 func _load_base_lod0(buffer: VoxelBuffer, block: Vector3i) -> void:
@@ -207,6 +228,14 @@ func _open_generated() -> VoxelStreamSQLite:
 	var stream: VoxelStreamSQLite = VoxelStreamSQLite.new()
 	stream.database_path = ProjectSettings.globalize_path(_store_dir + "/" + _generated_name())
 	return stream
+
+
+# 25 Oct (Dave's server window: "another row available" at Connection::load_version during a join, then the workers made blocks again instead of reading
+# them): the first read of a new sqlite file made the voxel module open its connections from several worker threads at once, and they raced on the
+# file's version row. One read here, on the main thread before any worker runs, opens the file and its first connection alone.
+func _warm(stream: VoxelStreamSQLite) -> void:
+	var scratch: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
+	stream.load_voxel_block(scratch, Vector3i(0, 0, 0), 0)
 
 
 # Deletes generated ground files of other generations (best effort).
@@ -228,12 +257,29 @@ func clear_generated() -> void:
 		file.store_string(str(_generation))
 		file.close()
 
-	_cache = _open_generated()
+	set_cache(_open_generated())
+	_warm(_cache_now())
 	# The settled copies were made over the ground just thrown away: new files for the new generation, the old ones deleted.
-	settle.close()
-	settle = GroundSettle.new()
+	_settle_now().close()
 	_purge_old_settled()
-	_open_settle()
+	var fresh = GroundSettle.new()
+	_open_settle(fresh)
+	set_settle(fresh)
+
+
+# The generated-ground cache is swapped on the main thread (clear_generated) while workers read it: workers take their own reference under _mutex, so a worker that
+# started with the old stream finishes with it (refcounted) and never uses a freed one.
+func _cache_now() -> VoxelStreamSQLite:
+	_mutex.lock()
+	var stream: VoxelStreamSQLite = _cache
+	_mutex.unlock()
+	return stream
+
+
+func set_cache(stream: VoxelStreamSQLite) -> void:
+	_mutex.lock()
+	_cache = stream
+	_mutex.unlock()
 
 
 func revision_of(tile: Vector2i) -> int:
@@ -256,7 +302,7 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	if lod == 0:
 		# A busy block has a settled copy with its first `upto` edits in it: replay only the rest (the same ground as replaying
 		# them all, ground_settle.gd).
-		var upto: int = settle.try_load(buffer, block) if settle_enabled else -1
+		var upto: int = _settle_now().try_load(buffer, block) if settle_enabled else -1
 
 		if upto >= 0:
 			ops.apply_range(buffer, block, upto, 1 << 30)
@@ -266,6 +312,11 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 
 	if lod == 0:
 		ops.apply(buffer, block)
+
+
+# The block as generated, before any dig or fill (the tunnel watch tells man-made spaces from natural caves with it).
+func load_natural(buffer: VoxelBuffer, block: Vector3i) -> void:
+	_load_base(buffer, block, 0)
 
 
 # Real ground is never a whole block of distance exactly 0 (a buffer nobody filled reads that way): 27 spread voxels, 20 at zero.
@@ -292,7 +343,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 		_count("zeroed_edit")
 		print("server: ZEROED BLOCK %s LOD %d from the saved edits (generating it again)" % [str(block), lod])
 
-	var cache: VoxelStreamSQLite = _cache
+	var cache: VoxelStreamSQLite = _cache_now()
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
@@ -342,7 +393,7 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
-	var cache: VoxelStreamSQLite = _cache
+	var cache: VoxelStreamSQLite = _cache_now()
 
 	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
@@ -401,7 +452,7 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	lines.append("server: freshly generated: " + _cell_text(fresh, local))
 	var cached: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _cache.load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_now().load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
 		lines.append("server: generated-ground cache: " + _cell_text(cached, local) + ("" if _is_sane(cached, block, 0) else "   <-- FAILS THE SANITY CHECK"))
 	else:
 		lines.append("server: generated-ground cache: no copy of this block")
@@ -514,7 +565,7 @@ func save_revisions() -> void:
 func flush() -> void:
 	settle.close()
 	save_revisions()
-	_cache.flush()
+	_cache_now().flush()
 	_edits.flush()
 
 

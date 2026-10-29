@@ -359,13 +359,28 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 	var reach: float = float(rules["ore_reach_m"])
 	var nodes: Array = cave["nodes"]
 	var step: float = float(_rules["step_m"])
-	var min_roof: float = float(_rules["min_roof_m"])
+	# Ore side passages may run closer under the surface than main passages (river gorges thin the roof over shallow ore).
+	var min_roof: float = minf(float(_rules["min_roof_m"]), float(rules.get("ore_min_roof_m", 2.0)))
 
 	for ore in _geology.ore_bodies:
 		var target: Vector3 = _ore_target(ore)
 
 		if is_nan(target.x):
 			continue
+
+		# A target above the ground is sunk into the rock (an outcropping vein is cut where the ground is still thick enough);
+		# a target that would need sinking more than ore_sink_max_m is not an ore this cave can reach.
+		var target_index: int = _index_at(Vector2(target.x, target.z), float(_rules["edge_margin_m"]))
+
+		if target_index >= 0:
+			var deepest_ok: float = _heights[target_index] - min_roof - 3.0
+
+			if target.y > deepest_ok:
+				if target.y - deepest_ok > float(rules.get("ore_sink_max_m", 25.0)):
+					ore_report["above"] = int(ore_report.get("above", 0)) + 1
+					continue
+
+				target.y = deepest_ok
 
 		var target_2d: Vector2 = Vector2(target.x, target.z)
 		var best: int = -1
@@ -395,6 +410,7 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 		var previous: int = best
 		var added: Array = []
 		var ok: bool = true
+		var why: String = ""
 
 		for k in range(1, steps + 1):
 			var t: float = float(k) / float(steps)
@@ -404,18 +420,30 @@ func _steer_to_ore(cave: Dictionary, province: int, rng: RandomNumberGenerator) 
 
 			if index < 0:
 				ok = false
+				why = "outside the tile margin at step %d of %d, p %.0f,%.0f" % [k, steps, p.x, p.y]
 				break
 
 			var y: float = lerpf(start.y, target.y, t)
 
-			if y + 1.5 > _heights[index] - min_roof:
-				ok = false
-				break
+			# Follow the ground: where it dips (valley, gorge) the passage dips with it and stays under the roof limit;
+			# only the ore end itself must be deep enough.
+			var ceiling: float = _heights[index] - min_roof - 1.5
+
+			if y > ceiling:
+				if k == steps:
+					ok = false
+					why = "ore end too shallow: y %.1f needs %.1f or lower (ground %.1f)" % [y, ceiling, _heights[index]]
+					break
+
+				y = ceiling
 
 			added.append([snappedf(p.x, 0.1), snappedf(y, 0.1), snappedf(p.y, 0.1), 2.5, 2.5])
 
 		if not ok or added.is_empty():
 			ore_report["blocked"] += 1
+
+			if OS.has_environment("ORE_STEER_LOG"):
+				print("  ore blocked: id %s shape %s target %.0f,%.0f,%.0f from node %d (%.0f,%.0f,%.0f) %.0f m, %d steps: %s" % [str(ore["id"]), str(ore["shape"]), target.x, target.y, target.z, best, start.x, start.y, start.z, best_distance, steps, why])
 			continue
 
 		ore_report["reached"] += 1

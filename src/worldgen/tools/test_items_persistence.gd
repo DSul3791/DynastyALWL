@@ -111,7 +111,7 @@ func _init() -> void:
 		var cz: int = (n / 2) % 2
 		var pos: Vector3 = Vector3(float(cx) * 256.0 + 5.0 + float(n % 4), 10.0, float(cz) * 256.0 + 5.0 + float((n * 7) % 4))
 
-		if s.drop_in_world(stone, 1, pos):
+		if s.drop_in_world(s.table.number_of("stone_axe"), 1, pos, 1):
 			accepted += 1
 
 	check(accepted == 4 * ItemsScript.MAX_DROPPED_NEAR and s.world_item_count() == accepted, "world items stop at the near-spot cap (%d accepted of 1000)" % accepted)

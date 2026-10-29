@@ -32,7 +32,7 @@ def write_ogg(name, x):
             w.setsampwidth(2)
             w.setframerate(SR)
             w.writeframes(data.tobytes())
-        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-c:a", "libvorbis",
+        subprocess.run(["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", wav, "-fflags", "+bitexact", "-flags:a", "+bitexact", "-c:a", "libvorbis",
                         "-q:a", "4", os.path.join(OUT, name + ".ogg")], check=True)
 
 
@@ -91,6 +91,13 @@ def torch(rng, n):
     return normalize(x, 0.1) * 1.2
 
 
+def torch_soft(rng, n):
+    """A held torch, quiet (Dave 2026-10-23: the old one was far too loud): sparse small crackles and only a faint low flutter, no steady bed."""
+    flutter = flow(rng, n, 150, 900, 0.3)
+    x = flutter * 0.2 + snaps(rng, n, 5, 1400, 3200, 0.004, 0.5)
+    return normalize(x, 0.05) * 1.0
+
+
 def lantern(rng, n):
     """A lantern flame behind glass: a faint, steady, hushed burn with the odd tiny tick."""
     x = flow(rng, n, 200, 2400, 0.7) + snaps(rng, n, 2, 2000, 4500, 0.003, 0.25)
@@ -128,7 +135,8 @@ def main():
     write_ogg("fire_small", small(rng, 12 * SR))
     write_ogg("fire_large", large(rng, 14 * SR))
     write_ogg("fire_rain", rain_on_fire(rng, 12 * SR))
-    write_ogg("flame_torch", torch(rng, 10 * SR))
+    torch(rng, 10 * SR)                                   # the old torch is no longer written; drawn only so the later sounds below stay identical
+    write_ogg("flame_torch", torch_soft(np.random.default_rng(20261031), 10 * SR))
     write_ogg("flame_lantern", lantern(rng, 10 * SR))
 
     for v in range(3):

@@ -1,0 +1,17 @@
+# Steve: hook Kathleen's sound batch 2 (ambience), RUNTIME
+Branch claude/steve-sound-batch2 = generator-v2 + claude/kathleen-sound-2 (639c9dd1) + my hookup. Class: one small hookup change.
+1. src/client/ambience_slots.gd (new, child of SoundStage as `ambience`): reads hour/season/zone weights from AmbientLife, picks one weather bed and one time bed by tags (most specific slot wins, crossfade 2 s), positional beds (pond at the nearest water point; volcano and lava wait for set_anchor), one-shots (max 2 at once, gap 4-20 s, no clip twice in a row, pitch +/-5 percent). Pure rule functions (matches, choose_bed, matching, time_class, biomes_for) are tested without a scene.
+2. AmbientLife skips the four calls the slots take over (bird_whistle, bird_trill, owl_hoot, frog_croak) so nothing doubles; nearest_wet_point() added.
+3. Sound test: ONE "Batch 2" entry; first press starts the sequence, each press jumps to the next group, every clip of the group plays three times back to back (beds cut at 15 s per play), flat in the headset; progress printed.
+4. test_slot_sounds: 17 slots, files exist, tag words known, bed and one-shot choices for forest/winter/night/beach/canyon/pond cases.
+Known limit (stated in the file): canyon, volcano, desert, dry scrub, polar, ice and lava have no client biome lookup yet; those slots play in the test and via --biome=NAME / set_anchor until a lookup exists.
+Needs Mike: test_slot_sounds run, one listen to Batch 2 in the Sound test. Needs Dave: Kathleen's one card.
+
+## Tyler reply (24 Oct 08:35 UTC) GO (answered once; batch 1 and sound-slots rules apply). Use claude/steve-sound-batch2 (8428f228) in gate list 6 instead of kathleen-sound-2 alone.
+1. Doubling guard as a test, not a hope: a test row that runs AmbientLife and the slots for 60 simulated seconds and counts voices per class (birds, owl, frogs); the old four calls must be 0. Report the busiest simultaneous ambience voice count at one tile (voice cap, JOBS.md).
+2. Scheduler determinism: seed the one-shot gap and pitch from the day number and the slot id, not time-of-frame random, so a recorded test reproduces; "never the same clip twice in a row" must hold across a bed change (carry the last clip id over the crossfade). Tests for both.
+3. Crossfade correctness: two beds never play at full level together (equal-power crossfade, 2 s); a bed change during a crossfade starts from the current level, not from 0 (no pumping when the hour boundary is crossed back and forth). Test the pure function with a time series around dusk.
+4. The known limit (no client biome lookup for canyon, volcano, desert, polar, ice, lava) is acceptable for now, but write it as a visible open job in JOBS.md with an owner (Steve: add a client biome lookup from the tile climate class the server already sends, or send a "zone" id in the existing ground/world info) so these slots do not stay test-only. Until then the slots must be marked "test-only" in batch2_slots.json so the validator does not count them as wired.
+5. Performance: the lookup of nearest_wet_point() must be cached for 1-2 s or only recomputed after the player moves 10 m (a scan every frame is the classic cost); report frame time with the Sound test stage running at F2 Low (look_rig --frametime).
+6. Sound test: sequence each group three times is good; add the current group name to the HUD line (F4 sound line) so Mike's note says which group he heard.
+Label RUNTIME. Go. Mike: test_slot_sounds and one listen.

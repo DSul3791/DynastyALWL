@@ -1,6 +1,20 @@
 {
 	"note": "Placed structures (Dave 2026-10-20: lean-to and storage chest are the first buildables). Placed like the campfire kit with ACT_PLACE (count = yaw in degrees). state is the world-item row state clients draw it by (5 lean-to, 6 chest). cap_per_chunk counts one 256 m chunk. A lean-to is a roof for the Cover index: a box of half_x by half_z around its spot, from 0.5 m below the ground to height above it. A structure with slots is a container: its contents are server-owned (chests.json) and sent only to the player who opens it. Container rules (data): slots is how many stacks it holds, max_kg the most weight it takes (weights.json kilograms; a put that would pass it puts what fits and the rest stays in the pack), who is who may open it (only \"anyone\" for now; \"owner\" and \"town\" come with ownership). The take side is limited by the player's own carry cap. footprint_x and footprint_z are the ghost's size in metres (the client draws it as the player holds the kit; red when blocked, from src/shared/placement_rules.gd). campfire is the fire kit's own gap between fires and cap per chunk (a fire is not a structure row). Station add-ons (Tyler, Valheim style): a structure with addon_of names the station it improves. A station's level is 1 plus the number of different add-on kinds within its addon_reach_m; recipes with station_level above that need more add-ons. Placement slope (build 505, design 10.1): max_rise_m is how much higher the highest of five ground samples across the footprint (middle and corners, turned by the placing yaw; a ring of 0.8 m for the campfire) may be than the lowest; a kit over the limit shows a red ghost with the reason and the server refuses it. A structure may set its own max_rise_m.",
 	"gap_m": 2.5,
+	"look_names": {
+		"note": "Look names the client can draw (src/client/look_table.gd) for pieces not in the game yet; planned rows are ignored by tools/check_look_names.py until a structure uses them (blueprint 1c).",
+		"log_wall": {"planned": true},
+		"flat_roof": {"planned": true},
+		"door_basic": {"planned": true},
+		"door_plank": {"planned": true},
+		"door_double": {"planned": true},
+		"door_steel": {"planned": true},
+		"door_wrought": {"planned": true},
+		"brace_short": {"planned": true},
+		"brace_mid": {"planned": true},
+		"brace_long": {"planned": true},
+		"water_wheel": {"planned": true}
+	},
 	"structures": {
 		"lean_to": {
 			"shelter": true,
@@ -12,7 +26,10 @@
 			"cap_per_chunk": 6,
 			"half_x": 1.1,
 			"half_z": 0.95,
-			"height": 2.1
+			"height": 2.1,
+			"look": "lean_to",
+			"sound": "leanto",
+			"clears_grass": true
 		},
 		"chest": {
 			"kit": "chest_kit",
@@ -23,20 +40,27 @@
 			"cap_per_chunk": 8,
 			"slots": 12,
 			"max_kg": 40,
-			"who": "anyone"
+			"who": "anyone",
+			"look": "chest",
+			"sound": "chest",
+			"clears_grass": true
 		},
 		"chopping_block": {
-			"kit": "chopping_block_kit",
+			"kit": "chopping_block",
 			"item": "chopping_block",
 			"state": 7,
 			"footprint_x": 0.7,
 			"footprint_z": 0.7,
 			"cap_per_chunk": 4,
 			"use": "split_log",
-			"logs_to_firewood": 4,
-			"shoulder_log_to_firewood": 12,
 			"use_pace_ms": 600,
-			"use_reach_m": 3.0
+			"use_reach_m": 3.0,
+			"look": "chopping_block",
+			"sound": "thump",
+			"clears_grass": true,
+			"blocks_per_log": 4,
+			"blocks_per_shoulder_log": 12,
+			"firewood_per_block": 2
 		},
 		"plank_chest": {
 			"kit": "plank_chest_kit",
@@ -47,7 +71,10 @@
 			"cap_per_chunk": 8,
 			"slots": 20,
 			"max_kg": 150,
-			"who": "anyone"
+			"who": "anyone",
+			"look": "chest",
+			"sound": "chest",
+			"clears_grass": true
 		},
 		"remains": {
 			"kit": "",
@@ -58,7 +85,10 @@
 			"cap_per_chunk": 50,
 			"slots": 30,
 			"who": "owner",
-			"take_only": true
+			"take_only": true,
+			"look": "remains",
+			"sound": "",
+			"clears_grass": false
 		},
 		"workbench": {
 			"kit": "workbench_kit",
@@ -71,7 +101,10 @@
 			"station_level": 1,
 			"reach_m": 4.0,
 			"addon_reach_m": 5.0,
-			"tier": "small"
+			"tier": "small",
+			"look": "workbench",
+			"sound": "",
+			"clears_grass": true
 		},
 		"tool_rack": {
 			"kit": "tool_rack_kit",
@@ -80,7 +113,10 @@
 			"footprint_x": 1.0,
 			"footprint_z": 0.4,
 			"cap_per_chunk": 6,
-			"addon_of": "workbench"
+			"addon_of": "workbench",
+			"look": "tool_rack",
+			"sound": "",
+			"clears_grass": true
 		},
 		"vice": {
 			"kit": "vice_kit",
@@ -89,7 +125,10 @@
 			"footprint_x": 0.5,
 			"footprint_z": 0.5,
 			"cap_per_chunk": 6,
-			"addon_of": "workbench"
+			"addon_of": "workbench",
+			"look": "vice",
+			"sound": "",
+			"clears_grass": true
 		},
 		"log_workbench": {
 			"kit": "log_workbench_kit",
@@ -102,7 +141,45 @@
 			"station_level": 2,
 			"tier": "medium",
 			"reach_m": 4.5,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "log_workbench",
+			"sound": "",
+			"clears_grass": true
+		},
+		"saw_mill": {
+			"kit": "saw_mill_kit",
+			"item": "saw_mill",
+			"state": 34,
+			"footprint_x": 3.0,
+			"footprint_z": 2.0,
+			"cap_per_chunk": 2,
+			"station": "saw_mill",
+			"station_level": 1,
+			"reach_m": 5.0,
+			"addon_reach_m": 5.0,
+			"tier": "large",
+			"look": "saw_mill",
+			"sound": "timber",
+			"clears_grass": true,
+			"needs_base_lift_m": 0.5,
+			"needs_running_water": {"from": [-2.5, 0.0], "to": [-0.5, 0.0]},
+			"note": "First-tier sawmill (Dave 2026-10-22). Placement: on a foundation lifted 0.5 m or more, with the wheel (a 2 m span beside the saw frame, local x -2.5 to -0.5 turned with the piece) over water running at least data/water_flow.json min_speed_m_s."
+		},
+		"woodworking_table": {
+			"kit": "woodworking_table_kit",
+			"item": "woodworking_table",
+			"state": 35,
+			"footprint_x": 2.0,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 4,
+			"station": "woodworking_table",
+			"station_level": 1,
+			"reach_m": 4.0,
+			"addon_reach_m": 5.0,
+			"tier": "small",
+			"look": "woodworking_table",
+			"sound": "",
+			"clears_grass": true
 		},
 		"stone_forge": {
 			"kit": "stone_forge_kit",
@@ -118,7 +195,10 @@
 			},
 			"tier": "large",
 			"reach_m": 5.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "stone_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"blacksmithy": {
 			"kit": "blacksmithy_kit",
@@ -134,7 +214,10 @@
 			},
 			"tier": "epic",
 			"reach_m": 5.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "blacksmithy",
+			"sound": "",
+			"clears_grass": true
 		},
 		"carcass": {
 			"kit": "",
@@ -144,7 +227,10 @@
 			"footprint_z": 0.6,
 			"cap_per_chunk": 50,
 			"take_only": true,
-			"reach_m": 3.0
+			"reach_m": 3.0,
+			"look": "carcass",
+			"sound": "",
+			"clears_grass": false
 		},
 		"large_forge": {
 			"kit": "large_forge_kit",
@@ -160,7 +246,10 @@
 			},
 			"tier": "epic",
 			"reach_m": 6.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "big_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"master_forge": {
 			"kit": "master_forge_kit",
@@ -176,35 +265,48 @@
 			},
 			"tier": "epic",
 			"reach_m": 6.0,
-			"addon_reach_m": 5.0
+			"addon_reach_m": 5.0,
+			"look": "big_forge",
+			"sound": "",
+			"clears_grass": true
 		},
 		"wall_section": {
 			"kit": "wall_section_kit",
 			"item": "wall_section",
 			"state": 22,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"variant_group": "wall",
+			"look": "wall",
+			"sound": "timber",
+			"clears_grass": false
 		},
 		"floor_section": {
 			"kit": "floor_section_kit",
 			"item": "floor_section",
 			"state": 23,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 2.0,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "floor"
+			"piece_kind": "floor",
+			"look": "ceiling",
+			"sound": "timber",
+			"clears_grass": true
 		},
 		"roof_section": {
 			"kit": "roof_section_kit",
 			"item": "roof_section",
 			"state": 24,
 			"piece": true,
+			"material": "wood",
 			"shelter": true,
 			"footprint_x": 2.4,
 			"footprint_z": 2.4,
@@ -213,13 +315,17 @@
 			"half_z": 1.2,
 			"height": 2.6,
 			"max_rise_m": 0.6,
-			"piece_kind": "roof"
+			"piece_kind": "roof",
+			"look": "roof",
+			"sound": "timber",
+			"clears_grass": false
 		},
 		"foundation_section": {
 			"kit": "foundation_section_kit",
 			"item": "foundation_section",
 			"state": 25,
 			"piece": true,
+			"material": "wood",
 			"foundation": true,
 			"footprint_x": 4.0,
 			"footprint_z": 4.0,
@@ -311,29 +417,144 @@
 					]
 				]
 			},
-			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle)."
+			"note": "Foundation (Dave 2026-10-22): a 4 m square slab 0.3 m high that clears the grass under and around it (placed_clearing.json) and that walls, floors and roofs snap to at the listed anchors (x, z, yaw from its middle).",
+			"look": "foundation",
+			"sound": "foundation",
+			"clears_grass": true
 		},
 		"doorway_section": {
 			"kit": "doorway_section_kit",
 			"item": "doorway_section",
 			"state": 26,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"variant_group": "wall",
+			"look": "door_shut",
+			"sound": "timber",
+			"clears_grass": false,
+			"use": "door",
+			"toggle": "door_open",
+			"use_pace_ms": 400,
+			"use_reach_m": 3.0
 		},
 		"window_section": {
 			"kit": "window_section_kit",
 			"item": "window_section",
 			"state": 27,
 			"piece": true,
+			"material": "wood",
 			"footprint_x": 2.0,
 			"footprint_z": 0.25,
 			"cap_per_chunk": 200,
 			"max_rise_m": 0.6,
-			"piece_kind": "wall"
+			"piece_kind": "wall",
+			"variant_group": "wall",
+			"look": "window_wall",
+			"sound": "timber",
+			"clears_grass": false
+		},
+		"door_open": {
+			"kit": "doorway_section_kit",
+			"item": "doorway_section",
+			"state": 28,
+			"piece": true,
+			"material": "wood",
+			"footprint_x": 2.0,
+			"footprint_z": 0.25,
+			"cap_per_chunk": 200,
+			"max_rise_m": 0.6,
+			"piece_kind": "wall",
+			"look": "door_open",
+			"sound": "timber",
+			"clears_grass": false,
+			"use": "door",
+			"toggle": "doorway_section",
+			"use_pace_ms": 400,
+			"use_reach_m": 3.0
+		},
+		"timber_prop": {
+			"kit": "timber_prop_kit",
+			"item": "timber_prop",
+			"state": 29,
+			"footprint_x": 0.4,
+			"footprint_z": 0.4,
+			"cap_per_chunk": 60,
+			"look": "prop",
+			"sound": "thump",
+			"clears_grass": false,
+			"support": {
+				"reach_m": 5.0,
+				"strength": 1.0,
+				"wear_game_days": 60,
+				"floor": 0.1
+			}
+		},
+		"timber_set": {
+			"kit": "timber_set_kit",
+			"item": "timber_set",
+			"state": 30,
+			"footprint_x": 2.0,
+			"footprint_z": 0.4,
+			"cap_per_chunk": 60,
+			"look": "set",
+			"sound": "thump",
+			"clears_grass": false,
+			"support": {
+				"reach_m": 7.5,
+				"strength": 1.0,
+				"wear_game_days": 120,
+				"floor": 0.1
+			}
+		},
+		"ladder": {
+			"kit": "ladder_kit",
+			"item": "ladder",
+			"state": 31,
+			"footprint_x": 0.6,
+			"footprint_z": 0.15,
+			"cap_per_chunk": 60,
+			"look": "ladder",
+			"sound": "timber",
+			"clears_grass": false
+		},
+		"path_patch": {
+			"kit": "",
+			"item": "path_patch",
+			"state": 32,
+			"footprint_x": 1.0,
+			"footprint_z": 1.0,
+			"cap_per_chunk": 400,
+			"look": "path",
+			"sound": "",
+			"clears_grass": true,
+			"walkover": true
+		},
+		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true},
+		"thatch_wall": {"kit": "thatch_wall_kit", "item": "thatch_wall", "state": 37, "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "look": "thatch_wall", "sound": "thump", "clears_grass": false, "piece": true, "piece_kind": "wall", "variant_group": "wall", "material": "thatch", "max_rise_m": 0.6},
+		"campfire_pot": {"kit": "campfire_pot_kit", "item": "campfire_pot", "state": 38, "attach_to": "fire", "legacy_kinds": ["tripod_pot"], "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 6, "look": "tripod_pot", "sound": "thump", "clears_grass": true, "station": "campfire_pot", "station_level": 1, "reach_m": 3.0},
+		"clay_hearth": {"kit": "clay_hearth_kit", "item": "clay_hearth", "state": 39, "footprint_x": 1.6, "footprint_z": 1.2, "cap_per_chunk": 4, "look": "clay_hearth", "sound": "stone", "clears_grass": true, "station": "clay_hearth", "station_level": 2, "reach_m": 3.0, "also": {"campfire": 1}},
+		"snare_trap": {"kit": "snare", "item": "snare_trap", "state": 46, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "snare_trap", "sound": "thump", "clears_grass": false},
+		"oven": {"kit": "oven_kit", "item": "oven", "state": 45, "footprint_x": 1.8, "footprint_z": 1.4, "cap_per_chunk": 2, "look": "oven", "sound": "stone", "clears_grass": true, "station": "oven", "station_level": 3, "reach_m": 3.0, "also": {"clay_hearth": 2, "campfire": 1}},
+		"thatch_floor": {"kit": "thatch_floor_kit", "item": "thatch_floor", "state": 42, "piece": true, "material": "thatch", "foundation": true, "footprint_x": 4.0, "footprint_z": 4.0, "cap_per_chunk": 60, "max_rise_m": 0.6, "snap_m": 2.0, "top_m": 0.1, "anchors": {"wall": [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]], "floor": [[-1, -1], [1, -1], [-1, 1], [1, 1]], "roof": [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]}, "note": "Tier 1 foundation (Dave and Tyler 24 Oct): a thatch floor on stakes, 4 m square, 0.1 m high; walls, roofs and floors snap to it like the stone foundation. Look is the foundation's until Kathleen's thatch floor lands.", "look": "thatch_floor", "sound": "thump", "clears_grass": true},
+		"thatch_roof": {"kit": "thatch_roof_kit", "item": "thatch_roof", "state": 43, "piece": true, "material": "thatch", "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "cap_per_chunk": 100, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "thatch_roof", "sound": "thump", "clears_grass": false},
+		"thatch_doorway": {"kit": "thatch_doorway_kit", "item": "thatch_doorway", "state": 44, "piece": true, "material": "thatch", "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "thatch_doorway", "sound": "thump", "clears_grass": false, "use": "door", "toggle": "door_open", "use_pace_ms": 400, "use_reach_m": 3.0},
+		"rock_pile": {
+			"kit": "rock_pile",
+			"item": "rock_pile",
+			"state": 33,
+			"footprint_x": 1.2,
+			"footprint_z": 1.2,
+			"cap_per_chunk": 12,
+			"look": "rock_pile",
+			"sound": "stone",
+			"clears_grass": true,
+			"use": "unpile",
+			"stones": 45
 		}
 	},
 	"campfire": {
@@ -342,5 +563,7 @@
 		"max_rise_m": 0.6
 	},
 	"max_rise_m": 1.0,
-	"piece_snap_m": 1.0
+	"piece_snap_m": 1.0,
+	"note_look": "look (model builder name in inventory_view._model_for_look), sound (placed_sounds kind) and clears_grass (the 5 m circle of cleared grass) per structure, read by src/shared/structure_look.gd. Never renumber a state; new states only append (BP-T28).",
+	"note_support": "support: a prop or set holds the ground around it (BRACING_ITEMS.md): strength at the support, fading to 0 at reach_m, times its condition (1 down to floor over wear_game_days). server_items.support_strength_at sums them, capped at 1."
 }

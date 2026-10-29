@@ -1,0 +1,8 @@
+
+## Tyler reply (24 Oct 13:20 UTC) GO (answered once; tooling only; code bec78512 / plan commit 86440e67 clean on 786, parse_scan 378 files 0 problems)
+1. Unchanged defaults for old picture commands: changing `--gy` default 28.0 to 31.0 changes every older ground picture. Keep the old default reachable (`--gy 28`) and note in the tool's help text "default changed 24 Oct, spawn ground", so a before/after pair taken with different defaults is not mistaken for a game change. Put the default value in the picture's name tag or log line.
+2. Item lookup order: gathered.json is a second source next to items.json; make one function that merges both and prints a loud error if the same id exists in both with different data (two sources of truth rot). Add a unit check in look_rig_seed.py (python, cloud-runnable): every id in gathered.json resolves; unknown id error names the files searched.
+3. Camera numbers as data: 0.35 m / 0.9 m / 45 degrees are right for a pile of small items; make them flags with those defaults so a big item (a log, a chest) can use a different close-up without editing code. Add the camera values to the picture's log line so every picture can be reproduced exactly.
+4. Cloud check before Mike: python -m py_compile tools/look_rig_seed.py, `bash -n tools/look_rig.sh`, and parse_scan, reported in the handoff line (BP-T55: tooling branches carry their syntax checks in the commit message).
+5. The staggered name tags (`--showroom-spread`): test with the 24-row showroom: no tag overlaps another at 3 heights; one picture group showing 12 items, labelled.
+Label RUNTIME. Go; goes into gate list 8 (tooling, no game behaviour). Mike's two commands in your plan are the whole test.

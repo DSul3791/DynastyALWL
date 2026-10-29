@@ -1,0 +1,18 @@
+{
+	"note": "Cave air by depth (Dave 24 Oct): metres walked inside rock -> dB on each air bus and a low-pass. Silent base: deep inside only Foley (steps, tools, breath) is heard. Half-open places (enclosure under 1) keep the older enclosure cut on top.",
+	"depth_m": [0, 6, 25, 40],
+	"db": {
+		"Wind": [0, -6, -45, -60],
+		"Weather": [0, -6, -45, -60],
+		"Nature": [0, -8, -45, -60]
+	},
+	"lowpass_hz": [20000, 6000, 1800, 1000],
+	"mute_below_db": -60,
+	"walk_out_factor": 3.0,
+	"deep_from_enclosure": 0.5,
+	"shallow_below_enclosure": 0.3,
+	"wet_hold_s": 20.0,
+	"wet_gap_m": 4.0,
+	"drip_wet_from": 0.2,
+	"dry_reverb_mult": 0.5
+}

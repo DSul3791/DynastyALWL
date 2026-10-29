@@ -416,6 +416,11 @@ static func _block_mesh() -> ArrayMesh:
 	return _finish_cached("block", st, _solid_material())
 
 
+# The block's mesh for the carried and dropped item (Dave 2026-10-22: the chopping block item looks exactly like the placed one).
+static func block_mesh() -> ArrayMesh:
+	return _block_mesh()
+
+
 static func block() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_block_mesh()))
@@ -527,15 +532,31 @@ static func _fire_base(loaded: bool) -> ArrayMesh:
 	return _finish_cached(key, st, _solid_material())
 
 
-static func _flames() -> ArrayMesh:
-	if _cache.has("flames"):
-		return _cache["flames"]
+# Fire tiers (Sal_fire_tiers.md; Dave 24 Oct): 1 survival fire (sticks), 2 campfire (firewood, today's look), 3 bonfire (logs).
+# Each tier is its own tongue list: [base, height, radius, lean]; tier 2 is exactly the old three tongues.
+const FLAME_TONGUES := {
+	1: [[Vector3(0.0, 0.05, 0.0), 0.34, 0.1, 0.0], [Vector3(0.06, 0.05, 0.04), 0.24, 0.07, 0.4]],
+	2: [[Vector3(0.0, 0.07, 0.0), 0.72, 0.17, 0.0], [Vector3(0.1, 0.07, 0.07), 0.5, 0.12, 0.4], [Vector3(-0.09, 0.07, -0.05), 0.42, 0.11, 2.2]],
+	3: [[Vector3(0.0, 0.1, 0.0), 1.15, 0.26, 0.0], [Vector3(0.18, 0.1, 0.1), 0.85, 0.19, 0.4], [Vector3(-0.16, 0.1, -0.08), 0.8, 0.18, 2.2],
+		[Vector3(0.05, 0.1, -0.2), 0.62, 0.15, 3.6], [Vector3(-0.2, 0.1, 0.14), 0.55, 0.13, 5.0]],
+}
+# Light range and energy by tier (the survival fire is dim, the bonfire carries furthest).
+const FIRE_LIGHT := {1: [6.0, 0.7], 2: [12.0, 1.6], 3: [14.0, 1.8]}
+# The stone ring and ash patch scale with the fire: a small ring for a few sticks, a wide one for logs.
+const FIRE_RING_SCALE := {1: 0.6, 2: 1.0, 3: 1.3}
+
+
+static func _flames(tier: int = 2) -> ArrayMesh:
+	var cache_key: String = "flames" if tier == 2 else "flames_%d" % tier
+
+	if _cache.has(cache_key):
+		return _cache[cache_key]
 
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# Three tongues of different height and lean: tapered cones, drawn unshaded with the shared flame shader.
-	for tongue in [[Vector3(0.0, 0.07, 0.0), 0.72, 0.17, 0.0], [Vector3(0.1, 0.07, 0.07), 0.5, 0.12, 0.4], [Vector3(-0.09, 0.07, -0.05), 0.42, 0.11, 2.2]]:
+	# Tongues of different height and lean: tapered cones, drawn unshaded with the shared flame shader.
+	for tongue in FLAME_TONGUES[tier]:
 		var base: Vector3 = tongue[0]
 		var height: float = float(tongue[1])
 		var radius: float = float(tongue[2])
@@ -551,7 +572,7 @@ static func _flames() -> ArrayMesh:
 			var mid: Vector3 = base + Vector3(0.0, height * 0.3, 0.0)
 			_tri(st, a, b, tip, Color.WHITE, mid)
 
-	return _finish_cached("flames", st, _flame_material())
+	return _finish_cached(cache_key, st, _flame_material())
 
 
 static func _coals() -> ArrayMesh:
@@ -571,18 +592,24 @@ static func _coals() -> ArrayMesh:
 
 
 # The fire ring as inventory_view.gd had it, with the same "Light" child when lit (kept off until the nearest few are chosen).
-static func fire(lit: bool, loaded: bool = false) -> Node3D:
+static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
+	tier = clampi(tier, 1, 3)
 	var root: Node3D = Node3D.new()
-	root.add_child(_instance(_fire_base(loaded and not lit)))
+	var ring: float = float(FIRE_RING_SCALE[tier])
+	var base: MeshInstance3D = _instance(_fire_base(loaded and not lit))
+	base.scale = Vector3(ring, 1.0, ring)
+	root.add_child(base)
 
 	if lit:
-		root.add_child(_instance(_coals()))
-		root.add_child(_instance(_flames()))
+		var coals: MeshInstance3D = _instance(_coals())
+		coals.scale = Vector3(ring, 1.0, ring)
+		root.add_child(coals)
+		root.add_child(_instance(_flames(tier)))
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = Color(1.0, 0.62, 0.3)
-		light.omni_range = 12.0
-		light.light_energy = 1.6
+		light.omni_range = float(FIRE_LIGHT[tier][0])
+		light.light_energy = float(FIRE_LIGHT[tier][1])
 		light.shadow_enabled = false
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false

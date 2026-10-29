@@ -36,10 +36,22 @@ extends Node
 # jog double-tap W, run Shift+W, G or F fly or walk, Esc opens the options menu.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
+const LogLookScript := preload("res://src/client/log_look.gd")
+const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const GroundDebugScript := preload("res://src/client/ground_debug.gd")
+const ShowroomScript := preload("res://src/client/showroom.gd")
+const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
+const DripViewScript := preload("res://src/client/drip_view.gd")
+const GameMenuScript := preload("res://src/client/game_menu.gd")
+const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
+const QuakeViewScript := preload("res://src/client/quake_view.gd")
+const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
+const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre apart
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
@@ -67,13 +79,17 @@ const FallMistScript := preload("res://src/client/fall_mist.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
-const BUILD := 646
+const RescueScript := preload("res://src/client/rescue.gd")
+const BuildInfo := preload("res://src/shared/build.gd")
+const BUILD: int = BuildInfo.NUMBER
+var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
-var _npc_voice_button: Button = null
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const WornSync := preload("res://src/client/worn_sync.gd")
+const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
@@ -124,6 +140,10 @@ const QUALITY_CACHE_MB := [1024, 4096, 10240, 10240]    # ground cache limit on 
 const FLY_SPEED := 30.0
 const INCOMING_USEC := 3000           # most time a frame puts arrived chunks in the scene (one at least)
 const WATER_MIN_MSEC := 3000          # and never more often than this, ground loading or not
+const GroundColumn := preload("res://src/client/ground_column.gd")
+# Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
+# a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
+const SPAWN_LIFT_M := 0.5
 const WATER_HOLD_MSEC := 2000        # water refreshes wait this long while ground loads
 const SURFACE_WAIT_MSEC := 1500       # stopped in the air: wait this long for the server to say where the ground is
 const LOAD_THREADS_MIN := 6                 # ground loading workers at least (see _ready)
@@ -175,6 +195,7 @@ var _ground_quality: int = -1       # quality the ground texture array was built
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
+var _was_lying: bool = false
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -183,6 +204,11 @@ var _last_w_msec: int = -1000
 var _bob_phase: float = 0.0           # walking head bob
 var _bob_amount: float = 0.0
 var waiting_for_ground: bool = false
+var _drop_ground_lods: int = 0                  # test only (--drop-ground-lods=N): the blocks of LOD 0 to N-1 in the spawn column fail for good; N=4 removes every collision LOD (collision_lod_count 4) and so forces the join hang
+var _ground_watchdog = GroundWatchdogScript.new()  # restarts the stream when the ground does not come (see ground_watchdog.gd)
+var _ground_giving_up: bool = false
+var _ground_log_msec: int = 0
+var _ground_logged: bool = false
 var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
@@ -204,9 +230,17 @@ var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (t
 var _test_probe_msec: int = 0
 var test_dump: bool = false           # --dump-test: 14 s after the welcome dump the ground under the feet (prints the dump)
 var _test_dump_done: bool = false
+var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
+var tunnel_cave_in_s: int = 1200
+var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
+var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
+var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
+var ground_debug = GroundDebugScript.new()    # ground dump, ground self-check, hole probe (ground_debug.gd)
+var drip_view = DripViewScript.new()          # dripping ceilings under water (drip_view.gd)
+var game_menu = GameMenuScript.new()          # the Esc menu (game_menu.gd)
+var sound_tests = SoundTestMenuScript.new()   # Esc > Settings sound test buttons and their state (sound_test_menu.gd)
 var menu_open: bool = false          # the Esc options menu
 var _menu: Control
-var _menu_pages: Dictionary = {}     # page name -> VBoxContainer
 var _menu_note: Label
 var knowledge = KnowledgeScript.new()   # what this character knows (placeholder stats)
 var test_inspect: bool = false       # --inspect: start with inspection on and print what it names
@@ -224,19 +258,12 @@ var _viewer_ground_y: float = NAN     # the streaming viewer's height while it s
 var _stage_done: bool = false         # the staged ground view has been started for this stop
 var _stage_view: float = 0.0          # above 0 while only the finest ground is built after a stop high up
 var _stage_next_msec: int = 0
+var test_menu: bool = false                    # --menu-test: open every Esc menu page and flip every switch
+var _test_menu_done: bool = false
 var test_fly: bool = false
 var test_route: Vector2 = Vector2(1.0, 0.0)   # --route=east|south|diag: heading of the --fly test
 var test_fly_msec: int = 30000                # --flytime=seconds: how long the --fly test moves
 var hole_probe: bool = false                  # --hole-probe: count missing ground colliders around the player every second (stress test)
-var _hole_next_msec: int = 0
-var _hole_since: Dictionary = {}              # grid cell -> msec it first had no ground under it
-var _hole_worst_msec: int = 0
-var _hole_worst_cell: Vector2i = Vector2i.ZERO
-var _hole_max_count: int = 0
-var _hole_samples: int = 0
-var _hole_settled: bool = false
-var _hole_max_after: int = 0
-var _hole_missing_total: int = 0
 var test_fly_alt: float = 0.0          # --fly check: fly level at this height above sea level (0 = the spawn height)
 var _fly_ground_msec: int = 0         # --fly check: when a collider first showed under the player after stopping
 var _fly_stop_msec: int = 0           # --fly check: when the flight stopped (0 = not yet)
@@ -250,17 +277,13 @@ var _wait_frames: int = 0             # walk test: frames spent waiting for grou
 var _space_wake_s: float = 0.0
 var _slowest_frame: float = 0.0       # walk test: longest frame (s)
 var _tunnel_test: int = 0
+var _spawn_test: String = ""            # --test-respawn=S / --test-go-to-spawn=S: S s after the welcome (and ground) do a respawn or go-to-spawn and log how it lands
+var _spawn_test_after_s: float = 0.0
+var _spawn_test_msec: int = 0           # when it was done (0 = not yet), then the log waits for the player to stand
+var _spawn_y_offset: float = 0.0        # --spawn-y-offset=M: M added to every spawn point's height (negative puts the spawn inside the ground)
 var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
-var _dig_guard: bool = true
-var _dug_points: Array = []            # [centre, msec] of digs this session (_near_dig)
-const DIG_RESCUE_SKIP_M := 14.0        # no "stand the player on the surface" rescue this close to a dig ...
-const DIG_RESCUE_SKIP_MSEC := 1800000  # ... for half an hour
-var _embed_check_msec: int = 0
-var embed_rescues: int = 0
-var _void_rescue_msec: int = -10000
-var rescued: int = 0                   # times the player was lifted back above the ground
-var _floor_msec: int = 0               # last time the player stood on something
+var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -334,18 +357,13 @@ var test_flame: bool = false
 var _test_flame_t: float = -1.0
 var test_exertion: bool = false
 var _test_exertion_t: float = -1.0
-var _sound_exertion_at: int = -1
 var _test_fire_at: int = 0
 var _test_fire_step: int = 0
-var _sound_fire_at: int = -1
 var _test_spear_step: int = 0
 var _test_spear_at: int = 0
-var _sound_spear_at: int = -1
 var test_interior: bool = false
 var _test_interior_step: int = 0
 var _test_interior_at: int = 0
-var _sound_interior_at: int = -1
-var _sound_gear_at: int = -1
 var test_items: bool = false
 var test_gather: bool = false
 var test_strain_run: bool = false       # --strainrun: with --walk --runspeed=11, the server strain must climb while running
@@ -357,13 +375,18 @@ var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_embed: bool = false
+var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn) or =check (say where the game starts)
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
+var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
+var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
+var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
+var test_snare: bool = false             # --snare: set a snare and wait for a carcass (SNARE TEST lines; server knob traps.json test_chance)
+var test_place_foundation: bool = false   # --place-foundation: give a thatch floor kit and place it ahead (FOUNDATION TEST lines)
 var test_creatures: bool = false
 var _test_creature_at: int = 0
 var _test_creature_step: int = 0
-var _sound_creature_at: int = -1
 var _quality_cued: int = -1
 var _test_ui_next: int = 0
 var _test_ui_step: int = 0
@@ -428,10 +451,6 @@ var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.a
 var weather: Dictionary = {}          # the weather here and now (WeatherScript.state): the same on every client, no network traffic; rendering and sounds read it
 var _weather_next_msec: int = 0
 var game_clock = GameClockScript.new()   # copy of the server's game clock, set at the welcome
-var _sound_test_at: int = -1          # Esc > Settings "Sound test time"; -1 follows the game clock
-var _sound_town_on: bool = false
-var _sound_hit_at: int = -1
-var _sound_weather_at: int = -1         # Esc > Settings "Sound test weather"; -1 follows the weather state
 var _water_dirty: bool = false        # the server said the water moved; not asked for yet
 var _water_asked_msec: int = 0
 var _flora_chunks: int = 0
@@ -505,7 +524,7 @@ func _ready() -> void:
 		elif argument == "--tunnel-test":
 			_tunnel_test = 1                      # test: dig a shaft and a side tunnel, stand in it, report whether the player was moved
 		elif argument == "--no-dig-guard":
-			_dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
+			rescue.dig_guard = false                    # test: switch the dig guard of the surface rescue off (shows the old behaviour)
 		elif argument.begins_with("--lose-after="):
 			_lose_after_s = float(argument.trim_prefix("--lose-after="))   # test: act as if the server dropped us this many seconds after the welcome
 		elif argument == "--act-test":
@@ -520,6 +539,16 @@ func _ready() -> void:
 			test_fly_alt = float(argument.trim_prefix("--flyalt="))
 		elif argument.begins_with("--wait="):
 			_wait_until_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--wait=")) * 1000.0)
+		elif argument.begins_with("--drop-ground-lods="):
+			_drop_ground_lods = int(argument.trim_prefix("--drop-ground-lods="))
+		elif argument.begins_with("--test-respawn="):
+			_spawn_test = "respawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-respawn="))
+		elif argument.begins_with("--test-go-to-spawn="):
+			_spawn_test = "go_to_spawn"
+			_spawn_test_after_s = float(argument.trim_prefix("--test-go-to-spawn="))
+		elif argument.begins_with("--spawn-y-offset="):
+			_spawn_y_offset = float(argument.trim_prefix("--spawn-y-offset="))
 		elif argument == "--clear-cache":
 			clear_cache = true
 		elif argument.begins_with("--quality="):
@@ -530,7 +559,9 @@ func _ready() -> void:
 			var xyz: PackedStringArray = argument.trim_prefix("--start=").split(",")
 			test_start = Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2]))
 		elif argument == "--no-ground-check":
-			ground_check = false
+			ground_debug.check_enabled = false
+		elif argument == "--menu-test":
+			test_menu = true
 		elif argument == "--dump-test":
 			test_dump = true
 		elif argument == "--inspect":
@@ -642,6 +673,8 @@ func _ready() -> void:
 			test_plantpick = true
 		elif argument == "--embed-test":
 			test_embed = true
+		elif argument.begins_with("--resume-test="):
+			test_resume = argument.trim_prefix("--resume-test=")
 		elif argument == "--dig-next-test":
 			test_dig_next = true
 		elif argument == "--texttest":
@@ -664,6 +697,16 @@ func _ready() -> void:
 			test_spear = true
 		elif argument == "--chop":
 			test_chop = true
+		elif argument == "--shoot":
+			test_shoot = true
+		elif argument == "--place-foundation":
+			test_place_foundation = true
+		elif argument == "--cook":
+			test_cook = true
+		elif argument == "--sleep":
+			test_sleep = true
+		elif argument == "--snare":
+			test_snare = true
 		elif argument == "--creatures":
 			test_creatures = true
 
@@ -674,9 +717,20 @@ func _ready() -> void:
 	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
+	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
+	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
+		tunnel_on = on
+		tunnel_cave_in_s = cave_in_s
+		_show_tunnel_buttons())
+	net.leak_received.connect(func(points: PackedVector3Array, closeness: PackedByteArray) -> void:
+		drip_view.on_leak(points, closeness, body.global_position))
 	net.quake_received.connect(func(stage: int, strength: float, point: Vector3) -> void:
+		quake_view.on_quake(stage, strength)
+
 		if sound != null and sound.placed != null:
 			sound.placed.quake(stage, strength, point))
 	net.pulse_received.connect(func() -> void:
@@ -684,9 +738,10 @@ func _ready() -> void:
 			link_bars.pulse())
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
+	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
-	net.dump_received.connect(_on_dump_received)
+	net.dump_received.connect(ground_debug.on_dump_received)
 	_host = host
 	_port = port
 
@@ -727,14 +782,14 @@ func _update_connect_window() -> void:
 			_connect_window = null
 			return
 
-		var silent_server: bool = waiting_for_ground and stream != null and stream.blocks_received == 0 and stream.pending() == 0
+		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
 
 		if silent_server and since >= 20:
 			_telemetry.event("JOIN: %d s in the world with no ground, 0 blocks received, 0 asked for; link: %s" % [since, link_bars.text() if link_bars != null else "?"])
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
-		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d s so far\n\nThe game opens as soon as there is ground to stand on." % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, since])
+		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else "", ("\n\nThe ground is taking long: %d blocks received, %d failed, %d still arriving, player height %.0f m." % [_ground_received(), _ground_failed(), stream.pending() if stream != null else 0, body.global_position.y]) if since > 60 and body != null else ""])
 		return
 
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
@@ -879,7 +934,18 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
+	var server_commit: String = str(info.get("server_commit", ""))
+
+	if server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
+		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
+		# cannot be restarted from here, so the player closes the game and presses Play again.
+		_telemetry.event("JOIN: server is build %s commit %s, this game is build %d commit %s" % [str(info.get("server_build", "?")), server_commit, BUILD, _commit])
+		_connect_window.fail("The server is out of date", "The server on port %d runs build %s (commit %s); this game is build %d (commit %s).\nClose the game and press Play again so a new server starts. If you joined a friend's server, ask them to restart it." % [_port, str(info.get("server_build", "?")), server_commit, BUILD, _commit], func(): _finish(1))
+		return
+
 	world = info
+	tunnel_on = bool(info.get("tunnels", {}).get("on", false))
+	tunnel_cave_in_s = int(info.get("tunnels", {}).get("cave_in_s", 1200))
 	game_clock.sync(float(info.get("game_seconds", game_clock.seconds)))
 	connected_msec = Time.get_ticks_msec()
 
@@ -909,6 +975,8 @@ func _welcome_body(info: Dictionary) -> void:
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 	stream = StreamScript.new()
 	stream.cache = cache
+	stream.drop_lods = _drop_ground_lods
+	stream.drop_xz = Vector2(float(info["spawn"].x), float(info["spawn"].z)) if test_start.is_finite() == false else Vector2(test_start.x, test_start.z)
 	link = BlockLinkScript.new()
 	link.stream = stream
 	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
@@ -939,7 +1007,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
-	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, 28.0, 0.0))
+	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
@@ -985,7 +1053,10 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
-	stance.changed.connect(func(new_stance: int): sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)]))
+	stance.changed.connect(func(new_stance: int):
+		sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)])
+		sound.slots.play("bed_lie" if new_stance == 3 else ("bed_rise" if _was_lying else ""), body.global_position)
+		_was_lying = new_stance == 3)
 	Probe.stop("welcome: sound setup", t4)
 
 	for argument in OS.get_cmdline_user_args():
@@ -995,7 +1066,8 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_gear:
 		sound.gear.set_worn(["plate", "cloth", "iron"])
 	var t5: int = Probe.start()
-	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, %d zeroed blocks refused, last %s" % [check_samples, check_mismatches, stream.zeroed_blocks, check_last])
+	debug_hud.add_line("server build", func() -> String: return "build %s, commit %s (this game: build %d, commit %s)" % [str(world.get("server_build", "?")), str(world.get("server_commit", "?")), BUILD, _commit])
+	debug_hud.add_line("ground check", func() -> String: return "%d samples, %d mismatches, %d zeroed blocks refused, last %s" % [ground_debug.check_samples, ground_debug.check_mismatches, stream.zeroed_blocks, ground_debug.check_last])
 	debug_hud.add_line("video memory", func() -> String:
 		return "video memory %.0f MB (textures %.0f, buffers %.0f), objects %d, nodes %d (orphans %d), script memory %.0f MB, primitives %d" % [
 			Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
@@ -1045,10 +1117,19 @@ func _welcome_body(info: Dictionary) -> void:
 	_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_mode_label)
 	_inspect_label = Label.new()
-	_inspect_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# The name sits just ABOVE the crosshair, bottom-aligned, so it grows upward and never meets the "Press E" prompt, which sits below it
+	# (inventory_view.gd _prompt). Anchored to the screen's middle line, so the gap holds at every UI scale and for names of several lines.
+	_inspect_label.anchor_left = 0.0
+	_inspect_label.anchor_right = 1.0
+	_inspect_label.anchor_top = 0.5
+	_inspect_label.anchor_bottom = 0.5
+	_inspect_label.offset_left = 0.0
+	_inspect_label.offset_right = 0.0
+	_inspect_label.offset_top = -420.0
+	_inspect_label.offset_bottom = -24.0
 	_inspect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_inspect_label.offset_top = 90.0
+	_inspect_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_inspect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_inspect_label.add_theme_font_size_override("font_size", 40)
 	_inspect_label.add_theme_constant_override("outline_size", 8)
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
@@ -1084,7 +1165,9 @@ func _welcome_body(info: Dictionary) -> void:
 	status_icons.add_icon("thirst", StatusIconsScript.drop_texture(), func() -> bool: return items.thirst <= 15, 0.85)
 	status_icons.add_icon("oxygen", StatusIconsScript.bubble_texture(), func() -> bool: return items.breath_ds >= 0, 0.9)
 	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
-	_build_menu(layer)
+	sound_tests.setup(self)
+	ground_debug.setup(self)
+	_build_menu()
 	hud = Label.new()
 	hud.position = Vector2(12.0, 72.0)   # below the link bars (top left)
 	hud.visible = display.hud_text
@@ -1108,6 +1191,10 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(animal_view)
 	_animal_view_node = animal_view
 	net.animals_received.connect(animal_view.on_rows)
+	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
+		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
+	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
+		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
 	items = InventoryViewScript.new()
@@ -1123,8 +1210,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(npc_voice)
 	_npc_voice = npc_voice
 
-	if _npc_voice_button != null:
-		_npc_voice_button.text = "NPC voice: %s" % ("on" if npc_voice.enabled else "off")
+	game_menu.refresh()
 
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
@@ -1134,7 +1220,13 @@ func _welcome_body(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
+	items.auto_pickup_blocked = func(): return swimming or (held != null and held.placing())
 	items.stance_event = _on_stance_from_server
+	items.notice_event = func(text: String):
+		var cue: String = SlotSoundsScript.net_cue(text)
+
+		if cue != "" and sound != null and body != null:
+			sound.slots.play(cue, body.global_position - body.global_transform.basis.z * 1.5)
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
 	items.sort_index = display.sort_index
@@ -1220,6 +1312,9 @@ func _welcome_body(info: Dictionary) -> void:
 	if test_embed:
 		_run_embed_test()
 
+	if test_resume != "":
+		_run_resume_test()
+
 	if test_dig_next:
 		_run_dig_next_test()
 
@@ -1234,9 +1329,25 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_chop:
 		items.run_chop_test(self)
+
+	if test_shoot:
+		items.run_shoot_test(self)
+
+	if test_place_foundation:
+		items.run_foundation_test(self)
+
+	if test_cook:
+		items.run_cook_test(self)
+
+	if test_sleep:
+		items.run_sleep_test(self)
+
+	if test_snare:
+		items.run_snare_test(self)
 	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
+	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
 
 
 
@@ -1262,10 +1373,44 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 # Digs made or seen this session (spot, time). A player inside a dug tunnel or pit is not "under the ground": the rescue that
 # stands a player on the surface must not fire there (Dave 2026-10-22: tunnelled underground and popped back up to the top).
 func _note_dig(center: Vector3) -> void:
-	_dug_points.append([center, Time.get_ticks_msec()])
+	rescue.note_dig(center)
 
-	if _dug_points.size() > 1500:
-		_dug_points = _dug_points.slice(500)
+
+# --test-respawn / --test-go-to-spawn: once the first ground is ready and S seconds have passed, do it and print "SPAWNTEST" lines: height above the ground on the first frame and the seconds until the player stands.
+func _spawn_test_step(now: int) -> void:
+	if _spawn_test == "" or connected_msec <= 0 or body == null or not world.has("spawn"):
+		return
+
+	if _spawn_test_msec == 0:
+		if now - connected_msec > int((_spawn_test_after_s + 150.0) * 1000.0):
+			print("SPAWNTEST %s: FAILED never started, still waiting for ground 150 s after the start time (player %s)" % [_spawn_test, str(body.global_position.round())])
+			_spawn_test = ""
+			return
+
+		if waiting_for_ground or now - connected_msec < int(_spawn_test_after_s * 1000.0):
+			return
+
+		_spawn_test_msec = now
+		var from: Vector3 = body.global_position
+		body.global_position += Vector3(0.0, 0.0, 300.0)   # somewhere else first, so the move is a real one
+
+		if _spawn_test == "respawn":
+			_on_died("spawn test", Vector3(world["spawn"]))
+		else:
+			go_to_spawn()
+
+		var ground: float = _ground_below(body.global_position)
+		print("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
+		return
+
+	if _spawn_test_msec > 0 and now - _spawn_test_msec > 60000:
+		print("SPAWNTEST %s: FAILED not standing 60 s later, player %s" % [_spawn_test, str(body.global_position.round())])
+		_spawn_test = ""
+		return
+
+	if _spawn_test_msec > 0 and not waiting_for_ground and body.is_on_floor():
+		print("SPAWNTEST %s: standing on the ground %.1f s later, player %s" % [_spawn_test, float(now - _spawn_test_msec) * 0.001, str(body.global_position.round())])
+		_spawn_test = ""
 
 
 # --tunnel-test: stand on the ground at the spawn, dig a 6 m shaft and a 6 m side tunnel, stand in the tunnel for 10 s, say where the player is.
@@ -1290,7 +1435,7 @@ func _tunnel_step() -> void:
 		_tunnel_msec = now
 	elif _tunnel_test == 3 and now - _tunnel_msec > 12000:
 		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(0.0, -6.0, 0.0))
-		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
+		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescue.rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
 		_tunnel_test = 4
 		_tunnel_msec = now
 		body.global_position = _tunnel_at + Vector3(7.0, -12.0, 0.0)      # inside solid rock beside the dug tunnel: the rescue must lift the player
@@ -1298,36 +1443,6 @@ func _tunnel_step() -> void:
 	elif _tunnel_test == 4 and now - _tunnel_msec > 8000:
 		print("Terrain client: tunnel test: put inside rock beside the tunnel, ended at y %.1f (rock was y %.1f, surface y %.1f): %s" % [body.global_position.y, _tunnel_at.y - 12.0, _tunnel_at.y, "LIFTED" if body.global_position.y > _tunnel_at.y - 6.0 else "STUCK"])
 		_tunnel_test = 0
-
-
-# True when the player's body (feet, middle or head) is inside solid ground by the loaded voxels: nobody stands inside rock, so
-# the surface rescue always applies then, dug tunnels nearby or not (Dave 2026-10-22: pushed under the world next to his pit and the
-# dig guard held the rescue back). Unloaded voxels read as not solid.
-func _inside_solid(here: Vector3) -> bool:
-	if terrain == null:
-		return false
-
-	var tool: VoxelTool = terrain.get_voxel_tool()
-	tool.channel = VoxelBuffer.CHANNEL_SDF
-
-	for lift in [0.2, 0.9, 1.6]:
-		if tool.get_voxel_f(Vector3i((here + Vector3(0.0, lift, 0.0)).floor())) > -0.3:
-			return false
-
-	return true
-
-
-func _near_dig(here: Vector3) -> bool:
-	if not _dig_guard:
-		return false
-
-	var now: int = Time.get_ticks_msec()
-
-	for entry in _dug_points:
-		if now - int(entry[1]) < DIG_RESCUE_SKIP_MSEC and here.distance_to(entry[0]) < DIG_RESCUE_SKIP_M:
-			return true
-
-	return false
 
 
 func _on_dug(center: Vector3, radius: float) -> void:
@@ -1408,7 +1523,11 @@ func _stamp_walkers(now: int) -> void:
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
 # sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
-const CLEARING_NOT := [0, 2, 3, 4, 10, 11, 12, 19, 22, 24, 26, 27]   # walls and roofs stand on a foundation or floor that clears; the foundation (25) clears 2 m past its edge inside the 5 m circle
+const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
+const StructureLook := preload("res://src/shared/structure_look.gd")
+var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this many metres of rock lie between the tunnel ceiling and the water; -1 = the real drip view
+var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
+var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
 var _cleared_key: int = 0
 var _switches_applied: bool = false
 var _switches = TestSwitchesScript.new()      # Esc > Advanced experiment switches (default on)
@@ -1431,6 +1550,17 @@ func _sync_cleared() -> void:
 	var lying: Array = []
 	var key: int = 0
 
+	if showroom == null and world.has("spawn"):
+		showroom = ShowroomScript.new()
+		showroom.setup(items, Vector3(world["spawn"]))
+
+	if showroom != null and body != null:
+		showroom.update(items.admin_craft, body.global_position)   # Admin mode on: the test rows at spawn, with the grass cleared under them
+
+		for spot in showroom.clear_spots():
+			spots.append(spot)
+			key = key ^ hash(Vector2(spot.x, spot.z))
+
 	for id in items._world:
 		var row: Dictionary = items._world[id]
 
@@ -1448,7 +1578,7 @@ func _sync_cleared() -> void:
 			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
 			continue
 
-		if int(row.get("state", 0)) in CLEARING_NOT or not _switches.on("clearing"):
+		if int(row.get("state", 0)) in CLEARING_NOT or not StructureLook.clears_grass(int(row.get("state", 0))) or not _switches.on("clearing"):
 			continue
 
 		var pos: Vector3 = row["pos"]
@@ -1485,6 +1615,10 @@ func _water_ahead() -> bool:
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
 # surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
 func _arrive_on_ground() -> void:
+	if connected_msec > 0 and not _ground_logged:
+		_ground_logged = true
+		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
+
 	var ground: float = _ground_below(body.global_position)
 
 	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
@@ -1513,11 +1647,60 @@ func _go_to_npc() -> void:
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
 
 
-func _on_died(_cause: String, spawn_point: Vector3) -> void:
+# The server's answer to hello with where this character resumes (protocol 69): their last spot, or the nearest rest or shelter.
+func _on_start_at(spot: Vector3) -> void:
+	if body == null or body.global_position.distance_to(spot) < 8.0:
+		return
+
+	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
+	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
+	body.velocity = Vector3.ZERO
+
+
+# Tells the server this quit is on purpose, then lets the packet go out before the game closes.
+func _say_logout() -> void:
+	if multiplayer.multiplayer_peer != null and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED and net != null:
+		net.logout.rpc_id(1)
+		multiplayer.poll()
+
+
+# Esc > Admin > Go to spawn: set the body down above the spawn point the way a respawn does (it waits for the ground there).
+func go_to_spawn() -> void:
+	if body == null or not world.has("spawn"):
+		return
+
+	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
+	body.velocity = Vector3.ZERO
+	_was_waiting = true
+	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+func _on_died(cause: String, spawn_point: Vector3) -> void:
 	if body == null:
 		return
 
-	body.global_position = spawn_point + Vector3(0.0, 28.0, 0.0)
+	# A cave-in death plays its long sequence first; the body is moved when it ends (finish_cavein_death).
+	if cause == "cave-in":
+		if cavein_death == null:
+			cavein_death = CaveinDeathScript.new()
+			add_child(cavein_death)
+
+		body.velocity = Vector3.ZERO
+		cavein_death.start(self, spawn_point)
+		return
+
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
+	body.velocity = Vector3.ZERO
+	_was_waiting = true
+	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+# The end of the cave-in death sequence: back at the respawn point, as any other death does at once.
+func finish_cavein_death(spawn_point: Vector3) -> void:
+	if body == null:
+		return
+
+	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
@@ -1615,6 +1798,10 @@ func _apply_incoming() -> void:
 			var t: int = Probe.start()
 			var full: bool = job["full"]
 
+			if rig_flora_hold.has(chunk):   # look rig: its own plants stay, the server's chunk is ignored
+				Probe.stop("flora chunk in", t)
+				continue
+
 			if not full and flora.holds_full(chunk):
 				Probe.stop("flora chunk in", t)
 				continue
@@ -1661,7 +1848,7 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
-	if _sound_weather_at < 0 and sound != null and sound.weather != null:
+	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
 
 
@@ -1748,6 +1935,18 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 		_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
+func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
+	if flora == null:
+		return
+
+	var period: int = int(round(float(world["tiles_per_side"]) * float(world["tile_size_m"]) / flora.chunk_m))
+
+	@warning_ignore("shadowed_variable")
+	for held in _flora_asked:
+		if posmod(held.x - chunk.x, period) == 0 and posmod(held.y - chunk.y, period) == 0:
+			flora.set_stripped(held, ids)
+
+
 func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	if flora == null:
 		return
@@ -1777,6 +1976,8 @@ func _update_flora() -> void:
 
 	if fall_growth != null:
 		fall_growth.update(falls, p)
+
+	flora.set_season(game_clock.season())
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -1812,9 +2013,12 @@ func _update_anchor(now: int, delta: float) -> void:
 	# Stopped in the air (Dave, 2026-10-21): the ground straight below is built first. The server says where the
 	# ground is under the player (protocol 45), the streaming viewer goes down to it and only the finest level is built
 	# to a short distance until the ground under the player has a collider; then the rest follows.
-	if follow and flying and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
+	# 25 Oct (Dave: a start in the air never built the ground under it): the same dive runs for a player who is not flying but waiting for ground.
+	var column: bool = flying or waiting_for_ground
+
+	if follow and column and _anchor_set and not is_nan(_ground_below_y) and absf(_ground_below_xz.x - here.x) < 2.0 and absf(_ground_below_xz.y - here.z) < 2.0:
 		pass
-	elif follow and flying and _anchor_set:
+	elif follow and column and _anchor_set:
 		if _surface_asked_msec == 0:
 			_surface_asked_msec = now
 			_ground_below_y = NAN
@@ -1839,7 +2043,7 @@ func _update_anchor(now: int, delta: float) -> void:
 
 		_viewer_ground_y = NAN
 
-		if flying and not is_nan(_ground_below_y) and _ground_below_y < here.y - STAGE_MIN_HEIGHT_M:
+		if GroundColumn.dive(column, _ground_below_y, here.y):
 			_viewer_ground_y = _ground_below_y + 2.0
 
 			# Only when the ground below has no collider yet: staging drops every coarse level, so over ground that is
@@ -1861,6 +2065,10 @@ func _update_anchor(now: int, delta: float) -> void:
 		_viewer.global_position = _anchor if is_nan(_viewer_ground_y) else Vector3(_anchor.x, _viewer_ground_y, _anchor.z)
 
 
+func _viewer_y_text() -> String:
+	return "?" if _viewer == null else "%.1f" % _viewer.global_position.y
+
+
 # A collider under the player within 3000 m (the ground there has loaded).
 func _collider_below(p: Vector3) -> bool:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p, p + Vector3(0.0, -3000.0, 0.0))
@@ -1869,15 +2077,16 @@ func _collider_below(p: Vector3) -> bool:
 
 
 func _on_surface_received(x: float, z: float, y: float) -> void:
-	if is_finite(_check_pending.x) and absf(_check_pending.x - x) < 0.01 and absf(_check_pending.y - z) < 0.01:
-		_check_pending = Vector2(NAN, NAN)
-		_ground_check_compare(x, z, y)
+	if ground_debug.surface_received(x, z, y):
 		return
 
 	_ground_below_xz = Vector2(x, z)
 	_ground_below_y = y
 	_surface_answered_msec = Time.get_ticks_msec()
 	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
+
+	if waiting_for_ground and connected_msec > 0:
+		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m, viewer y %s" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y, _viewer_y_text()])
 
 
 # After a stop high up only the finest STAGE_LODS levels are built (the engine builds the coarsest first, so
@@ -1975,6 +2184,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	_shape = shape
 	body.add_child(shape)
 	root.add_child(body)
+	rescue.setup(self)
 	body.global_position = start
 	camera = Camera3D.new()
 	camera.position = Vector3(0.0, 0.7, 0.0)
@@ -1985,6 +2195,8 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	view_cam = Camera3D.new()
 	view_cam.far = 6000.0
 	camera.add_child(view_cam)
+	quake_view.setup(self, camera)
+	drip_view.setup(self, self)
 	view_cam.current = true
 	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
@@ -2140,302 +2352,15 @@ func _load_brain_icon() -> Texture2D:
 # ------------------------------------------------------------------ options menu
 
 # The Esc menu: Resume, Settings, Advanced (clear saved ground), Quit game.
-func _build_menu(layer: CanvasLayer) -> void:
-	_menu = Control.new()
-	_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_menu.visible = false
-	layer.add_child(_menu)
-	var shade: ColorRect = ColorRect.new()
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.0, 0.0, 0.0, 0.55)
-	_menu.add_child(shade)
-	var center: CenterContainer = CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_menu.add_child(center)
-	var panel: PanelContainer = PanelContainer.new()
-	center.add_child(panel)
-	var margin: MarginContainer = MarginContainer.new()
-
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 28)
-
-	panel.add_child(margin)
-	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	margin.add_child(column)
-	var title: Label = Label.new()
-	title.text = "Dynasty"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	column.add_child(title)
-
-	var main: VBoxContainer = _menu_page(column, "main")
-	_menu_button(main, "Resume", func(): _set_menu(false))
-	_menu_button(main, "Settings", func(): _show_menu_page("settings"))
-	_menu_button(main, "Controls (every hotkey)", func(): _show_menu_page("controls"))
-	_menu_button(main, "Advanced", func(): _show_menu_page("advanced"))
-	_menu_button(main, "Quit game", func(): get_tree().quit())
-
-	var controls: VBoxContainer = _menu_page(column, "controls")
-	var controls_text: Label = Label.new()
-	controls_text.text = HELP_TEXT
-	controls_text.add_theme_font_size_override("font_size", 26)
-	controls_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls_text.custom_minimum_size = Vector2(1500.0, 0.0)
-	controls.add_child(controls_text)
-	_menu_button(controls, "Back", func(): _show_menu_page("main"))
-
-	var settings: VBoxContainer = _menu_page(column, "settings")
-	var quality_title: Label = Label.new()
-	quality_title.text = "Quality"
-	quality_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	settings.add_child(quality_title)
-
-	for n in range(QUALITY_NAMES.size()):
-		var index: int = n
-		var tier_button: Button = _menu_button(settings, QUALITY_NAMES[n], func():
-			quality = index
-			_apply_quality()
-			_save_display()
-			_menu_note.text = "Quality: %s (saved; the HUD shows it after the build number)" % QUALITY_NAMES[index])
-		_quality_buttons.append(tier_button)
-
-	_npc_voice_button = _menu_button(settings, "NPC voice: on", func():
-		if _npc_voice != null:
-			_npc_voice.set_enabled(not _npc_voice.enabled)
-			_npc_voice_button.text = "NPC voice: %s" % ("on" if _npc_voice.enabled else "off"))
-	_menu_button(settings, "Debug details (F3): on or off", func():
-		debug_hud.enabled = not debug_hud.enabled
-		_menu_note.text = "Debug details %s" % ("on" if debug_hud.enabled else "off"))
-	_menu_button(settings, "VSync: change", func():
-		display.vsync_index = (display.vsync_index + 1) % display.VSYNC_MODES.size()
-		display.apply(get_window())
-		_save_display()
-		_menu_note.text = "VSync is now %s. On snaps to 60 or 30; adaptive avoids the halving; off shows the true speed." % display.VSYNC_NAMES[display.vsync_index])
-	_menu_button(settings, "Resolution: change", func():
-		display.size_index = (display.size_index + 1) % display.SIZES.size()
-		display.apply(get_window())
-		_apply_render_scale()
-		_save_display()
-		_report_display())
-	_menu_button(settings, "Crafting screen text size: change", func():
-		display.text_index = (display.text_index + 1) % display.TEXT_SCALES.size()
-		items.set_text_scale(display.TEXT_SCALES[display.text_index])
-		_save_display()
-		_menu_note.text = "Crafting screen text: %s (saved)" % display.TEXT_NAMES[display.text_index])
-	_menu_button(settings, "Reset display to default", func():
-		display.reset()
-		items.set_text_scale(display.TEXT_SCALES[display.text_index])
-		quality = 2
-		display.apply(get_window())
-		_apply_quality()
-		_save_display()
-		_report_display("Display reset: High, windowed 1920x1080, VSync on. "))
-	_menu_button(settings, "Window: windowed or fullscreen windowed", func():
-		display.fullscreen = not display.fullscreen
-		display.apply(get_window())
-		_apply_render_scale()
-		_save_display()
-		_report_display())
-	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
-		_menu_slider(settings, level[1], float(sound.levels[level[0]]), func(value: float):
-			sound.set_level(level[0], value)
-			_menu_note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
-	for group in ["wind", "nature", "steps"]:
-		_menu_button(settings, "%s volume: change" % group.capitalize(), func():
-			var share: float = sound.mix_step(group)
-			_menu_note.text = "%s sounds are off" % group.capitalize() if share <= 0.0 else "%s volume %d %%" % [group.capitalize(), roundi(share * 100.0)])
-	_menu_button(settings, "Sound test time: change", func():
-		var order: Array = [["day", 14.0, "autumn"], ["dawn", 6.0, "autumn"], ["dusk", 18.4, "autumn"], ["night", 23.0, "autumn"], ["winter day", 12.0, "winter"], ["summer dawn", 5.0, "summer"], ["spring night", 22.0, "spring"], ["clock runs", -1.0, "autumn"], ["world clock", -2.0, ""]]
-		_sound_test_at = (_sound_test_at + 1) % order.size()
-		var pick: Array = order[_sound_test_at]
-		if float(pick[1]) == -2.0:
-			_sound_test_at = -1
-			_menu_note.text = "Nature sounds follow the world clock again."
-			return
-
-		sound.ambient.conditions["season"] = pick[2]
-		sound.ambient.clock_runs = float(pick[1]) == -1.0
-
-		if float(pick[1]) >= 0.0:
-			sound.ambient.conditions["hour"] = pick[1]
-
-		_menu_note.text = "Nature sounds now play as: %s (a test setting; the sky does not follow)" % pick[0])
-	_menu_button(settings, "Sound test: town sounds", func():
-		_sound_town_on = not _sound_town_on
-		var here: Vector3 = body.global_position
-		sound.town.set_sources([
-			{"id": 1, "kind": "fire", "at": here + Vector3(6, 0, 0), "strength": 1.0},
-			{"id": 2, "kind": "hammering", "at": here + Vector3(0, 0, 25), "strength": 1.0},
-			{"id": 3, "kind": "crowd", "at": here + Vector3(-20, 0, 0), "strength": 1.0},
-			{"id": 4, "kind": "bell", "at": here + Vector3(0, 20, -60), "strength": 1.0},
-		] if _sound_town_on else [])
-
-		if _sound_town_on:
-			sound.town.ring_bell(here + Vector3(0, 20, -60), 3)
-
-		_menu_note.text = "Town sounds %s (a test: a fire, a smith, a crowd and a bell placed around you)" % ("on" if _sound_town_on else "off"))
-	_menu_button(settings, "Sound test: creature calls", func():
-		var kinds: Array = sound.creatures.KINDS.keys()
-		var moods: Array = ["idle", "alert", "threat"]
-		_sound_creature_at = (_sound_creature_at + 1) % (kinds.size() * moods.size())
-		@warning_ignore("integer_division")
-		var kind: String = kinds[_sound_creature_at / moods.size()]
-		var mood: String = moods[_sound_creature_at % moods.size()]
-		var distance: float = (float(sound.creatures.KINDS[kind]["dist"][0]) + float(sound.creatures.KINDS[kind]["dist"][1])) * 0.5
-		var played: bool = sound.creatures.call_nearby(kind, mood, distance)
-		_menu_note.text = "Creature call: %s, %s, about %.0f m away%s (press again for the next)" % [kind, mood, distance, "" if played else " (did not play)"])
-	_menu_button(settings, "Sound test: spear", func():
-		_sound_spear_at = (_sound_spear_at + 1) % 6
-		var eye: Vector3 = camera.global_position
-		var ahead: Vector3 = -camera.global_transform.basis.z
-
-		if _sound_spear_at == 0:
-			sound.spear.jab(eye + ahead * 1.0)
-			_menu_note.text = "Spear jab (press again: throws into wood, stone, soil, flesh, then hits right here)"
-		elif _sound_spear_at <= 4:
-			var material: String = sound.spear.MATERIALS[_sound_spear_at - 1]
-			sound.spear.throw(eye + ahead, eye + ahead * 30.0, 28.0, material)
-			_menu_note.text = "Spear thrown 30 m ahead into %s" % material
-		else:
-			sound.spear.hit("wood", eye + ahead * 2.0, 1.0)
-			_menu_note.text = "Spear hits wood two metres ahead")
-	_menu_button(settings, "Sound test: fire", func():
-		_sound_fire_at = (_sound_fire_at + 1) % 7
-		_menu_note.text = _fire_test_step(_sound_fire_at, body.global_position + -camera.global_transform.basis.z * 3.0) + " (press again for the next)")
-	_menu_button(settings, "Sound test: exertion", func():
-		_sound_exertion_at = (_sound_exertion_at + 1) % 7
-		var levels: Array = [0.0, 0.35, 0.6, 0.9, 1.0, 1.6]
-		var notes: Array = ["Rested: silent", "Light exertion: soft slow breaths", "Hard exertion: clear quick breaths, heartbeat starts", "Severe exertion: gasps and a strong heartbeat", "Exhausted: fastest gasps (then it follows your running again)", "Over-exerted: racing heart, great chest heaves", "Faint demo, 27 s: over-exertion, forced slow-down, faint (world fades, only the heart, gone in 3 s), waking with the heart racing"]
-
-		if _sound_exertion_at == 6:
-			sound.breath.demo()
-		else:
-			sound.breath.set_exertion(levels[_sound_exertion_at])
-		_menu_note.text = "%s (press again for the next)" % notes[_sound_exertion_at])
-	_menu_button(settings, "Sound test: interior", func():
-		_sound_interior_at = (_sound_interior_at + 1) % 5
-		var here: Vector3 = body.global_position + -camera.global_transform.basis.z * 2.0
-		var step: int = _sound_interior_at
-		var notes: Array = ["Inside a house (press again: door open, door close, chest, then back outside)", "Door opens", "Door closes", "Chest opens", "Back outside"]
-		var objects: Array = ["", "door_open", "door_close", "chest_open", ""]
-
-		if step == 0:
-			sound.interior.set_inside(1.0, "house")
-		elif step == 4:
-			sound.interior.set_inside(0.0)
-		else:
-			sound.interior.object(objects[step], here)
-
-		_menu_note.text = notes[step])
-	_menu_button(settings, "Sound test: gear", func():
-		var sets: Array = [[], ["cloth"], ["leather", "hobnail"], ["chain", "iron"], ["plate", "iron"]]
-		_sound_gear_at = (_sound_gear_at + 1) % sets.size()
-		sound.gear.set_worn(sets[_sound_gear_at])
-		_menu_note.text = "Gear worn: %s (walk to hear it on every step)" % (", ".join(sets[_sound_gear_at]) if not sets[_sound_gear_at].is_empty() else "none"))
-	_menu_button(settings, "Sound test: swimming", func():
-		sound.swim.demo()
-		_menu_note.text = "A scripted swim: a splash, strokes, going under, surfacing (10 s; a test of the sounds)")
-	_menu_button(settings, "Sound test: tool hit", func():
-		_sound_hit_at = (_sound_hit_at + 1) % (sound.hits.TOOLS.size() * sound.hits.MATERIALS.size())
-		var tool: String = sound.hits.TOOLS[_sound_hit_at / sound.hits.MATERIALS.size()]
-		var material: String = sound.hits.MATERIALS[_sound_hit_at % sound.hits.MATERIALS.size()]
-		sound.hits.hit(tool, material, body.global_position + -camera.global_transform.basis.z * 2.0, 1.0)
-		_menu_note.text = "Tool hit: %s on %s (press again for the next; a test of the sounds, no tools exist yet)" % [tool, material])
-	_menu_button(settings, "Sound test weather: change", func():
-		var kinds: Array = sound.weather.KINDS.keys()
-		_sound_weather_at += 1
-
-		if _sound_weather_at >= kinds.size():
-			_sound_weather_at = -1
-			_menu_note.text = "Weather sounds follow the game's weather"
-			return
-
-		sound.weather.set_weather(kinds[_sound_weather_at], 1.0)
-		_menu_note.text = "Weather sounds now play: %s (a test setting; the sky, ground, rain and snow follow it too). Press again until it follows the game's weather." % kinds[_sound_weather_at])
-	_menu_button(settings, "Back", func(): _show_menu_page("main"))
-
-	var advanced: VBoxContainer = _menu_page(column, "advanced")
-	_menu_button(advanced, "Clear saved ground", func():
-		_ask_clear_cache())
-	_menu_button(advanced, "Dump ground at the crosshair (and copy it)", func():
-		_dump_ground_here())
-	_menu_button(advanced, "Show my player key (and copy it)", func():
-		var key: String = items.player_key() if items != null else ""
-		DisplayServer.clipboard_set(key)
-		_menu_note.text = "Your player key (copied): %s\nPut it in data/admin.json as {\"keys\": [\"%s\"]}" % [key, key])
-	_menu_button(advanced, "Admin: Bake starter tiles", func():
-		var problem: String = _bake.start()
-		_menu_note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
-	_menu_button(advanced, "Jitter test (next spot, or J)", func():
-		_jitter_test.next_spot()
-		_set_menu(false))
-	_menu_button(advanced, "GPU breakdown (stand still; or Ctrl+Shift+G)", func():
-		_set_menu(false)
-		_gpu_probe.toggle())
-	_menu_button(advanced, "Measure this machine (about 1 min)", func():
-		_set_menu(false)
-		_machine_probe.toggle())
-	for entry in TestSwitchesScript.KEYS:
-		var switch_key: String = entry[0]
-		var switch_button: Button = _menu_button(advanced, _switches.label(switch_key), func(): pass)
-		switch_button.pressed.connect(func():
-			_switches.set_on(switch_key, not _switches.on(switch_key))
-			switch_button.text = _switches.label(switch_key)
-			_apply_switches())
-	_menu_button(advanced, "Back", func(): _show_menu_page("main"))
-
-	_menu_note = Label.new()
-	_menu_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_menu_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_menu_note.custom_minimum_size = Vector2(380.0, 0.0)
-	column.add_child(_menu_note)
-	_show_menu_page("main")
-
-
-# A labelled slider row for the menu (0 to 1); `changed` gets each new value.
-func _menu_slider(parent: VBoxContainer, text: String, value: float, changed: Callable) -> void:
-	var label: Label = Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	parent.add_child(label)
-	var slider: HSlider = HSlider.new()
-	slider.min_value = 0.0
-	slider.max_value = 1.0
-	slider.step = 0.05
-	slider.value = value
-	slider.custom_minimum_size = Vector2(300.0, 24.0)
-	slider.value_changed.connect(changed)
-	parent.add_child(slider)
-
-
-func _menu_page(parent: VBoxContainer, page_name: String) -> VBoxContainer:
-	var page: VBoxContainer = VBoxContainer.new()
-	page.add_theme_constant_override("separation", 10)
-	page.visible = false
-	parent.add_child(page)
-	_menu_pages[page_name] = page
-	return page
-
-
-func _menu_button(parent: VBoxContainer, text: String, action: Callable) -> Button:
-	var button: Button = Button.new()
-	button.text = text
-	button.custom_minimum_size = Vector2(380.0, 52.0)
-	button.add_theme_font_size_override("font_size", 26)
-	button.pressed.connect(action)
-	@warning_ignore("standalone_ternary")
-	button.pressed.connect(func(): sound.ui.play("ui_click") if sound != null else null)   # after the action: a cue it plays itself wins
-	parent.add_child(button)
-	return button
+func _build_menu() -> void:
+	game_menu.build(self)
+	_menu = game_menu.root
+	_menu_note = game_menu.note
+	_quality_buttons = game_menu.quality_buttons
 
 
 func _show_menu_page(page_name: String) -> void:
-	@warning_ignore("shadowed_variable_base_class")
-	for name in _menu_pages:
-		_menu_pages[name].visible = name == page_name
-
-	_menu_note.text = ""
+	game_menu.show_page(page_name)
 
 
 func _set_menu(open: bool) -> void:
@@ -2452,10 +2377,6 @@ func _set_menu(open: bool) -> void:
 # "Clear saved ground": this client drops its own saved copy and reloads the
 # terrain. The server's own saved ground is the server's business (its
 # --clear-generated option); a client never clears it.
-# Debug (Dave 2026-10-21, a solid block standing in the lake that goes away with Clear saved ground): what this client
-# and the server's stores hold for the ground voxel the crosshair points at (Esc, Advanced, Dump ground; look at it first):
-# the dump aims where the screen centre pointed when the menu opened. The text is printed, shown and copied.
-var _dump_client: String = ""
 var _starter_seeded: int = 0
 var _water_spam_per_s: float = 0.0
 var _dig_spam_per_s: float = 0.0
@@ -2481,216 +2402,11 @@ var crash_report                      # CrashReport: breadcrumbs and the report 
 var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
-# Ground self-check (Dave's floating block and tan slab in the lake, 2026-10-21): every few seconds one point near
-# the player is asked of the server (surface height from the generator) and the client's own ground there is found by
-# a ray from above; ground more than GROUND_CHECK_TOLERANCE_M above the server's is logged with the coordinates
-# (user://ground_mismatch.log), and the server's dump of that cell is logged next to it. --no-ground-check turns it off.
-const GROUND_CHECK_EVERY_MSEC := 1500
-const GROUND_CHECK_TOLERANCE_M := 3.0
-const GROUND_CHECK_RINGS := [6.0, 15.0, 30.0, 50.0, 80.0]
-var ground_check: bool = true
-var _check_next_msec: int = 0
-var _check_ring: int = 0
-var _check_pending: Vector2 = Vector2(NAN, NAN)
-var _check_dump_msec: int = 0
-var check_samples: int = 0
-var check_mismatches: int = 0
-var check_last: String = "none yet"
-var _check_dump_at: Vector3 = Vector3.INF
-
-
-func _dump_ground_here(at: Vector3 = Vector3.INF) -> void:
-	var from: Vector3 = view_cam.global_position if view_cam != null else camera.global_position
-	var forward: Vector3 = -(view_cam if view_cam != null else camera).global_transform.basis.z
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from + forward * 400.0)
-	query.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-
-	if at.is_finite():
-		hit = {"position": at, "normal": Vector3.UP}
-
-	if hit.is_empty():
-		_menu_note.text = "Nothing solid under the crosshair within 400 m: look at the odd ground and try again"
-		return
-
-	var inside: Vector3 = hit["position"] - hit["normal"] * 0.5
-	var voxel: Vector3i = Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))
-	var lines: PackedStringArray = PackedStringArray()
-	lines.append("client: build %d, crosshair hit at (%.1f, %.1f, %.1f), voxel %s, normal %s" % [BUILD, hit["position"].x, hit["position"].y, hit["position"].z, str(voxel), str(hit["normal"])])
-	var tool: VoxelTool = terrain.get_voxel_tool()
-	lines.append("client: the terrain's voxel here: sdf %.2f (negative = solid)" % tool.get_voxel_f(voxel))
-	var block: Vector3i = Vector3i(floori(float(voxel.x) / 16.0), floori(float(voxel.y) / 16.0), floori(float(voxel.z) / 16.0))
-	var saved: VoxelBuffer = Layout.make_buffer(16)
-
-	if cache != null and cache.load_block(saved, block, 0):
-		var lx: int = voxel.x - block.x * 16
-		var ly: int = voxel.y - block.y * 16
-		var lz: int = voxel.z - block.z * 16
-		lines.append("client: saved copy of block %s: sdf %.2f, soil %d, rock %d" % [str(block), saved.get_voxel_f(lx, ly, lz, Layout.CHANNEL_SDF), saved.get_voxel(lx, ly, lz, Layout.CHANNEL_SOIL), saved.get_voxel(lx, ly, lz, Layout.CHANNEL_ROCK)])
-	else:
-		lines.append("client: no saved copy of block %s at LOD 0" % str(block))
-
-	lines.append("client: world tiles stamp %s, terrain version %s" % [str(world.get("tiles_stamp", "")), str(world.get("terrain_version", ""))])
-	_dump_client = "\n".join(lines)
-	net.request_dump.rpc_id(1, inside.x, inside.y, inside.z)
-	_menu_note.text = _dump_client + "\n(asking the server...)"
-
-
-func _on_dump_received(text: String) -> void:
-	var all: String = _dump_client + "\n" + text
-	print("Terrain client: ground dump\n" + all)
-
-	if _check_dump_at.is_finite():
-		_ground_check_log(all)
-		_check_dump_at = Vector3.INF
-	DisplayServer.clipboard_set(all)
-
-	if _menu_note != null:
-		_menu_note.text = all + "\n(copied to the clipboard)"
-
-
-# Asks the server for the ground height at one point near the player (the rings rotate, the angle is random).
-# --hole-probe: every second a 7 x 7 grid (50 m apart, 150 m each way) around the player is tested with rays straight
-# down; a cell with no ground collider is a hole. Prints the count each second and a summary line with the worst hole.
-func _hole_probe_step(now: int) -> void:
-	if not hole_probe or now < _hole_next_msec or connected_msec <= 0 or body == null:
-		return
-
-	_hole_next_msec = now + 1000
-	var centre: Vector2i = Vector2i(roundi(body.global_position.x / 50.0), roundi(body.global_position.z / 50.0))
-	var missing: int = 0
-	var seen: Dictionary = {}
-	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
-
-	for dz in range(-3, 4):
-		for dx in range(-3, 4):
-			var cell: Vector2i = centre + Vector2i(dx, dz)
-			var top: Vector3 = Vector3(float(cell.x) * 50.0, body.global_position.y + 50.0, float(cell.y) * 50.0)
-			var q: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -1500.0, 0.0))
-			q.exclude = [body.get_rid()]
-			seen[cell] = true
-
-			if space.intersect_ray(q).is_empty():
-				missing += 1
-
-				if not _hole_since.has(cell):
-					_hole_since[cell] = now
-			elif _hole_since.has(cell):
-				var lasted: int = now - int(_hole_since[cell])
-
-				if lasted > _hole_worst_msec:
-					_hole_worst_msec = lasted
-					_hole_worst_cell = cell
-
-				_hole_since.erase(cell)
-
-	for cell in _hole_since.keys():
-		if not seen.has(cell):
-			_hole_since.erase(cell)
-
-	if _fly_stop_msec > 0 and not _hole_settled:
-		_hole_max_after = maxi(_hole_max_after, missing)
-
-		if missing == 0:
-			_hole_settled = true
-			print("Terrain client: hole probe: all 49 cells have ground %.1f s after the stop (worst %d missing right after it)" % [float(now - _fly_stop_msec) / 1000.0, _hole_max_after])
-
-	_hole_samples += 1
-	_hole_missing_total += missing
-	_hole_max_count = maxi(_hole_max_count, missing)
-	var engine: Dictionary = VoxelEngine.get_stats()
-	var tasks: Dictionary = engine.get("tasks", {})
-	var pool: Dictionary = engine.get("thread_pools", {}).get("general", {})
-	print("Terrain client: engine tasks: streaming %d, meshing %d, generation %d, main thread %d; pool %d tasks on %d threads (%d active); blocks loaded %d, waiting %d, lod_count %d view %d" % [int(tasks.get("streaming", 0)), int(tasks.get("meshing", 0)), int(tasks.get("generation", 0)), int(tasks.get("main_thread", 0)), int(pool.get("tasks", 0)), int(pool.get("thread_count", 0)), int(pool.get("active_threads", 0)), stream.loads, stream.pending(), terrain.lod_count, terrain.view_distance])
-	print("Terrain client: holes %d of 49 at %s; worst so far: %d cells missing at once, one cell missing %.1f s (cell %s); average %.1f" % [missing, str(body.global_position.round()), _hole_max_count, float(_hole_worst_msec) / 1000.0, str(_hole_worst_cell * 50), float(_hole_missing_total) / float(_hole_samples)])
-
-
-func _ground_check_step(now: int) -> void:
-	if not ground_check or now < _check_next_msec or connected_msec <= 0 or body == null:
-		return
-
-	_check_next_msec = now + GROUND_CHECK_EVERY_MSEC
-
-	if _building_paused or is_finite(_check_pending.x):
-		_check_pending = Vector2(NAN, NAN)
-		return
-
-	var ring: float = GROUND_CHECK_RINGS[_check_ring % GROUND_CHECK_RINGS.size()]
-	_check_ring += 1
-	var angle: float = randf() * TAU
-	var x: float = snappedf(body.global_position.x + cos(angle) * ring, 0.5)
-	var z: float = snappedf(body.global_position.z + sin(angle) * ring, 0.5)
-
-	# Every other sample is looked for over water (the slabs in the lake): up to 12 tries within 100 m for a wet cell.
-	if _check_ring % 2 == 0 and flora != null:
-		for attempt in range(12):
-			var a: float = randf() * TAU
-			var r: float = 8.0 + randf() * 92.0
-			var wx: float = snappedf(body.global_position.x + cos(a) * r, 0.5)
-			var wz: float = snappedf(body.global_position.z + sin(a) * r, 0.5)
-
-			if not is_nan(flora.water_surface_at(wx, wz)):
-				x = wx
-				z = wz
-				break
-
-	_check_pending = Vector2(x, z)
-	net.request_surface.rpc_id(1, x, z)
-
-
-func _ground_check_compare(x: float, z: float, server_y: float) -> void:
-	var top: Vector3 = Vector3(x, server_y + 120.0, z)
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(top, top + Vector3(0.0, -400.0, 0.0))
-	query.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-
-	if hit.is_empty():
-		check_last = "no collider yet at %.0f, %.0f" % [x, z]
-		return
-
-	check_samples += 1
-	var client_y: float = hit["position"].y
-	check_last = "%.0f, %.0f: client %.1f, server %.1f" % [x, z, client_y, server_y]
-
-	if OS.has_environment("GROUND_CHECK_VERBOSE"):
-		print("Terrain client: ground check " + check_last + ", column loaded " + str(stream.column_loaded(x, z)))
-
-	if client_y - server_y <= GROUND_CHECK_TOLERANCE_M:
-		return
-
-	check_mismatches += 1
-	var inside: Vector3 = hit["position"] - hit["normal"] * 0.5
-	var line: String = "%s build %d GROUND MISMATCH at x %.1f z %.1f: client ground %.1f m, server %.1f m (%.1f m too high); player %s; voxel %s; lod_count %d, view %d; digs near: see the server dump" % [Time.get_datetime_string_from_system(true), BUILD, x, z, client_y, server_y, client_y - server_y, str(body.global_position.round()), str(Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))), terrain.lod_count, terrain.view_distance]
-	print("Terrain client: " + line)
-	_ground_check_log(line)
-
-	if Time.get_ticks_msec() - _check_dump_msec > 20000:
-		_check_dump_msec = Time.get_ticks_msec()
-		_check_dump_at = inside
-		_dump_ground_here(inside)
-
-		# A picture of what Dave sees at that moment, next to the log (user://ground_mismatch_N.png).
-		if DisplayServer.get_name() != "headless":
-			var image: Image = get_viewport().get_texture().get_image()
-
-			if image != null:
-				image.save_png("user://ground_mismatch_%d.png" % check_mismatches)
-
-
-func _ground_check_log(text: String) -> void:
-	var file: FileAccess = FileAccess.open("user://ground_mismatch.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://ground_mismatch.log") else FileAccess.WRITE)
-
-	if file != null:
-		file.seek_end()
-		file.store_line(text)
-		file.close()
-
-
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
 const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+I: crafting and inventory   R with a hammer in hand: blueprints   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
 F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
 Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
@@ -2758,7 +2474,80 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	print("Terrain client: the tile files changed on the server; reloaded the ground and plants")
 
 
+# The join hang (Dave, build 787): the ground never came and nothing was left to ask for. Start a new stream so everything is asked for again; the cache and
+# the starter ground stay as they are. Six tries, then the window says so and names the logs.
+func _run_ground_watchdog() -> void:
+	if connected_msec <= 0 or stream == null or _ground_giving_up:
+		return
+
+	var now: int = Time.get_ticks_msec()
+	var action: String = _ground_watchdog.step(now, waiting_for_ground, stream.pending(), _ground_received(), _ground_failed())
+
+	# While the ground is missing, one line every 5 s (with the wall-clock time), so a hang is visible in the log before any retry.
+	if waiting_for_ground and now - _ground_log_msec >= 5000:
+		_ground_log_msec = now
+		_join_log("JOIN: waiting for ground %d s after the welcome: loads %d, received %d (total %d), failed total %d, pending %d, test drops %d, retries %d (stall %d), ray down hits: %s, player y %.1f, viewer y %s" % [int(float(now - connected_msec) * 0.001), stream.loads, stream.blocks_received, _ground_received(), _ground_failed(), stream.pending(), stream.drops_made, _ground_watchdog.tries, _ground_watchdog.stall_tries, str(_ground_ray_hits()), body.global_position.y, _viewer_y_text()])
+
+	if action == "":
+		return
+
+	var line: String = "JOIN: ground %s, try %d of %d: loads %d, received %d, timeouts %d, bad %d, zeroed %d, pending %d, player %s" % [action, _ground_watchdog.tries, _ground_watchdog.MAX_TRIES, stream.loads, _ground_received(), stream.timeouts, stream.bad_blocks, stream.zeroed_blocks, stream.pending(), str(body.global_position) if body != null else "?"]
+	_join_log(line)
+
+	if action == "retry":
+		_restream_ground()
+		return
+
+	_ground_giving_up = true
+
+	if _connect_window != null:
+		_connect_window.fail("The ground did not arrive", "The server welcomed this game, but the ground under you did not load after %d tries.\n\nPlease quit, press Play again, and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % _ground_watchdog.tries, func(): _finish(1))
+
+
+# One join line to the telemetry log and to the console, with the wall-clock time and the seconds since the welcome (the logs had neither).
+func _join_log(text: String) -> void:
+	var line: String = "%s [+%.1f s] %s" % [Time.get_datetime_string_from_system(), float(Time.get_ticks_msec() - connected_msec) * 0.001, text]
+	_telemetry.event(line)
+	print("Terrain client: " + line)
+
+
+# Diagnostics for the join line: does a ray straight down from the player find any collision (the thing "waiting for ground" waits for)?
+func _ground_ray_hits() -> bool:
+	if body == null:
+		return false
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(body.global_position + Vector3(0.0, 1.0, 0.0), body.global_position + Vector3(0.0, -300.0, 0.0))
+	query.exclude = [body.get_rid()]
+	return not body.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+# Blocks received and failed since the welcome, over every stream the watchdog has started (a restart resets the new stream's own counters).
+var _ground_received_prior: int = 0
+var _ground_failed_prior: int = 0
+
+
+func _ground_received() -> int:
+	return _ground_received_prior + (stream.blocks_received if stream != null else 0)
+
+
+func _ground_failed() -> int:
+	return _ground_failed_prior + (stream.failed_total() if stream != null else 0)
+
+
+func _restream_ground() -> void:
+	_ground_received_prior = _ground_received()
+	_ground_failed_prior = _ground_failed()
+	stream.close()
+	stream = StreamScript.new()
+	stream.cache = cache
+	stream.link = link
+	link.stream = stream
+	terrain.stream = stream
+
+
 func _reload_ground() -> void:
+	_ground_received_prior = 0
+	_ground_failed_prior = 0
 	cache.clear_all()
 	stream.close()
 	stream = StreamScript.new()
@@ -2818,6 +2607,11 @@ func _inspect_target() -> String:
 		species = flora.species_near(point, 1.3)
 
 	if species >= 0:
+		var product: String = harvest.product_name_at(point) if harvest != null else ""
+
+		if product != "":
+			return product
+
 		return knowledge.reveal("f%d" % species, flora.label_of(species), flora.familiarity_of(species), "horticulture", flora.lookalikes(species))
 
 	var lying: String = items.world_item_name_near(point, 1.2)
@@ -2964,6 +2758,8 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
+		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
+		_dress_avatar()
 
 	var want: float = _view_m if third_person else 0.0
 	var eye: Vector3 = camera.global_position
@@ -2989,7 +2785,7 @@ func _update_view(delta: float) -> void:
 	if held != null:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
-		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M)
+		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
@@ -3012,7 +2808,7 @@ func _update_view(delta: float) -> void:
 		if carrying:
 			clip = "carry_walk" if pace > 0.6 else "carry_idle"
 
-		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M)
+		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
@@ -3031,6 +2827,40 @@ func _update_view(delta: float) -> void:
 
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
+# Stage-one clothing on the body (art/MODEL_PLAN.md): the worn body, legs and feet items colour the coat, trousers and shoes of the ragdoll
+# with their basic-look colour (data/items/looks.json); head, hands and back items have no look on the body yet.
+func _dress_avatar() -> void:
+	if _avatar == null or items == null:
+		return
+
+	var coat: Color = Color(0.4, 0.34, 0.28)
+	var trousers: Color = Color(0.25, 0.22, 0.2)
+	var shoes: Color = Color(0.14, 0.11, 0.09)
+
+	for number in items.worn:
+		if int(number) == 0:
+			continue
+
+		var id: String = items.table.id_of(int(number))
+		var slot: String = str(items.table.entry(id).get("slot", ""))
+		var def: Dictionary = BasicLookScript.entry(id)
+
+		if def.is_empty():
+			continue
+
+		var tint: Color = Color.html(str(def.get("color", "#808080")))
+
+		if slot == "body":
+			coat = tint
+		elif slot == "legs":
+			trousers = tint
+		elif slot == "feet":
+			shoes = tint
+
+	_avatar.dress(Color(0.78, 0.62, 0.5), coat, trousers, shoes)
+	WornSync.apply(_avatar, WornSync.ids_of(items.worn, items.table), false)   # Kathleen's worn pieces on the bones (the own avatar shows in third person only, so no first-person clipping)
+
+
 func _make_avatar() -> Node3D:
 	var avatar: Node3D = RagdollScript.new()
 	avatar.visible = false
@@ -3041,6 +2871,7 @@ func _make_avatar() -> Node3D:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_telemetry.event("EXIT: the window was asked to close (X button, Alt+F4 or the editor's Stop)")
+		_say_logout()
 
 	if crash_report == null:
 		return
@@ -3103,6 +2934,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		if _horizon != null:
 			_horizon.pitch_rad = pitch
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN) and held.wheel(event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		pass
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		_scroll_view(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
@@ -3119,6 +2952,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_P and items != null:
+			items.toggle_auto_pickup()
 		elif event.keycode == KEY_SLASH:
 			inspecting = not inspecting
 			status_icons.tick(0.0, true)
@@ -3164,6 +2999,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_gpu_probe.toggle()
 		elif event.keycode == KEY_W and event.ctrl_pressed and event.shift_pressed:
 			flora.toggle_water_visible()
+		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
+			flora.toggle_water_debug()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F4:
@@ -3174,6 +3011,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
+		elif event.keycode == KEY_R and not event.ctrl_pressed and items != null and not items.open:
+			if held != null:
+				held.toggle_blueprints()   # a hammer in hand: its blueprint list
 		elif event.keycode == KEY_F:
 			if items != null and not flying:
 				items.open_container()   # Dave 2026-10-22: F opens the chest beside you (fly is G)
@@ -3310,7 +3150,7 @@ func _room_to_rise(target: int) -> bool:
 
 
 func _move_player(delta: float) -> void:
-	if menu_open:
+	if menu_open or (cavein_death != null and cavein_death.active):
 		body.velocity = Vector3.ZERO
 		return
 
@@ -3398,6 +3238,8 @@ func _move_player(delta: float) -> void:
 	elif flying:
 		direction.y += float(Input.is_key_pressed(KEY_SPACE)) - float(Input.is_key_pressed(KEY_CTRL))
 		body.global_position += direction * FLY_SPEED * fast * delta
+	elif _climb_ladder(delta, strain_cap):
+		pass
 	else:
 		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and test_walk else pace)
 
@@ -3451,12 +3293,7 @@ func _move_player(delta: float) -> void:
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
 
-		if body.is_on_floor():
-			_floor_msec = Time.get_ticks_msec()
-		elif Time.get_ticks_msec() - _floor_msec > 1200 and _under_the_ground():
-			rescued += 1
-
-		_free_if_embedded()
+		rescue.step()
 
 		var tb: int = Probe.start()
 		_update_bob(delta)
@@ -3473,6 +3310,41 @@ func _move_player(delta: float) -> void:
 
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
 	_update_underwater()
+
+
+# The two tunnel collapse buttons in Esc > Settings show the server's settings: On in green or Off in red, and the cave-in time.
+func _show_tunnel_buttons() -> void:
+	game_menu.refresh()
+
+
+# On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
+func _climb_ladder(delta: float, strain_cap: float) -> bool:
+	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()):
+		ladder.let_go()
+		return false
+
+	var look: Vector3 = -body.global_transform.basis.z
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, Input.is_key_pressed(KEY_W), Input.is_key_pressed(KEY_S), Input.is_key_pressed(KEY_SPACE), delta)
+	var at: Vector3 = result["position"]
+
+	if at != Vector3.INF:
+		body.global_position = at + Vector3(0.0, 0.9, 0.0)
+
+	body.velocity = result["velocity"]
+
+	if not bool(result["active"]):
+		_ladder_climbed_m = 0.0
+		return false
+
+	_ladder_climbed_m += absf(body.velocity.y) * delta
+
+	if _ladder_climbed_m >= LADDER_RUNG_M:
+		_ladder_climbed_m = fmod(_ladder_climbed_m, LADDER_RUNG_M)
+		sound.slots.play("ladder_rung", body.global_position - Vector3(0.0, 0.9, 0.0))      # one per rung climbed, by distance, not by a timer
+
+	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_update_underwater()
+	return true
 
 
 # Walking, jogging or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
@@ -3619,44 +3491,12 @@ func _update_bob(delta: float) -> void:
 	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
 	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
 	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
-
-
-# One step of the fire sound test (button and --fire): returns what it did.
-func _fire_test_step(step: int, at: Vector3) -> String:
-	sound.fire.hold_manual(12.0)
-	var fire := {"id": 1, "at": at, "size": 0.3, "lit": true, "open": true}
-	var note: String = ""
-
-	if step == 0:
-		fire["lit"] = false
-		sound.weather.set_weather("clear", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Unlit fire placed three metres ahead (silent)"
-	elif step == 1:
-		sound.fire.set_fires([fire])
-		note = "Fire lit: small embers"
-	elif step == 2:
-		fire["size"] = 1.0
-		sound.fire.set_fires([fire])
-		note = "Fire grows to a bonfire"
-	elif step == 3:
-		fire["size"] = 1.0
-		sound.weather.set_weather("rain", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Rain starts on the open fire (sizzle)"
-	elif step == 4:
-		fire["lit"] = false
-		sound.fire.set_fires([fire])
-		note = "Fire put out (hiss)"
-	elif step == 5:
-		sound.weather.set_weather("clear", 1.0)
-		sound.fire.set_fires([fire])
-		note = "Fire lit again, rain gone"
-	else:
-		sound.fire.set_fires([])
-		note = "Fire removed (fades)"
-
-	return note
+	drip_view.step(delta)
+	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	var shake: Dictionary = quake_view.step(delta)
+	camera.position += shake["offset"]
+	camera.rotation.z += deg_to_rad(float(shake["roll"]))
 
 
 func _process(delta: float) -> void:
@@ -3703,10 +3543,15 @@ func _process(delta: float) -> void:
 	if link_bars != null:
 		link_bars.client_stalled(delta)
 
+	if _spawn_test != "":
+		_spawn_test_step(Time.get_ticks_msec())
+
 	if _tunnel_test > 0:
 		_tunnel_step()
 
 	_update_pit_shadow()
+
+	_run_ground_watchdog()
 
 	if _connect_window != null:
 		_update_connect_window()
@@ -3740,7 +3585,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	Probe.stop("harvest, clock, weather", tp)
 
-	if _sound_test_at < 0 and sound != null and sound.ambient != null:
+	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
@@ -3771,12 +3616,51 @@ func _process(delta: float) -> void:
 		@warning_ignore("integer_division")
 		print("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
 
-	_ground_check_step(Time.get_ticks_msec())
-	_hole_probe_step(Time.get_ticks_msec())
+	ground_debug.ground_check_step(Time.get_ticks_msec())
+	ground_debug.hole_probe_step(Time.get_ticks_msec())
+
+	if test_menu and not _test_menu_done and Time.get_ticks_msec() - connected_msec > 6000:
+		_test_menu_done = true
+		_set_menu(true)
+		var seen: int = 0
+
+		for page_name in game_menu._pages:
+			game_menu.show_page(page_name)
+			seen += 1 if game_menu._pages[page_name].visible and game_menu._pages[page_name].get_child_count() > 0 else 0
+
+		for found in game_menu.root.find_children("*", "Control", true, false):
+			if found.has_signal("toggled") and found.has_method("set_on"):
+				found.set_on(not found.on)
+				found.toggled.emit(found.on)
+				found.set_on(not found.on)
+				found.toggled.emit(found.on)
+
+		drip_view.on_leak(PackedVector3Array([body.global_position + Vector3(0.0, 2.0, 0.0)]), PackedByteArray([200]), body.global_position)
+		drip_view.step(0.1)
+		print("Terrain client: drip view: gap %.1f m, wet here %s" % [drip_view.gap_m, str(drip_view.wet_here)])
+		drip_view.step(2.0)
+		print("Terrain client: drip view after fade: gap %.1f m" % drip_view.gap_m)
+		print("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
+		_set_menu(false)
+		var esc: InputEventKey = InputEventKey.new()
+		esc.keycode = KEY_ESCAPE
+		esc.pressed = true
+		_unhandled_input(esc)
+		var opened: bool = menu_open and game_menu._pages["main"].visible
+		_unhandled_input(esc)
+		var closed: bool = not menu_open
+		var screen_ok: bool = true
+
+		if items != null:
+			items.toggle()
+			_unhandled_input(esc)
+			screen_ok = not items.screen_open() and not menu_open
+
+		print("Terrain client: esc test: opens the menu %s, closes it %s, closes an open screen first without opening the menu %s" % [str(opened), str(closed), str(screen_ok)])
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
-		_dump_ground_here(body.global_position + Vector3(0.0, -1.0, 0.0))
+		ground_debug.dump_ground_here(body.global_position + Vector3(0.0, -1.0, 0.0))
 
 	if test_clear and not _test_clear_done and Time.get_ticks_msec() - connected_msec > 12000:
 		_test_clear_done = true
@@ -3801,7 +3685,7 @@ func _process(delta: float) -> void:
 		var here: Vector3 = _anchor
 		var seconds: float = float(now - _aim_msec) / 1000.0
 
-		if _aim_msec > 0:
+		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
 			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds)
 
 		_aim_msec = now
@@ -3945,7 +3829,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
 			test_flame = false
 
-	# Headless check: make cordage (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
+	# Headless check: make twine (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
 	if test_craft_sounds and now - connected_msec > 18000:
 		if _test_craft_t < 0.0:
 			_test_craft_t = 0.0
@@ -4118,7 +4002,7 @@ func _process(delta: float) -> void:
 	# Headless check: place, light, grow, rain on, put out, light, remove.
 	if test_fire and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 1200
-		print("Terrain client: fire step %d: %s" % [_test_fire_step, _fire_test_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
+		print("Terrain client: fire step %d: %s" % [_test_fire_step, sound_tests.fire_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
 		_test_fire_step += 1
 
 		if _test_fire_step >= 7:
@@ -4846,7 +4730,7 @@ func _process(delta: float) -> void:
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
 	status_icons.tick(delta)
 	_note_last_sound()
-	hud.text = "build %d (%s)  %d fps  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
+	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
@@ -4974,7 +4858,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nmuffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded]
 	text += "\ncave: enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played]
 	text += "\nlast dig sound: %s" % sound.dig.last_dig
-	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if _sound_weather_at >= 0 else "the world weather above")
+	text += "\nweather sounds follow: %s" % ("the TEST button (press it until it says follow the world)" if sound_tests.weather_at >= 0 else "the world weather above")
 	text += "\nweather sounds: %s (rain %.1f, wind %.1f, thunder %d), ground wet %.2f snow %.2f, %s, drips %d" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, "under canopy" if sound.weather.covered > 0.5 else "in the open", sound.weather.drips_played]
 	text += "\nnature (%02d:%02d %s): forest %.1f meadow %.1f water %.1f high %.1f, last %s" % [int(sound.ambient.conditions["hour"]), int(fposmod(float(sound.ambient.conditions["hour"]), 1.0) * 60.0), sound.ambient.conditions["season"], sound.ambient.weights["forest"], sound.ambient.weights["meadow"], sound.ambient.weights["water"], sound.ambient.weights["highland"], sound.ambient.last_call]
 	text += "\nwater sounds: " + sound.water.summary
@@ -4997,7 +4881,7 @@ func _note_last_sound() -> void:
 	var sources: Array = [
 		["step", sound.last_step], ["breath", sound.breath.last], ["fire", sound.fire.last], ["tree", sound.trees.last], ["item", sound.itemfx.last], ["spear", sound.spear.last], ["placed", sound.placed.last],
 		["interior", sound.interior.last], ["gear", sound.gear.last], ["creature", sound.creatures.last], ["swim", sound.swim.last],
-		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call], ["npc voice", _npc_voice.last if _npc_voice != null else ""], ["inner voice", sound.inner.last],
+		["dig", sound.dig.last_dig], ["nature", sound.ambient.last_call], ["ambience", sound.ambience.last], ["npc voice", _npc_voice.last if _npc_voice != null else ""], ["inner voice", sound.inner.last],
 	]
 
 	for n in range(sources.size()):
@@ -5088,7 +4972,7 @@ func _walk_step() -> void:
 func _ground_ready() -> bool:
 	var here: Vector3 = body.global_position
 	var space: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
-	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -300.0, 0.0))
+	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 1.0, 0.0), here + Vector3(0.0, -3000.0, 0.0))   # 3000 m: a start high in the air finds the collider once the column below is built
 	down.exclude = [body.get_rid()]
 
 	if not space.intersect_ray(down).is_empty():
@@ -5098,13 +4982,7 @@ func _ground_ready() -> bool:
 	up.exclude = [body.get_rid()]
 	var hit: Dictionary = space.intersect_ray(up)
 
-	if not hit.is_empty() and (not _near_dig(here) or _inside_solid(here)):
-		body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-		rescued += 1
-
-		if crash_report != null:
-			crash_report.event("RESCUE (no ground below) from %s up to y %.1f, near a dig %s, inside rock %s" % [str(here.round()), float(hit["position"].y), _near_dig(here), _inside_solid(here)])
-
+	rescue.lift_when_no_ground_below(here, hit)
 	return false
 
 
@@ -5133,119 +5011,52 @@ func _run_dig_next_test() -> void:
 			off_floor_max = maxi(off_floor_max, off_floor)
 
 	await get_tree().create_timer(4.0).timeout
-	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
+	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
+
+
+# Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
+# with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
+func _run_resume_test() -> void:
+	await get_tree().create_timer(25.0).timeout
+	var spawn: Vector3 = world["spawn"]
+
+	if test_resume == "check":
+		print("Resume test: started %.0f m from the spawn, at %s" % [Vector2(body.global_position.x - spawn.x, body.global_position.z - spawn.z).length(), str(body.global_position.round())])
+		_finish(0)
+		return
+
+	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
+	body.velocity = Vector3.ZERO
+	await get_tree().create_timer(6.0).timeout
+	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
+
+	if test_resume == "logout":
+		_say_logout()
+		await get_tree().create_timer(0.5).timeout
+
+	_finish(0)
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.
 func _run_embed_test() -> void:
 	await get_tree().create_timer(25.0).timeout
 	var start: Vector3 = body.global_position
-	print("Embed test: embed rescues while standing %d" % embed_rescues)
+	print("Embed test: embed rescues while standing %d" % rescue.embed_rescues)
 	var column: Array = []
 
 	for k in range(-8, 6):
 		column.append("%d:%.1f" % [k, terrain.get_voxel_tool().get_voxel_f(Vector3i((start + Vector3(0.0, float(k), 0.0)).round()))])
 
 	print("Embed test: sdf column (m from feet): ", " ".join(column))
-	_dug_points.append([start, Time.get_ticks_msec()])      # as after a dig here: the surface rescue is off, only the embedded check can free the player
+	rescue.note_dig(start)      # as after a dig here: the surface rescue is off, only the embedded check can free the player
 	body.global_position = start + Vector3(0.0, -4.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(3.0).timeout
-	print("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
+	print("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, rescue.embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
 	body.global_position = start + Vector3(0.0, -150.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(5.0).timeout
 	print("Embed test: put in the void 150 m under, after 5 s y %.1f, %s" % [body.global_position.y, "BACK ON THE SURFACE" if body.global_position.y > start.y - 1.0 else "STILL UNDER THE WORLD"])
-
-
-# Dave (build 621): off the floor in empty space under the world is rescued even near a dig (Willy's 625 covers the player inside rock).
-func _free_if_embedded() -> void:
-	if terrain == null or flying:
-		return
-
-	var now: int = Time.get_ticks_msec()
-
-	if now < _embed_check_msec:
-		return
-
-	_embed_check_msec = now + 100
-	_free_if_in_void(now)
-
-
-# Dave (build 621, "under the world looking up at it"): off the floor for 1.5 s with no solid ground within 40 m below (the
-# ground's distance field) and ground overhead: the player left the world (collision vanished under them). The dig guard of the
-# older rescue is not used: a tunnel has floor under it, a void does not. Stands the player on the surface above.
-func _free_if_in_void(now: int) -> void:
-	if body.is_on_floor() or now - _floor_msec < 1500 or swimming:
-		return
-
-	# A block still loading reads as empty: only act when the whole column below is loaded, and never twice within 6 s.
-	if now - _void_rescue_msec < 6000:
-		return
-
-	var tool: VoxelTool = terrain.get_voxel_tool()
-	var here: Vector3 = body.global_position
-
-	if not tool.is_area_editable(AABB(here + Vector3(-1.0, -42.0, -1.0), Vector3(2.0, 43.0, 2.0))):
-		return
-
-	for depth in range(0, 41, 2):
-		if _solid_at(tool, here + Vector3(0.0, -float(depth), 0.0)):
-			return
-
-	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
-	up.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
-
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
-		return
-
-	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-	body.velocity = Vector3.ZERO
-	_floor_msec = now
-	_void_rescue_msec = now
-	rescued += 1
-	embed_rescues += 1
-	_telemetry.event("RESCUE: player was in empty space under the world at %s, stood on the surface at y %.1f" % [str(here), float(hit["position"].y)])
-	print("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
-
-
-func _solid_at(tool: VoxelTool, point: Vector3) -> bool:
-	return tool.get_voxel_f(Vector3i(point.round())) < -0.3
-
-
-# Off the floor for a while and below the highest collider overhead: the
-# player slipped through the ground (a gap, or collision that was not ready).
-# Stands the player on top of the surface and returns true.
-func _under_the_ground() -> bool:
-	var here: Vector3 = body.global_position
-	var up: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 800.0, 0.0), here + Vector3(0.0, -1.0, 0.0))
-	up.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(up)
-
-	if hit.is_empty() or float(hit["position"].y) < here.y + 2.0:
-		return false
-
-	var inside: bool = _inside_solid(here)
-
-	if _near_dig(here) and not inside:
-		return false
-
-	# Ground below within reach: this is a fall inside a cave or pit, not a slip through the world.
-	var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here, here + Vector3(0.0, -120.0, 0.0))
-	down.exclude = [body.get_rid()]
-
-	if not inside and not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
-		return false
-
-	body.global_position = Vector3(here.x, float(hit["position"].y) + 1.2, here.z)
-	body.velocity = Vector3.ZERO
-	_floor_msec = Time.get_ticks_msec()
-
-	if crash_report != null:
-		crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s" % [str(here.round()), float(hit["position"].y), inside])
-
-	return true
 
 
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
@@ -5357,7 +5168,7 @@ func _walk_report() -> void:
 	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
-		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescued,
+		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescue.rescued,
 		_wait_frames, int(s.get("frames", 0)), _slowest_frame * 1000.0
 	])
 

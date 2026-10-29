@@ -257,6 +257,8 @@ func _starter_island(
 		"beach_dir": [snappedf(beach_direction.x, 0.001), snappedf(beach_direction.y, 0.001)],
 		"plain_m": int(rules["plain_height_m"]),
 		"plain_width": float(rules["plain_width"]),
+		"beach_exp": float(rules.get("beach_profile_exponent", 1.7)),
+		"beach_cap_m": int(rules.get("beach_cap_m", 1100)),
 		"rocky_cliff_m": int(rules["rocky_cliff_m"]),
 		"bay_radius": float(rules["bay_radius"]),
 		"bay_depth_m": int(rules["bay_depth_m"]),

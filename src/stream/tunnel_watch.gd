@@ -14,10 +14,14 @@ extends RefCounted
 
 const Stability := preload("res://src/stream/tunnel_stability.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
+const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const CELL_M := 2.0
+const DRIP_RANGE_M := 4.0                    # water this close above a ceiling seeps through it (Dave 2026-10-23)
+const MAX_LEAKS_SENT := 24
 const QUAKE_EVERY_MSEC := 500
 const QUAKE_RANGE_M := 40.0
+const MIN_WARNING_MSEC := 90000             # the shaking never leaves less than this before a fall
 const MAX_FILLS_PER_COLLAPSE := 60
 const FILL_RADIUS_M := 1.5
 
@@ -27,13 +31,23 @@ var base_grace_s: float = 1800.0
 var min_grace_s: float = 225.0
 var max_grace_s: float = 3600.0
 var rubble_material: int = 1
+# Dave 2026-10-22 (collapse-plan-1): a dug space wider than about 2 m starts a timer; about 10 minutes of quiet, then rumbling for the
+# cave-in duration (a setting, 2 to 20 minutes, 20 by default) to dig out and brace. With quiet_s set the window is that fixed total
+# (no width scaling) and the stages are measured from the end of the quiet part; unset (0) keeps the older width-scaled window.
+var quiet_s: float = 0.0
+var cave_in_s: float = 300.0
+const CAVE_IN_MIN_S := 120.0
+const CAVE_IN_MAX_S := 1200.0
 var load_block: Callable                     # (Vector3i block) -> VoxelBuffer of the block with every edit applied, or null
+var load_natural: Callable                   # (Vector3i block) -> VoxelBuffer of the block as generated, no edits: collapse is for MAN-MADE spaces only (Dave 2026-10-23)
 var surface_h: Callable                      # (x, z) -> ground surface height
+var water_above: Callable                    # (x, z) -> y of the water surface over that column (the sea is 0), NAN when dry: ceilings under it drip
 var support_strength: Callable               # (Vector3) -> support strength x condition 0..1 at a point (items; none until they exist)
 
 var _mutex: Mutex = Mutex.new()
 var _dirty: Dictionary = {}                  # Vector3i block -> true
 var _cells: Dictionary = {}                  # Vector3i cell -> {pos, need, span, free, opened, grace_ms, seen}
+var _wet: Dictionary = {}                    # Vector3i block -> Array of [ceiling point, closeness 0..255]: dripping cells
 var _block_cells: Dictionary = {}            # Vector3i block -> Array of cell keys it holds
 var _next_quake_msec: int = 0
 var _sem: Semaphore = Semaphore.new()
@@ -51,6 +65,8 @@ func configure(data: Dictionary) -> void:
 	min_grace_s = float(data.get("min_grace_s", min_grace_s))
 	max_grace_s = float(data.get("max_grace_s", max_grace_s))
 	rubble_material = int(data.get("rubble_material", rubble_material))
+	quiet_s = maxf(float(data.get("quiet_s", quiet_s)), 0.0)
+	cave_in_s = clampf(float(data.get("cave_in_s", cave_in_s)), CAVE_IN_MIN_S, CAVE_IN_MAX_S)
 
 
 func start() -> void:
@@ -139,7 +155,13 @@ func process_dirty(now_msec: int) -> void:
 		if buffer == null:
 			continue
 
-		var found: Array = Stability.working(Stability.classify(buffer, Vector3(block * GroundOps.BLOCK_SIZE), surface_h))
+		var every: Array = Stability.classify(buffer, Vector3(block * GroundOps.BLOCK_SIZE), surface_h)
+		var found: Array = Stability.working(every)
+
+		if load_natural.is_valid() and not found.is_empty():
+			var natural: VoxelBuffer = load_natural.call(block)
+			var origin: Vector3 = Vector3(block * GroundOps.BLOCK_SIZE)
+			found = found.filter(func(cell): return natural == null or _dug(buffer, natural, (cell["pos"] as Vector3) - origin))
 		_mutex.lock()
 
 		for key in _block_cells.get(block, []):
@@ -149,14 +171,102 @@ func process_dirty(now_msec: int) -> void:
 
 		for cell in found:
 			var key: Vector3i = Vector3i(((cell["pos"] as Vector3) / CELL_M).floor())
-			var grace_s: float = clampf(base_grace_s * pow(float(cell["free"]) / maxf(float(cell["span"]), 0.1), 2.0), min_grace_s, max_grace_s)
+			var grace_s: float = quiet_s + cave_in_s if quiet_s > 0.0 else clampf(base_grace_s * pow(float(cell["free"]) / maxf(float(cell["span"]), 0.1), 2.0), min_grace_s, max_grace_s)
 			var was: Dictionary = _cells.get(key, {})
 			_cells[key] = {"pos": cell["pos"], "need": cell["need"], "span": cell["span"], "opened": int(was.get("opened", now_msec)), "grace_ms": int(grace_s * 1000.0), "last": now_msec}
 			keys.append(key)
 
 		_block_cells[block] = keys
+		_wet[block] = _wet_cells(every)
 		cells_measured += found.size()
 		_mutex.unlock()
+
+
+# The window share f mapped so the quiet part (share q of the window; 0 keeps the old fixed layout) ends at 0.6: stage_of and
+# strength_of then work unchanged on it.
+# True when part of the cell (a 3 x 3 x 3 look around its centre) is air now but was rock when the ground was generated: someone dug it.
+# Natural caves are never man-made, so they never start a window.
+static func _dug(now: VoxelBuffer, natural: VoxelBuffer, local: Vector3) -> bool:
+	for dy in range(-1, 2):
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var x: int = clampi(floori(local.x) + dx, 0, 15)
+				var y: int = clampi(floori(local.y) + dy, 0, 15)
+				var z: int = clampi(floori(local.z) + dz, 0, 15)
+
+				if now.get_voxel_f(x, y, z, Layout.CHANNEL_SDF) > 0.0 and natural.get_voxel_f(x, y, z, Layout.CHANNEL_SDF) <= 0.0:
+					return true
+
+	return false
+
+
+# The in-game switch (Esc > Settings, admin): off clears every running window; on starts the thread if it was never started.
+func set_enabled(on: bool) -> void:
+	_mutex.lock()
+	enabled = on
+	collapse_enabled = on
+
+	if not on:
+		_cells.clear()
+		_block_cells.clear()
+		_wet.clear()
+		_dirty.clear()
+
+	_mutex.unlock()
+	start()
+
+
+# The setting applies to windows already running too (Dave 2026-10-23: he dug, set 2 minutes, and the old clocks ran on): every cell gets the new
+# length, keeps the time already used, and if that is already past the new end it falls 90 s from now (the minimum warning).
+func set_cave_in_s(seconds: float, now_msec: int = 0) -> void:
+	cave_in_s = clampf(seconds, CAVE_IN_MIN_S, CAVE_IN_MAX_S)
+
+	if quiet_s <= 0.0:
+		return
+
+	var grace_ms: int = int((quiet_s + cave_in_s) * 1000.0)
+	_mutex.lock()
+
+	for key in _cells:
+		var cell: Dictionary = _cells[key]
+		cell["grace_ms"] = grace_ms
+
+		if now_msec - int(cell["opened"]) > grace_ms - MIN_WARNING_MSEC:
+			cell["opened"] = now_msec - (grace_ms - MIN_WARNING_MSEC)
+
+	_mutex.unlock()
+
+
+# The cells of a block whose ceiling has water within DRIP_RANGE_M above it: [ceiling point, closeness] (255 = water at the ceiling).
+func _wet_cells(cells: Array) -> Array:
+	var wet: Array = []
+
+	if not water_above.is_valid():
+		return wet
+
+	for cell in cells:
+		var pos: Vector3 = cell["pos"]
+		var surface: float = float(water_above.call(pos.x, pos.z))
+
+		if is_nan(surface):
+			continue
+
+		var gap: float = surface - float(cell["roof_y"])
+
+		if gap > 0.0 and gap <= DRIP_RANGE_M:
+			wet.append([Vector3(pos.x, float(cell["roof_y"]), pos.z), int(255.0 * (1.0 - gap / DRIP_RANGE_M))])
+
+	return wet
+
+
+static func _stage_share(f: float, q: float) -> float:
+	if q <= 0.0:
+		return f
+
+	if f < q:
+		return f / q * 0.6
+
+	return 0.6 + (f - q) / maxf(1.0 - q, 0.001) * 0.4
 
 
 static func stage_of(f: float) -> int:
@@ -183,7 +293,7 @@ func _strength(at: Vector3) -> float:
 
 # peers: peer id -> position. Returns {"quake": [[peer, stage, strength_pm, point]], "collapse": [{"fills": [[centre, radius]], "victims": [peer], "cells": n}]}.
 func tick(now_msec: int, peers: Dictionary) -> Dictionary:
-	var out: Dictionary = {"quake": [], "collapse": []}
+	var out: Dictionary = {"quake": [], "collapse": [], "leak": []}
 
 	if not enabled:
 		return out
@@ -206,7 +316,7 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 			continue
 
 		cell["last"] = now_msec
-		var f: float = float(now_msec - int(cell["opened"])) / float(cell["grace_ms"])
+		var f: float = _stage_share(float(now_msec - int(cell["opened"])) / float(cell["grace_ms"]), quiet_s / maxf(quiet_s + cave_in_s, 1.0) if quiet_s > 0.0 else 0.0)
 		var stage: int = stage_of(f)
 
 		if stage == 5 and collapse_enabled:
@@ -219,6 +329,9 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 					if stage > int(best[0]) or (stage == int(best[0]) and strength_of(f) > float(best[1])):
 						loudest[peer] = [stage, strength_of(f), cell["pos"]]
 
+	if send_quake and not _wet.is_empty():
+		out["leak"] = _leaks_near(peers)
+
 	for peer in loudest:
 		var info: Array = loudest[peer]
 		out["quake"].append([peer, int(info[0]), int(float(info[1]) * 1000.0), info[2]])
@@ -227,6 +340,37 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 		out["collapse"] = _collapse(failed, peers)
 
 	_mutex.unlock()
+	return out
+
+
+# Caller holds the mutex. For each player the dripping ceiling points within QUAKE_RANGE_M, nearest first: [peer, points, closeness bytes].
+func _leaks_near(peers: Dictionary) -> Array:
+	var out: Array = []
+
+	for peer in peers:
+		var here: Vector3 = peers[peer]
+		var near: Array = []
+
+		for block in _wet:
+			for entry in _wet[block]:
+				var d: float = (entry[0] as Vector3).distance_to(here)
+
+				if d <= QUAKE_RANGE_M:
+					near.append([d, entry[0], entry[1]])
+
+		if near.is_empty():
+			continue
+
+		near.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+		var points: PackedVector3Array = PackedVector3Array()
+		var close: PackedByteArray = PackedByteArray()
+
+		for i in range(mini(near.size(), MAX_LEAKS_SENT)):
+			points.append(near[i][1])
+			close.append(int(near[i][2]))
+
+		out.append([int(peer), points, close])
+
 	return out
 
 

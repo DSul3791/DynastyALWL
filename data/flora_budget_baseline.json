@@ -1,0 +1,110 @@
+{
+ "alpine_flowers": [
+  520,
+  172
+ ],
+ "angelica": [
+  946,
+  82
+ ],
+ "arnica": [
+  416,
+  172
+ ],
+ "blueberry": [
+  2700,
+  344
+ ],
+ "chamomile": [
+  630,
+  172
+ ],
+ "dandelion": [
+  464,
+  172
+ ],
+ "duskmallow": [
+  308,
+  172
+ ],
+ "feverfew": [
+  588,
+  172
+ ],
+ "gloaming_star": [
+  398,
+  172
+ ],
+ "gloomthistle": [
+  464,
+  172
+ ],
+ "heather": [
+  944,
+  118
+ ],
+ "juniper": [
+  4066,
+  344
+ ],
+ "lavender": [
+  856,
+  118
+ ],
+ "meadowsweet": [
+  1040,
+  82
+ ],
+ "mugwort": [
+  660,
+  34
+ ],
+ "nettle": [
+  2396,
+  272
+ ],
+ "nightcrown": [
+  320,
+  172
+ ],
+ "raspberry": [
+  4210,
+  344
+ ],
+ "sea_buckthorn": [
+  4516,
+  344
+ ],
+ "st_johns_wort": [
+  360,
+  172
+ ],
+ "stillwater_lotus": [
+  358,
+  172
+ ],
+ "tanglewort": [
+  4132,
+  344
+ ],
+ "valerian": [
+  1040,
+  82
+ ],
+ "wild_carrot": [
+  1040,
+  82
+ ],
+ "wild_garlic": [
+  1168,
+  82
+ ],
+ "wild_sage": [
+  2448,
+  344
+ ],
+ "yarrow": [
+  1168,
+  82
+ ]
+}

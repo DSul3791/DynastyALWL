@@ -11,7 +11,8 @@ LABELS = {  # Godot key constant -> word that must appear in a CONTROLS.md contr
     "MOUSE_BUTTON_LEFT": "Left click", "MOUSE_BUTTON_RIGHT": "Right click",
     "MOUSE_BUTTON_MIDDLE": "Middle click", "MOUSE_BUTTON_WHEEL_UP": "Wheel", "MOUSE_BUTTON_WHEEL_DOWN": "Wheel",
 }
-IGNORE = {"KEY_WRAPPED_X", "KEY_WRAPPED_Z", "KEY_SOURCE_REVISION", "KEY_SOURCE_REGION", "KEY_LOGICAL_REGION", "KEY_FILE"}
+# KEY_BURST and KEY_REFILL_PER_S (terrain_server.gd) are network rate limits (block keys per peer), not input bindings.
+IGNORE = {"KEY_BURST", "KEY_REFILL_PER_S", "KEY_WRAPPED_X", "KEY_WRAPPED_Z", "KEY_SOURCE_REVISION", "KEY_SOURCE_REGION", "KEY_LOGICAL_REGION", "KEY_FILE"}
 SKIP_DIRS = {"addons", "native", "tools", ".godot"}
 
 def label(const):

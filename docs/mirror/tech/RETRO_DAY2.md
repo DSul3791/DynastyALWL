@@ -1,0 +1,56 @@
+# Retrospective: did we get more done, and what slows us down? (Guru, 2026-10-23 05:20 UTC; Dave asked 04:48)
+Dave's observation: about the same share (about 20%) of the weekly limit used today as yesterday. Honest scope: I can count what is in git and the docs. I CANNOT measure tokens per thread, so "more per token" is a judgment from output, not a measurement.
+## 1. Numbers (from git history of claude/generator-v2; days in Atlantic time, 03:00 UTC to 03:00 UTC)
+| | Day 1 (21 Oct) | Day 2 (22 Oct) | Day 3 so far (23 Oct 03:00-04:55 UTC) |
+| all commits | 379 | 829 | 126 |
+| of which Dave's QA page commits (answers) | 28 (about 14 answers) | 437 (about 218 answers) | 50 (about 25) |
+| other commits (code, docs, merges) | 351 | 392 | 76 |
+| merge commits (branches joined) | 4 | 31 | 15 |
+| commits that mention fix/conflict/warning/duplicate | 24 | 25 | 4 |
+| build number | not recorded in code yet | reached 695 (about 100 builds merged, 592 to 695) | 695 to 701 in under 2 h |
+Reading: (a) Dave's decisions per day went up about 15x (the QA page and cards). (b) Integration went up about 8x (31 merges vs 4; about 100 numbered builds). (c) Raw code and doc commits are only about 12 percent higher. (d) The rework share (fix-like commits per commit) about halved, but tonight showed new kinds of rework (below). So: we got MORE DECIDED and MORE INTEGRATED for about the same budget, not obviously more raw code. Caveat: commit counts do not measure size or quality.
+## 2. Bottlenecks I can evidence
+1. Merges collide: tonight alone, duplicate item number 234 (wooden_block and rock_pile), two branches wanting action id 39/40, conflicts in game_menu.gd, server_items.gd, terrain_net.gd, test_tunnel_watch.gd; earlier (build 687) I committed conflict markers; warning-ignore line misplaced by a merge (234 warnings, fixed as 699); next_number not bumped (fixed as 701). Cause: every thread branches from a different head and picks "the next number" itself.
+2. Late discovery: nobody can run Godot in the cloud, so local_check, the warning count and headless loads wait for MikeW on Dave's PC; failures (699, 701) came back after the merge, one round trip each.
+3. Dave as the only tester: 12 test cards at night, most checkable by the team. Now BP-T45/T46 (showroom, team tests first).
+4. Relay overhead: threads cannot message each other, so the coordinator relays and I relay back; long relays repeat Dave's full words to several parties, and I hit an hourly message limit earlier.
+5. Card churn: card format wrong at first (Dave corrected 3 times), cards removed or reposted while he was answering, duplicate answer entries (I made one tonight), page code stale in his open tab (v7 vs v9).
+6. Waiting: permission prompts in thread windows that Dave cannot see; threads waiting for a card answer. BP-T41/T44 address this.
+7. Reading load: 83 docs in tech/, 46 best-practice rules, a long HANDOFF.md every thread reads at start; many rules are for me, not for them.
+8. Stale chains: a 30-minute moderator check chain and repeated status checklists produce messages with nothing new.
+9. Crash logs and telemetry committed to the repo several times (tracked files now ignored).
+## 3. Five best fixes, ranked (with why)
+1. PRE-MERGE GUARD SCRIPT AND CI (tools/merge_check.sh, then GitHub Actions headless Godot): checks conflict markers, duplicate item numbers and action ids, next_number, crash logs, JSON validity, and the warning baseline. Why: it would have caught every merge problem tonight BEFORE the merge, and removes the MikeW round trip. CI (C85) already exists in the plan, "gated"; this is the reason to turn it on. Needs a Godot headless build in CI (not verified: the 30-minute custom build may need caching).
+2. RESERVED NUMBER RANGES: item numbers, action ids and protocol bumps allocated by a one-line claim file (tech/ID_CLAIMS.md) or per-thread ranges (Sal 300-399, Steve 400-499...). Why: duplicates 234 and 39/40 are pure collisions; a claim takes seconds.
+3. TEAM TESTS FIRST (BP-T46) plus the showroom and the look rig on MikeW's PC (BP-T45). Why: moves the tester load off Dave and finds failures before cards.
+4. INBOX FILES AND THREAD-TO-THREAD NOTES: each thread has tech/INBOX_<name>.md that the coordinator and I write DELTAS to (not full quotes), read at the start of every turn. Why: threads cannot message each other; one short file replaces several long relays. Not verified: whether threads reliably read it each turn.
+5. SLIM THE READING: HANDOFF.md top block of at most 40 lines (done by me tonight: a first-jobs block); archive finished sections; one-line BP index per thread (only rules that apply to its job). Why: every thread reads this at every start.
+## Token-heavy habits we could trim without losing quality
+- Relaying Dave's full message to every thread: send only what changes for that thread (a delta).
+- Status checklists after every tiny step and the 30-minute moderator chain when nothing changed: post only on result, blocker or question (BP already says two replies max).
+- Rewriting the same card or answer entry: write once, correct by new card only if wrong.
+- Full BUILD_LOG lines of several sentences: keep to merged/not run/needs check.
+- Long reports duplicated in chat and a doc: doc plus one line in chat.
+## Not measured
+Tokens per thread or per task; how many of Dave's 218 answers changed real code; whether the extra merges are all useful or partly churn.
+
+## Who was least busy? (added 05:30 UTC; Dave asked 04:52)
+IMPORTANT: commit and merge counts are NOT effort. A thread can spend a whole day on one hard design, a bake, a test run or waiting for an answer and show almost nothing here. Git does not tell which thread wrote a commit (the author is the same account for most: 516 commits "The Magnanimous Coder" account, 311 "Claude", 196 "Tyler_Guru"). So this table uses the BUILD_LOG "MERGED" lines by thread (22 and 23 Oct, builds 647 to 701), which is the only per-thread record.
+| Thread | Builds merged (BUILD_LOG, 647-701) | Other work seen | Idle or blocked stretches I saw |
+| Sal_Crafts | about 20 | items, crafting, blueprint design, costs, wood chain, admin craft, rock pile | said branches unmerged when they were merged; waited at times on cost cards |
+| Kathleen_ArtisticDirector | about 12 | looks, tiers art, sounds, designs rounds 3-4 | waited on me to merge tools-v6 and on cards; could not render in cloud |
+| Steve_ProblemSolver | about 10 | Esc menu, collapse, ladders, drip, reset, clear drops, cave-in fix | a few permission waits |
+| Sonny_WorksDep | about 1 (terrain B pushed, off) | terrain B stages, basins, far water, ocean notes, water flicker analysis | waited on yes/no cards (he said so at 01:00); long work not visible in merges |
+| MikeW_LocalAgent | 0 code merges | warning baseline, local_check, backups, headless runs, bake tests, evidence copy | idle between asks (runs only when called); his checks gated my merges |
+| Guru (me) | all merges (about 53 MERGED lines), docs, 200+ answer sweeps and cards | page versions, BP rules, decisions | my hourly message limit and my own merge errors |
+Reading: by merges, MikeW and Sonny had the most spare capacity; MikeW because he only runs when called, Sonny because terrain B and water are big jobs that land later. Sonny is probably not idle in effort. MikeW is the clearest spare capacity.
+Next job I would hand MikeW: the team tests in TEAM_TESTS.md and the look rig, then run the pre-merge guard on his PC as the first "CI" until GitHub runs it. Sonny: the dry river sim check, water surface flicker and the 1-tile BAKE-1 test with MikeW.
+
+## Wrongly stuck cases today (BP-T48), one line each (only what I saw or was told; not complete)
+1. Shoulder log as an inventory item: Sal said it "needs Dave's Yes", but Dave had asked for it directly (a go).
+2. Sonny waiting for me to post a Yes/No card (01:00): technical choices were his to decide; only genuinely design questions needed a card.
+3. Kathleen waiting for me to merge kathleen-tools-v6 and rerun gen_looks.py: she could have kept working on her next item.
+4. Sal's status said his branches were unmerged when they were merged: a stale note kept him looking blocked.
+5. Hotbar-move: a question was asked of Dave that already matched what he described (Sal's own check answered it).
+6. Merges and cards waiting on Dave's pull or backup before more work: BP-T43 and BP-T41 now say work continues on branches.
+7. Several permission waits in thread windows (Steve and others, told by the coordinator): not visible to Dave; BP-T44/T48 say decide and go, or post a card.

@@ -1,0 +1,96 @@
+WhatamIDoingtoReachMyGoal (Kathleen)
+GOAL 1: Simple, reasonably accurate-to-real models for EVERYTHING in the game that needs one
+Rules: update at every step start/finish and every 30-min reminder; never delete done lines; if a step waits on someone, start the next; when fewer than 5 steps remain add the next 10 from goals_Kathleen.md.
+
+STEP LIST (ordered; done check in brackets)
+1. DONE 1a inventory art/MODEL_INVENTORY.md [file exists with counts]
+2. DONE 1c 198 items looks [validate_items says 0 GENERIC]
+3. DONE 1d building pieces (log wall, doors, ceiling, flat roof, braces, sawmill, table, wheel) [branches pushed]
+4. DONE 1b family 1 flowers: 21 species (claude/kathleen-flora-gaps) [headless build under budget]
+5. DONE 03:50 UTC 1b family 2 grasses: tall_grass, cotton_grass, samphire, plantain as grass_tuft rows [headless vertex table under 600 near]
+6. NEXT 1b family 3 ferns: fern, hushfern, whisperfern, staunchmoss, echo_moss [vertex table]
+7. DONE 04:10 UTC 1b family 4 reeds: reeds, wispbloom, tideglass_weed, riverbraid, stormreed, tidecrown [vertex table]
+8. DONE 04:35 UTC 1b family 5 shrubs without a model (16): juniper, gorse, dwarf_birch, saltbush, elder, hawthorn, sea_buckthorn, wild_sage, rosemary, drakethorn, sunberry, hagwillow, honeyspindle, sleetberry, tanglewort, sunsilver_vine [vertex table]
+9. DONE 04:40 UTC 1b family 6 cactus/aloe/prickly_pear [vertex table]
+10. DONE 04:42 UTC 1b reference notes per flora family written in MODEL_INVENTORY.md [lines added]
+11. DONE 05:10 UTC 1f worn clothing: write worn_look.gd builders for 9 items [plan Kathleen_worn_clothing.md; Tyler reply pending, start after it]
+12. DONE 05:10 UTC 1f worn.json + attach function + attach function handed to Steve [file pushed]
+13. 1e rabbit/duck carcass and remains variants per species [list of species with model]
+14. DONE 05:15 UTC request sent. (was: Ask Mike for ONE showroom batch: all families pictures (items, flora, building) [request filed through coordinator])
+15. Post cards per family from Mike's pictures with Tyler recommends [cards posted]
+16. READY 07:05 UTC (waits on merge + Mike pictures) 1 final check: inventory shows a model for every row; ask Tyler to confirm goal 1 complete [Tyler confirms]
+
+NEXT 10 (added 05:15 UTC from goals_Kathleen.md; goal 1 steps 13/15/16 wait on Mike's pictures)
+17. DONE 05:50 UTC (gap: one ellipsoid for all species, fix is in batch A plan) 1e rabbit/duck/wolf carcass+remains per species check and gaps list [list in inventory]
+18. 1e creature model gap list: fox/deer/moose/horse quad spec params vs real sizes [table]
+19. Goal 2 batch A (flora): before/after plan for raspberry/bramble/rose/blackthorn/blueberry vs photos [row picture request]
+20. Goal 2 batch B (items): tools (axe, knife, spades, hoes) real shapes with triangle budget [list + branch]
+21. Goal 2 batch C (building pieces): textures for log wall/doors/roofs [branch]
+22. Goal 4 prep: list the 42 fantasy species models still plain [list in inventory]
+23. Goal 5 prep: temple/shrine/altar model sketches from design 8.11 [plan to Tyler]
+24. Goal 6 prep: ruin set of 5 pieces list from design 4.4 [list]
+25. DONE 05:30 UTC Goal 7: sound manifest empty slots list art/SOUND_MANIFEST.md [list in inventory]
+26. Goal 9 prep: ART_DIRECTION world look pass order [list]
+
+MORE STEPS (added 05:50 UTC)
+27. DONE 06:10 UTC (carcass only; stone/stick/log next) Goal 2 batch A: carcass per species + stone/stick/log [after Tyler's reply on Kathleen_goal2_batch_a.md; rows 1-2 first]
+28. DONE 06:45 UTC Goal 2 batch A: animals (deer now a real quad, details on moose/horse; fox/wolf/rabbit/duck unchanged) data/animals/looks.json + builders [triangle table]
+29. Goal 2 batch A: body face/hair/hands parts [triangle table]
+30. DONE 07:00 UTC Sound batch 1 mapping tables (species footsteps) [data + clip_check]
+31. DONE 07:00 UTC Sound batch 1 door/ladder/wheel/table clips [ogg + CREDITS rows]
+32. Sound batch 1 sound test menu entries [list]
+33. Goal 2 batch B plan (tools, campfire, chests) [plan to Tyler]
+34. Goal 2 batch C plan (grass, ferns, trees) [plan to Tyler]
+35. Cards for Mike's pictures [cards posted]
+36. Goal 4 prep: fantasy species list with model status [list]
+
+HANDED OFF
+- 02:10 UTC to Steve: shrub mid LOD selection by distance, season/stripped into build(), low-berry carpets.
+- Pictures to Mike (Steve's --showroom flag).
+
+DONE LOG (UTC 24 Oct)
+- 01:10 building looks, showroom models, island types pushed.
+- 02:05 1a inventory. 02:55 1c items. 03:10 1e/1f status. 03:30 flowers family pushed (branch claude/kathleen-flora-gaps).
+- 03:50 UTC family 2 grasses pushed (4 species, near 120-290 vertices).
+- 04:10 UTC families 3 ferns/mosses and 4 reeds pushed.
+- 04:42 UTC families 5 shrubs (16), 6 cactus/aloe/prickly pear pushed; reference notes in MODEL_INVENTORY.md. Now 1f worn clothing (Tyler GO received).
+- 05:10 UTC 1f worn clothing pushed (claude/kathleen-worn-clothing): worn_look.gd + worn.json for 9 items. HANDED OFF to Steve: call WornLook.attach(rig, item_ids, far) from npc_view._make_body and the sync code; local player preview in the character screen (no body preview exists there yet).
+- 05:30 UTC sound manifest written (art/SOUND_MANIFEST.md) with EMPTY slots and a work order.
+- 05:35 UTC 30-min check: goal 1 coding steps 1b/1c/1d/1f done on branches; waiting on Mike pictures (step 14 request sent) for steps 15-16; now step 17 creature carcass gaps.
+- 05:50 UTC goal 2 ranking written (art/GOAL2_RANKING.md); plans for goal 2 batch A and sound batch 1 sent via coordinator; step list extended to 36.
+- 06:10 UTC batch A carcass per species pushed (claude/kathleen-goal2-a, 7 species, 294-390 tris). Next: stone/stick/log, then animals.
+- 06:25 UTC batch A: stone now a faceted lump (rock_look.gd, 70 tris) on claude/kathleen-goal2-a. Next: animals (data/animals/looks.json), then body parts; sound batch 1 mapping tables.
+- 06:45 UTC animals step pushed (deer 870-970 tris, moose 1070, horse 830, fox 840). Next: 29 body parts, 30 sound mapping tables.
+- 07:00 UTC sound batch 1 pushed (claude/kathleen-sound-1): 18 slots, 51 clips 472 KB, validator 0 empty. Ear-test menu entry is engine code (Steve). Back to goal 1: check Mike pictures, post cards; step 29 body parts.
+- 07:05 UTC goal 1 status table written in MODEL_INVENTORY.md; all coding done, step 16 waits for merges and Mike pictures. Next: step 29 body parts (batch A), then goal 2 batch B plan.
+- 07:30 UTC check: wild rose no-berries fix pushed (flora-gaps 4567adf); goal 1 coding done, step 16 waits for merges + Mike pictures; working goal 2 batch A step 29 body parts.
+- 08:20 UTC Mike gate fixes: goal2-a rebased on 776 (e986e7e7), sound-1 rebased (9a2e1ba9; it was NOT in head, merge it before steve-sound-slots), 12 showroom rows for my item families on claude/kathleen-showroom-rows.
+- 08:35 UTC check: gate fixes pushed (goal2-a e986e7e7, sound-1 9a2e1ba9, showroom rows 8e79c4a0). Goal 1 coding done; step 16 waits for Mike pictures. Now goal 2 batch A step 29 body parts.
+- 09:10 UTC Dave's tree belts job: plan Kathleen_tree_belts.md sent; code pushed claude/kathleen-tree-belts (flora_placer.gd). Needs Mike before/after at x 52474 z 72888 (cloud has no Voxel module so I could not run test_worldgen).
+- 09:20 UTC all-night work confirmed by Dave. Tree belts pushed (a9b93a04, VERSION 4). Next: step 29 body details (ragdoll face/hair/hands), then goal 2 batch B plan, sound ear-test support.
+- 09:50 UTC check: tree belts pushed earlier (a9b93a04); now starting step 29 body details on ragdoll_body.gd; goal 1 step 16 still waits for Mike pictures.
+- 09:55 UTC step 29 DONE: nose, brow, chin, ears, thumbs on claude/kathleen-body-details (hair needs a shader region, parked). Next: goal 2 batch B plan.
+- 04:36 UTC check: goal 1 step 16 still waits on Mike pictures; step 29 body details pushed (claude/kathleen-body-details); next goal 2 batch B plan.
+- 05:08 UTC check: nothing new; goal 1 step 16 waits on Mike pictures; next: batch B action plan.
+- 05:39 UTC check: batch B plan written (tech/ACTION_PLANS/Kathleen_goal2_batch_b.md), sent to Tyler via coordinator.
+- 05:41 UTC batch B part 1: pickaxe + knife upgraded (claude/kathleen-goal2-b); campfire and woven chest already detailed; plank chest shares state 6 so needs look plumbing (Steve/Tyler).
+- 05:48 UTC tree belts test fix cb73da93 (stand key, slope band row); sent to coordinator.
+- 06:11 UTC check: tree belts test fix cb73da93 and batch B part 1 (pickaxe, knife) pushed since 05:08; goal 1 step 16 still waits on Mike pictures.
+- 06:43 UTC check: nothing new since 06:11; goal 1 step 16 waits on Mike pictures.
+- 07:10 UTC: waiting for Sonny's test branch (92d85b48) to check 2 crowded positions; meanwhile goal 1/batch B.
+- 07:15 UTC check: nothing new since 06:43; waiting Mike pictures (goal 1 step 16) and Sonny's crowded-position print.
+- 07:17 UTC crowded pairs = wild rose patch members; test-only fix 4384c58a (crowd-fix) / 2426ceed (tree-belts); sent to coordinator.
+- 07:28 UTC showroom row B1 pickaxe+knife f8cfe47e on claude/kathleen-goal2-b; sent to coordinator.
+- 07:43 UTC viewed Mike's B1 picture: pickaxes and knife render but tiny at that distance; need close-up to judge. Goal 1 Done-when not yet closed (needs close-ups per family + Dave cards).
+- 07:46 UTC check: since 07:15: crowd-test fix (4384c58a/2426ceed), showroom B1 row f8cfe47e, viewed Mike's B1 picture (too small to judge). Goal 1 step 16 waits on close-up pictures K1-K12 + B1.
+- 08:17 UTC check: nothing new since 07:46; waiting on close-up pictures.
+- 08:18 UTC sound batch 2 plan written (tech/ACTION_PLANS/Kathleen_sound_batch_2.md), sent to Tyler.
+- 08:22 UTC sound batch 2 pushed 639c9dd1 (17 slots, 31 clips, 1.05 MB, seams ok, 6 voices, 12.6 MB at Low); manifest updated; needs Steve 'Batch 2' ear test + hookup, then one card.
+- 08:49 UTC check: since 08:17: sound batch 2 pushed 639c9dd1; goal 1 step 16 still waits on close-ups (queued by Mike).
+- 09:13 UTC flora biome test fix 804de331 (float32 border); layout 5 vs 4 explained; sent.
+- 09:21 UTC check: since 08:49: flora biome test fix 804de331; goal 1 step 16 waits on close-ups.
+- 09:52 UTC check: nothing new since 09:21; waiting on close-ups.
+- 10:23 UTC check: nothing new since 09:52; asking priority close-ups.
+- 10:24 UTC batch C plan written, sent to Tyler.
+- 10:27 UTC batch C pushed (grass blades, fern ribs+fiddleheads, root flare x5, budget test + baseline) on claude/kathleen-goal2-c; needs Mike frame time + pictures.
+- 10:56 UTC check: since 10:23: batch C pushed 538976f7 (grass/fern/root flare + budget test); goal 1 step 16 waits on priority close-ups.

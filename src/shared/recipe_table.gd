@@ -5,6 +5,7 @@ extends RefCounted
 
 const PATH := "res://data/items/recipes.json"
 
+var open_unknown: Array = []   # ids in open_recipes.json that match no recipe (a test fails on any)
 var _by_number: Dictionary = {}   # int -> {number, id, name, needs [[item number, count]], gives [item number, count], craft_s}
 
 
@@ -23,6 +24,10 @@ func load_file(path: String, item_table) -> bool:
 
 	for id in parsed["recipes"]:
 		var row: Dictionary = parsed["recipes"][id]
+
+		if bool(row.get("retired", false)):   # kept in the file so the number is never reused (Dave 24 Oct, key woods)
+			continue
+
 		var needs: Array = []
 
 		for need in row["needs"]:
@@ -39,14 +44,41 @@ func load_file(path: String, item_table) -> bool:
 			identify.append(item_table.number_of(str(need)))
 
 		var entry: Dictionary = {
-			"number": int(row["number"]), "id": id, "name": str(row["name"]), "needs": needs, "keeps": keeps, "identify": identify,
+			"number": int(row["number"]), "id": id, "name": str(row["name"]), "category": str(row.get("category", "")), "needs": needs, "keeps": keeps, "identify": identify,
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
+			"wears_tool": str(row.get("wears_tool", "")),
 		}
 		_by_number[entry["number"]] = entry
 
+	_open_listed(path.get_base_dir().path_join("open_recipes.json"))
 	return true
+
+
+# data/items/open_recipes.json {"open": [ids]}: recipes known from the first minute (Dave 24 Oct, no learn system). Server and client read the same file.
+func _open_listed(path: String) -> void:
+	open_unknown.clear()
+
+	if not FileAccess.file_exists(path):
+		return
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_error("recipe table: %s is not valid" % path)
+		return
+
+	for id in parsed.get("open", []):
+		var found: bool = false
+
+		for number in _by_number:
+			if _by_number[number]["id"] == str(id):
+				_by_number[number]["known"] = true
+				found = true
+
+		if not found:
+			open_unknown.append(str(id))
 
 
 func numbers() -> Array:

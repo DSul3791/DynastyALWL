@@ -2,21 +2,22 @@
 # GDScript warning counter (Dave's rule: new code makes zero warnings, so the log holds only real problems).
 #
 #   tools/check_warnings.sh              warnings per file, all scripts (about 1 minute)
-#   tools/check_warnings.sh --changed    only files changed against origin/claude/generator-v2 (and uncommitted):
+#   tools/check_warnings.sh --changed    only files changed against origin/main (and uncommitted):
 #                                        prints their warnings and exits 1 if there are any. Run before every push.
 #   tools/check_warnings.sh --detail F   every warning of file F (path from the project root, e.g. src/client/hud.gd)
 #
 # Needs the project's Godot on the PATH (godot). It loads every script with --debug, because headless Godot only
 # reports warnings in debug mode, and counts what the engine says.
 cd "$(dirname "$0")/.." || exit 2
+command -v godot >/dev/null || { echo "check_warnings: godot is not on the PATH, nothing was checked" >&2; exit 2; }
 OUT=$(mktemp)
 timeout 600 godot --headless --debug --path . --script res://tools/check_warnings.gd 2>&1 | grep "^WARN \|^scripts checked" | sed 's/^WARN //' | sort -u > "$OUT"
 grep "^scripts checked" "$OUT" | tail -1
 
 case "$1" in
 	--changed)
-		git fetch -q origin claude/generator-v2 2>/dev/null
-		CHANGED=$( (git diff --name-only origin/claude/generator-v2...HEAD; git diff --name-only HEAD) | sort -u | grep '\.gd$')
+		git fetch -q origin main 2>/dev/null
+		CHANGED=$( (git diff --name-only origin/main...HEAD; git diff --name-only HEAD) | sort -u | grep '\.gd$')
 		BAD=0
 		for f in $CHANGED; do
 			N=$(grep -c "^$f:" "$OUT")

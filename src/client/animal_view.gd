@@ -9,6 +9,12 @@ const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 
+signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
+
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse"}
+const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
 var _mats: Dictionary = {}
 var _t: float = 0.0
@@ -27,10 +33,13 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse() if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose() if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer() if int(row[1]) == 2 else _make_rabbit()))
+			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse(id) if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose(id) if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer(id) if int(row[1]) == 2 else _make_rabbit()))
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
+
+		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
+			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
@@ -120,8 +129,34 @@ func _process(delta: float) -> void:
 		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
 		if bool(b.get("wolf", false)):
 			_animate_wolf(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+		elif bool(b.get("quad", false)):
+			_animate_quad(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		else:
 			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
+
+		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+
+
+# A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
+func _emit_steps(b: Dictionary, node: Node3D, state: int, speed: float) -> void:
+	var kind: String = str(b.get("kind", ""))
+
+	if kind == "" or kind == "duck" or speed < 0.4:
+		return
+
+	var count: int
+	if kind == "rabbit":
+		if state == GRAZE:
+			return
+
+		count = int(floor((_t * (9.0 if state == FLEE else 5.0) + float(b["phase"])) / PI))
+	else:
+		count = int(floor(float(b.get("gait", 0.0))))
+
+	if int(b["step_count"]) >= 0 and count != int(b["step_count"]):
+		stepped.emit(kind, node.global_position)
+
+	b["step_count"] = count
 
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -140,8 +175,8 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 	var mesh: SphereMesh = SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	mesh.radial_segments = 8
-	mesh.rings = 4
+	mesh.radial_segments = 8 if radius >= 0.05 else 5      # tiny balls (eyes, nostrils, tail tips) need few facets
+	mesh.rings = 4 if radius >= 0.05 else 2
 	mesh.material = _material(color)
 	var inst: MeshInstance3D = MeshInstance3D.new()
 	inst.mesh = mesh
@@ -301,72 +336,193 @@ func _make_flock(id: int) -> Node3D:
 
 	for k in 6 + id % 8:
 		var at: Vector3 = Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(-3.0, 3.0))
-		_ball(rig, 0.16, Vector3(0.8, 0.7, 1.4), at + Vector3(0.0, 0.1, 0.0), Color(0.45, 0.36, 0.26))
-		_ball(rig, 0.07, Vector3.ONE, at + Vector3(0.0, 0.3, -0.22), Color(0.12, 0.34, 0.2))
+		var drake: bool = k % 2 == 0      # drakes: green head, white neck ring, grey flanks; hens: plain mottled brown
+		_ball(rig, 0.16, Vector3(0.8, 0.7, 1.4), at + Vector3(0.0, 0.1, 0.0), Color(0.5, 0.5, 0.52) if drake else Color(0.45, 0.36, 0.26))
+		_ball(rig, 0.055, Vector3(0.9, 1.4, 0.9), at + Vector3(0.0, 0.24, -0.16), Color(0.92, 0.9, 0.86) if drake else Color(0.45, 0.36, 0.26))   # neck
+		_ball(rig, 0.07, Vector3.ONE, at + Vector3(0.0, 0.32, -0.2), Color(0.12, 0.34, 0.2) if drake else Color(0.4, 0.31, 0.22))
+		_box(rig, Vector3(0.05, 0.02, 0.09), at + Vector3(0.0, 0.31, -0.29), Color(0.9, 0.68, 0.15))                            # bill
 
 	return root
 
 
-# A fox for now (placeholder until Art): the deer shape small and rusty red; state 13 creeps low, 14 runs with food.
-func _make_fox() -> Node3D:
-	var node: Node3D = _make_deer()
-	node.scale = Vector3(0.5, 0.5, 0.5)
-	var rust: StandardMaterial3D = _material(Color(0.72, 0.34, 0.12))
-
-	for child in node.find_children("*", "MeshInstance3D", true, false):
-		(child as MeshInstance3D).material_override = rust
-
-	return node
-
-
-# A horse for now (placeholder until Art): the deer shape without antlers, bay coat, about 1.4 times as big (2.1 m long, 1.6 m at the back).
-func _make_horse() -> Node3D:
-	var node: Node3D = _make_deer()
-	node.scale = Vector3(1.4, 1.4, 1.4)
-	var rig: Node = node.get_node("Rig")
-
-	for k in 2:
-		var last: Node = rig.get_child(rig.get_child_count() - 1)   # the two antlers are the last children
-		rig.remove_child(last)
-		last.queue_free()
-
-	var bay: StandardMaterial3D = _material(Color(0.36, 0.2, 0.11))
-
-	for child in node.find_children("*", "MeshInstance3D", true, false):
-		(child as MeshInstance3D).material_override = bay
-
-	return node
-
-
-# A moose for now (placeholder until Art): the deer shape in dark brown, about 1.8 times as big (2.7 m long, 2.1 m at the shoulder).
-func _make_moose() -> Node3D:
-	var node: Node3D = _make_deer()
-	node.scale = Vector3(1.8, 1.8, 1.8)
-	var brown: StandardMaterial3D = _material(Color(0.24, 0.17, 0.12))
-
-	for child in node.find_children("*", "MeshInstance3D", true, false):
-		(child as MeshInstance3D).material_override = brown
-
-	return node
-
-
-# A deer for now (placeholder until Art): tan body, neck and head, four thin legs, short antlers. About 1.5 m long, 1.2 m to the back.
-func _make_deer() -> Node3D:
+# Fox, horse and moose share one four-legged build (Mandy 2026-10-22). `spec` sizes it: leg_h (hip height), rb (body radius), len (shoulder to
+# hip), neck, head (head length), coat, dark, pale, plus flags hump, mane, antlers, bushy, snout. Facing -Z. Pieces named for `_animate_quad`: Rig,
+# Head (neck and head), Ear_L, Ear_R, Tail, Leg_FL, Leg_FR, Leg_HL, Leg_HR.
+func _make_quad(spec: Dictionary) -> Node3D:
 	var root: Node3D = Node3D.new()
+	root.set_meta("quad", true)
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
-	var coat: Color = Color(0.52, 0.38, 0.24)
-	_ball(rig, 0.3, Vector3(0.85, 0.85, 1.9), Vector3(0.0, 0.85, 0.0), coat)
-	_box(rig, Vector3(0.14, 0.5, 0.16), Vector3(0.0, 1.15, -0.55), coat, Vector3(-0.5, 0.0, 0.0))
-	_ball(rig, 0.11, Vector3(0.8, 0.8, 1.4), Vector3(0.0, 1.38, -0.75), coat)
-	_ball(rig, 0.05, Vector3.ONE, Vector3(0.0, 0.9, 0.55), Color(0.9, 0.86, 0.8))
+	var leg_h: float = float(spec["leg_h"])
+	var rb: float = float(spec["rb"])
+	var half: float = float(spec["len"]) * 0.5
+	var nk: float = float(spec["neck"])
+	var hd: float = float(spec["head"])
+	var coat: Color = spec["coat"]
+	var dark: Color = spec["dark"]
+	var pale: Color = spec["pale"]
+	var back: float = leg_h + rb * 0.8
+	rig.set_meta("leg_h", leg_h)
+	_ball(rig, rb, Vector3(0.85, 1.0, 1.5), Vector3(0.0, leg_h + rb * 0.35, -half * 0.45), coat)       # chest
+	_ball(rig, rb * 0.95, Vector3(0.85, 0.95, 1.5), Vector3(0.0, leg_h + rb * 0.3, half * 0.5), coat)  # hips
+	_ball(rig, rb * 0.8, Vector3(0.8, 0.8, 2.2), Vector3(0.0, leg_h + rb * 0.15, 0.0), pale if bool(spec.get("pale_belly", true)) else coat)   # belly
 
-	for lx in [-0.12, 0.12]:
-		for lz in [-0.38, 0.4]:
-			_box(rig, Vector3(0.06, 0.62, 0.06), Vector3(lx, 0.31, lz), Color(0.4, 0.3, 0.2))
+	if bool(spec.get("hump", false)):
+		_ball(rig, rb * 0.7, Vector3(0.8, 0.9, 1.3), Vector3(0.0, back + rb * 0.35, -half * 0.55), dark)   # shoulder hump
+
+	var head: Node3D = Node3D.new()
+	head.name = "Head"
+	head.position = Vector3(0.0, back - rb * 0.1, -half * 0.8)
+	rig.add_child(head)
+	_ball(head, nk * 0.22, Vector3(0.8, 0.8, 1.0), Vector3(0.0, nk * 0.3, -nk * 0.3), coat, Vector3(0.7, 0.0, 0.0))      # neck (long)
+	_ball(head, nk * 0.2, Vector3(0.75, 0.75, 1.3), Vector3(0.0, nk * 0.55, -nk * 0.55), coat, Vector3(0.7, 0.0, 0.0))
+	var top: Vector3 = Vector3(0.0, nk * 0.78, -nk * 0.85)
+	_ball(head, hd * 0.28, Vector3(0.85, 0.9, 1.4), top, coat if not bool(spec.get("dark_head", false)) else dark)       # skull
+	var snout: float = float(spec.get("snout", 1.0))
+	_box(head, Vector3(hd * 0.34, hd * 0.3, hd * 0.55 * snout), top + Vector3(0.0, -hd * 0.08, -hd * 0.45 * snout), pale if bool(spec.get("pale_snout", false)) else dark)
+	_ball(head, hd * 0.05, Vector3.ONE, top + Vector3(0.1 * hd, hd * 0.12, -hd * 0.18), Color(0.05, 0.04, 0.04))        # eyes
+	_ball(head, hd * 0.05, Vector3.ONE, top + Vector3(-0.1 * hd, hd * 0.12, -hd * 0.18), Color(0.05, 0.04, 0.04))
 
 	for side in [-1.0, 1.0]:
-		_box(rig, Vector3(0.025, 0.28, 0.025), Vector3(side * 0.07, 1.55, -0.75), Color(0.75, 0.7, 0.6), Vector3(0.0, 0.0, side * -0.4))
+		var ear: Node3D = Node3D.new()
+		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
+		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
+		head.add_child(ear)
+		_box(ear, Vector3(hd * 0.1, hd * 0.32, hd * 0.06), Vector3(0.0, hd * 0.16, 0.0), dark, Vector3(0.0, 0.0, side * -0.35))
+
+		if bool(spec.get("antlers", false)):
+			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
+			_box(head, Vector3(hd * 1.1, hd * 0.05, hd * 0.55), top + Vector3(side * hd * 0.75, hd * 0.4, 0.0), Color(0.72, 0.66, 0.54), Vector3(0.0, side * 0.3, side * -0.25))
+
+			for tine in 4:
+				_box(head, Vector3(hd * 0.05, hd * 0.05, hd * 0.3), top + Vector3(side * hd * (0.7 + 0.2 * float(tine)), hd * 0.48, -hd * 0.3 + hd * 0.2 * float(tine)), Color(0.72, 0.66, 0.54), Vector3(0.0, side * 0.2, 0.0))
+
+	if bool(spec.get("mane", false)):
+		_box(head, Vector3(hd * 0.06, nk * 0.6, hd * 0.25), Vector3(0.0, nk * 0.55, -nk * 0.4), dark, Vector3(0.7, 0.0, 0.0))
+
+	# Goal 2 batch A details, all children of existing nodes (names and animation unchanged): nostrils, then per species marks.
+	_ball(head, hd * 0.045, Vector3(1.0, 0.7, 0.7), top + Vector3(hd * 0.08, -hd * 0.1, -hd * 0.45 * snout - hd * 0.28 * snout), Color(0.04, 0.03, 0.03))
+	_ball(head, hd * 0.045, Vector3(1.0, 0.7, 0.7), top + Vector3(-hd * 0.08, -hd * 0.1, -hd * 0.45 * snout - hd * 0.28 * snout), Color(0.04, 0.03, 0.03))
+
+	if bool(spec.get("blaze", false)):
+		_box(head, Vector3(hd * 0.1, hd * 0.05, hd * 0.8), top + Vector3(0.0, hd * 0.14, -hd * 0.3), pale, Vector3(-0.15, 0.0, 0.0))      # a white stripe down the face
+
+	if bool(spec.get("bell", false)):
+		_ball(head, hd * 0.12, Vector3(0.6, 1.8, 0.6), top + Vector3(0.0, -hd * 0.55, hd * 0.12), dark)      # the moose's dangling bell under the throat
+
+	if bool(spec.get("tines", false)):
+		# A deer's antlers: a main beam sweeping up and back from each side with three tines.
+		for side in [-1.0, 1.0]:
+			var beam: Vector3 = top + Vector3(side * hd * 0.22, hd * 0.3, hd * 0.12)
+			_box(head, Vector3(hd * 0.05, hd * 0.9, hd * 0.05), beam + Vector3(side * hd * 0.1, hd * 0.4, hd * 0.2), Color(0.76, 0.7, 0.58), Vector3(0.45, 0.0, side * -0.25))
+
+			for tine in 3:
+				_box(head, Vector3(hd * 0.035, hd * 0.3, hd * 0.035), beam + Vector3(side * hd * (0.12 + 0.05 * float(tine)), hd * (0.25 + 0.22 * float(tine)), hd * (0.12 + 0.08 * float(tine))), Color(0.76, 0.7, 0.58), Vector3(-0.3, 0.0, side * 0.5))
+
+	if bool(spec.get("rump", false)):
+		_ball(rig, rb * 0.6, Vector3(0.8, 0.9, 0.5), Vector3(0.0, leg_h + rb * 0.4, half * 0.5 + rb * 0.8), pale)      # the pale rump patch
+
+	var tail: Node3D = Node3D.new()
+	tail.name = "Tail"
+	tail.position = Vector3(0.0, leg_h + rb * 0.7, half * 0.9)
+	rig.add_child(tail)
+
+	if bool(spec.get("bushy", false)):
+		_ball(tail, rb * 1.1, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -rb * 0.2, rb * 1.4), coat, Vector3(0.5, 0.0, 0.0))
+		_ball(tail, rb * 0.7, Vector3(0.8, 0.8, 1.4), Vector3(0.0, -rb * 0.7, rb * 2.8), Color(0.92, 0.9, 0.86), Vector3(0.5, 0.0, 0.0))
+	elif bool(spec.get("long_tail", false)):
+		_box(tail, Vector3(rb * 0.3, leg_h * 0.95, rb * 0.2), Vector3(0.0, -leg_h * 0.45, rb * 0.2), dark, Vector3(0.12, 0.0, 0.0))      # a horse's tail hangs nearly to the hocks
+		_box(tail, Vector3(rb * 0.2, leg_h * 0.5, rb * 0.15), Vector3(rb * 0.12, -leg_h * 0.62, rb * 0.28), dark, Vector3(0.18, 0.0, 0.1))
+	else:
+		_box(tail, Vector3(rb * 0.12, leg_h * 0.5, rb * 0.12), Vector3(0.0, -leg_h * 0.22, rb * 0.1), dark, Vector3(0.1, 0.0, 0.0))
+
+	for leg in [["Leg_FL", -1.0, -half * 0.8], ["Leg_FR", 1.0, -half * 0.8], ["Leg_HL", -1.0, half * 0.8], ["Leg_HR", 1.0, half * 0.8]]:
+		var pivot: Node3D = Node3D.new()
+		pivot.name = leg[0]
+		pivot.position = Vector3(float(leg[1]) * rb * 0.55, leg_h, float(leg[2]))
+		rig.add_child(pivot)
+		var w: float = rb * 0.3
+		_box(pivot, Vector3(w, leg_h * 0.5, w), Vector3(0.0, -leg_h * 0.24, 0.0), coat)
+		_box(pivot, Vector3(w * 0.7, leg_h * 0.5, w * 0.7), Vector3(0.0, -leg_h * 0.74, 0.0), dark if not bool(spec.get("socks", false)) else pale)
+		_box(pivot, Vector3(w * 0.9, leg_h * 0.06, w * 1.2), Vector3(0.0, -leg_h * 0.98, -w * 0.1), Color(0.12, 0.1, 0.09))      # hoof
 
 	return root
+
+
+# Legs swing with the real ground speed; the head sinks to graze, lifts to watch, lowers to warn; ears go forward when alert and flat when
+# warning; the front hoof stamps at a warn (10, the moose telegraph: head low, ears flat, one fore hoof pawing, unmistakable); a charge (11)
+# gallops with the head low; a recover (12) stands blowing, the chest heaving. `speed` is metres a second.
+func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+	var rig: Node3D = node.get_node("Rig")
+	var head: Node3D = rig.get_node("Head")
+	var tail: Node3D = rig.get_node("Tail")
+	var leg_h: float = float(rig.get_meta("leg_h"))
+	var gallop: float = clampf((speed - 3.0) / 4.0, 0.0, 1.0)
+	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / (leg_h * lerpf(1.8, 1.3, gallop))
+	var amp: float = clampf(speed / 1.2, 0.0, 1.0) * lerpf(0.45, 0.85, gallop)
+	var swing: float = sin(float(b["gait"]) * TAU * 0.5)
+	var legs: Dictionary = {"Leg_FL": swing, "Leg_HR": swing, "Leg_FR": -swing, "Leg_HL": -swing}
+
+	if gallop > 0.5:
+		legs = {"Leg_FL": swing, "Leg_FR": swing * 0.9, "Leg_HL": -swing, "Leg_HR": -swing * 0.9}
+
+	for leg in legs:
+		var pivot: Node3D = rig.get_node(leg)
+		var target: float = float(legs[leg]) * amp
+
+		if state == 10 and leg == "Leg_FR":
+			target = -0.9 + 0.9 * maxf(0.0, sin(_t * 9.0))      # paws and stamps the ground
+		elif state == 10 and leg == "Leg_FL":
+			target = -0.2 * maxf(0.0, sin(_t * 9.0 + 3.1))
+
+		pivot.rotation.x = lerpf(pivot.rotation.x, target, clampf(delta * 18.0, 0.0, 1.0))
+
+	var head_down: float = 0.0
+
+	if state == 0 and speed < 0.3:
+		head_down = 0.9 + 0.08 * sin(_t * 0.9 + float(b["phase"]))      # grazing
+	elif state == 3:
+		head_down = -0.35
+	elif state == 10:
+		head_down = 0.75 + 0.1 * sin(_t * 9.0)
+	elif state == 11 or gallop > 0.5:
+		head_down = 0.45
+	elif state == 12:
+		head_down = 0.2 + 0.1 * sin(_t * 3.5)
+
+	head.rotation.x = lerpf(head.rotation.x, -(head_down + 0.05 * swing * amp), clampf(delta * 8.0, 0.0, 1.0))
+	var ear_back: float = 1.2 if state == 10 or state == 11 else (-0.3 if state == 3 else 0.2 * sin(_t * 0.7 + float(b["phase"]) * 9.0) * (1.0 if state == 0 else 0.0))
+
+	for ear_name in ["Ear_L", "Ear_R"]:
+		var ear: Node3D = head.get_node(ear_name)
+		ear.rotation.x = lerpf(ear.rotation.x, ear_back, clampf(delta * 12.0, 0.0, 1.0))
+
+	var tail_target: float = -0.4 if gallop > 0.5 else (0.15 + 0.1 * sin(_t * 2.0 + float(b["phase"])))
+	tail.rotation.x = lerpf(tail.rotation.x, tail_target, clampf(delta * 6.0, 0.0, 1.0))
+	var bob: float = absf(swing) * leg_h * 0.04 * amp
+	var heave: float = 0.012 * sin(_t * 7.0) * leg_h if state == 12 else 0.0
+	rig.position.y = lerpf(rig.position.y, bob + heave, clampf(delta * 10.0, 0.0, 1.0))
+
+
+# A fox (Mandy 2026-10-22): small, rusty red, pale belly and muzzle, dark socks, big bushy white-tipped brush. State 13 creeps low, 14 runs with food.
+func _make_fox() -> Node3D:
+	return _make_quad({"leg_h": 0.22, "rb": 0.1, "len": 0.5, "neck": 0.16, "head": 0.2, "snout": 1.3, "coat": Color(0.72, 0.34, 0.12), "dark": Color(0.2, 0.12, 0.08), "pale": Color(0.93, 0.88, 0.8), "pale_snout": true, "bushy": true})
+
+
+# A horse (Mandy 2026-10-22): coat chosen from the animal id (bay, chestnut, grey, black, dun), dark mane and tail. Foals and harness come later.
+func _make_horse(id: int) -> Node3D:
+	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
+	var pick: Array = coats[id % coats.size()]
+	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.75, "head": 0.55, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
+
+
+# A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.
+func _make_moose(id: int) -> Node3D:
+	return _make_quad({"leg_h": 1.15, "rb": 0.5, "len": 1.4, "neck": 0.8, "head": 0.65, "snout": 1.2, "coat": Color(0.2, 0.14, 0.1), "dark": Color(0.12, 0.09, 0.07), "pale": Color(0.4, 0.33, 0.27), "hump": true, "socks": true, "antlers": id % 2 == 0, "pale_belly": false, "bell": true})
+
+
+# A deer (goal 2 batch A, Kathleen): the shared four-legged build, so it walks, grazes and watches like the others. About 1.5 m long, 1.2 m to the back, tan coat, pale belly and rump,
+# a stag's branched antlers on every second one (by id).
+func _make_deer(id: int = 0) -> Node3D:
+	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.5, "head": 0.32, "snout": 1.1, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})

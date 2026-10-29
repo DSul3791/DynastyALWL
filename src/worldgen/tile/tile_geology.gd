@@ -145,6 +145,9 @@ func build(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteA
 	clock = Time.get_ticks_msec()
 	_find_placers(tile, heights, water_class, flow, x0, z0)
 	timings["placers"] = Time.get_ticks_msec() - clock
+	clock = Time.get_ticks_msec()
+	_ensure_river_ore(tile, heights, water_class, flow, x0, z0)
+	timings["river_ore"] = Time.get_ticks_msec() - clock
 
 	outcrop_cells = {}
 	var counts: PackedInt32Array = PackedInt32Array()
@@ -1264,6 +1267,154 @@ func _find_placers(tile: Vector2i, heights: PackedFloat32Array, water_class: Pac
 		})
 
 	ore_bodies.append_array(placers)
+
+
+# Dave 24 Oct: copper and tin near running water. When a tile has land and rivers but no body of a river_ore_resources metal
+# (tin, copper) within river_ore_within_m of a river, one guaranteed placer of that metal is laid along a mid-sized river of the
+# tile: the same placer shape the outcropping bodies make, only without a source body ("feature" is empty, "guaranteed" is true).
+# Deterministic by tile and metal. Tiles with fewer than river_ore_min_river_cells river cells (open sea, a sliver of land) get none.
+func _ensure_river_ore(tile: Vector2i, heights: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, x0: float, z0: float) -> void:
+	var ore_rules: Dictionary = _rules["ores"]
+	var resources: Array = ore_rules.get("river_ore_resources", [])
+
+	if resources.is_empty():
+		return
+
+	var reach_m: float = float(ore_rules.get("river_ore_within_m", 1000.0))
+	var min_cells: int = int(ore_rules.get("river_ore_min_river_cells", 400))
+	var rivers: PackedVector2Array = PackedVector2Array()
+	var starts: Array = []
+	var river_cells: int = 0
+
+	for index in range(samples * samples):
+		if water_class[index] != RIVER or heights[index] <= 2.0:
+			continue
+
+		river_cells += 1
+
+		if river_cells % 4 == 0:
+			var i: int = index % samples
+			@warning_ignore("integer_division")
+			var j: int = index / samples
+			rivers.append(Vector2(x0 + float(i) * spacing_m, z0 + float(j) * spacing_m))
+			starts.append(index)
+
+	if river_cells < min_cells or starts.is_empty():
+		return
+
+	# Mid-sized rivers: the middle band of the sampled river cells by flow, so a placer does not start in a brook or in the sea mouth.
+	starts.sort_custom(func(a: int, b: int) -> bool: return flow[a] < flow[b])
+	var low: int = int(float(starts.size()) * 0.3)
+	var high: int = maxi(int(float(starts.size()) * 0.8), low + 1)
+	var rng: RandomNumberGenerator = SeedUtil.rng_for(_master, "geology_river_ore", tile.x, tile.y)
+	var max_steps: int = int(float(ore_rules["placer_length_m"]) / spacing_m)
+	var record_every: int = maxi(int(float(ore_rules["placer_step_m"]) / spacing_m), 1)
+	var local: int = 9500
+
+	for resource in resources:
+		if _nearest_body_m(str(resource), rivers) <= reach_m:
+			continue
+
+		var points: Array = []
+
+		for _attempt in range(8):
+			points = _river_walk(int(starts[rng.randi_range(low, high - 1)]), heights, water_class, flow, x0, z0, max_steps, record_every)
+
+			if points.size() >= 3:
+				break
+
+		if points.size() < 3:
+			continue
+
+		local += 1
+		var width: float = 4.0
+		var thickness: float = rng.randf_range(float(ore_rules["placer_thickness_m"][0]), float(ore_rules["placer_thickness_m"][1]))
+		var length: float = float(points.size() * record_every) * spacing_m
+		ore_bodies.append({
+			"id": "%d,%d#%d" % [tile.x, tile.y, local],
+			"home_tile": [tile.x, tile.y],
+			"local_id": local,
+			"resource": str(resource),
+			"shape": "placer",
+			"feature": "",
+			"guaranteed": true,
+			"points": points,
+			"width_m": width,
+			"thickness_m": snappedf(thickness, 0.1),
+			"grade": 0.3,
+			"tonnes": int(length * width * thickness * 1.8),
+		})
+
+
+# Down the river from `at` (following the larger flow), a point every record_every samples, on land only.
+func _river_walk(at: int, heights: PackedFloat32Array, water_class: PackedByteArray, flow: PackedFloat32Array, x0: float, z0: float, max_steps: int, record_every: int) -> Array:
+	var points: Array = []
+
+	for step in range(max_steps):
+		var i: int = at % samples
+		@warning_ignore("integer_division")
+		var j: int = at / samples
+
+		if water_class[at] == OCEAN or heights[at] <= 0.0:
+			break
+
+		if step % record_every == 0:
+			points.append([snappedf(x0 + float(i) * spacing_m, 0.1), snappedf(z0 + float(j) * spacing_m, 0.1)])
+
+		var next: int = -1
+		var best_flow: float = flow[at]
+
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				if dx == 0 and dz == 0:
+					continue
+
+				var ni: int = i + dx
+				var nj: int = j + dz
+
+				if ni < 0 or nj < 0 or ni >= samples or nj >= samples:
+					continue
+
+				var n: int = nj * samples + ni
+
+				if flow[n] > best_flow:
+					best_flow = flow[n]
+					next = n
+
+		if next < 0:
+			break
+
+		at = next
+
+	return points
+
+
+# Distance in metres from any body of `resource` (its centre, or the points of a vein or placer) to the nearest sampled river cell.
+func _nearest_body_m(resource: String, rivers: PackedVector2Array) -> float:
+	var best: float = INF
+
+	for ore in ore_bodies:
+		if str(ore["resource"]) != resource:
+			continue
+
+		var spots: Array = []
+		var shape: String = str(ore["shape"])
+
+		if shape == "placer" or shape == "vein":
+			for point in ore["points"]:
+				spots.append(Vector2(float(point[0]), float(point[1])))
+		elif not ore.has("center"):
+			continue
+		elif shape == "lens":
+			spots.append(Vector2(float(ore["center"][0]), float(ore["center"][2])))
+		else:
+			spots.append(Vector2(float(ore["center"][0]), float(ore["center"][1])))
+
+		for spot in spots:
+			for river in rivers:
+				best = minf(best, spot.distance_to(river))
+
+	return best
 
 
 # A sample inside the tile where the body reaches the ground, or -1.
