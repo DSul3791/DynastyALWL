@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Questions &amp; Tasks for Dave</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#1d1d1f;--mut:#5b5b60;--card:#fffdf8;--line:#ddd6c8;--acc:#7a1f1f;--accfg:#fff;--err:#b00020;--ok:#1f6f3f;--sel:#f3e6e0}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#ecebe8;--mut:#a3a2a0;--card:#1f1f22;--line:#34343a;--acc:#d98a7a;--accfg:#1a1010;--err:#ff7b8a;--ok:#6fd49a;--sel:#2c2422}}
+*{box-sizing:border-box}
+html{font-size:clamp(17px,1.1vw + 13px,26px)}
+body{background:var(--bg);color:var(--fg);font:1rem/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 0 6.5rem}
+.bar{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem}
+.bar h1{font:600 1.15rem/1.2 Georgia,"Times New Roman",serif;margin:0;flex:1;text-align:center;letter-spacing:.02em}
+.ib{min-width:48px;min-height:48px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--fg);font-size:1.5rem;line-height:1;padding:0;margin:0}
+main{max-width:46rem;margin:0 auto;padding:.75rem}
+h2.sec{font:600 .85rem/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin:1.4rem .25rem .5rem}
+.q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1rem;margin:.75rem 0}
+.q h2{font:600 1.15rem/1.35 system-ui,sans-serif;margin:0 0 .6rem}
+.q p{margin:.35rem 0;color:var(--mut);font-size:.92rem}
+label{display:flex;align-items:flex-start;gap:.75rem;min-height:48px;padding:.65rem .75rem;margin:.4rem 0;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+label:has(input:checked){border-color:var(--acc);background:var(--sel)}
+input[type=radio]{width:1.3rem;height:1.3rem;margin:.1rem 0 0;accent-color:var(--acc);flex:none}
+textarea,input[type=password]{width:100%;font:inherit;padding:.65rem;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg)}
+button{font:600 1rem system-ui,sans-serif;min-height:48px;padding:.6rem 1.2rem;margin-top:.6rem;border:0;border-radius:12px;background:var(--acc);color:var(--accfg)}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.err{color:var(--err)}.msg{margin-top:.5rem;font-size:.95rem}.ok{color:var(--ok)}
+.pic{width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:.4rem 0;background:var(--bg)}
+.ver{font-size:.75rem;color:var(--mut);text-align:center;margin:1.5rem 0 0}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--line);padding:.6rem .75rem calc(.6rem + env(safe-area-inset-bottom))}
+.dock .in{max-width:46rem;margin:0 auto}.dock button{width:100%;margin:0}.dock .msg{margin:.3rem 0 0;text-align:center}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9;display:none}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-radius:20px 20px 0 0;padding:1rem .75rem calc(1rem + env(safe-area-inset-bottom));max-height:85vh;overflow:auto;transform:translateY(105%);transition:transform .18s}
+.sheet.on{transform:none}
+.sheet .in{max-width:46rem;margin:0 auto}
+.sheet h3{margin:.2rem .25rem .6rem;font:600 1.05rem Georgia,serif}
+.item{display:flex;align-items:center;width:100%;margin:.35rem 0;text-align:left;background:transparent;color:var(--fg);border:1px solid var(--line)}
+.item.danger{color:var(--err)}
+#cmd dt{font-weight:700;margin-top:.7rem}#cmd dd{margin:.1rem 0 0 .5rem;color:var(--mut)}
+.dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:11;background:var(--card);border-radius:16px;padding:1.2rem;width:min(92vw,26rem);display:none;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.dlg.on{display:block}.dlg .row{display:flex;gap:.6rem}.dlg .row button{flex:1;margin-top:.8rem}
+.qcount{font-size:1.15rem;font-weight:700;margin:.2rem 0 .6rem}.qcount small{font-weight:400;font-size:.85rem;margin-left:.5rem}
+</style></head><body>
+<div class="bar"><button class="ib" aria-label="Menu" onclick="sheet('menu')">&#9776;</button><h1>Questions &amp; Tasks for Dave</h1><button class="ib" aria-label="Reload" onclick="load()">&#8635;</button></div>
+<main>
+<div id="qcount" class="qcount">Questions: ...</div>
+<div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
+<div id="list">Loading...</div>
+<p class=ver>Page version: poke v11 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
+</main>
+<div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
+<div class="scrim" id="scrim" onclick="closeAll()"></div>
+<div class="sheet" id="menu"><div class="in"><h3>Menu</h3>
+<button class="item" onclick="goSec('sec-check')">Things to check</button>
+<button class="item" onclick="goSec('sec-q')">Questions</button>
+<button class="item" onclick="openReview()">Review my answers</button>
+<button class="item" onclick="sheet('cmds')">Dave's commands</button>
+<button class="item" onclick="closeAll();load()">Reload questions</button>
+<button class="item danger" onclick="askForget()">Forget token</button>
+<button class="item ghost" onclick="closeAll()">Close</button></div></div>
+<div class="sheet" id="rev"><div class="in"><h3>Review my answers</h3><p style="margin:.2rem .25rem .6rem;color:var(--mut);font-size:.9rem">Newest first. Tap Ask again to put a question back on the page; your old answer stays on record.</p><div id="revlist">Loading...</div><button class="item ghost" onclick="closeAll()">Close</button></div></div>
+<div class="sheet" id="cmds"><div class="in"><h3>Dave's commands</h3><div id="cmd"><dl><dt>status</dt><dd>One-screen report: who is working, parked or blocked, open questions, last backup.</dd><dt>audit</dt><dd>Checks that every decision, answer and idea has an owner and a task, and fixes the gaps.</dd><dt>goodnight</dt><dd>Runs the backup, parks every thread with a handoff, lists tomorrow's first jobs.</dd><dt>idea</dt><dd>Adds what you just said to the ideas ledger; the owner decides now or later.</dd></dl></div><button class="item ghost" onclick="closeAll()">Close</button></div></div>
+<div class="dlg" id="sure" role="alertdialog" aria-labelledby="sureh"><h3 id="sureh" style="margin:0 0 .4rem;font:600 1.15rem Georgia,serif">Are you sure?</h3><p style="margin:0">Forgetting the token removes it from this browser. You will have to paste it again.</p><div class="row"><button class="ghost" onclick="closeAll()">Cancel</button><button onclick="doForget()">Yes, forget it</button></div></div>
+<script>
+const POKE_TARGETS=[["DSul3791/DynastyALWL-QA",1],["DSul3791/DynastyALWL",3]];
+const REPO="DSul3791/DynastyALWL",BR="qa",QF="questions/QUESTIONS.md",AF="questions/ANSWERS.md";
+const api=p=>`https://api.github.com/repos/${REPO}/contents/${p}`;
+const tok=()=>{try{return localStorage.getItem("ghtok")||""}catch(e){return ""}};
+function saveTok(){try{localStorage.setItem("ghtok",document.getElementById("t").value.trim())}catch(e){}load()}
+function closeAll(){for(const i of ['menu','cmds','sure','rev'])document.getElementById(i).classList.remove('on');document.getElementById('scrim').classList.remove('on')}
+function sheet(id){closeAll();document.getElementById(id).classList.add('on');document.getElementById('scrim').classList.add('on')}
+function askForget(){closeAll();document.getElementById('sure').classList.add('on');document.getElementById('scrim').classList.add('on')}
+function doForget(){closeAll();forget()}
+function goSec(id){closeAll();const e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}
+function forget(){try{localStorage.removeItem("ghtok")}catch(e){}load()}
+const hdr=()=>({Authorization:"Bearer "+tok(),Accept:"application/vnd.github+json"});
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+const b64e=s=>{let b="";new TextEncoder().encode(s).forEach(c=>b+=String.fromCharCode(c));return btoa(b)};
+async function get(p){const r=await fetch(api(p)+"?ref="+BR+"&t="+Date.now(),{headers:hdr(),cache:"no-store"});
+  if(r.status==404)return{text:"",sha:null};if(!r.ok)throw new Error(p+": "+r.status);const j=await r.json();return{text:b64d(j.content),sha:j.sha}}
+async function put(p,text,sha,msg){const body={message:msg,content:b64e(text),branch:BR};if(sha)body.sha=sha;
+  const r=await fetch(api(p),{method:"PUT",headers:hdr(),body:JSON.stringify(body)});
+  if(r.status==409||r.status==422)return false;if(!r.ok)throw new Error(p+": "+r.status);return true}
+function parse(t){const out=[];let c=null;
+  for(const line of t.split("\n")){
+    if(line.startsWith("## ")){const h=line.slice(3),i=h.indexOf("|");
+      c={id:(i<0?h:h.slice(0,i)).trim(),text:(i<0?"":h.slice(i+1)).trim(),choices:[],isText:false,isCheck:false,isTest:false,isPic:false,notes:[],raw:[line]};out.push(c)}
+    else if(c){c.raw.push(line);const s=line.trim();if(s.startsWith("- "))c.choices.push(s.slice(2).trim());else if(/^Priority: \d+$/.test(s))c.pri=+s.slice(10);else if(s=="[text]")c.isText=true;else if(s=="[check]")c.isCheck=true;else if(s=="[test]")c.isTest=true;else if(s=="[picture]")c.isPic=true;else if(s)c.notes.push(s)}}
+  return out}
+function chk(n){const r=document.querySelector(`input[name=q${n}]:checked`);document.getElementById('why'+n).hidden=!(r&&r.value=='No')}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+const PV="v11";
+async function selfUpdate(){try{const {text}=await get("questions/qa.html");const m=/Page version: poke (v\d+)/.exec(text);if(m&&m[1]!=PV)location.reload()}catch(e){}}
+let shownIds="";
+function setCount(n,fresh){document.getElementById("qcount").innerHTML="Questions: "+n+(fresh?"<small>(list changed, tap reload &#8635;)</small>":"")}
+async function pollCount(){if(!tok())return;try{const {text}=await get(QF);const qs=parse(text);const ids=qs.map(x=>x.id).join(",");setCount(qs.length,shownIds!==""||ids!==""?ids!==shownIds:false)}catch(e){}}
+setInterval(pollCount,60000);
+async function load(){
+  selfUpdate();
+  const L=document.getElementById("list");document.getElementById("tok").hidden=!!tok();
+  if(!tok()){L.textContent="";return}
+  try{const {text}=await get(QF);const qs=parse(text);shownIds=qs.map(x=>x.id).join(',');setCount(qs.length,false);
+    if(!qs.length){L.innerHTML="<div class=q><h2>All clear</h2><p>No questions right now.</p></div>";return}
+    let k=0;
+    const card=(q,n)=>{
+      let body,num="";
+      if(q.isTest||q.isPic){num=(++k)+". ";const yn=q.isPic?["Picture taken","Picture not taken"]:["Yes, it worked","No, it did not work"];body=`<label><input type=radio name=q${n} value="Yes">${yn[0]}</label><label><input type=radio name=q${n} value="No">${yn[1]}</label><p>Notes (anything you saw, yes or no)</p><textarea id=nt${n} rows=3></textarea>`}
+      else if(q.isCheck){num=(++k)+". ";body=`<label><input type=radio name=q${n} value="Yes" onchange="chk(${n})">Yes</label><label><input type=radio name=q${n} value="No" onchange="chk(${n})">No</label><div id=why${n} hidden><p>Why not?</p><textarea id=ta${n} rows=3></textarea></div>`}
+      else if(q.choices.length)body=q.choices.map(c=>`<label><input type=radio name=q${n} value="${esc(c).replace(/"/g,"&quot;")}">${esc(c)}</label>`).join("");
+      else if(q.isText)body=`<textarea id=ta${n} rows=3></textarea>`;
+      else return `<div class=q><h2>${esc(q.text||q.id)}</h2><p class=err>Error: question "${esc(q.id)}" has no choices and is not marked [text] or [check]. Ask the thread that wrote it to fix it.</p></div>`;
+      return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>x.startsWith("Image: ")?`<img class=pic data-p="${esc(x.slice(7).trim())}" alt="">`:`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`};
+    const P=q=>q.pri||99,top=qs.map((q,n)=>[q,n]).filter(x=>P(x[0])<=5).sort((a,b)=>P(a[0])-P(b[0])),isTop=n=>P(qs[n])<=5;
+    const topHtml=top.map(x=>card(x[0],x[1])).join("");
+    const ord=(a,b)=>P(qs[a])-P(qs[b])||a-b,idx=qs.map((q,n)=>n).filter(n=>!isTop(n)).sort(ord);
+    const checks=idx.filter(n=>qs[n].isCheck||qs[n].isTest||qs[n].isPic).map(n=>card(qs[n],n)).join(""),rest=idx.filter(n=>!(qs[n].isCheck||qs[n].isTest||qs[n].isPic)).map(n=>card(qs[n],n)).join("");
+    L.innerHTML=(topHtml?"<h2 class=sec id=sec-top>Do these first</h2>"+topHtml:"")+(checks?"<h2 class=sec id=sec-check>Things to check</h2>"+checks:"")+(rest?"<h2 class=sec id=sec-q>Questions</h2>"+rest:"");
+    document.querySelectorAll("img.pic[data-p]").forEach(async im=>{try{const r=await fetch(api(im.dataset.p)+"?ref="+BR,{headers:{Authorization:"Bearer "+tok(),Accept:"application/vnd.github.raw"}});if(!r.ok)throw new Error(r.status);im.src=URL.createObjectURL(await r.blob())}catch(e){im.alt="Picture could not load ("+e.message+")"}});
+  }catch(e){L.innerHTML=`<p class=err>${esc(e.message)}. Check the token.</p>`}}
+async function save(n,id){
+  const m=document.getElementById("m"+n);let ans;
+  const ta=document.getElementById("ta"+n);
+  if(document.getElementById('nt'+n)){const r=document.querySelector(`input[name=q${n}]:checked`);if(!r){m.textContent='Pick one first.';return}const nt=document.getElementById('nt'+n).value.trim();ans=r.value+(nt?': '+nt:'')}
+  else if(document.getElementById('why'+n)){const r=document.querySelector(`input[name=q${n}]:checked`);if(!r){m.textContent='Pick Yes or No first.';return}ans=r.value=='Yes'?'Yes':'No: '+(ta.value.trim()||'(no reason given)')}else if(ta)ans=ta.value.trim();else{const r=document.querySelector(`input[name=q${n}]:checked`);ans=r&&r.value}
+  if(!ans){m.textContent="Pick or type an answer first.";return}
+  m.textContent="";
+  try{
+    let q;
+    for(let k=0;k<5;k++){ // append answer
+      const f=await q_get(id);q=f.q;if(!q){m.textContent="Already gone.";load();return}
+      const a=await get(AF);
+      const entry=`## ${q.id} | ${q.text}\nAnswer: ${ans.replace(/\n/g," / ")}\nAnswered: ${new Date().toISOString().slice(0,16).replace("T"," ")} UTC\n\n`;
+      if(await put(AF,(a.text&&!a.text.endsWith("\n")?a.text+"\n":a.text||"# Answers\n\n")+entry,a.sha,"Answer: "+id))break;
+      if(k==4)throw new Error("conflict, try again")}
+    for(let k=0;k<5;k++){ // remove question
+      const f=await q_get(id);if(!f.q)break;
+      const rest=parse(f.text).filter(x=>x.id!=id);
+      const head=f.text.split("\n").findIndex(l=>l.startsWith("## "));
+      const pre=head<0?"":f.text.split("\n").slice(0,head).join("\n");
+      const nt=(pre?pre+"\n":"")+rest.map(x=>x.raw.join("\n").replace(/\n+$/,"")).join("\n\n")+(rest.length?"\n":"");
+      if(await put(QF,nt,f.sha,"Answered, removed: "+id))break;
+      if(k==4)throw new Error("conflict removing, try again")}
+    try{const a=JSON.parse(localStorage.getItem('answered')||'[]');a.push(id);localStorage.setItem('answered',JSON.stringify(a))}catch(e){}
+    load();
+  }catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
+async function poke(){
+  const m=document.getElementById('pokemsg');let ids=[];
+  m.textContent="Sending...";
+  try{ids=JSON.parse(localStorage.getItem('answered')||'[]')}catch(e){}
+  if(!tok()){m.innerHTML='<span class=err>No token saved in this browser. Paste it in the box at the top.</span>';return}
+  const body={body:"poke "+new Date().toISOString().slice(0,16).replace("T"," ")+" UTC"+(ids.length?" answered: "+ids.join(", "):" (nothing new answered)")};
+  const errs=[];
+  for(const [repo,pr] of POKE_TARGETS){
+    try{const r=await fetch(`https://api.github.com/repos/${repo}/issues/${pr}/comments`,{method:"POST",headers:hdr(),body:JSON.stringify(body)});
+      if(r.ok){try{localStorage.removeItem('answered')}catch(e){}m.innerHTML='<span class=ok>Poke sent at '+new Date().toLocaleTimeString()+" (via "+esc(repo)+").</span>";return}
+      let why="";try{why=(await r.json()).message||""}catch(e){}
+      errs.push(`${repo}: HTTP ${r.status} ${why}`)}
+    catch(e){errs.push(`${repo}: ${e.message}`)}}
+  m.innerHTML=`<span class=err>Poke failed. ${errs.map(esc).join(" | ")}. Fix: GitHub > Settings > Developer settings > Fine-grained tokens > your token > Edit: Repository access must include DynastyALWL-QA (or DynastyALWL) and Issues + Pull requests = Read and write. A new token means Forget token, then paste it.</span>`}
+async function q_get(id){const f=await get(QF);return{text:f.text,sha:f.sha,q:parse(f.text).find(x=>x.id==id)}}
+let REV=[];
+async function openReview(){sheet('rev');const L=document.getElementById('revlist');L.textContent='Loading...';
+  try{const a=await get(AF);REV=a.text.split(/\n(?=## )/).filter(x=>x.startsWith('## ')).map(b=>{const l=b.split('\n'),h=l[0].slice(3),i=h.indexOf('|');
+      const g=k=>{const m=l.find(x=>x.startsWith(k));return m?m.slice(k.length).trim():''};
+      return{id:(i<0?h:h.slice(0,i)).trim(),text:(i<0?'':h.slice(i+1)).trim(),ans:g('Answer:'),when:g('Answered:')}}).reverse();
+    const seen=new Set();REV=REV.filter(r=>!seen.has(r.id)&&seen.add(r.id));
+    L.innerHTML=REV.length?REV.map((r,n)=>`<div class=q><h2>${esc(r.text||r.id)}</h2><p>Your answer: ${esc(r.ans)}</p><p>${esc(r.when)}</p><button class=ghost onclick="reask(${n})">Ask again</button><div class=msg id=rm${n}></div></div>`).join(''):'Nothing answered yet.'}
+  catch(e){L.innerHTML=`<p class=err>${esc(e.message)}</p>`}}
+async function reask(n){const r=REV[n],m=document.getElementById('rm'+n);m.textContent='Working...';
+  try{for(let k=0;k<5;k++){const f=await get(QF);if(parse(f.text).some(x=>x.id==r.id)){m.textContent='Already on the page.';return}
+      const kind=/^(Yes|No)\b/.test(r.ans)?'[check]':'[text]';
+      const nt=(f.text&&!f.text.endsWith('\n')?f.text+'\n':f.text||'')+'\n## '+r.id+' | '+r.text+'\nNote: Asked again at your request. Your earlier answer: '+r.ans.replace(/\n/g,' / ')+'\n'+kind+'\n';
+      if(await put(QF,nt,f.sha,'Ask again: '+r.id)){m.textContent='Back on the page.';load();return}}
+    throw new Error('conflict, try again')}catch(e){m.innerHTML=`<span class=err>${esc(e.message)}</span>`}}
+load();
+setTimeout(function(){var l=document.getElementById('list');if(l&&l.textContent.trim()=='Loading...')l.innerHTML='<p class=err>The page started but could not load the questions in 8 seconds. Check your phone signal, then tap Reload. If it still fails: menu, Forget token, paste the token again.</p>'},8000);
+</script></body></html>
