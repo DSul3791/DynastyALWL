@@ -65,10 +65,7 @@ var bpm_step_max: float = 0.0           # the biggest change between two frames,
 var last: String = ""
 
 var _stage                              # SoundStage
-var _player: AudioStreamPlayer
 var _heart: AudioStreamPlayer
-var _breath_left: float = 1.0
-var _out_pending: float = -1.0
 var _beat_left: float = 1.0
 var _external_until: int = 0
 var _faint: float = 0.0                 # vision lost, 0..1
@@ -81,10 +78,7 @@ var _rng := RandomNumberGenerator.new()
 func setup(stage) -> void:
 	_stage = stage
 	_rng.randomize()
-	_player = AudioStreamPlayer.new()
 	_ensure_bus()
-	_player.bus = "Body"
-	add_child(_player)
 	_heart = AudioStreamPlayer.new()
 	_heart.bus = "Body"
 	add_child(_heart)
@@ -232,14 +226,10 @@ func update(delta: float, underwater: bool) -> void:
 	var silent: bool = (underwater and not fainted and not out_phase) or (exertion < QUIET and state != "waking" and not fainted and not out_phase)
 
 	if silent:
-		_breath_left = minf(_breath_left, 0.5)
 		_beat_left = minf(_beat_left, 0.5)
-		_out_pending = -1.0
 		return
 
-	if not fainted:
-		_breathe(delta)
-
+	# No breathing sounds on exertion (Dave 2026-10-21: breath_in/out/gasp/heave); only the heartbeat.
 	if (exertion >= HEART_FROM or fainted or state == "waking" or out_phase) and _heart_gain > 0.01:
 		_beat_left -= delta
 		var before: float = bpm_now
@@ -284,41 +274,6 @@ func _bpm() -> float:
 		return lerpf(BPM_REST, BPM_FAINT, clampf((e - HEART_FROM) / (FAINT_AT - HEART_FROM), 0.0, 1.0))
 
 	return lerpf(BPM_FAINT, BPM_PEAK, clampf((e - FAINT_AT) / (EXERTION_MAX - FAINT_AT), 0.0, 1.0))
-
-
-# Dave 2026-10-21: no heavy breathing on exertion (breath_in, breath_out, breath_gasp, breath_heave); the heartbeat stays.
-const BREATHING := false
-
-
-func _breathe(delta: float) -> void:
-	if not BREATHING:
-		return
-
-	_breath_left -= delta
-
-	if _out_pending >= 0.0:
-		_out_pending -= delta
-
-		if _out_pending < 0.0:
-			_play(_player, "breath_out", _level_db(), 1.0)
-
-	if _breath_left > 0.0:
-		return
-
-	var t: float = clampf((exertion - QUIET) / (OVER - QUIET), 0.0, 1.0)
-	var cycle: float = lerpf(4.2, 0.9, t) - 0.25 * _over()
-	_breath_left = cycle * _rng.randf_range(0.92, 1.08)
-
-	if exertion >= OVER:
-		_play(_player, "breath_heave", _level_db(), _rng.randf_range(0.92, 1.0))
-		heaves_played += 1
-		_out_pending = -1.0
-	elif exertion > 0.8:
-		_play(_player, "breath_gasp", _level_db(), _rng.randf_range(0.95, 1.1))
-		_out_pending = -1.0
-	else:
-		_play(_player, "breath_in", _level_db(), 1.0)
-		_out_pending = cycle * 0.4
 
 
 # The rest of the world's sound follows the faint: out with the vision, back slowly on waking.

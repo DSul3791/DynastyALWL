@@ -36,7 +36,3 @@ static func multiplier(level: int) -> float:
 
 	return float(points[points.size() - 1][1])
 
-
-# Real minutes a trail stays down for a player with this Tracking level.
-static func trail_minutes(level: int) -> float:
-	return float(config().get("base_minutes", 5.0)) * multiplier(level)

@@ -5,7 +5,6 @@ extends RefCounted
 # and the cave and air band filters keep working, in the group "world_sounds" (sound_occlusion.gd dulls it behind hills and in forest, the
 # voice budget may shed it). Distances: voices 30 to 60 m, fire 15 m, tree wind 40 m, doors and chests 25 m, thunder 400 m and more.
 
-const REFERENCE_M := 12.0               # a typical unit_size: the distance at which the sound is at its set loudness
 
 
 # A positional player child of `parent`. `unit_size` is the distance at full loudness, `reach_m` where it ends (0 = no end),
@@ -25,10 +24,3 @@ static func make(parent: Node, bus: String, unit_size: float, reach_m: float, cu
 
 	return player
 
-
-# Where a source sits left or right of a listener: -1 hard left, 0 centre or straight behind or ahead, +1 hard right, from the listener's
-# transform (the rig prints this for each player; it is the pan a positional player is given).
-static func pan_of(listener: Transform3D, at: Vector3) -> float:
-	var local: Vector3 = listener.affine_inverse() * at
-	var flat: float = Vector2(local.x, local.z).length()
-	return local.x / flat if flat > 0.001 else 0.0

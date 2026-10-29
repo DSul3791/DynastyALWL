@@ -59,6 +59,3 @@ func close() -> void:
 	if layer != null and layer.is_inside_tree():
 		layer.queue_free()
 
-
-func is_failed() -> bool:
-	return _failed

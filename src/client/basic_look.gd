@@ -705,11 +705,6 @@ static func _warm_stone(color: Color) -> Color:
 	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
 
 
-# A wooden handle lying along x, centred on the middle of a tool of this length (the head is added at its +x end).
-static func _handle(parts: Array, length: float, radius: float = 0.016, wood: Color = Color(0.42, 0.3, 0.17)) -> void:
-	_cyl(parts, radius, length, Vector3(-length * 0.05, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), wood)
-
-
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:
 	var box: BoxMesh = BoxMesh.new()
 	box.size = dims
@@ -746,17 +741,6 @@ static func _cone(parts: Array, radius: float, length: float, at: Vector3, color
 	cone.radial_segments = 6
 	cone.rings = 1
 	parts.append([cone, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, -PI * 0.5)), at), color])
-
-
-# A cone pointing down (-y), for the points of a pick.
-static func _cone_down(parts: Array, radius: float, length: float, at: Vector3, color: Color) -> void:
-	var cone: CylinderMesh = CylinderMesh.new()
-	cone.top_radius = radius
-	cone.bottom_radius = 0.0
-	cone.height = length
-	cone.radial_segments = 6
-	cone.rings = 1
-	parts.append([cone, Transform3D(Basis.IDENTITY, at), color])
 
 
 # A wedge for an axe head: `base` wide (y), `out` long (z) from its base to the edge, `along` long (x, the length of the edge). Thick at z - out/2, edge at +z.

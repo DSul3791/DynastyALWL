@@ -27,7 +27,6 @@ const ROCK_COLORS := {
 }
 
 var generator
-var _thread_ms: Array = []
 
 
 func _init() -> void:

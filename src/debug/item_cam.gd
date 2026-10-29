@@ -6,7 +6,6 @@ extends RefCounted
 const MIN_DIST := 0.2
 const MAX_FIT_DIST := 3.0
 const FIT_EXTENT := 0.9                  # every corner within 90 % of the half-frame: 10 % margin
-const MIN_FILL := 1.0 / 3.0
 const TOP_PITCH := -90.0
 
 

@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Writes the ground height of each tile as it stands BEFORE erosion (the input of TileErosion), for offline tools such as
+# Writes the ground height of each tile as it stands BEFORE erosion (the input of the pre-carve), for offline tools such as
 # the erosion simulation. Needs no baked tiles; one run takes a few minutes. Run with:
 #
 #   nice -n 19 godot --headless --path . --script res://src/worldgen/tools/export_raw_heights.gd -- --out=/tmp/raw_heights

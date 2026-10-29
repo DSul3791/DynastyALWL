@@ -1081,7 +1081,7 @@ func _build_warm_list() -> void:
 	for sound_name in ["item_pickup", "item_drop", "inv_open", "inv_close", "item_swap", "craft_done"]:
 		_warm.append([itemfx, sound_name])
 
-	for sound_name in ["breath_in", "breath_out", "breath_gasp", "heartbeat"]:
+	for sound_name in ["heartbeat"]:
 		_warm.append([breath, sound_name])
 
 
@@ -1119,13 +1119,6 @@ func _save_settings() -> void:
 		file.set_value("levels", sound_name, float(levels[sound_name]))
 
 	file.save(SETTINGS_PATH)
-
-
-# Esc > Settings "Sound volume": 100, 75, 50, 25 % and off. Returns the new share.
-func step_volume() -> float:
-	volume_index = (volume_index + 1) % VOLUME_STEPS.size()
-	_apply_buses()
-	return VOLUME_STEPS[volume_index]
 
 
 # Tree trunks within `radius` metres (their colliders, which exist near the

@@ -103,16 +103,8 @@ func has_table(table_name: String) -> bool:
 	return _tables.has(table_name)
 
 
-func get_table_names() -> Array:
-	return _tables.keys()
-
-
 func get_entries(table_name: String) -> Array:
 	return _tables.get(table_name, [])
-
-
-func has_name(table_name: String, entry_name: String) -> bool:
-	return _by_name.get(table_name, {}).has(entry_name)
 
 
 func has_id(table_name: String, entry_id: int) -> bool:

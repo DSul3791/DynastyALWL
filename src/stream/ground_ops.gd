@@ -160,10 +160,6 @@ func add(kind: int, material: int, centre: Vector3, radius: float) -> Array:
 	return blocks
 
 
-func blocks_with_ops() -> int:
-	return _by_block.size()
-
-
 func has_ops(block: Vector3i) -> bool:
 	return _by_block.has(block)
 

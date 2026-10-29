@@ -55,7 +55,6 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 	var result: Dictionary = baker.bake(tile)
 	print("Tile %s baked in %d ms (margin %d samples): %s" % [str(tile), Time.get_ticks_msec() - started, baker.margin, str(result["timings"])])
 	var height = result["height"]
-	var erosion = result["erosion"]
 	var water = result["water"]
 	var climate = result["climate"]
 	var geology = result["geology"]
@@ -65,7 +64,6 @@ func _run(world_dir: String, tile: Vector2i, cell: float, write_file: bool = fal
 	height.heights = result["raw_heights"]
 	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_relief.png")
 	height.heights = result["eroded_heights"]
-	print("Erosion: deepest cut %.1f m, highest fill %.1f m" % [erosion.deepest_cut_m, erosion.highest_fill_m])
 	TilePreviewScript.render(settings, height, tile, true, null).save_png(base + "_eroded.png")
 	height.heights = water.heights
 	print("Water: %d river cells, longest river %.0f m, %d lakes, %d pit cells filled" % [

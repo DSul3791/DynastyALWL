@@ -54,13 +54,6 @@ func add_icon(icon_name: String, texture: Texture2D, active: Callable, opacity: 
 	_icons[icon_name] = {"node": node, "active": active}
 
 
-func remove_icon(icon_name: String) -> void:
-	if _icons.has(icon_name):
-		_icons[icon_name]["node"].queue_free()
-		_icons.erase(icon_name)
-		_order.erase(icon_name)
-
-
 # Asks every symbol whether it shows (a few times a second); `force` asks at once.
 func tick(delta: float, force: bool = false) -> void:
 	_since += delta

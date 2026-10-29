@@ -304,10 +304,6 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-func _price_to_pay(value: int) -> int:
-	return maxi(int(ceil(float(value) * _shop_pay - 0.0001)), 1) if value > 0 else 0
-
-
 # What the trader pays for a stack slot of the pack (each), the same rule as the server: worn tools and old food pay less.
 func _price_to_get(slot: int) -> int:
 	var number: int = items.inventory.numbers[slot]

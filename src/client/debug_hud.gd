@@ -21,11 +21,6 @@ func add_line(line_name: String, text_of: Callable) -> void:
 	_lines[line_name] = text_of
 
 
-func remove_line(line_name: String) -> void:
-	_names.erase(line_name)
-	_lines.erase(line_name)
-
-
 func text() -> String:
 	var out: PackedStringArray = PackedStringArray()
 

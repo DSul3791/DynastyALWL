@@ -21,7 +21,6 @@ const RETRY_MSEC := 500
 const MIN_SLOPE_Y := 0.58                # surface normal y; steeper is bare rock
 const COVER_FROM := 0.14                 # slope (1 - normal y) where grass starts to thin
 const COVER_TO := 0.42                   # slope where it is gone, except in patches and on ledges
-const TUFTS_PER_POINT := 3
 # Depth under a crown is 0 at the drip line (the whole crown radius, the same disc as the rain shelter) and 1 at the trunk. Dave 2026-10-21:
 # litter and bare ground reach the canopy distance, the grass fading out over the outer fifth so there is no sharp circle.
 const CROWN_GRASS_FROM := 0.0            # grass starts thinning at the drip line
@@ -33,7 +32,6 @@ const LITTER_DEEP_TWIGS := 4.0           # twigs likewise
 const RIM_DROP_M := 0.8                  # ground this much lower beside a blade means a hole edge (see _drop_beside)
 const RIM_CLEAR_M := 0.9                 # no blades this close to the edge of a dug hole (they lean over it)
 const SCENERY_PEBBLES := true            # owner (2026-10-21): pebbles are decoration (not pickable, not harvestable, like a voxel texture); they vanish when the ground under them is dug (ground_changed)
-const SCENERY_BOULDERS := false          # server-owned boulders (Items, build 361) are drawn by inventory_view with GrassView._make_boulder(); the client scenery boulders would double up
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
@@ -70,7 +68,6 @@ const NEAR_END_MAX := 20.0
 const CLOSURE_OFFSETS := [Vector2(0.0, 0.0), Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(3.0, 3.0), Vector2(-3.0, -3.0)]
 const LOD_HYSTERESIS_M := 3.0
 const GRASS_LAYERS := 3                  # the first layers are grass; then forest litter, then the shore
-const BOULDER_LAYER := 7                 # index of the boulders layer in LAYERS
 const LITTER_END := 5                    # layers GRASS_LAYERS to LITTER_END - 1 are litter, the rest shore
 
 # Dead branches: a thin weathered stick with one side twig, lying along x from 0 to 1.
@@ -1320,8 +1317,6 @@ func _build(cell: Vector2i) -> int:
 
 			if shore_here:
 				_put_shore(buffers, counts, rng, point, spacing, water)
-				if SCENERY_BOULDERS:
-					_put_boulders(buffers, counts, rng, point, spacing, hit["normal"].y, water)
 
 			if not is_nan(water) and point.y < water + 0.3:
 				continue
@@ -1547,62 +1542,6 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 
 			buffer[o + 15] = 1.0
 			buffers[layer] = buffer
-
-
-# One ground sample on a slope or by water: now and then a boulder, in clusters (the patch noise), more
-# on the steeper ground and at the foot of a slope, half buried, mossy where it is damp or shaded.
-func _put_boulders(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, normal_y: float, water: float) -> void:
-	var slope: float = 1.0 - clampf(normal_y, 0.0, 1.0)
-	var near_water: bool = not is_nan(water)
-	var by_slope: float = smoothstep(0.1, 0.3, slope)
-	var chance: float = maxf(by_slope, 0.25 if near_water else 0.0)
-
-	if chance <= 0.0:
-		return
-
-	# Clusters: boulders gather where the patch noise is high and are absent elsewhere.
-	var cluster: float = smoothstep(0.1, 0.5, _patch.get_noise_2d(point.x * 1.7 + 311.0, point.z * 1.7))
-
-	if cluster <= 0.0:
-		return
-
-	var layer: int = BOULDER_LAYER
-	var want: float = float(LAYERS[layer]["per_point"]) * shore_density * chance * cluster * 4.0
-	var count: int = int(want) + (1 if rng.randf() < want - floorf(want) else 0)
-
-	for k in range(count):
-		var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
-		var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
-		var yaw: float = rng.randf() * TAU
-		var c: float = cos(yaw)
-		var s: float = sin(yaw)
-		var size: float = rng.randf_range(0.35, 1.2) * rng.randf_range(0.6, 1.0)
-		size = maxf(size, 0.3)
-		var tall: float = size * rng.randf_range(0.65, 1.1)
-		var shade: float = rng.randf_range(0.85, 1.1)
-		var mossy: float = clampf(0.35 + 0.5 * (cluster - 0.3) + (0.3 if near_water else 0.0) + rng.randf_range(-0.2, 0.2), 0.0, 1.0)
-		var buffer: PackedFloat32Array = buffers[layer]
-		var o: int = int(counts[layer]) * 16
-		counts[layer] = int(counts[layer]) + 1
-		buffer[o] = c * size
-		buffer[o + 1] = 0.0
-		buffer[o + 2] = s * size
-		buffer[o + 3] = ox
-		buffer[o + 4] = 0.0
-		buffer[o + 5] = tall
-		buffer[o + 6] = 0.0
-		buffer[o + 7] = point.y - 0.2 * tall
-		buffer[o + 8] = -s * size
-		buffer[o + 9] = 0.0
-		buffer[o + 10] = c * size
-		buffer[o + 11] = oz
-		# Granite: pale grey, a little warmer or bluer per rock.
-		var warm: float = rng.randf()
-		buffer[o + 12] = (0.33 + 0.06 * warm) * shade
-		buffer[o + 13] = (0.32 + 0.04 * warm) * shade
-		buffer[o + 14] = (0.30 + 0.02 * warm) * shade
-		buffer[o + 15] = mossy
-		buffers[layer] = buffer
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).

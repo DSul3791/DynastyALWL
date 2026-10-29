@@ -37,7 +37,6 @@ const SYNC_EVERY_S := 1.0
 const SAVE_EVERY_S := 30.0
 const DROPS_PATH := "res://data/items/drops.json"
 const REGROW_GAME_S := 3.0 * 86400.0     # a picked plant bears again after 3 game days
-const GATHER_M := 5.0                    # how far from the plant a gather request may come
 const SCATTER_RADIUS_M := 96.0           # loose stones and sticks are laid out this far around players
 const SCATTER_DROP_M := 250.0            # and taken away again beyond this (picked-up ones stay gone)
 const SCATTER_CELLS_PER_TICK := 8

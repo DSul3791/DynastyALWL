@@ -14,7 +14,6 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
-const TileErosionScript := preload("res://src/worldgen/tile/tile_erosion.gd")
 const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
@@ -225,21 +224,21 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		push_error("erosion_delta_v2.bin is missing next to world.json (terrain version 42 needs the pre-carve)")
 		return {"error": "erosion_delta_v2.bin missing", "timings": timings}
 
-	# Export tools want the ground as it stands before erosion (the input of TileErosion) and nothing else.
+	# Export tools want the ground as it stands before erosion (the input of the pre-carve) and nothing else.
 	if raw_only:
 		return {"raw_heights": raw_heights, "core": core, "timings": timings}
 
 	# Erosion works on the tile's own samples and changes nothing near its edge.
 	clock = Time.get_ticks_msec()
 	var min_land: float = float(tile_rules["erosion"]["min_land_m"])
-	var erosion = TileErosionScript.new()   # only carries the cropped heights now (the old per-tile erosion is not run)
+	var eroded: PackedFloat32Array   # the cropped heights after the pre-carve (the old per-tile erosion was removed 2026-10-29)
 
 	# The pre-carve change, by world position, on the whole frame (margin included) and on the pre-erosion copy water
 	# routes over, so frames agree along their edges and rivers see the carved valleys.
 	var delta_field: PackedFloat64Array = erosion_delta.delta_field(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
 	frame_height.heights = erosion_delta.apply_field(frame_height.heights, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
 	raw_frame = erosion_delta.apply_field(raw_frame, delta_field, n, frame_height.spacing_m, origin_sx, origin_sz, min_land)
-	erosion.heights = crop(frame_height.heights, n, core)
+	eroded = crop(frame_height.heights, n, core)
 
 	timings["erosion"] = Time.get_ticks_msec() - clock
 	clock = Time.get_ticks_msec()
@@ -251,12 +250,12 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var scree = TileScreeScript.new()
 	scree.setup(tile_rules.get("scree", {}))
 	frame_height.heights = scree.apply(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz)
-	erosion.heights = crop(frame_height.heights, n, core)
+	eroded = crop(frame_height.heights, n, core)
 	timings["scree"] = Time.get_ticks_msec() - clock
 
 	if tile_rules.has("spawn_pad"):
 		frame_height.heights = _pin_spawn_pad(frame_height.heights, n, frame_height.spacing_m, origin_sx, origin_sz, tile_rules["spawn_pad"])
-		erosion.heights = crop(frame_height.heights, n, core)
+		eroded = crop(frame_height.heights, n, core)
 
 	clock = Time.get_ticks_msec()
 	var starter: Dictionary = starter_info(tile)
@@ -310,7 +309,7 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	climate.moisture = crop(climate.moisture, n, core)
 	climate.temperature_c = crop(climate.temperature_c, n, core)
 	climate.samples = core
-	var eroded_heights: PackedFloat32Array = erosion.heights.duplicate()
+	var eroded_heights: PackedFloat32Array = eroded.duplicate()
 	var height = TileHeightScript.new()
 	height.samples = core
 	height.spacing_m = frame_height.spacing_m
@@ -335,7 +334,6 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 		"height": height,
 		"raw_heights": raw_heights,
 		"eroded_heights": eroded_heights,
-		"erosion": erosion,
 		"water": water,
 		"climate": climate,
 		"geology": geology,
