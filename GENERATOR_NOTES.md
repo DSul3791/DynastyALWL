@@ -70,6 +70,9 @@ Starter islands keep their original summit range (1000 to 1450 m); tall mountain
 Result on tile 3,4 (bumpiness 1 to 30 m ground, m off a straight line at lags 8 / 16 / 32 / 64 / 128 m): 0.21 / 0.51 / 1.05 / 2.09 / 4.7 (original 0.16 / 0.31 / 0.67 / 1.6 / 4.3; rolling-meadow target 0.7 / 1.3 / 2.7 at 16 / 32 / 64). Best 300 m town circles: 85 to 95% of ground at or under 8% slope, relief 1.1 to 1.2 m. Summit 1,423 m with the spire. All water tests and `test_worldgen` pass.
 Test limits changed for the new format: read-back checks allow half a 0.125 m step (0.0626 to 0.063 m); the old +2,553 m clamp is gone; the "center volcano is tallest" check is removed. Tiles other than 3,4 on disk are still in the old 0.1 m format and must be re-baked before tests that read them.
 
+## Giant heights, corrected (final)
+First version only changed the height inside `_band_table`, which only starter islands use; ordinary islands take their height from the mount's `peak` in the sketch. Now `_roll_giants` sets `mount["peak"]` itself: `max(peak x height multiplier, lerp(extreme_floor_m 2000, max_summit_m 3400, share))` capped at 3400, where share runs 0 to 1 as the island half-length goes from `extreme_from_a_m` (2500 m) to `extreme_to_a_m` (10000 m). Only the biggest islands reach extreme heights, so slopes stay gentle (3,400 m over 11.6 km is about 16 degrees). Census: 185 non-starter islands, 19 giants (sizes a 864 to 11,603 m), 111 summits found, tallest map summit 3,494 m; with the spire capped at 3,950 m the highest tips reach about 3,950 m. 44 of 44 selected tests pass. Census script: `NerdRunner/work/giant_census.gd`.
+
 ## Open items
 - Island character profiles (flat, rolling, rugged) setting target bumpiness by scale.
 - Human-scale detail (2 to 16 m bumps) at the 1 m voxel stage, as a function of world position.

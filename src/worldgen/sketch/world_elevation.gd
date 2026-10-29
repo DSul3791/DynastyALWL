@@ -153,6 +153,16 @@ func _roll_giants(sketch: Dictionary) -> void:
 			mount["a"] = float(mount["a"]) * size
 			mount["b"] = float(mount["b"]) * size
 			mount["giant_h"] = lerpf(float(height_range[0]), float(height_range[1]), spread)
+			# The bigger the giant, the taller its mountain: from `extreme_floor_m` at an island half-length of
+			# `extreme_from_a_m` up to the cap at `extreme_to_a_m`, so only the biggest islands reach extreme heights
+			# and the average slope stays gentle. The cap plus the spire (16%) stays under the world top.
+			var cap: float = float(giant.get("max_summit_m", mount["peak"]))
+			var reach: float = maxf(float(mount["a"]), float(mount["b"]))
+			var from_a: float = float(giant.get("extreme_from_a_m", 2500.0))
+			var to_a: float = float(giant.get("extreme_to_a_m", 10000.0))
+			var share: float = clampf((reach - from_a) / maxf(to_a - from_a, 1.0), 0.0, 1.0)
+			var raised: float = maxf(float(mount["peak"]) * float(mount["giant_h"]), lerpf(float(giant.get("extreme_floor_m", mount["peak"])), cap, share))
+			mount["peak"] = minf(raised, cap)
 
 
 # The 160 m map cannot hold a point, and the cubic upsampling rounds off the top, so every island's
@@ -744,11 +754,6 @@ func _band_table(mount: Dictionary, sea: PackedFloat32Array, size: int, radius: 
 	var peak_range: Array = starter_rules.get("peak_m", [300, 560])
 	var t: float = clampf((float(mount["peak"]) - float(peak_range[0])) / maxf(float(peak_range[1]) - float(peak_range[0]), 1.0), 0.0, 1.0)
 	var summit: float = lerpf(float(summit_range[0]), float(summit_range[1]), t)
-	# Giant islands (see _roll_giants) are taller by this factor, the island itself bigger, so the beaches and lowlands
-	# keep their shape and grow with the mountain.
-	if mount.has("giant_h"):
-		summit = minf(summit * float(mount["giant_h"]), float(rules.get("giant_peaks", {}).get("max_summit_m", summit)))
-
 	# The spire sits on top of the bands (so the summit is a peak, not the end of a smooth curve): the bands end at
 	# (1 - spire_share) of the summit height and the spire adds the rest over the last (1 - spire_start) of the distance to the sea.
 	var spire: float = float(starter_rules.get("spire_share", 0.0)) * summit

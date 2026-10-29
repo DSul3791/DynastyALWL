@@ -1,6 +1,6 @@
 {
 	"summits": {"min_peak_m": 450, "search_m": 1280},
-	"giant_peaks": {"chance": 0.12, "size_multiplier": [1.5, 2.4], "height_multiplier": [1.3, 1.8], "max_summit_m": 3400, "note": "A few non-starter islands are giants: bigger (outline x size) and taller (summit x height, capped before the spire) from one position-based roll, so the lowlands grow with the mountain and stay liveable. See GENERATOR_NOTES.md."},
+	"giant_peaks": {"chance": 0.12, "size_multiplier": [1.5, 2.4], "height_multiplier": [1.3, 1.8], "max_summit_m": 3400, "extreme_floor_m": 2000, "extreme_from_a_m": 2500, "extreme_to_a_m": 10000, "note": "A few non-starter islands are giants: bigger (outline x size) and taller (summit x height, capped before the spire) from one position-based roll, so the lowlands grow with the mountain and stay liveable. See GENERATOR_NOTES.md."},
 	"format_version": 1,
 	"note": "Rules for the world sketch: the large undersea features that islands grow from. Distances in meters unless the name says tiles. Rerun tools/build_sketch.gd after editing.",
 
