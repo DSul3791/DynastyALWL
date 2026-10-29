@@ -19,11 +19,8 @@ Goal: from one seed, make all 21 x 21 tiles of a varied, believable world with v
 - Each generator version keeps a metrics report (the scanner) per tile and per island, so a change can be compared with the last one and a regression shows.
 - Pictures at eye height, not only top-down maps, for review.
 
-## Measured so far (tile 3,4, 29 Oct 2026, `src/worldgen/tools/town_site_scan.gd`)
-- Mean grade over 16 m to 320 m is about 5 to 6% on ground under 30 m, nearly the same at every distance: a smooth ramp with almost no bumps.
-- Higher bands lose only about 15% of their grade between 16 m and 320 m: steep smooth slopes with faint wrinkles.
-- Biomes by area: forest 67%, grassland 13%, marsh under 2%; fertile land 3.3 km2 of about 148 km2 of land.
-- Tried: letting full detail strength arrive by 25 m instead of 120 m. No real change, so the low-land fade is not the cause.
+## Measured so far
+See `GENERATOR_NOTES.md` (how the generator works, why, the measuring method and every result).
 
 ## The living world (Dave, 29 Oct 2026)
 The generator makes the ORIGINAL world once; those tiles are saved and never edited. Players then change it: dig, dam, flood, fell trees, harvest. Water changes must slowly change the land type, and the SERVER decides.

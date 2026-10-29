@@ -67,7 +67,9 @@ func _run(world_dir: String, tile: Vector2i, radius: float, step: float, top: in
 	var side: int = int(result["height"].samples)
 	var margin: int = (side - PLAIN_SAMPLES) / 2
 	print("Tile %s baked: %d samples a side, margin %d" % [str(tile), side, margin])
-	_texture(grid, side)
+	_texture(result["raw_heights"], side, "after cubic upsampling + detail noise")
+	_texture(result["eroded_heights"], side, "after erosion")
+	_texture(grid, side, "final (after water)")
 	var slope: PackedFloat32Array = _slopes(grid, side)
 	var found: Array = []
 
@@ -107,14 +109,15 @@ func _run(world_dir: String, tile: Vector2i, radius: float, step: float, top: in
 	return 0
 
 
-# How bumpy the ground is at human scales, by height band: the mean height change over a distance
-# (lag), as a percent grade, going east and going north. A number near 0 at a lag means the ground
-# is flat at that scale; a big gap between east and north means the hills run one way only.
-func _texture(grid: PackedFloat32Array, side: int) -> void:
+# How bumpy the ground is at human scales, by height band: the mean distance (m) the ground departs
+# from a straight line across a span of 2 x lag, going east and going north (the second difference).
+# A steady ramp scores 0 however steep it is, so this measures bumps and not slope. A knoll 1 m high
+# and 30 m across scores about 0.5 at the 16 m lag. Near 0 means flat at that scale.
+func _texture(grid: PackedFloat32Array, side: int, label: String = "") -> void:
 	var bands: Array = [[1.0, 30.0], [30.0, 120.0], [120.0, 400.0], [400.0, 5000.0]]
-	var lags: Array = [2, 4, 8, 16, 40]
+	var lags: Array = [1, 2, 4, 8, 16, 40]
 	var reach: int = 40
-	print("ground texture: mean grade %% over a lag, east / north   (lag m: %s)" % str(lags.map(func(l): return l * 8)))
+	print("bumpiness %s: m off a straight line, east / north   (lag m: %s)" % [label, str(lags.map(func(l): return l * 8))])
 
 	for band in bands:
 		var sums: Array = []
@@ -135,8 +138,8 @@ func _texture(grid: PackedFloat32Array, side: int) -> void:
 
 				for index in range(lags.size()):
 					var lag: int = int(lags[index])
-					sums[index][0] += absf(grid[row * side + col + lag] - h)
-					sums[index][1] += absf(grid[(row + lag) * side + col] - h)
+					sums[index][0] += absf(grid[row * side + col + lag] - 2.0 * h + grid[row * side + col - lag])
+					sums[index][1] += absf(grid[(row + lag) * side + col] - 2.0 * h + grid[(row - lag) * side + col])
 
 		if count == 0:
 			continue
@@ -144,8 +147,7 @@ func _texture(grid: PackedFloat32Array, side: int) -> void:
 		var text: String = ""
 
 		for index in range(lags.size()):
-			var metres: float = float(lags[index]) * SPACING
-			text += "  %4.1f / %4.1f" % [100.0 * sums[index][0] / float(count) / metres, 100.0 * sums[index][1] / float(count) / metres]
+			text += "  %5.2f / %5.2f" % [sums[index][0] / float(count), sums[index][1] / float(count)]
 
 		print("  height %4.0f to %4.0f m (%6d pts):%s" % [band[0], band[1], count, text])
 
