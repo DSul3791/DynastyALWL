@@ -24,3 +24,15 @@ Goal: from one seed, make all 21 x 21 tiles of a varied, believable world with v
 - Higher bands lose only about 15% of their grade between 16 m and 320 m: steep smooth slopes with faint wrinkles.
 - Biomes by area: forest 67%, grassland 13%, marsh under 2%; fertile land 3.3 km2 of about 148 km2 of land.
 - Tried: letting full detail strength arrive by 25 m instead of 120 m. No real change, so the low-land fade is not the cause.
+
+## The living world (Dave, 29 Oct 2026)
+The generator makes the ORIGINAL world once; those tiles are saved and never edited. Players then change it: dig, dam, flood, fell trees, harvest. Water changes must slowly change the land type, and the SERVER decides.
+
+- **Authority.** The server runs the water (today: `water_hub.gd`, `water_live.gd`) and validates every action. Clients send intents (dig, fill, dam, chop) and receive state; they never report water levels, which would be cheatable and could desync.
+- **Layers.** Base world (immutable, from the generator) plus a sparse overlay of player changes (ground edits, water, land-state changes) saved per tile. The overlay can be reset or rewound without touching the base.
+- **Slow variables, not snapshots.** Each cell keeps a few time-averaged values updated on the water publish tick: wetness (moving average of how saturated), flood frequency, deepest water, drought stress. Land type reacts to these, never to one instant.
+- **Ecology tick.** On a slow clock (about once per game day) the server re-runs the SAME classifier the generator uses (`tile_climate.gd` rules) on the updated fields, with hysteresis: a cell flips only after the change has lasted, and drying out takes longer than waterlogging. One rule table means generation and succession always agree.
+- **Chains** (each step needs sustained conditions): grassland, wet meadow, marsh, reed bed, swamp or bog or fen, shallow pond, lake; and back again when drained (peat and silt stay). Flooding deposits silt, so deltas become rich farmland. Felling trees lowers evaporation, so the ground gets wetter. Dams raise the water table upstream and starve the channel below.
+- **Followers.** Flora is already placed from the biome map plus removals, so a changed biome cell changes what grows; animals follow habitat suitability.
+- **Cost control.** Only active tiles tick. A tile that was unloaded catches up when it loads, from its saved averages and the game time that passed.
+- **Missing classes.** Today's biomes: beach, dry_scrub, temperate_grassland, temperate_forest, mixed_forest, marsh, heath, boreal_forest, alpine_meadow, bare_rock. To add: wet_meadow, swamp (forested wetland), bog and fen, reed_bed, tidal_flat, floodplain_forest, pond and lake bed.
