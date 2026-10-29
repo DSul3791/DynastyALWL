@@ -24,15 +24,8 @@ const PUBLISH_TICKS := 15
 const RUN_SECONDS := 7200.0       # simulated time to run after each change (rivers settle to the new flow), then the water rests
 const START_SECONDS := 21600.0    # a dry start runs this long on its own, so the springs fill the land
 const START_PUBLISH_TICKS := 40
-# Owner report (2026-10-20, build 130 bake): the water poured over the pond lip and down the
-# cliff, but as a film a few cm to 20 cm deep, thinner than the draw rules (water_sim.gd
-# WET_M 0.12 m, STEEP_WET_M 0.6 m on drops), so the lip and the fall showed as dry dirt.
-# On the baked channel (brook, river, fall) any water this deep is drawn.
-const CHANNEL_WET_M := 0.01
 const FALL_FILM_M := 0.02        # thin water on a baked channel this deep counts for finding falls
-const CHANNEL_POOL_M := 0.5      # drawn water this deep beside a film cell is a pond or pool
 const HOLD_M := 0.03             # drawn channel water stays drawn until it is thinner than this (hysteresis)
-const CHANNEL_BANK_M := 1.0      # a film cell no more than this above drawn water beside it is the bank, not the fall
 
 var data
 var sim = null                    # the tile's WaterSim, built by begin() on the water thread
@@ -222,41 +215,6 @@ static func _hold_channel(water, levels: PackedFloat32Array, channel: PackedInt3
 			levels[k] = water.ground[k] + depth[k]
 
 		held[n] = 0 if is_nan(levels[k]) else 1
-
-
-# Draws thin running water on the channel cells the sim's own draw rules leave out, at the
-# water's true level. Owner report (2026-10-20, build 145): films on a pond's rim cells
-# (sloshing a few cm) drawn above the pond climbed its bank like a wall, so a film is skipped
-# where its bed is within CHANNEL_BANK_M of the drawn water beside it; a cell further above
-# (the fall face, or the ramp below a lip) is drawn.
-static func _show_channel(water, levels: PackedFloat32Array, channel: PackedInt32Array) -> PackedFloat32Array:
-	if levels.size() != water.ground.size():
-		return levels
-
-	var depth: PackedFloat32Array = water.get_depth()
-	var side: int = int(sqrt(float(levels.size())))
-	var drawn: PackedFloat32Array = levels.duplicate()
-
-	for k in channel:
-		if not is_nan(levels[k]) or depth[k] < CHANNEL_WET_M:
-			continue
-
-		var level: float = water.ground[k] + depth[k]
-		var climbs: bool = false
-		var column: int = k % side
-
-		for n in [k - 1, k + 1, k - side, k + side, k - side - 1, k - side + 1, k + side - 1, k + side + 1]:
-			if n < 0 or n >= levels.size() or absi(n % side - column) > 1:
-				continue
-
-			if not is_nan(drawn[n]) and depth[n] >= CHANNEL_POOL_M and water.ground[k] <= drawn[n] + CHANNEL_BANK_M:
-				climbs = true
-				break
-
-		if not climbs:
-			levels[k] = level
-
-	return levels
 
 
 # Owner report (2026-10-20, build 200): no water went over pond B's cliff, though the river

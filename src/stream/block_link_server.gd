@@ -44,13 +44,6 @@ func stop() -> void:
 	_server.stop()
 
 
-func has_line(peer_id: int) -> bool:
-	_mutex.lock()
-	var has: bool = _lines.has(peer_id)
-	_mutex.unlock()
-	return has
-
-
 func drop(peer_id: int) -> void:
 	_mutex.lock()
 	var line: Dictionary = _lines.get(peer_id, {})

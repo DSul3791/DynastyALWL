@@ -214,17 +214,6 @@ func _read_some() -> void:
 			(_players[sound_name] as AudioStreamPlayer3D).global_position = _centre["conifer" if sound_name == "pine" else "broadleaf"]
 
 
-# For the rig and the HUD sound line: where each loop sits, how far, and the pan it is given (-1 left to +1 right) for the listener.
-func positions_text(listener: Transform3D) -> String:
-	var parts: PackedStringArray = PackedStringArray()
-
-	for sound_name in LOOPS:
-		var at: Vector3 = (_players[sound_name] as AudioStreamPlayer3D).global_position
-		parts.append("%s at %.0f,%.0f dist %.0f m pan %+.2f" % [sound_name, at.x, at.z, listener.origin.distance_to(at), Sound3D.pan_of(listener, at)])
-
-	return "; ".join(parts)
-
-
 func _variants(sound_name: String) -> Array:
 	if _streams.has(sound_name):
 		return _streams[sound_name]

@@ -526,10 +526,6 @@ func _add_delta(k: int, amount: float) -> void:
 	# A touched cell whose delta cancelled to exactly zero is still in the list; harmless.
 
 
-func _is_spring(k: int) -> bool:
-	return _spring_cell[k] == 1
-
-
 # Levels for drawing: the water level where the depth is at least WET_M (or thin water
 # bridging drawn water, _drawn_wet), NAN elsewhere.
 func level_map() -> PackedFloat32Array:

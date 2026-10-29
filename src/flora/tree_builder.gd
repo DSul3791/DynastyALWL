@@ -2679,9 +2679,6 @@ static func _spine(acc: Acc, from: Vector3, to: Vector3, w: float, color: Color)
 	acc.tri(first, first + 2, first + 1)
 
 
-static func _raspberry(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
-	_cane_shrub(SHRUB_LOOKS["raspberry"], bark, leaves, rng, h, crown, far)
-
 
 # Stinging nettle (Dave's photos 2026-10-23) and other upright herbs: a dense patch of tall straight single stems, dark purple-brown, with leaf pairs
 # stepping up opposite each other (each pair turned 90 degrees from the one below), big toothed leaves low and smaller paler ones higher, and green

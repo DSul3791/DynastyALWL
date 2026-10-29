@@ -80,6 +80,3 @@ func update(delta: float) -> void:
 			line["label"].queue_free()
 			_lines.remove_at(n)
 
-
-func line_count() -> int:
-	return _lines.size()

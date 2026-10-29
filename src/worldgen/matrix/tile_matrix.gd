@@ -31,10 +31,6 @@ func get_cell(tile_x: int, tile_z: int) -> Dictionary:
 	return cells.get(Vector2i(tile_x, tile_z), {})
 
 
-func has_cell(tile_x: int, tile_z: int) -> bool:
-	return cells.has(Vector2i(tile_x, tile_z))
-
-
 # Locked cells and cells that already have a tile file are never changed.
 static func is_frozen(cell: Dictionary) -> bool:
 	if cell.is_empty():

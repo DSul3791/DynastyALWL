@@ -29,7 +29,6 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const KEY_FILE := "user://player_key.txt"
 const PICKUP_M := 3.0
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
-const COLUMNS := 6
 const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
 
 var open: bool = false
@@ -1245,14 +1244,6 @@ func over_pace_factor() -> float:
 	return float(_exertion_cfg.get("over_speed_factor", 0.9)) if strain_state == 1 else 1.0
 
 
-# The blackout level, 0 to 1: rising while strain is over the faint threshold (slowly at the threshold, faster the further
-# over it), 1 while fainted, falling as the character wakes. Sounds scale the heartbeat with it.
-func blackout_level() -> float:
-	if strain_state == 2:
-		return 1.0
-
-	return clampf(strain_fade, 0.0, 1.0) if strain_state == 1 or strain_state == 3 else 0.0
-
 
 # The picture's state name and progress for faint.set_state (Art's faint_effect.gd): vision fades over the
 # first vision_frac of a faint ("fainting", progress 0 to 1), then "fainted" holds black while only the heart is heard.
@@ -1744,16 +1735,6 @@ func _refresh_pile(id: int) -> void:
 		box.mesh = _mesh_for(int(entry["number"]))
 
 
-# One loose item as it is drawn on the ground, for the admin showroom: the node sits at the origin (the caller moves it), nothing is
-# registered in _world, so it cannot be picked up or counted.
-func make_display_item(number: int, seed_id: int) -> Node3D:
-	var box: MeshInstance3D = MeshInstance3D.new()
-	var real: Mesh = _natural_mesh(number, seed_id)
-	box.mesh = real if real != null else _mesh_for(number)
-	box.position = Vector3(0.0, 0.12, 0.0)
-	_dress_item(box, number, seed_id, real != null)
-	return box
-
 
 # Fires and structures standing in the world as {"pos", "state"} rows, for the placement ghost's blocked check.
 func foundation_rows() -> Array:
@@ -2069,10 +2050,6 @@ func _part(root: Node3D, size: Vector3, at: Vector3, color: Color, tilt: Vector3
 	root.add_child(piece)
 
 
-const LOG_COLOR := Color(0.33, 0.23, 0.14)
-const PLANK_COLOR := Color(0.45, 0.33, 0.2)
-const STONE_COLOR := Color(0.46, 0.45, 0.42)
-const IRON_COLOR := Color(0.16, 0.16, 0.18)
 
 
 # Medium: a thick hewn top on two log trestles, a rack of pegs at the back and a wooden vice at one end, about 2 by 1 m.
@@ -3348,16 +3325,6 @@ func _matches(text: String, filter: String) -> bool:
 	return filter == "" or text.to_lower().contains(filter)
 
 
-func _recipe_matches(r: Dictionary, filter: String) -> bool:
-	if _matches(str(r["name"]), filter) or _matches(table.name_of(r["gives"][0]), filter):
-		return true
-
-	for need in r["needs"] + r["keeps"]:
-		if _matches(table.name_of(need[0]), filter):
-			return true
-
-	return false
-
 
 # The slot buttons keep their slot (clicks, moves and the hotbar are unchanged); only where they sit in the grid
 # changes. Empty slots go last. Unsorted is the order the item kinds were picked up in.
@@ -3937,7 +3904,6 @@ func run_text_test(client) -> void:
 
 # Job 82: every control in the inventory window, read at the current text scale: the smallest font in use, the labels a
 # player sees (buttons, sort options, hints) and the key letters on the action buttons. Printed as "Audit:" lines.
-const MIN_FONT_PX := 24
 const ACTION_BUTTON_LABELS := ["Split (S)", "Drop (D)", "Use (E)", "Repair (R)"]
 
 

@@ -151,7 +151,6 @@ const LOD_COUNT := 7
 const STAGE_VIEW_M := 128            # the ground view distance in that time
 const STAGE_VERTICAL := 0.25         # and this share of it up and down
 const STAGE_LODS := 1                # after a stop high up only this many detail levels are built until the ground under the player has a collider
-const STAGE_MIN_HEIGHT_M := 40.0      # staged only when the player is this far above the ground
 const STAGE_STEP_MIN_MSEC := 600
 const STILL_MSEC := 3000              # flying: ground loads again after staying still this long
 # Natural speeds (Dave 2026-10-21, Tyler Report 13): walk, jog and run in m/s. The ONE place to tune them; the server
@@ -2121,28 +2120,6 @@ func _tree_trunk_near(point: Vector3) -> Array:
 
 	return []
 
-
-# E with nothing on the ground in reach: ask to gather the nearest plant or shrub within 2.5 m.
-# The server decides whether it gives anything (data/items/drops.json) and removes it.
-func _gather_nearest() -> void:
-	var here: Vector3 = body.global_position
-	var best: Array = []
-
-	for chunk in flora._chunks:
-		@warning_ignore("shadowed_variable")
-		var held: Dictionary = flora._chunks[chunk]["items"]
-
-		for n in range(held["ids"].size()):
-			if flora._species.get(held["ids"][n] >> 16, {}).get("kind", 0) == 0:
-				continue
-
-			var d: float = Vector2(held["positions"][n].x - here.x, held["positions"][n].z - here.z).length()
-
-			if d <= 2.5 and (best.is_empty() or d < best[0]):
-				best = [d, chunk, held["ids"][n]]
-
-	if not best.is_empty():
-		net.cut_flora.rpc_id(1, best[1], best[2])
 
 
 # Headless check: cut the tree nearest the spawn.

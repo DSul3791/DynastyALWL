@@ -13,16 +13,6 @@ func _ready() -> void:
 
 func _launch_role(role: String) -> void:
 	match role:
-		"server":
-			get_tree().change_scene_to_file(
-				"res://scenes/server/server_main.tscn"
-			)
-
-		"client":
-			get_tree().change_scene_to_file(
-				"res://scenes/client/client_main.tscn"
-			)
-
 		"terrain":
 			get_tree().change_scene_to_file(
 				"res://scenes/terrain_preview/terrain_preview.tscn"
@@ -39,11 +29,6 @@ func _launch_role(role: String) -> void:
 		"terrain_client":
 			get_tree().change_scene_to_file(
 				"res://scenes/terrain_client/terrain_client.tscn"
-			)
-
-		"builder":
-			get_tree().change_scene_to_file(
-				"res://scenes/builder/world_builder.tscn"
 			)
 
 		_:
