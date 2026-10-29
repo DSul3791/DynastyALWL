@@ -129,6 +129,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 	clock = Time.get_ticks_msec()
 	_add_detail(_detail_scale)
 	_lap("add detail", clock)
+	_add_summits()
 
 	if not defer_strata:
 		add_strata()
@@ -424,6 +425,46 @@ func _island_texture_rows() -> PackedFloat32Array:
 			out[out_base + i] = lerpf(top, bottom, fv)
 
 	return out
+
+
+# A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
+# the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
+# and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
+func _add_summits() -> void:
+	if not _rules.has("summit") or _elevation.summits.is_empty():
+		return
+
+	var rules: Dictionary = _rules["summit"]
+	var share: float = float(rules["spire_share"])
+	var factor: float = float(rules["radius_factor"])
+	var power: float = float(rules["power"])
+	var cap: float = float(rules["max_m"])
+	var x0: float = float(origin_sx) * spacing_m
+	var z0: float = float(origin_sz) * spacing_m
+	var last: int = samples - 1
+
+	for summit in _elevation.summits:
+		var top: float = float(summit[2])
+		var rise: float = minf(share * top, maxf(cap - top, 0.0))
+		var reach: float = factor * share * top
+
+		if rise <= 0.0 or reach <= 0.0:
+			continue
+
+		var east: float = (float(summit[0]) - x0) / spacing_m
+		var north: float = (float(summit[1]) - z0) / spacing_m
+		var span: float = reach / spacing_m
+		var i0: int = maxi(int(floor(east - span)), 0)
+		var i1: int = mini(int(ceil(east + span)), last)
+		var j0: int = maxi(int(floor(north - span)), 0)
+		var j1: int = mini(int(ceil(north + span)), last)
+
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var distance: float = Vector2(float(i) - east, float(j) - north).length() * spacing_m
+
+				if distance < reach:
+					heights[j * samples + i] += rise * pow(1.0 - distance / reach, power)
 
 
 func height_at(i: int, j: int) -> float:

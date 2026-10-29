@@ -1,4 +1,5 @@
 {
+	"summits": {"min_peak_m": 450, "search_m": 1280},
 	"format_version": 1,
 	"note": "Rules for the world sketch: the large undersea features that islands grow from. Distances in meters unless the name says tiles. Rerun tools/build_sketch.gd after editing.",
 

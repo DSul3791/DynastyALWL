@@ -67,6 +67,7 @@ func _run(world_dir: String, tile: Vector2i, radius: float, step: float, top: in
 	var side: int = int(result["height"].samples)
 	var margin: int = (side - PLAIN_SAMPLES) / 2
 	print("Tile %s baked: %d samples a side, margin %d" % [str(tile), side, margin])
+	_summit(grid, side)
 	_texture(result["raw_heights"], side, "after cubic upsampling + detail noise")
 	_texture(result["eroded_heights"], side, "after erosion")
 	_texture(grid, side, "final (after water)")
@@ -107,6 +108,49 @@ func _run(world_dir: String, tile: Vector2i, radius: float, step: float, top: in
 
 	print("%d candidate circles of radius %.0f m measured" % [found.size(), radius])
 	return 0
+
+
+# How sharp the highest point is: the radius of the connected ground that stays within `drop` metres of the
+# summit. A true peak narrows fast (a 100 m drop inside about 150 to 250 m); a mound stays wide (600 m or more).
+func _summit(grid: PackedFloat32Array, side: int) -> void:
+	var top: int = 0
+
+	for k in range(grid.size()):
+		if grid[k] > grid[top]:
+			top = k
+
+	var peak: float = grid[top]
+	print("summit: %.0f m at east %d m, north %d m of the frame" % [peak, (top % side) * 8, (top / side) * 8])
+
+	for drop in [10.0, 25.0, 50.0, 100.0, 200.0, 400.0]:
+		var level: float = peak - drop
+		var seen: PackedByteArray = PackedByteArray()
+		seen.resize(grid.size())
+		var stack: PackedInt32Array = PackedInt32Array([top])
+		seen[top] = 1
+		var cells: int = 0
+
+		while not stack.is_empty():
+			var k: int = stack[stack.size() - 1]
+			stack.resize(stack.size() - 1)
+			cells += 1
+			var col: int = k % side
+			var row: int = k / side
+
+			for step in [[1, 0], [-1, 0], [0, 1], [0, -1]]:
+				var nc: int = col + int(step[0])
+				var nr: int = row + int(step[1])
+
+				if nc < 0 or nr < 0 or nc >= side or nr >= side:
+					continue
+
+				var n: int = nr * side + nc
+
+				if seen[n] == 0 and grid[n] >= level:
+					seen[n] = 1
+					stack.append(n)
+
+		print("  within %3d m of the summit: %7.2f ha, equivalent radius %5.0f m" % [drop, float(cells) * 64.0 / 10000.0, sqrt(float(cells) * 64.0 / PI)])
 
 
 # How bumpy the ground is at human scales, by height band: the mean distance (m) the ground departs

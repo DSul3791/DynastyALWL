@@ -6,6 +6,13 @@
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
 		"margin_samples": 400
 	},
+	"summit": {
+		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md.",
+		"spire_share": 0.16,
+		"radius_factor": 3.2,
+		"power": 1.7,
+		"max_m": 2000
+	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
 		"octaves": [

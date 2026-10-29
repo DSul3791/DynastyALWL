@@ -32,6 +32,7 @@ var origin_z: float = 0.0
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 var owners: PackedInt32Array = PackedInt32Array()     # feature index per cell
+var summits: Array = []                               # [x_m, z_m, height_m] of every prominent peak (see _find_summits); the tile detail step sharpens each into a real peak
 var texture: PackedFloat32Array = PackedFloat32Array()   # how bumpy the ground is made here, 1 = the tile detail rules as written (island_types "texture")
 var special: PackedByteArray = PackedByteArray()      # lava and the like
 var feature_ids: Array = []
@@ -120,6 +121,44 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m") and not crater.is_empty():
 				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
+	_find_summits()
+
+
+# The 160 m map cannot hold a point, and the cubic upsampling rounds off the top, so every island's
+# summit came out as a wide mound. Here every local maximum above `summits.min_peak_m` within
+# `summits.search_m` is listed; tile_height.gd adds the spire to each at 8 m spacing.
+func _find_summits() -> void:
+	summits.clear()
+	var settings: Dictionary = rules.get("summits", {})
+	var min_height: float = float(settings.get("min_peak_m", 450.0))
+	var reach: int = int(ceil(float(settings.get("search_m", 1280.0)) / cell_m))
+
+	for row in range(size_z):
+		for column in range(size_x):
+			var h: float = heights[row * size_x + column]
+
+			if h < min_height:
+				continue
+
+			var highest: bool = true
+
+			for dr in range(-reach, reach + 1):
+				for dc in range(-reach, reach + 1):
+					if (dr == 0 and dc == 0) or dr * dr + dc * dc > reach * reach:
+						continue
+
+					var other: float = heights[index_of(column + dc, row + dr)]
+
+					if other > h or (other == h and (dr < 0 or (dr == 0 and dc < 0))):
+						highest = false
+						break
+
+				if not highest:
+					break
+
+			if highest:
+				var centre: Vector2 = cell_center_m(column, row)
+				summits.append([centre.x, centre.y, h])
 
 
 # ==================================================
