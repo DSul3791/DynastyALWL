@@ -33,8 +33,8 @@ case "$OUT" in *"0 errors"*) pass "$OUT";; *) fail "item validator: $OUT";; esac
 # BP-T31 secret-bake guard: classify the change (RUNTIME < RESTART < BAKE) from the paths changed against origin and uncommitted.
 BAKE_RE='^(src/worldgen/(tile|plan|sketch|tables|matrix|settings)/|src/worldgen/runtime/(terrain_layout|terrain_generator|flora_placer|tile_terrain_data)\.gd|worlds/base_world/)|(world_elevation|river_network)\.gd$'
 RESTART_RE='^(src/(server|shared|stream|water|admin)/|scenes/(server|terrain_server)/|data/)'
-git fetch -q origin claude/generator-v2 2>/dev/null
-CHANGED=$( (git diff --name-only origin/claude/generator-v2...HEAD; git diff --name-only HEAD) 2>/dev/null | sort -u)
+git fetch -q origin main 2>/dev/null
+CHANGED=$( (git diff --name-only origin/main...HEAD; git diff --name-only HEAD) 2>/dev/null | sort -u)
 BAKE_FILES=$(echo "$CHANGED" | grep -E "$BAKE_RE")
 LOOK_RE='^data/(items/looks\.json|look/)'      # only the client reads these, the server never loads them: RUNTIME
 RESTART_FILES=$(echo "$CHANGED" | grep -E "$RESTART_RE" | grep -vE "$LOOK_RE")

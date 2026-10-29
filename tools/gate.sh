@@ -1,5 +1,5 @@
 #!/bin/bash
-# One command for every gate on the Linux box (David3). Trial merge of a branch hash onto current generator-v2 in a warm clone, then the checks.
+# One command for every gate on the Linux box (David3). Trial merge of a branch hash onto current main in a warm clone, then the checks.
 #   tools/gate.sh <40-char hash> [--lane fast|slow|full] [--base REF] [--jobs N] [--clone N] [--no-publish]
 #   fast  (default)  parse_scan, merge_check on the merge, local_check, all quick tests N at a time, then the timing tests alone with one retry.
 #                    The slow tests are added automatically when the diff touches src/worldgen, src/water, src/stream, data/water or worlds/.
@@ -10,7 +10,7 @@
 # A trial-merge conflict fails loudly with the file names (look_table.gd, piece_look.gd, looks.json named first). /out/PAUSE pauses between tests.
 set -u
 HASH="${1:-}"; shift || true
-LANE=fast; BASE="origin/claude/generator-v2"; JOBS="${GATE_JOBS:-4}"; CLONE=""; PUBLISH=1
+LANE=fast; BASE="origin/main"; JOBS="${GATE_JOBS:-4}"; CLONE=""; PUBLISH=1
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--lane) LANE="$2"; shift 2;; --base) BASE="$2"; shift 2;; --jobs) JOBS="$2"; shift 2;;
@@ -55,7 +55,7 @@ if [ ! -d "$DIR/.git" ]; then say "FAIL clone $DIR missing (set it up first: git
 cd "$DIR" || exit 2
 export HOME="$ROOT/home$N"; export XDG_DATA_HOME="$HOME/data"; mkdir -p "$XDG_DATA_HOME"
 git merge --abort >/dev/null 2>&1
-git fetch -q origin '+refs/heads/claude/generator-v2:refs/remotes/origin/claude/generator-v2' 2>"$LOG/fetch.log"
+git fetch -q origin '+refs/heads/main:refs/remotes/origin/main' 2>"$LOG/fetch.log"
 case "$BASE" in origin/*) git fetch -q origin "+refs/heads/${BASE#origin/}:refs/remotes/$BASE" 2>>"$LOG/fetch.log";; esac
 git cat-file -e "$HASH^{commit}" 2>/dev/null || git fetch -q origin "$HASH" 2>>"$LOG/fetch.log"
 git cat-file -e "$HASH^{commit}" 2>/dev/null || git fetch -q origin '+refs/heads/claude/*:refs/remotes/origin/claude/*' 2>>"$LOG/fetch.log"

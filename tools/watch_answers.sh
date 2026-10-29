@@ -5,7 +5,7 @@
 # First run on an empty state prints BASELINE (and exits 10) so a lost or new state file is never silent.
 # State: last seen commit SHA per file in $STATE (default /mnt/project-files/tech/.answers_seen, shared and permanent). An ETag makes an unchanged poll a free 304.
 REPO=${REPO:-DSul3791/DynastyALWL}
-BRANCH=${BRANCH:-claude/generator-v2}
+BRANCH=${BRANCH:-qa}
 STATE=${STATE:-/mnt/project-files/tech/.answers_seen}
 EVERY=${EVERY:-300}
 mkdir -p "$(dirname "$STATE")"; touch "$STATE"

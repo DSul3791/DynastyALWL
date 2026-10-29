@@ -1,6 +1,6 @@
 # How a thread posts a card to Dave's QA page (BP-T47, Dave 2026-10-23 04:52)
 Dave: threads may post straight to the QA page as long as they follow the card rules AND always make a recommendation. The QA page is Dave's to-do list (BP-T44): anything he must decide, test or do is a card.
-## The one command (appends only, pushes to claude/generator-v2 from a throwaway clone; your own branch is untouched)
+## The one command (appends only, pushes to branch qa from a throwaway clone; your own branch is untouched)
   python3 tools/qa_post.py --id my-card --kind check --title "Should X do Y?" --note "What it means, plain words." --rec "Yes because Z."
 Kinds: check (Yes/No plus Why-not), test (Yes it worked / No plus Notes, steps are numbered notes), picture (Picture taken / not taken plus Notes), text (a typed answer, only when truly needed). Add --dry-run to see the card without posting. If git is not available, write the same text into questions/QUESTIONS.md by the GitHub contents API (append only) following the template.
 ## Card template (what the tool writes)

@@ -1,7 +1,7 @@
 # The QA system: how Dave's question page works (reusable kit)
 Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner answers questions and checks things, with every answer saved where the team can read it. Built with GitHub files only: no server, no database, no cost.
 
-## 1. Files (all in the repo on branch claude/generator-v2, folder questions/)
+## 1. Files (all on branch qa, folder questions/; the branch holds nothing else and is never merged with main)
 - `qa.html`: the page. One file, no libraries. Loads QUESTIONS.md live, writes answers back through the GitHub API.
 - `QUESTIONS.md`: open questions. Block = `## id | question`, then `- choice` lines, or `[text]` for a typed answer, or `[check]` for a "Things to check" card (Yes / No + "Why not?"). Other lines are notes shown under the question.
 - `ANSWERS.md`: answered questions (`Answer:`, `Answered:` UTC). Answering moves a block from QUESTIONS.md to here.
@@ -10,8 +10,8 @@ Written 2026-10-22 by the Guru. Goal: one phone-friendly page where the owner an
 - Support files in tech/: `QUESTION_OWED.md` (which thread waits on what), `TEST_QUEUE.md` (test asks from threads, batched into check cards), `DECISIONS.md` (every answer recorded), `tools/watch_answers.sh` (change watcher).
 
 ## 2. Hosting
-- The real page lives in the main repo (questions/qa.html). A tiny stub, `qa.html` + `index.html`, lives in a separate PUBLIC repo `DSul3791/DynastyALWL-QA` with GitHub Pages (main, root): https://dsul3791.github.io/DynastyALWL-QA/
-- The stub fetches the real qa.html from raw.githubusercontent.com (branch claude/generator-v2, cache about 5 min, CORS open) and rewrites itself with it. Page changes are pushed to the main repo only; the stub is never touched again.
+- The real page lives in the main repo on branch qa (questions/qa.html). A tiny stub, `qa.html` + `index.html`, lives in a separate PUBLIC repo `DSul3791/DynastyALWL-QA` with GitHub Pages (main, root): https://dsul3791.github.io/DynastyALWL-QA/
+- The stub fetches the real qa.html from raw.githubusercontent.com (branch qa, cache about 5 min, CORS open) and rewrites itself with it. Page changes are pushed to the main repo only; the stub is never touched again.
 - Requirement: the main repo must stay PUBLIC for the stub to load it. If it goes private the stub stops (decision repo-vis pending). Alternative then: serve the full page from the Pages repo and give it a token to read the private repo.
 - The main repo is over GitHub's 1 GB Pages limit, which is why the page lives in its own tiny repo.
 

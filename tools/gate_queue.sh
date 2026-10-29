@@ -27,7 +27,7 @@ work)
 			K=$(basename "$NEXT" .req); H=$(cat "$NEXT"); rm -f "$NEXT"
 			# jobs per gate: 4 with one gate going, 2 when several share the box
 			J=4; [ "$RUN" -ge 1 ] && J=2
-			setsid bash -c 'echo $$ > "$1/$2.pid"; echo "$3" > "$1/$2.hash"; bash "$4/gate.sh" "$3" --lane fast --jobs "$5" --base origin/claude/generator-v2 >/dev/null 2>&1; rm -f "$1/$2.pid"' _ "$R" "$K" "$H" "$HERE" "$J" &
+			setsid bash -c 'echo $$ > "$1/$2.pid"; echo "$3" > "$1/$2.hash"; bash "$4/gate.sh" "$3" --lane fast --jobs "$5" --base origin/main >/dev/null 2>&1; rm -f "$1/$2.pid"' _ "$R" "$K" "$H" "$HERE" "$J" &
 			sleep 3; continue
 		fi
 		sleep 10

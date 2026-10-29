@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Post one card to Dave's QA page (BP-T47). Appends to questions/QUESTIONS.md on claude/generator-v2 and pushes.
+"""Post one card to Dave's QA page (BP-T47). Appends to questions/QUESTIONS.md on branch qa (the QA data branch, not main) and pushes.
 
 Usage:
   python3 tools/qa_post.py --id my-card --kind check --title "Should X do Y?" \
@@ -15,7 +15,7 @@ It only ever APPENDS. It never edits or removes a card (Dave may be answering). 
 """
 import argparse, re, subprocess, sys, time
 
-BRANCH = "claude/generator-v2"
+BRANCH = "qa"
 QF = "questions/QUESTIONS.md"
 AF = "questions/ANSWERS.md"
 

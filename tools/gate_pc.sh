@@ -2,7 +2,7 @@
 # Gate on Dave's Windows PC (Git bash). Mike, 25 Oct 2026, gate fix plan (design/GATE_FIX_PLAN.md).
 #   tools/gate_pc.sh <40-char hash> [--lane fast|slow|full] [--jobs N] [--fresh]
 # --fresh: a brand-new worktree with no import cache (the weekly "same result as a clean clone" check); default: the warm slot.
-# Prints HEAD=<hash> first. Builds the candidate = hash + current origin/claude/generator-v2 (trial merge, committed only inside a throw-away
+# Prints HEAD=<hash> first. Builds the candidate = hash + current origin/main (trial merge, committed only inside a throw-away
 # warm worktree "slot" so the Godot import cache survives: a new worktree reimports everything because the files get new modification times, 3.5 min), imports with the warm Godot cache, runs parse_scan, merge_check, local_check, then the tests chosen by
 # tools/tests_for_diff.py through tools/run_tests.sh (parallel, serial and retry lanes, per-job data dir and log). Failures are compared BY NAME
 # with tech/TEST_BASELINE_PC.md (block between "known failures" markers). Prints per-step seconds and `Test done: N pass, M fail`.
@@ -25,7 +25,7 @@ export GATE_PAUSE="${GATE_PAUSE:-E:/Software/godotDev/GATE_PAUSE}"
 GATE_ROOT="${GATE_ROOT:-/e/Software/godotDev/gate_pc}"
 TOOLS_SRC="$(cd "$(dirname "$0")" && pwd)"
 REPO="${GATE_REPO:-$(cd "$TOOLS_SRC/.." && pwd)}"
-BASE_REF=origin/claude/generator-v2
+BASE_REF=origin/main
 mkdir -p "$GATE_ROOT"
 STAMP=$(date +%H%M%S)
 WT="$GATE_ROOT/wt_slot1"; [ "$FRESH" = "1" ] && WT="$GATE_ROOT/wt_fresh_${HASH:0:8}_$STAMP"
@@ -37,7 +37,7 @@ finish() { cd "$REPO"; rmdir "$LOCK" 2>/dev/null; [ "$FRESH" = "1" ] && git work
 
 cd "$REPO" || exit 2
 s=$(date +%s)
-git fetch -q origin claude/generator-v2 2>/dev/null
+git fetch -q origin main 2>/dev/null
 git fetch -q origin "$HASH" 2>/dev/null
 FULL=$(git rev-parse --verify -q "$HASH^{commit}") || { echo "HEAD=$HASH"; echo "FAILED: hash not found in this clone"; exit 2; }
 echo "HEAD=$FULL"
@@ -52,7 +52,7 @@ fi
 cd "$WT" || exit 2
 git -c user.name=gate -c user.email=gate@local merge -q --no-edit "$BASE_REF" >"$OUT/merge.txt" 2>&1
 if [ $? -ne 0 ]; then
-	echo "CONFLICT: the trial merge with generator-v2 fails:"; git diff --name-only --diff-filter=U | head -10 | sed 's/^/  /'
+	echo "CONFLICT: the trial merge with main fails:"; git diff --name-only --diff-filter=U | head -10 | sed 's/^/  /'
 	git merge --abort 2>/dev/null; finish; exit 2
 fi
 echo "candidate: $FULL merged with $(git rev-parse --short $BASE_REF) (trial, not pushed)"
@@ -75,7 +75,7 @@ s=$(date +%s); mkdir -p "$OUT/bin"; printf '#!/bin/bash\nexec "%s" "$@"\n' "$GOD
 LC=$(PATH="$OUT/bin:$PATH" bash tools/local_check.sh 2>&1 | grep -E "^FAIL|LOCAL CHECK|no new warnings|new warning|change class" | head -6)
 echo "$LC"; case "$LC" in *"LOCAL CHECK: PASS"*) ;; *) CHECK_FAIL=1;; esac; step "local_check" $s
 
-# test plan. The gate tools come from this script's own checkout when the candidate does not have them yet (before they are on generator-v2).
+# test plan. The gate tools come from this script's own checkout when the candidate does not have them yet (before they are on main).
 for f in tests_for_diff.py run_tests.sh run_one_test.sh test_lanes.json; do [ -f "tools/$f" ] || cp "$TOOLS_SRC/$f" "tools/$f"; done
 s=$(date +%s)
 "$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD > "$OUT/plan.json" 2>"$OUT/plan.err" || "$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD --all > "$OUT/plan.json"

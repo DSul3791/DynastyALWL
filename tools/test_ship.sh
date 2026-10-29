@@ -7,9 +7,9 @@ ok() { echo "PASS $1"; P=$((P+1)); }
 no() { echo "FAIL $1"; F=$((F+1)); }
 git clone -q "$SRC" "$T/c" && cd "$T/c" || exit 2
 git remote set-url origin "$SRC"
-git checkout -q -B claude/generator-v2 origin/claude/generator-v2 2>/dev/null || git checkout -q -B claude/generator-v2
+git checkout -q -B main origin/main 2>/dev/null || git checkout -q -B main
 git checkout -q -b claude/ship-selftest && echo "ship self test $(date +%s)" > docs/ship_selftest.txt && git add docs/ship_selftest.txt && git commit -qm "ship selftest file" && H=$(git rev-parse HEAD)
-git checkout -q claude/generator-v2
+git checkout -q main
 cp "$SRC/tools/ship.sh" tools/ship.sh
 godot --headless --import --path . >/dev/null 2>&1   # a fresh clone must import once or local_check sees false warnings (same reason the gate clones stay warm)
 mkdir "$T/log"; echo "# log" > "$T/log/BUILD_LOG.md"
@@ -24,9 +24,9 @@ grep -q "tested id $H" "$T/log/BUILD_LOG.md" && ok "build log written" || no "bu
 # 3. already merged refused
 OUT=$(BUILD_LOG_DIR=$T/log NO_PUSH=1 bash tools/ship.sh "$H" t n 2>&1); echo "$OUT" | grep -q 'already in' && ok "already merged refused" || no "already merged refused"
 # 4. conflict stops and names files
-git checkout -q -B claude/gen-conflict origin/claude/generator-v2 2>/dev/null; git checkout -q claude/generator-v2
+git checkout -q -B claude/gen-conflict origin/main 2>/dev/null; git checkout -q main
 echo "other side" > docs/ship_conflict.txt; git add docs/ship_conflict.txt; git commit -qm "main side"
-git checkout -q -b claude/ship-conflict HEAD~1; echo "branch side" > docs/ship_conflict.txt; git add docs/ship_conflict.txt; git commit -qm "branch side"; C=$(git rev-parse HEAD); git checkout -q claude/generator-v2
+git checkout -q -b claude/ship-conflict HEAD~1; echo "branch side" > docs/ship_conflict.txt; git add docs/ship_conflict.txt; git commit -qm "branch side"; C=$(git rev-parse HEAD); git checkout -q main
 OUT=$(BUILD_LOG_DIR=$T/log NO_PUSH=1 bash tools/ship.sh "$C" t n 2>&1); echo "$OUT" | grep -q 'CONFLICTS' && ok "conflict stops and lists files" || no "conflict stops"
 git merge --abort 2>/dev/null
 echo "ship self-test: $P pass, $F fail"; cd "$SRC"; rm -rf "$T"; [ $F -eq 0 ]

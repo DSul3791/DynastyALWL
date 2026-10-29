@@ -7,7 +7,7 @@ It does not run Godot (warning count and headless loads stay with tools/local_ch
 import json, os, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
-BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/claude/generator-v2"
+BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/main"
 
 problems = []
 

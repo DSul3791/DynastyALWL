@@ -1,5 +1,7 @@
 # BEST PRACTICES (office Guru: Tyler_Guru_SenDev). Created 2026-10-22.
 
+> **2026-10-29:** David3 (the Linux server box) is now used for another project and no longer has this code. Rules below that send gates, pictures or tests to David3 are paused: gate on Dave's PC with `tools/gate_pc.sh`. Base branch is now `main` (pull requests only); Dave's questions live on branch `qa`.
+
 This is THE guideline document. One entry per thing we do. Topic research from earlier (waterfalls, erosion, animals, skills, TTS, walking numbers, buildings) stays in `/mnt/project-files/tyler/BEST_PRACTICES.md` and `FINDINGS.md`; those are the detail appendix. If an entry here and the appendix disagree, this file wins.
 
 Key for each entry: **Source** D = Dave's decision (do not change without him), T = our own choice (Guru may change after telling Dave). **Owner** = thread that keeps it true. **FLAG** = Guru thinks it is not best practice; recommendation given, nothing changed.
