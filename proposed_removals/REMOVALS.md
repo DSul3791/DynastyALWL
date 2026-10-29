@@ -22,3 +22,8 @@ Restored here by Tyler on 25 Oct 18:10 UTC from commit 804932bf (the tree just b
 | addons/water_core/bin/~libwatercore.windows.template_release.x86_64.dll | Claude | 29 Oct | leftover temp lock copy of the water DLL (never commit temp DLLs) | the real DLL beside it |
 | src/client/crash_breadcrumb.gd.uid | Claude | 29 Oct | orphan: its script is gone | none |
 Also removed inside live files (git history keeps them): 23 functions nothing called, about 25 constants nothing read, the never-run water-settle step in src/admin/tile_bake_launcher.gd, client scenery boulders (SCENERY_BOULDERS was false) in grass_view.gd, breathing sounds (BREATHING was false) in breath_sounds.gd, and the launcher roles client/server/builder.
+
+## Finished tools, 29 Oct 2026 (Claude, branch claude/debloat)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/analyze_land.gd, flora_map.gd, stitch_water_seams.gd, river_settle_report.gd, terrain_bench.gd, basin_census.gd, river_pits.gd (+ .uid) | Claude | 29 Oct | one-off analysis tools; no script, test or bake references them | none |
