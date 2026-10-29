@@ -26,7 +26,8 @@ A multiplayer medieval survival and town-building game ("Dynasty, a life well li
 ## Team (2026-10-22, Dave approved)
 Coordinator (routing, moderator every 30 min, Dave's reports); Technical Director + Guru (docs, approvals, build numbers, JOBS/DECISIONS/PROCESS, question page, BEST_PRACTICES daily check); Sonny (World: ground, tunnels, bracing, water); Sal_Crafts (was Radar: items, crafting, NPCs, animals, buildings); Steve_ProblemSolver (Systems, was Tyler_002: server, network, HUD, movement, performance, saves); Kathleen_ArtisticDirector (was Kathleen_ArtisticDirector: art, animation, sound); MikeW_LocalAgent (runs on Dave's PC on demand: warnings, headless tests, GPU/visual checks). Workers run on demand from the queue. Details: `tech/TEAM_PROPOSAL.md`, `tech/PROCESS.md`.
 
-## Working rules (pointers; the full text is in tech/)
+## Working rules (one file: RULES.md; BEST_PRACTICES.md is the reference library)
+- Read `RULES.md` first: it replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS (archived 29 Oct 2026). The lines below are a short copy.
 - Before anything NEW, find its entry in `tech/BEST_PRACTICES.md`; none = ask the Technical Director and take another job meanwhile.
 - Zero new GDScript warnings; typed code; no `@warning_ignore` without a reason.
 - Server and client talk only through `src/stream/terrain_net.gd`; shared code in `src/shared`.
