@@ -153,10 +153,10 @@ def make_start(n, dx, seed=7, summit=1300.0):
     h = gaussian_filter(h, 1.0)
     return h
 
-def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None):
-    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h, balance=balance, bal_smooth=bal_smooth, lowboost=lowboost, low_from=low_from, low_to=low_to, tarn=tarn, rain_map=rain_map, ery_map=ery_map)
+def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None, uplift_map=None):
+    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h, balance=balance, bal_smooth=bal_smooth, lowboost=lowboost, low_from=low_from, low_to=low_to, tarn=tarn, rain_map=rain_map, ery_map=ery_map, uplift_map=uplift_map)
 
-def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None):
+def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None, uplift_map=None):
     h = (start_h.copy() if start_h is not None else make_start(n, dx, seed, summit)).ravel().astype(np.float64)
     start = h.copy()
     sea = (h <= 0).astype(np.uint8)
@@ -188,6 +188,8 @@ def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02,
         Ub = K*A0**m*S0 - D*w*lap.ravel()
         Ub = np.clip(Ub, 0, 5*U if U > 0 else 1e-2); Ub[sea == 1] = 0; Ub = gaussian_filter(Ub.reshape(n, n), bal_smooth).ravel()
         Umap = balance*Ub
+    if uplift_map is not None:
+        Umap = np.asarray(uplift_map, dtype=np.float64).ravel().copy()   # uplift told to us (m/yr per cell), not worked out from the finished shape
     Uzero = np.zeros(n*n)
     # tectonic/glacial hollows: sink patches in the mid-lands become catch basins (lakes)
     rng = np.random.default_rng(seed+1); yy, xx = np.mgrid[0:n, 0:n]*dx; placed = 0
