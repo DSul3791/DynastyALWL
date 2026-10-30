@@ -207,7 +207,7 @@ Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, ba
 | Money | 7DtD Old Cash*; Space Engineers Space Credits | Coins 96-99 | keep. |
 
 ## 11. Excluded from grouping (so nothing is hidden)
-Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory production parts, nuclear and packaged fluids; NMS starship, exosuit, exocraft, base tech; Space Engineers and Astroneer sci-fi parts; Minecraft redstone and brewing; Dragonwilds magic weapons, armour and per-skill potions; Conan thralls and deity altars; Rust electrical; gunpowder-era firearms (pending Q7). Named boss/loot weapons (Valheim Dyrnwyn etc.) are not grouped.
+Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory production parts, nuclear and packaged fluids; NMS starship, exosuit, exocraft, base tech; Space Engineers and Astroneer sci-fi parts; Minecraft redstone and brewing; Dragonwilds magic weapons, armour and per-skill potions (EXCLUDED FOR NOW only; Dave says a huge magic system is coming, so a separate magic-items pass is needed); Conan thralls and deity altars; Rust electrical; gunpowder-era firearms (pending Q7). Named boss/loot weapons (Valheim Dyrnwyn etc.) are not grouped.
 
 ---
 
@@ -224,7 +224,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 10. **Farming depth:** which crops, and do we want compost, flour and a mill?
 11. **Boats and carts:** in scope for this list?
 13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. DECIDED (Dave, 2026-10-30): **obsidian is in**, a mid-tier stone: found on islands beyond the starter islands, ones with dormant volcanoes, as rocks lying on or just under the surface. Intended uses (Dave): valuable tool and weapon material, jewellery, possible magic component. Details in section 1b.
-14. **Magic:** is there a magic system, so obsidian can be a component? If not, obsidian is tools, weapons, jewellery and trade only.
+14. **DECIDED (Dave, 2026-10-30): a huge magic system is planned for later.** Obsidian can be a magic component. Open: when magic items (staves, wands, components, potions, enchanted gear) get their own catalogue pass, and which sources to use (Dragonwilds, Valheim staves and Eitr, Minecraft brewing and enchanting, Ark Element are the ones the analysis covers).
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
