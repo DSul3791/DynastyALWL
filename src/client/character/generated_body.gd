@@ -32,6 +32,7 @@ void fragment() {
 """
 
 static var _shader: Shader
+static var _library: AnimationLibrary       # the converted clips, built once and shared by every generated body
 
 var arms_only: bool = false
 var skeleton: Skeleton3D
@@ -46,10 +47,10 @@ var _material: ShaderMaterial
 var _log: MeshInstance3D
 
 
-func _init(genome_in: Dictionary = {}, voxel: float = 0.04) -> void:
+func _init(genome_in: Dictionary = {}, voxel: float = 0.04, fingers: bool = true, use_cache: bool = false) -> void:
 	name = "GeneratedBody"
 	genome = genome_in if not genome_in.is_empty() else Generator.make_genome("average")
-	var made: Dictionary = Generator.make_node(genome, voxel)
+	var made: Dictionary = Generator.make_node(genome, voxel, fingers, use_cache)
 	var rig: Node3D = made["node"]
 	skeleton = made["skeleton"]
 	rig.remove_child(skeleton)
@@ -100,14 +101,16 @@ func _build_mounts() -> void:
 # The old clips (idle walk jog run crouch sit lie swing swing_fp jab throw use carry_idle carry_walk) converted to the generated skeleton. They come from a
 # temporary old body, which is freed again. The hips position is in units of hips height; motion_scale turns it back into metres.
 func _build_animations() -> void:
-	var old: Node3D = RagdollScript.new()
-	var lib: AnimationLibrary = Converter.convert_library(old.animation_player)
-	old.free()
+	if _library == null:
+		var old: Node3D = RagdollScript.new()
+		_library = Converter.convert_library(old.animation_player)
+		old.free()
+
 	skeleton.motion_scale = skeleton.get_bone_rest(skeleton.find_bone("Hips")).origin.y
 	animation_player = AnimationPlayer.new()
 	animation_player.name = "AnimationPlayer"
 	add_child(animation_player)
-	animation_player.add_animation_library("", lib)
+	animation_player.add_animation_library("", _library)
 	animation_player.play("idle")
 
 

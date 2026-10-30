@@ -173,7 +173,7 @@ static func _group_of(bone: int) -> int:
 	return 3 if bone <= 16 else 4
 
 
-static func primitives(g: Dictionary, rg: Dictionary) -> Array:
+static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> Array:
 	var p: Array = rg["global"]
 	var d: Dictionary = rg["dims"]
 	var h: float = d["h"]
@@ -225,14 +225,15 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
 		var f: int = 21 if side < 0.0 else 29
 		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.047 * hand_k, 0.0), Vector3(0.038 * hand_k, 0.046 * hand_k, 0.017 * hand_k)))
-		out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
-		out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
-		out.append(_cone(f + 2, p[f + 2], p[f + 3], 0.0115 * hand_k, 0.0095 * hand_k))
-		out.append(_cone(f + 3, p[f + 3], p[f + 3] + Vector3(0.0, -0.03 * hand_k, 0.0), 0.0095 * hand_k, 0.0075 * hand_k))
-		out.append(_cone(f + 4, p[f + 4], p[f + 5], 0.0165 * hand_k, 0.0135 * hand_k))
-		out.append(_cone(f + 5, p[f + 5], p[f + 5] + Vector3(0.0, -0.034 * hand_k, 0.0), 0.0135 * hand_k, 0.0105 * hand_k))
-		out.append(_cone(f + 6, p[f + 6], p[f + 7], 0.0105 * hand_k, 0.009 * hand_k))
-		out.append(_cone(f + 7, p[f + 7], p[f + 7] + Vector3(0.0, -0.026 * hand_k, 0.0), 0.009 * hand_k, 0.007 * hand_k))
+		if fingers:
+			out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
+			out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
+			out.append(_cone(f + 2, p[f + 2], p[f + 3], 0.0115 * hand_k, 0.0095 * hand_k))
+			out.append(_cone(f + 3, p[f + 3], p[f + 3] + Vector3(0.0, -0.03 * hand_k, 0.0), 0.0095 * hand_k, 0.0075 * hand_k))
+			out.append(_cone(f + 4, p[f + 4], p[f + 5], 0.0165 * hand_k, 0.0135 * hand_k))
+			out.append(_cone(f + 5, p[f + 5], p[f + 5] + Vector3(0.0, -0.034 * hand_k, 0.0), 0.0135 * hand_k, 0.0105 * hand_k))
+			out.append(_cone(f + 6, p[f + 6], p[f + 7], 0.0105 * hand_k, 0.009 * hand_k))
+			out.append(_cone(f + 7, p[f + 7], p[f + 7] + Vector3(0.0, -0.026 * hand_k, 0.0), 0.009 * hand_k, 0.007 * hand_k))
 
 	# Legs and feet
 	for side in [-1.0, 1.0]:
@@ -353,10 +354,10 @@ static func _smin(a: float, b: float, k: float) -> float:
 # Returns {arrays (for ArrayMesh), vertex_count, triangle_count, timings (ms), rig}.
 # Each group (trunk and head, each arm, each leg) is meshed on its own, so a hanging arm never fuses with the torso into a stretchy
 # membrane (the first two pictures showed that); the pieces overlap where limbs join and render as one body.
-static func build(g: Dictionary, voxel: float = 0.03) -> Dictionary:
+static func build(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> Dictionary:
 	var t0: int = Time.get_ticks_usec()
 	var rg: Dictionary = rig(g)
-	var prims: Array = primitives(g, rg)
+	var prims: Array = primitives(g, rg, fingers)
 	var verts: PackedVector3Array = PackedVector3Array()
 	var tris: PackedInt32Array = PackedInt32Array()
 	var vgroup: PackedInt32Array = PackedInt32Array()
@@ -692,9 +693,11 @@ static func _material_color(mat: int, g: Dictionary) -> Color:
 # ---------------------------------------------------------------- scene objects
 
 # Builds a Skeleton3D with the generated skinned mesh (and simple eyes). The result is a Node3D whose child "Skeleton3D" holds the bones.
-static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
-	var built: Dictionary = build(g, voxel)
-	var rg: Dictionary = built["rig"]
+static var _mesh_cache: Dictionary = {}     # genome hash, voxel and fingers -> {mesh, skin, triangle_count}; bodies with the same genome share one mesh
+
+
+static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, use_cache: bool = false) -> Dictionary:
+	var rg: Dictionary = rig(g)
 	var root: Node3D = Node3D.new()
 	var skeleton: Skeleton3D = Skeleton3D.new()
 	skeleton.name = "Skeleton3D"
@@ -709,27 +712,57 @@ static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 			skeleton.set_bone_parent(i, int((rg["parents"] as Array)[i]))
 
 	skeleton.reset_bone_poses()
-	var skin: Skin = Skin.new()
+	var key: String = "%d|%.4f|%s" % [g.hash(), voxel, str(fingers)]
+	var built: Dictionary = {}
+	var mesh: ArrayMesh
+	var skin: Skin
 
-	for i in range(names.size()):
-		skin.add_bind(i, skeleton.get_bone_global_rest(i).affine_inverse())
+	if use_cache and _mesh_cache.has(key):
+		var hit: Dictionary = _mesh_cache[key]
+		mesh = hit["mesh"]
+		skin = hit["skin"]
+		built = {"rig": rg, "triangle_count": hit["triangle_count"], "from_cache": true, "ms": {"total": 0.0}}
+	else:
+		built = build(g, voxel, fingers)
+		skin = Skin.new()
 
-	var mesh: ArrayMesh = ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, built["arrays"])
-	mesh.custom_aabb = AABB(Vector3(-1.5, -0.3, -1.5), Vector3(3.0, 3.0, 3.0))
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.roughness = 0.85
-	mesh.surface_set_material(0, material)
+		for i in range(names.size()):
+			skin.add_bind(i, skeleton.get_bone_global_rest(i).affine_inverse())
+
+		mesh = ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, built["arrays"])
+		mesh.custom_aabb = AABB(Vector3(-1.5, -0.3, -1.5), Vector3(3.0, 3.0, 3.0))
+		var material: StandardMaterial3D = StandardMaterial3D.new()
+		material.vertex_color_use_as_albedo = true
+		material.roughness = 0.85
+		mesh.surface_set_material(0, material)
+
+		if use_cache:
+			_mesh_cache[key] = {"mesh": mesh, "skin": skin, "triangle_count": built["triangle_count"]}
+
 	var body: MeshInstance3D = MeshInstance3D.new()
 	body.name = "Body"
 	body.mesh = mesh
 	body.skin = skin
 	body.skeleton = NodePath("..")
 	skeleton.add_child(body)
-
 	root.set_meta("face", make_face(g, skeleton))
 	return {"node": root, "skeleton": skeleton, "built": built}
+
+
+# A body type from a number: sliders drawn around the neutral body (a bell-shaped spread, so most people are ordinary and a few are extreme), a skin tone and a
+# hair colour from small palettes. The same seed always gives the same genome; used for NPC variety.
+static func genome_from_seed(seed_value: int) -> Dictionary:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var skins: Array = [Color(0.85, 0.66, 0.52), Color(0.72, 0.52, 0.38), Color(0.55, 0.38, 0.27), Color(0.93, 0.78, 0.66), Color(0.42, 0.28, 0.2)]
+	var hairs: Array = [Color(0.25, 0.16, 0.09), Color(0.08, 0.06, 0.05), Color(0.7, 0.55, 0.25), Color(0.55, 0.2, 0.1), Color(0.6, 0.58, 0.55)]
+	var g: Dictionary = make_genome("average", skins[rng.randi() % skins.size()], hairs[rng.randi() % hairs.size()])
+
+	for key in SLIDERS:
+		g[key] = clampf(rng.randfn(0.0, 0.4), -0.9, 0.9)
+
+	return g
 
 
 # ---------------------------------------------------------------- face (eyes and brows that can move; no mesh rebuild)
