@@ -13,6 +13,7 @@ const JOG_FROM := 2.2                   # walk to jog (m/s); 1.8 when already jo
 const JOG_HOLD := 1.8
 const RUN_FROM := 5.0                   # jog to run; 4.4 when already running
 const RUN_HOLD := 4.4
+const JUMP_UP := 1.0                    # vertical speed (m/s) above which the airborne clip is the jump (rising); below it the fall
 const SKIN := Color(0.78, 0.62, 0.5)
 const COAT := Color(0.4, 0.34, 0.28)
 const TROUSERS := Color(0.25, 0.22, 0.2)
@@ -35,8 +36,40 @@ static func choose_clip(stance: int, pace: float, current: String, carrying: boo
 	return clip
 
 
+# Plan 19: the clip for a body that may be in the air or moving sideways or backwards (the clips of motion_extra.gd; the old body has no such clips and ignores the
+# names, so ask a generated body only). `velocity_local` is the horizontal velocity in the body's own frame (x right, y the world z, so forward is -y), `vertical` the
+# vertical speed (m/s, up positive), `airborne` true when not on the floor. Everything else falls back to choose_clip.
+static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: float, airborne: bool, current: String, carrying: bool) -> String:
+	if airborne and stance == StanceScript.STAND:
+		return "jump" if vertical > JUMP_UP and current != "fall" else "fall"
+
+	var pace: float = velocity_local.length()
+	var forward: float = -velocity_local.y
+
+	if stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
+		return "crouch_walk"
+
+	if stance == StanceScript.STAND and not carrying and pace > WALK_MIN_PACE and pace <= JOG_FROM:
+		if forward < -0.5 * pace:
+			return "walk_back"
+
+		if absf(velocity_local.x) > 0.8 * pace:
+			return "strafe_right" if velocity_local.x > 0.0 else "strafe_left"
+
+	return choose_clip(stance, pace, current, carrying)
+
+
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 static func speed_scale(clip: String, pace: float) -> float:
+	if clip == "walk_back":
+		return clampf(pace / 1.1, 0.5, 1.5)
+
+	if clip == "strafe_left" or clip == "strafe_right":
+		return clampf(pace / 1.3, 0.5, 1.6)
+
+	if clip == "crouch_walk":
+		return clampf(pace / 0.9, 0.5, 1.6)
+
 	if clip == "carry_walk":
 		return clampf(pace / 1.1, 0.6, 1.5)
 

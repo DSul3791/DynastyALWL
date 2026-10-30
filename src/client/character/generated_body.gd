@@ -8,6 +8,7 @@ extends Node3D
 
 const Generator := preload("res://src/client/character/body_generator.gd")
 const Converter := preload("res://src/client/character/clip_converter.gd")
+const Extra := preload("res://src/client/character/motion_extra.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 
 const SHADER := """
@@ -125,6 +126,11 @@ func _build_animations() -> void:
 		var old: Node3D = RagdollScript.new()
 		_library = Converter.convert_library(old.animation_player)
 		old.free()
+		var extra: AnimationLibrary = Extra.library(skeleton)      # plan 19: jump, fall, land, crouch_walk, walk_back, strafe_left, strafe_right
+
+		for clip_name in extra.get_animation_list():
+			_library.add_animation(clip_name, extra.get_animation(clip_name))
+
 
 	skeleton.motion_scale = skeleton.get_bone_rest(skeleton.find_bone("Hips")).origin.y
 	animation_player = AnimationPlayer.new()
