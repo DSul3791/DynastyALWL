@@ -96,3 +96,21 @@ The ladder maps onto station levels (campfire 1, clay hearth 2, Basic Oven 3):
 | 4 | Clay Oven | oven 4 | brick 40, clay 20, stone 20 | a Basic Oven | holds more, faster, lower burn chance |
 | 5 | Iron Stove | oven 5 | iron ingot 6, brick 20, hinges 2 | a Clay Oven | fastest, best quality, adds a hob for a pot |
 Needs from code: two new structures with world states, footprints, looks and kits; `also` lists so a level-5 station satisfies lower-level recipes; the burn chance and quality grade need the quality system (not built). Dishes in the food pass (high tier) should require oven level 4 or 5. Nothing of this is written into data yet because new structures need models and states.
+
+## Merge status (2026-10-30, tested with Godot via tools/godot.cmd)
+| Merge | Status | Commit scope |
+|---|---|---|
+| A, spade sizes 213-220 | DONE. Retired with a note (never deleted); recipes 131-138 retired; the base spades carry the bite size: stone spade medium (4 pieces), iron and steel large (8), wooden stays small (1) (Sal's mapping of "a better material digs a bigger bite"); test_server_items now uses the iron spade. Looks, weights and showroom rows for the retired ids were left in place (harmless). | one commit |
+| B, sewing needle 49 | DONE (retired, recipe retired). | one commit |
+| B, hammer line | NOTHING TO DO: wooden hammer and stone hammer are tiers of one line (Tyler's wording), not duplicates. | none |
+| B, wooden vice 83/84 | DEFERRED. The vice is a workbench add-on that sets the bench level (tool rack = level 2, rack plus vice = level 3, test_stations.gd). Folding it into the log workbench changes the station-level rule, which needs a design call: proposal (Sal) the log workbench is level 2 by itself (it already has a rack and vice in its model), a tool rack beside it makes level 3; the vice kit retires. Not done because it changes crafting access. | none |
+| C, one Lumber and one Beam | DEFERRED. wood_species.json already has `key_woods` (Dave 24 Oct) and `retired_to` conversion for retired species; there is no per-stack species tag in code. Needs that feature first. | none |
+Tests run after each change: validate_items, server_items, dishes, stations, save_compat, inventory, first_hour (all pass), plus test_tool_looks (0 failures) for A. The full 40-step suite was started and stopped (too long); steps not run: the client/server scenarios (animals, wolves, trade scenes and so on).
+
+## Magic items: first pass (names only, for the later magic design; from the analysis rows, unconfirmed unless marked)
+Dave: a huge magic system is coming. Sources seen so far:
+- **Staves and wands:** Valheim Staff of Embers, Staff of Frost, Staff of Protection*, Dead Raiser*, Echo Spike, Spirit Caller; Dragonwilds wands and battlestaves by wood (Ash, Oak, Blightwood, Splitbark, Maple, Master, Ancestral). Magic armour sets in Dragonwilds: Apprentice, Wizard, Dark Mage, Splitbark, Mystic, Infinity, Ancestral.
+- **Energy resource:** Valheim Eitr (Refined Eitr, Eitr Refinery, Galdr Table, Minor Eitr Mead); Ark Element (Element Dust, Shard).
+- **Potions and brewing:** Minecraft brewing stand, base potion (water bottle, awkward potion), about 15 effects (healing, strength, swiftness, regeneration, night vision, water breathing, fire resistance, slow falling, weakness, poison), modifiers (longer, stronger, splash, lingering, reversed); Valheim meads (healing, stamina, resistance); Dragonwilds focused potions (weak to super) and antifire and antipoison.
+- Obsidian (Dave): a magic component; Obsidian mirror (Sal idea): scrying.
+REC for the magic pass (later): few, readable components (a crystal or stone, a herb, a metal), not dozens; each spell tool a staff or a wand with a clear job; potions follow the 3-ingredient rule. No design is decided.
