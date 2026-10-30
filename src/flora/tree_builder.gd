@@ -2128,7 +2128,7 @@ static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 	var tint: Color = Color(0.46, 0.5, 0.3) if banana else (Color(0.5, 0.42, 0.32) if date else BARK_TINT_PALM)
 	var lean_k: float = 0.04 if (banana or date) else 0.1
 	var lean: Vector2 = Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)).normalized() * lean_k * h
-	var base_r: float = trunk * (1.1 if banana else 0.85)
+	var base_r: float = maxf(trunk, h * 0.05) * 1.1 if banana else trunk * 0.85
 	var top_r: float = trunk * (0.7 if banana else (0.8 if date else 0.55))
 	var centers: Array = _trunk(bark, rng, h, base_r, top_r, lean, tint, 5 if far else 8, 2 if far else 7, 0.0 if far else (0.2 if banana else 0.7))
 	var top: Vector3 = centers[centers.size() - 1]
@@ -2140,7 +2140,7 @@ static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 			_bead(bark, c, Vector3(base_r * 1.15, h * 0.012, base_r * 1.15), tint * 0.78)
 
 	var fronds: int = 7 if far else (9 if banana else (20 if date else 15))
-	var length: float = crown * (1.5 if banana else (1.7 if date else 2.0))
+	var length: float = crown * (2.0 if banana else (1.7 if date else 2.0))
 	var width: float = 0.17 if banana else (0.2 if date else 0.22)
 
 	for k in range(fronds):
@@ -2174,7 +2174,7 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 	var tint: Color = Color(0.5, 0.44, 0.34)
 	var trunk: float = maxf(trunk_m, h * 0.03)
 	var crown: float = maxf(crown_m, h * 0.45)
-	var fork: float = h * rng.randf_range(0.55, 0.65)
+	var fork: float = h * rng.randf_range(0.66, 0.74)
 	var lean: Vector2 = Vector2(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.08, 0.08)) * h
 	var centers: Array = _trunk(bark, rng, fork, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.8)
 	var top: Vector3 = centers[centers.size() - 1]
@@ -2185,9 +2185,9 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 	for k in range(limbs):
 		az += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
-		var reach: float = crown * rng.randf_range(0.6, 0.8)
-		var mid: Vector3 = top + out * reach * 0.45 + Vector3(0.0, rise * 0.3, 0.0)
-		var tip: Vector3 = top + out * reach + Vector3(0.0, rise * 0.6, 0.0)
+		var reach: float = crown * rng.randf_range(0.85, 1.1)
+		var mid: Vector3 = top + out * reach * 0.5 + Vector3(0.0, rise * 0.22, 0.0)
+		var tip: Vector3 = top + out * reach + Vector3(0.0, rise * 0.5, 0.0)
 
 		if not far:
 			_branch(bark, top, mid, trunk * 0.5, trunk * 0.3, tint, 5)
@@ -2198,29 +2198,29 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 		for m in range(n):
 			var t: float = 0.35 + 0.65 * float(m) / float(n - 1)
 			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn() * 0.2, rng.randfn() * 0.05, rng.randfn() * 0.2) * crown * 0.2
-			p.y = lerpf(p.y, h * 0.93, 0.6)   # the canopy is a thin flat layer
-			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.8, top.z), crown * rng.randf_range(0.3, 0.42), rng.randf_range(0.8, 1.05), 2 if far else 3)
+			p.y = lerpf(p.y, h * 0.9, 0.35)   # the canopy is a thin flat layer
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 1.2, top.z), crown * rng.randf_range(0.34, 0.46), rng.randf_range(0.8, 1.05), 2 if far else 3)
 
-	_clump(leaves, rng, Vector3(top.x, h * 0.95, top.z), top - Vector3(0.0, crown, 0.0), crown * 0.4, 1.0, 2 if far else 3)
+	_clump(leaves, rng, Vector3(top.x, h * 0.9, top.z), top - Vector3(0.0, crown, 0.0), crown * 0.4, 1.0, 2 if far else 3)
 
 
 # Mangrove (red mangrove, Rhizophora): the tree stands on a tangle of arching stilt roots that leave the trunk well above the water and bury
 # their tips in the mud around it; a short trunk, then a dense rounded crown of dark glossy leaf clumps.
 static func _mangrove(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
 	var tint: Color = Color(0.36, 0.26, 0.2)
-	var trunk: float = maxf(trunk_m, h * 0.03)
+	var trunk: float = maxf(trunk_m * 1.5, h * 0.045)
 	var crown: float = maxf(crown_m, h * 0.35)
-	var root_top: float = h * 0.27
+	var root_top: float = h * 0.22
 	var lean: Vector2 = Vector2(rng.randf_range(-0.05, 0.05), rng.randf_range(-0.05, 0.05)) * h
-	var centers: Array = _trunk(bark, rng, h * 0.5, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 3, 0.0)
+	var centers: Array = _trunk(bark, rng, h * 0.42, trunk, trunk * 0.75, lean, tint, 5 if far else 7, 1 if far else 3, 0.4)
 	var top: Vector3 = centers[centers.size() - 1]
-	var roots: int = 6 if far else rng.randi_range(12, 15)
+	var roots: int = 6 if far else rng.randi_range(16, 20)
 	var az: float = rng.randf() * TAU
 
 	for k in range(roots):
 		az += TAU / float(roots) + rng.randf_range(-0.3, 0.3)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
-		var spread: float = crown * rng.randf_range(0.6, 1.05)
+		var spread: float = crown * rng.randf_range(0.4, 0.8)
 		var start: Vector3 = Vector3(lean.x * 0.5, root_top * rng.randf_range(0.7, 1.1), lean.y * 0.5) + out * trunk * 0.5
 		var arch: Vector3 = start + out * spread * 0.5 + Vector3(0.0, root_top * 0.1, 0.0)
 		var foot: Vector3 = Vector3(out.x * spread, -0.05, out.z * spread)
@@ -2233,7 +2233,7 @@ static func _mangrove(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: flo
 			_branch(bark, arch, low, trunk * 0.38, trunk * 0.28, tint, 5)
 			_branch(bark, low, foot, trunk * 0.28, trunk * 0.16, tint, 4)
 
-	var base_y: float = h * 0.38
+	var base_y: float = h * 0.3
 
 	for k in range(4 if far else rng.randi_range(5, 7)):
 		var a: float = rng.randf() * TAU
@@ -2255,7 +2255,7 @@ static func _mangrove(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: flo
 # flare out of the foot like fins, then a broad, flat-topped crown of heavy limbs high above the forest floor. Dark green, glossy leaves.
 static func _tropical_hardwood(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
 	var tint: Color = Color(0.46, 0.4, 0.34)
-	var trunk: float = maxf(trunk_m, h * 0.025)
+	var trunk: float = maxf(trunk_m * 0.7, h * 0.014)
 	var crown: float = maxf(crown_m, h * 0.3)
 	var bole: float = h * rng.randf_range(0.6, 0.68)
 	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
