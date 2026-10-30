@@ -18,26 +18,26 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 3 Herbs, flowers and low berries | 0 | 0 | 50 | 0 | 0 | 50 |
 | 4 Ferns, grasses and reeds | 0 | 0 | 16 | 0 | 0 | 16 |
 | 5 Fungi | 0 | 0 | 11 | 0 | 0 | 11 |
-| 6 Natural ground objects | 0 | 1 | 31 | 16 | 0 | 48 |
+| 6 Natural ground objects | 0 | 0 | 32 | 16 | 0 | 48 |
 | 7 Grass cover, litter and painted textures | 0 | 0 | 22 | 4 | 0 | 26 |
 | 8 Terrain surface and ground materials | 81 | 0 | 28 | 0 | 0 | 109 |
-| 9 Water, sky, weather and light | 2 | 1 | 11 | 10 | 0 | 24 |
+| 9 Water, sky, weather and light | 2 | 0 | 12 | 10 | 0 | 24 |
 | 10 Items: raw materials, wood and crafted parts | 0 | 0 | 87 | 0 | 0 | 87 |
-| 11 Items: gathered plant parts and foraged goods | 0 | 2 | 167 | 5 | 0 | 174 |
-| 12 Items: food, drink and medicine | 0 | 9 | 28 | 0 | 0 | 37 |
+| 11 Items: gathered plant parts and foraged goods | 0 | 0 | 169 | 5 | 0 | 174 |
+| 12 Items: food, drink and medicine | 0 | 0 | 37 | 0 | 0 | 37 |
 | 13 Items: tools, weapons and ammunition | 1 | 0 | 8 | 24 | 0 | 33 |
-| 14 Items: containers, coins, clothing and gear | 0 | 1 | 17 | 0 | 0 | 18 |
+| 14 Items: containers, coins, clothing and gear | 0 | 0 | 18 | 0 | 0 | 18 |
 | 15 Items: placeable kits | 0 | 0 | 33 | 2 | 0 | 35 |
 | 16 Placed structures: shelter, storage, fires and traps | 0 | 0 | 6 | 7 | 0 | 13 |
-| 17 Placed structures: building pieces | 0 | 1 | 29 | 0 | 0 | 30 |
+| 17 Placed structures: building pieces | 0 | 0 | 30 | 0 | 0 | 30 |
 | 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
 | 19 Creatures, animals and NPCs | 4 | 0 | 10 | 6 | 0 | 20 |
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **20** | **618** | **115** | **0** | **843** |
+| **All categories** | **90** | **5** | **633** | **115** | **0** | **843** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 20, stage 2 605, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 5, stage 2 620, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
@@ -286,7 +286,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 6 Natural ground objects
 
-48 entries. Stages: 1 x stage 1, 31 x stage 2, 16 x stage 3.
+48 entries. Stages: 32 x stage 2, 16 x stage 3.
 
 
 ### loose pickups (4)
@@ -351,7 +351,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Felled trunk and stump | A tree cut by the axe: stump and falling trunk | src/client/inventory_view.gd _make_felled (line 894) | built in code, two CylinderMesh in flat bark brown; trunk tilts over 1.5 s | 1 | plain tapered cylinders with one flat colour |
+| Felled trunk and stump | A tree cut by the axe: stump and falling trunk | src/client/inventory_view.gd _make_felled (line 894) | built in code (_make_felled): tapered bark cylinders plus pale cut faces with a darker core, branch stubs and root swell; trunk tilts over 1.5 s | 2 | redrawn from bare drums in this pass; compiled, not seen in game |
 
 ### boulders (1)
 
@@ -584,7 +584,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 9 Water, sky, weather and light
 
-24 entries. Stages: 2 x stage 0, 1 x stage 1, 11 x stage 2, 10 x stage 3.
+24 entries. Stages: 2 x stage 0, 12 x stage 2, 10 x stage 3.
 
 
 ### water, sky, weather, light (18)
@@ -598,7 +598,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Waterfall mist | Soft white spray cards at the foot | src/client/fall_mist.gd | built in code, GPUParticles3D alpha quads, 64/96/128/160 by quality | 2 | section 21 header comment; look-only |
 | Fall ferns | Ferns on the banks around a fall | src/client/fall_growth.gd | built in code, fern cards (fern.png) | 2 | ART_DIRECTION.md section 25 |
 | Ice on still water | Frost rim, patches, full sheet | water_material.gd ice uniform; flora_view._draw_ice; src/shared/ice.gd | shader state on the water | 3 | ART_DIRECTION.md section 50 |
-| Ocean ice floes | Flat white slabs on the sea in cold weather | src/client/ocean_ice.gd; src/shared/ice_floes.gd | built in code, plain white slab per floe | 1 | header comment: "Art restyles the slab (ice look job)" still open |
+| Ocean ice floes | Flat white slabs on the sea in cold weather | src/client/ocean_ice.gd; src/shared/ice_floes.gd | built in code with an ice shader: snow-dusted white top, blue shadow patches, glassy blue-green sides, cracks | 2 | the header comment still says plain white slab but ICE_SHADER implements the look; not seen in game |
 | Sky dome, sun, moon, stars | Sky shader with sun disc, blue moon, stars, horizon haze | src/client/sky_clouds.gd (shader), src/client/day_cycle.gd | built in code, one sky shader | 3 | ART_DIRECTION.md sections 6, 50; sun path from latitude |
 | Clouds | Drifting puffy clouds and high streaks | src/client/sky_clouds.gd | shader clouds on a layer 2 km up | 3 | owner 2026-10-19 asked for clouds; header comment |
 | Sun light, fog, haze, tone mapping | Directional sun with shadows, sky ambient, fog, time-of-day colour | terrain_client._make_environment; weather_look.gd; look_settings.gd | Environment + DirectionalLight3D settings | 3 | ART_DIRECTION.md sections 2.1, 4, 6 |
@@ -725,7 +725,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 11 Items: gathered plant parts and foraged goods
 
-174 entries. Stages: 2 x stage 1, 167 x stage 2, 5 x stage 3.
+174 entries. Stages: 169 x stage 2, 5 x stage 3.
 
 
 ### gathered: nut (7)
@@ -744,8 +744,8 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Aloe gel | Cool clear gel from a split aloe leaf. Soothes burns and sun-reddened skin. | data/items/gathered.json item aloe_gel (#1001) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #a8e0a0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "bowl" is only 2 lines: one to three primitives in one colour |
-| Food | Plain edible things gathered in the wild. Eat to stay on your feet. | data/items/gathered.json item food (#1055) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #c9a05a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "bowl" is only 2 lines: one to three primitives in one colour |
+| Aloe gel | Cool clear gel from a split aloe leaf. Soothes burns and sun-reddened skin. | data/items/gathered.json item aloe_gel (#1001) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #a8e0a0; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
+| Food | Plain edible things gathered in the wild. Eat to stay on your feet. | data/items/gathered.json item food (#1055) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #c9a05a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 
 ### gathered: chunk (8)
 
@@ -984,14 +984,14 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 12 Items: food, drink and medicine
 
-37 entries. Stages: 9 x stage 1, 28 x stage 2.
+37 entries. Stages: 37 x stage 2.
 
 
 ### food and drink (35)
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Campfire Stew | A bowl of chunky vegetable soup, simmered over a fire. | data/items/items.json item roast_forage (#15) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #b5793a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
+| Campfire Stew | A bowl of chunky vegetable soup, simmered over a fire. | data/items/items.json item roast_forage (#15) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #b5793a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Energy bar | Nuts, dried fruit and herbs pressed into a cake. Quick energy that wears on your fitness. | data/items/items.json item energy_bar (#51) | BasicLook.mesh_for -> shape "bar" (data/items/looks.json), colour #c9a15b; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bar" is 6 lines: a recognisable multi-part shape |
 | Herbal tea | Mint leaves steeped and drunk. A small lift of energy. | data/items/items.json item herbal_tea (#52) | BasicLook.mesh_for -> shape "bottle" (data/items/looks.json), colour #b6e61a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bottle" is 9 lines: a recognisable multi-part shape |
 | Magic tonic | A shimmering draught. A great lift of energy. | data/items/items.json item magic_tonic (#53) | BasicLook.mesh_for -> shape "bottle" (data/items/looks.json), colour #9b30ff; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bottle" is 9 lines: a recognisable multi-part shape [future] |
@@ -1006,10 +1006,10 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Carp | A heavy fish of still ponds. Cook it before you eat it. | data/items/items.json item carp (#78) | BasicLook.mesh_for -> shape "fish" (data/items/looks.json), colour #a09060; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fish" is 10 lines: a recognisable multi-part shape [future] |
 | Pike | A long hunting fish of lakes. Cook it before you eat it. | data/items/items.json item pike (#79) | BasicLook.mesh_for -> shape "fish" (data/items/looks.json), colour #5a7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fish" is 10 lines: a recognisable multi-part shape [future] |
 | Roast Fish | Fish cooked over a fire. Filling, and it keeps a day or two. | data/items/items.json item roast_fish (#80) | BasicLook.mesh_for -> shape "fish" (data/items/looks.json), colour #a8703a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fish" is 10 lines: a recognisable multi-part shape [future] |
-| Berry compote | Sweet stewed berries. Light, quick energy. | data/items/items.json item berry_compote (#175) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #9a1f3f; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
-| Nut paste | Ground hazelnuts and honey. Keeps well. | data/items/items.json item nut_paste (#176) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #b08a55; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "mound" is only 3 lines: one to three primitives in one colour |
+| Berry compote | Sweet stewed berries. Light, quick energy. | data/items/items.json item berry_compote (#175) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #9a1f3f; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
+| Nut paste | Ground hazelnuts and honey. Keeps well. | data/items/items.json item nut_paste (#176) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #b08a55; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Roast Roots | Roots baked in the embers. Plain and filling. | data/items/items.json item roast_roots (#177) | BasicLook.mesh_for -> shape "bundle" (data/items/looks.json), colour #ff9f1c; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bundle" is 10 lines: a recognisable multi-part shape |
-| Acorn mash | Leached acorns boiled to a mash. Famine food. | data/items/items.json item acorn_mash (#178) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "mound" is only 3 lines: one to three primitives in one colour |
+| Acorn mash | Leached acorns boiled to a mash. Famine food. | data/items/items.json item acorn_mash (#178) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Baked apples | Crab apples baked sweet in the ashes. | data/items/items.json item baked_apples (#179) | BasicLook.mesh_for -> shape "fruit" (data/items/looks.json), colour #ff5a36; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fruit" is 7 lines: a recognisable multi-part shape |
 | Mushroom skewer | Mushrooms and wild garlic grilled on a stick. | data/items/items.json item mushroom_skewer (#180) | BasicLook.mesh_for -> shape "skewer" (data/items/looks.json), colour #f5e6ff; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "skewer" is 5 lines: a recognisable multi-part shape |
 | Herb fish | Trout roasted with thyme and sea greens. | data/items/items.json item herb_fish (#181) | BasicLook.mesh_for -> shape "fish" (data/items/looks.json), colour #9a7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fish" is 10 lines: a recognisable multi-part shape |
@@ -1017,11 +1017,11 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Chestnut cakes | Flat cakes of chestnut, honey and linseed. Good travelling food. | data/items/items.json item chestnut_cakes (#183) | BasicLook.mesh_for -> shape "loaf" (data/items/looks.json), colour #5d3a1a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "loaf" is 7 lines: a recognisable multi-part shape |
 | Fruit leather | Dried fruit pressed flat. Keeps for a long journey. | data/items/items.json item fruit_leather (#184) | BasicLook.mesh_for -> shape "cloth" (data/items/looks.json), colour #00a8a8; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cloth" is 7 lines: a recognisable multi-part shape |
 | Smoked fish | Pike smoked over juniper. Lasts for weeks. | data/items/items.json item smoked_fish (#185) | BasicLook.mesh_for -> shape "fish" (data/items/looks.json), colour #6e4a2a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "fish" is 10 lines: a recognisable multi-part shape |
-| Hunter's stew | A thick meat and root stew. Warms you through. | data/items/items.json item hunters_stew (#186) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #6b3a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
-| Forager's stew | Greens, roots and mushrooms in one pot. | data/items/items.json item forager_stew (#187) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #7a9a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
-| Fish stew | Perch, cress and root in a sage broth. | data/items/items.json item fish_stew (#188) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #e8c870; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
+| Hunter's stew | A thick meat and root stew. Warms you through. | data/items/items.json item hunters_stew (#186) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #6b3a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
+| Forager's stew | Greens, roots and mushrooms in one pot. | data/items/items.json item forager_stew (#187) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #7a9a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
+| Fish stew | Perch, cress and root in a sage broth. | data/items/items.json item fish_stew (#188) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #e8c870; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Trail bread | Dense seed and nut loaves. Barely spoils. | data/items/items.json item trail_bread (#189) | BasicLook.mesh_for -> shape "loaf" (data/items/looks.json), colour #e8b96a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "loaf" is 7 lines: a recognisable multi-part shape |
-| Hearty pottage | A rich pot of seeds, roots, herbs and fat. Fills and warms. | data/items/items.json item hearty_pottage (#190) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #d9a640; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "stew" is only 3 lines: one to three primitives in one colour |
+| Hearty pottage | A rich pot of seeds, roots, herbs and fat. Fills and warms. | data/items/items.json item hearty_pottage (#190) | BasicLook.mesh_for -> shape "stew" (data/items/looks.json), colour #d9a640; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Roast Beast | Spiced, fat-basted roast. The best meal a campfire makes. | data/items/items.json item feast_roast (#191) | BasicLook.mesh_for -> shape "joint" (data/items/looks.json), colour #62301a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "joint" is 8 lines: a recognisable multi-part shape |
 | Flatbread | A flat cake baked on the hot clay. Plain and filling. | data/items/items.json item flatbread (#273) | BasicLook.mesh_for -> shape "loaf" (data/items/looks.json), colour #d9b87a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "loaf" is 7 lines: a recognisable multi-part shape |
 | Honey loaf | A sweet loaf baked in the oven. Keeps well. | data/items/items.json item honey_loaf (#274) | BasicLook.mesh_for -> shape "loaf" (data/items/looks.json), colour #c98a3c; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "loaf" is 7 lines: a recognisable multi-part shape |
@@ -1031,7 +1031,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Herb poultice | Crushed herb leaves for a wound. | data/items/items.json item poultice (#16) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #4f7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "mound" is only 3 lines: one to three primitives in one colour |
+| Herb poultice | Crushed herb leaves for a wound. | data/items/items.json item poultice (#16) | BasicLook.mesh_for -> shape "mound" (data/items/looks.json), colour #4f7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Herb bandage | Leaves and fibre wrapped to bind a wound. | data/items/items.json item bandage (#17) | BasicLook.mesh_for -> shape "coil" (data/items/looks.json), colour #f4f4f4; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coil" is 5 lines: a recognisable multi-part shape |
 
 ## 13 Items: tools, weapons and ammunition
@@ -1089,14 +1089,14 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 14 Items: containers, coins, clothing and gear
 
-18 entries. Stages: 1 x stage 1, 17 x stage 2.
+18 entries. Stages: 18 x stage 2.
 
 
 ### containers (4)
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Wooden bowl | A bowl hollowed from a bolt of wood. Carries a little water. | data/items/items.json item wooden_bowl (#39) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #9a6b38; held: plain drum (held_item._make_container_model) | 1 | BasicLook shape "bowl" is only 2 lines: one to three primitives in one colour |
+| Wooden bowl | A bowl hollowed from a bolt of wood. Carries a little water. | data/items/items.json item wooden_bowl (#39) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #9a6b38; held: plain drum (held_item._make_container_model) | 2 | wooden bowl built from helper shapes (frustum, rim ring, base) with a surface and chunky bits for stews; seen in an offline render: reads as a bowl of food |
 | Clay pot | A fired pot of clay. Holds three litres of water. | data/items/items.json item clay_pot (#40) | BasicLook.mesh_for -> shape "pot" (data/items/looks.json), colour #ff7f11; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "pot" is 8 lines: a recognisable multi-part shape |
 | Bucket | A wooden bucket bound with cord. Holds eight litres of water. | data/items/items.json item bucket (#41) | BasicLook.mesh_for -> shape "bucket" (data/items/looks.json), colour #b88a50; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "bucket" is 13 lines: a recognisable multi-part shape |
 | Waterskin | A skin bag sewn shut. Holds a day's drink and little weight. | data/items/items.json item waterskin (#42) | BasicLook.mesh_for -> shape "skin" (data/items/looks.json), colour #a0743f; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "skin" is 9 lines: a recognisable multi-part shape [future] |
@@ -1195,7 +1195,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 17 Placed structures: building pieces
 
-30 entries. Stages: 1 x stage 1, 29 x stage 2.
+30 entries. Stages: 30 x stage 2.
 
 
 ### building pieces (16)
@@ -1241,7 +1241,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
 | Placement ghost and campfire ring | see-through version of the placed model, and a green/yellow ring for campfires | held_item._ghost_clean, _update_blueprint | same model drawn with one see-through material | 2 | functional |
-| Grade stakes | Stakes marking a graded road line | src/client/held_item.gd (_stakes) | built in code, simple mesh | 1 | unconfirmed shape; grep shows only stake array and creation |
+| Grade stakes | Stakes marking a graded road line | src/client/held_item.gd (_stakes) | built in code (_make_stake): wooden post, sharpened foot, red-orange flag | 2 | redrawn from a plain white 1 m cylinder; compiled, not seen in game |
 
 ## 18 Stations and furniture
 
