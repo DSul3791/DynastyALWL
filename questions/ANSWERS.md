@@ -1722,3 +1722,27 @@ Answered: 2026-10-25 17:32 UTC
 Answer: No: i’m not sure I have not been able to run the program yet
 Answered: 2026-10-29 07:50 UTC
 
+## gates-a | Gates A: fast lane and slow lane
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
+## gates-b | Gates B: one result per final version, test the merged result
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
+## gates-c | Gates C: batch small branches, fewer builds
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
+## gates-d | Gates D: timing tests retry once; Mike's PC for Windows-only jobs
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
+## gates-e | Gates E: ship script and less noise
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
+## gates-f | Gates F: warm test folders instead of a fresh import each gate
+Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
+Answered: 2026-10-30 16:40 UTC
+
