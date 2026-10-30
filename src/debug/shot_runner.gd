@@ -109,6 +109,7 @@ var _subject: Vector3 = Vector3.ZERO # what the views look at: the middle of the
 var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
+var clip_name: String = ""       # --shot-clip=NAME: the body plays this clip (look rig, third person)
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
@@ -133,6 +134,8 @@ func setup(owner_client, args: Array) -> void:
 			dir = argument.trim_prefix("--shot-dir=")
 		elif argument == "--shot-cost":
 			costs = true
+		elif argument.begins_with("--shot-clip="):
+			clip_name = argument.trim_prefix("--shot-clip=")
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
@@ -1171,6 +1174,7 @@ func _print_flora_row() -> void:
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
 func _side_view(walk: float) -> void:
 	client.debug_pace = walk
+	client.debug_clip = clip_name
 
 	if walk < 0.0 or client._avatar == null or client.view_cam == null:
 		return

@@ -1,0 +1,5 @@
+average: 3814 vertices, 7608 triangles, grid cells 38040, ms rig+primitives 2.0 field 234.7 surface 214.6 weights 187.7 total 638.9
+save/reload mesh: save err 0, 5.7 ms, file 123073 bytes, load 9.4 ms, same vertex count true, skin bind count after reload not tested
+broad: 5391 vertices, 10764 triangles, grid cells 54524, ms rig+primitives 2.6 field 300.2 surface 295.6 weights 230.7 total 829.0
+lean: 3827 vertices, 7636 triangles, grid cells 37652, ms rig+primitives 2.1 field 223.0 surface 204.0 weights 196.4 total 625.4
+stocky: 4833 vertices, 9640 triangles, grid cells 52935, ms rig+primitives 2.3 field 272.7 surface 275.8 weights 220.2 total 771.0

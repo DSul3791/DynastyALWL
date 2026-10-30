@@ -8,6 +8,11 @@ extends RefCounted
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
 const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack"]
+const HUMANOID_NAMES := {
+	"hips": "Hips", "chest": "Chest", "head": "Head",
+	"hand_r": "RightHand", "hand_l": "LeftHand", "forearm_r": "RightLowerArm", "forearm_l": "LeftLowerArm", "arm_r": "RightUpperArm", "arm_l": "LeftUpperArm",
+	"thigh_r": "RightUpperLeg", "thigh_l": "LeftUpperLeg", "shin_r": "RightLowerLeg", "shin_l": "LeftLowerLeg", "foot_r": "RightFoot", "foot_l": "LeftFoot",
+}
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
@@ -51,6 +56,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		if row.is_empty():
 			continue
 
+		# A body can list builders it already draws itself (the generated body has its tunic and trousers in its mesh): those items add no separate pieces.
+		if str(row.get("builder", "")) in (rig.get_meta("worn_skip_builders", []) as Array):
+			continue
+
 		var out: float = float(int(row.get("layer", 1))) * LAYER_M
 
 		for part in parts_of(str(row["builder"]), out, bool(row.get("fringe", false))):
@@ -58,6 +67,11 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 				continue
 
 			var bone: String = str(part["bone"])
+
+			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
+			# when the skeleton has no bone of the old name. The old body is untouched by this.
+			if skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
+				bone = str(HUMANOID_NAMES[bone])
 
 			if not anchors.has(bone):
 				var anchor: BoneAttachment3D = BoneAttachment3D.new()
@@ -69,7 +83,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			var node: MeshInstance3D = MeshInstance3D.new()
 			node.mesh = _mesh(str(part["shape"]))
 			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))))
-			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled(part["size"]), part["at"])
+			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
+			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
+			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
+			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
 
