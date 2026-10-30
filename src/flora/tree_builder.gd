@@ -2645,7 +2645,7 @@ const WILDFLOWER_LOOKS := {
 	"chamomile": {"head": "daisy", "stems": 7, "petal": Color(1.0, 1.0, 0.95), "centre": Color(1.0, 0.82, 0.1), "size": 0.045, "petals": 10},
 	"feverfew": {"head": "daisy", "stems": 7, "petal": Color(1.0, 1.0, 0.95), "centre": Color(0.95, 0.85, 0.2), "size": 0.04, "petals": 9},
 	"arnica": {"head": "daisy", "stems": 4, "petal": Color(1.0, 0.72, 0.1), "centre": Color(0.85, 0.5, 0.05), "size": 0.08, "petals": 12},
-	"dandelion": {"head": "daisy", "stems": 4, "petal": Color(1.0, 0.85, 0.05), "centre": Color(0.95, 0.7, 0.05), "size": 0.12, "petals": 14},
+	"dandelion": {"head": "daisy", "stems": 6, "petal": Color(1.0, 0.85, 0.05), "centre": Color(0.95, 0.7, 0.05), "size": 0.05, "petals": 18},
 	"st_johns_wort": {"head": "daisy", "stems": 6, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.6, 0.05), "size": 0.045, "petals": 5},
 	"wild_carrot": {"head": "umbel", "stems": 4, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},

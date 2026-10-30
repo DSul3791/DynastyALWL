@@ -1458,9 +1458,9 @@
 			"crown_m": 0.3,
 			"trunk_m": 0.0,
 			"color": [
-				0.75,
-				0.65,
-				0.3
+				0.3,
+				0.45,
+				0.2
 			],
 			"per_hectare": {
 				"alpine_meadow": 400
