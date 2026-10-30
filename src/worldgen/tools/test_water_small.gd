@@ -12,6 +12,7 @@ const DrainageFillScript := preload("res://src/worldgen/tile/drainage_fill.gd")
 const DrainageFlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const DrainageNaturalScript := preload("res://src/worldgen/tile/drainage_natural.gd")
 const WaterSettler := preload("res://src/water/water_settler.gd")
+const WaterSim := preload("res://src/water/water_sim.gd")
 
 const SIZE := 128
 const CELL_M := 8.0
@@ -241,6 +242,28 @@ func _init() -> void:
 				lake_wet += 1
 
 	_check(lake_cells > 0 and lake_wet * 10 >= lake_cells, "the lakes hold water (%d of %d lake cells)" % [lake_wet, lake_cells])
+
+	# Rain-fed lateral inflow (water_settler.gd _add_lateral_inflows; the new system's way of feeding rivers below their heads): the runoff of land that drains into
+	# a river or lake is poured in, so the total is positive, never more than the whole land's rain at m3s_per_km2, and most of the land's rain is taken (this island
+	# drains almost wholly into its river and lake cells). Without it the lower reaches run dry.
+	var rain_sim = WaterSim.new()
+	rain_sim.setup(SIZE, CELL_M, data.heights)
+	var rule: Dictionary = WaterSettler.rules().get("lateral", {})
+	var made: int = WaterSettler._add_lateral_inflows(rain_sim, data, SIZE, [])
+	var lateral: float = 0.0
+
+	for spring in rain_sim.springs:
+		lateral += float(spring[1])
+
+	var land_km2: float = 0.0
+
+	for index in range(SIZE * SIZE):
+		if sea[index] == 0:
+			land_km2 += CELL_M * CELL_M / 1.0e6
+
+	var most: float = land_km2 * float(rule.get("m3s_per_km2", 1.0))
+	_check(made > 0 and lateral > 0.0 and lateral <= most * 1.001, "lateral inflow is positive and at most the land's rain (%d springs, %.2f of at most %.2f m3/s)" % [made, lateral, most])
+	_check(lateral >= 0.3 * most, "and takes a good share of it (%.0f percent of the land's rain)" % (100.0 * lateral / maxf(most, 0.001)))
 
 	# No water is created: what the sim holds on land never exceeds the springs' pour plus the painted start (none on a dry start).
 	var held: float = sim.total_volume()
