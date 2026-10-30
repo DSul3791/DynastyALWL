@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 278,
+	"next_number": 293,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3089,7 +3089,7 @@
 		},
 		"oven": {
 			"number": 267,
-			"name": "Oven",
+			"name": "Basic Oven",
 			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
 			"kind": "structure",
 			"stack": 1,
@@ -3097,7 +3097,7 @@
 		},
 		"oven_kit": {
 			"number": 268,
-			"name": "Oven",
+			"name": "Basic Oven",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3154,6 +3154,156 @@
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
+		},
+		"kindling": {
+			"number": 278,
+			"name": "Kindling",
+			"description": "Small dry twigs and shavings. Catches a spark and starts a fire.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"flint": {
+			"number": 279,
+			"name": "Flint",
+			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"pyrite": {
+			"number": 280,
+			"name": "Pyrite",
+			"description": "A brassy, heavy stone. Struck with flint it throws good sparks.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"obsidian": {
+			"number": 281,
+			"name": "Obsidian",
+			"description": "Black volcanic glass. Breaks into razor-sharp edges, and is prized.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 25
+		},
+		"processed_hide": {
+			"number": 282,
+			"name": "Processed hide",
+			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"leather": {
+			"number": 283,
+			"name": "Leather",
+			"description": "Tanned hide: tough and supple.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"fine_leather": {
+			"number": 284,
+			"name": "Fine leather",
+			"description": "The best of a batch of leather, soft and even.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 20
+		},
+		"heavy_leather": {
+			"number": 285,
+			"name": "Heavy leather",
+			"description": "Thick, stiff leather for armour and harness.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 20
+		},
+		"rivets": {
+			"number": 286,
+			"name": "Rivets",
+			"description": "Small iron pins that hold layers of leather or metal together.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"copper_ingot": {
+			"number": 287,
+			"name": "Copper ingot",
+			"description": "Smelted copper. Soft, but good for early tools.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 15
+		},
+		"tin_ingot": {
+			"number": 288,
+			"name": "Tin ingot",
+			"description": "Smelted tin. Mixed with copper it makes bronze.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 15
+		},
+		"bronze_ingot": {
+			"number": 289,
+			"name": "Bronze ingot",
+			"description": "Copper and tin melted together. Harder than copper.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 30
+		},
+		"flour": {
+			"number": 290,
+			"name": "Flour",
+			"description": "Ground grain. The start of bread.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"yeast": {
+			"number": 291,
+			"name": "Yeast",
+			"description": "A frothy starter that makes dough rise and ale ferment.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"salt": {
+			"number": 292,
+			"name": "Salt",
+			"description": "Keeps meat and fish from spoiling.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
 		}
 	}
 }

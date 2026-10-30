@@ -276,7 +276,7 @@
 		},
 		"oven": {
 			"number": 14,
-			"name": "Oven",
+			"name": "Basic Oven",
 			"structure": "oven",
 			"cost": [["brick", 24], ["clay", 10], ["stone", 8]],
 			"near": "clay_hearth",

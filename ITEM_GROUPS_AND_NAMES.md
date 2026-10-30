@@ -286,7 +286,7 @@ Dave approved the plan and said to decide without him where possible, research o
 ## B1. Design test every item must pass
 1. **Makes sense:** a player can guess what it is and why it exists (real-world logic, with a hint of education).
 2. **Fun:** it does something different from its neighbours, or gives a choice, a risk or a reward. If two items do the same job, merge them.
-3. **Reasonable to make:** simple tier needs 1 to 2 found things and no station; mid tier 2 to 3 things and one station; high tier 3 to 4 things and a better station. No step exists just to add a step (Dave on Aska's bloomery).
+3. **Reasonable to make:** DAVE'S RULE (2026-10-30): three ingredients at most for normal recipes; only a really special, powerful top-tier item may use 4 or 5. So: simple tier 1 to 2 found things and no station; mid tier 2 to 3 with one station; high tier 3 with a better station; 4 to 5 only for special powerful items. This replaces the earlier 3-to-4 for high-tier food. No step exists just to add a step (Dave on Aska's bloomery).
 
 ## B2. Open questions: my decisions
 | # | Decision |
@@ -324,7 +324,7 @@ Dave approved the plan and said to decide without him where possible, research o
 |---|---|---|---|
 | Simple | 1 to 2 | campfire, spit, hot stone | **Roast meat 69, Roast fish 80, Roast roots 177**, **Baked apples 179**, boiled egg, berries and honey, **Fruit leather 184**, jerky (meat + salt), **Flatbread 273** (flour + water), porridge (oats + water) |
 | Mid | 2 to 3 | campfire pot, clay hearth, **Basic Oven** | **Campfire Stew 15**, vegetable soup, pottage (**Hearty pottage 190**), bread (flour + water + yeast), **Honey loaf 274** (flour + honey + yeast), jam (berries + honey), **Berry compote 175**, dumplings (flour + fat + water), **Fish stew 188**, **Smoked fish 185**, cheese |
-| High | 3 to 4 | Clay Oven, Iron Stove | meat pie (flour + fat + meat + vegetable), **Hunter's stew 186**, **Forager's stew 187**, dumpling stew (meat + vegetable + flour + water), sweet cake (flour + egg + milk + honey), fruit tart, fish pie, roast fowl with herbs, **Roast Beast 191** |
+| High | 3 (4 only for a special feast dish) | Clay Oven, Iron Stove | meat pie (flour + meat + vegetable), **Hunter's stew 186**, **Forager's stew 187**, dumpling stew (meat + vegetable + flour), sweet cake (flour + egg + honey; milk optional as a Feast version), fruit tart, fish pie, roast fowl with herbs, **Roast Beast 191** |
 Existing dishes not placed: **Herb fish 181, Garlic meat 182, Chestnut cakes 183, Trail bread 189, Rosemary joint 275, Mushroom skewer 180, Nut paste 176, Acorn mash 178** (placing them is a later data job).
 
 **Drinks (Dave: all kinds, with food effects like Atlas):** Simple: water, milk, herbal infusions (the four teas 52, 57 to 59 stay). Mid: ale (grain + water + yeast), mead (honey + water + yeast), cider (apples), berry wine. High: wine (grapes, warm lands), spirits by distillation. Sources: ale was the peasant staple, mead is honey wine, cider from apples, wine imported in the north, barm (ale foam) was the bread leaven, and distilled drinks do not appear before the 15th century ([Barm](https://en.wikipedia.org/wiki/Barm), [BYO: Searching for medieval ale](https://byo.com/articles/searching-for-medieval-ale/), [SCA: Introduction to Brewing](https://adora.lochac.sca.org/files/2024/09/Introduction-to-Brewing.pdf)). Spirits therefore sit at the top tier. Brewing station: Brewing barrel/cauldron (Valheim Fermenter*, Dragonwilds Brewing Cauldron*); distilling needs a Still.
@@ -379,3 +379,9 @@ Dave: furniture should be fun and useful. REC set: **Stool** (sit to work; small
 
 ## B11. What I could not confirm
 Real-world yeast sourcing details for the game recipe; spyglass and compass dates; whether Valheim's oven or Atlas's drink effects work as I summarised (I used only analysis rows); exact dates for cannon and cog; all game recipe ingredients (the analysis rarely has them). Numbers for effects, durations and tiers are design proposals for later tuning, not measurements.
+
+## B12. Data edits done (batch 1, 2026-10-30, branch sal-items)
+Small and reversible; nothing merged or retired yet, because merges touch recipes, blueprints and saves and need a game test (and Dave said no bakes).
+- `data/items/items.json`: items 267 and 268 renamed **Basic Oven** (blueprint 14 in `blueprints.json` too). Added 15 materials, all marked `"future": true` (not obtainable yet), numbers 278 to 292, `next_number` now 293: Kindling 278, Flint 279, Pyrite 280, Obsidian 281, Processed hide 282, Leather 283, Fine leather 284, Heavy leather 285, Rivets 286, Copper ingot 287, Tin ingot 288, Bronze ingot 289, Flour 290, Yeast 291, Salt 292.
+- Checked: JSON loads; `tools/check_dupe_names.py` ok; `tools/check_look_names.py` ok. NOT run: the game itself.
+- Next data batch (not done): tools and weapons with their class fields (Hide scraper, Steel striker, Javelin, obsidian tools), the Tyler merges with old-number conversion, recipes, and the missing ovens (Clay Oven, Iron Stove).
