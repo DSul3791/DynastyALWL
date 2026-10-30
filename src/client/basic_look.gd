@@ -31,6 +31,14 @@ const ART_OVERRIDES := {
 	"flour": {"shape": "sack", "color": "#efe6d2", "size": 0.9},
 	"salt": {"shape": "grit", "color": "#f4f4f0", "size": 0.8},
 	"wooden_club": {"shape": "club", "color": "#5a3a1c", "size": 1.2},
+	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
+	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
+	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
+	"sickle": {"shape": "sickle", "color": "#8a8d92", "size": 1.0},
+	"scythe": {"shape": "scythe", "color": "#8a8d92", "size": 1.0},
+	"steel_striker": {"shape": "striker", "color": "#3a3c40", "size": 1.0},
+	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
+	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
 }
 
 
@@ -400,7 +408,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# Nothing bends sideways (out of that plane). Held with the head vertical (points up and down); see HELD_LOOK_TURN.
 			# Test: src/worldgen/tools/test_pick_axes.gd.
 			var steel_head: bool = bits.has("steel")
-			var iron: Color = Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042)   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
+			var stone_head: bool = bits.has("stone")
+			var iron: Color = Color(0.3, 0.28, 0.25) if stone_head else (Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042))   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
 			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
@@ -410,7 +419,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.0235, 0.02, Vector3(-0.27 + 0.02 * float(k) + 0.01, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(leather, k, 0.22) if k % 2 == 0 else leather.darkened(0.3))
 			_cyl(parts, 0.027, 0.012, Vector3(-0.115, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather.darkened(0.2))  # its top band
 			_box(parts, Vector3(0.075, 0.06, 0.085), Vector3(0.27, 0.0, 0.0), iron * 0.75)                    # the iron eye block the haft passes into
-			_metal(parts)
+			if not stone_head:
+				_metal(parts)
 			_box(parts, Vector3(0.02, 0.04, 0.04), Vector3(0.315, 0.0, 0.0), _tone(wood, 5, 0.1))                      # the haft's end, standing proud of the head
 			for k in range(3):                                                                                               # the collar's leather lashing, three turns
 				_cyl(parts, 0.028, 0.01, Vector3(0.2 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), leather if k != 1 else leather.darkened(0.25))
@@ -581,6 +591,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# chipped, about as long as the handle (about 23 cm overall). No sheen. Mesh axes: handle at -x, blade pointing +x.
 			var stone: Color = Color(0.3, 0.26, 0.19)                                                                                                 # matt grey-brown stone (linear; about sRGB 120, 110, 95 on screen)
 			var hide: Color = Color(0.22, 0.13, 0.07)
+			if bits.has("glass"):                                                                                                                     # obsidian: black volcanic glass
+				stone = Color(0.012, 0.012, 0.018)
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):
@@ -775,6 +787,50 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in 4:
 				_cyl(parts, 0.019, 0.012, Vector3(-0.28 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.28, 0.17, 0.09) if k % 2 == 0 else Color(0.18, 0.1, 0.05))
 			_sph(parts, 0.012, Vector3.ONE, Vector3(0.06, 0.04, 0.03), dark)
+		"scraper":
+			# A hide scraper: a short wrapped wooden handle with a wide flat flint blade lashed to its end, broad edge across the end, chipped, with thong bands.
+			for k in range(4):
+				_cyl(parts, 0.017, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.4, 0.27, 0.14), k, 0.06))
+			for k in range(3):
+				_cyl(parts, 0.0195, 0.012, Vector3(0.02 + 0.016 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.24, 0.14, 0.07) if k % 2 == 0 else Color(0.14, 0.08, 0.04))
+			var flint_dark: Color = Color(0.28, 0.25, 0.21)
+			_box_rot(parts, Vector3(0.05, 0.012, 0.085), Vector3(0.085, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), flint_dark)
+			_box_rot(parts, Vector3(0.012, 0.013, 0.085), Vector3(0.112, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), flint_dark.lightened(0.3))
+			_box_rot(parts, Vector3(0.016, 0.014, 0.018), Vector3(0.1, 0.0, 0.04), Vector3(0.0, 0.5, 0.0), flint_dark.darkened(0.2))
+		"sickle":
+			# A sickle: a short grip handle and a blade that bends round in a half circle toward +z, thin steel-grey with a row of pale flint teeth along the inside edge.
+			for k in range(3):
+				_cyl(parts, 0.018, 0.045, Vector3(-0.085 + 0.045 * float(k) + 0.02, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.4, 0.27, 0.14), k, 0.07))
+			_cyl(parts, 0.02, 0.012, Vector3(-0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))
+			var sc_r: float = 0.11
+			for k in range(10):
+				var a0: float = 2.4 * float(k) / 10.0
+				var a1: float = 2.4 * float(k + 1) / 10.0
+				var m0: float = (a0 + a1) * 0.5
+				var pt: Vector3 = Vector3(0.07 + sc_r * sin(m0), 0.0, sc_r - sc_r * cos(m0))
+				_box_rot(parts, Vector3(0.036, 0.004, 0.02 - 0.012 * float(k) / 10.0), pt, Vector3(0.0, -m0, 0.0), Color(0.4, 0.42, 0.45))
+				if k % 2 == 0 and k > 1:
+					_box_rot(parts, Vector3(0.012, 0.006, 0.01), pt + Vector3(-sin(m0 + 1.57) * 0.0, 0.0, 0.0) + Vector3(-cos(m0) * 0.012, 0.0, -sin(m0) * 0.012), Vector3(0.0, -m0, 0.0), Color(0.75, 0.7, 0.58))
+		"scythe":
+			# A scythe: a tall bent haft with two short side grips and a long thin curved iron blade swept out sideways (+z) from its top, held out at the end of the haft.
+			for k in range(20):
+				_cyl(parts, 0.016, 0.055, Vector3(-0.55 + 0.055 * float(k) + 0.027, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.45, 0.32, 0.17), k, 0.07))
+			for gx in [-0.2, 0.08]:
+				_cyl(parts, 0.012, 0.12, Vector3(gx, 0.0, 0.06), Vector3(PI * 0.5, 0.0, 0.0), Color(0.4, 0.28, 0.15))
+			_box(parts, Vector3(0.05, 0.03, 0.03), Vector3(0.55, 0.0, 0.0), Color(0.12, 0.12, 0.13))
+			for k in range(14):
+				var b0: float = 1.25 * float(k) / 14.0
+				var b1: float = 1.25 * float(k + 1) / 14.0
+				var bm: float = (b0 + b1) * 0.5
+				var bp: Vector3 = Vector3(0.57 + 0.5 * sin(bm), 0.0, 0.5 * (1.0 - cos(bm)))
+				_box_rot(parts, Vector3(0.1, 0.005, 0.055 - 0.035 * float(k) / 14.0), bp, Vector3(0.0, -bm, 0.0), Color(0.5, 0.52, 0.56))
+			_metal(parts)
+		"striker":
+			# A steel striker for flint: a flat strip of dark steel bent into a C that fits the fingers, a notch at one end, plain and scuffed.
+			for k in range(8):
+				var s0: float = -1.1 + 2.2 * float(k) / 7.0
+				_box_rot(parts, Vector3(0.016, 0.006, 0.014), Vector3(0.04 * sin(s0), 0.0, 0.04 * (1.0 - cos(s0)) * 1.6), Vector3(0.0, -s0 * 0.9, 0.0), Color(0.09, 0.09, 0.1) if k % 3 != 0 else Color(0.22, 0.22, 0.24))
+			_metal(parts)
 		"kit":
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)

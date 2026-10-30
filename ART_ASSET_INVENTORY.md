@@ -22,10 +22,10 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 7 Grass cover, litter and painted textures | 0 | 0 | 22 | 4 | 0 | 26 |
 | 8 Terrain surface and ground materials | 81 | 0 | 28 | 0 | 0 | 109 |
 | 9 Water, sky, weather and light | 2 | 0 | 12 | 10 | 0 | 24 |
-| 10 Items: raw materials, wood and crafted parts | 1 | 0 | 100 | 0 | 0 | 101 |
+| 10 Items: raw materials, wood and crafted parts | 0 | 0 | 101 | 0 | 0 | 101 |
 | 11 Items: gathered plant parts and foraged goods | 0 | 0 | 169 | 5 | 0 | 174 |
 | 12 Items: food, drink and medicine | 0 | 0 | 37 | 0 | 0 | 37 |
-| 13 Items: tools, weapons and ammunition | 8 | 0 | 9 | 24 | 0 | 41 |
+| 13 Items: tools, weapons and ammunition | 1 | 0 | 16 | 24 | 0 | 41 |
 | 14 Items: containers, coins, clothing and gear | 0 | 0 | 18 | 0 | 0 | 18 |
 | 15 Items: placeable kits | 0 | 0 | 33 | 2 | 0 | 35 |
 | 16 Placed structures: shelter, storage, fires and traps | 0 | 0 | 6 | 7 | 0 | 13 |
@@ -35,9 +35,9 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **98** | **5** | **647** | **115** | **0** | **865** |
+| **All categories** | **90** | **5** | **655** | **115** | **0** | **865** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 818 entries; stage 0 64, stage 1 5, stage 2 634, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 818 entries; stage 0 56, stage 1 5, stage 2 642, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
@@ -623,7 +623,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 
 ## 10 Items: raw materials, wood and crafted parts
 
-101 entries. Stages: 1 x stage 0, 100 x stage 2.
+101 entries. Stages: 101 x stage 2.
 
 
 ### raw and crafted materials (36)
@@ -740,7 +740,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 | Bronze ingot | item #289, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #289 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "ingot" (used while looks.json still holds the grey chunk) | 2 | ingot shape, golden brown [future] |
 | Flour | item #290, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #290 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "sack" (used while looks.json still holds the grey chunk) | 2 | sack shape, pale [future] |
 | Salt | item #292, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #292 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "grit" (used while looks.json still holds the grey chunk) | 2 | grit pile, white [future] |
-| Yeast | item #291, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #291 (not in this branch's items.json) | none yet | 0 | requested: small crock or paste clump; still the grey chunk placeholder [future] |
+| Yeast | item #291, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #291 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "pot" (used while looks.json still holds the grey chunk) | 2 | small pale crock (the pot shape at half size), offline render checked [future] |
 
 ## 11 Items: gathered plant parts and foraged goods
 
@@ -1055,7 +1055,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 
 ## 13 Items: tools, weapons and ammunition
 
-41 entries. Stages: 8 x stage 0, 9 x stage 2, 24 x stage 3.
+41 entries. Stages: 1 x stage 0, 16 x stage 2, 24 x stage 3.
 
 
 ### tools (28)
@@ -1063,11 +1063,11 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
 | Stone axe | A sharpened stone bound to a handle. Fells trees, breaks rock and cuts wood. | data/items/items.json item stone_axe (#6) | BasicLook.mesh_for -> shape "axe" (data/items/looks.json), colour #7d7a74; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "axe" is 19 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
-| Stone knife | A sharp stone flake on a handle. Cuts bark, gum and sap. | data/items/items.json item stone_knife (#11) | BasicLook.mesh_for -> shape "knife" (data/items/looks.json), colour #8a8680; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "knife" is 14 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
+| Stone knife | A sharp stone flake on a handle. Cuts bark, gum and sap. | data/items/items.json item stone_knife (#11) | BasicLook.mesh_for -> shape "knife" (data/items/looks.json), colour #8a8680; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "knife" is 16 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
 | Basic torch | A stick wrapped in fibre that burns for a while and lights your way. | data/items/items.json item torch (#12) | BasicLook.mesh_for -> shape "torch" (data/items/looks.json), colour #e08a2a; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "torch" is 10 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
 | Wooden spade | A sharpened wooden blade on a handle. Digs roots and bulbs. | data/items/items.json item wooden_spade (#19) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #8a6a3a; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
-| Iron pickaxe | An iron head on a hardwood handle. One blow breaks one stone off a boulder. | data/items/items.json item iron_pickaxe (#33) | BasicLook.mesh_for -> shape "pick" (data/items/looks.json), colour #6c6f75; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "pick" is 42 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
-| Steel pickaxe | A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. | data/items/items.json item steel_pickaxe (#34) | BasicLook.mesh_for -> shape "pick" (data/items/looks.json), colour #9aa3ad; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "pick" is 42 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
+| Iron pickaxe | An iron head on a hardwood handle. One blow breaks one stone off a boulder. | data/items/items.json item iron_pickaxe (#33) | BasicLook.mesh_for -> shape "pick" (data/items/looks.json), colour #6c6f75; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "pick" is 44 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
+| Steel pickaxe | A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest. | data/items/items.json item steel_pickaxe (#34) | BasicLook.mesh_for -> shape "pick" (data/items/looks.json), colour #9aa3ad; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "pick" is 44 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
 | Stone spade | A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer. | data/items/items.json item stone_spade (#45) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #7d7a74; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
 | Iron spade | A spade with an iron blade. | data/items/items.json item iron_spade (#46) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #6c6f75; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
 | Steel spade | A spade with a steel blade. | data/items/items.json item steel_spade (#47) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #9aa3ad; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
@@ -1111,13 +1111,13 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
 | Wooden club | item #300, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #300 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "club" (used while looks.json still holds the grey chunk) | 2 | new shape: tapered hardwood club with wrapped grip (offline render checked) [future] |
-| Hide scraper | item #293, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #293 (not in this branch's items.json) | none yet | 0 | requested: flint blade lashed to a short handle; no look row [future] |
-| Steel striker | item #294, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #294 (not in this branch's items.json) | none yet | 0 | requested: flat curved steel strip; no look row [future] |
-| Javelin | item #295, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #295 (not in this branch's items.json) | none yet | 0 | requested: light shaft with a small head; still the grey chunk placeholder [future] |
-| Obsidian knife | item #296, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #296 (not in this branch's items.json) | none yet | 0 | requested: black glass blade on a wrapped handle; no look row [future] |
-| Stone pickaxe | item #297, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #297 (not in this branch's items.json) | none yet | 0 | requested: stone head lashed to a long haft; no look row [future] |
-| Sickle | item #298, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #298 (not in this branch's items.json) | none yet | 0 | requested: curved flint-toothed blade on a short handle; no look row [future] |
-| Scythe | item #299, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #299 (not in this branch's items.json) | none yet | 0 | requested: long curved iron blade on a tall bent handle; no look row [future] |
+| Hide scraper | item #293, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #293 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "scraper" (used while looks.json still holds the grey chunk) | 2 | new shape: wrapped handle with a wide flint blade; held turn added (offline render checked) [future] |
+| Steel striker | item #294, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #294 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "striker" (used while looks.json still holds the grey chunk) | 2 | new shape: curved dark steel strip (offline render checked) [future] |
+| Javelin | item #295, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #295 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "shaft" (used while looks.json still holds the grey chunk) | 2 | the spear shaft at 0.85 size with an iron head (offline render checked) [future] |
+| Obsidian knife | item #296, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #296 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "knife" (used while looks.json still holds the grey chunk) | 2 | the stone-knife shape with a black glass blade (offline render checked) [future] |
+| Stone pickaxe | item #297, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #297 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "pick" (used while looks.json still holds the grey chunk) | 2 | the pickaxe shape with a matt stone head, no metal sheen (offline render checked) [future] |
+| Sickle | item #298, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #298 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "sickle" (used while looks.json still holds the grey chunk) | 2 | new shape: curved blade with pale flint teeth on a grip (offline render checked) [future] |
+| Scythe | item #299, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #299 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "scythe" (used while looks.json still holds the grey chunk) | 2 | new shape: tall haft with grips and a long curved blade (offline render checked) [future] |
 
 ## 14 Items: containers, coins, clothing and gear
 
