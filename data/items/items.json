@@ -2150,7 +2150,7 @@
 		"fish_stew": {
 			"number": 188,
 			"name": "Fish stew",
-			"description": "Perch, cress and root in a sage broth.",
+			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
 			"value": 44,

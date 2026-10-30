@@ -2503,10 +2503,6 @@
 				[
 					"wild_garlic_bulbs",
 					1
-				],
-				[
-					"porcini",
-					1
 				]
 			],
 			"gives": [
@@ -2532,10 +2528,6 @@
 				],
 				[
 					"chanterelles",
-					1
-				],
-				[
-					"sorrel_leaves",
 					1
 				]
 			],
@@ -2563,10 +2555,6 @@
 				[
 					"wild_carrot_roots",
 					1
-				],
-				[
-					"sage",
-					1
 				]
 			],
 			"gives": [
@@ -2589,10 +2577,6 @@
 				[
 					"hazelnuts",
 					2
-				],
-				[
-					"dates",
-					1
 				],
 				[
 					"animal_fat",
