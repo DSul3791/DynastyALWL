@@ -26,6 +26,9 @@ What this means for the plan (RECOMMENDATION, my reading; the named characters a
 - **Open question (D9):** how much of this variety is player-chosen, and how much is for NPCs only. Also check it against the "safe place" rule (no divisive labels, Part 4.1 item 8) and the disguise idea that height and build are hard to change (DESIGN_IDEAS.md section 9.2).
 - **Risk:** broad variety multiplies the animation checking (a long reach looks different on a stocky body). Mitigation: test every clip on the two most extreme archetypes.
 
+## Character creation (Dave, 2026-10-30)
+Players build their characters: an **ancestry** (human, orc, elf and others), which brings cultural boons and unfortunate traits; **sliders** for the skeleton and body (size, build, proportions, gait); the **face** (bone structure and features); **skin colour**; **hair** (style, length, colour); more (age, markings, handedness and others, see Part 5.7); and a **dice button** for everything and one **per section**. A character is a small list of numbers (a genome) saved on the server and turned into a body on each client. Details, suggestions and one rule flag (keep boons and drawbacks to fantasy peoples, keep skin tone and features cosmetic) are in Part 5.7.
+
 ## Principles
 See Part 4.1 (eight principles: readable first; believable weight; one body many views; actions are events; derive, don't send; cheap at distance; every number has a knob; no divisive defaults).
 
@@ -33,10 +36,10 @@ See Part 4.1 (eight principles: readable first; believable weight; one body many
 `ragdoll_body.gd` (rig and clips) -> `terrain_client.gd::_update_view` (picks clips) -> `held_item.gd` (first-person arms and tools) -> `worn_look.gd` / `worn_sync.gd` (clothes) -> `npc_view.gd` (NPCs). The plan puts an `AnimationTree` and a shared action library in the middle of that chain (Part 5.1) and changes the body last (Phase 3).
 
 ## Plan in one paragraph
-Phase 0 measure and prototype; Phase 1 animation architecture on the current body; Phase 2 missing locomotion; Phase 3 new body and rig; Phase 4 tool and activity library; Phase 5 equipment and secondary motion; Phase 6 other players; Phase 7 special states (Part 7.1). Risks in 7.2; open questions 7.3.
+Phase 0 define the new skeleton and the character genome, research character creators, measure and prototype; Phase 1 animation architecture; Phase 2 missing locomotion; Phase 3 body generator and archetypes; Phase 4 face, hair, skin and marks; Phase 5 character creation (ancestry, sliders, dice buttons); Phase 6 tool and activity library; Phase 7 equipment and secondary motion; Phase 8 other players; Phase 9 special states (Part 7.1, revised 2026-10-30). Risks in 7.2; open questions 7.3.
 
 ## Decisions for Dave
-D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation (Part 7.4, each with my recommendation).
+D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation, D14 to D21 ancestries, boons and drawbacks owner, whether size matters in play, later appearance changes, where creation happens, creator scope (Part 7.4, each with my recommendation).
 
 ## Where things are
 Order of this file: this vision; Part 1 present state; Parts 4 to 7 (rules, movement plan, gap analysis, roadmap and decisions); then the reference sections at the end: **Part 2** (copied project passages and the "passages to remove once Dave approves" list in 2.8) and **Part 3** (research log with sources and confidence tags). Part numbers are kept so cross references still work.
@@ -298,6 +301,61 @@ Common rule: each activity is defined by the action record in 5.1 item 4: **anti
 - Add (optional) shoulder-swap and an over-the-shoulder aim mode for bow/throw. No source found for shoulder swap (C-gaps); judge by playtest.
 - First-person full body ("body awareness"): optional; a lower-body-only mesh visible when looking down is a cheap compromise suggested by one forum poster (C7). Decision D3.
 
+## 5.7 Character creation (Dave, 2026-10-30)
+
+Dave's direction: players build their characters. They choose an **ancestry** (human, orc, elf and whatever else we find in other games), which brings cultural boons and unfortunate traits that vary by group. They adjust the **skeleton in a simple but effective way with sliders** for everything that changes look, gait and size. They adjust **facial bone structure and features**, **skin colour**, **hair style, length and colour**, and more. There is an overall **random (dice) button** and a **dice button in each section** for individual settings. Dave expects things are missing; my additions are marked.
+
+**What I have and have not done.** This section is design only. I have **not researched** other games' character creators (sliders, face systems, dice buttons, ancestry systems); that is a proposed Phase 0 research round. Everything below is RECOMMENDATION built from the code facts in Part 1 and the research in Part 3, with the unresearched parts labelled.
+
+### 5.7.1 The core idea: a character is a small list of numbers (the "genome")
+- **RECOMMENDATION:** a character's appearance is a compact record: ancestry id, an archetype or body preset, and about 40 to 60 slider values, each quantised to one byte, plus colour and hairstyle ids. That is on the order of 60 to 80 bytes (my estimate). The body, face and hair meshes are **generated from the genome on each client**, by the same code, so only the genome crosses the network and is saved on the server with the character. This fits the existing plan to derive instead of send (Part 4.1 item 5) and the code-generated body (D2).
+- **Cache by genome.** Generate each distinct body once and share the mesh between identical genomes (the current code already caches one shared mesh, Part 1.2). How long generation takes for 20 players entering view is unknown; measure in Phase 0.
+- **The server owns the record**, validates ranges (clamps) and never trusts a client's numbers. Appearance is cosmetic; anything that changes gameplay (reach, speed, carrying, ancestry boons) is separate server data.
+
+### 5.7.2 Ancestry (the people)
+- **Ancestry** = a preset that sets slider ranges, default values, extra features (for example pointed ears, tusks, a heavier brow) and the gameplay boons and drawbacks. Examples Dave named: human, orc, elf. Which others, and how many, is Dave's call (D14). I have not looked at other games' lists.
+- **Boons and drawbacks are server game design, not animation.** They belong with the items, skills and attributes design (the existing luck and fitness attributes; DESIGN_IDEAS.md and SKILLS_AND_ATTRIBUTES.md). This document only provides the visual side. Who designs and balances them is open (D15).
+- **FLAG for Dave's rule check (my concern, not a refusal):** "ethnicity" with built-in cultural boons and unfortunate traits is sensitive. Dave's standing rule (2026-10-23) is that the game never says anything that might divide people and describes use, never who it is for (Part 2.9 item 10). Attaching drawbacks to groups is fine for **fantasy peoples** (orcs, elves) but would conflict with that rule if applied to real-world ethnic groups or to skin tone. **Recommendation: keep skin tone, hair and facial features a free, purely cosmetic choice for every ancestry with no gameplay effect; tie boons and drawbacks only to fantasy ancestries.** Also avoid a link where a body slider gives a gameplay penalty in a way that reads as ranking appearances.
+- **Sliders stay inside each ancestry's range**, with generous overlap, so a very tall human and a short orc both look right, and the archetypes in Dave's references (Gaston, Link, Dragon Ball; I have not researched them) can be reached inside any ancestry that suits them.
+
+### 5.7.3 Body sliders (the "skeleton" sliders)
+Sliders change the bone rest positions and the generated shape from the same numbers, so the mesh and the skeleton always agree.
+- **Size and build:** overall height; build (slim to heavy); muscle; belly/waist; chest depth; shoulder width; hip width.
+- **Proportions:** torso length; leg length (relative to torso); upper-arm and forearm length; neck length and thickness; hand size; foot size; head size.
+- **Posture and gait (these change how the animation looks, see 5.7.6):** posture (upright to stooped), stride length, arm swing, hip sway, bounce, walk weight (light to heavy), shoulder roll.
+- **Additions I suggest Dave may be missing:** apparent age (young to elderly: posture, skin, hair greying); handedness (left or right; our tool mounts and swing clips currently assume the right hand, Part 1.5); voice pitch or type if voices are added; body hair; scars, markings, tattoos, war paint (cosmetic layers); eye colour and eye shape; teeth, tusks, fangs; ear shape; optional extras by ancestry (tail, horns); starting clothing colours; a name; a saved-presets list; sharing a character as a short code; a neutral preview with a turntable and a walk preview.
+
+### 5.7.4 Face
+- **Bone structure:** a small set of face bones or blend shapes: brow ridge, cheekbones, jaw width, chin length and width, nose (bridge, width, length, tip), eye size, spacing and tilt, mouth width, lip fullness, ear size and point. Godot supports blend shapes on a mesh (Part 3, H6) and the humanoid profile has jaw and eye bones (B7). How many and which is open.
+- **Art direction fit:** a few big readable shapes, not fine detail (Dave 2026-10-30: leave out detail and exaggerate). Expression (blink, brow, mouth for talk or effort) can come later.
+- **Cost warning:** a unique face per player means unique mesh data. I found that **MultiMesh ignores blend shapes** and that skinned meshes cannot be assumed to batch (H8, H9), so each distinct face is its own draw; the 20-body budget must be measured with 20 distinct genomes.
+
+### 5.7.5 Skin, hair and marks
+- **Skin:** tone (a continuous slider over a wide range, no gameplay effect), undertone, freckles, flush, age marks, scars, tattoos and markings. Extends the existing region-colour shader (Part 1.2) with a small texture mask; per-instance values through shader instance uniforms (H7).
+- **Hair:** style (a list of a few dozen simple stylised shapes), length (a slider that scales the shape), colour (picker, gradient, greying), facial hair, eyebrows. Hair is the hardest thing to do well in code, so use big solid shapes with a simple shader and optional spring-bone sway (H1). The method is unresearched.
+- **Optional:** eye colour, lip colour, nail colour.
+
+### 5.7.6 What sliders do to animation (important)
+- **FACT (code):** the gait function already takes its swing, lean and bob amplitudes as parameters (`_gait(...)`, Part 1.3), so per-character gait style is natural to support.
+- **RECOMMENDATION:** do **not** bake a different clip set per character. Keep one shared clip set and apply per-character modifiers at run time: stride scales with leg length, arm swing and bounce scale with the posture and gait sliders, lean and sway go through the additive layer (Part 5.1). The research found cadence did not depend on body size at preferred speed while stride length did (G2), so playback rate should follow speed divided by the stride set by leg length; that also stops foot sliding when legs differ in length.
+- **Changing bone lengths:** clips mostly store rotations, so they work on different bone lengths; the hips position key must be scaled by hips height (Godot's retarget has the same idea, B6 "Normalize Position Tracks"). Do not scale the whole skeleton node (the spring-bone docs warn that scaling breaks them, B12/H1); change bone rests and the generated mesh instead.
+- **IK:** foot IK and hand IK to tools (Part 5.1) must read the character's real bone lengths.
+- **Extremes:** test every clip on the smallest, largest, stockiest and leanest genome (risk in 7.2); clamp sliders where a clip breaks (for example arms too long to swing without hitting the legs).
+
+### 5.7.7 Random (dice) buttons
+- **Global dice** randomises everything; **per-section dice** (Ancestry features, Body, Face, Skin, Hair, Marks, Gait) randomise only that section; **per-slider lock** (suggested) so a locked value survives the dice.
+- **Random is gentle by default:** values are drawn from a bell-shaped spread around the ancestry's defaults, not uniformly over the full range, so results look like people; a "wild" toggle draws from the full range (suggested).
+- **Seeded, repeatable and undoable:** each press records its seed so Undo steps back; the whole genome can be shown as a short code to share. Sections stay independent so the face dice never changes the body.
+- Creator dice are client-side and cosmetic; the server validates the final record. Server rolls that affect gameplay keep going through the existing luck path (`src/shared/luck.gd`). Whether a random ancestry is allowed is Dave's call.
+
+### 5.7.8 Rules and limits
+- **Gameplay-neutral by default:** height, build and face sliders change look only; the collision capsule, reach, step height and camera height stay the same unless Dave decides body size should matter (D16). If it does, the capsule and eye height must scale with it and the 1.8 m tuning (ladders, doors, step-up) must be revisited.
+- **Ranges and fairness:** clamp every slider on the server. Keep extremes inside what the animation, clothing and tools support (worn pieces are fitted by proportion, Part 2 B6, Kathleen plan item 3).
+- **Changing appearance later:** barber, disguise (DESIGN_IDEAS.md section 9.2: clothes and hair are easy to change, height and build are not) and ageing are design questions (D17).
+- **Clothing and worn items must adapt to every genome**, which affects the worn-item builders.
+- **Start of the game (Dave, 2026-10-30):** when a player starts the game they **pick their character, and each character has its own account**. If they have no character they must **make one** (the creator above). So the flow is: sign in or start, character list (with a small body preview per character), choose one to play or make a new one. Consequences, all RECOMMENDATION or open: (1) the genome belongs to the character account and is stored with it on the server; (2) the list screen needs a cheap preview for each character (the character screen preview rig already exists, Part 1.6); (3) how many characters per player and how they relate to the dynasty and heir idea (BIG_PICTURE.md, DESIGN_IDEAS.md) are design questions (D20); (4) an identity layer exists as a plan: DECISIONS.md 2026-10-21 18:00 describes player identity behind one server-side `IdentityProvider` with an allow-list of account ids; I have not read it in full or checked how "one account per character" fits it, so that needs the technical lead (D21); (5) a character that already exists must never be re-rolled by the creator (luck and fitness are rolled once, PROTOCOL.md).
+- **Where creation happens:** I found no character creator in the code; the character screen shows a preview of the existing character, and luck and fitness are rolled once at first hello (PROTOCOL.md, characters.json entry). Whether creation is at first hello, in a hall, or in a menu is open (D18).
+
 ---
 
 # Part 6. Gap analysis (current state against the plan)
@@ -325,6 +383,8 @@ Common rule: each activity is defined by the action record in 5.1 item 4: **anti
 | Camera | FP bob/sway fixed; TP ray, simple zoom | Settings sliders, impact dip, swept shape, smooth return | Small | S |
 | Death/faint/hurt | No body response | Ragdoll or clip on faint/death; hurt additive | Clips + `PhysicalBoneSimulator3D` | M |
 | Mounts | None | Mount pose later | Later | L |
+| Character creation | **None found** (luck and fitness rolled once at first hello; a preview rig exists) | Ancestry, body/face/skin/hair sliders, dice buttons, compact genome saved on the server and generated on every client | Genome format, generator, UI, server validation, sharing | L |
+| Body sliders on animation | Gait amplitudes are function arguments but there is one set of clips for everyone | Shared clips plus per-character modifiers (stride from leg length, swing, bounce, posture) | Modifier layer, scaled hips key, IK reading real bone lengths | M |
 | Tooling | `check_ragdoll.gd`, standard shots | Per-clip review sheets, event/loop/foot-slide checks, perf harness | New checks | M |
 | Documentation | Scattered over ~20 docs, some stale (Part 2.9) | This file as the single source; originals pointed to it | Dave approves removal list | S |
 
@@ -332,27 +392,36 @@ Common rule: each activity is defined by the action record in 5.1 item 4: **anti
 
 # Part 7. Phased roadmap, risks, open questions and decisions
 
-## 7.1 Phased roadmap (RECOMMENDATION)
+## 7.1 Phased roadmap (RECOMMENDATION; revised 2026-10-30)
 
-The order is chosen so each phase is useful on its own, risky assumptions are tested early, and nothing is built twice. Nothing starts until Dave approves.
+Revised after Dave's approval. Two changes: (1) the **skeleton and the character genome are defined first**, so clips authored later survive the move to the new body (the earlier order would have made clips twice); (2) **character creation** (ancestry, sliders, face, hair, dice) is added. Nothing starts until Dave says go.
 
-**Phase 0. Agree and measure (before any build).** Dave answers the decisions in 7.4 (at least D1, D2, D3, D5, D10). Capture a baseline: standard stills and a slow-motion capture of the current walk/run/swing from side, front and back; frame time of the avatar and of 20 NPCs on the minimum machine (the project has never measured this, Part 1.9). Prototype in a scratch scene (not in the game) that an `AnimationTree` can drive the code-built skeleton (I2). Output: a short measured report. Size S to M.
+**Phase 0. Define, research, measure, prototype.**
+- Define the **new skeleton** (humanoid-compatible names, shoulders, toes, hand and grip bones, root, face bones or blend shapes, attach points; Part 4.3) and the **genome**: the list of sliders, ranges and archetype presets (Part 5.7). Keep the old body mesh running on the new skeleton temporarily.
+- Research round on character creators in other games (sliders, face systems, dice, ancestry systems) and on code-generated smooth bodies and soft weights, with sources, as for Part 3.
+- Baseline stills and frame times (avatar and 20 NPCs) on the minimum machine.
+- Prototypes in a scratch scene, not in the game: (a) `AnimationTree` on a code-built skeleton (I2); (b) a generated smooth mesh with scripted soft weights, saved as an asset, on two extreme genomes; (c) the cost of 20 different generated bodies.
+Output: a short measured report and a frozen skeleton and genome spec for Dave. Size M.
 
-**Phase 1. Animation architecture on the current body.** Replace the if-chain with an `AnimationTree` (locomotion blend space, stance machine, filtered upper-body one-shot), cross-fades instead of cuts, event tracks for hit/step, data-driven gait numbers, shared action records so third person plays the same swings as first person, settings for bob/shake. Keep the present body, so the result is visible as movement quality alone and is cheap to revert. Output: same figure, much better motion; third-person swings visible. Size M. Why first: it fixes the largest "feel" defects (hard clip switches, no third-person actions) and every later phase depends on it.
+**Phase 1. Animation architecture.** `AnimationTree` (or the fallback), cross-fades, upper-body masks, events, data-driven gait numbers, shared action records so third person plays the same swings. Built on the new skeleton. Size M.
 
-**Phase 2. Missing locomotion.** Jump/fall/land, crouch walk, strafe/back, turn and start/stop, ladder, swim, wade, slopes with foot IK (`TwoBoneIK3D`, B10), step-up, head look-at. Each as a small separate change reviewed by stills. Size L.
+**Phase 2. Missing locomotion.** Jump, fall, land, crouch walk, strafe and back, turn and start/stop, ladder, swim, wade, slopes and foot IK, step-up, head look-at, stride from leg length. Tested on the extreme genomes. Size L.
 
-**Phase 3. Body v2 and rig v2.** The new skeleton (humanoid names, shoulders, toes, grips, root), soft-skinned body with joint loops and the agreed proportions and hands (per D1 and D2), LOD body, character screen preview updated, silhouette test passed, alias table so old clips still play. The big visual jump arrives here. Size L. Needs the art pipeline decision (D2) and the proportion look-and-approve step with Dave.
+**Phase 3. Body generator and archetypes.** The smooth generated body with soft weights, joint-friendly shapes, hands, a simple stylised head, LOD, saved as an asset; archetype presets (broad, lean, stocky, muscular); silhouette test; character screen preview updated. This is the big visual jump. Size L.
 
-**Phase 4. Tool and activity library.** Per-tool clips and grip records: chop, mine, dig, hammer, saw, knife, spear, bow, fishing, torch, shield, gather/pick-up/interact, eat/drink. Two-hand IK. Hit stop and camera feedback. Replace the per-tool constants in `held_item.gd`. Size L, can run in slices tool by tool in the order players meet them.
+**Phase 4. Face, hair, skin and marks.** Face sliders (bones or blend shapes), hair styles and colour, skin tone and marks, eyes. Size L.
 
-**Phase 5. Equipment and secondary motion.** Named attach points, belt/back tools, region hiding, spring-bone cloak and straps, tint via instance uniforms, armour layers. Size M.
+**Phase 5. Character creation.** Ancestry presets and ranges, slider screens, section and global dice with locks and undo, save and load presets, share code, server validation and storage of the genome, first-hello flow. Boons and drawbacks per ancestry are separate server design (D15). Size L.
 
-**Phase 6. Other people.** Remote player bodies, derived animation, tiers with hysteresis, reliable action ids, NPC port, performance measured with 20 bodies. Size L. May move earlier if a friend session needs to see each other (D7).
+**Phase 6. Tool and activity library.** Per-tool clips and grip records, two-hand IK, hit stop and feedback, replacing the per-tool constants. Slice by tool. Size L.
 
-**Phase 7. Special states and polish.** Exertion posture, limp, hurt, faint/death ragdoll, sit/sleep transitions on markers, emotes, mounts when horses arrive. Size L, open-ended.
+**Phase 7. Equipment and secondary motion.** Attach points, belt and back tools, fit-by-proportion on every genome, region hiding, spring-bone cloaks, armour layers. Size M.
 
-Review gates: after each phase Dave sees stills/video and a short change note; a phase is "done" when the checks in 4.4 pass.
+**Phase 8. Other people.** Remote player bodies from the genome, derived animation, tiers with hysteresis, reliable action ids, NPC port using the same generator (NPC variety is just random genomes), 20-body measurement. May move earlier if a friend session needs it (D7). Size L.
+
+**Phase 9. Special states and polish.** Exertion posture, limp, hurt, faint and death, sit and sleep transitions, emotes, mounts. Open-ended.
+
+Review gates: after each phase Dave sees stills or video and a short note; done means the checks in Part 4.4 pass.
 
 ## 7.2 Risks
 
@@ -368,6 +437,11 @@ Review gates: after each phase Dave sees stills/video and a short change note; a
 10. **Scope creep.** The wish list (mounts, emotes, customisation) is endless. Mitigation: phases ordered by what players do every minute (walk, jump, swing, climb, swim) first.
 11. **Research confidence.** Many sources were summary-level (3.10). Mitigation: re-open the sources behind any expensive decision.
 12. **Licensing** if third-party assets or animations are used: for example the GDQuest third-person controller art is non-commercial (B15). Mitigation: check every licence before importing anything.
+13. **Character creation is a large new system** (UI, genome, server validation, storage, sync, content for ancestries). Mitigation: Phase 0 research and spec, a small first version (few ancestries, a limited slider set), expand later.
+14. **Unique bodies cost.** Every distinct generated body and face is its own mesh and draw; the 1 ms budget for 20 bodies may not hold with 20 different genomes (H8, H9). Mitigation: Phase 0 measurement, LOD, share meshes for identical genomes, cap face detail.
+15. **Sensitivity of ancestry design.** Boons and drawbacks by "ethnicity" can collide with the safe-place rule (5.7.2). Mitigation: fantasy peoples only, cosmetic traits free of gameplay effect, Dave approves the ancestry list and traits.
+16. **Fairness and exploits.** Size or body sliders could confer advantages (hiding in grass, small hitboxes). Mitigation: gameplay-neutral appearance by default (5.7.8).
+17. **Unresearched.** Creator UX, face systems and generated hair in code are new territory for this team and not yet researched.
 
 ## 7.3 Open questions for Dave
 
@@ -399,6 +473,14 @@ Review gates: after each phase Dave sees stills/video and a short change note; a
 | D11 | Quality bar sign-off | accept the targets in 4.4 or change | accept as tunable defaults |
 | D12 | Budgets | triangles/bones/body cost per LOD | set after the Phase 0 measurements, not before (no external number found, H11) |
 | D13 | Headline: motion-capture or purchased animation packs | use / don't | consider packs only with BoneMap retarget and licence check; no motion matching (A8) |
+| D14 | Which ancestries ship first | human only / human, orc, elf / more | human, orc, elf, then add; each defined by slider ranges and extra features |
+| D15 | Who designs ancestry boons and drawbacks | Sonny / items and skills designers / Dave | the items and skills designers with Dave; Sonny supplies the visual side only. Fantasy peoples only; skin tone and facial features gameplay-neutral |
+| D16 | Does body size matter in play (reach, hitbox, speed, carrying, camera height)? | cosmetic only / some effect | cosmetic only at first |
+| D17 | Changing appearance after creation | never / barber and hair only / full | hair and colours by barber or item; height and build fixed (matches DESIGN_IDEAS 9.2) |
+| D18 | Where character creation happens. **Dave 2026-10-30: at game start, pick a character (each has its own account); if none, make one.** | at first hello / a world place / menu | as Dave said: character list at start, creator when none; a later edit place for hair and colours |
+| D19 | Creator scope for version 1 | minimal (ancestry, height, build, skin, hair, face preset) / full slider set | minimal first, then grow; dice and locks from the start |
+| D20 | Characters per player and their link to the dynasty/heir idea | one / several / unlimited | several, with the dynasty design deciding how heirs inherit appearance |
+| D21 | One account per character and the identity layer | per Dave's decision; how it maps onto the IdentityProvider plan | technical lead to confirm before Phase 5; Sonny supplies only the appearance record |
 
 ## 7.5 What I would do first once Dave approves (RECOMMENDATION)
 
