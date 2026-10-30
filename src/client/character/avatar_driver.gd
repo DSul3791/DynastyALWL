@@ -96,6 +96,4 @@ static func dress(avatar, items) -> void:
 
 	var colors: Dictionary = outfit_colors(items.worn, items.table)
 	avatar.dress(SKIN, colors["coat"], colors["trousers"], colors["shoes"])
-	# The generated body (--generated-body) has the humanoid bone names, not the old ones the worn pieces are built on, so it skips them for now.
-	if avatar.skeleton != null and avatar.skeleton.find_bone("chest") >= 0:
-		WornSync.apply(avatar, WornSync.ids_of(items.worn, items.table), false)   # the own avatar shows in third person only, so no first-person clipping
+	WornSync.apply(avatar, WornSync.ids_of(items.worn, items.table), false)   # the own avatar shows in third person only, so no first-person clipping (worn_look.gd maps the old bone names to the generated body)
