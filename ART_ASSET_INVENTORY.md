@@ -13,8 +13,8 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 
 | Category | 0 | 1 | 2 | 3 | 4 | Total |
 |---|---|---|---|---|---|---|
-| 1 Trees | 0 | 0 | 5 | 20 | 0 | 25 |
-| 2 Shrubs and bushes | 0 | 0 | 20 | 6 | 0 | 26 |
+| 1 Trees | 0 | 0 | 0 | 25 | 0 | 25 |
+| 2 Shrubs and bushes | 0 | 0 | 19 | 7 | 0 | 26 |
 | 3 Herbs, flowers and low berries | 0 | 0 | 50 | 0 | 0 | 50 |
 | 4 Ferns, grasses and reeds | 0 | 0 | 16 | 0 | 0 | 16 |
 | 5 Fungi | 0 | 0 | 11 | 0 | 0 | 11 |
@@ -22,22 +22,22 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 7 Grass cover, litter and painted textures | 0 | 0 | 22 | 4 | 0 | 26 |
 | 8 Terrain surface and ground materials | 81 | 0 | 28 | 0 | 0 | 109 |
 | 9 Water, sky, weather and light | 2 | 1 | 11 | 10 | 0 | 24 |
-| 10 Items: raw materials, wood and crafted parts | 0 | 8 | 79 | 0 | 0 | 87 |
-| 11 Items: gathered plant parts and foraged goods | 0 | 18 | 151 | 5 | 0 | 174 |
+| 10 Items: raw materials, wood and crafted parts | 0 | 0 | 87 | 0 | 0 | 87 |
+| 11 Items: gathered plant parts and foraged goods | 0 | 11 | 158 | 5 | 0 | 174 |
 | 12 Items: food, drink and medicine | 0 | 9 | 28 | 0 | 0 | 37 |
-| 13 Items: tools, weapons and ammunition | 1 | 1 | 7 | 24 | 0 | 33 |
-| 14 Items: containers, coins, clothing and gear | 0 | 6 | 12 | 0 | 0 | 18 |
-| 15 Items: placeable kits | 0 | 5 | 28 | 2 | 0 | 35 |
-| 16 Placed structures: shelter, storage, fires and traps | 0 | 1 | 5 | 7 | 0 | 13 |
+| 13 Items: tools, weapons and ammunition | 1 | 0 | 8 | 24 | 0 | 33 |
+| 14 Items: containers, coins, clothing and gear | 0 | 1 | 17 | 0 | 0 | 18 |
+| 15 Items: placeable kits | 0 | 4 | 29 | 2 | 0 | 35 |
+| 16 Placed structures: shelter, storage, fires and traps | 0 | 0 | 6 | 7 | 0 | 13 |
 | 17 Placed structures: building pieces | 0 | 3 | 27 | 0 | 0 | 30 |
-| 18 Stations and furniture | 0 | 2 | 7 | 4 | 0 | 13 |
+| 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
 | 19 Creatures, animals and NPCs | 4 | 0 | 10 | 6 | 0 | 20 |
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **60** | **584** | **109** | **0** | **843** |
+| **All categories** | **90** | **35** | **603** | **115** | **0** | **843** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 60, stage 2 571, stage 3 109.
+Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 35, stage 2 590, stage 3 115.
 
 Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirmed 60, unused builders 12.
 
@@ -71,7 +71,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 1 Trees
 
-25 entries. Stages: 5 x stage 2, 20 x stage 3.
+25 entries. Stages: 25 x stage 3.
 
 
 ### kind tree (25)
@@ -85,17 +85,17 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Spruce | spruce tree, 28 to 48 m tall | data/tables/flora.json id 4 (spruce); built by src/flora/tree_builder.gd | built in code, _spruce, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Alder | alder tree, 8 to 18 m tall | data/tables/flora.json id 5 (alder); built by src/flora/tree_builder.gd | built in code, _alder, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Willow | willow tree, 5 to 16 m tall | data/tables/flora.json id 6 (willow); built by src/flora/tree_builder.gd | built in code, _willow, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
-| Coconut palm | coconut_palm tree, 10 to 22 m tall | data/tables/flora.json id 7 (coconut_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 2 | stage-1 trees pass: curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); offline preview render checked (shape only) |
-| Tropical hardwood | tropical_hardwood tree, 22 to 36 m tall | data/tables/flora.json id 8 (tropical_hardwood); built by src/flora/tree_builder.gd | built in code, _tropical_hardwood, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125); checked in offline preview renders (shape only, no game lighting/tint) |
-| Acacia | acacia tree, 6 to 12 m tall | data/tables/flora.json id 9 (acacia); built by src/flora/tree_builder.gd | built in code, _acacia, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125); checked in offline preview renders (shape only, no game lighting/tint) |
-| Mangrove | mangrove tree, 5 to 12 m tall | data/tables/flora.json id 10 (mangrove); built by src/flora/tree_builder.gd | built in code, _mangrove, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125); checked in offline preview renders (shape only, no game lighting/tint) |
+| Coconut palm | coconut_palm tree, 10 to 22 m tall | data/tables/flora.json id 7 (coconut_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 3 | curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); seen in the real game (art/CRITIQUES/trees_2026-10-30): reads as a palm, fronds thin (severity 1 open) |
+| Tropical hardwood | tropical_hardwood tree, 22 to 36 m tall | data/tables/flora.json id 8 (tropical_hardwood); built by src/flora/tree_builder.gd | built in code, _tropical_hardwood, 4 variants, near/mid/far models plus impostor | 3 | new species builder; seen in the real game with the look rig, fixed after art/CRITIQUES/trees_2026-10-30 (severity 2 flaws fixed, severity 1 open) |
+| Acacia | acacia tree, 6 to 12 m tall | data/tables/flora.json id 9 (acacia); built by src/flora/tree_builder.gd | built in code, _acacia, 4 variants, near/mid/far models plus impostor | 3 | new species builder; seen in the real game with the look rig, fixed after art/CRITIQUES/trees_2026-10-30 (severity 2 flaws fixed, severity 1 open) |
+| Mangrove | mangrove tree, 5 to 12 m tall | data/tables/flora.json id 10 (mangrove); built by src/flora/tree_builder.gd | built in code, _mangrove, 4 variants, near/mid/far models plus impostor | 3 | new species builder; seen in the real game with the look rig, fixed after art/CRITIQUES/trees_2026-10-30 (severity 2 flaws fixed, severity 1 open) |
 | Rowan | rowan tree, 6 to 14 m tall | data/tables/flora.json id 35 (rowan); built by src/flora/tree_builder.gd | built in code, _rowan, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Crab apple | wild_apple tree, 4 to 10 m tall | data/tables/flora.json id 40 (wild_apple); built by src/flora/tree_builder.gd | built in code, _wild_apple, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Wild pear | wild_pear tree, 4 to 15 m tall | data/tables/flora.json id 41 (wild_pear); built by src/flora/tree_builder.gd | built in code, _wild_apple (pear flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Wild cherry | wild_cherry tree, 4 to 18 m tall | data/tables/flora.json id 42 (wild_cherry); built by src/flora/tree_builder.gd | built in code, _wild_apple (cherry flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Sweet chestnut | sweet_chestnut tree, 5 to 24 m tall | data/tables/flora.json id 43 (sweet_chestnut); built by src/flora/tree_builder.gd | built in code, _chestnut, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Walnut | walnut tree, 5 to 22 m tall | data/tables/flora.json id 44 (walnut); built by src/flora/tree_builder.gd | built in code, _chestnut (walnut flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
-| Date palm | date_palm tree, 12 to 22 m tall | data/tables/flora.json id 81 (date_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 2 | stage-1 trees pass: curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); offline preview render checked (shape only) |
+| Date palm | date_palm tree, 12 to 22 m tall | data/tables/flora.json id 81 (date_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 3 | curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); seen in the real game (art/CRITIQUES/trees_2026-10-30): reads as a palm, fronds thin (severity 1 open) |
 | Mirrorbark | mirrorbark tree, 4 to 20 m tall fantasy species | data/tables/flora.json id 89 (mirrorbark); built by src/flora/tree_builder.gd | built in code, _mirrorbark, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
 | Wardpine | wardpine tree, 18 to 36 m tall fantasy species | data/tables/flora.json id 92 (wardpine); built by src/flora/tree_builder.gd | built in code, _wardpine, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
 | Hearthwood | hearthwood tree, 5 to 26 m tall fantasy species | data/tables/flora.json id 113 (hearthwood); built by src/flora/tree_builder.gd | built in code, _hearthwood, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
@@ -106,7 +106,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 2 Shrubs and bushes
 
-26 entries. Stages: 20 x stage 2, 6 x stage 3.
+26 entries. Stages: 19 x stage 2, 7 x stage 3.
 
 
 ### berry and thorn shrubs (6)
@@ -153,7 +153,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Wild banana | wild_banana, 3 to 6 m tall | data/tables/flora.json id 80 (wild_banana); built by src/flora/tree_builder.gd | built in code, _palm (banana look: soft pseudostem, broad leaves, hanging bunch) | 2 | stage-1 trees pass; offline preview render checked (shape only) |
+| Wild banana | wild_banana, 3 to 6 m tall | data/tables/flora.json id 80 (wild_banana); built by src/flora/tree_builder.gd | built in code, _palm (banana look: soft pseudostem, broad leaves, hanging bunch) | 3 | seen in the real game (art/CRITIQUES/trees_2026-10-30): reads as a banana plant; bunch tiny (severity 1 open) |
 
 ## 3 Herbs, flowers and low berries
 
@@ -621,7 +621,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 10 Items: raw materials, wood and crafted parts
 
-87 entries. Stages: 8 x stage 1, 79 x stage 2.
+87 entries. Stages: 87 x stage 2.
 
 
 ### raw and crafted materials (36)
@@ -644,24 +644,24 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Hide | A raw animal skin. | data/items/items.json item hide (#43) | BasicLook.mesh_for -> shape "hide" (data/items/looks.json), colour #8a6a4a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "hide" is 10 lines: a recognisable multi-part shape [future] |
 | Rope | Twisted twine, strong enough to haul and to lash a frame. | data/items/items.json item rope (#44) | BasicLook.mesh_for -> shape "coil" (data/items/looks.json), colour #a98f52; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coil" is 5 lines: a recognisable multi-part shape |
 | Bone | A cleaned animal bone. | data/items/items.json item bone (#48) | BasicLook.mesh_for -> shape "bone" (data/items/looks.json), colour #b3a98f; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bone" is 6 lines: a recognisable multi-part shape [future] |
-| Rotten food | Food that has gone bad. Do not eat it. | data/items/items.json item rotten_food (#55) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #4f5a2c; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
+| Rotten food | Food that has gone bad. Do not eat it. | data/items/items.json item rotten_food (#55) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #4f5a2c; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
 | Sinew | Tough strands from an animal's legs. Strong sewing thread when dry. | data/items/items.json item sinew (#70) | BasicLook.mesh_for -> shape "bundle" (data/items/looks.json), colour #d0b898; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bundle" is 10 lines: a recognisable multi-part shape [future] |
 | Animal fat | White fat for torches, cooking and waterproofing. | data/items/items.json item animal_fat (#71) | BasicLook.mesh_for -> shape "chunk" (data/items/looks.json), colour #f1ead2; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "chunk" is 7 lines: a recognisable multi-part shape [future] |
 | Feather | A feather for fletching and stuffing. | data/items/items.json item feather (#72) | BasicLook.mesh_for -> shape "feather" (data/items/looks.json), colour #b9b4a8; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "feather" is 7 lines: a recognisable multi-part shape [future] |
-| Stone block | A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar. | data/items/items.json item cut_stone_block (#208) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #8a8780; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "block" is only 4 lines: one to three primitives in one colour |
-| Brick | A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar. | data/items/items.json item brick (#209) | BasicLook.mesh_for -> shape "brick" (data/items/looks.json), colour #a8452e; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "brick" is only 4 lines: one to three primitives in one colour |
-| Mortar | A bucketful of sand and clay paste that binds stone blocks and bricks. | data/items/items.json item mortar (#210) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #a89c85; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
+| Stone block | A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar. | data/items/items.json item cut_stone_block (#208) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #8a8780; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "block" is 7 lines: a recognisable multi-part shape |
+| Brick | A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar. | data/items/items.json item brick (#209) | BasicLook.mesh_for -> shape "brick" (data/items/looks.json), colour #a8452e; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "brick" is 6 lines: a recognisable multi-part shape |
+| Mortar | A bucketful of sand and clay paste that binds stone blocks and bricks. | data/items/items.json item mortar (#210) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #a89c85; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
 | Rough plank | A plank split from a log: rough, smooth on one side, bark on the other. | data/items/items.json item rough_plank (#226) | BasicLook.mesh_for -> shape "planks" (data/items/looks.json), colour #a8875a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "planks" is 9 lines: a recognisable multi-part shape |
 | Fine board | A smooth board planed from sawn lumber. For fine woodwork. | data/items/items.json item fine_board (#227) | BasicLook.mesh_for -> shape "planks" (data/items/looks.json), colour #d4b57a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "planks" is 9 lines: a recognisable multi-part shape |
-| Nails | Iron nails, bought and used by the handful. | data/items/items.json item nails (#228) | BasicLook.mesh_for -> shape "needle" (data/items/looks.json), colour #5e6166; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "needle" is only 2 lines: one to three primitives in one colour |
+| Nails | Iron nails, bought and used by the handful. | data/items/items.json item nails (#228) | BasicLook.mesh_for -> shape "needle" (data/items/looks.json), colour #5e6166; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "needle" is 5 lines: a recognisable multi-part shape |
 | Cobblestone | A rounded stone, dressed to lay in a wall or a floor. | data/items/items.json item cobblestone (#229) | BasicLook.mesh_for -> shape "chunk" (data/items/looks.json), colour #8b8982; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "chunk" is 7 lines: a recognisable multi-part shape |
 | Stone shingle | A thin flat slab of stone for a roof. | data/items/items.json item stone_shingle (#230) | BasicLook.mesh_for -> shape "chunk" (data/items/looks.json), colour #6d7076; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "chunk" is 7 lines: a recognisable multi-part shape |
-| Tar | Thick black tar, boiled down. Seals a flat roof and soaks logs against rot. | data/items/items.json item tar (#231) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #1c1814; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
+| Tar | Thick black tar, boiled down. Seals a flat roof and soaks logs against rot. | data/items/items.json item tar (#231) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #1c1814; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
 | Hinges | A pair of iron hinges for a door. | data/items/items.json item hinges (#232) | BasicLook.mesh_for -> shape "ingot" (data/items/looks.json), colour #4f5359; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "ingot" is 5 lines: a recognisable multi-part shape |
 | Wooden pin | A hardwood pin or dowel that joins logs and beams without iron. | data/items/items.json item wooden_pin (#233) | BasicLook.mesh_for -> shape "rod" (data/items/looks.json), colour #a88255; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "rod" is 36 lines: a recognisable multi-part shape |
-| Wooden block | A short round of log, about 30 cm long. Split it on a chopping block. | data/items/items.json item wooden_block (#234) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #a67c4a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "block" is only 4 lines: one to three primitives in one colour |
+| Wooden block | A short round of log, about 30 cm long. Split it on a chopping block. | data/items/items.json item wooden_block (#234) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #a67c4a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "block" is 7 lines: a recognisable multi-part shape |
 | Softwood firewood | Split pine, spruce or fir. It catches fast and burns out quick. | data/items/items.json item firewood_soft (#236) | BasicLook.mesh_for -> shape "bundle" (data/items/looks.json), colour #9a7a4a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bundle" is 10 lines: a recognisable multi-part shape |
-| Softwood block | A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block. | data/items/items.json item wooden_block_soft (#237) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #b8905a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "block" is only 4 lines: one to three primitives in one colour |
+| Softwood block | A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block. | data/items/items.json item wooden_block_soft (#237) | BasicLook.mesh_for -> shape "block" (data/items/looks.json), colour #b8905a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "block" is 7 lines: a recognisable multi-part shape |
 | Saw blades | A pair of iron saw blades for a sawmill frame. | data/items/items.json item saw_blade (#238) | BasicLook.mesh_for -> shape "bar" (data/items/looks.json), colour #8f9296; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "bar" is 6 lines: a recognisable multi-part shape [future] |
 | Water wheel | A wooden wheel with paddles. It turns where running water pushes it. | data/items/items.json item water_wheel (#239) | BasicLook.mesh_for -> shape "coil" (data/items/looks.json), colour #7a5a36; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coil" is 5 lines: a recognisable multi-part shape |
 
@@ -723,7 +723,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 11 Items: gathered plant parts and foraged goods
 
-174 entries. Stages: 18 x stage 1, 151 x stage 2, 5 x stage 3.
+174 entries. Stages: 11 x stage 1, 158 x stage 2, 5 x stage 3.
 
 
 ### gathered: nut (7)
@@ -918,15 +918,15 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Chanterelles | Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods. | data/items/gathered.json item chanterelles (#1021) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #e0a028; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Cinderfoot caps | Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified. | data/items/gathered.json item cinderfoot_caps (#1026) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a2a1a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Fly agaric caps | Bright red caps with white flecks. Poisonous: do not eat. | data/items/gathered.json item fly_agaric_caps (#1053) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #d02a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Lumencap caps | Pale mushroom caps that glow softly in the dark. Not for eating until identified. | data/items/gathered.json item lumencap_caps (#1086) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #7ad8c0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Mirrorcap caps | Shiny silver-grey mushroom caps. Not for eating until identified. | data/items/gathered.json item mirrorcap_caps (#1093) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #c4ccd0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Morels | Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw. | data/items/gathered.json item morels (#1094) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Porcini | Fat brown-capped mushrooms with a thick pale stem. A fine meal. | data/items/gathered.json item porcini (#1107) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a5a34; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Puffball | A round white mushroom the size of a head. Sliced and fried; spoils in a day. | data/items/gathered.json item puffball (#1110) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #f0ead8; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
-| Rimecap caps | Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified. | data/items/gathered.json item rimecap_caps (#1116) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #a8d4e4; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -58 lines: one to three primitives in one colour |
+| Chanterelles | Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods. | data/items/gathered.json item chanterelles (#1021) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #e0a028; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Cinderfoot caps | Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified. | data/items/gathered.json item cinderfoot_caps (#1026) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a2a1a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Fly agaric caps | Bright red caps with white flecks. Poisonous: do not eat. | data/items/gathered.json item fly_agaric_caps (#1053) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #d02a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Lumencap caps | Pale mushroom caps that glow softly in the dark. Not for eating until identified. | data/items/gathered.json item lumencap_caps (#1086) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #7ad8c0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Mirrorcap caps | Shiny silver-grey mushroom caps. Not for eating until identified. | data/items/gathered.json item mirrorcap_caps (#1093) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #c4ccd0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Morels | Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw. | data/items/gathered.json item morels (#1094) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Porcini | Fat brown-capped mushrooms with a thick pale stem. A fine meal. | data/items/gathered.json item porcini (#1107) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a5a34; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Puffball | A round white mushroom the size of a head. Sliced and fried; spoils in a day. | data/items/gathered.json item puffball (#1110) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #f0ead8; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Rimecap caps | Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified. | data/items/gathered.json item rimecap_caps (#1116) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #a8d4e4; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
 
 ### gathered: beams (12)
 
@@ -963,13 +963,13 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Echo moss | Springy grey-green moss that seems to muffle sound around it. Grows in damp hollows. | data/items/gathered.json item echo_moss (#1042) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #6a8a8a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Gloomthistle down | Dark grey thistle fluff, soft and light. Fills pillows and burns quick. | data/items/gathered.json item gloomthistle_down (#1059) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #cfc8d8; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Pine tar | Thick black tar boiled from pine. Seals roofs and soaks wood against rot. | data/items/gathered.json item pine_tar (#1104) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #2a2018; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Potash | Grey ash of salt-bush, rich in lye. Used for soap and glass. | data/items/gathered.json item potash (#1108) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #c8c4b8; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Staunchmoss | Soft spongy moss that stops bleeding when packed on a wound. | data/items/gathered.json item staunchmoss (#1135) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #4f7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Stuffing | Soft fluff for filling a bed or a pack. | data/items/gathered.json item stuffing (#1141) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #e8e0d0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
-| Tinder | Fine dry stuff that takes a spark. | data/items/gathered.json item tinder (#1153) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #a89878; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
+| Echo moss | Springy grey-green moss that seems to muffle sound around it. Grows in damp hollows. | data/items/gathered.json item echo_moss (#1042) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #6a8a8a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Gloomthistle down | Dark grey thistle fluff, soft and light. Fills pillows and burns quick. | data/items/gathered.json item gloomthistle_down (#1059) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #cfc8d8; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Pine tar | Thick black tar boiled from pine. Seals roofs and soaks wood against rot. | data/items/gathered.json item pine_tar (#1104) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #2a2018; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Potash | Grey ash of salt-bush, rich in lye. Used for soap and glass. | data/items/gathered.json item potash (#1108) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #c8c4b8; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Staunchmoss | Soft spongy moss that stops bleeding when packed on a wound. | data/items/gathered.json item staunchmoss (#1135) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #4f7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Stuffing | Soft fluff for filling a bed or a pack. | data/items/gathered.json item stuffing (#1141) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #e8e0d0; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
+| Tinder | Fine dry stuff that takes a spark. | data/items/gathered.json item tinder (#1153) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #a89878; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
 
 ### gathered: grit (4)
 
@@ -1034,7 +1034,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 13 Items: tools, weapons and ammunition
 
-33 entries. Stages: 1 x stage 0, 1 x stage 1, 7 x stage 2, 24 x stage 3.
+33 entries. Stages: 1 x stage 0, 8 x stage 2, 24 x stage 3.
 
 
 ### tools (28)
@@ -1050,7 +1050,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Stone spade | A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer. | data/items/items.json item stone_spade (#45) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #7d7a74; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
 | Iron spade | A spade with an iron blade. | data/items/items.json item iron_spade (#46) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #6c6f75; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
 | Steel spade | A spade with a steel blade. | data/items/items.json item steel_spade (#47) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #9aa3ad; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me [future] |
-| Sewing needle | A needle carved from bone. For sewing hide and cloth. | data/items/items.json item sewing_needle (#49) | BasicLook.mesh_for -> shape "needle" (data/items/looks.json), colour #c8c8cc; held: tool/weapon model in held_item.gd | 1 | BasicLook shape "needle" is only 2 lines: one to three primitives in one colour [future] |
+| Sewing needle | A needle carved from bone. For sewing hide and cloth. | data/items/items.json item sewing_needle (#49) | BasicLook.mesh_for -> shape "needle" (data/items/looks.json), colour #c8c8cc; held: tool/weapon model in held_item.gd | 2 | BasicLook shape "needle" is 5 lines: a recognisable multi-part shape [future] |
 | Fishing rod | A stick with a line and a hook. Hold it and click at the water, then click again when something bites. | data/items/items.json item fishing_rod (#75) | BasicLook.mesh_for -> shape "rod" (data/items/looks.json), colour #9a9a9e; held: tool/weapon model in held_item.gd | 2 | BasicLook shape "rod" is 36 lines: a recognisable multi-part shape |
 | Shore net | A weighted twine net. Hold the left button at the water's edge for about 20 seconds. | data/items/items.json item shore_net (#260) | BasicLook.mesh_for -> shape "cloth" (data/items/looks.json), colour #a89a78; held: tool/weapon model in held_item.gd | 2 | BasicLook shape "cloth" is 7 lines: a recognisable multi-part shape |
 | Medium wooden spade | Medium spade: moves 4 pieces of ground at a time. | data/items/items.json item wooden_spade_medium (#213) | BasicLook.mesh_for -> shape "spade" (data/items/looks.json), colour #8a6a3a; held: tool/weapon model in held_item.gd | 3 | BasicLook shape "spade" is 51 lines of mesh code with its own review rounds (archived Kathleen tool-pass/weak-looks/held-pose plans; pickaxe "locked, Dave: excellent"); not seen rendered by me |
@@ -1087,7 +1087,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 14 Items: containers, coins, clothing and gear
 
-18 entries. Stages: 6 x stage 1, 12 x stage 2.
+18 entries. Stages: 1 x stage 1, 17 x stage 2.
 
 
 ### containers (4)
@@ -1097,7 +1097,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Wooden bowl | A bowl hollowed from a bolt of wood. Carries a little water. | data/items/items.json item wooden_bowl (#39) | BasicLook.mesh_for -> shape "bowl" (data/items/looks.json), colour #9a6b38; held: plain drum (held_item._make_container_model) | 1 | BasicLook shape "bowl" is only 2 lines: one to three primitives in one colour |
 | Clay pot | A fired pot of clay. Holds three litres of water. | data/items/items.json item clay_pot (#40) | BasicLook.mesh_for -> shape "pot" (data/items/looks.json), colour #ff7f11; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "pot" is 8 lines: a recognisable multi-part shape |
 | Bucket | A wooden bucket bound with cord. Holds eight litres of water. | data/items/items.json item bucket (#41) | BasicLook.mesh_for -> shape "bucket" (data/items/looks.json), colour #b88a50; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "bucket" is 13 lines: a recognisable multi-part shape |
-| Waterskin | A skin bag sewn shut. Holds a day's drink and little weight. | data/items/items.json item waterskin (#42) | BasicLook.mesh_for -> shape "skin" (data/items/looks.json), colour #ff4fa3; held: plain drum (held_item._make_container_model) | 1 | BasicLook shape "skin" is only 3 lines: one to three primitives in one colour [future] |
+| Waterskin | A skin bag sewn shut. Holds a day's drink and little weight. | data/items/items.json item waterskin (#42) | BasicLook.mesh_for -> shape "skin" (data/items/looks.json), colour #a0743f; held: plain drum (held_item._make_container_model) | 2 | BasicLook shape "skin" is 9 lines: a recognisable multi-part shape [future] |
 
 ### worn clothing and gear (as item) (10)
 
@@ -1118,14 +1118,14 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Copper coin | A small copper coin. The smallest money there is. | data/items/items.json item coin_copper (#96) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #b0653a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "coin" is only 3 lines: one to three primitives in one colour [future] |
-| Bronze coin | A bronze coin, worth ten copper. | data/items/items.json item coin_bronze (#97) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #9c7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "coin" is only 3 lines: one to three primitives in one colour [future] |
-| Silver coin | A silver coin, worth ten bronze. | data/items/items.json item coin_silver (#98) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #c4c8cc; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "coin" is only 3 lines: one to three primitives in one colour [future] |
-| Gold coin | A gold coin, worth ten silver. | data/items/items.json item coin_gold (#99) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #e0b83a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "coin" is only 3 lines: one to three primitives in one colour [future] |
+| Copper coin | A small copper coin. The smallest money there is. | data/items/items.json item coin_copper (#96) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #b0653a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coin" is 7 lines: a recognisable multi-part shape [future] |
+| Bronze coin | A bronze coin, worth ten copper. | data/items/items.json item coin_bronze (#97) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #9c7a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coin" is 7 lines: a recognisable multi-part shape [future] |
+| Silver coin | A silver coin, worth ten bronze. | data/items/items.json item coin_silver (#98) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #c4c8cc; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coin" is 7 lines: a recognisable multi-part shape [future] |
+| Gold coin | A gold coin, worth ten silver. | data/items/items.json item coin_gold (#99) | BasicLook.mesh_for -> shape "coin" (data/items/looks.json), colour #e0b83a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "coin" is 7 lines: a recognisable multi-part shape [future] |
 
 ## 15 Items: placeable kits
 
-35 entries. Stages: 5 x stage 1, 28 x stage 2, 2 x stage 3.
+35 entries. Stages: 4 x stage 1, 29 x stage 2, 2 x stage 3.
 
 
 ### kits and placeables (35)
@@ -1157,7 +1157,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Ladder | A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb. | data/items/items.json item ladder_kit (#211) | fallback mesh: brown box crate (placeable/tool/weapon) or a small tinted lump; held: kit bundle (held_item._make_kit_model) | 1 | no looks.json entry: falls back to the default in inventory_view._mesh_for |
 | Sawmill | A saw frame on a tall foundation, driven by a water wheel in running water. | data/items/items.json item saw_mill_kit (#240) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Woodworking table | A heavy table with vices and clamps for fine woodwork. Set it down in a workshop. | data/items/items.json item woodworking_table_kit (#242) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7a5430; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
-| Rock pile | A heap of 45 stones. Set it down to store rock; pick it up to carry it. | data/items/items.json item rock_pile (#235) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #7d7a74; held: kit bundle (held_item._make_kit_model) | 1 | BasicLook shape "pile" is only 4 lines: one to three primitives in one colour |
+| Rock pile | A heap of 45 stones. Set it down to store rock; pick it up to carry it. | data/items/items.json item rock_pile (#235) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #7d7a74; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |
 | Rough bed | A heap of thatch bound with twine and stakes. Set it down under a roof. | data/items/items.json item rough_bed_kit (#250) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #c9bb7a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Thatch wall | Bundled thatch on a frame of sticks. Set it up to close in a shelter. | data/items/items.json item thatch_wall_kit (#252) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #b8a46a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Campfire pot | A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood. | data/items/items.json item campfire_pot_kit (#254) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #4a3a2a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
@@ -1170,7 +1170,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 16 Placed structures: shelter, storage, fires and traps
 
-13 entries. Stages: 1 x stage 1, 5 x stage 2, 7 x stage 3.
+13 entries. Stages: 6 x stage 2, 7 x stage 3.
 
 
 ### shelter, storage, fires, traps (13)
@@ -1181,7 +1181,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Chest | structure state 6 | data/items/structures.json chest (state 6, look "chest") | built in code via building_look.gd chest() | 3 | woven wicker chest ~400 triangles (section 52) |
 | Chopping block | structure state 7 | data/items/structures.json chopping_block (state 7, look "chopping_block") | built in code via building_look.gd block() | 3 | wobbly bark block ~300 triangles (section 52); held model also built |
 | Plank chest | structure state 6 | data/items/structures.json plank_chest (state 6, look "chest") | built in code via building_look.gd chest() | 3 | same woven chest model as chest (no plank look of its own) |
-| Remains | structure state 11 | data/items/structures.json remains (state 11, look "remains") | built in code via inventory_view._make_remains | 1 | box-built remains (inventory_view._make_remains, BoxMesh) |
+| Remains | structure state 11 | data/items/structures.json remains (state 11, look "remains") | built in code via building_look.gd remains() | 2 | redrawn: slumped pack, bones, ribs and a rag, four age stages (offline render checked) |
 | Carcass | structure state 19 | data/items/structures.json carcass (state 19, look "carcass") | built in code via carcass_look.gd | 2 | species carcass, see creatures |
 | Campfire pot | structure state 38 | data/items/structures.json campfire_pot (state 38, look "tripod_pot") | built in code via piece_look.gd tripod_pot() | 2 | piece_look.tripod_pot: tripod, pot, chain |
 | Clay hearth | structure state 39 | data/items/structures.json clay_hearth (state 39, look "clay_hearth") | built in code via piece_look.gd clay_hearth() | 2 | piece_look.clay_hearth |
@@ -1243,7 +1243,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 18 Stations and furniture
 
-13 entries. Stages: 2 x stage 1, 7 x stage 2, 4 x stage 3.
+13 entries. Stages: 9 x stage 2, 4 x stage 3.
 
 
 ### stations and furniture (13)
@@ -1251,8 +1251,8 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
 | Workbench | structure state 13, tier small | data/items/structures.json workbench (state 13, look "workbench") | built in code via building_look.gd camp_bench() | 2 | BuildingLook.camp_bench (27 lines of mesh) |
-| Tool rack | structure state 14 | data/items/structures.json tool_rack (state 14, look "tool_rack") | built in code via inventory_view._make_rack | 1 | BoxMesh bars on a beam built inline (inventory_view._make_rack) |
-| Vice | structure state 15 | data/items/structures.json vice (state 15, look "vice") | built in code via inventory_view._make_vice | 1 | a few BoxMesh pieces built inline (inventory_view._make_vice) |
+| Tool rack | structure state 14 | data/items/structures.json tool_rack (state 14, look "tool_rack") | built in code via building_look.gd tool_rack() | 2 | redrawn: split-log posts, rails, pegs, hanging axe, mallet and saw (offline render checked) |
+| Vice | structure state 15 | data/items/structures.json vice (state 15, look "vice") | built in code via building_look.gd vice() | 2 | redrawn: stump bench with jaws, screw and cross handle (offline render checked) |
 | Log workbench | structure state 16, tier medium | data/items/structures.json log_workbench (state 16, look "log_workbench") | built in code via building_look.gd log_bench() | 2 | BuildingLook.log_bench: hewn top on trestles, peg rack, vice |
 | Saw mill | structure state 34, tier large | data/items/structures.json saw_mill (state 34, look "saw_mill") | built in code via piece_look.gd saw_mill() | 2 | piece_look.saw_mill with water wheel |
 | Woodworking table | structure state 35, tier small | data/items/structures.json woodworking_table (state 35, look "woodworking_table") | built in code via piece_look.gd woodworking_table() | 2 | piece_look.woodworking_table |
