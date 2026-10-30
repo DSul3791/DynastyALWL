@@ -52,6 +52,7 @@ Goal: the player character should look and move like a natural, readable person:
 - `art/character_proto/motion/strips.png`: walk and panic strips on two bodies.
 - `art/character_proto/hands/hands_and_faces.png`: hand poses (open, fist, point, claw) and eye and brow expressions.
 - `art/character_proto/worn/worn_on_generated_fitted.png`: the same worn pieces **fitted to each body's proportions** (Plan 15): wider on the stocky body, longer on the long-legged one.
+- `art/character_proto/hem/hem_band.png`: the darker band at hems, cuffs, collar and waist, off and on (subtle at this size; not yet seen in the running game).
 - `art/character_proto/worn/worn_on_generated.png`: the worn clothing pieces on generated bodies (columns: none; cloak, hood, boots; pack, leggings, mittens; grass skirt, sandals, quiver; top row a lean body from the front-left, bottom row a stocky body from the back-left).
 - `art/character_proto/converted/old_clips_on_generated.png`: the old clips (idle, walk, jog, run, crouch, swing, jab, throw) on two generated bodies.
 
@@ -928,8 +929,14 @@ Three separate mechanisms; all are in `src/client/character/` and `src/client/wo
 - **Tunic and trousers on the generated body are drawn by the body mesh, not by separate pieces.** Kathleen's new builders `tunic`, `trousers` and `gloves` (on her branch `kathleen-art`) draw a sleeved shirt, sewn trousers and fingered gloves on the OLD ragdoll and NPC bodies. On the generated body a body can list builders it draws itself: `worn_look.gd` skips items whose builder is in the rig meta `worn_skip_builders` (the generated body sets `["tunic", "trousers"]`), so nothing is doubled. The item colours still reach the body through `dress` (coat and trousers colours from the item, today `#7a5a3c` and `#6b4c31`).
 - **Measures for builders that fit themselves:** `Generator.measures(genome)` (also the rig meta `worn_measures`) gives half widths and depths, limb radii and lengths, hand and finger sizes in metres; a part with `"fitted": true` is not scaled again by `worn_fit`. Kathleen can use it later; today nothing needs it.
 - **Gloves with fingers on the generated body:** the finger bones exist: `LeftThumbProximal`, `LeftThumbDistal`, `LeftIndexProximal`, `LeftIndexDistal`, `LeftMiddleProximal`, `LeftMiddleDistal`, `LeftLittleProximal`, `LeftLittleDistal`, and the same with `Right`. Their rest offsets are readable from the skeleton. Not built: a `gloves_fingers` builder; until then gloves fall back to the mitten through the existing mapping.
-- **A darker band at hem, cuffs and waist:** asked for by Kathleen as the one cue her builders have; **not built** (the body shader has no hem geometry; it would be a vertex colour darkening near the end of each cloth part). Possible later.
+- **A darker band at hem, cuffs and waist:** built, see 8.6u.
 - **Check:** `tools/check_worn_generated.gd`: 114 cases, 0 failures (the skip list, the measures and the earlier checks).
+
+## 8.6u Darker band at hems, cuffs, collar and waist (asked for by Kathleen, then the moderator)
+
+- **What it does:** every cloth vertex of the generated body (tunic, trousers, boots) now knows how far it lies from the edge of its cloth: in the generator, the distance to the nearest *different* material (skin at a sleeve end or collar, the tunic at the waist, the boot at a trouser cuff) minus its own, over 2 cm (`HEM_REACH`). The number rides in the fraction of the vertex alpha (the whole part still decodes the material id). The body shader multiplies the colour by `hem_dark` (0.7 at the very edge) fading to 1.0 inside. Set `hem_dark` to 1.0 to turn it off.
+- **Limits (stated plainly):** the band is about one voxel wide (3 to 4 cm grid), so it is a soft dark edge, not a stitched hem. It costs nothing at run time (no new geometry). The mesh cache and the threaded build carry it unchanged.
+- **Tested how:** `tools/check_hem_band.gd` (headless, 16 cases): each material has both edge and interior vertices on all four presets and still decodes from alpha. The earlier checks still pass (244, 5,124, 114, 781, 24). Picture, seen by me on this PC in a bare scene (not the game): `art/character_proto/hem/hem_band.png` (columns: band off, on, on from the back; rows: average and stocky). At this size the effect is subtle; **a look at it in the running game is still needed.**
 
 ## 8.7 What was tested how (for Dave's review)
 

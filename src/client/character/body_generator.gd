@@ -29,6 +29,7 @@ const MAT_LIPS := 2
 const MAT_TUNIC := 3
 const MAT_TROUSERS := 4
 const MAT_BOOTS := 5
+const HEM_REACH := 0.02      # how far (m) from a cloth edge the hem and cuff darkening fades out
 const SMOOTH_K := 0.035                # smooth union band, metres
 const WEIGHT_FALLOFF := 0.03           # skin weight falloff with distance to a primitive, metres
 const WEIGHT_PASSES := 2
@@ -579,6 +580,7 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 	for i in range(count):
 		var best: float = 1000.0
 		var best_mat: int = MAT_SKIN
+		var mat_best: Dictionary = {}
 		var gp: Array = group_prims[vgroup[i]]
 		var dists: PackedFloat32Array = PackedFloat32Array()
 		dists.resize(gp.size())
@@ -593,6 +595,8 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			# Hair, lips and cloth win a tie with the skin under them.
 			var shown: float = d - (0.0 if mat == MAT_SKIN else 0.006)
 
+			mat_best[mat] = minf(float(mat_best.get(mat, 1000.0)), shown)
+
 			if shown < best:
 				best = shown
 				best_mat = mat
@@ -601,7 +605,20 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			w[i * bone_count + int(q["bone"])] += exp(-maxf(d, 0.0) / fall)
 
 		var shown_color: Color = _material_color(best_mat, g)
-		shown_color.a = (float(best_mat) + 0.5) / 8.0       # the material id rides in alpha (opaque materials ignore it); GeneratedBody uses it to recolour
+		# The material id rides in alpha (opaque materials ignore it); GeneratedBody uses it to recolour. The fraction of alpha carries how far inside its cloth a
+		# vertex lies (0.05 at a hem, cuff or collar edge where the skin is nearly as close as the cloth, 0.95 well inside); the shader darkens the low end.
+		var inside: float = 0.5
+
+		if best_mat >= MAT_TUNIC:
+			var other: float = 1000.0     # the nearest different material: skin at a hem, the tunic at a waist, the boot at a trouser cuff
+
+			for m in mat_best:
+				if int(m) != best_mat:
+					other = minf(other, float(mat_best[m]))
+
+			inside = clampf((other - best) / HEM_REACH, 0.0, 1.0)
+
+		shown_color.a = (float(best_mat) + 0.05 + 0.9 * inside) / 8.0
 		colors[i] = shown_color
 
 	var neighbours: Array = []

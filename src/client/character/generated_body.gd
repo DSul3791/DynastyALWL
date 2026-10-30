@@ -18,7 +18,8 @@ uniform vec3 lips_color : source_color = vec3(0.7, 0.4, 0.38);
 uniform vec3 tunic_color : source_color = vec3(0.4, 0.34, 0.28);
 uniform vec3 trouser_color : source_color = vec3(0.25, 0.22, 0.2);
 uniform vec3 boot_color : source_color = vec3(0.14, 0.11, 0.09);
-uniform float show_cloth = 1.0;       // 0: the tunic, trousers and boots regions show skin (a bare body, for fittings and the creator)
+uniform float hem_dark = 0.7;         // colour factor at the very edge of a piece of cloth (1.0 turns the band off)
+uniform float show_cloth = 1.0;      // 0: the tunic, trousers and boots regions show skin (a bare body, for fittings and the creator)
 void fragment() {
 	int id = int(floor(COLOR.a * 8.0));
 	vec3 c = skin_color;
@@ -28,6 +29,11 @@ void fragment() {
 	else if (id == 4) { c = trouser_color; }
 	else if (id == 5) { c = boot_color; }
 	if (show_cloth < 0.5 && id >= 3) { c = skin_color; }
+	else if (id >= 3) {
+		// the fraction of alpha says how far inside its cloth the surface is: darker at hems, cuffs and collars
+		float inside = clamp((fract(COLOR.a * 8.0) - 0.05) / 0.9, 0.0, 1.0);
+		c *= mix(hem_dark, 1.0, smoothstep(0.0, 1.0, inside));
+	}
 	ALBEDO = c;
 	ROUGHNESS = 0.85;
 }
