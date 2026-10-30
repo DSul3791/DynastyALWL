@@ -9,6 +9,8 @@
 # Prints: one line per test (seconds), the retry log, the slowest five, then `Test done: N pass, M fail`; exit 1 when M > 0.
 # Environment: GODOT_EXE (the Godot program, default `godot`), PYTHON (default python3). No `wait -n`: Git bash safe (xargs -P).
 cd "$(dirname "$0")/.." || exit 2
+# A fresh checkout or worktree has no import cache: classes and addons are unknown and most tests fail with misleading errors. Import once.
+if [ ! -f .godot/global_script_class_cache.cfg ]; then echo "run_tests: no .godot import cache, importing once (about 1.5 min)"; "${GODOT_EXE:-godot}" --headless --path . --import >/dev/null 2>&1; fi
 PY="${PYTHON:-python3}"
 JOBS="${GATE_JOBS:-4}"; OUT=""; FAST=""; TIMING=""; SLOW=""; SERIAL_EXTRA=""; PLAN=""
 MODE=""
