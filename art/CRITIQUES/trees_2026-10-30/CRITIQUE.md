@@ -11,6 +11,6 @@ Pictures taken with `tools/look_rig.sh --flora <species> --summer` at the spawn 
 | Wild banana | banana_v2_mid.jpg | reads as a banana plant (stout stem, big leaf rosette); bunch is tiny and hidden | 1 | open: bigger hanging bunch |
 | Coconut, date palm | palms_far.jpg, palms_mid.jpg | read as palms; fronds look thin and pale at a distance, the two crowns overlap in a tight row | 1 | open: fatter frond cards, darker tint |
 | Row of three | row_v0_overlap.jpg | the rig row is too tight for the tall trees (tropical hardwood trunk fills the frame) | n/a | use one species per run |
-| Tropical hardwood | (pending) | first look showed a very thick, blotchy trunk | 2 | trunk slimmed to 0.7 x listed width; picture pending |
+| Tropical hardwood | hardwood_v2_far.jpg | reads as a tall rainforest tree (slim bole, high dark crown); the bark spots look like leopard blotches on such a tall trunk; buttress roots barely show at this scale; the crown is mostly above the frame | 1 | trunk slimmed to 0.7 x listed width (done). open: finer bark texture for tall trunks, bigger buttress fins |
 
 Source of the method: the in-repo rig (`tools/look_rig.sh`) and the offline preview scripts I wrote in the session scratchpad (Godot SubViewport, vertex colours, leaf textures, no game tint) which were used for the first-pass shape checks only.
