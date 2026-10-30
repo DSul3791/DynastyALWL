@@ -148,7 +148,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 	_add_feeders(sim, data, generator, side, placed, rate, heads)
 	_add_hollow_springs(sim, data, flow_all, side, placed)
 	_add_edge_inflows(sim, data, flow_all, side, placed)
-	_add_lateral_inflows(sim, data, side)
+	_add_lateral_inflows(sim, data, side, placed)
 	sim.wake_all_wet()
 	return sim
 
@@ -159,7 +159,7 @@ static func build(data, rate: float, generator, seed_painted: bool = true):
 # there; that runoff (m3s_per_km2 x km2, the same rate as a head) is poured in, gathered per block of block_cells x block_cells so the spring list stays
 # short. Without it the water below a head is only what the head pours and the lower reaches run dry or spill (GENERATOR_NOTES.md, live water report).
 # The tile's stored flow map is not used: it is a log scale in 6 percent steps, too coarse to tell one cell's runoff from the next.
-static func _add_lateral_inflows(sim, data, side: int) -> int:
+static func _add_lateral_inflows(sim, data, side: int, placed: Array) -> int:
 	var cfg: Dictionary = rules().get("lateral", {})
 
 	if not bool(cfg.get("enabled", false)):
@@ -210,8 +210,22 @@ static func _add_lateral_inflows(sim, data, side: int) -> int:
 	var added: int = 0
 	var total: float = 0.0
 
+	var pond_reach: float = float(cfg.get("pond_served_cells", 20))   # a lake with a head spring within this many cells keeps only that spring
+
 	for key in sums:
 		var k: int = spots[key]
+
+		if data.water_class[k] == LAKE:
+			var served: bool = false
+
+			for other in placed:
+				if Vector2(float(k % side) - float(other.x), float(k / side) - float(other.y)).length() < pond_reach:
+					served = true
+					break
+
+			if served:
+				continue
+
 		var q: float = float(sums[key]) * cell_km2 * per_km2
 		total += q
 		@warning_ignore("integer_division")
