@@ -11,4 +11,4 @@ Rig: `tools/look_rig.sh --pieces NAME,... --views close:...`, spawn area, 12:00 
 | Rock pile | row1_...jpg | a dark heap of rocks | in shadow; reads as a rock heap | - | none |
 | Path patch | row2_...jpg | brown packed-earth patch with edge stones | edge stones large for a 1 m patch | 1 | open |
 
-The white sphere that showed in row 1 where the remains should be was not the remains: it was a boulder lying at that spot (the real remains model is in row 2).
+The white sphere that showed in row 1 where the remains should be was most likely a boulder or pebble lying at that spot (unconfirmed): the remains model drew correctly in the second run at another spot, so the model itself is not white.
