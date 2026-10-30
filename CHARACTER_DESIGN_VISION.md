@@ -15,6 +15,24 @@ Goal: the player character should look and move like a natural, readable person:
 - Comparable games show the traps: first and third person drifting apart (Rust, Medieval Dynasty), giant state machines (Rust), rigs too crude to bend (Unturned) (Part 3, F1 to F10).
 - The research could not confirm many numbers (gait angles, proportions, budgets). So the plan treats numbers as tunable and measures on the minimum machine (Part 3.10).
 
+## Pictures for Dave (all paths in this repository, branch `sonny-character`; copies are in the shared notes folder)
+
+**In the real game** (third person, through Kathleen's look rig; the generated body is switched on with the client argument `--generated-body`; see 8.6g):
+- `art/character_proto/ingame/old_idle.jpg`: the OLD ragdoll, standing (for comparison).
+- `art/character_proto/ingame/generated_idle.jpg`: the generated body, standing.
+- `art/character_proto/ingame/generated_walk.jpg`: walking (1.4 m/s).
+- `art/character_proto/ingame/generated_jog.jpg`: jogging (3.2 m/s).
+- `art/character_proto/ingame/generated_run.jpg`: running (6.0 m/s).
+- `art/character_proto/ingame/generated_carry.jpg`: **an attempt at carrying a large log on the shoulder that did NOT work** (the log is not visible and the body plays an ordinary walk); kept so nothing is lost, see 8.6g for what it means.
+
+**Offline test pictures** (my own render scripts, bare test scene, not the game):
+- `art/character_proto/proto_rest.png`: four body types (average, broad, lean, stocky), front and side, clothed.
+- `art/character_proto/proto_bent.png`: the same four in a bend test pose (shows the skin bending at elbows, knees, shoulders).
+- `art/character_proto/voxel45/proto_rest.png`: a lower detail level (4.5 cm).
+- `art/character_proto/motion/strips.png`: walk and panic strips on two bodies.
+- `art/character_proto/hands/hands_and_faces.png`: hand poses (open, fist, point, claw) and eye and brow expressions.
+- `art/character_proto/converted/old_clips_on_generated.png`: the old clips (idle, walk, jog, run, crouch, swing, jab, throw) on two generated bodies.
+
 ## Art direction (Dave, 2026-10-30)
 Dave's words, paraphrased: realistic, but "fantasy fun realistic": older cartoons combined with a hyper-real surrounding; classic fantasy adventure picture books, or Final Fantasy without looking like Final Fantasy. Characters may look like Gaston, like Link, or like Dragon Ball characters. Broad audience, a fusion of cartoon and realism. The model does not have to be perfect: leave out detail where it is easiest and exaggerate, and let that become the style.
 
@@ -842,7 +860,7 @@ Nothing below was run inside the real game. **"Headless" means a command-line ru
 
 **A jog, also in the real game (`art/character_proto/ingame/generated_jog.jpg`, played by faking a speed of 3.2 m/s through the rig):** the converted jog clip plays on the generated body: clear stride, bent knees, arm swing, a forward lean, body and shadow moving together. Judging the feel needs motion, not a still.
 
-**Walk and run (`generated_walk.jpg` at 1.4 m/s, `generated_run.jpg` at 6.0 m/s, same view):** both play. The run picture catches the flight phase of the run clip with a forward lean and a trailing leg. One frame each, so timing and feel are not judged. **Not yet seen in the real game:** crouching (the rig does not set the stance; Kathleen offered to add an option or to use her offline `shot_node.gd`), swinging a tool, carrying a log, first-person arms (still the old model), worn clothing pieces (skipped on the new body), other players or NPCs (still the old body).
+**Walk and run (`generated_walk.jpg` at 1.4 m/s, `generated_run.jpg` at 6.0 m/s, same view):** both play. The run picture catches the flight phase of the run clip with a forward lean and a trailing leg. One frame each, so timing and feel are not judged. **Carry attempt (`generated_carry.jpg`, inconclusive):** I asked the rig to give an oak log (`--give log_oak:1`) and fake a pace of 1.1 m/s. The picture shows no log on the shoulder and an ordinary walking pose, so either the item was not given before the picture was taken, or the game did not put it on the shoulder in that setup. I do not know which; the generated body's shoulder-log code and the carry clips are only verified by the headless check (the converted `carry_idle` and `carry_walk` clips equal the old ones). It needs a retry with a longer wait or a different way to give the item, or Kathleen's help with the rig. **Not yet seen in the real game:** crouching (the rig does not set the stance; Kathleen offered to add an option or to use her offline `shot_node.gd`), swinging a tool, carrying a log, first-person arms (still the old model), worn clothing pieces (skipped on the new body), other players or NPCs (still the old body).
 
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
