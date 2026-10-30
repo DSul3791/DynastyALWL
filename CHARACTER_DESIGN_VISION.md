@@ -797,7 +797,7 @@ The rules for how the arms follow the body at rest and the camera while working 
 
 ## 8.6h Three more plans (approved by me under the moderator's pre-approval; Plan 11 has started). Plans 9 and 10 above are still open.
 
-**Plan 11. In-game look pass.** Use the look rig to see the generated body walking, jogging, running, crouching and carrying a log in the real game; compare with the old body; fix what looks wrong (clothes colours and contrast in game light, anything that clips or floats); keep a before and after set of pictures for Dave. Two pictures are done (standing and jogging, 8.6g).
+**Plan 11. In-game look pass.** Use the look rig to see the generated body walking, jogging, running, crouching and carrying a log in the real game; compare with the old body; fix what looks wrong (clothes colours and contrast in game light, anything that clips or floats); keep a before and after set of pictures for Dave. Four pictures are done (standing, walking, jogging, running; 8.6g); crouch, carry and tools are next.
 
 **Plan 12. Worn clothing on the generated body.** Make the worn pieces (cloak, hood, boots, leggings, mittens, skirt, sandals, pack) attach to the new bone names by adding a name alias (old bone name to humanoid name) so `worn_look.gd` can hang them; checked headless the way `test_worn_sync.gd` checks the old body; then a look in the game. Touches `worn_look.gd` or `worn_sync.gd` minimally, or adds an adapter, whichever keeps the old body untouched.
 
@@ -819,7 +819,7 @@ Nothing below was run inside the real game. **"Headless" means a command-line ru
 | Cost of 20 animation trees | Headless, evaluation only | Yes: includes no drawing or skinning |
 | Avatar rules moved out of `terrain_client.gd` | 11,731 headless comparisons against the old formulas, 0 differences; both files compile | Yes: the game was **not run**; this is the only edit of the player's visible behaviour code, and it should be looked at once in play (walk, jog, run, crouch, carry a log, slopes) |
 | First-person arm rules moved out of `held_item.gd` | 4,013 headless comparisons, 0 differences; constants checked; files compile | Yes: swing, jab, aim and rest pose in first person should be looked at once in play |
-| Old clips converted to the generated skeleton; drop-in body | 5,124 headless comparisons, 0 failures; pictures of the old clips on two bodies; **one real-game picture of the standing body through the look rig (8.6g)** | Yes: walking, running, crouching, carrying a log, tool in hand, first person; a standing and a jogging picture have been seen in the game so far. |
+| Old clips converted to the generated skeleton; drop-in body | 5,124 headless comparisons, 0 failures; pictures of the old clips on two bodies; **one real-game picture of the standing body through the look rig (8.6g)** | Yes: walking, running, crouching, carrying a log, tool in hand, first person; standing, walking, jogging and running pictures have been seen in the game so far. |
 | Fear list, backgrounds, traits, all plans | Documents only | They are proposals; nothing is built |
 
 ## 8.6f Plan 8 result: the old clips play on the generated body; a switch to try it in the game
@@ -842,7 +842,7 @@ Nothing below was run inside the real game. **"Headless" means a command-line ru
 
 **A jog, also in the real game (`art/character_proto/ingame/generated_jog.jpg`, played by faking a speed of 3.2 m/s through the rig):** the converted jog clip plays on the generated body: clear stride, bent knees, arm swing, a forward lean, body and shadow moving together. Judging the feel needs motion, not a still.
 
-**Not yet seen in the real game:** walking and running as such, crouching, swinging a tool, carrying a log, first-person arms (still the old model), worn clothing pieces (skipped on the new body), other players or NPCs (still the old body).
+**Walk and run (`generated_walk.jpg` at 1.4 m/s, `generated_run.jpg` at 6.0 m/s, same view):** both play. The run picture catches the flight phase of the run clip with a forward lean and a trailing leg. One frame each, so timing and feel are not judged. **Not yet seen in the real game:** crouching (the rig does not set the stance; Kathleen offered to add an option or to use her offline `shot_node.gd`), swinging a tool, carrying a log, first-person arms (still the old model), worn clothing pieces (skipped on the new body), other players or NPCs (still the old body).
 
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
