@@ -88,6 +88,7 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -2769,36 +2770,18 @@ func _update_view(delta: float) -> void:
 
 	if _avatar.visible:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
-		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
-
-		if stance.stance == StanceScript.STAND and pace > 0.6:
-			# Walk, jog or run by the real speed, with a margin so the clip does not flicker at a limit; the playback speed keeps the
-			# stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
-			var current_clip: String = _avatar.current()
-			var jog_from: float = 2.2 if current_clip != "jog" and current_clip != "run" else 1.8
-			var run_from: float = 5.0 if current_clip != "run" else 4.4
-			clip = "run" if pace > run_from else ("jog" if pace > jog_from else "walk")
-
-		# A large log on the shoulder (Dave 2026-10-21): the carry clips replace idle and the gaits while standing.
+		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
-
-		if carrying:
-			clip = "carry_walk" if pace > 0.6 else "carry_idle"
+		var clip: String = AvatarDriver.choose_clip(stance.stance, pace, _avatar.current(), carrying)
 
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
 
-		_avatar.animation_player.speed_scale = clampf(pace / 1.1, 0.6, 1.5) if clip == "carry_walk" else clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
+		_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
 
-		# Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table).
-		var tilt: float = 0.0
-
-		if body.is_on_floor() and pace > 0.6 and clip != "idle":
-			var n: Vector3 = body.global_transform.basis.inverse() * body.get_floor_normal()
-			var angle: float = atan2(n.z, maxf(n.y, 0.1))
-			tilt = clampf(angle, -0.1, 0.44) if angle > 0.0 else clampf(angle * 0.4, -0.1, 0.0)
+		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
 		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
 
@@ -2807,35 +2790,7 @@ func _update_view(delta: float) -> void:
 # Stage-one clothing on the body (art/MODEL_PLAN.md): the worn body, legs and feet items colour the coat, trousers and shoes of the ragdoll
 # with their basic-look colour (data/items/looks.json); head, hands and back items have no look on the body yet.
 func _dress_avatar() -> void:
-	if _avatar == null or items == null:
-		return
-
-	var coat: Color = Color(0.4, 0.34, 0.28)
-	var trousers: Color = Color(0.25, 0.22, 0.2)
-	var shoes: Color = Color(0.14, 0.11, 0.09)
-
-	for number in items.worn:
-		if int(number) == 0:
-			continue
-
-		var id: String = items.table.id_of(int(number))
-		var slot: String = str(items.table.entry(id).get("slot", ""))
-		var def: Dictionary = BasicLookScript.entry(id)
-
-		if def.is_empty():
-			continue
-
-		var tint: Color = Color.html(str(def.get("color", "#808080")))
-
-		if slot == "body":
-			coat = tint
-		elif slot == "legs":
-			trousers = tint
-		elif slot == "feet":
-			shoes = tint
-
-	_avatar.dress(Color(0.78, 0.62, 0.5), coat, trousers, shoes)
-	WornSync.apply(_avatar, WornSync.ids_of(items.worn, items.table), false)   # Kathleen's worn pieces on the bones (the own avatar shows in third person only, so no first-person clipping)
+	AvatarDriver.dress(_avatar, items)
 
 
 func _make_avatar() -> Node3D:

@@ -708,7 +708,7 @@ This widens my earlier rules (document only) to: the new files below, on my bran
 
 **Plan 3. Proposals for Dave: fears, backgrounds, traits (documents only). DRAFTED: see Part 9 and 5.8.8.** Goal: give Dave lists to edit. Steps: keep the draft fear list (5.8.8); draft about 12 backgrounds (story, small boon, small drawback, look hint) written as plain data rows; draft the trait list on the existing -10 to +10 attributes (Luck and Fitness exist; Strength, Dexterity, Memory, Wisdom are listed) with the skill links; write all as proposals, label them clearly, and check wording against the safe-place rule. Files: this document (Part 9). Done when: Dave has lists he can cut and change. Done as a draft.
 
-A fourth plan is queued: **Plan 4, extract the avatar and first-person arm code** into a new module (the moderator's answer 1). It waits for Plans 1 and 2 because the new skeleton decides the shape of that module, and extracting before that would be done twice.
+Plan 4 (**done, 8.3c**): **extract the avatar and first-person arm code** into a new module (the moderator's answer 1). It waits for Plans 1 and 2 because the new skeleton decides the shape of that module, and extracting before that would be done twice.
 
 ## 8.3 Plan 1 first result: it works, with known defects
 
@@ -748,9 +748,27 @@ Reading: **one body takes about 0.15 to 0.45 s to generate in plain GDScript on 
 
 Not yet done in Plan 2: viewing the clips on screen (a walk strip and the panic poses), squash and stretch, foot placement, and measuring the cost of an `AnimationTree` for 20 bodies. Those are the next steps for the motion plan.
 
+## 8.3c Plan 4 result: the avatar rules moved out of `terrain_client.gd` (behaviour unchanged, checked)
+
+**What changed (the only edit to an existing game file so far):** `scenes/terrain_client/terrain_client.gd` lost about 45 lines (51 deleted, 6 added). The rules that choose the avatar's clip (idle, crouch, sit, lie, walk, jog, run, carry), its playback speed, its slope tilt and its clothes colours now live in the new `src/client/character/avatar_driver.gd` as plain functions (`choose_clip`, `speed_scale`, `slope_tilt`, `outfit_colors`, `dress`). `terrain_client.gd` keeps the camera, the avatar node and the held-item wiring and calls the driver. `held_item.gd` was not edited. The first-person arm code is **not** moved yet (see the plans below).
+
+**Check (`tools/check_avatar_driver.gd`, headless):** the old inline formulas are repeated in the check as the reference and compared with the new functions over **11,731 cases** (every stance, every current clip including the hysteresis margins, carrying or not, speeds 0 to 9 m/s in 0.05 steps; every clip's speed scale to 12 m/s; 500 random floor normals for the slope tilt): **0 differences.** The same run also loads `terrain_client.gd` and `held_item.gd` and confirms both compile. Other existing checks still pass: `tools/check_ragdoll.gd` (ok) and `test_worn_sync.gd` (0 failures). I did **not** run the game itself, so on-screen behaviour is checked only through these equivalence tests.
+
+**Two things learned while doing it:**
+- A fresh worktree has no `.godot` class cache, so scripts that use a `class_name` (for example `AppConfig`) fail to compile in headless runs until `godot --headless --path . --import` has been run once; that run also rewrites many tracked `.import` files, which I reverted so they do not enter my commits (the cache itself is git-ignored).
+- `terrain_client.gd` cannot be compiled in a bare `--script` run for the same reason; the check now works because the cache exists.
+
+## 8.6 Three new plans (approved by me under the moderator's pre-approval; Plan 5 starts now)
+
+**Plan 5. Motion on screen.** Render a walk strip and the panic poses for two or three bodies, so Dave can judge them; test squash and stretch with a helper bone; test foot placement on a slope with `TwoBoneIK3D`; measure the cost of 20 animation trees in one scene. Files: `tools/proto_motion_view.gd` and pictures in `art/character_proto/motion/`. Done when: pictures exist, the IK test says whether feet stay planted, and the 20-tree cost is a number.
+
+**Plan 6. Body version 2.** Fingers (thumb and two or three finger groups) and a nicer hand, a better face (eye lids that can open wide, a brow raise by swap), seam fixes, a lower-detail variant for distance, a genome that can be saved and shared as a code (5.7.9), and a check script for the generator (bone set, limits, no holes). Files: `body_generator.gd` and new check tools.
+
+**Plan 7. First-person arm extraction.** Move the arm-model code out of `held_item.gd` (about 1,800 lines, tangled with tool handling) into a module with the same equivalence-check approach as Plan 4. Only after Plans 5 and 6 settle the skeleton, because the arms must use it. If the equivalence check cannot cover enough of it, I will stop and report instead of editing blind.
+
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
-- **Avatar module extraction (answer 1):** queued as Plan 4 (see 8.2).
+- **Avatar module extraction (answer 1):** done for the avatar rules in Plan 4 (8.3c); the first-person arm code is Plan 7 (8.6).
 - **Playing the generated body in the game:** not done; no existing game file was changed.
 
 ## 8.5 Next steps (in order)
