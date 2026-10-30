@@ -5,7 +5,6 @@ Measured run: generator-v2 dceab26b9287dc80aa608555b21dae57fc67a560, all 109 tes
 The one failure: test_animals ("even 150 animals all near stay under 2 ms on average (2.006)"): repeatable here (fails the retry too), the box is faster.
 
 <!-- known failures -->
-- test_animals (150 animals all near average 2.006 to 2.012 ms against the 2 ms limit on this PC: fails twice in a row, a speed limit this PC just misses; passes on the box)
 <!-- end known failures -->
 
 History: before the terrain/water rework (24-25 Oct) five tests failed here for real (test_drainage_flow, test_head_pond_fill, test_pond_outlet, test_showroom, test_water_soak); on dceab26b they all pass. If one of them comes back, that is a real failure, not a baseline entry.
