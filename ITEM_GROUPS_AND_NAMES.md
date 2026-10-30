@@ -301,19 +301,21 @@ Dave approved the plan and said to decide without him where possible, research o
 | Sickle | CUT (Tyler I): the Scythe harvests grain and grass. |
 | First animals | Chicken (eggs), bees (honey), then sheep (wool), goats/cows (milk), pigs. |
 
-## B3. Tyler's trim list A to J: my decisions
-| Group | Decision | Reason |
+## B3. Tyler's trim list A to J: CORRECTED (Dave already answered these on 25 Oct)
+I found `docs/mirror/design/ITEM_TRIM_DECISIONS.md` (Dave's answers, read by Tyler 25 Oct). My first version of this table decided the groups myself and CONTRADICTED several of Dave's earlier answers. Dave's answers win; the corrected result:
+| Group | Dave's answer (25 Oct) | Note |
 |---|---|---|
-| A spade sizes | **YES** merge (one spade per material) | 12 spades for one verb is noise. |
-| B | Hammer: **YES** one hammer line. Vice: **YES** merge into workbench. Camp bench: **NO, keep** (Dave: furniture is fun). Sewing needle: **NO, keep** as a bone needle (cheap, educational, used for clothes) | Fun and reasonable. |
-| C wood | **YES** one Lumber, one Beam; tree type kept on the item (also feeds flame effects) | matches Dave's ideas. |
-| D | Cobblestone -> Stone block **YES**; stone shingle, wooden pin **cut**; Softwood firewood/block -> Firewood/Wooden block **YES** (type kept on item); Tar **hold**; Driftwood **keep** (Dave) | |
-| E | Cut Herbal tea, Medicine, Energy bar; Nut paste -> Acorn mash; Campfire Stew = plain stew; Magic tonic **hold for the magic system** | |
-| F forges | **REVERSED: keep four forge tiers** | Dave builds ladders from separate stations (ovens); tiers gate bronze, iron, steel. Anvil, tongs, bellows stay forge parts, not carried items. |
-| G building pieces | **YES** generic pieces with material as a variant (thatch, wood, stone, later brick) | |
-| H | Hide mittens -> **Gloves** YES. Bronze coin **KEEP**: data/items/coins.json already defines 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold | Tyler's note contradicts the coin table. |
-| I | Scythe keep; sickle cut; rake cut; **shears KEEP** (sheep are coming) | |
-| J | **Loom ADDED** (flax -> thread -> linen cloth is a good education chain); tanning rack is part of the Tannery (Dave's leather chain); Kiln keep (charcoal, pottery, brick); Cooking station = the oven ladder; tongs, bellows, anvil are forge parts; defer instruments (one flute and one drum first), dice, chess, book | |
+| A spades | YES: one spade per material; 213-220 retire; all spades same weight | needs a bite-size setting in code |
+| B tools | YES: one hammer line; no vice (into the log workbench); NO sewing needle; wooden bowl and driftwood stay | camp bench not mentioned, so it stays |
+| C wood | YES: one Lumber, one Beam, species is a tag; Rough plank is NOT folded (it is the Plank tier material) | |
+| D materials | NO: nothing cut (cobblestone, shingle, pin, softwood twins, tar stay) | my earlier cuts withdrawn |
+| E food | NO: keep every dish and tea; wide choice of foods | consistent with the food pass |
+| F forge | CHANGED: one forge model (furnace plus anvil), upgraded in tiers; Medium, Large, Master become upgrades | my "keep four tiers" withdrawn |
+| G building | REJECTED: every tier's wall/floor/roof/doorway/foundation is its own item | my "generic pieces" withdrawn |
+| H clothing, coins | Keep everything, all coins, mittens stay; ADD tunic, trousers, gloves (hide first) | |
+| I tools | Scythe AND a hand sickle; NO rake; shears stay out until sheep exist | my "sickle cut" withdrawn |
+| J design names | cooking station = the oven ladder; others not answered, treat as No | my loom stays a proposal only |
+Items I proposed that Dave's answers cancel: none of the new `future` items conflict. The merges A, B and C are NOT executed yet (see ITEM_DECISION_LOG.md, "Merge plan").
 
 ## B4. Food catalogue (Dave's farming and cooking rules)
 **Effects (simple):** Hunger fill (every food), then one main effect by food group: grain/bread = Stamina; vegetables and soups = Health regeneration; meat = Strength (protein); sweets = quick energy; fish = alertness/focus; herbs = resistance or cure. Eating three groups in a day gives a small Balanced bonus. Dave's rule: higher tiers give better effects for longer, and quality grade scales it.

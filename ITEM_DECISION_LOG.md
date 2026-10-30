@@ -23,7 +23,7 @@ Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the
 | 9 | Furniture | In, fun and useful (stool, chair, bench, throne) | Dave | his words |
 | 10 | Farming | Crop to food, simple; windmill; recipe tiers | Dave | his words |
 | 11 | Boats and carts | In, many types, sizes and qualities | Dave | his words |
-| 12 | Tyler's trim list A to J | Decided group by group (see B3) | Sal | design test, Dave's ideas |
+| 12 | Tyler's trim list A to J | ALREADY ANSWERED by Dave on 25 Oct (docs/mirror/design/ITEM_TRIM_DECISIONS.md): A, B (no vice, no sewing needle), C yes; D, E, G rejected; F one forge in tiers; H keep all coins, add tunic, trousers, gloves; I scythe and sickle, no rake, shears not yet. My earlier decisions were wrong and are withdrawn | Dave | that file |
 | 13 | Pyrite | In | Dave | his words |
 | 14 | Obsidian | In, mid tier, on dormant-volcano islands past the starter islands; knives, arrows, spears, swords, jewellery, magic component | Dave | his words |
 | 14b | Magic | A huge magic system comes later; magic items get a separate pass | Dave | his words |
@@ -31,11 +31,12 @@ Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the
 | 15b | Rivets | New item | Sal | needed for bound leather |
 | 16 | Ovens | Basic Oven (existing 268), Clay Oven, Iron Stove | Dave (Basic Oven, 3 rungs) + Sal (names) | his words |
 | 17 | Crop strictness | Medieval European crops in the starter lands; potato, maize, rice only as exotic crops from far islands | Sal | potatoes and maize reached Europe after 1492 (general knowledge; the search did not cover it) |
-| 17b | Sickle | Cut; scythe does the job | Sal | Tyler I |
+| 17b | Sickle | Keep: scythe AND hand sickle (Dave 25 Oct) | Dave | ITEM_TRIM_DECISIONS.md |
 | 17c | Seeds / plots | One seed item per crop; no plot item, the hoe tills a field | Sal | simplicity |
 | 18 | First animals | Chickens, bees, then sheep, goats/cows, pigs | Sal | simplicity |
-| 19 | Forges | Keep the four tiers (reverses Tyler F) | Sal | matches Dave's oven ladder |
-| 20 | Camp bench, sewing needle, shears, bronze coin | Keep | Sal | furniture is fun; coins.json defines bronze |
+| 19 | Forges | One forge model (furnace plus anvil), upgraded in tiers (Dave 25 Oct) | Dave | ITEM_TRIM_DECISIONS.md |
+| 20 | Camp bench, sewing needle, shears, bronze coin | Camp bench and bronze coin keep; sewing needle CUT and shears out until sheep exist (Dave 25 Oct) | Dave | ITEM_TRIM_DECISIONS.md |
+| 21 | Bench rule | `docs/mirror/design/CRAFTING_STATIONS_RULE.md` records "benches make WEAPONS and TOOLS only" as Dave's standing rule (25 Oct 02:50). On 2026-10-30 Dave told Sal that rule is not his and benches are for crafting generally. Sal follows the 30 Oct words; the older file was not edited. Flagged to the moderator | Dave (30 Oct) | conflict, needs the moderator to reconcile |
 
 ## Work log
 - 2026-10-30: grouping document, Part B decisions, data batch 1 (Basic Oven rename; items 278-292).
@@ -47,3 +48,41 @@ Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the
 
 ## Sources used so far (quick searches, mixed quality)
 Fire striker (Wikipedia); Conchoidal fracture (Wikipedia mirror); Flint knapping (nordling.de); Geology In (pyrite, obsidian); Rockhounding.org; History Crunch (medieval food and siege); Wikipedia regional cuisines, siege engines list, medieval ships; Gilbey, Early Carriages and Roads; Barm (Wikipedia); BYO medieval ale; SCA Introduction to Brewing.
+
+## Data batch 3 (2026-10-30)
+Recipes 178 to 185 added in `data/items/recipes.json` (`next_number` 186), all `known: false`: Kindling (stick), Processed hide (hide, keeps Hide scraper), Hide scraper (flint, stick, twine; workbench), Javelin (stick x2, flint; workbench), Obsidian knife (obsidian, stick, twine; workbench), Steel striker (steel ingot; forge), Rivets (iron ingot; forge), Bronze ingot (copper ingot, tin ingot; forge level 2). Each uses at most 3 ingredient kinds. Recipes for Leather, Fine leather, Heavy leather, Flour, Yeast, Salt, Copper ingot and Tin ingot are NOT written because their inputs (tannery, grain, ore items) do not exist yet.
+
+## Merge plan (A, B, C approved by Dave on 25 Oct; NOT executed)
+Why not executed: each retirement touches many files that need the game to test, and I found no Godot binary here to run `tools/items_check.py` (validate_items, server_items, tool_looks). Doing it blind risks breaking tests. Files touched per merge (from a repo search by id):
+- **A, spades 213-220** (wooden/stone/iron/steel medium and large): items.json, looks.json, recipes.json (2 to 3 each), showroom.json, weights.json, tools/gen_looks.py, design/TOOL_TIERS.md, ITEM_MASTER.md, tests test_server_items.gd (wooden_spade_large) and test_tool_looks.gd (stone/iron/steel large). Needs: a bite-size setting on the one spade per material (code), all spades the same weight.
+- **B, wooden vice 83/84 and sewing needle 49:** vice into the log workbench; hammer line to one. Sewing needle recipe/uses need checking.
+- **C, species lumber/beam:** items 101-102, 107-108, 110-111, 113-114, 125-126, 149-150, 173-174 into one Lumber and one Beam with a species tag; touches wood_species.json, src/stream/server_items.gd and tests.
+Method when a session with Godot runs it: retire (never delete) with `"retired": true` and a `"merged_into"` note, one commit per group so each can be reverted alone.
+
+## Food pass: existing dishes against Dave's 3-ingredient rule
+Dave (25 Oct) keeps every dish. The rule says three kinds normally and four or five only for special powerful top-tier items. These are the current dishes by number of kinds (from data/items/dishes.json):
+
+| Dish | Kinds | Needs | Food points |
+|---|---|---|---|
+| Acorn mash | 2 | acorns x3, water x1 | 380 |
+| Baked apples | 2 | crab_apples x3, honeyspindle_nectar x1 | 420 |
+| Berry compote | 2 | blueberries x2, honeyspindle_nectar x1 | 350 |
+| Flatbread | 2 | seeds x3, water x1 | 420 |
+| Nut paste | 2 | hazelnuts x3, honeyspindle_nectar x1 | 450 |
+| Roast Roots | 2 | burdock_roots x2, wild_carrot_roots x2 | 400 |
+| Chestnut cakes | 3 | chestnuts x3, honeyspindle_nectar x1, linseed x1 | 600 |
+| Fruit leather | 3 | crab_apples x2, cranberries x1, honeyspindle_nectar x1 | 520 |
+| Garlic meat | 3 | raw_meat x1, wild_garlic_bulbs x1, rosemary x1 | 760 |
+| Herb fish | 3 | trout x1, thyme x1, samphire x1 | 680 |
+| Honey loaf | 3 | seeds x3, hazelnuts x1, honeyspindle_nectar x1 | 620 |
+| Mushroom skewer | 3 | porcini x2, chanterelles x1, wild_garlic_leaves x1 | 560 |
+| Rosemary joint | 3 | raw_meat x2, rosemary x1, wild_garlic_bulbs x1 | 700 |
+| Smoked fish | 3 | pike x1, samphire x1, juniper_berries x1 | 700 |
+| Fish stew | 4 | perch x1, watercress x1, wild_carrot_roots x1, sage x1 | 880 |
+| Forager's stew | 4 | greens x2, burdock_roots x1, chanterelles x1, sorrel_leaves x1 | 850 |
+| Hunter's stew | 4 | raw_meat x1, wild_carrot_roots x1, wild_garlic_bulbs x1, porcini x1 | 900 |
+| Trail bread | 4 | linseed x2, hazelnuts x2, dates x1, animal_fat x1 | 950 |
+| Hearty pottage | 5 | seeds x2, wild_carrot_roots x1, dandelion_leaves x1, marjoram x1, animal_fat x1 | 1050 |
+| Roast Beast | 5 | raw_meat x2, wild_garlic_bulbs x1, thyme x1, rosemary x1, animal_fat x1 | 1200 |
+
+Verdict (Sal): 2 and 3 kinds are fine. **4 kinds** (Hunter's stew, Forager's stew, Fish stew, Trail bread) and **5 kinds** (Hearty pottage, Feast roast) exceed the normal limit. Proposal: keep Feast roast and Hearty pottage as the special top-tier dishes; reduce the other four to 3 kinds when the dish file is next edited (change `needs` in dishes.json and run `tools/gen_dishes.py`, which regenerates items, recipes and food points). NOT done: gen_dishes.py and the tests were not run. The file note also says more kinds = better dish (DESIGN_IDEAS 5.3); that still works with 3 as the normal ceiling.
