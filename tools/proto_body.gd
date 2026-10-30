@@ -58,6 +58,9 @@ func _run() -> void:
 		var ms: Dictionary = built["ms"]
 		bench.append("%s: %d vertices, %d triangles, grid cells %s, ms rig+primitives %.1f field %.1f surface %.1f weights %.1f total %.1f" % [presets[i], built["vertex_count"], built["triangle_count"], str((built["grid"] as Vector3i).x), ms["rig_prims"], ms["field"], ms["surface"], ms["weights"], ms["total"]])
 		print(bench[bench.size() - 1])
+		if i == 0:
+			_save_reload_test(node, bench)
+
 		viewport.add_child(node)
 		var height: float = float((built["rig"] as Dictionary)["dims"]["head_y"]) + 0.3
 		cam.look_at_from_position(Vector3(0.0, height * 0.5, 6.2), Vector3(0.0, height * 0.5, 0.0))
@@ -119,3 +122,18 @@ func _bend(skeleton: Skeleton3D) -> void:
 func _pose(skeleton: Skeleton3D, bone: String, euler: Vector3) -> void:
 	var idx: int = skeleton.find_bone(bone)
 	skeleton.set_bone_pose_rotation(idx, Quaternion.from_euler(euler))
+
+
+# Saves the generated body mesh and skin as a binary resource, loads it back and times both (plan 5.7.9: bake once, cache by genome).
+func _save_reload_test(node: Node3D, bench: PackedStringArray) -> void:
+	var body: MeshInstance3D = node.get_node("Skeleton3D/Body")
+	var path: String = "user://proto_body_average.res"
+	var t0: int = Time.get_ticks_usec()
+	var err: int = ResourceSaver.save(body.mesh, path, ResourceSaver.FLAG_COMPRESS)
+	var t1: int = Time.get_ticks_usec()
+	var loaded: Mesh = load(path) as Mesh
+	var t2: int = Time.get_ticks_usec()
+	var same: bool = loaded != null and (loaded.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == (body.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+	var size: int = FileAccess.get_file_as_bytes(path).size() if FileAccess.file_exists(path) else -1
+	bench.append("save/reload mesh: save err %d, %.1f ms, file %d bytes, load %.1f ms, same vertex count %s, skin bind count after reload not tested" % [err, float(t1 - t0) / 1000.0, size, float(t2 - t1) / 1000.0, str(same)])
+	print(bench[bench.size() - 1])

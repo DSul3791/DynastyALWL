@@ -20,6 +20,10 @@ const BONES := [
 
 const MAT_SKIN := 0
 const MAT_HAIR := 1
+const MAT_LIPS := 2
+const MAT_TUNIC := 3
+const MAT_TROUSERS := 4
+const MAT_BOOTS := 5
 const SMOOTH_K := 0.035                # smooth union band, metres
 const WEIGHT_FALLOFF := 0.03           # skin weight falloff with distance to a primitive, metres
 const WEIGHT_PASSES := 2
@@ -42,7 +46,7 @@ static func m(s: float, lo: float, hi: float) -> float:
 	return lerpf(1.0, hi, s) if s >= 0.0 else lerpf(1.0, lo, -s)
 
 
-static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.62, 0.48), hair: Color = Color(0.25, 0.16, 0.09)) -> Dictionary:
+static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.62, 0.48), hair: Color = Color(0.25, 0.16, 0.09), tunic: Color = Color(0.36, 0.45, 0.3), trousers: Color = Color(0.3, 0.24, 0.18), boots: Color = Color(0.2, 0.13, 0.09)) -> Dictionary:
 	var g: Dictionary = {}
 
 	for key in SLIDERS:
@@ -53,6 +57,10 @@ static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.
 
 	g["skin"] = skin
 	g["hair"] = hair
+	g["lips"] = skin.lerp(Color(0.7, 0.25, 0.25), 0.5)
+	g["tunic"] = tunic
+	g["trousers"] = trousers
+	g["boots"] = boots
 	return g
 
 
@@ -168,7 +176,8 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 	out.append(_ell(4, head_c + Vector3(0.0, 0.14 * hs, 0.0), Vector3(0.095 * hs, 0.118 * hs, 0.108 * hs)))
 	out.append(_ell(4, head_c + Vector3(0.0, 0.065 * hs, -0.022 * hs), Vector3(0.074 * hs * jaw, 0.07 * hs, 0.082 * hs)))
 	out.append(_ell(4, head_c + Vector3(0.0, 0.115 * hs, -0.108 * hs), Vector3(0.017 * nose, 0.03 * nose, 0.026 * nose)))
-	out.append(_ell(4, head_c + Vector3(0.0, 0.183 * hs, -0.085 * hs), Vector3(0.08 * hs, 0.013 * hs * brow, 0.028 * hs)))
+	out.append(_ell(4, head_c + Vector3(0.0, 0.183 * hs, -0.085 * hs), Vector3(0.08 * hs, 0.013 * hs * brow, 0.028 * hs), MAT_HAIR))
+	out.append(_ell(4, head_c + Vector3(0.0, 0.052 * hs, -0.097 * hs), Vector3(0.026 * hs, 0.007 * hs, 0.013 * hs), MAT_LIPS))
 
 	for side in [-1.0, 1.0]:
 		out.append(_ell(4, head_c + Vector3(0.099 * hs * side, 0.135 * hs, 0.005 * hs), Vector3(0.012, 0.03 * ear, 0.019)))
@@ -200,7 +209,72 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 		out.append(_ell(l + 2, foot_c, Vector3(0.05 * foot_k, 0.04, 0.115 * foot_k)))
 		out.append(_ell(l + 3, p[l + 3] + Vector3(0.0, 0.0, -0.01), Vector3(0.045 * foot_k, 0.03, 0.04 * foot_k)))
 
+	_dress(out)
 	return out
+
+
+# Clothes: a slightly larger copy of the covered body parts with a cloth material, in the same group, so the surface shows the cloth
+# where it covers and the skin elsewhere (hands, forearms, head). Tunic on the trunk and upper arms, trousers on hips and legs, boots below the calf.
+static func _dress(out: Array) -> void:
+	var extra: Array = []
+
+	for q in out:
+		if int(q["mat"]) != MAT_SKIN:
+			continue
+
+		var bone: int = int(q["bone"])
+		var c: Dictionary = q.duplicate()
+
+		if q["t"] == "ell":
+			var r: Vector3 = q["r"]
+
+			if bone == 0:
+				c["mat"] = MAT_TROUSERS
+				c["r"] = r * 1.07 + Vector3(0.006, 0.006, 0.006)
+			elif bone == 1 or bone == 2:
+				c["mat"] = MAT_TUNIC
+				c["r"] = r * 1.06 + Vector3(0.007, 0.007, 0.007)
+			elif bone == 15 or bone == 19:
+				c["mat"] = MAT_BOOTS
+				c["r"] = r * 1.12 + Vector3(0.006, 0.006, 0.006)
+			else:
+				continue
+		else:
+			var a: Vector3 = q["a"]
+			var b2: Vector3 = q["b"]
+
+			if bone == 5 or bone == 9:
+				c["mat"] = MAT_TUNIC
+				c["ra"] = float(q["ra"]) + 0.012
+				c["rb"] = float(q["rb"]) + 0.012
+			elif bone == 6 or bone == 10:
+				c["mat"] = MAT_TUNIC
+				c["b"] = a.lerp(b2, 0.72)
+				c["rb"] = lerpf(float(q["ra"]), float(q["rb"]), 0.72)
+				c["ra"] = float(q["ra"]) + 0.012
+				c["rb"] = float(c["rb"]) + 0.012
+			elif bone == 13 or bone == 17:
+				c["mat"] = MAT_TROUSERS
+				c["ra"] = float(q["ra"]) + 0.013
+				c["rb"] = float(q["rb"]) + 0.013
+			elif bone == 14 or bone == 18:
+				c["mat"] = MAT_TROUSERS
+				c["b"] = a.lerp(b2, 0.5)
+				c["rb"] = lerpf(float(q["ra"]), float(q["rb"]), 0.5)
+				c["ra"] = float(q["ra"]) + 0.013
+				c["rb"] = float(c["rb"]) + 0.013
+				var boot: Dictionary = q.duplicate()
+				boot["mat"] = MAT_BOOTS
+				boot["a"] = a.lerp(b2, 0.5)
+				boot["ra"] = lerpf(float(q["ra"]), float(q["rb"]), 0.5) + 0.016
+				boot["rb"] = float(q["rb"]) + 0.016
+				extra.append(boot)
+			else:
+				continue
+
+		extra.append(c)
+
+	out.append_array(extra)
 
 
 static func prim_sdf(q: Dictionary, x: Vector3) -> float:
@@ -449,8 +523,6 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 	w.resize(count * bone_count)
 	var colors: PackedColorArray = PackedColorArray()
 	colors.resize(count)
-	var skin_c: Color = g["skin"]
-	var hair_c: Color = g["hair"]
 
 	var dists: PackedFloat32Array = PackedFloat32Array()
 	dists.resize(prims.size())
@@ -463,9 +535,11 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			var q: Dictionary = prims[k]
 			var d: float = prim_sdf(q, verts[i]) if int(q["grp"]) == vgroup[i] else 1000.0
 			dists[k] = d
+			# Hair, lips and cloth win a tie with the skin under them.
+			var shown: float = d - (0.0 if int(q["mat"]) == MAT_SKIN else 0.006)
 
-			if d < best:
-				best = d
+			if shown < best:
+				best = shown
 				best_mat = int(q["mat"])
 
 		# Only the primitives of the vertex's own group give it weight, so a torso vertex beside an arm never follows the arm.
@@ -475,7 +549,7 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			if int(q2["grp"]) == vgroup[i]:
 				w[i * bone_count + int(q2["bone"])] += exp(-maxf(dists[k], 0.0) / WEIGHT_FALLOFF)
 
-		colors[i] = hair_c if best_mat == MAT_HAIR else skin_c
+		colors[i] = _material_color(best_mat, g)
 
 	var neighbours: Array = []
 	neighbours.resize(count)
@@ -545,6 +619,22 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			weights[i * 4 + s] = float(best_w[s]) / maxf(total, 0.000001)
 
 	return {"bones": bones, "weights": weights, "colors": colors}
+
+
+static func _material_color(mat: int, g: Dictionary) -> Color:
+	match mat:
+		MAT_HAIR:
+			return g["hair"]
+		MAT_LIPS:
+			return g["lips"]
+		MAT_TUNIC:
+			return g["tunic"]
+		MAT_TROUSERS:
+			return g["trousers"]
+		MAT_BOOTS:
+			return g["boots"]
+
+	return g["skin"]
 
 
 # ---------------------------------------------------------------- scene objects
