@@ -205,18 +205,6 @@ func _cut_reach(cells: PackedInt32Array, land: PackedFloat32Array, flow, size: i
 	if bent:
 		reaches_bent += 1
 
-	if count > 120 and OS.get_environment("NATURAL_DEBUG") != "":
-		var flat_sum: float = 0.0
-		var slope_sum: float = 0.0
-		var off_max: float = 0.0
-
-		for k in range(count):
-			flat_sum += pow(clampf(1.0 - slope[k] / slope_flat, 0.0, 1.0), 0.7)
-			slope_sum += slope[k]
-			off_max = maxf(off_max, Vector2(qx[k] - sx[k], qy[k] - sy[k]).length() * cell_m)
-
-		print("  reach %d cells, %.0f m, mean slope %.3f, mean flat %.2f, widest swing %.0f m, mean width %.0f m" % [count, length_m, slope_sum / float(count), flat_sum / float(count), off_max, width[count / 2]])
-
 	var straight: float = Vector2(qx[count - 1] - qx[0], qy[count - 1] - qy[0]).length() * cell_m
 	var travelled: float = 0.0
 

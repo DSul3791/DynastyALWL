@@ -6,13 +6,15 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/water_spread_report.gd -- --tile=3,4 --hours=6 --minutes=30
 #
 # Options: --tile=X,Z (default 3,4); --hours=H simulated hours to run (default 6); --minutes=M real-time limit (default 30);
-#   --rate=R spring flow multiplier (default WaterLive.DEFAULT_RATE); --world=DIR world folder (default res://worlds/base_world). See GENERATOR_NOTES.md.
+#   --rate=R spring flow multiplier (default WaterLive.DEFAULT_RATE); --world=DIR world folder (default res://worlds/base_world); --dump=FILE writes the final water depths (float32, one per sample). See GENERATOR_NOTES.md.
 
 const WaterLive := preload("res://src/water/water_live.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
+
+var dump_path: String = ""
 
 const WET_M := 0.12            # depth at which a cell counts as wet
 const POOL_M := 0.3            # depth at which water on land counts as standing water
@@ -24,6 +26,7 @@ func _init() -> void:
 	var minutes: float = 30.0
 	var rate: float = WaterLive.DEFAULT_RATE
 	var world_dir: String = "res://worlds/base_world"
+	dump_path = ""
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):
@@ -37,6 +40,8 @@ func _init() -> void:
 			rate = float(argument.trim_prefix("--rate="))
 		elif argument.begins_with("--world="):
 			world_dir = argument.trim_prefix("--world=")
+		elif argument.begins_with("--dump="):
+			dump_path = argument.trim_prefix("--dump=")
 
 	quit(_run(tile, hours, minutes, rate, world_dir))
 
@@ -75,6 +80,12 @@ func _run(tile: Vector2i, hours: float, minutes: float, rate: float, world_dir: 
 
 	print("Stopped at %.2f simulated hours (%d ticks, %.0f s real time)" % [live.seconds() / 3600.0, ticks, float(Time.get_ticks_msec() - started) / 1000.0])
 	_report(data, live.sim.get_depth())
+
+	if dump_path != "":
+		var file := FileAccess.open(dump_path, FileAccess.WRITE)
+		file.store_buffer(live.sim.get_depth().to_byte_array())
+		file.close()
+
 	return 0
 
 
