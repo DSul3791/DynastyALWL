@@ -1,0 +1,622 @@
+extends RefCounted
+
+# PROTOTYPE (Sonny, 2026-10-30): generates a stylised humanoid body from a small "genome" of sliders. See CHARACTER_DESIGN_VISION.md
+# (Part 5.7, section 5.7.9 and Part 3.11.3). Nothing in the game uses this yet; tools/proto_body.gd builds pictures and a benchmark from it.
+#
+# Steps: genome -> skeleton (21 bones, Godot humanoid names, rest pose with the arms hanging down) -> primitives (round cones and
+# ellipsoids, each on one bone) -> signed distance field with a smooth union, evaluated only near each primitive -> naive surface nets
+# -> skin weights from the distance to each primitive (exponential falloff, then smoothing passes) -> one ArrayMesh with 4 bone
+# influences per vertex and a vertex colour per primitive material (skin / hair).
+#
+# Conventions: metres, feet at y = 0, the body faces -Z, the character's right is +X (as in ragdoll_body.gd), "Left" bones are at -X.
+
+const BONES := [
+	["Hips", -1], ["Spine", 0], ["Chest", 1], ["Neck", 2], ["Head", 3],
+	["LeftShoulder", 2], ["LeftUpperArm", 5], ["LeftLowerArm", 6], ["LeftHand", 7],
+	["RightShoulder", 2], ["RightUpperArm", 9], ["RightLowerArm", 10], ["RightHand", 11],
+	["LeftUpperLeg", 0], ["LeftLowerLeg", 13], ["LeftFoot", 14], ["LeftToes", 15],
+	["RightUpperLeg", 0], ["RightLowerLeg", 17], ["RightFoot", 18], ["RightToes", 19],
+]
+
+const MAT_SKIN := 0
+const MAT_HAIR := 1
+const SMOOTH_K := 0.035                # smooth union band, metres
+const WEIGHT_FALLOFF := 0.03           # skin weight falloff with distance to a primitive, metres
+const WEIGHT_PASSES := 2
+const GROUPS := 5
+
+# Slider names, each -1 .. +1 (0 is the neutral body). Archetype presets are just different numbers.
+const SLIDERS := ["height", "build", "muscle", "belly", "shoulders", "hips", "torso", "legs", "arms", "neck", "head", "hands", "feet",
+	"jaw", "nose", "brow", "ears", "hair_length"]
+
+const PRESETS := {
+	"average": {},
+	"broad": {"height": 0.3, "build": 0.7, "muscle": 0.9, "belly": 0.2, "shoulders": 0.9, "hips": -0.2, "torso": 0.2, "legs": -0.2, "arms": 0.3, "neck": 0.8, "head": -0.1, "hands": 0.7, "feet": 0.4, "jaw": 0.8, "nose": 0.2, "brow": 0.6, "hair_length": -0.4},
+	"lean": {"height": 0.6, "build": -0.6, "muscle": -0.3, "belly": -0.8, "shoulders": -0.3, "hips": -0.3, "torso": -0.1, "legs": 0.6, "arms": 0.4, "neck": 0.2, "head": -0.2, "hands": 0.1, "feet": 0.1, "jaw": -0.4, "nose": 0.3, "ears": 0.9, "hair_length": 0.6},
+	"stocky": {"height": -0.7, "build": 0.6, "muscle": 0.3, "belly": 0.8, "shoulders": 0.4, "hips": 0.6, "torso": 0.3, "legs": -0.7, "arms": -0.4, "neck": -0.3, "head": 0.4, "hands": 0.5, "feet": 0.6, "jaw": 0.3, "nose": 0.7, "brow": 0.3, "hair_length": 0.2},
+}
+
+
+# Maps a slider value s (-1 .. 1) to lo .. hi, with 0 mapping to 1.0 when lo < 1 < hi.
+static func m(s: float, lo: float, hi: float) -> float:
+	return lerpf(1.0, hi, s) if s >= 0.0 else lerpf(1.0, lo, -s)
+
+
+static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.62, 0.48), hair: Color = Color(0.25, 0.16, 0.09)) -> Dictionary:
+	var g: Dictionary = {}
+
+	for key in SLIDERS:
+		g[key] = 0.0
+
+	for key in PRESETS.get(preset, {}):
+		g[key] = float(PRESETS[preset][key])
+
+	g["skin"] = skin
+	g["hair"] = hair
+	return g
+
+
+# ---------------------------------------------------------------- skeleton
+
+# Returns {names, parents, global (Vector3 per bone, rest positions), local (Vector3 per bone), dims}.
+static func rig(g: Dictionary) -> Dictionary:
+	var h: float = m(float(g["height"]), 0.9, 1.12)
+	var legs: float = h * m(float(g["legs"]), 0.9, 1.12)
+	var torso: float = h * m(float(g["torso"]), 0.9, 1.12)
+	var arm: float = h * m(float(g["arms"]), 0.88, 1.15)
+	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
+	var foot_k: float = m(float(g["feet"]), 0.85, 1.3)
+	var ankle_y: float = 0.06 * h
+	var shin: float = 0.40 * legs
+	var thigh: float = 0.44 * legs
+	var hips_y: float = ankle_y + shin + thigh + 0.05 * h
+	var spine_y: float = hips_y + 0.12 * torso
+	var chest_y: float = spine_y + 0.20 * torso
+	var shoulder_y: float = chest_y + 0.18 * torso
+	var neck_y: float = chest_y + 0.22 * torso
+	var head_y: float = neck_y + 0.07 * h + 0.04 * float(g["neck"])
+	var arm_x: float = 0.07 + 0.16 * wide * m(float(g["build"]), 0.9, 1.15)
+	var hip_x: float = 0.108 * hip_w
+	var pos: Array = []
+	pos.resize(BONES.size())
+	pos[0] = Vector3(0.0, hips_y, 0.0)
+	pos[1] = Vector3(0.0, spine_y, 0.0)
+	pos[2] = Vector3(0.0, chest_y, 0.0)
+	pos[3] = Vector3(0.0, neck_y, 0.0)
+	pos[4] = Vector3(0.0, head_y, 0.0)
+
+	for side in [-1.0, 1.0]:
+		var o: int = 5 if side < 0.0 else 9
+		pos[o] = Vector3(0.06 * side, shoulder_y, 0.0)
+		pos[o + 1] = Vector3(arm_x * side, shoulder_y, 0.0)
+		pos[o + 2] = pos[o + 1] + Vector3(0.0, -0.29 * arm, 0.0)
+		pos[o + 3] = pos[o + 2] + Vector3(0.0, -0.26 * arm, 0.0)
+		var l: int = 13 if side < 0.0 else 17
+		pos[l] = Vector3(hip_x * side, hips_y - 0.05 * h, 0.0)
+		pos[l + 1] = pos[l] + Vector3(0.0, -thigh, 0.0)
+		pos[l + 2] = pos[l + 1] + Vector3(0.0, -shin, 0.0)
+		pos[l + 3] = pos[l + 2] + Vector3(0.0, -(ankle_y - 0.025 * h), -0.15 * foot_k)
+
+	var names: Array = []
+	var parents: Array = []
+	var locals: Array = []
+
+	for i in range(BONES.size()):
+		names.append(BONES[i][0])
+		parents.append(BONES[i][1])
+		locals.append(pos[i] if int(BONES[i][1]) < 0 else pos[i] - pos[int(BONES[i][1])])
+
+	return {"names": names, "parents": parents, "global": pos, "local": locals,
+		"dims": {"h": h, "legs": legs, "torso": torso, "arm": arm, "hips_y": hips_y, "head_y": head_y, "ankle_y": ankle_y}}
+
+
+# ---------------------------------------------------------------- primitives
+
+# A primitive: {t: "cone" | "ell", bone, mat, a, b, ra, rb (cone) | c, r (ellipsoid), cut_n, cut_c (optional plane: keep dot(n, p) >= c)}.
+static func _cone(bone: int, a: Vector3, b: Vector3, ra: float, rb: float, mat: int = MAT_SKIN) -> Dictionary:
+	return {"t": "cone", "bone": bone, "mat": mat, "grp": _group_of(bone), "a": a, "b": b, "ra": ra, "rb": rb}
+
+
+static func _ell(bone: int, c: Vector3, r: Vector3, mat: int = MAT_SKIN) -> Dictionary:
+	return {"t": "ell", "bone": bone, "mat": mat, "grp": _group_of(bone), "c": c, "r": r}
+
+
+# Smooth blending happens only inside a group (trunk and head, each arm, each leg); different groups meet with a hard union, so an
+# arm never webs onto the torso or a leg onto the other leg (the first picture showed that tearing when posed).
+static func _group_of(bone: int) -> int:
+	if bone <= 4:
+		return 0
+
+	if bone <= 8:
+		return 1
+
+	if bone <= 12:
+		return 2
+
+	return 3 if bone <= 16 else 4
+
+
+static func primitives(g: Dictionary, rg: Dictionary) -> Array:
+	var p: Array = rg["global"]
+	var d: Dictionary = rg["dims"]
+	var h: float = d["h"]
+	var torso: float = d["torso"]
+	var b: float = m(float(g["build"]), 0.8, 1.3)
+	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
+	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
+	var belly: float = m(float(g["belly"]), 0.85, 1.55)
+	var hs: float = m(float(g["head"]), 0.85, 1.4)
+	var hand_k: float = m(float(g["hands"]), 0.8, 1.5)
+	var foot_k: float = m(float(g["feet"]), 0.85, 1.3)
+	var neck_r: float = 0.05 * m(float(g["neck"]), 0.8, 1.4) * sqrt(b)
+	var jaw: float = m(float(g["jaw"]), 0.85, 1.25)
+	var nose: float = m(float(g["nose"]), 0.7, 1.9)
+	var brow: float = m(float(g["brow"]), 0.5, 2.0)
+	var ear: float = m(float(g["ears"]), 0.8, 2.4)
+	var hair_len: float = m(float(g["hair_length"]), 0.2, 2.0)
+	var out: Array = []
+	var hips_c: Vector3 = p[0]
+	var head_c: Vector3 = p[4]
+	# Trunk
+	out.append(_ell(0, hips_c + Vector3(0.0, 0.0, 0.0), Vector3(0.165 * b * hip_w, 0.14, 0.12 * b)))
+	out.append(_ell(1, p[1] + Vector3(0.0, 0.02 * torso, -0.01), Vector3(0.155 * b, 0.15 * torso, 0.12 * b * belly)))
+	out.append(_ell(2, p[2] + Vector3(0.0, 0.08 * torso, -0.005), Vector3(0.155 * b * wide, 0.2 * torso, 0.12 * b * mu)))
+	out.append(_cone(3, p[3] + Vector3(0.0, -0.02, 0.0), head_c + Vector3(0.0, 0.03, 0.0), neck_r, neck_r * 0.92))
+	# Head, face and hair
+	out.append(_ell(4, head_c + Vector3(0.0, 0.14 * hs, 0.0), Vector3(0.095 * hs, 0.118 * hs, 0.108 * hs)))
+	out.append(_ell(4, head_c + Vector3(0.0, 0.065 * hs, -0.022 * hs), Vector3(0.074 * hs * jaw, 0.07 * hs, 0.082 * hs)))
+	out.append(_ell(4, head_c + Vector3(0.0, 0.115 * hs, -0.108 * hs), Vector3(0.017 * nose, 0.03 * nose, 0.026 * nose)))
+	out.append(_ell(4, head_c + Vector3(0.0, 0.183 * hs, -0.085 * hs), Vector3(0.08 * hs, 0.013 * hs * brow, 0.028 * hs)))
+
+	for side in [-1.0, 1.0]:
+		out.append(_ell(4, head_c + Vector3(0.099 * hs * side, 0.135 * hs, 0.005 * hs), Vector3(0.012, 0.03 * ear, 0.019)))
+
+	var cap: Dictionary = _ell(4, head_c + Vector3(0.0, 0.158 * hs, 0.012 * hs), Vector3(0.101 * hs, 0.122 * hs, 0.116 * hs), MAT_HAIR)
+	cap["cut_n"] = Vector3(0.0, 1.0, -0.12)
+	cap["cut_c"] = head_c.y + 0.19 * hs
+	out.append(cap)
+	var back: Dictionary = _ell(4, head_c + Vector3(0.0, 0.09 * hs - 0.05 * (hair_len - 1.0), 0.052 * hs), Vector3(0.095 * hs, 0.1 * hs * hair_len, 0.07 * hs), MAT_HAIR)
+	back["cut_n"] = Vector3(0.0, 0.0, 1.0)
+	back["cut_c"] = 0.012 * hs
+	out.append(back)
+
+	# Arms and hands
+	for side in [-1.0, 1.0]:
+		var o: int = 5 if side < 0.0 else 9
+		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.05 * mu, 0.05 * mu))
+		out.append(_cone(o + 1, p[o + 1], p[o + 2], 0.052 * mu * sqrt(b), 0.042 * mu))
+		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
+		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.075 * hand_k, 0.0), Vector3(0.04 * hand_k, 0.078 * hand_k, 0.028 * hand_k)))
+		out.append(_ell(o + 3, p[o + 3] + Vector3(-0.03 * side * hand_k, -0.045 * hand_k, -0.02 * hand_k), Vector3(0.016 * hand_k, 0.035 * hand_k, 0.016 * hand_k)))
+
+	# Legs and feet
+	for side in [-1.0, 1.0]:
+		var l: int = 13 if side < 0.0 else 17
+		out.append(_cone(l, p[l], p[l + 1], 0.085 * sqrt(b) * mu * hip_w, 0.062 * mu))
+		out.append(_cone(l + 1, p[l + 1], p[l + 2], 0.058 * mu, 0.041))
+		var foot_c: Vector3 = p[l + 2] + Vector3(0.0, -0.025 * h, -0.065 * foot_k)
+		out.append(_ell(l + 2, foot_c, Vector3(0.05 * foot_k, 0.04, 0.115 * foot_k)))
+		out.append(_ell(l + 3, p[l + 3] + Vector3(0.0, 0.0, -0.01), Vector3(0.045 * foot_k, 0.03, 0.04 * foot_k)))
+
+	return out
+
+
+static func prim_sdf(q: Dictionary, x: Vector3) -> float:
+	var dist: float
+
+	if q["t"] == "cone":
+		var a: Vector3 = q["a"]
+		var ab: Vector3 = (q["b"] as Vector3) - a
+		var t: float = clampf((x - a).dot(ab) / maxf(ab.length_squared(), 0.000001), 0.0, 1.0)
+		dist = (x - (a + ab * t)).length() - lerpf(float(q["ra"]), float(q["rb"]), t)
+	else:
+		var r: Vector3 = q["r"]
+		var v: Vector3 = x - (q["c"] as Vector3)
+		var k0: float = Vector3(v.x / r.x, v.y / r.y, v.z / r.z).length()
+		var k1: float = Vector3(v.x / (r.x * r.x), v.y / (r.y * r.y), v.z / (r.z * r.z)).length()
+		dist = k0 * (k0 - 1.0) / maxf(k1, 0.000001)
+
+	if q.has("cut_n"):
+		dist = maxf(dist, float(q["cut_c"]) - (q["cut_n"] as Vector3).dot(x))
+
+	return dist
+
+
+static func _bounds(q: Dictionary) -> AABB:
+	if q["t"] == "cone":
+		var r: float = maxf(float(q["ra"]), float(q["rb"]))
+		var box: AABB = AABB(q["a"], Vector3.ZERO).expand(q["b"])
+		return box.grow(r)
+
+	var c: Vector3 = q["c"]
+	var rr: Vector3 = q["r"]
+	return AABB(c - rr, rr * 2.0)
+
+
+static func _smin(a: float, b: float, k: float) -> float:
+	var h: float = maxf(k - absf(a - b), 0.0) / k
+	return minf(a, b) - h * h * k * 0.25
+
+
+# ---------------------------------------------------------------- mesh
+
+# Returns {arrays (for ArrayMesh), vertex_count, triangle_count, timings (ms), rig}.
+# Each group (trunk and head, each arm, each leg) is meshed on its own, so a hanging arm never fuses with the torso into a stretchy
+# membrane (the first two pictures showed that); the pieces overlap where limbs join and render as one body.
+static func build(g: Dictionary, voxel: float = 0.03) -> Dictionary:
+	var t0: int = Time.get_ticks_usec()
+	var rg: Dictionary = rig(g)
+	var prims: Array = primitives(g, rg)
+	var verts: PackedVector3Array = PackedVector3Array()
+	var tris: PackedInt32Array = PackedInt32Array()
+	var vgroup: PackedInt32Array = PackedInt32Array()
+	var t_field: int = 0
+	var t_surface: int = 0
+	var grid_cells: int = 0
+
+	for gi in range(GROUPS):
+		var gp: Array = []
+
+		for q in prims:
+			if int(q["grp"]) == gi:
+				gp.append(q)
+
+		var ta: int = Time.get_ticks_usec()
+		var bounds: AABB = AABB()
+		var first: bool = true
+
+		for q in gp:
+			var qb: AABB = _bounds(q)
+			bounds = qb if first else bounds.merge(qb)
+			first = false
+
+		bounds = bounds.grow(SMOOTH_K + voxel * 2.0)
+		var origin: Vector3 = bounds.position
+		var nx: int = ceili(bounds.size.x / voxel)
+		var ny: int = ceili(bounds.size.y / voxel)
+		var nz: int = ceili(bounds.size.z / voxel)
+		var sx: int = nx + 1
+		var sxy: int = sx * (ny + 1)
+		var field: PackedFloat32Array = PackedFloat32Array()
+		field.resize(sxy * (nz + 1))
+		field.fill(1.0)
+		grid_cells += nx * ny * nz
+
+		for q in gp:
+			var qb2: AABB = _bounds(q).grow(SMOOTH_K + voxel)
+			var lo: Vector3 = (qb2.position - origin) / voxel
+			var hi: Vector3 = (qb2.end - origin) / voxel
+
+			for iz in range(maxi(0, floori(lo.z)), mini(nz, ceili(hi.z)) + 1):
+				for iy in range(maxi(0, floori(lo.y)), mini(ny, ceili(hi.y)) + 1):
+					for ix in range(maxi(0, floori(lo.x)), mini(nx, ceili(hi.x)) + 1):
+						var idx: int = ix + iy * sx + iz * sxy
+						field[idx] = _smin(field[idx], prim_sdf(q, origin + Vector3(ix, iy, iz) * voxel), SMOOTH_K)
+
+		var tb: int = Time.get_ticks_usec()
+		var gv: PackedVector3Array = PackedVector3Array()
+		var gt: PackedInt32Array = PackedInt32Array()
+		_surface_nets(field, nx, ny, nz, origin, voxel, gv, gt)
+		var tc: int = Time.get_ticks_usec()
+		t_field += tb - ta
+		t_surface += tc - tb
+		var offset: int = verts.size()
+		verts.append_array(gv)
+
+		for index in gt:
+			tris.append(index + offset)
+
+		for _v in range(gv.size()):
+			vgroup.append(gi)
+
+	var t3: int = Time.get_ticks_usec()
+	var normals: PackedVector3Array = _normals(verts, tris)
+	var skinning: Dictionary = _weights(verts, tris, prims, vgroup, g)
+	var t4: int = Time.get_ticks_usec()
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = skinning["colors"]
+	arrays[Mesh.ARRAY_INDEX] = tris
+	arrays[Mesh.ARRAY_BONES] = skinning["bones"]
+	arrays[Mesh.ARRAY_WEIGHTS] = skinning["weights"]
+	@warning_ignore("integer_division")   # whole triangles
+	var triangle_count: int = tris.size() / 3
+	return {"arrays": arrays, "rig": rg, "vertex_count": verts.size(), "triangle_count": triangle_count,
+		"grid": Vector3i(grid_cells, 0, 0),
+		"ms": {"rig_prims": float(t3 - t0 - t_field - t_surface) / 1000.0, "field": float(t_field) / 1000.0, "surface": float(t_surface) / 1000.0,
+			"weights": float(t4 - t3) / 1000.0, "total": float(t4 - t0) / 1000.0}}
+
+
+static func _surface_nets(field: PackedFloat32Array, nx: int, ny: int, nz: int, origin: Vector3, vs: float, verts: PackedVector3Array, tris: PackedInt32Array) -> void:
+	var sx: int = nx + 1
+	var sxy: int = sx * (ny + 1)
+	var cell_vertex: PackedInt32Array = PackedInt32Array()
+	cell_vertex.resize(nx * ny * nz)
+	cell_vertex.fill(-1)
+	var corner: Array = [Vector3i(0, 0, 0), Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(1, 1, 0), Vector3i(0, 0, 1), Vector3i(1, 0, 1), Vector3i(0, 1, 1), Vector3i(1, 1, 1)]
+	var edges: Array = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]
+	var values: PackedFloat32Array = PackedFloat32Array()
+	values.resize(8)
+
+	for z in range(nz):
+		for y in range(ny):
+			for x in range(nx):
+				var mask: int = 0
+
+				for c in range(8):
+					var o: Vector3i = corner[c]
+					var v: float = field[(x + o.x) + (y + o.y) * sx + (z + o.z) * sxy]
+					values[c] = v
+
+					if v < 0.0:
+						mask |= 1 << c
+
+				if mask == 0 or mask == 255:
+					continue
+
+				var sum: Vector3 = Vector3.ZERO
+				var count: int = 0
+
+				for e in edges:
+					var ca: int = e[0]
+					var cb: int = e[1]
+					var va: float = values[ca]
+					var vb: float = values[cb]
+
+					if (va < 0.0) != (vb < 0.0):
+						var tt: float = va / (va - vb)
+						var oa: Vector3i = corner[ca]
+						var ob: Vector3i = corner[cb]
+						sum += Vector3(oa).lerp(Vector3(ob), tt)
+						count += 1
+
+				cell_vertex[x + y * nx + z * nx * ny] = verts.size()
+				verts.append(origin + (Vector3(x, y, z) + sum / float(count)) * vs)
+
+	# One quad for every grid edge that crosses the surface, wound so the normal points out of the body (toward positive field).
+	for z in range(1, nz):
+		for y in range(1, ny):
+			for x in range(1, nx):
+				var f0: float = field[x + y * sx + z * sxy]
+
+				for axis in range(3):
+					var step: int = 1 if axis == 0 else (sx if axis == 1 else sxy)
+					var limit_ok: bool = (axis == 0 and x < nx) or (axis == 1 and y < ny) or (axis == 2 and z < nz)
+
+					if not limit_ok:
+						continue
+
+					var f1: float = field[x + y * sx + z * sxy + step]
+
+					if (f0 < 0.0) == (f1 < 0.0):
+						continue
+
+					var q: Array = []
+
+					if axis == 0:
+						q = [Vector3i(x, y - 1, z - 1), Vector3i(x, y, z - 1), Vector3i(x, y, z), Vector3i(x, y - 1, z)]
+					elif axis == 1:
+						q = [Vector3i(x - 1, y, z - 1), Vector3i(x - 1, y, z), Vector3i(x, y, z), Vector3i(x, y, z - 1)]
+					else:
+						q = [Vector3i(x - 1, y - 1, z), Vector3i(x, y - 1, z), Vector3i(x, y, z), Vector3i(x - 1, y, z)]
+
+					var ids: Array = []
+
+					for cell in q:
+						ids.append(cell_vertex[cell.x + cell.y * nx + cell.z * nx * ny])
+
+					if ids.has(-1):
+						continue
+
+					var outward: Vector3 = Vector3.ZERO
+					outward[axis] = 1.0 if f0 < 0.0 else -1.0
+					var n: Vector3 = (verts[ids[1]] - verts[ids[0]]).cross(verts[ids[2]] - verts[ids[0]]) + (verts[ids[2]] - verts[ids[0]]).cross(verts[ids[3]] - verts[ids[0]])
+
+					if n.dot(outward) < 0.0:
+						ids.reverse()
+
+					tris.append_array(PackedInt32Array([ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]]))
+
+
+static func _normals(verts: PackedVector3Array, tris: PackedInt32Array) -> PackedVector3Array:
+	var normals: PackedVector3Array = PackedVector3Array()
+	normals.resize(verts.size())
+
+	for i in range(0, tris.size(), 3):
+		var a: int = tris[i]
+		var b: int = tris[i + 1]
+		var c: int = tris[i + 2]
+		var n: Vector3 = (verts[b] - verts[a]).cross(verts[c] - verts[a])
+		normals[a] += n
+		normals[b] += n
+		normals[c] += n
+
+	for i in range(normals.size()):
+		normals[i] = normals[i].normalized()
+
+	return normals
+
+
+# Skin weights: each vertex takes exp(-distance / falloff) from every primitive, summed per bone, smoothed over the mesh neighbours, then the best 4 bones are kept.
+static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: Array, vgroup: PackedInt32Array, g: Dictionary) -> Dictionary:
+	var count: int = verts.size()
+	var bone_count: int = BONES.size()
+	var w: PackedFloat32Array = PackedFloat32Array()
+	w.resize(count * bone_count)
+	var colors: PackedColorArray = PackedColorArray()
+	colors.resize(count)
+	var skin_c: Color = g["skin"]
+	var hair_c: Color = g["hair"]
+
+	var dists: PackedFloat32Array = PackedFloat32Array()
+	dists.resize(prims.size())
+
+	for i in range(count):
+		var best: float = 1000.0
+		var best_mat: int = MAT_SKIN
+
+		for k in range(prims.size()):
+			var q: Dictionary = prims[k]
+			var d: float = prim_sdf(q, verts[i]) if int(q["grp"]) == vgroup[i] else 1000.0
+			dists[k] = d
+
+			if d < best:
+				best = d
+				best_mat = int(q["mat"])
+
+		# Only the primitives of the vertex's own group give it weight, so a torso vertex beside an arm never follows the arm.
+		for k in range(prims.size()):
+			var q2: Dictionary = prims[k]
+
+			if int(q2["grp"]) == vgroup[i]:
+				w[i * bone_count + int(q2["bone"])] += exp(-maxf(dists[k], 0.0) / WEIGHT_FALLOFF)
+
+		colors[i] = hair_c if best_mat == MAT_HAIR else skin_c
+
+	var neighbours: Array = []
+	neighbours.resize(count)
+
+	for i in range(count):
+		neighbours[i] = PackedInt32Array()
+
+	for i in range(0, tris.size(), 3):
+		for k in range(3):
+			var a: int = tris[i + k]
+			var b: int = tris[i + (k + 1) % 3]
+			(neighbours[a] as PackedInt32Array).append(b)
+			(neighbours[b] as PackedInt32Array).append(a)
+
+	for _pass in range(WEIGHT_PASSES):
+		var next: PackedFloat32Array = w.duplicate()
+
+		for i in range(count):
+			var nb: PackedInt32Array = neighbours[i]
+
+			if nb.is_empty():
+				continue
+
+			var same: PackedInt32Array = PackedInt32Array()
+
+			for n in nb:
+				if vgroup[n] == vgroup[i]:
+					same.append(n)
+
+			if same.is_empty():
+				continue
+
+			for j in range(bone_count):
+				var s: float = 0.0
+
+				for n in same:
+					s += w[n * bone_count + j]
+
+				next[i * bone_count + j] = 0.5 * w[i * bone_count + j] + 0.5 * s / float(same.size())
+
+		w = next
+
+	var bones: PackedInt32Array = PackedInt32Array()
+	var weights: PackedFloat32Array = PackedFloat32Array()
+	bones.resize(count * 4)
+	weights.resize(count * 4)
+
+	for i in range(count):
+		var best_bones: Array = [0, 0, 0, 0]
+		var best_w: Array = [0.0, 0.0, 0.0, 0.0]
+
+		for j in range(bone_count):
+			var v: float = w[i * bone_count + j]
+
+			for s in range(4):
+				if v > float(best_w[s]):
+					best_w.insert(s, v)
+					best_bones.insert(s, j)
+					best_w.pop_back()
+					best_bones.pop_back()
+					break
+
+		var total: float = float(best_w[0]) + float(best_w[1]) + float(best_w[2]) + float(best_w[3])
+
+		for s in range(4):
+			bones[i * 4 + s] = int(best_bones[s])
+			weights[i * 4 + s] = float(best_w[s]) / maxf(total, 0.000001)
+
+	return {"bones": bones, "weights": weights, "colors": colors}
+
+
+# ---------------------------------------------------------------- scene objects
+
+# Builds a Skeleton3D with the generated skinned mesh (and simple eyes). The result is a Node3D whose child "Skeleton3D" holds the bones.
+static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
+	var built: Dictionary = build(g, voxel)
+	var rg: Dictionary = built["rig"]
+	var root: Node3D = Node3D.new()
+	var skeleton: Skeleton3D = Skeleton3D.new()
+	skeleton.name = "Skeleton3D"
+	root.add_child(skeleton)
+	var names: Array = rg["names"]
+
+	for i in range(names.size()):
+		skeleton.add_bone(names[i])
+		skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, (rg["local"] as Array)[i]))
+
+		if int((rg["parents"] as Array)[i]) >= 0:
+			skeleton.set_bone_parent(i, int((rg["parents"] as Array)[i]))
+
+	skeleton.reset_bone_poses()
+	var skin: Skin = Skin.new()
+
+	for i in range(names.size()):
+		skin.add_bind(i, skeleton.get_bone_global_rest(i).affine_inverse())
+
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, built["arrays"])
+	mesh.custom_aabb = AABB(Vector3(-1.5, -0.3, -1.5), Vector3(3.0, 3.0, 3.0))
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.85
+	mesh.surface_set_material(0, material)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	body.name = "Body"
+	body.mesh = mesh
+	body.skin = skin
+	body.skeleton = NodePath("..")
+	skeleton.add_child(body)
+
+	# Eyes: a white and a dark sphere on the Head bone.
+	var attach: BoneAttachment3D = BoneAttachment3D.new()
+	attach.name = "Eyes"
+	skeleton.add_child(attach)
+	attach.bone_name = "Head"
+	var hs: float = m(float(g["head"]), 0.85, 1.4)
+
+	for side in [-1.0, 1.0]:
+		var white: MeshInstance3D = MeshInstance3D.new()
+		var sphere: SphereMesh = SphereMesh.new()
+		sphere.radius = 0.021 * hs
+		sphere.height = 0.042 * hs
+		sphere.radial_segments = 12
+		sphere.rings = 6
+		white.mesh = sphere
+		var wm: StandardMaterial3D = StandardMaterial3D.new()
+		wm.albedo_color = Color(0.96, 0.95, 0.92)
+		white.material_override = wm
+		white.position = Vector3(0.037 * hs * side, 0.148 * hs, -0.093 * hs)
+		attach.add_child(white)
+		var pupil: MeshInstance3D = MeshInstance3D.new()
+		var ps: SphereMesh = SphereMesh.new()
+		ps.radius = 0.0105 * hs
+		ps.height = 0.021 * hs
+		ps.radial_segments = 10
+		ps.rings = 5
+		pupil.mesh = ps
+		var pm: StandardMaterial3D = StandardMaterial3D.new()
+		pm.albedo_color = Color(0.08, 0.06, 0.05)
+		pupil.material_override = pm
+		pupil.position = white.position + Vector3(0.0, 0.0, -0.0155 * hs)
+		attach.add_child(pupil)
+
+	return {"node": root, "skeleton": skeleton, "built": built}

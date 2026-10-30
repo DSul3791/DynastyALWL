@@ -62,7 +62,7 @@ Dave asked me to decide without him wherever I can and to ask only if I really n
 | D28 | Smooth motion by default; held, stepped poses only in comic beats; simplified hands with a thumb and two or three finger groups; minimal eye and brow channel by swap | 3.11.1, 3.11.2 |
 
 **Really needs Dave or another owner (I cannot decide these):**
-- **A. D10: ownership and the removal list.** May I move the avatar and first-person arm logic into a new module, edit the shared files `terrain_client.gd` and `held_item.gd` minimally, and do you approve the removal list in 2.8? This is a permission question, not a design one.
+- **A. D10: ownership and the removal list. ANSWERED by the moderator on Dave's behalf (Part 8.1):** yes to the new module with minimal edits to the shared files; do not remove passages outright, archive them instead (not yet done, 8.4). Dave may still overrule.
 - **B. D15 wording:** do you want ancestry-linked boons to stay as small fantasy-people traits, or kept entirely in backgrounds? The research and your rule push toward the second; you asked for the first. I chose the middle path above.
 - **C. D20 and D21: accounts.** How many characters per player, how they link to the dynasty and heirs, and how one account per character fits the identity plan. This belongs to the technical lead and the dynasty design.
 - **D. D23 and the trait and background content:** the final fear list, the background list and the trait rules are your design; I supplied a draft fear list (5.8.8) only.
@@ -684,6 +684,68 @@ Review gates: after each phase Dave sees stills or video and a short note; done 
 2. Phase 1 on the existing body.
 3. Show Dave a short side-by-side (stills and a clip) after each of Phases 1 and 2 before spending on Body v2.
 
+
+---
+
+# Part 8. Action plans and the first prototype (Sonny, 2026-10-30)
+
+## 8.1 Answers from the moderator while Dave is away (relayed by the session that started me)
+1. **Yes:** move the avatar and first-person arm code into a new module on my branch, with minimal edits to `terrain_client.gd` and `held_item.gd`.
+2. **Do not remove passages outright:** move them into an archive file so nothing is lost. (Status in 8.4.)
+3. **Ancestry boons:** take my middle path (small mostly physical traits for fantasy peoples, bigger bonuses in backgrounds and traits, skin tone and face cosmetic). Done in 4.7 and the decision sheet.
+4. **Characters per player:** Dave's call; design for **one active character per account with a data shape that allows more** (D20).
+5. **Draft the fear, background and trait lists as proposals** for Dave to edit (Plan 3).
+6. **Build the first body prototype**, save pictures for Dave, keep proportions adjustable, benchmark the GDScript body generation (Plan 1, results in 8.3).
+7. Search the web for facts and record source and confidence; delete nothing; write three new plans of action, approve them myself (pre-approved), and start the first.
+
+This widens my earlier rules (document only) to: the new files below, on my branch only. I still do not touch `main` or `DailyDev_20261029`, make no bakes, and have not changed any existing game file.
+
+## 8.2 Three action plans (approved by me under the moderator's pre-approval)
+
+**Plan 1. Body generator prototype and benchmark (started, first result below).** Goal: prove the genome-to-body idea. Steps: generator from sliders to skeleton, smooth body, skin weights and mesh; pictures of four archetypes at rest and in a bend test; GDScript timing; then iterate on the defects (seams, hair, hands, face, clothes, triangle budget); then add the face presets and skin and hair options. Files: `src/client/character/body_generator.gd`, `tools/proto_body.gd`, pictures in `art/character_proto/`. Done when: bodies bend cleanly, four archetypes read clearly at 20 m, cost per body is known, and Dave has seen pictures. Risk: GDScript too slow (measured below: no); visual quality of a code-made body (open).
+
+**Plan 2. Motion prototype on the generated skeleton.** Goal: prove the animation plan before building it. Steps: an `AnimationTree` with a speed blend space and a filtered upper-body one-shot on the new skeleton (settles risk 2 in 7.2); a held-pose comic clip using `INTERPOLATION_NEAREST` and manual stepping (4.6); a squash helper bone; rotation-only clips with the hips scaled by `motion_scale` on two different bodies (5.7.6); capture stills and timing. Files: `tools/proto_motion.gd` and a few new clip definitions. Done when: the same clip set plays correctly on the four archetypes with no foot sliding at a fixed speed, and the stepped clip reads as comedy rather than lag.
+
+**Plan 3. Proposals for Dave: fears, backgrounds, traits (documents only).** Goal: give Dave lists to edit. Steps: keep the draft fear list (5.8.8); draft about 12 backgrounds (story, small boon, small drawback, look hint) written as plain data rows; draft the trait list on the existing -10 to +10 attributes (Luck and Fitness exist; Strength, Dexterity, Memory, Wisdom are listed) with the skill links; write all as proposals, label them clearly, and check wording against the safe-place rule. Files: this document (new Part 9 when drafted). Done when: Dave has lists he can cut and change. Not started yet.
+
+A fourth plan is queued: **Plan 4, extract the avatar and first-person arm code** into a new module (the moderator's answer 1). It waits for Plans 1 and 2 because the new skeleton decides the shape of that module, and extracting before that would be done twice.
+
+## 8.3 Plan 1 first result: it works, with known defects
+
+**What was built (new files, nothing existing changed):** `src/client/character/body_generator.gd` (about 520 lines) and `tools/proto_body.gd`. A genome of 18 sliders from -1 to +1 (height, build, muscle, belly, shoulders, hips, torso, legs, arms, neck, head, hands, feet, jaw, nose, brow, ears, hair length) plus skin and hair colours. Four archetype presets (average, broad, lean, stocky) are just different slider values. The skeleton has 21 bones with Godot humanoid names (hips, spine, chest, neck, head, shoulders, upper and lower arms, hands, upper and lower legs, feet, toes). Each body part is a rounded cone or ellipsoid on one bone; each group (trunk and head, each arm, each leg) is blended smoothly inside the group and meshed separately; skin weights come from distance to the parts of the same group, smoothed twice, best four bones kept. Eyes are two small spheres on the head bone. Hair is a cut ellipsoid cap and a back piece.
+
+**Pictures (for Dave; four bodies, front and side):** `art/character_proto/proto_rest.png` (standing), `art/character_proto/proto_bent.png` (a bend test: arms raised, elbows and knees bent, head turned) at 3 cm detail, and `art/character_proto/voxel45/` at 4.5 cm detail. Copies are in the shared notes folder.
+
+**Benchmark (GDScript, one run on Dave's PC, wall-clock in milliseconds, whole body from genome to mesh; one run, not averaged):**
+| Detail | Archetype | Triangles | Total ms | of which field | surface | skin weights |
+|---|---|---|---|---|---|---|
+| 3.0 cm | average | 6,852 | 335 | 83 | 117 | 134 |
+| 3.0 cm | broad | 9,188 | 446 | 110 | 162 | 173 |
+| 3.0 cm | lean | 6,700 | 354 | 86 | 120 | 148 |
+| 3.0 cm | stocky | 8,272 | 436 | 113 | 157 | 165 |
+| 4.5 cm | average | 3,024 | 156 | 43 | 53 | 60 |
+| 4.5 cm | broad | 4,060 | 220 | 58 | 73 | 88 |
+| 4.5 cm | lean | 2,932 | 160 | 46 | 53 | 60 |
+| 4.5 cm | stocky | 3,736 | 203 | 51 | 73 | 78 |
+
+Reading: **one body takes about 0.15 to 0.45 s to generate in plain GDScript on this PC, with no optimisation.** That is acceptable for creating a character or loading one into view once (and baking the result to a file, plan in 5.7.9) but not for building 20 bodies in one frame; they must be generated one at a time in the background, cached by genome, and ideally shared between players with the same genome. The earlier estimate in 3.11.3 (M12: "hundreds of milliseconds to seconds") held, at the low end. The agent estimate was not measured by me on the minimum machine: this PC is likely faster than a GTX 1050-class machine, so the real cost there is higher; this must be re-measured on the minimum machine. Triangle counts (3,000 to 9,000) are above the old documented budget of 1.5 to 3.2 thousand for the ragdoll; 4.5 cm detail is near it.
+
+**Findings (what worked and what failed):**
+- **Worked:** the genome idea (four clearly different bodies from numbers alone); soft bends at elbows, knees and shoulders in the bend test; one shared skeleton with different bone lengths per body; the bake path is cheap.
+- **Failed first, then fixed:** blending all parts smoothly made the arms fuse to the torso and legs to each other, and a raised arm tore a sheet of skin off the side (first pictures). Fix: blend only inside a group; weights only from the same group; then separate meshes per group so a hanging arm no longer forms a thin membrane against the torso. This is a real design rule for the final generator: **limbs must not be unioned with the trunk.**
+- **Known defects left in the first picture sheet:** thin seam lines where limbs meet the trunk; the hair cap shows a grey patch (a cut-plane artefact); face is only two eyes, a nose, brow and ears; hands and feet are crude blobs; no clothes; lighting in the sheet is flat. These are prototype defects, not findings about the method.
+- **Not yet checked:** how the body looks in the game lighting; animation clips on it (Plan 2); memory per body; whether the Voxel module could mesh faster; saving the mesh to a file and loading it back (5.7.9); the cost of 20 different bodies in view on the minimum machine.
+
+## 8.4 What I did not do, and why
+- **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
+- **Avatar module extraction (answer 1):** queued as Plan 4 (see 8.2).
+- **Playing the generated body in the game:** not done; no existing game file was changed.
+
+## 8.5 Next steps (in order)
+1. Plan 1 iteration: fix hair and seams, add hands and a nicer face, add a first simple tunic and boots layer so the pictures read as a character, add a 4.5 cm variant for distance, save and reload the mesh.
+2. Plan 2 motion prototype on this skeleton (walk and a held-pose comic reaction).
+3. Plan 3 lists for Dave.
+4. Plan 4 module extraction.
 
 ---
 
