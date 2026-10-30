@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 297,
+	"next_number": 301,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3416,6 +3416,99 @@
 				]
 			],
 			"value": 60
+		},
+		"stone_pickaxe": {
+			"number": 297,
+			"name": "Stone pickaxe",
+			"description": "A heavy stone head lashed to a haft. Breaks rock and ore, slowly.",
+			"kind": "tool",
+			"tool_class": "pick",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"durability": 4500,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 35
+		},
+		"sickle": {
+			"number": 298,
+			"name": "Sickle",
+			"description": "A curved flint blade on a short handle. Cuts grain and grass by the handful.",
+			"kind": "tool",
+			"tool_class": "sickle",
+			"material": "stone",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 600,
+			"look_alikes": [],
+			"repair": [
+				[
+					"flint",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 18
+		},
+		"scythe": {
+			"number": 299,
+			"name": "Scythe",
+			"description": "A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
+			"kind": "tool",
+			"tool_class": "scythe",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"durability": 9000,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 80,
+			"repair_station": "forge"
+		},
+		"wooden_club": {
+			"number": 300,
+			"name": "Wooden club",
+			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
+			"kind": "weapon",
+			"weapon_class": "club",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"damage": 7.0,
+			"durability": 350,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 10
 		}
 	}
 }
