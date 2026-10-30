@@ -227,3 +227,5 @@ Approved by Sal (moderator pre-approval). Plan 1 started: spec is in ITEM_CHANGE
 1. Combat tier list (swords, maces, shields, armour): DONE as ITEM_COMBAT_TIER_LIST.md (spec only).
 2. Farming crops and tools gap check: next.
 3. One-page glossary of item names for the team: after that.
+
+Plan 1 of round 2 built: items 312-331, recipes 201-220 (shield off-hand = choice A; plate = future only). Tests green. Next: farming gap check, then glossary.

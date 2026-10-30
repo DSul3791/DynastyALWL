@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 312,
+	"next_number": 332,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3631,6 +3631,355 @@
 			"light_m": 4.0,
 			"look_alikes": [],
 			"value": 3
+		},
+		"wicker_shield": {
+			"number": 312,
+			"name": "Wicker shield",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 120,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 8
+		},
+		"stone_mace": {
+			"number": 313,
+			"name": "Stone mace",
+			"description": "A heavy stone lashed to a stick. Cracks armour and bone.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"damage": 9.0,
+			"durability": 400,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 20
+		},
+		"plank_shield": {
+			"number": 314,
+			"name": "Plank shield",
+			"description": "Boards bound with hide. Sturdier than wicker.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"lumber",
+					1
+				]
+			],
+			"value": 25
+		},
+		"bronze_sword": {
+			"number": 315,
+			"name": "Bronze sword",
+			"description": "A bronze blade on a short grip. Quick and sharp.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"damage": 12.0,
+			"durability": 900,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 70,
+			"repair_station": "forge"
+		},
+		"bronze_mace": {
+			"number": 316,
+			"name": "Bronze mace",
+			"description": "A cast bronze head on a stout haft.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"damage": 11.0,
+			"durability": 900,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 65,
+			"repair_station": "forge"
+		},
+		"bronze_shield": {
+			"number": 317,
+			"name": "Bronze-rimmed shield",
+			"description": "A plank shield with a bronze rim and boss.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"durability": 700,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 60,
+			"repair_station": "forge"
+		},
+		"iron_sword": {
+			"number": 318,
+			"name": "Iron sword",
+			"description": "A forged iron blade with a leather grip.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"damage": 16.0,
+			"durability": 1800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 120,
+			"repair_station": "forge"
+		},
+		"iron_mace": {
+			"number": 319,
+			"name": "Iron mace",
+			"description": "A flanged iron head that breaks armour.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"damage": 15.0,
+			"durability": 1800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 110,
+			"repair_station": "forge"
+		},
+		"iron_shield": {
+			"number": 320,
+			"name": "Iron-banded shield",
+			"description": "Boards held by iron bands. Hard to break.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"durability": 1500,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 110,
+			"repair_station": "forge"
+		},
+		"steel_sword": {
+			"number": 321,
+			"name": "Steel sword",
+			"description": "A tempered steel blade. Keeps its edge.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"damage": 22.0,
+			"durability": 3200,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 250,
+			"repair_station": "forge"
+		},
+		"steel_mace": {
+			"number": 322,
+			"name": "Steel mace",
+			"description": "A steel flanged head on a long haft.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"damage": 20.0,
+			"durability": 3200,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 230,
+			"repair_station": "forge"
+		},
+		"steel_shield": {
+			"number": 323,
+			"name": "Steel kite shield",
+			"description": "A long steel-faced shield that covers shoulder to shin.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"durability": 2800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 230,
+			"repair_station": "forge"
+		},
+		"leather_cap": {
+			"number": 324,
+			"name": "Leather cap",
+			"description": "A close leather cap. Better than bare hide.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.08,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 25
+		},
+		"leather_jerkin": {
+			"number": 325,
+			"name": "Leather jerkin",
+			"description": "A stiff leather vest. Turns a glancing blow.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.22,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 60
+		},
+		"bronze_helm": {
+			"number": 326,
+			"name": "Bronze helm",
+			"description": "A beaten bronze cap with a nose guard.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 90
+		},
+		"gambeson": {
+			"number": 327,
+			"name": "Gambeson",
+			"description": "Quilted padding. Cheap armour that soaks a blow.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.3,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 70
+		},
+		"iron_helm": {
+			"number": 328,
+			"name": "Iron helm",
+			"description": "A riveted iron helmet.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 140
+		},
+		"mail_shirt": {
+			"number": 329,
+			"name": "Mail shirt",
+			"description": "Rings of iron riveted together. Heavy but sound.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 200
+		},
+		"steel_helm": {
+			"number": 330,
+			"name": "Steel helm",
+			"description": "A fitted steel helm with leather lining.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 260
+		},
+		"plate_cuirass": {
+			"number": 331,
+			"name": "Plate cuirass",
+			"description": "Shaped steel plates over a leather harness. The best body armour.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 500
 		}
 	}
 }

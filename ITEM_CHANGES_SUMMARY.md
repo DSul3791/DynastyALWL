@@ -43,3 +43,6 @@ ITEM_GROUPS_AND_NAMES.md (all games grouped, names recommended, Part B decisions
 
 ## What is still not done
 Lumber and Beam species merge; Clay Oven and Iron Stove; ore gathering in the world (the ore items exist but nothing yields them yet); the large and master forge cannot be built; quality grades; magic items; swords, maces, shields, slings and armour above hide; farming crops, windmill, animals, boats, carts, furniture, gliders and climbing items (all catalogued in ITEM_GROUPS_AND_NAMES.md, none in data).
+
+## Combat items (added 2026-10-30, all `future`)
+Items 312 to 331 and recipes 201 to 220: 4 swords/maces per metal tier, 5 shields, 8 armour pieces. Details and open choices in ITEM_COMBAT_TIER_LIST.md. Needs the ore and smelting code and the lumber source to be obtainable.

@@ -7,10 +7,13 @@ Spec only: nothing is in the data files yet. If approved, each row becomes a `fu
 | 1 Wood and hide | (Wooden club 300 exists) | Wooden club | Wicker shield (stick x3, plant fibre) | Hide tunic 305 exists / none | hand |
 | 2 Stone | Stone knife 11, Obsidian knife 296 exist | Stone mace (stone, stick, cord) | Plank shield (plank x3, hide) | Hide tunic + leather cap (leather x2) | hand / bench |
 | 3 Copper and bronze | Bronze sword (bronze ingot x2, stick) | Bronze mace (bronze ingot x2, stick) | Bronze-rimmed shield (plank x2, bronze ingot) | Leather jerkin (leather x3), bronze helm (bronze ingot x3) | bench + forge 2 |
-| 4 Iron | Iron sword (iron ingot x2, leather) | Iron mace (iron ingot x2, stick) | Iron-banded shield (plank x2, iron ingot x2) | Gambeson (cloth/fibre x3), iron helm, mail shirt (rivets x2, iron ingot x2) | bench + forge 2 |
+| 4 Iron | Iron sword (iron ingot x2, leather) | Iron mace (iron ingot x2, stick) | Iron-banded shield (plank x2, iron ingot x2) | Gambeson (twine x3, leather), iron helm, mail shirt (rivets x2, iron ingot x2) | bench + forge 2 |
 | 5 Steel | Steel sword (steel ingot x2, heavy leather) | Steel mace | Steel kite shield (plank, steel ingot x2) | Plate cuirass, steel helm (special: 4 ingredients) | bench + forge 3 |
 
 Notes
 - Fun and simple: each weapon type has one clear job (sword: fast, mace: breaks armour, shield: block). Slings and javelins stay as thrown/ranged items (Javelin 295 exists).
 - Depends on the ore and smelting code (see ITEM_CODE_HANDOFF.md). Bronze needs copper and tin; the bench rule and forge levels are unchanged.
 - Open for Dave: does the shield go in the off-hand slot (the validator today allows only torch and shield there)? Is plate armour too late for the first island?
+
+## Status (2026-10-30): now `future` items 312 to 331, recipes 201 to 220
+Wicker/plank/bronze-rimmed/iron-banded/steel kite shields (312 plank... see items.json), stone/bronze/iron/steel maces, bronze/iron/steel swords, leather cap and jerkin, bronze/iron/steel helms, gambeson, mail shirt, plate cuirass. Every recipe is 3 kinds or fewer (the plate cuirass and steel helm use exactly 3, not 4). Shields use tool_class shield with offhand true (choice A for Dave, reversible). Damage, durability and prices are Sal's placeholders from the ITEM_TIER_BALANCE.md ladder. Armour has warmth only; no armour stat exists yet. Tests: validate_items, dishes, server_items, first_hour, inventory, stations, save_compat all pass.

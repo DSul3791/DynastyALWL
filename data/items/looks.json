@@ -2195,6 +2195,106 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "wicker_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "stone_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "plank_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "leather_cap": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "leather_jerkin": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "gambeson": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "mail_shirt": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "plate_cuirass": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }
