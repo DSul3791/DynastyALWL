@@ -2474,8 +2474,8 @@ const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of t
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
 const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
-const PICKUP_BRIGHT := 1.3
-const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
+const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
+const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
@@ -2498,7 +2498,11 @@ func _pickup_group(group: String) -> Array:
 
 						if base is StandardMaterial3D:
 							var lit: StandardMaterial3D = base.duplicate()
-							lit.albedo_color = STICK_TINT if group == "stick" else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
+							# The glb material does not use the mesh's vertex colours on its own, so every stone drew as flat white (with the glow below): the "white sphere" in the rig
+							# pictures. Vertex colours are switched on (Kathleen, 2026-10-30), which is what the tint and the brightness here were meant to multiply into.
+							lit.vertex_color_use_as_albedo = true
+							var bright: float = 1.05 if group == "stick" else (1.0 if group == "driftwood" else PICKUP_BRIGHT)   # the mesh colours are already stone grey, bark brown and bleached wood
+							lit.albedo_color = Color(bright, bright, bright)
 							lit.emission_enabled = true
 							lit.emission = PICKUP_GLOW
 							mesh.surface_set_material(surface, lit)
