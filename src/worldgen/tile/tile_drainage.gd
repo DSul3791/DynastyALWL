@@ -28,7 +28,10 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 	# the two tiles' eroded ground differs and so would their lakes and divides. The raw ground is the same in every frame.
 	var route_over: PackedFloat32Array = land
 
-	if bool(rules.get("route_over_raw", true)) and water.routing_raw.size() == land.size():
+	# Natural rivers run on the shared pre-carve, whose eroded ground is the same in every frame, so water is routed over that ground and the lakes the erosion left are found.
+	var natural_on: bool = bool(rules.get("natural", {}).get("enabled", false))
+
+	if bool(rules.get("route_over_raw", true)) and not natural_on and water.routing_raw.size() == land.size():
 		route_over = water.routing_raw
 
 	var routing: PackedFloat32Array = _routing_heights(route_over, sea, samples, float(rules.get("routing_noise_m", 0.25)), int(rules.get("seed", 17)), origin)
