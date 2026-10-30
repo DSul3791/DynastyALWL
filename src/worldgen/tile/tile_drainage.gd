@@ -8,6 +8,7 @@ extends RefCounted
 const FillScript := preload("res://src/worldgen/tile/drainage_fill.gd")
 const FlowScript := preload("res://src/worldgen/tile/drainage_flow.gd")
 const ChannelsScript := preload("res://src/worldgen/tile/drainage_channels.gd")
+const NaturalScript := preload("res://src/worldgen/tile/drainage_natural.gd")
 
 
 # `water` is the TileWater being built (heights loaded, arrays sized). Returns a summary for the log.
@@ -51,13 +52,26 @@ static func apply(water, rules: Dictionary) -> Dictionary:
 		flow.build(fill, runoff)
 	_lap("flow + edge seed", clock)
 	clock = Time.get_ticks_msec()
-	var channels = ChannelsScript.new()
-	channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
-	_lap("channels", clock)
-	clock = Time.get_ticks_msec()
-	_probe(water, fill, flow, channels, land, samples, cell_m, unit)
-	_breach_outlets(water, fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
-	_lap("probe + breach", clock)
+	var channels
+
+	if bool(rules.get("natural", {}).get("enabled", false)):
+		# Natural rivers: the rivers are the drainage's own lines, bent and carved by flow (drainage_natural.gd); no ponds, craters or rule-made lakes.
+		channels = NaturalScript.new()
+		channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), sea, rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+		print("  natural rivers: %d reaches, %d bent, longest %.0f m, mean sinuosity %.3f" % [
+			channels.reaches_made, channels.reaches_bent, channels.longest_reach_m, channels.sinuosity_sum / maxf(float(channels.sinuosity_count), 1.0)
+		])
+		_lap("natural rivers", clock)
+		clock = Time.get_ticks_msec()
+	else:
+		channels = ChannelsScript.new()
+		channels.build(land, fill, flow, samples, cell_m, float(rules.get("river_start_km2", 0.5)), rules, int(rules.get("seed", 17)), Vector2i(water._origin_sx, water._origin_sz))
+		_lap("channels", clock)
+		clock = Time.get_ticks_msec()
+		_probe(water, fill, flow, channels, land, samples, cell_m, unit)
+		_breach_outlets(water, fill, flow, channels, land, sea, samples, lake_min_catchment, rules)
+		_lap("probe + breach", clock)
+
 	water.heights = channels.bed
 	water.flow = flow.discharge.duplicate()
 
