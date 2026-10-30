@@ -222,3 +222,8 @@ Conclusion: only two data-side gaps are not dead ends of the code: the ore items
 2. Storage gap check: basket, sack, barrel, shelf specs with 3-ingredient recipes.
 3. Medicine gap check: antidote, jerky, hardtack specs.
 Approved by Sal (moderator pre-approval). Plan 1 started: spec is in ITEM_CHANGES_SUMMARY.md; data change waits for Dave.
+
+## Plans round 2 (2026-10-30)
+1. Combat tier list (swords, maces, shields, armour): DONE as ITEM_COMBAT_TIER_LIST.md (spec only).
+2. Farming crops and tools gap check: next.
+3. One-page glossary of item names for the team: after that.
