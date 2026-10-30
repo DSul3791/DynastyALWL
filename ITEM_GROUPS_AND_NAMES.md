@@ -1,0 +1,195 @@
+# Item groups and names: DynastyALWL
+
+Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any data table.
+
+## How to read this
+
+- **Source:** `Items_in_other_games_Analysis.md` (the "analysis") plus our `data/items/items.json` ("ours", numbers are item numbers) and `docs/mirror/design/ITEM_TRIM_LIST.md` (Tyler's proposals, not yet approved).
+- **Flag after a name:** none = the analysis marks the row C (sub-agent says it read it; "likely", not proof). `*` = the analysis marks it U (unconfirmed). Names are as the analysis lists them, sometimes shortened by me; a few rows group several items under one name.
+- **Weak coverage:** Atlas, Aska, Medieval Engineers, Medieval Dynasty, Farming Simulator, Space Engineers and Astroneer are thin; Rust is a sample; The Forest, Don't Starve, Vintage Story, Valheim and No Man's Sky are partial. A game missing from a group may simply not have been catalogued. Absence is not evidence.
+- **Not used for grouping:** sci-fi, electronics, nuclear, spaceship, magic and Tek-tier items (Satisfactory/NMS/Space Engineers/Astroneer/Ark Tek/Dragonwilds magic). They are listed in the closing "Excluded" section so nothing is hidden.
+- **Tier:** where the analysis gives a stage I quote it; otherwise I use our own ladder: T0 hand-gathered (no tool), T1 stone/wood/bone, T2 copper/bronze era, T3 iron, T4 steel. (Our tables have iron and steel ingots and pickaxes today; copper/tin/bronze appear only as coins and in the resources table. REC: confirm the metal ladder with Dave.)
+- **REC** = my recommendation only. "Alt" = other names that would also suit a medieval setting. Where I name a medieval term I use ordinary English words; I have not checked their historical accuracy beyond common usage, and Dave should veto any he dislikes.
+- **Standing rulings I am keeping to** (from ITEM_TRIM_LIST.md, which records Dave's words): benches only for weapons and tools; tailoring and similar are by hand; wooden bowl, driftwood and hand saw stay; one tool per material, not per size.
+
+---
+
+## 1. Raw materials
+
+| Group | Games and exact names | Function | Tier | Ours | REC name / function |
+|---|---|---|---|---|---|
+| Wood (log) | Ark Wood; Atlas Wood (species list); 7DtD Wood; Rust Wood*; Dragonwilds logs (per tree); Conan Wood; MD Logs; Forest Log; Valheim wood types | Basic building/fuel; cut from trees | T0/T1 | Log 4; species logs 100,106,109,112,124,148,172 | REC **Log**, species remembered on the item (matches Tyler group C). Alt: Timber (for cut/large pieces). |
+| Cut wood (board) | Ark none*; Atlas none; Conan Shaped Wood, Boards via bench; DS Boards; Valheim Fine Wood*; Minecraft planks (cosmetic per species) | Sawn board for building and crafting | T1-T2 | Lumber 27, Rough plank 226, Fine board 227 | REC **Lumber** (rough sawn) and **Fine board** (finished). Retire Rough plank into Lumber (Tyler C). Alt: Plank. |
+| Beam | Ark Wood set; Conan Shaped Wood*; Valheim Log Beam (building) | Structural member | T2 | beams per species 102,108,111,114,126,150,174 | REC single **Beam**. |
+| Stick / branch | Ark none; Conan Branch; MD Sticks; Forest Stick; Aska none | Light wood, tool/fire fuel | T0 | Stick 2 | REC **Stick**. |
+| Stone | Ark Stone; Atlas Stone (types); 7DtD Small Stone; Rust Stones*; MD Stone; Forest Rock; Conan Stone | Hand-gathered rock | T0 | Stone 1 | REC **Stone**. Alt: Rock. |
+| Flint | Ark Flint; Atlas Flint; Valheim Flint (axe/knife/spear names) | Sharp stone for edges and sparks | T0/T1 | none as item (Stone knife 11) | REC decide whether flint is separate from Stone: the analysis shows three games do. Question Q1. |
+| Plant fibre | Ark Fiber; Atlas Fibers; 7DtD Plant Fibers; Conan Plant Fiber; MD Straw; Forest none | Cordage base, cloth early | T0 | Plant fibre 3 | REC **Plant fibre**. |
+| Cordage | Conan Twine, Rope*, Fiber Bindings*; Rust Rope; Forest Rope; DS Rope*; VS none | Binding material | T0/T1 | Twine 5, Rope 44 | REC keep **Twine** (thin) and **Rope** (thick). |
+| Hide / leather | Ark Hide; Atlas Hide (Leather, Pelt, Skin...); 7DtD Leather; Rust Leather*; Conan Hide, Leather, Thick Hide, Thick Leather; Forest Deer/Boar Skin; MD Leather | Animal skin, raw and tanned | T0-T2 | Hide 43 | REC keep **Hide** (raw); add **Leather** (tanned) only if a tannery step is wanted (Q2). Tannery appears in Atlas* and Conan*. |
+| Fur / wool | Ark Pelt, Wool; Atlas Hide (Pelt); MD Wool; Forest Rabbit Fur | Cold-weather material | T1-T2 | none | gap candidate (list at end). |
+| Bone | Ark none (Keratin/Chitin); Atlas Keratinoid (Bone); 7DtD Bone; Conan Bone; Forest Bone; Aska none | Tool/needle/arrow material | T0 | Bone 48 | REC **Bone**. |
+| Sinew, fat, feather | 7DtD/MD Feather; Forest Feather; Ark none | Cordage, fletching, tallow | T0 | Sinew 70, Animal fat 71, Feather 72 | REC keep. |
+| Coal / charcoal | Ark Charcoal, Atlas Coal, 7DtD Coal, Aska Charcoal, Valheim Coal (charcoal) | Fuel and smelting | T1-T2 | not in item list (resources table has coal 1) | REC **Charcoal** (made) and **Coal** (mined) as separate names. |
+| Clay / sand / gravel / soil | Ark Clay*, Sand; 7DtD Clay Soil, Crushed Sand; MD Clay; Astroneer Clay, Soil | Ground materials, bricks, glass | T0-T2 | Clay 36, Sand 37, Gravel 38, Soil 35 | REC keep. |
+| Ores and ingots | Ark Metal Ingot*; Atlas Copper/Iron/Silver/Tin/Cobalt/Iridium Ingot*; 7DtD Iron, Lead, Forged Iron, Forged Steel; Valheim Copper, Tin, Iron, Silver bars, Bronze, Black Metal, Flametal; Conan Iron Bar, Steel Bars; VS Copper, Tin, Bismuth, Zinc, Lead, Bronze, Brass; MD Copper/Tin/Bronze Bar; Aska Iron Bloom, Slag | Smelted metal | T2-T4 | Iron ingot 31, Steel ingot 32 | REC use **X ingot** (matches ours) rather than "bar" or "bloom". Add Copper, Tin, Bronze ingots if Dave confirms the copper/bronze era (Q3). Alt: Bloom for raw iron before refining (Aska, VS). |
+| Nails, hinges | 7DtD Nails; Valheim Bronze/Iron Nails; Conan Iron Reinforcement | Metal fixings | T2-T3 | Nails 228, Hinges 232 | REC keep. |
+| Brick, mortar, cement | Conan Hardened Brick, Stone Consolidant; 7DtD Cement, Cobblestone; Ark Cementing Paste* | Masonry | T2 | Brick 209, Mortar 210, Stone block 208, Cobblestone 229 | REC keep Brick, Mortar, Stone block; merge Cobblestone into Stone block (Tyler D). |
+| Tar / resin | Conan Tar; Ark Resin; Astroneer Resin | Waterproofing, torches | T1-T2 | Tar 231 | REC keep Tar only if a use is built (Tyler: hold). |
+| Fuel | Ark none; Rust Low Grade Fuel*; Satisfactory Fuel | Burnable | - | Firewood 26 | REC **Firewood**. |
+
+## 2. Hand tools (gathering)
+
+| Group | Games and exact names | Function | Tier | Ours | REC |
+|---|---|---|---|---|---|
+| Axe (wood) | Ark Stone Hatchet*, Metal Hatchet*; Atlas Stone/Metal Hatchet; Rust Stone Hatchet; 7DtD Stone Axe, Iron Fireaxe*; Dragonwilds Stone Logging Axe*, "Logging Axes Bronze-Rune"*; Valheim Stone Axe, Flint Axe, Bronze/Iron Axe; Conan Stone/Iron/Steel Hatchet*; Forest Crafted Axe; MD Stone axe; DS Axe; VS Axe; Aska Iron Axe | Fell trees; also weak weapon | T1 stone, T3 iron | Stone axe 6 (no iron/steel axe in list) | REC **Axe**, with material in the name (Stone axe, Iron axe...). Add Iron axe and Steel axe (gap, see end). Alt: Hatchet for the small one-handed form. |
+| Pickaxe | Ark Stone Pick*, Metal Pick*; Atlas Stone/Metal Pick; Rust Pickaxe; 7DtD Iron/Steel Pickaxe*; Dragonwilds Stone/Bone/Bronze...Rune Pickaxe; Conan Stone/Iron/Steel Pick*; Minecraft pickaxe (wooden to netherite); MD Stone pickaxe; DS Pickaxe; VS Pickaxe | Mine rock and ore | T1-T4 | Iron pickaxe 33, Steel pickaxe 34 (no stone pickaxe) | REC **Pickaxe**; add Stone pickaxe for T1 (gap). Alt: Pick. |
+| Shovel / spade | 7DtD Stone/Iron/Steel Shovel*; Minecraft shovel; Dragonwilds Spades*; Valheim Shovel*; DS Shovel; VS Shovel; Atlas Shovel* | Dig soil, sand, gravel | T1-T4 | Wooden 19, Stone 45, Iron 46, Steel 47 + sizes 213-220 | REC **Spade** (our word), one per material; sizes merged (Tyler A). Alt: Shovel. |
+| Hoe | Minecraft hoe; MD Wooden hoe, Copper/Bronze hoe; Dragonwilds none; VS Hoe | Till farmland | T1-T4 | Hoes 221-224 | REC keep. |
+| Knife | Valheim Flint Knife, Copper Knife; 7DtD Bone Knife*, Hunting Knife*; Forest none; MD Stone knife; VS Knife; Conan none | Skin, cut, carve; weak weapon | T1-T3 | Stone knife 11 | REC **Knife**; add Iron knife later. |
+| Hammer | Rust Hammer; Valheim Hammer*; 7DtD Claw Hammer*; DS Hammer; VS Hammer; MD Wooden hammer; Conan Repair Hammer*; Atlas Repair Hammer*; Aska Hammer | Build/repair, also smithing tool | T1-T3 | Wooden hammer 247, Stone hammer 244 | REC one **Hammer** line (Tyler B). Smithing hammer is a different job: REC **Smith's hammer** (VS lists a separate Helve Hammer; I have not checked what it does). |
+| Saw | VS Saw; Dragonwilds none; 7DtD none | Cut boards | T2+ | Hand saw 245, Saw blades 238 | REC keep (Dave ruling). |
+| Sickle / scythe | Ark Metal Sickle*; Atlas Metal Sickle*; Valheim Scythe; VS Scythe, Cleaver; Dragonwilds Iron Secateurs* | Harvest crops/plants | T2-T3 | none | gap candidate. Alt: Reaping hook. |
+| Shears | Atlas Scissors*; Minecraft Shears; DS Shears; MD Bronze shearing scissors; VS Shears | Shear wool | T2 | none | gap candidate if sheep exist. Alt: Sheep shears. |
+| Fishing rod | Ark none; Atlas Fishing Rod*; Rust Fishing Rod; Minecraft Fishing rod; Valheim Fishing Rod; DS Fishing Rod; Dragonwilds Fishing Rods (Ash, Oak, Willow...) | Catch fish | T1 | Fishing rod 75 | REC keep. |
+| Fishing net | Dragonwilds Fishing Nets (Coarse, Wool, Fine); Atlas none | Catch fish passively | T1-T2 | Shore net 260 | REC keep. |
+| Fire starter | Minecraft Flint and steel; VS Firestarter; Forest Lighter; Atlas none | Light fires | T0-T2 | not an item (campfire 8) | REC **Flint and steel** later; T0 hand-drill/bow-drill is a mechanic (Q4). |
+| Prospecting | VS Prospecting Pick, Wooden Pan; DS Gold Pan; 7DtD none | Find ore | T2 | none | gap candidate. |
+| Climbing | Ark Climbing Pick*; Atlas Grappling Hook*, Zipline*; Satisfactory Zipline/Jetpack; Forest Climbing Axe | Scale cliffs | T3 | none (Dave noted climb/mining tools) | Q5. |
+
+
+## 3. Weapons
+
+| Group | Games and exact names | Function | Tier | Ours | REC |
+|---|---|---|---|---|---|
+| Club | Ark Wooden Club*; Valheim Club; Conan Stone Club*; 7DtD Wooden Club*; Dragonwilds Stone Club, Bone Club; Forest Crafted Club; VS Club | Early blunt melee | T1 | none | REC **Club**; add (gap). |
+| Spear | Ark Spear*, Pike*; Atlas Spear; Valheim Flint/Bronze/Iron... Spear; 7DtD Stone Spear*, Iron/Steel Spear*; Rust Wooden Spear; Forest Weak/Upgraded Spear; DS Spear; VS Spear (stone to steel); MD Wooden spear, Copper/Bronze spear; Conan Javelin*, Stygian Bronze Spear*, Iron Pike* | Reach melee, thrown, hunting | T1-T4 | Wooden spear 10, Stone spear 7 | REC **Spear** by material; **Javelin** (Conan*) as the throwing one only if thrown/melee are split (Q6). |
+| Knife / dagger | Valheim Flint/Copper Knife; Dragonwilds Stone/Bone/Bronze... Dagger; Conan Stone Dagger*, Iron Poniard*; Atlas none | Short melee | T1-T3 | Knife is a tool | REC **Dagger** as the weapon version, **Knife** stays the tool. |
+| Sword | Ark Sword*; Atlas Sword; Valheim Bronze/Iron/Silver Sword; 7DtD none; Dragonwilds Bronze...Rune Sword; Conan Stone Sword*, Iron Broadsword*, Longsword*; Minecraft Swords; VS Falx, Blackguard shortsword; MD none | One-handed blade | T2-T4 | none | gap candidate (list at end). Alt: Arming sword. |
+| Mace / hammer-weapon | Atlas Mace; Valheim Bronze/Iron Mace; Dragonwilds Bronze...Rune Mace; Conan Iron Warhammer*; Minecraft Mace | Armour-breaking blunt melee | T2-T3 | none | REC **Mace**. |
+| Axe-weapon | Valheim Bronze/Iron Axe, Battleaxe; Dragonwilds Greataxe line; Conan Cimmerian Battle-Axe*; Conan Throwing Axe; Minecraft Axes | Chop weapon | T1-T4 | tool only | REC the axe tool doubles as weak weapon; **Battleaxe** later. |
+| Two-handed / polearm | Valheim Atgeir; Dragonwilds Greatsword, Warhammer; Conan Iron Pike*; Ark Pike*; DS Halberd; Atlas none | Heavy reach melee | T3+ | none | later; Alt: Halberd (DS), Pike. |
+| Bow | Ark Bow*; Atlas Bow; Valheim Crude Bow, Finewood Bow, Huntsman Bow; 7DtD Primitive Bow, Wooden Bow*; Rust Hunting Bow; Forest Crafted Bow; Conan Hunting Bow, Hyrkanian Bow; MD Bow; VS Crude/Simple bow, Longbow, Recurve bow; Dragonwilds Shortbow, Longbow | Ranged weapon | T1-T3 | Wooden bow 269 | REC keep **Wooden bow**; **Longbow** as a later tier. |
+| Crossbow | Ark Crossbow*; 7DtD Iron Crossbow*; Conan Crossbow; Dragonwilds Bronze...Rune Crossbow; Minecraft Crossbow; MD bolts; Valheim Arbalest* | Mechanical ranged weapon | T3+ | none | gap candidate. |
+| Sling | Ark Slingshot*; Forest Slingshot; VS Sling | Thrown stone | T0-T1 | none | gap candidate (cheap, T0). |
+| Thrown / trap weapon | Ark Bola*, Boomerang*; Atlas Bola, Throwing Knife; DS Boomerang; Conan Throwing Axe | Short-range throw | - | none | skip unless Dave wants. |
+| Firearms, explosives, siege | Ark/Atlas/7DtD/Rust/Forest guns; Atlas Cannon, Ballista, Catapult; Conan siege none; ME siege machines | Gunpowder or siege | late | none | Q7: gunpowder era in or out? Medieval siege (ballista, catapult, ram) is a candidate. |
+
+## 4. Ammunition
+
+| Group | Games and names | Ours | REC |
+|---|---|---|---|
+| Arrows by head | Ark Stone Arrow*, Flame Arrow*, Metal Arrow*; Valheim Wood, Flinthead, Bronzehead, Ironhead, Fire, Poison Arrow; 7DtD Stone/Iron/Steel Arrow, Flaming, Exploding; Conan Flinthead, Razor, Fire, Ironhead, Snake Arrows; Dragonwilds Stone Arrow*, Bronze...Mithril, Fire/Poison/Barbed variants; VS Arrow crude/flint/obsidian/bone/copper... | Wooden arrow 270, Stone arrow 271 | REC **<Head> arrow** (Flint/Bone/Iron arrow...). Fire arrow later. |
+| Bolts | 7DtD Stone/Iron/Steel Crossbow Bolt; Dragonwilds Bolts; MD bolt; Minecraft none | none | with crossbow. |
+| Quiver | Forest Quiver; VS none | Quiver 272 | keep. |
+| Sling stones | none confirmed | none | with sling. |
+
+## 5. Armour, clothing and shields
+
+| Group | Games and names | Tier | Ours | REC |
+|---|---|---|---|---|
+| Plant / cloth wear | Ark Cloth Armor; Atlas Cloth set; Conan Coarse Tunic/Handwraps/Leggings/Footwraps; DS Grass Suit; Dragonwilds Adventurer's Tunic; VS none | T0-T1 | Grass skirt 60, Grass cloak 61, Fibre sandals 62 | REC keep. Alt: Tunic as woven plant tunic (Conan "Coarse Tunic"). |
+| Hide / leather wear | Ark Hide Armor; Atlas Hide set; Valheim Leather Armor; 7DtD Primitive set; Conan Light set; Dragonwilds Leather set; VS Leather jerkin/armor, Hide armor | T1 | Hide cloak 63, boots 64, hood 65, mittens 66, leggings 67 | REC keep; no chest piece besides cloak (gap: **Hide jerkin** / Leather jerkin; VS name). |
+| Padded | VS Gambeson; Valheim Padded Armor; Dragonwilds Studded Leather set | T2 | none | REC **Gambeson** (VS name, also the period term). |
+| Mail / scale | VS Chain armor, Scale armor, Lamellar; Valheim Iron Armor; Dragonwilds Bronze/Iron/Steel set; Conan Medium set; Ark Flak* | T3 | none | REC **Mail shirt** / **Mail coif**, **Scale armour** later. |
+| Plate | VS Plate armor, Brigandine; Conan Heavy set; Atlas Plate set; Dragonwilds Rune set | T4 | none | later. |
+| Fur / cold | Ark Fur Armor; Atlas Fur set; Valheim Wolf Armor; Forest Snow Shoes; DS Winter Hat | T2 | none | gap candidate (cold-biome gear). |
+| Shields | Ark Wooden/Metal Shield*; Valheim Wood Shield, Wood Tower Shield, Bronze Buckler; Conan Wood Shield, Wood Targe, Iron Targe, Steel Heater Shield; Dragonwilds Wooden/Leather/Bronze... Shield; Minecraft Shield | T1-T4 | none | REC **Wooden shield**, **Buckler**, **Heater shield**, **Targe** all appear in sources; keep Wooden shield + Buckler first. |
+| Helmets / caps | 7DtD sets; Conan Medium Cap/Heavy Helmet; DS Battle Helm; VS (inside sets) | T2+ | Hide hood 65 | pair with armour tiers. |
+
+## 6. Containers, bags and water
+
+| Group | Games and names | Ours | REC |
+|---|---|---|---|
+| Waterskin | Ark Waterskin*; Atlas Waterskin*; Conan Sealed Waterskin*; Forest Waterskin | Waterskin 42 | keep. |
+| Bucket | Atlas Bucket*; 7DtD Bucket*; Minecraft Bucket; VS Wooden bucket | Bucket 41 | keep. |
+| Pot / jar / jug | Atlas Water Jar*; VS Crock, Storage vessel, Jug; Forest Old Pot | Clay pot 40 | keep Clay pot; Jug later (water/ale). |
+| Bowl | VS Bowl | Wooden bowl 39 | keep (Dave). |
+| Backpack / bag | Ark none; Forest Pouch, Stick Bag, Rock Bag; VS Hand basket, Linen sack, Backpack, Mining bag; DS Backpack; MD Simple bag; Dragonwilds Lumber Backpack | Backpack 50 | keep Backpack; Basket as an early step (VS Hand basket) is a candidate. |
+| Chest / box | Ark Storage Box; Atlas Large Storage Box; 7DtD Wood Storage Crate; Rust Wood Storage Box; Valheim chests; VS Reed chest, Chest, Trunk, Crate; Dragonwilds Ash Chest; DS Chest | Woven chest 22, Plank chest 28 | keep. |
+| Barrel / cask | Atlas Barrel; Ark Storage Barrel*; VS Barrel | none | gap candidate (liquids, salted food). |
+| Rack / shelf | VS Tool rack, Shelf, Bookshelf; Ark Wooden Cabinet | Tool rack 81 | keep. |
+| Quiver | see ammo | 272 | |
+
+*Sections 3-6 saved. Sections 7 onward follow below.*
+
+## 7. Food, drink and medicine
+
+| Group | Games and names | Ours | REC |
+|---|---|---|---|
+| Raw meat / fish | Ark Raw Meat, Raw Fish, Raw Prime Meat; Atlas Animal Meat, Fish Meat; Valheim raw meats; Minecraft Raw meat, raw fish | Raw meat 68, Trout 76, Perch 77, Carp 78, Pike 79 | keep. |
+| Cooked meat / fish | Ark Cooked Meat; Atlas Cooked Animal Meat; 7DtD Grilled/Charred/Boiled Meat; Dragonwilds Grilled Trout; Valheim cooked meats | Roast meat 69, Roast fish 80 | keep. |
+| Preserved food | Atlas Salted Fish*, Salted Meat*, Hardtack*; Ark Meat Jerky*; Valheim Boar/Wolf Jerky; Minecraft Dried kelp; Ark Preserving Salt*; DS Jerky, Drying Rack | Smoked fish 185, Fruit leather 184 | REC **Jerky**, **Salted meat**, **Hardtack** (Atlas*) are the common forms; Salt is a gap (see end). |
+| Stew / soup | Valheim Carrot Soup, Deer Stew, Turnip Stew; 7DtD Vegetable Stew*; Dragonwilds Meat Stew, Vegetable Soup; Minecraft Mushroom stew, Rabbit stew; Atlas Celery Soup; Ark Calien Soup | Campfire Stew 15, Hunter's 186, Forager's 187, Fish stew 188, Hearty pottage 190 | keep per Tyler E; serve in wooden bowl (Dave). |
+| Bread / baked | Valheim Bread; 7DtD Pumpkin Bread; Minecraft Bread, Cookie; Atlas Jack Buns; NMS Bread | Flatbread 273, Trail bread 189, Honey loaf 274 | keep. Needs flour (VS Quern, FS Grain mill): gap. |
+| Pies | Valheim Lox Meat Pie, Piquant Pie; Atlas Pork Pie; Minecraft Pumpkin pie; VS pie | none | later. |
+| Tea / brew | Ark Medical Brew*; 7DtD Honey Tea, Goldenrod Tea; Atlas Berry Tea; Valheim Mead; Atlas Ale; 7DtD Beer; Dragonwilds Brewing Cauldron* | Teas 52, 57, 58, 59 | keep; Ale/mead: Q8. |
+| Fruit, nuts, berries | Ark berry line; Atlas berries; Forest Berries; Minecraft Sweet berries | Berry compote 175, Nut paste 176, Baked apples 179 | keep. |
+| Medical | Ark Narcotic*, Stimulant*; 7DtD Bandage, First Aid Kit; Rust Bandage; Forest Meds*; ME Bandages; DS Healing Salve | Herb poultice 16, Herb bandage 17, Medicine 56 | keep poultice/bandage; **Salve** (DS) is an alt name for an ointment. Cut Medicine 56 (Tyler E). |
+
+## 8. Crafting stations (benches only for weapons and tools: Dave)
+
+| Group | Games and names | Job | Ours | REC |
+|---|---|---|---|---|
+| Basic bench | Valheim Workbench*; Rust Workbench Level 1-3; 7DtD Workbench; Conan Woodworking Bench*; Minecraft Crafting table; DS Science Machine | Tool/weapon crafting, gates tiers | Log workbench 85, Woodworking table 242, Tool rack 81 | keep; "Log workbench" is our T1. |
+| Forge / furnace | Valheim Forge, Smelter, Black Forge; 7DtD Forge; Rust Furnace; Conan Furnace*; Aska Furnace, Forge; VS Forge, Bloomery, Crucible; Minecraft Furnace, Blast furnace; Atlas Forge* | Smelt and work metal | Basic/Medium/Large/Master Forge 87-95 | keep four tiers; **Bloomery** is the VS name for raw-iron smelting (Q3). |
+| Anvil | 7DtD Anvil; VS Anvil (copper/bronze; iron/steel); Minecraft Anvil; Aska Wood Anvil | Shape hot metal | none | gap candidate. |
+| Cooking | Valheim Cooking Station; Ark Cooking Pot; 7DtD Cooking Pot, Grill; Conan Firebowl Cauldron; VS Cooking pot; Dragonwilds Stone Range, Grill; DS Crock Pot | Cook meals | Campfire 8, Campfire pot 254, Clay hearth 256, Oven 268, Chopping block 25 | keep. |
+| Tannery | Atlas Tannery*; Conan Tannery* | Hide to leather | none | Q2. |
+| Loom / spinning | Atlas Loom*; Valheim Spinning Wheel*, Standing Loom* | Thread and cloth | none | Dave said tailoring is by hand; skip unless wanted. |
+| Sawmill | FS Sawmill | Boards from logs | Sawmill 240 | keep. |
+| Kiln | Valheim Charcoal Kiln*; VS Pit kiln | Charcoal and pottery | Clay hearth 256 | check whether Clay hearth covers pottery firing. |
+| Mill / quern | VS Quern; FS Grain mill | Grind grain | none | gap candidate. |
+| Research bench | Rust Research Table*; ME Research Table | Unlock recipes | none | our design is learning by doing; skip. |
+
+## 9. Building and furniture
+
+| Group | Games and names | Ours | REC |
+|---|---|---|---|
+| Foundation, floor, wall, roof, door, window by material | Ark Thatch/Wood/Stone/Adobe/Metal sets; Conan Sandstone/Stonebrick/Reinforced sets; Dragonwilds Ash Palisades and building pieces; Valheim piece sets; 7DtD Wood/Cobblestone/Building Block | Wall 192, Floor 194, Roof 196, Foundation 198, Doorway 200, Window wall 202, Thatch set 252-266 | keep; thatch, wood, stone is the common ladder. |
+| Stairs / pillar | Conan Stairs, Pillar | Ladder 211, Timber prop 204 | stairs: gap candidate. |
+| Gate / fence / palisade | Ark Behemoth Gate; Conan Fence, Gate; Dragonwilds Ash Palisades; DS Stone/Wood Wall; 7DtD Barbed Wire Fence | none | gap candidate (defence). |
+| Door | Rust Wooden Door; 7DtD Wood Door*; Conan Wooden Door | Doorway only | gap candidate (hung door). |
+| Bed | Ark Simple Bed; Rust Bed, Sleeping Bag; 7DtD Bedroll; Dragonwilds Bed Roll; Conan Fiber Bedroll*; VS Bed (hay, wooden); ME Bed; DS Tent | Rough bed 250 | keep; **Bedroll** as the portable early one (4 games). |
+| Table / chair | Atlas Wood Table, Wood Chair | Camp bench 73 (Tyler: merge) | furniture scope: Q9. |
+| Sign | Atlas Wooden Sign; Ark Metal Sign | none | low priority. |
+
+## 10. Light, traps, farming, transport
+
+| Group | Games and names | Ours | REC |
+|---|---|---|---|
+| Torch | Ark, Rust, Atlas, Conan, Forest, DS, VS, MD Torch | Basic torch 12 | keep. |
+| Lantern / candle / lamp | Atlas Lantern*, Belt Oil Lantern*; Conan Candle Stub*; VS Oil lamp, Candle, Small/Large lantern; DS Lantern; Valheim Dvergr Lantern | none | gap candidate (candle earlier, lantern later). |
+| Campfire | all | Campfire 8 | keep. |
+| Snare / trap | Forest Dead Fall Trap*, Noose Trap*; DS Trap, Bird Trap, Tooth Trap; Ark Bear Trap*; 7DtD Wood Spikes* | Snare 276 | keep Snare; bear trap and spikes later. |
+| Seeds / crops | Ark berries; Atlas Wheat, Maize, Turnip, Potato; Minecraft Wheat, Carrot; Dragonwilds seeds; MD Field; 7DtD Farm Plot | Seeds 9, Roots 18 | farming items mostly missing: Q10. |
+| Compost / fertiliser | Ark Re-Fertilizer*; Atlas Fertilizer*; Dragonwilds Compost; FS Manure, Slurry; MD Manure | none | gap candidate. |
+| Beehive / animals | Ark Bee Hive; 7DtD Apiary, Chicken Run; DS Bee Box, Rabbit Hutch; Dragonwilds Livestock* | none | later. |
+| Boats | Atlas ships; Valheim Raft, Karve, Longship; DS Log Raft, Row Boat; VS Raft; Minecraft Boat | none | Q11. |
+| Cart / mount | Valheim Cart*; 7DtD Bicycle; Minecraft Saddle; Ark saddles; MD Donkey | none | later. |
+| Money | 7DtD Old Cash*; Space Engineers Space Credits | Coins 96-99 | keep. |
+
+## 11. Excluded from grouping (so nothing is hidden)
+Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory production parts, nuclear and packaged fluids; NMS starship, exosuit, exocraft, base tech; Space Engineers and Astroneer sci-fi parts; Minecraft redstone and brewing; Dragonwilds magic weapons, armour and per-skill potions; Conan thralls and deity altars; Rust electrical; gunpowder-era firearms (pending Q7). Named boss/loot weapons (Valheim Dyrnwyn etc.) are not grouped.
+
+---
+
+## Questions for Dave
+1. **Flint:** a separate item from Stone (three games do it), or folded into Stone?
+2. **Leather and a tannery:** keep Hide only, or add Leather (tanned) with a tannery step? (Atlas*, Conan*)
+3. **Metal ladder:** add copper, tin and bronze ingots (and a bloomery step for iron) before iron/steel?
+4. **Fire starting:** is the first fire a hand mechanic with no item, and flint and steel a later item?
+5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
+6. **Thrown spear:** a separate Javelin item, or the spear thrown?
+7. **Gunpowder era and siege weapons:** out, or siege only (ballista, catapult, ram)?
+8. **Ale/mead** and brewing: in?
+9. **Furniture** (table, chair, shelf): how much? Dave's rule limits benches to weapons and tools.
+10. **Farming depth:** which crops, and do we want compost, flour and a mill?
+11. **Boats and carts:** in scope for this list?
+12. Do you approve Tyler's trim groups A-E as the base for our own list?
+
+## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
+Missing from ours but present in many of the other games: stone pickaxe; iron and steel axe; club; sword, mace and shield; sling; mail/gambeson/scale body armour and helmets; sickle or scythe, shears; anvil and smith's hammer; flint and steel; lantern and candle; barrel; salt and preserved foods; mill/quern and flour; stairs, gate/fence, hung doors, bedroll; compost; a copper/tin/bronze tier (our copper, silver and gold exist only as coins).
+
+## Weaknesses of this document
+Names come from a partly unconfirmed analysis; where a game column says "none" or a game is absent it may mean "not catalogued". Functions are one-line generalisations of the analysis rows, not wiki quotes. Tier is only as exact as the analysis gives. No web research was done for this draft.
