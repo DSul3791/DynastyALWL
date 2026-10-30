@@ -37,6 +37,8 @@ func _initialize() -> void:
 	_check_fit()
 	_check_not_buried()
 	_check_bare()
+	_check_measures()
+	_check_skip()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -205,3 +207,32 @@ func _check_bare() -> void:
 	body.set_clothed(true)
 	_ok(is_equal_approx(float((body.body_mesh.material_override as ShaderMaterial).get_shader_parameter("show_cloth")), 1.0), "and clothed again")
 	body.queue_free()
+
+
+# Body measures for clothing builders: sensible values on the neutral body, and they follow the sliders.
+func _check_measures() -> void:
+	var Gen: GDScript = load("res://src/client/character/body_generator.gd")
+	var n: Dictionary = Gen.measures(Gen.make_genome("average"))
+	_ok(absf(float(n["upper_arm_radius"]) - 0.052) < 0.0005 and absf(float(n["forearm_radius"]) - 0.042) < 0.0005, "neutral arm radii are the body's own (0.052, 0.042)")
+	_ok(absf(float(n["thigh_radius"]) - 0.085) < 0.0005 and absf(float(n["shin_radius"]) - 0.058) < 0.0005, "neutral leg radii are the body's own (0.085, 0.058)")
+	_ok(absf(float(n["hand_length"]) - 0.15) < 0.001 and int(n["finger_count"]) == 4, "neutral hand length 0.15 m, four finger groups (thumb plus three)")
+	var lean: Dictionary = Gen.measures(Gen.make_genome("lean"))
+	var broad: Dictionary = Gen.measures(Gen.make_genome("broad"))
+	_ok(float(broad["chest_half_width"]) > float(lean["chest_half_width"]) * 1.4, "chest width follows the body type (%.3f vs %.3f)" % [float(broad["chest_half_width"]), float(lean["chest_half_width"])])
+	_ok(float(lean["thigh_length"]) > float(broad["thigh_length"]), "leg length follows the body type")
+	var body: Node3D = GeneratedBody.new(Gen.make_genome("stocky"), 0.07)
+	_ok(body.has_meta("worn_measures") and body.has_meta("worn_fit"), "a generated body carries worn_measures and worn_fit")
+	body.free()
+
+
+func _check_skip() -> void:
+	var body: Node3D = GeneratedBody.new({}, 0.07)
+	root.add_child(body)
+	_ok(WornLook.attach(body, ["hide_cloak"], false) > 0, "a cloak hangs on the generated body")
+	body.set_meta("worn_skip_builders", ["cloak"])
+	_ok(WornLook.attach(body, ["hide_cloak"], false) == 0, "an item whose builder the body skips adds no pieces")
+	_ok((body.get_meta("worn_skip_builders") as Array).size() == 1, "the skip list is per body")
+	var fresh: Node3D = GeneratedBody.new({}, 0.07)
+	_ok((fresh.get_meta("worn_skip_builders") as Array).has("tunic") and (fresh.get_meta("worn_skip_builders") as Array).has("trousers"), "a generated body skips the tunic and trousers builders by default")
+	body.queue_free()
+	fresh.free()

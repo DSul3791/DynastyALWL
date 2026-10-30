@@ -923,6 +923,14 @@ Three separate mechanisms; all are in `src/client/character/` and `src/client/wo
 
 **Where to look:** `src/client/character/body_generator.gd` (`BONES`, `_dress`, `worn_fit`), `src/client/character/generated_body.gd` (the shader, `dress`, `set_clothed`), `src/client/worn_look.gd` (`attach`, `HUMANOID_NAMES`), `tools/check_worn_generated.gd` (what is checked), picture `art/character_proto/worn/worn_on_generated_fitted.png`.
 
+## 8.6t Agreement with Kathleen on tunic, trousers and gloves (new worn items hide_tunic, hide_trousers, hide_gloves)
+
+- **Tunic and trousers on the generated body are drawn by the body mesh, not by separate pieces.** Kathleen's new builders `tunic`, `trousers` and `gloves` (on her branch `kathleen-art`) draw a sleeved shirt, sewn trousers and fingered gloves on the OLD ragdoll and NPC bodies. On the generated body a body can list builders it draws itself: `worn_look.gd` skips items whose builder is in the rig meta `worn_skip_builders` (the generated body sets `["tunic", "trousers"]`), so nothing is doubled. The item colours still reach the body through `dress` (coat and trousers colours from the item, today `#7a5a3c` and `#6b4c31`).
+- **Measures for builders that fit themselves:** `Generator.measures(genome)` (also the rig meta `worn_measures`) gives half widths and depths, limb radii and lengths, hand and finger sizes in metres; a part with `"fitted": true` is not scaled again by `worn_fit`. Kathleen can use it later; today nothing needs it.
+- **Gloves with fingers on the generated body:** the finger bones exist: `LeftThumbProximal`, `LeftThumbDistal`, `LeftIndexProximal`, `LeftIndexDistal`, `LeftMiddleProximal`, `LeftMiddleDistal`, `LeftLittleProximal`, `LeftLittleDistal`, and the same with `Right`. Their rest offsets are readable from the skeleton. Not built: a `gloves_fingers` builder; until then gloves fall back to the mitten through the existing mapping.
+- **A darker band at hem, cuffs and waist:** asked for by Kathleen as the one cue her builders have; **not built** (the body shader has no hem geometry; it would be a vertex colour darkening near the end of each cloth part). Possible later.
+- **Check:** `tools/check_worn_generated.gd`: 114 cases, 0 failures (the skip list, the measures and the earlier checks).
+
 ## 8.7 What was tested how (for Dave's review)
 
 Nothing below was run inside the real game. **"Headless" means a command-line run with no window; "pictures" means my own render script showing the generated bodies in a bare test scene, not the game's scene, lighting or camera.**

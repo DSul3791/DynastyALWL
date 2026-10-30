@@ -757,6 +757,34 @@ static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, 
 	return {"node": root, "skeleton": skeleton, "built": built}
 
 
+# The body's own measures in metres, from its sliders (the same numbers the body parts are built from), for clothing builders that fit themselves instead of using
+# worn_fit: half widths and depths, radii and lengths of limbs, hand and finger sizes. For the neutral genome these are the values the old worn pieces were written for
+# (limbs run down -Y, front is -Z, right is +X). Stored on a generated body as the meta "worn_measures".
+static func measures(g: Dictionary) -> Dictionary:
+	var rg: Dictionary = rig(g)
+	var d: Dictionary = rg["dims"]
+	var b: float = m(float(g["build"]), 0.8, 1.3)
+	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
+	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
+	var hk: float = m(float(g["hands"]), 0.8, 1.5)
+	var fk: float = m(float(g["feet"]), 0.85, 1.3)
+	var hs: float = m(float(g["head"]), 0.85, 1.4)
+	var torso: float = float(d["torso"])
+	return {
+		"chest_half_width": 0.155 * b * wide, "chest_half_depth": 0.12 * b * mu, "chest_height": 0.4 * torso,
+		"waist_half_width": 0.155 * b, "waist_half_depth": 0.12 * b * m(float(g["belly"]), 0.85, 1.55),
+		"hips_half_width": 0.165 * b * hip_w, "hips_half_depth": 0.12 * b,
+		"upper_arm_radius": 0.052 * sqrt(b) * mu, "upper_arm_length": 0.29 * float(d["arm"]),
+		"forearm_radius": 0.042 * mu, "forearm_length": 0.26 * float(d["arm"]),
+		"thigh_radius": 0.085 * sqrt(b) * mu * hip_w, "thigh_length": 0.44 * float(d["legs"]),
+		"shin_radius": 0.058 * mu, "shin_length": 0.40 * float(d["legs"]),
+		"hand_length": 0.15 * hk, "hand_half_width": 0.038 * hk, "hand_half_thickness": 0.017 * hk,
+		"finger_count": 4, "finger_radius": 0.011 * hk, "finger_length": 0.066 * hk, "thumb_length": 0.056 * hk,
+		"foot_length": 0.23 * fk, "foot_half_width": 0.05 * fk, "head_scale": hs,
+	}
+
+
 # Threaded build (Plan 17): `build` uses only maths, arrays and resources made from them, no nodes, so it can run on a worker thread. start_build returns a handle;
 # poll with build_done and take the result with finish_build (which waits if needed). The result is the same as `build(g, voxel, fingers)`.
 static func start_build(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> Dictionary:

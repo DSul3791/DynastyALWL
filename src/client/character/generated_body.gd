@@ -61,6 +61,8 @@ func _init(genome_in: Dictionary = {}, voxel: float = 0.04, fingers: bool = true
 	body_mesh = skeleton.get_node("Body") as MeshInstance3D
 	face = skeleton.get_node("Face")
 	set_meta("worn_fit", Generator.worn_fit(genome))
+	set_meta("worn_measures", Generator.measures(genome))
+	set_meta("worn_skip_builders", ["tunic", "trousers"])     # drawn by the body mesh itself (set_clothed, dress); a separate tunic or trousers piece would double the cloth
 	_build_material()
 	_build_mounts()
 	_build_animations()

@@ -56,6 +56,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		if row.is_empty():
 			continue
 
+		# A body can list builders it already draws itself (the generated body has its tunic and trousers in its mesh): those items add no separate pieces.
+		if str(row.get("builder", "")) in (rig.get_meta("worn_skip_builders", []) as Array):
+			continue
+
 		var out: float = float(int(row.get("layer", 1))) * LAYER_M
 
 		for part in parts_of(str(row["builder"]), out, bool(row.get("fringe", false))):
@@ -80,7 +84,8 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			node.mesh = _mesh(str(part["shape"]))
 			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))))
 			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
-			var fit: Vector3 = (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
+			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
+			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
 			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
