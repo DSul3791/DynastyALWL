@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes the balance sheet for Dave from the data files (vitals, exertion, fitness, weights, recipes, items, drops).
 
-Run: python3 tools/balance_sheet.py [output path]   (default /mnt/project-files/items/BALANCE.md)
+Run: python tools/balance_sheet.py [output path]   (default docs/mirror/items/BALANCE.md)
 Change the numbers in the data files, never in the sheet or the code.
 """
 import json
@@ -10,7 +10,7 @@ import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-out_path = sys.argv[1] if len(sys.argv) > 1 else "/mnt/project-files/items/BALANCE.md"
+out_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "docs", "mirror", "items", "BALANCE.md")
 
 
 def load(name):
