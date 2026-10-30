@@ -36,11 +36,16 @@ start = c.copy()
 t0 = time.time()
 lem.RAMP_M = P['ramp_m']
 ery_factory = None
+rain_map = None
+veg_map = None
+if P.get('climate_dir'):
+    import climate
+    rain_map, veg_map, _bi, _names = climate.load(P['climate_dir'], P['X0'], P['Z0'], P['X1'], P['Z1'], S)
 if P.get('geology_dir'):
     import rock
     _g = rock.load(P['geology_dir'], P.get('cover_m', 4.0), P.get('cover_ery', 5.0))
     assert _g['n'] == n, (_g['n'], n)
-    ery_factory = lambda h0, sea0: rock.make_fn(_g, c, sea0, dx)
+    ery_factory = lambda h0, sea0: rock.make_fn(_g, c, sea0, dx, veg_map)
 uplift_map = None
 if P.get('design_uplift'):
     # Uplift told from the design: high where the designed land is high, small at the low coast, none at sea. balance stays 0.
@@ -50,7 +55,7 @@ if P.get('design_uplift'):
     uplift_map = np.maximum(uplift_map, P['design_U'] * P['design_floor'])
     uplift_map[c <= 0] = 0.0
 st, h, sea, fill, area, secs = lem.run_from(c, dx, years=P['years'], dt=P['dt'], K=P['K'], U=P['U'], D=P['D'], dep=P['dep'],
-                                           off=P['off'], coast_pow=P['coast_pow'], basins=P['basins'], sub=P['sub'], ramp_m=P['ramp_m'], balance=P['balance'], bal_smooth=P['bal_smooth'], lowboost=P['lowboost'], tarn=P['tarn'], uplift_map=uplift_map, ery_fn_factory=ery_factory)
+                                           off=P['off'], coast_pow=P['coast_pow'], basins=P['basins'], sub=P['sub'], ramp_m=P['ramp_m'], balance=P['balance'], bal_smooth=P['bal_smooth'], lowboost=P['lowboost'], tarn=P['tarn'], uplift_map=uplift_map, ery_fn_factory=ery_factory, rain_map=rain_map)
 delta = (h-start)
 delta[start <= 0] = 0.0
 # Sonny 25 Oct: a +65 m fill at a hill foot is too much. Soft-cap fill, then smooth the delta where its own slope is above dslope.

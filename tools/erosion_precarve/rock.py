@@ -30,13 +30,13 @@ def load(geo_dir, cover_m=4.0, cover_ery=5.0, cover_slope_deg=42.0):
 
 
 @nb.njit(cache=True)
-def _ery(h, cover, sea, prov, surf, gran, basa, er, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, cover_m, cover_ery, out):
+def _ery(h, cover, veg, sea, prov, surf, gran, basa, er, cycle, repeat, base, marble, ptr, lrock, lbot, gid, bid, lid, mid, cover_m, cover_ery, out):
     for i in range(h.size):
         if sea[i]:
             out[i] = 1.0; continue
         y = h[i]
         if cover[i] > 0.0:                       # loose cover is not yet washed off
-            out[i] = cover_ery; continue
+            out[i] = cover_ery * veg[i]; continue
         if y <= gran[i]:
             out[i] = er[gid]; continue
         if y <= basa[i]:
@@ -70,15 +70,16 @@ def _wear(cover, delta, sea):
         cover[i] = 0.0 if c < 0.0 else c
 
 
-def make_fn(g, start_h, sea, dx):
+def make_fn(g, start_h, sea, dx, veg_map=None):
     start = np.asarray(start_h, np.float64)
     n = start.shape[0]
     gy, gx = np.gradient(start, dx)
     slope = np.degrees(np.arctan(np.hypot(gx, gy)))
     cover = (g['cover_m'] * np.clip(1.0 - slope / 42.0, 0.0, 1.0)).ravel().copy()   # as the baker: none on slopes of 42 degrees or more
     out = np.ones(cover.size)
+    veg = np.ones(cover.size) if veg_map is None else np.asarray(veg_map, np.float64).ravel().copy()
     def fn(h):
-        _ery(h, cover, sea, g['prov'], g['surf'], g['gran'], g['basa'], g['er'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'],
+        _ery(h, cover, veg, sea, g['prov'], g['surf'], g['gran'], g['basa'], g['er'], g['cycle'], g['repeat'], g['base'], g['marble'], g['ptr'],
              g['lrock'], g['lbot'], g['gid'], g['bid'], g['lid'], g['mid'], g['cover_m'], g['cover_ery'], out)
         return out
     fn.update = lambda delta: _wear(cover, delta, sea)
