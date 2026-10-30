@@ -219,6 +219,32 @@ CORRECTION (Dave, 2026-10-30): Dave described THREE ovens, not the six rungs I l
 | Cart / mount | Valheim Cart*; 7DtD Bicycle; Minecraft Saddle; Ark saddles; MD Donkey | none | later. |
 | Money | 7DtD Old Cash*; Space Engineers Space Credits | Coins 96-99 | keep. |
 
+## 12. Farming items (draft for Dave, 2026-10-30; REC unless marked)
+
+**Dave's direction:** crop to food, simple, a little education. Grow grain, mill it at a windmill, mix flour with water, honey and yeast for bread; eggs and milk for cakes; fruit, vegetables and berries for jams and compotes; vegetables and water for soups; flour for stews and dumplings; meat for better protein.
+
+**What we have:** Seeds 9, Roots 18 (item_uses says the seed bundle is "planted in a farm patch"), hoes 221-224, spades, Bucket 41, Waterskin 42. The flora table has wild plants only (flax, wild carrot, wild garlic, hazel, wild apple, pear, cherry, chestnut, walnut, many berries and herbs, reeds, thatch grass) and no cultivated grain or vegetables.
+
+| Group | Games and names (analysis rows, flag as before) | Function | REC for us |
+|---|---|---|---|
+| Grain crops | Atlas Wheat, Maize, Rice; Minecraft Wheat; FS Wheat, Barley, Oats; ME Wheat; VS crops; MD (rye and wheat threshed in a barn) | Flour, bread, ale | **Wheat, Barley, Oats, Rye**. Maize and rice only if we have New World or tropical islands (Q17). |
+| Fibre crop | Dragonwilds flax seeds; ME flax straw -> thread; our flora has wild flax | Thread, cloth | **Flax** as a crop (and linen thread later). |
+| Roots and veg | Atlas Carrot, Celery, Garlic, Onion, Potato, Turnip; Minecraft Carrot, Potato, Beetroot; Dragonwilds cabbage, onion seeds; FS Red Beet, Carrots, Parsnips | Soups, stews, roast roots | **Carrot, Turnip, Onion, Garlic, Cabbage, Parsnip, Beetroot**. **Potato** is a New World crop (general knowledge, not in my search): educational hook, or leave out of a medieval setting (Q17). |
+| Legumes | Atlas Beans, Chickpea | Protein, pottage | **Peas, Beans**. |
+| Squash and gourd | Minecraft Melon, Pumpkin; ME Pumpkin; 7DtD Pumpkin Bread | Soups, pies | **Pumpkin** (later). |
+| Fruit and berries | Atlas many berries; Minecraft Sweet berries; our flora has wild berries, apple, pear, cherry | Jams, compotes, drinks | gather from wild and orchard trees; no crop item needed at first. |
+| Herbs | Atlas Parsley, Mint, Rosemary, Thyme; our flora has many | Flavour, medicine | gather wild; a herb garden plot later. |
+| Seeds | Dragonwilds seeds per crop; Minecraft seeds; 7DtD seeds | Plant a crop | **one seed item per crop** (Wheat seeds...) replaces generic Seeds 9 (Q17). |
+| Plot / field | Dragonwilds Ash Farming Plot; 7DtD Farm Plot; Forest Small Garden*; MD Field; Ark Small Crop Plot | Place where crops grow | **Farm plot** (placeable) or tilled ground by the hoe (Q17). |
+| Tools | Valheim Cultivator, Hoe; Atlas Metal Sickle*; Dragonwilds Iron Secateurs*; VS Scythe, Hoe; MD hoe | Till, plant, harvest | Hoe exists; **Scythe** for grain (Tyler keeps scythe, cuts sickle: Dave to decide). Bucket/Waterskin for watering. |
+| Compost / fertiliser | Dragonwilds Compost Bin, Compost; Atlas Fertilizer*; Ark Re-Fertilizer*; MD Manure; FS Manure, Slurry | Better yield | **Compost bin** and **Compost**; **Manure** from animals. Rotten food 55 already says "usable as compost" in Tyler's list. |
+| Milling | FS Grain mill; VS Quern; Valheim none | Grain to flour | **Quern** (hand, early), **Windmill** (Dave), **Flour**. Possibly **Water mill** (our Water wheel 239 exists). |
+| Baking inputs | Dave: water, honey, yeast; FS Bakery (flour, sugar, milk, eggs, butter) | Bread, cake | **Yeast** (new; real source: baking and brewing, not researched), **Honey**, **Eggs**, **Milk**, **Butter**. |
+| Animal husbandry | 7DtD Chicken Run, Apiary; Ark Bee Hive; DS Bee Box, Rabbit Hutch; MD Hen/Goose houses; FS Dairy | Eggs, milk, honey, wool | **Chicken coop**, **Beehive**, later cow/sheep pens; wool needs shears (Tyler cut shears: revisit). |
+| Preserving | Atlas Salted Meat*, Preserving Salt*; MD Salt; Valheim jerky; DS Drying Rack | Keep food longer | **Salt**, **Drying rack** (also leather chain), **Barrel**. |
+
+Questions: Q17 how strictly medieval Europe are the crops (potato, maize, rice); one seed item per crop; plot item versus hoed ground; keep sickle or only scythe; which animals first.
+
 ## 11. Excluded from grouping (so nothing is hidden)
 Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory production parts, nuclear and packaged fluids; NMS starship, exosuit, exocraft, base tech; Space Engineers and Astroneer sci-fi parts; Minecraft redstone and brewing; Dragonwilds magic weapons, armour and per-skill potions (EXCLUDED FOR NOW only; Dave says a huge magic system is coming, so a separate magic-items pass is needed); Conan thralls and deity altars; Rust electrical; gunpowder-era firearms (pending Q7). Named boss/loot weapons (Valheim Dyrnwyn etc.) are not grouped.
 
@@ -240,6 +266,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 14. **DECIDED (Dave, 2026-10-30): a huge magic system is planned for later.** Obsidian can be a magic component. Open: when magic items (staves, wands, components, potions, enchanted gear) get their own catalogue pass, and which sources to use (Dragonwilds, Valheim staves and Eitr, Minecraft brewing and enchanting, Ark Element are the ones the analysis covers).
 15. **Leather chain:** confirm the steps above, rivets, and how quality sorting works.
 16. **DECIDED (Dave): Oven 268 is the basic oven (rung 1).** Open: names and quality details for rungs 2 and 3.
+17. **Farming** (section 12): strictness of crop list (potato, maize, rice), one seed item per crop, plot item or hoed ground, sickle or scythe only, first animals.
 12. **Tyler's trim list has groups A to J (not A-E). Dave asked to see them (2026-10-30); shown in chat, not yet decided.** Groups touching Dave's decisions: F (merge four forges into one), J (cuts loom and tanning rack), B (camp bench merge), I (sickle, shears).
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
