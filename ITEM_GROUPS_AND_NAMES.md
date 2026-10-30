@@ -39,6 +39,40 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Kindling (NEW, Dave idea) | none of the sources list it as an item; Forest/DS use sticks and leaves as fire fuel | Small fuel that starts fires; dropped as a small amount when cutting or processing trees and tree by-products | T0 | none | REC **Kindling**; species remembered on the item if tree-type flame effects are adopted. Note: Tyler D merges Softwood firewood into Firewood; tree-type flame effects would argue for keeping species on the item (still one item number). |
 | Fuel | Ark none; Rust Low Grade Fuel*; Satisfactory Fuel | Burnable | - | Firewood 26 | REC **Firewood**. |
 
+## 1b. Stones: sizes, types and fire (Dave's direction 2026-10-30; sizes and types are REC, to confirm)
+
+**Dave's rule:** there are many real kinds of stone with different jobs, and size matters. Keep it simple and interesting for the average gamer, with a hint of education.
+
+**Sizes (REC, a ladder the player can read at a glance):**
+
+| Size | Meaning in the game (REC) | Ours today |
+|---|---|---|
+| Pebble | small round stone, smaller than a hand | none |
+| Stone | the classic hand-sized stone, smooth or rough | Stone 1 (1 kg per stone in boulders.json) |
+| Rock | larger, heavier to carry | Rock pile 235 is a placeable, not a rock item |
+| Large rock | bigger still, likely a two-hand carry or a placed block | none |
+| Boulder | huge, various sizes, not carried; broken into stones with a pick | data/items/boulders.json (Dave 2026-10-21) |
+
+I could not confirm formal geology size names on the web (the search returned nothing on the Wentworth scale), so real-world cut-offs for pebble, cobble and boulder are NOT checked. Use the game's own sizes above unless Dave wants real ranges.
+
+**Types by job (REC; real facts are sourced, the game names are mine):**
+
+| Type | Job | Real-world support |
+|---|---|---|
+| Plain stone (smooth or rough) | building, hammer, the ring around a fire | none needed |
+| Flint (DECIDED: its own stone item, common near rivers) | strike sparks; shapes into edges for knives, spear and arrow heads | Flint is a cryptocrystalline quartz and a variety of chert; flint, chert and obsidian break with a curved "conchoidal" fracture, giving sharp edges, which is why they are the usual knapping stones ([Conchoidal fracture](https://en.wikipedia-on-ipfs.org/wiki/Conchoidal_fracture), [Flint knapping](https://outdoors.nordling.de/area/flint-knapping/)) |
+| Chert | same as flint, a second tool stone | same sources |
+| Obsidian | very sharp glassy tool stone | same sources; our rocks table has basalt and tuff but no obsidian |
+| Pyrite (or marcasite) | historic spark-maker used with flint before steel | [Fire striker](https://en.wikipedia.org/wiki/Fire_striker): iron pyrite or marcasite was used with flint before steel. One less established wiki says its sparks are cooler and shorter than steel's; unconfirmed |
+
+Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, basalt, sandstone, marble, chalk, tuff and so on). The conchoidal fracture page describes flint as a chert found in chalk or marly limestone, so our chalk and limestone beds are a natural place for the world owner to put flint; Dave also wants it common by rivers.
+
+**Making fire: what is real (sourced) and a simple game version (REC):**
+- Real: striking flint or chert on high-carbon steel sheds hot steel particles; they catch on char cloth or tinder; the ember is blown into flame in a tinder bundle ([Fire striker](https://en.wikipedia.org/wiki/Fire_striker), [Outdoor Life](https://www.outdoorlife.com/blogs/survivalist/survival-video-how-work-flint-and-steel/)). Steel gives hotter, more plentiful sparks than pyrite.
+- I found nothing backing "two ordinary stones make sparks reliably". Dave's 8 or 9 tries for flint and stone is a game choice, not something I confirmed. The education that IS supported: the old way was flint with pyrite, and steel replaced it.
+- REC ladder, one E action with three levels: (1) **Flint and stone**, about 8 or 9 tries (Dave); (2) later **Flint and steel** using a **Steel striker** item, usually about two strikes (Dave); (3) kindling plays the part of tinder so the spark takes. Steel striker is a new gap item. Dave decides whether pyrite exists as a middle step (Q13).
+- Char cloth (real tinder) is NOT recommended, to keep the game simple, unless Dave wants it.
+
 ## 2. Hand tools (gathering)
 
 | Group | Games and exact names | Function | Tier | Ours | REC |
@@ -179,7 +213,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
 2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
 3. **PART DECIDED (Dave, 2026-10-30): no bloomery step** (felt like extra for its own sake in Aska); ore is smelted straight to an ingot in a forge. Still open: add copper, tin and bronze ingots before iron/steel?
-4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. FIRE RULES (Dave, 2026-10-30): a fire is crafted as an inventory item and placed with a blueprint; the sticks used as the recipe are stored in the placed campfire's own inventory as its first fuel. Pressing E on a fire lights or extinguishes it: the character sparks flint and stone a few times to light it, or stomps it out. So lighting needs no fire-starter item (flint is a stone type). DECIDED (Dave): lighting needs one Stone and one Flint in inventory. Flint should be a common find near rivers (a world-placement note for whoever owns rocks and gathering, not an item-table change). Open detail: does the campfire's inventory hold other fuel (firewood, kindling)?
+4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. FIRE RULES (Dave, 2026-10-30): a fire is crafted as an inventory item and placed with a blueprint; the sticks used as the recipe are stored in the placed campfire's own inventory as its first fuel. Pressing E on a fire lights or extinguishes it: the character sparks flint and stone a few times to light it, or stomps it out. So lighting needs no fire-starter item (flint is a stone type). DECIDED (Dave): lighting needs one Stone and one Flint in inventory; flint is its OWN stone item (many stone types with different jobs; see section 1b); flint and stone takes about 8 or 9 tries, a later flint and steel about two strikes. Flint should be a common find near rivers (a world-placement note for whoever owns rocks and gathering, not an item-table change). Open detail: does the campfire's inventory hold other fuel (firewood, kindling)?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
 6. **Thrown spear:** a separate Javelin item, or the spear thrown?
 7. **Gunpowder era and siege weapons:** out, or siege only (ballista, catapult, ram)?
@@ -187,6 +221,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 9. **Furniture** (table, chair, shelf): how much? Dave's rule limits benches to weapons and tools.
 10. **Farming depth:** which crops, and do we want compost, flour and a mill?
 11. **Boats and carts:** in scope for this list?
+13. **Pyrite** as a middle step between flint-and-stone and flint-and-steel, or skip it? Is obsidian in?
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
