@@ -32,6 +32,7 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--generated-body"):
 		for variant in range(VARIANTS):
 			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), 0.045, false)
+			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), BodyGenerator.lod_voxel(2), false)     # the far level (Plan 18)
 
 
 func on_roster(rows: Array) -> void:
@@ -142,6 +143,10 @@ func _process(delta: float) -> void:
 			body["far_t"] = 1.0
 			var far: bool = WornSync.far_after(distance, bool(body.get("far", false)))
 			body["far"] = far
+
+			if ragdoll.has_method("set_far"):
+				ragdoll.set_far(far)
+
 			WornSync.apply(ragdoll, _worn_of(str(roster.get(id, {}).get("outfit", ""))), far)
 
 		var every: int = 1 if distance <= FULL_M else (2 if distance <= HALF_M else (4 if distance <= QUARTER_M else 0))

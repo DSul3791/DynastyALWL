@@ -53,6 +53,7 @@ Goal: the player character should look and move like a natural, readable person:
 - `art/character_proto/hands/hands_and_faces.png`: hand poses (open, fist, point, claw) and eye and brow expressions.
 - `art/character_proto/worn/worn_on_generated_fitted.png`: the same worn pieces **fitted to each body's proportions** (Plan 15): wider on the stocky body, longer on the long-legged one.
 - `art/character_proto/hem/hem_band.png`: the darker band at hems, cuffs, collar and waist, off and on (subtle at this size; not yet seen in the running game).
+- `art/character_proto/far/far_level.png`: the near NPC body and the cheaper far body (7 cm grid, no face) side by side (Plan 18; bare scene, not yet seen in the game).
 - `art/character_proto/worn/worn_on_generated.png`: the worn clothing pieces on generated bodies (columns: none; cloak, hood, boots; pack, leggings, mittens; grass skirt, sandals, quiver; top row a lean body from the front-left, bottom row a stocky body from the back-left).
 - `art/character_proto/converted/old_clips_on_generated.png`: the old clips (idle, walk, jog, run, crouch, swing, jab, throw) on two generated bodies.
 
@@ -905,7 +906,7 @@ The rules for how the arms follow the body at rest and the camera while working 
 
 **Plan 17. Build bodies off the main thread, and cache them on disk. DONE for NPC bodies (8.6r); the disk cache is not connected.** A worker-thread build of a body's mesh data (`Generator.build` uses only maths and arrays, no nodes) so the 8 NPC types and a player's body are made without a hitch; a disk cache of baked meshes keyed by the genome (a saved mesh loads in about 5 ms, Part 8.3b). Checked headless: the threaded result equals the synchronous one; a saved mesh loads back with the same data.
 
-**Plan 18. A cheaper far level for NPCs.** Beyond about 40 m draw a lower detail body (a 7 cm grid, no face parts) or fewer bones; measured with the same rig run, 20 NPCs near and far.
+**Plan 18. A cheaper far level for NPCs.** Beyond about 40 m draw a lower detail body (a 7 cm grid, no face parts) or fewer bones; measured with the same rig run, 20 NPCs near and far. **Done in code, see 8.6v.**
 
 **Plan 19. Motion polish (the old Plan 10).** Strafe and backward walking, jump, fall, land, swim and ladder clips, crouch walk, squash and stretch with a helper bone, foot placement on a real slope with ground rays; each with a headless check where one exists and a real-game picture through the rig.
 
@@ -937,6 +938,13 @@ Three separate mechanisms; all are in `src/client/character/` and `src/client/wo
 - **What it does:** every cloth vertex of the generated body (tunic, trousers, boots) now knows how far it lies from the edge of its cloth: in the generator, the distance to the nearest *different* material (skin at a sleeve end or collar, the tunic at the waist, the boot at a trouser cuff) minus its own, over 2 cm (`HEM_REACH`). The number rides in the fraction of the vertex alpha (the whole part still decodes the material id). The body shader multiplies the colour by `hem_dark` (0.7 at the very edge) fading to 1.0 inside. Set `hem_dark` to 1.0 to turn it off.
 - **Limits (stated plainly):** the band is about one voxel wide (3 to 4 cm grid), so it is a soft dark edge, not a stitched hem. It costs nothing at run time (no new geometry). The mesh cache and the threaded build carry it unchanged.
 - **Tested how:** `tools/check_hem_band.gd` (headless, 16 cases): each material has both edge and interior vertices on all four presets and still decodes from alpha. The earlier checks still pass (244, 5,124, 114, 781, 24). Picture, seen by me on this PC in a bare scene (not the game): `art/character_proto/hem/hem_band.png` (columns: band off, on, on from the back; rows: average and stocky). At this size the effect is subtle; **a look at it in the running game is still needed.**
+
+## 8.6v Plan 18 done in code: a far level for NPC bodies (headless only; not yet seen in the running game)
+
+- **What changed:** `Generator.mesh_for(genome, voxel, fingers, use_cache)` makes (or shares, or takes from a prewarm job) the mesh of one detail level; `make_node` now uses it. `GeneratedBody.set_far(on)` swaps the body mesh for the 7 cm, no-finger mesh of the same genome and hides the eyes and brows; `set_far(false)` puts the near mesh back. Bones, skin and animation are unchanged, so a switch is one mesh swap (about 0 ms when another body of the type already did it). `npc_view.gd` calls it from the same once-a-second distance look that dresses bodies for distance (`WornSync.far_after`), and prewarms the 8 far meshes on worker threads when `--generated-body` is on.
+- **Measured (headless, this PC, three seeds):** triangles per body: 3 cm with fingers about 10,000 to 11,200 (the player setting), 4.5 cm without fingers 3,900 to 4,500 (NPC near), **7 cm 1,500 to 1,900 (far)**, 10 cm 800 to 860. Build time in GDScript: 4.5 cm 230 to 410 ms, 7 cm 100 to 160 ms. So the far level draws about 40 percent of the near NPC level.
+- **Not done:** fewer bones (kept: the 37-bone skeleton is shared and animation at that distance is already skipped to every fourth frame). No frame-time gain is claimed: the earlier real-game runs showed no measurable cost from 20 bodies on this PC, so the gain would show only on weaker machines, which are unmeasured.
+- **Tested how:** `tools/check_far_level.gd` (headless, 14 cases: far has under 60 percent of the near triangles, bone indices valid, switching back and forth, mesh sharing, animating a far body) plus the earlier checks (781, 5,124, 114, 24, 16, 3,096) all pass. Picture, bare scene on this PC: `art/character_proto/far/far_level.png` (columns: near, far, far from behind). **The real game at 40 m or more has not been looked at.**
 
 ## 8.7 What was tested how (for Dave's review)
 

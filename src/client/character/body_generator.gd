@@ -714,6 +714,40 @@ static var _jobs: Dictionary = {}           # key -> a started worker-thread bui
 static var _mesh_cache: Dictionary = {}     # genome hash, voxel and fingers -> {mesh, skin, triangle_count}; bodies with the same genome share one mesh
 
 
+# The skinned mesh of a body type at one detail level; the bones are the same at every level, so a mesh from here fits any skin made for this genome. With
+# use_cache the mesh is shared between bodies of the same genome, voxel and fingers, and a mesh started by prewarm is used. Returns {mesh, triangle_count, from_cache,
+# (from_job), ms}.
+static func mesh_for(g: Dictionary, voxel: float, fingers: bool, use_cache: bool, rg: Dictionary = {}) -> Dictionary:
+	var key: String = "%d|%.4f|%s" % [g.hash(), voxel, str(fingers)]
+
+	if use_cache and _mesh_cache.has(key):
+		var hit: Dictionary = _mesh_cache[key]
+		return {"mesh": hit["mesh"], "rig": rg if not rg.is_empty() else rig(g), "triangle_count": hit["triangle_count"], "from_cache": true, "ms": {"total": 0.0}}
+
+	var built: Dictionary = {}
+
+	if use_cache and _jobs.has(key):
+		built = finish_build(_jobs[key])      # started earlier by prewarm: only the mesh is made here
+		built["from_job"] = true
+		_jobs.erase(key)
+	else:
+		built = build(g, voxel, fingers)
+
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, built["arrays"])
+	mesh.custom_aabb = AABB(Vector3(-1.5, -0.3, -1.5), Vector3(3.0, 3.0, 3.0))
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.roughness = 0.85
+	mesh.surface_set_material(0, material)
+	built["mesh"] = mesh
+
+	if use_cache:
+		_mesh_cache[key] = {"mesh": mesh, "triangle_count": built["triangle_count"]}
+
+	return built
+
+
 static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, use_cache: bool = false) -> Dictionary:
 	var rg: Dictionary = rig(g)
 	var root: Node3D = Node3D.new()
@@ -730,40 +764,13 @@ static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, 
 			skeleton.set_bone_parent(i, int((rg["parents"] as Array)[i]))
 
 	skeleton.reset_bone_poses()
-	var key: String = "%d|%.4f|%s" % [g.hash(), voxel, str(fingers)]
-	var built: Dictionary = {}
-	var mesh: ArrayMesh
-	var skin: Skin
+	var skin: Skin = Skin.new()
 
-	if use_cache and _mesh_cache.has(key):
-		var hit: Dictionary = _mesh_cache[key]
-		mesh = hit["mesh"]
-		skin = hit["skin"]
-		built = {"rig": rg, "triangle_count": hit["triangle_count"], "from_cache": true, "ms": {"total": 0.0}}
-	else:
-		if use_cache and _jobs.has(key):
-			built = finish_build(_jobs[key])      # started earlier by prewarm: only the mesh is made here
-			built["from_job"] = true
-			_jobs.erase(key)
-		else:
-			built = build(g, voxel, fingers)
+	for i in range(names.size()):
+		skin.add_bind(i, skeleton.get_bone_global_rest(i).affine_inverse())
 
-		skin = Skin.new()
-
-		for i in range(names.size()):
-			skin.add_bind(i, skeleton.get_bone_global_rest(i).affine_inverse())
-
-		mesh = ArrayMesh.new()
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, built["arrays"])
-		mesh.custom_aabb = AABB(Vector3(-1.5, -0.3, -1.5), Vector3(3.0, 3.0, 3.0))
-		var material: StandardMaterial3D = StandardMaterial3D.new()
-		material.vertex_color_use_as_albedo = true
-		material.roughness = 0.85
-		mesh.surface_set_material(0, material)
-
-		if use_cache:
-			_mesh_cache[key] = {"mesh": mesh, "skin": skin, "triangle_count": built["triangle_count"]}
-
+	var built: Dictionary = mesh_for(g, voxel, fingers, use_cache, rg)
+	var mesh: ArrayMesh = built["mesh"]
 	var body: MeshInstance3D = MeshInstance3D.new()
 	body.name = "Body"
 	body.mesh = mesh

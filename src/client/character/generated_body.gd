@@ -53,11 +53,20 @@ var genome: Dictionary = {}
 var face: Node3D
 var _material: ShaderMaterial
 var _log: MeshInstance3D
+var _near_mesh: ArrayMesh
+var _far_mesh: ArrayMesh
+var _far: bool = false
+var _voxel: float = 0.04
+var _fingers: bool = true
+var _use_cache: bool = false
 
 
 func _init(genome_in: Dictionary = {}, voxel: float = 0.04, fingers: bool = true, use_cache: bool = false) -> void:
 	name = "GeneratedBody"
 	genome = genome_in if not genome_in.is_empty() else Generator.make_genome("average")
+	_voxel = voxel
+	_fingers = fingers
+	_use_cache = use_cache
 	var made: Dictionary = Generator.make_node(genome, voxel, fingers, use_cache)
 	var rig: Node3D = made["node"]
 	skeleton = made["skeleton"]
@@ -137,6 +146,31 @@ func current() -> String:
 
 func is_one_shot_playing() -> bool:
 	return animation_player != null and animation_player.is_playing() and animation_player.get_animation(animation_player.current_animation).loop_mode == Animation.LOOP_NONE
+
+
+# The far level of detail (Plan 18): a coarser mesh of the same body (7 cm grid, no fingers, shared between bodies of the same genome when the body uses the cache)
+# and no eyes or brows. The bones, skin and animation are the same, so switching costs one mesh swap; the far mesh is made the first time it is wanted.
+func set_far(on: bool) -> void:
+	if on == _far:
+		return
+
+	_far = on
+	face.visible = not on
+
+	if on:
+		if _near_mesh == null:
+			_near_mesh = body_mesh.mesh as ArrayMesh
+
+		if _far_mesh == null:
+			_far_mesh = Generator.mesh_for(genome, Generator.lod_voxel(2), false, _use_cache)["mesh"]
+
+		body_mesh.mesh = _far_mesh
+	elif _near_mesh != null:
+		body_mesh.mesh = _near_mesh
+
+
+func is_far() -> bool:
+	return _far
 
 
 # Shows or hides the clothes baked into the body (tunic, trousers, boots): false gives a bare body in skin colour.
