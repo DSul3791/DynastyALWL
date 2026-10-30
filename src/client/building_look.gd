@@ -1188,13 +1188,15 @@ static func _vice_mesh() -> ArrayMesh:
 	rng.seed = 27
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	_tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.8, 0.0), 0.2, 0.17, _tone(WOOD_DARK, rng, 0.1), 8, rng)
-	_box(st, Vector3(0.0, 0.8, 0.0), Vector3(0.42, 0.05, 0.36), WOOD)
-	_box(st, Vector3(-0.1, 0.9, 0.0), Vector3(0.05, 0.2, 0.28), WOOD_PALE)
-	_box(st, Vector3(0.12, 0.9, 0.0), Vector3(0.07, 0.2, 0.28), WOOD)
-	_tube(st, Vector3(-0.12, 0.93, 0.0), Vector3(0.3, 0.93, 0.0), 0.022, 0.022, WOOD_DARK, 6, rng)
-	_tube(st, Vector3(0.3, 0.93, -0.1), Vector3(0.3, 0.93, 0.1), 0.014, 0.014, WOOD_PALE, 5, rng)
-	_box(st, Vector3(-0.1, 0.885, 0.0), Vector3(0.012, 0.04, 0.22), IRON)
+	_tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.72, 0.0), 0.2, 0.17, _tone(WOOD_DARK, rng, 0.1), 8, rng)
+	_tube(st, Vector3(0.0, 0.2, 0.0), Vector3(0.0, 0.24, 0.0), 0.215, 0.215, IRON, 8, rng)     # two iron bands round the stump
+	_tube(st, Vector3(0.0, 0.55, 0.0), Vector3(0.0, 0.59, 0.0), 0.19, 0.19, IRON, 8, rng)
+	_box(st, Vector3(0.52, 0.07, 0.42), Vector3(0.0, 0.755, 0.0), WOOD)                         # a hewn top plank wider than the stump
+	_box(st, Vector3(0.07, 0.3, 0.3), Vector3(-0.17, 0.94, 0.0), WOOD_PALE)                      # the fixed jaw
+	_box(st, Vector3(0.09, 0.3, 0.3), Vector3(0.06, 0.94, 0.0), WOOD)                            # the moving jaw
+	_tube(st, Vector3(-0.17, 0.98, 0.0), Vector3(0.4, 0.98, 0.0), 0.028, 0.028, WOOD_DARK, 6, rng)   # the long wooden screw through both jaws
+	_tube(st, Vector3(0.4, 0.98, -0.15), Vector3(0.4, 0.98, 0.15), 0.02, 0.02, WOOD_PALE, 5, rng)    # the cross handle
+	_box(st, Vector3(-0.134, 0.9, 0.0), Vector3(0.012, 0.1, 0.24), IRON)                         # iron facing on the fixed jaw
 	return _finish_cached("vice", st, _solid_material())
 
 
@@ -1224,14 +1226,14 @@ static func remains(age: float) -> Node3D:
 			var a: float = rng.randf() * TAU
 			var at: Vector3 = Vector3(cos(a) * rng.randf_range(0.3, 0.7), 0.025, sin(a) * rng.randf_range(0.2, 0.5))
 			var dir: Vector3 = Vector3(cos(a + 1.0), 0.0, sin(a + 1.0)) * rng.randf_range(0.12, 0.2)
-			_tube(st, at - dir, at + dir, 0.014, 0.011, _tone(bone, rng, 0.08), 5, rng)
+			_tube(st, at - dir, at + dir, 0.022, 0.017, _tone(bone, rng, 0.08), 5, rng)
 			_blob(st, at + dir, Vector3(0.025, 0.02, 0.025), bone, rng, 5, 2, 0.1)
 			_blob(st, at - dir, Vector3(0.025, 0.02, 0.025), bone, rng, 5, 2, 0.1)
 
 		for n in range(5):
 			var x: float = -0.45 + 0.07 * float(n)
-			_tube(st, Vector3(x, 0.01, -0.12), Vector3(x + 0.02, 0.07, 0.0), 0.008, 0.007, bone, 4, rng)
-			_tube(st, Vector3(x + 0.02, 0.07, 0.0), Vector3(x, 0.01, 0.12), 0.007, 0.006, bone, 4, rng)
+			_tube(st, Vector3(x, 0.01, -0.12), Vector3(x + 0.02, 0.07, 0.0), 0.013, 0.011, bone, 4, rng)
+			_tube(st, Vector3(x + 0.02, 0.07, 0.0), Vector3(x, 0.01, 0.12), 0.011, 0.009, bone, 4, rng)
 
 		_blob(st, Vector3(-0.2, 0.03, 0.3), Vector3(0.14, 0.03, 0.1), Color(0.35, 0.3, 0.26), rng, 6, 2, 0.2)
 		_cache[key] = _finish(st, _solid_material())
