@@ -3155,8 +3155,10 @@
 			"stack": 1,
 			"look_alikes": []
 		},
-		"kindling": {
+		"kindling_duplicate": {
 			"number": 278,
+			"retired": true,
+			"note": "Duplicate: kindling already exists as gathered item 1080 (gathered.json). Number kept, never reused.",
 			"name": "Kindling",
 			"description": "Small dry twigs and shavings. Catches a spark and starts a fire.",
 			"kind": "material",
