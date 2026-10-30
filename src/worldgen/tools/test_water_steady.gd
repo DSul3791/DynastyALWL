@@ -17,4 +17,4 @@ func _init():
 		out += ("1" if not is_nan(nw["levels"][0]) else "0")
 		cur = nw
 	print("water steady: ", "ok" if out == "111111110" else "FAIL " + out)
-	quit()
+	quit(0 if out == "111111110" else 1)
