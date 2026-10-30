@@ -10,7 +10,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 - **Not used for grouping:** sci-fi, electronics, nuclear, spaceship, magic and Tek-tier items (Satisfactory/NMS/Space Engineers/Astroneer/Ark Tek/Dragonwilds magic). They are listed in the closing "Excluded" section so nothing is hidden.
 - **Tier:** where the analysis gives a stage I quote it; otherwise I use our own ladder: T0 hand-gathered (no tool), T1 stone/wood/bone, T2 copper/bronze era, T3 iron, T4 steel. (Our tables have iron and steel ingots and pickaxes today; copper/tin/bronze appear only as coins and in the resources table. REC: confirm the metal ladder with Dave.)
 - **REC** = my recommendation only. "Alt" = other names that would also suit a medieval setting. Where I name a medieval term I use ordinary English words; I have not checked their historical accuracy beyond common usage, and Dave should veto any he dislikes.
-- **Standing rulings I am keeping to** (from ITEM_TRIM_LIST.md, which records Dave's words): benches only for weapons and tools; tailoring and similar are by hand; wooden bowl, driftwood and hand saw stay; one tool per material, not per size.
+- **Standing rulings I am keeping to** (from ITEM_TRIM_LIST.md, which records Dave's words): (CORRECTED 2026-10-30: Dave did NOT mean benches are only for weapons and tools. Benches are for crafting; some things make sense by hand and others at a work station, decided item by item.) Tailoring by hand, as Tyler recorded; wooden bowl, driftwood and hand saw stay; one tool per material, not per size.
 
 ---
 
@@ -80,7 +80,7 @@ Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, ba
 2. Processed hide -> **Tannery** (tubs and drying racks) -> **Rough leather**, sorted by quality.
 3. Higher quality rough leather -> **Fine leather** or **Heavy leather**.
 4. With iron: several layers of leather plus rivets -> **Bound leather**, then leather armour.
-Open: the hide scraper may be the hand tool used at step 1. Check against Dave's rule that benches are for weapons and tools only: a leather working table crafts leather goods, so Dave to confirm it is allowed. Also needs rivets (not in our list; we have nails 228) and a quality-sorting mechanic (Q15).
+Open: the hide scraper may be the hand tool used at step 1. The leather working table is allowed (Dave: benches are for crafting). Also needs rivets (not in our list; we have nails 228) and a quality-sorting mechanic (Q15).
 
 ## 2. Hand tools (gathering)
 
@@ -171,7 +171,7 @@ Open: the hide scraper may be the hand tool used at step 1. Check against Dave's
 | Fruit, nuts, berries | Ark berry line; Atlas berries; Forest Berries; Minecraft Sweet berries | Berry compote 175, Nut paste 176, Baked apples 179 | keep. |
 | Medical | Ark Narcotic*, Stimulant*; 7DtD Bandage, First Aid Kit; Rust Bandage; Forest Meds*; ME Bandages; DS Healing Salve | Herb poultice 16, Herb bandage 17, Medicine 56 | keep poultice/bandage; **Salve** (DS) is an alt name for an ointment. Cut Medicine 56 (Tyler E). |
 
-## 8. Crafting stations (benches only for weapons and tools: Dave)
+## 8. Crafting stations (Dave: benches are for crafting; hand-crafting vs station decided item by item)
 
 | Group | Games and names | Job | Ours | REC |
 |---|---|---|---|---|
@@ -227,12 +227,12 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 6. **Thrown spear:** a separate Javelin item, or the spear thrown?
 7. **Gunpowder era and siege weapons:** out, or siege only (ballista, catapult, ram)?
 8. **Ale/mead** and brewing: in?
-9. **Furniture** (table, chair, shelf): how much? Dave's rule limits benches to weapons and tools.
+9. **Furniture** (table, chair, shelf): how much? (the earlier "benches only for weapons and tools" note was a misreading and is withdrawn).
 10. **Farming depth:** which crops, and do we want compost, flour and a mill?
 11. **Boats and carts:** in scope for this list?
 13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. DECIDED (Dave, 2026-10-30): **obsidian is in**, a mid-tier stone: found on islands beyond the starter islands, ones with dormant volcanoes, as rocks lying on or just under the surface. Intended uses (Dave): valuable tool and weapon material, jewellery, possible magic component. Details in section 1b.
 14. **DECIDED (Dave, 2026-10-30): a huge magic system is planned for later.** Obsidian can be a magic component. Open: when magic items (staves, wands, components, potions, enchanted gear) get their own catalogue pass, and which sources to use (Dragonwilds, Valheim staves and Eitr, Minecraft brewing and enchanting, Ark Element are the ones the analysis covers).
-15. **Leather chain:** confirm the steps above, the leather working table versus the bench rule, rivets, and how quality sorting works.
+15. **Leather chain:** confirm the steps above, rivets, and how quality sorting works.
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
