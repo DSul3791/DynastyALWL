@@ -4679,6 +4679,7 @@
 			"display": "Wild banana",
 			"kind": "shrub",
 			"shape": "palm",
+			"leaf": "broad",
 			"height_m": [
 				3,
 				6

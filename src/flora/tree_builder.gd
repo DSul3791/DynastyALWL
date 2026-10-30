@@ -2139,13 +2139,13 @@ static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 			var c: Vector3 = centers[mini(k, centers.size() - 1)]
 			_bead(bark, c, Vector3(base_r * 1.15, h * 0.012, base_r * 1.15), tint * 0.78)
 
-	var fronds: int = 7 if far else (8 if banana else (20 if date else 15))
-	var length: float = crown * (1.3 if banana else (1.7 if date else 2.0))
-	var width: float = 0.5 if banana else (0.2 if date else 0.22)
+	var fronds: int = 7 if far else (9 if banana else (20 if date else 15))
+	var length: float = crown * (1.5 if banana else (1.7 if date else 2.0))
+	var width: float = 0.17 if banana else (0.2 if date else 0.22)
 
 	for k in range(fronds):
 		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.2, 0.2)
-		var rise: float = rng.randf_range(0.6, 1.0) if date and k % 2 == 0 else (rng.randf_range(0.25, 0.6) if banana else rng.randf_range(0.1, 0.55))
+		var rise: float = rng.randf_range(0.6, 1.0) if date and k % 2 == 0 else (rng.randf_range(0.9, 1.3) if banana else rng.randf_range(0.1, 0.55))
 		var tone: Color = Color(0.9, 1.0, 0.75) if banana else Color.WHITE
 		_frond(leaves, rng, top, Vector3(cos(a), 0.0, sin(a)), length * rng.randf_range(0.85, 1.1), rise, 1 if far else (4 if not banana else 3), width, tone)
 
@@ -2174,7 +2174,7 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 	var tint: Color = Color(0.5, 0.44, 0.34)
 	var trunk: float = maxf(trunk_m, h * 0.03)
 	var crown: float = maxf(crown_m, h * 0.45)
-	var fork: float = h * rng.randf_range(0.5, 0.6)
+	var fork: float = h * rng.randf_range(0.55, 0.65)
 	var lean: Vector2 = Vector2(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.08, 0.08)) * h
 	var centers: Array = _trunk(bark, rng, fork, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.8)
 	var top: Vector3 = centers[centers.size() - 1]
@@ -2185,9 +2185,9 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 	for k in range(limbs):
 		az += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
-		var reach: float = crown * rng.randf_range(0.45, 0.6)
-		var mid: Vector3 = top + out * reach * 0.5 + Vector3(0.0, rise * 0.55, 0.0)
-		var tip: Vector3 = top + out * reach + Vector3(0.0, rise * 0.85, 0.0)
+		var reach: float = crown * rng.randf_range(0.6, 0.8)
+		var mid: Vector3 = top + out * reach * 0.45 + Vector3(0.0, rise * 0.3, 0.0)
+		var tip: Vector3 = top + out * reach + Vector3(0.0, rise * 0.6, 0.0)
 
 		if not far:
 			_branch(bark, top, mid, trunk * 0.5, trunk * 0.3, tint, 5)
@@ -2197,10 +2197,11 @@ static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float
 
 		for m in range(n):
 			var t: float = 0.35 + 0.65 * float(m) / float(n - 1)
-			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn() * 0.2, rng.randfn() * 0.12, rng.randfn() * 0.2) * crown * 0.2
-			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.5, top.z), crown * rng.randf_range(0.34, 0.5), rng.randf_range(0.8, 1.05), 2 if far else 3)
+			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn() * 0.2, rng.randfn() * 0.05, rng.randfn() * 0.2) * crown * 0.2
+			p.y = lerpf(p.y, h * 0.93, 0.6)   # the canopy is a thin flat layer
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.8, top.z), crown * rng.randf_range(0.3, 0.42), rng.randf_range(0.8, 1.05), 2 if far else 3)
 
-	_clump(leaves, rng, top + Vector3(0.0, rise * 0.9, 0.0), top - Vector3(0.0, crown, 0.0), crown * 0.5, 1.0, 2 if far else 3)
+	_clump(leaves, rng, Vector3(top.x, h * 0.95, top.z), top - Vector3(0.0, crown, 0.0), crown * 0.4, 1.0, 2 if far else 3)
 
 
 # Mangrove (red mangrove, Rhizophora): the tree stands on a tangle of arching stilt roots that leave the trunk well above the water and bury
@@ -2209,28 +2210,30 @@ static func _mangrove(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: flo
 	var tint: Color = Color(0.36, 0.26, 0.2)
 	var trunk: float = maxf(trunk_m, h * 0.03)
 	var crown: float = maxf(crown_m, h * 0.35)
-	var root_top: float = h * 0.32
+	var root_top: float = h * 0.27
 	var lean: Vector2 = Vector2(rng.randf_range(-0.05, 0.05), rng.randf_range(-0.05, 0.05)) * h
 	var centers: Array = _trunk(bark, rng, h * 0.5, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 3, 0.0)
 	var top: Vector3 = centers[centers.size() - 1]
-	var roots: int = 5 if far else rng.randi_range(9, 12)
+	var roots: int = 6 if far else rng.randi_range(12, 15)
 	var az: float = rng.randf() * TAU
 
 	for k in range(roots):
 		az += TAU / float(roots) + rng.randf_range(-0.3, 0.3)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
-		var spread: float = crown * rng.randf_range(0.5, 0.95)
+		var spread: float = crown * rng.randf_range(0.6, 1.05)
 		var start: Vector3 = Vector3(lean.x * 0.5, root_top * rng.randf_range(0.7, 1.1), lean.y * 0.5) + out * trunk * 0.5
-		var arch: Vector3 = start + out * spread * 0.55 + Vector3(0.0, root_top * 0.25, 0.0)
+		var arch: Vector3 = start + out * spread * 0.5 + Vector3(0.0, root_top * 0.1, 0.0)
 		var foot: Vector3 = Vector3(out.x * spread, -0.05, out.z * spread)
 
 		if far:
-			_branch(bark, start, foot, trunk * 0.22, trunk * 0.1, tint, 3)
+			_branch(bark, start, foot, trunk * 0.35, trunk * 0.15, tint, 3)
 		else:
-			_branch(bark, start, arch, trunk * 0.24, trunk * 0.16, tint, 4)
-			_branch(bark, arch, foot, trunk * 0.16, trunk * 0.08, tint, 4)
+			var low: Vector3 = arch.lerp(foot, 0.5) + Vector3(0.0, root_top * 0.08, 0.0)
+			_branch(bark, start, arch, trunk * 0.5, trunk * 0.38, tint, 5)
+			_branch(bark, arch, low, trunk * 0.38, trunk * 0.28, tint, 5)
+			_branch(bark, low, foot, trunk * 0.28, trunk * 0.16, tint, 4)
 
-	var base_y: float = h * 0.4
+	var base_y: float = h * 0.38
 
 	for k in range(4 if far else rng.randi_range(5, 7)):
 		var a: float = rng.randf() * TAU
@@ -2269,7 +2272,7 @@ static func _tropical_hardwood(bark: Acc, leaves: Acc, rng: RandomNumberGenerato
 	for k in range(limbs):
 		az += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
 		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
-		var reach: float = crown * rng.randf_range(0.55, 0.85)
+		var reach: float = crown * rng.randf_range(0.7, 1.0)
 		var mid: Vector3 = top + out * reach * 0.45 + Vector3(0.0, span * 0.4, 0.0)
 		var tip: Vector3 = top + out * reach + Vector3(0.0, span * rng.randf_range(0.65, 0.9), 0.0)
 
@@ -2280,9 +2283,9 @@ static func _tropical_hardwood(bark: Acc, leaves: Acc, rng: RandomNumberGenerato
 		for m in range(3 if far else 5):
 			var t: float = 0.3 + 0.7 * float(m) / 4.0
 			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn(), rng.randfn() * 0.4, rng.randfn()) * crown * 0.08
-			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.4, top.z), crown * rng.randf_range(0.4, 0.6), rng.randf_range(0.55, 0.95), 2 if far else 3)
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.5, top.z), crown * rng.randf_range(0.55, 0.8), rng.randf_range(0.55, 0.95), 2 if far else 3)
 
-	_clump(leaves, rng, top + Vector3(0.0, span * 0.85, 0.0), top, crown * 0.6, 1.0, 2 if far else 3)
+	_clump(leaves, rng, top + Vector3(0.0, span * 0.85, 0.0), top, crown * 0.8, 1.0, 2 if far else 3)
 
 
 # One arching frond card strip: rises, then droops.
@@ -2889,6 +2892,7 @@ static func _column(acc: Acc, rng: RandomNumberGenerator, h: float, radius: floa
 const MUSHROOM_LOOKS := {
 	"chanterelle": {"type": "funnel", "cap": Color(0.95, 0.68, 0.14), "stem": Color(0.97, 0.78, 0.3), "count": [4, 6], "cap_r": 0.5, "stem_r": 0.13, "spots": null},
 	"porcini": {"type": "dome", "cap": Color(0.52, 0.30, 0.14), "stem": Color(0.88, 0.80, 0.64), "count": [1, 3], "cap_r": 0.55, "cap_h": 0.4, "stem_r": 0.22, "spots": null},
+	"mushrooms": {"type": "dome", "cap": Color(0.60, 0.42, 0.26), "stem": Color(0.93, 0.89, 0.80), "count": [3, 5], "cap_r": 0.5, "cap_h": 0.36, "stem_r": 0.15, "spots": null},
 	"morel": {"type": "cone", "cap": Color(0.50, 0.36, 0.18), "stem": Color(0.93, 0.88, 0.76), "count": [1, 2], "cap_r": 0.26, "cap_h": 0.62, "stem_r": 0.2, "spots": null},
 	"fly_agaric": {"type": "dome", "cap": Color(0.88, 0.1, 0.07), "stem": Color(0.97, 0.96, 0.92), "count": [2, 3], "cap_r": 0.6, "cap_h": 0.34, "stem_r": 0.12, "spots": Color(1.0, 1.0, 0.95), "ring": true},
 	"puffball": {"type": "ball", "cap": Color(0.96, 0.94, 0.88), "stem": Color(0.9, 0.88, 0.8), "count": [1, 3], "cap_r": 0.5, "cap_h": 0.8, "stem_r": 0.0, "spots": null},
