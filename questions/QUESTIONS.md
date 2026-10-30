@@ -110,3 +110,18 @@ Note: Your rule is a 3-ingredient maximum. Sal made these two the only exception
 Note: Recommendation: Keep them as future items. They cost nothing now, steel is far down the progression, and they can be changed or removed before they are ever released.
 - Keep them as future items with 4 ingredients
 - Drop them for now
+
+## log-inventory-link | How should the carried shoulder log show up in the inventory?
+Note: Today the log you carry on your shoulder is stored on the character as a separate `shoulder` field, so it is not in any of the 36 bag slots. Q lays it down, death drops it where you fell, and it is saved with the character. You said you wish the log and an inventory item were tied together.
+Note: Option A would add a read-only 'Carried' slot to the inventory window. It shows the log from a value the game client already has, so nothing changes on the server or in saves, and the existing drag-out and put-in-chest paths already work.
+Note: Option B would make the log a real bag item that moves itself onto the shoulder. That changes slots, weight, the save format and the drop and death paths, so it is larger and riskier. Owners if you pick A: Sal for the slot, whoever owns `terrain_client.gd` for the keys.
+Note: Recommendation: Option A, the read-only 'Carried' slot. It gives you the link you asked for, needs no server or save change, and Option B can still be done later if A does not feel right.
+- A: a read-only 'Carried' slot in the inventory window
+- B: make the log a real bag item that auto-equips to the shoulder
+- Leave it as it is
+
+## double-f-window | How fast must the second F press be to put the shoulder log down?
+Note: You asked to press F twice to put the carried log down, like setting down a pet on your shoulder in Atlas. The first F shows a hint ('F again to put the log down'); the second F within the window puts it down. If a chest is in reach, F still opens the chest.
+Note: Recommendation: 0.6 seconds. It is quick enough to avoid dropping the log by accident, and still easy to hit on purpose.
+- 0.6 seconds
+- 1.0 second
