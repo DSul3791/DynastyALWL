@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 190,
+	"next_number": 197,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -3785,6 +3785,146 @@
 				1
 			],
 			"craft_s": 4.0,
+			"known": false
+		},
+		"smelt_copper": {
+			"number": 190,
+			"name": "Copper ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"copper_ore",
+					2
+				]
+			],
+			"gives": [
+				"copper_ingot",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false,
+			"station": "forge"
+		},
+		"smelt_tin": {
+			"number": 191,
+			"name": "Tin ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"tin_ore",
+					2
+				]
+			],
+			"gives": [
+				"tin_ingot",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false,
+			"station": "forge"
+		},
+		"smelt_iron": {
+			"number": 192,
+			"name": "Iron ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"iron_ore",
+					3
+				]
+			],
+			"gives": [
+				"iron_ingot",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false,
+			"station": "forge"
+		},
+		"smelt_steel": {
+			"number": 193,
+			"name": "Steel ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"coal",
+					1
+				]
+			],
+			"gives": [
+				"steel_ingot",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false,
+			"station": "forge",
+			"station_level": 2
+		},
+		"hide_tunic": {
+			"number": 194,
+			"name": "Hide tunic",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_tunic",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false
+		},
+		"hide_trousers": {
+			"number": 195,
+			"name": "Hide trousers",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_trousers",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false
+		},
+		"hide_gloves": {
+			"number": 196,
+			"name": "Hide gloves",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_gloves",
+				1
+			],
+			"craft_s": 12.0,
 			"known": false
 		}
 	}

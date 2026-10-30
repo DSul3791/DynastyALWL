@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 301,
+	"next_number": 308,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3509,6 +3509,82 @@
 				]
 			],
 			"value": 10
+		},
+		"copper_ore": {
+			"number": 301,
+			"name": "Copper ore",
+			"description": "A heavy lump streaked green and red. Smelts to copper.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"tin_ore": {
+			"number": 302,
+			"name": "Tin ore",
+			"description": "A dark, very heavy lump. Smelts to tin.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"iron_ore": {
+			"number": 303,
+			"name": "Iron ore",
+			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"coal": {
+			"number": 304,
+			"name": "Coal",
+			"description": "A black lump that burns hot. Needed to turn iron into steel.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"hide_tunic": {
+			"number": 305,
+			"name": "Hide tunic",
+			"description": "A sewn hide shirt with sleeves. Warmer and neater than a cloak.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.24,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 30
+		},
+		"hide_trousers": {
+			"number": 306,
+			"name": "Hide trousers",
+			"description": "Hide sewn into proper trousers. Better than leggings.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.18,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 26
+		},
+		"hide_gloves": {
+			"number": 307,
+			"name": "Hide gloves",
+			"description": "Stitched hide gloves with fingers, for work and cold.",
+			"kind": "clothing",
+			"slot": "hands",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 16
 		}
 	}
 }

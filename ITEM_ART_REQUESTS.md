@@ -31,3 +31,6 @@ Design rules from Dave: simple, readable, a hint of education (a player should b
 
 Also still placeholder from before: the older items flagged `placeholder` in data/items/looks.json (4 rows).
 Questions for Kathleen to answer by herself using best practice: icon style and size match the existing items; world-pickup models for the three stones should be distinct in silhouette, not only in colour.
+
+## Added later (2026-10-30)
+Copper ore, Tin ore, Iron ore, Coal (ore lumps and a black coal lump; the placeholder is the grey chunk), and Hide tunic, Hide trousers, Hide gloves (clothing currently drawn with the cloak, leggings and mittens builders in data/items/worn.json; new drawings welcome). Kathleen has already done the first 22.

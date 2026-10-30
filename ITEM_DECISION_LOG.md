@@ -194,3 +194,9 @@ Findings:
 
 ## Kathleen's reply (2026-10-30)
 All 22 art requests have looks on branch kathleen-art (commits eccd2c88, 90efaa55) through ART_OVERRIDES in src/client/basic_look.gd; looks.json untouched, so the branches should merge cleanly. Not yet viewed in the real game. The code hand-off page is ITEM_CODE_HANDOFF.md (plan 2 of round 4, done).
+
+## Data batch 5 (2026-10-30) and plan results
+- Metals gap closed in data: ore items Copper ore 301, Tin ore 302, Iron ore 303, Coal 304 (future) and smelting recipes 190 to 193 (copper, tin, iron at forge 1; steel from 2 iron ingots plus coal at forge 2). Ore gathering in the world is still missing (code).
+- Clothing from Dave's 25 Oct H answer: Hide tunic 305, Hide trousers 306, Hide gloves 307 (future), recipes 194 to 196 (hide and twine, hand-made in the data's class but hidden). Drawn with the existing cloak, leggings and mittens builders via worn.json until new drawings exist.
+- Plan 3 (durability and tier numbers): new items sit on the ladder in ITEM_TIER_BALANCE.md: stone pickaxe 4500 (stone rung about 4050), scythe 9000 (iron-tool band), sickle 600, club 350, javelin 120, obsidian knife 300 (brittle, 0.6 of flint). No existing number was changed.
+- One-page summary of every change: ITEM_CHANGES_SUMMARY.md.
