@@ -7,6 +7,8 @@
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
 	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
+	"slow_mode": "closure",
+	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
 	"slow_exclude": ["src/worldgen/tools/**"],
 	"offline_globs": ["tools/erosion_precarve/**", "tools/**/*.py"],
 	"always": ["test_inventory", "test_server_items", "test_items_persistence", "test_save_compat", "test_structure_look", "test_placement_rules", "test_new_player", "test_skills", "test_first_hour", "test_block_roundtrip"],
@@ -41,7 +43,7 @@
 			"pin": true
 		}
 	],
-	"shared_all": ["project.godot", "tools/warning_baseline.txt", "tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/tests_for_diff.py"],
+	"shared_all": ["project.godot", "tools/warning_baseline.txt"],
 	"bake_regex": "^(src/worldgen/(tile|plan|sketch|tables|matrix|settings)/|src/worldgen/runtime/(terrain_layout|terrain_generator|flora_placer|tile_terrain_data)\\.gd|worlds/base_world/)|(world_elevation|river_network)\\.gd$",
 	"docs_globs": ["docs/**", "tech/**", "design/**", "proposed_removals/**", "art/**/*.md", "*.md", "**/*.md", "*.txt", "**/*.txt"],
 	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "art/", ".github/"],

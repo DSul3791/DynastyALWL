@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.." || exit 2
 # A fresh checkout or worktree has no import cache: classes and addons are unknown and most tests fail with misleading errors. Import once.
 if [ ! -f .godot/global_script_class_cache.cfg ]; then echo "run_tests: no .godot import cache, importing once (about 1.5 min)"; "${GODOT_EXE:-godot}" --headless --path . --import >/dev/null 2>&1; fi
 PY="${PYTHON:-python3}"
-JOBS="${GATE_JOBS:-4}"; OUT=""; FAST=""; TIMING=""; SLOW=""; SERIAL_EXTRA=""; PLAN=""
+JOBS="${GATE_JOBS:-4}"; OUT=""; FAST=""; TIMING=""; SLOW=""; SERIAL_EXTRA=""; PLAN=""; CHECKS=""
 MODE=""
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -34,6 +34,7 @@ import json, sys
 d = json.load(open(sys.argv[1]))
 for k in ("fast", "timing", "slow"):
     print('%s="$%s %s"' % (k.upper(), k.upper(), " ".join(d.get(k, []))))
+print('CHECKS="%s"' % " ".join(c for c in d.get("checks", []) if c in ("lanes", "selftest")))
 PYEOF
 )"
 fi
@@ -95,6 +96,13 @@ done
 [ -s "$OUT/retries.log" ] && sed 's/^/NOTE  /' "$OUT/retries.log"
 echo "slowest: $(sort -rn "$OUT/seconds.txt" | head -5 | awk '{printf "%s %ss  ", $2, $1}')"
 echo "wall time $(( $(date +%s) - START )) s, seconds per test in $OUT/seconds.txt"
+# Gate-tooling checks from the plan (a diff that only touches the lane lists, the runner or the selector): lane check and selftest.
+for c in $CHECKS; do
+	case "$c" in
+		lanes) if "$PY" tools/tests_for_diff.py --check-lanes >/dev/null; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check lanes: tests_for_diff.py --check-lanes"; fi;;
+		selftest) R=$(bash tools/selftest_gate_tools.sh 2>&1 | tail -3); if echo "$R" | grep -q 'Test done: [0-9]* pass, 0 fail'; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check selftest: $R"; fi;;
+	esac
+done
 [ -n "$KNOWN_HIT" ] && echo "KNOWN PC failure (not counted, see tech/TEST_BASELINE_PC.md):$KNOWN_HIT"
 echo "Test done: $PASS pass, $FAIL fail"
 [ "$FAIL" -eq 0 ]
