@@ -162,7 +162,7 @@ def select(paths, lanes, force_all=False):
     fast_all, timing_all, slow_all = lane_sets(lanes, tests)
     why = {}
     result = {"class": "docs", "fast": [], "timing": [], "slow": [], "pictures": [], "checks": [], "pin": False, "why": why}
-    live = [p for p in paths if not matches(p, lanes["docs_globs"])]
+    live = [p for p in paths if not matches(p, lanes["docs_globs"] + lanes.get("offline_globs", []))]
 
     if not paths:
         why["diff"] = "empty diff: no tests"
@@ -235,7 +235,7 @@ def select(paths, lanes, force_all=False):
             if rule.get("pin"):
                 result["pin"] = True
 
-    slow_hit = next((p for p in live if matches(p, lanes["slow_triggers"])), None)
+    slow_hit = next((p for p in live if matches(p, lanes["slow_triggers"]) and not matches(p, lanes.get("slow_exclude", []))), None)
     if slow_hit or result["class"] == "bake":
         add(slow_all, "slow lane: " + (slow_hit or "bake class"))
     if result["class"] == "bake":

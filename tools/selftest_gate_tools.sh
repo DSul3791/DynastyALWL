@@ -15,6 +15,9 @@ sel src/client/piece_look.gd | field "'test_tool_looks' in d['fast'] and 'warnin
 sel worlds/base_world/tiles/a.tile | field "d['class']=='bake' and d['pin'] and 'test_worldgen' in d['slow']" | grep -q True; ok $? "baked tiles select the slow lane and the pin check"
 sel src/worldgen/tools/test_traps.gd | field "'test_traps' in d['fast']" | grep -q True; ok $? "a changed test selects itself"
 "$PY" tools/tests_for_diff.py --check-lanes >/dev/null; ok $? "every name in test_lanes.json is a test"
+sel src/worldgen/tools/export_tile_maps.gd | field "len(d['slow'])==0"  | grep -q True; ok $? "an offline worldgen tool script does not start the slow lane"
+sel tools/erosion_precarve/rock.py | field "d['class']=='docs' and len(d['fast'])==0" | grep -q True; ok $? "an offline python tool selects no tests"
+sel src/worldgen/tile/tile_drainage.gd | field "len(d['slow'])>0" | grep -q True; ok $? "worldgen runtime code still starts the slow lane"
 
 cat > "$T/fakegodot" <<'F'
 #!/bin/bash
