@@ -27,6 +27,13 @@ var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ra
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
 
 
+func _ready() -> void:
+	# --generated-body: start building the body types on worker threads now, so no NPC waits for its mesh when it first appears.
+	if OS.get_cmdline_user_args().has("--generated-body"):
+		for variant in range(VARIANTS):
+			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), 0.045, false)
+
+
 func on_roster(rows: Array) -> void:
 	roster.clear()
 

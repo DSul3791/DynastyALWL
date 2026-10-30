@@ -693,6 +693,7 @@ static func _material_color(mat: int, g: Dictionary) -> Color:
 # ---------------------------------------------------------------- scene objects
 
 # Builds a Skeleton3D with the generated skinned mesh (and simple eyes). The result is a Node3D whose child "Skeleton3D" holds the bones.
+static var _jobs: Dictionary = {}           # key -> a started worker-thread build (see prewarm)
 static var _mesh_cache: Dictionary = {}     # genome hash, voxel and fingers -> {mesh, skin, triangle_count}; bodies with the same genome share one mesh
 
 
@@ -723,7 +724,13 @@ static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, 
 		skin = hit["skin"]
 		built = {"rig": rg, "triangle_count": hit["triangle_count"], "from_cache": true, "ms": {"total": 0.0}}
 	else:
-		built = build(g, voxel, fingers)
+		if use_cache and _jobs.has(key):
+			built = finish_build(_jobs[key])      # started earlier by prewarm: only the mesh is made here
+			built["from_job"] = true
+			_jobs.erase(key)
+		else:
+			built = build(g, voxel, fingers)
+
 		skin = Skin.new()
 
 		for i in range(names.size()):
@@ -768,6 +775,14 @@ static func finish_build(job: Dictionary) -> Dictionary:
 		job["finished"] = true
 
 	return job["result"]
+
+
+# Starts building a body type on a worker thread so that the first make_node(use_cache) of it does not wait (Plan 17). Does nothing if it is cached or already started.
+static func prewarm(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> void:
+	var key: String = "%d|%.4f|%s" % [g.hash(), voxel, str(fingers)]
+
+	if not _mesh_cache.has(key) and not _jobs.has(key):
+		_jobs[key] = start_build(g, voxel, fingers)
 
 
 # A body type from a number: sliders drawn around the neutral body (a bell-shaped spread, so most people are ordinary and a few are extreme), a skin tone and a

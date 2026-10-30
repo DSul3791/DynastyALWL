@@ -15,6 +15,7 @@ var _checked: int = 0
 func _initialize() -> void:
 	_check_seeds()
 	_check_cache_and_fingers()
+	_check_prewarm()
 	_check_twenty()
 	_check_compiles()
 	print("checked %d cases, %d failures" % [_checked, _fails])
@@ -98,3 +99,30 @@ func _check_twenty() -> void:
 func _check_compiles() -> void:
 	var script: GDScript = load("res://src/client/npc_view.gd") as GDScript
 	_ok(script != null and script.can_instantiate(), "src/client/npc_view.gd compiles")
+
+
+# Plan 17: bodies started early on worker threads are used by the first make_node of the type; the result equals a plain build; the main thread only makes the mesh.
+func _check_prewarm() -> void:
+	var seeds: Array = [11, 12, 13, 14]
+
+	for sd in seeds:
+		Generator.prewarm(Generator.genome_from_seed(sd), 0.05, false)
+
+	OS.delay_msec(300)       # the jobs run meanwhile
+	var main_ms: float = 0.0
+
+	for sd in seeds:
+		var g: Dictionary = Generator.genome_from_seed(sd)
+		var t0: int = Time.get_ticks_usec()
+		var made: Dictionary = Generator.make_node(g, 0.05, false, true)
+		main_ms += float(Time.get_ticks_usec() - t0) / 1000.0
+		_ok(bool((made["built"] as Dictionary).get("from_job", false)), "seed %d: the first body of the type used the early build" % sd)
+		var direct: Dictionary = Generator.build(g, 0.05, false)
+		_ok(int((made["built"] as Dictionary)["triangle_count"]) == int(direct["triangle_count"]), "seed %d: same triangle count as a direct build" % sd)
+		var again: Dictionary = Generator.make_node(g, 0.05, false, true)
+		_ok(bool((again["built"] as Dictionary).get("from_cache", false)), "seed %d: the next body comes from the cache" % sd)
+		made["node"].free()
+		again["node"].free()
+
+	print("making 4 prewarmed bodies took %.0f ms on the main thread in total (mesh creation only)" % main_ms)
+	_ok(main_ms < 400.0, "prewarmed bodies cost the main thread little (%.0f ms for 4)" % main_ms)
