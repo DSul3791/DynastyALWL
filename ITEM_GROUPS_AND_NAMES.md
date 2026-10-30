@@ -1,5 +1,7 @@
 # Item groups and names: DynastyALWL
 
+> Status 2026-10-30: Parts 1 to 12 are the grouping with Dave's answers recorded; PART B at the end holds Sal's autonomous decisions (Dave approved Sal deciding). Dave can overrule any line.
+
 Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any data table.
 
 ## How to read this
@@ -274,3 +276,106 @@ Missing from ours but present in many of the other games: stone pickaxe; iron an
 
 ## Weaknesses of this document
 Names come from a partly unconfirmed analysis; where a game column says "none" or a game is absent it may mean "not catalogued". Functions are one-line generalisations of the analysis rows, not wiki quotes. Tier is only as exact as the analysis gives. No web research was done for this draft.
+
+---
+
+# PART B: Sal's autonomous decisions and catalogues (2026-10-30)
+
+Dave approved the plan and said to decide without him where possible, research online first, and make sure items **make sense, are fun and are reasonable to make**. Everything below is a DECISION BY SAL unless it says Dave. Dave can overrule any line. Web sources are quick searches of mixed quality (history sites, wikis, hobby pages); dates are approximate.
+
+## B1. Design test every item must pass
+1. **Makes sense:** a player can guess what it is and why it exists (real-world logic, with a hint of education).
+2. **Fun:** it does something different from its neighbours, or gives a choice, a risk or a reward. If two items do the same job, merge them.
+3. **Reasonable to make:** simple tier needs 1 to 2 found things and no station; mid tier 2 to 3 things and one station; high tier 3 to 4 things and a better station. No step exists just to add a step (Dave on Aska's bloomery).
+
+## B2. Open questions: my decisions
+| # | Decision |
+|---|---|
+| 3, metals | Dave: ore smelts straight to ingots. Ladder: Stone/bone/flint/obsidian (T1) -> Copper (T2a) -> Bronze, made at a forge from copper and tin ingots (T2b) -> Iron (T3) -> Steel (T4). Forge tiers stay as the gate (see F below). |
+| 12, Tyler's trim list | See B3. |
+| 15, quality | One simple **quality grade** on food, leather, crafted tools/weapons/armour: Poor, Common, Good, Fine, Excellent. Set by the maker's skill, the station tier and (for food) burning risk. Items-list job: only flag which items carry a grade (food, leather, weapons, armour, boats, carts). The system itself belongs to the game-systems owner. |
+| 15, rivets | Add **Rivets** (iron, small): needed for bound leather and mail. Nails stay for wood. |
+| 15, hide scraper | Keep both: Hide scraper is the hand tool; the Leather working table is where processed hide gets finished. |
+| 16, oven names | Rung 1 **Basic Oven** (item 268). Rung 2 **Clay Oven** (one item; stone as a build material option later). Rung 3 **Iron Stove** (with oven; "Range" is an alternate name). |
+| 17, crops | Core crops are medieval European (wheat, barley, rye, oats, peas, beans, cabbage, turnip, onion, leek, carrot, parsnip, flax). Potato and maize reached Europe only after 1492 (general knowledge; my search did not cover it). Decision: keep them OUT of the starter lands and offer them, with rice and similar, as **exotic crops from far islands** (trade or exploration reward). One seed item per crop. No Farm plot item: the hoe tills ground into a field (garden bed placeable later). |
+| Sickle | CUT (Tyler I): the Scythe harvests grain and grass. |
+| First animals | Chicken (eggs), bees (honey), then sheep (wool), goats/cows (milk), pigs. |
+
+## B3. Tyler's trim list A to J: my decisions
+| Group | Decision | Reason |
+|---|---|---|
+| A spade sizes | **YES** merge (one spade per material) | 12 spades for one verb is noise. |
+| B | Hammer: **YES** one hammer line. Vice: **YES** merge into workbench. Camp bench: **NO, keep** (Dave: furniture is fun). Sewing needle: **NO, keep** as a bone needle (cheap, educational, used for clothes) | Fun and reasonable. |
+| C wood | **YES** one Lumber, one Beam; tree type kept on the item (also feeds flame effects) | matches Dave's ideas. |
+| D | Cobblestone -> Stone block **YES**; stone shingle, wooden pin **cut**; Softwood firewood/block -> Firewood/Wooden block **YES** (type kept on item); Tar **hold**; Driftwood **keep** (Dave) | |
+| E | Cut Herbal tea, Medicine, Energy bar; Nut paste -> Acorn mash; Campfire Stew = plain stew; Magic tonic **hold for the magic system** | |
+| F forges | **REVERSED: keep four forge tiers** | Dave builds ladders from separate stations (ovens); tiers gate bronze, iron, steel. Anvil, tongs, bellows stay forge parts, not carried items. |
+| G building pieces | **YES** generic pieces with material as a variant (thatch, wood, stone, later brick) | |
+| H | Hide mittens -> **Gloves** YES. Bronze coin **KEEP**: data/items/coins.json already defines 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold | Tyler's note contradicts the coin table. |
+| I | Scythe keep; sickle cut; rake cut; **shears KEEP** (sheep are coming) | |
+| J | **Loom ADDED** (flax -> thread -> linen cloth is a good education chain); tanning rack is part of the Tannery (Dave's leather chain); Kiln keep (charcoal, pottery, brick); Cooking station = the oven ladder; tongs, bellows, anvil are forge parts; defer instruments (one flute and one drum first), dice, chess, book | |
+
+## B4. Food catalogue (Dave's farming and cooking rules)
+**Effects (simple):** Hunger fill (every food), then one main effect by food group: grain/bread = Stamina; vegetables and soups = Health regeneration; meat = Strength (protein); sweets = quick energy; fish = alertness/focus; herbs = resistance or cure. Eating three groups in a day gives a small Balanced bonus. Dave's rule: higher tiers give better effects for longer, and quality grade scales it.
+
+**Ingredients (new ones marked *):** Grain: wheat, barley, rye, oats. *Flour (from a quern or the Windmill). *Yeast (barm from ale or a starter; see sources). Honey, *Eggs, *Milk, *Butter, *Cheese, salt, herbs, fat. Vegetables: carrot, turnip, onion, leek, cabbage, parsnip, peas, beans. Fruit and berries: apple, pear, cherry, berries (wild now). Meat: beef, mutton, pork, fowl, game, fish.
+
+| Tier | Ingredients | Where | Dishes (existing in **bold**) |
+|---|---|---|---|
+| Simple | 1 to 2 | campfire, spit, hot stone | **Roast meat 69, Roast fish 80, Roast roots 177**, **Baked apples 179**, boiled egg, berries and honey, **Fruit leather 184**, jerky (meat + salt), **Flatbread 273** (flour + water), porridge (oats + water) |
+| Mid | 2 to 3 | campfire pot, clay hearth, **Basic Oven** | **Campfire Stew 15**, vegetable soup, pottage (**Hearty pottage 190**), bread (flour + water + yeast), **Honey loaf 274** (flour + honey + yeast), jam (berries + honey), **Berry compote 175**, dumplings (flour + fat + water), **Fish stew 188**, **Smoked fish 185**, cheese |
+| High | 3 to 4 | Clay Oven, Iron Stove | meat pie (flour + fat + meat + vegetable), **Hunter's stew 186**, **Forager's stew 187**, dumpling stew (meat + vegetable + flour + water), sweet cake (flour + egg + milk + honey), fruit tart, fish pie, roast fowl with herbs, **Roast Beast 191** |
+Existing dishes not placed: **Herb fish 181, Garlic meat 182, Chestnut cakes 183, Trail bread 189, Rosemary joint 275, Mushroom skewer 180, Nut paste 176, Acorn mash 178** (placing them is a later data job).
+
+**Drinks (Dave: all kinds, with food effects like Atlas):** Simple: water, milk, herbal infusions (the four teas 52, 57 to 59 stay). Mid: ale (grain + water + yeast), mead (honey + water + yeast), cider (apples), berry wine. High: wine (grapes, warm lands), spirits by distillation. Sources: ale was the peasant staple, mead is honey wine, cider from apples, wine imported in the north, barm (ale foam) was the bread leaven, and distilled drinks do not appear before the 15th century ([Barm](https://en.wikipedia.org/wiki/Barm), [BYO: Searching for medieval ale](https://byo.com/articles/searching-for-medieval-ale/), [SCA: Introduction to Brewing](https://adora.lochac.sca.org/files/2024/09/Introduction-to-Brewing.pdf)). Spirits therefore sit at the top tier. Brewing station: Brewing barrel/cauldron (Valheim Fermenter*, Dragonwilds Brewing Cauldron*); distilling needs a Still.
+
+## B5. Farming catalogue (see also section 12)
+Crops by tier: T1 oats, peas, turnip, cabbage, onion; T2 wheat, barley, rye, carrot, parsnip, leek, beans, flax; exotics from far islands: potato, maize, rice. Sources: wheat, barley, rye and oats were the main medieval cereals; peas and beans the legumes; cabbage, turnips, onions, leeks and carrots the vegetables ([History Crunch](https://historycrunch.com/food-and-farming-in-the-middle-ages/), [Wikipedia: Regional cuisines of medieval Europe](https://en.wikipedia.com/wiki/Regional_cuisines_of_medieval_Europe)).
+Support items: hoe (exists), spade (exists), bucket (exists), **Scythe**, **Compost bin + Compost**, **Manure**, **Quern** (hand mill, T1), **Windmill** (Dave; grinds more, wind powered), **Water mill** (uses Water wheel 239), **Drying rack**, **Barrel**, **Salt**, **Chicken coop**, **Beehive**, **Hay** (animal feed), **Sack** (flour, grain).
+
+## B6. Siege and gunpowder (Dave: both in, tiered)
+Sources: battering ram and siege tower are ancient; the counterweight trebuchet replaced the mangonel in the 12th and 13th centuries; artillery appears in the 14th century; gunpowder arms (arquebus, cannon, mortar) end the age of siege engines around the late 15th century ([History Crunch: siege weapons](https://historycrunch.com/medieval-siege-weapons/), [Wikipedia: siege engines](https://www.Wikipedia.org/wiki/List_of_siege_engines)). Weak sources; dates approximate.
+| Tier | Items (REC) | Notes |
+|---|---|---|
+| Early | **Battering ram**, **Siege ladder**, **Siege tower** | wood and rope; assault fortifications |
+| Mid | **Ballista** (Dave: great against sea creatures from ships; Atlas*), **Catapult / Mangonel** (Atlas*, Medieval Engineers) | uses Bolts, Stone shot; ship mountable |
+| Mid-late | **Trebuchet** (Medieval Engineers siege machines*) | biggest range, heavy build |
+| Late (gunpowder) | **Hand cannon**, **Arquebus**, **Musket**, **Pistol**, **Cannon** (Atlas*, Ark*), **Mortar** | needs **Gunpowder** (charcoal + sulphur + saltpetre, ingredients real; Atlas, Rust and Satisfactory list Gunpowder) and **Shot**, **Powder charge**; fire and misfire risk |
+Small throwables fit before this: **Javelin** (Dave), **Throwing axe** (Conan), **Sling**.
+
+## B7. Boats and carts (Dave: many types, sizes, qualities)
+Boats (sources: [Wikipedia: Medieval ships](https://en.wikipedia.org/wiki/Medieval_ships), other pages of mixed quality): dugout (oldest, hollowed from one log), coracle (wicker frame, hide cover), raft, **Karve** (small longship, war and transport), **Longship** (Viking warship), **Knarr** (short broad cargo ship, up to about thirty tons), **Cog** (northern merchant ship, high sides; sources disagree on its date). Our tier order (REC): Raft, Dugout canoe, Coracle (river), Rowboat/Skiff, Karve, Longship, Knarr, Cog. Sizes: small / medium / large; quality grade as above. Ship parts: oars, sail, anchor, rudder, hull planks; weapons mount (ballista, cannon). Existing refs: Valheim Raft, Karve, Longship; Atlas ships and shipyard; Don't Starve boats.
+Carts and wagons (Dave's list plus sources: carts for farm goods long predate passenger vehicles; four-wheeled covered wagons were common in the late Middle Ages; horse litters carried the sick and the high born; passenger coaches spread across Europe by the 16th century, and the stagecoach is an early-modern form ([Gilbey: Early Carriages and Roads](https://gutenberg.org/cache/epub/66597/pg66597-images.html)). Because our game is fantasy-medieval, Dave's later vehicles stay but sit at the top tier):
+| Tier | Vehicle | Pulled by |
+|---|---|---|
+| T1 | **Hand cart**, **Wheelbarrow** | player |
+| T2 | **Hay cart**, **Pack saddle / saddlebags** (Vintage Story saddlebags*), **Litter** | donkey / horse |
+| T3 | **Large hay cart**, **Lumber wagon**, **Caravan wagon** | horse / ox |
+| T4 | **Carriage**, **Stage coach**, **Fine carriage** | horse team |
+Needs draft animals (horse, donkey, ox): a future animal list. Sizes small/medium/large; quality grade.
+
+## B8. Furniture and comfort
+Dave: furniture should be fun and useful. REC set: **Stool** (sit to work; small crafting-quality or speed bonus), **Chair** (rest; heals/rests faster), **Bench** (seats 3, social: friends sitting and drinking get a morale bonus), **Table**, **Throne** (a keep's command seat for commanding a militia), **Bed** tiers (Rough bed 250, then Straw bed, Bed with linen), **Chest**, **Shelf**, **Wardrobe**, **Rug**, **Banner**, **Candlestick**, **Mug/Tankard** (drinks), **Barrel seat**. A comfort score from furniture was already a Valheim design in docs/mirror/design/research/Tyler_Valheim.md (Rested/Comfort); I have not re-read it. Existing: Camp bench 73, Rough bed 250, Tool rack 81, chests 22 and 28.
+
+## B9. Climbing, traversal and gliders (Dave: in)
+**Climbing pick** (Ark*, Forest climbing axe; T2+, pair of picks to climb cliffs), **Grappling hook** (Atlas*, Ark*, Valheim*; T3, rope and iron hook), **Anchored rope** (placeable; hammer an anchor into rock, rope hangs; Ark's zip-line anchor*, Satisfactory zipline), **Rope ladder**, **Glider** (Vintage Story lists Glider; Dave wants gliding off mountains: frame of wood, linen sail from flax, a good use for the loom chain; T3 to T4, limited by wind/stamina), **Pitons** (optional). Fun test: all of these reward exploration and mountains.
+
+## B10. Remaining categories: recommended item families
+(Each family is by material tier; a family is one item line, material is in the name. Counts are rough, to be fixed when data work starts.)
+| Category | Families (REC) |
+|---|---|
+| Tools | Axe, Pickaxe, Spade, Hoe, Knife, Hammer (and Smith's hammer), Saw, Scythe, Shears, Fishing rod, Net, Hide scraper, Chisel (stone/carving, Vintage Story), Prospecting pan, Climbing pick, Torch/lantern, Bucket |
+| Melee weapons | Club, Spear, Javelin, Dagger, Short sword, Sword, Longsword, Mace, Warhammer, Battleaxe, Halberd / polearm |
+| Ranged | Sling, Hunting bow, Longbow, Crossbow, Throwing axe; guns at the top |
+| Shields | Round shield, Buckler, Heater shield, Tower shield |
+| Armour | Plant/cloth, Hide, Leather, Heavy leather, Bound leather, Gambeson (padded), Mail, Scale, Brigandine, Plate; helmets, gloves, boots, cloaks |
+| Containers | Basket, Sack, Backpack, Barrel, Chest types, Pot, Jug, Waterskin, Quiver |
+| Stations | Workbench tiers, Forge tiers, Kiln, Tannery, Leather table, Loom, Basic Oven, Clay Oven, Iron Stove, Still, Windmill, Quern, Carpenter/sawmill, Anvil as forge part |
+| Building | Material tiers thatch, wood, stone, brick; stairs, gates, fences, palisades, hung doors, towers |
+| Light | Torch, Candle, Oil lamp, Lantern |
+| Medical | Bandage, Poultice, Salve, Herbal brews, Splint, Antidote |
+
+**Extras (the "10 percent more", REC, each useful and cheap):** Glider; Anchored rope; Obsidian mirror; Hide scraper; Spyglass (Atlas Spyglass; general knowledge says it is a 17th-century invention, so it sits in the late fantasy tier); Compass and Map (Atlas, Minecraft, Forest; compass use in medieval Europe dates to roughly the 12th century, general knowledge, not in my searches); Treasure map (Atlas); Windmill; Still; Beehive; Chicken coop; Loom; Bedroll; Stool/Chair/Bench/Throne.
+
+## B11. What I could not confirm
+Real-world yeast sourcing details for the game recipe; spyglass and compass dates; whether Valheim's oven or Atlas's drink effects work as I summarised (I used only analysis rows); exact dates for cannon and cog; all game recipe ingredients (the analysis rarely has them). Numbers for effects, durations and tiers are design proposals for later tuning, not measurements.
