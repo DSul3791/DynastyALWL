@@ -31,6 +31,8 @@ The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired
 ## Testing
 - Test first yourself (headless tests, look rig `tools/look_rig.sh`, the spawn showroom); only human-judgment checks go to Dave.
 - Run tests with `tools/tests_for_diff.py` and `tools/run_tests.sh` (put `tools/` on PATH so `godot` resolves).
+- Per change: `tools/tests_for_diff.py <base> <head> > plan.json`, then `tools/run_tests.sh --plan plan.json` (seconds to a minute). Small fast tests cover drainage, live water, the water hub and the erosion delta. The big tests on the real baked tiles run per change only when baked tiles, water data or plan files change.
+- Before a release or after a big world or water change, run `tools/release_check.sh` by hand (every test, about 7 min). There is no nightly schedule.
 - Ground tests: look down at the spot, step back about 1 m, say what you expect, then stop.
 - No chasing ghosts: fix only with a log, a repro or a screenshot.
 
