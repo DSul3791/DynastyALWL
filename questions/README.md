@@ -51,3 +51,8 @@ The page shows a numbered "Things to check" list with Yes / No and a "Why not?" 
 - `[test]` card: title = "Please test this, look for X." Notes lines give the steps. Dave picks "Yes, it worked" or "No, it did not work" and always has a Notes box.
 - `[picture]` card: title = "Please take a picture of this at x, z." Dave picks "Picture taken" or "Picture not taken", with the same Notes box.
 - Keep instructions specific and simple: what to do, where, what to look for.
+
+## Comments and revisit (page v12, Dave 2026-10-30)
+- Every card has a Comments box. Whatever Dave types is saved after the answer as ` | Comment: ...`.
+- Every card has a "We should revisit this later" button at the bottom. It records `Revisit later` (with the comment) in ANSWERS.md, copies the card to LATER.md and removes it from QUESTIONS.md.
+- Every multiple-choice card carries a `Note: Recommendation: X because Y` line, written by whoever posts it.

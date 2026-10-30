@@ -45,7 +45,7 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 <div id="qcount" class="qcount">Questions: ...</div>
 <div id="tok" hidden class="q"><h2>Paste your GitHub token (once)</h2><input id="t" type="password" autocomplete="off"><button onclick="saveTok()">Remember</button></div>
 <div id="list">Loading...</div>
-<p class=ver>Page version: poke v11 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
+<p class=ver>Page version: poke v12 (reloads itself when a newer page is out, 0200 UTC). If you do not see this line, you have an old copy: reload.</p>
 </main>
 <div class="dock"><div class="in"><button onclick="poke()">Tell Claude I answered</button><div class=msg id="pokemsg"></div></div></div>
 <div class="scrim" id="scrim" onclick="closeAll()"></div>
@@ -88,7 +88,7 @@ function parse(t){const out=[];let c=null;
   return out}
 function chk(n){const r=document.querySelector(`input[name=q${n}]:checked`);document.getElementById('why'+n).hidden=!(r&&r.value=='No')}
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
-const PV="v11";
+const PV="v12";
 async function selfUpdate(){try{const {text}=await get("questions/qa.html");const m=/Page version: poke (v\d+)/.exec(text);if(m&&m[1]!=PV)location.reload()}catch(e){}}
 let shownIds="";
 function setCount(n,fresh){document.getElementById("qcount").innerHTML="Questions: "+n+(fresh?"<small>(list changed, tap reload &#8635;)</small>":"")}
@@ -104,11 +104,11 @@ async function load(){
     const card=(q,n)=>{
       let body,num="";
       if(q.isTest||q.isPic){num=(++k)+". ";const yn=q.isPic?["Picture taken","Picture not taken"]:["Yes, it worked","No, it did not work"];body=`<label><input type=radio name=q${n} value="Yes">${yn[0]}</label><label><input type=radio name=q${n} value="No">${yn[1]}</label><p>Notes (anything you saw, yes or no)</p><textarea id=nt${n} rows=3></textarea>`}
-      else if(q.isCheck){num=(++k)+". ";body=`<label><input type=radio name=q${n} value="Yes" onchange="chk(${n})">Yes</label><label><input type=radio name=q${n} value="No" onchange="chk(${n})">No</label><div id=why${n} hidden><p>Why not?</p><textarea id=ta${n} rows=3></textarea></div>`}
-      else if(q.choices.length)body=q.choices.map(c=>`<label><input type=radio name=q${n} value="${esc(c).replace(/"/g,"&quot;")}">${esc(c)}</label>`).join("");
+      else if(q.isCheck){num=(++k)+". ";body=`<label><input type=radio name=q${n} value="Yes" onchange="chk(${n})">Yes</label><label><input type=radio name=q${n} value="No" onchange="chk(${n})">No</label><div id=why${n} hidden><p>Why not?</p><textarea id=ta${n} rows=3></textarea></div><p>Comments (optional)</p><textarea id=cm${n} rows=2></textarea>`}
+      else if(q.choices.length)body=q.choices.map(c=>`<label><input type=radio name=q${n} value="${esc(c).replace(/"/g,"&quot;")}">${esc(c)}</label>`).join("")+`<p>Comments (optional)</p><textarea id=cm${n} rows=2></textarea>`;
       else if(q.isText)body=`<textarea id=ta${n} rows=3></textarea>`;
       else return `<div class=q><h2>${esc(q.text||q.id)}</h2><p class=err>Error: question "${esc(q.id)}" has no choices and is not marked [text] or [check]. Ask the thread that wrote it to fix it.</p></div>`;
-      return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>x.startsWith("Image: ")?`<img class=pic data-p="${esc(x.slice(7).trim())}" alt="">`:`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button><div class=msg id=m${n}></div></div>`};
+      return `<div class=q id=box${n}><h2>${num}${esc(q.text||q.id)}</h2>${q.notes.map(x=>x.startsWith("Image: ")?`<img class=pic data-p="${esc(x.slice(7).trim())}" alt="">`:`<p>${esc(x)}</p>`).join("")}${body}<button onclick="save(${n},'${q.id.replace(/'/g,"")}')">Save</button> <button class=ghost onclick="save(${n},'${q.id.replace(/'/g,"")}',true)">We should revisit this later</button><div class=msg id=m${n}></div></div>`};
     const P=q=>q.pri||99,top=qs.map((q,n)=>[q,n]).filter(x=>P(x[0])<=5).sort((a,b)=>P(a[0])-P(b[0])),isTop=n=>P(qs[n])<=5;
     const topHtml=top.map(x=>card(x[0],x[1])).join("");
     const ord=(a,b)=>P(qs[a])-P(qs[b])||a-b,idx=qs.map((q,n)=>n).filter(n=>!isTop(n)).sort(ord);
@@ -116,12 +116,14 @@ async function load(){
     L.innerHTML=(topHtml?"<h2 class=sec id=sec-top>Do these first</h2>"+topHtml:"")+(checks?"<h2 class=sec id=sec-check>Things to check</h2>"+checks:"")+(rest?"<h2 class=sec id=sec-q>Questions</h2>"+rest:"");
     document.querySelectorAll("img.pic[data-p]").forEach(async im=>{try{const r=await fetch(api(im.dataset.p)+"?ref="+BR,{headers:{Authorization:"Bearer "+tok(),Accept:"application/vnd.github.raw"}});if(!r.ok)throw new Error(r.status);im.src=URL.createObjectURL(await r.blob())}catch(e){im.alt="Picture could not load ("+e.message+")"}});
   }catch(e){L.innerHTML=`<p class=err>${esc(e.message)}. Check the token.</p>`}}
-async function save(n,id){
+async function save(n,id,later){
   const m=document.getElementById("m"+n);let ans;
   const ta=document.getElementById("ta"+n);
-  if(document.getElementById('nt'+n)){const r=document.querySelector(`input[name=q${n}]:checked`);if(!r){m.textContent='Pick one first.';return}const nt=document.getElementById('nt'+n).value.trim();ans=r.value+(nt?': '+nt:'')}
+  if(later){const c=document.getElementById('cm'+n)||document.getElementById('nt'+n)||document.getElementById('ta'+n),ct=c&&c.value.trim();ans='Revisit later'+(ct?' | Comment: '+ct:'')}
+  else if(document.getElementById('nt'+n)){const r=document.querySelector(`input[name=q${n}]:checked`);if(!r){m.textContent='Pick one first.';return}const nt=document.getElementById('nt'+n).value.trim();ans=r.value+(nt?': '+nt:'')}
   else if(document.getElementById('why'+n)){const r=document.querySelector(`input[name=q${n}]:checked`);if(!r){m.textContent='Pick Yes or No first.';return}ans=r.value=='Yes'?'Yes':'No: '+(ta.value.trim()||'(no reason given)')}else if(ta)ans=ta.value.trim();else{const r=document.querySelector(`input[name=q${n}]:checked`);ans=r&&r.value}
   if(!ans){m.textContent="Pick or type an answer first.";return}
+  if(!later){const cm=document.getElementById('cm'+n),ct=cm&&cm.value.trim();if(ct)ans+=' | Comment: '+ct}
   m.textContent="";
   try{
     let q;
@@ -131,6 +133,11 @@ async function save(n,id){
       const entry=`## ${q.id} | ${q.text}\nAnswer: ${ans.replace(/\n/g," / ")}\nAnswered: ${new Date().toISOString().slice(0,16).replace("T"," ")} UTC\n\n`;
       if(await put(AF,(a.text&&!a.text.endsWith("\n")?a.text+"\n":a.text||"# Answers\n\n")+entry,a.sha,"Answer: "+id))break;
       if(k==4)throw new Error("conflict, try again")}
+    if(later){for(let k=0;k<5;k++){ // park the card in LATER.md
+      const f=await q_get(id),l=await get("questions/LATER.md");if(!f.q)break;
+      const blk=f.q.raw.join("\n").replace(/\n+$/,"");
+      if(await put("questions/LATER.md",(l.text&&!l.text.endsWith("\n")?l.text+"\n":l.text||"# LATER\n\n")+"\n"+blk+"\n",l.sha,"Revisit later: "+id))break;
+      if(k==4)throw new Error("conflict parking, try again")}}
     for(let k=0;k<5;k++){ // remove question
       const f=await q_get(id);if(!f.q)break;
       const rest=parse(f.text).filter(x=>x.id!=id);
