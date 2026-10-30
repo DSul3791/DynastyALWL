@@ -27,7 +27,7 @@ What this means for the plan (RECOMMENDATION, my reading; the named characters a
 - **Risk:** broad variety multiplies the animation checking (a long reach looks different on a stocky body). Mitigation: test every clip on the two most extreme archetypes.
 
 ## Character creation (Dave, 2026-10-30)
-Players build their characters: an **ancestry** (human, orc, elf and others), which brings cultural boons and unfortunate traits; **sliders** for the skeleton and body (size, build, proportions, gait); the **face** (bone structure and features); **skin colour**; **hair** (style, length, colour); more (age, markings, handedness and others, see Part 5.7); and a **dice button** for everything and one **per section**. A character is a small list of numbers (a genome) saved on the server and turned into a body on each client. Details, suggestions and one rule flag (keep boons and drawbacks to fantasy peoples, keep skin tone and features cosmetic) are in Part 5.7.
+Players also pick a D&D-like background and traits (roll or point buy) and a greatest fear that can make the character panic, run away screaming and flail comically (Part 5.8). Players build their characters: an **ancestry** (human, orc, elf and others), which brings cultural boons and unfortunate traits; **sliders** for the skeleton and body (size, build, proportions, gait); the **face** (bone structure and features); **skin colour**; **hair** (style, length, colour); more (age, markings, handedness and others, see Part 5.7); and a **dice button** for everything and one **per section**. A character is a small list of numbers (a genome) saved on the server and turned into a body on each client. Details, suggestions and one rule flag (keep boons and drawbacks to fantasy peoples, keep skin tone and features cosmetic) are in Part 5.7.
 
 ## Principles
 See Part 4.1 (eight principles: readable first; believable weight; one body many views; actions are events; derive, don't send; cheap at distance; every number has a knob; no divisive defaults).
@@ -39,7 +39,7 @@ See Part 4.1 (eight principles: readable first; believable weight; one body many
 Phase 0 define the new skeleton and the character genome, research character creators, measure and prototype; Phase 1 animation architecture; Phase 2 missing locomotion; Phase 3 body generator and archetypes; Phase 4 face, hair, skin and marks; Phase 5 character creation (ancestry, sliders, dice buttons); Phase 6 tool and activity library; Phase 7 equipment and secondary motion; Phase 8 other players; Phase 9 special states (Part 7.1, revised 2026-10-30). Risks in 7.2; open questions 7.3.
 
 ## Decisions for Dave
-D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation, D14 to D21 ancestries, boons and drawbacks owner, whether size matters in play, later appearance changes, where creation happens, creator scope (Part 7.4, each with my recommendation).
+D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation, D14 to D26 ancestries, boons and drawbacks owner, whether size matters in play, later appearance changes, where creation happens, creator scope, character account, trait system, fear list and secrecy, panic mechanics, who designs backgrounds (Part 7.4, each with my recommendation).
 
 ## Where things are
 Order of this file: this vision; Part 1 present state; Parts 4 to 7 (rules, movement plan, gap analysis, roadmap and decisions); then the reference sections at the end: **Part 2** (copied project passages and the "passages to remove once Dave approves" list in 2.8) and **Part 3** (research log with sources and confidence tags). Part numbers are kept so cross references still work.
@@ -356,6 +356,45 @@ Sliders change the bone rest positions and the generated shape from the same num
 - **Start of the game (Dave, 2026-10-30):** when a player starts the game they **pick their character, and each character has its own account**. If they have no character they must **make one** (the creator above). So the flow is: sign in or start, character list (with a small body preview per character), choose one to play or make a new one. Consequences, all RECOMMENDATION or open: (1) the genome belongs to the character account and is stored with it on the server; (2) the list screen needs a cheap preview for each character (the character screen preview rig already exists, Part 1.6); (3) how many characters per player and how they relate to the dynasty and heir idea (BIG_PICTURE.md, DESIGN_IDEAS.md) are design questions (D20); (4) an identity layer exists as a plan: DECISIONS.md 2026-10-21 18:00 describes player identity behind one server-side `IdentityProvider` with an allow-list of account ids; I have not read it in full or checked how "one account per character" fits it, so that needs the technical lead (D21); (5) a character that already exists must never be re-rolled by the creator (luck and fitness are rolled once, PROTOCOL.md).
 - **Where creation happens:** I found no character creator in the code; the character screen shows a preview of the existing character, and luck and fitness are rolled once at first hello (PROTOCOL.md, characters.json entry). Whether creation is at first hello, in a hall, or in a menu is open (D18).
 
+## 5.8 Backgrounds, traits and the greatest fear (Dave, 2026-10-30)
+
+Dave's direction: a Dungeons and Dragons style system, but different. Players pick a **background** that gives different bonuses or boons. Every character picks their **traits** through **a rolling system or a point system, the player's choice**. **Base traits affect all related skills.** Every character also picks a **greatest fear** from a list we make up; when they meet their greatest fear the character has a **rolled chance to freak out and run away screaming and flailing, comedically**.
+
+**Whose job is which.** Backgrounds, trait values, skill links and the fear list are **game and server design**, which belongs with the items, skills and attributes designers (the existing design is SKILLS_AND_ATTRIBUTES.md and DESIGN_IDEAS.md section 5.4). My part is: (1) the creator screens and how a background or fear shows on the character; (2) the panic animation and movement state; (3) the dice and point-buy controls in the creator. Everything below is RECOMMENDATION unless marked FACT, and I have **not researched D&D character creation or other games' background and fear systems** (a Phase 0 research item).
+
+### 5.8.1 What already exists (FACT, doc)
+- Attributes are whole numbers from -10 to +10, fixed at creation: **Luck and Fitness are built**; Strength, Dexterity, Memory and Wisdom are listed but not built (docs/mirror/items/SKILLS_AND_ATTRIBUTES.md, "Attributes").
+- A skill has an innate part, a trained part and practice; **attributes feed skills through a web of weights** (same file, intro). That is already "base traits affect all related skills", so Dave's rule fits the existing design.
+- NPCs are created with a randomly rolled **background**, and the language model fills in details (DESIGN_IDEAS.md, NPC section, line 1232 area). A player background can share the same data format.
+- Luck and Fitness are rolled once at first hello and never changed (PROTOCOL.md, characters.json entry). A creator would have to roll or spend points **before** that first hello and then fix the result on the server.
+
+### 5.8.2 Backgrounds (suggestion)
+- A background is a data record: name, short story, a few starting skills or knowledge, a small boon and optionally a small drawback, a starting item or two, maybe a look hint (clothing, a mark, posture). Examples are for Dave to invent; none are decided.
+- Visual side (mine): a background can suggest default clothing colours, a tattoo or scar, or a posture and gait style, all optional and changeable in the creator.
+- Same rule as ancestry (5.7.2): boons and drawbacks come from **what the character did**, not from skin tone or facial features.
+
+### 5.8.3 Trait values: roll or point buy (the player's choice)
+- **Point buy:** a pool of points spent on the attributes (-10 to +10 today); a cap per attribute, a visible total and a reset.
+- **Roll:** a button that rolls the attributes (the dice idea of 5.7.7), with a limited number of re-rolls or a keep-the-best choice so it stays fair. Rolled and bought values should have the same expected total, otherwise one method is better than the other (design check; no numbers proposed).
+- **The server rolls and validates**, because luck-affecting rolls go through the existing server random path (`src/shared/luck.gd`, PROTOCOL.md); the client only shows the preview. Anything the player buys is checked against the pool on the server.
+- "Like D&D but different": the different part (what the pool is, what extra choices exist) is Dave's design to decide (D22).
+
+### 5.8.4 Greatest fear
+- **Chosen from a list we write.** Suggested categories only, not a list: creatures (wolves, snakes, spiders, bears), places (deep water, heights, dark enclosed spaces, caves), phenomena (fire, storms, thunder, blood), and odd or social fears (crowds, a certain animal such as geese). Dave writes or approves the real list (D23). Keep them harmless and comic; avoid fears that mock real conditions.
+- **Trigger and roll are server decisions.** The server knows what is near the player and rolls the chance (through the existing random path) when the greatest fear comes into range or view. The client must not decide this. Suggested shape: trigger when the feared thing is within a distance or in sight, roll once per encounter, then a cooldown so it cannot loop; modified by traits such as Wisdom or a courage-like trait if Dave adds one.
+- **Hidden information.** A player's greatest fear should be hidden from other players by default, otherwise others could exploit it in PvP. Whether a character may reveal it, and whether NPCs can know it, is open (D24).
+- **Existing design to reconcile.** DESIGN_IDEAS.md section 6.16 decided that breathing and heartbeat follow exertion only and that "later, fear and pain may add adrenaline" (2026-10-17). This panic feature is that later step, so those sounds would need a fear input.
+
+### 5.8.5 The panic state (my animation and movement part)
+- **What it looks like (suggestion):** the character screams (needs a sound clip from the sound owner), eyes wide, mouth open, arms flailing overhead, an exaggerated high-knee run away from the feared thing, a stumble or two, a wobbling head. Comedic and in line with the cartoon style (art direction at the top), not scary. It ends on a timer or when far enough away, then a breathless slump or a short embarrassed recovery.
+- **Mechanics (FACT, code, then RECOMMENDATION):** player movement is client-side with the server validating (Part 1.4, PROTOCOL.md), so the server would send a "panic" state with a direction hint and a duration, and the client would steer the character itself; the player briefly loses control. This touches the movement code (`terrain_client.gd`) and the server together, so it needs the technical lead (D25).
+- **Safety rules (important):** panic must never run a player into near-certain death (off a cliff, into deep water, fire or a cave-in) in a way that feels unfair. Options: the run avoids hazards using the same ground checks as the creature AI; or it is a fixed-length stumbling run at reduced speed with no auto-jump; or hazard cases give a freeze and cower instead. An accessibility setting (reduce or disable loss of control, or turn it into a flinch and cower) is wise, since losing control can be unpleasant. None of this is researched.
+- **Others see it too:** it is an action the server states to nearby clients (Part 5.5), so remote players and NPCs play the same panic clips from the same record. NPCs could have fears too (NPC backgrounds already exist), a cheap source of comedy.
+- **Animation work:** panic run, flail loop, cower or freeze, scream pose, recovery; all on the shared skeleton and tested on the extreme genomes (5.7.6).
+
+### 5.8.6 Where this sits in the roadmap
+Backgrounds, trait entry and fear selection are part of **Phase 5, character creation**, but their server side (trait storage, skill weights, fear rolls) comes from the skills and attributes designers and must be agreed before then. The panic animation and movement state go into **Phase 9** (special states) unless Dave wants them earlier because they are a signature feature; they need a few clips and one server message. Like 5.7, this is untested design.
+
 ---
 
 # Part 6. Gap analysis (current state against the plan)
@@ -442,6 +481,8 @@ Review gates: after each phase Dave sees stills or video and a short note; done 
 15. **Sensitivity of ancestry design.** Boons and drawbacks by "ethnicity" can collide with the safe-place rule (5.7.2). Mitigation: fantasy peoples only, cosmetic traits free of gameplay effect, Dave approves the ancestry list and traits.
 16. **Fairness and exploits.** Size or body sliders could confer advantages (hiding in grass, small hitboxes). Mitigation: gameplay-neutral appearance by default (5.7.8).
 17. **Unresearched.** Creator UX, face systems and generated hair in code are new territory for this team and not yet researched.
+18. **Panic can feel unfair or be exploited.** Loss of control near hazards, or other players learning a fear, could ruin play. Mitigation: hazard-aware or non-lethal panic, hidden fear, opt-out setting (5.8.5).
+19. **Trait and background design is outside my files** and has to be agreed with the skills, items and server owners before creator work starts (5.8).
 
 ## 7.3 Open questions for Dave
 
@@ -481,6 +522,11 @@ Review gates: after each phase Dave sees stills or video and a short note; done 
 | D19 | Creator scope for version 1 | minimal (ancestry, height, build, skin, hair, face preset) / full slider set | minimal first, then grow; dice and locks from the start |
 | D20 | Characters per player and their link to the dynasty/heir idea | one / several / unlimited | several, with the dynasty design deciding how heirs inherit appearance |
 | D21 | One account per character and the identity layer | per Dave's decision; how it maps onto the IdentityProvider plan | technical lead to confirm before Phase 5; Sonny supplies only the appearance record |
+| D22 | Trait system: point buy and roll, and what is "different from D&D" | Dave's design | player's choice of roll or point buy, equal expected value, server-validated; Dave defines the rest |
+| D23 | The list of fears | Dave writes it | short comic list at first, grouped by creature, place and phenomenon |
+| D24 | Is a greatest fear hidden from other players and NPCs | hidden / revealable / public | hidden by default |
+| D25 | Panic mechanics: loss of control, hazards, duration, opt-out setting | full run-away / flinch and cower / player setting | run-away with hazard avoidance and an accessibility setting; technical lead designs the server message |
+| D26 | Who designs backgrounds and their boons | Sonny / skills and items designers / Dave | skills and items designers with Dave; Sonny supplies creator UI, look hints and animation |
 
 ## 7.5 What I would do first once Dave approves (RECOMMENDATION)
 
