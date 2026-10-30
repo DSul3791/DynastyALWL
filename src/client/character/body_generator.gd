@@ -3,7 +3,7 @@ extends RefCounted
 # PROTOTYPE (Sonny, 2026-10-30): generates a stylised humanoid body from a small "genome" of sliders. See CHARACTER_DESIGN_VISION.md
 # (Part 5.7, section 5.7.9 and Part 3.11.3). Nothing in the game uses this yet; tools/proto_body.gd builds pictures and a benchmark from it.
 #
-# Steps: genome -> skeleton (21 bones, Godot humanoid names, rest pose with the arms hanging down) -> primitives (round cones and
+# Steps: genome -> skeleton (37 bones, Godot humanoid names, rest pose with the arms hanging down) -> primitives (round cones and
 # ellipsoids, each on one bone) -> signed distance field with a smooth union, evaluated only near each primitive -> naive surface nets
 # -> skin weights from the distance to each primitive (exponential falloff, then smoothing passes) -> one ArrayMesh with 4 bone
 # influences per vertex and a vertex colour per primitive material (skin / hair).
@@ -16,6 +16,11 @@ const BONES := [
 	["RightShoulder", 2], ["RightUpperArm", 9], ["RightLowerArm", 10], ["RightHand", 11],
 	["LeftUpperLeg", 0], ["LeftLowerLeg", 13], ["LeftFoot", 14], ["LeftToes", 15],
 	["RightUpperLeg", 0], ["RightLowerLeg", 17], ["RightFoot", 18], ["RightToes", 19],
+	# Simplified hands (version 2): a thumb and three finger groups (index, middle and ring together, little), two bones each.
+	["LeftThumbProximal", 8], ["LeftThumbDistal", 21], ["LeftIndexProximal", 8], ["LeftIndexDistal", 23],
+	["LeftMiddleProximal", 8], ["LeftMiddleDistal", 25], ["LeftLittleProximal", 8], ["LeftLittleDistal", 27],
+	["RightThumbProximal", 12], ["RightThumbDistal", 29], ["RightIndexProximal", 12], ["RightIndexDistal", 31],
+	["RightMiddleProximal", 12], ["RightMiddleDistal", 33], ["RightLittleProximal", 12], ["RightLittleDistal", 35],
 ]
 
 const MAT_SKIN := 0
@@ -27,7 +32,11 @@ const MAT_BOOTS := 5
 const SMOOTH_K := 0.035                # smooth union band, metres
 const WEIGHT_FALLOFF := 0.03           # skin weight falloff with distance to a primitive, metres
 const WEIGHT_PASSES := 2
-const GROUPS := 5
+const GROUPS := 7                      # trunk and head, left arm, right arm, left leg, right leg, left hand, right hand
+const HAND_VOXEL := 0.009              # the hands are meshed on their own finer grid (fingers are about 2 cm wide)
+const HAND_K := 0.008
+const HAND_FALLOFF := 0.007
+const LOD_VOXELS := [0.03, 0.045, 0.07]  # detail levels 0 to 2: near, middle, far
 
 # Slider names, each -1 .. +1 (0 is the neutral body). Archetype presets are just different numbers.
 const SLIDERS := ["height", "build", "muscle", "belly", "shoulders", "hips", "torso", "legs", "arms", "neck", "head", "hands", "feet",
@@ -105,6 +114,19 @@ static func rig(g: Dictionary) -> Dictionary:
 		pos[l + 1] = pos[l] + Vector3(0.0, -thigh, 0.0)
 		pos[l + 2] = pos[l + 1] + Vector3(0.0, -shin, 0.0)
 		pos[l + 3] = pos[l + 2] + Vector3(0.0, -(ankle_y - 0.025 * h), -0.15 * foot_k)
+		# Fingers hang from the wrist; "inner" is the side toward the body (the thumb side).
+		var hk: float = m(float(g["hands"]), 0.8, 1.5)
+		var inner: float = -side
+		var hand: Vector3 = pos[o + 3]
+		var f0: int = 21 if side < 0.0 else 29
+		pos[f0] = hand + Vector3(inner * 0.03 * hk, -0.035 * hk, -0.018 * hk)
+		pos[f0 + 1] = pos[f0] + Vector3(inner * 0.004 * hk, -0.03 * hk, -0.014 * hk)
+		pos[f0 + 2] = hand + Vector3(inner * 0.027 * hk, -0.085 * hk, -0.004 * hk)
+		pos[f0 + 3] = pos[f0 + 2] + Vector3(0.0, -0.036 * hk, 0.0)
+		pos[f0 + 4] = hand + Vector3(inner * 0.002 * hk, -0.088 * hk, -0.004 * hk)
+		pos[f0 + 5] = pos[f0 + 4] + Vector3(0.0, -0.04 * hk, 0.0)
+		pos[f0 + 6] = hand + Vector3(-inner * 0.027 * hk, -0.083 * hk, -0.004 * hk)
+		pos[f0 + 7] = pos[f0 + 6] + Vector3(0.0, -0.03 * hk, 0.0)
 
 	var names: Array = []
 	var parents: Array = []
@@ -136,11 +158,17 @@ static func _group_of(bone: int) -> int:
 	if bone <= 4:
 		return 0
 
-	if bone <= 8:
+	if bone <= 7:
 		return 1
 
-	if bone <= 12:
+	if bone == 8 or (bone >= 21 and bone <= 28):
+		return 5
+
+	if bone <= 11:
 		return 2
+
+	if bone == 12 or bone >= 29:
+		return 6
 
 	return 3 if bone <= 16 else 4
 
@@ -161,7 +189,6 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 	var neck_r: float = 0.05 * m(float(g["neck"]), 0.8, 1.4) * sqrt(b)
 	var jaw: float = m(float(g["jaw"]), 0.85, 1.25)
 	var nose: float = m(float(g["nose"]), 0.7, 1.9)
-	var brow: float = m(float(g["brow"]), 0.5, 2.0)
 	var ear: float = m(float(g["ears"]), 0.8, 2.4)
 	var hair_len: float = m(float(g["hair_length"]), 0.2, 2.0)
 	var out: Array = []
@@ -176,7 +203,6 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 	out.append(_ell(4, head_c + Vector3(0.0, 0.14 * hs, 0.0), Vector3(0.095 * hs, 0.118 * hs, 0.108 * hs)))
 	out.append(_ell(4, head_c + Vector3(0.0, 0.065 * hs, -0.022 * hs), Vector3(0.074 * hs * jaw, 0.07 * hs, 0.082 * hs)))
 	out.append(_ell(4, head_c + Vector3(0.0, 0.115 * hs, -0.108 * hs), Vector3(0.017 * nose, 0.03 * nose, 0.026 * nose)))
-	out.append(_ell(4, head_c + Vector3(0.0, 0.183 * hs, -0.085 * hs), Vector3(0.08 * hs, 0.013 * hs * brow, 0.028 * hs), MAT_HAIR))
 	out.append(_ell(4, head_c + Vector3(0.0, 0.052 * hs, -0.097 * hs), Vector3(0.026 * hs, 0.007 * hs, 0.013 * hs), MAT_LIPS))
 
 	for side in [-1.0, 1.0]:
@@ -197,8 +223,16 @@ static func primitives(g: Dictionary, rg: Dictionary) -> Array:
 		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.05 * mu, 0.05 * mu))
 		out.append(_cone(o + 1, p[o + 1], p[o + 2], 0.052 * mu * sqrt(b), 0.042 * mu))
 		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
-		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.075 * hand_k, 0.0), Vector3(0.04 * hand_k, 0.078 * hand_k, 0.028 * hand_k)))
-		out.append(_ell(o + 3, p[o + 3] + Vector3(-0.03 * side * hand_k, -0.045 * hand_k, -0.02 * hand_k), Vector3(0.016 * hand_k, 0.035 * hand_k, 0.016 * hand_k)))
+		var f: int = 21 if side < 0.0 else 29
+		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.047 * hand_k, 0.0), Vector3(0.038 * hand_k, 0.046 * hand_k, 0.017 * hand_k)))
+		out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
+		out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
+		out.append(_cone(f + 2, p[f + 2], p[f + 3], 0.0115 * hand_k, 0.0095 * hand_k))
+		out.append(_cone(f + 3, p[f + 3], p[f + 3] + Vector3(0.0, -0.03 * hand_k, 0.0), 0.0095 * hand_k, 0.0075 * hand_k))
+		out.append(_cone(f + 4, p[f + 4], p[f + 5], 0.0165 * hand_k, 0.0135 * hand_k))
+		out.append(_cone(f + 5, p[f + 5], p[f + 5] + Vector3(0.0, -0.034 * hand_k, 0.0), 0.0135 * hand_k, 0.0105 * hand_k))
+		out.append(_cone(f + 6, p[f + 6], p[f + 7], 0.0105 * hand_k, 0.009 * hand_k))
+		out.append(_cone(f + 7, p[f + 7], p[f + 7] + Vector3(0.0, -0.026 * hand_k, 0.0), 0.009 * hand_k, 0.007 * hand_k))
 
 	# Legs and feet
 	for side in [-1.0, 1.0]:
@@ -332,6 +366,8 @@ static func build(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 
 	for gi in range(GROUPS):
 		var gp: Array = []
+		var vox: float = minf(voxel, HAND_VOXEL * voxel / 0.03) if gi >= 5 else voxel
+		var kk: float = HAND_K if gi >= 5 else SMOOTH_K
 
 		for q in prims:
 			if int(q["grp"]) == gi:
@@ -346,11 +382,11 @@ static func build(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 			bounds = qb if first else bounds.merge(qb)
 			first = false
 
-		bounds = bounds.grow(SMOOTH_K + voxel * 2.0)
+		bounds = bounds.grow(kk + vox * 2.0)
 		var origin: Vector3 = bounds.position
-		var nx: int = ceili(bounds.size.x / voxel)
-		var ny: int = ceili(bounds.size.y / voxel)
-		var nz: int = ceili(bounds.size.z / voxel)
+		var nx: int = ceili(bounds.size.x / vox)
+		var ny: int = ceili(bounds.size.y / vox)
+		var nz: int = ceili(bounds.size.z / vox)
 		var sx: int = nx + 1
 		var sxy: int = sx * (ny + 1)
 		var field: PackedFloat32Array = PackedFloat32Array()
@@ -359,20 +395,20 @@ static func build(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 		grid_cells += nx * ny * nz
 
 		for q in gp:
-			var qb2: AABB = _bounds(q).grow(SMOOTH_K + voxel)
-			var lo: Vector3 = (qb2.position - origin) / voxel
-			var hi: Vector3 = (qb2.end - origin) / voxel
+			var qb2: AABB = _bounds(q).grow(kk + vox)
+			var lo: Vector3 = (qb2.position - origin) / vox
+			var hi: Vector3 = (qb2.end - origin) / vox
 
 			for iz in range(maxi(0, floori(lo.z)), mini(nz, ceili(hi.z)) + 1):
 				for iy in range(maxi(0, floori(lo.y)), mini(ny, ceili(hi.y)) + 1):
 					for ix in range(maxi(0, floori(lo.x)), mini(nx, ceili(hi.x)) + 1):
 						var idx: int = ix + iy * sx + iz * sxy
-						field[idx] = _smin(field[idx], prim_sdf(q, origin + Vector3(ix, iy, iz) * voxel), SMOOTH_K)
+						field[idx] = _smin(field[idx], prim_sdf(q, origin + Vector3(ix, iy, iz) * vox), kk)
 
 		var tb: int = Time.get_ticks_usec()
 		var gv: PackedVector3Array = PackedVector3Array()
 		var gt: PackedInt32Array = PackedInt32Array()
-		_surface_nets(field, nx, ny, nz, origin, voxel, gv, gt)
+		_surface_nets(field, nx, ny, nz, origin, vox, gv, gt)
 		var tc: int = Time.get_ticks_usec()
 		t_field += tb - ta
 		t_surface += tc - tb
@@ -524,30 +560,44 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 	var colors: PackedColorArray = PackedColorArray()
 	colors.resize(count)
 
-	var dists: PackedFloat32Array = PackedFloat32Array()
-	dists.resize(prims.size())
+	# The primitives and bones of each group: a vertex only looks at its own group's primitives (a hand has 9 bones, a leg 4), not all of them.
+	var group_prims: Array = []
+	var group_bones: Array = []
+
+	for _gi in range(GROUPS):
+		group_prims.append([])
+		group_bones.append([])
+
+	for q in prims:
+		(group_prims[int(q["grp"])] as Array).append(q)
+		var list: Array = group_bones[int(q["grp"])]
+
+		if not list.has(int(q["bone"])):
+			list.append(int(q["bone"]))
 
 	for i in range(count):
 		var best: float = 1000.0
 		var best_mat: int = MAT_SKIN
+		var gp: Array = group_prims[vgroup[i]]
+		var dists: PackedFloat32Array = PackedFloat32Array()
+		dists.resize(gp.size())
+		var fall: float = HAND_FALLOFF if vgroup[i] >= 5 else WEIGHT_FALLOFF
+		var v: Vector3 = verts[i]
 
-		for k in range(prims.size()):
-			var q: Dictionary = prims[k]
-			var d: float = prim_sdf(q, verts[i]) if int(q["grp"]) == vgroup[i] else 1000.0
+		for k in range(gp.size()):
+			var q: Dictionary = gp[k]
+			var d: float = prim_sdf(q, v)
 			dists[k] = d
+			var mat: int = q["mat"]
 			# Hair, lips and cloth win a tie with the skin under them.
-			var shown: float = d - (0.0 if int(q["mat"]) == MAT_SKIN else 0.006)
+			var shown: float = d - (0.0 if mat == MAT_SKIN else 0.006)
 
 			if shown < best:
 				best = shown
-				best_mat = int(q["mat"])
+				best_mat = mat
 
-		# Only the primitives of the vertex's own group give it weight, so a torso vertex beside an arm never follows the arm.
-		for k in range(prims.size()):
-			var q2: Dictionary = prims[k]
-
-			if int(q2["grp"]) == vgroup[i]:
-				w[i * bone_count + int(q2["bone"])] += exp(-maxf(dists[k], 0.0) / WEIGHT_FALLOFF)
+			# Only the primitives of the vertex's own group give it weight, so a torso vertex beside an arm never follows the arm.
+			w[i * bone_count + int(q["bone"])] += exp(-maxf(d, 0.0) / fall)
 
 		colors[i] = _material_color(best_mat, g)
 
@@ -582,7 +632,7 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			if same.is_empty():
 				continue
 
-			for j in range(bone_count):
+			for j in group_bones[vgroup[i]]:
 				var s: float = 0.0
 
 				for n in same:
@@ -601,7 +651,7 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 		var best_bones: Array = [0, 0, 0, 0]
 		var best_w: Array = [0.0, 0.0, 0.0, 0.0]
 
-		for j in range(bone_count):
+		for j in group_bones[vgroup[i]]:
 			var v: float = w[i * bone_count + j]
 
 			for s in range(4):
@@ -676,14 +726,28 @@ static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 	body.skeleton = NodePath("..")
 	skeleton.add_child(body)
 
-	# Eyes: a white and a dark sphere on the Head bone.
+	root.set_meta("face", make_face(g, skeleton))
+	return {"node": root, "skeleton": skeleton, "built": built}
+
+
+# ---------------------------------------------------------------- face (eyes and brows that can move; no mesh rebuild)
+
+# Adds a BoneAttachment3D "Face" on the Head bone with two eyes (a white and a dark sphere each, squashed to blink or stretched to widen) and two brows
+# (hair colour, raised or lowered). No lip-sync and no jaw: the expression comes from the eyes, the brows and the body (CHARACTER_DESIGN_VISION.md 4.6).
+static func make_face(g: Dictionary, skeleton: Skeleton3D) -> Node3D:
 	var attach: BoneAttachment3D = BoneAttachment3D.new()
-	attach.name = "Eyes"
+	attach.name = "Face"
 	skeleton.add_child(attach)
 	attach.bone_name = "Head"
 	var hs: float = m(float(g["head"]), 0.85, 1.4)
+	var brow_k: float = m(float(g["brow"]), 0.5, 2.0)
 
 	for side in [-1.0, 1.0]:
+		var tag: String = "L" if side < 0.0 else "R"
+		var eye: Node3D = Node3D.new()
+		eye.name = "Eye" + tag
+		eye.position = Vector3(0.037 * hs * side, 0.148 * hs, -0.093 * hs)
+		attach.add_child(eye)
 		var white: MeshInstance3D = MeshInstance3D.new()
 		var sphere: SphereMesh = SphereMesh.new()
 		sphere.radius = 0.021 * hs
@@ -694,8 +758,7 @@ static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 		var wm: StandardMaterial3D = StandardMaterial3D.new()
 		wm.albedo_color = Color(0.96, 0.95, 0.92)
 		white.material_override = wm
-		white.position = Vector3(0.037 * hs * side, 0.148 * hs, -0.093 * hs)
-		attach.add_child(white)
+		eye.add_child(white)
 		var pupil: MeshInstance3D = MeshInstance3D.new()
 		var ps: SphereMesh = SphereMesh.new()
 		ps.radius = 0.0105 * hs
@@ -706,7 +769,102 @@ static func make_node(g: Dictionary, voxel: float = 0.03) -> Dictionary:
 		var pm: StandardMaterial3D = StandardMaterial3D.new()
 		pm.albedo_color = Color(0.08, 0.06, 0.05)
 		pupil.material_override = pm
-		pupil.position = white.position + Vector3(0.0, 0.0, -0.0155 * hs)
-		attach.add_child(pupil)
+		pupil.position = Vector3(0.0, 0.0, -0.0155 * hs)
+		eye.add_child(pupil)
+		var brow: MeshInstance3D = MeshInstance3D.new()
+		brow.name = "Brow" + tag
+		var bs: SphereMesh = SphereMesh.new()
+		bs.radius = 0.5
+		bs.height = 1.0
+		bs.radial_segments = 10
+		bs.rings = 5
+		brow.mesh = bs
+		brow.scale = Vector3(0.045 * hs, 0.012 * hs * brow_k, 0.022 * hs)
+		var bm: StandardMaterial3D = StandardMaterial3D.new()
+		bm.albedo_color = g["hair"]
+		brow.material_override = bm
+		brow.position = Vector3(0.037 * hs * side, 0.183 * hs, -0.088 * hs)
+		brow.set_meta("base_y", brow.position.y)
+		brow.set_meta("hs", hs)
+		attach.add_child(brow)
 
-	return {"node": root, "skeleton": skeleton, "built": built}
+	return attach
+
+
+# open: 0 shut (a blink) to 1 normal to 1.3 wide with surprise; brow_raise: -1 lowered (anger, effort) to 1 raised (surprise).
+static func set_expression(face: Node3D, open: float, brow_raise: float) -> void:
+	for tag in ["L", "R"]:
+		var eye: Node3D = face.get_node("Eye" + tag)
+		eye.scale = Vector3(1.0, clampf(open, 0.05, 1.4), 1.0)
+		var brow: Node3D = face.get_node("Brow" + tag)
+		brow.position.y = float(brow.get_meta("base_y")) + brow_raise * 0.022 * float(brow.get_meta("hs"))
+
+
+# ---------------------------------------------------------------- share code and detail levels
+
+const CODE_VERSION := 1
+const COLOR_KEYS := ["skin", "hair", "tunic", "trousers", "boots"]
+
+
+static func _crc8(bytes: PackedByteArray) -> int:
+	var crc: int = 0
+
+	for b in bytes:
+		crc ^= int(b)
+
+		for _i in range(8):
+			crc = ((crc << 1) ^ 0x07) & 0xFF if (crc & 0x80) != 0 else (crc << 1) & 0xFF
+
+	return crc
+
+
+# A genome as a short text code: a version byte, one byte per slider, three bytes per colour and a check byte, in Base64. Slider values are stored,
+# not mesh results, so the generator can improve without breaking saved characters (CHARACTER_DESIGN_VISION.md 5.7.9).
+static func encode(g: Dictionary) -> String:
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.append(CODE_VERSION)
+
+	for key in SLIDERS:
+		bytes.append(clampi(roundi((clampf(float(g[key]), -1.0, 1.0) + 1.0) * 127.5), 0, 255))
+
+	for key in COLOR_KEYS:
+		var c: Color = g[key]
+		bytes.append(clampi(roundi(c.r * 255.0), 0, 255))
+		bytes.append(clampi(roundi(c.g * 255.0), 0, 255))
+		bytes.append(clampi(roundi(c.b * 255.0), 0, 255))
+
+	bytes.append(_crc8(bytes))
+	return Marshalls.raw_to_base64(bytes)
+
+
+# Returns the genome, or an empty dictionary when the code is damaged, has the wrong length or another version. Never executes anything from the text.
+static func decode(code: String) -> Dictionary:
+	var bytes: PackedByteArray = Marshalls.base64_to_raw(code.strip_edges())
+	var expected: int = 1 + SLIDERS.size() + COLOR_KEYS.size() * 3 + 1
+
+	if bytes.size() != expected or bytes[0] != CODE_VERSION:
+		return {}
+
+	var body: PackedByteArray = bytes.slice(0, expected - 1)
+
+	if _crc8(body) != int(bytes[expected - 1]):
+		return {}
+
+	var g: Dictionary = {}
+	var at: int = 1
+
+	for key in SLIDERS:
+		g[key] = float(bytes[at]) / 127.5 - 1.0
+		at += 1
+
+	for key in COLOR_KEYS:
+		g[key] = Color(float(bytes[at]) / 255.0, float(bytes[at + 1]) / 255.0, float(bytes[at + 2]) / 255.0)
+		at += 3
+
+	g["lips"] = (g["skin"] as Color).lerp(Color(0.7, 0.25, 0.25), 0.5)
+	return g
+
+
+# The voxel size for a detail level (0 near, 1 middle, 2 far).
+static func lod_voxel(level: int) -> float:
+	return float(LOD_VOXELS[clampi(level, 0, LOD_VOXELS.size() - 1)])
