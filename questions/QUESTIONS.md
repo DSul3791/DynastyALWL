@@ -128,3 +128,15 @@ Note: Recommendation: Open pull requests for Sal's and Kathleen's branches now, 
 - Open pull requests for Sal's and Kathleen's now, hold Sonny's
 - Open pull requests for all three now
 - Hold all three until you have reviewed them
+
+## shield-offhand | Should a shield go in the off-hand slot?
+Note: Sal's combat tier list (ITEM_COMBAT_TIER_LIST.md on branch sal-items) covers swords, maces, shields and armour across five tiers: wood/hide, stone, copper/bronze, iron and steel. Sal is already building these as `future` items (not obtainable yet), so this choice only decides how a shield is carried.
+Note: Recommendation: Yes, use the off-hand slot. The game already has an off-hand slot, and a shield there leaves the main hand free for a weapon or tool, as players expect.
+- Yes, a shield goes in the off-hand slot
+- No, a shield is hand-held only
+
+## top-tier-armour | What should happen to the plate cuirass and steel helm (4 ingredients each)?
+Note: Your rule is a 3-ingredient maximum. Sal made these two the only exceptions, as special top-tier items, with 4 ingredients. They would be `future` items, so they would have no effect on the first island.
+Note: Recommendation: Keep them as future items. They cost nothing now, steel is far down the progression, and they can be changed or removed before they are ever released.
+- Keep them as future items with 4 ingredients
+- Drop them for now
