@@ -13,6 +13,14 @@ Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the
 8. **Numbers used:** items 278 to 300 and recipes 178 to 189, inside the block reserved in TOOL_TIERS.md.
 9. **Not tested:** the full 40-step suite and the animal, wolf and trade scenarios.
 
+### Sal's default answers to the questions above (reversible; Dave can overrule)
+- Copper tool rung: NOT added now. Copper and bronze stay ingots and weapon/jewellery materials until Dave asks for tools; adding the rung later is a data change plus the tier-numbering issue noted in ITEM_TIER_BALANCE.md.
+- Pickaxe versus spade tier: left as is (no change).
+- Dish food points: left as is (a small buff); cutting them later is a one-line edit per dish.
+- Bench-rule file: left untouched; Sal follows the 30 Oct words.
+- Spade bite mapping (stone 4, iron and steel 8): kept; changeable in items.json (`spade_size`).
+- Clay Oven and Iron Stove: spec written, nothing built; needs models and states.
+
 ## Dave's rules (his words, condensed)
 - Recipes: three ingredients at most; only a really special, powerful top-tier item may use 4 or 5.
 - Keep it simple, engaging, educational (a hint), fun and reasonable to make; never so complicated players stop enjoying it.
@@ -173,3 +181,13 @@ Gaps seen: no club, sword, mace, shield or armour above hide in any tier; no sto
 ## Data batch 4: progression gap items (plan 1 started, 2026-10-30)
 Added as `future` (not obtainable yet), all passing validate_items, dishes, server_items, first_hour, inventory, stations, save_compat: **Stone pickaxe 297** (pick, tier 2; the missing stone rung in design/TOOL_TIERS.md), **Sickle 298** (stone, tier 1; Dave 25 Oct: scythe AND sickle), **Scythe 299** (iron, tier 3), **Wooden club 300** (weapon, tier 1, damage 7). Recipes 186 to 189 (all `known: false`): Stone pickaxe (stick 2, stone 3, twine 2; workbench), Sickle (flint, stick, twine; workbench), Scythe (iron ingot 2, stick 2; forge), Wooden club (stick 3; by hand). Weights added; look row added for the club (tools use in-hand models). `next_number` items 301, recipes 190. Note: design/TOOL_TIERS.md reserved items 267-299 and recipes 170-199 for early tools; my numbers 278-300 and 178-189 fall in that block, so anyone planning those numbers should start after 300 / 189.
 Not added on purpose: copper tools (TOOL_TIERS says no copper rung until Dave asks; Dave asked for copper, tin and bronze ingots but not yet for a tool rung: open call), sword, mace, shield, sling, armour above hide. These wait for the final list.
+
+## Plans round 4 (self-approved, 2026-10-30): 1 station and bench chain check (done below), 2 one hand-off page for the code owner (Clay Oven, Iron Stove, species tag, vice migration), 3 tool durability and tier number pass.
+### Plan 1 result: crafting-station level and bench chain against the item list
+How stations work: a recipe names a station and a level; a placed structure provides a station at its `station_level` and may also provide others through `also` (stone forge gives workbench 3 and forge 1; blacksmithy workbench 4 and forge 2; large forge forge 3; master forge forge 4).
+Chain as built: hand -> camp bench (workbench 1, hand recipe) -> log workbench (workbench 2, made at workbench 1) -> sawmill, woodworking table, stone forge, blacksmithy (blueprints) -> large and master forge. Live recipes by station: hand 66; workbench 1: 22, workbench 2: 1; forge 1: 7, forge 2: 2; sawmill 15; woodworking table 1; campfire 12; campfire pot 7; clay hearth 1; oven 2.
+Findings:
+- **No recipe uses workbench level 3 or 4 or forge level 3 or 4.** The large forge (92) and master forge (94), and the blacksmithy's top levels, unlock nothing yet; large and master forge also have no kit recipe or blueprint (not buildable). That fits Dave's 25 Oct answer F (one forge upgraded in tiers) but the upgrade path is not built.
+- **No recipe makes an ingot.** iron_ingot and steel_ingot (and my copper, tin and bronze) are `future` materials with no smelting recipe and no ore items, so every forge recipe (nails, hinges, iron pickaxe, scythe, rivets, striker, bronze ingot) hangs on a missing step. Dave's rule: ore smelts straight to an ingot in a forge, one step. Needed: ore items (copper, tin, iron; the world resources table has the minerals but they are not items), smelting recipes at forge 1 (copper, tin, iron), forge 2 (bronze, steel).
+- The new bronze ingot recipe needs forge level 2 (blacksmithy); iron-tier recipes need forge 1.
+- Nothing in the new items asks for workbench 3 or 4, so no new dead ends were added.
