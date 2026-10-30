@@ -120,7 +120,7 @@ There is **no** clip for: jump, fall, land, swim, climb or ladder, turn, start o
 
 These passages are **copied unchanged** (each line prefixed with "> ") from the source files, which are untouched. Each has its source file, line range and nearest heading. Where the documents disagree, see 2.9. Old agent names: Mandy and Art = the arts director (now Kathleen_ArtisticDirector); Tyler = technical research; Steve = former technical director; Radar/Items = items; "Sonny" inside these passages is the earlier terrain/water agent, not me.
 
-## Passages by topic (2.1 to 2.7 = B1 to B7)
+## Passages by topic (B1 to B7 below are 2.1 to 2.7)
 
 ### B1. Look, style, proportions and budgets
 
@@ -600,7 +600,7 @@ Nothing has been removed. This list is for Dave's approval. For each entry: file
 6. **Spear controls:** the same section says spear controls are "decided, not built"; held_item.gd implements jab and throw.
 7. **Arms side naming:** older notes (JOBS.md, BUILD_LOG.md) say the arms use `hand_mount_l`; since build 354 the right hand is `hand_mount_r` (ART_DIRECTION.md section 48).
 8. **NPC animation:** Tyler's BEST_PRACTICES says npc_view.gd had no animation calls; later BUILD_LOG entries (491) say NPC bodies animate. The code today has clip selection and distance throttling.
-9. **Unsourced numbers:** Tyler's gait table (BEST_PRACTICES "Natural walk, jog, run") says plainly that only the walk-run transition is sourced and the rest are from memory; the clips were built from it. See Part 3.8 for my check.
+9. **Unsourced numbers:** Tyler's gait table (BEST_PRACTICES "Natural walk, jog, run") says plainly that only the walk-run transition is sourced and the rest are from memory; the clips were built from it. See Part 3.7 for my check.
 10. **Dave's rules found in the passages (carry forward):** the left hand does not move in an attack unless it holds something; the first-person view should not be driven by the body-twist clip; hit events fire at the impact key; held items point only slightly down; names must be non-divisive ("safe place" rule, no gendered labels); characters are not to be shown as realistic.
 
 ---
@@ -625,10 +625,10 @@ Every note is in my own words. Each entry has an ID (for example A3) that Parts 
 - **A6** Motion matching (For Honor): each frame the system scores candidate animation frames on key-bone positions and a predicted trajectory; foot IK and toe locking hide residual sliding; a state machine still runs the game logic. https://www.gameanim.com/?p=13538 (OPENED); Clavet GDC 2016: about 5 to 10 minutes of captured motion can replace hand-made starts, stops and turns. https://gdcvault.com/play/1022985/Motion-Matching-and-The-Road (OPENED)
 - **A7** Unreal Motion Matching needs a schema, a database of root-motion clips and a pose history; cost grows with samples; it replaces state machines. https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-matching-in-unreal-engine (OPENED). The Last of Us Part II used it and the 2021 talk overview calls it high-risk and then experimental. https://gdcvault.com/play/1027118/Motion-Matching-in-The-Last (OPENED, overview only). Learned motion matching cuts memory with neural nets and is research-grade. https://montreal.ubisoft.com/?p=23009 (OPENED)
 - **A8** Indie feasibility of motion matching: the cost is mocap data (studio capture is thousands per day; cheap packs exist); no Godot implementation found. https://mocaponline.com/blogs/mocap-news/motion-capture-indie-game-dev (SNIPPET, vendor). My conclusion (RECOMMENDATION): not realistic for this project.
-- **A9** The human walk-to-run transition is about 2.0 m/s (Hreljac 1993 average 2.06 m/s, energetic optimum 2.24); the mechanism is still debated. https://www.wikipedia.org/wiki/Transition_from_walking_to_running (SNIPPET); the earlier internal Tyler note cites Kram et al. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2719915/ and https://sites.utexas.edu/neptune/wp-content/uploads/sites/6031/2020/07/jeb2085.pdf (as quoted in our own docs; not opened by me). **NOT CONFIRMED by any source found in round 1: cadence, stride length, lean angles, knee peaks.** Round 2 tried to fill this (3.6).
+- **A9** The human walk-to-run transition is about 2.0 m/s (Hreljac 1993 average 2.06 m/s, energetic optimum 2.24); the mechanism is still debated. https://www.wikipedia.org/wiki/Transition_from_walking_to_running (SNIPPET); the earlier internal Tyler note cites Kram et al. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2719915/ and https://sites.utexas.edu/neptune/wp-content/uploads/sites/6031/2020/07/jeb2085.pdf (as quoted in our own docs; not opened by me). **NOT CONFIRMED by any source found in round 1: cadence, stride length, lean angles, knee peaks.** Round 2 tried to fill this (3.7).
 - **A10** Jump design: take-off, looping in-air pose and a very short landing clip because the player may keep running (student blog, weak). https://mattlawsonhall.blogspot.com/2025/12/graduate-portfolio-character-animation.html (SNIPPET). Forum opinion: locking movement during a landing recovery feels bad. https://answers.unrealengine.com/questions/28414/view.html (SNIPPET).
 - **A11** Godot AnimationTree gives BlendSpace1D/2D, Transition, OneShot, TimeScale and root motion; Godot has no built-in motion matching or stride warping (absence in the docs, not proof). https://docs.godotengine.org/en/stable/tutorials/animation/animation_tree.html (OPENED)
-- **A12** **NOT CONFIRMED / no authoritative source found** for crouch, swimming, climbing, ladder and mounted-riding animation (round 1). Round 2 asked again (3.6).
+- **A12** **NOT CONFIRMED / no authoritative source found** for crouch, swimming, climbing, ladder and mounted-riding animation (round 1). Round 2 asked again (3.7).
 
 ## 3.2 Round 1, topic B: Godot engine specifics (stable docs identify as 4.7)
 
@@ -643,7 +643,7 @@ Every note is in my own words. Each entry has an ID (for example A3) that Parts 
 - **B9** SkeletonModifier3D runs after the AnimationMixer; subclasses listed include IKModifier3D, LookAtModifier3D, SpringBoneSimulator3D, RetargetModifier3D, BoneConstraint3D, BoneTwistDisperser3D, LimitAngularVelocityModifier3D, ModifierBoneTarget3D, PhysicalBoneSimulator3D, SkeletonIK3D. https://docs.godotengine.org/en/stable/classes/class_skeletonmodifier3d.html (OPENED)
 - **B10** IK returned in Godot 4.6: TwoBoneIK3D (deterministic), ChainIK3D family (SplineIK3D, IterateIK3D with FABRIK3D, CCDIK3D, JacobianIK3D), LimitAngularVelocityModifier3D to smooth; no foot-IK tutorial. https://godotengine.org/article/inverse-kinematics-returns-to-godot-4-6/ (OPENED). TwoBoneIK3D settings: root, middle, end bone, target node, pole node, pole direction; end must be a child of middle, middle of root. https://docs.godotengine.org/en/stable/classes/class_twoboneik3d.html (OPENED). SkeletonIK3D still exists but is marked deprecated. https://docs.godotengine.org/en/stable/classes/class_skeletonik3d.html (OPENED). The 4.6 blog's wording that it was removed in 4.0 contradicts the class page: unresolved.
 - **B11** LookAtModifier3D turns a chosen forward axis toward a target with angle limits, damping and time smoothing; parent-bone modifiers must be listed before child-bone ones. https://docs.godotengine.org/en/stable/classes/class_lookatmodifier3d.html (OPENED)
-- **B12** SpringBoneSimulator3D (secondary motion for hair, tails, cloth): chains from root to end bone, no branched chains, do not scale the skeleton, collisions by SpringBoneCollision3D nodes; introduced in 4.5 per the 4.6 blog. https://docs.godotengine.org/en/stable/classes/class_springbonesimulator3d.html (OPENED)
+- **B12** SpringBoneSimulator3D (secondary motion for hair, tails, cloth): chains from root to end bone, no branched chains, do not scale the skeleton, collisions by SpringBoneCollision3D nodes; introduced in Godot 4.4 per the 4.4 release page (see H1; the 4.6 blog wording is looser). https://docs.godotengine.org/en/stable/classes/class_springbonesimulator3d.html (OPENED)
 - **B13** BoneAttachment3D copies a bone transform to a node (right for tools, shield, torch, pack); avoid `override_pose` together with modifiers. https://docs.godotengine.org/en/stable/classes/class_boneattachment3d.html (OPENED)
 - **B14** Import: animation names containing `loop` or `cycle` import looped; `-noimp` drops a node. https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/node_type_customization.html (OPENED)
 - **B15** Licences: godot-demo-projects is MIT. https://github.com/godotengine/godot-demo-projects (OPENED). GDQuest's Godot 4 third-person controller: code MIT, **art CC-BY-NC-SA (not usable commercially)**. https://github.com/gdquest-demos/godot-4-3d-third-person-controller (OPENED). No well-known Godot 4 locomotion, foot-IK or ragdoll addon with a confirmed licence was found. No official foot-IK or hand-IK tutorial for the new nodes; hand IK on a tool is the agent's inference only.
@@ -670,7 +670,7 @@ Every note is in my own words. Each entry has an ID (for example A3) that Parts 
 - **D4** Attack structure of anticipation, active and recovery frames with a cancel window late in recovery (generic fighting-game sheet). https://docs.google.com/document/d/1i2zTU-0btjdDaTJMucGcmAPAEwuJm_siPdPVMY1zgGY/export?format=pdf (SNIPPET). Mariel Cartwright's Animation Bootcamp talk on fluid, powerful, responsive animation: https://gdcvault.com/play/1020575/Animation-Bootcamp-Fluid-and-Powerful (OPENED, description only).
 - **D5** Layering in Godot: Blend2 with filters, or two AnimationPlayers (upper/lower); OneShot with filters over locomotion gives attack-while-walking. https://forum.godotengine.org/t/is-possible-to-use-two-animation-in-parallel/50798 (OPENED); one forum report says a track-stripping script worked in 4.1.4 and broke in 4.6, so prefer node filters. https://forum.godotengine.org/t/can-t-remove-tracks-from-imported-animation/135572 (SNIPPET)
 - **D6** Modular characters: share one skeleton and swap skinned meshes; meshes made for other bone lengths warp. https://forum.godotengine.org/t/swapping-a-skeletons-3d-models-while-having-them-look-normal/140811 (SNIPPET). Attach tools to bones instead of keeping hidden children; material swaps are cheaper than duplicate meshes. https://godotforums.org/d/40518-accessories-for-3d-characters (SNIPPET)
-- **D7** Budgets are vendor marketing only (mobile hero 1.5k to 5k triangles, PC 15k to 50k; LOD example 3.7k down to 1.0k): low confidence. https://blog.neural4d.com/user-guide/polygon-count-for-3d-game-assets-printing-and-webar/ (SNIPPET), https://simplygon.com/posts/0179d2c5-a440-49d7-850a-0a9a94152d1b (SNIPPET). **NOT CONFIRMED: anything GTX 1050-specific, bone limits, hiding body regions under clothing, atlasing, stylised proportion guidance.** Round 2 retried (3.7).
+- **D7** Budgets are vendor marketing only (mobile hero 1.5k to 5k triangles, PC 15k to 50k; LOD example 3.7k down to 1.0k): low confidence. https://blog.neural4d.com/user-guide/polygon-count-for-3d-game-assets-printing-and-webar/ (SNIPPET), https://simplygon.com/posts/0179d2c5-a440-49d7-850a-0a9a94152d1b (SNIPPET). **NOT CONFIRMED: anything GTX 1050-specific, bone limits, hiding body regions under clothing, atlasing, stylised proportion guidance.** Round 2 retried (3.8).
 - **D8** **NOT CONFIRMED / nothing found:** For Honor or Dark Souls frame data, Swink's *Game Feel* text, input buffering sources (the 100 to 200 ms buffer, late-recovery cancel window are agent MEMORY), looping gather animations, foot sliding while attacking.
 
 ## 3.5 Round 1, topic E: networking and prediction
@@ -699,3 +699,333 @@ Every note is in my own words. Each entry has an ID (for example A3) that Parts 
 - **F8 Others, low confidence.** 7 Days to Die 1.0 reportedly brought new base models and new first- and third-person animations (secondary sources only). https://charlieintel.com/games/7-days-to-die-1-0-version-333099 (SNIPPET). Project Zomboid Build 41 described as its animation overhaul with visible clothing and backpacks (search summary only). https://projectzomboid.com/blog/news/2017/02/buildstatus/ (SNIPPET). RuneScape: Dragonwilds is Unreal Engine 5, third person (job postings mention IK and mocap). https://www.heftig.com/?p=1184 (SNIPPET). Sons of the Forest: first person, you can look down to see equipped armour on your own body (Q&A report). https://dreadxp.com/?p=30887 (SNIPPET). ARK: Survival Ascended players complained the first-person camera sits too low (Steam thread). https://steamcommunity.com/app/2399830/discussions/0/3954784199559638352 (SNIPPET).
 - **F9 NOT CONFIRMED / not researched:** Palworld, Kenshi, Mount & Blade, Green Hell, original ARK, Vintage Story (no developer source), V Rising specifics, any GDC postmortem on survival-game character animation, 7 Days to Die first-person arms details.
 - **F10 Pattern across F1, F3, F5, F6 (my synthesis, labelled).** Where there is a separate first-person arms rig plus a full body, the two drift apart unless deliberately kept in step (Rust took years, Medieval Dynasty has a stream of bugs). Small rigs stay workable if the geometry does not hide the held item. Context-specific animation layers beat one giant state machine.
+
+## 3.7 Round 2, gait numbers, special movement, action feel, camera shake
+
+Bottom line from this round (agent report, which I accept): **the numeric gait table written earlier by Tyler (walk 1.4 m/s, cadence 100 to 120, step 0.65 to 0.8 m; jog, run, sprint speeds; trunk lean 1-3 / 4-7 / 8-12 degrees; knee peaks 60 / 95 / 110 degrees) could not be confirmed or refuted by any source found.** They stay "from memory, tunable by eye". The only well-supported numbers are below.
+
+- **G1** Cadence of at least about 100 steps/min is a consistent heuristic for moderate-intensity walking in adults. https://pubmed.ncbi.nlm.nih.gov/29858465/ (SNIPPET). Older able-bodied adults: stride about 1.35 to 1.53 m (step about 0.68 to 0.77 m) at 103 to 112 steps/min. https://pubmed.ncbi.nlm.nih.gov/26210370/ (SNIPPET). So 100 to 120 steps/min and a 0.65 to 0.8 m step are plausible for a walk, not confirmed for young adults.
+- **G2** In one study cadence did not depend on age, height or weight at preferred speed, while stride length did. https://pubmed.ncbi.nlm.nih.gov/11292147/ (SNIPPET). Use for design (RECOMMENDATION): keep cadence similar across body sizes and scale stride with leg length.
+- **G3** The walk-run transition happens at a Froude number of about 0.5 (v squared over g times leg length). https://pmc.ncbi.nlm.nih.gov/articles/PMC1617162 (SNIPPET; page blocked). With a 0.9 m leg this is about 2.1 m/s (my arithmetic). Matches A9 and the game's jog start at 2.2 m/s.
+- **G4** Running style is described by step frequency and duty factor; faster running raises step frequency and lowers duty factor, flight time rises. https://pmc.ncbi.nlm.nih.gov/articles/PMC9760857 (SNIPPET; which of two URLs carries it is unconfirmed). No degrees found.
+- **G5** Arm swing: arms act as passive dampers of upper-body rotation, shoulders counter-rotate against the pelvis; shoulder and elbow motion grows with speed; restricting the arms shortened stride and speed. https://pubmed.ncbi.nlm.nih.gov/19181900/ (SNIPPET), https://www.mdpi.com/2076-3417/15/12/6593 (SNIPPET). No degrees found.
+- **G6** Carrying a load: forward trunk lean and higher cadence are consistently reported; stride change is not consistent. Systematic review of 54 studies: https://espace.curtin.edu.au/handle/20.500.11937/20483 (SNIPPET). Soldiers with 10.7 to 17.5 kg leaned forward about 10 degrees or more and took longer, faster strides. https://pubmed.ncbi.nlm.nih.gov/20496244/ (OPENED, abstract). A 40 percent body-mass pack is reported to give shorter, faster strides (LaFiandra 2003, no URL: MEMORY level, not used as fact).
+- **G7** Crouch walking: only clinical crouch-gait data was found (deeper stance knee flexion, smaller swing flexion); weak evidence for a game crouch walk. https://pmc.ncbi.nlm.nih.gov/articles/PMC3233366 (SNIPPET).
+- **G8** Swimming: freestyle phases are catch, pull, push, recovery; body roll guidance conflicts (about 30 to 45 degrees). https://royallifesavingwa.com.au/programs/swim-teacher/swim-teacher-tips/freestyle-stroke-technique (SNIPPET, low authority). **NOT CONFIRMED: breaststroke, treading water.**
+- **G9** Ladders: standard portable ladder rung spacing is 305 mm; rung spacing sets stride length. https://cdc.gov/niosh/bulletin/2023/research-rung-spacing.html (SNIPPET). Climbing is described with three points of control. https://www.mdpi.com/1660-4601/17/8/2897/htm (SNIPPET). Game rule of thumb (agent's, not a source): one limb moves at a time, alternate hand and foot. Our ladder rungs are 0.35 m apart (terrain_client.gd `LADDER_RUNG_M`), close to that spacing.
+- **G10** Riding: the rider's pelvis is the main connection and must follow the horse's motion; rider pelvic motion differs by gait (trot mainly vertical, canter rocking). https://www.usdf.org/EduDocs/The-Rider/In_Search_of_Balance1.pdf (SNIPPET), https://uwe-repository.worktribe.com/OutputFile/7521252 (SNIPPET). **NOT CONFIRMED: rider pose angles; the 4/2/3 beat counts are MEMORY.**
+- **G11** Responsiveness: about 40 ms end to end for competitive shooters, 50 to 70 ms for action games, with animation start-up frames counting as latency (blog, low authority). https://bugnet.io/blog/debugging-input-lag-in-action-games (SNIPPET). A patent filing says latency beyond about 70 to 80 ms hurts fast-action play. https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/11071908 (SNIPPET). A study found players did not rate the most natural but least responsive controller as better, though observers did. https://repository.upenn.edu/hms/141 (SNIPPET).
+- **G12** Coyote time and jump buffering are described by Celeste's author as small cheats for feel, with no frame counts. https://gigazine.net/gsc_news/en/20200317-celeste-action-feel-things (OPENED). (The "6 frames each" claim is from one tutorial site only and is not used.)
+- **G13** Camera shake: Eiserloh's GDC 2016 talk "Juicing Your Cameras With Math" exists (page confirms framing, smoothing, shake). https://gdcvault.com/play/1023146/Math-for-Game-Programmers-Juicing (OPENED). The trauma model (trauma 0 to 1 added by events, decays, shake = trauma squared or cubed, noise-driven) comes from secondary sources and memory. https://www.strayspark.studio/docs/godot-camera-system/noise-and-shake (SNIPPET).
+- **G14** Foot slide: perception thresholds studied (camera motion raises the threshold); values not obtained. https://diglib.eg.org/handle/10.2312/SCA.SCA11.287-294 (SNIPPET). Foot-locking practice: detect the planted foot and hold its world position with IK until lift-off; sliding mostly comes from play rate not matching travel speed, so match playback to speed first. https://theorangeduck.com/ (SNIPPET), https://deepmotion.com/article/foot-locking (SNIPPET).
+- **G15** **NOT CONFIRMED / nothing credible found:** turn-in-place and lean-into-turn technique; running cadence; flight-phase fraction; trunk lean degrees; knee flexion degrees; counter-rotation degrees; Dean 1965 step-length equation.
+
+## 3.8 Round 2, stylised design, budgets, modular characters, animation cost, secondary motion
+
+Project fact (code): `project.godot` features line says Godot 4.7 with the **Forward Plus** renderer (line 22). That matters for H3 and H6.
+
+- **H1** SpringBoneSimulator3D shipped in **Godot 4.4** (this corrects B12, which said 4.5): the 4.4 release page lists it as a new node for hair, cloth and tails built on SkeletonModifier3D. https://godotengine.org/releases/4.4/ (OPENED). It returns bones to the original pose (unlike PhysicalBoneSimulator3D) and has `external_force` for wind. https://docs.godotengine.org/en/stable/classes/class_springbonesimulator3d.html (OPENED). A contributor blog snippet saying 4.5 conflicts; I trust the release page.
+- **H2** Valheim cape physics: only a third-party collider mod mentions hip and lower-back cloth colliders; not an Iron Gate statement. https://valheim.thunderstore.io/c/valheim/p/HugotheDwarf/More_and_Modified_Player_Cloth_Colliders/v/3.0.1/ (SNIPPET). **NOT CONFIRMED: vertex-shader sway for capes in low-poly games (no source found).**
+- **H3** Animation cost in Godot: `callback_mode_process` MANUAL means the mixer only steps when you call `advance(delta)`, so distance-based update rates are possible; there is no built-in throttle property. https://docs.godotengine.org/en/stable/classes/class_animationmixer.html (OPENED). `Skeleton3D.modifier_callback_mode_process` also has a MANUAL mode; if animation is throttled, modifiers (spring bones, look-at, IK) should be throttled too. https://docs.godotengine.org/en/stable/classes/class_skeleton3d.html (OPENED).
+- **H4** A known open engine issue: about 100 animated skeletons on the **Compatibility (OpenGL)** renderer ran under 20 fps against over 100 fps on Vulkan; a maintainer said skin deformation, not animation playback, is the bottleneck; workarounds are spreading updates across frames, pausing distant animation, impostors. https://github.com/godotengine/godot/issues/88954 (OPENED). Relevant: this project uses Forward Plus; the issue would bite if a Compatibility renderer option were ever added for weak machines (RECOMMENDATION: check before promising one).
+- **H5** Unity's animator culling modes (always animate, cull update transforms, cull completely) show the standard idea of not animating what is not seen. https://docs.unity.com/en-us/engine/current/manual/animation-section/animation-mecanim/class-animator (OPENED). Unreal has update-rate optimisation flags; mechanics not documented in what was reachable. https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/Engine/USkinnedMeshComponent (OPENED, flag names only). **NOT CONFIRMED: the official Unreal URO guide.**
+- **H6** Modular characters in Godot: a `MeshInstance3D` has `skeleton` and `skin`; the default of `skeleton` changed in Godot 4.6 (a project setting restores the old behaviour), so check this when swapping armour meshes; baking meshes from the current pose stalls the renderer and is not for runtime use on many characters. https://docs.godotengine.org/en/stable/classes/class_meshinstance3d.html (OPENED). Several meshes on one skeleton using different `Skin` objects get several skeleton RIDs, so each differently skinned armour piece may add skinning work; sharing one `Skin` resource or merging meshes avoids that (the agent's inference from the docs, to be profiled). https://docs.godotengine.org/en/stable/classes/class_skinreference.html (OPENED).
+- **H7** Per-instance shader parameters (`instance uniform` plus `set_instance_shader_parameter`) allow per-player colours or region toggles on one shared material. https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html (OPENED)
+- **H8** MultiMesh and skinned meshes: no documentation found saying a MultiMesh can be skinned; Godot's own tutorial does crowds with vertex-shader animation because CPU bone animation does not scale. https://docs.godotengine.org/en/stable/tutorials/3d/vertex_animation/animating_thousands_of_fish.html (SNIPPET; page flagged as not updated for 4.7). So "skinned bodies cannot be batched" is very likely but **not confirmed by an explicit doc**. Baked vertex-animation textures are the documented alternative (a plugin exists; SNIPPET).
+- **H9** **NOT CONFIRMED:** whether Forward+ skins on GPU or CPU in Godot 4; any authoritative way to hide body regions under clothing (shader masks, vertex colour regions, blend shapes). MultiMesh ignores blend shapes (SNIPPET).
+- **H10** Godot automatic mesh LOD (meshoptimizer at import, 1 pixel threshold by default) warns it can cause rendering issues in skinned meshes; at 1.5 to 3k triangles the gain is small, so hand-made low LODs with visibility ranges are safer. https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html (OPENED). Visibility ranges: begin and end measured to the AABB centre; fade mode DISABLED acts as hysteresis and is cheapest; alpha-fade modes need Forward+ (fine here). https://docs.godotengine.org/en/stable/tutorials/3d/visibility_ranges.html (OPENED)
+- **H11** Triangle budgets: **no developer-stated figures found for Valheim, Minecraft, Fortnite or Overwatch.** Overwatch heroes at about 30 to 34 thousand triangles with four LODs is a community claim only. https://polycount.com/discussion/235824/anyone-know-overwatch-2-tri-count-for-hero-characters (SNIPPET). A CryEngine character budgets page exists (not opened). Generic mobile 3k to 10k is vendor material (see D7). **Therefore the project's own budget cannot be justified from outside sources; it must be set by measurement on the minimum machine (RECOMMENDATION).**
+- **H12** Valheim's player: no verified Iron Gate source for how the character, armour, cape and weapons are built. Soft facts only: equipment has head, chest, legs, cape and held-item slots (preview, SNIPPET); the art director says the low-poly look is deliberate. https://widgets.sportskeeda.com/esports/news-the-story-deathsquitoes-rule-cool-valheim-s-journey-robin-eyre-art-director-creative-lead-sportskeeda-exclusive (SNIPPET). Nothing found on customisation.
+- **H13** Stylised design: Team Fortress 2's wiki summarises the design aim that a character is recognised by silhouette without lighting, class differences come from body proportion, weapon and silhouette, rim highlights replace dark outlines, and shading varies hue and luminance. https://wiki.teamfortress.com/wiki/Artstyle (OPENED; wiki summary, not the paper). The Valve paper and slides exist (Mitchell, "Illustrative Rendering in Team Fortress 2", SIGGRAPH 2007 notes https://www.advances.realtimerendering.com/s2007/Mitchell-IllustrativeRenderingInTF2(Siggraph07%20Course%20Notes).pdf and GDC 2008 https://cdn.steamstatic.com/apps/valve/2008/GDC2008_StylizationWithAPurpose_TF2.pdf) but the fetch tool could not read them: **I have not read them (SNIPPET: URLs only).**
+- **H14** Joint topology: forum advice says place a loop at the pivot of a joint with supporting edges either side and more density where it bends (community opinion, no wiki text). https://www.tech-artists.org/t/edgeflow-for-good-deformation/895 (SNIPPET), https://polycount.com/discussion/comment/1823338 (SNIPPET). **NOT CONFIRMED: heads-tall ratios, big hands and feet, simplified faces, Overwatch or Fortnite design talks, Zelda BotW analyses.**
+
+## 3.9 Round 2 (Godot gaps) and my own round-3 spot checks
+
+**Godot 4.7 and animation nodes (agent, round 2):**
+
+- **I1** The 4.7 "stable" docs are the current docs; the 4.7 release page lists no skeleton or IK changes (animation items: collapsible editor nodes, `Tween.tween_await()`). https://godotengine.org/releases/4.7/ (OPENED). The 4.7 upgrade page notes: `add_blend_point` on BlendSpace1D/2D gets an optional name, **`LookAtModifier3D.relative` default changed from true to false**, no skeleton/IK deprecations listed. https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html (OPENED). The 4.6 release page confirms the new IK framework (IKModifier3D, TwoBoneIK3D, SplineIK3D, FABRIK3D, CCDIK3D, JacobianIK3D, with constraints). https://godotengine.org/releases/4.6/ (OPENED). SkeletonIK3D: deprecated, class still present in 4.7 docs (settles the question left open in B10). https://docs.godotengine.org/en/stable/classes/class_skeletonik3d.html (OPENED)
+- **I2** Filter API sits on the base `AnimationNode`, so Blend2, Blend3, Add2 and OneShot all have `filter_enabled`, `set_filter_path(path, enable)`, `is_path_filtered(path)`. https://docs.godotengine.org/en/stable/classes/class_animationnode.html (OPENED). Path form is `<skeleton path relative to the tree's root_node>:<bone name>`, from a forum example that builds a tree in code. https://forum.godotengine.org/t/journal-samples-how-to-setup-animationtree-by-code/110728 (OPENED). That example used an imported skeleton, so **a tree on a code-built skeleton and player is plausible (tracks are only paths) but is not confirmed by any source: prototype it first.**
+- **I3** OneShot has `fadein_time`, `fadeout_time`, `mix_mode` (blend or add), `autorestart`, `break_loop_at_end`; fire it with `parameters/OneShot/request`. https://docs.godotengine.org/en/stable/classes/class_animationnodeoneshot.html (OPENED). Blend2 amount range 0 to 1, Blend3 -1 to 1, Add2 for out-of-range. https://docs.godotengine.org/en/stable/classes/class_animationnodeblend2.html (OPENED)
+- **I4** BlendSpace sync modes: none, independent, cyclic mutable (cycle length from the active weights) and cyclic constant (fixed `cyclic_length`); `AnimationNodeAnimation` has `stretch_time_scale`, `start_offset`, `use_custom_timeline` for matching walk and run cycle periods. https://docs.godotengine.org/en/stable/classes/class_animationnodeblendspace2d.html (OPENED), https://docs.godotengine.org/en/stable/classes/class_animationnodeanimation.html (OPENED). Introduction version of sync modes: NOT CONFIRMED.
+- **I5** State machine class: transitions added in code with `add_transition(from, to, transition)`; playback through `parameters/playback`. https://docs.godotengine.org/en/stable/classes/class_animationnodestatemachine.html (OPENED). Transition properties (switch mode, advance condition, cross-fade time) were not verified.
+- **I6** Root motion lives on `AnimationMixer` (`root_motion_track`, getters for position, rotation, scale and accumulators). https://docs.godotengine.org/en/stable/classes/class_animationmixer.html (OPENED)
+- **I7** Skeleton3D: `add_bone` names must be unique with no `:` or `/`, parent index must be lower than child index; no maximum bone count is stated on the page. https://docs.godotengine.org/en/stable/classes/class_skeleton3d.html (OPENED). GeometryInstance3D docs mention a custom AABB avoids costly AABB recalculation when a skeleton is used (the current mesh already sets one, Part 1.2). https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html (OPENED). **No official statement of GPU or CPU skinning, bone limits per skin, batching or per-character cost was found.** Profile.
+- **I8** GeometryInstance3D visibility ranges: begin/end plus margins (hysteresis with fade disabled); fade modes SELF and DEPENDENCIES only in Forward+. https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html (OPENED). `VisibleOnScreenNotifier3D` is approximate with no occlusion. https://docs.godotengine.org/en/stable/classes/class_visibleonscreennotifier3d.html (OPENED)
+- **I9** `PhysicalBoneSimulator3D` offers `physical_bones_start_simulation()` and `stop` (ragdoll for faint/death); PhysicalBone3D details not read. https://docs.godotengine.org/en/stable/classes/class_physicalbonesimulator3d.html (OPENED). `CharacterBody3D` has floor snap and slope settings but **no built-in stair support**; the project already has its own `step_up.gd` (Part 1.4). https://docs.godotengine.org/en/stable/classes/class_characterbody3d.html (OPENED)
+
+**My own spot checks (round 3):**
+
+- **J1** I re-opened the Rust "Built Different" devblog myself. It is dated 4 June 2026 and says what F1 reports: new player model with more realistic proportions after almost 10 years, new rig with more natural bind pose and twist bones, Maya rig replaced (IK/FK spine, pose libraries, mocap), the single 250-plus-animation state machine replaced by small context-specific behaviours (torch: right arm only), and third-person animation matched to the first-person viewmodel where possible. https://rust.facepunch.com/news/Built-Different (OPENED by me). Confirms F1.
+- **J2** I read the two Valve texts myself (local copies of the PDFs the agent downloaded, text extracted with `pdftotext`). SIGGRAPH 2007 course notes, Mitchell, Francke and Eng, "Illustrative Rendering in Team Fortress 2": the nine class silhouettes were designed to be distinct; body proportions, weapons and silhouette lines from footwear, hats and clothing folds were designed to give each a unique silhouette; interior clothing folds echo the silhouette; characters were validated as readable in plain silhouette during concept; rim highlights replace dark outlines. https://www.advances.realtimerendering.com/s2007/Mitchell-IllustrativeRenderingInTF2(Siggraph07%20Course%20Notes).pdf (READ). GDC 2008 slides "Stylization with a Purpose": read hierarchy of team colour, class by silhouette and proportion, weapons; character creation order silhouette, interior shapes, model sheet, 3D model, skin; "keep it iconic". https://cdn.steamstatic.com/apps/valve/2008/GDC2008_StylizationWithAPurpose_TF2.pdf (READ). This upgrades H13 from "not read" to read for these two documents. They contain no numeric proportions.
+- **J3** A new web search for stylised head-height ratios and hand/foot sizing returned generic articles (silhouette test as black shape, grayscale check, shape language) and no usable numeric guidance: https://80.lv/articles/character-design-shape-language-and-readability/ and https://rocketbrush.com/blog/shape-language-in-game-character-design-how-to-make-characters-readable-and-consistent (SNIPPET, search summary only). **Proportion numbers remain NOT CONFIRMED by any source**; the plan's numbers are my starting values.
+
+## 3.10 How many rounds, and what is still unknown
+
+- **Round 1:** six sub-agents, one per topic (A to F). **Round 2:** three sub-agents on the gaps round 1 left (gait and feel numbers; design, budgets, modular, animation cost, Valheim; Godot-specific gaps). **Round 3:** my own spot checks (J1 to J3) plus reading the Valve documents. That is **three rounds**. Round 3 found nothing that changes the plan, so I stopped there. Round 2 did add important items (the Compatibility-renderer skinning issue H4, SpringBoneSimulator3D version H1, the unverified gait table 3.7, the lack of stairs support I9, the 4.7 `LookAtModifier3D.relative` change I1), so I would not call the research exhaustive, only sufficient for planning.
+- **Limits.** Most sources were summarised by a small model on fetch and many pages were not fully readable (several returned 403 or were blocked). Dozens of items are SNIPPET-level. I did not re-check every claim. Treat SNIPPET items as leads. A second pair of eyes should re-open the sources behind any decision that costs a lot (the Compatibility-renderer issue, the multiplayer approach, the choice of IK nodes).
+- **Still NOT CONFIRMED (the honest list):** numeric human gait values (3.7 G15); proportion numbers for stylised bodies (J3); developer-stated triangle budgets for comparable games (H11); how Valheim, Ark, Rust, 7 Days to Die sync animation and build armour (E11, F7, H12); turn-in-place and lean-into-turn technique (G15); procedural arm swing and left-hand IK recipes (C11); a Godot recipe for foot and hand IK with the new 4.6 nodes (B10, I2); whether skinned meshes can be batched and how Forward+ skins (H8, H9, I7); an official input-latency standard (G11); remote-player foot-sliding fix (E11); mounted riding pose angles (G10); breaststroke and treading (G8); Unreal's official URO guide (H5); the Overwatch GDC talk content (E7).
+
+---
+
+# Part 4. Player character design guides and rules
+
+**Everything in Parts 4 to 7 is RECOMMENDATION unless marked FACT, with the supporting facts cited by ID from Part 1 (current state), Part 2 (project documents) or Part 3 (research). Where the research could not confirm something, the rule says so and makes it a tunable value to be set by eye or by measurement, not a law.**
+
+## 4.1 Principles
+
+1. **Readable first, detailed second.** The player and other people must read as a person at 70 m and from any camera angle: strong silhouette, clear head, torso, arms, legs, held tool. (Basis: the Team Fortress 2 design papers I read, which validated characters as plain silhouettes before any shading; see H13 and 3.9 below. Project basis: Dave 2026-10-20 decision that characters are "slightly stylised, heroic proportions, a hint of cartoon", ART_DIRECTION.md section 10.)
+2. **Believable weight over realism.** The world is near-photoreal (ART_DIRECTION.md section 5) but the character is stylised (section 10). Motion should be natural in its timing and weight (A1, A2) while the shapes are simplified.
+3. **One body, many views.** The first-person arms, the third-person body, the character screen preview and the NPCs and other players should all be driven by the same skeleton definition, the same clip names and the same action timings, so a fix in one place fixes all (Basis: Rust spent years with first and third person drifting apart, F1, F10; Medieval Dynasty's bug stream, F5; Dave already found the third-person clip was driving the first-person arms, Part 2 B5, FINDINGS Report 26).
+4. **Actions are events, not clips.** A swing is: anticipation, contact, recovery, with the damage/sound/particle fired on the contact event, never from a timer that is guessed to match the animation (Part 2 B5, FINDINGS Report 26 item 3; D1, D4, B3).
+5. **Derive, don't send.** The network carries velocity, stance, aim and action ids; each client derives the pose (Part 2 B7 decision DECISIONS 18:10; E1, E2, E4).
+6. **Cheap at distance, rich up close.** Full detail within about 15 m, reduced beyond, frozen past about 70 m (Dave's existing rule, Part 2 B7); a measured budget of 1 ms at Low for 20 visible bodies (DECISIONS.md, Part 2 B1).
+7. **Every number has an owner file and a tuning knob**, in data, not buried in code (the Dave rule that gaits are tuned in one place; Part 2 B3 and B7 item 1).
+8. **No gendered, divisive or exclusionary labels or defaults** in names, files, clips or customisation (DECISIONS 2026-10-23 03:35 "safe place" rule; DESIGN_IDEAS section on spouses; Part 2.9 item 10).
+
+## 4.2 Look, proportions, scale and style
+
+- **Style (FACT/doc):** slightly stylised, heroic proportions, a hint of cartoon; lighter budget than the realistic reference (ART_DIRECTION.md section 10). Owner on 2026-10-21 asked for a "simple ragdoll type character, no features". These two are compatible only if "no features" is read as "no detailed face, no fingers"; whether to add a face, hair and fingers is Dave's decision (Part 7, D1).
+- **Height and scale (FACT/code):** 1.86 m tall, capsule 1.8 m high and 0.35 m radius, eye 0.7 m above the capsule centre, hips at 0.95 m. RECOMMENDATION: keep 1.8 to 1.86 m, because the world, doors, ladders (2.4 m, rungs 0.35 m), jump height (about 1.2 m) and the step limit (0.5 m) are all tuned to it; scale NPC variation within plus or minus 4 percent height and 6 percent width (project proposal, FINDINGS Report 17, not an outside fact).
+- **Proportion rule (RECOMMENDATION, not sourced):** no outside source for head-heights or hand and foot size was found (H14). Propose a 7 to 7.5 head-tall body with hands and feet about 10 to 15 percent oversize, shoulders slightly broad, as a *starting* value to be decided by Dave's eye on a side-by-side with the current figure. Clearly marked UNCONFIRMED by research; validate with the silhouette test below.
+- **Silhouette test (basis: TF2 paper, H13):** every new body, tool, hat or garment must still read when drawn as a flat black shape at the size the character appears at 20 m, 50 m and 70 m. Test before any shading work.
+- **Colour and contrast:** keep the existing four-region tint (skin, coat, trousers, shoes) for cheap variation (Part 1.2). Prefer value contrast between torso, arms and legs so the swing of an arm reads against the body.
+- **Shape language:** rounded shapes for the body are already in place; hands and tools need distinct silhouettes (tool head larger than realism, grip visible).
+- **Faces and hair (decision pending):** if added, keep them as a few large shapes on the head mesh or texture, not geometry detail; the small-rig Minecraft and Unturned experience shows a simple face plus strong body motion carries a lot (F3, F6).
+- **Joints must bend (basis: H14 community advice and the current "blob" weights):** the current rigid weights give a stick-figure look (Part 1.1). The next body must have a joint loop at each elbow, knee, shoulder, hip, wrist, ankle and neck and soft weights across it. Keep the 7 to 10 degree bend visible at the knee even in walk.
+- **Skin tones and body variety:** allowed variation: skin tone, hair, coat colour, body build within a narrow range (disguise rule in DESIGN_IDEAS section 9.2: height and build are hard to change). Detail in Part 7.
+
+## 4.3 Skeleton and rig conventions
+
+- **Bone names (RECOMMENDATION, basis B6 B7):** adopt the Godot humanoid names (`Hips`, `Spine`, `Chest`, `Neck`, `Head`, `LeftShoulder`, `LeftUpperArm`, `LeftLowerArm`, `LeftHand`, `LeftUpperLeg`, `LeftLowerLeg`, `LeftFoot`, `LeftToes`, and Right) so any future imported animation, Mixamo-style or purchased clip set can be retargeted by a BoneMap (B6) and RetargetModifier3D (B8) instead of re-keying. The current names (`arm_r`, `forearm_r`, `thigh_r`...) can stay as an internal alias table.
+- **Minimum new bones:** shoulders (clavicles) so the shoulder can shrug and the arm can reach without twisting the chest; toes so the foot can roll; `UpperChest` optional. Add helper/twist bones only if the mesh shows candy-wrapper twisting. Fingers: one pair of grip poses (open, closed around a haft) by blend shape or three simple finger bones per hand; decide in Part 7 (D1). Rust added twist bones and metacarpals in its rebuild (F1) but with a far larger budget.
+- **Extra non-deforming bones:** `Root` at the feet (for root motion if used and for IK placement), `Hand_R_Grip` and `Hand_L_Grip` (replace today's `Marker3D` mounts), `Head_Look`, `Eye` (camera) and `Back`, `Hip_R`, `Hip_L` attachment points for pack, quiver, tool on belt.
+- **Axis and rest pose:** T-pose or A-pose facing +Z for imported assets (B6); the project's own convention is facing -Z in the rig with right = +X, which is Godot's usual forward. Document the convention once in assets/character/README.md and keep the check script (`tools/check_ragdoll.gd`) updated.
+- **Skeleton count:** one shared skeleton definition for player, NPC and other players (FINDINGS Report 17 item 1).
+
+## 4.4 Animation quality bar
+
+These are targets to be tuned and measured, not outside standards. Where an outside source exists it is cited.
+
+- **No visible foot sliding while moving at a steady speed.** Match playback speed to ground speed (already done within limits, Part 1.4); lock planted feet with IK when IK lands (C1, G14). The sliding perception threshold is not known (G14); define it by eye on a standard slow-motion side shot.
+- **Weight:** every move that starts or stops has a lean/ease: a body that reaches full speed instantly looks weightless (A1). Add lean into acceleration, turns and stops (G15 says no sources; judged by eye).
+- **Response time:** a tool swing should begin to visibly move within about 50 to 70 ms (3 to 4 frames at 60 fps) of the click, with the longer wind-up carried by an already-ready pose (A2 "anticipation moves into the ready pose") and the owner's client playing it at once (E8). The 40 to 80 ms ceiling comes from low-authority sources (G11); treat as a starting point.
+- **Hit timing:** damage, sound and particles fire on the contact event of the clip; hit stop 2 to 10 frames scaled with tool weight, capped (D1, D3: lengths unverified, tune by feel). Offer a setting to reduce or turn off camera shake/bob/hit stop (C10, G12 note).
+- **Cross-fades and transitions:** no hard cuts; cross-fade 0.1 to 0.25 s depending on the pair (today 0.15 to 0.25 s, Part 1.3); landing and start/stop clips must be short enough not to lock control (A10).
+- **Loop cleanliness:** every loop is seamless and the phase of left/right feet is preserved on blends (B1 sync "cyclic").
+- **Secondary motion:** breathing, cloak sway, tool inertia, head stabilisation (the head stays level while the body bobs, Part 2 B3 rules).
+- **Cost:** a single body < 0.1 ms CPU for animation at full rate; 20 visible bodies < 1 ms at Low (DECISIONS.md; Tyler's 0.1 ms per NPC target, FINDINGS Report 17). Re-measure on the minimum machine before and after each phase (the agent's note B5 says AnimationTree is heavy on weak CPUs and 4.7 changed internals, B4).
+- **Visual review:** every clip is reviewed as a flat side/front/back/three-quarter stills set and a slow-motion capture, per the existing STANDARD_SHOTS.md procedure (Part 2 B4), before Dave sees it.
+
+## 4.5 Naming and technical conventions
+
+- **Clip names:** `snake_case`, grouped by prefix: `loco_idle`, `loco_walk`, `loco_jog`, `loco_run`, `loco_crouch_idle`, `loco_crouch_walk`, `air_jump_start`, `air_fall`, `air_land`, `swim_surface`, `climb_ladder`, `act_chop`, `act_mine`, `act_dig`, `act_hammer`, `act_jab`, `act_throw`, `act_use`, `pose_sit`, `pose_lie`. Loop clips carry a `loop` suffix if imported (B14). Existing names (`idle walk jog run crouch sit lie swing swing_fp jab throw use carry_*`) are mapped by an alias table until retired.
+- **Frame events:** method-call tracks named `hit`, `step_l`, `step_r`, `release`, `grab`, `footfall` and so on; footstep sounds and grass/dust hooks should be driven by `step_*` events, not a timer (Tyler's note, Part 2 B3). AnimationPlayer method tracks do not fire when seeking or stopping (B3), so cancel paths need explicit tests.
+- **Data:** gait, lean and action timing numbers in `data/` JSON (like `movement.json` and `worn.json`), not in constants.
+- **Code layout (proposal):** `src/client/character/` with a rig definition, a body builder, a state-machine builder, an action library, an equipment/attachment module and a remote-body view; `ragdoll_body.gd` becomes a thin wrapper until retired. This is a plan for later; no file changes now.
+- **Tests:** keep `check_ragdoll.gd` style headless checks: bone set, clip set, every clip keys every driven bone, loops closed, event tracks present, attach points exist, triangle and bone limits.
+- **Ownership:** this document assumes Sonny owns the player character look, feel and movement files (`ragdoll_body.gd`, `stance.gd`, the avatar part of `terrain_client.gd::_update_view`, the arm/clip parts of `held_item.gd`, `worn_look.gd`, `worn_sync.gd`, the character screen preview). Several are shared with others (held item logic, camera): Part 7 asks Dave to confirm.
+
+---
+
+# Part 5. Movement and animation plan
+
+Legend. **Now** = what the code does today (Part 1). **Look** = how it should read. **Build** = technique. **Why** = supporting fact IDs or project rule. **Pri** = priority (P1 first). Techniques named here are available in Godot 4.7 per B1 to B15.
+
+## 5.1 Architecture (applies to everything below)
+
+1. **State machine plus blend spaces plus layers, in an `AnimationTree` (B1).**
+   - Locomotion layer: a `BlendSpace1D` (speed) for forward gaits, plus a `BlendSpace2D` (direction x speed) for strafe and backward if wanted; stance state machine on top (stand, crouch, sit, lie, swim, climb, air).
+   - Upper-body action layer: `OneShot` nodes with a bone filter (B1, D5) so a swing or use plays on spine/arms while the legs keep walking.
+   - Additive layer: breathing, look-at, lean, recoil (A1 secondary action).
+   - Procedural layer after the mixer: `LookAtModifier3D` for head/spine (B11), `TwoBoneIK3D` for feet and left hand (B10, C1), `SpringBoneSimulator3D` for cloaks and straps (H1), all `SkeletonModifier3D` (B9).
+   - **Hard cuts become cross-fades** driven by a transition graph rather than an if-chain in `_update_view`.
+2. **Root motion: not used for the player; in-place clips with speed-scaled playback** (the player's speed is decided by input and the server, not the animation). Root-motion data may be used offline to read stride lengths (A5, A11, A6). Basis: our movement is server-validated physics; Unreal's pose warping needs root-motion clips and is Unreal-only (A5).
+3. **Motion matching and stride warping: not recommended** (needs large data sets and custom engine work, no Godot implementation found; A6 to A8). Use a small number of authored clips plus IK.
+4. **One action model for all views.** A shared "action definition" record per tool/action: clip, duration, anticipation end, contact time, recovery end, cancel window, hit-stop, camera kick, sound event, which hand(s), which layer. First-person arms and third-person body read the same record; each view has its own clip authored to the same timings (F1, F10; Part 2 B5 Report 26).
+5. **Update scheduling.** Own avatar: every frame when visible. Others: use `callback_mode_process = MANUAL` and `advance()` at the tier rate (H3; already used for NPCs, Part 1.7), and throttle modifiers too (H3).
+6. **Network:** see 5.5.
+
+## 5.2 Locomotion and posture
+
+| State | Now (FACT, code) | Look (RECOMMENDATION) | Build | Why | Pri |
+|---|---|---|---|---|---|
+| Idle | one 3 s loop, arms slightly out | weight shifts, occasional look-around, breath, hands relaxed; variation every 4 to 12 s | idle set (3 to 4 clips) + random micro-actions in the state machine; head glance via LookAt | FINDINGS Report 17 item 3 (project); A1 | P2 |
+| Walk | clip `walk`, speed 1.4 m/s | heel-strike, relaxed arm swing, level head, hip sway | refine clip; stride-match; foot lock IK later | Tyler table, unverified (3.7 G15); G1 | P1 |
+| Jog / run | clips `jog` 3.2, `run` 6.0 m/s | lean 5 to 10 degrees, bent elbows, flight phase in run | refine; blend by speed in BlendSpace1D, not hard switches | G3 transition about 2 m/s; A4 | P1 |
+| Sprint | none (game has no sprint) | only if the game adds it | decision D6 | CONTROLS gait rules | - |
+| Strafe / backward | none: the body is always square to the view | walk or jog at reduced stride while facing the view; backward half stride | BlendSpace2D (direction x speed), or orientation twist of the spine over a forward clip | A5 (orientation warping idea) | P2 |
+| Turning | body snaps with mouse | in third person the body follows the view with a short lag; turn-in-place steps when the view turns past a threshold; lean into fast turns | torso/head lookat limit, then body yaw catch-up; turn clips; lean via additive | G15 (no source); handled by eye | P2 |
+| Start / stop | none (immediate) | 2 to 4 step accel lean, stop lean back, plant | additive lean from acceleration; optional start/stop clips | A3 (Game Anim chapter); A1 | P2 |
+| Crouch | single held pose | knees and hips flex, back inclines, shorter steps, smaller head bob; separate idle and walk; transition in/out | `loco_crouch_idle`, `loco_crouch_walk` + transition clips; stance eye heights from stance.gd | G7 weak; Part 1.4 | P1 |
+| Sit / lie / sleep | static poses | settle in/out transitions, breathing, hands in lap; furniture markers hold exact pose (chair, bed) | transitions + marker-driven snap, as for NPCs | FINDINGS Report 17 item 2 | P3 |
+| Jump / fall / land | **no clips** (jump 7 m/s, rise about 1.2 m) | crouch-load, push-off, tucked rise, open arms in fall, landing absorb scaled by fall speed, tumble on hard fall | `air_jump_start`, `air_fall` loop, `air_land` short; blend landing by vertical speed; no control lock | A4 (distance matching idea), A10, G12 | P1 |
+| Step up (0.5 m) | instant lift of the body | lead knee lifts, foot plants on the step, body rises smoothly | foot IK target at step height; smooth the capsule lift (existing eye ease) | Part 1.4 step_up.gd; C1 | P2 |
+| Slopes | whole body tilts | uphill lean, shorter steps; downhill knee bend; feet on the ground | pelvis drop + two-bone foot IK to ray hits, smoothed; keep the tilt for large slopes | C1, B10; Tyler slope rules (unverified) | P2 |
+| Stairs / ladders (placed ladders exist) | none (no ladder clip) | one limb at a time, hands on rungs, feet on rungs 0.35 m apart, body close to the rails | `climb_ladder_up/down` loops synced to climb speed 1.1 m/s; hand/foot IK to rung positions | G9; Rust still lacked a ladder animation in 2017 (F2); ladder_climb.gd | P2 |
+| Swim | walk/idle clips while swimming | surface: prone body, alternating arm strokes and flutter; dive: glide; tread when still; breath exhale | `swim_surface`, `swim_fast`, `swim_idle`, `swim_dive`; body pitch to move direction | G8 weak; CONTROLS swimming 2 and 3 m/s | P2 |
+| Wade (water over knees) | speed reduced only | high steps, arms out | blend knee lift by water depth | CONTROLS swimming | P3 |
+| Carry (log on shoulder) | `carry_idle`, `carry_walk` | forward lean, shorter steps, slow roll | keep; tune lean with G6 | G6; Part 1.3 | P3 |
+| Heavy pack / load | speed only | lean forward and shorter, faster steps scaled by load | additive lean by load ratio | G6 | P3 |
+| Mounts (horses planned) | none | seated pelvis follows horse motion; legs and hands posed | mount point + pose + pelvis follow; later | G10; DESIGN_IDEAS mounts text | P4 |
+| Exhaustion / injury | none (heart and breath sound only) | heavy breathing in chest, slowing, stumble, limp; collapse on faint | additive breathing driven by the exertion value; limp clip; ragdoll or collapse clip for faint | Part 2 B3 exertion text; DESIGN_IDEAS 6.16 | P3 |
+| Hurt / death / respawn | none | flinch, fall; lie down; get up | additive hit reaction; death: ragdoll via `PhysicalBoneSimulator3D` or scripted fall | DESIGN_IDEAS death text; B9 (PhysicalBoneSimulator3D) | P3 |
+
+## 5.3 Hands, tools, weapons and activities
+
+Common rule: each activity is defined by the action record in 5.1 item 4: **anticipation, contact, recovery** with the contact event firing the effect (D1, D4, Part 2 Report 26). Anticipation lengths are tuned per tool weight; the look in the table is the target.
+
+| Activity | Now | Look | Build | Pri |
+|---|---|---|---|---|
+| Chop (axe, felling) | first person: `swing_fp` 0.55 s, good; third person: **no swing visible** | two-hand grip, weight back, over-shoulder, impact at chest height, tug out | third-person clip `act_chop` driven by same action record; left hand IK to the haft; hit stop | P1 |
+| Mine (pickaxe) | first person `use` | over-head arc, heavier, short pause, recoil | `act_mine`; stronger camera kick | P1 |
+| Dig / fill (spade) | `use` | foot on blade, lever, lift, throw; both hands | `act_dig_*` with loop for held button; left-hand IK | P1 |
+| Hammer / build | `use` | short repeated strikes at the placed piece; kneel for low pieces | `act_hammer` loop | P2 |
+| Saw | `use` | pull-push loop | `act_saw` loop | P3 |
+| Knife / cut | `use` | short slash; two-hand carve | `act_cut` | P3 |
+| Spear jab / throw | `jab`, `throw` | crouch-lunge jab; throw with whole body | per-view clips; aim line for throw | P2 |
+| Bow draw / shoot | bow item exists, no clip | nock, draw with back muscles, hold with breathing, release, bow hand recoil | `act_bow_draw` (held), `act_bow_release`; left hand holds the bow, right hand IK to string | P2 |
+| Fishing | rod item | cast over shoulder, hold, strike, reel | `act_fish_cast/idle/reel` | P3 |
+| Torch / shield (off hand) | mount only | torch held low and forward; shield on forearm, raise to block | off-hand layer that overrides one arm (Rust's torch method, F1); block pose | P2 |
+| Gather / pick up / interact (E) | `use` | bend or reach to the target height (ground, bush, chest, door), pick, stand | height-aware reach: IK or three clips (low, mid, high) | P2 |
+| Eat / drink | none | hand to mouth, head tilt; scoop water | `act_eat`, `act_drink` | P3 |
+| Place blueprint / set trap | none | hold, point, lower | context-specific upper layers | P4 |
+| Talk to NPC | none | face NPC (head look), small gesture | LookAt + gesture one-shots | P4 |
+| Carry (hands) / drag | none | two-hand hold for baskets, crates | carry layers | P4 |
+
+**Tool grip.** Replace the per-tool hand-tuned constants in `held_item.gd` with a per-item grip record in data: grip point on the tool, secondary (left-hand) grip point, hold style (one-hand, two-hand, off-hand) and carry pose (third person). The tool mesh stays the same as the ground model (Part 2 B5 Dave 2026-10-24). The left hand reaches the second grip point with `TwoBoneIK3D` when the tool is two-handed (B10; no sourced recipe, C11).
+
+**First person.** Keep the arms-only viewmodel (cheap, proven in survival games, C6, F10) with these rules: (a) own camera-space clip per action authored to the shared action record; (b) the body-twist clip never drives the arms; (c) hands stay in view during wind-up; (d) the left hand shows only when it holds something (Dave's rule, Part 2 B5); (e) viewmodel FOV/depth treatment only if wall clipping becomes a problem (C8, both approaches have reported side-effects); (f) small camera dip and shake on impact under a user setting (C10, G13).
+
+## 5.4 Equipment and clothing
+
+- **Slots (existing items):** head (hood), chest (cloak, jerkin), back (pack), legs (leggings, skirt), feet (boots, sandals), hands (mittens), off-hand (torch, shield). (Part 1.6.)
+- **Approach (RECOMMENDATION):** keep the data-driven slot system (worn.json) and its cheap primitives for now (Kathleen's plan in Part 2 B6 is sound: named anchors, layers, fit by proportion, under 150 triangles per piece, no detail beyond 30 m), but: (1) switch anchors to the new named attach bones from 4.3; (2) hide body regions under clothing with a region mask in the existing vertex-colour shader (not confirmed anywhere in research, H9; prototype first); (3) keep all worn pieces on the one shared `Skin` where possible to avoid extra skinning cost (H6, to be profiled); (4) give cloaks, skirts and straps `SpringBoneSimulator3D` chains (H1) with a cheaper vertex-shader sway for far bodies (H2: no source for the sway technique); (5) one master tint per item through instance uniforms (H7).
+- **Tools on the body when not held:** belt/back attachment points for axe, spade, bow, quiver, torch; shown to others and in third person. New (not in the code today).
+- **First-person own body:** hide head/hood/cloak parts from the owner's camera (Part 2 B6 Steve plan item 4; C7), never shrink the camera into the body.
+- **Armour (planned, ARMOUR_LADDER.md):** same layer system, shape plus colour/material per tier, no per-armour clips.
+
+## 5.5 Other players, NPCs and the network
+
+- **Decision already taken (Part 2 B7):** send velocity, stance and one-shot action ids; clients derive clips. Research supports it (E1, E2, E3, E4). RECOMMENDATION adds:
+  1. The owning client plays its own action immediately; the server validates and the hit result arrives later (E8, E6). Keep cosmetic and authoritative parts separate.
+  2. One-shot action ids go on a reliable channel; positions on unreliable ordered (E9). At the 5 Hz tier a swing could be missed otherwise (E10).
+  3. Drive remote walk speed from the interpolated displayed velocity, not the last packet's (E11 memory-level; test).
+  4. Add hysteresis at the 15, 40 and 70 m tier edges (E10 report of pop-in).
+  5. If melee needs server-side hit checks, use capsules or swept volumes first; server animation like Riot's is a possible later step and they cut cost by animating every fourth frame (E6).
+  6. Interpolation buffer about three snapshot intervals (E5): at 4 Hz updates that is 750 ms, which is long for nearby players; consider a higher send rate within 20 m. (My arithmetic from E5; the real current send rate for players is not in this document, see Part 1.7.)
+- **Remote humans do not exist client-side today** (Part 1.7). The remote body view should reuse the NPC view's logic (clip choice from speed/state, tiered update) and the same dressing code.
+
+## 5.6 Camera and view
+
+- First person: keep the head bob/sway (Part 1.4) but expose strength sliders and an off switch (C10); add a dip and a recoil on hit (D2, G13).
+- Third person: keep the scroll-out view; replace the single ray with a swept-shape check (`SpringArm3D` style, C9) and smooth the return; align the camera target slightly above the shoulder.
+- Add (optional) shoulder-swap and an over-the-shoulder aim mode for bow/throw. No source found for shoulder swap (C-gaps); judge by playtest.
+- First-person full body ("body awareness"): optional; a lower-body-only mesh visible when looking down is a cheap compromise suggested by one forum poster (C7). Decision D3.
+
+---
+
+# Part 6. Gap analysis (current state against the plan)
+
+"Current" is FACT (Part 1). "Target" is the RECOMMENDATION in Parts 4 and 5. Size: S under a day of work, M a few days, L a week or more (my rough guess, not measured; Dave should treat these as order of magnitude).
+
+| Area | Current (FACT) | Target (RECOMMENDATION) | Gap | Size |
+|---|---|---|---|---|
+| Body look | Blobs of ellipsoids/capsules, rigid weights, no face, hands one ellipsoid | Soft-skinned stylised body, joint loops, simple head, grip-capable hands, clear silhouette | Mesh, skin weights, proportions, hands, head | L |
+| Skeleton | 17 bones, own names, no shoulders/toes/fingers/root/grip bones | Humanoid-compatible names, shoulders, toes, root, grip and attach bones, one shared rig for all views | New rig definition, alias table, check script | M |
+| Animation authoring | Angle tables in code sampled to clips | Same approach kept for tuning, plus ability to import authored clips by BoneMap | Pipeline decision (D2); import/retarget path | M |
+| Animation runtime | `AnimationPlayer`, hard clip switches by if-chain | `AnimationTree`: locomotion blend space, stance state machine, filtered upper-body one-shots, additive layer | Build the tree (and verify it works on a code-built skeleton, I2) | M |
+| Locomotion | idle, walk, jog, run, crouch (one pose), sit, lie, carry | + crouch walk, strafe/back, turn, start/stop, jump/fall/land, swim, climb, wade, slopes, steps | ~12 new clips or procedural systems | L |
+| Feet | Playback speed matching only; whole-body tilt on slopes | Foot IK on slopes/steps, foot lock, pelvis drop | `TwoBoneIK3D` setup, rays, tuning (no tutorial exists, B10) | M |
+| Head/torso aim | Body square to view; head does not look | LookAt on head/spine with limits; body yaw catch-up; turn-in-place | `LookAtModifier3D`, turn logic (default changed in 4.7, I1) | M |
+| First-person arms | Arms-only rig; clips `swing_fp`, `jab`, `throw`, `use`; hand-tuned per-tool constants | Per-action camera-space clips on shared action records; left hand shows only when it holds something; settings for shake/bob | Action records + more clips | M |
+| Third-person actions | **No arm clip plays on the body during swings/jabs/uses** (Part 1.5) | Same actions visible in third person, from the same records | Wire up + author clips | M |
+| Tools and weapons | Mount + many tuned constants per tool; spear, axe, knife, torch, tools via `use` | Grip records in data; two-hand IK; per-tool clips (chop, mine, dig, hammer, bow, fish) | Data + IK + ~10 clips | L |
+| Action events | Hit fired by a timer matched to the clip key (`HIT_AT 0.636`) | Hit/step/release events on the clip's method track | Event tracks + cancel-path tests (B3) | S |
+| Equipment | Primitives per slot on bones, colour regions; no secondary motion; no tools on belt/back | Named attach bones, region hiding under clothes, spring bones, belt/back tools | Attach points, mask, `SpringBoneSimulator3D` | M |
+| Other players | **Not drawn** (Part 1.7) | Remote bodies using the same rig, derived animation, tiered update | New remote body view + sync decisions | L |
+| NPCs | Same old rig, clip by state/speed, tiered update | Share the new rig and tree; idle variation, work loops | Port | M |
+| Network | Plan exists (derive from velocity/stance/action id); not implemented for players | Reliable action ids, hysteresis tiers, interpolation of displayed speed | Implementation + test with 20 clients | M |
+| Performance | Budget 1 ms/20 bodies; never measured; 1 renderer (Forward+) | Measured per-phase on the minimum machine; LOD bodies | Profile harness | M |
+| Camera | FP bob/sway fixed; TP ray, simple zoom | Settings sliders, impact dip, swept shape, smooth return | Small | S |
+| Death/faint/hurt | No body response | Ragdoll or clip on faint/death; hurt additive | Clips + `PhysicalBoneSimulator3D` | M |
+| Mounts | None | Mount pose later | Later | L |
+| Tooling | `check_ragdoll.gd`, standard shots | Per-clip review sheets, event/loop/foot-slide checks, perf harness | New checks | M |
+| Documentation | Scattered over ~20 docs, some stale (Part 2.9) | This file as the single source; originals pointed to it | Dave approves removal list | S |
+
+---
+
+# Part 7. Phased roadmap, risks, open questions and decisions
+
+## 7.1 Phased roadmap (RECOMMENDATION)
+
+The order is chosen so each phase is useful on its own, risky assumptions are tested early, and nothing is built twice. Nothing starts until Dave approves.
+
+**Phase 0. Agree and measure (before any build).** Dave answers the decisions in 7.4 (at least D1, D2, D3, D5, D10). Capture a baseline: standard stills and a slow-motion capture of the current walk/run/swing from side, front and back; frame time of the avatar and of 20 NPCs on the minimum machine (the project has never measured this, Part 1.9). Prototype in a scratch scene (not in the game) that an `AnimationTree` can drive the code-built skeleton (I2). Output: a short measured report. Size S to M.
+
+**Phase 1. Animation architecture on the current body.** Replace the if-chain with an `AnimationTree` (locomotion blend space, stance machine, filtered upper-body one-shot), cross-fades instead of cuts, event tracks for hit/step, data-driven gait numbers, shared action records so third person plays the same swings as first person, settings for bob/shake. Keep the present body, so the result is visible as movement quality alone and is cheap to revert. Output: same figure, much better motion; third-person swings visible. Size M. Why first: it fixes the largest "feel" defects (hard clip switches, no third-person actions) and every later phase depends on it.
+
+**Phase 2. Missing locomotion.** Jump/fall/land, crouch walk, strafe/back, turn and start/stop, ladder, swim, wade, slopes with foot IK (`TwoBoneIK3D`, B10), step-up, head look-at. Each as a small separate change reviewed by stills. Size L.
+
+**Phase 3. Body v2 and rig v2.** The new skeleton (humanoid names, shoulders, toes, grips, root), soft-skinned body with joint loops and the agreed proportions and hands (per D1 and D2), LOD body, character screen preview updated, silhouette test passed, alias table so old clips still play. The big visual jump arrives here. Size L. Needs the art pipeline decision (D2) and the proportion look-and-approve step with Dave.
+
+**Phase 4. Tool and activity library.** Per-tool clips and grip records: chop, mine, dig, hammer, saw, knife, spear, bow, fishing, torch, shield, gather/pick-up/interact, eat/drink. Two-hand IK. Hit stop and camera feedback. Replace the per-tool constants in `held_item.gd`. Size L, can run in slices tool by tool in the order players meet them.
+
+**Phase 5. Equipment and secondary motion.** Named attach points, belt/back tools, region hiding, spring-bone cloak and straps, tint via instance uniforms, armour layers. Size M.
+
+**Phase 6. Other people.** Remote player bodies, derived animation, tiers with hysteresis, reliable action ids, NPC port, performance measured with 20 bodies. Size L. May move earlier if a friend session needs to see each other (D7).
+
+**Phase 7. Special states and polish.** Exertion posture, limp, hurt, faint/death ragdoll, sit/sleep transitions on markers, emotes, mounts when horses arrive. Size L, open-ended.
+
+Review gates: after each phase Dave sees stills/video and a short change note; a phase is "done" when the checks in 4.4 pass.
+
+## 7.2 Risks
+
+1. **Wide blast radius.** `terrain_client.gd` (5,196 lines) and `held_item.gd` (1,802 lines) are shared with other work; the avatar and first-person arm code sit inside them. Mitigation: move the avatar logic to its own module in Phase 1 with minimal edits to those files; coordinate with the other agents (the session "kathleen" is active now). Unknown: who else edits these files this week.
+2. **AnimationTree on a code-built skeleton is unconfirmed** (I2). Mitigation: Phase 0 prototype. Fallback: keep the `AnimationPlayer` and build the blending in code (blend nodes are plain classes).
+3. **CPU cost.** AnimationTree and skinned meshes may cost more than the 1 ms budget at 20 bodies on a GTX 1050-class PC with a weak CPU (B5, H4; both anecdotal). Mitigation: Phase 0 measurement; manual `advance()` tiers; fewer bones for far LOD; do not offer the Compatibility renderer without testing (H4).
+4. **IK without a recipe.** The 4.6 nodes are new and no foot-IK tutorial exists (B10). Mitigation: small prototype before relying on it; keep the current tilt as fallback; physics-world ray costs.
+5. **Unsourced numbers.** The gait table that drove today's clips is from memory (3.7). Mitigation: treat all values as tunable, tune by eye with Dave.
+6. **Two view problem.** Maintaining separate first-person and third-person clips can drift (F1, F5). Mitigation: shared action records, one test that compares event times for both clips.
+7. **Art production.** Body v2 needs modelling/rigging skill and time; code-generated bodies are limited (Part 1.1). Unknown: Dave's tools and who authors (D2).
+8. **Style mismatch** between "no features" and "heroic stylised" (Part 2.9 item 1). Mitigation: decide D1 first.
+9. **Network design unmeasured**: the actual player update rate, bandwidth and 20-client behaviour are not in my knowledge (Part 1.9). Mitigation: Phase 6 starts by reading the real protocol and measuring.
+10. **Scope creep.** The wish list (mounts, emotes, customisation) is endless. Mitigation: phases ordered by what players do every minute (walk, jump, swing, climb, swim) first.
+11. **Research confidence.** Many sources were summary-level (3.10). Mitigation: re-open the sources behind any expensive decision.
+12. **Licensing** if third-party assets or animations are used: for example the GDQuest third-person controller art is non-commercial (B15). Mitigation: check every licence before importing anything.
+
+## 7.3 Open questions for Dave
+
+1. Is third person a first-class mode (every action polished in both), or a secondary view (first person is the real game)? (Medieval Dynasty and Rust show the cost of treating both loosely, F1, F5.)
+2. Do you want other players to see each other soon (a friend session)? That raises the priority of Phase 6.
+3. What speeds will the game finally use, and will there be a true sprint, a roll or a dodge, or combat? (CONTROLS has walk, jog, run only; PvP zones are in DESIGN_IDEAS.)
+4. How much will combat matter? Melee against players needs server-side hit design (E6, E8) that shapes the swing animation timings.
+5. Are horses and mounts, boats, and wall/rope climbing planned for the first playable? (They need poses and attach points.)
+6. Character customisation: how much (skin tone, hair, build, face)? Any limits under the "safe place" rule?
+7. Should the player's own body be visible in first person (looking down to see feet and clothing), as in Sons of the Forest (F8, snippet)?
+8. Hardware floor: still GTX 1050 / 8 GB at 30 fps minimum (BIG_PICTURE.md), Forward+ only?
+9. Is Blender (or another DCC tool) available and who will model and rig, or should the body stay generated in code?
+10. How does the "Kathleen_ArtisticDirector" role (arts) divide with me on character look, worn items and animal/NPC bodies?
+
+## 7.4 Decisions only Dave can make (with my recommendation)
+
+| # | Decision | Options | Recommendation |
+|---|---|---|---|
+| D1 | Character look | (a) keep "no features" ragdoll look, only improve motion and joints; (b) stylised human with simple face, hair, hands; (c) detailed realistic | (b) kept simple, but only after Phase 1 and 2 prove the motion. If the answer is (a) Phase 3 shrinks to joints, shoulders and hands |
+| D2 | How the body is made | (a) keep generating it in code; (b) model/rig in Blender and import glTF; (c) buy/licence a base and adapt | (b) if a modeller is available, else (a) with soft weights generated by script; avoid (c) unless the licence is clear |
+| D3 | First-person approach | (a) arms-only viewmodel (today); (b) full body in first person; (c) arms-only plus lower body when looking down | (a) now, (c) later if wanted. Never two unrelated animation sets: shared action records |
+| D4 | Third person priority | first-class vs secondary | first-class for actions (they are cheap once records are shared) |
+| D5 | Order of work | the roadmap in 7.1 | Phase 0, 1, 2 first |
+| D6 | New movement: sprint, roll, dodge | add or not | not until combat design says so |
+| D7 | When other players become visible | before or after Body v2 | after Phase 1 and 2 unless a friend session needs it sooner |
+| D8 | Update-rate tiers for far bodies | keep 15/40/70 m tiers | keep, with hysteresis; measure |
+| D9 | Customisation scope | none / small / large | small: skin tone, hair, coat colour |
+| D10 | Ownership and approvals | which files I may change; whether I may edit shared files `terrain_client.gd` and `held_item.gd`; approval of the passage-removal list in 2.8 | Allow me to extract the avatar and arm logic into a new module with minimal edits to the shared files |
+| D11 | Quality bar sign-off | accept the targets in 4.4 or change | accept as tunable defaults |
+| D12 | Budgets | triangles/bones/body cost per LOD | set after the Phase 0 measurements, not before (no external number found, H11) |
+| D13 | Headline: motion-capture or purchased animation packs | use / don't | consider packs only with BoneMap retarget and licence check; no motion matching (A8) |
+
+## 7.5 What I would do first once Dave approves (RECOMMENDATION)
+
+1. Phase 0 baseline and the AnimationTree prototype (one scratch scene).
+2. Phase 1 on the existing body.
+3. Show Dave a short side-by-side (stills and a clip) after each of Phases 1 and 2 before spending on Body v2.
