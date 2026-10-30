@@ -75,6 +75,13 @@ Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, ba
 - REC ladder, one E action with three levels: (1) **Flint and stone**, about 8 or 9 tries (Dave); (2) later **Flint and steel** using a **Steel striker** item, usually about two strikes (Dave); (3) kindling plays the part of tinder so the spark takes. Steel striker is a new gap item. Pyrite (Dave likes it) is found in coal seams, black shale and mineral veins (sources: [Geology In](https://www.geologyin.com/2024/04/pyrite-properties-uses-occurrence.html), [Rockhounding.org](https://rockhounding.org/maps/specimen/pyrite); both low-to-medium reliability); in our terrain that points at the coal and shale beds in data/tables/rocks.json. REC for the world owner, not decided. Dave decides whether pyrite exists as a middle step (Q13).
 - Char cloth (real tinder) is NOT recommended, to keep the game simple, unless Dave wants it.
 
+**Leather chain (Dave's rough idea, 2026-10-30; details to be worked out later, names are his words or REC):**
+1. Raw hide -> **Leather working table** (early station) -> **Processed hide**.
+2. Processed hide -> **Tannery** (tubs and drying racks) -> **Rough leather**, sorted by quality.
+3. Higher quality rough leather -> **Fine leather** or **Heavy leather**.
+4. With iron: several layers of leather plus rivets -> **Bound leather**, then leather armour.
+Open: the hide scraper may be the hand tool used at step 1. Check against Dave's rule that benches are for weapons and tools only: a leather working table crafts leather goods, so Dave to confirm it is allowed. Also needs rivets (not in our list; we have nails 228) and a quality-sorting mechanic (Q15).
+
 ## 2. Hand tools (gathering)
 
 | Group | Games and exact names | Function | Tier | Ours | REC |
@@ -213,7 +220,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 
 ## Questions for Dave
 1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
-2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
+2. **DECIDED (Dave, 2026-10-30): a tannery station IS wanted (tubs and drying racks); see the leather chain in section 1b. We have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
 3. **PART DECIDED (Dave, 2026-10-30): no bloomery step** (felt like extra for its own sake in Aska); ore is smelted straight to an ingot in a forge. Still open: add copper, tin and bronze ingots before iron/steel?
 4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. FIRE RULES (Dave, 2026-10-30): a fire is crafted as an inventory item and placed with a blueprint; the sticks used as the recipe are stored in the placed campfire's own inventory as its first fuel. Pressing E on a fire lights or extinguishes it: the character sparks flint and stone a few times to light it, or stomps it out. So lighting needs no fire-starter item (flint is a stone type). DECIDED (Dave): lighting needs one Stone and one Flint in inventory; flint is its OWN stone item (many stone types with different jobs; see section 1b); flint and stone takes about 8 or 9 tries, a later flint and steel about two strikes. Flint should be a common find near rivers (a world-placement note for whoever owns rocks and gathering, not an item-table change). Open detail: does the campfire's inventory hold other fuel (firewood, kindling)?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
@@ -225,6 +232,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 11. **Boats and carts:** in scope for this list?
 13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. DECIDED (Dave, 2026-10-30): **obsidian is in**, a mid-tier stone: found on islands beyond the starter islands, ones with dormant volcanoes, as rocks lying on or just under the surface. Intended uses (Dave): valuable tool and weapon material, jewellery, possible magic component. Details in section 1b.
 14. **DECIDED (Dave, 2026-10-30): a huge magic system is planned for later.** Obsidian can be a magic component. Open: when magic items (staves, wands, components, potions, enchanted gear) get their own catalogue pass, and which sources to use (Dragonwilds, Valheim staves and Eitr, Minecraft brewing and enchanting, Ark Element are the ones the analysis covers).
+15. **Leather chain:** confirm the steps above, the leather working table versus the bench rule, rivets, and how quality sorting works.
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
