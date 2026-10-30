@@ -2185,6 +2185,16 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "herb_salve": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "splint": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }

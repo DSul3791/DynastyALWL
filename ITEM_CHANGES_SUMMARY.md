@@ -25,10 +25,11 @@ All changes are data on branch `sal-items` (plus two test edits). Nothing is on 
 | 293 to 296 | Hide scraper, Steel striker, Javelin, Obsidian knife | tools and weapon |
 | 297 to 300 | Stone pickaxe, Sickle, Scythe, Wooden club | tools and weapon |
 | 301 to 304 | Copper ore, Tin ore, Iron ore, Coal | ores |
+| 308 to 310 | Clay jug, Herb salve, Splint | container and medicine (storage and medicine gap check) |
 | 305 to 307 | Hide tunic, Hide trousers, Hide gloves | clothing (worn using the existing cloak, leggings and mittens drawings until Kathleen makes new ones) |
 
 ## New recipes (all hidden until discovered, none over 3 ingredients)
-Kindling from sticks; Processed hide (hide, kept scraper); Hide scraper; Javelin; Obsidian knife; Steel striker; Rivets; Bronze ingot (copper ingot plus tin ingot, forge 2); Stone pickaxe; Sickle; Scythe; Wooden club; four smelting recipes (copper ore to ingot and tin ore to ingot at forge 1, iron ore to ingot at forge 1, steel from two iron ingots plus coal at forge 2); Hide tunic, trousers, gloves.
+Kindling from sticks; Processed hide (hide, kept scraper); Hide scraper; Javelin; Obsidian knife; Steel striker; Rivets; Bronze ingot (copper ingot plus tin ingot, forge 2); Stone pickaxe; Sickle; Scythe; Wooden club; four smelting recipes (copper ore to ingot and tin ore to ingot at forge 1, iron ore to ingot at forge 1, steel from two iron ingots plus coal at forge 2); Hide tunic, trousers, gloves; Clay jug (clay 4), Herb salve (comfrey leaves 2, animal fat), Splint (sticks 2, twine).
 
 ## Documents on the branch
 ITEM_GROUPS_AND_NAMES.md (all games grouped, names recommended, Part B decisions); ITEM_DECISION_LOG.md (every question and answer, what Dave must read at the top); ITEM_TIER_BALANCE.md; ITEM_ART_REQUESTS.md (for Kathleen, done on her branch); ITEM_CODE_HANDOFF.md (work only a code owner can do: species tag for lumber and beams, Clay Oven and Iron Stove, finishing the vice, ore gathering, quality grades).

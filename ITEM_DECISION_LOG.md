@@ -2,6 +2,8 @@
 
 Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the internet first, ask Dave only if truly needed, and keep a record here. Newest items at the bottom. "Dave" = Dave's own words; "Sal" = my decision. Main working document: `ITEM_GROUPS_AND_NAMES.md`. Branch: `sal-items`.
 
+**One page of every item change: `ITEM_CHANGES_SUMMARY.md` (read it before this log).**
+
 ## FOR DAVE: decisions Sal made for you or still needs (read this first)
 1. **Bench rule conflict.** `docs/mirror/design/CRAFTING_STATIONS_RULE.md` records "benches make weapons and tools only" as your standing rule (25 Oct). You said on 30 Oct it is not yours. Sal followed the 30 Oct words; the old file is untouched.
 2. **Trim list: your 25 Oct answers stand** (ITEM_TRIM_DECISIONS.md). Done: spade sizes retired (stone spade digs 4 pieces, iron and steel 8: Sal's mapping, change it if you wish), sewing needle retired, vice kit no longer craftable. Deferred: one Lumber/Beam with a species tag (needs a code feature; spec below).
@@ -200,3 +202,9 @@ All 22 art requests have looks on branch kathleen-art (commits eccd2c88, 90efaa5
 - Clothing from Dave's 25 Oct H answer: Hide tunic 305, Hide trousers 306, Hide gloves 307 (future), recipes 194 to 196 (hide and twine, hand-made in the data's class but hidden). Drawn with the existing cloak, leggings and mittens builders via worn.json until new drawings exist.
 - Plan 3 (durability and tier numbers): new items sit on the ladder in ITEM_TIER_BALANCE.md: stone pickaxe 4500 (stone rung about 4050), scythe 9000 (iron-tool band), sickle 600, club 350, javelin 120, obsidian knife 300 (brittle, 0.6 of flint). No existing number was changed.
 - One-page summary of every change: ITEM_CHANGES_SUMMARY.md.
+
+## Food, medicine and storage gap check across tiers (2026-10-30)
+Live: food 35 items (raw and cooked fish and meat, teas, 20 dishes; the flour, yeast, salt and grain chain is data only), medicine 2 (poultice, bandage), containers 4 (wooden bowl, clay pot, bucket, waterskin) plus the woven and plank chests, tool rack and backpack.
+Gaps against the catalogue: storage has nothing between the bowl and the chest for loose goods (basket, sack, barrel, shelf); no jug for ale and mead; medicine stops at the poultice and bandage (no salve, splint, antidote); preserved food (jerky, salt meat, hardtack) not yet in dishes; no grain, bread or cake items because no crops exist.
+Added (future, with recipes of at most 3 ingredients): Clay jug 308, Herb salve 309, Splint 310 (recipes 197 to 199). Not added: basket, sack, barrel and shelf (storage items need capacity and placement rules that belong with the code owner), antidote (needs poisons and injuries), jerky and hardtack (need salt in the world and grain).
+Plans for this round: clothing recipes (done, see batch 5), this gap check (done), summary page at the top (done).
