@@ -191,3 +191,6 @@ Findings:
 - **No recipe makes an ingot.** iron_ingot and steel_ingot (and my copper, tin and bronze) are `future` materials with no smelting recipe and no ore items, so every forge recipe (nails, hinges, iron pickaxe, scythe, rivets, striker, bronze ingot) hangs on a missing step. Dave's rule: ore smelts straight to an ingot in a forge, one step. Needed: ore items (copper, tin, iron; the world resources table has the minerals but they are not items), smelting recipes at forge 1 (copper, tin, iron), forge 2 (bronze, steel).
 - The new bronze ingot recipe needs forge level 2 (blacksmithy); iron-tier recipes need forge 1.
 - Nothing in the new items asks for workbench 3 or 4, so no new dead ends were added.
+
+## Kathleen's reply (2026-10-30)
+All 22 art requests have looks on branch kathleen-art (commits eccd2c88, 90efaa55) through ART_OVERRIDES in src/client/basic_look.gd; looks.json untouched, so the branches should merge cleanly. Not yet viewed in the real game. The code hand-off page is ITEM_CODE_HANDOFF.md (plan 2 of round 4, done).
