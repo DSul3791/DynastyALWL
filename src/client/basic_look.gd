@@ -39,6 +39,10 @@ const ART_OVERRIDES := {
 	"steel_striker": {"shape": "striker", "color": "#3a3c40", "size": 1.0},
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
+	"copper_ore": {"shape": "ore", "color": "#6a5a4c", "size": 1.0, "bits": ["#3fa77a"]},
+	"tin_ore": {"shape": "ore", "color": "#5c5a58", "size": 1.0, "bits": ["#2b2218"]},
+	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
+	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
 
 
@@ -831,6 +835,28 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var s0: float = -1.1 + 2.2 * float(k) / 7.0
 				_box_rot(parts, Vector3(0.016, 0.006, 0.014), Vector3(0.04 * sin(s0), 0.0, 0.04 * (1.0 - cos(s0)) * 1.6), Vector3(0.0, -s0 * 0.9, 0.0), Color(0.09, 0.09, 0.1) if k % 3 != 0 else Color(0.22, 0.22, 0.24))
 			_metal(parts)
+		"ore":
+			# An ore lump (copper, tin, iron): a rough grey-brown rock of three blobs and a few flat chips, with speckles and thin veins of the metal's mineral colour
+			# (bits[0], a hex colour: green for copper, dark brown for tin, rust red for iron) breaking out of the surface, so the rock is told from plain stone by its colour spots.
+			var mineral: Color = Color.html(str(bits[0])) if bits.size() > 0 else Color(0.6, 0.5, 0.3)
+			_sph(parts, 0.08, Vector3(1.1, 0.75, 0.95), Vector3(0.0, -0.03, 0.0), color)
+			_sph(parts, 0.055, Vector3(1.0, 0.8, 1.0), Vector3(0.065, -0.04, 0.03), _tone(color, 3, 0.12))
+			_sph(parts, 0.05, Vector3(1.0, 0.75, 1.0), Vector3(-0.05, -0.035, -0.04), dark)
+			for k in 3:
+				_box_rot(parts, Vector3(0.03, 0.008, 0.026), Vector3(-0.03 + 0.04 * float(k), 0.012, -0.03 + 0.03 * float(k % 2)), Vector3(0.0, 0.7 * float(k), 0.3), color.lightened(0.1))
+			for k in 8:
+				var a: float = TAU * float(k) / 8.0 + 0.4
+				_sph(parts, 0.012 + 0.004 * float(k % 3), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * 0.06, -0.01 + 0.012 * float(k % 3), sin(a) * 0.055), _tone(mineral, k, 0.15))
+			_box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(0.0, 0.026, 0.0), Vector3(0.0, 0.6, 0.0), mineral)
+		"coal":
+			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.
+			_box_rot(parts, Vector3(0.1, 0.075, 0.085), Vector3(0.0, -0.025, 0.0), Vector3(0.2, 0.5, 0.15), color)
+			_box_rot(parts, Vector3(0.07, 0.06, 0.07), Vector3(0.05, -0.03, 0.03), Vector3(0.0, 1.0, 0.3), _tone(color, 2, 0.15))
+			_box_rot(parts, Vector3(0.06, 0.05, 0.06), Vector3(-0.04, -0.035, -0.035), Vector3(0.3, 0.2, 0.1), color.lightened(0.04))
+			_box_rot(parts, Vector3(0.05, 0.004, 0.04), Vector3(0.0, 0.012, 0.0), Vector3(0.1, 0.4, 0.0), Color(0.3, 0.3, 0.34))
+			_box_rot(parts, Vector3(0.03, 0.02, 0.03), Vector3(-0.015, -0.015, 0.045), Vector3(0.2, 0.9, 0.1), color.lightened(0.12))
+			for k in 4:
+				_box_rot(parts, Vector3(0.012, 0.01, 0.012), Vector3(0.08 - 0.03 * float(k), -0.06, -0.07 + 0.035 * float(k % 2)), Vector3(0.3 * float(k), 0.6 * float(k), 0.2), color)
 		"kit":
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)

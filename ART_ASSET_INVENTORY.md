@@ -22,7 +22,7 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 7 Grass cover, litter and painted textures | 0 | 0 | 22 | 4 | 0 | 26 |
 | 8 Terrain surface and ground materials | 81 | 0 | 28 | 0 | 0 | 109 |
 | 9 Water, sky, weather and light | 2 | 0 | 12 | 10 | 0 | 24 |
-| 10 Items: raw materials, wood and crafted parts | 0 | 0 | 101 | 0 | 0 | 101 |
+| 10 Items: raw materials, wood and crafted parts | 0 | 0 | 105 | 0 | 0 | 105 |
 | 11 Items: gathered plant parts and foraged goods | 0 | 0 | 169 | 5 | 0 | 174 |
 | 12 Items: food, drink and medicine | 0 | 0 | 37 | 0 | 0 | 37 |
 | 13 Items: tools, weapons and ammunition | 1 | 0 | 16 | 24 | 0 | 41 |
@@ -32,16 +32,16 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 17 Placed structures: building pieces | 0 | 0 | 30 | 0 | 0 | 30 |
 | 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
 | 19 Creatures, animals and NPCs | 4 | 0 | 10 | 6 | 0 | 20 |
-| 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
+| 20 Player avatar and worn clothing | 0 | 6 | 12 | 2 | 0 | 20 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **5** | **655** | **115** | **0** | **865** |
+| **All categories** | **90** | **8** | **659** | **115** | **0** | **872** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 818 entries; stage 0 56, stage 1 5, stage 2 642, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 825 entries; stage 0 56, stage 1 8, stage 2 646, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
-Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirmed 60, unused builders 12.
+Flag counts: fantasy 38, retired item rows 56, `future` item rows 137, unconfirmed 60, unused builders 12.
 
 ## Index
 
@@ -54,7 +54,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 * [7 Grass cover, litter and painted textures](#7-grass-cover-litter-and-painted-textures) (26)
 * [8 Terrain surface and ground materials](#8-terrain-surface-and-ground-materials) (109)
 * [9 Water, sky, weather and light](#9-water-sky-weather-and-light) (24)
-* [10 Items: raw materials, wood and crafted parts](#10-items-raw-materials-wood-and-crafted-parts) (101)
+* [10 Items: raw materials, wood and crafted parts](#10-items-raw-materials-wood-and-crafted-parts) (105)
 * [11 Items: gathered plant parts and foraged goods](#11-items-gathered-plant-parts-and-foraged-goods) (174)
 * [12 Items: food, drink and medicine](#12-items-food-drink-and-medicine) (37)
 * [13 Items: tools, weapons and ammunition](#13-items-tools-weapons-and-ammunition) (41)
@@ -64,7 +64,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 * [17 Placed structures: building pieces](#17-placed-structures-building-pieces) (30)
 * [18 Stations and furniture](#18-stations-and-furniture) (13)
 * [19 Creatures, animals and NPCs](#19-creatures-animals-and-npcs) (20)
-* [20 Player avatar and worn clothing](#20-player-avatar-and-worn-clothing) (17)
+* [20 Player avatar and worn clothing](#20-player-avatar-and-worn-clothing) (20)
 * [21 Particles and effects](#21-particles-and-effects) (10)
 * [22 UI icons, HUD pictures and design pictures](#22-ui-icons-hud-pictures-and-design-pictures) (21)
 * [Passes and searches](#passes-and-searches)
@@ -623,7 +623,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 
 ## 10 Items: raw materials, wood and crafted parts
 
-101 entries. Stages: 101 x stage 2.
+105 entries. Stages: 105 x stage 2.
 
 
 ### raw and crafted materials (36)
@@ -723,7 +723,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 | Sugar maple lumber | Sawn sugar maple boards. | data/items/items.json item lumber_maple (#173) | BasicLook.mesh_for -> shape "planks" (data/items/looks.json), colour #d0a46f; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "planks" is 9 lines: a recognisable multi-part shape [future] |
 | Sugar maple beams | Heavy squared sugar maple beams for building. | data/items/items.json item beam_maple (#174) | BasicLook.mesh_for -> shape "beams" (data/items/looks.json), colour #d0a46f; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "beams" is 8 lines: a recognisable multi-part shape [future] |
 
-### requested by Sal (future items, branch sal-items) (14)
+### requested by Sal (future items, branch sal-items) (18)
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
@@ -741,6 +741,10 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 | Flour | item #290, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #290 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "sack" (used while looks.json still holds the grey chunk) | 2 | sack shape, pale [future] |
 | Salt | item #292, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #292 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "grit" (used while looks.json still holds the grey chunk) | 2 | grit pile, white [future] |
 | Yeast | item #291, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #291 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "pot" (used while looks.json still holds the grey chunk) | 2 | small pale crock (the pot shape at half size), offline render checked [future] |
+| Copper ore | item #301, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #301 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "ore" (used while looks.json still holds the grey chunk) | 2 | new shape: rough rock with green mineral speckles and a vein (offline render checked) [future] |
+| Tin ore | item #302, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #302 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "ore" (used while looks.json still holds the grey chunk) | 2 | ore shape with dark brown speckles [future] |
+| Iron ore | item #303, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #303 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "ore" (used while looks.json still holds the grey chunk) | 2 | ore shape with rust-red speckles [future] |
+| Coal | item #304, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; item #304 (not in this branch's items.json) | BasicLook.ART_OVERRIDES -> shape "coal" (used while looks.json still holds the grey chunk) | 2 | new shape: black angular lump with shiny facets and crumbs [future] |
 
 ## 11 Items: gathered plant parts and foraged goods
 
@@ -1345,8 +1349,16 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 130, unconfirm
 
 ## 20 Player avatar and worn clothing
 
-17 entries. Stages: 3 x stage 1, 12 x stage 2, 2 x stage 3.
+20 entries. Stages: 6 x stage 1, 12 x stage 2, 2 x stage 3.
 
+
+### requested by Sal (future items, branch sal-items) (3)
+
+| Name | What | Where | How made | Stage | Evidence / flags |
+|---|---|---|---|---|---|
+| Hide tunic | item #305, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: a sleeved shirt; worn.json still reuses the cloak builder; deferred until the stylised-human body exists [future,pending character restyle] |
+| Hide trousers | item #306, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: sewn trousers; still the leggings builder; deferred with the body restyle [future,pending character restyle] |
+| Hide gloves | item #307, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: fingered gloves; still the mittens builder; deferred with the body restyle [future,pending character restyle] |
 
 ### body (3)
 
