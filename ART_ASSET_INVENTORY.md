@@ -32,12 +32,12 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 17 Placed structures: building pieces | 0 | 0 | 30 | 0 | 0 | 30 |
 | 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
 | 19 Creatures, animals and NPCs | 4 | 0 | 10 | 6 | 0 | 20 |
-| 20 Player avatar and worn clothing | 0 | 6 | 12 | 2 | 0 | 20 |
+| 20 Player avatar and worn clothing | 0 | 3 | 15 | 2 | 0 | 20 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **8** | **659** | **115** | **0** | **872** |
+| **All categories** | **90** | **5** | **662** | **115** | **0** | **872** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 825 entries; stage 0 56, stage 1 8, stage 2 646, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 825 entries; stage 0 56, stage 1 5, stage 2 649, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
@@ -1349,16 +1349,16 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 137, unconfirm
 
 ## 20 Player avatar and worn clothing
 
-20 entries. Stages: 6 x stage 1, 12 x stage 2, 2 x stage 3.
+20 entries. Stages: 3 x stage 1, 15 x stage 2, 2 x stage 3.
 
 
 ### requested by Sal (future items, branch sal-items) (3)
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Hide tunic | item #305, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: a sleeved shirt; worn.json still reuses the cloak builder; deferred until the stylised-human body exists [future,pending character restyle] |
-| Hide trousers | item #306, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: sewn trousers; still the leggings builder; deferred with the body restyle [future,pending character restyle] |
-| Hide gloves | item #307, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | reuses an older worn builder | 1 | requested: fingered gloves; still the mittens builder; deferred with the body restyle [future,pending character restyle] |
+| Hide tunic | item #305, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | worn_look.gd builder "tunic" via BUILDER_OVERRIDES (replaces the cloak/leggings/mittens placeholder) | 2 | new builder: sleeved hide shirt to mid-thigh with rope belt and lace opening (offline render on the ragdoll). On the generated body the tunic is part of the body mesh (dress colour), so only the colour carries over [future,pending character restyle] |
+| Hide trousers | item #306, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | worn_look.gd builder "trousers" via BUILDER_OVERRIDES (replaces the cloak/leggings/mittens placeholder) | 2 | new builder: sewn trousers with waistband, side seams and cuffs (offline render on the ragdoll). On the generated body: dress colour only [future,pending character restyle] |
+| Hide gloves | item #307, flagged future | ITEM_ART_REQUESTS.md on branch sal-items; worn.json row on that branch | worn_look.gd builder "gloves" via BUILDER_OVERRIDES (replaces the cloak/leggings/mittens placeholder) | 2 | new builder: palm, four fingers, thumb and cuff on the hand bone (offline render on the ragdoll). The generated hand has finger bones; fingers on those bones are not done [future,pending character restyle] |
 
 ### body (3)
 

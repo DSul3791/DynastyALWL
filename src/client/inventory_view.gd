@@ -60,7 +60,7 @@ const BOULDER_STATE := 10                 # the world-item row state of a boulde
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
-var _boulder_rock: StandardMaterial3D
+var _boulder_rock: ShaderMaterial
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
@@ -1837,9 +1837,17 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
-		_boulder_rock = StandardMaterial3D.new()
-		_boulder_rock.albedo_color = Color(0.46, 0.46, 0.44)
-		_boulder_rock.roughness = 1.0
+		# Granite with moss (Kathleen, white-sphere fix): the plain mid-grey material drew server boulders near white in full sun, big smooth pale eggs. The scenery
+		# boulder shader of grass_view.gd (stone mottle, moss on the tops and north side) is used instead, with its per-instance custom data turned into
+		# uniforms and its distance fade switched off (a boulder the server sends must not melt away at 18 m).
+		var shader: Shader = Shader.new()
+		shader.code = String(load("res://src/client/grass_view.gd").BOULDER_SHADER).replace("stone = INSTANCE_CUSTOM.rgb;", "stone = stone_color;").replace("mossy = INSTANCE_CUSTOM.a;", "mossy = mossiness;").replace("uniform vec3 moss_color", "uniform vec3 stone_color = vec3(0.30, 0.29, 0.27);
+uniform float mossiness = 0.65;
+uniform vec3 moss_color")
+		_boulder_rock = ShaderMaterial.new()
+		_boulder_rock.shader = shader
+		_boulder_rock.set_shader_parameter("fade_start", 100000.0)
+		_boulder_rock.set_shader_parameter("fade_end", 100001.0)
 
 	var body: StaticBody3D = StaticBody3D.new()
 	var shape: CollisionShape3D = CollisionShape3D.new()
