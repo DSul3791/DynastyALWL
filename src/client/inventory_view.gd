@@ -905,9 +905,67 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	cyl.material = bark
 	mesh_node.mesh = cyl
 	root.add_child(mesh_node)
+	# Looks (Kathleen, stage-1 pass): a pale cut face with a darker ring on the stump top and at both ends of the trunk, a few snapped branch stubs
+	# along the trunk and root swell round the stump foot, so a felled tree is not a bare drum.
+	var cut: StandardMaterial3D = StandardMaterial3D.new()
+	cut.albedo_color = Color(0.72, 0.58, 0.38)
+	var ring: StandardMaterial3D = StandardMaterial3D.new()
+	ring.albedo_color = Color(0.5, 0.36, 0.2)
+
+	for end in ([-1.0, 1.0] if trunk else [1.0]):
+		var face: MeshInstance3D = MeshInstance3D.new()
+		var disc: CylinderMesh = CylinderMesh.new()
+		var r_end: float = cyl.top_radius if end > 0.0 else cyl.bottom_radius
+		disc.top_radius = r_end * 0.93
+		disc.bottom_radius = r_end * 0.93
+		disc.height = 0.012
+		disc.material = cut
+		face.mesh = disc
+		face.position = Vector3(0.0, end * cyl.height * 0.5 + end * 0.004, 0.0)
+		mesh_node.add_child(face)
+		var core: MeshInstance3D = MeshInstance3D.new()
+		var inner: CylinderMesh = CylinderMesh.new()
+		inner.top_radius = r_end * 0.55
+		inner.bottom_radius = r_end * 0.55
+		inner.height = 0.016
+		inner.material = ring
+		core.mesh = inner
+		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
+		mesh_node.add_child(core)
+
+	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	stub_rng.seed = int(radius * 1000.0) + int(length)
+
+	if trunk:
+		for k in range(4):
+			var stub: MeshInstance3D = MeshInstance3D.new()
+			var twig: CylinderMesh = CylinderMesh.new()
+			twig.top_radius = radius * 0.06
+			twig.bottom_radius = radius * 0.12
+			twig.height = radius * 1.1
+			twig.material = bark
+			stub.mesh = twig
+			var along: float = stub_rng.randf_range(-0.35, 0.4) * cyl.height
+			var ang: float = stub_rng.randf() * TAU
+			var local_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, along / cyl.height + 0.5)
+			stub.position = Vector3(cos(ang) * local_r, along, sin(ang) * local_r)
+			stub.rotation = Vector3(sin(ang) * 1.2, 0.0, -cos(ang) * 1.2)
+			mesh_node.add_child(stub)
 
 	if not trunk:
 		mesh_node.position = Vector3(0.0, cyl.height * 0.5, 0.0)
+
+		for k in range(5):
+			var swell: MeshInstance3D = MeshInstance3D.new()
+			var fin: BoxMesh = BoxMesh.new()
+			fin.size = Vector3(radius * 0.9, radius * 0.35, radius * 0.22)
+			fin.material = bark
+			swell.mesh = fin
+			var a2: float = TAU * float(k) / 5.0 + stub_rng.randf() * 0.5
+			swell.position = Vector3(cos(a2) * radius * 0.95, radius * 0.1, sin(a2) * radius * 0.95)
+			swell.rotation = Vector3(0.0, -a2, 0.0)
+			root.add_child(swell)
+
 		return root
 
 	# Hinge at the stump: pivot turns from upright to lying, over about 1.5 s.
