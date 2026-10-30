@@ -704,9 +704,9 @@ This widens my earlier rules (document only) to: the new files below, on my bran
 
 **Plan 1. Body generator prototype and benchmark (started, first result below).** Goal: prove the genome-to-body idea. Steps: generator from sliders to skeleton, smooth body, skin weights and mesh; pictures of four archetypes at rest and in a bend test; GDScript timing; then iterate on the defects (seams, hair, hands, face, clothes, triangle budget); then add the face presets and skin and hair options. Files: `src/client/character/body_generator.gd`, `tools/proto_body.gd`, pictures in `art/character_proto/`. Done when: bodies bend cleanly, four archetypes read clearly at 20 m, cost per body is known, and Dave has seen pictures. Risk: GDScript too slow (measured below: no); visual quality of a code-made body (open).
 
-**Plan 2. Motion prototype on the generated skeleton.** Goal: prove the animation plan before building it. Steps: an `AnimationTree` with a speed blend space and a filtered upper-body one-shot on the new skeleton (settles risk 2 in 7.2); a held-pose comic clip using `INTERPOLATION_NEAREST` and manual stepping (4.6); a squash helper bone; rotation-only clips with the hips scaled by `motion_scale` on two different bodies (5.7.6); capture stills and timing. Files: `tools/proto_motion.gd` and a few new clip definitions. Done when: the same clip set plays correctly on the four archetypes with no foot sliding at a fixed speed, and the stepped clip reads as comedy rather than lag.
+**Plan 2. Motion prototype on the generated skeleton. DONE for the checks (8.3b): 10 of 10 pass.** Goal: prove the animation plan before building it. Steps: an `AnimationTree` with a speed blend space and a filtered upper-body one-shot on the new skeleton (settles risk 2 in 7.2); a held-pose comic clip using `INTERPOLATION_NEAREST` and manual stepping (4.6); a squash helper bone; rotation-only clips with the hips scaled by `motion_scale` on two different bodies (5.7.6); capture stills and timing. Files: `tools/proto_motion.gd` and a few new clip definitions. Done when: the same clip set plays correctly on the four archetypes with no foot sliding at a fixed speed, and the stepped clip reads as comedy rather than lag.
 
-**Plan 3. Proposals for Dave: fears, backgrounds, traits (documents only).** Goal: give Dave lists to edit. Steps: keep the draft fear list (5.8.8); draft about 12 backgrounds (story, small boon, small drawback, look hint) written as plain data rows; draft the trait list on the existing -10 to +10 attributes (Luck and Fitness exist; Strength, Dexterity, Memory, Wisdom are listed) with the skill links; write all as proposals, label them clearly, and check wording against the safe-place rule. Files: this document (new Part 9 when drafted). Done when: Dave has lists he can cut and change. Not started yet.
+**Plan 3. Proposals for Dave: fears, backgrounds, traits (documents only). DRAFTED: see Part 9 and 5.8.8.** Goal: give Dave lists to edit. Steps: keep the draft fear list (5.8.8); draft about 12 backgrounds (story, small boon, small drawback, look hint) written as plain data rows; draft the trait list on the existing -10 to +10 attributes (Luck and Fitness exist; Strength, Dexterity, Memory, Wisdom are listed) with the skill links; write all as proposals, label them clearly, and check wording against the safe-place rule. Files: this document (Part 9). Done when: Dave has lists he can cut and change. Done as a draft.
 
 A fourth plan is queued: **Plan 4, extract the avatar and first-person arm code** into a new module (the moderator's answer 1). It waits for Plans 1 and 2 because the new skeleton decides the shape of that module, and extracting before that would be done twice.
 
@@ -736,16 +736,63 @@ Reading: **one body takes about 0.15 to 0.45 s to generate in plain GDScript on 
 - **Known defects left in the first picture sheet:** thin seam lines where limbs meet the trunk; the hair cap shows a grey patch (a cut-plane artefact); face is only two eyes, a nose, brow and ears; hands and feet are crude blobs; no clothes; lighting in the sheet is flat. These are prototype defects, not findings about the method.
 - **Not yet checked:** how the body looks in the game lighting; animation clips on it (Plan 2); memory per body; whether the Voxel module could mesh faster; saving the mesh to a file and loading it back (5.7.9); the cost of 20 different bodies in view on the minimum machine.
 
+## 8.3b Plan 1 second pass and Plan 2 result (same day)
+
+**Plan 1, second pass (pictures `art/character_proto/proto_rest.png` and `proto_bent.png` replaced; 3.5 cm detail).** Added: a tunic, trousers and boots drawn as slightly larger cloth parts in the same group so the surface shows cloth where it covers and skin elsewhere; brows in hair colour; a lip patch; shoulder cones dressed; vertex colours from the nearest part with a bias so hair, lips and cloth beat the skin under them. Result: the four bodies now read as dressed characters, bend cleanly in the test pose, and cost 400 to 630 ms each at 3.5 cm detail (6,000 to 8,000 triangles) in GDScript on this PC. **Save and reload test:** the baked body mesh saved in 5.5 ms to a 98 KB compressed file and loaded back in 8.1 ms with the same vertex count (a skin bind check after reload was not done). So generating once and loading from the cache costs about fifty times less than generating. Still open: seam lines at the limb joints, a light patch on the side of the head, crude hands and feet, no fingers, no face beyond eyes, brows, nose, lips and ears.
+
+**Plan 2, motion prototype: all 10 checks pass** (`tools/proto_motion.gd`, run headless; `src/client/character/motion_proto.gd`; exit code 0). What was proved, on the generated skeleton and an AnimationPlayer both built in code (this settles risk 2 in 7.2 and the unconfirmed point I2 in the research log):
+1. **An `AnimationTree` built in code drives a code-built `Skeleton3D`.** A blend space over speed (idle at 0, walk at 1.4, run at 3.5 m/s) moves the legs; at rest the thigh stays at rest, walking swings it about 0.45 rad. **Two catches found by the check:** (a) a tree built in code does nothing until at least one frame has been processed in the scene tree (calling `advance()` immediately changes nothing), and (b) a `BlendSpace1D` ignores points outside its range, whose default is -1 to 1, so `min_space` and `max_space` must be set for m/s values.
+2. **A filtered one-shot works.** A panic clip fired through an `AnimationNodeOneShot` with the upper-body bones filtered moved the arms by up to 1.4 rad against an identical body without the shot, while the legs stayed identical (difference 0.000 rad): attack-while-walking layering is confirmed in this setup.
+3. **Held poses work.** The panic clip's rotation tracks use `INTERPOLATION_NEAREST`; sampled 10 ms apart inside one step the pose is identical, and it changes between steps (twelve poses a second). This is the stop-motion beat of Part 4.6, working. Whether it looks right on screen is not yet judged.
+4. **One clip set fits bodies with different bone lengths.** Rotation-only clips with the hips position stored in units of hips height and `Skeleton3D.motion_scale` set per body put the hips at each body's own height (1.08 m for the lean body, 0.83 m for the stocky one, within 3 mm). This confirms the design rule in 5.7.6 and M8.
+
+Not yet done in Plan 2: viewing the clips on screen (a walk strip and the panic poses), squash and stretch, foot placement, and measuring the cost of an `AnimationTree` for 20 bodies. Those are the next steps for the motion plan.
+
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
 - **Avatar module extraction (answer 1):** queued as Plan 4 (see 8.2).
 - **Playing the generated body in the game:** not done; no existing game file was changed.
 
 ## 8.5 Next steps (in order)
-1. Plan 1 iteration: fix hair and seams, add hands and a nicer face, add a first simple tunic and boots layer so the pictures read as a character, add a 4.5 cm variant for distance, save and reload the mesh.
-2. Plan 2 motion prototype on this skeleton (walk and a held-pose comic reaction).
-3. Plan 3 lists for Dave.
-4. Plan 4 module extraction.
+1. Plan 1: seams, hands with fingers, a nicer face, a lower-detail variant for distance, and a skin bind check after reload.
+2. Plan 2: look at the clips on screen (a walk strip and the panic poses), squash and stretch, foot placement, and the cost of 20 trees.
+3. Plan 3: Dave's review of Part 9 and 5.8.8.
+4. Plan 4: avatar and arm module extraction once the skeleton is frozen.
+
+---
+
+# Part 9. Proposals for Dave: backgrounds and traits (Plan 3, draft; nothing here is decided)
+
+Written for Dave to cut and change. Moderator answer: "draft the fear, background and trait lists as proposals". The fears are in 5.8.8. Everything below uses only skills and attributes that already exist in `data/items/skills.json` and SKILLS_AND_ATTRIBUTES.md, so a background is just a few small number changes and one story line. All wording follows the safe-place rule: a background describes **what the character did and learned**, never who they are; no background mentions skin, face, body or any real group. Boons and drawbacks are small, so no background is clearly best.
+
+## 9.1 Traits (attributes) on the existing scale
+Existing, -10 to +10, whole numbers: **Luck** and **Fitness** (built); **Strength**, **Dexterity**, **Memory**, **Wisdom** (listed, not built). **Proposal: add one new attribute, Courage** (-10 to +10), because it is the natural dial for the greatest-fear panic roll (5.8.4): higher Courage lowers the chance to freak out, lower Courage raises it. It also gives a comic knob, such as a bold fool and a timid hero. Attributes feed skills through the existing web of weights (so "base traits affect all related skills" holds). Point buy and roll rules are in 5.8.3. Suggested point-buy pool and caps are a number for the skills designers; I give none.
+
+## 9.2 Twelve draft backgrounds
+Each row: **story**, **skills it nudges** (existing skill names), **attribute nudge** (small), **boon**, **drawback**, **look hint**. A "nudge" is a starting bump of a few levels, not a cap.
+
+| # | Background | Story (one line) | Skills nudged | Attributes | Boon | Drawback | Look hint |
+|---|---|---|---|---|---|---|---|
+| 1 | Woodcutter's Helper | grew up carrying logs and sharpening axes | woodcutting, crafting | Strength +1 | a little extra yield from felled trees | clumsy with delicate work (crafting time slightly higher at first) | calloused hands, leather apron colours |
+| 2 | River Fisher | learned the shallows and the weather from a boat | fishing, tracking | Wisdom +1 | bites come a little sooner | easily bored by long waits away from water (small exertion rise on dry land when idle is not used; flavour only) | a woollen cap, waders colours |
+| 3 | Hedge Herbalist | knew which leaves heal and which ones do not | foraging, gathering | Memory +1 | extra plant yield and a better chance to recognise a plant on first inspection | weak at hauling (lower carry in the first levels) | pouch, bundle of herbs on the belt |
+| 4 | Quarry Apprentice | spent years swinging a pick in the dark | mining, digging | Strength +1, Fitness +1 | a little faster at breaking rock | a little uneasy under open sky: a tiny extra chance of the greatest-fear roll outdoors in storms | dusty clothes, a pick strapped to the back |
+| 5 | Hunter's Kin | followed a relative through the woods | hunting, tracking | Dexterity +1 | quieter steps | bad at crowds and market talk (worse prices in trade, once trade exists) | fur trim, a bow or spear colours |
+| 6 | Travelling Peddler | walked from town to town selling small goods | crafting, trades | Memory +1 | better prices once trade exists, remembers faces and places | thin pack at the start | patched cloak, many small pouches |
+| 7 | Hermit's Student | learned quiet living and odd lore in a cave | foraging, tool care | Wisdom +2 | spots the Might-be and Unknown inspection clues better | slow with tools (small craft time penalty) | plain robe, a staff |
+| 8 | Shepherd | spent days on hillsides with a flock and a dog | gathering, tracking | Fitness +1 | steadier on slopes and in weather | a little slow to learn fighting skills | wool coat, a crook |
+| 9 | Ferry Hand | poled people across rivers and learned the water | athletics, fishing | Fitness +1 | steadier swimming (slower exertion rise in water) | uneasy on tall places (small bump on the greatest-fear roll near heights) | rope belt, a striped shirt |
+| 10 | Cook's Helper | chopped, stirred and carried at an inn | crafting, gathering | Dexterity +1 | slightly better food results once cooking depends on skill | soft hands (small exertion rise on heavy work at first) | apron, a ladle |
+| 11 | Tower Watch | kept a lookout light and watched the sky | tracking, athletics | Wisdom +1 | notices weather and distant movement a little earlier | night-time dread: a small bump on the dark fear roll | a lantern, a long coat |
+| 12 | Wandering Tinkerer | mended pots and tools for coin | crafting, tool care | Dexterity +1, Luck +1 | tools wear a little slower | spends coin carelessly (starts with fewer items) | tool roll, goggles or a magnifier |
+
+Notes for Dave: (1) Every drawback is something that can be coded as a small change in an existing number or a flavour line; I did not invent new systems. (2) Items "once trade exists" refer to features that are not built yet. (3) The rows deliberately overlap in skills so that no skill belongs to one background. (4) Any row can be renamed, merged or dropped; the count of twelve is arbitrary. (5) Backgrounds could also be offered to NPCs at birth (DESIGN_IDEAS.md already rolls an NPC background).
+
+## 9.3 How a background, a trait and a fear fit together (an example)
+A "Quarry Apprentice" with Strength +1, Fitness +1 and a greatest fear of "cave-ins and creaking timber" is good at mining and bad at being calm in a mine: strong and capable, but with a comic panic chance when the roof creaks, which is the funny contrast Dave described. A "Tower Watch" with a fear of "the dark" has a small extra bump, so the story and the fear can reinforce each other, or the player can choose a fear that contradicts the background for different comedy.
+
+## 9.4 What I need from Dave on these
+Not a blocker. When Dave reviews: keep, rename or cut each background; say whether Courage should be added as an attribute; and give the point-buy pool and caps to the skills designers (or tell me to propose numbers).
 
 ---
 
