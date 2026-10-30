@@ -2,6 +2,12 @@
 
 All changes are data on branch `sal-items` (plus two test edits). Nothing is on main. Everything new is marked `future` (not obtainable in the game yet). Nothing is deleted: retired items keep their numbers. Tests run after each change: validate_items, dishes, server_items, first_hour, inventory, stations, save_compat (all pass); the full suite and the animal, wolf and trade scenarios were not run.
 
+## MAIN THING FOR DAVE: everything built from lumber waits on iron, and iron has no source
+- Lumber is only made at the sawmill or with the hand saw, and both need iron. Iron has no way to enter the game yet (the ore items and smelting recipes exist, but nothing gives out ore). So nails, hinges, saw blades, lumber, fine board, chests, building sections, the ladder and the water wheel cannot be reached from a fresh start.
+- Flint, obsidian, pyrite and coal also have no world source, which blocks the hide scraper, javelin, sickle and obsidian knife.
+- **Proposed fix (one, reversible):** add a stone-age path to the first lumber: a **Stone wedge** (stone + stick, hand-made) that splits a log into 2 rough planks, no iron needed. Planks from the wedge cover the early builds; the sawmill and hand saw stay as the faster, cleaner iron-age route. Pair it with the code job already on the hand-off page (ore, flint, obsidian and coal gathering) so iron arrives mid-game, not at the start.
+- Status: proposal only. Nothing built. Say yes and I will add the item and recipe as `future`.
+
 ## Renamed
 - Oven (items 267, 268 and blueprint 14) is now **Basic Oven** (Dave).
 

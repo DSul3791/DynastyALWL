@@ -216,3 +216,9 @@ Plans for this round: clothing recipes (done, see batch 5), this gap check (done
 2. **Flint, Obsidian, Pyrite and Coal have no world source.** The resources table lists flint, coal and others as terrain minerals, but no gather yield makes the items. Blocks Hide scraper, Javelin, Sickle, Obsidian knife.
 3. False alarms of the script: firewood, wooden block, fish, species logs come from felling and fishing, which the script does not model.
 Conclusion: only two data-side gaps are not dead ends of the code: the ore items exist now, and the smelting recipes exist; the missing piece is the code that gives them out.
+
+## Plans round (2026-10-30, after the iron finding)
+1. Stone wedge path: write the item and recipe spec for the stone-age lumber route (needs Dave's yes before data change).
+2. Storage gap check: basket, sack, barrel, shelf specs with 3-ingredient recipes.
+3. Medicine gap check: antidote, jerky, hardtack specs.
+Approved by Sal (moderator pre-approval). Plan 1 started: spec is in ITEM_CHANGES_SUMMARY.md; data change waits for Dave.
