@@ -884,16 +884,8 @@ func _test_sketch() -> void:
 		var area: float = float(census["islands"][center_label]["area_km2"])
 		_check(area > 120.0, "the center island is huge (%.0f km2)" % area)
 
-		var tallest_other: float = 0.0
-
-		for number in range(census["islands"].size()):
-			if number != center_label:
-				tallest_other = maxf(tallest_other, float(census["islands"][number]["peak_m"]))
-
-		_check(
-			tallest_other < float(census["islands"][center_label]["peak_m"]),
-			"the center volcano is the tallest peak (%.0f m elsewhere)" % tallest_other
-		)
+		# Dave (29 Oct 2026): the center volcano does not have to be the tallest peak, only a big scary volcano
+		# (its height is peak_m in world.json); other islands may be taller.
 
 	# Every starter tile has a decent island near its middle.
 	for tile_position in settings.get_all_starters():
@@ -1632,7 +1624,7 @@ func _test_runtime_terrain(settings, tile_rules: Dictionary, tables, tile: Vecto
 		var z: float = data.z0 + float(j) * data.spacing_m
 		worst = maxf(worst, absf(data.height_at(x, z) - water.heights[j * samples + i]))
 
-	_check(worst < 0.06, "the generator's height matches the height map on grid points (worst %.3f m)" % worst)
+	_check(worst < 0.0630, "the generator's height matches the height map on grid points, within half a 0.125 m step (worst %.3f m)" % worst)
 
 	# Detail noise made as images matches the column-by-column noise.
 	var x_mid: float = data.x0 + 7000.0
@@ -2208,9 +2200,9 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	var worst: float = 0.0
 
 	for i in range(heights.size()):
-		worst = maxf(worst, absf(heights[i] - clampf(water.heights[i], -4000.0, 2553.5)))
+		worst = maxf(worst, absf(heights[i] - clampf(water.heights[i], -4000.0, 4000.0)))
 
-	_check(heights.size() == water.samples * water.samples and worst <= 0.0501, "heights read back within 0.05 m (worst %.3f)" % worst)
+	_check(heights.size() == water.samples * water.samples and worst <= 0.0626, "heights read back within half a 0.125 m step (worst %.3f)" % worst)
 
 	var surface: PackedFloat32Array = TileFileScript.decode_water_surface(TileFileScript.read_section(path, table, "water_surface")["raw"])
 	var surface_ok: bool = true
@@ -2220,7 +2212,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 			if not is_nan(surface[i]):
 				surface_ok = false
 				break
-		elif absf(surface[i] - water.water_surface[i]) > 0.0501:
+		elif absf(surface[i] - water.water_surface[i]) > 0.0626:
 			surface_ok = false
 			break
 

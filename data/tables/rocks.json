@@ -7,6 +7,7 @@
 		{
 			"id": 0,
 			"name": "air",
+			"erodibility": 0.0,
 			"display": "Air",
 			"familiarity": 50,
 			"family": "none",
@@ -15,6 +16,7 @@
 		{
 			"id": 1,
 			"name": "sediment",
+			"erodibility": 3.0,
 			"display": "Sediment",
 			"familiarity": 60,
 			"family": "sedimentary",
@@ -23,6 +25,7 @@
 		{
 			"id": 2,
 			"name": "shale",
+			"erodibility": 1.5,
 			"display": "Shale",
 			"familiarity": 40,
 			"family": "sedimentary",
@@ -31,6 +34,7 @@
 		{
 			"id": 3,
 			"name": "limestone",
+			"erodibility": 0.35,
 			"display": "Limestone",
 			"familiarity": 72,
 			"family": "sedimentary",
@@ -39,6 +43,7 @@
 		{
 			"id": 4,
 			"name": "coal",
+			"erodibility": 1.5,
 			"display": "Coal",
 			"familiarity": 90,
 			"family": "sedimentary",
@@ -47,6 +52,7 @@
 		{
 			"id": 5,
 			"name": "granite",
+			"erodibility": 0.08,
 			"display": "Granite",
 			"familiarity": 88,
 			"family": "igneous",
@@ -55,6 +61,7 @@
 		{
 			"id": 6,
 			"name": "slate",
+			"erodibility": 0.4,
 			"display": "Slate",
 			"familiarity": 70,
 			"family": "metamorphic",
@@ -63,6 +70,7 @@
 		{
 			"id": 7,
 			"name": "basalt",
+			"erodibility": 0.12,
 			"display": "Basalt",
 			"familiarity": 55,
 			"family": "igneous",
@@ -71,6 +79,7 @@
 		{
 			"id": 8,
 			"name": "sandstone",
+			"erodibility": 0.7,
 			"display": "Sandstone",
 			"familiarity": 78,
 			"family": "sedimentary",
@@ -79,6 +88,7 @@
 		{
 			"id": 9,
 			"name": "marble",
+			"erodibility": 0.2,
 			"display": "Marble",
 			"familiarity": 85,
 			"family": "metamorphic",
@@ -87,6 +97,7 @@
 		{
 			"id": 10,
 			"name": "chalk",
+			"erodibility": 0.9,
 			"display": "Chalk",
 			"familiarity": 78,
 			"family": "sedimentary",
@@ -95,6 +106,7 @@
 		{
 			"id": 11,
 			"name": "tuff",
+			"erodibility": 1.0,
 			"display": "Tuff",
 			"familiarity": 25,
 			"family": "igneous",

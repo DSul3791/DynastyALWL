@@ -129,6 +129,7 @@ func build_frame(origin_x: int, origin_z: int, count: int) -> void:
 	clock = Time.get_ticks_msec()
 	_add_detail(_detail_scale)
 	_lap("add detail", clock)
+	_add_summits()
 
 	if not defer_strata:
 		add_strata()
@@ -361,6 +362,8 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 	var hill_from: float = float(detail.get("hill_from_m", 0.0))
 	var hill_to: float = float(detail.get("hill_to_m", 0.0))
 	var hill_min: float = float(detail.get("hill_min_share", 1.0))
+	# Each island's own bumpiness (world map, so every tile agrees): flat prairie, rolling hills, rugged ridge.
+	var island_texture: PackedFloat32Array = _island_texture_rows()
 
 	for index in range(total):
 		var h: float = heights[index]
@@ -375,6 +378,8 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 		if not detail_scale.is_empty():
 			strength *= detail_scale[index]
 
+		strength *= island_texture[index]
+
 		var hill: float = 1.0
 
 		if hill_to > hill_from:
@@ -387,6 +392,79 @@ func _add_detail(detail_scale: PackedFloat32Array = PackedFloat32Array()) -> voi
 			value += 0.5 * ragged * ((field[index] + fine[index]) / 20.0)
 
 		heights[index] = value
+
+
+# The island texture factor (WorldElevation.texture) for every sample of this frame.
+func _island_texture_rows() -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(samples * samples)
+	var cell: float = _elevation.cell_m
+	var x0: float = float(origin_sx) * spacing_m
+	var z0: float = float(origin_sz) * spacing_m
+	var column_cell: PackedInt32Array = PackedInt32Array()
+	var column_frac: PackedFloat32Array = PackedFloat32Array()
+	column_cell.resize(samples)
+	column_frac.resize(samples)
+
+	for i in range(samples):
+		var u: float = (x0 + float(i) * spacing_m - _elevation.origin_x) / cell - 0.5
+		column_cell[i] = int(floor(u))
+		column_frac[i] = u - floor(u)
+
+	for j in range(samples):
+		var v: float = (z0 + float(j) * spacing_m - _elevation.origin_z) / cell - 0.5
+		var row: int = int(floor(v))
+		var fv: float = v - floor(v)
+		var out_base: int = j * samples
+
+		for i in range(samples):
+			var c: int = column_cell[i]
+			var fu: float = column_frac[i]
+			var top: float = lerpf(_elevation.texture[_elevation.index_of(c, row)], _elevation.texture[_elevation.index_of(c + 1, row)], fu)
+			var bottom: float = lerpf(_elevation.texture[_elevation.index_of(c, row + 1)], _elevation.texture[_elevation.index_of(c + 1, row + 1)], fu)
+			out[out_base + i] = lerpf(top, bottom, fv)
+
+	return out
+
+
+# A real peak on every summit of the world map: a tent that adds `spire_share` of the summit height at
+# the top and fades to nothing `radius_factor` x that far out, with an exponent above 1 so the point is sharp
+# and the foot blends into the mountain. A function of world position only, so tiles agree on shared edges.
+func _add_summits() -> void:
+	if not _rules.has("summit") or _elevation.summits.is_empty():
+		return
+
+	var rules: Dictionary = _rules["summit"]
+	var share: float = float(rules["spire_share"])
+	var factor: float = float(rules["radius_factor"])
+	var power: float = float(rules["power"])
+	var cap: float = float(rules["max_m"])
+	var x0: float = float(origin_sx) * spacing_m
+	var z0: float = float(origin_sz) * spacing_m
+	var last: int = samples - 1
+
+	for summit in _elevation.summits:
+		var top: float = float(summit[2])
+		var rise: float = minf(share * top, maxf(cap - top, 0.0))
+		var reach: float = factor * share * top
+
+		if rise <= 0.0 or reach <= 0.0:
+			continue
+
+		var east: float = (float(summit[0]) - x0) / spacing_m
+		var north: float = (float(summit[1]) - z0) / spacing_m
+		var span: float = reach / spacing_m
+		var i0: int = maxi(int(floor(east - span)), 0)
+		var i1: int = mini(int(ceil(east + span)), last)
+		var j0: int = maxi(int(floor(north - span)), 0)
+		var j1: int = mini(int(ceil(north + span)), last)
+
+		for j in range(j0, j1 + 1):
+			for i in range(i0, i1 + 1):
+				var distance: float = Vector2(float(i) - east, float(j) - north).length() * spacing_m
+
+				if distance < reach:
+					heights[j * samples + i] += rise * pow(1.0 - distance / reach, power)
 
 
 func height_at(i: int, j: int) -> float:

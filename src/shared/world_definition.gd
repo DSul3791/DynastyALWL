@@ -39,7 +39,7 @@ extends Resource
 @export_category("Vertical Size")
 
 @export var world_bottom_meters: int = -4000
-@export var world_top_meters: int = 2048
+@export var world_top_meters: int = 4000
 @export var sea_level_meters: int = 0
 
 

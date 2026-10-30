@@ -5,7 +5,7 @@
 	"retry": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
 	"serial_extra": [],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
-	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
+	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",
 	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
@@ -39,7 +39,7 @@
 		{
 			"why": "Sonny: baked tiles, water and plan inputs",
 			"paths": ["worlds/base_world/tiles/**", "worlds/base_world/water/**", "worlds/base_world/plan/*.json", "data/water_settle.json", "addons/**"],
-			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core"],
+			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core"],
 			"pin": true
 		}
 	],

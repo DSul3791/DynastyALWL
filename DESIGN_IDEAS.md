@@ -1943,7 +1943,7 @@ The new generator lives in `src/worldgen/` on branch `claude/generator-v2` (GDSc
 
 **Current values**
 
-- World height -4,000 m to +2,048 m, sea level 0, 1 m voxels, 15,360 m tiles (15 by 15 regions of 1,024 m), 8 m map grid, 21 by 21 tiles.
+- World height -4,000 m to +4,000 m (top raised from +2,048 m on 29 Oct 2026; mountain tips may reach 4,000 m and are seen, not climbed: cold and thin air stop players), sea level 0, 1 m voxels, 15,360 m tiles (15 by 15 regions of 1,024 m), 8 m map grid, 21 by 21 tiles.
 - Rock types (11): sediment, shale, limestone, coal, granite, slate, basalt, sandstone, marble, chalk, tuff. Resources: IDs 1 to 31 (Section 4.9a).
 - Default server capacity: 32 clients.
 
