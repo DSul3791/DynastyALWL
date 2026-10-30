@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 293,
+	"next_number": 297,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3304,6 +3304,94 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 4
+		},
+		"hide_scraper": {
+			"number": 293,
+			"name": "Hide scraper",
+			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
+			"kind": "tool",
+			"tool_class": "scraper",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"flint",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 12
+		},
+		"steel_striker": {
+			"number": 294,
+			"name": "Steel striker",
+			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
+			"kind": "tool",
+			"tool_class": "striker",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"durability": 600,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 30
+		},
+		"javelin": {
+			"number": 295,
+			"name": "Javelin",
+			"description": "A light, balanced throwing spear. Flies farther and straighter than a plain spear.",
+			"kind": "weapon",
+			"weapon_class": "javelin",
+			"tier": 2,
+			"stack": 5,
+			"future": true,
+			"damage": 4.0,
+			"throw_damage": 9.0,
+			"durability": 120,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 15
+		},
+		"obsidian_knife": {
+			"number": 296,
+			"name": "Obsidian knife",
+			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
+			"kind": "tool",
+			"tool_class": "knife",
+			"material": "obsidian",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"cut": 1.6,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"obsidian",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 60
 		}
 	}
 }
