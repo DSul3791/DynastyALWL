@@ -750,6 +750,26 @@ static func make_node(g: Dictionary, voxel: float = 0.03, fingers: bool = true, 
 	return {"node": root, "skeleton": skeleton, "built": built}
 
 
+# Threaded build (Plan 17): `build` uses only maths, arrays and resources made from them, no nodes, so it can run on a worker thread. start_build returns a handle;
+# poll with build_done and take the result with finish_build (which waits if needed). The result is the same as `build(g, voxel, fingers)`.
+static func start_build(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> Dictionary:
+	var job: Dictionary = {"genome": g.duplicate(true), "voxel": voxel, "fingers": fingers, "result": {}}
+	job["task"] = WorkerThreadPool.add_task(func() -> void: job["result"] = build(job["genome"], job["voxel"], job["fingers"]), false, "generated body")
+	return job
+
+
+static func build_done(job: Dictionary) -> bool:
+	return bool(job.get("finished", false)) or WorkerThreadPool.is_task_completed(int(job["task"]))
+
+
+static func finish_build(job: Dictionary) -> Dictionary:
+	if not bool(job.get("finished", false)):
+		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
+		job["finished"] = true
+
+	return job["result"]
+
+
 # A body type from a number: sliders drawn around the neutral body (a bell-shaped spread, so most people are ordinary and a few are extreme), a skin tone and a
 # hair colour from small palettes. The same seed always gives the same genome; used for NPC variety.
 static func genome_from_seed(seed_value: int) -> Dictionary:
