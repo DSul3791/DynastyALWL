@@ -46,3 +46,6 @@ Lumber and Beam species merge; Clay Oven and Iron Stove; ore gathering in the wo
 
 ## Combat items (added 2026-10-30, all `future`)
 Items 312 to 331 and recipes 201 to 220: 4 swords/maces per metal tier, 5 shields, 8 armour pieces. Details and open choices in ITEM_COMBAT_TIER_LIST.md. Needs the ore and smelting code and the lumber source to be obtainable.
+
+## Farming items (added 2026-10-30, all `future`)
+Items 332 to 345 and recipes 221 to 224: six crops with seeds, Quern, Compost. See ITEM_FARMING_GAP_CHECK.md. Crop list is a choice for Dave (rec: these six).

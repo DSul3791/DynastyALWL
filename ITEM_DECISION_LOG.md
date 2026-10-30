@@ -231,3 +231,9 @@ Approved by Sal (moderator pre-approval). Plan 1 started: spec is in ITEM_CHANGE
 Plan 1 of round 2 built: items 312-331, recipes 201-220 (shield off-hand = choice A; plate = future only). Tests green. Next: farming gap check, then glossary.
 
 Plan 2 of round 2 done: ITEM_FARMING_GAP_CHECK.md (spec only). Dave question: which first crops (rec: wheat, barley, carrot, potato, turnip, flax). Next: item-name glossary.
+
+Farming items built (332-345, recipes 221-224), tests green. ITEM_GLOSSARY.md generated (plan 3 of round 2 done).
+## Plans round 3 (2026-10-30)
+1. Storage items: basket, sack, barrel, shelf as future items (3 ingredients max). Starting.
+2. Animals and beehive item spec (egg, milk, wool, honeycomb, wax; no live animals).
+3. Final consistency pass: every new item has a weight, look, recipe, art request line.

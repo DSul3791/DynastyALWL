@@ -20,3 +20,6 @@ Hoes and spades are live. The sickle and scythe wait on flint and iron (no world
 
 ## Not done / for Dave
 Crop list (which six), whether water matters, whether farming gets its own Skill tree. Nothing added to the data files this round.
+
+## Status (2026-10-30): built as `future`
+Items 332 to 345: Wheat, Barley, Carrot, Potato, Turnip, Flax; a seeds item for each; Quern; Compost. Recipes 221 to 224: Quern (2 stone, stick), Flour from wheat and Flour from barley (3 grain, keeps the quern, gives 2 Flour), Compost (3 plant fibre). Watering can, compost bin, mill and animals left out. Tests green (all seven). Nothing grows them yet: planting code needed.

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 332,
+	"next_number": 346,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3980,6 +3980,154 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 500
+		},
+		"wheat": {
+			"number": 332,
+			"name": "Wheat",
+			"description": "Golden heads of grain. Thresh and grind for flour.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"barley": {
+			"number": 333,
+			"name": "Barley",
+			"description": "Hardy grain for bread and brewing.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"carrot": {
+			"number": 334,
+			"name": "Carrot",
+			"description": "A sweet orange root grown in a tilled bed.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"potato": {
+			"number": 335,
+			"name": "Potato",
+			"description": "A starchy tuber that keeps well.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"turnip": {
+			"number": 336,
+			"name": "Turnip",
+			"description": "A round root, good in stew.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"flax": {
+			"number": 337,
+			"name": "Flax",
+			"description": "Tall stalks with strong fibres inside.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"wheat_seeds": {
+			"number": 338,
+			"name": "Wheat seeds",
+			"description": "Seeds for sowing wheat. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"barley_seeds": {
+			"number": 339,
+			"name": "Barley seeds",
+			"description": "Seeds for sowing barley. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"carrot_seeds": {
+			"number": 340,
+			"name": "Carrot seeds",
+			"description": "Seeds for sowing carrot. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"potato_seeds": {
+			"number": 341,
+			"name": "Potato seeds",
+			"description": "Seeds for sowing potato. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"turnip_seeds": {
+			"number": 342,
+			"name": "Turnip seeds",
+			"description": "Seeds for sowing turnip. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"flax_seeds": {
+			"number": 343,
+			"name": "Flax seeds",
+			"description": "Seeds for sowing flax. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"quern": {
+			"number": 344,
+			"name": "Quern",
+			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
+			"kind": "tool",
+			"tool_class": "quern",
+			"stack": 1,
+			"future": true,
+			"durability": 3000,
+			"repair": [
+				[
+					"stone",
+					1
+				]
+			],
+			"look_alikes": [],
+			"value": 15
+		},
+		"compost": {
+			"number": 345,
+			"name": "Compost",
+			"description": "Rotted plant matter. Feeds a tilled bed.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
 		}
 	}
 }
