@@ -408,6 +408,64 @@ Status: **idea only, not planned for any phase, not researched.** Notes so the i
 - **Owner only:** the cinematic is seen by the player; other players just see the normal panic animation.
 - **Sharing:** a replay clip could be saved or shared as a short code or clip; whether that is wanted is Dave's call (privacy and cost not examined).
 
+### 5.8.8 Draft list of fears (Sonny, 2026-10-30, at Dave's request: simple first, then strange, things people will meet sometimes)
+
+**Status: a first draft for Dave to edit. Nothing is decided.** Rules I followed: harmless and comic, things a player will run into now and then just to experience the moment; no medical words (not "phobia"); nothing aimed at a real group of people. "Trigger" is what the server would have to detect (distance, sight or a condition); distances are placeholders to tune. "In game today?" is only what I know from our documents (animals built so far: rabbit, deer, wolf, moose, horse, fox, duck, from BUILD_LOG.md and ANIMAL_ART_NEEDS.md); I did not check the full content list, so "no" means "not that I know of". Each fear that needs something that does not exist yet waits for that content.
+
+**Tier 1. The classics (simple, easy to read)**
+| # | Fear | Trigger | Panic flavour (my suggestion) | In game today? |
+|---|---|---|---|---|
+| 1 | Spiders | a spider, or a web, within 3 m | slap-dance, brushing yourself off, then bolting | no |
+| 2 | Snakes | a snake within 4 m, or a long stick that looks like one in the grass | high-kicking leap backward, then run | no |
+| 3 | Bears | a bear in sight within 25 m | straight sprint, arms overhead | not that I know of |
+| 4 | Wolves | a wolf within 25 m, or hearing a howl close | looks over the shoulder while running | yes |
+| 5 | Rats and mice | a rat nearby | hops on the nearest thing, squeals | no |
+| 6 | Bats | a bat flying within 4 m | ducks, covers head, zigzags | no |
+| 7 | Bees and wasps | a swarm within 5 m | spinning, swatting, running in circles | no |
+| 8 | The dark | standing in full darkness in the open at night or in a cave without light | feels along the air, bolts to the nearest light | partly (day cycle, caves exist) |
+| 9 | Fire | a big fire or a burning building within 6 m | hands up, backing away, then running | yes (campfires) |
+| 10 | Thunder | a close lightning strike | drops flat, then bolts | yes (storms, lightning in docs) |
+
+**Tier 2. Places and situations (you meet them by exploring)**
+| # | Fear | Trigger | Panic flavour | In game today? |
+|---|---|---|---|---|
+| 11 | Deep water | standing at the edge of or in deep water | flailing backward, refuses to turn around | yes |
+| 12 | Heights | standing near a drop of more than about 5 m | drops to hands and knees, clings, crawls away | yes (terrain) |
+| 13 | Caves and tunnels | entering a cave or deep tunnel | bolts toward daylight | yes |
+| 14 | Cave-ins and creaking timber | a bracing beam creaks, or a roof drips dust | covers head, runs out | yes (digging and supports) |
+| 15 | Tight spaces | a narrow dug passage | squirms and backs out | partly |
+| 16 | Open ocean | being on a boat far from land | clutches the rail, cries | boats are planned |
+| 17 | Fog | thick fog | walks into things, spins, runs blind | partly (weather) |
+| 18 | Mud and swamp | wading in a bog | high stepping, panics at every squelch | partly |
+| 19 | Crowds and markets | many people close | squeezes through, escapes | NPC towns planned |
+| 20 | Blood | seeing a big wound or a butchered animal | faints or bolts | yes (hunting, carcasses) |
+
+**Tier 3. Odd and strange (comedy first)**
+| # | Fear | Trigger | Panic flavour | In game today? |
+|---|---|---|---|---|
+| 21 | Geese and ducks | an angry bird within 6 m | runs in an exaggerated waddle, flapping elbows | yes (duck) |
+| 22 | Moose | a moose in sight | frozen stare, then tiptoes, then bolts | yes |
+| 23 | Owls at night | an owl hoot very near, or eyes in a tree | looks around slowly, then bolts | no |
+| 24 | Crows | a flock of crows landing near | covers head | partly (crow calls exist in the sound pack) |
+| 25 | Scarecrows | a scarecrow seen at dusk | slow backing away, then run | no (a possible prop) |
+| 26 | Your own shadow | long shadow at dawn or dusk | jumps, then fights the shadow | the lighting exists |
+| 27 | Mushrooms | a large cluster of mushrooms | tiptoes round them, flails | partly (flora) |
+| 28 | Mirrors and still water reflections | seeing yourself in still water | stares, pulls a face, bolts | partly |
+| 29 | Chests and doors that creak | opening a chest or door, the very moment (matches Dave's replay idea, 5.8.7) | double-take, then the "Nope" run | yes (chests, doors) |
+| 30 | Being watched | feeling eyes behind you for a long time in the forest | keeps turning, walks backward, bolts | no |
+| 31 | Silence | no sound at all for a while | pokes ears, shouts "hello?" | the sound stage exists |
+| 32 | Pots and cooking smoke | burning food | frantic flapping at the smoke | yes (cooking) |
+| 33 | Toads and frogs | a frog landing on you | shakes limbs, high-pitched squeal | partly (ambience has frogs) |
+| 34 | Fish that jump | a fish leaping out of the water at your feet | flinches, falls over | yes (fishing) |
+| 35 | Very large trees falling | a tree falling nearby | sprints sideways, looks up | yes (felling) |
+
+**How I would build the list in practice (RECOMMENDATION):**
+- Start with the ten in tier 1, because most are easy to trigger with things that exist or are cheap to add. Take 3 or 4 from tiers 2 and 3 that need nothing new (deep water, heights, caves, a chest or door, geese and ducks, moose, a falling tree).
+- **Panic flavour makes each fear its own small animation set**: running away, backing away, falling to the ground and crawling, flapping or swatting. These are variants of one panic state (5.8.5) to avoid 35 separate systems; the server only sends a fear id and a direction hint.
+- A fear is a data row: id, name, trigger kind, trigger distance, roll chance, cooldown, panic variant, and the voice lines (D27 idea). New fears then cost content only.
+- Fear 29 (a creaking chest or door) is the best first one: it needs nothing new and matches the reaction replay (5.8.7).
+- The same list could give NPCs a fear too.
+
 ---
 
 # Part 6. Gap analysis (current state against the plan)
@@ -536,7 +594,7 @@ Review gates: after each phase Dave sees stills or video and a short note; done 
 | D20 | Characters per player and their link to the dynasty/heir idea | one / several / unlimited | several, with the dynasty design deciding how heirs inherit appearance |
 | D21 | One account per character and the identity layer | per Dave's decision; how it maps onto the IdentityProvider plan | technical lead to confirm before Phase 5; Sonny supplies only the appearance record |
 | D22 | Trait system: point buy and roll, and what is "different from D&D" | Dave's design | player's choice of roll or point buy, equal expected value, server-validated; Dave defines the rest |
-| D23 | The list of fears | Dave writes it | short comic list at first, grouped by creature, place and phenomenon |
+| D23 | The list of fears | Dave writes it; **Dave asked Sonny to draft it: see 5.8.8 (35 fears, three tiers)** | edit the draft; start with tier 1 and a few from tiers 2 and 3 that need no new content |
 | D24 | Is a greatest fear hidden from other players and NPCs | hidden / revealable / public | hidden by default |
 | D25 | Panic mechanics: loss of control, hazards, duration, opt-out setting | full run-away / flinch and cower / player setting | run-away with hazard avoidance and an accessibility setting; technical lead designs the server message |
 | D26 | Who designs backgrounds and their boons | Sonny / skills and items designers / Dave | skills and items designers with Dave; Sonny supplies creator UI, look hints and animation |
