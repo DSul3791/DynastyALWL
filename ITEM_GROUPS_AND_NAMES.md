@@ -32,7 +32,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Sinew, fat, feather | 7DtD/MD Feather; Forest Feather; Ark none | Cordage, fletching, tallow | T0 | Sinew 70, Animal fat 71, Feather 72 | REC keep. |
 | Coal / charcoal | Ark Charcoal, Atlas Coal, 7DtD Coal, Aska Charcoal, Valheim Coal (charcoal) | Fuel and smelting | T1-T2 | not in item list (resources table has coal 1) | REC **Charcoal** (made) and **Coal** (mined) as separate names. |
 | Clay / sand / gravel / soil | Ark Clay*, Sand; 7DtD Clay Soil, Crushed Sand; MD Clay; Astroneer Clay, Soil | Ground materials, bricks, glass | T0-T2 | Clay 36, Sand 37, Gravel 38, Soil 35 | REC keep. |
-| Ores and ingots | Ark Metal Ingot*; Atlas Copper/Iron/Silver/Tin/Cobalt/Iridium Ingot*; 7DtD Iron, Lead, Forged Iron, Forged Steel; Valheim Copper, Tin, Iron, Silver bars, Bronze, Black Metal, Flametal; Conan Iron Bar, Steel Bars; VS Copper, Tin, Bismuth, Zinc, Lead, Bronze, Brass; MD Copper/Tin/Bronze Bar; Aska Iron Bloom, Slag | Smelted metal | T2-T4 | Iron ingot 31, Steel ingot 32 | REC use **X ingot** (matches ours) rather than "bar" or "bloom". Add Copper, Tin, Bronze ingots if Dave confirms the copper/bronze era (Q3). Alt: Bloom for raw iron before refining (Aska, VS). |
+| Ores and ingots | Ark Metal Ingot*; Atlas Copper/Iron/Silver/Tin/Cobalt/Iridium Ingot*; 7DtD Iron, Lead, Forged Iron, Forged Steel; Valheim Copper, Tin, Iron, Silver bars, Bronze, Black Metal, Flametal; Conan Iron Bar, Steel Bars; VS Copper, Tin, Bismuth, Zinc, Lead, Bronze, Brass; MD Copper/Tin/Bronze Bar; Aska Iron Bloom, Slag (bloom step rejected by Dave) | Smelted metal | T2-T4 | Iron ingot 31, Steel ingot 32 | REC use **X ingot** (matches ours) rather than "bar" or "bloom". Add Copper, Tin, Bronze ingots if Dave confirms the copper/bronze era (Q3). Alt: Bloom for raw iron before refining (Aska, VS). |
 | Nails, hinges | 7DtD Nails; Valheim Bronze/Iron Nails; Conan Iron Reinforcement | Metal fixings | T2-T3 | Nails 228, Hinges 232 | REC keep. |
 | Brick, mortar, cement | Conan Hardened Brick, Stone Consolidant; 7DtD Cement, Cobblestone; Ark Cementing Paste* | Masonry | T2 | Brick 209, Mortar 210, Stone block 208, Cobblestone 229 | REC keep Brick, Mortar, Stone block; merge Cobblestone into Stone block (Tyler D). |
 | Tar / resin | Conan Tar; Ark Resin; Astroneer Resin | Waterproofing, torches | T1-T2 | Tar 231 | REC keep Tar only if a use is built (Tyler: hold). |
@@ -132,7 +132,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Group | Games and names | Job | Ours | REC |
 |---|---|---|---|---|
 | Basic bench | Valheim Workbench*; Rust Workbench Level 1-3; 7DtD Workbench; Conan Woodworking Bench*; Minecraft Crafting table; DS Science Machine | Tool/weapon crafting, gates tiers | Log workbench 85, Woodworking table 242, Tool rack 81 | keep; "Log workbench" is our T1. |
-| Forge / furnace | Valheim Forge, Smelter, Black Forge; 7DtD Forge; Rust Furnace; Conan Furnace*; Aska Furnace, Forge; VS Forge, Bloomery, Crucible; Minecraft Furnace, Blast furnace; Atlas Forge* | Smelt and work metal | Basic/Medium/Large/Master Forge 87-95 | keep four tiers; **Bloomery** is the VS name for raw-iron smelting (Q3). |
+| Forge / furnace | Valheim Forge, Smelter, Black Forge; 7DtD Forge; Rust Furnace; Conan Furnace*; Aska Furnace, Forge; VS Forge, Bloomery, Crucible; Minecraft Furnace, Blast furnace; Atlas Forge* | Smelt and work metal | Basic/Medium/Large/Master Forge 87-95 | keep four tiers; NO bloomery step (Dave). |
 | Anvil | 7DtD Anvil; VS Anvil (copper/bronze; iron/steel); Minecraft Anvil; Aska Wood Anvil | Shape hot metal | none | gap candidate. |
 | Cooking | Valheim Cooking Station; Ark Cooking Pot; 7DtD Cooking Pot, Grill; Conan Firebowl Cauldron; VS Cooking pot; Dragonwilds Stone Range, Grill; DS Crock Pot | Cook meals | Campfire 8, Campfire pot 254, Clay hearth 256, Oven 268, Chopping block 25 | keep. |
 | Tannery | Atlas Tannery*; Conan Tannery* | Hide to leather | none | Q2. |
@@ -177,7 +177,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 ## Questions for Dave
 1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
 2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
-3. **Metal ladder:** add copper, tin and bronze ingots (and a bloomery step for iron) before iron/steel?
+3. **PART DECIDED (Dave, 2026-10-30): no bloomery step** (felt like extra for its own sake in Aska); ore is smelted straight to an ingot in a forge. Still open: add copper, tin and bronze ingots before iron/steel?
 4. **Fire starting:** is the first fire a hand mechanic with no item, and flint and steel a later item?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
 6. **Thrown spear:** a separate Javelin item, or the spear thrown?
