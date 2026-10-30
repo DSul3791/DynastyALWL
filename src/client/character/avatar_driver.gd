@@ -71,6 +71,12 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
 
+	var panic_t: float = maxf(float(avatar.get_meta("panic_t", 0.0)) - delta, 0.0)
+	avatar.set_meta("panic_t", panic_t)
+
+	if panic_t > 0.0 and player.has_animation("panic_run"):
+		return "panic_run"
+
 	var air_t: float = float(avatar.get_meta("air_t", 0.0))
 	var land_t: float = maxf(float(avatar.get_meta("land_t", 0.0)) - delta, 0.0)
 
@@ -94,6 +100,9 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 static func speed_scale(clip: String, pace: float) -> float:
+	if clip == "panic_run":
+		return 1.0
+
 	if clip == "walk_back":
 		return clampf(pace / 1.1, 0.5, 1.5)
 

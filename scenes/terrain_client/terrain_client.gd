@@ -2689,6 +2689,7 @@ const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the ca
 
 var view_cam: Camera3D
 var third_person: bool = false
+var debug_clip: String = ""                              # shot runner only (--shot-clip=NAME): play this clip whatever the body does
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
@@ -2774,6 +2775,9 @@ func _update_view(delta: float) -> void:
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
+
+		if debug_clip != "":
+			clip = debug_clip
 
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 

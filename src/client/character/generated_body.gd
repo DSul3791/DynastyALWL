@@ -8,6 +8,7 @@ extends Node3D
 
 const Generator := preload("res://src/client/character/body_generator.gd")
 const Converter := preload("res://src/client/character/clip_converter.gd")
+const React := preload("res://src/client/character/motion_react.gd")
 const Extra := preload("res://src/client/character/motion_extra.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 
@@ -128,8 +129,11 @@ func _build_animations() -> void:
 		old.free()
 		var extra: AnimationLibrary = Extra.library(skeleton)      # plan 19: jump, fall, land, crouch_walk, walk_back, strafe_left, strafe_right
 
-		for clip_name in extra.get_animation_list():
-			_library.add_animation(clip_name, extra.get_animation(clip_name))
+		var react: AnimationLibrary = React.library(skeleton)      # plan 21: panic_run, panic_clutch, startle, glance
+
+		for lib in [extra, react]:
+			for clip_name in (lib as AnimationLibrary).get_animation_list():
+				_library.add_animation(clip_name, (lib as AnimationLibrary).get_animation(clip_name))
 
 
 	skeleton.motion_scale = skeleton.get_bone_rest(skeleton.find_bone("Hips")).origin.y
@@ -144,6 +148,22 @@ func _build_animations() -> void:
 func play(animation: String, speed: float = 1.0, blend: float = 0.15) -> void:
 	if animation_player != null and animation_player.has_animation(animation):
 		animation_player.play(animation, blend, speed)
+
+
+# A reaction (plan 21): "panic" runs away flailing for `seconds` (the driver holds the clip meanwhile), "clutch", "startle" and "glance" play once. `reaction_started`
+# is the hook the slow-motion replay of Part 5.8 would listen to.
+signal reaction_started(kind: String)
+
+
+func react(kind: String, seconds: float = 3.0) -> void:
+	reaction_started.emit(kind)
+
+	if kind == "panic":
+		set_meta("panic_t", seconds)
+	elif kind == "clutch":
+		play("panic_clutch", 1.0, 0.1)
+	elif kind == "startle" or kind == "glance":
+		play(kind, 1.0, 0.1)
 
 
 func current() -> String:
