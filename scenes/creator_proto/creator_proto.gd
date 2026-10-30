@@ -8,6 +8,7 @@ extends Control
 const Logic := preload("res://src/client/character/creator_logic.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
@@ -32,6 +33,11 @@ var turntable: bool = true
 
 
 func _ready() -> void:
+	var saved: String = MyCharacter.saved_code()
+
+	if saved != "":
+		logic.load_code(saved)
+
 	_build_ui()
 	_refresh_controls()
 	_rebuild_body()
@@ -134,10 +140,29 @@ func _build_top(column: VBoxContainer) -> void:
 			_changed("Body type: " + preset))
 		presets.add_child(b)
 
+	var play_row: HBoxContainer = HBoxContainer.new()
+	column.add_child(play_row)
+	var play: Button = Button.new()
+	play.text = "Save and play"
+	play.add_theme_font_size_override("font_size", 18)
+	play.pressed.connect(func() -> void:
+		MyCharacter.save_code(logic.code())
+		_start_game())
+	play_row.add_child(play)
+	var skip: Button = Button.new()
+	skip.text = "Play without saving"
+	skip.pressed.connect(_start_game)
+	play_row.add_child(skip)
+
 	_status = Label.new()
 	_status.text = "Drag a slider, press a dice, lock what you like."
 	_status.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	column.add_child(_status)
+
+
+func _start_game() -> void:
+	Engine.set_meta("creator_done", true)
+	get_tree().change_scene_to_file("res://scenes/launcher.tscn")
 
 
 func _build_section(column: VBoxContainer, section: String) -> void:

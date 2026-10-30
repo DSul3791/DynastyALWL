@@ -14,6 +14,7 @@ const SLEEP := 3
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const BodyGenerator := preload("res://src/client/character/body_generator.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const VARIANTS := 8                  # with --generated-body: this many body types, built once each and shared (see _make_body)
 const BuildingLook := preload("res://src/client/building_look.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
@@ -29,7 +30,7 @@ var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
 
 func _ready() -> void:
 	# --generated-body: start building the body types on worker threads now, so no NPC waits for its mesh when it first appears.
-	if OS.get_cmdline_user_args().has("--generated-body"):
+	if MyCharacter.generated_body_on():
 		for variant in range(VARIANTS):
 			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), 0.045, false)
 			BodyGenerator.prewarm(BodyGenerator.genome_from_seed(variant), BodyGenerator.lod_voxel(2), false)     # the far level (Plan 18)
@@ -172,7 +173,7 @@ func _make_body(id: String) -> Node3D:
 	var info: Dictionary = roster.get(id, {})
 	var root: Node3D = Node3D.new()
 	# --generated-body (off by default, untested in the running game): generated bodies, a few shared body types without fingers at 4.5 cm detail.
-	var ragdoll: Node3D = GeneratedBodyScript.new(BodyGenerator.genome_from_seed(id.hash() % VARIANTS), 0.045, false, true) if OS.get_cmdline_user_args().has("--generated-body") else RagdollScript.new()
+	var ragdoll: Node3D = GeneratedBodyScript.new(BodyGenerator.genome_from_seed(id.hash() % VARIANTS), 0.045, false, true) if MyCharacter.generated_body_on() else RagdollScript.new()
 	ragdoll.name = "Rig"
 	ragdoll.rotation.y = 0.0
 	root.add_child(ragdoll)

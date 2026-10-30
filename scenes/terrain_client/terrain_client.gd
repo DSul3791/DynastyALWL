@@ -38,6 +38,7 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -2801,7 +2802,7 @@ func _dress_avatar() -> void:
 
 func _make_avatar() -> Node3D:
 	# --generated-body (off by default, untested in the running game): the generated body of src/client/character/ instead of the old ragdoll.
-	var avatar: Node3D = GeneratedBodyScript.new() if OS.get_cmdline_user_args().has("--generated-body") else RagdollScript.new()
+	var avatar: Node3D = GeneratedBodyScript.new(MyCharacter.genome()) if MyCharacter.generated_body_on() else RagdollScript.new()
 	avatar.visible = false
 	return avatar
 
