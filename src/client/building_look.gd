@@ -1139,3 +1139,103 @@ static func bed() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_bed_mesh()))
 	return root
+
+
+# Tool rack, 1.0 x 0.2 x 1.5 m (Kathleen, stage-1 pass): two split-log posts on small feet, two cross rails, pegs standing out of the upper rail
+# with an axe-head-and-haft, a hammer and a saw hung from them, a shelf board at the foot.
+static func _tool_rack_mesh() -> ArrayMesh:
+	if _cache.has("tool_rack"):
+		return _cache["tool_rack"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 21
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	for x in [-0.45, 0.45]:
+		_tube(st, Vector3(x, 0.0, 0.0), Vector3(x + rng.randf_range(-0.01, 0.01), 1.5, 0.0), 0.05, 0.042, _tone(WOOD_DARK, rng, 0.1), 6, rng)
+		_box(st, Vector3(x, 0.03, 0.0), Vector3(0.1, 0.06, 0.3), WOOD_DARK)
+
+	_box(st, Vector3(0.0, 1.38, 0.0), Vector3(1.0, 0.07, 0.06), WOOD)
+	_box(st, Vector3(0.0, 0.95, 0.0), Vector3(1.0, 0.06, 0.06), WOOD)
+	_box(st, Vector3(0.0, 0.35, 0.05), Vector3(0.95, 0.04, 0.2), WOOD_PALE)
+
+	for k in range(5):
+		_tube(st, Vector3(-0.36 + 0.18 * float(k), 1.38, 0.03), Vector3(-0.36 + 0.18 * float(k), 1.38, 0.13), 0.014, 0.012, WOOD_PALE, 4, rng)
+
+	# an axe hanging by its haft, a mallet and a saw
+	_tube(st, Vector3(-0.36, 1.36, 0.14), Vector3(-0.36, 0.95, 0.14), 0.016, 0.014, WOOD, 5, rng)
+	_box(st, Vector3(-0.31, 1.0, 0.14), Vector3(0.12, 0.09, 0.03), STONE)
+	_tube(st, Vector3(-0.0, 1.36, 0.14), Vector3(0.0, 1.0, 0.14), 0.016, 0.014, WOOD, 5, rng)
+	_box(st, Vector3(0.0, 0.98, 0.14), Vector3(0.12, 0.07, 0.07), WOOD_DARK)
+	_box(st, Vector3(0.36, 1.1, 0.14), Vector3(0.3, 0.2, 0.01), IRON, 0.0)
+	_box(st, Vector3(0.36, 1.23, 0.14), Vector3(0.1, 0.04, 0.03), WOOD)
+	return _finish_cached("tool_rack", st, _solid_material())
+
+
+static func tool_rack() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_tool_rack_mesh()))
+	return root
+
+
+# Vice, 0.45 x 0.8 x 0.4 m: a hewn stump bench with a thick wooden screw vice bolted to one edge: two jaws, a long screw through them, a cross handle.
+static func _vice_mesh() -> ArrayMesh:
+	if _cache.has("vice"):
+		return _cache["vice"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 27
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_tube(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.8, 0.0), 0.2, 0.17, _tone(WOOD_DARK, rng, 0.1), 8, rng)
+	_box(st, Vector3(0.0, 0.8, 0.0), Vector3(0.42, 0.05, 0.36), WOOD)
+	_box(st, Vector3(-0.1, 0.9, 0.0), Vector3(0.05, 0.2, 0.28), WOOD_PALE)
+	_box(st, Vector3(0.12, 0.9, 0.0), Vector3(0.07, 0.2, 0.28), WOOD)
+	_tube(st, Vector3(-0.12, 0.93, 0.0), Vector3(0.3, 0.93, 0.0), 0.022, 0.022, WOOD_DARK, 6, rng)
+	_tube(st, Vector3(0.3, 0.93, -0.1), Vector3(0.3, 0.93, 0.1), 0.014, 0.014, WOOD_PALE, 5, rng)
+	_box(st, Vector3(-0.1, 0.885, 0.0), Vector3(0.012, 0.04, 0.22), IRON)
+	return _finish_cached("vice", st, _solid_material())
+
+
+static func vice() -> Node3D:
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_vice_mesh()))
+	return root
+
+
+# What a dead player leaves (age 0 fresh, 1 old): a leather pack slumped on the ground, a scatter of long bones and a few ribs, a rag of cloth.
+# Fresh remains are dark, old ones pale and weathered; four stages are cached.
+static func remains(age: float) -> Node3D:
+	var stage: int = clampi(int(round(age * 3.0)), 0, 3)
+	var key: String = "remains_%d" % stage
+
+	if not _cache.has(key):
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = 41
+		var st: SurfaceTool = SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var k: float = float(stage) / 3.0
+		var bone: Color = Color(0.45, 0.38, 0.32).lerp(Color(0.86, 0.83, 0.74), k)
+		_blob(st, Vector3(0.1, 0.16, 0.0), Vector3(0.24, 0.16, 0.2), WOOD.darkened(0.15 + 0.2 * (1.0 - k)), rng, 7, 3, 0.12)
+		_box(st, Vector3(0.1, 0.21, 0.0), Vector3(0.2, 0.025, 0.1), WOOD_DARK, 0.2)
+
+		for n in range(6):
+			var a: float = rng.randf() * TAU
+			var at: Vector3 = Vector3(cos(a) * rng.randf_range(0.3, 0.7), 0.025, sin(a) * rng.randf_range(0.2, 0.5))
+			var dir: Vector3 = Vector3(cos(a + 1.0), 0.0, sin(a + 1.0)) * rng.randf_range(0.12, 0.2)
+			_tube(st, at - dir, at + dir, 0.014, 0.011, _tone(bone, rng, 0.08), 5, rng)
+			_blob(st, at + dir, Vector3(0.025, 0.02, 0.025), bone, rng, 5, 2, 0.1)
+			_blob(st, at - dir, Vector3(0.025, 0.02, 0.025), bone, rng, 5, 2, 0.1)
+
+		for n in range(5):
+			var x: float = -0.45 + 0.07 * float(n)
+			_tube(st, Vector3(x, 0.01, -0.12), Vector3(x + 0.02, 0.07, 0.0), 0.008, 0.007, bone, 4, rng)
+			_tube(st, Vector3(x + 0.02, 0.07, 0.0), Vector3(x, 0.01, 0.12), 0.007, 0.006, bone, 4, rng)
+
+		_blob(st, Vector3(-0.2, 0.03, 0.3), Vector3(0.14, 0.03, 0.1), Color(0.35, 0.3, 0.26), rng, 6, 2, 0.2)
+		_cache[key] = _finish(st, _solid_material())
+
+	var root: Node3D = Node3D.new()
+	root.add_child(_instance(_cache[key]))
+	return root

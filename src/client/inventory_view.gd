@@ -1926,51 +1926,11 @@ func _make_block() -> Node3D:
 # A camp bench (placeholder look until Art draws it): a flat top on four legs, waist high, about 1.5 by 1 m.
 # Add-ons (placeholder looks): a tool rack is two posts and a crossbar with pegs; a vice is a block with two jaws.
 func _make_rack() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.29, 0.18)
-
-	for x in [-0.45, 0.45]:
-		var post: MeshInstance3D = MeshInstance3D.new()
-		var bar: BoxMesh = BoxMesh.new()
-		bar.size = Vector3(0.08, 1.5, 0.08)
-		post.mesh = bar
-		post.material_override = wood
-		post.position = Vector3(x, 0.75, 0.0)
-		root.add_child(post)
-
-	var cross: MeshInstance3D = MeshInstance3D.new()
-	var beam: BoxMesh = BoxMesh.new()
-	beam.size = Vector3(1.0, 0.08, 0.08)
-	cross.mesh = beam
-	cross.material_override = wood
-	cross.position = Vector3(0.0, 1.35, 0.0)
-	root.add_child(cross)
-	return root
+	return BuildingLook.tool_rack()
 
 
 func _make_vice() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.36, 0.26, 0.16)
-	var block: MeshInstance3D = MeshInstance3D.new()
-	var base: BoxMesh = BoxMesh.new()
-	base.size = Vector3(0.45, 0.8, 0.4)
-	block.mesh = base
-	block.material_override = wood
-	block.position = Vector3(0.0, 0.4, 0.0)
-	root.add_child(block)
-
-	for x in [-0.12, 0.12]:
-		var jaw: MeshInstance3D = MeshInstance3D.new()
-		var plate: BoxMesh = BoxMesh.new()
-		plate.size = Vector3(0.06, 0.25, 0.3)
-		jaw.mesh = plate
-		jaw.material_override = wood
-		jaw.position = Vector3(x, 0.92, 0.0)
-		root.add_child(jaw)
-
-	return root
+	return BuildingLook.vice()
 
 
 # Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
@@ -2252,25 +2212,7 @@ func _make_carcass(species: String) -> Node3D:
 
 
 func _make_remains(age: float) -> Node3D:
-	var root: Node3D = Node3D.new()
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0
-	material.albedo_color = Color(0.22, 0.17, 0.14).lerp(Color(0.8, 0.77, 0.68), clampf(age, 0.0, 1.0))
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = Vector3(1.7, 0.16, 0.5)
-	body.mesh = box
-	body.material_override = material
-	body.position = Vector3(0.0, 0.08, 0.0)
-	root.add_child(body)
-	var pack: MeshInstance3D = MeshInstance3D.new()
-	var pack_box: BoxMesh = BoxMesh.new()
-	pack_box.size = Vector3(0.4, 0.28, 0.5)
-	pack.mesh = pack_box
-	pack.material_override = material
-	pack.position = Vector3(0.1, 0.3, 0.0)
-	root.add_child(pack)
-	return root
+	return BuildingLook.remains(age)
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
