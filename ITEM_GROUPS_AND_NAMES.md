@@ -82,6 +82,8 @@ Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, ba
 4. With iron: several layers of leather plus rivets -> **Bound leather**, then leather armour.
 Open: the hide scraper may be the hand tool used at step 1. The leather working table is allowed (Dave: benches are for crafting). Also needs rivets (not in our list; we have nails 228) and a quality-sorting mechanic (Q15).
 
+**Cooking ladder (Dave's idea, 2026-10-30; stages and names are REC, details later):** Dave enjoys Valheim's oven and wants it explored further: a basic oven, then larger clay and stone ovens (pizza-oven style), then an iron stove with an oven. Each stage holds more and/or cooks more smoothly. Lower tiers cook slower and may burn part of the food, lowering its quality rating; higher tiers cook faster and give higher quality food. Our stations today: Campfire 8, Campfire pot 254, Clay hearth 256, Oven 268. Sources: Valheim lists Cooking Station, Iron Cooking Station*, Stone Oven; Dragonwilds Stone Range, Grill; 7DtD Cooking Pot, Grill; Conan Firebowl Cauldron; VS Cooking pot (analysis rows, partly unconfirmed; I have not checked how Valheim's oven works). REC ladder: Campfire (spit/stick) -> Campfire pot -> Clay hearth -> **Clay oven** (holds more, bakes) -> **Stone oven** -> **Iron stove with oven** (alt name: Range, as in Dragonwilds "Stone Range"). Needs the quality system (Q15) for burn chance and quality.
+
 ## 2. Hand tools (gathering)
 
 | Group | Games and exact names | Function | Tier | Ours | REC |
@@ -233,6 +235,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. DECIDED (Dave, 2026-10-30): **obsidian is in**, a mid-tier stone: found on islands beyond the starter islands, ones with dormant volcanoes, as rocks lying on or just under the surface. Intended uses (Dave): valuable tool and weapon material, jewellery, possible magic component. Details in section 1b.
 14. **DECIDED (Dave, 2026-10-30): a huge magic system is planned for later.** Obsidian can be a magic component. Open: when magic items (staves, wands, components, potions, enchanted gear) get their own catalogue pass, and which sources to use (Dragonwilds, Valheim staves and Eitr, Minecraft brewing and enchanting, Ark Element are the ones the analysis covers).
 15. **Leather chain:** confirm the steps above, rivets, and how quality sorting works.
+16. **Cooking ladder:** confirm the stages and names above, and whether Oven 268 is the first rung or sits above the Clay hearth.
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
