@@ -86,6 +86,8 @@ Open: the hide scraper may be the hand tool used at step 1. The leather working 
 
 CORRECTION (Dave, 2026-10-30): Dave described THREE ovens, not the six rungs I listed: (1) a basic oven like Valheim's, (2) larger clay and stone ovens, pizza-oven style, (3) an iron stove with an oven. My separate Clay oven and Stone oven are one rung (2). Our Oven 268 ("a brick oven, built with a hammer next to a clay hearth", items.json) IS rung 1, the basic oven (Dave confirmed 2026-10-30). NAME DECIDED (Dave): **Basic Oven**, to emphasise it is the basic one (a display rename of item 268 for later; no data changed). Missing: rung 2 (larger clay and stone ovens) and rung 3 (iron stove with oven).
 
+**TO DO (Dave, 2026-10-30: do not forget food):** a full food pass. Crops and animal products (grain, flour, honey, yeast, eggs, milk, fruit, vegetables, berries, meats) to dishes: breads, cakes, jams and compotes, soups, stews, dumplings, meat meals with a protein effect, drinks and spirits; recipe tiers by ingredient count (simple 1 to 2, mid 2 to 3 with oven or pot, high 3 to 4) and effect strength and duration per tier. Sources in the analysis: Valheim (about 45 dishes), Atlas (food, drink, medicine, berries, herbs), Dragonwilds, 7DtD, Ark, Don't Starve crock pot, NMS cooked food, Minecraft. Our existing dishes: items 15, 175-191, 273-275 (and the teas 52, 57-59).
+
 ## 2. Hand tools (gathering)
 
 | Group | Games and exact names | Function | Tier | Ours | REC |
