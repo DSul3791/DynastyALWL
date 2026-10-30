@@ -23,10 +23,10 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Beam | Ark Wood set; Conan Shaped Wood*; Valheim Log Beam (building) | Structural member | T2 | beams per species 102,108,111,114,126,150,174 | REC single **Beam**. |
 | Stick / branch | Ark none; Conan Branch; MD Sticks; Forest Stick; Aska none | Light wood, tool/fire fuel | T0 | Stick 2 | REC **Stick**. |
 | Stone | Ark Stone; Atlas Stone (types); 7DtD Small Stone; Rust Stones*; MD Stone; Forest Rock; Conan Stone | Hand-gathered rock | T0 | Stone 1 | REC **Stone**. Alt: Rock. |
-| Flint | Ark Flint; Atlas Flint; Valheim Flint (axe/knife/spear names) | Sharp stone for edges and sparks | T0/T1 | none as item (Stone knife 11) | REC decide whether flint is separate from Stone: the analysis shows three games do. Question Q1. |
+| Flint (DECIDED: a type of Stone) | Ark Flint; Atlas Flint; Valheim Flint (axe/knife/spear names) | Sharp stone for edges and sparks | T0/T1 | none as item (Stone knife 11) | REC decide whether flint is separate from Stone: the analysis shows three games do. Question Q1. |
 | Plant fibre | Ark Fiber; Atlas Fibers; 7DtD Plant Fibers; Conan Plant Fiber; MD Straw; Forest none | Cordage base, cloth early | T0 | Plant fibre 3 | REC **Plant fibre**. |
 | Cordage | Conan Twine, Rope*, Fiber Bindings*; Rust Rope; Forest Rope; DS Rope*; VS none | Binding material | T0/T1 | Twine 5, Rope 44 | REC keep **Twine** (thin) and **Rope** (thick). |
-| Hide / leather | Ark Hide; Atlas Hide (Leather, Pelt, Skin...); 7DtD Leather; Rust Leather*; Conan Hide, Leather, Thick Hide, Thick Leather; Forest Deer/Boar Skin; MD Leather | Animal skin, raw and tanned | T0-T2 | Hide 43 | REC keep **Hide** (raw); add **Leather** (tanned) only if a tannery step is wanted (Q2). Tannery appears in Atlas* and Conan*. |
+| Hide / leather | Ark Hide; Atlas Hide (Leather, Pelt, Skin...); 7DtD Leather; Rust Leather*; Conan Hide, Leather, Thick Hide, Thick Leather; Forest Deer/Boar Skin; MD Leather | Animal skin, raw and tanned | T0-T2 | Hide 43 | DECIDED (Dave): **Hide** (raw), **Leather** (tanned) and potentially **Heavy leather** (Conan Thick Leather). Open: tannery station (Q2). Tannery appears in Atlas* and Conan*. |
 | Fur / wool | Ark Pelt, Wool; Atlas Hide (Pelt); MD Wool; Forest Rabbit Fur | Cold-weather material | T1-T2 | none | gap candidate (list at end). |
 | Bone | Ark none (Keratin/Chitin); Atlas Keratinoid (Bone); 7DtD Bone; Conan Bone; Forest Bone; Aska none | Tool/needle/arrow material | T0 | Bone 48 | REC **Bone**. |
 | Sinew, fat, feather | 7DtD/MD Feather; Forest Feather; Ark none | Cordage, fletching, tallow | T0 | Sinew 70, Animal fat 71, Feather 72 | REC keep. |
@@ -175,8 +175,8 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 ---
 
 ## Questions for Dave
-1. **Flint:** a separate item from Stone (three games do it), or folded into Stone?
-2. **Leather and a tannery:** keep Hide only, or add Leather (tanned) with a tannery step? (Atlas*, Conan*)
+1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
+2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
 3. **Metal ladder:** add copper, tin and bronze ingots (and a bloomery step for iron) before iron/steel?
 4. **Fire starting:** is the first fire a hand mechanic with no item, and flint and steel a later item?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
