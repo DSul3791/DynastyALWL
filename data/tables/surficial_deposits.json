@@ -7,42 +7,50 @@
 		{
 			"id": 0,
 			"name": "none",
+			"erodibility": 0.0,
 			"display": "None"
 		},
 		{
 			"id": 1,
 			"name": "alluvium",
+			"erodibility": 6.0,
 			"display": "Alluvium"
 		},
 		{
 			"id": 2,
 			"name": "gravel",
+			"erodibility": 3.0,
 			"display": "Gravel"
 		},
 		{
 			"id": 3,
 			"name": "sand",
+			"erodibility": 5.0,
 			"display": "Sand",
 			"glass_quality": 0.5
 		},
 		{
 			"id": 4,
 			"name": "silt",
+			"erodibility": 6.0,
 			"display": "Silt"
 		},
 		{
 			"id": 5,
 			"name": "clay",
+			"erodibility": 2.5,
 			"display": "Clay"
 		},
 		{
 			"id": 6,
 			"name": "lake_sediment",
+			"erodibility": 5.0,
 			"display": "Lake sediment"
 		},
 		{
 			"id": 7,
 			"name": "peat",
+			"erodibility": 4.0,
 			"display": "Peat"
 		}
 	]
