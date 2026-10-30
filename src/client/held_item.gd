@@ -59,6 +59,10 @@ const HELD_LOOK_TURN := {
 	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"saw": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"scraper": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # like the knife: the blade end forward, the edge down
+	"sickle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # like the hoe: the blade curls round at the end of the handle
+	"scythe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
@@ -951,6 +955,44 @@ var _grade_has_b: bool = false
 var _stakes: Array = []
 
 
+# A survey stake (Kathleen, stage-1 pass): a 1 m wooden post with a sharpened foot and a small red-orange flag at the top, so a grade line reads as marked
+# ground and not as a white pole. Origin in the middle of its height, like the old post.
+func _make_stake() -> Node3D:
+	var stake: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.55, 0.4, 0.22)
+	wood.roughness = 1.0
+	var shaft: MeshInstance3D = MeshInstance3D.new()
+	var post: CylinderMesh = CylinderMesh.new()
+	post.top_radius = 0.025
+	post.bottom_radius = 0.028
+	post.height = 0.8
+	post.material = wood
+	shaft.mesh = post
+	shaft.position = Vector3(0.0, 0.1, 0.0)
+	stake.add_child(shaft)
+	var tip: MeshInstance3D = MeshInstance3D.new()
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = 0.028
+	cone.bottom_radius = 0.002
+	cone.height = 0.2
+	cone.material = wood
+	tip.mesh = cone
+	tip.position = Vector3(0.0, -0.4, 0.0)
+	stake.add_child(tip)
+	var flag: MeshInstance3D = MeshInstance3D.new()
+	var cloth: BoxMesh = BoxMesh.new()
+	cloth.size = Vector3(0.2, 0.12, 0.008)
+	var red: StandardMaterial3D = StandardMaterial3D.new()
+	red.albedo_color = Color(0.92, 0.28, 0.1)
+	red.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cloth.material = red
+	flag.mesh = cloth
+	flag.position = Vector3(0.11, 0.42, 0.0)
+	stake.add_child(flag)
+	return stake
+
+
 func _grade_point_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
@@ -981,12 +1023,7 @@ func _grade_point_here() -> void:
 		_grade_a = hit["position"]
 
 	for point in ([_grade_a, hit["position"]] if setting_b else [hit["position"]]):
-		var stake: MeshInstance3D = MeshInstance3D.new()
-		var post: CylinderMesh = CylinderMesh.new()
-		post.top_radius = 0.03
-		post.bottom_radius = 0.03
-		post.height = 1.0
-		stake.mesh = post
+		var stake: Node3D = _make_stake()
 		_root.add_child(stake)
 		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
 		_stakes.append(stake)

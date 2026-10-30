@@ -402,3 +402,32 @@ Measured, headless at spawn 53233,68416 with the new `flora.draw_stats()` line i
 
 Dave is modelling the forges himself (his concept picture: Basic, Medium, Large, Master Forge; `/root/.claude/uploads/.../dave_forge_ideas.png`, copy it to `art/` when it is shared). Import path: Dave's `.glb` files go in `assets/stations/` by the names forge_basic, forge_medium, forge_large, forge_master (spec in STATION_TIERS_DESIGN.md: metres, pivot at the footprint centre on the ground, front toward -Z); `inventory_view.gd` loads them. Hooks (build 475): the "Fire" and "Smoke" Node3D markers inside each model give the points; `BuildingLook.add_hooks` adds the flickering light, swaps the flat "Fire_Coals" card for the shared coals and flame tongues, and adds a smoke plume. Keep one material per surface kind, emissive only on coals and gems.
 Look cues from his picture for the later look pass: Basic = clay-daubed rubble hearth with a plank-and-log lean-to roof; Medium = squared stone, arched firebox, stepped stone hood with one riveted iron band; Large = same with heavy riveted iron straps at the corners, an iron-banded hood and a diamond plate over the arch; Master = black iron and gold filigree, red gem inlays, glowing hood, side towers. All: arched firebox with glowing coals and sparks, stepped hood into a flue, riveted iron straps, warm orange glow on the surrounding stone.
+
+## 54. Proposed conventions: palette, scale, models, quality tiers, critiques (Kathleen, 2026-10-30, all *[Proposed]*, nothing here is decided until Dave approves)
+
+Every number below is already in the repo; this section only gathers it so one place says it. Sources are named so a number can be checked.
+
+**Palette.**
+- Autumn leaf colours: the 15-colour `AUTUMN` list in `src/flora/flora_view.gd` (lemon yellow through flame and scarlet red to a dark red-brown). Species with their own `autumn_colors` in `data/tables/flora.json` use those.
+- Bark and wood: the `BARK_TINT_*` constants at the top of `src/flora/tree_builder.gd` (hardwood gray 0.45/0.42/0.35, softwood brown 0.50/0.34/0.22, birch near white, and one per species); building wood in `src/client/building_look.gd` (`WOOD`, `WOOD_DARK`, `WOOD_PALE`) and `piece_look.gd`.
+- Ground and rock: the `color` of each row of `data/tables/soils.json` and `rocks.json`, drawn with the six `assets/ground` textures (ART_DIRECTION.md section 7).
+- Loose items are drawn bolder than real so they tell apart on grass: saturation x 1.35 and value x 1.08 (`basic_look.gd`, Dave 2026-10-22).
+- Light: warm sun against blue sky fill, soft highlights, cool blue-green shadows (section 2.1).
+
+**Scale.** Units are metres, Y up, a model rests on Y = 0 (`assets/natural_pickups/README.md`, `assets/character/README.md`).
+- Player about 1.86 m tall, capsule half width 0.35 m. Held tool no longer than 1.0 m (`HELD_LOOK_MAX_M`).
+- Loose stone about 10 to 15 cm, stick 40 to 60 cm, driftwood 40 to 65 cm (pickup README).
+- Wall 2 m wide x 2.4 m high, floor 2 x 2 m, roof 2.4 x 2.5 m (`piece_look.gd` header; art/BUILDING_TIERS_LOOKS.md for the tier pictures, which are design only).
+- Trees and plants keep the height, crown and trunk in `flora.json`; a new model must stay within them (the placer reads them).
+
+**Model conventions.**
+- Built in code unless a hand-made model exists; imported models are glb with vertex colours (pickups) or textures (forges in `assets/stations`).
+- Trees: near model, mid model (decimated to about a third), far model, impostor. Budgets recorded in section 46: near up to about 4000 triangles, far up to about 800 for shrubs.
+- One shared mesh and material per kind of thing, vertex colours instead of texture files where possible, no per-frame work.
+- Orientation: front is +Z for placed buildings; the character faces -Z; held tools run handle to head and are turned to the hand mount by `held_item.gd`.
+
+**Quality tiers (used by ART_ASSET_INVENTORY.md).** 0 nothing drawn; 1 placeholder or primitive; 2 basic but recognisable; 3 reviewed and improved (a critique exists and its severity 2 and 3 flaws are fixed or owned); 4 polished (owner says so). Moving a thing to 3 needs a picture from the real game, not only an offline render.
+
+**Critiques.** One folder per review: `art/CRITIQUES/<topic>_<date>/CRITIQUE.md` with the pictures beside it and a table: species or item, picture, flaw, severity 1 to 3, action. First one: `art/CRITIQUES/trees_2026-10-30/`.
+
+**Open decision needing Dave (from the player-character plan, 2026-10-30).** Dave wants a stronger stylisation for characters than section 10 says ("slightly stylised"): "fantasy fun realistic", cartoon fused with a hyper-real world, a simple stylised human with a simple face, hair and hands instead of the featureless ragdoll. Sections 5 and 10 would be updated when Dave approves; the character plan is in CHARACTER_DESIGN_VISION.md on branch sonny-character.

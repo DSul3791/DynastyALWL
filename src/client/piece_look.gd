@@ -4,6 +4,7 @@ extends RefCounted
 # 2.5 m with four short posts. Each piece is solid (a StaticBody3D box) so you walk round a wall and stand on a floor. Pieces turn in
 # quarter circles and sit on a 1 m grid (placement_rules.gd snap), so neighbours meet edge to edge.
 
+const RockLook := preload("res://src/client/rock_look.gd")
 const WOOD := Color(0.5, 0.36, 0.21)
 const WOOD_DARK := Color(0.3, 0.2, 0.11)
 const TEX := 128                 # texture side in pixels: small and cheap at every quality setting
@@ -279,17 +280,33 @@ static func path() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
+	_box(root, Vector3(0.7, 0.012, 1.0), Vector3(0.0, 0.02, 0.0), _earth)   # the trodden middle, a little higher and paler than the verge
+
+	for k in 7:   # small stones pressed into the edges
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		_stone_at(root, Vector3(side * (0.46 + 0.02 * float(k % 3)), 0.03, -0.42 + 0.14 * float(k)), float(k) * 0.9)
+
 	return root
 
 
-# A rock pile: a mound of grey stones about 1.2 m across (Kathleen draws the real one).
+# A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
+# foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	var rows: Array = [[Vector3(0.0, 0.14, 0.0), 0.5], [Vector3(0.35, 0.12, 0.2), 0.34], [Vector3(-0.3, 0.12, 0.25), 0.36], [Vector3(0.1, 0.12, -0.35), 0.38], [Vector3(-0.1, 0.34, 0.0), 0.3]]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 33
+	var rocks: Array = [[Vector3(0.0, 0.1, 0.0), 3.6], [Vector3(0.38, 0.08, 0.2), 2.8], [Vector3(-0.34, 0.08, 0.25), 3.0], [Vector3(0.12, 0.08, -0.38), 3.1], [Vector3(-0.3, 0.07, -0.25), 2.6],
+		[Vector3(0.45, 0.07, -0.2), 2.4], [Vector3(-0.1, 0.24, 0.12), 2.6], [Vector3(0.2, 0.22, -0.1), 2.4], [Vector3(-0.2, 0.22, -0.12), 2.2], [Vector3(0.0, 0.36, 0.0), 2.2], [Vector3(0.28, 0.18, 0.3), 1.8], [Vector3(-0.42, 0.06, 0.0), 2.0]]
 
-	for row in rows:
-		_box(root, Vector3.ONE * float(row[1]), row[0], _stone)
+	for rock in rocks:
+		var node: MeshInstance3D = MeshInstance3D.new()
+		node.mesh = RockLook.mesh()
+		node.position = rock[0]
+		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
+		var k: float = float(rock[1])
+		node.scale = Vector3(k, k * rng.randf_range(0.9, 1.3), k * rng.randf_range(0.85, 1.1))
+		root.add_child(node)
 
 	_solid(root, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
 	return root
@@ -767,7 +784,15 @@ static func snare_trap() -> Node3D:
 	var root: Node3D = Node3D.new()
 	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.55, 0.0), 0.02, _log)             # the bent stick
 	_rod(root, Vector3(-0.2, 0.55, 0.0), Vector3(0.2, 0.35, 0.0), 0.012, _frame)           # the arm over the path
-	_box(root, Vector3(0.22, 0.012, 0.22), Vector3(0.2, 0.1, 0.0), _thatch)                # the loop on the ground
+	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.06, 0.0), 0.05, _log)              # the peg driven into the ground
+	var ring: int = 10
+
+	for k in ring:   # the wire loop hanging in the path: ten short rods round a circle 22 cm across
+		var a0: float = TAU * float(k) / float(ring)
+		var a1: float = TAU * float(k + 1) / float(ring)
+		_rod(root, Vector3(0.2 + cos(a0) * 0.11, 0.3 + sin(a0) * 0.11, 0.0), Vector3(0.2 + cos(a1) * 0.11, 0.3 + sin(a1) * 0.11, 0.0), 0.008, _steel)
+
+	_rod(root, Vector3(0.2, 0.19, 0.0), Vector3(0.2, 0.0, 0.0), 0.012, _frame)             # the stake it is tied to
 	return root
 
 

@@ -16,6 +16,7 @@ extends Node
 #   --shot-item=ITEM    a picture set of one item lying on the ground (id or name): give, drop, hide the player, HUD, grass and flora, then four views (front, side, top,
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
+#   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -58,6 +59,8 @@ var _item_tries: int = 0
 var _item_views: Array = []
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
+var _stance_msec: int = 0
+var stance_index: int = -1      # --shot-stance=stand|crouch|sit|lie: holds that stance for the whole run (third-person body poses; the stance script is client.stance)
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
@@ -173,6 +176,8 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-stance="):
+			stance_index = ["stand", "crouch", "sit", "lie"].find(argument.trim_prefix("--shot-stance="))
 		elif argument.begins_with("--shot-give="):
 			give_item = argument.trim_prefix("--shot-give=")
 
@@ -226,6 +231,9 @@ func setup(owner_client, args: Array) -> void:
 func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
+
+	if stance_index >= 0 and client.shot_stance != stance_index:
+		client.shot_stance = stance_index   # the runner flies the body, which stands it up, so the avatar clip is forced instead
 
 	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
 	if client._spawn_test != "":

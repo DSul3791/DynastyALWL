@@ -2691,6 +2691,7 @@ var view_cam: Camera3D
 var third_person: bool = false
 var debug_clip: String = ""                              # shot runner only (--shot-clip=NAME): play this clip whatever the body does
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
+var shot_stance: int = -1                                # shot runner only (--shot-stance): draw the third-person body in this stance (0 stand, 1 crouch, 2 sit, 3 lie) even while the runner flies
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
 var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
@@ -2774,7 +2775,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
-		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
+		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
 		if debug_clip != "":
 			clip = debug_clip

@@ -60,7 +60,7 @@ const BOULDER_STATE := 10                 # the world-item row state of a boulde
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
-var _boulder_rock: StandardMaterial3D
+var _boulder_rock: ShaderMaterial
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
@@ -905,9 +905,67 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	cyl.material = bark
 	mesh_node.mesh = cyl
 	root.add_child(mesh_node)
+	# Looks (Kathleen, stage-1 pass): a pale cut face with a darker ring on the stump top and at both ends of the trunk, a few snapped branch stubs
+	# along the trunk and root swell round the stump foot, so a felled tree is not a bare drum.
+	var cut: StandardMaterial3D = StandardMaterial3D.new()
+	cut.albedo_color = Color(0.72, 0.58, 0.38)
+	var ring: StandardMaterial3D = StandardMaterial3D.new()
+	ring.albedo_color = Color(0.5, 0.36, 0.2)
+
+	for end in ([-1.0, 1.0] if trunk else [1.0]):
+		var face: MeshInstance3D = MeshInstance3D.new()
+		var disc: CylinderMesh = CylinderMesh.new()
+		var r_end: float = cyl.top_radius if end > 0.0 else cyl.bottom_radius
+		disc.top_radius = r_end * 0.93
+		disc.bottom_radius = r_end * 0.93
+		disc.height = 0.012
+		disc.material = cut
+		face.mesh = disc
+		face.position = Vector3(0.0, end * cyl.height * 0.5 + end * 0.004, 0.0)
+		mesh_node.add_child(face)
+		var core: MeshInstance3D = MeshInstance3D.new()
+		var inner: CylinderMesh = CylinderMesh.new()
+		inner.top_radius = r_end * 0.55
+		inner.bottom_radius = r_end * 0.55
+		inner.height = 0.016
+		inner.material = ring
+		core.mesh = inner
+		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
+		mesh_node.add_child(core)
+
+	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	stub_rng.seed = int(radius * 1000.0) + int(length)
+
+	if trunk:
+		for k in range(4):
+			var stub: MeshInstance3D = MeshInstance3D.new()
+			var twig: CylinderMesh = CylinderMesh.new()
+			twig.top_radius = radius * 0.06
+			twig.bottom_radius = radius * 0.12
+			twig.height = radius * 1.1
+			twig.material = bark
+			stub.mesh = twig
+			var along: float = stub_rng.randf_range(-0.35, 0.4) * cyl.height
+			var ang: float = stub_rng.randf() * TAU
+			var local_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, along / cyl.height + 0.5)
+			stub.position = Vector3(cos(ang) * local_r, along, sin(ang) * local_r)
+			stub.rotation = Vector3(sin(ang) * 1.2, 0.0, -cos(ang) * 1.2)
+			mesh_node.add_child(stub)
 
 	if not trunk:
 		mesh_node.position = Vector3(0.0, cyl.height * 0.5, 0.0)
+
+		for k in range(5):
+			var swell: MeshInstance3D = MeshInstance3D.new()
+			var fin: BoxMesh = BoxMesh.new()
+			fin.size = Vector3(radius * 0.9, radius * 0.35, radius * 0.22)
+			fin.material = bark
+			swell.mesh = fin
+			var a2: float = TAU * float(k) / 5.0 + stub_rng.randf() * 0.5
+			swell.position = Vector3(cos(a2) * radius * 0.95, radius * 0.1, sin(a2) * radius * 0.95)
+			swell.rotation = Vector3(0.0, -a2, 0.0)
+			root.add_child(swell)
+
 		return root
 
 	# Hinge at the stump: pivot turns from upright to lying, over about 1.5 s.
@@ -1779,9 +1837,17 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
-		_boulder_rock = StandardMaterial3D.new()
-		_boulder_rock.albedo_color = Color(0.46, 0.46, 0.44)
-		_boulder_rock.roughness = 1.0
+		# Granite with moss (Kathleen, white-sphere fix): the plain mid-grey material drew server boulders near white in full sun, big smooth pale eggs. The scenery
+		# boulder shader of grass_view.gd (stone mottle, moss on the tops and north side) is used instead, with its per-instance custom data turned into
+		# uniforms and its distance fade switched off (a boulder the server sends must not melt away at 18 m).
+		var shader: Shader = Shader.new()
+		shader.code = String(load("res://src/client/grass_view.gd").BOULDER_SHADER).replace("stone = INSTANCE_CUSTOM.rgb;", "stone = stone_color;").replace("mossy = INSTANCE_CUSTOM.a;", "mossy = mossiness;").replace("uniform vec3 moss_color", "uniform vec3 stone_color = vec3(0.30, 0.29, 0.27);
+uniform float mossiness = 0.65;
+uniform vec3 moss_color")
+		_boulder_rock = ShaderMaterial.new()
+		_boulder_rock.shader = shader
+		_boulder_rock.set_shader_parameter("fade_start", 100000.0)
+		_boulder_rock.set_shader_parameter("fade_end", 100001.0)
 
 	var body: StaticBody3D = StaticBody3D.new()
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -1926,51 +1992,11 @@ func _make_block() -> Node3D:
 # A camp bench (placeholder look until Art draws it): a flat top on four legs, waist high, about 1.5 by 1 m.
 # Add-ons (placeholder looks): a tool rack is two posts and a crossbar with pegs; a vice is a block with two jaws.
 func _make_rack() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.29, 0.18)
-
-	for x in [-0.45, 0.45]:
-		var post: MeshInstance3D = MeshInstance3D.new()
-		var bar: BoxMesh = BoxMesh.new()
-		bar.size = Vector3(0.08, 1.5, 0.08)
-		post.mesh = bar
-		post.material_override = wood
-		post.position = Vector3(x, 0.75, 0.0)
-		root.add_child(post)
-
-	var cross: MeshInstance3D = MeshInstance3D.new()
-	var beam: BoxMesh = BoxMesh.new()
-	beam.size = Vector3(1.0, 0.08, 0.08)
-	cross.mesh = beam
-	cross.material_override = wood
-	cross.position = Vector3(0.0, 1.35, 0.0)
-	root.add_child(cross)
-	return root
+	return BuildingLook.tool_rack()
 
 
 func _make_vice() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.36, 0.26, 0.16)
-	var block: MeshInstance3D = MeshInstance3D.new()
-	var base: BoxMesh = BoxMesh.new()
-	base.size = Vector3(0.45, 0.8, 0.4)
-	block.mesh = base
-	block.material_override = wood
-	block.position = Vector3(0.0, 0.4, 0.0)
-	root.add_child(block)
-
-	for x in [-0.12, 0.12]:
-		var jaw: MeshInstance3D = MeshInstance3D.new()
-		var plate: BoxMesh = BoxMesh.new()
-		plate.size = Vector3(0.06, 0.25, 0.3)
-		jaw.mesh = plate
-		jaw.material_override = wood
-		jaw.position = Vector3(x, 0.92, 0.0)
-		root.add_child(jaw)
-
-	return root
+	return BuildingLook.vice()
 
 
 # Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
@@ -2252,25 +2278,7 @@ func _make_carcass(species: String) -> Node3D:
 
 
 func _make_remains(age: float) -> Node3D:
-	var root: Node3D = Node3D.new()
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0
-	material.albedo_color = Color(0.22, 0.17, 0.14).lerp(Color(0.8, 0.77, 0.68), clampf(age, 0.0, 1.0))
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = Vector3(1.7, 0.16, 0.5)
-	body.mesh = box
-	body.material_override = material
-	body.position = Vector3(0.0, 0.08, 0.0)
-	root.add_child(body)
-	var pack: MeshInstance3D = MeshInstance3D.new()
-	var pack_box: BoxMesh = BoxMesh.new()
-	pack_box.size = Vector3(0.4, 0.28, 0.5)
-	pack.mesh = pack_box
-	pack.material_override = material
-	pack.position = Vector3(0.1, 0.3, 0.0)
-	root.add_child(pack)
-	return root
+	return BuildingLook.remains(age)
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
@@ -2466,8 +2474,8 @@ const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of t
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
 const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
-const PICKUP_BRIGHT := 1.3
-const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
+const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
+const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
@@ -2490,7 +2498,11 @@ func _pickup_group(group: String) -> Array:
 
 						if base is StandardMaterial3D:
 							var lit: StandardMaterial3D = base.duplicate()
-							lit.albedo_color = STICK_TINT if group == "stick" else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
+							# The glb material does not use the mesh's vertex colours on its own, so every stone drew as flat white (with the glow below): the "white sphere" in the rig
+							# pictures. Vertex colours are switched on (Kathleen, 2026-10-30), which is what the tint and the brightness here were meant to multiply into.
+							lit.vertex_color_use_as_albedo = true
+							var bright: float = 1.05 if group == "stick" else (1.0 if group == "driftwood" else PICKUP_BRIGHT)   # the mesh colours are already stone grey, bark brown and bleached wood
+							lit.albedo_color = Color(bright, bright, bright)
 							lit.emission_enabled = true
 							lit.emission = PICKUP_GLOW
 							mesh.surface_set_material(surface, lit)
