@@ -1,0 +1,3 @@
+rows: lean walk, lean panic, stocky walk, stocky panic
+lean: walk and panic strips rendered
+stocky: walk and panic strips rendered
