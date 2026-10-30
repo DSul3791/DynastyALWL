@@ -26,6 +26,7 @@ All changes are data on branch `sal-items` (plus two test edits). Nothing is on 
 | 297 to 300 | Stone pickaxe, Sickle, Scythe, Wooden club | tools and weapon |
 | 301 to 304 | Copper ore, Tin ore, Iron ore, Coal | ores |
 | 308 to 310 | Clay jug, Herb salve, Splint | container and medicine (storage and medicine gap check) |
+| 311 | Candle | light |
 | 305 to 307 | Hide tunic, Hide trousers, Hide gloves | clothing (worn using the existing cloak, leggings and mittens drawings until Kathleen makes new ones) |
 
 ## New recipes (all hidden until discovered, none over 3 ingredients)

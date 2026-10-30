@@ -86,6 +86,7 @@
 		"clay_jug": 1.2,
 		"herb_salve": 0.1,
 		"splint": 0.4,
+		"candle": 0.05,
 		"iron_ingot": 1.5,
 		"iron_pickaxe": 2.5,
 		"kindling": 0.3,

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 311,
+	"next_number": 312,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3618,6 +3618,19 @@
 			"note": "Placeholder: sets a break once injuries exist.",
 			"look_alikes": [],
 			"value": 6
+		},
+		"candle": {
+			"number": 311,
+			"name": "Candle",
+			"description": "A wick dipped in animal fat. A small steady light for indoors.",
+			"kind": "tool",
+			"tool_class": "candle",
+			"tier": 1,
+			"stack": 10,
+			"future": true,
+			"light_m": 4.0,
+			"look_alikes": [],
+			"value": 3
 		}
 	}
 }
