@@ -15,6 +15,19 @@ Goal: the player character should look and move like a natural, readable person:
 - Comparable games show the traps: first and third person drifting apart (Rust, Medieval Dynasty), giant state machines (Rust), rigs too crude to bend (Unturned) (Part 3, F1 to F10).
 - The research could not confirm many numbers (gait angles, proportions, budgets). So the plan treats numbers as tunable and measures on the minimum machine (Part 3.10).
 
+## State at a glance (for Dave; kept current)
+
+**Branch `sonny-character`.** Research and plan are complete; a first working prototype exists and is **off by default** in the game. Nothing here has been merged or run beyond the checks and pictures below. Plans done: 1 body generator, 2 motion, 3 drafts for you (fears, backgrounds, traits), 4 and 7 avatar and arm rules moved out of the big files (equivalence-checked), 5 motion on screen and foot IK, 6 body v2 (fingers, expressions, share code), 8 old clips on the new body, 11 in-game pictures, 12 worn clothing on the new body, 13 NPCs, 14 the creator screen.
+
+**How to look at it yourself:**
+- In the game: start the client with the argument `--generated-body`; the third-person player and the NPCs become generated bodies (not tried by a person yet).
+- The creator screen: open `scenes/creator_proto/creator_proto.tscn` (godot --path . res://scenes/creator_proto/creator_proto.tscn). It is not connected to any account or server.
+- Checks (all headless, all pass): `tools/check_body_generator.gd`, `check_generated_body.gd`, `check_worn_generated.gd`, `check_npc_bodies.gd`, `check_creator_logic.gd`, `check_avatar_driver.gd`, `check_arms_view.gd`, `proto_motion.gd`, `proto_ik.gd` (details in 8.7).
+
+**What I changed in existing game files (every one is checked by an equivalence test and listed in 8.7):** `scenes/terrain_client/terrain_client.gd` (avatar rules moved out; one `--generated-body` line), `src/client/held_item.gd` (arm placement moved out), `src/client/worn_look.gd` (bone-name mapping), `src/client/npc_view.gd` (generated NPC bodies behind the switch). Everything else is new files.
+
+**Open and needs you** (full list: decision sheet below): look at the pictures and say what you want changed; the ancestry wording; accounts and characters per player.
+
 ## Pictures for Dave (all paths in this repository, branch `sonny-character`; copies are in the shared notes folder)
 
 **In the real game** (third person, through Kathleen's look rig; the generated body is switched on with the client argument `--generated-body`; see 8.6g):
@@ -30,6 +43,7 @@ Goal: the player character should look and move like a natural, readable person:
 - `art/character_proto/ingame/generated_carry.jpg` and `generated_carry2.jpg`: **two attempts at carrying a large log on the shoulder that did NOT work** (the log is not visible and the body plays an ordinary walk); kept so nothing is lost, see 8.6g for what it means.
 
 **Offline test pictures** (my own render scripts, bare test scene, not the game):
+- `art/character_proto/creator/1_start.jpg`, `2_dice_everything_height_locked.jpg`, `3_broad_then_face_dice.jpg`, `4_undo_twice.jpg`: **the character creator prototype screen** (sliders, locks, dice per section and for everything, undo and redo, body types, colours, share code, turntable preview); screenshots of a scripted session (not the game, no server).
 - `art/character_proto/proto_rest.png`: four body types (average, broad, lean, stocky), front and side, clothed.
 - `art/character_proto/proto_bent.png`: the same four in a bend test pose (shows the skin bending at elbows, knees, shoulders).
 - `art/character_proto/voxel45/proto_rest.png`: a lower detail level (4.5 cm).
@@ -833,6 +847,22 @@ The rules for how the arms follow the body at rest and the camera while working 
 - **Check and measurement (`tools/check_npc_bodies.gd`, headless): 768 cases, 0 failures:** seeds give the same genome every time and stay in range; the second body of a type comes from the cache and shares the mesh; no fingers is lighter; `npc_view.gd` compiles. **Numbers (one run on this PC):** making 20 NPC bodies of 8 types took **1,877 ms the first time** (8 meshes built, about 0.23 s each; 12 shared) and **8 ms for the next 20** (all cached); animating 20 bodies costs **0.095 ms per frame for all of them** (animation evaluation only; headless, no drawing). Earlier checks (`check_body_generator` 244, `check_generated_body` 5,124, `check_worn_generated` 43) still pass after the refactor.
 - **What this means:** the first time a town's NPCs appear there would be up to about 2 seconds of hitching spread over the NPCs that appear (0.2 s each) if nothing is prepared; building the 8 types one per frame in the background, or in a loading step, would hide it (not done). After that, new NPC bodies cost under a millisecond. The earlier 1 ms budget for 20 bodies looks fine for animation; drawing and skinning cost on the minimum machine is still unmeasured.
 - **Real game (`npcs_old.jpg`, `npcs_generated.jpg`, first person at the spawn):** with `--generated-body` Hob appears as a generated body with red hair, a tunic, boots and his backpack; the client started and rendered without a script error. One NPC was in view, standing; walking, sitting and sleeping NPC clips, several NPCs at once, and frame time with drawing are not yet seen.
+
+## 8.6k Plan 14 result: the character creator prototype screen
+
+- **Files (all new):** `src/client/character/creator_logic.gd` (the rules), `scenes/creator_proto/creator_proto.gd` and `.tscn` (the screen, built in code), `tools/check_creator_logic.gd` (the check), `tools/proto_creator_view.gd` (screenshots).
+- **What the screen has:** the 18 sliders in four sections (Body, Head and face, Hands and feet, Hair) with a **lock** on each; a **dice for everything** and a **dice per section** (the colours have their own dice too); a "wild dice" switch (gentle dice draw from a bell-shaped spread around the neutral body, wild draws from a wider one); **undo and redo** (60 steps; a slider drag is one step, a global dice is one step); four body types (average, broad, lean, stocky); skin and hair colour pickers; a **share code** box (the code updates after every change, a pasted code can be loaded, a bad one is refused and nothing changes); a turntable preview of the generated body that is rebuilt 0.35 s after the last change (about 0.2 to 0.3 s per rebuild at 5 cm detail on this PC).
+- **Rules (checked):** a locked value is never changed by any dice; a section dice never touches another section; dice values stay inside -1 to 1; gentle dice stay closer to the neutral body than wild dice; undo and redo restore the exact earlier body; with everything locked a dice changes nothing and makes no undo step; presets keep locked sliders; the share code round trip keeps every slider within 1/127; the same random seed gives the same dice. **Check: 3,096 cases, 0 failures (headless).**
+- **Pictures:** `art/character_proto/creator/` (see the list at the top): the start screen; everything rolled with the height locked at +0.40 (the height stayed); a body type followed by a face dice; two undos.
+- **Not done:** ancestry choice, backgrounds, traits and the fear choice (Part 5.8, they need the server and the skills design), face presets (BG3-style), hair styles beyond length and colour, a real UI theme (it uses plain default controls), controller and accessibility checks, a person using it. The preview shows the body in the creator's own lighting, not the game's.
+
+## 8.6l Three more plans (approved by me under the moderator's pre-approval; Plan 14 is done above)
+
+**Plan 14. Creator screen prototype with dice, locks and share code.** DONE (8.6k).
+
+**Plan 15. Clothing and armour layers on the generated body.** Fit the worn pieces to each body's proportions (today their sizes are written for the old body: a stocky body gets pieces that look small, a lean one pieces that look big), add a layer rule (body, clothes, armour, pack) with region hiding under clothes in the body shader so skin does not poke through, and show the layers in the creator preview. Checks: part counts and a "no piece inside the body by more than X cm" test on the four body types; pictures.
+
+**Plan 16. Performance check with many NPCs in the real game.** Put 20 NPCs near each other (a rig option or a test world spot) with `--generated-body` and with the old body, and measure frame time with the rig's `--frametime` option; also measure the 8 first builds in the game (the 2 second hitch) and a build-in-the-background fix. Decide whether the 1 ms budget holds on this PC and what it means for the minimum machine.
 
 ## 8.7 What was tested how (for Dave's review)
 
