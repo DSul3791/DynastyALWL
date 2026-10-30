@@ -795,6 +795,14 @@ The rules for how the arms follow the body at rest and the camera while working 
 
 **Plan 10. Motion polish.** Strafe and backward walking, jump, fall and land, crouch walk, swim and ladder clips, squash and stretch with a helper bone, foot placement on a real slope with ground rays, and a far detail level without fingers; each with a headless check where one is possible and pictures where not.
 
+## 8.6h Three more plans (approved by me under the moderator's pre-approval; Plan 11 has started). Plans 9 and 10 above are still open.
+
+**Plan 11. In-game look pass.** Use the look rig to see the generated body walking, jogging, running, crouching and carrying a log in the real game; compare with the old body; fix what looks wrong (clothes colours and contrast in game light, anything that clips or floats); keep a before and after set of pictures for Dave. Two pictures are done (standing and jogging, 8.6g).
+
+**Plan 12. Worn clothing on the generated body.** Make the worn pieces (cloak, hood, boots, leggings, mittens, skirt, sandals, pack) attach to the new bone names by adding a name alias (old bone name to humanoid name) so `worn_look.gd` can hang them; checked headless the way `test_worn_sync.gd` checks the old body; then a look in the game. Touches `worn_look.gd` or `worn_sync.gd` minimally, or adds an adapter, whichever keeps the old body untouched.
+
+**Plan 13. Many bodies in the game.** Use the generated body for NPCs (`npc_view.gd` calls the old body today) behind the same `--generated-body` switch, with a far detail level without fingers; measure frame time with the rig's `--frametime` option with 20 NPCs near and far; decide whether the 1 ms budget for 20 bodies (Part 2 B1, DECISIONS) holds on this PC and what that means for the minimum machine.
+
 ## 8.7 What was tested how (for Dave's review)
 
 Nothing below was run inside the real game. **"Headless" means a command-line run with no window; "pictures" means my own render script showing the generated bodies in a bare test scene, not the game's scene, lighting or camera.**
@@ -811,7 +819,7 @@ Nothing below was run inside the real game. **"Headless" means a command-line ru
 | Cost of 20 animation trees | Headless, evaluation only | Yes: includes no drawing or skinning |
 | Avatar rules moved out of `terrain_client.gd` | 11,731 headless comparisons against the old formulas, 0 differences; both files compile | Yes: the game was **not run**; this is the only edit of the player's visible behaviour code, and it should be looked at once in play (walk, jog, run, crouch, carry a log, slopes) |
 | First-person arm rules moved out of `held_item.gd` | 4,013 headless comparisons, 0 differences; constants checked; files compile | Yes: swing, jab, aim and rest pose in first person should be looked at once in play |
-| Old clips converted to the generated skeleton; drop-in body | 5,124 headless comparisons, 0 failures; pictures of the old clips on two bodies | Yes, essential: start the client with `--generated-body` and look in third person (walk, run, crouch, carry a log, tool in hand). **Never run in the game.** |
+| Old clips converted to the generated skeleton; drop-in body | 5,124 headless comparisons, 0 failures; pictures of the old clips on two bodies; **one real-game picture of the standing body through the look rig (8.6g)** | Yes: walking, running, crouching, carrying a log, tool in hand, first person; a standing and a jogging picture have been seen in the game so far. |
 | Fear list, backgrounds, traits, all plans | Documents only | They are proposals; nothing is built |
 
 ## 8.6f Plan 8 result: the old clips play on the generated body; a switch to try it in the game
@@ -821,6 +829,20 @@ Nothing below was run inside the real game. **"Headless" means a command-line ru
 - **Check (`tools/check_generated_body.gd`, headless): 5,124 cases, 0 failures.** Every converted track equals the old one (rotations equal, hips positions divided by 0.95, key times and counts, loop modes, lengths); the new body has every method and property listed above and they behave as the old ones in the calls the game makes. The other checks still pass after the change (`check_avatar_driver` 11,731 cases, `check_arms_view` 4,013 cases, `check_body_generator` 244 checks, `check_ragdoll` ok), and `terrain_client.gd` and `held_item.gd` compile.
 - **Picture:** `art/character_proto/converted/old_clips_on_generated.png`: the **old** clips (idle, walk, jog, run, crouch, swing, jab, throw, in that order) on the lean and stocky generated bodies. They read correctly on both; the stocky body bends into the crouch with a rounder shape. Colours look darker than before because the test lighting differs from the earlier pictures; the game's lighting was not used.
 - **A way to look at it in the running game (off by default):** start the client with the argument `--generated-body` and the player's third-person avatar becomes the generated body instead of the old ragdoll (one added line in `terrain_client.gd::_make_avatar`, plus a guard in `avatar_driver.gd` so worn pieces, which are built on the old bone names, are skipped on the new body). **It has not been run.** Known gaps when it is on: worn clothing pieces are not shown; the first-person arms are still the old model; generation takes about 0.6 s when the avatar is first made; no head look or turning (as before).
+
+## 8.6g In the real game: the generated body seen through Kathleen's look rig (first real-game pictures)
+
+**How:** Kathleen's `tools/look_rig.sh --cam left` starts a throwaway server and a windowed client with their own settings folder (Dave's saves are not touched) and saves a third-person picture. For the generated body I ran a scratch copy of the script with the client argument `--generated-body` added (her file is unchanged; the copy lives outside the repository). Kathleen also offered `tools/shot_node.gd` on her branch `kathleen-art` for a quick four-view picture of any node (not used yet). Each run takes about three minutes.
+
+**Pictures (reduced to 1280 by 720; the full 2880 by 1620 originals are kept locally, not committed, because they are 5 MB each):**
+- `art/character_proto/ingame/old_idle.jpg`: the old featureless ragdoll in the real game, standing, seen from the left.
+- `art/character_proto/ingame/generated_idle.jpg`: the generated body in the same place and view; `generated_jog.jpg` (below).
+
+**What the real-game picture shows (my reading; Dave should look):** the generated body stands on the ground with correct size next to the trees, casts a shadow, and reads as a person: a bit of hair, an eye and brow, a nose, ears, a coat and trousers in the game's own default clothes colours, boots, hands with visible fingers. The old ragdoll in the same picture has a smooth bald head, no face, no fingers. The generated body looks darker and a little grey in the game's light because its colours come from the shader's plain palette and the default coat and trousers are dark brown (the same default colours the old body uses); the offline pictures looked brighter. No seam lines are visible at this distance. It is crude close up (hands, face, flat colours) but already much more of a character than the ragdoll. **Cost and stability in the game were not measured; the client started and took the picture without a script error** (the only console errors were the voxel module's usual exit-time leak warnings, which also appear with the old body).
+
+**A jog, also in the real game (`art/character_proto/ingame/generated_jog.jpg`, played by faking a speed of 3.2 m/s through the rig):** the converted jog clip plays on the generated body: clear stride, bent knees, arm swing, a forward lean, body and shadow moving together. Judging the feel needs motion, not a still.
+
+**Not yet seen in the real game:** walking and running as such, crouching, swinging a tool, carrying a log, first-person arms (still the old model), worn clothing pieces (skipped on the new body), other players or NPCs (still the old body).
 
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
