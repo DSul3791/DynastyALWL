@@ -30,6 +30,44 @@ What this means for the plan (RECOMMENDATION, my reading; the named characters a
 ## Character creation (Dave, 2026-10-30)
 Players also pick a D&D-like background and traits (roll or point buy) and a greatest fear that can make the character panic, run away screaming and flail comically (Part 5.8). Players build their characters: an **ancestry** (human, orc, elf and others), which brings cultural boons and unfortunate traits; **sliders** for the skeleton and body (size, build, proportions, gait); the **face** (bone structure and features); **skin colour**; **hair** (style, length, colour); more (age, markings, handedness and others, see Part 5.7); and a **dice button** for everything and one **per section**. A character is a small list of numbers (a genome) saved on the server and turned into a body on each client. Details, suggestions and one rule flag (keep boons and drawbacks to fantasy peoples, keep skin tone and features cosmetic) are in Part 5.7.
 
+## Decision sheet (one page; Sonny, 2026-10-30)
+
+Dave asked me to decide without him wherever I can and to ask only if I really need him. So the decisions below are **provisional decisions by Sonny**: I will work to them unless Dave says otherwise. Each is reversible before the phase that uses it. Full table with options: Part 7.4.
+
+**Decided by Dave:** D1 the character is a simple stylised human. Art direction: cartoon-realism fusion with body archetypes; character creation with ancestry, sliders, face, hair, dice buttons; each character has its own account and a new player must make one; a D&D-like background and traits (roll or points); a greatest fear that can trigger a comic panic.
+
+**Decided by Sonny (provisional):**
+| # | Decision | Why |
+|---|---|---|
+| D2 | Generate the body in code (smooth distance-field body, scripted soft weights, baked and cached by genome); a modeller can replace head and hands later | Dave leans that way; no modeller needed; sliders stay numbers (3.11.3) |
+| D3 | Keep the arms-only first-person viewmodel; own camera-space clips driven by the same action records as third person | cheap, proven; Rust's years of drift show why records are shared (F1) |
+| D4 | Third person is a first-class view for actions | cheap once records are shared |
+| D5 | Order of work: Phase 0 to 2, then body, face, creator | clips survive the body change because the skeleton comes first |
+| D6 | No sprint, roll or dodge until combat design needs them | scope |
+| D8 | Keep the 15, 40 and 70 m animation tiers, with hysteresis; measure | already Dave's rule |
+| D9 | Players: skin tone, hair, coat colour, face presets and a few archetypes; NPCs: full range | variety without a slider explosion (N2, N3) |
+| D11 | Accept the animation quality targets in 4.4 as tunable defaults | no outside standard exists (3.10) |
+| D12 | Triangle, bone and cost budgets are set after the Phase 0 measurement | no developer-stated figures found (H11) |
+| D13 | Purchased animation only with a clear licence and a bone-map retarget; no motion matching | A8, B15 |
+| D14 | First ancestries: human (neutral baseline), orc, elf | Dave's examples |
+| D15 | Ancestry boons: small, mostly physical or lifestyle, fantasy peoples only; larger bonuses in backgrounds and traits | research (N12) and Dave's safe-place rule |
+| D16 | Body size is cosmetic only (same capsule, reach, camera height) | fairness, keeps the 1.8 m tuning |
+| D17 | After creation: hair, colour and tattoos can change; height and build cannot | matches DESIGN_IDEAS 9.2 |
+| D18 | Creation happens at character selection when the player has no character (Dave's flow) | Dave |
+| D19 | Creator version 1: ancestry, background, traits, height, build, skin, hair, face presets plus about eight face sliders, dice and locks | N2, N3 |
+| D22 | Traits: point buy by default, plus a bounded-variance roll option | N9 |
+| D24 | A greatest fear is hidden from other players | PvP exploit risk |
+| D25 | Panic: hazard-aware run, short, with a cooldown and a setting to reduce or disable it | fairness; sources thin (N13 to N15) |
+| D27 | The reaction replay is a future idea, owner-only and skippable | scope |
+| D28 | Smooth motion by default; held, stepped poses only in comic beats; simplified hands with a thumb and two or three finger groups; minimal eye and brow channel by swap | 3.11.1, 3.11.2 |
+
+**Really needs Dave or another owner (I cannot decide these):**
+- **A. D10: ownership and the removal list.** May I move the avatar and first-person arm logic into a new module, edit the shared files `terrain_client.gd` and `held_item.gd` minimally, and do you approve the removal list in 2.8? This is a permission question, not a design one.
+- **B. D15 wording:** do you want ancestry-linked boons to stay as small fantasy-people traits, or kept entirely in backgrounds? The research and your rule push toward the second; you asked for the first. I chose the middle path above.
+- **C. D20 and D21: accounts.** How many characters per player, how they link to the dynasty and heirs, and how one account per character fits the identity plan. This belongs to the technical lead and the dynasty design.
+- **D. D23 and the trait and background content:** the final fear list, the background list and the trait rules are your design; I supplied a draft fear list (5.8.8) only.
+- **E. Look sign-off.** The first body must be approved by your eye (proportions and archetype shapes). I cannot judge that for you.
+
 ## Principles
 See Part 4.1 (eight principles: readable first; believable weight; one body many views; actions are events; derive, don't send; cheap at distance; every number has a knob; no divisive defaults).
 
@@ -412,6 +450,7 @@ Dave's direction: a Dungeons and Dragons style system, but different. Players pi
 - **Point buy:** a pool of points spent on the attributes (-10 to +10 today); a cap per attribute, a visible total and a reset.
 - **Roll:** a button that rolls the attributes (the dice idea of 5.7.7), with a limited number of re-rolls or a keep-the-best choice so it stays fair. Rolled and bought values should have the same expected total, otherwise one method is better than the other (design check; no numbers proposed).
 - **The server rolls and validates**, because luck-affecting rolls go through the existing server random path (`src/shared/luck.gd`, PROTOCOL.md); the client only shows the preview. Anything the player buys is checked against the pool on the server.
+- **Fairness (N9):** standard array and point buy average exactly 12; four dice drop the lowest averages about 12.24 with a wide spread (forum analysis and the agent's own arithmetic). **Provisional decision (D22):** point buy is the default; the roll option gets bounded variance (a floor and a ceiling on the total) and a limited number of re-rolls, so neither is clearly better in an online game where players compare. Baldur's Gate 3 uses 27-point buy only with scores starting at 8 and capped at 15 (N9). Costs per point in the SRD are public (8=0 up to 15=9); we use our own numbers, scaled to the -10 to +10 range already in the game, to be set by the skills designers.
 - "Like D&D but different": the different part (what the pool is, what extra choices exist) is Dave's design to decide (D22).
 
 ### 5.8.4 Greatest fear
@@ -425,7 +464,8 @@ Dave's direction: a Dungeons and Dragons style system, but different. Players pi
 - **Mechanics (FACT, code, then RECOMMENDATION):** player movement is client-side with the server validating (Part 1.4, PROTOCOL.md), so the server would send a "panic" state with a direction hint and a duration, and the client would steer the character itself; the player briefly loses control. This touches the movement code (`terrain_client.gd`) and the server together, so it needs the technical lead (D25).
 - **Safety rules (important):** panic must never run a player into near-certain death (off a cliff, into deep water, fire or a cave-in) in a way that feels unfair. Options: the run avoids hazards using the same ground checks as the creature AI; or it is a fixed-length stumbling run at reduced speed with no auto-jump; or hazard cases give a freeze and cower instead. An accessibility setting (reduce or disable loss of control, or turn it into a flinch and cower) is wise, since losing control can be unpleasant. None of this is researched.
 - **Others see it too:** it is an action the server states to nearby clients (Part 5.5), so remote players and NPCs play the same panic clips from the same record. NPCs could have fears too (NPC backgrounds already exist), a cheap source of comedy.
-- **Animation work:** panic run, flail loop, cower or freeze, scream pose, recovery; all on the shared skeleton and tested on the extreme genomes (5.7.6).
+- **Animation work:** panic run, flail loop, cower or freeze, scream pose, recovery; all on the shared skeleton and tested on the extreme genomes (5.7.6). Acting follows Part 4.6: held, stepped poses on twos in the comic beats, with hand shapes (clutch the head, flap, shield the eyes) and a quick eye widening by texture swap.
+- **Lessons from other games (3.11.4, N13 and N14):** Darkest Dungeon makes afflicted heroes ignore commands and lets stress spread, with a cost to cure; Amnesia hid its numbers and later became ambient mood with few consequences; Don't Starve never takes control from the player. No source on opt-outs or complaints about forced loss of control was found, so these rules are my inference: keep panic rare (cooldown), short (a few seconds), funny rather than punishing, never lethal on purpose, with no stat penalty beyond the lost seconds, and hide the number from the player the way Amnesia did.
 
 ### 5.8.6 Where this sits in the roadmap
 Backgrounds, trait entry and fear selection are part of **Phase 5, character creation**, but their server side (trait storage, skill weights, fear rolls) comes from the skills and attributes designers and must be agreed before then. The panic animation and movement state go into **Phase 9** (special states) unless Dave wants them earlier because they are a signature feature; they need a few clips and one server message. Like 5.7, this is untested design.
@@ -546,6 +586,8 @@ Revised after Dave's approval. Two changes: (1) the **skeleton and the character
 - Research round on character creators in other games (sliders, face systems, dice, ancestry systems) and on code-generated smooth bodies and soft weights, with sources, as for Part 3.
 - Baseline stills and frame times (avatar and 20 NPCs) on the minimum machine.
 - Prototypes in a scratch scene, not in the game: (a) `AnimationTree` on a code-built skeleton (I2); (b) a generated smooth mesh with scripted soft weights, saved as an asset, on two extreme genomes; (c) the cost of 20 different generated bodies.
+- Check whether the Godot Voxel module the game already uses can mesh a body from distance fields (3.11.3, M13) before writing a separate mesher; benchmark GDScript surface nets at a coarse grid.
+- Prototype stepped (held) poses on one comic clip with `INTERPOLATION_NEAREST` and with manual stepping, and a squash helper bone, to see what looks right (4.6).
 Output: a short measured report and a frozen skeleton and genome spec for Dave. Size M.
 
 **Phase 1. Animation architecture.** `AnimationTree` (or the fallback), cross-fades, upper-body masks, events, data-driven gait numbers, shared action records so third person plays the same swings. Built on the new skeleton. Size M.
