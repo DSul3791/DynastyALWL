@@ -62,10 +62,12 @@ I could not confirm formal geology size names on the web (the search returned no
 | Plain stone (smooth or rough) | building, hammer, the ring around a fire | none needed |
 | Flint (DECIDED: its own stone item, common near rivers) | strike sparks; shapes into edges for knives, spear and arrow heads | Flint is a cryptocrystalline quartz and a variety of chert; flint, chert and obsidian break with a curved "conchoidal" fracture, giving sharp edges, which is why they are the usual knapping stones ([Conchoidal fracture](https://en.wikipedia-on-ipfs.org/wiki/Conchoidal_fracture), [Flint knapping](https://outdoors.nordling.de/area/flint-knapping/)) |
 | Chert | same as flint, a second tool stone | same sources |
-| Obsidian | very sharp glassy tool stone | same sources; our rocks table has basalt and tuff but no obsidian |
+| Obsidian (DECIDED IN, mid tier) | very sharp glassy tool and weapon stone, jewellery, possible magic component (Dave); brittle | same sources; our rocks table has basalt and tuff but no obsidian |
 | Pyrite (or marcasite) | historic spark-maker used with flint before steel | [Fire striker](https://en.wikipedia.org/wiki/Fire_striker): iron pyrite or marcasite was used with flint before steel. One less established wiki says its sparks are cooler and shorter than steel's; unconfirmed |
 
 Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, basalt, sandstone, marble, chalk, tuff and so on). The conchoidal fracture page describes flint as a chert found in chalk or marly limestone, so our chalk and limestone beds are a natural place for the world owner to put flint; Dave also wants it common by rivers.
+
+**Obsidian plan (Dave's direction; details are REC):** found on dormant-volcano islands past the starter islands, as rocks on or just under the surface; recognised by gamers as valuable, so it is also a trade good and a reason to sail. Uses (REC): obsidian knife, spear head, arrowhead and blade (sharp, wears faster than flint); obsidian jewellery as a high-value crafted item; magic component only if a magic system exists (magic is excluded from this list so far, Q14). Nothing about it is in any data table yet.
 
 **Making fire: what is real (sourced) and a simple game version (REC):**
 - Real: striking flint or chert on high-carbon steel sheds hot steel particles; they catch on char cloth or tinder; the ember is blown into flame in a tinder bundle ([Fire striker](https://en.wikipedia.org/wiki/Fire_striker), [Outdoor Life](https://www.outdoorlife.com/blogs/survivalist/survival-video-how-work-flint-and-steel/)). Steel gives hotter, more plentiful sparks than pyrite.
@@ -221,7 +223,8 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 9. **Furniture** (table, chair, shelf): how much? Dave's rule limits benches to weapons and tools.
 10. **Farming depth:** which crops, and do we want compost, flour and a mill?
 11. **Boats and carts:** in scope for this list?
-13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. Still open: is obsidian in?
+13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. DECIDED (Dave, 2026-10-30): **obsidian is in**, a mid-tier stone: found on islands beyond the starter islands, ones with dormant volcanoes, as rocks lying on or just under the surface. Intended uses (Dave): valuable tool and weapon material, jewellery, possible magic component. Details in section 1b.
+14. **Magic:** is there a magic system, so obsidian can be a component? If not, obsidian is tools, weapons, jewellery and trade only.
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
