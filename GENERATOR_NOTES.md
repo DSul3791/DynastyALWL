@@ -110,3 +110,13 @@ Six simulated hours from dry on tile 3,4 (water_spread_report):
 | 3.0 m3/s per km2 | 67% | 1.35 km2 |
 
 Reading: more rain wets more of the channel but the spill grows too, and even at low rain spill is above the no-inflow baseline. The channels are too shallow or leaky for the water they must carry, so the next work is the CARVING (width and depth from flow, banks higher than the water, bed without lips), not the water volume. Set to 1.0 for now. Dry channel cells at 3.0 are still 33%: look at whether those are upstream stubs of short brooks.
+
+## What the erosion model (tools/erosion_precarve/lem.py) does and does not do (2026-10-29)
+
+Checked by reading the code:
+- Rock hardness: NOT used. `ery` (erodibility per cell) was all ones. Now `run(..., ery_map=)` takes a per-cell map (higher erodes faster).
+- Rain: NOT used. Every cell counted the same area. Now `run(..., rain_map=)` scales each cell's runoff (1 = reference rain), so dry biomes make small flows and wet ones large.
+- Uplift is set by the "balance" mode so that the START surface stays in stream-power balance: the model keeps the shape it is given and only sharpens it. It does not grow valleys from nothing. For "water decides the rivers" this needs a decision: balance off (valleys develop freely, but summits and relief bands drift) or a lighter balance.
+- `tarn=True` punches 14 random sink patches that become lakes. These are placed by the model, not found by the water.
+- Design decisions from Dave: temperate, tropical and arid biomes get erosion with their own rain and erodibility; polar land (summer 0 C, winter -60 C) never thaws, so it gets no erosion, no water and only a cosmetic snow layer. Build and tune on the nine centre tiles; the rest follow from the biome maps.
+Next: build rain and erodibility maps from the climate and geology tiles, run with balance off, then read rivers from the result with the baker's fixed channel carving switched off.

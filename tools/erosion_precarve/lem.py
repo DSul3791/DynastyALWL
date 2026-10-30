@@ -80,12 +80,12 @@ def route(h, sea, n):
     return filled, rec, order[:no]
 
 @nb.njit(cache=True, fastmath=False, parallel=False)
-def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul):
+def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul, rain):
     filled, rec, order = route(h, sea, n)
     N = n*n
     cell = dx*dx
     A = np.zeros(N)
-    for q in order: A[q] = cell
+    for q in order: A[q] = cell*rain[q]   # runoff per cell: 1 = the reference rain; deserts less, wet land more
     for q in range(order.size-1, -1, -1):
         i = order[q]; d = rec[i]
         if d >= 0 and not sea[d]: A[d] += A[i]
@@ -153,15 +153,16 @@ def make_start(n, dx, seed=7, summit=1300.0):
     h = gaussian_filter(h, 1.0)
     return h
 
-def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False):
-    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h, balance=balance, bal_smooth=bal_smooth, lowboost=lowboost, low_from=low_from, low_to=low_to, tarn=tarn)
+def run_from(start_h, dx, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=False, dep=0.3, off=0.7, coast_pow=1.5, basins=14, sub=3.0, ramp_m=12000.0, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None):
+    return run(n=start_h.shape[0], dx=dx, years=years, dt=dt, K=K, m=m, U=U, D=D, seed=seed, log=log, dep=dep, off=off, coast_pow=coast_pow, basins=basins, sub=sub, ramp_m=ramp_m, start_h=start_h, balance=balance, bal_smooth=bal_smooth, lowboost=lowboost, low_from=low_from, low_to=low_to, tarn=tarn, rain_map=rain_map, ery_map=ery_map)
 
-def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False):
+def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02, seed=7, log=True, dep=0.3, off=0.7, coast_pow=1.5, summit=1300.0, basins=14, sub=3.0, ramp_m=12000.0, start_h=None, balance=0.0, bal_smooth=3.0, lowboost=0.0, low_from=150.0, low_to=350.0, tarn=False, rain_map=None, ery_map=None):
     h = (start_h.copy() if start_h is not None else make_start(n, dx, seed, summit)).ravel().astype(np.float64)
     start = h.copy()
     sea = (h <= 0).astype(np.uint8)
     h[sea == 1] = np.minimum(h[sea == 1], -1.0)
-    ery = np.ones(n*n)
+    ery = np.ones(n*n) if ery_map is None else np.asarray(ery_map, dtype=np.float64).ravel().copy()   # rock hardness / cover: higher erodes faster
+    rain = np.ones(n*n) if rain_map is None else np.asarray(rain_map, dtype=np.float64).ravel().copy()
     w = np.clip((h-low_from)/(low_to-low_from), 0, 1); w = w*w*(3-2*w)
     dmul = 1.0 + lowboost*(1.0-w)
     # uplift ramps up from the coast (distance to sea) so coastal land stays low and gentle
@@ -202,6 +203,6 @@ def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02,
     fill = np.zeros(n*n); area = np.zeros(n*n)
     nsteps = int(years/dt); t0 = time.time()
     for s in range(nsteps):
-        step(h, sea, n, dx, dt, K, m, Umap if s < off*nsteps else Uzero, D, ery, dep, fill, area, dmul)
+        step(h, sea, n, dx, dt, K, m, Umap if s < off*nsteps else Uzero, D, ery, dep, fill, area, dmul, rain)
         if log and s % 50 == 0: print(s, nsteps, round(time.time()-t0, 1), 'max h', round(h.max()), flush=True)
     return start.reshape(n, n), h.reshape(n, n), sea.reshape(n, n), fill.reshape(n, n), area.reshape(n, n), time.time()-t0
