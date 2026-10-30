@@ -70,7 +70,7 @@ Note: `data/tables/rocks.json` is terrain geology (shale, limestone, granite, ba
 **Making fire: what is real (sourced) and a simple game version (REC):**
 - Real: striking flint or chert on high-carbon steel sheds hot steel particles; they catch on char cloth or tinder; the ember is blown into flame in a tinder bundle ([Fire striker](https://en.wikipedia.org/wiki/Fire_striker), [Outdoor Life](https://www.outdoorlife.com/blogs/survivalist/survival-video-how-work-flint-and-steel/)). Steel gives hotter, more plentiful sparks than pyrite.
 - I found nothing backing "two ordinary stones make sparks reliably". Dave's 8 or 9 tries for flint and stone is a game choice, not something I confirmed. The education that IS supported: the old way was flint with pyrite, and steel replaced it.
-- REC ladder, one E action with three levels: (1) **Flint and stone**, about 8 or 9 tries (Dave); (2) later **Flint and steel** using a **Steel striker** item, usually about two strikes (Dave); (3) kindling plays the part of tinder so the spark takes. Steel striker is a new gap item. Dave decides whether pyrite exists as a middle step (Q13).
+- REC ladder, one E action with three levels: (1) **Flint and stone**, about 8 or 9 tries (Dave); (2) later **Flint and steel** using a **Steel striker** item, usually about two strikes (Dave); (3) kindling plays the part of tinder so the spark takes. Steel striker is a new gap item. Pyrite (Dave likes it) is found in coal seams, black shale and mineral veins (sources: [Geology In](https://www.geologyin.com/2024/04/pyrite-properties-uses-occurrence.html), [Rockhounding.org](https://rockhounding.org/maps/specimen/pyrite); both low-to-medium reliability); in our terrain that points at the coal and shale beds in data/tables/rocks.json. REC for the world owner, not decided. Dave decides whether pyrite exists as a middle step (Q13).
 - Char cloth (real tinder) is NOT recommended, to keep the game simple, unless Dave wants it.
 
 ## 2. Hand tools (gathering)
@@ -221,7 +221,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 9. **Furniture** (table, chair, shelf): how much? Dave's rule limits benches to weapons and tools.
 10. **Farming depth:** which crops, and do we want compost, flour and a mill?
 11. **Boats and carts:** in scope for this list?
-13. **Pyrite** as a middle step between flint-and-stone and flint-and-steel, or skip it? Is obsidian in?
+13. **Pyrite: Dave likes the idea (2026-10-30)** as the middle step between flint-and-stone and flint-and-steel. Where it is found: see below. Still open: is obsidian in?
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
