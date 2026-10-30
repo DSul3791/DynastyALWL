@@ -280,6 +280,12 @@ static func path() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
+	_box(root, Vector3(0.7, 0.012, 1.0), Vector3(0.0, 0.02, 0.0), _earth)   # the trodden middle, a little higher and paler than the verge
+
+	for k in 7:   # small stones pressed into the edges
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		_stone_at(root, Vector3(side * (0.46 + 0.02 * float(k % 3)), 0.03, -0.42 + 0.14 * float(k)), float(k) * 0.9)
+
 	return root
 
 

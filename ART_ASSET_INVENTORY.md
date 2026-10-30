@@ -29,15 +29,15 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 14 Items: containers, coins, clothing and gear | 0 | 1 | 17 | 0 | 0 | 18 |
 | 15 Items: placeable kits | 0 | 4 | 29 | 2 | 0 | 35 |
 | 16 Placed structures: shelter, storage, fires and traps | 0 | 0 | 6 | 7 | 0 | 13 |
-| 17 Placed structures: building pieces | 0 | 3 | 27 | 0 | 0 | 30 |
+| 17 Placed structures: building pieces | 0 | 1 | 29 | 0 | 0 | 30 |
 | 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
 | 19 Creatures, animals and NPCs | 4 | 0 | 10 | 6 | 0 | 20 |
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **35** | **603** | **115** | **0** | **843** |
+| **All categories** | **90** | **33** | **605** | **115** | **0** | **843** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 35, stage 2 590, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 33, stage 2 592, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
@@ -1195,7 +1195,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 17 Placed structures: building pieces
 
-30 entries. Stages: 3 x stage 1, 27 x stage 2.
+30 entries. Stages: 1 x stage 1, 29 x stage 2.
 
 
 ### building pieces (16)
@@ -1205,14 +1205,14 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Wall section | structure state 22, material wood | data/items/structures.json wall_section (state 22, look "wall") | built in code via look_table.gd LOOKS[wall] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Floor section | structure state 23, material wood | data/items/structures.json floor_section (state 23, look "ceiling") | built in code via look_table.gd LOOKS[ceiling] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Roof section | structure state 24, material wood | data/items/structures.json roof_section (state 24, look "roof") | built in code via look_table.gd LOOKS[roof] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
-| Foundation section | structure state 25, material wood | data/items/structures.json foundation_section (state 25, look "foundation") | built in code via look_table.gd LOOKS[foundation] -> piece_look.gd | 1 | piece_look builds it from a few untextured/plain boxes (e.g. prop() is ~9 lines) |
+| Foundation section | structure state 25, material wood | data/items/structures.json foundation_section (state 25, look "foundation") | built in code via look_table.gd LOOKS[foundation] -> piece_look.gd | 2 | stone-block rim slab with a packed-earth top, 4 x 4 x 0.3 m: reads as a plinth |
 | Doorway section | structure state 26, material wood | data/items/structures.json doorway_section (state 26, look "door_shut") | built in code via look_table.gd LOOKS[door_shut] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Window section | structure state 27, material wood | data/items/structures.json window_section (state 27, look "window_wall") | built in code via look_table.gd LOOKS[window_wall] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Door open | structure state 28, material wood | data/items/structures.json door_open (state 28, look "door_open") | built in code via look_table.gd LOOKS[door_open] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Timber prop | structure state 29 | data/items/structures.json timber_prop (state 29, look "prop") | built in code via look_table.gd LOOKS[prop] -> piece_look.gd | 2 | plain timber posts/rails/rungs: reads as what it is, no texture detail beyond the board material |
 | Timber set | structure state 30 | data/items/structures.json timber_set (state 30, look "set") | built in code via look_table.gd LOOKS[set] -> piece_look.gd | 2 | plain timber posts/rails/rungs: reads as what it is, no texture detail beyond the board material |
 | Ladder | structure state 31 | data/items/structures.json ladder (state 31, look "ladder") | built in code via look_table.gd LOOKS[ladder] -> piece_look.gd | 2 | plain timber posts/rails/rungs: reads as what it is, no texture detail beyond the board material |
-| Path patch | structure state 32 | data/items/structures.json path_patch (state 32, look "path") | built in code via look_table.gd LOOKS[path] -> piece_look.gd | 1 | piece_look builds it from a few untextured/plain boxes (e.g. prop() is ~9 lines) |
+| Path patch | structure state 32 | data/items/structures.json path_patch (state 32, look "path") | built in code via look_table.gd LOOKS[path] -> piece_look.gd | 2 | packed-earth patch with a raised trodden middle and edge stones (offline-checked only) |
 | Thatch wall | structure state 37, material thatch | data/items/structures.json thatch_wall (state 37, look "thatch_wall") | built in code via look_table.gd LOOKS[thatch_wall] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Thatch floor | structure state 42, material thatch | data/items/structures.json thatch_floor (state 42, look "thatch_floor") | built in code via look_table.gd LOOKS[thatch_floor] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
 | Thatch roof | structure state 43, material thatch | data/items/structures.json thatch_roof (state 43, look "thatch_roof") | built in code via look_table.gd LOOKS[thatch_roof] -> piece_look.gd | 2 | textured box slabs (board texture / thatch), no tiers; the six-tier looks in art/BUILDING_TIERS_LOOKS.md are design pictures only and not built |
