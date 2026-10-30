@@ -89,6 +89,7 @@ const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
+const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -2794,7 +2795,8 @@ func _dress_avatar() -> void:
 
 
 func _make_avatar() -> Node3D:
-	var avatar: Node3D = RagdollScript.new()
+	# --generated-body (off by default, untested in the running game): the generated body of src/client/character/ instead of the old ragdoll.
+	var avatar: Node3D = GeneratedBodyScript.new() if OS.get_cmdline_user_args().has("--generated-body") else RagdollScript.new()
 	avatar.visible = false
 	return avatar
 

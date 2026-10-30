@@ -599,7 +599,9 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			# Only the primitives of the vertex's own group give it weight, so a torso vertex beside an arm never follows the arm.
 			w[i * bone_count + int(q["bone"])] += exp(-maxf(d, 0.0) / fall)
 
-		colors[i] = _material_color(best_mat, g)
+		var shown_color: Color = _material_color(best_mat, g)
+		shown_color.a = (float(best_mat) + 0.5) / 8.0       # the material id rides in alpha (opaque materials ignore it); GeneratedBody uses it to recolour
+		colors[i] = shown_color
 
 	var neighbours: Array = []
 	neighbours.resize(count)
