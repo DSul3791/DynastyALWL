@@ -717,7 +717,7 @@ func _init() -> void:
 
 	# Spade sizes (Dave 2026-10-22): a large spade moves 8 pieces, a medium 4, a small 1.
 	m.inventory_of(1).remove(m.table.number_of("wooden_spade"), 1)
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade_large"), 0, 1, Vector3.ZERO)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("iron_spade"), 0, 1, Vector3.ZERO)
 	check(m._spade_pieces(m.inventory_of(1)) == 8, "a large spade moves 8 pieces (%d)" % m._spade_pieces(m.inventory_of(1)))
 	digs.clear()
 	m._last_dig.clear()
@@ -736,7 +736,7 @@ func _init() -> void:
 	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and fills[0][1] < 1.8 and m.inventory_of(1).count_of(soil_n) == 0, "a short pack raises a smaller heap")
 	m.take_fill(1, 100000)
-	m.inventory_of(1).remove(m.table.number_of("wooden_spade_large"), 1)
+	m.inventory_of(1).remove(m.table.number_of("iron_spade"), 1)
 	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
 
 	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
