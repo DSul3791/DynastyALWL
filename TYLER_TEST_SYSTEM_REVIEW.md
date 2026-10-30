@@ -2,19 +2,45 @@
 
 Branch `claude/tyler-gates-fee5f7`. Timings are measured on this PC (12 threads, Godot 4.7.2, 6 jobs unless stated) with the whole 109-test set run twice (the first run was in a fresh worktree with no import cache, which exposed bug 1 below). Nothing was merged into main.
 
+## Decisions (30 Oct 2026, Tyler; Dave asked me to decide the open options)
+
+| Option | Decision | Done in | What we lose |
+|---|---|---|---|
+| A. Slow world and water tests | **Per commit: only the slow tests that load a changed file. All 108 tests once a day (`tools/nightly_slow.sh`) and before every ship to main (`ship.sh`; `SKIP_SLOW=1` skips).** `slow_mode` in `test_lanes.json` switches back to "always" | d9d7e43b, 695669c6 | A break in a test the diff does not reach can sit up to a day (or until the next ship). The closure scan can miss a dependency made by string at run time; the nightly run is the net |
+| B. `test_animals` limit | **Only the 150-animals-all-near check goes from 2 ms to 3 ms.** The 20-player 2 ms budget check is untouched. The PC known-failure list is empty again | commit "Option B" | 50 percent more slack on that one stress check |
+| C. Gate-tool edits | **Edits to `test_lanes.json`, `run_tests.sh`, `run_one_test.sh`, `tests_for_diff.py` and the selftest run the lane check and the selftest (1 min), no game tests** | d9d7e43b | A lane edit that wrongly moves a game test is caught by the next real change or the nightly run |
+| D. `.import` line endings | **`*.import text eol=lf` in `.gitattributes`** | 20823bce | Nothing; see the correction in section 3 |
+| Linux-only paths | `ship.sh`, `next_build.sh`, `watch_answers.sh`, `balance_sheet.py` made path-independent | a19ed7b4 | Nothing. `look_rig.sh` already had a Windows branch; I was wrong to list it |
+
+**Measured effect of A and C (selector on the last 30 DailyDev commits, CPU seconds, from this PC's per-test times):** 24,767 before any of my changes, 14,826 now (minus 40 percent). Eight commits (tool-only or python-only edits such as f4c88438 and 9cfea081) drop from about 1,185 to 62 s; 8411eca1 drops from 1,196 to 698 s. The other world-generator commits (6f6dc18e, 4a3e9e62, 066a4e7d, 9a110cc1 and similar) still run most of the slow lane, because those files really are loaded by `test_worldgen`, `test_head_pond_fill` and `test_water_soak`. The saving is real but smaller than the 6 minutes per commit I first suggested.
+
+**Final full run (`tools/nightly_slow.sh`, 6 jobs, after all changes): 108 pass, 0 fail, 394 s wall.** There are 108 tests because `test_scree` is archived; `test_animals` passes at the new limit. Slowest: water_soak 379 s, worldgen 325 s, head_pond_fill 210 s, tile_lakes 72 s.
+
+### Sources and confidence
+
+| Topic | Source | What it says | Confidence |
+|---|---|---|---|
+| Test selection per commit, full run nightly | [Martin Fowler, The Rise of Test Impact Analysis](https://martinfowler.com/articles/rise-test-impact-analysis.html) | A common setup is a smaller suite per commit plus a nightly job that runs everything; the cost is delayed bad news | High for the article; the fit to a 108-test Godot project is my judgment |
+| Selection can miss; keep a full run | [regression-suite-selector write-up](https://tessl.io/registry/testland/regression-suite-selector), [Datadog on its test selection](https://www.datadoghq.com/blog/streamline-ci-testing-with-datadog-intelligent-test-runner.md), [minware on test impact analysis](https://www.minware.com/guide/best-practices/test-impact-analysis) | Run everything on the default branch as a failsafe; unmappable changes (config, tooling) should fall back to more tests; nightly failures that PR runs missed show selection gaps | Medium: vendor and blog sources |
+| Tiered suites | [archman.dev CI integration guide](https://archman.dev/docs/testing-strategy/test-automation/ci-integration) | Fast checks per commit, slower ones nightly or pre-release | Low to medium: secondary source, its minute figures are rough |
+| Godot and line endings | [Godot docs, Version control systems](https://docs.godotengine.org/en/4.4/tutorials/best_practices/version_control_systems.html) | Git for Windows defaults to `core.autocrlf=true`, which marks files modified because of CRLF; Godot recommends `autocrlf=input` or LF through `.gitattributes`; ignore `.godot/` | High (official). It says nothing specific about `.import` files |
+| `*.import text eol=lf` | [community .gitattributes example](https://github.com/Teslacrashed/godot-tooling/blob/trunk/.gitattributes) | Uses exactly that line | Low as a source; my own test is the evidence: after the change 73 phantom modifications were gone |
+| gitattributes mechanics | [git gitattributes manual](https://manpages.ubuntu.com/manpages/jammy/man5/gitattributes.5.html) | `eol` implies `text`; existing CRLF paths may look dirty until re-added | High (official) |
+| Shell portability | [Bash FAQ 062 on temporary files](https://mywiki.wooledge.org/BashFAQ/062?action=raw), [Unix SE thread on tmp dirs across platforms](https://wiki.neonvagabond.xyz/content/unix.stackexchange.com_en_all_2024-05/questions/174817/finding-the-correct-tmp-dir-on-multiple-platforms) | Prefer `mktemp`; honour `TMPDIR`; do not hardcode `/tmp` | Medium. The search did not confirm `mktemp` ships in Git bash; I tested it here and it works |
+
 ## Summary
 
 | # | Finding | Size | Status |
 |---|---|---|---|
 | 1 | A test that does not compile leaves Godot idle; the runner waited the full limit (4 slow tests x 1500 s). A fresh checkout also failed 12 tests with misleading errors until `godot --import` ran | 25 min lost per broken run | **Fixed** (stops after about 2 s; imports once) |
-| 2 | The slow lane (9 tests, 1123 CPU s, about 6 to 7 min wall) starts for every change under `src/worldgen/` or `src/water/`, including offline tool scripts; 13 of the 19 non-doc commits among the last 30 on DailyDev paid it | 6 to 7 min per commit | Tool scripts **fixed**; the rest is **option A** below |
+| 2 | The slow lane (9 tests, 1123 CPU s, about 6 to 7 min wall) starts for every change under `src/worldgen/` or `src/water/`, including offline tool scripts; 13 of the 19 non-doc commits among the last 30 on DailyDev paid it | 6 to 7 min per commit | **Fixed** (A) |
 | 3 | `test_animals` fails on this PC every time (2.0 to 2.4 ms against a 2 ms limit); plain `run_tests.sh` ended in "1 fail" on any run that picked it | noise | **Fixed** (known failures from `tech/TEST_BASELINE_PC.md` are reported, not counted) |
 | 4 | `test_water_steady` could never fail (always exited 0); `test_scree` has no check at all and writes to `/tmp` | 2 false-safe tests | **Fixed** / **archived** |
 | 5 | CI merge guard only ran on pushes to `claude/generator-v2` (retired); pull requests still ran | no push guard on main | **Fixed** |
 | 6 | The suite is lean: median 1.9 s per test, 83 of 109 under 3 s. Five tests are 94 percent of the time | n/a | Do not prune small tests (saves about 2 s each) |
-| 7 | Changing any gate tool file (`test_lanes.json`, `run_tests.sh`, `tests_for_diff.py`) selects all 96 fast tests | about 4 min wall | **Option C** |
-| 8 | Linux paths: `ship.sh`, `next_build.sh`, `watch_answers.sh`, `balance_sheet.py`, `look_rig.sh`; four tools nothing references | housekeeping | Reported; not changed |
-| 9 | Import rewrites 85 tracked `.import` files (line endings), so a clean tree is dirty after any run | noise | **Option D** |
+| 7 | Changing any gate tool file (`test_lanes.json`, `run_tests.sh`, `tests_for_diff.py`) selected all 96 fast tests | about 4 min wall | **Fixed** (C) |
+| 8 | Linux paths: `ship.sh`, `next_build.sh`, `watch_answers.sh`, `balance_sheet.py`; four tools nothing references | housekeeping | Paths **fixed**; unreferenced tools reported |
+| 9 | After any Godot import, 73 tracked `.import` files show as modified with no content change (Godot writes LF, `autocrlf` expects CRLF); 6 more differ for real (texture format) | noise | **Fixed** (D) |
 
 ## 1. How it works today (one page)
 
@@ -67,12 +93,12 @@ Runner:
 - Timing test list: `test_fish_schools` is still a timing test though `FLAKY_TESTS.md` says it was fixed. Keep until `flake_finder.sh` gives 20 clean runs (not run, about 10 min).
 
 Platform and dead scripts:
-- Linux paths on this Windows PC: `ship.sh` (`BUILD_LOG_DIR=/mnt/project-files/tech`, skipped if the folder is missing, so it still runs), `next_build.sh`, `watch_answers.sh`, `balance_sheet.py` (`/mnt/project-files/...`), `look_rig.sh` (`/opt/godot`), `bots.sh` and `hole_stress.sh` (`/tmp`), `test_scree` (`/tmp`, now archived). `python3` and `timeout` resolve in Git bash here.
+- Linux paths on this Windows PC: `ship.sh` (`BUILD_LOG_DIR=/mnt/project-files/tech`, skipped if the folder is missing, so it still runs), `next_build.sh`, `watch_answers.sh`, `balance_sheet.py` (`/mnt/project-files/...`), `bots.sh` and `hole_stress.sh` (`/tmp`), `test_scree` (`/tmp`, now archived). `python3` and `timeout` resolve in Git bash here.
 - `ship.sh` carried another session's `Claude-Session:` trailer in every commit message. **Fixed**. It also writes `/tmp/ship_lc.txt`; now honours `TMPDIR`.
 - Nothing references: `tools/merge_check.sh` (wrapper for `merge_check.py`), `pause_for_backup.sh`, `rebuild_starter_cache.sh`, `selftest_gate_tools.sh` (used by hand only). Not removed: move them to `proposed_removals/` on Dave's OK.
 - `merge_check.yml` named a branch that was retired (**fixed**). Its `fetch-depth: 0` clone is the only CI cost.
 - Docs: `GATE_FIX_PLAN.md` and `GATE_BEFORE_AFTER.md` describe `gate.sh`, `gate_queue.sh` and a nightly job that are archived or never ran. `docs/mirror/tech/TEST_BASELINE.md` says "generator-v2". Left as history.
-- Git line endings: `.gitattributes` has `* text=auto`, but Godot writes `.import` files with LF. A full import dirties 85 tracked `.import` files and adds 2 untracked ones under `docs/archive/`. I restored them before committing.
+- Git line endings (correction): the repo stores `.import` files as LF, the checkout is CRLF (`autocrlf=true`), and Godot rewrites them as LF. After an import git listed 79 as modified; ignoring line endings only 6 differ for real (`assets/stations/forge_*_N.png.import`: Godot picks the plain texture format here instead of the VRAM-compressed one stored in the repo). The other 73 were phantom changes, and `*.import text eol=lf` removed them. The 6 real differences are platform import settings and will reappear after each import; not changed.
 
 ## 4. Recommendations, in order of value
 
@@ -80,13 +106,13 @@ Platform and dead scripts:
 |---|---|---|---|---|---|
 | 1 | Stop broken tests at once; import in a fresh checkout | high (25 min) | small | none | done |
 | 2 | Offline tool scripts do not start the slow lane | high (6 min per tool edit) | small | low | done |
-| 3 | Option A: per-commit slow lane = closure only; full slow lane daily and before main | very high (6 min on about half the commits) | small (one rule in `test_lanes.json`; a nightly job) | a day's delay on world regressions | **needs Dave** |
+| 3 | Option A: per-commit slow lane = closure only; full slow lane daily and before main | very high (6 min on about half the commits) | small (one rule in `test_lanes.json`; a nightly job) | a day's delay on world regressions | **done** |
 | 4 | Known-failure list in `run_tests.sh` | medium | small | none | done |
 | 5 | `test_water_steady` exit code; archive `test_scree` | low | small | none | done |
 | 6 | CI trigger fixed | low | small | none | done |
-| 7 | Option C: gate-tool edits run `--check-lanes` and the selftest, not 96 tests | medium (4 min per tool edit) | small | a lane edit could skip a test | **needs Dave** |
-| 8 | Option B: `test_animals` limit | low | small | changes what the test checks | **needs Dave** |
-| 9 | Option D: `.import` line endings | low | small | line-ending churn either way | **needs Dave** |
+| 7 | Option C: gate-tool edits run `--check-lanes` and the selftest, not 96 tests | medium (4 min per tool edit) | small | a lane edit could skip a test | **done** |
+| 8 | Option B: `test_animals` limit | low | small | changes what the test checks | **done** |
+| 9 | Option D: `.import` line endings | low | small | line-ending churn either way | **done** |
 | 10 | Archive 3 unreferenced tool scripts; fix Linux paths in `next_build.sh`, `watch_answers.sh` | low | small | low | later |
 
 ## 5. What I changed (one commit each, none touches main or deletes anything)
@@ -103,7 +129,7 @@ Platform and dead scripts:
 
 Verified after the changes: `selftest_gate_tools.sh` 16 pass, 0 fail; `tests_for_diff.py --check-lanes` 0 missing; `local_check.sh` PASS (38 s); `parse_scan` 0 problems; `merge_check` all clear. Not re-run after the changes: the full 109-test run (the second full run, 108/1, was before the last two edits).
 
-## 6. Options for Dave (questions for the QA page)
+## 6. Options as first written (superseded by the Decisions section)
 
 **A. How often should the heavy world and water tests (about 6 min) run?** (1) Every commit that touches world or water code, as today. (2) Recommended: per commit only the tests that touch the changed files; the full set once a day and before anything goes to main. (3) Only when asked and before main. Lose with 2: a world or water break can hide until the daily run.
 
