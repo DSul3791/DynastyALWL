@@ -30,13 +30,12 @@ sed -i "3s/.*/HEAD = build $NEW on main ($TITLE merged). Dave: close game and le
 ENTRY="- $(date -u +%H:%M) UTC $(date -u +%d) Oct Guru_003: MERGED $NEW ($TITLE), tested id $HASH, $NOTE; merge_check and marker grep clean."
 echo "$ENTRY" >> docs/mirror/tech/BUILD_LOG.md; [ -d "$LOGDIR" ] && echo "$ENTRY" >> "$LOGDIR/BUILD_LOG.md"
 sed 's#export PATH="$PWD/tools:$PATH"#true#' tools/local_check.sh > tools/lc_tmp.sh
-CHANGE_LABEL=$LABEL bash tools/lc_tmp.sh 2>&1 | tail -3 | tee /tmp/ship_lc.txt; rm -f tools/lc_tmp.sh
-grep -q 'LOCAL CHECK: PASS' /tmp/ship_lc.txt || die "local_check failed (merge and bump are in the tree, not pushed)"
+CHANGE_LABEL=$LABEL bash tools/lc_tmp.sh 2>&1 | tail -3 | tee "${TMPDIR:-/tmp}/ship_lc.txt"; rm -f tools/lc_tmp.sh
+grep -q 'LOCAL CHECK: PASS' "${TMPDIR:-/tmp}/ship_lc.txt" || die "local_check failed (merge and bump are in the tree, not pushed)"
 git add HANDOFF.md docs/mirror/tech src data tools 2>/dev/null
 git commit -qm "Build $NEW: $TITLE merged
 
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01FuHMTZERqd1m7CUyVqcdHW" || die "commit failed"
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>" || die "commit failed"
 [ -n "${NO_PUSH:-}" ] && { echo "NO_PUSH set: stopping before push at build $NEW"; exit 0; }
 # main is protected, so the build lands through a pull request from its own ship/ branch (tools/pr_merge.sh).
 SHIP_BR=ship/build-$NEW
