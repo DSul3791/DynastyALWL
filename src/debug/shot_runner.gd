@@ -59,6 +59,7 @@ var _item_tries: int = 0
 var _item_views: Array = []
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
+var _stance_msec: int = 0
 var stance_index: int = -1      # --shot-stance=stand|crouch|sit|lie: holds that stance for the whole run (third-person body poses; the stance script is client.stance)
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
@@ -228,8 +229,8 @@ func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
 
-	if stance_index >= 0:
-		client.stance.set_stance(stance_index)
+	if stance_index >= 0 and client.shot_stance != stance_index:
+		client.shot_stance = stance_index   # the runner flies the body, which stands it up, so the avatar clip is forced instead
 
 	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
 	if client._spawn_test != "":

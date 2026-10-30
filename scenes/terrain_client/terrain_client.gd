@@ -2688,6 +2688,7 @@ const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the ca
 var view_cam: Camera3D
 var third_person: bool = false
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
+var shot_stance: int = -1                                # shot runner only (--shot-stance): draw the third-person body in this stance (0 stand, 1 crouch, 2 sit, 3 lie) even while the runner flies
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
 var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
@@ -2769,9 +2770,9 @@ func _update_view(delta: float) -> void:
 
 	if _avatar.visible:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
-		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
+		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance if shot_stance < 0 else shot_stance]
 
-		if stance.stance == StanceScript.STAND and pace > 0.6:
+		if (stance.stance if shot_stance < 0 else shot_stance) == StanceScript.STAND and pace > 0.6:
 			# Walk, jog or run by the real speed, with a margin so the clip does not flicker at a limit; the playback speed keeps the
 			# stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 			var current_clip: String = _avatar.current()
