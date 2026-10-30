@@ -134,3 +134,12 @@ Plan for `lem.py`: per cell, erodibility at each step = cover (while any cover i
 - Gentle settings (K 4e-6, U 1.2e-3, D 0.25): almost no channels (289 cells over 0.35 km2, biggest drainage 2.8 km2).
 - 4x K and U, D 0.08 (design3): 3,220 channel cells, 1,016 over 1 km2, max cut 401 m. But the channels are STRAIGHT, parallel and radial down the cone: no branching, no meanders. Cause: the designed islands are smooth cones, so steepest descent has nothing to converge on; at 32 m the start has lost the 8 m detail.
 - Next: break the symmetry with what nature uses, i.e. layered rock (hard and soft bands steer water sideways and make branches; see "Layered rock for the erosion"), a little noise in erodibility, and a longer run. Rain maps per biome after that.
+
+## Layered rock in the erosion (rock1, 2026-10-29)
+
+`tools/erosion_precarve/rock.py` + `src/worldgen/tools/export_geology.gd`: the erosion reads the generator's real rock stack (province, datum plus fold offset, layers, cycle, intrusions) and loose cover (4 m, erodibility 5 until washed off), so each cell's K follows the rock at its current height (rock1: design3 settings plus `geology_dir`). Fix needed: the smoothing step's stability limit must include the erodibility (soft rock blew it up to NaN).
+- Result: the big island's flank is carved into ridges and spurs where hard layers stand; 3,732 channel cells over 0.35 km2 (was 3,220), biggest drainage 3.9 km2.
+- Summit fell from 1,473 m to 1,060 m: hard-rock ridges are less tall than the uniform run because the soft cover and shale go fast. design_U needs calibrating (raise until summits hold) before the real run.
+- Channels are STILL straight: D8 routing on 32 m cells always runs the steepest of 8 directions, so reaches are straight until something bends them. Meanders are not an erosion output here; they need their own step, working inside the valley the erosion made (see below).
+
+Meander step (planned, read-only, in the river-finding stage): take each river's line from the drainage tree, then bend it sideways with sinuosity that grows as the valley floor flattens (slope low, drainage large), kept inside the valley floor, and cut the bed along the bent line. High, steep reaches stay straight and fast; the lower flat reaches wander to the sea.
