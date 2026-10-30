@@ -12,6 +12,7 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const ArmsView := preload("res://src/client/character/arms_view.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
@@ -177,24 +178,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 # A small skin-coloured, slightly flattened ball at a hand mount: with a tool it is the fist round the handle, without one it
 # gives the bare hand a shape.
 func _make_fist(mount: Node3D, at: Vector3) -> void:
-	if mount == null:
-		return
-
-	var fist: MeshInstance3D = MeshInstance3D.new()
-	fist.name = "Fist"
-	var ball: SphereMesh = SphereMesh.new()
-	ball.radius = 0.05
-	ball.height = 0.1
-	ball.radial_segments = 10
-	ball.rings = 5
-	var skin: StandardMaterial3D = StandardMaterial3D.new()
-	skin.albedo_color = FIST_COLOR
-	skin.roughness = 0.9
-	ball.material = skin
-	fist.mesh = ball
-	fist.scale = Vector3(1.0, 0.9, 1.25)
-	fist.position = at
-	mount.add_child(fist)
+	ArmsView.make_fist(mount, at, FIST_COLOR)
 
 
 # First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
@@ -782,14 +766,8 @@ func _place_arms(delta: float) -> void:
 		return
 
 	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _arms.is_one_shot_playing()
-	_arm_up = lerpf(_arm_up, 1.0 if working else 0.0, 1.0 - exp(-ARMS_FOLLOW_K * delta))
-	var eye: Transform3D = _camera.global_transform
-	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
-	var body_pose: Transform3D = Transform3D(yaw * Basis(Vector3.RIGHT, deg_to_rad(REST_PITCH_DEG)), eye.origin + Vector3(0.0, -REST_DOWN_M, 0.0) + yaw * Vector3(0.0, 0.0, REST_BACK_M))
-	var side: Transform3D = eye.affine_inverse() * body_pose
-	var up_pos: Vector3 = ARMS_POS
-	var up_basis: Basis = Basis(Vector3.RIGHT, deg_to_rad(ARMS_PITCH_DEG))
-	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)).scaled(Vector3.ONE * ARMS_SCALE), side.origin.lerp(up_pos, _arm_up))
+	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
+	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.

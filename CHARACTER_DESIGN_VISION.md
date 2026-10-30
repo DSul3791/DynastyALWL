@@ -762,9 +762,9 @@ Not yet done in Plan 2: viewing the clips on screen (a walk strip and the panic 
 
 **Plan 5. Motion on screen.** Render a walk strip and the panic poses for two or three bodies, so Dave can judge them; test squash and stretch with a helper bone; test foot placement on a slope with `TwoBoneIK3D`; measure the cost of 20 animation trees in one scene. Files: `tools/proto_motion_view.gd` and pictures in `art/character_proto/motion/`. Done when: pictures exist, the IK test says whether feet stay planted, and the 20-tree cost is a number.
 
-**Plan 6. Body version 2.** Fingers (thumb and two or three finger groups) and a nicer hand, a better face (eye lids that can open wide, a brow raise by swap), seam fixes, a lower-detail variant for distance, a genome that can be saved and shared as a code (5.7.9), and a check script for the generator (bone set, limits, no holes). Files: `body_generator.gd` and new check tools.
+**Plan 6. Body version 2. DONE (8.6c).** Fingers (thumb and two or three finger groups) and a nicer hand, a better face (eye lids that can open wide, a brow raise by swap), seam fixes, a lower-detail variant for distance, a genome that can be saved and shared as a code (5.7.9), and a check script for the generator (bone set, limits, no holes). Files: `body_generator.gd` and new check tools.
 
-**Plan 7. First-person arm extraction.** Move the arm-model code out of `held_item.gd` (about 1,800 lines, tangled with tool handling) into a module with the same equivalence-check approach as Plan 4. Only after Plans 5 and 6 settle the skeleton, because the arms must use it. If the equivalence check cannot cover enough of it, I will stop and report instead of editing blind.
+**Plan 7. First-person arm extraction. DONE for the arm placement and fist (8.6d); the rest is not moved.** Move the arm-model code out of `held_item.gd` (about 1,800 lines, tangled with tool handling) into a module with the same equivalence-check approach as Plan 4. Only after Plans 5 and 6 settle the skeleton, because the arms must use it. If the equivalence check cannot cover enough of it, I will stop and report instead of editing blind.
 
 ## 8.6b Plan 5 results: motion on screen, foot IK, cost of 20 animation trees
 
@@ -772,6 +772,46 @@ Not yet done in Plan 2: viewing the clips on screen (a walk strip and the panic 
 - **Foot IK works (`tools/proto_ik.gd`, headless, 3 of 3 checks pass).** Godot's `TwoBoneIK3D` (new in 4.6, present in 4.7) moved the left foot of a generated body onto a target 15 cm higher to within 0.000 m, bent the knee toward the pole target (z -0.26 m, forward) and left the right foot where it was. The setup is `setting_count` plus indexed setters (`set_root_bone_name`, `set_middle_bone_name`, `set_end_bone_name`, `set_target_node`, `set_pole_node`), verified through the class API. **Catch found:** the modified pose can be read only inside the skeleton's `skeleton_updated` signal; reading `get_bone_global_pose()` at other times returns the unmodified pose, which at first looked like "IK does nothing". This is the kind of thing the 4.6 blog and docs did not say (research gap B10 now has a working recipe on our rig). The check starts the legs slightly bent; a perfectly straight chain was not tested separately.
 - **Cost of 20 animation trees (`tools/proto_motion_bench.gd`, headless, one run):** 20 generated bodies with an `AnimationTree` each: **0.150 ms per frame for all 20** (0.0075 ms each); with a plain `AnimationPlayer` each: 0.100 ms for all 20. This is animation evaluation only; it excludes drawing and GPU skinning (headless), and this PC is probably faster than the minimum machine, so treat it as a lower bound. It is far inside the earlier 1 ms budget for 20 bodies, so the `AnimationTree` is not a cost worry on the evidence so far (the forum worries in 3.2 B5 were about much larger crowds on weaker CPUs).
 - **Not done in Plan 5:** squash and stretch with a helper bone (left for Plan 6 with the new hands), full-scene cost with drawing on the minimum machine, IK on a real slope with ground rays.
+
+## 8.6c Plan 6 result: body version 2
+
+- **Hands:** a simplified hand with a thumb and three finger groups (index, middle and ring together, little), two bones each, 16 more bones (37 in all, Godot humanoid names such as `RightIndexProximal`). Each hand is meshed on its own finer grid (about 9 mm) so fingers exist at all (at the body's 3 to 4 cm grid they would vanish). Poses tried in `art/character_proto/hands/hands_and_faces.png` (top row): open, fist, point (index out, the rest curled), claw. They read as hand shapes; they are crude.
+- **Face:** eyes and brows are now small movable parts on the head bone (no mesh rebuild): `Generator.set_expression(face, open, brow_raise)` blinks (open near 0), widens (1.35) and raises or lowers the brows. Bottom row of the same picture: normal, blink, wide eyes with raised brows, narrowed eyes with lowered brows. No lip-sync, no jaw (Part 4.6).
+- **Share code:** `Generator.encode(genome)` gives a short text (version byte, one byte per slider, three bytes per colour, a check byte, Base64; 64 characters or fewer); `decode` refuses cut, damaged, empty or foreign text and never executes anything from it.
+- **Detail levels:** `Generator.lod_voxel(level)`: 3.0, 4.5 and 7.0 cm grids (near, middle, far); the hand grid scales with it.
+- **Speed after adding hands:** 0.63 to 0.83 s per body at 3.5 cm detail (7,600 to 10,800 triangles) in GDScript on this PC, after speeding up the skin weights (they now only look at the parts of the vertex's own group). Hands cost about 1,000 triangles per body at near detail, so a far level should drop the fingers (not built yet).
+- **Check (`tools/check_body_generator.gd`, headless): 244 checks, 0 failures:** bone names unique, parents before children, required bones present; for each archetype no NaN vertices, unit normals, weights in range and summing to 1, valid indices, plausible height (1.5 to 2.3 m), feet at the floor, left and right balanced, bones that matter carry weight; **every one of the 18 sliders at both extremes gives a valid body**; share code round trip, refusal of damaged codes; same genome gives the same mesh and weights.
+- **Not done in Plan 6:** squash and stretch, seam lines at limb joints, a far detail level without fingers, a skin bind check after reload, real texture or lighting work.
+
+## 8.6d Plan 7 result: first-person arm rules moved out of `held_item.gd`
+
+The rules for how the arms follow the body at rest and the camera while working (`next_arm_up`, `arms_transform`) and the fist at each hand mount (`make_fist`) moved to `src/client/character/arms_view.gd`; `held_item.gd` shrank by 22 lines (4 added, 26 deleted) and calls it, passing its own tuning constants. **Check (`tools/check_arms_view.gd`, headless): 4,013 cases, 0 differences** against the old formulas repeated as the reference (2,000 random arm-up blends, 2,000 random camera poses, fist size, place and colour), plus a test that reads `held_item.gd` as text and fails if any of the seven tuning constants was changed, plus a compile check of `held_item.gd` and `terrain_client.gd`. **Not moved:** the swing, jab and throw timers, the tool mounting and the per-tool constants (about 1,700 lines), because they are entangled with the item and network code and I could not build an honest equivalence check for them without running the game.
+
+## 8.6e Three more plans (approved by me under the moderator's pre-approval; Plan 8 starts now)
+
+**Plan 8. Existing clips on the new skeleton, and a drop-in adapter.** Convert every clip of the old rig automatically (rename the bone tracks to the new names, scale the hips position by hips height) so no clip is authored twice; build an adapter node with the same methods the game uses on the old body (`play`, `current`, `is_one_shot_playing`, `animation_player`, `hand_mount_r`, `hand_mount_l`, `head_mount`, `dress`, `set_shoulder_log`, `skeleton`, `body_mesh`) so the generated body can replace the old one behind a command-line switch that is **off by default**. Done when: the converted clips match the old ones numerically on mapped bones and the adapter passes a method-by-method check. Needs a look in the running game before anyone turns it on.
+
+**Plan 9. Creator prototype.** A standalone scene (new files only) with sliders for the 18 genome values, a dice button for everything and one per section, per-slider locks, undo, preset archetypes, a share-code box and a turntable preview using the same generator. Logic (dice, locks, undo, codes) checked headless; looks checked by pictures.
+
+**Plan 10. Motion polish.** Strafe and backward walking, jump, fall and land, crouch walk, swim and ladder clips, squash and stretch with a helper bone, foot placement on a real slope with ground rays, and a far detail level without fingers; each with a headless check where one is possible and pictures where not.
+
+## 8.7 What was tested how (for Dave's review)
+
+Nothing below was run inside the real game. **"Headless" means a command-line run with no window; "pictures" means my own render script showing the generated bodies in a bare test scene, not the game's scene, lighting or camera.**
+
+| Item | How it was tested | Still needs a look in the running game |
+|---|---|---|
+| Body generator (shape, bones, weights, 18 sliders at extremes, share code) | 244 headless checks, all pass | Yes: how the body looks in the game's lighting, textures and at game distances; per-frame cost with real drawing on the minimum machine |
+| Body appearance and bending | Pictures only (my judgement of stills; flat lighting, no game camera) | Yes: everything about looks |
+| Generation time | One run per body on this PC, wall clock | Yes: the minimum machine will be slower; many bodies at once |
+| Save and reload of the baked mesh | One headless-capable run: same vertex count after reload | Yes: skin binds after reload, and loading many |
+| Animation tree, filtered one-shot, stepped poses, motion scale | 10 headless checks, all pass | Yes: how the motion feels at 60 frames a second, with real input |
+| Walk and panic strips | Pictures only | Yes: the clips are crude prototypes; judging comic timing needs motion, not stills |
+| Foot IK (`TwoBoneIK3D`) | 3 headless checks, all pass, on a flat test with a raised target | Yes: on real slopes with ground rays; a straight chain was not tested alone |
+| Cost of 20 animation trees | Headless, evaluation only | Yes: includes no drawing or skinning |
+| Avatar rules moved out of `terrain_client.gd` | 11,731 headless comparisons against the old formulas, 0 differences; both files compile | Yes: the game was **not run**; this is the only edit of the player's visible behaviour code, and it should be looked at once in play (walk, jog, run, crouch, carry a log, slopes) |
+| First-person arm rules moved out of `held_item.gd` | 4,013 headless comparisons, 0 differences; constants checked; files compile | Yes: swing, jab, aim and rest pose in first person should be looked at once in play |
+| Fear list, backgrounds, traits, all plans | Documents only | They are proposals; nothing is built |
 
 ## 8.4 What I did not do, and why
 - **Moving passages into an archive file (answer 2):** not done yet. Every passage is already copied in Part 2 of this file, so nothing can be lost. Editing the original documents now (many live files, edited by other agents on other branches) risks merge conflicts and gains nothing yet; I will create the archive file and replace the passages in the originals with one-line pointers in one pass when Dave or the moderator says the plan is final, or sooner if asked. This is a decision of mine, stated here so it can be overruled.
