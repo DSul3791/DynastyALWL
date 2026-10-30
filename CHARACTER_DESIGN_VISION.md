@@ -15,6 +15,17 @@ Goal: the player character should look and move like a natural, readable person:
 - Comparable games show the traps: first and third person drifting apart (Rust, Medieval Dynasty), giant state machines (Rust), rigs too crude to bend (Unturned) (Part 3, F1 to F10).
 - The research could not confirm many numbers (gait angles, proportions, budgets). So the plan treats numbers as tunable and measures on the minimum machine (Part 3.10).
 
+## Art direction (Dave, 2026-10-30)
+Dave's words, paraphrased: realistic, but "fantasy fun realistic": older cartoons combined with a hyper-real surrounding; classic fantasy adventure picture books, or Final Fantasy without looking like Final Fantasy. Characters may look like Gaston, like Link, or like Dragon Ball characters. Broad audience, a fusion of cartoon and realism. The model does not have to be perfect: leave out detail where it is easiest and exaggerate, and let that become the style.
+
+What this means for the plan (RECOMMENDATION, my reading; the named characters are Dave's references and I have not researched them):
+- **Stronger stylisation than ART_DIRECTION.md section 10.** That section says "slightly stylised, a hint of cartoon". This direction is a deliberate cartoon-realism fusion. ART_DIRECTION.md sections 5 and 10 should be updated by Dave's approval (section 5 says "storybook" lives in colour and mood, not shapes; the new direction puts it in the shapes too).
+- **Exaggeration is a design tool, not a flaw.** Pick what to exaggerate per archetype (chest and shoulders for a brawler, lean limbs for a scout, big hands, feet and head), and drop what is hard in code (fine faces, individual fingers, hair strands). This matches how the Team Fortress 2 papers I read design characters from silhouette and body proportion first (Part 3, J2).
+- **Body archetypes as parameters.** The code-generated body (D2) suits this: a few archetype presets (broad and heavy, lean and tall, stocky, muscular) are just different numbers for limb length, radius, shoulder width, head size and hand size. My earlier single set of proportions (7 to 7.5 heads tall, Part 4.2) is replaced by a range per archetype, to be set by eye with Dave.
+- **Animation must suit the exaggeration.** Cartoon-leaning bodies read best with strong poses, clear anticipation and follow-through and held key poses (Part 3, A1, A2), while staying grounded (weight, planted feet). One shared skeleton still serves every archetype; clips are scaled or adjusted per archetype rather than re-authored.
+- **Open question (D9):** how much of this variety is player-chosen, and how much is for NPCs only. Also check it against the "safe place" rule (no divisive labels, Part 4.1 item 8) and the disguise idea that height and build are hard to change (DESIGN_IDEAS.md section 9.2).
+- **Risk:** broad variety multiplies the animation checking (a long reach looks different on a stocky body). Mitigation: test every clip on the two most extreme archetypes.
+
 ## Principles
 See Part 4.1 (eight principles: readable first; believable weight; one body many views; actions are events; derive, don't send; cheap at distance; every number has a knob; no divisive defaults).
 
@@ -151,7 +162,7 @@ There is **no** clip for: jump, fall, land, swim, climb or ladder, turn, start o
 
 - **Style (FACT/doc):** slightly stylised, heroic proportions, a hint of cartoon; lighter budget than the realistic reference (ART_DIRECTION.md section 10). Owner on 2026-10-21 asked for a "simple ragdoll type character, no features". These two are compatible only if "no features" is read as "no detailed face, no fingers"; whether to add a face, hair and fingers is Dave's decision (Part 7, D1).
 - **Height and scale (FACT/code):** 1.86 m tall, capsule 1.8 m high and 0.35 m radius, eye 0.7 m above the capsule centre, hips at 0.95 m. RECOMMENDATION: keep 1.8 to 1.86 m, because the world, doors, ladders (2.4 m, rungs 0.35 m), jump height (about 1.2 m) and the step limit (0.5 m) are all tuned to it; scale NPC variation within plus or minus 4 percent height and 6 percent width (project proposal, FINDINGS Report 17, not an outside fact).
-- **Proportion rule (RECOMMENDATION, not sourced):** no outside source for head-heights or hand and foot size was found (H14). Propose a 7 to 7.5 head-tall body with hands and feet about 10 to 15 percent oversize, shoulders slightly broad, as a *starting* value to be decided by Dave's eye on a side-by-side with the current figure. Clearly marked UNCONFIRMED by research; validate with the silhouette test below.
+- **Proportion rule (RECOMMENDATION, not sourced; superseded in part by the 2026-10-30 art direction at the top: use a range per archetype, not one set):** no outside source for head-heights or hand and foot size was found (H14). Propose a 7 to 7.5 head-tall body with hands and feet about 10 to 15 percent oversize, shoulders slightly broad, as a *starting* value to be decided by Dave's eye on a side-by-side with the current figure. Clearly marked UNCONFIRMED by research; validate with the silhouette test below.
 - **Silhouette test (basis: TF2 paper, H13):** every new body, tool, hat or garment must still read when drawn as a flat black shape at the size the character appears at 20 m, 50 m and 70 m. Test before any shading work.
 - **Colour and contrast:** keep the existing four-region tint (skin, coat, trousers, shoes) for cheap variation (Part 1.2). Prefer value contrast between torso, arms and legs so the swing of an arm reads against the body.
 - **Shape language:** rounded shapes for the body are already in place; hands and tools need distinct silhouettes (tool head larger than realism, grip visible).
@@ -376,14 +387,14 @@ Review gates: after each phase Dave sees stills/video and a short change note; a
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
 | D1 | Character look. **DECIDED by Dave 2026-10-30: (b) simple stylised human.** | (a) keep "no features" ragdoll look, only improve motion and joints; (b) stylised human with simple face, hair, hands; (c) detailed realistic | (b) kept simple, but only after Phase 1 and 2 prove the motion. If the answer is (a) Phase 3 shrinks to joints, shoulders and hands |
-| D2 | How the body is made | (a) keep generating it in code; (b) model/rig in Blender and import glTF; (c) buy/licence a base and adapt | (b) if a modeller is available, else (a) with soft weights generated by script; avoid (c) unless the licence is clear |
+| D2 | How the body is made. Dave leans to code generation (2026-10-30: the model need not be perfect; leave out detail and exaggerate). | (a) keep generating it in code (smooth blended mesh, scripted soft weights, saved as an asset); (b) model/rig in Blender and import glTF; (c) buy/licence a base and adapt | (b) if a modeller is available, else (a) with soft weights generated by script; avoid (c) unless the licence is clear |
 | D3 | First-person approach | (a) arms-only viewmodel (today); (b) full body in first person; (c) arms-only plus lower body when looking down | (a) now, (c) later if wanted. Never two unrelated animation sets: shared action records |
 | D4 | Third person priority | first-class vs secondary | first-class for actions (they are cheap once records are shared) |
 | D5 | Order of work | the roadmap in 7.1 | Phase 0, 1, 2 first |
 | D6 | New movement: sprint, roll, dodge | add or not | not until combat design says so |
 | D7 | When other players become visible | before or after Body v2 | after Phase 1 and 2 unless a friend session needs it sooner |
 | D8 | Update-rate tiers for far bodies | keep 15/40/70 m tiers | keep, with hysteresis; measure |
-| D9 | Customisation scope | none / small / large | small: skin tone, hair, coat colour |
+| D9 | Customisation and archetypes | none / small / large; archetypes for NPCs only or for players too | small for players (skin tone, hair, coat colour, one of a few archetypes); full archetype range for NPCs. Check against the safe-place rule |
 | D10 | Ownership and approvals | which files I may change; whether I may edit shared files `terrain_client.gd` and `held_item.gd`; approval of the passage-removal list in 2.8 | Allow me to extract the avatar and arm logic into a new module with minimal edits to the shared files |
 | D11 | Quality bar sign-off | accept the targets in 4.4 or change | accept as tunable defaults |
 | D12 | Budgets | triangles/bones/body cost per LOD | set after the Phase 0 measurements, not before (no external number found, H11) |
