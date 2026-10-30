@@ -86,3 +86,13 @@ Dave (25 Oct) keeps every dish. The rule says three kinds normally and four or f
 | Roast Beast | 5 | raw_meat x2, wild_garlic_bulbs x1, thyme x1, rosemary x1, animal_fat x1 | 1200 |
 
 Verdict (Sal): 2 and 3 kinds are fine. **4 kinds** (Hunter's stew, Forager's stew, Fish stew, Trail bread) and **5 kinds** (Hearty pottage, Feast roast) exceed the normal limit. Proposal: keep Feast roast and Hearty pottage as the special top-tier dishes; reduce the other four to 3 kinds when the dish file is next edited (change `needs` in dishes.json and run `tools/gen_dishes.py`, which regenerates items, recipes and food points). NOT done: gen_dishes.py and the tests were not run. The file note also says more kinds = better dish (DESIGN_IDEAS 5.3); that still works with 3 as the normal ceiling.
+
+## Spec for the code owner: Clay Oven and Iron Stove (Dave's cooking ladder, 2026-10-30)
+How the Basic Oven is wired today (data/items/structures.json, blueprints.json): structure `oven`, kit `oven_kit` (item 268), world state 45, footprint 1.8 x 1.4 m, `station: oven`, `station_level: 3`, `also` = it counts as a clay hearth (level 2) and a campfire (level 1); blueprint 14 "Basic Oven" costs brick 24, clay 10, stone 8, built with a hammer next to a clay hearth. Cooking recipes name a station (`oven`) and may name `station_level`.
+The ladder maps onto station levels (campfire 1, clay hearth 2, Basic Oven 3):
+| Rung | Name | Station level | Cost (3 kinds max) | Needs near | Cooking effect (proposal) |
+|---|---|---|---|---|---|
+| 3 | Basic Oven (exists) | oven 3 | brick 24, clay 10, stone 8 | clay hearth | baseline speed, some burn chance |
+| 4 | Clay Oven | oven 4 | brick 40, clay 20, stone 20 | a Basic Oven | holds more, faster, lower burn chance |
+| 5 | Iron Stove | oven 5 | iron ingot 6, brick 20, hinges 2 | a Clay Oven | fastest, best quality, adds a hob for a pot |
+Needs from code: two new structures with world states, footprints, looks and kits; `also` lists so a level-5 station satisfies lower-level recipes; the burn chance and quality grade need the quality system (not built). Dishes in the food pass (high tier) should require oven level 4 or 5. Nothing of this is written into data yet because new structures need models and states.
