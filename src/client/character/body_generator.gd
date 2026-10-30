@@ -765,6 +765,34 @@ static func genome_from_seed(seed_value: int) -> Dictionary:
 	return g
 
 
+# How worn pieces are scaled to this body: bone name -> (width, length, depth) factors on the sizes and places written for the neutral body. For the neutral
+# genome every factor is 1, so nothing changes. Used by worn_look.gd through the rig meta "worn_fit" (Plan 15).
+static func worn_fit(g: Dictionary) -> Dictionary:
+	var h: float = m(float(g["height"]), 0.9, 1.12)
+	var b: float = m(float(g["build"]), 0.8, 1.3)
+	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
+	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
+	var torso: float = h * m(float(g["torso"]), 0.9, 1.12)
+	var legs: float = h * m(float(g["legs"]), 0.9, 1.12)
+	var arm: float = h * m(float(g["arms"]), 0.88, 1.15)
+	var hs: float = m(float(g["head"]), 0.85, 1.4)
+	var hk: float = m(float(g["hands"]), 0.8, 1.5)
+	var fk: float = m(float(g["feet"]), 0.85, 1.3)
+	var limb: float = sqrt(b) * mu
+	return {
+		"Hips": Vector3(b * hip_w, h, b),
+		"Chest": Vector3(b * wide, torso, b * mu),
+		"Head": Vector3(hs, hs, hs),
+		"LeftUpperArm": Vector3(limb, arm, limb), "RightUpperArm": Vector3(limb, arm, limb),
+		"LeftLowerArm": Vector3(limb, arm, limb), "RightLowerArm": Vector3(limb, arm, limb),
+		"LeftHand": Vector3(hk, hk, hk), "RightHand": Vector3(hk, hk, hk),
+		"LeftUpperLeg": Vector3(limb * hip_w, legs, limb), "RightUpperLeg": Vector3(limb * hip_w, legs, limb),
+		"LeftLowerLeg": Vector3(limb, legs, limb), "RightLowerLeg": Vector3(limb, legs, limb),
+		"LeftFoot": Vector3(fk, fk, fk), "RightFoot": Vector3(fk, fk, fk),
+	}
+
+
 # ---------------------------------------------------------------- face (eyes and brows that can move; no mesh rebuild)
 
 # Adds a BoneAttachment3D "Face" on the Head bone with two eyes (a white and a dark sphere each, squashed to blink or stretched to widen) and two brows

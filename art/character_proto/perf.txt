@@ -1,0 +1,5 @@
+renderer: NVIDIA GeForce RTX 2060 SUPER, window (100, 100)
+empty scene:                                   average 2.36 ms, 95th percentile 8.25 ms, worst 9.50 ms
+20 old ragdolls                                     : average 2.40 ms, 95th percentile 5.63 ms, worst 7.47 ms  (made in 199 ms)
+20 generated bodies, no fingers, 4.5 cm (NPC setting): average 2.70 ms, 95th percentile 6.81 ms, worst 7.91 ms  (made in 2260 ms)
+20 generated bodies, fingers, 3 cm (player setting) : average 2.30 ms, 95th percentile 3.17 ms, worst 3.60 ms  (made in 6909 ms)

@@ -58,6 +58,7 @@ func _init(genome_in: Dictionary = {}, voxel: float = 0.04, fingers: bool = true
 	add_child(skeleton)
 	body_mesh = skeleton.get_node("Body") as MeshInstance3D
 	face = skeleton.get_node("Face")
+	set_meta("worn_fit", Generator.worn_fit(genome))
 	_build_material()
 	_build_mounts()
 	_build_animations()

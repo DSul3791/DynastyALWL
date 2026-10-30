@@ -73,6 +73,6 @@ func _run() -> void:
 	for i in range(shots.size()):
 		sheet.blit_rect(shots[i], Rect2i(0, 0, SHOT.x, SHOT.y), Vector2i((i % sets.size()) * SHOT.x, (i / sets.size()) * SHOT.y))
 
-	sheet.save_png(_out + "/worn_on_generated.png")
+	sheet.save_png(_out + "/worn_on_generated_fitted.png")
 	print("done")
 	quit()

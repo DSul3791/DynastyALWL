@@ -79,7 +79,9 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			var node: MeshInstance3D = MeshInstance3D.new()
 			node.mesh = _mesh(str(part["shape"]))
 			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))))
-			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled(part["size"]), part["at"])
+			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
+			var fit: Vector3 = (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
+			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
 
