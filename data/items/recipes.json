@@ -615,7 +615,8 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": false,
+			"retired": true
 		},
 		"backpack": {
 			"number": 30,

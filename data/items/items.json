@@ -622,7 +622,9 @@
 			],
 			"value": 8,
 			"future": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Cut (Dave 25 Oct trim answer B: no sewing needle); number kept, never reused."
 		},
 		"backpack": {
 			"number": 50,
