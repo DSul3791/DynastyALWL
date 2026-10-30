@@ -130,3 +130,22 @@ Work for the code owner:
 5. Tests: test_server_items.gd, test_inventory.gd, save_compat, test_first_hour; new test for tag merge, split and save/load.
 Files touched (from the repo search): data/items/items.json, recipes.json, looks.json, weights.json, wood_species.json; src/stream/server_items.gd; src/shared (inventory); client inventory_view.gd; tools/gen_looks.py; tests above.
 Why deferred: it is a feature, not a data merge. Nothing is half-done in the data.
+
+## Three new plans (self-approved by Sal under the moderator's pre-approval, 2026-10-30)
+1. **Recipe balance check** (done below). 2. **Items still lacking a look, for Kathleen** (done below). 3. **Progression gap check across tiers** (first pass below; full review waits for Dave's final list).
+
+### Plan 1 result: recipe balance against the 3-ingredient rule
+132 live recipes. By number of ingredient kinds: 1 kind 47, 2 kinds 52, 3 kinds 27, 4 kinds 4, 5 kinds 2. Only the six dishes already named exceed 3: Hunter's stew, Forager's stew, Fish stew, Trail bread (4 each), Hearty pottage and Roast Beast (5 each). Everything else obeys Dave's rule. Proposal: Roast Beast and Hearty pottage stay as the special top-tier dishes (allowed 4 to 5); the other four drop to 3 kinds when someone edits dishes.json and runs `tools/gen_dishes.py` (the generator rewrites items, recipes, vitals, spoilage and weights; run the `dishes` check after). Nothing was changed. The recipes file note ("hand crafts at most two ingredient kinds") is older than Dave's rule and still true for hand crafts.
+
+### Plan 2 result: for Kathleen (art): items with no look yet
+226 live items. Own models already (left out of looks.json on purpose): stone, stick, log, driftwood, chopping block, species logs, log workbench kit, timber prop and set kits, ladder kit. Items with only a generated placeholder look (a simple shape and colour from tools/gen_looks.py): all the materials I added (Flint, Pyrite, Obsidian, Processed hide, Leather, Fine leather, Heavy leather, Rivets, Copper, Tin and Bronze ingots, Flour, Yeast, Salt) and the Javelin; plus four older placeholder-flagged items. Items with NO look row at all: Hide scraper, Steel striker, Obsidian knife (tools have separate in-hand models). Art asks, by priority: Flint, Pyrite and Obsidian (they are visible in the world and in fire-making), Javelin, Hide scraper, Obsidian knife, Steel striker, then leather grades and ingots.
+
+### Plan 3 first pass: progression by tier (live and `future` items)
+| Tier | Tools | Weapons | Clothing |
+|---|---|---|---|
+| 0 | wooden spade, hoe, fishing rod, shore net | none | grass skirt, cloak, fibre sandals |
+| 1 | stone axe, stone knife, torch, wooden hammer (hide scraper, future) | wooden spear, wooden bow | hide cloak, boots, hood, mittens, leggings |
+| 2 | stone spade, hoe, hammer (iron pickaxe, obsidian knife, future) | stone spear (javelin, future) | none |
+| 3 | hand saw (steel pickaxe, iron spade, iron hoe, future) | none | none |
+| 4 | (steel spade, hoe, striker, future) | none | none |
+Gaps seen: no club, sword, mace, shield or armour above hide in any tier; no stone pickaxe (the first pickaxe is iron); no body armour; no head/hand/foot gear above tier 1; copper and bronze items exist only as ingots; no axe above stone. These match the first-thoughts list in ITEM_GROUPS_AND_NAMES.md and are inputs to the later progression review, not decisions.
