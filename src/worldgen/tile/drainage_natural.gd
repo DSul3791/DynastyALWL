@@ -167,6 +167,7 @@ func _cut_reach(cells: PackedInt32Array, land: PackedFloat32Array, flow, size: i
 		normal_y[k] = t.x
 
 	var slope_flat: float = float(cfg.get("slope_flat", 0.04))
+	var steep_share: float = float(cfg.get("steep_share", 0.0))   # share of the full swing a steep reach still gets (steep rivers bend a little, not none)
 	var amp_widths: float = float(cfg.get("amp_widths", 2.5))
 	var gain: float = float(cfg.get("noise_gain", 2.2))   # value noise rarely nears its extremes; the gain brings the typical swing up to the target
 	var knot_widths: float = float(cfg.get("knot_widths", 6.0))
@@ -179,7 +180,7 @@ func _cut_reach(cells: PackedInt32Array, land: PackedFloat32Array, flow, size: i
 	var bent: bool = false
 
 	for k in range(count):
-		var flat: float = pow(clampf(1.0 - slope[k] / slope_flat, 0.0, 1.0), 0.7)
+		var flat: float = maxf(pow(clampf(1.0 - slope[k] / slope_flat, 0.0, 1.0), 0.7), steep_share)
 		var taper: float = minf(minf(along[k], length_m - along[k]) / taper_m, 1.0)
 		var swing: float = taper * amp_widths * width[k] * flat
 		var offset: float = 0.0

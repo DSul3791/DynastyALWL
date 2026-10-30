@@ -180,6 +180,7 @@
 				"smooth_cells": 7,
 				"profile_cells": 25,
 				"slope_flat": 0.12,
+				"steep_share": 0.35,
 				"amp_widths": 3.5,
 				"noise_gain": 1.8,
 				"knot_widths": 5.0,
