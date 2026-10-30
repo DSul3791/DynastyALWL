@@ -36,6 +36,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Nails, hinges | 7DtD Nails; Valheim Bronze/Iron Nails; Conan Iron Reinforcement | Metal fixings | T2-T3 | Nails 228, Hinges 232 | REC keep. |
 | Brick, mortar, cement | Conan Hardened Brick, Stone Consolidant; 7DtD Cement, Cobblestone; Ark Cementing Paste* | Masonry | T2 | Brick 209, Mortar 210, Stone block 208, Cobblestone 229 | REC keep Brick, Mortar, Stone block; merge Cobblestone into Stone block (Tyler D). |
 | Tar / resin | Conan Tar; Ark Resin; Astroneer Resin | Waterproofing, torches | T1-T2 | Tar 231 | REC keep Tar only if a use is built (Tyler: hold). |
+| Kindling (NEW, Dave idea) | none of the sources list it as an item; Forest/DS use sticks and leaves as fire fuel | Small fuel that starts fires; dropped as a small amount when cutting or processing trees and tree by-products | T0 | none | REC **Kindling**; species remembered on the item if tree-type flame effects are adopted. Note: Tyler D merges Softwood firewood into Firewood; tree-type flame effects would argue for keeping species on the item (still one item number). |
 | Fuel | Ark none; Rust Low Grade Fuel*; Satisfactory Fuel | Burnable | - | Firewood 26 | REC **Firewood**. |
 
 ## 2. Hand tools (gathering)
@@ -178,7 +179,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
 2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
 3. **PART DECIDED (Dave, 2026-10-30): no bloomery step** (felt like extra for its own sake in Aska); ore is smelted straight to an ingot in a forge. Still open: add copper, tin and bronze ingots before iron/steel?
-4. **Fire starting:** is the first fire a hand mechanic with no item, and flint and steel a later item?
+4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. Still open: is flint and steel a later item?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
 6. **Thrown spear:** a separate Javelin item, or the spear thrown?
 7. **Gunpowder era and siege weapons:** out, or siege only (ballista, catapult, ram)?
@@ -189,7 +190,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
-Missing from ours but present in many of the other games: stone pickaxe; iron and steel axe; club; sword, mace and shield; sling; mail/gambeson/scale body armour and helmets; sickle or scythe, shears; anvil and smith's hammer; flint and steel; lantern and candle; barrel; salt and preserved foods; mill/quern and flour; stairs, gate/fence, hung doors, bedroll; compost; a copper/tin/bronze tier (our copper, silver and gold exist only as coins).
+Missing from ours but present in many of the other games: stone pickaxe; iron and steel axe; club; sword, mace and shield; sling; mail/gambeson/scale body armour and helmets; sickle or scythe, shears; anvil and smith's hammer; flint and steel (if wanted); kindling (Dave idea); lantern and candle; barrel; salt and preserved foods; mill/quern and flour; stairs, gate/fence, hung doors, bedroll; compost; a copper/tin/bronze tier (our copper, silver and gold exist only as coins).
 
 ## Weaknesses of this document
 Names come from a partly unconfirmed analysis; where a game column says "none" or a game is absent it may mean "not catalogued". Functions are one-line generalisations of the analysis rows, not wiki quotes. Tier is only as exact as the analysis gives. No web research was done for this draft.
