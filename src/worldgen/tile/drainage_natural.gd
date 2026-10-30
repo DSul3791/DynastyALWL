@@ -306,7 +306,8 @@ func _stamp(x: float, y: float, b: float, w: float, d: float, share: float, bank
 
 			_near[index] = dist
 			bed[index] = lerpf(ground, section, weight)
-			surface[index] = b + d * share if dist <= half else NAN
+			var water: float = b + d * share
+			surface[index] = water if dist <= half and water > bed[index] + 0.05 else NAN   # water only where the carved bed lies at least 5 cm under it (water_min_depth_m)
 
 
 func _smooth(values: PackedFloat32Array, window: int) -> PackedFloat32Array:

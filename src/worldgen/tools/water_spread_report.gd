@@ -6,7 +6,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/water_spread_report.gd -- --tile=3,4 --hours=6 --minutes=30
 #
 # Options: --tile=X,Z (default 3,4); --hours=H simulated hours to run (default 6); --minutes=M real-time limit (default 30);
-#   --rate=R spring flow multiplier (default WaterLive.DEFAULT_RATE). See GENERATOR_NOTES.md.
+#   --rate=R spring flow multiplier (default WaterLive.DEFAULT_RATE); --world=DIR world folder (default res://worlds/base_world). See GENERATOR_NOTES.md.
 
 const WaterLive := preload("res://src/water/water_live.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -23,6 +23,7 @@ func _init() -> void:
 	var hours: float = 6.0
 	var minutes: float = 30.0
 	var rate: float = WaterLive.DEFAULT_RATE
+	var world_dir: String = "res://worlds/base_world"
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tile="):
@@ -34,18 +35,20 @@ func _init() -> void:
 			minutes = float(argument.trim_prefix("--minutes="))
 		elif argument.begins_with("--rate="):
 			rate = float(argument.trim_prefix("--rate="))
+		elif argument.begins_with("--world="):
+			world_dir = argument.trim_prefix("--world=")
 
-	quit(_run(tile, hours, minutes, rate))
+	quit(_run(tile, hours, minutes, rate, world_dir))
 
 
-func _run(tile: Vector2i, hours: float, minutes: float, rate: float) -> int:
+func _run(tile: Vector2i, hours: float, minutes: float, rate: float, world_dir: String) -> int:
 	var errors: Array = []
-	var settings = WorldSettingsScript.load_from_file("res://worlds/base_world/world.json", errors)
-	var rules = TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", errors)
+	var settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
+	var rules = TileHeightScript.load_rules(world_dir + "/plan/tile_rules.json", errors)
 	var tables = TableSetScript.new()
 	errors.append_array(tables.load_directory())
 	var generator = GeneratorScript.new()
-	generator.setup(settings, rules, tables, "res://worlds/base_world/tiles")
+	generator.setup(settings, rules, tables, world_dir + "/tiles")
 	var data = generator.get_tile(tile)
 
 	if data == null or data.placeholder:
