@@ -39,7 +39,7 @@ See Part 4.1 (eight principles: readable first; believable weight; one body many
 Phase 0 define the new skeleton and the character genome, research character creators, measure and prototype; Phase 1 animation architecture; Phase 2 missing locomotion; Phase 3 body generator and archetypes; Phase 4 face, hair, skin and marks; Phase 5 character creation (ancestry, sliders, dice buttons); Phase 6 tool and activity library; Phase 7 equipment and secondary motion; Phase 8 other players; Phase 9 special states (Part 7.1, revised 2026-10-30). Risks in 7.2; open questions 7.3.
 
 ## Decisions for Dave
-D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation, D14 to D26 ancestries, boons and drawbacks owner, whether size matters in play, later appearance changes, where creation happens, creator scope, character account, trait system, fear list and secrecy, panic mechanics, who designs backgrounds (Part 7.4, each with my recommendation).
+D1 look (DECIDED 2026-10-30: simple stylised human), D2 how the body is made, D3 first-person approach, D4 third-person priority, D5 order of work, D6 sprint/roll, D7 when other players appear, D8 distance tiers, D9 customisation, D10 file ownership and approval of the removal list, D11 quality bar, D12 budgets, D13 purchased animation, D14 to D27 ancestries, boons and drawbacks owner, whether size matters in play, later appearance changes, where creation happens, creator scope, character account, trait system, fear list and secrecy, panic mechanics, who designs backgrounds, the future reaction replay (Part 7.4, each with my recommendation).
 
 ## Where things are
 Order of this file: this vision; Part 1 present state; Parts 4 to 7 (rules, movement plan, gap analysis, roadmap and decisions); then the reference sections at the end: **Part 2** (copied project passages and the "passages to remove once Dave approves" list in 2.8) and **Part 3** (research log with sources and confidence tags). Part numbers are kept so cross references still work.
@@ -395,6 +395,19 @@ Dave's direction: a Dungeons and Dragons style system, but different. Players pi
 ### 5.8.6 Where this sits in the roadmap
 Backgrounds, trait entry and fear selection are part of **Phase 5, character creation**, but their server side (trait storage, skill weights, fear rolls) comes from the skills and attributes designers and must be agreed before then. The panic animation and movement state go into **Phase 9** (special states) unless Dave wants them earlier because they are a signature feature; they need a few clips and one server message. Like 5.7, this is untested design.
 
+### 5.8.7 Future idea: the reaction replay (Dave, 2026-10-30; not to build now)
+
+Dave's picture: some day, after you flip out and run away, an **instant-replay slow-motion camera** swings around and shows you from the front, in third person, like a movie, as you open the door or the chest, realise what you are looking at, and react in slow motion: you turn into an anxiety-riddled, running buffoon screaming "Nope. Nope. Nope. Not today. Oh no! Not today."
+
+Status: **idea only, not planned for any phase, not researched.** Notes so the idea is not lost, all RECOMMENDATION or open:
+- **It should be a replay, not slow motion of the live game.** The world, the server and other players cannot slow down for one player. A replay shown to the owner only, after or just as the panic starts, avoids that. Two ways to do it: (a) keep a short rolling history (the last few seconds) of the player's position, facing, speed, stance and actions, then re-play it on the avatar from a cinematic camera; (b) at the trigger, briefly cut to a staged cinematic of the same few seconds. Option (a) fits the plan to derive animation from velocity, stance and action ids (Part 4.1 item 5), because the replay can re-derive the pose from that short history instead of storing bones.
+- **Camera:** a swing from first person round to a front view of the avatar's face, with a push-in or dolly-zoom on the reaction, a slow-motion section and a return to normal play. Needs the third-person camera work in Part 5.6 and a camera mode that can be driven by script. The 3rd-person body must already be good, so this comes after the body and face work (Phases 3 and 4).
+- **Face and body acting:** the replay only works if the face and body can act: wide eyes, open mouth, eyebrows, a double-take and the flailing run. That is a reason to keep the face rig expressive enough (Part 5.7.4) and to build the panic clips (5.8.5) with strong poses.
+- **Voice:** spoken lines such as "Nope. Nope. Nope. Not today. Oh no! Not today." need recorded or generated voice lines (the sound owner, plus the project rule about voices in DESIGN_IDEAS.md and the earlier TTS decisions) and subtitles; a few variants per character voice so it is not the same line every time.
+- **Fairness and comfort:** the replay must not leave a player helpless while others can attack, so it should play only after control is back or while the character is already safe, be skippable, and be switchable off. A swinging camera and slow motion can be uncomfortable; the research found that comfort options for camera motion are common practice (Part 3, C10).
+- **Owner only:** the cinematic is seen by the player; other players just see the normal panic animation.
+- **Sharing:** a replay clip could be saved or shared as a short code or clip; whether that is wanted is Dave's call (privacy and cost not examined).
+
 ---
 
 # Part 6. Gap analysis (current state against the plan)
@@ -527,6 +540,7 @@ Review gates: after each phase Dave sees stills or video and a short note; done 
 | D24 | Is a greatest fear hidden from other players and NPCs | hidden / revealable / public | hidden by default |
 | D25 | Panic mechanics: loss of control, hazards, duration, opt-out setting | full run-away / flinch and cower / player setting | run-away with hazard avoidance and an accessibility setting; technical lead designs the server message |
 | D26 | Who designs backgrounds and their boons | Sonny / skills and items designers / Dave | skills and items designers with Dave; Sonny supplies creator UI, look hints and animation |
+| D27 | The reaction replay (slow-motion cinematic of the panic) | never / someday / early signature feature | someday, after the body, face and panic clips; design as a short replay for the owner only, skippable, with a setting to turn it off |
 
 ## 7.5 What I would do first once Dave approves (RECOMMENDATION)
 
