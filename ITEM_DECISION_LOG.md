@@ -114,3 +114,19 @@ Dave: a huge magic system is coming. Sources seen so far:
 - **Potions and brewing:** Minecraft brewing stand, base potion (water bottle, awkward potion), about 15 effects (healing, strength, swiftness, regeneration, night vision, water breathing, fire resistance, slow falling, weakness, poison), modifiers (longer, stronger, splash, lingering, reversed); Valheim meads (healing, stamina, resistance); Dragonwilds focused potions (weak to super) and antifire and antipoison.
 - Obsidian (Dave): a magic component; Obsidian mirror (Sal idea): scrying.
 REC for the magic pass (later): few, readable components (a crystal or stone, a herb, a metal), not dozens; each spell tool a staff or a wand with a clear job; potions follow the 3-ingredient rule. No design is decided.
+
+## Update: vice done, hammer line, and the species-tag spec (merge C)
+- **Vice (B): DONE, in its own commit.** The vice kit recipe is retired, so it can no longer be crafted. The kit item and the `vice` structure stay, because validate_items forbids a structure naming a retired item and because vices already placed or carried must keep working (a later save migration can retire them fully). Bench levels now: camp bench 1, a tool rack beside it makes 2; log workbench 2, with a rack 3. No live recipe needs workbench level 3 or more (21 need level 1, 1 needs level 2), so nothing became unreachable. `test_stations.gd` now checks that a camp bench with a rack stays level 2.
+- **Hammer line (B): nothing to do.** The wooden hammer (247) and stone hammer (244) are tiers of one line; no item is a duplicate. Independent of the vice.
+
+### Spec for the code owner: one Lumber and one Beam with a species tag (merge C, approved by Dave 25 Oct, DEFERRED)
+Goal: items 27 (Lumber) and a single Beam stay; the 14 species items (oak, birch, Scots pine, spruce, tropical hardwood, walnut, sugar maple: lumber 101, 107, 110, 113, 125, 149, 173 and beams 102, 108, 111, 114, 126, 150, 174) retire; the tree species is carried on the item, and affects burn, tier and look.
+What does not exist yet: a per-stack species tag. Inventory slots hold only item number and count (plus wear for tools, server-owned).
+Work for the code owner:
+1. Inventory: let a slot carry an optional species id; stacks of the same item and species merge, different species do not; save format and `save_compat` must read old saves without the tag.
+2. Crafting: a recipe consuming Lumber/Beam may demand any species or a named one; the sawmill, hand saw and block recipes carry the input log's species to the output.
+3. Conversion: `wood_species.json` already has `key_woods` and `retired_to`; extend it so retired species lumber/beam rows convert into (Lumber or Beam + species tag) on load.
+4. Display: tooltip shows the species; looks tint by species (BasicLook already knows wood colours).
+5. Tests: test_server_items.gd, test_inventory.gd, save_compat, test_first_hour; new test for tag merge, split and save/load.
+Files touched (from the repo search): data/items/items.json, recipes.json, looks.json, weights.json, wood_species.json; src/stream/server_items.gd; src/shared (inventory); client inventory_view.gd; tools/gen_looks.py; tests above.
+Why deferred: it is a feature, not a data merge. Nothing is half-done in the data.
