@@ -2084,7 +2084,306 @@
   "ladder_kit": {
    "shape": "kit",
    "color": "#9a7a45",
-   "size": 0.9
+   "size": 0.9  },
+  "kindling_duplicate": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "flint": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "pyrite": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "obsidian": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "processed_hide": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "leather": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "fine_leather": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "heavy_leather": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "rivets": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "copper_ingot": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "tin_ingot": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_ingot": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "flour": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "yeast": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "salt": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "javelin": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "wooden_club": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "copper_ore": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "tin_ore": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_ore": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "coal": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "hide_tunic": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "hide_trousers": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "hide_gloves": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "herb_salve": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "splint": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "wicker_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "stone_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "plank_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_sword": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_mace": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_shield": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "leather_cap": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "leather_jerkin": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "bronze_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "gambeson": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "iron_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "mail_shirt": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "steel_helm": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "plate_cuirass": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "wheat": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "barley": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "carrot": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "potato": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "turnip": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "flax": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "wheat_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "barley_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "carrot_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "potato_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "turnip_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "flax_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "quern": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "compost": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }

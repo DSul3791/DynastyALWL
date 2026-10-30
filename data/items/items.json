@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 278,
+	"next_number": 346,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -526,6 +526,7 @@
 			"description": "A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer.",
 			"kind": "tool",
 			"tool_class": "spade",
+			"spade_size": "medium",
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
@@ -549,6 +550,7 @@
 			"description": "A spade with an iron blade.",
 			"kind": "tool",
 			"tool_class": "spade",
+			"spade_size": "large",
 			"material": "iron",
 			"tier": 3,
 			"stack": 1,
@@ -574,6 +576,7 @@
 			"description": "A spade with a steel blade.",
 			"kind": "tool",
 			"tool_class": "spade",
+			"spade_size": "large",
 			"material": "steel",
 			"tier": 4,
 			"stack": 1,
@@ -619,7 +622,9 @@
 			],
 			"value": 8,
 			"future": true,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Cut (Dave 25 Oct trim answer B: no sewing needle); number kept, never reused."
 		},
 		"backpack": {
 			"number": 50,
@@ -1017,6 +1022,7 @@
 			"kind": "placeable",
 			"stack": 1,
 			"value": 25,
+			"note": "No longer craftable (Dave 25 Oct trim answer B: vice goes into the log workbench). Kept so vices already placed or carried still work; structures.json names this kit.",
 			"look_alikes": []
 		},
 		"vice": {
@@ -2144,7 +2150,7 @@
 		"fish_stew": {
 			"number": 188,
 			"name": "Fish stew",
-			"description": "Perch, cress and root in a sage broth.",
+			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
 			"value": 44,
@@ -2392,7 +2398,9 @@
 			],
 			"value": 37,
 			"spade_size": "medium",
-			"tier": 1
+			"tier": 1,
+			"retired": true,
+			"note": "Merged into wooden_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"wooden_spade_large": {
 			"number": 214,
@@ -2411,7 +2419,9 @@
 			],
 			"value": 67,
 			"spade_size": "large",
-			"tier": 1
+			"tier": 1,
+			"retired": true,
+			"note": "Merged into wooden_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"stone_spade_medium": {
 			"number": 215,
@@ -2435,7 +2445,9 @@
 			],
 			"value": 75,
 			"look_alikes": [],
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"note": "Merged into stone_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"stone_spade_large": {
 			"number": 216,
@@ -2459,7 +2471,9 @@
 			],
 			"value": 135,
 			"look_alikes": [],
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"note": "Merged into stone_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"iron_spade_medium": {
 			"number": 217,
@@ -2485,7 +2499,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"note": "Merged into iron_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"iron_spade_large": {
 			"number": 218,
@@ -2511,7 +2527,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"note": "Merged into iron_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"steel_spade_medium": {
 			"number": 219,
@@ -2537,7 +2555,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "medium"
+			"spade_size": "medium",
+			"retired": true,
+			"note": "Merged into steel_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"steel_spade_large": {
 			"number": 220,
@@ -2563,7 +2583,9 @@
 			"future": true,
 			"look_alikes": [],
 			"repair_station": "forge",
-			"spade_size": "large"
+			"spade_size": "large",
+			"retired": true,
+			"note": "Merged into steel_spade (Dave 25 Oct trim answer A); number kept, never reused."
 		},
 		"wooden_hoe": {
 			"number": 221,
@@ -3089,7 +3111,7 @@
 		},
 		"oven": {
 			"number": 267,
-			"name": "Oven",
+			"name": "Basic Oven",
 			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
 			"kind": "structure",
 			"stack": 1,
@@ -3097,7 +3119,7 @@
 		},
 		"oven_kit": {
 			"number": 268,
-			"name": "Oven",
+			"name": "Basic Oven",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"kind": "placeable",
 			"stack": 1,
@@ -3154,6 +3176,958 @@
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
+		},
+		"kindling_duplicate": {
+			"number": 278,
+			"retired": true,
+			"note": "Duplicate: kindling already exists as gathered item 1080 (gathered.json). Number kept, never reused.",
+			"name": "Kindling",
+			"description": "Small dry twigs and shavings. Catches a spark and starts a fire.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"flint": {
+			"number": 279,
+			"name": "Flint",
+			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"pyrite": {
+			"number": 280,
+			"name": "Pyrite",
+			"description": "A brassy, heavy stone. Struck with flint it throws good sparks.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"obsidian": {
+			"number": 281,
+			"name": "Obsidian",
+			"description": "Black volcanic glass. Breaks into razor-sharp edges, and is prized.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 25
+		},
+		"processed_hide": {
+			"number": 282,
+			"name": "Processed hide",
+			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"leather": {
+			"number": 283,
+			"name": "Leather",
+			"description": "Tanned hide: tough and supple.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"fine_leather": {
+			"number": 284,
+			"name": "Fine leather",
+			"description": "The best of a batch of leather, soft and even.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 20
+		},
+		"heavy_leather": {
+			"number": 285,
+			"name": "Heavy leather",
+			"description": "Thick, stiff leather for armour and harness.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 20
+		},
+		"rivets": {
+			"number": 286,
+			"name": "Rivets",
+			"description": "Small iron pins that hold layers of leather or metal together.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"copper_ingot": {
+			"number": 287,
+			"name": "Copper ingot",
+			"description": "Smelted copper. Soft, but good for early tools.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 15
+		},
+		"tin_ingot": {
+			"number": 288,
+			"name": "Tin ingot",
+			"description": "Smelted tin. Mixed with copper it makes bronze.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 15
+		},
+		"bronze_ingot": {
+			"number": 289,
+			"name": "Bronze ingot",
+			"description": "Copper and tin melted together. Harder than copper.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 30
+		},
+		"flour": {
+			"number": 290,
+			"name": "Flour",
+			"description": "Ground grain. The start of bread.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"yeast": {
+			"number": 291,
+			"name": "Yeast",
+			"description": "A frothy starter that makes dough rise and ale ferment.",
+			"kind": "material",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"salt": {
+			"number": 292,
+			"name": "Salt",
+			"description": "Keeps meat and fish from spoiling.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"hide_scraper": {
+			"number": 293,
+			"name": "Hide scraper",
+			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
+			"kind": "tool",
+			"tool_class": "scraper",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"flint",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 12
+		},
+		"steel_striker": {
+			"number": 294,
+			"name": "Steel striker",
+			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
+			"kind": "tool",
+			"tool_class": "striker",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"durability": 600,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 30
+		},
+		"javelin": {
+			"number": 295,
+			"name": "Javelin",
+			"description": "A light, balanced throwing spear. Flies farther and straighter than a plain spear.",
+			"kind": "weapon",
+			"weapon_class": "javelin",
+			"tier": 2,
+			"stack": 5,
+			"future": true,
+			"damage": 4.0,
+			"throw_damage": 9.0,
+			"durability": 120,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 15
+		},
+		"obsidian_knife": {
+			"number": 296,
+			"name": "Obsidian knife",
+			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
+			"kind": "tool",
+			"tool_class": "knife",
+			"material": "obsidian",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"cut": 1.6,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"obsidian",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 60
+		},
+		"stone_pickaxe": {
+			"number": 297,
+			"name": "Stone pickaxe",
+			"description": "A heavy stone head lashed to a haft. Breaks rock and ore, slowly.",
+			"kind": "tool",
+			"tool_class": "pick",
+			"material": "stone",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"durability": 4500,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 35
+		},
+		"sickle": {
+			"number": 298,
+			"name": "Sickle",
+			"description": "A curved flint blade on a short handle. Cuts grain and grass by the handful.",
+			"kind": "tool",
+			"tool_class": "sickle",
+			"material": "stone",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 600,
+			"look_alikes": [],
+			"repair": [
+				[
+					"flint",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 18
+		},
+		"scythe": {
+			"number": 299,
+			"name": "Scythe",
+			"description": "A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
+			"kind": "tool",
+			"tool_class": "scythe",
+			"material": "iron",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"durability": 9000,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 80,
+			"repair_station": "forge"
+		},
+		"wooden_club": {
+			"number": 300,
+			"name": "Wooden club",
+			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
+			"kind": "weapon",
+			"weapon_class": "club",
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"damage": 7.0,
+			"durability": 350,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 10
+		},
+		"copper_ore": {
+			"number": 301,
+			"name": "Copper ore",
+			"description": "A heavy lump streaked green and red. Smelts to copper.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"tin_ore": {
+			"number": 302,
+			"name": "Tin ore",
+			"description": "A dark, very heavy lump. Smelts to tin.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"iron_ore": {
+			"number": 303,
+			"name": "Iron ore",
+			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"coal": {
+			"number": 304,
+			"name": "Coal",
+			"description": "A black lump that burns hot. Needed to turn iron into steel.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"hide_tunic": {
+			"number": 305,
+			"name": "Hide tunic",
+			"description": "A sewn hide shirt with sleeves. Warmer and neater than a cloak.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.24,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 30
+		},
+		"hide_trousers": {
+			"number": 306,
+			"name": "Hide trousers",
+			"description": "Hide sewn into proper trousers. Better than leggings.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.18,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 26
+		},
+		"hide_gloves": {
+			"number": 307,
+			"name": "Hide gloves",
+			"description": "Stitched hide gloves with fingers, for work and cold.",
+			"kind": "clothing",
+			"slot": "hands",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 16
+		},
+		"clay_jug": {
+			"number": 308,
+			"name": "Clay jug",
+			"description": "A tall fired jug with a handle and a narrow mouth. Holds water, ale or mead.",
+			"kind": "container",
+			"stack": 1,
+			"capacity_ml": 2000,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"herb_salve": {
+			"number": 309,
+			"name": "Herb salve",
+			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
+			"kind": "medicine",
+			"stack": 10,
+			"future": true,
+			"note": "Placeholder: heals once health exists.",
+			"look_alikes": [],
+			"value": 12
+		},
+		"splint": {
+			"number": 310,
+			"name": "Splint",
+			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
+			"kind": "medicine",
+			"stack": 5,
+			"future": true,
+			"note": "Placeholder: sets a break once injuries exist.",
+			"look_alikes": [],
+			"value": 6
+		},
+		"candle": {
+			"number": 311,
+			"name": "Candle",
+			"description": "A wick dipped in animal fat. A small steady light for indoors.",
+			"kind": "tool",
+			"tool_class": "candle",
+			"tier": 1,
+			"stack": 10,
+			"future": true,
+			"light_m": 4.0,
+			"look_alikes": [],
+			"value": 3
+		},
+		"wicker_shield": {
+			"number": 312,
+			"name": "Wicker shield",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 1,
+			"stack": 1,
+			"future": true,
+			"durability": 120,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stick",
+					1
+				]
+			],
+			"value": 8
+		},
+		"stone_mace": {
+			"number": 313,
+			"name": "Stone mace",
+			"description": "A heavy stone lashed to a stick. Cracks armour and bone.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"damage": 9.0,
+			"durability": 400,
+			"look_alikes": [],
+			"repair": [
+				[
+					"stone",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"value": 20
+		},
+		"plank_shield": {
+			"number": 314,
+			"name": "Plank shield",
+			"description": "Boards bound with hide. Sturdier than wicker.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 2,
+			"stack": 1,
+			"future": true,
+			"durability": 300,
+			"look_alikes": [],
+			"repair": [
+				[
+					"lumber",
+					1
+				]
+			],
+			"value": 25
+		},
+		"bronze_sword": {
+			"number": 315,
+			"name": "Bronze sword",
+			"description": "A bronze blade on a short grip. Quick and sharp.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"damage": 12.0,
+			"durability": 900,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 70,
+			"repair_station": "forge"
+		},
+		"bronze_mace": {
+			"number": 316,
+			"name": "Bronze mace",
+			"description": "A cast bronze head on a stout haft.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"damage": 11.0,
+			"durability": 900,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 65,
+			"repair_station": "forge"
+		},
+		"bronze_shield": {
+			"number": 317,
+			"name": "Bronze-rimmed shield",
+			"description": "A plank shield with a bronze rim and boss.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 3,
+			"stack": 1,
+			"future": true,
+			"durability": 700,
+			"look_alikes": [],
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"value": 60,
+			"repair_station": "forge"
+		},
+		"iron_sword": {
+			"number": 318,
+			"name": "Iron sword",
+			"description": "A forged iron blade with a leather grip.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"damage": 16.0,
+			"durability": 1800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 120,
+			"repair_station": "forge"
+		},
+		"iron_mace": {
+			"number": 319,
+			"name": "Iron mace",
+			"description": "A flanged iron head that breaks armour.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"damage": 15.0,
+			"durability": 1800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 110,
+			"repair_station": "forge"
+		},
+		"iron_shield": {
+			"number": 320,
+			"name": "Iron-banded shield",
+			"description": "Boards held by iron bands. Hard to break.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 4,
+			"stack": 1,
+			"future": true,
+			"durability": 1500,
+			"look_alikes": [],
+			"repair": [
+				[
+					"iron_ingot",
+					1
+				]
+			],
+			"value": 110,
+			"repair_station": "forge"
+		},
+		"steel_sword": {
+			"number": 321,
+			"name": "Steel sword",
+			"description": "A tempered steel blade. Keeps its edge.",
+			"kind": "weapon",
+			"weapon_class": "sword",
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"damage": 22.0,
+			"durability": 3200,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 250,
+			"repair_station": "forge"
+		},
+		"steel_mace": {
+			"number": 322,
+			"name": "Steel mace",
+			"description": "A steel flanged head on a long haft.",
+			"kind": "weapon",
+			"weapon_class": "mace",
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"damage": 20.0,
+			"durability": 3200,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 230,
+			"repair_station": "forge"
+		},
+		"steel_shield": {
+			"number": 323,
+			"name": "Steel kite shield",
+			"description": "A long steel-faced shield that covers shoulder to shin.",
+			"kind": "weapon",
+			"tool_class": "shield",
+			"offhand": true,
+			"tier": 5,
+			"stack": 1,
+			"future": true,
+			"durability": 2800,
+			"look_alikes": [],
+			"repair": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"value": 230,
+			"repair_station": "forge"
+		},
+		"leather_cap": {
+			"number": 324,
+			"name": "Leather cap",
+			"description": "A close leather cap. Better than bare hide.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.08,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 25
+		},
+		"leather_jerkin": {
+			"number": 325,
+			"name": "Leather jerkin",
+			"description": "A stiff leather vest. Turns a glancing blow.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.22,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 60
+		},
+		"bronze_helm": {
+			"number": 326,
+			"name": "Bronze helm",
+			"description": "A beaten bronze cap with a nose guard.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 90
+		},
+		"gambeson": {
+			"number": 327,
+			"name": "Gambeson",
+			"description": "Quilted padding. Cheap armour that soaks a blow.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.3,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 70
+		},
+		"iron_helm": {
+			"number": 328,
+			"name": "Iron helm",
+			"description": "A riveted iron helmet.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 140
+		},
+		"mail_shirt": {
+			"number": 329,
+			"name": "Mail shirt",
+			"description": "Rings of iron riveted together. Heavy but sound.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 200
+		},
+		"steel_helm": {
+			"number": 330,
+			"name": "Steel helm",
+			"description": "A fitted steel helm with leather lining.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.05,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 260
+		},
+		"plate_cuirass": {
+			"number": 331,
+			"name": "Plate cuirass",
+			"description": "Shaped steel plates over a leather harness. The best body armour.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 500
+		},
+		"wheat": {
+			"number": 332,
+			"name": "Wheat",
+			"description": "Golden heads of grain. Thresh and grind for flour.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"barley": {
+			"number": 333,
+			"name": "Barley",
+			"description": "Hardy grain for bread and brewing.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"carrot": {
+			"number": 334,
+			"name": "Carrot",
+			"description": "A sweet orange root grown in a tilled bed.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"potato": {
+			"number": 335,
+			"name": "Potato",
+			"description": "A starchy tuber that keeps well.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"turnip": {
+			"number": 336,
+			"name": "Turnip",
+			"description": "A round root, good in stew.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"flax": {
+			"number": 337,
+			"name": "Flax",
+			"description": "Tall stalks with strong fibres inside.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"wheat_seeds": {
+			"number": 338,
+			"name": "Wheat seeds",
+			"description": "Seeds for sowing wheat. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"barley_seeds": {
+			"number": 339,
+			"name": "Barley seeds",
+			"description": "Seeds for sowing barley. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"carrot_seeds": {
+			"number": 340,
+			"name": "Carrot seeds",
+			"description": "Seeds for sowing carrot. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"potato_seeds": {
+			"number": 341,
+			"name": "Potato seeds",
+			"description": "Seeds for sowing potato. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"turnip_seeds": {
+			"number": 342,
+			"name": "Turnip seeds",
+			"description": "Seeds for sowing turnip. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"flax_seeds": {
+			"number": 343,
+			"name": "Flax seeds",
+			"description": "Seeds for sowing flax. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"quern": {
+			"number": 344,
+			"name": "Quern",
+			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
+			"kind": "tool",
+			"tool_class": "quern",
+			"stack": 1,
+			"future": true,
+			"durability": 3000,
+			"repair": [
+				[
+					"stone",
+					1
+				]
+			],
+			"look_alikes": [],
+			"value": 15
+		},
+		"compost": {
+			"number": 345,
+			"name": "Compost",
+			"description": "Rotted plant matter. Feeds a tilled bed.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
 		}
 	}
 }
