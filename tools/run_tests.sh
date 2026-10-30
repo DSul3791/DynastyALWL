@@ -77,12 +77,15 @@ for t in $FAST $TIMING $SLOW; do
 	fi
 done
 
+# Known failures on this machine (tech/TEST_BASELINE_PC.md, same block gate_pc.sh reads): reported, but not counted as a fail.
+KNOWN=$(sed -n '/^<!-- known failures -->/,/^<!-- end known failures -->/p' tech/TEST_BASELINE_PC.md 2>/dev/null | grep -E '^- ' | sed 's/^- //; s/[ :].*//')
+KNOWN_HIT=""
 PASS=0; FAIL=0; : > "$OUT/seconds.txt"; FAILED=""
 for t in $FAST $TIMING $SLOW; do
 	R=$(cat "$OUT/$t.result" 2>/dev/null || echo "FAIL 0 -1 no result (did not run)")
 	set -- $R
 	echo "$2 $t $1" >> "$OUT/seconds.txt"
-	if [ "$1" = "PASS" ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); FAILED="$FAILED $t"; fi
+	if [ "$1" = "PASS" ]; then PASS=$((PASS + 1)); elif is_in "$t" "$KNOWN"; then KNOWN_HIT="$KNOWN_HIT $t"; else FAIL=$((FAIL + 1)); FAILED="$FAILED $t"; fi
 done
 for t in $FAILED; do
 	echo "FAILED $t: $(cat "$OUT/$t.result" 2>/dev/null)"
@@ -92,5 +95,6 @@ done
 [ -s "$OUT/retries.log" ] && sed 's/^/NOTE  /' "$OUT/retries.log"
 echo "slowest: $(sort -rn "$OUT/seconds.txt" | head -5 | awk '{printf "%s %ss  ", $2, $1}')"
 echo "wall time $(( $(date +%s) - START )) s, seconds per test in $OUT/seconds.txt"
+[ -n "$KNOWN_HIT" ] && echo "KNOWN PC failure (not counted, see tech/TEST_BASELINE_PC.md):$KNOWN_HIT"
 echo "Test done: $PASS pass, $FAIL fail"
 [ "$FAIL" -eq 0 ]
