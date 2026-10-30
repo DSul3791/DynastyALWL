@@ -39,6 +39,8 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 
 Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 35, stage 2 590, stage 3 115.
 
+**Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
+
 Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirmed 60, unused builders 12.
 
 ## Index
@@ -1306,8 +1308,8 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Hob (merchant) | Shopkeeper NPC | data/npcs/npcs.json roster, outfits.json merchant | ragdoll_body + dress(coat, trousers, shoes) + worn hide_boots and backpack (npc_view._make_body) | 2 | same featureless ragdoll as the player, colour variation only |
-| Edda (guard) | Guard NPC | data/npcs/npcs.json roster, outfits.json guard | ragdoll_body + dress + worn hide_boots, hide_leggings, hide_hood | 2 | same featureless ragdoll as the player |
+| Hob (merchant) | Shopkeeper NPC | data/npcs/npcs.json roster, outfits.json merchant | ragdoll_body + dress(coat, trousers, shoes) + worn hide_boots and backpack (npc_view._make_body) | 2 | same featureless ragdoll as the player, colour variation only [pending character restyle] |
+| Edda (guard) | Guard NPC | data/npcs/npcs.json roster, outfits.json guard | ragdoll_body + dress + worn hide_boots, hide_leggings, hide_hood | 2 | same featureless ragdoll as the player [pending character restyle] |
 
 ## 20 Player avatar and worn clothing
 
@@ -1318,24 +1320,24 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Player body (third person) | 17-bone ragdoll-style character, ~1.86 m, 3.2k triangles | src/client/ragdoll_body.gd; assets/character/README.md | built in code (skinned mesh, 10 animations) | 2 | owner decision 2026-10-21: "no features"; no face, hair or clothing detail beyond dress() |
-| First-person arms and hands | chest + two arms, 7 bones | src/client/ragdoll_body.gd Ragdoll.new(true) | built in code | 2 | same body; skin colour only |
-| Fist / bare hand ball | small skin ball at the hand mount | held_item._make_fist | built in code | 1 | single flattened sphere |
+| Player body (third person) | 17-bone ragdoll-style character, ~1.86 m, 3.2k triangles | src/client/ragdoll_body.gd; assets/character/README.md | built in code (skinned mesh, 10 animations) | 2 | owner decision 2026-10-21: "no features"; no face, hair or clothing detail beyond dress() [pending character restyle] |
+| First-person arms and hands | chest + two arms, 7 bones | src/client/ragdoll_body.gd Ragdoll.new(true) | built in code | 2 | same body; skin colour only [pending character restyle] |
+| Fist / bare hand ball | small skin ball at the hand mount | held_item._make_fist | built in code | 1 | single flattened sphere [pending character restyle] |
 
 ### worn items (10)
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Hide cloak | worn cloak, layer 2 | data/items/worn.json hide_cloak; src/client/worn_look.gd | built in code, builder "cloak" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Grass cloak | worn cloak, layer 2 | data/items/worn.json grass_cloak; src/client/worn_look.gd | built in code, builder "cloak" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Hide hood | worn hood, layer 2 | data/items/worn.json hide_hood; src/client/worn_look.gd | built in code, builder "hood" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Hide boots | worn boots, layer 1 | data/items/worn.json hide_boots; src/client/worn_look.gd | built in code, builder "boots" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Hide leggings | worn leggings, layer 1 | data/items/worn.json hide_leggings; src/client/worn_look.gd | built in code, builder "leggings" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Hide mittens | worn mittens, layer 1 | data/items/worn.json hide_mittens; src/client/worn_look.gd | built in code, builder "mittens" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Grass skirt | worn skirt, layer 1 | data/items/worn.json grass_skirt; src/client/worn_look.gd | built in code, builder "skirt" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Fibre sandals | worn sandals, layer 1 | data/items/worn.json fibre_sandals; src/client/worn_look.gd | built in code, builder "sandals" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Backpack | worn pack, layer 3 | data/items/worn.json backpack; src/client/worn_look.gd | built in code, builder "pack" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
-| Quiver | worn pack, layer 3 | data/items/worn.json quiver; src/client/worn_look.gd | built in code, builder "pack" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered |
+| Hide cloak | worn cloak, layer 2 | data/items/worn.json hide_cloak; src/client/worn_look.gd | built in code, builder "cloak" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Grass cloak | worn cloak, layer 2 | data/items/worn.json grass_cloak; src/client/worn_look.gd | built in code, builder "cloak" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Hide hood | worn hood, layer 2 | data/items/worn.json hide_hood; src/client/worn_look.gd | built in code, builder "hood" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Hide boots | worn boots, layer 1 | data/items/worn.json hide_boots; src/client/worn_look.gd | built in code, builder "boots" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Hide leggings | worn leggings, layer 1 | data/items/worn.json hide_leggings; src/client/worn_look.gd | built in code, builder "leggings" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Hide mittens | worn mittens, layer 1 | data/items/worn.json hide_mittens; src/client/worn_look.gd | built in code, builder "mittens" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Grass skirt | worn skirt, layer 1 | data/items/worn.json grass_skirt; src/client/worn_look.gd | built in code, builder "skirt" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Fibre sandals | worn sandals, layer 1 | data/items/worn.json fibre_sandals; src/client/worn_look.gd | built in code, builder "sandals" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Backpack | worn pack, layer 3 | data/items/worn.json backpack; src/client/worn_look.gd | built in code, builder "pack" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
+| Quiver | worn pack, layer 3 | data/items/worn.json quiver; src/client/worn_look.gd | built in code, builder "pack" on named bones (hung by worn_sync) | 2 | goal 1f: low-poly boxes/spheres/cylinders under ~150 triangles; not seen rendered [pending character restyle] |
 
 ### held offhand (2)
 
@@ -1348,8 +1350,8 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Held spear/axe/knife/other tool models | see tools in category 13 | held_item._make_spear_model etc. | built in code (or BasicLook mesh turned to the held pose) | 3 | tool passes (category 13) |
-| Shoulder log | large log across the shoulder | held_item.set_shoulder | plain cylinder | 1 | single cylinder |
+| Held spear/axe/knife/other tool models | see tools in category 13 | held_item._make_spear_model etc. | built in code (or BasicLook mesh turned to the held pose) | 3 | tool passes (category 13) [pending character restyle] |
+| Shoulder log | large log across the shoulder | held_item.set_shoulder | plain cylinder | 1 | single cylinder [pending character restyle] |
 
 ## 21 Particles and effects
 
