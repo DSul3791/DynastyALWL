@@ -18,6 +18,7 @@ uniform vec3 lips_color : source_color = vec3(0.7, 0.4, 0.38);
 uniform vec3 tunic_color : source_color = vec3(0.4, 0.34, 0.28);
 uniform vec3 trouser_color : source_color = vec3(0.25, 0.22, 0.2);
 uniform vec3 boot_color : source_color = vec3(0.14, 0.11, 0.09);
+uniform float show_cloth = 1.0;       // 0: the tunic, trousers and boots regions show skin (a bare body, for fittings and the creator)
 void fragment() {
 	int id = int(floor(COLOR.a * 8.0));
 	vec3 c = skin_color;
@@ -26,6 +27,7 @@ void fragment() {
 	else if (id == 3) { c = tunic_color; }
 	else if (id == 4) { c = trouser_color; }
 	else if (id == 5) { c = boot_color; }
+	if (show_cloth < 0.5 && id >= 3) { c = skin_color; }
 	ALBEDO = c;
 	ROUGHNESS = 0.85;
 }
@@ -127,6 +129,11 @@ func current() -> String:
 
 func is_one_shot_playing() -> bool:
 	return animation_player != null and animation_player.is_playing() and animation_player.get_animation(animation_player.current_animation).loop_mode == Animation.LOOP_NONE
+
+
+# Shows or hides the clothes baked into the body (tunic, trousers, boots): false gives a bare body in skin colour.
+func set_clothed(on: bool) -> void:
+	_material.set_shader_parameter("show_cloth", 1.0 if on else 0.0)
 
 
 # Paints the body: skin, coat (the tunic), trousers and shoes (boots), one shader material, as the dress method of the old body.

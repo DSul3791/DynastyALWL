@@ -35,6 +35,8 @@ func _initialize() -> void:
 	var far_new: int = WornLook.attach(fresh, ids, true)
 	_ok(far_new > 0 and far_new <= all_new, "far detail hangs fewer or equal parts (%d)" % far_new)
 	_check_fit()
+	_check_not_buried()
+	_check_bare()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -137,3 +139,69 @@ func _thigh_width(rig: Node) -> float:
 func _thigh_length(rig: Node) -> float:
 	var piece: Node3D = _first_piece(rig, "LeftUpperLeg")
 	return piece.transform.basis.get_scale().y if piece != null else 0.0
+
+
+# No worn piece may be completely hidden inside the body: at least one corner of each piece's box must lie outside the body surface (the union of the body parts).
+func _body_sdf(prims: Array, p: Vector3) -> float:
+	var best: float = 1000.0
+
+	for q in prims:
+		best = minf(best, (load("res://src/client/character/body_generator.gd") as GDScript).prim_sdf(q, p))
+
+	return best
+
+
+func _check_not_buried() -> void:
+	var Gen: GDScript = load("res://src/client/character/body_generator.gd")
+	var ids: Array = WornLook.table().keys()
+
+	for preset in ["average", "broad", "lean", "stocky"]:
+		var g: Dictionary = Gen.make_genome(preset)
+		var body: Node3D = GeneratedBody.new(g, 0.07)
+		root.add_child(body)
+		var skeleton: Skeleton3D = body.skeleton
+		var prims: Array = Gen.primitives(g, Gen.rig(g), false)
+
+		for id in ids:
+			WornLook.attach(body, [id], false)
+			var pieces: int = 0
+			var buried: int = 0
+
+			for anchor in skeleton.get_children():
+				if not str(anchor.name).begins_with("Worn_"):
+					continue
+
+				var rest: Transform3D = skeleton.get_bone_global_rest(skeleton.find_bone((anchor as BoneAttachment3D).bone_name))
+
+				for piece in anchor.get_children():
+					var mesh_node: MeshInstance3D = piece as MeshInstance3D
+					var box: AABB = mesh_node.mesh.get_aabb()
+					var out: bool = false
+
+					for cx in [0.0, 1.0]:
+						for cy in [0.0, 1.0]:
+							for cz in [0.0, 1.0]:
+								var corner: Vector3 = box.position + box.size * Vector3(cx, cy, cz)
+								var model_pos: Vector3 = rest * (mesh_node.transform * corner)
+
+								if _body_sdf(prims, model_pos) > 0.004:
+									out = true
+
+					pieces += 1
+
+					if not out:
+						buried += 1
+
+			_ok(buried == 0, "%s on the %s body: no piece is completely buried in the body (%d pieces, %d buried)" % [id, preset, pieces, buried])
+
+		body.queue_free()
+
+
+func _check_bare() -> void:
+	var body: Node3D = GeneratedBody.new({}, 0.07)
+	root.add_child(body)
+	body.set_clothed(false)
+	_ok(is_equal_approx(float((body.body_mesh.material_override as ShaderMaterial).get_shader_parameter("show_cloth")), 0.0), "a body can be shown bare (clothes hidden)")
+	body.set_clothed(true)
+	_ok(is_equal_approx(float((body.body_mesh.material_override as ShaderMaterial).get_shader_parameter("show_cloth")), 1.0), "and clothed again")
+	body.queue_free()
