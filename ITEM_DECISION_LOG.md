@@ -229,3 +229,5 @@ Approved by Sal (moderator pre-approval). Plan 1 started: spec is in ITEM_CHANGE
 3. One-page glossary of item names for the team: after that.
 
 Plan 1 of round 2 built: items 312-331, recipes 201-220 (shield off-hand = choice A; plate = future only). Tests green. Next: farming gap check, then glossary.
+
+Plan 2 of round 2 done: ITEM_FARMING_GAP_CHECK.md (spec only). Dave question: which first crops (rec: wheat, barley, carrot, potato, turnip, flax). Next: item-name glossary.
