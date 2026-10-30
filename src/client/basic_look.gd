@@ -14,6 +14,26 @@ static var _metal_mats: Dictionary = {}
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
+# Look overrides (Kathleen): item id -> {shape, color, size, bits}, used before looks.json, so the new items Sal lists in ITEM_ART_REQUESTS.md get a real look
+# even while their looks.json row is still the grey placeholder chunk. Remove a row here once looks.json carries the same shape.
+const ART_OVERRIDES := {
+	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
+	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
+	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
+	"processed_hide": {"shape": "leather", "color": "#d9c9a8", "size": 1.0},
+	"leather": {"shape": "leather", "color": "#8a5a2e", "size": 1.0},
+	"fine_leather": {"shape": "leather", "color": "#b07a3c", "size": 1.0, "bits": ["fine"]},
+	"heavy_leather": {"shape": "leather", "color": "#4a2f19", "size": 1.0, "bits": ["thick"]},
+	"rivets": {"shape": "rivets", "color": "#6b6e74", "size": 1.0},
+	"copper_ingot": {"shape": "ingot", "color": "#b5683a", "size": 1.0},
+	"tin_ingot": {"shape": "ingot", "color": "#a9adb3", "size": 1.0},
+	"bronze_ingot": {"shape": "ingot", "color": "#a8803a", "size": 1.0},
+	"flour": {"shape": "sack", "color": "#efe6d2", "size": 0.9},
+	"salt": {"shape": "grit", "color": "#f4f4f0", "size": 0.8},
+	"wooden_club": {"shape": "club", "color": "#5a3a1c", "size": 1.2},
+}
+
+
 static func entry(item_id: String) -> Dictionary:
 	if not _loaded:
 		_loaded = true
@@ -24,6 +44,9 @@ static func entry(item_id: String) -> Dictionary:
 
 			if parsed is Dictionary:
 				_table = parsed.get("items", {})
+
+	if ART_OVERRIDES.has(item_id) and not _table.has(item_id):
+		return ART_OVERRIDES[item_id]
 
 	return _table.get(item_id, {})
 
@@ -700,6 +723,58 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.017, 0.025, Vector3(0.0, 0.155, 0.0), Vector3.ZERO, Color(0.55, 0.4, 0.22))
 			_box(parts, Vector3(0.006, 0.18, 0.006), Vector3(0.0, 0.0, -0.062), dark)
 			_torus_v(parts, 0.035, 0.005, Vector3(0.06, 0.08, 0.0), dark)
+		"flint":
+			# Flint (Sal's request, priority 1): a rounded, waxy dark grey-brown nodule with a chalky pale rind on one side and three glassy chip scars where flakes
+			# came off (conchoidal fracture): the silhouette is a lumpy potato with flat bites taken out, so it cannot be mistaken for a smooth stone.
+			var rind: Color = Color(0.78, 0.72, 0.6)
+			_sph(parts, 0.075, Vector3(1.15, 0.7, 0.95), Vector3(0.0, -0.03, 0.0), color)
+			_sph(parts, 0.05, Vector3(1.0, 0.75, 0.9), Vector3(0.06, -0.035, 0.02), _tone(color, 2, 0.1))
+			_sph(parts, 0.045, Vector3(1.0, 0.7, 1.0), Vector3(-0.055, -0.03, -0.03), _tone(color, 5, 0.1))
+			_sph(parts, 0.04, Vector3(1.3, 0.35, 1.0), Vector3(-0.03, -0.045, 0.06), rind)
+			for k in 3:
+				_box_rot(parts, Vector3(0.035, 0.006, 0.03), Vector3(-0.04 + 0.05 * float(k), 0.012 + 0.006 * float(k % 2), -0.02 + 0.02 * float(k)), Vector3(0.0, 0.6 * float(k), 0.35), color.lightened(0.28))
+		"pyrite":
+			# Pyrite, fool's gold (priority 1): a cluster of brass-yellow cubes, each a little different in size and turn, with a dark seam where they meet: a blocky
+			# silhouette with straight edges and flat faces, nothing round, so it is told apart from gold nuggets and from flint at once.
+			var brass: Color = Color(0.82, 0.68, 0.2)
+			for k in 6:
+				var a: float = TAU * float(k) / 6.0
+				var sz: float = 0.045 + 0.012 * float(k % 3)
+				_box_rot(parts, Vector3(sz, sz, sz), Vector3(cos(a) * 0.04, -0.04 + 0.02 * float(k % 2) + sz * 0.5, sin(a) * 0.04), Vector3(0.3 * float(k), 0.5 * float(k), 0.2 * float(k % 3)), _tone(brass, k, 0.12))
+			_box(parts, Vector3(0.1, 0.03, 0.1), Vector3(0.0, -0.055, 0.0), Color(0.3, 0.27, 0.22))
+			_box_rot(parts, Vector3(0.06, 0.06, 0.06), Vector3(0.0, 0.015, 0.0), Vector3(0.4, 0.8, 0.3), brass.lightened(0.15))
+		"obsidian":
+			# Obsidian (priority 1): volcanic glass, a black angular shard: a tall pointed slab with a smooth curved chip face (a shell-shaped scoop) and razor edges;
+			# glossy and nearly black with pale grey highlights on the facets. The silhouette is a sharp triangle, unlike the rounded flint and the cubic pyrite.
+			var glass: Color = Color(0.06, 0.06, 0.08)
+			_wedge(parts, 0.07, 0.15, 0.09, Vector3(0.0, -0.02, 0.0), glass)
+			_wedge(parts, 0.05, 0.11, 0.06, Vector3(0.035, -0.035, 0.03), glass.lightened(0.05))
+			_box_rot(parts, Vector3(0.05, 0.1, 0.012), Vector3(-0.02, 0.01, 0.04), Vector3(0.0, 0.4, 0.35), Color(0.22, 0.24, 0.3))
+			_box_rot(parts, Vector3(0.03, 0.06, 0.01), Vector3(0.02, 0.03, -0.04), Vector3(0.0, -0.5, -0.3), Color(0.3, 0.32, 0.4))
+			_sph(parts, 0.03, Vector3(1.6, 0.25, 1.0), Vector3(-0.02, -0.05, 0.0), glass.lightened(0.1))
+		"leather":
+			# Leather (processed hide, leather, fine and heavy leather): a flat sheet folded once, a visible thick edge and a rolled corner; bits "thick" for heavy leather,
+			# "fine" for smooth thin leather. The colour tells the grade.
+			var th: float = 0.034 if bits.has("thick") else (0.014 if bits.has("fine") else 0.022)
+			_box(parts, Vector3(0.24, th, 0.18), Vector3(0.0, -0.05 + th * 0.5, 0.0), color)
+			_box(parts, Vector3(0.2, th, 0.16), Vector3(0.02, -0.05 + th * 1.5, 0.0), color.lightened(0.06))
+			_cyl(parts, th * 0.7, 0.16, Vector3(-0.11, -0.05 + th * 2.2, 0.0), Vector3(PI * 0.5, 0.0, 0.0), dark)
+			_box(parts, Vector3(0.012, th * 2.0, 0.17), Vector3(0.12, -0.05 + th, 0.0), color.darkened(0.2))
+		"rivets":
+			# Rivets: a small pile of iron pins with round flat heads, lying every way, a few heads up.
+			for k in 9:
+				var a2: float = TAU * float(k) / 9.0 + 0.3
+				var at2: Vector3 = Vector3(cos(a2) * 0.035 * float(1 + k % 2), -0.05 + 0.012 * float(k % 3), sin(a2) * 0.035 * float(1 + k % 2))
+				_cyl(parts, 0.004, 0.05, at2, Vector3(0.0, a2, PI * 0.5 + 0.3 * float(k % 3)), color)
+				_cyl(parts, 0.011, 0.005, at2 + Vector3(cos(a2) * 0.024, 0.0, -sin(a2) * 0.024), Vector3(0.0, a2, PI * 0.5), color.lightened(0.15))
+		"club":
+			# A hardwood club: a stout shaft with a grip wrapped near the thin end and a heavy swollen striking end with a rounded head, a knot and a worn pale top.
+			_cyl_taper(parts, 0.016, 0.034, 0.34, Vector3(-0.17, 0.0, 0.0), _tone(color, 1, 0.08))
+			_cyl_taper(parts, 0.034, 0.05, 0.14, Vector3(0.07, 0.0, 0.0), _tone(color, 2, 0.1))
+			_sph(parts, 0.05, Vector3(0.8, 1.0, 1.0), Vector3(0.15, 0.0, 0.0), color.lightened(0.08))
+			for k in 4:
+				_cyl(parts, 0.019, 0.012, Vector3(-0.28 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.28, 0.17, 0.09) if k % 2 == 0 else Color(0.18, 0.1, 0.05))
+			_sph(parts, 0.012, Vector3.ONE, Vector3(0.06, 0.04, 0.03), dark)
 		"kit":
 			_box(parts, Vector3(0.3, 0.12, 0.2), Vector3(0.0, -0.01, 0.0), color)
 			_box(parts, Vector3(0.31, 0.02, 0.21), Vector3(0.0, 0.0, 0.0), dark)
