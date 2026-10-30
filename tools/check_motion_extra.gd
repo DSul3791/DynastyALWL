@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_check_clips()
 	_check_feet()
 	_check_driver()
+	_check_clip_for()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -150,3 +151,63 @@ func _check_driver() -> void:
 	_ok(Driver.choose_clip_moving(crouch, Vector2.ZERO, 0.0, false, "crouch_walk", false) == "crouch", "standing still crouched is crouch")
 	_ok(Driver.choose_clip_moving(stand, Vector2(0.0, 1.2), 0.0, false, "idle", true) == "carry_walk", "carrying overrides the backwards walk")
 	_ok(Driver.speed_scale("strafe_left", 1.3) == 1.0 and Driver.speed_scale("walk_back", 5.0) == 1.5 and Driver.speed_scale("crouch_walk", 0.9) == 1.0, "speed scales for the new gaits")
+
+
+# The per-frame call: the old body gets exactly the old rule; a generated body flies, falls and lands.
+func _check_clip_for() -> void:
+	var old: Node3D = load("res://src/client/ragdoll_body.gd").new()
+	var gen: Node3D = GeneratedBody.new({}, 0.07, false)
+	root.add_child(old)
+	root.add_child(gen)
+	var stand: int = StanceScript.STAND
+	var id: Basis = Basis.IDENTITY
+	var same: bool = true
+
+	for pace in [0.0, 1.0, 3.0, 6.0]:
+		for air in [false, true]:
+			var a: String = Driver.clip_for(old, stand, Vector3(0.0, 4.0, -pace), id, not air, pace, "idle", false, 0.016)
+			same = same and a == Driver.choose_clip(stand, pace, "idle", false)
+
+	_ok(same, "the old body always gets the old rule, in the air or not")
+	_ok(Driver.clip_for(gen, stand, Vector3(0.0, 0.0, 1.2), id, true, 1.2, "idle", false, 0.016) == "walk_back", "a generated body walking backwards gets walk_back")
+	# Jump: leave the floor rising, then fall, then touch down after a long fall.
+	var clip: String = ""
+
+	for _f in range(5):
+		clip = Driver.clip_for(gen, stand, Vector3(0.0, 4.0, 0.0), id, false, 0.0, clip, false, 0.016)
+
+	_ok(clip != "jump", "a 0.08 s loss of floor is not yet the air (steps and slopes)")
+
+	for _f in range(5):
+		clip = Driver.clip_for(gen, stand, Vector3(0.0, 4.0, 0.0), id, false, 0.0, clip, false, 0.016)
+
+	_ok(clip == "jump", "after the delay a rising body jumps")
+
+	for _f in range(40):
+		clip = Driver.clip_for(gen, stand, Vector3(0.0, -4.0, 0.0), id, false, 0.0, clip, false, 0.016)
+
+	_ok(clip == "fall", "then falls")
+	clip = Driver.clip_for(gen, stand, Vector3.ZERO, id, true, 0.0, clip, false, 0.016)
+	_ok(clip == "land", "touching down after a long fall plays land")
+
+	for _f in range(14):
+		clip = Driver.clip_for(gen, stand, Vector3.ZERO, id, true, 0.0, clip, false, 0.016)
+
+	_ok(clip == "land", "and keeps asking for it while it plays")
+
+	for _f in range(10):
+		clip = Driver.clip_for(gen, stand, Vector3.ZERO, id, true, 0.0, clip, false, 0.016)
+
+	_ok(clip == "idle", "then idle (%s)" % clip)
+	# A short hop does not land hard.
+	var hop: Node3D = GeneratedBody.new({}, 0.07, false)
+	root.add_child(hop)
+
+	for _f in range(14):
+		clip = Driver.clip_for(hop, stand, Vector3(0.0, 1.0, 0.0), id, false, 0.0, "idle", false, 0.016)
+
+	clip = Driver.clip_for(hop, stand, Vector3.ZERO, id, true, 0.0, clip, false, 0.016)
+	_ok(clip == "idle", "a hop of 0.2 s in the air does not play land (%s)" % clip)
+	old.queue_free()
+	gen.queue_free()
+	hop.queue_free()

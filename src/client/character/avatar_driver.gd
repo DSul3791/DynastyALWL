@@ -14,6 +14,9 @@ const JOG_HOLD := 1.8
 const RUN_FROM := 5.0                   # jog to run; 4.4 when already running
 const RUN_HOLD := 4.4
 const JUMP_UP := 1.0                    # vertical speed (m/s) above which the airborne clip is the jump (rising); below it the fall
+const AIR_DELAY := 0.15                 # seconds without a floor before the body counts as in the air
+const LAND_AFTER := 0.4                 # a fall at least this long ends in the land clip
+const LAND_HOLD := 0.36                 # how long the land clip is asked for (a little under its length, so it is not restarted when it ends)
 const SKIN := Color(0.78, 0.62, 0.5)
 const COAT := Color(0.4, 0.34, 0.28)
 const TROUSERS := Color(0.25, 0.22, 0.2)
@@ -57,6 +60,36 @@ static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: f
 			return "strafe_right" if velocity_local.x > 0.0 else "strafe_left"
 
 	return choose_clip(stance, pace, current, carrying)
+
+
+# Plan 20: the one call the client makes each frame. A body that has the plan 19 clips (a generated body) gets choose_clip_moving with its local velocity, the air time
+# (the floor must be lost for AIR_DELAY seconds before it counts as in the air, so steps and slope edges do not flicker) and a landing: after a fall of LAND_AFTER
+# seconds or more the `land` clip is asked for until it is over. Any other body (the old ragdoll) gets exactly choose_clip. The timers live in meta on the avatar.
+static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_floor: bool, pace: float, current: String, carrying: bool, delta: float) -> String:
+	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
+
+	if player == null or not player.has_animation("jump"):
+		return choose_clip(stance, pace, current, carrying)
+
+	var air_t: float = float(avatar.get_meta("air_t", 0.0))
+	var land_t: float = maxf(float(avatar.get_meta("land_t", 0.0)) - delta, 0.0)
+
+	if on_floor:
+		if air_t >= LAND_AFTER and stance == StanceScript.STAND:
+			land_t = LAND_HOLD
+
+		air_t = 0.0
+	else:
+		air_t += delta
+
+	avatar.set_meta("air_t", air_t)
+	avatar.set_meta("land_t", land_t)
+
+	if land_t > 0.0 and stance == StanceScript.STAND and not carrying:
+		return "land"
+
+	var local: Vector3 = basis.inverse() * velocity
+	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)
 
 
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
