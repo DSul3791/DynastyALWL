@@ -189,6 +189,7 @@ def select(paths, lanes, force_all=False, full=False):
         result["class"] = "code"
 
     chosen = set()
+    keep = set()   # release tests kept in the plan: baked data or the test itself changed
 
     def add(names, reason):
         for n in names:
@@ -238,6 +239,8 @@ def select(paths, lanes, force_all=False, full=False):
         hit = next((p for p in live if matches(p, rule["paths"])), None)
         if hit:
             add(rule["tests"], rule["why"] + ": " + hit)
+            if rule in lanes["extra_inputs"]:
+                keep.update(rule["tests"])
             for c in rule.get("checks", []):
                 if c not in result["checks"]:
                     result["checks"].append(c)
@@ -259,6 +262,15 @@ def select(paths, lanes, force_all=False, full=False):
         m = re.match(re.escape(TEST_DIR) + r"/(test_\w+)\.gd$", p)
         if m and m.group(1) in tests:
             add([m.group(1)], "the test itself changed")
+            keep.add(m.group(1))
+
+    # Release tests (big tests on the real baked tiles, minutes each; small fast tests cover their code): picked only when baked data or the test
+    # itself changed, or with --full. tools/release_check.sh runs them all by hand before a release.
+    if not full:
+        for t in lanes.get("release", []):
+            if t in chosen and t not in keep:
+                chosen.discard(t)
+                why.pop(t, None)
 
     result["pictures"] = [p for p in live if matches(p, lanes["picture_paths"])]
     result["fast"] = [t for t in fast_all if t in chosen]
@@ -279,7 +291,7 @@ def main(argv):
         return 0
     if "--check-lanes" in argv:
         tests = set(all_tests())
-        names = set(lanes["timing"] + lanes["retry"] + lanes["slow"] + lanes["always"] + lanes.get("serial_extra", []))
+        names = set(lanes["timing"] + lanes["retry"] + lanes["slow"] + lanes.get("release", []) + lanes["always"] + lanes.get("serial_extra", []))
         for rule in lanes["path_rules"] + lanes["extra_inputs"]:
             names |= {n for n in rule["tests"] if n != "@all_fast"}
         missing = sorted(n for n in names if n not in tests)

@@ -3,7 +3,7 @@
 #   tools/ship.sh <40-char tested hash> "<short title>" "<gate note>" [RUNTIME|RESTART|BAKE]
 # Steps: fetch, merge --no-ff (stops on a conflict and tells you which files), merge_check + marker grep + parse_scan, bump build.gd,
 # HANDOFF.md line 3 and both BUILD_LOG copies, local_check (label default RESTART), commit, push with retry, verify origin (build number and ancestor).
-# Env: SKIP_SLOW=1 skips the full test run before the push (tools/nightly_slow.sh), PYTHON (default python3), GODOT_EXE via tools/godot or PATH, BUILD_LOG_DIR (optional second copy of BUILD_LOG and HANDOFF; unset = repo copies only), NO_PUSH=1 to stop before pushing.
+# Env: SKIP_TESTS=1 skips the selected tests before the push, PYTHON (default python3), GODOT_EXE via tools/godot or PATH, BUILD_LOG_DIR (optional second copy of BUILD_LOG and HANDOFF; unset = repo copies only), NO_PUSH=1 to stop before pushing.
 # Never deletes anything (Dave's rule): files removed by a merge must already be under proposed_removals/ (merge_check step 7).
 set -u
 HASH=${1:?usage: tools/ship.sh <hash> "<title>" "<gate note>" [label]}; TITLE=${2:?title}; NOTE=${3:?gate note}; LABEL=${4:-RESTART}
@@ -32,10 +32,12 @@ echo "$ENTRY" >> docs/mirror/tech/BUILD_LOG.md; [ -n "$LOGDIR" ] && [ -d "$LOGDI
 sed 's#export PATH="$PWD/tools:$PATH"#true#' tools/local_check.sh > tools/lc_tmp.sh
 CHANGE_LABEL=$LABEL bash tools/lc_tmp.sh 2>&1 | tail -3 | tee "${TMPDIR:-/tmp}/ship_lc.txt"; rm -f tools/lc_tmp.sh
 grep -q 'LOCAL CHECK: PASS' "${TMPDIR:-/tmp}/ship_lc.txt" || die "local_check failed (merge and bump are in the tree, not pushed)"
-# Before main: every test once, slow lane included (per-commit gates only run the tests a diff touches). SKIP_SLOW=1 skips it (e.g. tools/nightly_slow.sh passed today).
-if [ -z "${SKIP_SLOW:-}" ]; then
-	bash tools/nightly_slow.sh 2>&1 | tail -4 | tee "${TMPDIR:-/tmp}/ship_slow.txt"
-	grep -q 'Test done: [0-9]* pass, 0 fail' "${TMPDIR:-/tmp}/ship_slow.txt" || die "full test set failed (merge and bump are in the tree, not pushed); SKIP_SLOW=1 to skip"
+# Before main: the tests this merge needs (tests_for_diff.py origin/main HEAD: the small fast tests for the code it touches, the big release tests only if baked
+# data changed). SKIP_TESTS=1 skips; tools/release_check.sh runs every test by hand.
+if [ -z "${SKIP_TESTS:-}" ]; then
+	$PY tools/tests_for_diff.py origin/$BRANCH HEAD > "${TMPDIR:-/tmp}/ship_plan.json" || die "test selection failed"
+	bash tools/run_tests.sh --plan "${TMPDIR:-/tmp}/ship_plan.json" 2>&1 | tail -4 | tee "${TMPDIR:-/tmp}/ship_tests.txt"
+	grep -q 'Test done: [0-9]* pass, 0 fail' "${TMPDIR:-/tmp}/ship_tests.txt" || die "tests failed (merge and bump are in the tree, not pushed); SKIP_TESTS=1 to skip"
 fi
 git add HANDOFF.md docs/mirror/tech src data tools 2>/dev/null
 git commit -qm "Build $NEW: $TITLE merged

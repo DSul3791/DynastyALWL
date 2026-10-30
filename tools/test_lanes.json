@@ -5,7 +5,8 @@
 	"retry": ["test_animals", "test_npcs", "test_bed", "test_fish_schools"],
 	"serial_extra": [],
 	"serial_note": "The serial lane = the timing tests plus every test the scan finds writing a fixed file outside user:// (listed under `serial` by --print-lanes). Each parallel job also gets its own data dir, so user:// folders never collide.",
-	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core", "test_slot_sounds"],
+	"slow": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes"],
+	"release": ["test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",
 	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
@@ -18,6 +19,11 @@
 		"name_patterns": ["items", "inventory", "craft", "recipe", "blueprint", "structure", "bed", "eat", "fish", "bow", "traps", "carcass", "hunt", "vitals", "shore", "dishes", "sickness", "spoilage", "stations", "trade", "worn", "offhand", "pick_axes", "thatch", "campfire", "hammer", "auto_", "first_hour", "new_player", "coin", "tool_looks", "showroom", "forge", "ladder", "tier", "persistence", "save_compat", "placed_clearing", "placement"]
 	},
 	"path_rules": [
+		{
+			"why": "drainage and live water code: the small fast tests that replaced the big tile tests",
+			"paths": ["src/worldgen/tile/tile_drainage.gd", "src/worldgen/tile/drainage_*.gd", "src/water/**", "data/water_settle.json", "data/water_flow.json", "data/water/**"],
+			"tests": ["test_drainage_small", "test_water_small", "test_water_hub_small", "test_drainage_natural", "test_drainage_fill"]
+		},
 		{
 			"why": "Kathleen: looks and pieces",
 			"paths": ["src/client/piece_look.gd", "src/client/basic_look.gd", "src/client/building_look.gd", "src/client/inventory_view.gd", "src/client/*_look.gd", "src/client/avatar*", "src/client/**/avatar*", "src/client/held_item.gd", "src/client/look_table.gd", "data/items/looks.json", "data/items/structures.json", "data/items/clothing.json", "data/look/**"],

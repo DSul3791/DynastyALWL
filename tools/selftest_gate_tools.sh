@@ -18,8 +18,9 @@ sel src/worldgen/tools/test_traps.gd | field "'test_traps' in d['fast']" | grep 
 sel src/worldgen/tools/export_tile_maps.gd | field "len(d['slow'])==0"  | grep -q True; ok $? "an offline worldgen tool script does not start the slow lane"
 sel tools/erosion_precarve/rock.py | field "d['class']=='docs' and len(d['fast'])==0" | grep -q True; ok $? "an offline python tool selects no tests"
 sel src/worldgen/tile/tile_drainage.gd | field "len(d['slow'])>0" | grep -q True; ok $? "worldgen runtime code selects the slow tests that load it"
-sel src/worldgen/tile/tile_drainage.gd | field "len(d['slow'])<9" | grep -q True; ok $? "per commit, worldgen code does not start the whole slow lane"
-"$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==9 and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
+sel src/worldgen/tile/tile_drainage.gd | field "'test_head_pond_fill' not in d['slow'] and 'test_water_small' in d['fast']" | grep -q True; ok $? "worldgen water code selects the small tests, not the big release tests"
+sel worlds/base_world/tiles/tile_3_4.tile | field "'test_head_pond_fill' in d['slow'] and 'test_water_soak' in d['slow']" | grep -q True; ok $? "baked tile data selects the big release tests"
+"$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==5 and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
 sel tools/run_tests.sh | field "d['class']=='tools' and len(d['fast'])==0 and 'selftest' in d['checks']" | grep -q True; ok $? "a gate tool edit selects the lane check and selftest, no game tests"
 
 cat > "$T/fakegodot" <<'F'
