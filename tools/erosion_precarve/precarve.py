@@ -40,7 +40,7 @@ if P.get('geology_dir'):
     import rock
     _g = rock.load(P['geology_dir'], P.get('cover_m', 4.0), P.get('cover_ery', 5.0))
     assert _g['n'] == n, (_g['n'], n)
-    ery_factory = lambda h0, sea0: rock.make_fn(_g, c, sea0)
+    ery_factory = lambda h0, sea0: rock.make_fn(_g, c, sea0, dx)
 uplift_map = None
 if P.get('design_uplift'):
     # Uplift told from the design: high where the designed land is high, small at the low coast, none at sea. balance stays 0.

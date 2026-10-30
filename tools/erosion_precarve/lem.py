@@ -105,7 +105,7 @@ def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul,
     # hillslope diffusion (explicit, stable: D dt/dx^2 <= .2 via substeps)
     dmax = 1.0
     for i in range(N):
-        if dmul[i]*ery[i] > dmax: dmax = dmul[i]*ery[i]   # the diffusion step must be stable for the softest rock too
+        if dmul[i]*ery[i]**0.3 > dmax: dmax = dmul[i]*ery[i]**0.3   # the diffusion step must be stable for the softest rock too
     ns = int(np.ceil(D*dmax*dt/(dx*dx)/0.2)); ns = max(ns, 1)
     kk = D*dt/ns/(dx*dx)
     for s in range(ns):
@@ -115,7 +115,7 @@ def step(h, sea, n, dx, dt, K, m, U, D, ery, dep_frac, fill_out, area_out, dmul,
                 i = r*n+c
                 if sea[i]: continue
                 lap = b[i-1]+b[i+1]+b[i-n]+b[i+n]-4*b[i]
-                h[i] = max(b[i]+kk*ery[i]*dmul[i]*lap, 0.05)
+                h[i] = max(b[i]+kk*ery[i]**0.3*dmul[i]*lap, 0.05)   # hillslope creep depends only weakly on rock hardness
     # sediment: eroded volume travels downstream, drops in pits (filled-h > 0)
     Q = np.zeros(N)
     for i in range(N):
@@ -207,6 +207,9 @@ def run(n=720, dx=64.0, years=1.0e6, dt=4000.0, K=1.2e-6, m=0.5, U=6e-4, D=0.02,
     ery_fn = ery_fn_factory(h, sea) if ery_fn_factory is not None else None   # layered rock: erodibility from the rock at each cell's current height
     for s in range(nsteps):
         if ery_fn is not None: ery = ery_fn(h)
-        step(h, sea, n, dx, dt, K, m, Umap if s < off*nsteps else Uzero, D, ery, dep, fill, area, dmul, rain)
+        Uc = Umap if s < off*nsteps else Uzero
+        before = h + Uc*dt
+        step(h, sea, n, dx, dt, K, m, Uc, D, ery, dep, fill, area, dmul, rain)
+        if ery_fn is not None: ery_fn.update(h - before)
         if log and s % 50 == 0: print(s, nsteps, round(time.time()-t0, 1), 'max h', round(h.max()), flush=True)
     return start.reshape(n, n), h.reshape(n, n), sea.reshape(n, n), fill.reshape(n, n), area.reshape(n, n), time.time()-t0
