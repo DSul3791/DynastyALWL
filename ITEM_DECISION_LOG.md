@@ -2,6 +2,17 @@
 
 Kept by Sal. Dave (2026-10-30): decide on your own, look best practice up on the internet first, ask Dave only if truly needed, and keep a record here. Newest items at the bottom. "Dave" = Dave's own words; "Sal" = my decision. Main working document: `ITEM_GROUPS_AND_NAMES.md`. Branch: `sal-items`.
 
+## FOR DAVE: decisions Sal made for you or still needs (read this first)
+1. **Bench rule conflict.** `docs/mirror/design/CRAFTING_STATIONS_RULE.md` records "benches make weapons and tools only" as your standing rule (25 Oct). You said on 30 Oct it is not yours. Sal followed the 30 Oct words; the old file is untouched.
+2. **Trim list: your 25 Oct answers stand** (ITEM_TRIM_DECISIONS.md). Done: spade sizes retired (stone spade digs 4 pieces, iron and steel 8: Sal's mapping, change it if you wish), sewing needle retired, vice kit no longer craftable. Deferred: one Lumber/Beam with a species tag (needs a code feature; spec below).
+3. **Dishes:** four dishes trimmed to 3 ingredients; Hearty pottage and Roast Beast stay at 5 as special top-tier dishes. Food points were not reduced (a small buff). Say if you want them reduced.
+4. **Crops:** medieval European crops in the starter lands; potato, maize, rice only as exotic crops from far islands.
+5. **Copper tool rung:** you asked for copper, tin and bronze ingots; no copper tools exist and TOOL_TIERS.md says none until you ask. Do you want copper axe, pickaxe, knife?
+6. **Pickaxe tier:** the pickaxes are tiered one rung earlier than the spades (iron pick tier 2, iron spade tier 3). Sal left it.
+7. **Clay Oven and Iron Stove** need new structures, models and the quality system; spec below, nothing built.
+8. **Numbers used:** items 278 to 300 and recipes 178 to 189, inside the block reserved in TOOL_TIERS.md.
+9. **Not tested:** the full 40-step suite and the animal, wolf and trade scenarios.
+
 ## Dave's rules (his words, condensed)
 - Recipes: three ingredients at most; only a really special, powerful top-tier item may use 4 or 5.
 - Keep it simple, engaging, educational (a hint), fun and reasonable to make; never so complicated players stop enjoying it.
