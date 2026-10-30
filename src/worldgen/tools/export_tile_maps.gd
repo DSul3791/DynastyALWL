@@ -1,0 +1,52 @@
+extends SceneTree
+
+# Reads baked tile files and writes their height and water class maps as raw arrays for offline viewing. Read-only. Run with:
+#
+#   godot --headless --path . --script res://src/worldgen/tools/export_tile_maps.gd -- --out=C:/some/folder
+#
+# Options: --world=DIR (default res://worlds/base_world); --tiles=X0,Z0,X1,Z1 (default 2,3,4,5); --out=DIR.
+# Per tile writes h_X_Z.f32 (metres, 1921 x 1921) and c_X_Z.u8 (0 dry, 1 ocean, 2 lake, 3 river).
+
+const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+
+
+func _init() -> void:
+	var world_dir: String = "res://worlds/base_world"
+	var out_dir: String = "user://tile_maps"
+	var rect: Array = [2, 3, 4, 5]
+
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--world="):
+			world_dir = argument.trim_prefix("--world=")
+		elif argument.begins_with("--out="):
+			out_dir = argument.trim_prefix("--out=")
+		elif argument.begins_with("--tiles="):
+			rect = []
+
+			for part in argument.trim_prefix("--tiles=").split(","):
+				rect.append(int(part))
+
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out_dir))
+
+	for z in range(int(rect[1]), int(rect[3]) + 1):
+		for x in range(int(rect[0]), int(rect[2]) + 1):
+			var path: String = "%s/tiles/tile_%d_%d.tile" % [world_dir, x, z]
+			var head: Dictionary = TileFileScript.read_header(path)
+
+			if not bool(head.get("ok", false)):
+				print("no tile %d,%d" % [x, z])
+				continue
+
+			var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"])
+			var classes: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
+			_write("%s/h_%d_%d.f32" % [out_dir, x, z], heights.to_byte_array())
+			_write("%s/c_%d_%d.u8" % [out_dir, x, z], classes)
+			print("exported %d,%d" % [x, z])
+
+	quit()
+
+
+func _write(path: String, bytes: PackedByteArray) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_buffer(bytes)
+	file.close()
