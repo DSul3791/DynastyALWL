@@ -149,3 +149,12 @@ Why deferred: it is a feature, not a data merge. Nothing is half-done in the dat
 | 3 | hand saw (steel pickaxe, iron spade, iron hoe, future) | none | none |
 | 4 | (steel spade, hoe, striker, future) | none | none |
 Gaps seen: no club, sword, mace, shield or armour above hide in any tier; no stone pickaxe (the first pickaxe is iron); no body armour; no head/hand/foot gear above tier 1; copper and bronze items exist only as ingots; no axe above stone. These match the first-thoughts list in ITEM_GROUPS_AND_NAMES.md and are inputs to the later progression review, not decisions.
+
+## Dishes done and plan 3 (tool and weapon tier balance), 2026-10-30
+**Dishes (one commit):** Hunter's stew drops porcini, Forager's stew drops sorrel, Fish stew drops sage (description updated), Trail bread drops dates. All four now take 3 ingredient kinds. Hearty pottage and Roast Beast keep 5 as special top-tier dishes (Dave: 4 or 5 only for really special powerful items). Food points, shelf life and warmth unchanged on purpose (a dish that is cheaper to make but worth the same is a buff, which Sal judged fine for first-hour cooks; Dave can ask for a cut). I edited dishes.json and the four recipes by hand instead of running tools/gen_dishes.py, which rewrites seven data files in a different format. Tests pass: validate_items, dishes, server_items, first_hour, inventory.
+
+**Tool and weapon balance (observations from items.json, no changes):**
+- Durability climbs about tenfold per material: stone axe 900, stone spade/hoe/hammer about 4000, iron spade/hoe 20250, steel 40500, iron pickaxe 9000, steel pickaxe 22500. The jump from stone to iron is about 5 times for spades but the first pickaxe is iron, so there is no stone mining tool.
+- Pickaxes are tiered 2 (iron) and 3 (steel) while spades are tiered 2 (stone), 3 (iron), 4 (steel): the pickaxe sits one tier earlier than the matching spade. Check against design/TOOL_TIERS.md.
+- Weapons: wooden spear 6 melee / 5 thrown, stone spear 8 / 6; Javelin (new, future) 4 melee / 9 thrown with durability 120, which makes it the best thrown weapon and a poor melee one, as Dave described. Obsidian knife cuts 1.6 against flint-class stone knife 1.0 with durability 300 against 540: sharper and more brittle, as intended.
+- Value: Steel pickaxe 300 and Iron pickaxe 120 are priced far above the stone tools (20 to 30); copper, tin and bronze tools do not exist yet, so there is a gap between stone (T2) and iron (T3).
