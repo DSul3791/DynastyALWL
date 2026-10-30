@@ -176,7 +176,13 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"conifer":
 			_conifer(bark, leaves, rng, h, crown, trunk, far)
 		"palm":
-			_palm(bark, leaves, rng, h, crown, trunk, far)
+			_palm(bark, leaves, rng, h, crown, trunk, far, str(entry["name"]))
+		"acacia":
+			_acacia(bark, leaves, rng, h, crown, trunk, far)
+		"mangrove":
+			_mangrove(bark, leaves, rng, h, crown, trunk, far)
+		"tropical_hardwood":
+			_tropical_hardwood(bark, leaves, rng, h, crown, trunk, far)
 		"shrub":
 			_shrub(bark, leaves, rng, h, crown, far)
 		"cactus":
@@ -2112,16 +2118,171 @@ static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w
 	acc.card(at, right, up, half_w, half_h, normal, color)
 
 
-static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool) -> void:
-	var tint: Color = BARK_TINT_PALM
-	var lean: Vector2 = Vector2(rng.randf_range(-0.12, 0.12), rng.randf_range(-0.12, 0.12)) * h
-	var centers: Array = _trunk(bark, rng, h, trunk * 0.85, trunk * 0.7, lean, tint, 5 if far else 8, 2 if far else 6, 0.5 if not far else 0.0)
+# Palms (Kathleen, stage-1 trees pass): one builder, three looks by species name. Coconut palm: a tall slender trunk leaning and curving, a
+# loose crown of long drooping fronds, a cluster of green-brown nuts under the crown. Date palm: a straighter, thicker trunk roughened by old
+# frond bases, a dense crown of stiffer, more upright fronds with orange date bunches. Wild banana: a thick soft pale-green pseudostem, few very
+# broad leaves, a hanging bunch of green bananas. Heights, crowns and trunk widths come from flora.json unchanged.
+static func _palm(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool, kind: String = "coconut_palm") -> void:
+	var banana: bool = kind == "wild_banana"
+	var date: bool = kind == "date_palm"
+	var tint: Color = Color(0.46, 0.5, 0.3) if banana else (Color(0.5, 0.42, 0.32) if date else BARK_TINT_PALM)
+	var lean_k: float = 0.04 if (banana or date) else 0.1
+	var lean: Vector2 = Vector2(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)).normalized() * lean_k * h
+	var base_r: float = trunk * (1.1 if banana else 0.85)
+	var top_r: float = trunk * (0.7 if banana else (0.8 if date else 0.55))
+	var centers: Array = _trunk(bark, rng, h, base_r, top_r, lean, tint, 5 if far else 8, 2 if far else 7, 0.0 if far else (0.2 if banana else 0.7))
 	var top: Vector3 = centers[centers.size() - 1]
-	var fronds: int = 7 if far else 13
+
+	# Rings of old frond bases roughen a date or coconut trunk (near models only).
+	if not far and not banana:
+		for k in range(1, 9 if date else 6):
+			var c: Vector3 = centers[mini(k, centers.size() - 1)]
+			_bead(bark, c, Vector3(base_r * 1.15, h * 0.012, base_r * 1.15), tint * 0.78)
+
+	var fronds: int = 7 if far else (8 if banana else (20 if date else 15))
+	var length: float = crown * (1.3 if banana else (1.7 if date else 2.0))
+	var width: float = 0.5 if banana else (0.2 if date else 0.22)
 
 	for k in range(fronds):
 		var a: float = TAU * float(k) / float(fronds) + rng.randf_range(-0.2, 0.2)
-		_frond(leaves, rng, top, Vector3(cos(a), 0.0, sin(a)), crown * rng.randf_range(1.5, 2.0), rng.randf_range(0.1, 0.5), 1 if far else 3, 0.26)
+		var rise: float = rng.randf_range(0.6, 1.0) if date and k % 2 == 0 else (rng.randf_range(0.25, 0.6) if banana else rng.randf_range(0.1, 0.55))
+		var tone: Color = Color(0.9, 1.0, 0.75) if banana else Color.WHITE
+		_frond(leaves, rng, top, Vector3(cos(a), 0.0, sin(a)), length * rng.randf_range(0.85, 1.1), rise, 1 if far else (4 if not banana else 3), width, tone)
+
+	if far:
+		return
+
+	if banana:
+		var bunch: Vector3 = top + Vector3(0.0, -h * 0.05, 0.0) + Vector3(cos(0.7), 0.0, sin(0.7)) * trunk * 0.9
+
+		for k in range(9):
+			var p: Vector3 = bunch + Vector3(rng.randf_range(-0.12, 0.12), -float(k % 3) * 0.1, rng.randf_range(-0.12, 0.12))
+			_bead(bark, p, Vector3(0.05, 0.12, 0.05), Color(0.55, 0.65, 0.22))
+	else:
+		var fruit: Color = Color(0.85, 0.5, 0.12) if date else Color(0.45, 0.5, 0.2)
+
+		for k in range(10 if date else 7):
+			var a: float = rng.randf() * TAU
+			var p: Vector3 = top + Vector3(cos(a) * trunk * 0.9, -h * 0.025 - rng.randf() * h * 0.03, sin(a) * trunk * 0.9)
+			var sz: float = 0.07 if date else 0.14
+			_bead(bark, p, Vector3(sz, sz * 1.3, sz), fruit)
+
+
+# Acacia (umbrella thorn, Vachellia): a short, slim, often leaning trunk that forks low into a few long, nearly level limbs; the crown is a wide,
+# flat-topped umbrella of small feathery leaf clumps in thin layers with sky showing under it. Pale yellow-gray bark. Savanna species.
+static func _acacia(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
+	var tint: Color = Color(0.5, 0.44, 0.34)
+	var trunk: float = maxf(trunk_m, h * 0.03)
+	var crown: float = maxf(crown_m, h * 0.45)
+	var fork: float = h * rng.randf_range(0.5, 0.6)
+	var lean: Vector2 = Vector2(rng.randf_range(-0.08, 0.08), rng.randf_range(-0.08, 0.08)) * h
+	var centers: Array = _trunk(bark, rng, fork, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 4, 0.0 if far else 0.8)
+	var top: Vector3 = centers[centers.size() - 1]
+	var limbs: int = 3 if far else rng.randi_range(4, 5)
+	var az: float = rng.randf() * TAU
+	var rise: float = h - fork
+
+	for k in range(limbs):
+		az += TAU / float(limbs) + rng.randf_range(-0.4, 0.4)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var reach: float = crown * rng.randf_range(0.45, 0.6)
+		var mid: Vector3 = top + out * reach * 0.5 + Vector3(0.0, rise * 0.55, 0.0)
+		var tip: Vector3 = top + out * reach + Vector3(0.0, rise * 0.85, 0.0)
+
+		if not far:
+			_branch(bark, top, mid, trunk * 0.5, trunk * 0.3, tint, 5)
+			_branch(bark, mid, tip, trunk * 0.3, trunk * 0.1, tint, 4)
+
+		var n: int = 3 if far else 6
+
+		for m in range(n):
+			var t: float = 0.35 + 0.65 * float(m) / float(n - 1)
+			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn() * 0.2, rng.randfn() * 0.12, rng.randfn() * 0.2) * crown * 0.2
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.5, top.z), crown * rng.randf_range(0.34, 0.5), rng.randf_range(0.8, 1.05), 2 if far else 3)
+
+	_clump(leaves, rng, top + Vector3(0.0, rise * 0.9, 0.0), top - Vector3(0.0, crown, 0.0), crown * 0.5, 1.0, 2 if far else 3)
+
+
+# Mangrove (red mangrove, Rhizophora): the tree stands on a tangle of arching stilt roots that leave the trunk well above the water and bury
+# their tips in the mud around it; a short trunk, then a dense rounded crown of dark glossy leaf clumps.
+static func _mangrove(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
+	var tint: Color = Color(0.36, 0.26, 0.2)
+	var trunk: float = maxf(trunk_m, h * 0.03)
+	var crown: float = maxf(crown_m, h * 0.35)
+	var root_top: float = h * 0.32
+	var lean: Vector2 = Vector2(rng.randf_range(-0.05, 0.05), rng.randf_range(-0.05, 0.05)) * h
+	var centers: Array = _trunk(bark, rng, h * 0.5, trunk, trunk * 0.7, lean, tint, 5 if far else 7, 1 if far else 3, 0.0)
+	var top: Vector3 = centers[centers.size() - 1]
+	var roots: int = 5 if far else rng.randi_range(9, 12)
+	var az: float = rng.randf() * TAU
+
+	for k in range(roots):
+		az += TAU / float(roots) + rng.randf_range(-0.3, 0.3)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var spread: float = crown * rng.randf_range(0.5, 0.95)
+		var start: Vector3 = Vector3(lean.x * 0.5, root_top * rng.randf_range(0.7, 1.1), lean.y * 0.5) + out * trunk * 0.5
+		var arch: Vector3 = start + out * spread * 0.55 + Vector3(0.0, root_top * 0.25, 0.0)
+		var foot: Vector3 = Vector3(out.x * spread, -0.05, out.z * spread)
+
+		if far:
+			_branch(bark, start, foot, trunk * 0.22, trunk * 0.1, tint, 3)
+		else:
+			_branch(bark, start, arch, trunk * 0.24, trunk * 0.16, tint, 4)
+			_branch(bark, arch, foot, trunk * 0.16, trunk * 0.08, tint, 4)
+
+	var base_y: float = h * 0.4
+
+	for k in range(4 if far else rng.randi_range(5, 7)):
+		var a: float = rng.randf() * TAU
+		var reach: float = crown * rng.randf_range(0.25, 0.5)
+		var tip: Vector3 = Vector3(top.x + cos(a) * reach, h * rng.randf_range(0.8, 0.95), top.z + sin(a) * reach)
+
+		if not far:
+			_branch(bark, top, tip, trunk * 0.3, trunk * 0.1, tint, 4)
+
+		for m in range(2 if far else 4):
+			var p: Vector3 = top.lerp(tip, 0.45 + 0.55 * float(m) / 3.0) + Vector3(rng.randfn(), rng.randfn() * 0.5, rng.randfn()) * crown * 0.1
+			p.y = maxf(p.y, base_y)
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.3, top.z), crown * rng.randf_range(0.55, 0.8), rng.randf_range(0.5, 0.85), 2 if far else 3)
+
+	_clump(leaves, rng, Vector3(top.x, h * 0.92, top.z), Vector3(top.x, h * 0.5, top.z), crown * 0.8, 0.9, 2 if far else 3)
+
+
+# Tropical hardwood (a rainforest canopy tree such as mahogany or kapok): a very tall, straight, branch-free bole on big buttress roots that
+# flare out of the foot like fins, then a broad, flat-topped crown of heavy limbs high above the forest floor. Dark green, glossy leaves.
+static func _tropical_hardwood(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
+	var tint: Color = Color(0.46, 0.4, 0.34)
+	var trunk: float = maxf(trunk_m, h * 0.025)
+	var crown: float = maxf(crown_m, h * 0.3)
+	var bole: float = h * rng.randf_range(0.6, 0.68)
+	var lean: Vector2 = Vector2(rng.randf_range(-0.03, 0.03), rng.randf_range(-0.03, 0.03)) * h
+	var centers: Array = _trunk(bark, rng, bole, trunk, trunk * 0.62, lean, tint, 6 if far else 9, 2 if far else 6, 0.0 if far else 1.2)
+	var top: Vector3 = centers[centers.size() - 1]
+
+	if not far:
+		_root_flare(bark, rng, Vector3.ZERO, trunk, tint, 6, 3.2)
+
+	var limbs: int = 4 if far else rng.randi_range(6, 8)
+	var az: float = rng.randf() * TAU
+	var span: float = h - bole
+
+	for k in range(limbs):
+		az += TAU / float(limbs) + rng.randf_range(-0.35, 0.35)
+		var out: Vector3 = Vector3(cos(az), 0.0, sin(az))
+		var reach: float = crown * rng.randf_range(0.55, 0.85)
+		var mid: Vector3 = top + out * reach * 0.45 + Vector3(0.0, span * 0.4, 0.0)
+		var tip: Vector3 = top + out * reach + Vector3(0.0, span * rng.randf_range(0.65, 0.9), 0.0)
+
+		if not far:
+			_branch(bark, top, mid, trunk * 0.42, trunk * 0.28, tint, 5)
+			_branch(bark, mid, tip, trunk * 0.28, trunk * 0.1, tint, 4)
+
+		for m in range(3 if far else 5):
+			var t: float = 0.3 + 0.7 * float(m) / 4.0
+			var p: Vector3 = mid.lerp(tip, t) + Vector3(rng.randfn(), rng.randfn() * 0.4, rng.randfn()) * crown * 0.08
+			_clump(leaves, rng, p, Vector3(top.x, p.y - crown * 0.4, top.z), crown * rng.randf_range(0.4, 0.6), rng.randf_range(0.55, 0.95), 2 if far else 3)
+
+	_clump(leaves, rng, top + Vector3(0.0, span * 0.85, 0.0), top, crown * 0.6, 1.0, 2 if far else 3)
 
 
 # One arching frond card strip: rises, then droops.

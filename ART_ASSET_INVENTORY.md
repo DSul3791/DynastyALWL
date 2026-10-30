@@ -13,7 +13,7 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 
 | Category | 0 | 1 | 2 | 3 | 4 | Total |
 |---|---|---|---|---|---|---|
-| 1 Trees | 0 | 3 | 2 | 20 | 0 | 25 |
+| 1 Trees | 0 | 0 | 5 | 20 | 0 | 25 |
 | 2 Shrubs and bushes | 0 | 0 | 20 | 6 | 0 | 26 |
 | 3 Herbs, flowers and low berries | 0 | 0 | 50 | 0 | 0 | 50 |
 | 4 Ferns, grasses and reeds | 0 | 0 | 16 | 0 | 0 | 16 |
@@ -35,9 +35,9 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **221** | **423** | **109** | **0** | **843** |
+| **All categories** | **90** | **218** | **426** | **109** | **0** | **843** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 221, stage 2 410, stage 3 109.
+Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 218, stage 2 413, stage 3 109.
 
 Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirmed 60, unused builders 12.
 
@@ -71,7 +71,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 1 Trees
 
-25 entries. Stages: 3 x stage 1, 2 x stage 2, 20 x stage 3.
+25 entries. Stages: 5 x stage 2, 20 x stage 3.
 
 
 ### kind tree (25)
@@ -85,17 +85,17 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Spruce | spruce tree, 28 to 48 m tall | data/tables/flora.json id 4 (spruce); built by src/flora/tree_builder.gd | built in code, _spruce, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Alder | alder tree, 8 to 18 m tall | data/tables/flora.json id 5 (alder); built by src/flora/tree_builder.gd | built in code, _alder, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Willow | willow tree, 5 to 16 m tall | data/tables/flora.json id 6 (willow); built by src/flora/tree_builder.gd | built in code, _willow, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
-| Coconut palm | coconut_palm tree, 10 to 22 m tall | data/tables/flora.json id 7 (coconut_palm); built by src/flora/tree_builder.gd | built in code, generic _palm (trunk plus frond cards, assets/trees/leaf_palm.png), no species builder | 2 | generic palm shared by palm rows; reads as a palm but is not specific to the species |
-| Tropical hardwood | tropical_hardwood tree, 22 to 36 m tall | data/tables/flora.json id 8 (tropical_hardwood); built by src/flora/tree_builder.gd | built in code, generic _broadleaf (trunk, branches, leaf clumps), no species builder | 1 | no model/look of its own: flora.json has no "model" key, draws the stock broadleaf; will not look like Tropical hardwood |
-| Acacia | acacia tree, 6 to 12 m tall | data/tables/flora.json id 9 (acacia); built by src/flora/tree_builder.gd | built in code, generic _broadleaf (trunk, branches, leaf clumps), no species builder | 1 | no model/look of its own: flora.json has no "model" key, draws the stock broadleaf; will not look like Acacia |
-| Mangrove | mangrove tree, 5 to 12 m tall | data/tables/flora.json id 10 (mangrove); built by src/flora/tree_builder.gd | built in code, generic _broadleaf (trunk, branches, leaf clumps), no species builder | 1 | no model/look of its own: flora.json has no "model" key, draws the stock broadleaf; will not look like Mangrove |
+| Coconut palm | coconut_palm tree, 10 to 22 m tall | data/tables/flora.json id 7 (coconut_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 2 | stage-1 trees pass: curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); headless build ok, not rendered |
+| Tropical hardwood | tropical_hardwood tree, 22 to 36 m tall | data/tables/flora.json id 8 (tropical_hardwood); built by src/flora/tree_builder.gd | built in code, _tropical_hardwood, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125), not rendered |
+| Acacia | acacia tree, 6 to 12 m tall | data/tables/flora.json id 9 (acacia); built by src/flora/tree_builder.gd | built in code, _acacia, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125), not rendered |
+| Mangrove | mangrove tree, 5 to 12 m tall | data/tables/flora.json id 10 (mangrove); built by src/flora/tree_builder.gd | built in code, _mangrove, 4 variants, near/mid/far models plus impostor | 2 | new species builder (stage-1 trees pass): umbrella crown / stilt roots / buttressed bole; headless build ok (near 522-634 verts, far 92-125), not rendered |
 | Rowan | rowan tree, 6 to 14 m tall | data/tables/flora.json id 35 (rowan); built by src/flora/tree_builder.gd | built in code, _rowan, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Crab apple | wild_apple tree, 4 to 10 m tall | data/tables/flora.json id 40 (wild_apple); built by src/flora/tree_builder.gd | built in code, _wild_apple, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Wild pear | wild_pear tree, 4 to 15 m tall | data/tables/flora.json id 41 (wild_pear); built by src/flora/tree_builder.gd | built in code, _wild_apple (pear flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Wild cherry | wild_cherry tree, 4 to 18 m tall | data/tables/flora.json id 42 (wild_cherry); built by src/flora/tree_builder.gd | built in code, _wild_apple (cherry flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Sweet chestnut | sweet_chestnut tree, 5 to 24 m tall | data/tables/flora.json id 43 (sweet_chestnut); built by src/flora/tree_builder.gd | built in code, _chestnut, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
 | Walnut | walnut tree, 5 to 22 m tall | data/tables/flora.json id 44 (walnut); built by src/flora/tree_builder.gd | built in code, _chestnut (walnut flag), 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) |
-| Date palm | date_palm tree, 12 to 22 m tall | data/tables/flora.json id 81 (date_palm); built by src/flora/tree_builder.gd | built in code, generic _palm (trunk plus frond cards, assets/trees/leaf_palm.png), no species builder | 2 | generic palm shared by palm rows; reads as a palm but is not specific to the species |
+| Date palm | date_palm tree, 12 to 22 m tall | data/tables/flora.json id 81 (date_palm); built by src/flora/tree_builder.gd | built in code, _palm with a look per species (coconut / date / banana), frond cards assets/trees/leaf_palm.png | 2 | stage-1 trees pass: curved trunk, drooping fronds and nuts (coconut), rough trunk, upright fronds and date bunches (date); headless build ok, not rendered |
 | Mirrorbark | mirrorbark tree, 4 to 20 m tall fantasy species | data/tables/flora.json id 89 (mirrorbark); built by src/flora/tree_builder.gd | built in code, _mirrorbark, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
 | Wardpine | wardpine tree, 18 to 36 m tall fantasy species | data/tables/flora.json id 92 (wardpine); built by src/flora/tree_builder.gd | built in code, _wardpine, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
 | Hearthwood | hearthwood tree, 5 to 26 m tall fantasy species | data/tables/flora.json id 113 (hearthwood); built by src/flora/tree_builder.gd | built in code, _hearthwood, 4 variants, near/mid/far models plus impostor | 3 | species builder with a comment citing the owner's photos/description, 4 variants, season states; cannot confirm by a render (no critique files in repo) [fantasy] |
@@ -153,7 +153,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Wild banana | wild_banana, 3 to 6 m tall | data/tables/flora.json id 80 (wild_banana); built by src/flora/tree_builder.gd | built in code, generic _palm | 2 | generic palm shared with the palm trees |
+| Wild banana | wild_banana, 3 to 6 m tall | data/tables/flora.json id 80 (wild_banana); built by src/flora/tree_builder.gd | built in code, _palm (banana look: soft pseudostem, broad leaves, hanging bunch) | 2 | stage-1 trees pass; headless build ok, not rendered |
 
 ## 3 Herbs, flowers and low berries
 
@@ -1437,7 +1437,7 @@ I made **6 passes**, each by a different route; the last two found nothing new t
 
 * **No art critiques exist in the repo.** `art/CRITIQUES/`, `art/MODEL_INVENTORY.md`, `art/MODEL_PLAN.md`, `art/GOAL2_RANKING.md`, `art/REFERENCE_PHOTOS.md` and `art/reference/` are named in the archived Kathleen documents but have no file and no git history here. Stage 3 therefore rests on code comments and archived plans, not on seen critiques; **I did not see any render**, so every stage is a code-reading estimate.
 * **No stage 4.** Nothing in the repo claims polish; the closest are the tools (owner called the pickaxe "excellent") and the owner-made forge glbs.
-* **Without a model of their own** (flora): 3 tropical trees (tropical hardwood, acacia, mangrove) draw the stock broadleaf; coconut palm, date palm and wild banana share one generic palm; the generic `Mushrooms` row draws as porcini.
+* **Without a model of their own** (flora): no flora tree is at stage 1 any more (tropical hardwood, acacia, mangrove and the three palms got builders in the stage-1 trees pass, unrendered); the generic `Mushrooms` row still draws as porcini.
 * **Table rows with no visible presence found:** ores/mineral resources (31), surficial deposits (7), site types (10: cave, mineshaft, labyrinth, lair, landmark, harbor, town site, ruin, shipwreck, spawn point), fish, bear, boar, grouse as live animals. Marked `unconfirmed` because I only grepped `src/client`.
 * **Design-only art that is not built:** the six building tiers (art/BUILDING_TIERS_LOOKS.md, art/tiers/*.png) are pictures; the pieces in game are board-textured boxes plus thatch; `log_wall`, `flat_roof`, doors and braces exist as builders but no structure row uses them.
 * **Placeholders in code:** shield (no item row), shoulder log cylinder, felled trunk cylinders, remains boxes, tool rack and vice boxes, coin circles, ocean ice slabs, cave-in skull drawing.

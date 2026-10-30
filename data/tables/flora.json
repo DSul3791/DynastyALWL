@@ -505,6 +505,7 @@
 			"display": "Tropical hardwood",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"model": "tropical_hardwood",
 			"height_m": [22, 36],
 			"crown_m": 7.0,
 			"trunk_m": 0.6,
@@ -551,6 +552,7 @@
 			"display": "Acacia",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"model": "acacia",
 			"canopy": "light",
 			"height_m": [
 				6,
@@ -603,6 +605,7 @@
 			"display": "Mangrove",
 			"kind": "tree",
 			"shape": "broadleaf",
+			"model": "mangrove",
 			"height_m": [
 				5,
 				12
