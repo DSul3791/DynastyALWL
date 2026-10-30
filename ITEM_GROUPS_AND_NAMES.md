@@ -54,7 +54,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 | Shears | Atlas Scissors*; Minecraft Shears; DS Shears; MD Bronze shearing scissors; VS Shears | Shear wool | T2 | none | gap candidate if sheep exist. Alt: Sheep shears. |
 | Fishing rod | Ark none; Atlas Fishing Rod*; Rust Fishing Rod; Minecraft Fishing rod; Valheim Fishing Rod; DS Fishing Rod; Dragonwilds Fishing Rods (Ash, Oak, Willow...) | Catch fish | T1 | Fishing rod 75 | REC keep. |
 | Fishing net | Dragonwilds Fishing Nets (Coarse, Wool, Fine); Atlas none | Catch fish passively | T1-T2 | Shore net 260 | REC keep. |
-| Fire starter | Minecraft Flint and steel; VS Firestarter; Forest Lighter; Atlas none | Light fires | T0-T2 | not an item (campfire 8) | REC **Flint and steel** later; T0 hand-drill/bow-drill is a mechanic (Q4). |
+| Fire starter | Minecraft Flint and steel; VS Firestarter; Forest Lighter; Atlas none | Light fires | T0-T2 | not an item (campfire 8) | DECIDED (Dave): no fire-starter item; lighting is a character action using flint and stone (Q4). |
 | Prospecting | VS Prospecting Pick, Wooden Pan; DS Gold Pan; 7DtD none | Find ore | T2 | none | gap candidate. |
 | Climbing | Ark Climbing Pick*; Atlas Grappling Hook*, Zipline*; Satisfactory Zipline/Jetpack; Forest Climbing Axe | Scale cliffs | T3 | none (Dave noted climb/mining tools) | Q5. |
 
@@ -179,7 +179,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 1. **DECIDED (Dave, 2026-10-30): flint is a type of stone**, not a separate item. REC for implementation: stone type remembered on the Stone item, as with wood species (to confirm with Dave if he meant otherwise).
 2. **DECIDED (Dave, 2026-10-30): we have both Hide and Leather, and potentially Heavy leather** (Conan lists Thick Hide, Thick Leather). Still open: whether a tannery station does the tanning, and whether Heavy leather is in the first list.
 3. **PART DECIDED (Dave, 2026-10-30): no bloomery step** (felt like extra for its own sake in Aska); ore is smelted straight to an ingot in a forge. Still open: add copper, tin and bronze ingots before iron/steel?
-4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. Still open: is flint and steel a later item?
+4. **DECIDED (Dave, 2026-10-30): the first fire is built, not an item.** Rocks make the circle, sticks are the first fuel. NEW ITEM IDEA: **Kindling**, small bits gained a little each time trees or tree by-products are cut or processed, used to start fires. POTENTIAL IDEA (not decided): firewood/kindling from different tree types gives different flame effects. FIRE RULES (Dave, 2026-10-30): a fire is crafted as an inventory item and placed with a blueprint; the sticks used as the recipe are stored in the placed campfire's own inventory as its first fuel. Pressing E on a fire lights or extinguishes it: the character sparks flint and stone a few times to light it, or stomps it out. So lighting needs no fire-starter item (flint is a stone type). Open detail: must the player carry a flint stone to light it, and does the campfire's inventory hold other fuel (firewood, kindling)?
 5. **Climbing/traversal tools** (climbing pick, grappling hook): in or out?
 6. **Thrown spear:** a separate Javelin item, or the spear thrown?
 7. **Gunpowder era and siege weapons:** out, or siege only (ballista, catapult, ram)?
@@ -190,7 +190,7 @@ Ark Tek/Genesis gear, kibble, eggs, creature saddles, artifacts; Satisfactory pr
 12. Do you approve Tyler's trim groups A-E as the base for our own list?
 
 ## First thoughts on progression gaps (NOT a recommendation; for the later progression review)
-Missing from ours but present in many of the other games: stone pickaxe; iron and steel axe; club; sword, mace and shield; sling; mail/gambeson/scale body armour and helmets; sickle or scythe, shears; anvil and smith's hammer; flint and steel (if wanted); kindling (Dave idea); lantern and candle; barrel; salt and preserved foods; mill/quern and flour; stairs, gate/fence, hung doors, bedroll; compost; a copper/tin/bronze tier (our copper, silver and gold exist only as coins).
+Missing from ours but present in many of the other games: stone pickaxe; iron and steel axe; club; sword, mace and shield; sling; mail/gambeson/scale body armour and helmets; sickle or scythe, shears; anvil and smith's hammer; kindling (Dave idea); lantern and candle; barrel; salt and preserved foods; mill/quern and flour; stairs, gate/fence, hung doors, bedroll; compost; a copper/tin/bronze tier (our copper, silver and gold exist only as coins).
 
 ## Weaknesses of this document
 Names come from a partly unconfirmed analysis; where a game column says "none" or a game is absent it may mean "not catalogued". Functions are one-line generalisations of the analysis rows, not wiki quotes. Tier is only as exact as the analysis gives. No web research was done for this draft.
