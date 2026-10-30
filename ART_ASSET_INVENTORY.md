@@ -23,11 +23,11 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 8 Terrain surface and ground materials | 81 | 0 | 28 | 0 | 0 | 109 |
 | 9 Water, sky, weather and light | 2 | 1 | 11 | 10 | 0 | 24 |
 | 10 Items: raw materials, wood and crafted parts | 0 | 0 | 87 | 0 | 0 | 87 |
-| 11 Items: gathered plant parts and foraged goods | 0 | 11 | 158 | 5 | 0 | 174 |
+| 11 Items: gathered plant parts and foraged goods | 0 | 2 | 167 | 5 | 0 | 174 |
 | 12 Items: food, drink and medicine | 0 | 9 | 28 | 0 | 0 | 37 |
 | 13 Items: tools, weapons and ammunition | 1 | 0 | 8 | 24 | 0 | 33 |
 | 14 Items: containers, coins, clothing and gear | 0 | 1 | 17 | 0 | 0 | 18 |
-| 15 Items: placeable kits | 0 | 4 | 29 | 2 | 0 | 35 |
+| 15 Items: placeable kits | 0 | 0 | 33 | 2 | 0 | 35 |
 | 16 Placed structures: shelter, storage, fires and traps | 0 | 0 | 6 | 7 | 0 | 13 |
 | 17 Placed structures: building pieces | 0 | 1 | 29 | 0 | 0 | 30 |
 | 18 Stations and furniture | 0 | 0 | 9 | 4 | 0 | 13 |
@@ -35,9 +35,9 @@ Kathleen (art), generated from the repository at branch `kathleen-art` on 2026-1
 | 20 Player avatar and worn clothing | 0 | 3 | 12 | 2 | 0 | 17 |
 | 21 Particles and effects | 1 | 1 | 5 | 3 | 0 | 10 |
 | 22 UI icons, HUD pictures and design pictures | 1 | 1 | 19 | 0 | 0 | 21 |
-| **All categories** | **90** | **33** | **605** | **115** | **0** | **843** |
+| **All categories** | **90** | **20** | **618** | **115** | **0** | **843** |
 
-Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 33, stage 2 592, stage 3 115.
+Without the concept rows (biomes, geology, air) and the reference pictures: 796 entries; stage 0 56, stage 1 20, stage 2 605, stage 3 115.
 
 **Pending character restyle (Dave, 2026-10-30, via Sonny's plan):** the player body, first-person arms, fist, NPC bodies and the worn-clothing meshes are flagged `pending character restyle`; Dave has decided the character becomes a simple stylised human (simple face, hair, hands) instead of the featureless ragdoll, so their ratings below describe the ragdoll and will be redone when the new body exists.
 
@@ -725,7 +725,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 11 Items: gathered plant parts and foraged goods
 
-174 entries. Stages: 11 x stage 1, 158 x stage 2, 5 x stage 3.
+174 entries. Stages: 2 x stage 1, 167 x stage 2, 5 x stage 3.
 
 
 ### gathered: nut (7)
@@ -920,15 +920,15 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Chanterelles | Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods. | data/items/gathered.json item chanterelles (#1021) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #e0a028; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Cinderfoot caps | Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified. | data/items/gathered.json item cinderfoot_caps (#1026) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a2a1a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Fly agaric caps | Bright red caps with white flecks. Poisonous: do not eat. | data/items/gathered.json item fly_agaric_caps (#1053) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #d02a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Lumencap caps | Pale mushroom caps that glow softly in the dark. Not for eating until identified. | data/items/gathered.json item lumencap_caps (#1086) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #7ad8c0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Mirrorcap caps | Shiny silver-grey mushroom caps. Not for eating until identified. | data/items/gathered.json item mirrorcap_caps (#1093) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #c4ccd0; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Morels | Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw. | data/items/gathered.json item morels (#1094) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Porcini | Fat brown-capped mushrooms with a thick pale stem. A fine meal. | data/items/gathered.json item porcini (#1107) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a5a34; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Puffball | A round white mushroom the size of a head. Sliced and fried; spoils in a day. | data/items/gathered.json item puffball (#1110) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #f0ead8; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
-| Rimecap caps | Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified. | data/items/gathered.json item rimecap_caps (#1116) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #a8d4e4; held: same mesh as on the ground, enlarged 1.8x in the palm | 1 | BasicLook shape "cap" is only -81 lines: one to three primitives in one colour |
+| Chanterelles | Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods. | data/items/gathered.json item chanterelles (#1021) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #e0a028; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Cinderfoot caps | Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified. | data/items/gathered.json item cinderfoot_caps (#1026) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a2a1a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Fly agaric caps | Bright red caps with white flecks. Poisonous: do not eat. | data/items/gathered.json item fly_agaric_caps (#1053) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #d02a1e; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Lumencap caps | Pale mushroom caps that glow softly in the dark. Not for eating until identified. | data/items/gathered.json item lumencap_caps (#1086) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #7ad8c0; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Mirrorcap caps | Shiny silver-grey mushroom caps. Not for eating until identified. | data/items/gathered.json item mirrorcap_caps (#1093) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #c4ccd0; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Morels | Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw. | data/items/gathered.json item morels (#1094) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a6a3a; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Porcini | Fat brown-capped mushrooms with a thick pale stem. A fine meal. | data/items/gathered.json item porcini (#1107) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #8a5a34; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Puffball | A round white mushroom the size of a head. Sliced and fried; spoils in a day. | data/items/gathered.json item puffball (#1110) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #f0ead8; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
+| Rimecap caps | Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified. | data/items/gathered.json item rimecap_caps (#1116) | BasicLook.mesh_for -> shape "cap" (data/items/looks.json), colour #a8d4e4; held: same mesh as on the ground, enlarged 1.8x in the palm | 2 | BasicLook shape "cap" is 15 lines: a recognisable multi-part shape |
 
 ### gathered: beams (12)
 
@@ -1127,7 +1127,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 
 ## 15 Items: placeable kits
 
-35 entries. Stages: 4 x stage 1, 29 x stage 2, 2 x stage 3.
+35 entries. Stages: 33 x stage 2, 2 x stage 3.
 
 
 ### kits and placeables (35)
@@ -1143,7 +1143,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Camp bench | Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp. | data/items/items.json item workbench_kit (#73) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Tool rack | Pegs and a crossbar to hang tools and stretch hides. Set it beside a camp bench. | data/items/items.json item tool_rack_kit (#81) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7a5a35; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Wooden vice | Two jaws of hardwood that hold work still. Set it beside a camp bench. | data/items/items.json item vice_kit (#83) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7a5a35; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
-| Log workbench | A heavy log bench with its own rack and vice, ready to set down. | data/items/items.json item log_workbench_kit (#85) | fallback mesh: brown box crate (placeable/tool/weapon) or a small tinted lump; held: kit bundle (held_item._make_kit_model) | 1 | no looks.json entry: falls back to the default in inventory_view._mesh_for |
+| Log workbench | A heavy log bench with its own rack and vice, ready to set down. | data/items/items.json item log_workbench_kit (#85) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #6a4a2a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Basic Forge | A clay and rough stone dome forge under a log roof, ready to raise. | data/items/items.json item stone_forge_kit (#87) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7d7a74; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Medium Forge | A dressed stone forge with a stepped hood and iron straps, ready to raise. | data/items/items.json item blacksmithy_kit (#89) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #6c6f75; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Large Forge | A big arched forge with a riveted iron frame, ready to raise. | data/items/items.json item large_forge_kit (#92) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #5c5f65; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
@@ -1154,9 +1154,9 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 108, unconfirm
 | Foundation | A stone and clay slab, four metres square. Walls and floors snap onto it. | data/items/items.json item foundation_section_kit (#198) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7d7a74; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Doorway | A plank wall with a gap you can walk through, one metre wide and two high. | data/items/items.json item doorway_section_kit (#200) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Window wall | A plank wall with an opening at chest height to see through. | data/items/items.json item window_section_kit (#202) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
-| Timber prop | A log stood on end to hold up a low roof of earth. Short reach, quick to wear. | data/items/items.json item timber_prop_kit (#204) | fallback mesh: brown box crate (placeable/tool/weapon) or a small tinted lump; held: kit bundle (held_item._make_kit_model) | 1 | no looks.json entry: falls back to the default in inventory_view._mesh_for |
-| Timber set | A post and cap frame that braces a tunnel. Longer reach and slower to wear. | data/items/items.json item timber_set_kit (#206) | fallback mesh: brown box crate (placeable/tool/weapon) or a small tinted lump; held: kit bundle (held_item._make_kit_model) | 1 | no looks.json entry: falls back to the default in inventory_view._mesh_for |
-| Ladder | A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb. | data/items/items.json item ladder_kit (#211) | fallback mesh: brown box crate (placeable/tool/weapon) or a small tinted lump; held: kit bundle (held_item._make_kit_model) | 1 | no looks.json entry: falls back to the default in inventory_view._mesh_for |
+| Timber prop | A log stood on end to hold up a low roof of earth. Short reach, quick to wear. | data/items/items.json item timber_prop_kit (#204) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7a5a35; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
+| Timber set | A post and cap frame that braces a tunnel. Longer reach and slower to wear. | data/items/items.json item timber_set_kit (#206) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
+| Ladder | A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb. | data/items/items.json item ladder_kit (#211) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #9a7a45; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Sawmill | A saw frame on a tall foundation, driven by a water wheel in running water. | data/items/items.json item saw_mill_kit (#240) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #8a6a3a; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Woodworking table | A heavy table with vices and clamps for fine woodwork. Set it down in a workshop. | data/items/items.json item woodworking_table_kit (#242) | BasicLook.mesh_for -> shape "kit" (data/items/looks.json), colour #7a5430; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "kit" (32 lines) with a lid emblem per station (weak-looks batch) |
 | Rock pile | A heap of 45 stones. Set it down to store rock; pick it up to carry it. | data/items/items.json item rock_pile (#235) | BasicLook.mesh_for -> shape "pile" (data/items/looks.json), colour #7d7a74; held: kit bundle (held_item._make_kit_model) | 2 | BasicLook shape "pile" is 9 lines: a recognisable multi-part shape |

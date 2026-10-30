@@ -2065,6 +2065,26 @@
    "color": "#8a7040",
    "size": 0.6,
    "placeholder": true
+  },
+  "log_workbench_kit": {
+   "shape": "kit",
+   "color": "#6a4a2a",
+   "size": 1.0
+  },
+  "timber_prop_kit": {
+   "shape": "kit",
+   "color": "#7a5a35",
+   "size": 0.9
+  },
+  "timber_set_kit": {
+   "shape": "kit",
+   "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "ladder_kit": {
+   "shape": "kit",
+   "color": "#9a7a45",
+   "size": 0.9
   }
 
  }
