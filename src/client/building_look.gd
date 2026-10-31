@@ -304,22 +304,34 @@ static func _leanto_leaves() -> ArrayMesh:
 	if normal.y < 0.0:
 		normal = -normal
 
-	var rows: int = 11
+	var rows: int = 15
 
-	for row in range(rows):
-		var t: float = float(row) / float(rows - 1)
-		var centre: Vector3 = back + slope * t
-		var cols: int = 15
+	for layer in range(2):   # two layers of leaf shingles: the under layer darker and offset, so the roof has depth and no flat paper look (guide: lean-to roof)
+		for row in range(rows):
+			var t: float = float(row) / float(rows - 1)
+			var centre: Vector3 = back + slope * t
+			var cols: int = 22
 
-		for col in range(cols):
-			var x: float = -1.1 + 2.2 * float(col) / float(cols - 1) + rng.randf_range(-0.07, 0.07)
-			var size: float = rng.randf_range(0.6, 0.85)
-			var tilt: Vector3 = normal * rng.randf_range(0.0, 0.07) - run * 0.0
-			var c: Vector3 = centre + across * x + normal * (0.05 + 0.02 * float(row % 2)) + tilt
-			var half_w: Vector3 = across * size * 0.5
-			var half_l: Vector3 = run * size * 0.6
-			var droop: Vector3 = -normal * 0.07
-			_card(st, c - half_w - half_l, c + half_w - half_l, c + half_w + half_l + droop, c - half_w + half_l + droop, _tone(greens[rng.randi() % greens.size()], rng, 0.1), normal)
+			for col in range(cols):
+				var x: float = -1.12 + 2.24 * (float(col) + 0.5 * float((row + layer) % 2)) / float(cols - 1) + rng.randf_range(-0.05, 0.05)
+				var size: float = rng.randf_range(0.34, 0.5)
+				var lift: float = (0.03 if layer == 0 else 0.0) + 0.02 * float(row % 2) + rng.randf_range(0.0, 0.05) + 0.015 * float(layer == 0)
+				var c: Vector3 = centre + across * x + normal * lift - run * 0.03 * float(layer)
+				var half_w: Vector3 = across * size * 0.5
+				var half_l: Vector3 = run * size * 0.62
+				var droop: Vector3 = -normal * rng.randf_range(0.05, 0.14)
+				var col_leaf: Color = _tone(greens[rng.randi() % greens.size()], rng, 0.12)
+
+				if layer == 1:
+					col_leaf = col_leaf.darkened(0.25)
+
+				# a leaf shape: wide at the top edge, narrowing to a point below, the point dipping away from the roof like a shingle
+				_card(st, c - half_w * 0.9 - half_l, c + half_w * 0.9 - half_l, c + half_w * 0.12 + half_l + droop, c - half_w * 0.12 + half_l + droop, col_leaf, normal)
+
+	for col in range(14):   # a ragged fringe of hanging leaves along the low back edge
+		var fx: float = -1.05 + 2.1 * float(col) / 13.0 + rng.randf_range(-0.05, 0.05)
+		var top: Vector3 = back + across * fx + Vector3(0.0, -0.04, -0.04)
+		_card(st, top - across * 0.07, top + across * 0.07, top + across * 0.02 + Vector3(0.0, -0.3, -0.05), top - across * 0.02 + Vector3(0.0, -0.3, -0.05), _tone(greens[rng.randi() % greens.size()], rng, 0.12), Vector3(0.0, 0.0, -1.0))
 
 	# The bed: a spread of dry leaves on the ground under the roof.
 	for n in range(20):

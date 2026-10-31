@@ -4,6 +4,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_spawn_wiring.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const AnimalViewScript := preload("res://src/client/animal_view.gd")
 
 var failures: int = 0
 
@@ -103,5 +104,35 @@ func _init() -> void:
 	far.biome_at = func(x, z): return "boreal_forest"
 	run(far, 40.0)
 	check(count(far, "moose") > 0, "moose spawn when the real spawn is far away (%d)" % count(far, "moose"))
+	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
+	var carcass: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))["species"]
+	var view = AnimalViewScript.new()
+	var cases: Array = [["boar", 8, "temperate_forest", 23.0, 12.0], ["songbirds", 9, "temperate_grassland", 12.0, 23.0], ["frog", 10, "marsh", 23.0, 12.0], ["grouse", 11, "heath", 12.0, 23.0], ["seal", 12, "beach", 12.0, 23.0], ["seabird", 13, "beach", 12.0, 23.0]]
+
+	for c in cases:
+		var name: String = c[0]
+		var a2 = make(players, name)
+		a2.cfg["species"][name]["spawn_share"] = 1.0
+		a2.hour_now = func(): return c[3]
+		a2.biome_at = func(x, z): return c[2]
+		a2.starter = Vector2(100000.0, 100000.0)
+		run(a2, 40.0)
+		check(count(a2, name) > 0, "%s spawn in %s at hour %d (%d)" % [name, c[2], int(c[3]), count(a2, name)])
+		var other = make(players, name)
+		other.hour_now = func(): return c[3]
+		other.biome_at = func(x, z): return "ocean"
+		run(other, 40.0)
+		check(count(other, name) == 0, "%s do not spawn in the ocean (%d)" % [name, count(other, name)])
+		var model = view._make_for_species(int(c[1]), 1)
+		check(model != null, "%s has a model" % name)
+		check(carcass.has(name) and (carcass[name] as Dictionary).has("blows"), "%s has a carcass row with its own blows" % name)
+
+	var waiting = make(players, "seal")
+	waiting.cfg["species"]["seal"]["model"] = false
+	waiting.cfg["species"]["seal"]["target_per_player"] = 4
+	waiting.biome_at = func(x, z): return "beach"
+	run(waiting, 40.0)
+	check(count(waiting, "seal") == 0, "a species waiting for its model never spawns")
+	check(view._make_for_species(14, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

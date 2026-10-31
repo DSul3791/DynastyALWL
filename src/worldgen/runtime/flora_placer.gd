@@ -55,6 +55,7 @@ const KINDS := ["tree", "shrub", "plant"]
 const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 
 var generator
 var chunk_m: float = 256.0
@@ -70,6 +71,7 @@ var _patches: FastNoiseLite
 var _grove_seed: int = 0
 var _stand_seed: int = 0
 var _patch_seed: int = 0
+var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: the spawn point and every NPC marker (starter clearing)
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -88,6 +90,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_grove_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_groves")
 	_stand_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_stands")
 	_patch_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_patches")
+	_clearings = _starter_clearings()
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
 	_soil_growth.resize(256)
@@ -256,6 +259,35 @@ func species_of(id: int) -> Dictionary:
 
 func species_by_id(species_id: int) -> Dictionary:
 	return _by_id.get(species_id, {})
+
+
+# The starter clearing (a new player must not wake up inside a thicket, NPC markers must not stand in a flora collider; Sonny's test_spawn_dry):
+# no tree or shrub within CLEAR_SPAWN_M of the spawn point or CLEAR_MARKER_M of any NPC marker, thinning out over the next CLEAR_SOFT_M so the wood
+# comes back gradually. The spawn is src/shared/spawn_point.gd, the markers data/npcs/markers.json (the same files the server reads). Plants stay.
+func _starter_clearings() -> Array:
+	var list: Array = [[SpawnPointScript.OVERRIDE, CLEAR_SPAWN_M, CLEAR_SOFT_M]]
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json")) if FileAccess.file_exists("res://data/npcs/markers.json") else null
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		for marker in (parsed as Dictionary).get("markers", []):
+			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
+
+	return list
+
+
+# True when a tree or shrub at this spot is kept out by a starter clearing: inside the core always, in the soft edge with a stable chance that
+# grows with the distance from the core.
+func _cleared_at(x: float, z: float, species_id: int) -> bool:
+	for c in _clearings:
+		var d: float = Vector2(x, z).distance_to(c[0]) - float(c[1])
+
+		if d >= float(c[2]):
+			continue
+
+		if d < 0.0 or rng_pick(x, z, species_id + 211) >= d / float(c[2]):
+			return true
+
+	return false
 
 
 # The chunk holding a world position (wrapped).
@@ -482,11 +514,19 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var occupied: Dictionary = {}       # occupancy cell -> Array of [x, z, spacing radius, stand spacing, species]
 	var canopies: Dictionary = {}       # occupancy cell -> Array of [x, z, canopy radius, dense]
 
+	var clearings_here: bool = false
+
+	for c in _clearings:
+		clearings_here = clearings_here or (Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(c[0]) < chunk_m * 0.75 + float(c[1]) + float(c[2]))
+
 	for f in found:
 		var item: Dictionary = _by_id[f[1]]
 		var x: float = f[3]
 		var z: float = f[5]
 		var height: float = f[6]
+
+		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
+			continue
 
 		if item["kind"] != KIND_PLANT:
 			# Young trees need light: none under a dense crown; under a light one
@@ -544,6 +584,9 @@ const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the play
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
 const SHRUB_COLLIDER_MIN_M := 0.22
 const SHRUB_COLLIDER_MAX_M := 0.5
+const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
+const CLEAR_MARKER_M := 6.0         # ... or this close to an NPC marker
+const CLEAR_SOFT_M := 5.0           # and the wood thins back in over this much more
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
 

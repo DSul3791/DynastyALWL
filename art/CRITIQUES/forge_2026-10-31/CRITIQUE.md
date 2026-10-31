@@ -1,0 +1,4 @@
+# Stone forge (guide Part 6: "a torn grey block with ragged orange edges"), 2026-10-31, Kathleen
+
+forge_before.png is the procedural stone forge of building_look.gd (a stone base with a coal bed, a chimney of laid stones, an anvil on a stump, a work table), offline. Rating 3: it reads as a masonry forge with a chimney; the stone courses vary, the coals glow orange.
+The guide's "torn grey block with ragged orange edges" is not this model. The game draws Dave's own station models (assets/stations/forge_basic.glb and the larger tiers) when they import, and the ragged orange edges are most likely the glb's fire or ember quads and its torn-looking geometry. That is Dave's asset; I did not change it. Needed from Dave or the moderator: a picture of forge_basic.glb on its own (Godot model viewer) to see whether the mesh or the material is at fault. If the glb is kept, my part is the placed kit (a dome parcel, done) and the coal glow.

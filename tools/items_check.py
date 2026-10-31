@@ -54,6 +54,7 @@ UNITS = [
     ("trails", "src/worldgen/tools/test_trails.gd"),
     ("first town", "src/worldgen/tools/test_first_town.gd"),
     ("dishes", "src/worldgen/tools/test_dishes.gd"),
+    ("economy", "src/worldgen/tools/test_economy_guard.gd"),
     ("npc routines", "src/worldgen/tools/test_npc_routines.gd"),
     ("horses", "src/worldgen/tools/test_horses.gd"),
     ("ai_contract", "src/worldgen/tools/test_ai_contract.gd"),

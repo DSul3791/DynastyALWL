@@ -405,6 +405,26 @@ func _init() -> void:
 			want_item.call(String(row[0]), "fishing.json %s" % water)
 			obtainable[String(row[0])] = true
 
+	# Fish schools (fish_schools.json species_by_kind): river, lake, pond and sea fish that exist as items are caught from a school (Sal, 2026-10-31).
+	var schools: Dictionary = _read("fish_schools.json")
+
+	for kind in schools.get("species_by_kind", {}):
+		for row in schools["species_by_kind"][kind]:
+			if all.has(String(row[0])):
+				obtainable[String(row[0])] = true
+
+	# Boulders (boulders.json): ore and coal from outcrop boulders and flint nodules are picked up with a pick or an axe (guide F-02, F-23).
+	var boulders: Dictionary = _read("boulders.json")
+
+	for ore_name in boulders.get("ore", {}).get("items", {}):
+		var ore_item: String = String(boulders["ore"]["items"][ore_name])
+
+		if all.has(ore_item):
+			obtainable[ore_item] = true
+
+	if all.has(String(boulders.get("flint", {}).get("item", ""))):
+		obtainable[String(boulders["flint"]["item"])] = true
+
 	# Hunting: every part a carcass can give is obtainable (by hunting and working the carcass).
 	for species_id in _read("carcass.json").get("species", {}):
 		for row in _read("carcass.json")["species"][species_id].get("parts", []):

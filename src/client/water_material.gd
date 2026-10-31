@@ -255,8 +255,9 @@ void fragment() {
 		// Surf: a bright line where the water meets the sand, bands of foam that run in and out with the swell over the first metre of depth, fading with distance (the shore reads by colour far off).
 		float surf = 1.0 - smoothstep(0.0, 1.5, thickness);
 		float pulse = 0.5 + 0.5 * sin(thickness * 5.0 - TIME * 1.15 + noise(local / 7.0) * 3.5);
-		float line = 1.0 - smoothstep(0.0, 0.1, thickness);
-		float surf_foam = clamp(surf * smoothstep(0.45, 0.8, pulse) * 0.9 + line * 0.9, 0.0, 1.0) / (1.0 + distance_m / 900.0);
+		float line = 1.0 - smoothstep(0.05, 0.5, thickness);
+		float lace = smoothstep(0.35, 0.75, noise(local / 1.7 + vec2(TIME * 0.05, 0.0)));     // the foam breaks into lace, so it reads as foam and not as a painted stripe
+		float surf_foam = clamp(surf * smoothstep(0.3, 0.7, pulse) * (0.7 + 0.6 * lace) + line * (0.9 + 0.3 * lace), 0.0, 1.0) / (1.0 + distance_m / 2200.0);
 		foam = max(foam, surf_foam);
 	}
 	murk = max(murk, face * 0.8);

@@ -2749,6 +2749,56 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "salmon": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "herring": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "mackerel": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "smelt": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "eel": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "cod": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "radish": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "lettuce": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "radish_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "lettuce_seeds": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }

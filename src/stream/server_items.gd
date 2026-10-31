@@ -1577,7 +1577,7 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 
 	_last_process[peer] = now
 	var st: Dictionary = it["struct"]
-	var blows_total: int = int(_carcass_cfg.get("blows", 4))
+	var blows_total: int = int((_carcass_cfg.get("species", {}).get(str(st.get("species", "")), {}) as Dictionary).get("blows", _carcass_cfg.get("blows", 4)))   # per species (carcass.json species row), else the global number
 	_wear_tool(peer, inv, str(_carcass_cfg.get("tool_class", "knife")), "carcass")
 
 	if not st.has("parts"):

@@ -201,7 +201,14 @@ void fragment() {
 	// rock stay rock), and the edge of the beach wanders with noise so it is not a contour line.
 	float beach = (1.0 - smoothstep(0.9, 3.0 + 1.6 * vnoise(world_pos * 0.06), world_pos.y)) * smoothstep(-0.5, 0.1, world_pos.y) * (1.0 - smoothstep(0.35, 0.6, slope));
 	vec3 sand = mix(vec3(0.58, 0.50, 0.35), vec3(0.68, 0.60, 0.44), vnoise(world_pos * 0.9));
-	sand = mix(sand, vec3(0.36, 0.31, 0.23), 1.0 - smoothstep(0.0, 0.8, world_pos.y));
+	sand = mix(sand, vec3(0.78, 0.70, 0.52), 0.35 * vnoise(world_pos * 0.13));      // broad pale and darker drifts, so the beach is not one flat tone
+	// Wet sand: a narrow darker band at the waterline (it was a wide dark patch on flat shore), lighter than before.
+	sand = mix(sand, vec3(0.42, 0.36, 0.27), 0.85 * (1.0 - smoothstep(0.05, 0.4 + 0.15 * vnoise(world_pos * 0.5), world_pos.y)));
+	// Pebbles and shells: small grey and pale stones in patches, more of them near the waterline and where the beach meets the land.
+	float pebble_zone = max(1.0 - smoothstep(0.0, 1.2, world_pos.y), smoothstep(1.2, 2.4, world_pos.y)) * smoothstep(0.35, 0.6, vnoise(world_pos * 0.35));
+	float pebble = smoothstep(0.64, 0.7, vnoise(world_pos * 4.0)) * pebble_zone;
+	vec3 pebble_color = mix(vec3(0.36, 0.35, 0.34), vec3(0.62, 0.60, 0.55), vnoise(world_pos * 11.0));
+	sand = mix(sand, pebble_color, pebble * 0.85);
 	color = mix(color, sand, beach);
 
 	// Waterfall base (owner, 2026-10-20): the spray keeps the rock and ground around a fall wet:

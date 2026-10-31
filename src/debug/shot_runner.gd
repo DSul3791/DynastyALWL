@@ -578,6 +578,13 @@ func _process(delta: float) -> void:
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+
+	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
+	# for it; but a camera far below the reading, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
+	var guard_ground: float = _ground(p.x, p.z)
+
+	if is_nan(guard_ground) or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
+		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): ground reading %.1f, camera y %.1f; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
 

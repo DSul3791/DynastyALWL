@@ -1,0 +1,17 @@
+# Data against Tyler's new systems: audit (Sal, 2026-10-31)
+
+Checked against learn, farming, starter goals and ore/flint in src/stream/server_items.gd and boulders.json at daily head 5d7c4ac9. Tests: test_learn, test_farming, test_goals, test_ore all 0 failures after my data fixes.
+
+## Data fixed by me
+- **crops.json sow seasons.** The server compares `sow_season` as one string (turnip hard-coded as always sowable) and a new world starts on day 100 (early summer), so spring-only crops could not be sown for about 265 real hours. Now: oats, carrot, potato, cabbage, onion, peas, beet and flax sow in summer; rye in autumn; wheat and barley stay spring (test_farming sows them in spring); turnip spring but exempt. The realistic season lists are in `sow_seasons` for later.
+- **Obtainable items no longer flagged `future`:** flint, copper ore, tin ore, iron ore, coal, copper/tin/iron ingots, nails, hinges, rivets, saw blade, processed hide. validate_items now reads boulders.json (ore items, flint) as sources, so the check agrees with the code.
+- Starter goals: rewards, `after` chains and event names (`drink`, `tree_felled`, `fire_lit`, `ate_food`, `placed`, `carcass_worked`) match test_goals; the structure kinds `lean_to`, `rough_bed`, `workbench` exist.
+- Learn system: the 19 locked recipes (forge/workbench level 2+, water wheel) are learnable by seeing the product or holding all ingredients at the station, so nothing is permanently locked; recipes needing future ingredients stay unlearnable until those exist.
+
+## Code mismatches for Tyler
+1. **`sow_season` as a list.** Read `sow_seasons` (list) when present instead of a single string, and drop the hard-coded turnip exemption. Then wheat and barley can be sown in spring and summer, as in real growing.
+2. **Grow times are in game days = real hours.** Wheat 110, barley 80, potato 100 game days is 80 to 110 real hours of server uptime for one harvest. Either halve `grow_days` in crops.json (Dave's call) or add fast crops for the first week (see FIRST_WEEK_WALK.md). The crop tick also needs water: without the water-gather action (WATER_GATHER_SPEC.md) crops only grow on rainy days.
+3. **Camp goals.** data/items/camp_goals.json uses the starter-goal shape with four checks that need code: events `worn_warmth` (min), `talked` (npc, hour), `moved_lit_night` (metres), and sea salt for jerky and salted fish. hints.json is read by nothing: hint triggers are free text; map `trigger` names to the goal states if you want them shown.
+4. **Ore tier.** FLINT_ORE_SPEC.md said iron needs a better pick than copper; your boulders.json ore block does it by rarity (no bronze pick exists). I updated my expectation; no data change needed. The iron pickaxe and the other iron tools stay flagged `future` only because the client test requires a held model for every non-future tool; once models exist, unflag them.
+5. **Tools still `future` though reachable:** hide scraper, javelin, sickle, obsidian knife (needs obsidian), iron tools. Same reason.
+6. **Unread data files (proposals):** wild_foods.json, animal_sign.json, encyclopedia.json, town_proposal.json, shops_proposal.json, quality.json (not yet written), camp_goals.json.

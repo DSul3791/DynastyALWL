@@ -24,6 +24,10 @@ func make():
 	a.player_positions = func(): return players.map(func(p): return p["pos"])
 	a.player_stances = func(): return players.map(func(_p): return 0)
 	a.setup()
+
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
+		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
+
 	a.cfg["species"]["rabbit"]["target_per_player"] = 0
 	a.cfg["species"]["moose"]["target_per_player"] = 0
 	a.cfg["species"]["fox"]["target_per_player"] = 0

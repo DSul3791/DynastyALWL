@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 420,
+	"next_number": 430,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -358,8 +358,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 30,
-			"future": true
+			"value": 30
 		},
 		"steel_ingot": {
 			"number": 32,
@@ -2047,7 +2046,7 @@
 			"description": "Ground hazelnuts and honey. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 11,
+			"value": 10,
 			"look_alikes": []
 		},
 		"roast_roots": {
@@ -2084,7 +2083,7 @@
 			"description": "Mushrooms and wild garlic grilled on a stick.",
 			"kind": "food",
 			"stack": 10,
-			"value": 21,
+			"value": 11,
 			"look_alikes": []
 		},
 		"herb_fish": {
@@ -2111,7 +2110,7 @@
 			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 9,
 			"look_alikes": []
 		},
 		"fruit_leather": {
@@ -2120,7 +2119,7 @@
 			"description": "Dried fruit pressed flat. Keeps for a long journey.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 7,
 			"look_alikes": []
 		},
 		"smoked_fish": {
@@ -2138,7 +2137,7 @@
 			"description": "A thick meat and root stew. Warms you through.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 16,
 			"look_alikes": []
 		},
 		"forager_stew": {
@@ -2147,7 +2146,7 @@
 			"description": "Greens, roots and mushrooms in one pot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 23,
+			"value": 11,
 			"look_alikes": []
 		},
 		"fish_stew": {
@@ -2156,7 +2155,7 @@
 			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": []
 		},
 		"trail_bread": {
@@ -2165,7 +2164,7 @@
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 11,
 			"look_alikes": []
 		},
 		"hearty_pottage": {
@@ -2174,7 +2173,7 @@
 			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
 			"kind": "food",
 			"stack": 10,
-			"value": 38,
+			"value": 12,
 			"look_alikes": []
 		},
 		"feast_roast": {
@@ -2183,7 +2182,7 @@
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"kind": "food",
 			"stack": 10,
-			"value": 75,
+			"value": 34,
 			"look_alikes": []
 		},
 		"wall_section_kit": {
@@ -2691,7 +2690,7 @@
 			"note": "Hoe path: row state 32; no kit, cannot be picked up."
 		},
 		"tilled_bed": {
-			"number": 419,
+			"number": 425,
 			"name": "Tilled bed",
 			"description": "A metre of hoed soil, ready to sow.",
 			"kind": "structure",
@@ -2721,7 +2720,6 @@
 		},
 		"nails": {
 			"number": 228,
-			"future": true,
 			"name": "Nails",
 			"description": "Iron nails, bought and used by the handful.",
 			"kind": "material",
@@ -2759,7 +2757,6 @@
 		},
 		"hinges": {
 			"number": 232,
-			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2810,8 +2807,7 @@
 			"kind": "material",
 			"stack": 10,
 			"look_alikes": [],
-			"value": 60,
-			"future": true
+			"value": 60
 		},
 		"water_wheel": {
 			"number": 239,
@@ -3161,7 +3157,7 @@
 			"description": "A sweet loaf baked in the oven. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 14,
 			"look_alikes": []
 		},
 		"roast_joint": {
@@ -3215,7 +3211,6 @@
 			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3241,7 +3236,6 @@
 		},
 		"processed_hide": {
 			"number": 282,
-			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
@@ -3285,7 +3279,6 @@
 			"description": "Small iron pins that hold layers of leather or metal together.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3295,7 +3288,6 @@
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3305,7 +3297,6 @@
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3534,7 +3525,6 @@
 			"description": "A heavy lump streaked green and red. Smelts to copper.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3544,7 +3534,6 @@
 			"description": "A dark, very heavy lump. Smelts to tin.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3554,7 +3543,6 @@
 			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -3564,7 +3552,6 @@
 			"description": "A black lump that burns hot. Needed to turn iron into steel.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4568,7 +4555,7 @@
 			"description": "Oats simmered thick with crushed nuts.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4578,7 +4565,7 @@
 			"description": "A thin warm broth of barley and carrot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4598,7 +4585,7 @@
 			"description": "A thick green soup of peas and onion.",
 			"kind": "food",
 			"stack": 10,
-			"value": 18,
+			"value": 15,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4628,7 +4615,7 @@
 			"description": "Cabbage, meat and onion stewed together.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4658,7 +4645,7 @@
 			"description": "A salty soup of seaweed and shellfish.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 12,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4668,7 +4655,7 @@
 			"description": "Shellfish stewed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 17,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4688,7 +4675,7 @@
 			"description": "Eggs fried with young nettle greens.",
 			"kind": "food",
 			"stack": 10,
-			"value": 24,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4708,7 +4695,7 @@
 			"description": "Dark seal meat stewed with turnip.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4718,7 +4705,7 @@
 			"description": "Meat and fat baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4728,7 +4715,7 @@
 			"description": "Fish and onion baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 31,
+			"value": 19,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4747,7 +4734,7 @@
 			"description": "Flat bread rubbed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 11,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4815,7 +4802,7 @@
 			"description": "Banana and flour fried golden.",
 			"kind": "food",
 			"stack": 10,
-			"value": 14,
+			"value": 9,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4886,6 +4873,100 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 14
+		},
+		"salmon": {
+			"number": 419,
+			"name": "Salmon",
+			"description": "A big silver river fish that runs upstream in autumn. Rich and oily.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 12
+		},
+		"herring": {
+			"number": 420,
+			"name": "Herring",
+			"description": "A small oily silver sea fish that swims in shoals.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 5
+		},
+		"mackerel": {
+			"number": 421,
+			"name": "Mackerel",
+			"description": "A striped oily sea fish of summer. Spoils fast, so cook it soon.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 6
+		},
+		"smelt": {
+			"number": 422,
+			"name": "Smelt",
+			"description": "A tiny silver fish from shallow coastal water. Fry it whole.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 3
+		},
+		"eel": {
+			"number": 423,
+			"name": "Eel",
+			"description": "A long slippery fish. Must be cooked: raw eel blood is toxic.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 10
+		},
+		"cod": {
+			"number": 424,
+			"name": "Cod",
+			"description": "A big white sea fish. Lean and flaky when cooked.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 9
+		},
+		"radish": {
+			"number": 426,
+			"name": "Radish",
+			"description": "A peppery red root that grows fast in cool ground.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"lettuce": {
+			"number": 427,
+			"name": "Lettuce",
+			"description": "Soft green leaves that grow fast and spoil fast.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"radish_seeds": {
+			"number": 428,
+			"name": "Radish seeds",
+			"description": "Seeds for sowing radish. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"lettuce_seeds": {
+			"number": 429,
+			"name": "Lettuce seeds",
+			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
 		}
 	}
 }
