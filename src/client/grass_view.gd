@@ -12,7 +12,7 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
-const PLUME_THIN := 0.3                  # share of the ground grass kept round the tall-grass patches
+const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
 const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
