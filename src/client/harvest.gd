@@ -42,6 +42,7 @@ func setup(client, items, net) -> void:
 	_drops = drops if typeof(drops) == TYPE_DICTIONARY else {}
 
 	if _client.flora != null:
+		_client.flora.fruit_cfg = _drops.get("fruit_tree", {})      # the trees whose drawn fruit follows the store
 		_client.flora.set_fruiting((_drops.get("berry_yield", {}) as Dictionary).keys())      # the bushes drawn per season and bare once picked
 
 

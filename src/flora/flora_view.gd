@@ -317,6 +317,7 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var fruit_cfg: Dictionary = {}           # drops.json "fruit_tree" (species name -> {max, per_pick}), set by the client: which trees hold fruit
 var fruit_taken: Dictionary = {}         # chunk -> {tree id -> pieces taken this season} (fruit trees; set_fruit_taken, cleared when the season changes)
 var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
 var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
@@ -673,7 +674,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"mid": mid_meshes,
 		"far": far_meshes,
 		"shape": shape,
-		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", [])},
+		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
 		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
@@ -1392,13 +1393,67 @@ func set_fruiting(names: Array) -> void:
 
 # The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
 # are built on a worker; the chunks redraw when they are ready.
+# The share of fruit picked, in the five levels the fruit shader draws (0, 0.34, 0.67, 0.9, 1.0 = 100, 66, 33, 10 and 0 percent left).
+static func fruit_level(picked_share: float) -> float:
+	if picked_share < 0.17:
+		return 0.0
+
+	if picked_share < 0.5:
+		return 0.34
+
+	if picked_share < 0.78:
+		return 0.67
+
+	if picked_share < 0.95:
+		return 0.9
+
+	return 1.0
+
+
+# {tree id -> level} for the fruit trees of a chunk with fruit taken (main thread: the draw task only reads it).
+func _fruit_levels_of(chunk: Vector2i, items: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var taken: Dictionary = fruit_taken.get(chunk, {})
+
+	if taken.is_empty() or fruit_cfg.is_empty():
+		return out
+
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(ids.size()):
+		var id: int = int(ids[n])
+
+		if not taken.has(id):
+			continue
+
+		var species: Dictionary = _species.get(id >> 16, {})
+		var cfg: Dictionary = fruit_cfg.get(str(_slugs.get(id >> 16, "")), {})
+
+		if cfg.is_empty() or not species.has("season_row"):
+			continue
+
+		var full: int = GatherRules.fruit_max(cfg, species["season_row"], id, float((items["heights"] as PackedFloat32Array)[n]))
+		out[id] = fruit_level(float(taken[id]) / float(maxi(full, 1)))
+
+	return out
+
+
 # The server's count of fruit taken from trees of a chunk (the prompt shows what is left); a later count replaces an earlier one.
 func set_fruit_taken(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
 	if not fruit_taken.has(chunk):
 		fruit_taken[chunk] = {}
 
+	var before: Dictionary = {}
+
+	if _chunks.has(chunk):
+		before = _fruit_levels_of(chunk, _chunks[chunk]["items"])
+
 	for n in range(ids.size()):
 		fruit_taken[chunk][int(ids[n])] = int(taken[n])
+
+	# Only a change of level (100, 66, 33, 10, 0 percent) redraws the chunk: one pick never rebuilds it.
+	if _chunks.has(chunk) and _fruit_levels_of(chunk, _chunks[chunk]["items"]) != before:
+		_redraw(chunk)
 
 
 func set_season(now_season: String) -> void:
@@ -1717,6 +1772,7 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
 
 	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+	items["fruit_levels"] = _fruit_levels_of(chunk, items)
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
@@ -2039,6 +2095,9 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 				var custom: Color = _leaf_tint(ids[n], info) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
 				# Glowing leaves: young trees glow weakly, grown ones fully.
 				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
+
+				if (items.get("fruit_levels", {}) as Dictionary).has(int(ids[n])):
+					custom.a = float(items["fruit_levels"][int(ids[n])])   # a fruit tree: the share of its fruit already picked (FRUIT_SHADER discards that share)
 				buffer[o + 12] = custom.r
 				buffer[o + 13] = custom.g
 				buffer[o + 14] = custom.b
