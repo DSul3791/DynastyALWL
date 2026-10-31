@@ -413,27 +413,27 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var tip_x: float = low_len - 0.18
 				var up_len: float = 0.1 if kind != "flax" else 0.05
 				var ux: float = tip_x + cos(bend) * up_len * 0.5
-				var uy: float = cy * 1.15 - sin(bend) * up_len * 0.5
-				_cyl(parts, 0.0042, up_len, Vector3(ux, uy, cz * 1.15), Vector3(0.0, 0.0, PI * 0.5 - bend), _tone(stalk, k, 0.1))
+				var uy: float = cy * 2.4 - sin(bend) * up_len * 0.5
+				_cyl(parts, 0.0042, up_len, Vector3(ux, uy, cz * 2.4), Vector3(0.0, 0.0, PI * 0.5 - bend), _tone(stalk, k, 0.1))
 				var ex: float = tip_x + cos(bend) * up_len
-				var ey: float = cy * 1.15 - sin(bend) * up_len
+				var ey: float = cy * 2.4 - sin(bend) * up_len
 
 				if kind == "flax":
-					_sph(parts, 0.009, Vector3.ONE, Vector3(ex, ey, cz * 1.15), Color(0.62, 0.5, 0.28), true)
+					_sph(parts, 0.009, Vector3.ONE, Vector3(ex, ey, cz * 2.4), Color(0.62, 0.5, 0.28), true)
 					if k % 4 == 0:
-						_sph(parts, 0.008, Vector3(0.4, 1.0, 1.0), Vector3(ex + 0.012, ey + 0.008, cz * 1.15), Color(0.4, 0.55, 0.92), true)
+						_sph(parts, 0.008, Vector3(0.4, 1.0, 1.0), Vector3(ex + 0.012, ey + 0.008, cz * 2.4), Color(0.4, 0.55, 0.92), true)
 				else:
 					if kind == "oats":   # an open panicle: thin branchlets each hanging a small oval grain
 						for g in 4:
 							var ga: float = TAU * float(g) / 4.0
-							_box_rot(parts, Vector3(0.03, 0.002, 0.002), Vector3(ex + 0.012, ey + sin(ga) * 0.014, cz * 1.15 + cos(ga) * 0.014), Vector3(0.0, ga, 0.0), color.darkened(0.1))
-							_sph(parts, 0.009, Vector3(1.0, 1.6, 1.0), Vector3(ex + 0.02, ey - 0.014 + sin(ga) * 0.014, cz * 1.15 + cos(ga) * 0.018), _tone(color, k + g, 0.1), true)
+							_box_rot(parts, Vector3(0.03, 0.002, 0.002), Vector3(ex + 0.012, ey + sin(ga) * 0.014, cz * 2.4 + cos(ga) * 0.014), Vector3(0.0, ga, 0.0), color.darkened(0.1))
+							_sph(parts, 0.009, Vector3(1.0, 1.6, 1.0), Vector3(ex + 0.02, ey - 0.014 + sin(ga) * 0.014, cz * 2.4 + cos(ga) * 0.018), _tone(color, k + g, 0.1), true)
 					else:
-						_sph(parts, 0.016, Vector3(2.8 if kind != "rye" else 3.2, 0.85 if kind != "rye" else 0.6, 0.85 if kind != "rye" else 0.6), Vector3(ex + 0.025, ey - sin(bend) * 0.03, cz * 1.15), _tone(color, k * 2, 0.1), true)
+						_sph(parts, 0.016, Vector3(2.8 if kind != "rye" else 3.2, 0.85 if kind != "rye" else 0.6, 0.85 if kind != "rye" else 0.6), Vector3(ex + 0.025, ey - sin(bend) * 0.03, cz * 2.4), _tone(color, k * 2, 0.1), true)
 
 					if kind == "barley" or kind == "rye":
 						for a in 3:
-							_box_rot(parts, Vector3(0.09, 0.0025, 0.0025), Vector3(ex + 0.085, ey - sin(bend) * 0.07 + 0.002 * float(a - 1), cz * 1.15 + 0.006 * float(a - 1)), Vector3(0.0, 0.12 * float(a - 1), -bend + 0.08 * float(a - 1)), color.lightened(0.2))
+							_box_rot(parts, Vector3(0.09, 0.0025, 0.0025), Vector3(ex + 0.085, ey - sin(bend) * 0.07 + 0.002 * float(a - 1), cz * 2.4 + 0.006 * float(a - 1)), Vector3(0.0, 0.12 * float(a - 1), -bend + 0.08 * float(a - 1)), color.lightened(0.2))
 
 			for k in 3:   # leaf blades at the foot
 				_box_rot(parts, Vector3(0.2, 0.002, 0.014), Vector3(-0.1, 0.01 * float(k - 1), 0.025 * float(k - 1)), Vector3(0.0, 0.1 * float(k - 1), 0.0), Color(0.5, 0.55, 0.28))

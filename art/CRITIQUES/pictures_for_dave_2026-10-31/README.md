@@ -1,4 +1,4 @@
-# Pictures for Dave, 2026-10-31 (Kathleen). Offline renders with the real model builders: the real-game rig did not finish a run all night (a 75-minute felling run produced nothing), so these do not show game light, terrain or the leaf textures on cards. Ratings 1 to 5 (5 = clearly the real thing at 10 and 30 m), honest, with the rounds each took.
+# Pictures for Dave, 2026-10-31 (Kathleen). Offline renders with the real model builders: the real-game rig did not finish a run all night (a felling run of more than an hour produced nothing), so these do not show game light, terrain or the leaf textures on cards. Ratings 1 to 5 (5 = clearly the real thing at 10 and 30 m), honest, with the rounds each took.
 
 | Picture | What | Rounds | Rating | What is weak |
 |---|---|---|---|---|
