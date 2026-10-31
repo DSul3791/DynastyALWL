@@ -2895,17 +2895,17 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 # made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
 const WILD_STEM := Color(0.38, 0.5, 0.22)
 const WILDFLOWER_LOOKS := {
-	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.09, "petal": Color(1.0, 1.0, 1.0), "centre": Color(1.0, 0.75, 0.0), "size": 0.045, "petals": 10},
-	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.08, "petal": Color(1.0, 1.0, 0.97), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 9},
-	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.1, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
-	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.09, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
-	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.08, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
-	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.16, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
+	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 1.0, 1.0), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
+	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
+	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
+	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
+	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
+	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
-	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.97, 0.82), "size": 0.14, "rays": 8},
-	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.14, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
-	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.14, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
-	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.13, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.2, "petal": Color(1.0, 1.0, 1.0), "size": 0.14, "rays": 8},
+	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.2, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
+	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.2, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
+	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
@@ -2948,7 +2948,7 @@ static func _daisy(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: floa
 
 	for k in range(count):
 		var a: float = turn + TAU * float(k) / float(count)
-		_bead(acc, at + (Vector3(cos(a), 0.0, sin(a)) * size * 0.7).rotated(tilt_axis, tilt), Vector3(size * 0.55, size * 0.08, size * 0.22).rotated(Vector3.UP, 0.0), petal)
+		_bead(acc, at + (Vector3(cos(a), 0.0, sin(a)) * size * 0.7).rotated(tilt_axis, tilt), Vector3(size * 0.6, size * 0.08, size * 0.32).rotated(Vector3.UP, 0.0), petal)
 
 	_bead(acc, at + normal * size * 0.12, Vector3(size * 0.4, size * 0.3, size * 0.4), centre)
 
