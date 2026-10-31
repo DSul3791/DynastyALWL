@@ -10,7 +10,7 @@
 		"orange": {"max": [40, 100], "per_pick": 5},
 		"lemon": {"max": [40, 100], "per_pick": 5},
 		"date_palm": {"max": [60, 150], "per_pick": 5},
-		"coconut_palm": {"max": [10, 30], "per_pick": 3},
+		"coconut_palm": {"max": [20, 40], "per_pick": 3},
 		"apple_early": {"max": [30, 80], "per_pick": 5},
 		"apple_summer": {"max": [40, 100], "per_pick": 5},
 		"apple_autumn": {"max": [50, 130], "per_pick": 5},
