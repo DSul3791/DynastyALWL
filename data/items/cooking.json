@@ -28,6 +28,9 @@
 		"chamomile_tea": 12,
 		"willow_bark_tea": 12,
 		"roast_meat": 14,
+		"roast_shellfish": 10,
+		"boiled_egg": 8,
+		"roast_seal": 14,
 		"roast_fish": 12,
 		"berry_compote": 4,
 		"nut_paste": 0,
@@ -87,6 +90,10 @@
 	"rain_light_chance": {"note": "Lighting a fire in light rain (under puts_out strength) can fail: chance = max(min_chance, 1 - rain / puts_out x loss). The tinder is used either way.", "puts_out": 0.2, "loss": 0.8, "min_chance": 0.2},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
+		"shellfish": "roast_shellfish",
+		"crab_meat": "roast_shellfish",
+		"egg": "boiled_egg",
+		"seal_meat": "roast_seal",
 		"trout": "roast_fish",
 		"perch": "roast_fish",
 		"carp": "roast_fish",
@@ -95,6 +102,10 @@
 	"raw_sick": {
 		"by_id": {
 			"raw_meat": 24,
+			"shellfish": 24,
+			"crab_meat": 12,
+			"seal_meat": 24,
+			"egg": 12,
 			"fiddleheads": 12,
 			"trout": 12,
 			"perch": 12,

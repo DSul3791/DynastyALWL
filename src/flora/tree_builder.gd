@@ -2658,7 +2658,7 @@ const WILDFLOWER_LOOKS := {
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
 	"wild_mint": {"head": "spike", "stems": 6, "petal": Color(0.72, 0.6, 0.9), "size": 0.045, "beads": 9, "span": 0.25},
 	"wolfsbane": {"head": "spike", "stems": 3, "petal": Color(0.25, 0.22, 0.65), "size": 0.06, "beads": 10, "span": 0.4},
-	"flax": {"head": "spike", "stems": 7, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 5, "span": 0.2},
+	"flax": {"head": "spike", "stems": 8, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 7, "span": 0.3, "basal": 1},
 	"foxglove": {"head": "bell", "stems": 3, "petal": Color(0.85, 0.35, 0.7), "size": 0.035, "beads": 10, "span": 0.5},
 	# Family 1 of goal 1b (Kathleen, 24 Oct): the remaining flower rows. References: alpine gentian-type blue, wild thyme pink 1 cm sprays, wood sorrel red-green spikes, watercress white umbels,
 	# thistle purple, mallow 5 petals, lily and bluebell bells; the fantasy plants keep their listed colours.
@@ -2704,7 +2704,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var az: float = rng.randf() * TAU
 
 	# Basal leaves: a few low clumps round the foot.
-	for k in range(2 if far else 3):
+	for k in range(mini(2, int(look.get("basal", 3))) if far else int(look.get("basal", 3))):
 		var a: float = rng.randf() * TAU
 		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, h * 0.12, 0.0), Vector3(0.0, -h, 0.0), maxf(crown * 0.7, h * 0.3), rng.randf_range(0.85, 1.05), 2)
 
@@ -2856,12 +2856,12 @@ static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 		var height: float = h * rng.randf_range(0.7, 1.1)
 		var lean: Vector3 = Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.03 * height
 		var top: Vector3 = base + lean + Vector3(0.0, height, 0.0)
-		_branch(bark, base, top, 0.006, 0.003, Color(0.42, 0.30, 0.28), 4)
+		_branch(bark, base, top, 0.006, 0.003, Color(0.36, 0.4, 0.22), 4)   # green-brown, not dark purple: dark stems read as black wires against the sky
 		var pairs: int = 3 if far else rng.randi_range(5, 7)
 		var turn: float = rng.randf() * PI
 
 		for m in range(pairs):
-			var t: float = 0.12 + 0.88 * float(m) / float(pairs)
+			var t: float = 0.12 + 0.88 * float(m) / float(pairs - 1)   # the top pair sits at the stem top, so no bare black stem shows above the leaves
 			var at: Vector3 = base.lerp(top, t)
 			var length: float = h * lerpf(0.34, 0.14, t) * rng.randf_range(0.85, 1.1)
 			var shade: float = lerpf(0.78, 1.05, t) * rng.randf_range(0.92, 1.06)
@@ -3060,12 +3060,12 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 7, "head_color": Color(0.74, 0.66, 0.38), "reach": 0.9},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.74, 0.66, 0.38), "reach": 1.2, "blade_h": 0.8, "blade_base": Color(0.13, 0.25, 0.07), "blade_tip": Color(0.78, 0.68, 0.38), "head_size": 1.5},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
-	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 11, "head_color": Color(0.84, 0.72, 0.34), "reach": 0.95},
+	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.84, 0.72, 0.34), "reach": 1.1, "blade_h": 0.85, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
 
@@ -3083,7 +3083,7 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
 
 	if head != "succulent":
-		_blades(bark, rng, h * low, crown, 6 if far else 22, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
+		_blades(bark, rng, h * low * float(look.get("blade_h", 1.0)), crown, 6 if far else 22, look.get("blade_base", Color(0.2, 0.32, 0.1)), look.get("blade_tip", Color(0.52, 0.62, 0.26)))
 
 	var color: Color = look["head_color"]
 
@@ -3115,8 +3115,10 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				elif head == "spike":
 					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
 				elif not far:
-					for b in range(4):
-						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03, 0.0) + out * crown * 0.02 * float(b % 2), Vector3(h * 0.012, h * 0.022, h * 0.012), color * rng.randf_range(0.9, 1.1))
+					var hs: float = float(look.get("head_size", 1.0))
+
+					for b in range(5 if hs > 1.0 else 4):   # a seed head droops: beads stepping down and out from the stem top
+						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03 * hs, 0.0) + out * crown * 0.03 * float(b), Vector3(h * 0.012, h * 0.022, h * 0.012) * hs, color * rng.randf_range(0.9, 1.1))
 
 
 # Ferns and mosses, family 3 of goal 1b (Kathleen, 24 Oct). Reference: bracken/common fern 50-120 cm, a rosette of arching fronds; moss cushions 3-10 cm of tiny green domes with thin spore stalks.

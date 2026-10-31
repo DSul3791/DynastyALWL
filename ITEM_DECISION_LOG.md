@@ -240,3 +240,23 @@ Farming items built (332-345, recipes 221-224), tests green. ITEM_GLOSSARY.md ge
 
 ## Fauna data pass (2026-10-30, moderator job 1)
 Merged origin/DailyDev_20261029 into the branch (clean). Added items 346-352, recipes 225-226, 14 carcass rows, fauna_proposal.json (50 species), ANIMAL_SPEC.md. Tests green except the animals timing check (machine load, unrelated). Choice made (reversible): kept spawn rows out of animals.json because the code and models do not exist; the proposal file is read by nothing.
+
+## Plans round 4 (2026-10-30 night, self-approved per moderator)
+1. Guide findings: fix every item/recipe/reachability finding once PLAYTHROUGH_FINDINGS.md is pushed (not on disk or remote yet at this check).
+2. Tropical and desert fauna list (monkey, parrot, crocodile, camel, scorpion) with loot, same format as fauna_proposal.json.
+3. Re-run test_animals on a quiet machine and record the real timing.
+
+## Guide findings pass (2026-10-31)
+Decisions (reversible): F-01 rule = known unless forge/workbench level 2+ (76 flipped); axe twine left at 5 (tests hard-code it); stone wedge route for lumber (moderator QA yes). See PLAYTHROUGH_FINDINGS.md section 5, LEARN_SYSTEM_SPEC.md, FLINT_ORE_SPEC.md. New items: Stone wedge 353, Fibre arrow 354.
+
+## Moderator round 3 (2026-10-31)
+Axe/spear to 2 twine (tests updated). Straw from tall grass. Shore and sea foods added: Seaweed, Shellfish, Crab meat, Egg, Seal meat, Sea salt, Steamed Shellfish, Boiled egg, Seal Steak (items 355-363; cooking through cooking.json cooks_into; kcal and spoilage follow existing cooked/raw ratios, my numbers); carcass rows seal, seabird. FAUNA_BY_BIOME.md, LOG_SPECIES_SPEC.md, BUILD_ORDERS.md written.
+Plans (self-approved): 1 per-tier build orders with timings (done, BUILD_ORDERS.md); 2 add Sea salt recipe once a water-gather action exists (code); 3 recheck BUILD_ORDERS.md after the flint/ore code lands.
+
+## Food coverage check and gap plans (2026-10-31)
+Shrubs and berries: all 11 berry species have berry_yield rows and eat by the `berries` suffix (vitals.json by_suffix); herbs, roots and fungus have harvest_yield rows; plants without a row (gorse, wolfsbane, aloe, belladonna, henbane and the magic plants) fall back to their flora `yields` (test_server_items checks this), so I added nothing. Poisonous look-alikes already exist in gathered.json look_alikes (belladonna berries vs blueberry and so on). Seasons are in flora.json. Result: no food-side gap found for the new bushes except the ones needing code (crops, shore foods). I tried adding 33 explicit harvest rows and reverted: they broke test_server_items, which relies on the fallback.
+Added: recipes Leather, Heavy leather, Fine leather (236 range 234-236); oak gives tannin_bark; data/items/crops.json; WATER_GATHER_SPEC.md; GAP_PLANS.md.
+New plans (self-approved): 1 keep BUILD_ORDERS.md current after each code drop; 2 wildlife: write spawn weights per biome from FAUNA_BY_BIOME.md for the code session; 3 dishes using shore foods (seaweed soup, mussel stew) at 3 ingredients.
+
+## Guide part 2 (2026-10-31)
+F-16 groups + validator rule; F-19 nine products flagged future; F-20 fibre yield removed from flax/tall grass/nettle, rose hips orphan listed; F-24 re-count: 19 locked by design. Basis: server gather() natural-yield fallback (server_items.gd 1063).

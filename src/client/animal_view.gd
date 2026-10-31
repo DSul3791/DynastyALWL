@@ -189,26 +189,37 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 
 # Facing -Z (the heading turns the root). About 0.45 m long, 0.3 m to the ear tips.
 func _make_rabbit() -> Node3D:
+	# A wild rabbit (refs: field-guide photos of the European rabbit: a brown-grey agouti coat, a rounded hunched body with big haunches, long hind feet, short forelegs, a small blunt head,
+	# long ears with dark tips, a rusty nape patch, pale belly and chin, a small white-underside scut). About 0.45 m long, 0.25 m high. Facing -Z; the node is named Rig for the hop animation.
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
-	var fur: Color = Color(0.45, 0.36, 0.26)
-	_ball(rig, 0.1, Vector3(1.0, 0.9, 1.6), Vector3(0.0, 0.11, 0.02), fur)
-	_ball(rig, 0.065, Vector3(1.0, 1.0, 1.2), Vector3(0.0, 0.19, -0.15), fur)
+	var fur: Color = Color(0.5, 0.4, 0.28)
+	var dark: Color = Color(0.3, 0.23, 0.16)
+	var pale: Color = Color(0.9, 0.86, 0.78)
+	_ball(rig, 0.09, Vector3(1.0, 1.0, 1.2), Vector3(0.0, 0.1, 0.1), fur)                       # the haunch: the big rounded rear is the rabbit's silhouette
+	_ball(rig, 0.075, Vector3(0.95, 0.9, 1.5), Vector3(0.0, 0.1, -0.02), fur)                   # the body
+	_ball(rig, 0.05, Vector3(0.9, 1.0, 1.0), Vector3(0.0, 0.14, -0.1), fur)                     # the shoulders
+	_ball(rig, 0.06, Vector3(0.8, 0.5, 1.6), Vector3(0.0, 0.05, -0.02), pale)                   # the pale belly
+	_ball(rig, 0.024, Vector3(1.3, 0.55, 0.8), Vector3(0.0, 0.18, -0.118), Color(0.6, 0.4, 0.22))   # the rusty nape patch
+	_ball(rig, 0.052, Vector3(0.85, 0.9, 1.15), Vector3(0.0, 0.17, -0.17), fur)                 # the head
+	_ball(rig, 0.03, Vector3(0.8, 0.75, 1.2), Vector3(0.0, 0.155, -0.215), pale)                # muzzle and chin
+	_ball(rig, 0.01, Vector3.ONE, Vector3(0.0, 0.16, -0.243), Color(0.2, 0.1, 0.1))             # the nose
+	_ball(rig, 0.01, Vector3.ONE, Vector3(0.036, 0.18, -0.19), Color(0.05, 0.04, 0.04))         # eyes
+	_ball(rig, 0.01, Vector3.ONE, Vector3(-0.036, 0.18, -0.19), Color(0.05, 0.04, 0.04))
 
 	for side in [-1.0, 1.0]:
-		var ear: MeshInstance3D = MeshInstance3D.new()
-		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(0.025, 0.11, 0.012)
-		box.material = _material(Color(0.5, 0.4, 0.3))
-		ear.mesh = box
-		ear.position = Vector3(side * 0.025, 0.28, -0.13)
-		ear.rotation = Vector3(0.25, 0.0, side * 0.15)
-		ear.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var ear: Node3D = Node3D.new()
+		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
+		ear.position = Vector3(side * 0.03, 0.2, -0.15)
 		rig.add_child(ear)
+		_ball(ear, 0.03, Vector3(0.62, 2.5, 0.25), Vector3(0.0, 0.07, 0.02), fur, Vector3(-0.2, 0.0, side * -0.2))     # a long ear leaning back and out
+		_ball(ear, 0.018, Vector3(0.4, 2.0, 0.15), Vector3(0.0, 0.1, 0.0), dark, Vector3(-0.2, 0.0, side * -0.2))      # the dark tip
+		_box(rig, Vector3(0.022, 0.03, 0.07), Vector3(side * 0.045, 0.02, -0.12), fur)          # a short foreleg and paw
+		_box(rig, Vector3(0.032, 0.026, 0.15), Vector3(side * 0.06, 0.013, 0.07), fur)            # the long hind foot flat on the ground
 
-	_ball(rig, 0.035, Vector3.ONE, Vector3(0.0, 0.15, 0.19), Color(0.92, 0.9, 0.86))
+	_ball(rig, 0.03, Vector3(1.0, 1.0, 0.9), Vector3(0.0, 0.14, 0.2), pale)                     # the white scut
 	return root
 
 
@@ -375,12 +386,16 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	head.name = "Head"
 	head.position = Vector3(0.0, back - rb * 0.1, -half * 0.8)
 	rig.add_child(head)
-	_ball(head, nk * 0.22, Vector3(0.8, 0.8, 1.0), Vector3(0.0, nk * 0.3, -nk * 0.3), coat, Vector3(0.7, 0.0, 0.0))      # neck (long)
-	_ball(head, nk * 0.2, Vector3(0.75, 0.75, 1.3), Vector3(0.0, nk * 0.55, -nk * 0.55), coat, Vector3(0.7, 0.0, 0.0))
+	for seg in 5:   # the neck: five overlapping, thinning segments from the shoulder to the skull, so it reads as one tapering neck and not a chain of beads
+		var t: float = float(seg) / 4.0
+		_ball(head, nk * lerpf(0.27, 0.19, t), Vector3(0.85, 0.85, 1.25), Vector3(0.0, lerpf(nk * 0.1, nk * 0.7, t), lerpf(-nk * 0.08, -nk * 0.75, t)), coat, Vector3(0.7, 0.0, 0.0))
 	var top: Vector3 = Vector3(0.0, nk * 0.78, -nk * 0.85)
 	_ball(head, hd * 0.28, Vector3(0.85, 0.9, 1.4), top, coat if not bool(spec.get("dark_head", false)) else dark)       # skull
 	var snout: float = float(spec.get("snout", 1.0))
-	_box(head, Vector3(hd * 0.34, hd * 0.3, hd * 0.55 * snout), top + Vector3(0.0, -hd * 0.08, -hd * 0.45 * snout), pale if bool(spec.get("pale_snout", false)) else dark)
+	_ball(head, hd * 0.2, Vector3(0.75, 0.7, 1.3), top + Vector3(0.0, -hd * 0.12, -hd * 0.12), coat if not bool(spec.get("dark_head", false)) else dark)       # jaw and cheek: the head tapers to the muzzle
+	var muzzle: Color = pale if bool(spec.get("pale_snout", false)) else dark
+	_ball(head, hd * 0.2, Vector3(0.75, 0.62, 1.7 * snout), top + Vector3(0.0, -hd * 0.1, -hd * 0.4 * snout), muzzle)      # the muzzle tapers to the nose, not a box
+	_ball(head, hd * 0.08, Vector3(1.0, 0.8, 0.8), top + Vector3(0.0, -hd * 0.06, -hd * 0.4 * snout - hd * 0.34 * snout), Color(0.05, 0.04, 0.04))      # the nose
 	_ball(head, hd * 0.05, Vector3.ONE, top + Vector3(0.1 * hd, hd * 0.12, -hd * 0.18), Color(0.05, 0.04, 0.04))        # eyes
 	_ball(head, hd * 0.05, Vector3.ONE, top + Vector3(-0.1 * hd, hd * 0.12, -hd * 0.18), Color(0.05, 0.04, 0.04))
 
@@ -389,7 +404,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
 		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
 		head.add_child(ear)
-		_box(ear, Vector3(hd * 0.1, hd * 0.32, hd * 0.06), Vector3(0.0, hd * 0.16, 0.0), dark, Vector3(0.0, 0.0, side * -0.35))
+		_ball(ear, hd * 0.13, Vector3(0.4, 1.7, 0.22), Vector3(0.0, hd * 0.17, 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
@@ -429,8 +444,8 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	rig.add_child(tail)
 
 	if bool(spec.get("bushy", false)):
-		_ball(tail, rb * 1.1, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -rb * 0.2, rb * 1.4), coat, Vector3(0.5, 0.0, 0.0))
-		_ball(tail, rb * 0.7, Vector3(0.8, 0.8, 1.4), Vector3(0.0, -rb * 0.7, rb * 2.8), Color(0.92, 0.9, 0.86), Vector3(0.5, 0.0, 0.0))
+		_ball(tail, rb * 0.95, Vector3(0.7, 0.7, 2.3), Vector3(0.0, -rb * 0.3, rb * 1.3), coat, Vector3(0.45, 0.0, 0.0))      # a fox brush: long, thickest in the middle
+		_ball(tail, rb * 0.55, Vector3(0.7, 0.7, 1.3), Vector3(0.0, -rb * 0.75, rb * 2.55), Color(0.92, 0.9, 0.86), Vector3(0.45, 0.0, 0.0))
 	elif bool(spec.get("long_tail", false)):
 		_box(tail, Vector3(rb * 0.3, leg_h * 0.95, rb * 0.2), Vector3(0.0, -leg_h * 0.45, rb * 0.2), dark, Vector3(0.12, 0.0, 0.0))      # a horse's tail hangs nearly to the hocks
 		_box(tail, Vector3(rb * 0.2, leg_h * 0.5, rb * 0.15), Vector3(rb * 0.12, -leg_h * 0.62, rb * 0.28), dark, Vector3(0.18, 0.0, 0.1))
@@ -507,7 +522,7 @@ func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 # A fox (Mandy 2026-10-22): small, rusty red, pale belly and muzzle, dark socks, big bushy white-tipped brush. State 13 creeps low, 14 runs with food.
 func _make_fox() -> Node3D:
-	return _make_quad({"leg_h": 0.22, "rb": 0.1, "len": 0.5, "neck": 0.16, "head": 0.2, "snout": 1.3, "coat": Color(0.72, 0.34, 0.12), "dark": Color(0.2, 0.12, 0.08), "pale": Color(0.93, 0.88, 0.8), "pale_snout": true, "bushy": true})
+	return _make_quad({"leg_h": 0.22, "rb": 0.1, "len": 0.5, "neck": 0.16, "head": 0.2, "snout": 1.3, "pale_belly": false, "coat": Color(0.72, 0.34, 0.12), "dark": Color(0.2, 0.12, 0.08), "pale": Color(0.93, 0.88, 0.8), "pale_snout": true, "bushy": true})
 
 
 # A horse (Mandy 2026-10-22): coat chosen from the animal id (bay, chestnut, grey, black, dun), dark mane and tail. Foals and harness come later.
@@ -525,4 +540,4 @@ func _make_moose(id: int) -> Node3D:
 # A deer (goal 2 batch A, Kathleen): the shared four-legged build, so it walks, grazes and watches like the others. About 1.5 m long, 1.2 m to the back, tan coat, pale belly and rump,
 # a stag's branched antlers on every second one (by id).
 func _make_deer(id: int = 0) -> Node3D:
-	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.5, "head": 0.32, "snout": 1.1, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})
+	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.42, "head": 0.32, "snout": 1.1, "pale_belly": false, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})

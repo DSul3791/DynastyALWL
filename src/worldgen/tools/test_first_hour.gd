@@ -104,10 +104,10 @@ func _init() -> void:
 	check(heaps == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 48, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
 	note("gathering")
 
-	# 2. Twist five twine from fibre by hand, then craft a stone axe (a stone, a stick and 5 twine).
-	queue(1, 5)
+	# 2. Twist two twine from fibre by hand, then craft a stone axe (a stone, a stick and 2 twine).
+	queue(1, 2)
 	pass_time(20.0, 0.2)
-	check(count("twine") == 5, "five twine are twisted by hand from fibre")
+	check(count("twine") == 2, "two twine are twisted by hand from fibre")
 	queue(2, 1)
 	pass_time(10.0, 0.2)
 	check(count("stone_axe") == 1, "the stone axe is made by hand")

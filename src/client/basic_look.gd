@@ -31,6 +31,38 @@ const ART_OVERRIDES := {
 	"flour": {"shape": "sack", "color": "#efe6d2", "size": 0.9},
 	"salt": {"shape": "grit", "color": "#f4f4f0", "size": 0.8},
 	"wooden_club": {"shape": "club", "color": "#5a3a1c", "size": 1.2},
+	"stone_mace": {"shape": "mace", "color": "#46433e", "size": 1.0},
+	"wicker_shield": {"shape": "shield", "color": "#b8924a", "size": 1.0},
+	"leather_cap": {"shape": "helm", "color": "#6a4020", "size": 1.0},
+	"bronze_helm": {"shape": "helm", "color": "#b5803a", "size": 1.0, "bits": ["metal"]},
+	"iron_helm": {"shape": "helm", "color": "#6c6f75", "size": 1.0, "bits": ["metal"]},
+	"steel_helm": {"shape": "helm", "color": "#9aa3ad", "size": 1.0, "bits": ["metal"]},
+	"leather_jerkin": {"shape": "jerkin", "color": "#5a3418", "size": 1.0, "bits": ["leather"]},
+	"gambeson": {"shape": "jerkin", "color": "#d8cbb0", "size": 1.0, "bits": ["padded"]},
+	"mail_shirt": {"shape": "jerkin", "color": "#8c9099", "size": 1.0, "bits": ["mail"]},
+	"plate_cuirass": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.0, "bits": ["plate"]},
+	"bronze_sword": {"shape": "sword", "color": "#b5803a", "size": 1.0},
+	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
+	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
+	"bronze_mace": {"shape": "flanged_mace", "color": "#b5803a", "size": 1.0},
+	"iron_mace": {"shape": "flanged_mace", "color": "#6c6f75", "size": 1.0},
+	"steel_mace": {"shape": "flanged_mace", "color": "#9aa3ad", "size": 1.0},
+	"bronze_shield": {"shape": "metal_shield", "color": "#b5803a", "size": 1.0},
+	"iron_shield": {"shape": "metal_shield", "color": "#6c6f75", "size": 1.0},
+	"steel_shield": {"shape": "metal_shield", "color": "#9aa3ad", "size": 1.0},
+	"plank_shield": {"shape": "plank_shield", "color": "#a07a45", "size": 1.0},
+	"wheat": {"shape": "sheaf", "color": "#c9983a", "size": 1.0, "bits": ["wheat"]},
+	"barley": {"shape": "sheaf", "color": "#c9a850", "size": 1.0, "bits": ["barley"]},
+	"flax": {"shape": "sheaf", "color": "#b8a46a", "size": 1.0, "bits": ["flax"]},
+	"carrot": {"shape": "carrot", "color": "#e0782a", "size": 1.0},
+	"turnip": {"shape": "turnip", "color": "#ece6d8", "size": 1.0},
+	"potato": {"shape": "potato", "color": "#7d5f38", "size": 1.0},
+	"wheat_seeds": {"shape": "seedpile", "color": "#d9bd6a", "size": 1.0, "bits": ["long"]},
+	"barley_seeds": {"shape": "seedpile", "color": "#cdb36c", "size": 1.0, "bits": ["long"]},
+	"carrot_seeds": {"shape": "seedpile", "color": "#8a6a3a", "size": 0.9},
+	"potato_seeds": {"shape": "seedpile", "color": "#c9a878", "size": 1.1},
+	"turnip_seeds": {"shape": "seedpile", "color": "#3a2a22", "size": 0.9},
+	"flax_seeds": {"shape": "seedpile", "color": "#7a5230", "size": 0.9, "bits": ["long"]},
 	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
@@ -57,10 +89,15 @@ static func entry(item_id: String) -> Dictionary:
 			if parsed is Dictionary:
 				_table = parsed.get("items", {})
 
-	if ART_OVERRIDES.has(item_id) and not _table.has(item_id):
+	if ART_OVERRIDES.has(item_id) and (not _table.has(item_id) or _is_placeholder(_table[item_id])):   # a missing row or the grey placeholder chunk gives way to the real look
 		return ART_OVERRIDES[item_id]
 
 	return _table.get(item_id, {})
+
+
+# The grey chunk that gen_looks.py and the item sessions write for an item that has no model yet.
+static func _is_placeholder(row: Dictionary) -> bool:
+	return str(row.get("shape", "")) == "chunk" and str(row.get("color", "")).to_lower() == "#8a8a8a"
 
 
 static func has_look(item_id: String) -> bool:
@@ -109,6 +146,244 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var bend: float = (float(k % 3) - 1.0) * 0.05
 				_box_rot(parts, Vector3(0.34 + 0.02 * float(k % 4), 0.004, 0.006), Vector3(0.0, 0.004 * float(k % 5), spread), Vector3(0.0, bend, 0.0), color.lightened(0.07 * float(k % 3)) if k % 2 == 0 else color.darkened(0.08))
 			_cyl(parts, 0.04, 0.02, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.45, 0.36, 0.2))
+		"heap":
+			# A loose heap of dried grass (bedding): a low dome of overlapping straw clumps, darker in the hollows, with many short strands lying across it following its curve (crossed every way),
+			# a few long stray ones at the edge and a couple of dry leaves; about 0.3 m across and 0.08 m high.
+			var straw_dark: Color = color.darkened(0.3)
+
+			for k in 11:
+				var ha: float = TAU * float(k) * 0.381966
+				var hr: float = 0.012 + 0.085 * sqrt(float(k) / 11.0)
+				var lift: float = 0.045 * (1.0 - pow(hr / 0.14, 2.0))
+				_sph(parts, 0.06 - 0.012 * (hr / 0.1), Vector3(1.4, 0.55, 1.2), Vector3(cos(ha) * hr, -0.055 + lift, sin(ha) * hr), _tone(straw_dark if k % 2 == 0 else color.darkened(0.12), k, 0.12))
+
+			for k in 54:
+				var sa: float = TAU * float(k) * 0.381966
+				var sr: float = 0.15 * sqrt(float((k * 7) % 54) / 54.0)
+				var sh: float = -0.045 + 0.05 * (1.0 - pow(sr / 0.15, 2.0))
+				var tint: Color = color.lightened(0.15) if k % 4 != 3 else color.darkened(0.1)
+				_box_rot(parts, Vector3(0.14 + 0.04 * float(k % 3), 0.004, 0.006), Vector3(cos(sa) * sr, sh + 0.006 * float(k % 3), sin(sa) * sr), Vector3(0.0, sa * 2.3, 0.18 * float((k % 3) - 1)), _tone(tint, k, 0.15))
+
+			for k in 5:
+				var la: float = TAU * float(k) / 5.0 + 0.4
+				_box_rot(parts, Vector3(0.2, 0.003, 0.005), Vector3(cos(la) * 0.15, -0.045, sin(la) * 0.15), Vector3(0.0, la + 1.2, 0.0), _tone(color.lightened(0.15), k, 0.1))
+
+			for k in 2:
+				_box_rot(parts, Vector3(0.05, 0.004, 0.028), Vector3(0.05 * float(k * 2 - 1), 0.005, 0.03 * float(1 - k * 2)), Vector3(0.0, 0.8 + 2.0 * float(k), 0.2), Color(0.45, 0.33, 0.15))
+		"mace":
+			# A stone mace (ovoid macehead on a haft; refs: Fitzwilliam and Penn museum macehead records, Late Neolithic to Early Bronze Age): a wooden haft with a wrapped grip at the thin end and a pear-shaped
+			# pecked stone head slid on at the thick end, wedged and bound under the head, the haft tip showing through the top; chips and a drilled-hole collar mark the stone.
+			_cyl_taper(parts, 0.016, 0.022, 0.46, Vector3(-0.07, 0.0, 0.0), _tone(Color(0.4, 0.27, 0.13), 1, 0.08))
+
+			for k in 5:
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.27 + 0.019 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.24, 0.14, 0.07) if k % 2 == 0 else Color(0.16, 0.09, 0.05))
+
+			_sph(parts, 0.07, Vector3(1.05, 1.0, 1.0), Vector3(0.15, 0.0, 0.0), _tone(color, 2, 0.08))
+			_sph(parts, 0.05, Vector3(1.0, 0.95, 0.95), Vector3(0.205, 0.0, 0.0), _tone(color, 4, 0.08))
+			_sph(parts, 0.032, Vector3(0.8, 1.0, 1.0), Vector3(0.245, 0.0, 0.0), color.lightened(0.06))
+			_cyl(parts, 0.027, 0.02, Vector3(0.08, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))   # the lashing under the head
+			_cyl(parts, 0.016, 0.02, Vector3(0.275, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.46, 0.26))   # the haft tip through the head
+			_box_rot(parts, Vector3(0.03, 0.012, 0.025), Vector3(0.14, 0.05, 0.03), Vector3(0.0, 0.5, 0.3), color.lightened(0.25))
+			_box_rot(parts, Vector3(0.025, 0.012, 0.02), Vector3(0.19, -0.03, -0.04), Vector3(0.0, -0.6, 0.2), color.darkened(0.25))
+		"shield":
+			# A wicker shield (ref: British Museum on the Enderby Iron Age shield, a hazel rim, a woven willow dome boss and a flat handle): a round woven board, its willow rods in
+			# alternating pale and dark rings out from the boss, radial stakes under them, a heavy rim of split hazel and a woven dome boss in the middle. Lying flat, about 0.55 m across.
+			var wicker: Color = color
+			_cyl(parts, 0.27, 0.02, Vector3(0.0, -0.03, 0.0), Vector3.ZERO, wicker.darkened(0.25))
+
+			for k in 8:
+				_box_rot(parts, Vector3(0.53, 0.012, 0.014), Vector3(0.0, -0.018, 0.0), Vector3(0.0, PI * float(k) / 8.0, 0.0), _tone(wicker.darkened(0.35), k, 0.1))
+
+			for k in 5:
+				_torus(parts, 0.07 + 0.04 * float(k), 0.011, Vector3(0.0, -0.014, 0.0), wicker if k % 2 == 0 else wicker.lightened(0.15))
+
+			_torus(parts, 0.268, 0.022, Vector3(0.0, -0.025, 0.0), Color(0.34, 0.22, 0.12))
+			_sph(parts, 0.075, Vector3(1.0, 0.55, 1.0), Vector3(0.0, -0.012, 0.0), wicker.lightened(0.1))
+			_torus(parts, 0.05, 0.008, Vector3(0.0, 0.0, 0.0), wicker.darkened(0.2))
+			_torus(parts, 0.03, 0.007, Vector3(0.0, 0.008, 0.0), wicker.lightened(0.2))
+		"helm":
+			# A helmet or cap lying on its crown (refs: Bronze Age and Iron Age helmets, Roman Coolus and Montefortino bronze helms; medieval leather cap): a dome with a brim band; metal ones get a nasal bar,
+			# cheek plates, a centre ridge and rivets (bits "metal"), leather ones soft side flaps and darker stitched seams.
+			var metal_helm: bool = bits.has("metal")
+			_sph(parts, 0.1, Vector3(1.0, 0.85, 1.08), Vector3(0.0, 0.0, 0.0), color)
+			_cyl(parts, 0.108, 0.014, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, dark)
+			_box_rot(parts, Vector3(0.012, 0.014, 0.13), Vector3(0.0, 0.088, 0.0), Vector3.ZERO, light if metal_helm else dark)      # the ridge over the crown, shorter than the dome so it does not stick out
+
+			if metal_helm:
+				_box(parts, Vector3(0.016, 0.075, 0.01), Vector3(0.0, -0.01, -0.108), dark)
+				_box_rot(parts, Vector3(0.012, 0.07, 0.06), Vector3(0.1, -0.03, 0.02), Vector3(0.0, 0.0, 0.25), dark)
+				_box_rot(parts, Vector3(0.012, 0.07, 0.06), Vector3(-0.1, -0.03, 0.02), Vector3(0.0, 0.0, -0.25), dark)
+
+				for k in 6:
+					var ra: float = TAU * float(k) / 6.0
+					_sph(parts, 0.007, Vector3.ONE, Vector3(cos(ra) * 0.108, -0.045, sin(ra) * 0.108), light, true)
+
+				_metal(parts)
+			else:
+				_sph(parts, 0.04, Vector3(0.35, 1.0, 0.8), Vector3(0.105, -0.04, 0.0), dark)
+				_sph(parts, 0.04, Vector3(0.35, 1.0, 0.8), Vector3(-0.105, -0.04, 0.0), dark)
+
+				for k in 4:   # stitched seams running over the crown
+					_box(parts, Vector3(0.004, 0.004, 0.17), Vector3((float(k) - 1.5) * 0.04, 0.045 - absf(float(k) - 1.5) * 0.02, 0.0), dark.lightened(0.15))
+		"jerkin":
+			# A body garment lying flat (leather jerkin, quilted gambeson, mail shirt, plate cuirass), seen from the front: a torso panel with a neck opening, shoulder pieces, a belt and the
+			# material told in the surface: bits "leather" smooth with lacing, "padded" a diamond of quilting lines, "mail" rows of rings (alternating tone), "plate" two domed plates with rivets.
+			var kind: String = str(bits[0]) if bits.size() > 0 else "leather"
+
+			if kind == "plate":
+				_sph(parts, 0.17, Vector3(0.95, 0.28, 1.05), Vector3(0.0, 0.0, 0.0), color)
+				_sph(parts, 0.14, Vector3(0.8, 0.22, 0.9), Vector3(0.0, 0.03, -0.01), color.lightened(0.12))
+				_box(parts, Vector3(0.012, 0.02, 0.3), Vector3(0.0, 0.056, 0.0), light)
+
+				for k in 8:
+					var pa: float = TAU * float(k) / 8.0
+					_sph(parts, 0.008, Vector3.ONE, Vector3(cos(pa) * 0.15, 0.025, sin(pa) * 0.155), dark, true)
+
+				_box_rot(parts, Vector3(0.1, 0.012, 0.07), Vector3(0.17, 0.01, -0.12), Vector3(0.0, 0.3, 0.1), color)
+				_box_rot(parts, Vector3(0.1, 0.012, 0.07), Vector3(-0.17, 0.01, -0.12), Vector3(0.0, -0.3, -0.1), color)
+				_metal(parts)
+			else:
+				_box(parts, Vector3(0.3, 0.03, 0.34), Vector3(0.0, 0.0, 0.0), color)
+				_box(parts, Vector3(0.1, 0.036, 0.1), Vector3(0.0, 0.0, -0.17), dark)
+				_box_rot(parts, Vector3(0.09, 0.03, 0.12), Vector3(0.16, 0.0, -0.13), Vector3(0.0, 0.0, 0.0), color.darkened(0.08))
+				_box_rot(parts, Vector3(0.09, 0.03, 0.12), Vector3(-0.16, 0.0, -0.13), Vector3(0.0, 0.0, 0.0), color.darkened(0.08))
+				_box(parts, Vector3(0.31, 0.034, 0.03), Vector3(0.0, 0.002, 0.08), dark.lightened(0.05))
+
+				if kind == "padded":
+					for k in 5:
+						_box_rot(parts, Vector3(0.005, 0.034, 0.36), Vector3(-0.12 + 0.06 * float(k), 0.001, 0.0), Vector3(0.0, 0.5, 0.0), color.darkened(0.25))
+						_box_rot(parts, Vector3(0.005, 0.034, 0.36), Vector3(-0.12 + 0.06 * float(k), 0.001, 0.0), Vector3(0.0, -0.5, 0.0), color.darkened(0.25))
+				elif kind == "mail":
+					for rz in 10:   # rows of small rings, every other row shifted half a ring, tone varying ring by ring: it reads as mail and not as a chequerboard
+						for rx in 9:
+							var shift: float = 0.0165 if rz % 2 == 1 else 0.0
+							_box(parts, Vector3(0.026, 0.034, 0.024), Vector3(-0.134 + 0.033 * float(rx) + shift, 0.002, -0.14 + 0.031 * float(rz)), _tone(color, rx * 3 + rz * 5, 0.16))
+
+					_metal(parts)
+				else:
+					for k in 4:
+						_box(parts, Vector3(0.02, 0.036, 0.004), Vector3(0.0, 0.002, -0.14 + 0.025 * float(k)), dark)
+		"sword":
+			# A straight sword lying flat (refs: Bronze Age leaf-bladed swords, Roman gladius, medieval arming sword): a long flat blade with a central fuller groove and a pointed tip, a crossguard, a wrapped grip and a round pommel.
+			_box(parts, Vector3(0.36, 0.008, 0.046), Vector3(0.13, 0.0, 0.0), color)
+			_box_rot(parts, Vector3(0.09, 0.008, 0.026), Vector3(0.375, 0.0, 0.0105), Vector3(0.0, -0.3, 0.0), color)   # the tip: two tilted pieces meeting in a point
+			_box_rot(parts, Vector3(0.09, 0.008, 0.026), Vector3(0.375, 0.0, -0.0105), Vector3(0.0, 0.3, 0.0), color)
+			_box(parts, Vector3(0.34, 0.01, 0.01), Vector3(0.13, 0.001, 0.0), dark)
+			_metal(parts)
+			_box(parts, Vector3(0.022, 0.016, 0.14), Vector3(-0.055, 0.0, 0.0), dark)
+
+			for k in 4:
+				_cyl(parts, 0.014, 0.022, Vector3(-0.1 - 0.024 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.25, 0.15, 0.08) if k % 2 == 0 else Color(0.15, 0.09, 0.05))
+
+			_sph(parts, 0.022, Vector3.ONE, Vector3(-0.21, 0.0, 0.0), dark)
+		"flanged_mace":
+			# A metal mace (refs: Bronze Age flanged maces, medieval flanged mace): a haft with a wrapped grip and a head of six radial flanges round a central core, a spike on the end.
+			_cyl_taper(parts, 0.016, 0.02, 0.4, Vector3(-0.05, 0.0, 0.0), Color(0.42, 0.28, 0.14))
+
+			for k in 4:
+				_cyl(parts, 0.0185, 0.012, Vector3(-0.2 + 0.02 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))
+
+			_cyl(parts, 0.03, 0.08, Vector3(0.19, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), dark)
+
+			for k in 6:
+				_box_rot(parts, Vector3(0.08, 0.07, 0.01), Vector3(0.19, sin(float(k) * PI / 3.0) * 0.03, cos(float(k) * PI / 3.0) * 0.03), Vector3(float(k) * PI / 3.0, 0.0, 0.0), color)
+
+			_cone(parts, 0.022, 0.07, Vector3(0.26, 0.0, 0.0), color)
+			_metal(parts)
+		"metal_shield":
+			# A round metal shield lying flat (refs: Bronze Age round bronze shields, Iron Age bossed shields): a thin disc with a raised rolled rim, a domed central boss, a ring of rivets and two crossed ribs.
+			_cyl(parts, 0.25, 0.012, Vector3(0.0, -0.03, 0.0), Vector3.ZERO, color)
+			_torus(parts, 0.246, 0.012, Vector3(0.0, -0.026, 0.0), color.lightened(0.1))
+			_torus(parts, 0.16, 0.007, Vector3(0.0, -0.022, 0.0), color.darkened(0.12))
+			_sph(parts, 0.07, Vector3(1.0, 0.6, 1.0), Vector3(0.0, -0.015, 0.0), color.lightened(0.15))
+
+			for k in 8:
+				var ra: float = TAU * float(k) / 8.0
+				_sph(parts, 0.008, Vector3.ONE, Vector3(cos(ra) * 0.2, -0.022, sin(ra) * 0.2), dark, true)
+
+			_box(parts, Vector3(0.46, 0.006, 0.02), Vector3(0.0, -0.022, 0.0), color.darkened(0.1))
+			_box(parts, Vector3(0.02, 0.006, 0.46), Vector3(0.0, -0.022, 0.0), color.darkened(0.1))
+			_metal(parts)
+		"plank_shield":
+			# A plank shield lying flat (ref: Viking and Anglo-Saxon round shields): five boards edge to edge cut to a circle, two iron bands across, an iron boss, and a leather-bound edge.
+			for k in 5:
+				var px: float = (float(k) - 2.0) * 0.1
+				var chord: float = 2.0 * sqrt(maxf(0.25 * 0.25 - px * px, 0.0001))
+				_box(parts, Vector3(0.096, 0.016, chord), Vector3(px, -0.03, 0.0), _tone(color, k, 0.1))
+
+			_box(parts, Vector3(0.5, 0.02, 0.03), Vector3(0.0, -0.02, 0.12), Color(0.12, 0.12, 0.13))
+			_box(parts, Vector3(0.5, 0.02, 0.03), Vector3(0.0, -0.02, -0.12), Color(0.12, 0.12, 0.13))
+			_torus(parts, 0.248, 0.01, Vector3(0.0, -0.03, 0.0), Color(0.3, 0.19, 0.1))
+			_sph(parts, 0.065, Vector3(1.0, 0.6, 1.0), Vector3(0.0, -0.012, 0.0), Color(0.22, 0.22, 0.24))
+			_metal(parts)
+		"sheaf":
+			# A bundle of cereal or flax stalks (refs: harvested wheat sheaves, barley with its long awns, retted flax bundles): a dozen long thin stalks lying together, tied with a twist of cord a third of the way along, the ear heads
+			# at the far end (wheat: plump golden oval ears; barley: slimmer ears each with a brush of long awns; flax: pale bare stems ending in small round seed capsules and a few blue petals).
+			var kind: String = str(bits[0]) if bits.size() > 0 else "wheat"
+			var stalk: Color = color.darkened(0.12) if kind != "flax" else color.lightened(0.08)
+
+			for k in 13:
+				var ca: float = TAU * float(k) / 13.0
+				var cr: float = 0.02 * (0.4 + 0.3 * float(k % 3))
+				var cy: float = sin(ca) * cr
+				var cz: float = cos(ca) * cr
+				_cyl(parts, 0.005, 0.4 + 0.02 * float(k % 3), Vector3(0.0, cy, cz), Vector3(0.0, 0.0, PI * 0.5), _tone(stalk, k, 0.1))
+				_cyl(parts, 0.004, 0.08, Vector3(0.16, cy * 1.6, cz * 1.6), Vector3(cz * 2.0, 0.0, PI * 0.5 - cy * 2.0), _tone(stalk, k, 0.1))   # the stalk fans out below the ear
+
+				if kind == "flax":
+					_sph(parts, 0.009, Vector3.ONE, Vector3(0.2 + 0.01 * float(k % 3), cy, cz), Color(0.62, 0.5, 0.28), true)
+					if k % 4 == 0:
+						_sph(parts, 0.008, Vector3(0.4, 1.0, 1.0), Vector3(0.215, cy + 0.008, cz), Color(0.4, 0.55, 0.92), true)
+				else:
+					_sph(parts, 0.016, Vector3(2.8, 0.85, 0.85), Vector3(0.2 + 0.02 * float(k % 3), cy * 2.2, cz * 2.2), _tone(color, k * 2, 0.1), true)
+
+					if kind == "barley":
+						for a in 3:
+							_box_rot(parts, Vector3(0.09, 0.0025, 0.0025), Vector3(0.29 + 0.02 * float(k % 3), cy * 2.2 + 0.006 * float(a - 1), cz * 2.2 + 0.006 * float(a - 1)), Vector3(0.0, 0.12 * float(a - 1), 0.08 * float(a - 1)), color.lightened(0.2))
+
+			_cyl(parts, 0.032, 0.012, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.38, 0.2))
+		"carrot":
+			# A carrot (ref: garden carrots): a long orange taproot with faint ridge rings tapering to a thin tip, a fat crown at the top and a tuft of feathery green leaves.
+			_cone(parts, 0.04, 0.22, Vector3(0.02, 0.0, 0.0), color)
+
+			for k in 4:
+				_cyl(parts, 0.04 * (1.0 - (-0.04 + 0.045 * float(k) + 0.09) / 0.22) + 0.0015, 0.0035, Vector3(-0.04 + 0.045 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.12))
+
+			_sph(parts, 0.04, Vector3(0.6, 1.0, 1.0), Vector3(-0.092, 0.0, 0.0), color.lightened(0.05))
+
+			for k in 5:
+				var la: float = TAU * float(k) / 5.0
+				_box_rot(parts, Vector3(0.14, 0.004, 0.016), Vector3(-0.17, sin(la) * 0.02, cos(la) * 0.02), Vector3(la, 0.15, 0.0), Color(0.3, 0.55, 0.2) if k % 2 == 0 else Color(0.22, 0.45, 0.15))
+		"turnip":
+			# A turnip (ref: garden purple-top turnips): a round white bulb with a purple flush over the top shoulder, a thin tap root and the cut stumps of the leaf stalks.
+			_sph(parts, 0.055, Vector3(1.0, 0.9, 1.0), Vector3(0.0, 0.0, 0.0), color)
+			_sph(parts, 0.054, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.022, 0.0), Color(0.55, 0.3, 0.55))
+			_cone(parts, 0.012, 0.05, Vector3(0.0, -0.075, 0.0), color.darkened(0.1))
+
+			for k in 4:
+				var ta: float = TAU * float(k) / 4.0 + 0.4
+				_cyl(parts, 0.006, 0.05, Vector3(cos(ta) * 0.015, 0.075, sin(ta) * 0.015), Vector3(sin(ta) * 0.25, 0.0, cos(ta) * 0.25), Color(0.35, 0.55, 0.25))
+		"potato":
+			# Potatoes (ref: garden potatoes): four uneven, lumpy, flattened tubers of different sizes lying together, each with a few dark eyes and a knob.
+			for k in 4:
+				var pa: float = TAU * float(k) / 4.0 + 0.3
+				var at: Vector3 = Vector3(cos(pa) * 0.05, -0.028 + 0.012 * float(k % 2), sin(pa) * 0.05)
+				_sph(parts, 0.05 - 0.008 * float(k % 3), Vector3(1.25 - 0.15 * float(k % 2), 0.8, 0.95 + 0.1 * float(k % 3)), at, _tone(color, k, 0.14))
+				_sph(parts, 0.022, Vector3(1.0, 0.7, 1.0), at + Vector3(0.03, 0.004, -0.02 + 0.01 * float(k)), _tone(color, k + 5, 0.14))
+				_sph(parts, 0.008, Vector3(1.0, 0.6, 1.0), at + Vector3(-0.01, 0.022, 0.012), color.darkened(0.45), true)
+				_sph(parts, 0.007, Vector3(1.0, 0.6, 1.0), at + Vector3(0.02, 0.02, -0.014), color.darkened(0.45), true)
+		"seedpile":
+			# A small heap of seed grains beside a closed cloth pouch (refs: seed packets and handfuls of grain): about 30 tiny grains in the item colour, a little tone variation; wheat and barley
+			# grains elongated, turnip and flax round.
+			for k in 30:
+				var ga: float = TAU * float(k) * 0.381966
+				var gr: float = 0.07 * sqrt(float(k) / 30.0)
+				var gh: float = -0.05 + 0.03 * (1.0 - pow(gr / 0.07, 2.0))
+				_sph(parts, 0.008, Vector3(1.7, 0.8, 0.8) if bits.has("long") else Vector3(1.0, 0.9, 1.0), Vector3(cos(ga) * gr, gh, sin(ga) * gr), _tone(color, k, 0.14), true)
+
+			_sph(parts, 0.04, Vector3(1.0, 1.1, 1.0), Vector3(0.1, -0.02, -0.04), Color(0.72, 0.64, 0.45))
+			_sph(parts, 0.022, Vector3(1.2, 0.5, 1.2), Vector3(0.1, 0.02, -0.04), Color(0.72, 0.64, 0.45).lightened(0.1))
+			_cyl(parts, 0.015, 0.01, Vector3(0.1, 0.012, -0.04), Vector3.ZERO, Color(0.4, 0.3, 0.18))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)

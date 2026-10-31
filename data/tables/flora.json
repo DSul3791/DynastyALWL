@@ -1256,8 +1256,7 @@
 				800
 			],
 			"water": [],
-			"yields": [
-				"fibre",
+			"yields": [
 				"linseed"
 			],
 			"season": [
@@ -1323,8 +1322,7 @@
 			"water": [],
 			"yields": [
 				"thatch",
-				"straw",
-				"fibre"
+				"straw"
 			],
 			"season": [
 				"spring",
@@ -1382,8 +1380,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"fibre",
+			"yields": [
 				"greens"
 			],
 			"season": [
