@@ -3,7 +3,7 @@
 #   tools/merge_watch.sh [branch ...]        default list below; MW_OUT = folder for the run (default a temp folder)
 # Prints "NEW" (and the lines that changed) when the conflict list or the red tests differ from the last round, else "SAME". Exit 0 either way.
 cd "$(dirname "$0")/.." || exit 2
-BR=("$@"); [ ${#BR[@]} -eq 0 ] && BR=(sonny-character kathleen-art claude/sal-items-c65419 claude/flora-density claude/dazzling-elbakyan-e46f22 claude/sonny-character-67aca3 claude/kathleen-art-36b4ac)
+BR=("$@"); [ ${#BR[@]} -eq 0 ] && BR=(claude/tyler-gates-fee5f7 sonny-character kathleen-art claude/sal-items-c65419 claude/flora-density claude/dazzling-elbakyan-e46f22 claude/sonny-character-67aca3 claude/kathleen-art-36b4ac)
 OUT="${MW_OUT:-$(mktemp -d)}"
 bash tools/merge_day.sh --out "$OUT" "${BR[@]}" > "$OUT/console.txt" 2>&1
 R="$OUT/report.md"; [ -f "$R" ] || { echo "no report"; tail -5 "$OUT/console.txt"; exit 0; }
