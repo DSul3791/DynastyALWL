@@ -20,3 +20,4 @@ Next: send ACT_PLACE through the client's own place path (client.held ghost conf
 - fire_back.png: back is dark, only a thin orange line under the hearth; rating 4.
 - torch_chandelier_10m.png: torch and chandelier each have a visible pool on the ground at 10 m, flames small but clear; rating 4.
 (Ground behind z 68430 is not loaded in the rig, so side and back views were taken from the north and west.)
+- fire_front2.png (after the inner glow rework, 4 m): jambs and inside brick glow warm, the floating orange dot is gone, the flames sit on the log, the ground cone in front is unchanged; rating 4.5. Remaining: flames are still pale-cream at the tips.
