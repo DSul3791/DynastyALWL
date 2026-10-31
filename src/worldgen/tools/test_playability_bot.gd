@@ -78,7 +78,7 @@ func craft(id: String, crafts: int) -> String:
 	var before: int = items.inventory_of(1).count_of(int(r["gives"][0]))
 
 	for part in r["needs"]:
-		var have: int = items.inventory_of(1).count_of(int(part[0])) if int(part[0]) > 0 else 0
+		var have: int = items.inventory_of(1).count_fill(int(part[0])) if int(part[0]) > 0 else 0
 
 		if have < int(part[1]) * crafts:
 			return "recipe '%s' needs %d x %s, the pack holds %d" % [id, int(part[1]) * crafts, items.table.name_of(int(part[0])), have]
@@ -231,16 +231,20 @@ func _init() -> void:
 		return
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)
 
-	step("chop: fell the tree and work the trunk into logs and leaves")
+	step("chop: fell the tree, cut a log off the trunk, pick it up")
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 
-	for n in range(40):
+	for n in range(200):   # as many blows as it takes (the count is tuned by the felling design, so the bot does not depend on it)
+		if standing.is_empty():
+			break
+
 		items._last_hit.clear()
 		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
 
-	need(standing.is_empty(), "the tree did not fall to 40 axe blows")
+	need(standing.is_empty(), "the tree did not fall to 200 axe blows")
 	if halted:
 		return
+
 	pass_time(60.0, 0.8)
 	var trunk_id: int = 0
 
@@ -251,22 +255,43 @@ func _init() -> void:
 	need(trunk_id != 0, "the felled tree left no trunk on the ground to work")
 	if halted:
 		return
+
 	items.report_position(1, Vector3(14.0, 10.0, 0.0))
 	var guard: int = 0
+	var log_on_ground: int = 0
+	var log_numbers: PackedInt32Array = items.table.group_members(items.table.number_of("log"))
 
-	while items._items.has(trunk_id) and guard < 200:
+	# Chopping the lying trunk cuts logs off its end; they fall on the ground and are not picked up by themselves (branches, bark and sticks are).
+	while log_on_ground == 0 and guard < 300:
+		if items._items.has(trunk_id):
+			items.report_position(1, items.cut_line_point(trunk_id))   # the player walks to the cut line (the server says "Walk along the trunk" otherwise)
+
 		items._last_process.clear()
 		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
+		items.tick(1.0)
 
-	pass_time(120.0, 0.8)
-	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
-	need(logs >= 1, "working the trunk gave no log (%d logs)" % logs)
+		for k in items._items:
+			var it: Dictionary = items._items[k]
+
+			if not (it.has("tree") or it.has("fire") or it.has("struct") or it.has("scatter")) and log_numbers.has(int(it.get("number", 0))):
+				log_on_ground = k
+
+	need(log_on_ground != 0, "%d chops on the trunk cut no log that lies on the ground" % guard)
 	if halted:
 		return
+
+	pass_time(30.0, 0.8)
 	need(count("leaves") >= int(raw.get("leaves", 0)), "working the trunk gave %d leaves, the lean-to needs %d" % [count("leaves"), int(raw.get("leaves", 0))])
 	if halted:
 		return
+
+	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
+	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0
+	need(carried, "the log on the ground could not be picked up (shoulder empty, none in the pack)")
+	if halted:
+		return
+
 	items.lay_down_shoulder(1)
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
@@ -307,6 +332,28 @@ func _init() -> void:
 		shelters += 1 if items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "lean_to" else 0
 
 	need(shelters == 1, "placing the lean-to kit put %d lean-tos in the world, not 1" % shelters)
+	if halted:
+		return
+
+	step("docs: CONTROLS.md says what the data and the code do (guide finding F-04)")
+	var controls: String = FileAccess.get_file_as_string("res://CONTROLS.md")
+	var camp: Dictionary = recipe_by_id("campfire")
+	var sticks: int = 0
+	var stones: int = 0
+
+	for part in camp["needs"]:
+		sticks += int(part[1]) if int(part[0]) == items.table.number_of("stick") else 0
+		stones += int(part[1]) if int(part[0]) == items.table.number_of("stone") else 0
+
+	need(controls.contains("campfire kit (%d sticks and %d stones)" % [sticks, stones]), "CONTROLS.md does not say that a campfire kit costs %d sticks and %d stones (the recipe)" % [sticks, stones])
+	if halted:
+		return
+
+	need(not controls.contains("starts lit"), "CONTROLS.md says a placed campfire 'starts lit'; it is placed laid and lit with E")
+	if halted:
+		return
+
+	need(not controls.contains("Splits one log into 4 firewood"), "CONTROLS.md says the chopping block splits a log into 4 firewood; it splits one wooden block into one firewood")
 	if halted:
 		return
 

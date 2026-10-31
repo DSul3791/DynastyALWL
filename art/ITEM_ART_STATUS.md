@@ -4,7 +4,7 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 4, missing 38, placeholder 15, rough 486, total 543
+Counts: decent 4, missing 38, placeholder 34, rough 512, total 588
 
 Queue, by what a player meets first (the grey placeholder list comes from src/worldgen/tools/test_item_looks.gd, 56 items on 31 Oct): 1 weapons and shields (wooden club, stone mace and wicker shield done; javelin; bronze, iron and steel swords, maces, shields; plank shield), 2 armour (leather cap, leather jerkin, gambeson, bronze, iron and steel helms, mail shirt, plate cuirass), 3 seeds and crops (wheat, barley, carrot, potato, turnip, flax and their seeds), 4 hide clothes (hide tunic, trousers, gloves) and the quern, 5 animal parts (antler, tusk, claw, down, quill, hide glue, bone arrow, fibre arrow), 6 food (eggs, seal and shellfish meat, roast dishes, herb salve, splint), 7 stick, branch, rocks, flint, plant fibre, twine, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed (survival basics, in hand and dropped); then stations and tools; then the rest. The guide's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 | # | id | name | look | source | status | reference | date | picture | note |
@@ -350,24 +350,24 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 343 | flax_seeds | Flax seeds | override | ART_OVERRIDES | rough |  |  |  |  |
 | 344 | quern | Quern | override | ART_OVERRIDES | rough |  |  |  |  |
 | 345 | compost | Compost | override | ART_OVERRIDES | rough |  |  |  |  |
-| 346 | antler | Antler | chunk | looks.json | placeholder |  |  |  |  |
-| 347 | tusk | Tusk | chunk | looks.json | placeholder |  |  |  |  |
-| 348 | claw | Claw | chunk | looks.json | placeholder |  |  |  |  |
-| 349 | down | Down | chunk | looks.json | placeholder |  |  |  |  |
-| 350 | quill | Quill | chunk | looks.json | placeholder |  |  |  |  |
+| 346 | antler | Antler | override | ART_OVERRIDES | rough |  |  |  |  |
+| 347 | tusk | Tusk | override | ART_OVERRIDES | rough |  |  |  |  |
+| 348 | claw | Claw | override | ART_OVERRIDES | rough |  |  |  |  |
+| 349 | down | Down | override | ART_OVERRIDES | rough |  |  |  |  |
+| 350 | quill | Quill | override | ART_OVERRIDES | rough |  |  |  |  |
 | 351 | hide_glue | Hide glue | override | ART_OVERRIDES | rough |  |  |  |  |
 | 352 | bone_arrow | Bone arrow | override | ART_OVERRIDES | rough |  |  |  |  |
 | 353 | stone_wedge | Stone wedge | override | ART_OVERRIDES | rough |  |  |  |  |
 | 354 | fibre_arrow | Fibre arrow | override | ART_OVERRIDES | rough |  |  |  |  |
-| 355 | seaweed | Seaweed | chunk | looks.json | placeholder |  |  |  |  |
-| 356 | shellfish | Shellfish | chunk | looks.json | placeholder |  |  |  |  |
-| 357 | crab_meat | Crab meat | chunk | looks.json | placeholder |  |  |  |  |
-| 358 | egg | Egg | chunk | looks.json | placeholder |  |  |  |  |
-| 359 | seal_meat | Seal meat | chunk | looks.json | placeholder |  |  |  |  |
-| 360 | sea_salt | Sea salt | chunk | looks.json | placeholder |  |  |  |  |
-| 361 | roast_shellfish | Steamed Shellfish | chunk | looks.json | placeholder |  |  |  |  |
-| 362 | boiled_egg | Boiled egg | chunk | looks.json | placeholder |  |  |  |  |
-| 363 | roast_seal | Seal Steak | chunk | looks.json | placeholder |  |  |  |  |
+| 355 | seaweed | Seaweed | override | ART_OVERRIDES | rough |  |  |  |  |
+| 356 | shellfish | Shellfish | override | ART_OVERRIDES | rough |  |  |  |  |
+| 357 | crab_meat | Crab meat | override | ART_OVERRIDES | rough |  |  |  |  |
+| 358 | egg | Egg | override | ART_OVERRIDES | rough |  |  |  |  |
+| 359 | seal_meat | Seal meat | override | ART_OVERRIDES | rough |  |  |  |  |
+| 360 | sea_salt | Sea salt | override | ART_OVERRIDES | rough |  |  |  |  |
+| 361 | roast_shellfish | Steamed Shellfish | override | ART_OVERRIDES | rough |  |  |  |  |
+| 362 | boiled_egg | Boiled egg | override | ART_OVERRIDES | rough |  |  |  |  |
+| 363 | roast_seal | Seal Steak | override | ART_OVERRIDES | rough |  |  |  |  |
 | 364 | wool | Wool | override | ART_OVERRIDES | rough |  |  |  |  |
 | 365 | linen | Linen | override | ART_OVERRIDES | rough |  |  |  |  |
 | 366 | wool_tunic | Wool tunic | override | ART_OVERRIDES | rough |  |  |  |  |
@@ -378,6 +378,51 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 371 | fur_cloak | Fur cloak | override | ART_OVERRIDES | rough |  |  |  |  |
 | 372 | fur_hat | Fur hat | override | ART_OVERRIDES | rough |  |  |  |  |
 | 373 | fur_boots | Fur boots | override | ART_OVERRIDES | rough |  |  |  |  |
+| 374 | oats | Oats | override | ART_OVERRIDES | rough |  |  |  |  |
+| 375 | rye | Rye | override | ART_OVERRIDES | rough |  |  |  |  |
+| 376 | cabbage | Cabbage | override | ART_OVERRIDES | rough |  |  |  |  |
+| 377 | onion | Onion | override | ART_OVERRIDES | rough |  |  |  |  |
+| 378 | peas | Peas | override | ART_OVERRIDES | rough |  |  |  |  |
+| 379 | beet | Beet | override | ART_OVERRIDES | rough |  |  |  |  |
+| 380 | oats_seeds | Oats seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 381 | rye_seeds | Rye seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 382 | cabbage_seeds | Cabbage seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 383 | onion_seeds | Onion seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 384 | peas_seeds | Peas seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 385 | beet_seeds | Beet seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 386 | oat_porridge | Oat porridge | chunk | looks.json | placeholder |  |  |  |  |
+| 387 | barley_broth | Barley broth | chunk | looks.json | placeholder |  |  |  |  |
+| 388 | rye_flatbread | Rye flatbread | chunk | looks.json | placeholder |  |  |  |  |
+| 389 | pea_soup | Pea soup | chunk | looks.json | placeholder |  |  |  |  |
+| 390 | turnip_mash | Turnip mash | chunk | looks.json | placeholder |  |  |  |  |
+| 391 | baked_potato | Baked potato | chunk | looks.json | placeholder |  |  |  |  |
+| 392 | cabbage_stew | Cabbage stew | chunk | looks.json | placeholder |  |  |  |  |
+| 393 | beet_roast | Beet roast | chunk | looks.json | placeholder |  |  |  |  |
+| 394 | onion_roast | Onion roast | chunk | looks.json | placeholder |  |  |  |  |
+| 395 | seaweed_soup | Seaweed soup | chunk | looks.json | placeholder |  |  |  |  |
+| 396 | mussel_stew | Mussel stew | chunk | looks.json | placeholder |  |  |  |  |
+| 397 | crab_cakes | Crab cakes | chunk | looks.json | placeholder |  |  |  |  |
+| 398 | egg_nettle_fry | Egg and nettle fry | chunk | looks.json | placeholder |  |  |  |  |
+| 399 | herb_omelette | Herb omelette | chunk | looks.json | placeholder |  |  |  |  |
+| 400 | seal_stew | Seal stew | chunk | looks.json | placeholder |  |  |  |  |
+| 401 | venison_pie | Venison pie | chunk | looks.json | placeholder |  |  |  |  |
+| 402 | fish_pie | Fish pie | chunk | looks.json | placeholder |  |  |  |  |
+| 403 | juniper_trout | Juniper trout | chunk | looks.json | placeholder |  |  |  |  |
+| 404 | garlic_bread | Garlic bread | chunk | looks.json | placeholder |  |  |  |  |
+| 405 | oat_cakes | Oat cakes | chunk | looks.json | placeholder |  |  |  |  |
+| 406 | jerky | Jerky | chunk | looks.json | placeholder |  |  |  |  |
+| 407 | salted_fish | Salted fish | chunk | looks.json | placeholder |  |  |  |  |
+| 408 | dried_berries | Dried berries | chunk | looks.json | placeholder |  |  |  |  |
+| 409 | sauerkraut | Sauerkraut | chunk | looks.json | placeholder |  |  |  |  |
+| 410 | hazelnut_butter | Hazelnut butter | chunk | looks.json | placeholder |  |  |  |  |
+| 411 | banana_fritter | Banana fritter | chunk | looks.json | placeholder |  |  |  |  |
+| 412 | cactus_fry | Cactus fry | chunk | looks.json | placeholder |  |  |  |  |
+| 413 | tallow | Tallow | chunk | looks.json | placeholder |  |  |  |  |
+| 414 | soap | Soap | chunk | looks.json | placeholder |  |  |  |  |
+| 415 | leather_strap | Leather strap | chunk | looks.json | placeholder |  |  |  |  |
+| 416 | milk | Milk | chunk | looks.json | placeholder |  |  |  |  |
+| 417 | butter | Butter | chunk | looks.json | placeholder |  |  |  |  |
+| 418 | cheese | Cheese | chunk | looks.json | placeholder |  |  |  |  |
 | 1000 | acorns | Acorns | nut | looks.json | rough |  |  |  |  |
 | 1001 | aloe_gel | Aloe gel | bowl | looks.json | rough |  |  |  |  |
 | 1002 | amadou | Amadou | chunk | looks.json | rough |  |  |  |  |

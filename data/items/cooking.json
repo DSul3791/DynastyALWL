@@ -117,6 +117,12 @@
 	"rain_light_chance": {"note": "Lighting a fire in light rain (under puts_out strength) can fail: chance = max(min_chance, 1 - rain / puts_out x loss). The tinder is used either way.", "puts_out": 0.2, "loss": 0.8, "min_chance": 0.2},
 	"cooks_into": {
 		"raw_meat": "roast_meat",
+		"salmon": "roast_fish",
+		"herring": "roast_fish",
+		"mackerel": "roast_fish",
+		"smelt": "roast_fish",
+		"eel": "roast_fish",
+		"cod": "roast_fish",
 		"shellfish": "roast_shellfish",
 		"crab_meat": "roast_shellfish",
 		"egg": "boiled_egg",
@@ -129,6 +135,12 @@
 	"raw_sick": {
 		"by_id": {
 			"raw_meat": 24,
+			"salmon": 12,
+			"herring": 12,
+			"mackerel": 12,
+			"smelt": 12,
+			"eel": 24,
+			"cod": 12,
 			"shellfish": 24,
 			"crab_meat": 12,
 			"seal_meat": 24,

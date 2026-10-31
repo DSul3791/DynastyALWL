@@ -146,6 +146,7 @@ var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | p
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
+var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -965,6 +966,12 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_learn_clock += spent
+
+		if _learn_clock >= LEARN_TICK_S:
+			_learn_clock = 0.0
+			_learn_tick()
+
 		_fish_tick()
 		_remains_tick(spent)
 		_spoil_tick(spent)
@@ -1523,7 +1530,7 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 
 	_last_process[peer] = now
 	var st: Dictionary = it["struct"]
-	var blows_total: int = int(_carcass_cfg.get("blows", 4))
+	var blows_total: int = int((_carcass_cfg.get("species", {}).get(str(st.get("species", "")), {}) as Dictionary).get("blows", _carcass_cfg.get("blows", 4)))   # per species (carcass.json species row), else the global number
 	_wear_tool(peer, inv, str(_carcass_cfg.get("tool_class", "knife")), "carcass")
 
 	if not st.has("parts"):
@@ -3071,8 +3078,28 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator
 		if left <= 0:
 			continue
 
-		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": yaw, "total": total}}
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
+		var ore_name: String = _boulder_ore(spot, key)
+
+		if ore_name != "":
+			row["ore"] = ore_name   # an outcrop: a pick takes this ore out of it (boulders.json ore)
+
+		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+
+
+# The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
+func _boulder_ore(spot: Vector3, key: int) -> String:
+	var cfg: Dictionary = _boulder_cfg.get("ore", {})
+
+	if cfg.is_empty() or not ore_near.is_valid():
+		return ""
+
+	if float(hash(key) % 1000) >= 1000.0 * float(cfg.get("boulder_share", 0.0)):
+		return ""
+
+	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0))))
+	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
 
 
 # The blows a stone takes from the best tool on the hotbar (items.json material, boulders.json tools), as [slot, blows], or [].
@@ -3141,7 +3168,36 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if int(it["count"]) > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
 		out = 2
 
-	inv.add(stone, out)
+	# Ore (F-23): a pick on an outcrop takes ore out of it now and then, else stone.
+	var ore_cfg: Dictionary = _boulder_cfg.get("ore", {})
+	var ore_item: int = 0
+
+	if info.has("ore") and not ore_cfg.is_empty():
+		var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
+
+		if str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
+			ore_item = table.number_of(str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), "")))
+
+	if ore_item > 0:
+		inv.add(ore_item, 1)
+		out = 1
+
+	# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule is one piece, never a double.
+	var flint_cfg: Dictionary = _boulder_cfg.get("flint", {})
+	var flint_n: int = table.number_of(str(flint_cfg.get("item", "flint"))) if not flint_cfg.is_empty() else 0
+	var flint_p: float = float(flint_cfg.get("chance", 0.0))
+
+	if flint_n > 0 and water_near.is_valid() and bool(water_near.call(it["pos"], float(flint_cfg.get("water_reach_m", 6.0)))):
+		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
+
+	if ore_item > 0:
+		pass   # the piece was ore
+	elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
+		inv.add(flint_n, 1)
+		out = 1
+	else:
+		inv.add(stone, out)
+
 	practice(peer, "mine_rock")   # breaking a boulder is Mining too
 	it["count"] = int(it["count"]) - out
 	_boulder_left[it["scatter"]] = int(it["count"])
@@ -3193,7 +3249,12 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 			continue
 
 		var driftwood: bool = rng.randf() < float(bank.get("driftwood", 0.12))   # luck-exempt: seeded world layout
-		_items[_next_id] = {"number": table.number_of("driftwood" if driftwood else "stone"), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		var bank_number: String = "driftwood" if driftwood else "stone"
+
+		if not driftwood and float(bank.get("flint", 0.0)) > 0.0 and float(hash(key) % 1000) < 1000.0 * float(bank.get("flint", 0.0)):
+			bank_number = "flint"   # F-02: a share of the bank stones are flint (from the key, so the layout's random stream is not touched)
+
+		_items[_next_id] = {"number": table.number_of(bank_number), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
 
@@ -4315,7 +4376,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 		return false
 
 	for need in row["cost"]:
-		if inv.count_of(table.number_of(str(need[0]))) < int(need[1]):
+		if inv.count_fill(table.number_of(str(need[0]))) < int(need[1]):
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
 			return false
 
@@ -4324,7 +4385,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 
 func _pay_blueprint(inv, row: Dictionary) -> void:
 	for need in row["cost"]:
-		inv.remove(table.number_of(str(need[0])), int(need[1]))
+		inv.remove_fill(table.number_of(str(need[0])), int(need[1]))
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
@@ -7250,12 +7311,73 @@ func free_craft_for(peer: int) -> bool:
 	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
 
 
+# Recipe learning (guide finding F-01, LEARN_SYSTEM_SPEC.md; Tyler 31 Oct 2026). A recipe is known when its table row says known (the data decides what a first-day
+# player gets), or the character has learned it. Learned recipes are saved with the character (characters.json "learned": recipe numbers).
+# A character learns an unknown recipe (1) by discovery: it holds every ingredient and stands at the station the recipe needs; (2) by seeing: the item the recipe
+# makes is in the pack. Checked when the recipe is asked for and every LEARN_TICK_S for every player. One line is said: "You work out how to make X".
+const LEARN_TICK_S := 10.0
+var _learn_clock: float = 0.0
+
+
+func _learned_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "" or not _characters.has(key):
+		return {}
+
+	if typeof(_characters[key].get("learned", null)) != TYPE_DICTIONARY:
+		_characters[key]["learned"] = {}
+
+	return _characters[key]["learned"]
+
+
+func recipe_known_for(peer: int, recipe: Dictionary) -> bool:
+	return bool(recipe.get("known", false)) or _learned_of(peer).has(str(int(recipe.get("number", -1))))
+
+
+# Learns the recipe if the character qualifies; true when it is known afterwards.
+func _try_learn(peer: int, inv, recipe: Dictionary) -> bool:
+	if recipe_known_for(peer, recipe):
+		return true
+
+	var learned: Dictionary = _learned_of(peer)
+
+	if inv == null or recipe.is_empty() or not _characters.has(str(_peer_key.get(peer, ""))):
+		return false
+
+	var seen: bool = inv.count_of(int(recipe["gives"][0])) > 0
+	var station_ok: bool = str(recipe.get("station", "")) == "" or station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1)))
+	var discovered: bool = station_ok and _pack_covers(inv, recipe, 1)
+
+	if not seen and not discovered:
+		return false
+
+	learned[str(int(recipe["number"]))] = true
+	_dirty = true
+	_say(peer, "You work out how to make %s" % str(recipe.get("name", "that")).to_lower())
+	return true
+
+
+func _learn_tick() -> void:
+	for peer in _peer_key.keys():
+		var inv = inventory_of(peer)
+
+		if inv == null or not _peer_pos.has(peer):
+			continue
+
+		for number in recipes.numbers():
+			var r: Dictionary = recipes.recipe(int(number))
+
+			if not bool(r.get("known", false)):
+				_try_learn(peer, inv, r)
+
+
 func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
-	if queue.is_empty() or recipe.is_empty() or (not bool(recipe["known"]) and not free):
+	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
 		return
 
 	if free:
@@ -7295,7 +7417,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 			break
 
 		for need in recipe["needs"]:
-			inv.remove(need[0], need[1])
+			inv.remove_fill(need[0], need[1])
 
 		taken += 1
 
@@ -7315,7 +7437,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 # Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
 func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 	for need in recipe["needs"]:
-		if not inv.has(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
+		if not inv.has_fill(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
 			return false
 
 	for keep in recipe["keeps"]:
@@ -7329,8 +7451,9 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 # was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int) -> int:
 	var ctx: Dictionary = {
-		"have": func(item: int) -> int: return inv.count_of(item),
+		"have": func(item: int) -> int: return inv.count_fill(item),
 		"station_ok": func(r: Dictionary) -> bool: return str(r.get("station", "")) == "" or station_near(peer, str(r["station"]), int(r.get("station_level", 1))),
+		"known": func(r: Dictionary) -> bool: return recipe_known_for(peer, r),
 		"free": false,
 	}
 	var plan: Dictionary = CraftPlanner.plan(recipes, table, recipe_number, clampi(count, 1, CRAFT_QUEUE_MAX_COUNT), ctx)
@@ -7366,7 +7489,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for step in steps:
 		for need in step["take"]:
-			inv.remove(need[0], int(need[1]) * int(step["count"]))
+			inv.remove_fill(need[0], int(need[1]) * int(step["count"]))
 
 		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
 
@@ -7382,13 +7505,13 @@ func _start_deferred(peer: int, head: Array) -> bool:
 	var times: int = int(head[1])
 
 	for need in head[3]:
-		if inv == null or not inv.has(need[0], int(need[1]) * times):
+		if inv == null or not inv.has_fill(need[0], int(need[1]) * times):
 			_cancel_craft(peer, 0)
 			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
 			return false
 
 	for need in head[3]:
-		inv.remove(need[0], int(need[1]) * times)
+		inv.remove_fill(need[0], int(need[1]) * times)
 		var merged: bool = false
 
 		for have in head[2]:
@@ -8113,6 +8236,7 @@ func _load_characters() -> void:
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
+			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 

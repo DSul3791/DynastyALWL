@@ -29,6 +29,7 @@ const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled
 const GATHER_REACH_M := 12.0              # a gather request for a chunk further than this from the player is ignored
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
@@ -296,6 +297,19 @@ func _ready() -> void:
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
+		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if ore_tile.placeholder:
+			return ""
+
+		var flat: Vector2 = Vector2(pos.x, pos.z)
+
+		for ore in ore_tile.ores:
+			if (ore["rect"] as Rect2).grow(reach).has_point(flat):
+				return str(ore.get("resource", ""))
+
+		return ""
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -604,7 +618,7 @@ func _ready() -> void:
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
 # Checked 31 Oct 2026 (tools/spawn_probe.gd, test_spawn_dry): in the current world this spot is dry, ground 31.6 m, the nearest settled water 113 m away and 7 m lower; the 0.9 m of
 # water noted above was the old x10 flow. The guide's dark rippled plane here came from the build before the tile height fix (31 Oct), not from a pond.
-const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
+const SPAWN_OVERRIDE := SpawnPointScript.OVERRIDE   # the one source (src/shared/spawn_point.gd), shared with the flora placer's starter clearing
 
 
 func _spawn_point(world_dir: String) -> Vector3:

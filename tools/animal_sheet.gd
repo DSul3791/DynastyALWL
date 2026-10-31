@@ -3,7 +3,7 @@ extends Node3D
 # Animal models from src/client/animal_view.gd for tools/shot_node.gd (Kathleen): one or several species in a row, four views, offline with the real meshes (no game light).
 # Used for the iterative critique rounds of the fauna looks (art/CRITIQUES/<species>_<date>/roundN.png).
 #   godot --path . --script res://tools/shot_node.gd -- --script=res://tools/animal_sheet.gd --animal=rabbit,fox,deer --out=C:/temp/animals.png --height=2.2 --pitch=-15
-# Species: rabbit, wolf, fox, deer, moose, horse, duck (a flock of one).
+# Species: rabbit, wolf, fox, deer, moose, horse, duck (a flock of one), boar, songbird, frog, trout.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
 
@@ -29,6 +29,13 @@ func _init() -> void:
 			"moose": model = view._make_moose(0)
 			"horse": model = view._make_horse(0)
 			"duck": model = view._make_flock(0)
+			"boar": model = view._make_boar()
+			"songbird": model = view._make_songbird()
+			"frog": model = view._make_frog()
+			"trout": model = view._make_fish()
+			"grouse": model = view._make_grouse()
+			"seal": model = view._make_seal()
+			"gull": model = view._make_seabird()
 
 		if model == null:
 			push_warning("animal_sheet: unknown species " + names[n])

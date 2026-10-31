@@ -183,7 +183,8 @@
 			"tries": 60,
 			"chance": 0.5,
 			"max": 6,
-			"driftwood": 0.12
+			"driftwood": 0.12,
+			"flint": 0.06
 		},
 		"spawn_boost": {
 			"note": "Campfire friction fix (coordinator 2026-10-21, Radar): within radius_m of the respawn point every cell gets extra loose things so a new player finds a campfire kit's worth (20 sticks, 10 stones) in a few minutes of walking. Elsewhere the scatter stays sparse. Server-side layout only, no bake. stones_add and sticks_add are [min, max] added to the cell's roll (stones capped at stones_max_boost, sticks at sticks_max_boost).",

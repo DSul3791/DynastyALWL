@@ -38,3 +38,6 @@ The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired
 
 ## Where things live
 `HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (open plans), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
+
+## Heavy Godot jobs share the PC (Tyler, 31 Oct 2026)
+At most 3 test or rig jobs run at once on this PC, across all sessions: `tools/run_tests.sh` / `tools/run_one_test.sh` take a slot from `tools/godot_slot.sh` on their own. For anything else that starts Godot for a while (picture rigs, servers and clients, probes), wrap it: `tools/godot_slot.sh godot --path . ...`. `GODOT_SLOTS=0` switches the guard off, `GODOT_SLOTS=N` changes the number. It never kills anything; a slot whose job is gone is taken over.

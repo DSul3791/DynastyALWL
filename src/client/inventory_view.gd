@@ -2098,7 +2098,7 @@ func _parts_plan(number: int) -> Dictionary:
 
 	if not recipes.can_make(number, inventory):
 		var ctx: Dictionary = {
-			"have": func(item: int) -> int: return inventory.count_of(item),
+			"have": func(item: int) -> int: return inventory.count_fill(item),
 			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
 			"free": false,
 		}
@@ -3654,7 +3654,7 @@ func _refresh_detail() -> void:
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
-		var have: int = inventory.count_of(need[0])
+		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0])
 		var line: Label = Label.new()
 		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)

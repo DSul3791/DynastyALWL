@@ -63,7 +63,7 @@ func _init() -> void:
 	items.peer_connected_hello(1, "newplayer-day-01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items._vitals_cfg["eat_pace_ms"] = 0
-	items.vitals_of(1)["weight"] = 120.0
+	items.vitals_of(1)["weight"] = 400.0   # item weights grew (Sal, 31 Oct): 32 stones and 48 sticks no longer fit a 120 kg frame with the product
 	zoo = AnimalsScript.new()
 	zoo.ground_height = items.ground_height
 	zoo.blocked = func(_x, _z): return false
@@ -93,13 +93,13 @@ func _init() -> void:
 
 	# Craft the tools and the fire kit by hand.
 	queue(6, 1)
-	pass_time(6.0, 0.2)
+	pass_time(60.0, 0.2)   # crafts take longer than their listed seconds (unskilled hands)
 	check(count("stone_knife") == 1, "a stone knife is made by hand")
 	queue(5, 1)
-	pass_time(6.0, 0.2)
+	pass_time(60.0, 0.2)   # crafts take longer than their listed seconds (unskilled hands)
 	check(count("wooden_spear") == 1, "a wooden spear is made by hand")
 	queue(4, 1)
-	pass_time(6.0, 0.2)
+	pass_time(60.0, 0.2)   # crafts take longer than their listed seconds (unskilled hands)
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
 	# The player puts the knife and the spear on the hotbar (new items no longer land there by themselves).

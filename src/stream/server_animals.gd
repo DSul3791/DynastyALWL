@@ -616,6 +616,10 @@ func _top_up(players: Array, only: int) -> void:
 	for p in [players[only]]:
 		for sp in cfg.get("species", {}):
 			var def: Dictionary = species_def(sp)
+
+			if not bool(def.get("model", true)):
+				continue   # waiting for a model: never spawned, so nothing invisible (or a stand-in rabbit) appears
+
 			var have: int = 0
 			var all_near: int = 0
 
