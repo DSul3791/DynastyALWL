@@ -2495,6 +2495,7 @@ func _init() -> void:
 	check(big >= 4000 and big <= 5200, "a 1 m radius boulder makes about 4600 stones at 0.85 height, 2600 kg/m3, half usable (%d)" % big)
 	check(bo._boulder_stones(0.3) >= 100 and bo._boulder_stones(0.3) <= 150 and bo._boulder_stones(1.2) > 7000, "small boulders make a hundred or so, a 1.2 m one several thousand (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
+	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
 	var small_total: int = bo._boulder_stones(0.3)
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.3, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
