@@ -4,6 +4,7 @@ extends SceneTree
 # and what 60 NPCs cost.
 #   godot --headless --path . --script res://src/worldgen/tools/test_npcs.gd
 
+const TimingScale := preload("res://src/worldgen/tools/timing_scale.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AdminScript := preload("res://src/stream/server_admin.gd")
 const Steering := preload("res://src/shared/steering.gd")
@@ -177,7 +178,7 @@ func _init() -> void:
 
 	var per: float = float(Time.get_ticks_usec() - t0) / float(ticks) / 1000.0
 	print("npc cost: %d NPCs, %.3f ms per 10 Hz tick, %d steps taken" % [big.npcs.size(), per, big.ticks_run])
-	check(per < 1.0, "60 NPCs cost under 1 ms a tick (%.3f)" % per)
+	check(per < 1.0 * TimingScale.scale(), "60 NPCs cost under 1 ms a tick (%.3f; limit scaled by machine load %.2f)" % [per, TimingScale.scale()])
 
 	print("npc tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
