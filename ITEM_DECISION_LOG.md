@@ -348,3 +348,5 @@ Dave: crab apples must be edible. Server check: crab_apples already counted as f
 
 ## Comfort (2026-10-31)
 docs/COMFORT_DESIGN.md + data/items/comfort.json (radius 9 m, any cover counts as shelter, each kind once, fires lit only, Rested 15+3 per level cap 60, tiers) + 14 locked furniture kits (487-500, recipes 319-332). Wild apples unflagged (flora tree exists). Fixed a look_placeholders.json merge-marker commit before pushing.
+
+Moved all plant dishes off the campfire (12 to the clay hearth, 3 to the pot); comfort buff fixed at 45 real minutes (level scales the bonus) in docs/COMFORT_DESIGN.md, comfort.json, DESIGN_IDEAS.md. Kathleen asked about +50 percent lean-to materials for the bigger model: declined for now (fibre/stick grind risk, first-hour tests); the numbers wait for a play-through.
