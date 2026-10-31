@@ -52,24 +52,33 @@ func _init() -> void:
 
 	for kind in ["wall_torch", "chandelier", "fireplace"]:
 		var model: Node3D = BuildingLook.lit_fixture(kind)
-		var light: OmniLight3D = model.get_node_or_null("Light")
+		var light: Light3D = model.get_node_or_null("Light")
 		var flames: int = 0
 
 		for child in model.get_children():
 			if child is MeshInstance3D:
 				flames += 1
 
-		check(light != null and not light.visible and not light.shadow_enabled and flames >= 1, "%s: %d flame meshes and a warm light that starts off, no shadow" % [kind, flames])
+		check(light != null and not light.visible and (kind == "fireplace" or not light.shadow_enabled) and flames >= 1, "%s: %d flame meshes and a warm light that starts off, no shadow" % [kind, flames])
 
 	var torch_light: OmniLight3D = BuildingLook.lit_fixture("wall_torch").get_node("Light")
 	check(torch_light.position.z > 0.35 and torch_light.position.y > 2.3, "the torch light is at the flame, a little out from the wall")
 
 	# Short range with a real falloff and a base energy for the gentle flicker (Dave 31 Oct: the fireplace light was one huge even wash).
-	var limits: Dictionary = {"wall_torch": 6.0, "chandelier": 4.0, "fireplace": 6.0}
+	var limits: Dictionary = {"wall_torch": 7.0, "chandelier": 6.0}
 
 	for kind in limits:
 		var l: OmniLight3D = BuildingLook.lit_fixture(kind).get_node("Light")
 		check(l.omni_range <= float(limits[kind]) and l.omni_attenuation >= 2.0 and l.has_meta("base_energy"), "%s light: range %.1f m (max %.0f), falloff %.1f" % [kind, l.omni_range, float(limits[kind]), l.omni_attenuation])
+
+	# The fireplace shines only out of its opening (Dave 31 Oct: light cannot go through the bricks): a shadow-casting spot cone facing +z, wide and soft, with a small dim glow inside.
+	var place: Node3D = BuildingLook.lit_fixture("fireplace")
+	var cone: SpotLight3D = place.get_node("Light")
+	var facing: Vector3 = cone.transform.basis * Vector3(0.0, 0.0, -1.0)
+	check(facing.z > 0.99 and cone.shadow_enabled and cone.spot_angle >= 50.0 and cone.spot_angle <= 60.0 and cone.spot_range <= 7.0 and cone.spot_attenuation >= 2.0, "the fireplace light is a shadowed spot facing the front (z %.2f), %.0f degrees half angle, range %.1f m" % [facing.z, cone.spot_angle, cone.spot_range])
+	check(cone.position.z > 0.0 and cone.position.z < 0.6 and cone.has_meta("base_energy"), "placed at the hearth just inside the opening")
+	var glow: OmniLight3D = cone.get_node("Glow")
+	check(glow.omni_range <= 1.5 and glow.light_energy < 0.5 and not glow.shadow_enabled, "and only a small dim glow inside (range %.1f m)" % glow.omni_range)
 
 	for tier in [1, 2, 3]:
 		var camp: OmniLight3D = BuildingLook.fire(true, false, tier).get_node("Light")

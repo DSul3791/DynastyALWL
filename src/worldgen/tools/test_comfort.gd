@@ -122,13 +122,21 @@ func _init() -> void:
 
 	# The HUD message (protocol 80): level, buff level, whole minutes; told once, again when something changes.
 	var told: Array = []
-	items.send_comfort = func(_p, l, r, m): told.append([l, r, m])
+	items.send_comfort = func(_p, l, r, m, t): told.append([l, r, m, t])
 	items._comfort_tick()
 	items._comfort_tick()
 	check(told.size() == 1 and told[0][0] == level() and told[0][1] > 0 and told[0][2] > 40, "the client is told the comfort level, the buff and its minutes once (%s)" % str(told))
 	items._characters[items._peer_key[1]].erase("rested")
 	items._comfort_tick()
 	check(told.size() == 2 and told[1][1] == 0 and told[1][2] == 0, "and again when the buff ends")
+	var tip: String = str(told[0][3])
+	check(tip.contains("Comfort %d of 20" % int(told[0][0])) and tip.contains("+1  Shelter") and tip.contains("Could add:") and tip.contains("rested") and tip.contains("health regeneration"), "the tooltip lists what counts, what could be added and the Rested bonuses")
+	check(tip.contains("min left"), "and the minutes left")
+	covered[0] = false
+	items._comfort_cache.clear()
+	check(items.comfort_tip(1).contains("not under a roof"), "unsheltered, the tooltip says why the level is 0")
+	covered[0] = true
+	items._comfort_cache.clear()
 	var View := load("res://src/client/inventory_view.gd")
 	check(View.comfort_text(7, 2, 38) == "Comfort 7   Rested 38 min" and View.comfort_text(0, 0, 0) == "" and View.comfort_text(3, 0, 0) == "Comfort 3", "the HUD words: 'Comfort 7   Rested 38 min'")
 
