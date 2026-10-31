@@ -45,11 +45,7 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"acorns",
-				"bark"
-			],
+			"yields": ["acorns", "bark"],
 			"season": [
 				"all"
 			],
@@ -110,10 +106,7 @@
 				1000
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"beechnuts"
-			],
+			"yields": ["beechnuts"],
 			"season": [
 				"all"
 			],
@@ -172,11 +165,7 @@
 				1300
 			],
 			"water": [],
-			"yields": [
-				"wood",
-				"birch_bark",
-				"sap"
-			],
+			"yields": ["birch_bark", "sap"],
 			"season": [
 				"all"
 			],
@@ -232,11 +221,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin",
-				"pine_tar"
-			],
+			"yields": ["resin", "pine_tar"],
 			"season": [
 				"all"
 			],
@@ -288,10 +273,7 @@
 				1800
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin"
-			],
+			"yields": ["resin"],
 			"season": [
 				"all"
 			],
@@ -353,10 +335,7 @@
 			"water": [
 				"marsh"
 			],
-			"yields": [
-				"wood",
-				"charcoal_wood"
-			],
+			"yields": ["charcoal_wood"],
 			"season": [
 				"all"
 			],
@@ -420,11 +399,7 @@
 			"water": [
 				"marsh"
 			],
-			"yields": [
-				"wood",
-				"withies",
-				"willow_bark"
-			],
+			"yields": ["withies", "willow_bark"],
 			"season": [
 				"all"
 			],
@@ -527,10 +502,7 @@
 				1200
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"resin"
-			],
+			"yields": ["resin"],
 			"season": [
 				"all"
 			],
@@ -579,10 +551,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"gum"
-			],
+			"yields": ["gum"],
 			"season": [
 				"all"
 			],
@@ -634,10 +603,7 @@
 				"estuary",
 				"ocean"
 			],
-			"yields": [
-				"wood",
-				"tannin_bark"
-			],
+			"yields": ["tannin_bark"],
 			"season": [
 				"all"
 			],
@@ -695,10 +661,7 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"poles",
-				"hazelnuts"
-			],
+			"yields": ["hazelnuts"],
 			"season": [
 				"autumn"
 			],
@@ -816,10 +779,7 @@
 				2000
 			],
 			"water": [],
-			"yields": [
-				"juniper_berries",
-				"wood"
-			],
+			"yields": ["juniper_berries"],
 			"season": [
 				"autumn",
 				"winter"
@@ -2022,11 +1982,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"elderberries",
-				"elderflowers",
-				"wood"
-			],
+			"yields": ["elderberries", "elderflowers"],
 			"season": [
 				"spring",
 				"summer",
@@ -2096,10 +2052,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"rowan_berries",
-				"wood"
-			],
+			"yields": ["rowan_berries"],
 			"season": [
 				"autumn"
 			],
@@ -2157,13 +2110,8 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"rose_petals"
-			],
-			"season": [
-				"spring",
-				"summer"
-			],
+			"yields": ["rose_petals", "rose_hips"],
+			"season": ["spring", "summer", "autumn"],
 			"rarity": "common",
 			"familiarity": 93,
 			"uses": [
@@ -2280,11 +2228,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"haws",
-				"hawthorn_blossom",
-				"hard_wood"
-			],
+			"yields": ["haws", "hawthorn_blossom"],
 			"season": [
 				"spring",
 				"autumn"
@@ -2406,10 +2350,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"crab_apples",
-				"wood"
-			],
+			"yields": ["crab_apples"],
 			"season": [
 				"autumn"
 			],
@@ -2469,10 +2410,7 @@
 				600
 			],
 			"water": [],
-			"yields": [
-				"wild_pears",
-				"wood"
-			],
+			"yields": ["wild_pears"],
 			"season": [
 				"autumn"
 			],
@@ -2593,10 +2531,7 @@
 				800
 			],
 			"water": [],
-			"yields": [
-				"chestnuts",
-				"timber"
-			],
+			"yields": ["chestnuts"],
 			"season": [
 				"autumn"
 			],
@@ -2654,11 +2589,7 @@
 				600
 			],
 			"water": [],
-			"yields": [
-				"walnuts",
-				"walnut_husks",
-				"fine_wood"
-			],
+			"yields": ["walnuts", "walnut_husks"],
 			"season": [
 				"autumn"
 			],
@@ -2712,10 +2643,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"wild_garlic_leaves",
-				"wild_garlic_bulbs"
-			],
+			"yields": ["wild_garlic_leaves", "wild_garlic_bulbs"],
 			"season": [
 				"spring"
 			],
@@ -2953,11 +2881,7 @@
 				1800
 			],
 			"water": [],
-			"yields": [
-				"dandelion_leaves",
-				"dandelion_roots",
-				"dandelion_flowers"
-			],
+			"yields": ["dandelion_flowers", "dandelion_leaves", "dandelion_roots"],
 			"season": [
 				"spring",
 				"summer",
@@ -7347,11 +7271,7 @@
 				1700
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin",
-				"bedding"
-			],
+			"yields": ["resin", "bedding"],
 			"season": [
 				"all"
 			],
@@ -7418,10 +7338,7 @@
 				1100
 			],
 			"water": [],
-			"yields": [
-				"wood",
-				"sap"
-			],
+			"yields": ["sap"],
 			"season": [
 				"spring"
 			],
@@ -7482,7 +7399,7 @@
 			"max_slope_deg": 30,
 			"altitude_m": [0.3, 40],
 			"water": [],
-			"yields": ["fibre"],
+			"yields": [],
 			"season": ["spring", "summer", "autumn"],
 			"rarity": "common",
 			"familiarity": 60,
