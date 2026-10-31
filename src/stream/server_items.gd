@@ -7482,7 +7482,9 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 
 	var def: Dictionary = _crop_table()[crop_id]
 
-	if _season() != str(def.get("sow_season", "spring")) and crop_id != "turnip":
+	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
+
+	if not sow_seasons.has(_season()):
 		_say(peer, "Wrong season to sow %s" % str(def.get("name", crop_id)).to_lower())
 		return false
 
@@ -7556,7 +7558,7 @@ func _crops_tick() -> void:
 
 		while int(crop["day"]) < today:
 			crop["day"] = int(crop["day"]) + 1
-			var winter: bool = _season() == "winter" and str(crop["crop"]) != "turnip"
+			var winter: bool = _season() == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
 
 			if winter:
 				if crop_stage(crop) == 0:

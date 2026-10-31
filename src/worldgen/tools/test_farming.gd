@@ -159,8 +159,11 @@ func _init() -> void:
 	season[0] = "winter"
 	days(1)
 	check(not items._crops.has(key), "a seedling does not survive winter frost")
-	give("turnip_seeds", 1)
-	check(items.sow(1, items.inventory_of(1), bed, slot_of("turnip_seeds")), "turnip can be sown in winter")
+	give("turnip_seeds", 2)
+	check(not items.sow(1, items.inventory_of(1), bed, slot_of("turnip_seeds")), "turnip cannot be sown in winter (its seasons are spring and autumn)")
+	season[0] = "autumn"
+	check(items.sow(1, items.inventory_of(1), bed, slot_of("turnip_seeds")), "turnip can be sown in autumn (sow_seasons list)")
+	season[0] = "winter"
 	days(2)
 	check(items._crops.has(key) and float(items._crops[key]["age"]) >= 2.0, "and grows through it")
 

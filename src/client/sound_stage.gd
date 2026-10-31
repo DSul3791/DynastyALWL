@@ -1085,14 +1085,25 @@ func _build_warm_list() -> void:
 		_warm.append([breath, sound_name])
 
 
+# Loads the sounds in the warm list one entry at a time, never more than one entry per WARM_GAP_SEC, so ~80 files (each about 30 ms, and several variants per entry)
+# are spread over seconds instead of landing on consecutive frames (31 Oct 2026: on a loaded PC consecutive loads starved the main thread and tripped the 15 s
+# hung-watchdog). An entry that took longer than WARM_SLOW_MS makes the next wait four times as long.
+const WARM_GAP_SEC := 0.15
+const WARM_SLOW_MS := 40
+var _warm_gap: float = 0.0
+
+
 func _warm_one(delta: float) -> void:
 	_warm_wait += delta
+	_warm_gap -= delta
 
-	if _warm_wait < WARM_START_SEC or _warm.is_empty():
+	if _warm_wait < WARM_START_SEC or _warm.is_empty() or _warm_gap > 0.0:
 		return
 
 	var entry: Array = _warm.pop_front()
+	var begun: int = Time.get_ticks_msec()
 	entry[0]._variants(entry[1])
+	_warm_gap = WARM_GAP_SEC * (4.0 if Time.get_ticks_msec() - begun > WARM_SLOW_MS else 1.0)
 
 
 func _load_settings() -> void:
