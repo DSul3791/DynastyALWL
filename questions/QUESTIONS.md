@@ -13,12 +13,6 @@
 
 
 
-## pic-water2-dam-break | Does the new water spread out like a real puddle (a square block of water at 0, 4, 12 and 40 seconds)?
-Image: questions/img/water2_dam_break.png
-Note: Top-down render of the new Dynasty water sim on a flat floor, not the real game (nothing is drawn in the game yet). Sonny rates it 3.5 of 5: it spreads and settles, but a short-lived dry hole opens in the middle at 12 s.
-- Yes
-- No
-
 ## pic-water2-river | Does the new water run as a river down a valley (top-down, water brighter where it is faster)?
 Image: questions/img/water2_river_valley.png
 Note: Top-down render of the new Dynasty water sim, not the real game. Sonny rates it 2 of 5: it flows the whole valley, but the river is only one cell wide, so it says little about looks.
