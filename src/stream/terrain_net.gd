@@ -135,6 +135,7 @@ const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots)
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
+const ACT_GATHER_EDGE := 54  # at = the player's spot: take sea water into a container, or the tide-line node of the cell (data/items/shore_nodes.json)
 const ACT_TILL := 50       # at = the ground point: one hoe stroke tills a metre into a tilled bed (FARMING_SPEC.md step 2)
 const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)

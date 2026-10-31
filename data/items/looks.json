@@ -1908,6 +1908,11 @@
    "color": "#5a9ad4",
    "size": 0.8
   },
+  "sea_water": {
+   "shape": "bottle",
+   "color": "#3f7fa8",
+   "size": 0.8
+  },
   "watercress": {
    "shape": "frond",
    "color": "#3f8a3a",

@@ -12,7 +12,7 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water"]
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
