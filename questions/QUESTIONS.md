@@ -146,3 +146,9 @@ Image: questions/img/tall_grass_25m.png
 Note: Real game, noon, camera 25 m west of a clump at (53358,68366). Flora rates it 3.5 of 5: it reads as a tuft of tall grass with dark plumes at 25 m, but small; at 40 m it is only just visible and dark in shade.
 - Yes
 - No
+
+## pic-meadow-flowers | Can you see colour from wild flowers in the starter meadow (yellow drift left of the bush, at the forest edge)?
+Image: questions/img/meadow_flowers.png
+Note: Real game, noon, low viewpoint. Flora rates it 3 of 5: flower drifts (dandelion, St John's wort, yarrow, chamomile, wild carrot) now stand above the grass with bright yellow heads, but they are few and small at this distance and sit at the meadow edge, not in the open middle.
+- Yes
+- No
