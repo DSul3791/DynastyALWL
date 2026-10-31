@@ -3,6 +3,7 @@
 	"fruit_tree_note": "Fruit trees with a real fruit store (Dave 2026-10-31, docs/FRUIT_TREES_PLAN.md): a tree of a listed species holds `max` pieces (a range; each tree gets a stable amount from its id, scaled by its height against the species reference), a press takes up to `per_pick` of them, limited by what the weight limit lets the player carry, and the store refills when the fruiting season comes round again (season stamp); an empty tree is shown bare and offers nothing. The item is the species harvest_yield item; out of season nothing can be picked.",
 	"fruit_tree": {
 		"wild_apple": {"max": [40, 120], "per_pick": 5},
+		"wild_apple_sweet": {"max": [20, 60], "per_pick": 5},
 		"fig": {"max": [30, 80], "per_pick": 5},
 		"olive": {"max": [60, 160], "per_pick": 5},
 		"pomegranate": {"max": [20, 50], "per_pick": 4},
@@ -67,6 +68,7 @@
 		"puffball": {"item": "puffball", "count": 1},
 		"fly_agaric": {"item": "fly_agaric_caps", "count": 3},
 		"wild_apple": {"item": "crab_apples", "count": 120},
+		"wild_apple_sweet": {"item": "wild_apples", "count": 40},
 		"fig": {"item": "figs", "count": 40},
 		"olive": {"item": "olives", "count": 40},
 		"pomegranate": {"item": "pomegranates", "count": 40},
