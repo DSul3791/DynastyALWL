@@ -1,12 +1,6 @@
 {
  "note": "Items that still draw the grey placeholder chunk, each with a reason (Kathleen, 2026-10-31). test_item_looks fails for a grey item that is not listed here and for a listed item that already has a look. Make a look, then delete the row.",
  "items": {
-<<<<<<< HEAD
-  "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)",
-  "stewed_berries": "food (Sal, 2026-10-31), queued: a small bowl of dark fruit",
-  "wild_apples": "fruit (Sal, 2026-10-31): small apple, green with a red blush, queued"
-=======
   "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)"
->>>>>>> origin/kathleen-art
  }
 }
