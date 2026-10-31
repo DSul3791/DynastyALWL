@@ -1894,3 +1894,7 @@ Answered: 2026-10-31 20:01 UTC
 Answer: Yes
 Answered: 2026-10-31 20:02 UTC
 
+## pic-apples | Do these apples look like round apples (stem, highlight) instead of red diamonds?
+Answer: No | Comment: They are not spheres at all. They’re not even apple shaped. Look up what apples look like and try again and make them smooth.
+Answered: 2026-10-31 20:02 UTC
+
