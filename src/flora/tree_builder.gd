@@ -11,6 +11,7 @@ extends RefCounted
 # vertex color; foliage takes a per-tree tint from the instance custom data.
 
 const VARIANTS := 4
+const LIMB_DARK := Color(0.30, 0.22, 0.16)         # crown limbs (depth 1 and up) are drawn this much toward warm dark brown, so no pale spikes show through the leaves (guide F, 2026-10-31)
 const BARK_TINT_HARD := Color(0.45, 0.42, 0.35)       # hardwood: gray (owner, 2026-10-17)
 const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens: brown
 const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
@@ -350,7 +351,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 	# the height to the top, like a street maple; a few limbs show through.
 	var base_y: float = h * 0.25
 	var limbs: int = 5 if far else rng.randi_range(9, 11)
-	var size_base: float = crown * (0.95 if far else 0.6)
+	var size_base: float = crown * (0.95 if far else 0.72)
 
 	# Limbs sweep up and out from the trunk at an angle, like a young maple, and carry
 	# the leaves along their length so the crown is built from them.
@@ -366,7 +367,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 		var tip: Vector3 = start + dirv * reach
 		tip.y = minf(tip.y, h * 0.97)
 		if not far:
-			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint, 5)
+			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint.lerp(LIMB_DARK, 0.5), 5)
 		var along: int = 3 if far else 5
 		for m in range(along):
 			var t: float = lerpf(0.3, 1.0, float(m) / float(along - 1))
@@ -757,13 +758,13 @@ static func _maple_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGen
 	to.y = minf(to.y, h)
 
 	if not far:
-		_branch(bark, from, to, r, r * 0.62, tint, 6 if depth == 0 else (5 if depth == 1 else 4))
+		_branch(bark, from, to, r, r * 0.62, tint if depth == 0 else tint.lerp(LIMB_DARK, 0.5), 6 if depth == 0 else (5 if depth == 1 else 4))
 
 	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - half_h)) / (2.0 * half_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
 
 	if not bare and depth < last:
 		# Leaves all along the inner limbs too, so the crown is full down to the fork.
-		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.08, center, crown_w * (0.5 if far else 0.3), shade * 0.88, 2 if far else 3)
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.08, center, crown_w * (0.5 if far else 0.36), shade * 0.88, 2 if far else 3)
 
 	if depth >= last:
 
@@ -775,7 +776,7 @@ static func _maple_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGen
 					var turn: float = yaw + PI * 0.5 * float(c)
 					twigs.card(to + Vector3(0.0, length * 0.45, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.6, length * 0.55, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
 		else:
-			var size: float = crown_w * (0.5 if far else 0.3) * rng.randf_range(0.85, 1.15)
+			var size: float = crown_w * (0.5 if far else 0.36) * rng.randf_range(0.85, 1.15)
 			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
 			if not far:
 				_clump(leaves, rng, from.lerp(to, 0.5) + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
@@ -1618,13 +1619,14 @@ static func _oak_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 
 	if not far:
 		var sides: int = 6 if depth == 0 else (5 if depth == 1 else 4)
-		_branch(bark, from, mid, r, r * 0.8, BARK_TINT_OAK, sides)
-		_branch(bark, mid, to, r * 0.8, r * 0.62, BARK_TINT_OAK, sides)
+		var limb: Color = BARK_TINT_OAK if depth == 0 else BARK_TINT_OAK.lerp(LIMB_DARK, 0.5)
+		_branch(bark, from, mid, r, r * 0.8, limb, sides)
+		_branch(bark, mid, to, r * 0.8, r * 0.62, limb, sides)
 
 	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - low_h)) / (half_h + low_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
 
 	if not bare and depth >= 1 and depth < last:
-		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.05, center, crown_w * (0.36 if far else 0.24), shade * 0.88, 2 if far else 3)
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.05, center, crown_w * (0.36 if far else 0.29), shade * 0.88, 2 if far else 3)
 
 	if depth >= last:
 		if bare:
@@ -1635,7 +1637,7 @@ static func _oak_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 					var turn: float = yaw + PI * 0.5 * float(c)
 					twigs.card(to + Vector3(0.0, length * 0.35, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.55, length * 0.5, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
 		else:
-			var size: float = crown_w * (0.4 if far else 0.26) * rng.randf_range(0.85, 1.15)
+			var size: float = crown_w * (0.4 if far else 0.31) * rng.randf_range(0.85, 1.15)
 			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
 			if not far:
 				_clump(leaves, rng, mid + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
