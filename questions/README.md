@@ -56,3 +56,7 @@ The page shows a numbered "Things to check" list with Yes / No and a "Why not?" 
 - Every card has a Comments box. Whatever Dave types is saved after the answer as ` | Comment: ...`.
 - Every card has a "We should revisit this later" button at the bottom. It records `Revisit later` (with the comment) in ANSWERS.md, copies the card to LATER.md and removes it from QUESTIONS.md.
 - Every multiple-choice card carries a `Note: Recommendation: X because Y` line, written by whoever posts it.
+
+## Pictures for Dave to review (Dave 2026-10-31)
+- Any picture Dave should review goes on the page as its own card: ONE item per card. Put `Image: questions/img/<file>.png` under the header (copy the picture into `questions/img/`), then the choices `- Yes` and `- No`. The Comments box is the optional notes box. Add a `Note:` line with your own rating and what is shown (render vs real game, which version).
+- Do not post pictures in chat for review; post the card. Several pictures of one thing that are one decision stay one card; different items are different cards.
