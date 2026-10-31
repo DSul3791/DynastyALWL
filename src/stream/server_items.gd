@@ -996,6 +996,7 @@ func tick(delta: float) -> void:
 		_craft_tick(spent)
 		_crops_tick()
 		_lights_tick(spent)
+		_dev_pending_tick(spent)
 		_comfort_tick(spent)
 		_goals_tick()
 		_learn_clock += spent
@@ -8304,6 +8305,87 @@ func _night_walk_tick() -> void:
 		if lit:
 			st["goal_counts"]["moved_lit_night"] = float(st["goal_counts"].get("moved_lit_night", 0.0)) + step
 			_dirty = true
+
+
+var _dev_pending: Array = []          # [spec, seconds waited]: --dev-place specs still waiting for their ground
+
+
+func dev_place_later(spec: String) -> void:
+	_dev_pending.append([spec, 0.0])
+
+
+# Once a second-ish (slow tick): tries each waiting spec; a spec that placed is dropped, one still without ground after 180 s is given up with a line in the log.
+func _dev_pending_tick(spent: float) -> void:
+	for entry in _dev_pending.duplicate():
+		var made: int = dev_place(str(entry[0]))
+
+		if made != 0:
+			print("server: dev-place %s -> world id %d" % [str(entry[0]), made])
+			_dev_pending.erase(entry)
+		else:
+			entry[1] = float(entry[1]) + spent
+
+			if float(entry[1]) > 180.0:
+				print("server: dev-place %s NOT placed (unknown name, or no ground there)" % str(entry[0]))
+				_dev_pending.erase(entry)
+
+
+# --- Testing only: place structures without a kit (for screenshots and rigs) -------------------------------------------------------------------------------------------
+# The server scene calls this for each `--dev-place=name@x,z,yaw[,lit]` argument (repeatable); nothing else calls it, so normal play never runs it. `name` is a structure
+# kind of structures.json (lean_to, rough_bed, fireplace, wall_torch, chandelier, chest, workbench ...), x and z world metres (the ground height is taken from the ground),
+# yaw degrees; the word `lit` lights a light or a fire. A fire name (`campfire`) lays a lit campfire. Returns the world id, 0 when the name or the ground is unknown.
+func dev_place(spec: String) -> int:
+	var parts: PackedStringArray = spec.split("@")
+
+	if parts.size() != 2 or not ground_height.is_valid():
+		return 0
+
+	var name: String = parts[0].strip_edges()
+	var nums: PackedStringArray = parts[1].split(",")
+
+	if nums.size() < 2:
+		return 0
+
+	var x: float = float(nums[0])
+	var z: float = float(nums[1])
+	var yaw: float = float(nums[2]) if nums.size() > 2 and nums[2].is_valid_float() else 0.0
+	var lit: bool = nums.has("lit")
+	var y: float = float(ground_height.call(x, z))
+
+	if is_nan(y):
+		return 0
+
+	var at: Vector3 = Vector3(x, y, z)
+
+	if name == "campfire":
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": 1 if lit else 9, "burn_left": 36000.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 36000.0}, "covered": false, "recheck": COVER_RECHECK_S}}
+		_next_id += 1
+		_dirty = true
+		return _next_id - 1
+
+	var def: Dictionary = _structures.get(name, {})
+
+	if def.is_empty():
+		return 0
+
+	var row: Dictionary = {"kind": name, "yaw": float(posmod(int(yaw), 360))}
+
+	if lit:
+		row["lit"] = true
+		row["fuel_left"] = float(def.get("fuel_s", 3600.0)) * 2.0
+
+	var entry: Dictionary = {"number": table.number_of(str(def.get("item", name))), "count": 1, "pos": at, "left": 1.0e9, "struct": row}
+
+	if int(def.get("slots", 0)) > 0:
+		row["uid"] = _next_uid
+		_chests[_next_uid] = InventoryScript.new(table)
+		_next_uid += 1
+
+	_items[_next_id] = entry
+	_next_id += 1
+	_add_roof(entry)
+	_dirty = true
+	return _next_id - 1
 
 
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
