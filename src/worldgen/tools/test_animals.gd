@@ -29,7 +29,7 @@ func make(players: Array):
 	a.player_positions = func(): return players
 	a.setup()
 
-	for sp in ["boar", "songbirds", "frog"]:
+	for sp in ["boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
 		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
 
 	a.cfg["species"]["rabbit"]["burrow_m"] = 0.0   # burrows are tested in test_animal_senses.gd

@@ -26,7 +26,7 @@ func make():
 	a.player_stances = func(): return players.map(func(_p): return 0)
 	a.setup()
 
-	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog"]:
+	for sp in ["rabbit", "deer", "moose", "fox", "duck", "horse", "boar", "songbirds", "frog", "grouse", "seal", "seabird"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
 
 	a.cfg["senses"] = {}
