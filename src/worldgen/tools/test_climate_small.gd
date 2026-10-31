@@ -136,6 +136,35 @@ func _init() -> void:
 	by_script.build(heights, water, 3 * 1920, 4 * 1920)
 	TileClimateScript.force_script = false
 	_check(by_script.biome == climate.biome and by_script.soil == climate.soil and by_script.temperature_c == climate.temperature_c, "the script classification gives the same maps as the bake's")
+	# The rule on its own (pick_biome, the reference the native code must match): one made-up spot, only the temperature or wetness changing.
+	var rb: Dictionary = rules["climate"]["biome"]
+	var c: Dictionary = {
+		"hot_min": rb["hot_min_c"], "warm_min": rb["warm_min_c"], "cold_min": rb["cold_min_c"], "snow_max": rb["snow_max_c"], "glacier_max": rb["glacier_max_c"],
+		"rock_tan": tan(deg_to_rad(float(rb["rock_slope_deg"]))), "marsh_tan": tan(deg_to_rad(float(rb["marsh_slope_deg"]))),
+		"beach_height_m": rb["beach_height_m"], "beach_distance_m": rb["beach_distance_m"], "marsh_height_m": rb["marsh_height_m"], "marsh_moisture": rb["marsh_moisture"],
+		"alpine_min_height_m": rb["alpine_min_height_m"], "boreal_moisture": rb["boreal_moisture"], "desert_moisture": rb["desert_moisture"],
+		"scrub_moisture": rb["scrub_moisture"], "savanna_moisture": rb["savanna_moisture"], "grassland_moisture": rb["grassland_moisture"],
+		"mixed_moisture": rb["mixed_moisture"], "cool_forest_below_c": rb["cool_forest_below_c"],
+	}
+	var ids: Dictionary = {}
+
+	for name in ["beach", "hot_desert", "dry_scrub", "savanna", "tropical_forest", "mangrove", "temperate_grassland", "temperate_forest", "mixed_forest", "marsh", "heath",
+			"boreal_forest", "tundra", "alpine_meadow", "bare_rock", "snowfield", "glacier"]:
+		ids[name] = tables.id_of("biomes", name)
+
+	var sweep: Array = [[30.0, 0.8, "tropical_forest"], [28.0, 0.1, "hot_desert"], [15.0, 0.8, "temperate_forest"], [15.0, 0.3, "temperate_grassland"], [3.0, 0.8, "boreal_forest"],
+		[-5.0, 0.8, "tundra"], [-10.0, 0.8, "snowfield"], [-16.0, 0.8, "glacier"]]
+	var wrong: Array = []
+
+	for row in sweep:
+		var got: int = TileClimateScript.pick_biome(ids, c, float(row[0]), float(row[1]), 300.0, 0.05, 5000.0)
+
+		if got != int(ids[row[2]]):
+			wrong.append("%s C wet %s -> %s, not %s" % [row[0], row[1], biome_names.get(got, "?"), row[2]])
+
+	_check(wrong.is_empty(), "the biome rule: hot wet = tropical, hot dry = desert, mild = forest or grass, cool = boreal, cold = tundra, snow, glacier %s" % str(wrong))
+	_check(TileClimateScript.pick_biome(ids, c, 12.0, 0.5, 300.0, 1.5, 5000.0) == int(ids["bare_rock"]), "a steep slope is bare rock at any mild temperature")
+	_check(TileClimateScript.pick_biome(ids, c, 7.0, 0.5, 1200.0, 0.05, 5000.0) == int(ids["alpine_meadow"]), "high and cool ground is alpine meadow")
 	var took: float = float(Time.get_ticks_msec() - begun) / 1000.0
 	print("climate small: %d failures, %.1f s, biomes %s" % [failures, took, str(climate.biome_cells)])
 	quit(1 if failures > 0 else 0)
