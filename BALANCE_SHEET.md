@@ -13,7 +13,7 @@ Time and quantity budget for the first tools, compared with other survival games
 | Workbench | 12 sticks, 3 twine (9 fibre) | 12 s | no station needed |
 | Stone knife / spear | 2 stone + stick; wooden spear + 2 twine | 3 s / 4 s | |
 | Bow | 2 sticks, 3 twine at the workbench | 8 s | arrows need feathers or the weaker fibre arrow |
-| First forge (Basic Forge, hammer blueprint) | 36 stone, 10 clay, 2 hide | not data-driven here | needs a workbench of level 2 nearby |
+| First forge (Basic Forge, hammer blueprint) | 24 stone (was 36), 10 clay, 2 hide | not data-driven here | needs a workbench of level 2 nearby |
 | Total hand-made kit (axe, fire, shelter, bed, bench, bow) | about 30 sticks, 6 stones, 10 thatch, 6 leaves, 12 twine (36 fibre) | about 60 s of crafting | gathering dominates |
 
 ## Comparison (sources in the list below)
