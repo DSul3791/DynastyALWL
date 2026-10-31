@@ -4,10 +4,9 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 4, missing 38, placeholder 45, rough 435, total 522
+Counts: decent 4, missing 38, placeholder 56, rough 435, total 533
 
-Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre, twine, bedding, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed; then crafting stations and tools; then the rest. The guide session's LOOKS WRONG and MISSING rows are added at the top as they arrive.
-
+Queue, by what a player meets first (the grey placeholder list comes from src/worldgen/tools/test_item_looks.gd, 56 items on 31 Oct): 1 weapons and shields (wooden club, stone mace and wicker shield done; javelin; bronze, iron and steel swords, maces, shields; plank shield), 2 armour (leather cap, leather jerkin, gambeson, bronze, iron and steel helms, mail shirt, plate cuirass), 3 seeds and crops (wheat, barley, carrot, potato, turnip, flax and their seeds), 4 hide clothes (hide tunic, trousers, gloves) and the quern, 5 animal parts (antler, tusk, claw, down, quill, hide glue, bone arrow, fibre arrow), 6 food (eggs, seal and shellfish meat, roast dishes, herb salve, splint), 7 stick, branch, rocks, flint, plant fibre, twine, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed (survival basics, in hand and dropped); then stations and tools; then the rest. The guide's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 | # | id | name | look | source | status | reference | date | picture | note |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | stone | Stone | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
@@ -358,6 +357,17 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 350 | quill | Quill | chunk | looks.json | placeholder |  |  |  |  |
 | 351 | hide_glue | Hide glue | chunk | looks.json | placeholder |  |  |  |  |
 | 352 | bone_arrow | Bone arrow | chunk | looks.json | placeholder |  |  |  |  |
+| 353 | stone_wedge | Stone wedge | chunk | looks.json | placeholder |  |  |  |  |
+| 354 | fibre_arrow | Fibre arrow | chunk | looks.json | placeholder |  |  |  |  |
+| 355 | seaweed | Seaweed | chunk | looks.json | placeholder |  |  |  |  |
+| 356 | shellfish | Shellfish | chunk | looks.json | placeholder |  |  |  |  |
+| 357 | crab_meat | Crab meat | chunk | looks.json | placeholder |  |  |  |  |
+| 358 | egg | Egg | chunk | looks.json | placeholder |  |  |  |  |
+| 359 | seal_meat | Seal meat | chunk | looks.json | placeholder |  |  |  |  |
+| 360 | sea_salt | Sea salt | chunk | looks.json | placeholder |  |  |  |  |
+| 361 | roast_shellfish | Steamed Shellfish | chunk | looks.json | placeholder |  |  |  |  |
+| 362 | boiled_egg | Boiled egg | chunk | looks.json | placeholder |  |  |  |  |
+| 363 | roast_seal | Seal Steak | chunk | looks.json | placeholder |  |  |  |  |
 | 1000 | acorns | Acorns | nut | looks.json | rough |  |  |  |  |
 | 1001 | aloe_gel | Aloe gel | bowl | looks.json | rough |  |  |  |  |
 | 1002 | amadou | Amadou | chunk | looks.json | rough |  |  |  |  |
