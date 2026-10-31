@@ -485,8 +485,21 @@ static func chest() -> Node3D:
 
 # --------------------------------------------------------------- the campfire
 
-static func _fire_base(loaded: bool) -> ArrayMesh:
-	var key: String = "fire_loaded" if loaded else "fire_base"
+# What a laid (ready-to-light) fire is built of, by tier (Dave's spec): a bed of plant fibre inside the ring, thin twigs criss-crossed over it in layers,
+# bigger sticks leaned together in a teepee over that, and for the bonfire a stack of logs under the teepee. [fibre strands, twig layers, twigs per layer,
+# teepee sticks, teepee stick radius, teepee height, logs]
+const FIRE_LAID := {
+	1: [9, 1, 7, 4, 0.03, 0.5, 0],
+	2: [16, 2, 9, 6, 0.04, 0.62, 0],
+	3: [22, 2, 11, 7, 0.055, 0.72, 4],
+}
+const FIBRE := Color(0.76, 0.68, 0.44)
+const FIBRE_DARK := Color(0.6, 0.52, 0.33)
+
+
+static func _fire_base(loaded: bool, tier: int = 2) -> ArrayMesh:
+	tier = clampi(tier, 1, 3)
+	var key: String = "fire_loaded_%d" % tier if loaded else "fire_base"
 
 	if _cache.has(key):
 		return _cache[key]
@@ -511,17 +524,42 @@ static func _fire_base(loaded: bool) -> ArrayMesh:
 		_tri(st, Vector3(0.0, 0.012, 0.0), Vector3(cos(t1), 0.0, sin(t1)) * 0.36 + Vector3(0.0, 0.012, 0.0), Vector3(cos(t0), 0.0, sin(t0)) * 0.36 + Vector3(0.0, 0.012, 0.0), ash, Vector3(0.0, -1.0, 0.0))
 
 	if loaded:
-		# Kindling leaned together over the ring: pale sticks meeting at the top, and a nest of twigs at the foot.
-		for n in range(7):
-			var a2: float = TAU * float(n) / 7.0 + rng.randf_range(-0.1, 0.1)
-			var base: Vector3 = Vector3(cos(a2) * 0.3, 0.03, sin(a2) * 0.3)
-			var tip: Vector3 = Vector3(cos(a2) * 0.04, 0.62 + rng.randf_range(-0.05, 0.04), sin(a2) * 0.04)
-			_tube(st, base, tip, 0.04, 0.025, _tone(WOOD_PALE, rng, 0.14), 5, rng)
+		var laid: Array = FIRE_LAID[tier]
+		# 1. A bed of plant fibre inside the ring: a pale tan patch with loose strands lying across it every way.
+		for k in range(10):
+			var t0: float = TAU * float(k) / 10.0
+			var t1: float = TAU * float(k + 1) / 10.0
+			_tri(st, Vector3(0.0, 0.03, 0.0), Vector3(cos(t1), 0.0, sin(t1)) * 0.33 + Vector3(0.0, 0.03, 0.0), Vector3(cos(t0), 0.0, sin(t0)) * 0.33 + Vector3(0.0, 0.03, 0.0), _tone(FIBRE, rng, 0.08), Vector3(0.0, -1.0, 0.0))
 
-		for n in range(8):
-			var a3: float = rng.randf() * TAU
-			var start: Vector3 = Vector3(cos(a3) * 0.2, 0.05, sin(a3) * 0.2)
-			_tube(st, start, start + Vector3(cos(a3 + 1.4) * 0.18, 0.04, sin(a3 + 1.4) * 0.18), 0.012, 0.008, WOOD, 4, rng)
+		for n in range(int(laid[0])):
+			var af: float = rng.randf() * TAU
+			var from: Vector3 = Vector3(cos(af) * rng.randf_range(0.02, 0.22), 0.045 + rng.randf_range(0.0, 0.03), sin(af) * rng.randf_range(0.02, 0.22))
+			var heading: float = rng.randf() * TAU
+			_tube(st, from, from + Vector3(cos(heading) * 0.2, rng.randf_range(0.0, 0.04), sin(heading) * 0.2), 0.009, 0.005, _tone(FIBRE if n % 2 == 0 else FIBRE_DARK, rng, 0.1), 4, rng)
+
+		# 2. Thin sticks criss-crossed over the fibre, in layers, each layer turned against the one below.
+		for layer in range(int(laid[1])):
+			for n in range(int(laid[2])):
+				var ang: float = TAU * float(n) / float(laid[2]) + float(layer) * 0.5 + rng.randf_range(-0.15, 0.15)
+				var offset: float = rng.randf_range(-0.12, 0.12)
+				var dir: Vector3 = Vector3(cos(ang), 0.0, sin(ang))
+				var side: Vector3 = Vector3(-dir.z, 0.0, dir.x) * offset
+				var y: float = 0.07 + 0.035 * float(layer) + rng.randf_range(0.0, 0.015)
+				_tube(st, dir * -0.27 + side + Vector3(0.0, y, 0.0), dir * 0.27 + side + Vector3(0.0, y + rng.randf_range(-0.01, 0.03), 0.0), 0.011, 0.008, _tone(WOOD, rng, 0.14), 4, rng)
+
+		# 3. The bonfire only: four logs laid as a square stack under the sticks.
+		if int(laid[6]) > 0:
+			for n in range(2):
+				var o: float = (float(n) - 0.5) * 0.36
+				_tube(st, Vector3(-0.32, 0.1, o), Vector3(0.32, 0.1, o), 0.055, 0.05, _tone(WOOD, rng, 0.12), 6, rng)
+				_tube(st, Vector3(o, 0.2, -0.32), Vector3(o, 0.2, 0.32), 0.055, 0.05, _tone(WOOD, rng, 0.12), 6, rng)
+
+		# 4. Bigger sticks leaned together in a teepee, meeting near the top.
+		for n in range(int(laid[3])):
+			var a2: float = TAU * float(n) / float(laid[3]) + rng.randf_range(-0.1, 0.1)
+			var foot: Vector3 = Vector3(cos(a2) * 0.3, 0.05, sin(a2) * 0.3)
+			var top: Vector3 = Vector3(cos(a2) * 0.04, float(laid[5]) + rng.randf_range(-0.05, 0.04), sin(a2) * 0.04)
+			_tube(st, foot, top, float(laid[4]), float(laid[4]) * 0.6, _tone(WOOD_PALE, rng, 0.14), 5, rng)
 	else:
 		# Burnt logs: three thick pieces laid across each other in the ring, charred black with a brown end.
 		for n in range(3):
@@ -596,7 +634,7 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 	tier = clampi(tier, 1, 3)
 	var root: Node3D = Node3D.new()
 	var ring: float = float(FIRE_RING_SCALE[tier])
-	var base: MeshInstance3D = _instance(_fire_base(loaded and not lit))
+	var base: MeshInstance3D = _instance(_fire_base(loaded and not lit, tier))
 	base.scale = Vector3(ring, 1.0, ring)
 	root.add_child(base)
 

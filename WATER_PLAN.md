@@ -1,0 +1,74 @@
+# Land and water: findings, research and plan (Sonny, 30 Oct 2026)
+
+Dave made me responsible for land and water (the generator, rivers, lakes, ocean, live water) on 30 Oct 2026, after the character queue. This file holds (1) what was wrong in build 826, measured, (2) the research with sources and my confidence, (3) the plan with phases and sizes. Nothing here changes the tiles on disk: no bake was run.
+
+## 1. What was wrong (diagnosis, with measurements)
+
+### 1.1 The ocean is missing and the land stands 1,000 m too high: the tiles are read at the wrong height step  (symptom d, and the flora altitude finding)
+
+- The nine baked tiles (`worlds/base_world/tiles`, tiles 2..4 by 3..5) were last baked on 24/25 Oct (TERRAIN_VERSION 41, commit be270498 and 9f55bbf0). Their height maps use **0.1 m steps** (`raw x 0.1 - 4000`).
+- Commit 9a110cc1 (29 Oct, TERRAIN_VERSION 43, "vertical range to +4000 m") changed the decoder to **0.125 m steps** and wrote in GENERATOR_NOTES.md "Old saved tiles use the old encoding: re-bake everything". The re-bake did not happen, and the tile header carries no marker for the step, so the decoder silently read old files with the new step.
+- Effect: every height reads as `1.25 x old + 1000 m` (old sea level 0 lands on raw 40,000, which the new step reads as +1,000 m).
+- Measured on the low-resolution maps of all nine tiles (`tools/water_survey.gd`, `water_survey3.gd`):
+  - every ocean-class sample has its water surface at exactly **+1000.0 m** (the full-resolution map of tile 3,4: 1,866,276 ocean cells, all at 1000.0);
+  - the "ocean" cells stand on ground up to 1,000 m: 1,550,703 of the 1,866,276 ocean cells of tile 3,4 (83 percent) have ground above 5 m;
+  - the land class starts at 997 m; the starter tile's peak reads 2,555 m (it is 1,244 m), the deepest ground reads -1,785 m against -2,223 m in the tile's own header (`-2223 x 1.25 + 1000 = -1779`);
+  - read with the 0.1 m step: 0 of 117,212 ocean cells of tile 3,4 lie above sea level and 2 of 112,105 land cells lie below it; the same holds for all nine tiles (`src/worldgen/tools/test_tile_height_format.gd`, 4 s).
+- Where the sea is in the world: sea level is 0 m (`world.json` `sea_level_m` 0; `terrain_server._water_at` puts the sea at 0 wherever the ground is at or below 0; `flora_placer` SEA_LEVEL_M 0). The island coast, correctly read, is at 0 m. As the game read it, the whole coast sat at +1,000 m and the "land" was one continent; the picture `art/water/coast_read_wrong_vs_right.jpg` shows the nine tiles as read (left) and as baked (right: a shallow shelf with several islands).
+- Dave's position (x 51689, z 65076, tile 3,4 local 5609, 3636): read as 521 m of sand dunes; baked ground there is **-390 m, ocean class** (the seabed of a shelf bay). The nearest beach (class land, 4 m) is 1,760 m away at x 52544, z 66592. So there was an ocean; the world had been lifted out of it. The ocean was not lost by the raised range itself: the raise moved nothing, the mismatch between old files and the new decoder did.
+- The flora finding is the same fact: baked forests at 1,000 to 2,100 m are really at 0 to 850 m, which fits the altitude caps of flora.json (oak 900, beech 1000, maple 1100). He flew the nine centre tiles at y about 1,040 to 1,055 with the ground "not far below": the ground was really 0 to 100 m (read as 1,000 to 1,100) near the coast.
+- Are there outer tiles that are placeholders? Yes, by design: a tile with no file is an ocean placeholder (WORLD_FORMAT_SPEC.md); only 9 of the 21 by 21 tiles are baked, the rest is flat deep ocean.
+
+In game after the fix (look rig, first person, standing at the beach x 52600 z 66592 facing west, `art/water/coast_first_person_after_fix.png`): the sea now exists, but it is a flat, featureless grey plane to the horizon with no waves, shore or depth colour, and the shot shows no beach in the foreground, so either the ground blocks had not arrived when the rig took the picture or the player stood in the water; phase 1 repeats it with a longer wait and a second view. That flat sea is the starting point of phase 3.
+
+### 1.2 Rivers: why the water appears late, patchy, and slowly (symptoms a, b, c)
+
+- `terrain_server._start_water` started the water with `dry_start = true` unless `--settled-water` was given ("Owner 2026-10-18: the world starts dry and the springs fill it so the real water paths show"). The launcher's "play" does not pass the flag, so every play session started dry.
+- `WaterHub._tile_data` then blanks `sim_levels` of every tile the hub touches (the live tiles and the neighbours it examines for river crossings) so the baked settled water that `TileTerrainData._load_sim_water` loads for every tile is erased exactly where the hub runs. Water comes back only from the simulation: springs fill ponds and rivers over `WaterLive.START_SECONDS` = 21,600 simulated seconds (6 hours) at the water thread's duty cap.
+- (a) "River water only appears when he flies to the head pond": the baked water of the nine tiles is blanked in the live set and the springs are at the heads; the hub runs at most 4 tiles (`MAX_ACTIVE`, centre first), so a river appears first near its source tile and downstream tiles stay empty until the flow arrives.
+- (b) "It takes forever to fill": 6 simulated hours at a 0.5 core duty cap, one thread.
+- (c) "Broken patches with gaps, bright grey patches": a half-filled network (water in patches where the sim has reached; dry bed between) is the expected picture of a dry start with the rate at x10; the "bright grey patches" have not been seen by me yet: they need a picture of a settled start (see phase 1.3 below) before I call them a separate fault. They may be the thin settled film or the beds drawn in the same material.
+- Fix done tonight: the server now starts from the baked settled water by default; `--dry-water` brings back the old dry start (`--settled-water` is still accepted). With this, every tile draws its settled rivers and lakes from the first second and the hub's live sim loads the saved depths instead of restarting from zero.
+
+## 2. Research: live water on a voxel server (sources and confidence)
+
+Confidence: H = checked against a primary or detailed source, M = consistent across several secondary sources, L = one weak source or my recollection.
+
+| Topic | Finding | Source | Conf. |
+|---|---|---|---|
+| Virtual pipes | Fluid as columns joined by virtual pipes (O'Brien and Hodgins 1995); each pipe's flux is updated from the surface-height difference, depth follows from the net flux, so volume is conserved exactly and the update is local and parallel. Mei et al. (2007) use it for hydraulic erosion on GPU heightmaps; Dagenais et al. (2018) add a stable viscosity term. This is the model our `water_sim.gd` / native `water_core` follow (depth moved between equal cells, a speed ceiling per face). | [Mei, Decaudin, Hu 2007](https://core.ac.uk/download/52631892.pdf) and the survey in [Nilles et al. 2024](https://diglib.eg.org/items/deefa865-6a25-4463-adcd-d8de2b37507e/full); [Dagenais 2018](https://profs.etsmtl.ca/epaquette/Research/Papers/Dagenais.2018.cg/) | H |
+| Cellular automata with mass conservation | Noita's liquids are falling-sand style cellular automata: simple per-cell rules, updated bottom-up, in chunks, with most of the work skipped where nothing moves. | [GDC 2019 Noita talk](https://gdcvault.com/play/1025695/Exploring-the-Tech-and-Design); [80.lv write-up](https://80.lv/articles/noita-a-game-based-on-falling-sand-simulation/) | M (secondary) |
+| Minecraft-style flow | Source and flowing levels: water spreads about 7 cells on flat ground and without limit downward; each direction gets a path weight so water steers toward drops; a flowing cell above a same-fluid source stops; infinite sources need two sources and a gap. Cheap, local, no mass conservation (levels are decreased, not conserved). Good for gameplay rules; wrong for rivers that must carry a volume. | [Minecraft Wiki: Water](https://minecraft.fandom.com/wiki/Water) | M |
+| Terraria | Four liquids share common rules, the slower liquid flows slower; liquids are per tile with sleeping and settling; a liquid on a "bubble" of another makes a block. | [Terraria wiki: Liquids](https://terraria.wiki.gg/wiki/Liquids) | M |
+| Vintage Story | Liquids flow through non-solid blocks; the realistic-water mod recomputes flow when the world changes, with a max path distance. Nothing public on sleeping chunks. | [Vintage Story mod: Realistic Water](https://mods.vintagestory.at/show/mod/47649) | L |
+| Baked water plus a dynamic overlay | The common production answer for large worlds: bake the settled water per tile (we have `water/tile_X_Z.water`), draw it with no simulation, and run the live sim only near players or edits, saving the changed depth to disk on sleep. This is exactly our hub (`MAX_ACTIVE` 4, 1.2 GB cap, save on unload); the gap was the dry start and the blanking. | design reasoning from the sources above; our `water_hub.gd` header | M |
+| Flow-map rendering | Paint (or derive) a flow vector field, advect the normal map along it in two phases offset by half a cycle and blend with noise to hide the restart and the pulsing: about two extra texture fetches and 21 instructions (Valve, Left 4 Dead 2 and Portal 2). We already compute a flow speed and direction per cell (`src/stream/water_flow.gd`), so a flow map is available at no extra simulation cost. | [Vlachos, SIGGRAPH 2010](https://www.advances.realtimerendering.com/s2010/Vlachos-Waterflow(SIGGRAPH%202010%20Advanced%20RealTime%20Rendering%20Course).pdf); [Valve $flowmap](https://developer.valvesoftware.com/wiki/$flowmap) | H |
+| Foam, shore, depth | Foam where the water meets geometry (depth-buffer intersection) and where the surface is steep (rapids, falls); a pressure term where the river narrows; edge fade at the shore; depth fog and refraction from the depth and screen textures. | [GameDev.net: foam with flow mapping](https://gamedev.net/shaderlab/53-foam-with-flow-mapping/); [Waterways (Godot river tool)](https://github.com/Arnklit/WaterGenGodot); [Godot water shader 3D](https://godotshaders.com/shader/water-shader-3d-godot-4-3/); [realistic water with foam and caustics](https://godotshaders.com/shader/realistic-animated-shader-with-foamdropletscausticswaves/) | M |
+| Valheim | I found no official description of its water; third-party mods say rivers use animated ripple normals, reflection, shallow clarity and shore foam. | [ArcaneNaturalWaters changelog](https://thunderstore.io/c/valheim/p/Chazman/ArcaneNaturalWaters/changelog) | L |
+| Server authority and sync | Our own design: the server owns the water (sim_levels per tile), clients draw levels sent per chunk (`water_requested`) and need only deltas; one water thread under a CPU duty cap and a memory cap. | `src/water/water_hub.gd`, `tech/WATER_NINE_TILES_PLAN.md` | H (our code) |
+
+What I could not find: a public source for a voxel game that simulates tens of kilometres of rivers live. Everyone bakes the large water and simulates only near players, which is what we do.
+
+## 3. Plan (phases, sizes, order)
+
+Sizes: S under half a day, M one to two days, L several days. Tests stay small and fast (Tyler's rules); `test_water_soak` (release test, 400 s) keeps the hub's memory cap.
+
+| Phase | What | Size | Status |
+|---|---|---|---|
+| 0 | Read tiles at their own height step; a test that fails when ocean cells stand above the sea; TERRAIN_VERSION 44; rivers start full (`--dry-water` for the old start) | S | **Done 30 Oct (branch sonny-character)** |
+| 1 | Look at it in game: the rig from a beach at the coast (spawn, shore, shelf, ocean), settled rivers, the "bright grey patches"; fix what the pictures show (first suspects: the settled film material, tile seams) | S to M | Next |
+| 2 | Whole-network draw and wake: the settled water of all nine tiles is now drawn from the start; make the hub's wake cover a river that crosses into a tile without a live neighbour, keep the 4-tile and 1.2 GB caps, add a small test that a restart shows the same rivers as the baked files | M | Next |
+| 3 | The ocean: sea plane at 0 m out to the horizon on every side of the baked tiles (the outer 12 tiles are placeholders: flat deep ocean, one shared mesh), with a shore: depth fog and colour by depth, foam at the depth intersection, a wet-sand band on the beach, gentle wave normals; far water LOD | M | After 1 |
+| 4 | Flow you can see: the water shader reads the flow speed and direction per cell (the data `water_flow.gd` already has) into a flow map with the two-phase advected normals; faster in narrows, slower in pools | M | After 3 |
+| 5 | Waterfalls where the bed drops (the settler already finds falls, `fall_levels`): mist, foam at the foot, sound slot | M | After 4 |
+| 6 | Wet shores, bogs and ponds that fill: the land types (`land_type.gd`) already know wet shore and marsh; make the settled start produce them and show them (mud, reeds); small ponds fill after rain through the live sim | M | After 2 |
+| 7 | Rivers on (the pending "natural rivers" decision, `water.drainage.natural.enabled` in `tile_rules.json`): needs the erosion delta (slow1), a re-bake of the nine tiles (about 6 minutes a tile plus settling), re-settled water files, `test_river_surface` and the other pinned tests re-pinned, `TERRAIN_VERSION` bumped with the bake, and the new tiles will write `height_step_m` 0.125 and the rolling ground and tall range of 29 Oct. Do it after phase 1 shows the old tiles are fine in game, and in one planned bake | L | Needs Dave's go (a bake) |
+| 8 | Performance budgets: measure the water thread and the ocean shader on the minimum machine with the frame-time rig; keep `test_water_soak` | S | With each phase |
+
+Things the diagnosis changes: the world Dave has been playing since 29 Oct was the wrong world (every height lifted 1,000 m); the fix puts back the island, shelf and sea. Saved ground edits in a test world made since then sit 1,000 m off and are not valid. Everything tuned on the old heights (spawn pad, starter data, flora altitudes, rivers) is consistent again.
+
+## 4. Open decisions
+
+1. Re-bake all nine tiles with the current generator (phase 7) or keep the 25 Oct tiles for now: the compatibility decode makes the old tiles work; the re-bake brings rolling ground, taller peaks and natural rivers but changes the world.
+2. Saved player edits made since 29 Oct (Dave's test worlds): drop them (default) or shift them by the same transform.
+3. `--dry-water` stays as a developer option; the default is start-full.

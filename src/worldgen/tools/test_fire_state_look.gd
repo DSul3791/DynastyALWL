@@ -5,6 +5,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_fire_state_look.gd
 
 const InventoryView := preload("res://src/client/inventory_view.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 
 var failures: int = 0
 
@@ -17,6 +18,26 @@ func check(ok: bool, what: String) -> void:
 
 func _json(path: String) -> Dictionary:
 	return JSON.parse_string(FileAccess.get_file_as_string(path))
+
+
+func _first_mesh(node: Node) -> Mesh:
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		return (child as MeshInstance3D).mesh
+
+	return null
+
+
+func _triangles(node: Node) -> int:
+	var total: int = 0
+
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		var mesh: Mesh = (child as MeshInstance3D).mesh
+
+		if mesh != null:
+			for surface in mesh.get_surface_count():
+				total += mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX].size() / 3
+
+	return total
 
 
 func _init() -> void:
@@ -41,6 +62,25 @@ func _init() -> void:
 
 		if row is Dictionary and (row as Dictionary).has("state"):
 			check(not InventoryView.is_felled_state(int(row["state"])), "structure %s (state %d) is not drawn as a trunk or stump" % [kind, int(row["state"])])
+
+
+	# The fire looks: laid (unlit, loaded), lit and burnt out, tiers 1 to 3: built, cheap, cached, and the laid one is bigger the higher the tier.
+	var tris: Dictionary = {}
+
+	for tier in range(1, 4):
+		for state_name in ["laid", "lit", "burnt"]:
+			var fire: Node3D = BuildingLook.fire(state_name == "lit", state_name == "laid", tier)
+			var count: int = _triangles(fire)
+			tris["%s_%d" % [state_name, tier]] = count
+			check(count > 40 and count < 3000, "fire %s tier %d is built and cheap (%d triangles)" % [state_name, tier, count])
+			check((fire.get_node_or_null("Light") != null) == (state_name == "lit"), "fire %s tier %d: a light only when lit" % [state_name, tier])
+			var again: Node3D = BuildingLook.fire(state_name == "lit", state_name == "laid", tier)
+			check(_first_mesh(again) == _first_mesh(fire), "fire %s tier %d: the mesh is cached, not rebuilt" % [state_name, tier])
+			fire.free()
+			again.free()
+
+	check(int(tris["laid_1"]) < int(tris["laid_2"]) and int(tris["laid_2"]) < int(tris["laid_3"]), "the laid fire has more sticks the higher the tier (%d, %d, %d)" % [tris["laid_1"], tris["laid_2"], tris["laid_3"]])
+	check(int(tris["laid_2"]) > int(tris["burnt_2"]), "a laid fire is more built-up than a burnt-out one")
 
 	# The server never gives a fire the state of a tree record.
 	var server_src: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")

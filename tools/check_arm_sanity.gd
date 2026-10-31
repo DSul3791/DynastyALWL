@@ -43,6 +43,7 @@ func _initialize() -> void:
 		corner[key] = -1.0
 
 	_check_one(corner, "everything -1")
+	_check_feet()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -100,3 +101,28 @@ func _check_one(g: Dictionary, tag: String) -> Array:
 
 	_ok(absf((wrists[0] as Vector3).x + (wrists[1] as Vector3).x) < 0.001 and absf((wrists[0] as Vector3).y - (wrists[1] as Vector3).y) < 0.001, "%s: both arms mirror each other" % tag)
 	return wrists
+
+
+# The feet: a clear foot shape (heel behind the ankle, an instep, a toe box pointing forward) that grows with the Feet slider, covered by the boot with no skin poking through.
+func _check_feet() -> void:
+	var lengths: Array = []
+
+	for feet in [-1.0, 0.0, 1.0]:
+		var g: Dictionary = Generator.make_genome("average")
+		g["feet"] = feet
+		var rg: Dictionary = Generator.rig(g)
+		var ankle: Vector3 = (rg["global"] as Array)[15]
+		var front: float = 0.0
+		var back: float = 0.0
+		var width: float = 0.0
+
+		for q in Generator.primitives(g, rg, false):
+			if q["t"] == "ell" and (int(q["bone"]) == 15 or int(q["bone"]) == 16) and int(q["mat"]) == 0:
+				front = maxf(front, ankle.z - ((q["c"] as Vector3).z - (q["r"] as Vector3).z))
+				back = maxf(back, ((q["c"] as Vector3).z + (q["r"] as Vector3).z) - ankle.z)
+				width = maxf(width, (q["r"] as Vector3).x)
+
+		lengths.append(front)
+		_ok(front > 0.2 and back > 0.03 and width > 0.04, "feet %.1f: a foot shape: %.3f m in front of the ankle, %.3f behind, half width %.3f" % [feet, front, back, width])
+
+	_ok(float(lengths[0]) < float(lengths[1]) and float(lengths[1]) < float(lengths[2]) and float(lengths[2]) - float(lengths[0]) > 0.05, "the Feet slider changes the foot length (%s)" % str(lengths))
