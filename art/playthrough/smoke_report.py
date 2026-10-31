@@ -84,5 +84,9 @@ for key, row in sorted(rows.items(), key=lambda kv: (order[kv[1]["sev"]], -kv[1]
 if not rows:
     out.append("| - | 0 | no errors or warnings found | | |")
 
+notes_path = os.path.join(ROOT, "art", "playthrough", "smoke", "notes.md")
+if os.path.exists(notes_path):
+    out += ["", "## Notes (hand-written, kept in art/playthrough/smoke/notes.md)", "", open(notes_path, encoding="utf8").read().rstrip()]
+
 open(os.path.join(ROOT, "SMOKE_TEST.md"), "w", encoding="utf8", newline="\n").write("\n".join(out) + "\n")
 print("SMOKE_TEST.md:", len(rows), "distinct messages;", sum(1 for r in rows.values() if r["sev"] == "HIGH"), "HIGH")
