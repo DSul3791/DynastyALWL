@@ -13,12 +13,6 @@
 
 
 
-## pic-grass-feet | Do the character's feet and lower legs now show above the grass in third person (left: before, right: after)?
-Image: questions/img/grass_feet_before_after.png
-Note: Real game, third person, noon, same spot. Flora rates it 4 of 5: grass within 1.8 m of the player is cut low with a soft edge (done in the grass shader, no extra draw), boots and legs are visible; the cut patch is a little visible as a soft hollow.
-- Yes
-- No
-
 ## pic-tall-grass-25m | Can you spot the tall-grass clump (circled) from about 25 m away, standing in the meadow?
 Image: questions/img/tall_grass_25m.png
 Note: Real game, noon, camera 25 m west of a clump at (53358,68366). Flora rates it 3.5 of 5: it reads as a tuft of tall grass with dark plumes at 25 m, but small; at 40 m it is only just visible and dark in shade.
