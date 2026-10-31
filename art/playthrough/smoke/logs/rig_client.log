@@ -1,10 +1,57 @@
 Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
 D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 2060 SUPER
 
-Terrain client: connecting to 127.0.0.1:7895
-Terrain client: welcome after 103 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
-Terrain client: 2026-10-31T06:45:47 [+3.5 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
+Terrain client: connecting to 127.0.0.1:7857
+Terrain client: welcome after 106 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
+Terrain client: 2026-10-31T07:49:37 [+3.3 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
 Terrain client: block line open
-Terrain client: the block line closed; blocks come over the game connection
-Crash report written: res://crash_reports/2026-10-31_06-46-02_build826.txt
-Terrain client: 2026-10-31T06:46:08 [+25.1 s] JOIN: waiting for ground 25 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Crash report written: res://crash_reports/2026-10-31_07-49-53_build826.txt
+Terrain client: 2026-10-31T07:49:54 [+20.8 s] JOIN: waiting for ground 20 s after the welcome: loads 19, received 56 (total 56), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: ground under (53316, 68476) is at 31.6 m
+Terrain client: 2026-10-31T07:49:54 [+20.9 s] JOIN: column answer 20.9 s after the welcome: ground 31.6 m, player 34.1 m, viewer y 34.1
+Terrain client: 2026-10-31T07:49:59 [+25.8 s] JOIN: waiting for ground 25 s after the welcome: loads 38, received 129 (total 129), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:04 [+30.8 s] JOIN: waiting for ground 30 s after the welcome: loads 38, received 129 (total 129), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:09 [+35.8 s] JOIN: waiting for ground 35 s after the welcome: loads 38, received 129 (total 129), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: ground under (53344, 68464) is at 31.0 m
+Terrain client: 2026-10-31T07:50:10 [+36.6 s] JOIN: column answer 36.6 s after the welcome: ground 31.0 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53354, 68443) is at 30.3 m
+Terrain client: 2026-10-31T07:50:10 [+36.6 s] JOIN: column answer 36.6 s after the welcome: ground 30.3 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53304, 68397) is at 26.9 m
+Terrain client: 2026-10-31T07:50:14 [+40.3 s] JOIN: column answer 40.3 s after the welcome: ground 26.9 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53315, 68482) is at 31.5 m
+Terrain client: 2026-10-31T07:50:14 [+40.3 s] JOIN: column answer 40.3 s after the welcome: ground 31.5 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53304, 68486) is at 30.8 m
+Terrain client: 2026-10-31T07:50:14 [+40.3 s] JOIN: column answer 40.3 s after the welcome: ground 30.8 m, player 34.1 m, viewer y 34.1
+Terrain client: 2026-10-31T07:50:15 [+41.5 s] JOIN: waiting for ground 41 s after the welcome: loads 264, received 1176 (total 1176), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:20 [+46.5 s] JOIN: waiting for ground 46 s after the welcome: loads 1377, received 2956 (total 2956), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:25 [+51.6 s] JOIN: waiting for ground 51 s after the welcome: loads 2662, received 4710 (total 4710), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:30 [+56.6 s] JOIN: waiting for ground 56 s after the welcome: loads 3658, received 6443 (total 6443), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:35 [+61.6 s] JOIN: waiting for ground 61 s after the welcome: loads 4421, received 7866 (total 7866), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T07:50:36 [+62.8 s] JOIN: ground ready after 0 retries, test drops 0, player (53316.0, 34.07495, 68476.0), viewer y 34.1
+WARNING: client: ZEROED BLOCK (3332, 1, 4280) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
+   at: VariantUtilityFunctions::push_warning (core\variant\variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _note_zeroed (res://src/stream/network_voxel_stream.gd:332)
+       [1] _store (res://src/stream/network_voxel_stream.gd:292)
+       [2] _load_inner (res://src/stream/network_voxel_stream.gd:267)
+       [3] _load (res://src/stream/network_voxel_stream.gd:127)
+       [4] _load_voxel_block (res://src/stream/network_voxel_stream.gd:70)
+client: ZEROED BLOCK (3332, 1, 4280) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
+WARNING: client: ZEROED BLOCK (3332, 2, 4279) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
+   at: VariantUtilityFunctions::push_warning (core\variant\variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _note_zeroed (res://src/stream/network_voxel_stream.gd:332)
+       [1] _store (res://src/stream/network_voxel_stream.gd:292)
+       [2] _load_inner (res://src/stream/network_voxel_stream.gd:189)
+       [3] _load (res://src/stream/network_voxel_stream.gd:127)
+       [4] _load_voxel_block (res://src/stream/network_voxel_stream.gd:70)
+client: ZEROED BLOCK (3332, 2, 4279) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
+WARNING: client: ZEROED BLOCK (3329, 0, 4280) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
+   at: VariantUtilityFunctions::push_warning (core\variant\variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _note_zeroed (res://src/stream/network_voxel_stream.gd:332)
+       [1] _store (res://src/stream/network_voxel_stream.gd:292)
+       [2] _load_inner (res://src/stream/network_voxel_stream.gd:189)
+       [3] _load (res://src/stream/network_voxel_stream.gd:127)
+       [4] _load_voxel_block (res://src/stream/network_voxel_stream.gd:70)
+client: ZEROED BLOCK (3329, 0, 4280) at LOD 0 (from the server, 42 bytes, hash 99522065); not used, asked for again
