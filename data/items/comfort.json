@@ -192,7 +192,7 @@
 			"class": "decor",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "flower_pot_kit"
 		},
 		{
@@ -200,7 +200,7 @@
 			"class": "decor",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "antler_mount_kit"
 		}
 	],

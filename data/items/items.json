@@ -5667,7 +5667,6 @@
 			"description": "A pot of flowers.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"antler_mount": {
@@ -5676,7 +5675,6 @@
 			"description": "Antlers mounted on a board.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"bench_kit": {
@@ -5789,7 +5787,6 @@
 			"description": "A clay pot of soil with a living plant.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 9
 		},
@@ -5799,7 +5796,6 @@
 			"description": "A pair of antlers on a plaque. A hunter's trophy.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 42
 		}
