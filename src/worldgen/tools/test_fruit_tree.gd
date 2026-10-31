@@ -182,6 +182,9 @@ func _init() -> void:
 			bad.append("%s season %d of 4" % [species_name, in_count])
 
 	check(bad.is_empty() and drops["fruit_tree"].size() >= 19, "every fruit tree variety (%d) has a flora row, its item, a store and a limited season %s" % [drops["fruit_tree"].size(), str(bad)])
+	# Drawn fruit follows the store in five levels (Kathleen's fruit shader: INSTANCE_CUSTOM.a = share picked): 100, 66, 33, 10 and 0 percent left.
+	var view_script = load("res://src/flora/flora_view.gd")
+	check(view_script.fruit_level(0.0) == 0.0 and view_script.fruit_level(0.2) == 0.34 and view_script.fruit_level(0.6) == 0.67 and view_script.fruit_level(0.85) == 0.9 and view_script.fruit_level(1.0) == 1.0, "picked share maps to the five fruit levels (0, 0.34, 0.67, 0.9, 1.0)")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
 
