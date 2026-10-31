@@ -103,7 +103,7 @@ class Acc:
 # "birch_bark": Material, "twig": Material, "oak": Material, "smooth_bark": Material}. `season`: "winter" gives species that
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
-static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false) -> ArrayMesh:
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
@@ -215,6 +215,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		_:
 			_shrub(bark, leaves, rng, h, crown, far)
 
+	_fruit_finish(fruit, entry, fruit_share)
+
 	if h >= 3.0 and str(entry["shape"]) not in ["grass", "reed", "fern", "flower", "mushroom"]:
 		_crown_shading(leaves, twigs, [bark, white, smooth])
 
@@ -240,6 +242,43 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	leaf_kind = str(entry.get("leaf", leaf_kind))
 	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
 	return mesh
+
+
+# The fruit surface of a fruit tree: an optional entry "fruit_color" [r, g, b] recolours an apple (the apple varieties share one model: the base is APPLE_TINT, the per-bead shade is kept),
+# and `fruit_share` (0..1) keeps only the fruits whose rank (vertex alpha) is below it, so one model builds as 100, 66, 33, 10 or 0 percent of its fruit. Whole beads (six vertices) are dropped.
+static func _fruit_finish(fruit: Acc, entry: Dictionary, share: float) -> void:
+	if fruit.v.is_empty():
+		return
+
+	if entry.has("fruit_color") and str(entry.get("model", "")) == "wild_apple":
+		var want: Array = entry["fruit_color"]
+
+		for k in range(fruit.c.size()):
+			var col: Color = fruit.c[k]
+			fruit.c[k] = Color(col.r / APPLE_TINT.r * float(want[0]), col.g / APPLE_TINT.g * float(want[1]), col.b / APPLE_TINT.b * float(want[2]), col.a)
+
+	if share >= 0.999:
+		return
+
+	var keep: Acc = Acc.new()
+
+	for first in range(0, fruit.v.size(), 6):
+		if fruit.c[first].a >= share:
+			continue
+
+		var base: int = keep.v.size()
+
+		for k in range(6):
+			keep.vert(fruit.v[first + k], fruit.n[first + k], fruit.uv[first + k], fruit.c[first + k])
+
+		for q in [[0, 4, 2], [1, 2, 4], [0, 3, 4], [1, 4, 3], [0, 5, 3], [1, 3, 5], [0, 2, 5], [1, 5, 2]]:
+			keep.tri(base + q[0], base + q[1], base + q[2])
+
+	fruit.v = keep.v
+	fruit.n = keep.n
+	fruit.uv = keep.uv
+	fruit.c = keep.c
+	fruit.i = keep.i
 
 
 # Baked shading in the vertex colours, no extra triangles (Dave 2026-10-31: trees looked evenly lit). Leaves darken toward the crown's centre and underside
