@@ -610,6 +610,58 @@
 				]
 			],
 			"hunt_difficulty": 1.8
+		},
+		"seal": {
+			"size_kg": 80.0,
+			"parts": [
+				[
+					"seal_meat",
+					8,
+					12
+				],
+				[
+					"hide",
+					1,
+					2
+				],
+				[
+					"bone",
+					3,
+					5
+				],
+				[
+					"animal_fat",
+					4,
+					7
+				]
+			],
+			"hunt_difficulty": 2.0
+		},
+		"seabird": {
+			"size_kg": 1.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					4,
+					8
+				],
+				[
+					"egg",
+					1,
+					2
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.8
 		}
 	}
 }

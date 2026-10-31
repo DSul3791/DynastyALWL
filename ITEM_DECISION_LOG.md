@@ -248,3 +248,7 @@ Merged origin/DailyDev_20261029 into the branch (clean). Added items 346-352, re
 
 ## Guide findings pass (2026-10-31)
 Decisions (reversible): F-01 rule = known unless forge/workbench level 2+ (76 flipped); axe twine left at 5 (tests hard-code it); stone wedge route for lumber (moderator QA yes). See PLAYTHROUGH_FINDINGS.md section 5, LEARN_SYSTEM_SPEC.md, FLINT_ORE_SPEC.md. New items: Stone wedge 353, Fibre arrow 354.
+
+## Moderator round 3 (2026-10-31)
+Axe/spear to 2 twine (tests updated). Straw from tall grass. Shore and sea foods added: Seaweed, Shellfish, Crab meat, Egg, Seal meat, Sea salt, Steamed Shellfish, Boiled egg, Seal Steak (items 355-363; cooking through cooking.json cooks_into; kcal and spoilage follow existing cooked/raw ratios, my numbers); carcass rows seal, seabird. FAUNA_BY_BIOME.md, LOG_SPECIES_SPEC.md, BUILD_ORDERS.md written.
+Plans (self-approved): 1 per-tier build orders with timings (done, BUILD_ORDERS.md); 2 add Sea salt recipe once a water-gather action exists (code); 3 recheck BUILD_ORDERS.md after the flint/ore code lands.

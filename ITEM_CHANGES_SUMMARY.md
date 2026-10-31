@@ -52,3 +52,6 @@ Items 332 to 345 and recipes 221 to 224: six crops with seeds, Quern, Compost. S
 
 ## Fauna items (added 2026-10-30, all `future`)
 Items 346 to 352 and recipes 225 to 226: Antler, Tusk, Claw, Down, Quill, Hide glue, Bone arrow. 14 new carcass loot rows. See ANIMAL_SPEC.md and data/animals/fauna_proposal.json.
+
+## Round 3 (2026-10-31)
+Axe and spear 2 twine; tinder, bedding, straw, fibre arrow, stone wedge; shore foods 355 to 363. See ITEM_DECISION_LOG.md.

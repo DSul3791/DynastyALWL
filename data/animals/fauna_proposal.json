@@ -941,6 +941,92 @@
 			"kg": 0.1,
 			"status": "proposed",
 			"needs_new_work": "shore ambient; trap-able"
+		},
+		{
+			"id": "seal",
+			"name": "Harbour seal",
+			"group": "mammal",
+			"latin": "Phoca vitulina",
+			"biomes": [
+				"beach"
+			],
+			"diet": "fish, squid",
+			"group_size": "5-30 (haul-out)",
+			"activity": "day on shore, hunts at sea",
+			"rarity_1common_5rare": 3,
+			"role": "prey (shore)",
+			"kg": 80,
+			"status": "carcass row only",
+			"needs_new_work": "spawn on beach + model; slow on land, dives (behaviour); loot seal_meat, hide, fat"
+		},
+		{
+			"id": "seabird",
+			"name": "Seabird colony (gull, puffin, tern)",
+			"group": "bird",
+			"latin": "Larus / Fratercula / Sterna",
+			"biomes": [
+				"beach"
+			],
+			"diet": "fish, scraps",
+			"group_size": "10-60 (colony)",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey / egg source",
+			"kg": 1.5,
+			"status": "carcass row only",
+			"needs_new_work": "nest nodes give eggs (new gather); flock reuse duck code"
+		},
+		{
+			"id": "mussel",
+			"name": "Mussel / limpet beds",
+			"group": "shellfish",
+			"latin": "Mytilus edulis / Patella",
+			"biomes": [
+				"beach"
+			],
+			"diet": "filter feeders",
+			"group_size": "bed",
+			"activity": "tide",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.05,
+			"status": "proposed",
+			"needs_new_work": "tide-line gather node gives shellfish (new code)"
+		},
+		{
+			"id": "kelp",
+			"name": "Kelp and wrack",
+			"group": "seaweed",
+			"latin": "Laminaria / Fucus",
+			"biomes": [
+				"beach"
+			],
+			"diet": "n/a",
+			"group_size": "patch",
+			"activity": "tide",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "tide-line gather node gives seaweed (new code)"
+		},
+		{
+			"id": "shore_crab_node",
+			"name": "Rock pool crabs",
+			"group": "crustacean",
+			"latin": "Carcinus maenas",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"diet": "scraps",
+			"group_size": "1-5",
+			"activity": "night",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "gather node gives crab_meat; or trap"
 		}
 	]
 }
