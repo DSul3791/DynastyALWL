@@ -21,3 +21,9 @@ The three live models share one builder (`_make_quad`) whose node names (Rig, He
 | 4 | deer_fox_rabbit_round4.png | check of all three side by side | consistent style; rabbit still the old model |
 
 New ratings (offline, no game light, not yet seen in the real game): fox 3, deer 3, rabbit 2 (unchanged: needs haunch, long ears, muzzle). Horse and moose use the same builder and inherit the neck, head and ear changes unchecked: look at them next. Remaining flaws seen: legs still thin straight boxes, bodies two joined blobs, fox ears thin and dark. test_animals: 1 failure, the known 150-animal server timing check (3.4 ms against 3 ms on this loaded machine), unrelated to shapes.
+
+## Rabbit rework (2026-10-31)
+
+References: field-guide photographs of the European rabbit (agouti brown-grey coat, hunched rounded body with big haunches, short forelegs, long hind feet, small blunt head, long dark-tipped ears, rusty nape patch, pale belly and chin, white-underside scut). Round 1 (rabbit_round1_before.png) was an egg with stick ears; round 2 (rabbit_round2.png) rebuilt it: a big rounded haunch, hunched body, small head with a pale muzzle and nose, long leaf-shaped ears with dark tips, a rusty nape patch, forelegs and long hind feet, white scut; round 3 (rabbit_round3.png) widened the ears, shrank the nape patch and tucked the hind feet under the haunch. Node names (Rig, Ear_L, Ear_R) kept, so the hop animation is unchanged.
+
+Rating 3 (reads clearly as a rabbit from all four sides, offline). To reach 4: fur tone variation (a darker back, lighter flanks), a hint of white on the inside of the ears, the feet merged into the body so no boxes show, and a check in the real game at 10 and 30 m with the hop animation.
