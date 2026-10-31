@@ -27,14 +27,14 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## Minute 8 to 12: the first tool, the first tree
 
-7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 4 s). Check: stone axe in the pack.
+7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
 9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
 10. Trigger: tree down. Line: "Keep striking the fallen trunk: first its branches come off (sticks and leaves), then logs." (3 branch blows: 1-3 sticks and 1-3 leaves each; then a log every 3 blows, carried on your shoulder; Q puts it down.) Check: 6 leaves and 10 sticks in the pack. **Do not tell the player to make a chopping block yet (F-16).**
 
 ## Minute 12 to 18: fire
 
-11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 3 s). Check: campfire kit in the pack.
+11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
 14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: sticks burn 15 game minutes each, firewood an hour, a log two hours. One game hour is 2.5 real minutes." Check: one fuel added.
@@ -49,9 +49,9 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## Minute 26 to 30: tools and what comes next
 
-20. Trigger: bed placed. Line: "A Workbench (12 sticks, 3 twine) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
-21. Trigger: workbench placed. Line: "For defence make a Wooden spear: 1 stick (keep a stone in your pack), then bind it with 2 twine for a stone spear. Left click jabs; hold right click to aim a throw." (recipes 5 and 3.) Check: spear made.
-22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick)." (recipe 6.) Check: knife made.
+20. Trigger: bed placed. Line: "A Camp bench, the workbench (20 sticks, 6 twine, 4 stones; 60 s; or 4 logs, 6 twine, 6 sticks) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
+21. Trigger: workbench placed. Line: "For defence make a Wooden spear: 1 stick (keep a stone in your pack), then bind it with 2 twine for a stone spear. Left click jabs; hold right click to aim a throw." (recipes 5 and 3; 6 s and 10 s.) Check: spear made.
+22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick; 8 s)." (recipe 6.) Check: knife made.
 
 ## What the tutorial must NOT promise yet
 
