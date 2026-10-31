@@ -1930,3 +1930,7 @@ Answered: 2026-10-31 20:05 UTC
 Answer: Yes | Comment: Yes, it looks like it’s working. It might be blocky. Maybe the water squares are too big but it does look like it’s working.
 Answered: 2026-10-31 20:05 UTC
 
+## pic-water2-calm-rough | Is "fast but calm" vs "fast and rough" a good split (the same river at 4.9 m/s, left calm, right rough)?
+Answer: Yes | Comment: Yes, we are gonna make it work right now, but we’re gonna make it look better later so for now as long as it fills in all the gaps and flows down over hill size and acts like proper water then it’s good
+Answered: 2026-10-31 20:07 UTC
+
