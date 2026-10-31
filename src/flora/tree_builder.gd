@@ -1728,7 +1728,7 @@ static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumber
 	var trunk_r: float = maxf(trunk * 0.6, h * 0.014)
 	var drift: Vector3 = Vector3(rng.randf_range(-0.02, 0.02), 0.0, rng.randf_range(-0.02, 0.02)) * h
 	var crown_w: float = maxf(crown * 0.8, h * 0.28) * rng.randf_range(0.9, 1.1)
-	_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, trunk_r, crown_w, h * rng.randf_range(0.24, 0.3), 8 if far else rng.randi_range(16, 20), 1.0, BARK_TINT_BEECH, far, bare, 0.4)
+	_pole(smooth, leaves, twigs, rng, Vector3.ZERO, Vector3(0.0, h * 0.95, 0.0) + drift, trunk_r, crown_w, h * rng.randf_range(0.29, 0.36), 8 if far else rng.randi_range(16, 20), 1.0, BARK_TINT_BEECH, far, bare, 0.4)
 
 
 # A slim, straight stem from `base` to `top` with short limbs climbing along it
