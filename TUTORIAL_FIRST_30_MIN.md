@@ -2,7 +2,16 @@
 
 Written to become the in-game tutorial text. Every line states only what the game really does today (data of 2026-10-31 and the server code; see `PLAYTHROUGH_GUIDE.md` and `PLAYTHROUGH_FINDINGS.md` for the evidence). Each step has a **trigger** (when to show it), the **line** (the text, second person, short), and a **check** (what the game must see for the step to be done). Numbers are the real recipe numbers; if a recipe changes, `art/playthrough/status_check.py` and `PLAYTHROUGH_CHAPTERS.md` show it.
 
-What a new player finds at the spawn (probe_spawn_output.txt, real flora placer): a forest pond shore, temperate forest, ground 31 m. Within 50 m: about 190 ferns, 88 balsam firs, 44 nettles, 30 hazels, 20 raspberry bushes, 14 wild garlic, 12 comfrey, 17 beeches, 5 oaks; 6 grown trees (cover) within 50 m and 17 within 100 m. Loose sticks and stones are laid thicker around the spawn on purpose (1-2 extra stones, 2-3 extra sticks per 32 m square within 300 m). There are **no** tall grass, flax, reeds or heather in the forest: fibre comes from **nettles**.
+What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, real flora placer, re-run after the flora density merge): a forest pond shore, temperate forest, ground 31 m. Within 50 m: about 190 ferns, 88 balsam firs, 67 tall grass, 49 nettles, 30 hazels, 29 raspberry bushes, 18 elder, 17 beeches, 15 reeds, 14 wild garlic, 12 comfrey; 6 grown trees (cover) within 50 m, 17 within 100 m, 80 within 200 m (nearest: a 23 m beech 19 m away). Within 100 m: 142 nettles, 214 tall grass, 33 reeds, 577 ferns. Loose sticks and stones are laid thicker around the spawn on purpose (1-2 extra stones, 2-3 extra sticks per 32 m square within 300 m). Plant fibre comes from **nettles** and **tall grass** (and reeds), thatch from tall grass and reeds, bedding from ferns.
+
+## Fix status that changes this script (2026-10-31; `PLAYTHROUGH_STATUS.md` has the live table)
+
+| Fix | State | What the script gains when it lands |
+|---|---|---|
+| F-01 recipes known | **landed** (173 of 192 learnable) | pickaxe, club, kindling, hide clothes, waterskin are in the script's later steps |
+| F-16 plain `log` recipes | **still broken** | steps A below (chopping block, planks, lumber, wooden house) |
+| F-02 flint pickup | **still broken** | steps B below (hide scraper, tanning, sickle, javelin) |
+| F-03 tinder sources | landed | the fire step may name birch bark, tinder (2 thatch make 2) as well as plant fibre |
 
 ## Minute 0 to 3: look, drink, move
 
@@ -58,3 +67,31 @@ What a new player finds at the spawn (probe_spawn_output.txt, real flora placer)
 ## Checks the game can run to advance each step
 
 Steps 4 to 22 each end on an inventory or world event the server already knows (items in the pack, a crafted item, a placed structure with `kind` lean_to, rough_bed or workbench, a fire whose state is lit, a tree felled). No new server code is needed to detect them; the tutorial layer only has to watch the pack and the placed structures.
+
+## Steps that unlock when the open fixes land (write them in now, switch them on with the fix)
+
+**A. When F-16 lands (a felled `log_oak` counts as a `log`):**
+
+| Trigger | Line | Recipe (data) |
+|---|---|---|
+| 2 logs in the pack or on the shoulder | "Lay the logs down (Q) and make a Chopping block: 2 logs." | #15, 3 s |
+| a chopping block placed and an axe held | "Press E at the block to split a wooden block into firewood. Hold E to keep splitting." | server: one block to one firewood |
+| workbench placed | "Rough planks: 1 log makes 4 planks at the workbench." | #143, 6 s |
+| workbench placed, stone wedge (2 stones + 1 stick, #227) in the pack | "Split a log into 2 lumber with the wedge." | #230 lumber_wedge, 14 s |
+| 4 lumber + 1 twine | "Wall section kit: 4 lumber, 1 twine; floor 4 lumber, 1 twine; roof 5 lumber, 2 twine, 2 sticks; doorway 3 lumber, 1 twine." | #119, #120, #121, #123 |
+| 4 logs, 6 twine, 6 sticks | "Log workbench: the second bench tier." | #49, 30 s |
+
+A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs = 14 trees' worth of logs. Say so in the text.
+
+**B. When F-02 lands (flint can be picked up):**
+
+| Trigger | Line | Recipe |
+|---|---|---|
+| flint + stick + twine, workbench | "Hide scraper." | #180 |
+| hide + scraper | "Scrape a hide: processed hide, the start of leather." | #179 |
+| flint + stick + twine | "Sickle." | #187 |
+| 2 sticks + 1 flint | "Javelins (2)." | #181 |
+
+## Time and quantity check
+
+`PLAYTHROUGH_BUDGET.md` says what the whole order of play costs: about 4 minutes of hands-on time (estimate, see the parameters there) from the first stick to the spear and knife, with 34 plant fibre and about 9 trees' worth of sticks and leaves; the tutorial's 30 minutes is therefore mostly reading and walking.

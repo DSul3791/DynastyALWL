@@ -104,3 +104,32 @@ broken = sum(1 for r in rows if r[2] == "STILL BROKEN")
 out.append("\n%d fixed, %d still broken, %d manual." % (fixed, broken, len(rows) - fixed - broken))
 open(os.path.join(ROOT, "PLAYTHROUGH_STATUS.md"), "w", encoding="utf8", newline="\n").write("\n".join(out) + "\n")
 print("PLAYTHROUGH_STATUS.md:", fixed, "fixed,", broken, "still broken")
+
+# Delta against the last run (status.json), so a note can carry the change and not the whole table.
+cur = {r[0]: r[2] for r in rows}
+path = os.path.join(ROOT, "art/playthrough/status.json")
+try:
+    old = json.load(open(path, encoding="utf8"))
+except Exception:
+    old = {}
+for fid, st in cur.items():
+    if fid in old and old[fid] != st:
+        print("DELTA", fid, old[fid], "->", st)
+json.dump(cur, open(path, "w", encoding="utf8"), indent=0)
+
+# Keep the scoreboard in PLAYTHROUGH_FINDINGS.md current (between the two marker lines; the file is created with them at the end if missing).
+board = ["<!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->", "## Scoreboard: FIXED / STILL BROKEN (" + __import__("datetime").date.today().isoformat() + ")", "", "| id | what | status | evidence (short) |", "|---|---|---|---|"]
+for fid, title, st, ev, owner in rows:
+    board.append("| %s | %s | **%s** | %s |" % (fid, title, st, ev.replace("|", "/")[:110]))
+board.append("")
+board.append("%d fixed, %d still broken, %d manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`." % (fixed, broken, len(rows) - fixed - broken))
+board.append("<!-- SCOREBOARD END -->")
+fp = os.path.join(ROOT, "PLAYTHROUGH_FINDINGS.md")
+NL = chr(10)
+body = open(fp, encoding="utf8", newline="").read().replace(chr(13) + NL, NL)
+block = NL.join(board)
+if "<!-- SCOREBOARD START" in body:
+    body = re.sub(r"<!-- SCOREBOARD START.*?<!-- SCOREBOARD END -->", lambda m: block, body, flags=re.S)
+else:
+    body = body.rstrip(NL) + NL + NL + "---" + NL + NL + block + NL
+open(fp, "w", encoding="utf8", newline=NL).write(body)

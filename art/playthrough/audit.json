@@ -1,8 +1,8 @@
 {
  "counts": {
-  "items": 467,
-  "recipes": 183,
-  "recipes_known_or_open": 164,
+  "items": 477,
+  "recipes": 192,
+  "recipes_known_or_open": 173,
   "structures": 37,
   "blueprints": 6
  },
@@ -469,7 +469,7 @@
    "blocked_by": [
     "no source anywhere for willow_bark"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "grass_skirt",
@@ -906,7 +906,7 @@
    "wave_now": 2,
    "wave_potential": 2,
    "blocked_by": [],
-   "future": false
+   "future": true
   },
   {
    "id": "cook_baked_apples",
@@ -957,11 +957,9 @@
    "station": "campfire",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for wild_garlic_bulbs"
-   ],
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1015,11 +1013,9 @@
    "station": "campfire_pot",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for wild_garlic_bulbs"
-   ],
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1073,11 +1069,9 @@
    "station": "campfire_pot",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for seeds,dandelion_leaves"
-   ],
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1088,11 +1082,9 @@
    "station": "campfire",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for wild_garlic_bulbs"
-   ],
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1367,7 +1359,7 @@
    "blocked_by": [
     "no source anywhere for iron_ingot"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "cobblestone",
@@ -1408,7 +1400,7 @@
    "blocked_by": [
     "no source anywhere for pine_tar"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "hinges",
@@ -1423,7 +1415,7 @@
    "blocked_by": [
     "no source anywhere for iron_ingot"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "wooden_pin",
@@ -1510,7 +1502,7 @@
    "blocked_by": [
     "no source anywhere for saw_blade"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "lumber_by_hand",
@@ -1691,12 +1683,10 @@
    "station": "clay_hearth",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for seeds"
-   ],
-   "future": false
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": true
   },
   {
    "id": "cook_honey_loaf",
@@ -1709,7 +1699,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "no source anywhere for seeds,honeyspindle_nectar"
+    "no source anywhere for honeyspindle_nectar"
    ],
    "future": false
   },
@@ -1721,11 +1711,9 @@
    "station": "oven",
    "station_level": 1,
    "known": true,
-   "wave_now": null,
-   "wave_potential": null,
-   "blocked_by": [
-    "no source anywhere for wild_garlic_bulbs"
-   ],
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1767,7 +1755,7 @@
    "blocked_by": [
     "no source anywhere for hide_scraper"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "hide_scraper",
@@ -2277,7 +2265,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "leather_jerkin",
@@ -2613,6 +2601,127 @@
     "no source anywhere for leather"
    ],
    "future": true
+  },
+  {
+   "id": "wool_tunic",
+   "number": 237,
+   "category": "Clothing",
+   "gives": "wool_tunic",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "wool_trousers",
+   "number": 238,
+   "category": "Clothing",
+   "gives": "wool_trousers",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "wool_cap",
+   "number": 239,
+   "category": "Clothing",
+   "gives": "wool_cap",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "wool_mittens",
+   "number": 240,
+   "category": "Clothing",
+   "gives": "wool_mittens",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "linen_shirt",
+   "number": 241,
+   "category": "Clothing",
+   "gives": "linen_shirt",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for linen"
+   ],
+   "future": true
+  },
+  {
+   "id": "fur_cloak",
+   "number": 242,
+   "category": "Clothing",
+   "gives": "fur_cloak",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "fur_hat",
+   "number": 243,
+   "category": "Clothing",
+   "gives": "fur_hat",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "fur_boots",
+   "number": 244,
+   "category": "Clothing",
+   "gives": "fur_boots",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "linen",
+   "number": 245,
+   "category": "Materials",
+   "gives": "linen",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flax"
+   ],
+   "future": true
   }
  ],
  "items": [
@@ -2709,7 +2818,7 @@
     "recipe:campfire"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -2841,7 +2950,7 @@
     "recipe:lean_to_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -2861,7 +2970,7 @@
     "recipe:chest_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -2916,7 +3025,7 @@
     "recipe:plank_chest_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3277,7 +3386,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (bottle)",
-   "future": false
+   "future": true
   },
   {
    "id": "grass_skirt",
@@ -3476,7 +3585,7 @@
     "recipe:workbench_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3562,7 +3671,7 @@
     "recipe:tool_rack_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3580,7 +3689,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3600,7 +3709,7 @@
     "recipe:log_workbench_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3618,7 +3727,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3636,7 +3745,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3663,7 +3772,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -3681,7 +3790,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4002,7 +4111,7 @@
    ],
    "obtainable": "now",
    "look": "ok (mound)",
-   "future": false
+   "future": true
   },
   {
    "id": "baked_apples",
@@ -4044,7 +4153,7 @@
    "sources": [
     "recipe:cook_garlic_meat"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (joint)",
    "future": false
   },
@@ -4088,7 +4197,7 @@
    "sources": [
     "recipe:cook_hunters_stew"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (stew)",
    "future": false
   },
@@ -4132,7 +4241,7 @@
    "sources": [
     "recipe:cook_hearty_pottage"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (stew)",
    "future": false
   },
@@ -4143,7 +4252,7 @@
    "sources": [
     "recipe:cook_feast_roast"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (joint)",
    "future": false
   },
@@ -4155,7 +4264,7 @@
     "recipe:wall_section_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4175,7 +4284,7 @@
     "recipe:floor_section_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4195,7 +4304,7 @@
     "recipe:roof_section_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4215,7 +4324,7 @@
     "recipe:foundation_section_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4235,7 +4344,7 @@
     "recipe:doorway_section_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4255,7 +4364,7 @@
     "recipe:window_section_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4275,7 +4384,7 @@
     "recipe:timber_prop_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4295,7 +4404,7 @@
     "recipe:timber_set_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4348,7 +4457,7 @@
     "recipe:ladder_kit"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4444,7 +4553,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (needle)",
-   "future": false
+   "future": true
   },
   {
    "id": "cobblestone",
@@ -4477,7 +4586,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (pile)",
-   "future": false
+   "future": true
   },
   {
    "id": "hinges",
@@ -4488,7 +4597,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (ingot)",
-   "future": false
+   "future": true
   },
   {
    "id": "wooden_pin",
@@ -4573,7 +4682,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4591,7 +4700,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4623,7 +4732,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (saw)",
-   "future": false
+   "future": true
   },
   {
    "id": "wooden_hammer",
@@ -4644,7 +4753,7 @@
     "recipe:rough_bed_kit,rough_bed_bedding,rough_bed_straw"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4664,7 +4773,7 @@
     "recipe:thatch_wall_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4684,7 +4793,7 @@
     "recipe:campfire_pot_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4702,7 +4811,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4733,7 +4842,7 @@
     "recipe:thatch_floor_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4753,7 +4862,7 @@
     "recipe:thatch_roof_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4773,7 +4882,7 @@
     "recipe:thatch_doorway_kit"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4800,7 +4909,7 @@
    "kind": "placeable",
    "sources": [],
    "obtainable": "RECIPE BLOCKED",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4854,9 +4963,9 @@
    "sources": [
     "recipe:cook_flatbread"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (loaf)",
-   "future": false
+   "future": true
   },
   {
    "id": "honey_loaf",
@@ -4876,7 +4985,7 @@
    "sources": [
     "recipe:cook_roast_joint"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "now",
    "look": "ok (chunk)",
    "future": false
   },
@@ -4888,7 +4997,7 @@
     "recipe:snare"
    ],
    "obtainable": "now",
-   "look": "ok (kit)",
+   "look": "override look",
    "future": false
   },
   {
@@ -4936,7 +5045,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": false
+   "future": true
   },
   {
    "id": "leather",
@@ -5386,7 +5495,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": false
+   "future": true
   },
   {
    "id": "leather_jerkin",
@@ -5471,7 +5580,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5480,7 +5589,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5489,7 +5598,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5498,7 +5607,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5507,7 +5616,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5516,7 +5625,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5525,7 +5634,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5534,7 +5643,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5543,7 +5652,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5552,7 +5661,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5561,7 +5670,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5570,7 +5679,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5787,6 +5896,116 @@
    "kind": "food",
    "sources": [
     "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wool",
+   "number": 364,
+   "kind": "material",
+   "sources": [
+    "carcass:wild_sheep"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "linen",
+   "number": 365,
+   "kind": "material",
+   "sources": [
+    "recipe:linen"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wool_tunic",
+   "number": 366,
+   "kind": "clothing",
+   "sources": [
+    "recipe:wool_tunic"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wool_trousers",
+   "number": 367,
+   "kind": "clothing",
+   "sources": [
+    "recipe:wool_trousers"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wool_cap",
+   "number": 368,
+   "kind": "clothing",
+   "sources": [
+    "recipe:wool_cap"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wool_mittens",
+   "number": 369,
+   "kind": "clothing",
+   "sources": [
+    "recipe:wool_mittens"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "linen_shirt",
+   "number": 370,
+   "kind": "clothing",
+   "sources": [
+    "recipe:linen_shirt"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "fur_cloak",
+   "number": 371,
+   "kind": "clothing",
+   "sources": [
+    "recipe:fur_cloak"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "fur_hat",
+   "number": 372,
+   "kind": "clothing",
+   "sources": [
+    "recipe:fur_hat"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "fur_boots",
+   "number": 373,
+   "kind": "clothing",
+   "sources": [
+    "recipe:fur_boots"
    ],
    "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
