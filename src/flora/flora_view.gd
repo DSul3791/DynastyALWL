@@ -2266,8 +2266,14 @@ func _decimate_task(wanted: Array) -> void:
 
 		for surface in range(mesh.get_surface_count()):
 			var arrays: Array = mesh.surface_get_arrays(surface)
+			var index: Variant = arrays[Mesh.ARRAY_INDEX]
+
+			if not index is PackedInt32Array:      # a surface without indices cannot be simplified: keep the full model
+				triangles = -1
+				break
+
 			@warning_ignore("integer_division")
-			triangles += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			triangles += (index as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
 			materials.append(mesh.surface_get_material(surface))
 
