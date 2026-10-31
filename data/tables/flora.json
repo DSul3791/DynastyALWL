@@ -1252,10 +1252,10 @@
 			"kind": "plant",
 			"shape": "grass",
 			"model": "grass_tuft",
-			"patch": {"every_m": 24, "chance": 0.75, "count": [18, 26], "radius_m": [1.0, 1.8], "scale": [1, 1.2], "spacing_m": 0.55, "by_biome": true},
+			"patch": {"every_m": 26, "chance": 0.75, "count": [25, 40], "radius_m": [1.0, 1.7], "scale": [1, 1.15], "spacing_m": 0.5, "by_biome": true, "ring_count": 8, "ring_scale": 0.65},
 			"height_m": [
-				1.7,
-				2.1
+				1.8,
+				2.4
 			],
 			"crown_m": 0.4,
 			"trunk_m": 0.0,

@@ -884,6 +884,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_fill(peer, inv, at)
 	elif kind == Net.ACT_GATHER_EDGE:
 		gather_edge(peer, inv)
+	elif kind == Net.ACT_SET_SPAWN:
+		set_spawn_bed(peer, a)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at)
 	elif kind == Net.ACT_SOW:
@@ -2573,6 +2575,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE, "wood": {"log": 0.0, "firewood": 0.0, "weak": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE}, "covered": covered, "recheck": COVER_RECHECK_S}}
 	_next_id += 1
+	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
 
 
 # Placement rules of a station that stands on a tall foundation over running water (the sawmill, Dave 2026-10-22): it needs a foundation under it
@@ -3378,6 +3381,9 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 		# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
 		var allowed_materials: Array = (ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), [])
 		var material_ok: bool = allowed_materials.is_empty() or allowed_materials.has(str(held.get("material", "")))
+
+		if not material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and int(info.get("blows", 0)) == 0:
+			_say(peer, "This pick is too soft for that ore.")   # said once per stone, when the stone comes away
 
 		if material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
 			ore_item = table.number_of(str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), "")))
@@ -5529,8 +5535,59 @@ func _note_shelter(peer: int) -> void:
 		_dirty = true
 
 
-# Where this character comes back: just in front of their last shelter if it still stands, else the world spawn.
+# The spawn point a player chooses (Dave 31 Oct 2026): E on a placed bed offers "Set this bed as your spawn point" (ACT_SET_SPAWN). One per character, saved in
+# characters.json "spawn_bed" [x, y, z]; a new choice unsets the old; if that bed is taken down or destroyed the character comes back at the spawn pad.
+func set_spawn_bed(peer: int, bed_id: int) -> bool:
+	var it: Dictionary = _items.get(bed_id, {})
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if it.is_empty() or not it.has("struct") or str(it["struct"].get("kind", "")) != "rough_bed" or key == "" or not _characters.has(key) or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
+		_say(peer, "Too far from the bed.")
+		return false
+
+	var p: Vector3 = it["pos"]
+	_characters[key]["spawn_bed"] = [p.x, p.y, p.z]
+	_dirty = true
+	_say(peer, "Spawn point set")
+	return true
+
+
+# The bed standing at the saved spawn spot, 0 when it is gone.
+func _spawn_bed_id(peer: int) -> int:
+	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("spawn_bed", [])
+
+	if saved.size() != 3:
+		return 0
+
+	var spot := Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"].get("kind", "")) == "rough_bed" and it["pos"].distance_to(spot) <= 0.5:
+			return id
+
+	return 0
+
+
+# Where this character comes back: at their spawn bed if they set one and it still stands (a bed that is gone is forgotten and the spawn pad is used), else just in front of
+# their last shelter if it still stands, else the world spawn.
 func respawn_for(peer: int) -> Vector3:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if (row.get("spawn_bed", []) as Array).size() == 3:
+		var bed: int = _spawn_bed_id(peer)
+
+		if bed != 0:
+			return _items[bed]["pos"] + Vector3(0.0, 0.3, 0.0)
+
+		row.erase("spawn_bed")
+		_dirty = true
+		return respawn_point
+
 	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("shelter", [])
 
 	if saved.size() != 3:
@@ -7866,6 +7923,127 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
+# --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
+# A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
+# characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (axe_held_near_tree, the fruit and orchard ones, beach_with_container) never fires.
+# A hint whose goal is still open HINT_REPEAT_S (5 minutes) after it was said is said once more.
+const HINT_REPEAT_S := 300.0
+var _hints: Array = []
+var _hints_loaded: bool = false
+var _hint_origin: Dictionary = {}     # peer -> first position seen (the "moved" trigger)
+
+
+func _hints_data() -> Array:
+	if not _hints_loaded:
+		_hints_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/hints.json"))
+		_hints = parsed.get("hints", []) if typeof(parsed) == TYPE_DICTIONARY else []
+
+	return _hints
+
+
+func _hint_count(st: Dictionary, key: String) -> int:
+	return int(st["goal_counts"].get(key, 0))
+
+
+func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
+	var inv = inventory_of(peer)
+
+	if inv == null or not _peer_pos.has(peer):
+		return false
+
+	var v: Dictionary = vitals_of(peer)
+	var hour: float = fmod(float(game_seconds.call()) if game_seconds.is_valid() else 0.0, 86400.0) / 3600.0
+
+	match trigger:
+		"first_frame":
+			return true
+		"moved":
+			return _hint_origin.has(peer) and (_hint_origin[peer] as Vector3).distance_to(_peer_pos[peer]) >= 5.0
+		"water_in_view":
+			return water_near.is_valid() and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
+		"after_drink":
+			return _hint_count(st, "event:drink") >= 1
+		"8_sticks":
+			return inv.count_of(table.number_of("stick")) >= 8
+		"12_fibre":
+			return inv.count_of(table.number_of("plant_fibre")) >= 12
+		"2_twine_1_stone_1_stick":
+			return inv.count_of(table.number_of("twine")) >= 2 and inv.count_of(table.number_of("stone")) >= 1 and inv.count_of(table.number_of("stick")) >= 1
+		"axe_made":
+			return _hint_count(st, "made:stone_axe") >= 1
+		"tree_down":
+			return _hint_count(st, "event:tree_felled") >= 1
+		"6_sticks_3_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 3
+		"kit_made":
+			return _hint_count(st, "made:campfire_kit") >= 1
+		"fire_placed":
+			return _hint_count(st, "event:placed:campfire") >= 1
+		"fire_lit":
+			return _hint_count(st, "event:fire_lit") >= 1
+		"hungry":
+			return not v.is_empty() and int(_vitals_points(v)[0]) < 80
+		"fire_burning_cold":
+			return _hint_count(st, "event:fire_lit") >= 1 and not v.is_empty() and float(v.get("warmth", 100.0)) < 70.0
+		"leanto_made":
+			return _hint_count(st, "made:lean_to_kit") >= 1
+		"leanto_placed":
+			return _hint_count(st, "event:placed:lean_to") >= 1
+		"bed_placed":
+			return _hint_count(st, "event:placed:rough_bed") >= 1
+		"workbench_placed":
+			return _hint_count(st, "event:placed:workbench") >= 1
+		"spear_made":
+			return _hint_count(st, "made:spear") >= 1
+		"warmth_under_70":
+			return not v.is_empty() and float(v.get("warmth", 100.0)) < 70.0
+		"dusk":
+			return hour >= 18.0 and hour < 20.0
+
+	return false
+
+
+# Looks at every hint for one player: says the ones whose trigger holds and that were not said yet (or whose goal is still open 5 minutes after).
+func _hints_check(peer: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or _hints_data().is_empty() or not _peer_pos.has(peer):
+		return
+
+	if not _hint_origin.has(peer):
+		_hint_origin[peer] = _peer_pos[peer]
+
+	if typeof(st.get("hints_seen", null)) != TYPE_DICTIONARY:
+		st["hints_seen"] = {}
+
+	var now_s: float = Time.get_unix_time_from_system()
+
+	for hint in _hints_data():
+		var id: String = str(hint["id"])
+		var said_at: float = float(st["hints_seen"].get(id, 0.0))
+		var goal: String = str(hint.get("goal", ""))
+
+		if said_at > 0.0:
+			var again: bool = goal != "" and not st["goals_done"].has(goal) and not st["hints_seen"].has(id + "#again") and now_s - said_at >= HINT_REPEAT_S
+
+			if not again:
+				continue
+
+			st["hints_seen"][id + "#again"] = now_s
+		elif not _hint_trigger_true(peer, st, str(hint.get("trigger", ""))):
+			continue
+		else:
+			st["hints_seen"][id] = now_s
+
+		if goal != "" and st["goals_done"].has(goal):
+			continue   # the goal is already done: the hint would only nag
+
+		_say(peer, str(hint.get("text", "")))
+		_dirty = true
+		return   # one hint at a time
+
+
 # Starter goals (data/items/starter_goals.json by Sal; Tyler 31 Oct 2026): an ordered list of small first-hour goals. A goal is open when every goal in its `after` is done.
 # Checks: {event, count, what?} (the server calls _goal_event: drink, tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that
 # finished), {have_item, count} and {have_item_any: [ids], count} (true while the pack holds that many, looked at every slow tick). Events and crafts are counted from the
@@ -8009,6 +8187,7 @@ func _goals_tick() -> void:
 
 	for peer in _peer_key.keys():
 		_goals_check(peer)
+		_hints_check(peer)
 
 
 # What the goal list would show: [[id, title, hint, state]] with state 0 locked, 1 open, 2 done.
@@ -9056,8 +9235,10 @@ func _load_characters() -> void:
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
+			"spawn_bed": parsed["players"][key].get("spawn_bed", []) if typeof(parsed["players"][key].get("spawn_bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("spawn_bed", []) as Array).size() == 3 else [],
 			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
-			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
+			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},
+			"hints_seen": parsed["players"][key].get("hints_seen", {}) if typeof(parsed["players"][key].get("hints_seen", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
