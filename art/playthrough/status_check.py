@@ -89,8 +89,15 @@ row("F-23", "ore, coal and flint can be picked up", all(obtainable(i) in ("now",
 kit_ids = [i for i, v in items.items() if v["kind"] == "placeable" and i.endswith("_kit")]
 looks = load("data/items/looks.json")["items"]
 kit_looks = set((looks.get(i, {}).get("shape"), looks.get(i, {}).get("color"), json.dumps(looks.get(i, {}).get("bits"))) for i in kit_ids)
-kit_shapes = set(looks.get(i, {}).get("shape") for i in kit_ids)
-row("F-27", "kits are told apart by shape, not only tint", len(kit_shapes) > 3, "%d kits, %d distinct shapes, %d distinct tints/emblems" % (len(kit_ids), len(kit_shapes), len(kit_looks)), "Kathleen")
+over = {}
+for line in basic.split(chr(10)):
+    m = re.match(r'\s*"([a-z_0-9]+)": \{"shape": "([a-z_0-9]+)"(.*)', line)
+    if m:
+        over[m.group(1)] = (m.group(2), tuple(re.findall(r'"([a-z_#0-9]+)"', m.group(3).split("bits")[1].split("[", 1)[1].split("]")[0])) if "bits" in m.group(3) else ())
+def kit_look(i):
+    return over.get(i) or (looks.get(i, {}).get("shape"), tuple(looks.get(i, {}).get("bits", [])))
+kit_variants = set(kit_look(i) for i in kit_ids)
+row("F-27", "kits are told apart by an emblem or shape, not only tint", len(kit_variants) >= len(kit_ids) // 2, "%d kits, %d distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796)" % (len(kit_ids), len(kit_variants)), "Kathleen")
 row("S-farm", "farming exists (crops.json read by code)", bool(subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip()), "crops.json is read by: %s" % (subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip() or "nothing"), "Sal (spec) + Tyler (code)")
 rules_ok = ("saw_mill", "campfire_pot", "snare_trap")   # refused by a placement rule (foundation, laid fire, open ground), not a bug
 place_bad = [x for x in re.findall(r"probe2: (\S+) \| (?:kit \S+|blueprint \S+) \| REFUSED", probe2) if x not in rules_ok]

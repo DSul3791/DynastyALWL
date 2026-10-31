@@ -1,8 +1,8 @@
 {
  "counts": {
-  "items": 489,
-  "recipes": 194,
-  "recipes_known_or_open": 175,
+  "items": 522,
+  "recipes": 227,
+  "recipes_known_or_open": 208,
   "structures": 37,
   "blueprints": 6
  },
@@ -2732,6 +2732,485 @@
     "no source anywhere for rye"
    ],
    "future": true
+  },
+  {
+   "id": "cook_oat_porridge",
+   "number": 248,
+   "category": "Fire and cooking",
+   "gives": "oat_porridge",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for oats"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_barley_broth",
+   "number": 249,
+   "category": "Fire and cooking",
+   "gives": "barley_broth",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for barley"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_rye_flatbread",
+   "number": 250,
+   "category": "Fire and cooking",
+   "gives": "rye_flatbread",
+   "station": "clay_hearth",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flour,sea_salt"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_pea_soup",
+   "number": 251,
+   "category": "Fire and cooking",
+   "gives": "pea_soup",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for peas,onion"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_turnip_mash",
+   "number": 252,
+   "category": "Fire and cooking",
+   "gives": "turnip_mash",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for turnip"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_baked_potato",
+   "number": 253,
+   "category": "Fire and cooking",
+   "gives": "baked_potato",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for potato"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_cabbage_stew",
+   "number": 254,
+   "category": "Fire and cooking",
+   "gives": "cabbage_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for cabbage,onion"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_beet_roast",
+   "number": 255,
+   "category": "Fire and cooking",
+   "gives": "beet_roast",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for beet"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_onion_roast",
+   "number": 256,
+   "category": "Fire and cooking",
+   "gives": "onion_roast",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for onion"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_seaweed_soup",
+   "number": 257,
+   "category": "Fire and cooking",
+   "gives": "seaweed_soup",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for seaweed,shellfish"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_mussel_stew",
+   "number": 258,
+   "category": "Fire and cooking",
+   "gives": "mussel_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for shellfish"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_crab_cakes",
+   "number": 259,
+   "category": "Fire and cooking",
+   "gives": "crab_cakes",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for crab_meat,flour"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_egg_nettle_fry",
+   "number": 260,
+   "category": "Fire and cooking",
+   "gives": "egg_nettle_fry",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "cook_herb_omelette",
+   "number": 261,
+   "category": "Fire and cooking",
+   "gives": "herb_omelette",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": true
+  },
+  {
+   "id": "cook_seal_stew",
+   "number": 262,
+   "category": "Fire and cooking",
+   "gives": "seal_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for turnip"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_venison_pie",
+   "number": 263,
+   "category": "Fire and cooking",
+   "gives": "venison_pie",
+   "station": "oven",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flour"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_fish_pie",
+   "number": 264,
+   "category": "Fire and cooking",
+   "gives": "fish_pie",
+   "station": "oven",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flour,onion"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_juniper_trout",
+   "number": 265,
+   "category": "Fire and cooking",
+   "gives": "juniper_trout",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_garlic_bread",
+   "number": 266,
+   "category": "Fire and cooking",
+   "gives": "garlic_bread",
+   "station": "clay_hearth",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flour"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_oat_cakes",
+   "number": 267,
+   "category": "Fire and cooking",
+   "gives": "oat_cakes",
+   "station": "clay_hearth",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for oats"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_jerky",
+   "number": 268,
+   "category": "Fire and cooking",
+   "gives": "jerky",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for sea_salt"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_salted_fish",
+   "number": 269,
+   "category": "Fire and cooking",
+   "gives": "salted_fish",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for sea_salt"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_dried_berries",
+   "number": 270,
+   "category": "Fire and cooking",
+   "gives": "dried_berries",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_sauerkraut",
+   "number": 271,
+   "category": "Fire and cooking",
+   "gives": "sauerkraut",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for cabbage,sea_salt"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_hazelnut_butter",
+   "number": 272,
+   "category": "Fire and cooking",
+   "gives": "hazelnut_butter",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_banana_fritter",
+   "number": 273,
+   "category": "Fire and cooking",
+   "gives": "banana_fritter",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for flour"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_cactus_fry",
+   "number": 274,
+   "category": "Fire and cooking",
+   "gives": "cactus_fry",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for onion"
+   ],
+   "future": true
+  },
+  {
+   "id": "tallow",
+   "number": 275,
+   "category": "Materials",
+   "gives": "tallow",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "soap",
+   "number": 276,
+   "category": "Materials",
+   "gives": "soap",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "tallow_candle",
+   "number": 277,
+   "category": "Tools",
+   "gives": "candle",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "leather_strap",
+   "number": 278,
+   "category": "Materials",
+   "gives": "leather_strap",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for leather"
+   ],
+   "future": true
+  },
+  {
+   "id": "butter",
+   "number": 279,
+   "category": "Fire and cooking",
+   "gives": "butter",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for milk"
+   ],
+   "future": true
+  },
+  {
+   "id": "cheese",
+   "number": 280,
+   "category": "Fire and cooking",
+   "gives": "cheese",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for milk,sea_salt"
+   ],
+   "future": true
   }
  ],
  "items": [
@@ -5364,7 +5843,7 @@
    "number": 311,
    "kind": "tool",
    "sources": [
-    "recipe:candle"
+    "recipe:candle,tallow_candle"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -6132,6 +6611,367 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "oat_porridge",
+   "number": 386,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_oat_porridge"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "barley_broth",
+   "number": 387,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_barley_broth"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "rye_flatbread",
+   "number": 388,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_rye_flatbread"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "pea_soup",
+   "number": 389,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_pea_soup"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "turnip_mash",
+   "number": 390,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_turnip_mash"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "baked_potato",
+   "number": 391,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_baked_potato"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "cabbage_stew",
+   "number": 392,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_cabbage_stew"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "beet_roast",
+   "number": 393,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_beet_roast"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "onion_roast",
+   "number": 394,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_onion_roast"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "seaweed_soup",
+   "number": 395,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_seaweed_soup"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "mussel_stew",
+   "number": 396,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_mussel_stew"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "crab_cakes",
+   "number": 397,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_crab_cakes"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "egg_nettle_fry",
+   "number": 398,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_egg_nettle_fry"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "herb_omelette",
+   "number": 399,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_herb_omelette"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "seal_stew",
+   "number": 400,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_seal_stew"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "venison_pie",
+   "number": 401,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_venison_pie"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "fish_pie",
+   "number": 402,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_fish_pie"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "juniper_trout",
+   "number": 403,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_juniper_trout"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "garlic_bread",
+   "number": 404,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_garlic_bread"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "oat_cakes",
+   "number": 405,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_oat_cakes"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "jerky",
+   "number": 406,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_jerky"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "salted_fish",
+   "number": 407,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_salted_fish"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "dried_berries",
+   "number": 408,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_dried_berries"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "sauerkraut",
+   "number": 409,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_sauerkraut"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "hazelnut_butter",
+   "number": 410,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_hazelnut_butter"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "banana_fritter",
+   "number": 411,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_banana_fritter"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "cactus_fry",
+   "number": 412,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_cactus_fry"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "tallow",
+   "number": 413,
+   "kind": "material",
+   "sources": [
+    "recipe:tallow"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "soap",
+   "number": 414,
+   "kind": "material",
+   "sources": [
+    "recipe:soap"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "leather_strap",
+   "number": 415,
+   "kind": "material",
+   "sources": [
+    "recipe:leather_strap"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "milk",
+   "number": 416,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "butter",
+   "number": 417,
+   "kind": "food",
+   "sources": [
+    "recipe:butter"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "cheese",
+   "number": 418,
+   "kind": "food",
+   "sources": [
+    "recipe:cheese"
+   ],
+   "obtainable": "RECIPE BLOCKED",
    "look": "PLACEHOLDER grey chunk",
    "future": true
   },

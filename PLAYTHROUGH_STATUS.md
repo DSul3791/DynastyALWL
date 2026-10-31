@@ -4,7 +4,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 
 | id | what | status | evidence | owner |
 |---|---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 175 of 194 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_s) | Sal (data), Tyler (code half) |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 208 of 227 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_s) | Sal (data), Tyler (code half) |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
 | F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks | Tyler |
@@ -21,15 +21,15 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True | Sal |
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle | Kathleen |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout, dried_berries, hazelnut_butter, tallow, soap, candle | Kathleen |
 | F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future | Sal |
 | F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) | Sal / flora |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None | Sal |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN | Tyler + Sal |
-| F-27 | kits are told apart by shape, not only tint | **STILL BROKEN** | 31 kits, 1 distinct shapes, 23 distinct tints/emblems | Kathleen |
+| F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
 | S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing | Sal (spec) + Tyler (code) |
 | S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) | Tyler |
 | S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] | Tyler |
 
-11 fixed, 14 still broken, 2 manual.
+12 fixed, 13 still broken, 2 manual.

@@ -1,0 +1,18 @@
+probe6: PASS | wooden spear (1 stick, keeps a stone) | spears in the pack: 1
+probe6: PASS | stone spear (wooden spear + 2 twine) | stone spears: 1
+probe6: PASS | stone knife (2 stones, 1 stick) | knives: 1
+probe6: PASS | spear and knife on the hotbar | slots 0 and 1: spear, stone_knife
+probe6: PASS | a rabbit appears (admin spawn at 1.8 m, jab reach) | id 1
+probe6: PASS | one jab kills the rabbit | jabs 1
+probe6: PASS | a carcass lies where it died | carcass id 104
+probe6: PASS | dressing with the stone knife (4 blows): meat, hide, bone | raw_meat 2, hide 1, bone 2
+probe6: PASS | the carcass is used up | 
+probe6: PASS | a deer dies to the stone spear (3 jabs expected; it may bolt and bleed out) | jabs 3, alive: false
+probe6: PASS | a deer carcass lies there | id 105
+probe6: PASS | deer dressed: meat, hide, bone, sinew, fat, antler | raw_meat 11, hide 3, bone 9, sinew 3, animal_fat 2, antler 2
+probe6: PASS | a campfire is placed | fire id 106
+probe6: PASS | the fire is lit with plant fibre | state 40
+probe6: PASS | one raw meat roasts at the fire (hold E) | roast_meat 1, raw_meat 10
+probe6: PASS | the roast meat is eaten | roast_meat left 0, food before 91%, after 100%
+probe6: PASS | a waterskin from two hides and a twine | waterskins 1, hides left 1
+probe6: 0 breaks

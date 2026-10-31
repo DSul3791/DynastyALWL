@@ -333,12 +333,20 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 First-hour hunting, fishing, snare and net routes pass in the existing tests (bow 19, traps 26, fish schools 16, fish water 14, fish balance 16, big game, senses, shore net, fishing: 0 failures).
 
+# Part 8: new findings from the morning-checklist pass (2026-10-31)
+
+| ID | Sev | What | Evidence | Owner | Size |
+|---|---|---|---|---|---|
+| F-35 | MEDIUM | **No berry or nut is in season at the start.** A new world starts on day 30 of spring and a game day is one real hour, so summer (raspberry, bramble, strawberry, blueberry) is about 62 real hours away and autumn (hazelnut, porcini) about 150. Only greens, mint, watercress, elder and comfrey are in season; food in the first days is hunting, fishing, snares and roast meat. The first-30-minutes script's berry and hazelnut lines are wrong at the start. | `game_clock.gd START_SECONDS`; flora.json seasons | Dave (start season), Sal (a spring food row) | small |
+| F-36 | MEDIUM | `test_playability_bot` (the "first hour from nothing" bot) now stops at step 6, "working the trunk gave no log", because logs cut off a trunk drop on the ground (028e666e) and the bot counts only the pack and the shoulder. Steps 7 to 9 (fire, shelter, well) are no longer run. `test_first_hour` passes. | `test_playability_bot.gd` line 261 | Tyler | small |
+| S-hunt | info | **The whole kill-to-roast chain passes on the server code** (spear and knife from nothing, rabbit one jab, dress, deer three jabs and dress with sinew, fat, antler, campfire, light, roast, eat, waterskin from two hides): `probe_hunt_output.txt`, 0 breaks. | `art/playthrough/probe_hunt.gd` | | |
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
 | id | what | status | evidence (short) |
 |---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 175 of 194 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 208 of 227 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks |
@@ -355,18 +363,18 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout |
 | F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future |
 | F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
-| F-27 | kits are told apart by shape, not only tint | **STILL BROKEN** | 31 kits, 1 distinct shapes, 23 distinct tints/emblems |
+| F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) |
 | S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing |
 | S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) |
 | S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] |
 
-11 fixed, 14 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
+12 fixed, 13 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
 
 ---
