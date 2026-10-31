@@ -4179,7 +4179,16 @@ func run_plant_test(client) -> void:
 func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the kit
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("lean_to_kit")):
+			break
+
+		if wait == 16 and inventory.count_of(table.number_of("lean_to_kit")) == 0:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+
 	var here: Vector3 = _player_position.call()
 	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
 	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)
