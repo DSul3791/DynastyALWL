@@ -271,3 +271,6 @@ Plans (self-approved): 1 apply the ECONOMY_PLAN value fixes after Dave/moderator
 
 ## Economy fixes applied (2026-10-31, moderator YES)
 Values by rule: thatch kits 54/147/117/93, rough bed kit 28, bucket 30, waterskin 15, rope 15, grass cloak 20, shore net 36, wooden spear 5; dishes capped at 2.5x ingredients plus labour: hearty pottage 38, trail bread 33, forager stew 23, fish stew 28, hunters stew 33. The 34 items "without value" are placed structures, not tradeable, so they got none. Basic Forge stone 36 to 24 (blueprint and its retired kit recipe; test_blueprints checks they match). No shops added.
+
+## Plans round (2026-10-31)
+Done: SEASONALITY_WINTER.md (plants by season, winter chain, gaps: Jerky/Salted fish/dried berries need a drying rack and salt), TOWN_NPC_SPEC.md (7-NPC roster, shop wants), MEDICINE_CHAIN.md (ailments, cures, poison status needs code; folk-herbal references from general knowledge). Guide told to teach audit_playthrough.py the natural-yield fallback. Next (self-approved): 1 data for Jerky, Salted fish, dried berries, yarrow bandage, arnica salve, feverfew and valerian teas, charcoal and antidote; 2 recheck BUILD_ORDERS after the next merge; 3 art list for new items to Kathleen.
