@@ -3177,14 +3177,14 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.82, 0.68, 0.38), "reach": 1.35, "blade_h": 0.9, "blade_base": Color(0.1, 0.25, 0.16), "blade_tip": Color(0.45, 0.62, 0.42), "head_size": 1.0},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 6, "head_color": Color(0.82, 0.68, 0.38), "reach": 1.35, "blade_h": 0.9, "blade_base": Color(0.1, 0.25, 0.16), "blade_tip": Color(0.45, 0.62, 0.42), "head_size": 1.0},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
 	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
 	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
-	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.84, 0.7, 0.34), "reach": 1.3, "blade_h": 0.9, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
+	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 6, "head_color": Color(0.84, 0.7, 0.34), "reach": 1.3, "blade_h": 0.9, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
 
