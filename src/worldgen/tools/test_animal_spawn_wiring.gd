@@ -134,5 +134,29 @@ func _init() -> void:
 	run(waiting, 40.0)
 	check(count(waiting, "seal") == 0, "a species waiting for its model never spawns")
 	check(view._make_for_species(14, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
+	# Hours (Sal's spawn_plan active flags): songbirds, grouse and seabirds are diurnal, boar and frog come out at dusk and night; the chance by hour per species.
+	var by_hour = make(players, "rabbit")
+	var expected: Dictionary = {"songbirds": [1.0, 0.0], "grouse": [1.0, 0.0], "seabird": [1.0, 0.0], "boar": [0.0, 1.0], "frog": [0.0, 1.0]}   # [wanted at noon, wanted at 02:00]
+
+	for name in expected:
+		var def: Dictionary = by_hour.species_def(name)
+		by_hour.hour_now = func(): return 12.0
+		var noon: float = by_hour.activity_chance(def)
+		by_hour.hour_now = func(): return 2.0
+		var night: float = by_hour.activity_chance(def)
+		by_hour.hour_now = func(): return 19.0
+		var dusk: float = by_hour.activity_chance(def)
+		var diurnal: bool = float(expected[name][0]) > 0.5
+		check((noon >= 0.9 and night <= 0.05 and dusk >= 0.3) if diurnal else (night >= 0.9 and dusk >= 0.9 and noon <= 0.05), "%s activity by hour: noon %.2f, dusk %.2f, 02:00 %.2f" % [name, noon, dusk, night])
+
+	# An animal whose hours are over leaves once no player is close: a songbird spawned at noon is gone at 02:00, a boar stays.
+	var shift = make(players, "songbirds")
+	shift.hour_now = func(): return 12.0
+	shift.biome_at = func(x, z): return "temperate_grassland"
+	run(shift, 20.0)
+	var before_birds: int = count(shift, "songbirds")
+	shift.hour_now = func(): return 2.0
+	run(shift, 20.0)
+	check(before_birds > 0 and count(shift, "songbirds") < before_birds, "songbirds spawned by day leave at night (%d -> %d)" % [before_birds, count(shift, "songbirds")])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
