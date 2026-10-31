@@ -3177,7 +3177,7 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 6, "head_color": Color(0.82, 0.68, 0.38), "reach": 1.35, "blade_h": 0.9, "blade_base": Color(0.1, 0.25, 0.16), "blade_tip": Color(0.45, 0.62, 0.42), "head_size": 1.0},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 6, "head_color": Color(0.92, 0.84, 0.58), "reach": 1.35, "blade_h": 0.9, "blade_base": Color(0.1, 0.25, 0.16), "blade_tip": Color(0.45, 0.62, 0.42), "head_size": 1.0},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
@@ -3253,18 +3253,18 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
 				elif far:
 					if head == "seed":
-						_bead(bark, tip - Vector3(0.0, 0.1, 0.0) + out * 0.05, Vector3(0.012, 0.16, 0.012), color * rng.randf_range(0.95, 1.1))      # one thin drooping panicle seen from afar
+						_bead(bark, tip - Vector3(0.0, 0.16, 0.0) + out * 0.07, Vector3(0.022, 0.26, 0.022), color * rng.randf_range(0.95, 1.1))      # one long pale drooping panicle seen from afar (it must read at 10 to 40 m)
 				elif not far:
 					var hs: float = float(look.get("head_size", 1.0))
 
 					# A drooping panicle 0.25 to 0.35 m long: small grains of gold-tan stepping out and down along an arch from the stalk top, each a narrow grain, slightly different in tone.
-					var plen: float = rng.randf_range(0.25, 0.35)
-					var grains: int = 6
+					var plen: float = rng.randf_range(0.4, 0.5)      # longer and larger so it reads at 10 m (moderator 2026-10-31)
+					var grains: int = 7
 
 					for b in range(grains):
 						var t: float = float(b) / float(grains - 1)
 						var at_g: Vector3 = tip + out * (0.1 * sin(t * 2.0)) + Vector3(0.0, 0.03 * t - plen * t * t, 0.0)
-						_bead(bark, at_g, Vector3(0.011, 0.03 - 0.012 * t, 0.011), color * rng.randf_range(0.88, 1.08))
+						_bead(bark, at_g, Vector3(0.02, 0.05 - 0.02 * t, 0.02), color * rng.randf_range(0.9, 1.08))
 
 
 # Fallen logs and old stumps for the forest floor (Kathleen, beach and forest pass; flora.json rows name the look, `h` is the log length 2 to 6 m, `trunk` the radius). Reference: a rotting
