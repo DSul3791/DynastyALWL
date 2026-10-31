@@ -95,7 +95,7 @@ if [ -n "$GROUND" ]; then
   $PY tools/look_rig_seed.py "$STORE/world_items.json" "$GID" "$GCOUNT" "$X" "$GY" "$Z" "$DDIST"
 fi
 PORT=$((7800 + RANDOM % 150))
-"$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 > "$RIG/server.log" 2>&1 &
+"$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$STORE" --open-admin --quit-after=900 ${SERVER_ARGS:-} > "$RIG/server.log" 2>&1 &
 SP=$!
 trap 'kill $SP 2>/dev/null; sleep 1; [ -z "$KEEP" ] && rm -rf "$RIG"; [ -n "$KEEP" ] && echo "rig kept: $RIG"' EXIT
 sleep 30
@@ -104,7 +104,7 @@ WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN=
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK${MORE:+;$MORE}"
 CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN $XARGS ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
-  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
+  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=900 > "$RIG/client.log" 2>&1
 else
   # NVIDIA Vulkan file when nvidia-smi works (found by looking), else Mesa lavapipe; own HOME so Dave's settings are never touched.
   ICD=""; REND=software

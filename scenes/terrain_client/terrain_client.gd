@@ -1080,6 +1080,9 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
+		if sound_log_arg.begins_with("--sound-log="):
+			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
 	stance.changed.connect(func(new_stance: int):
 		sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)])
 		sound.slots.play("bed_lie" if new_stance == 3 else ("bed_rise" if _was_lying else ""), body.global_position)

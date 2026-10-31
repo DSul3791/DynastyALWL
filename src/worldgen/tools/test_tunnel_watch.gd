@@ -63,12 +63,14 @@ func _init() -> void:
 	watch.process_dirty(0)
 	var peers: Dictionary = {1: Vector3(8.0, 6.0, 8.0), 2: Vector3(500.0, 6.0, 8.0)}
 	_check(watch.working_count() > 0, "a wide tunnel starts windows (%d cells)" % watch.working_count())
+	peers[1] = (watch._cells.values()[0] as Dictionary)["pos"] + Vector3(1.0, 0.0, 0.0)   # inside the tunnel: the creak reaches only players within a few metres (QUAKE_NEAR_M)
 	var grace: int = int(watch._cells.values()[0]["grace_ms"])
 	_check(grace >= 225000 and grace <= 3600000, "grace within 225 s and 60 min (%d s)" % (grace / 1000))
 	var early: Dictionary = watch.tick(1000, peers)
 	_check(early["quake"].is_empty() and early["collapse"].is_empty(), "quiet at the start")
 	var creak: Dictionary = watch.tick(int(float(grace) * 0.7), peers)
 	_check(creak["quake"].size() == 1 and int(creak["quake"][0][0]) == 1 and int(creak["quake"][0][1]) == 2, "creak (stage 2) only for the player in range")
+	_near_and_warn(grace)
 	var throes: Dictionary = watch.tick(int(float(grace) * 0.97), peers)
 	_check(throes["quake"].size() == 1 and int(throes["quake"][0][1]) == 4 and int(throes["quake"][0][2]) > 600, "throes (stage 4), strong")
 	var down: Dictionary = watch.tick(grace + 5000, peers)
@@ -206,3 +208,19 @@ func _init() -> void:
 	_check(off.tick(10, peers)["quake"].is_empty(), "switched off: nothing happens")
 	print("test_tunnel_watch: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# The creak reaches a player only near the tunnel, and warns once in plain words (Dave 31 Oct 2026).
+func _near_and_warn(grace: int) -> void:
+	var w: Watch = _watch()
+	w.mark_dirty([Vector3i.ZERO])
+	w.process_dirty(0)
+	var inside: Vector3 = Vector3(8.0, 6.0, 8.0)
+	var cell_pos: Vector3 = (w._cells.values()[0] as Dictionary)["pos"]
+	var far: Vector3 = cell_pos + Vector3(20.0, 0.0, 0.0)
+	var near_peers: Dictionary = {1: cell_pos + Vector3(2.0, 0.0, 0.0), 2: far}
+	var first: Dictionary = w.tick(int(float(grace) * 0.7), near_peers)
+	_check(first["warn"].has(1) and not first["warn"].has(2), "the stage-2 warning goes to the player in the tunnel, not to one 20 m away")
+	_check(first["quake"].size() == 1 and int(first["quake"][0][0]) == 1, "and so does the creaking: nothing reaches the player 20 m away through the rock")
+	var second: Dictionary = w.tick(int(float(grace) * 0.72) + 600, near_peers)
+	_check(second["warn"].is_empty(), "the warning is said once, not every half second")

@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 79
+const PROTOCOL_VERSION := 80
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -89,6 +89,7 @@ signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: Stri
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
+signal comfort_received(level: int, rested_level: int, rested_minutes: int)
 signal died_received(cause: String, spawn: Vector3)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
@@ -138,6 +139,7 @@ const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair 
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
 const ACT_GATHER_EDGE := 54  # at = the player's spot: take sea water into a container, or the tide-line node of the cell (data/items/shore_nodes.json)
+const ACT_SET_SPAWN := 55   # a = a placed bed's world id: the bed becomes this character's spawn point (Dave 31 Oct 2026); the old one is unset
 const ACT_TILL := 50       # at = the ground point: one hoe stroke tills a metre into a tilled bed (FARMING_SPEC.md step 2)
 const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
@@ -518,6 +520,12 @@ func limp(percent: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func body(bpm: int, eta_s: int, phase: int) -> void:
 	body_received.emit(bpm, eta_s, phase)
+
+
+# Comfort level and the Rested buff (protocol 80, docs/COMFORT_DESIGN.md): at hello and whenever the level, the buff's level or its whole minutes left change. rested_level 0 = no buff.
+@rpc("authority", "call_remote", "reliable")
+func comfort(level: int, rested_level: int, rested_minutes: int) -> void:
+	comfort_received.emit(level, rested_level, rested_minutes)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

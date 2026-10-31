@@ -183,6 +183,21 @@ static func _chunk(p: Vector3) -> Vector2i:
 
 
 # "" when the spot is free, else why not: "close" (too near a fire or a structure) or "crowded" (the chunk's cap).
+# A rough bed may lie inside a lean-to (any shelter structure): its middle within the shelter's half_x by half_z box, turned by the shelter's yaw (server_items.gd _inside_shelter
+# uses the same box). The row's yaw is in degrees when the client's world rows carry one.
+static func _bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
+	if str(def.get("use", "")) != "set_spawn":   # a bed: the rough, straw, feather and canopy beds carry use set_spawn
+		return false
+
+	var shelter: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+	if shelter.is_empty() or not bool(shelter.get("shelter", false)):
+		return false
+
+	var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
+	return absf(local.x) <= float(shelter.get("half_x", 0.0)) and absf(local.y) <= float(shelter.get("half_z", 0.0))
+
+
 static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array) -> String:
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
@@ -216,7 +231,7 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 			elif STRUCTURE_STATES.has(state) and row["pos"].distance_to(spot) < gap:
 				return "close"
 		else:
-			if not bool(def.get("gap_exempt", false)) and (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:   # furniture may stand beside a fire or a shelter
+			if not bool(def.get("gap_exempt", false)) and not _bed_in_shelter(cfg, def, row, spot) and (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:   # furniture may stand beside a fire or a shelter
 				return "close"
 
 			if int(def.get("state", -1)) == state and _chunk(row["pos"]) == _chunk(spot):

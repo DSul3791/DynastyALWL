@@ -277,6 +277,10 @@ func _ready() -> void:
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
+
+	for dev_arg in OS.get_cmdline_user_args():   # testing only (rigs and screenshots): --dev-place=name@x,z,yaw[,lit], repeatable; normal play never passes it
+		if dev_arg.begins_with("--dev-place="):
+			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed
@@ -290,6 +294,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
+	items.send_comfort = func(peer, level, rested_level, rested_minutes): net.comfort.rpc_id(peer, level, rested_level, rested_minutes)
 	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
 	@warning_ignore("confusable_local_declaration")
@@ -1500,6 +1505,9 @@ func _tunnel_tick() -> void:
 
 	for quake in result["quake"]:
 		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
+
+	for warned in result["warn"]:
+		net.notice.rpc_id(int(warned), "The tunnel ceiling is creaking: brace it or leave.")
 
 	for leak in result["leak"]:
 		net.leak.rpc_id(leak[0], leak[1], leak[2])
