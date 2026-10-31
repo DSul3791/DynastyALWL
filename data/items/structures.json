@@ -534,6 +534,7 @@
 			"clears_grass": true,
 			"walkover": true
 		},
+		"tilled_bed": {"kit": "", "item": "tilled_bed", "state": 47, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 200, "look": "path", "sound": "", "clears_grass": true, "walkover": true},
 		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true},
 		"thatch_wall": {"kit": "thatch_wall_kit", "item": "thatch_wall", "state": 37, "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "look": "thatch_wall", "sound": "thump", "clears_grass": false, "piece": true, "piece_kind": "wall", "variant_group": "wall", "material": "thatch", "max_rise_m": 0.6},
 		"campfire_pot": {"kit": "campfire_pot_kit", "item": "campfire_pot", "state": 38, "attach_to": "fire", "legacy_kinds": ["tripod_pot"], "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 6, "look": "tripod_pot", "sound": "thump", "clears_grass": true, "station": "campfire_pot", "station_level": 1, "reach_m": 3.0},
