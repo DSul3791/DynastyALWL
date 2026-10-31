@@ -744,7 +744,7 @@ func _auto_pickup_tick(now: int) -> void:
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
 
-	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, hash(inventory.counts), in_view)
 
 	if id != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -1098,7 +1098,7 @@ func _update_fire_lights() -> void:
 	lit.sort_custom(func(a, b): return a[0] < b[0])
 
 	for n in lit.size():
-		var light: OmniLight3D = lit[n][1]
+		var light: Light3D = lit[n][1]
 		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
 		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
@@ -1106,7 +1106,7 @@ func _update_fire_lights() -> void:
 # Is a fire light that is switched on within `radius` of the point?
 func fire_light_near(point: Vector3, radius: float) -> bool:
 	for id in _world:
-		var light: OmniLight3D = _world[id]["light"]
+		var light: Light3D = _world[id]["light"]
 
 		if light != null and light.visible and point.distance_to(_world[id]["pos"]) <= radius:
 			return true
@@ -1798,11 +1798,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			var roof_key: int = -1
 
 			if state == 5 and cover_index != null:
-				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
+				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.3, 1.7, yaw, row[3].y - 0.5, row[3].y + 1.5))
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			var fixture_light: OmniLight3D = null
+			var fixture_light: Light3D = null
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
@@ -3025,9 +3025,10 @@ var comfort_level: int = 0
 var rested_level: int = 0
 var rested_minutes: int = 0
 var _comfort_label: Label
+var comfort_tip: String = ""
 
 
-func _on_comfort(level: int, rested_tier_level: int, minutes: int) -> void:
+func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String = "") -> void:
 	comfort_level = level
 	rested_level = rested_tier_level
 	rested_minutes = minutes
@@ -3044,10 +3045,12 @@ func _on_comfort(level: int, rested_tier_level: int, minutes: int) -> void:
 		_comfort_label.add_theme_font_size_override("font_size", 26)
 		_comfort_label.add_theme_constant_override("outline_size", 6)
 		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		_comfort_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_comfort_label.mouse_filter = Control.MOUSE_FILTER_STOP   # hover it (inventory open, cursor free) for the tooltip
 		_layer.add_child(_comfort_label)
 
 	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
+	_comfort_label.tooltip_text = tip
+	comfort_tip = tip
 	_comfort_label.visible = _comfort_label.text != ""
 	_comfort_label.modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
 
@@ -3403,7 +3406,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
-	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
+	auto_pickup.note_refused(_player_position.call(), hash(inventory.counts))
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -4747,15 +4750,40 @@ func run_chest_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	var here: Vector3 = _player_position.call()
-	var spot: Vector3 = Vector3(here.x + 2.0, float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0))), here.z)
-	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, spot)
-	await get_tree().create_timer(2.0).timeout
 	var id: int = 0
 
-	for k in _world:
-		if _world[k]["state"] == 6:
-			id = k
+	# Place the chest and wait for it; a slow cloud world may not have the ground or the chest yet, so try again up to four times (the 04:18 rig run never saw the chest and then read a null chest_inv).
+	for attempt in 4:
+		var here: Vector3 = _player_position.call()
+		var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
+
+		if is_nan(ground):
+			await get_tree().create_timer(2.0).timeout
+			continue
+
+		if inventory.numbers.find(table.number_of("chest_kit")) < 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+			await get_tree().create_timer(1.0).timeout
+
+		net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
+
+		for wait in 40:
+			for k in _world:
+				if _world[k]["state"] == 6:
+					id = k
+
+			if id != 0:
+				break
+
+			await get_tree().create_timer(0.1).timeout
+
+		if id != 0:
+			break
+
+	if id == 0:
+		print("Chest test: no chest was placed (no ground or the place was refused)")
+		_finish_early(client)
+		return
 
 	_ask_open(id)
 
@@ -4764,6 +4792,11 @@ func run_chest_test(client) -> void:
 			break
 
 		await get_tree().create_timer(0.1).timeout
+
+	if chest_inv == null:
+		print("Chest test: the chest did not open (no contents arrived)")
+		_finish_early(client)
+		return
 
 	var stone: int = table.number_of("stone")
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)

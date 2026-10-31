@@ -306,7 +306,7 @@ func _process(delta: float) -> void:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 
-	if drop_it and _given and not _dropped and _placed and now - _moved_msec > 3000:      # only once the player stands on the real ground (a drop before that fell from the spawn height)
+	if drop_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:      # only once the player stands on the real ground (a drop before that fell from the spawn height)
 		_dropped = true
 		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
