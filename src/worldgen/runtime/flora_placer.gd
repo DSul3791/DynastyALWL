@@ -113,7 +113,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		_by_biome[n] = []
 
 	for entry in tables.get_entries("flora"):
-		if entry.get("retired", false):
+		if entry.get("retired", false) or entry.get("future", false):   # a future row has no model yet: never placed
 			continue
 
 		var per_biome: PackedFloat32Array = PackedFloat32Array()
