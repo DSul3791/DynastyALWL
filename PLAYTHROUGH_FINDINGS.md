@@ -319,6 +319,20 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 ---
 
+# Part 7: wildlife (F-28 to F-34, details in `PLAYTHROUGH_WILDLIFE.md`)
+
+| ID | Sev | What | Owner | Size |
+|---|---|---|---|---|
+| F-28 | HIGH | only seven species alive, three near the spawn; moose and horse excluded within 1,500 m of the OLD spawn point; ducks need water; wolves admin-only | Tyler, Sal | small |
+| F-29 | HIGH | spawning ignores biome, time and season; the 44-species plan is read by nothing | Tyler | medium |
+| F-30 | MEDIUM | nothing lives within 100 m of the spawn; ambient fauna is sound only | Tyler, Kathleen | small / large |
+| F-31 | HIGH | 37 of 44 planned species have no model, 26 no carcass row | Kathleen, Sal | large |
+| F-32 | LOW | the horse has no carcass row | Sal | small |
+| F-33 | MEDIUM | no predation or ecology | Tyler | large |
+| F-34 | MEDIUM | horse and moose models look weak | Kathleen | medium |
+
+First-hour hunting, fishing, snare and net routes pass in the existing tests (bow 19, traps 26, fish schools 16, fish water 14, fish balance 16, big game, senses, shore net, fishing: 0 failures).
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
