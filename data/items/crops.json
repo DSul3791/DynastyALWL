@@ -1,12 +1,19 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet: the crop table for the farming code (see GAP_PLANS.md section 3). grow_days are game days from sowing to ripe; water_per_day = buckets of water the bed wants per game day (0 when rain-fed); seed gives seeds back from the harvest. Growth numbers are Sal's, loosely from real crop cycles (wheat sown spring ripe ~100+ days, potato ~90-120, turnip ~60-90, carrot ~70-80, flax ~100): approximate, not individually verified.",
+	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet; the crop table for the farming code (FARMING_SPEC.md). 12 crops. grow_days = game days sowing to ripe, water_per_day = buckets per bed per game day (0 if rain-fed), seed_source = the wild plant that gives seeds so a player starts from forage, store = how it keeps (drying, salting, root cellar). Agronomy numbers (days to maturity, soil, storage) are general growing knowledge for temperate crops, approximate and not individually sourced; a game day is one real hour so real months are scaled down by the code owner. Items for all 12 crops and their seeds exist (332 to 337 and 374 to 385); the wild-seed drops, the cellar and the drying rack do not.",
+	"storage_chain": {
+		"drying": "Drying rack (new structure, 4 sticks + twine 4): berries, herbs, peas, meat strips; item Jerky = raw meat 2 + salt 1 on the rack",
+		"salting": "Salt (sea salt, WATER_GATHER_SPEC.md) + fish or meat into a clay jug: Salted fish, Salted meat",
+		"root_cellar": "Root cellar (dug room, needs 24 stone + 6 lumber, hammer blueprint): root crops keep 4 to 6 months, spoilage x0.25",
+		"ferment": "Cabbage + salt in a jug: sauerkraut keeps 6 months (needs salt)"
+	},
 	"crops": {
 		"wheat": {
 			"name": "Wheat",
 			"seed": "wheat_seeds",
-			"grow_days": 90,
-			"sow_season": "summer",
+			"sow_season": "spring",
+			"grow_days": 110,
 			"water_per_day": 0.3,
+			"soil": "loam, clay loam",
 			"yields": [
 				[
 					"wheat",
@@ -24,19 +31,21 @@
 					4
 				]
 			],
+			"seed_source": "wild tall grass in grassland, late summer (1 to 3 seeds)",
 			"biomes": [
 				"temperate_grassland",
 				"mixed_forest"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "sickle"
+			"tool_to_harvest": "sickle",
+			"store": "dry in the sheaf, grain keeps 12 months in a dry store"
 		},
 		"barley": {
 			"name": "Barley",
 			"seed": "barley_seeds",
-			"grow_days": 75,
-			"sow_season": "summer",
+			"sow_season": "spring",
+			"grow_days": 80,
 			"water_per_day": 0.2,
+			"soil": "light, well drained",
 			"yields": [
 				[
 					"barley",
@@ -54,19 +63,87 @@
 					4
 				]
 			],
+			"seed_source": "wild tall grass, late summer",
 			"biomes": [
 				"temperate_grassland",
 				"heath"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "sickle"
+			"tool_to_harvest": "sickle",
+			"store": "dry grain keeps 12 months; also malting and ale later"
+		},
+		"oats": {
+			"name": "Oats",
+			"seed": "oats_seeds",
+			"sow_season": "spring",
+			"grow_days": 100,
+			"water_per_day": 0.3,
+			"soil": "cool, damp, acid soil",
+			"yields": [
+				[
+					"oats",
+					6
+				],
+				[
+					"straw",
+					3
+				]
+			],
+			"seeds_back": [
+				"oats_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild grass on heath and boreal edges",
+			"biomes": [
+				"heath",
+				"boreal_forest",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "sickle",
+			"store": "dry grain keeps 12 months"
+		},
+		"rye": {
+			"name": "Rye",
+			"seed": "rye_seeds",
+			"sow_season": "autumn",
+			"grow_days": 250,
+			"water_per_day": 0.1,
+			"soil": "poor, sandy, cold",
+			"yields": [
+				[
+					"rye",
+					5
+				],
+				[
+					"straw",
+					5
+				]
+			],
+			"seeds_back": [
+				"rye_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild grass in dry grassland, autumn",
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"tundra"
+			],
+			"tool_to_harvest": "sickle",
+			"store": "dry grain keeps 12 months; sown in autumn, overwinters"
 		},
 		"carrot": {
 			"name": "Carrot",
 			"seed": "carrot_seeds",
-			"grow_days": 70,
-			"sow_season": "all warm",
+			"sow_season": "spring",
+			"grow_days": 75,
 			"water_per_day": 0.2,
+			"soil": "deep, loose, stone-free",
 			"yields": [
 				[
 					"carrot",
@@ -80,19 +157,21 @@
 					4
 				]
 			],
+			"seed_source": "wild carrot (seed heads, summer)",
 			"biomes": [
 				"temperate_grassland",
 				"mixed_forest"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "hand"
+			"tool_to_harvest": "hand",
+			"store": "root cellar: keeps 4 to 5 months cool and dark"
 		},
 		"potato": {
 			"name": "Potato",
 			"seed": "potato_seeds",
-			"grow_days": 95,
-			"sow_season": "summer",
+			"sow_season": "spring",
+			"grow_days": 100,
 			"water_per_day": 0.2,
+			"soil": "loose, slightly acid",
 			"yields": [
 				[
 					"potato",
@@ -106,20 +185,22 @@
 					4
 				]
 			],
+			"seed_source": "dig a wild tuber with a spade",
 			"biomes": [
 				"temperate_grassland",
 				"heath",
 				"boreal_forest"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "hand"
+			"tool_to_harvest": "hand",
+			"store": "root cellar: keeps 5 to 6 months in the dark"
 		},
 		"turnip": {
 			"name": "Turnip",
 			"seed": "turnip_seeds",
-			"grow_days": 60,
 			"sow_season": "spring,autumn",
-			"water_per_day": 0.1,
+			"grow_days": 60,
+			"water_per_day": 0.2,
+			"soil": "most soils, cool",
 			"yields": [
 				[
 					"turnip",
@@ -133,20 +214,135 @@
 					4
 				]
 			],
+			"seed_source": "wild turnip or radish, spring",
 			"biomes": [
 				"temperate_grassland",
 				"boreal_forest",
 				"tundra"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "hand"
+			"tool_to_harvest": "hand",
+			"store": "root cellar: keeps 4 months"
+		},
+		"cabbage": {
+			"name": "Cabbage",
+			"seed": "cabbage_seeds",
+			"sow_season": "spring",
+			"grow_days": 90,
+			"water_per_day": 0.3,
+			"soil": "rich, moist, heavy",
+			"yields": [
+				[
+					"cabbage",
+					3
+				]
+			],
+			"seeds_back": [
+				"cabbage_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild sea cabbage on beaches, summer",
+			"biomes": [
+				"temperate_grassland",
+				"beach",
+				"marsh"
+			],
+			"tool_to_harvest": "knife",
+			"store": "cellar 3 to 4 months, or salted into a ferment (needs sea salt)"
+		},
+		"onion": {
+			"name": "Onion",
+			"seed": "onion_seeds",
+			"sow_season": "spring",
+			"grow_days": 110,
+			"water_per_day": 0.1,
+			"soil": "light, well drained",
+			"yields": [
+				[
+					"onion",
+					5
+				]
+			],
+			"seeds_back": [
+				"onion_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild garlic and ramsons bulbs, spring (nearest wild source)",
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "dry and hang: keeps 6 months"
+		},
+		"peas": {
+			"name": "Peas",
+			"seed": "peas_seeds",
+			"sow_season": "spring",
+			"grow_days": 65,
+			"water_per_day": 0.2,
+			"soil": "light loam, cool",
+			"yields": [
+				[
+					"peas",
+					5
+				]
+			],
+			"seeds_back": [
+				"peas_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild vetch pods, summer (stand-in)",
+			"biomes": [
+				"temperate_grassland",
+				"heath"
+			],
+			"tool_to_harvest": "hand",
+			"store": "dry the pods: keeps 12 months; fresh only a few days"
+		},
+		"beet": {
+			"name": "Beet",
+			"seed": "beet_seeds",
+			"sow_season": "spring",
+			"grow_days": 65,
+			"water_per_day": 0.2,
+			"soil": "deep loam",
+			"yields": [
+				[
+					"beet",
+					4
+				]
+			],
+			"seeds_back": [
+				"beet_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild beet on coasts, summer",
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			],
+			"tool_to_harvest": "hand",
+			"store": "root cellar: keeps 4 months"
 		},
 		"flax": {
 			"name": "Flax",
 			"seed": "flax_seeds",
-			"grow_days": 100,
-			"sow_season": "summer",
+			"sow_season": "spring",
+			"grow_days": 95,
 			"water_per_day": 0.2,
+			"soil": "loam, moist, weed free",
 			"yields": [
 				[
 					"flax",
@@ -164,12 +360,13 @@
 					4
 				]
 			],
+			"seed_source": "wild flax, summer (already a plant here)",
 			"biomes": [
 				"temperate_grassland",
 				"marsh"
 			],
-			"tool_to_sow": "hoe",
-			"tool_to_harvest": "sickle"
+			"tool_to_harvest": "sickle",
+			"store": "dry sheaves; retting and spinning later (linen)"
 		}
 	}
 }
