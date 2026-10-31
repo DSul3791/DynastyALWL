@@ -22,120 +22,120 @@ Natural sources found in `drops.json`, `digging.json`, `carcass.json`, `fishing.
 
 | item | kind | sources | obtainable | look | picture |
 |---|---|---|---|---|---|
-| stone | material | boulder; dig; ground scatter | now | NO LOOK ENTRY | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| stick | material | ground scatter; plant:any shrub; tree:stump; tree:trunk | now | NO LOOK ENTRY | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| plant_fibre | material | plant:flax; plant:nettle; plant:reeds; plant:riverbraid; plant:tall_grass; plant:tanglewor | now | ok (fibre) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| seed_bundle | material | tree:log chain | now | ok (sack) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| bark | material | tree:log chain | now | ok (bark) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| leaves | material | tree:trunk | now | ok (leaves) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| roast_forage | food | cooking at a fire | now | ok (stew) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| tree_roots | material | tree:trunk | now | ok (bundle) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| firewood | material | tree:log chain; tree:stump; tree:trunk | now | ok (bundle) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| driftwood | material | ground scatter (water bank) | now | NO LOOK ENTRY | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| soil | material | dig | now | ok (clump) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| clay | material | dig | now | ok (clump) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| sand | material | dig | now | ok (grit) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| gravel | material | dig | now | ok (grit) | showroom/sr_r03_1a_raw_and_misc_material.jpg |
-| hide | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:fox; car | now | ok (hide) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| bone | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (bone) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| rotten_food | material | spoilage | now | ok (pile) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| raw_meat | food | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (meat) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| roast_meat | food | cooking at a fire | now | ok (joint) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| sinew | material | carcass:bear; carcass:boar; carcass:deer; carcass:fox; carcass:lynx; carcass:moose; carcas | now | ok (bundle) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| animal_fat | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:moose; c | now | ok (chunk) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| feather | material | carcass:duck; carcass:eagle; carcass:goose; carcass:grouse; carcass:gull; carcass:pheasant | now | ok (feather) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| trout | food | fishing | now | ok (fish) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| perch | food | fishing | now | ok (fish) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| carp | food | fishing | now | ok (fish) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| pike | food | fishing | now | ok (fish) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| roast_fish | food | cooking at a fire | now | ok (fish) | showroom/sr_r02_1a_raw_and_misc_food.jpg |
-| log_oak | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_birch | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_scots_pine | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_spruce | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_tropical_hardwood | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_walnut | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| log_maple | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| wooden_block | material | tree:log chain | now | ok (block) | showroom/sr_r04_1a_raw_and_misc_material.jpg |
-| firewood_soft | material | tree:log chain | now | ok (bundle) | showroom/sr_r05_1a_raw_and_misc_material.jpg |
-| wooden_block_soft | material | tree:log chain | now | ok (block) | showroom/sr_r05_1a_raw_and_misc_material.jpg |
-| antler | material | carcass:deer; carcass:moose; carcass:reindeer | now | PLACEHOLDER grey chunk | showroom/sr_r06_1a_raw_and_misc_material.jpg |
-| tusk | material | carcass:boar | now | PLACEHOLDER grey chunk | showroom/sr_r06_1a_raw_and_misc_material.jpg |
-| claw | material | carcass:badger; carcass:bear; carcass:eagle; carcass:lynx; carcass:wolf | now | PLACEHOLDER grey chunk | showroom/sr_r07_1a_raw_and_misc_material.jpg |
-| down | material | carcass:duck; carcass:goose | now | PLACEHOLDER grey chunk | showroom/sr_r07_1a_raw_and_misc_material.jpg |
-| quill | material | carcass:porcupine | now | PLACEHOLDER grey chunk | showroom/sr_r07_1a_raw_and_misc_material.jpg |
-| acorns | material | tree:oak; tree:trunk | now | ok (nut) | showroom/sr_r18_1b_plant_other.jpg |
-| angelica_roots | material | plant:angelica | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| arnica_flowers | material | plant:arnica | now | ok (flower) | showroom/sr_r14_1b_plant_flowers.jpg |
-| bananas | material | plant:wild_banana | now | ok (fruit) | showroom/sr_r18_1b_plant_other.jpg |
-| beechnuts | material | tree:beech; tree:trunk | now | ok (nut) | showroom/sr_r17_1b_plant_nuts.jpg |
-| blackberries | material | plant:bramble | now | ok (berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| blueberries | material | plant:blueberry | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| burdock_roots | material | plant:burdock | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| chamomile_flowers | material | plant:chamomile | now | ok (flower) | showroom/sr_r14_1b_plant_flowers.jpg |
-| chanterelles | material | plant:chanterelle | now | ok (cap) | showroom/sr_r18_1b_plant_other.jpg |
-| cherries | material | plant:wild_cherry; tree:trunk; tree:wild_cherry | now | ok (fruit) | showroom/sr_r18_1b_plant_other.jpg |
-| chestnuts | material | plant:sweet_chestnut; tree:sweet_chestnut; tree:trunk | now | ok (nut) | showroom/sr_r17_1b_plant_nuts.jpg |
-| cloudberries | material | plant:cloudberry | now | ok (berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| coconuts | material | plant:coconut_palm; tree:coconut_palm; tree:trunk | now | ok (nut) | showroom/sr_r17_1b_plant_nuts.jpg |
-| comfrey_leaves | material | plant:comfrey | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| crab_apples | material | plant:wild_apple; tree:trunk; tree:wild_apple | now | ok (fruit) | showroom/sr_r18_1b_plant_other.jpg |
-| cranberries | material | plant:cranberry | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| crowberries | material | plant:crowberry | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| dandelion_flowers | material | plant:dandelion | now | ok (flower) | showroom/sr_r14_1b_plant_flowers.jpg |
-| dates | material | plant:date_palm; tree:date_palm; tree:trunk | now | ok (fruit) | showroom/sr_r18_1b_plant_other.jpg |
-| drakethorn_berries | material | plant:drakethorn | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| elderberries | material | plant:elder | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| feverfew | material | plant:feverfew | now | ok (flower) | showroom/sr_r19_1b_plant_other.jpg |
-| fly_agaric_caps | material | plant:fly_agaric | now | ok (cap) | showroom/sr_r13_1b_plant_caps.jpg |
-| foxglove_leaves | material | plant:foxglove | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| haws | material | plant:hawthorn | now | ok (round_berries) | showroom/sr_r19_1b_plant_other.jpg |
-| hazelnuts | material | plant:hazel | now | ok (nut) | showroom/sr_r17_1b_plant_nuts.jpg |
-| heartroots | material | plant:heartroot | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| juniper_berries | material | plant:juniper | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| kindling | material | tree:stump; tree:trunk | now | ok (bundle) | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| lavender_flowers | material | plant:lavender | now | ok (flower) | showroom/sr_r14_1b_plant_flowers.jpg |
-| lingonberries | material | plant:lingonberry | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| lumencap_caps | material | plant:lumencap | now | ok (cap) | showroom/sr_r13_1b_plant_caps.jpg |
-| marjoram | material | plant:wild_marjoram | now | ok (frond) | showroom/sr_r20_1b_plant_other.jpg |
-| marrowroots | material | plant:marrowroot | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| meadowsweet_flowers | material | plant:meadowsweet | now | ok (flower) | showroom/sr_r14_1b_plant_flowers.jpg |
-| mint | material | plant:wild_mint | now | ok (frond) | showroom/sr_r20_1b_plant_other.jpg |
-| morels | material | plant:morel | now | ok (cap) | showroom/sr_r20_1b_plant_other.jpg |
-| mournbloom_petals | material | plant:mournbloom | now | ok (flower) | showroom/sr_r24_1b_plant_petals.jpg |
-| mugwort | material | plant:mugwort | now | ok (frond) | showroom/sr_r20_1b_plant_other.jpg |
-| nightcrown_blooms | material | plant:nightcrown | now | ok (flower) | showroom/sr_r20_1b_plant_other.jpg |
-| owlpetals | material | plant:owlpetal | now | ok (flower) | showroom/sr_r24_1b_plant_petals.jpg |
-| plantain_leaves | material | plant:plantain | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| porcini | material | plant:porcini | now | ok (cap) | showroom/sr_r21_1b_plant_other.jpg |
-| prickly_pears | material | plant:prickly_pear | now | ok (fruit) | showroom/sr_r21_1b_plant_other.jpg |
-| puffball | material | plant:puffball | now | ok (cap) | showroom/sr_r21_1b_plant_other.jpg |
-| raspberries | material | plant:raspberry | now | ok (berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| resin | material | tree:balsam_fir; tree:scots_pine; tree:spruce; tree:trunk | now | ok (chunk) | showroom/sr_r21_1b_plant_other.jpg |
-| rose_petals | material | plant:wild_rose | now | ok (flower) | showroom/sr_r24_1b_plant_petals.jpg |
-| rosemary | material | plant:rosemary | now | ok (frond) | showroom/sr_r21_1b_plant_other.jpg |
-| rowan_berries | material | plant:rowan; tree:rowan; tree:trunk | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| sage | material | plant:wild_sage | now | ok (frond) | showroom/sr_r21_1b_plant_other.jpg |
-| samphire | material | plant:samphire | now | ok (frond) | showroom/sr_r21_1b_plant_other.jpg |
-| sea_buckthorn_berries | material | plant:sea_buckthorn | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| sleetberries | material | plant:sleetberry | now | ok (round_berries) | showroom/sr_r10_1b_plant_berries.jpg |
-| sloes | material | plant:blackthorn | now | ok (round_berries) | showroom/sr_r22_1b_plant_other.jpg |
-| sorrel_leaves | material | plant:sorrel | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| st_johns_wort | material | plant:st_johns_wort | now | ok (flower) | showroom/sr_r22_1b_plant_other.jpg |
-| staunchmoss | material | plant:staunchmoss | now | ok (pile) | showroom/sr_r22_1b_plant_other.jpg |
-| strawberries | material | plant:wild_strawberry | now | ok (berries) | showroom/sr_r11_1b_plant_berries.jpg |
-| sunberries | material | plant:sunberry | now | ok (round_berries) | showroom/sr_r11_1b_plant_berries.jpg |
-| thatch | material | plant:heather; plant:reeds; plant:tall_grass; plant:thatch_grass; tree:birch/spruce/pine b | now | ok (bundle) | showroom/sr_r22_1b_plant_other.jpg |
-| thyme | material | plant:wild_thyme | now | ok (frond) | showroom/sr_r22_1b_plant_other.jpg |
-| truthsage_leaves | material | plant:truthsage | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| valerian_roots | material | plant:valerian | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| walnuts | material | plant:walnut; tree:trunk; tree:walnut | now | ok (nut) | showroom/sr_r17_1b_plant_nuts.jpg |
-| watercress | material | plant:watercress | now | ok (frond) | showroom/sr_r23_1b_plant_other.jpg |
-| wild_carrot_roots | material | plant:wild_carrot | now | ok (root) | showroom/sr_r25_1b_plant_roots.jpg |
-| wild_garlic_leaves | material | plant:wild_garlic | now | ok (frond) | showroom/sr_r16_1b_plant_leaves.jpg |
-| wild_pears | material | plant:wild_pear; tree:trunk; tree:wild_pear | now | ok (fruit) | showroom/sr_r23_1b_plant_other.jpg |
-| wispbloom_heads | material | plant:wispbloom | now | ok (flower) | showroom/sr_r23_1b_plant_other.jpg |
-| yarrow | material | plant:yarrow | now | ok (flower) | showroom/sr_r23_1b_plant_other.jpg |
+| stone | material | boulder; dig; ground scatter | now | NO LOOK ENTRY | sheets/items_01.jpg |
+| stick | material | ground scatter; plant:any shrub; tree:stump; tree:trunk | now | NO LOOK ENTRY | sheets/items_01.jpg |
+| plant_fibre | material | plant:flax; plant:nettle; plant:reeds; plant:riverbraid; plant:tall_grass; plant:tanglewor | now | ok (fibre) | sheets/items_01.jpg |
+| seed_bundle | material | tree:log chain | now | ok (sack) | sheets/items_01.jpg |
+| bark | material | tree:log chain | now | ok (bark) | sheets/items_01.jpg |
+| leaves | material | tree:trunk | now | ok (leaves) | sheets/items_01.jpg |
+| roast_forage | food | cooking at a fire | now | ok (stew) | sheets/items_01.jpg |
+| tree_roots | material | tree:trunk | now | ok (bundle) | sheets/items_01.jpg |
+| firewood | material | tree:log chain; tree:stump; tree:trunk | now | ok (bundle) | sheets/items_01.jpg |
+| driftwood | material | ground scatter (water bank) | now | NO LOOK ENTRY | sheets/items_01.jpg |
+| soil | material | dig | now | ok (clump) | sheets/items_01.jpg |
+| clay | material | dig | now | ok (clump) | sheets/items_01.jpg |
+| sand | material | dig | now | ok (grit) | sheets/items_01.jpg |
+| gravel | material | dig | now | ok (grit) | sheets/items_01.jpg |
+| hide | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:fox; car | now | ok (hide) | sheets/items_01.jpg |
+| bone | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (bone) | sheets/items_01.jpg |
+| rotten_food | material | spoilage | now | ok (pile) | sheets/items_02.jpg |
+| raw_meat | food | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (meat) | sheets/items_01.jpg |
+| roast_meat | food | cooking at a fire | now | ok (joint) | sheets/items_01.jpg |
+| sinew | material | carcass:bear; carcass:boar; carcass:deer; carcass:fox; carcass:lynx; carcass:moose; carcas | now | ok (bundle) | sheets/items_02.jpg |
+| animal_fat | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:moose; c | now | ok (chunk) | sheets/items_02.jpg |
+| feather | material | carcass:duck; carcass:eagle; carcass:goose; carcass:grouse; carcass:gull; carcass:pheasant | now | ok (feather) | sheets/items_02.jpg |
+| trout | food | fishing | now | ok (fish) | sheets/items_01.jpg |
+| perch | food | fishing | now | ok (fish) | sheets/items_01.jpg |
+| carp | food | fishing | now | ok (fish) | sheets/items_01.jpg |
+| pike | food | fishing | now | ok (fish) | sheets/items_01.jpg |
+| roast_fish | food | cooking at a fire | now | ok (fish) | sheets/items_01.jpg |
+| log_oak | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_birch | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_scots_pine | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_spruce | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_tropical_hardwood | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_walnut | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| log_maple | material | tree:log chain (shoulder, one at a time) | now | NO LOOK ENTRY | sheets/items_02.jpg |
+| wooden_block | material | tree:log chain | now | ok (block) | sheets/items_02.jpg |
+| firewood_soft | material | tree:log chain | now | ok (bundle) | sheets/items_02.jpg |
+| wooden_block_soft | material | tree:log chain | now | ok (block) | sheets/items_02.jpg |
+| antler | material | carcass:deer; carcass:moose; carcass:reindeer | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
+| tusk | material | carcass:boar | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
+| claw | material | carcass:badger; carcass:bear; carcass:eagle; carcass:lynx; carcass:wolf | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
+| down | material | carcass:duck; carcass:goose | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
+| quill | material | carcass:porcupine | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
+| acorns | material | tree:oak; tree:trunk | now | ok (nut) | sheets/items_05.jpg |
+| angelica_roots | material | plant:angelica | now | ok (root) | sheets/items_08.jpg |
+| arnica_flowers | material | plant:arnica | now | ok (flower) | sheets/items_04.jpg |
+| bananas | material | plant:wild_banana | now | ok (fruit) | sheets/items_05.jpg |
+| beechnuts | material | tree:beech; tree:trunk | now | ok (nut) | sheets/items_05.jpg |
+| blackberries | material | plant:bramble | now | ok (berries) | sheets/items_04.jpg |
+| blueberries | material | plant:blueberry | now | ok (round_berries) | sheets/items_04.jpg |
+| burdock_roots | material | plant:burdock | now | ok (root) | sheets/items_08.jpg |
+| chamomile_flowers | material | plant:chamomile | now | ok (flower) | sheets/items_04.jpg |
+| chanterelles | material | plant:chanterelle | now | ok (cap) | sheets/items_06.jpg |
+| cherries | material | plant:wild_cherry; tree:trunk; tree:wild_cherry | now | ok (fruit) | sheets/items_06.jpg |
+| chestnuts | material | plant:sweet_chestnut; tree:sweet_chestnut; tree:trunk | now | ok (nut) | sheets/items_05.jpg |
+| cloudberries | material | plant:cloudberry | now | ok (berries) | sheets/items_04.jpg |
+| coconuts | material | plant:coconut_palm; tree:coconut_palm; tree:trunk | now | ok (nut) | sheets/items_05.jpg |
+| comfrey_leaves | material | plant:comfrey | now | ok (frond) | sheets/items_05.jpg |
+| crab_apples | material | plant:wild_apple; tree:trunk; tree:wild_apple | now | ok (fruit) | sheets/items_06.jpg |
+| cranberries | material | plant:cranberry | now | ok (round_berries) | sheets/items_04.jpg |
+| crowberries | material | plant:crowberry | now | ok (round_berries) | sheets/items_04.jpg |
+| dandelion_flowers | material | plant:dandelion | now | ok (flower) | sheets/items_04.jpg |
+| dates | material | plant:date_palm; tree:date_palm; tree:trunk | now | ok (fruit) | sheets/items_06.jpg |
+| drakethorn_berries | material | plant:drakethorn | now | ok (round_berries) | sheets/items_04.jpg |
+| elderberries | material | plant:elder | now | ok (round_berries) | sheets/items_04.jpg |
+| feverfew | material | plant:feverfew | now | ok (flower) | sheets/items_06.jpg |
+| fly_agaric_caps | material | plant:fly_agaric | now | ok (cap) | sheets/items_04.jpg |
+| foxglove_leaves | material | plant:foxglove | now | ok (frond) | sheets/items_05.jpg |
+| haws | material | plant:hawthorn | now | ok (round_berries) | sheets/items_06.jpg |
+| hazelnuts | material | plant:hazel | now | ok (nut) | sheets/items_05.jpg |
+| heartroots | material | plant:heartroot | now | ok (root) | sheets/items_08.jpg |
+| juniper_berries | material | plant:juniper | now | ok (round_berries) | sheets/items_04.jpg |
+| kindling | material | tree:stump; tree:trunk | now | ok (bundle) | sheets/items_11.jpg |
+| lavender_flowers | material | plant:lavender | now | ok (flower) | sheets/items_04.jpg |
+| lingonberries | material | plant:lingonberry | now | ok (round_berries) | sheets/items_04.jpg |
+| lumencap_caps | material | plant:lumencap | now | ok (cap) | sheets/items_04.jpg |
+| marjoram | material | plant:wild_marjoram | now | ok (frond) | sheets/items_06.jpg |
+| marrowroots | material | plant:marrowroot | now | ok (root) | sheets/items_08.jpg |
+| meadowsweet_flowers | material | plant:meadowsweet | now | ok (flower) | sheets/items_04.jpg |
+| mint | material | plant:wild_mint | now | ok (frond) | sheets/items_06.jpg |
+| morels | material | plant:morel | now | ok (cap) | sheets/items_06.jpg |
+| mournbloom_petals | material | plant:mournbloom | now | ok (flower) | sheets/items_08.jpg |
+| mugwort | material | plant:mugwort | now | ok (frond) | sheets/items_06.jpg |
+| nightcrown_blooms | material | plant:nightcrown | now | ok (flower) | sheets/items_07.jpg |
+| owlpetals | material | plant:owlpetal | now | ok (flower) | sheets/items_08.jpg |
+| plantain_leaves | material | plant:plantain | now | ok (frond) | sheets/items_05.jpg |
+| porcini | material | plant:porcini | now | ok (cap) | sheets/items_07.jpg |
+| prickly_pears | material | plant:prickly_pear | now | ok (fruit) | sheets/items_07.jpg |
+| puffball | material | plant:puffball | now | ok (cap) | sheets/items_07.jpg |
+| raspberries | material | plant:raspberry | now | ok (berries) | sheets/items_04.jpg |
+| resin | material | tree:balsam_fir; tree:scots_pine; tree:spruce; tree:trunk | now | ok (chunk) | sheets/items_07.jpg |
+| rose_petals | material | plant:wild_rose | now | ok (flower) | sheets/items_08.jpg |
+| rosemary | material | plant:rosemary | now | ok (frond) | sheets/items_07.jpg |
+| rowan_berries | material | plant:rowan; tree:rowan; tree:trunk | now | ok (round_berries) | sheets/items_04.jpg |
+| sage | material | plant:wild_sage | now | ok (frond) | sheets/items_07.jpg |
+| samphire | material | plant:samphire | now | ok (frond) | sheets/items_07.jpg |
+| sea_buckthorn_berries | material | plant:sea_buckthorn | now | ok (round_berries) | sheets/items_04.jpg |
+| sleetberries | material | plant:sleetberry | now | ok (round_berries) | sheets/items_04.jpg |
+| sloes | material | plant:blackthorn | now | ok (round_berries) | sheets/items_07.jpg |
+| sorrel_leaves | material | plant:sorrel | now | ok (frond) | sheets/items_05.jpg |
+| st_johns_wort | material | plant:st_johns_wort | now | ok (flower) | sheets/items_07.jpg |
+| staunchmoss | material | plant:staunchmoss | now | ok (pile) | sheets/items_07.jpg |
+| strawberries | material | plant:wild_strawberry | now | ok (berries) | sheets/items_04.jpg |
+| sunberries | material | plant:sunberry | now | ok (round_berries) | sheets/items_04.jpg |
+| thatch | material | plant:heather; plant:reeds; plant:tall_grass; plant:thatch_grass; tree:birch/spruce/pine b | now | ok (bundle) | sheets/items_07.jpg |
+| thyme | material | plant:wild_thyme | now | ok (frond) | sheets/items_07.jpg |
+| truthsage_leaves | material | plant:truthsage | now | ok (frond) | sheets/items_05.jpg |
+| valerian_roots | material | plant:valerian | now | ok (root) | sheets/items_08.jpg |
+| walnuts | material | plant:walnut; tree:trunk; tree:walnut | now | ok (nut) | sheets/items_05.jpg |
+| watercress | material | plant:watercress | now | ok (frond) | sheets/items_08.jpg |
+| wild_carrot_roots | material | plant:wild_carrot | now | ok (root) | sheets/items_08.jpg |
+| wild_garlic_leaves | material | plant:wild_garlic | now | ok (frond) | sheets/items_05.jpg |
+| wild_pears | material | plant:wild_pear; tree:trunk; tree:wild_pear | now | ok (fruit) | sheets/items_08.jpg |
+| wispbloom_heads | material | plant:wispbloom | now | ok (flower) | sheets/items_08.jpg |
+| yarrow | material | plant:yarrow | now | ok (flower) | sheets/items_08.jpg |
 
 ## Chapter 2: Stone age by hand: twine, axe, knife, spear
 
@@ -143,39 +143,39 @@ The first hour. Hands only, no station. Every recipe here is open (known:true) u
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 1 | twine -> 1 x twine | 3 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | showroom/sr_r35_2_crafted_materials.jpg |
-| 2 | 2 | stone_axe -> 1 x stone_axe | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 5 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 3 | 3 | spear -> 1 x spear | 1 x wooden_spear [recipe:wooden_spear]; 5 x twine [recipe:twine,twine_bark,sinew_cord] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r45_2_crafted_weapons.jpg |
-| 4 | 5 | wooden_spear -> 1 x wooden_spear | 1 x stick [ground scatter; plant:any shrub] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r45_2_crafted_weapons.jpg |
-| 5 | 6 | stone_knife -> 1 x stone_knife | 2 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 6 | 7 | torch -> 1 x torch | 1 x stick [ground scatter; plant:any shrub]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 7 | 12 | wooden_spade -> 1 x wooden_spade | 2 x stick [ground scatter; plant:any shrub] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 8 | 24 | twine_bark -> 1 x twine | 2 x bark [tree:log chain] | hands | yes | PASS (wave 1) | showroom/sr_r35_2_crafted_materials.jpg |
-| 9 | 25 | rope -> 1 x rope | 4 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r35_2_crafted_materials.jpg |
-| 10 | 44 | sinew_cord -> 2 x twine | 3 x sinew [carcass:bear; carcass:boar] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r35_2_crafted_materials.jpg |
-| 11 | 46 | fishing_rod -> 1 x fishing_rod | 2 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 12 | 129 | mortar -> 2 x mortar | 2 x sand [dig]; 1 x clay [dig] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r36_2_crafted_materials.jpg |
-| 13 | 139 | wooden_hoe -> 1 x wooden_hoe | 2 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r41_2_crafted_tools.jpg |
-| 14 | 161 | wooden_hammer -> 1 x wooden_hammer | 1 x wooden_block [tree:log chain]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r42_2_crafted_tools.jpg |
-| 15 | 163 | shore_net -> 1 x shore_net | 20 x twine [recipe:twine,twine_bark,sinew_cord]; 4 x stone [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r42_2_crafted_tools.jpg |
-| 16 | 171 | wooden_arrow -> 4 x wooden_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle] | hands | yes | PASS (wave 1) | showroom/sr_r42_2_crafted_tools.jpg |
-| 17 | 172 | stone_arrow -> 4 x stone_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle]; 2 x stone [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r42_2_crafted_tools.jpg |
-| 18 | 177 | snare -> 1 x snare | 3 x twine [recipe:twine,twine_bark,sinew_cord]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | PASS (wave 1) | showroom/sr_r42_2_crafted_tools.jpg |
-| 19 | 189 | wooden_club -> 1 x wooden_club | 3 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r45_2_crafted_weapons.jpg |
-| 20 | 200 | candle -> 2 x candle | 1 x animal_fat [carcass:badger; carcass:bear]; 1 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r43_2_crafted_tools.jpg |
-| 21 | 201 | wicker_shield -> 1 x wicker_shield | 3 x stick [ground scatter; plant:any shrub]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r43_2_crafted_tools.jpg |
-| 22 | 202 | stone_mace -> 1 x stone_mace | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r43_2_crafted_tools.jpg |
-| 23 | 221 | quern -> 1 x quern | 2 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r43_2_crafted_tools.jpg |
-| 24 | 224 | compost -> 1 x compost | 3 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r37_2_crafted_materials.jpg |
-| 25 | 226 | bone_arrow -> 4 x bone_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle]; 2 x bone [carcass:badger; carcass:bear] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r44_2_crafted_tools.jpg |
-| 26 | 27 | iron_spade -> 1 x iron_spade | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r41_2_crafted_tools.jpg |
-| 27 | 28 | steel_spade -> 1 x steel_spade | 2 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | showroom/sr_r41_2_crafted_tools.jpg |
-| 28 | 141 | iron_hoe -> 1 x iron_hoe | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r41_2_crafted_tools.jpg |
-| 29 | 142 | steel_hoe -> 1 x steel_hoe | 2 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | showroom/sr_r41_2_crafted_tools.jpg |
-| 30 | 159 | lumber_by_hand -> 2 x lumber | 1 x log [NO SOURCE] | keeps: hand_saw kept [recipe:hand_saw] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log,hand_saw | showroom/sr_r35_2_crafted_materials.jpg |
-| 31 | 179 | processed_hide -> 1 x processed_hide | 1 x hide [carcass:badger; carcass:bear] | keeps: hide_scraper kept [recipe:hide_scraper] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for hide_scraper | showroom/sr_r37_2_crafted_materials.jpg |
-| 32 | 222 | flour_from_wheat -> 2 x flour | 3 x wheat [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for wheat | showroom/sr_r37_2_crafted_materials.jpg |
-| 33 | 223 | flour_from_barley -> 2 x flour | 3 x barley [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for barley | showroom/sr_r37_2_crafted_materials.jpg |
+| 1 | 1 | twine -> 1 x twine | 3 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 2 | 2 | stone_axe -> 1 x stone_axe | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 5 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 3 | 3 | spear -> 1 x spear | 1 x wooden_spear [recipe:wooden_spear]; 5 x twine [recipe:twine,twine_bark,sinew_cord] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_14.jpg |
+| 4 | 5 | wooden_spear -> 1 x wooden_spear | 1 x stick [ground scatter; plant:any shrub] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_14.jpg |
+| 5 | 6 | stone_knife -> 1 x stone_knife | 2 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 6 | 7 | torch -> 1 x torch | 1 x stick [ground scatter; plant:any shrub]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 7 | 12 | wooden_spade -> 1 x wooden_spade | 2 x stick [ground scatter; plant:any shrub] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 8 | 24 | twine_bark -> 1 x twine | 2 x bark [tree:log chain] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 9 | 25 | rope -> 1 x rope | 4 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 10 | 44 | sinew_cord -> 2 x twine | 3 x sinew [carcass:bear; carcass:boar] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_11.jpg |
+| 11 | 46 | fishing_rod -> 1 x fishing_rod | 2 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 12 | 129 | mortar -> 2 x mortar | 2 x sand [dig]; 1 x clay [dig] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_12.jpg |
+| 13 | 139 | wooden_hoe -> 1 x wooden_hoe | 2 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | keeps: stone kept [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 14 | 161 | wooden_hammer -> 1 x wooden_hammer | 1 x wooden_block [tree:log chain]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 15 | 163 | shore_net -> 1 x shore_net | 20 x twine [recipe:twine,twine_bark,sinew_cord]; 4 x stone [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 16 | 171 | wooden_arrow -> 4 x wooden_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 17 | 172 | stone_arrow -> 4 x stone_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle]; 2 x stone [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
+| 18 | 177 | snare -> 1 x snare | 3 x twine [recipe:twine,twine_bark,sinew_cord]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | PASS (wave 1) | sheets/items_14.jpg |
+| 19 | 189 | wooden_club -> 1 x wooden_club | 3 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 20 | 200 | candle -> 2 x candle | 1 x animal_fat [carcass:badger; carcass:bear]; 1 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 21 | 201 | wicker_shield -> 1 x wicker_shield | 3 x stick [ground scatter; plant:any shrub]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 22 | 202 | stone_mace -> 1 x stone_mace | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 23 | 221 | quern -> 1 x quern | 2 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 24 | 224 | compost -> 1 x compost | 3 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_12.jpg |
+| 25 | 226 | bone_arrow -> 4 x bone_arrow | 2 x stick [ground scatter; plant:any shrub]; 2 x feather [carcass:duck; carcass:eagle]; 2 x bone [carcass:badger; carcass:bear] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 26 | 27 | iron_spade -> 1 x iron_spade | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_13.jpg |
+| 27 | 28 | steel_spade -> 1 x steel_spade | 2 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | sheets/items_13.jpg |
+| 28 | 141 | iron_hoe -> 1 x iron_hoe | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_13.jpg |
+| 29 | 142 | steel_hoe -> 1 x steel_hoe | 2 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | sheets/items_13.jpg |
+| 30 | 159 | lumber_by_hand -> 2 x lumber | 1 x log [NO SOURCE] | keeps: hand_saw kept [recipe:hand_saw] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log,hand_saw | sheets/items_11.jpg |
+| 31 | 179 | processed_hide -> 1 x processed_hide | 1 x hide [carcass:badger; carcass:bear] | keeps: hide_scraper kept [recipe:hide_scraper] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for hide_scraper | sheets/items_12.jpg |
+| 32 | 222 | flour_from_wheat -> 2 x flour | 3 x wheat [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for wheat | sheets/items_12.jpg |
+| 33 | 223 | flour_from_barley -> 2 x flour | 3 x barley [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for barley | sheets/items_12.jpg |
 
 Checklist for chapter 2:
 
@@ -219,19 +219,19 @@ Fire is lit from a kit (campfire) and cooked at with E; these are the hand recip
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 8 | poultice_plantain -> 1 x poultice | 3 x plantain_leaves [plant:plantain] | hands | yes | PASS (wave 1) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 2 | 9 | poultice_comfrey -> 1 x poultice | 2 x comfrey_leaves [plant:comfrey] | hands | yes | PASS (wave 1) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 3 | 10 | bandage_plantain -> 1 x bandage | 1 x plantain_leaves [plant:plantain]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 4 | 11 | bandage_staunchmoss -> 2 x bandage | 1 x staunchmoss [plant:staunchmoss]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 5 | 31 | energy_bar -> 2 x energy_bar | 3 x hazelnuts [plant:hazel]; 2 x dates [plant:date_palm; tree:date_palm]; 1 x yarrow [plant:yarrow] | hands | yes | PASS (wave 1) | showroom/sr_r34_2_crafted_food_and_drink.jpg |
-| 6 | 32 | herbal_tea -> 1 x herbal_tea | 3 x mint [plant:wild_mint] | hands | yes | PASS (wave 1) | showroom/sr_r34_2_crafted_food_and_drink.jpg |
-| 7 | 33 | stomach_tea -> 1 x stomach_tea | 2 x mint [plant:wild_mint]; 2 x chamomile_flowers [plant:chamomile] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | PASS (wave 1) | showroom/sr_r34_2_crafted_food_and_drink.jpg |
-| 8 | 34 | chamomile_tea -> 1 x chamomile_tea | 3 x chamomile_flowers [plant:chamomile] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | PASS (wave 1) | showroom/sr_r34_2_crafted_food_and_drink.jpg |
-| 9 | 165 | campfire_pot_kit -> 1 x campfire_pot_kit | 3 x stick [ground scatter; plant:any shrub]; 5 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x clay_pot [recipe:clay_pot] | hands | yes | PASS (wave 1) | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 10 | 178 | kindling -> 3 x kindling | 1 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 11 | 198 | herb_salve -> 2 x herb_salve | 2 x comfrey_leaves [plant:comfrey]; 1 x animal_fat [carcass:badger; carcass:bear] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 12 | 199 | splint -> 1 x splint | 2 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r38_2_crafted_medicine.jpg |
-| 13 | 35 | willow_bark_tea -> 1 x willow_bark_tea | 2 x willow_bark [NO SOURCE] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for willow_bark | showroom/sr_r34_2_crafted_food_and_drink.jpg |
+| 1 | 8 | poultice_plantain -> 1 x poultice | 3 x plantain_leaves [plant:plantain] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 2 | 9 | poultice_comfrey -> 1 x poultice | 2 x comfrey_leaves [plant:comfrey] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 3 | 10 | bandage_plantain -> 1 x bandage | 1 x plantain_leaves [plant:plantain]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 4 | 11 | bandage_staunchmoss -> 2 x bandage | 1 x staunchmoss [plant:staunchmoss]; 2 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 5 | 31 | energy_bar -> 2 x energy_bar | 3 x hazelnuts [plant:hazel]; 2 x dates [plant:date_palm; tree:date_palm]; 1 x yarrow [plant:yarrow] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 6 | 32 | herbal_tea -> 1 x herbal_tea | 3 x mint [plant:wild_mint] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 7 | 33 | stomach_tea -> 1 x stomach_tea | 2 x mint [plant:wild_mint]; 2 x chamomile_flowers [plant:chamomile] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 8 | 34 | chamomile_tea -> 1 x chamomile_tea | 3 x chamomile_flowers [plant:chamomile] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 9 | 165 | campfire_pot_kit -> 1 x campfire_pot_kit | 3 x stick [ground scatter; plant:any shrub]; 5 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x clay_pot [recipe:clay_pot] | hands | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 10 | 178 | kindling -> 3 x kindling | 1 x stick [ground scatter; plant:any shrub] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_11.jpg |
+| 11 | 198 | herb_salve -> 2 x herb_salve | 2 x comfrey_leaves [plant:comfrey]; 1 x animal_fat [carcass:badger; carcass:bear] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_12.jpg |
+| 12 | 199 | splint -> 1 x splint | 2 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_12.jpg |
+| 13 | 35 | willow_bark_tea -> 1 x willow_bark_tea | 2 x willow_bark [NO SOURCE] | keeps: wooden_bowl kept [recipe:wooden_bowl] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for willow_bark | sheets/items_11.jpg |
 
 Checklist for chapter 3:
 
@@ -255,41 +255,41 @@ Roofs, beds, boxes, packs and clothes. Kits are placed with left click; lean-to,
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 4 | campfire -> 1 x campfire_kit | 6 x stick [ground scatter; plant:any shrub]; 3 x stone [boulder; dig] | hands | yes | PASS (wave 1) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 2 | 13 | lean_to_kit -> 1 x lean_to_kit | 8 x stick [ground scatter; plant:any shrub]; 6 x leaves [tree:trunk]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 3 | 14 | chest_kit -> 1 x chest_kit | 10 x stick [ground scatter; plant:any shrub]; 4 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 4 | 20 | wooden_bowl -> 1 x wooden_bowl | 1 x firewood [tree:log chain; tree:stump] | hands | yes | PASS (wave 1) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 5 | 21 | clay_pot -> 1 x clay_pot | 6 x clay [dig] | hands | yes | PASS (wave 1) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 6 | 23 | waterskin -> 1 x waterskin | 2 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 7 | 30 | backpack -> 1 x backpack | 4 x hide [carcass:badger; carcass:bear]; 1 x rope [recipe:rope] | hands | yes | PASS (wave 1) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 8 | 36 | grass_skirt -> 1 x grass_skirt | 8 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 9 | 37 | grass_cloak -> 1 x grass_cloak | 16 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 10 | 38 | fibre_sandals -> 1 x fibre_sandals | 6 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 11 | 39 | hide_cloak -> 1 x hide_cloak | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 12 | 40 | hide_boots -> 1 x hide_boots | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 13 | 41 | hide_hood -> 1 x hide_hood | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 14 | 42 | hide_mittens -> 1 x hide_mittens | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 15 | 43 | hide_leggings -> 1 x hide_leggings | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 16 | 45 | workbench_kit -> 1 x workbench_kit | 12 x stick [ground scatter; plant:any shrub]; 3 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r46_2_crafted_workshops_and_stations.jpg |
-| 17 | 122 | foundation_section_kit -> 1 x foundation_section_kit | 8 x stone [boulder; dig]; 2 x clay [dig] | hands | yes | PASS (wave 1) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 18 | 151 | rock_pile -> 1 x rock_pile | 45 x stone [boulder; dig] | hands | yes | PASS (wave 1) |  |
-| 19 | 162 | rough_bed_kit -> 1 x rough_bed_kit | 10 x thatch [plant:heather; plant:reeds]; 4 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 20 | 173 | quiver -> 1 x quiver | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 21 | 194 | hide_tunic -> 1 x hide_tunic | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 22 | 195 | hide_trousers -> 1 x hide_trousers | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 23 | 196 | hide_gloves -> 1 x hide_gloves | 1 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r29_2_crafted_clothing.jpg |
-| 24 | 197 | clay_jug -> 1 x clay_jug | 4 x clay [dig] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 25 | 15 | chopping_block -> 1 x chopping_block | 2 x log [NO SOURCE] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log |  |
-| 26 | 22 | bucket -> 1 x bucket | 6 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
-| 27 | 119 | wall_section_kit -> 1 x wall_section_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 28 | 120 | floor_section_kit -> 1 x floor_section_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 29 | 121 | roof_section_kit -> 1 x roof_section_kit | 5 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 30 | 123 | doorway_section_kit -> 1 x doorway_section_kit | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 31 | 124 | window_section_kit -> 1 x window_section_kit | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 32 | 125 | timber_prop_kit -> 1 x timber_prop_kit | 1 x log [NO SOURCE]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for log | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 33 | 126 | timber_set_kit -> 1 x timber_set_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 34 | 130 | ladder_kit -> 1 x ladder_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 35 | 213 | leather_cap -> 1 x leather_cap | 2 x leather [NO SOURCE] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | showroom/sr_r29_2_crafted_clothing.jpg |
+| 1 | 4 | campfire -> 1 x campfire_kit | 6 x stick [ground scatter; plant:any shrub]; 3 x stone [boulder; dig] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 2 | 13 | lean_to_kit -> 1 x lean_to_kit | 8 x stick [ground scatter; plant:any shrub]; 6 x leaves [tree:trunk]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 3 | 14 | chest_kit -> 1 x chest_kit | 10 x stick [ground scatter; plant:any shrub]; 4 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 4 | 20 | wooden_bowl -> 1 x wooden_bowl | 1 x firewood [tree:log chain; tree:stump] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 5 | 21 | clay_pot -> 1 x clay_pot | 6 x clay [dig] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 6 | 23 | waterskin -> 1 x waterskin | 2 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_10.jpg |
+| 7 | 30 | backpack -> 1 x backpack | 4 x hide [carcass:badger; carcass:bear]; 1 x rope [recipe:rope] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 8 | 36 | grass_skirt -> 1 x grass_skirt | 8 x plant_fibre [plant:flax; plant:nettle] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_09.jpg |
+| 9 | 37 | grass_cloak -> 1 x grass_cloak | 16 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_09.jpg |
+| 10 | 38 | fibre_sandals -> 1 x fibre_sandals | 6 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_09.jpg |
+| 11 | 39 | hide_cloak -> 1 x hide_cloak | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 12 | 40 | hide_boots -> 1 x hide_boots | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 13 | 41 | hide_hood -> 1 x hide_hood | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 14 | 42 | hide_mittens -> 1 x hide_mittens | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 15 | 43 | hide_leggings -> 1 x hide_leggings | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 16 | 45 | workbench_kit -> 1 x workbench_kit | 12 x stick [ground scatter; plant:any shrub]; 3 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_14.jpg |
+| 17 | 122 | foundation_section_kit -> 1 x foundation_section_kit | 8 x stone [boulder; dig]; 2 x clay [dig] | hands | yes | PASS (wave 1) | sheets/items_12.jpg |
+| 18 | 151 | rock_pile -> 1 x rock_pile | 45 x stone [boulder; dig] | hands | yes | PASS (wave 1) | sheets/structures_10.jpg |
+| 19 | 162 | rough_bed_kit -> 1 x rough_bed_kit | 10 x thatch [plant:heather; plant:reeds]; 4 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 20 | 173 | quiver -> 1 x quiver | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 21 | 194 | hide_tunic -> 1 x hide_tunic | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_09.jpg |
+| 22 | 195 | hide_trousers -> 1 x hide_trousers | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_09.jpg |
+| 23 | 196 | hide_gloves -> 1 x hide_gloves | 1 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_09.jpg |
+| 24 | 197 | clay_jug -> 1 x clay_jug | 4 x clay [dig] | hands | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_10.jpg |
+| 25 | 15 | chopping_block -> 1 x chopping_block | 2 x log [NO SOURCE] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log | sheets/structures_01.jpg |
+| 26 | 22 | bucket -> 1 x bucket | 6 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber | sheets/items_10.jpg |
+| 27 | 119 | wall_section_kit -> 1 x wall_section_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_12.jpg |
+| 28 | 120 | floor_section_kit -> 1 x floor_section_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_12.jpg |
+| 29 | 121 | roof_section_kit -> 1 x roof_section_kit | 5 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_12.jpg |
+| 30 | 123 | doorway_section_kit -> 1 x doorway_section_kit | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_13.jpg |
+| 31 | 124 | window_section_kit -> 1 x window_section_kit | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_13.jpg |
+| 32 | 125 | timber_prop_kit -> 1 x timber_prop_kit | 1 x log [NO SOURCE]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for log | sheets/items_13.jpg |
+| 33 | 126 | timber_set_kit -> 1 x timber_set_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 1 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_13.jpg |
+| 34 | 130 | ladder_kit -> 1 x ladder_kit | 4 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_13.jpg |
+| 35 | 213 | leather_cap -> 1 x leather_cap | 2 x leather [NO SOURCE] | hands | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | sheets/items_09.jpg |
 
 Checklist for chapter 4:
 
@@ -335,29 +335,29 @@ Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 107 | cook_mushroom_skewer -> 2 x mushroom_skewer | 2 x porcini [plant:porcini]; 1 x chanterelles [plant:chanterelle]; 1 x wild_garlic_leaves [plant:wild_garlic] | campfire L1 | yes | PASS (wave 1) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 2 | 108 | cook_herb_fish -> 1 x herb_fish | 1 x trout [fishing]; 1 x thyme [plant:wild_thyme]; 1 x samphire [plant:samphire] | campfire L1 | yes | PASS (wave 1) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 3 | 112 | cook_smoked_fish -> 1 x smoked_fish | 1 x pike [fishing]; 1 x samphire [plant:samphire]; 1 x juniper_berries [plant:juniper] | campfire L1 | yes | PASS (wave 1) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 4 | 128 | brick -> 3 x brick | 2 x clay [dig] | campfire L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r36_2_crafted_materials.jpg |
-| 5 | 104 | cook_roast_roots -> 2 x roast_roots | 2 x burdock_roots [plant:burdock]; 2 x wild_carrot_roots [plant:wild_carrot] | campfire L1 | yes | PASS (wave 2) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 6 | 105 | cook_acorn_mash -> 2 x acorn_mash | 3 x acorns [tree:oak; tree:trunk]; 1 x water [NO SOURCE] | campfire_pot L1 | yes | PASS (wave 2) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 7 | 115 | cook_fish_stew -> 2 x fish_stew | 1 x perch [fishing]; 1 x watercress [plant:watercress]; 1 x wild_carrot_roots [plant:wild_carrot] | campfire_pot L1 | yes | PASS (wave 2) | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 8 | 225 | hide_glue -> 2 x hide_glue | 1 x hide [carcass:badger; carcass:bear] | campfire_pot L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r37_2_crafted_materials.jpg |
-| 9 | 102 | cook_berry_compote -> 2 x berry_compote | 2 x blueberries [plant:blueberry]; 1 x honeyspindle_nectar [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 10 | 103 | cook_nut_paste -> 2 x nut_paste | 3 x hazelnuts [plant:hazel]; 1 x honeyspindle_nectar [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 11 | 106 | cook_baked_apples -> 2 x baked_apples | 3 x crab_apples [plant:wild_apple; tree:trunk]; 1 x honeyspindle_nectar [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 12 | 109 | cook_garlic_meat -> 1 x garlic_meat | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_bulbs [NO SOURCE]; 1 x rosemary [plant:rosemary] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 13 | 110 | cook_chestnut_cakes -> 3 x chestnut_cakes | 3 x chestnuts [plant:sweet_chestnut; tree:sweet_chestnut]; 1 x honeyspindle_nectar [NO SOURCE]; 1 x linseed [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar,linseed | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 14 | 111 | cook_fruit_leather -> 3 x fruit_leather | 2 x crab_apples [plant:wild_apple; tree:trunk]; 1 x cranberries [plant:cranberry]; 1 x honeyspindle_nectar [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 15 | 113 | cook_hunters_stew -> 2 x hunters_stew | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x wild_garlic_bulbs [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 16 | 114 | cook_forager_stew -> 2 x forager_stew | 2 x greens [NO SOURCE]; 1 x burdock_roots [plant:burdock]; 1 x chanterelles [plant:chanterelle] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for greens | showroom/sr_r32_2_crafted_fire_and_cooking.jpg |
-| 17 | 116 | cook_trail_bread -> 3 x trail_bread | 2 x linseed [NO SOURCE]; 2 x hazelnuts [plant:hazel]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for linseed | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 18 | 117 | cook_hearty_pottage -> 3 x hearty_pottage | 2 x seeds [NO SOURCE]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x dandelion_leaves [NO SOURCE]; 1 x marjoram [plant:wild_marjoram]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds,dandelion_leaves | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 19 | 118 | cook_feast_roast -> 2 x feast_roast | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_bulbs [NO SOURCE]; 1 x thyme [plant:wild_thyme]; 1 x rosemary [plant:rosemary]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 20 | 148 | tar -> 1 x tar | 5 x pine_tar [NO SOURCE] | campfire L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for pine_tar | showroom/sr_r36_2_crafted_materials.jpg |
-| 21 | 174 | cook_flatbread -> 2 x flatbread | 3 x seeds [NO SOURCE]; 1 x water [NO SOURCE] | clay_hearth L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 22 | 175 | cook_honey_loaf -> 2 x honey_loaf | 3 x seeds [NO SOURCE]; 1 x hazelnuts [plant:hazel]; 1 x honeyspindle_nectar [NO SOURCE] | oven L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds,honeyspindle_nectar | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
-| 23 | 176 | cook_roast_joint -> 2 x roast_joint | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x rosemary [plant:rosemary]; 1 x wild_garlic_bulbs [NO SOURCE] | oven L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | showroom/sr_r33_2_crafted_fire_and_cooking.jpg |
+| 1 | 107 | cook_mushroom_skewer -> 2 x mushroom_skewer | 2 x porcini [plant:porcini]; 1 x chanterelles [plant:chanterelle]; 1 x wild_garlic_leaves [plant:wild_garlic] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 2 | 108 | cook_herb_fish -> 1 x herb_fish | 1 x trout [fishing]; 1 x thyme [plant:wild_thyme]; 1 x samphire [plant:samphire] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 3 | 112 | cook_smoked_fish -> 1 x smoked_fish | 1 x pike [fishing]; 1 x samphire [plant:samphire]; 1 x juniper_berries [plant:juniper] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 4 | 128 | brick -> 3 x brick | 2 x clay [dig] | campfire L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_12.jpg |
+| 5 | 104 | cook_roast_roots -> 2 x roast_roots | 2 x burdock_roots [plant:burdock]; 2 x wild_carrot_roots [plant:wild_carrot] | campfire L1 | yes | PASS (wave 2) | sheets/items_10.jpg |
+| 6 | 105 | cook_acorn_mash -> 2 x acorn_mash | 3 x acorns [tree:oak; tree:trunk]; 1 x water [NO SOURCE] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_10.jpg |
+| 7 | 115 | cook_fish_stew -> 2 x fish_stew | 1 x perch [fishing]; 1 x watercress [plant:watercress]; 1 x wild_carrot_roots [plant:wild_carrot] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_10.jpg |
+| 8 | 225 | hide_glue -> 2 x hide_glue | 1 x hide [carcass:badger; carcass:bear] | campfire_pot L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_12.jpg |
+| 9 | 102 | cook_berry_compote -> 2 x berry_compote | 2 x blueberries [plant:blueberry]; 1 x honeyspindle_nectar [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | sheets/items_10.jpg |
+| 10 | 103 | cook_nut_paste -> 2 x nut_paste | 3 x hazelnuts [plant:hazel]; 1 x honeyspindle_nectar [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | sheets/items_10.jpg |
+| 11 | 106 | cook_baked_apples -> 2 x baked_apples | 3 x crab_apples [plant:wild_apple; tree:trunk]; 1 x honeyspindle_nectar [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | sheets/items_10.jpg |
+| 12 | 109 | cook_garlic_meat -> 1 x garlic_meat | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_bulbs [NO SOURCE]; 1 x rosemary [plant:rosemary] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | sheets/items_10.jpg |
+| 13 | 110 | cook_chestnut_cakes -> 3 x chestnut_cakes | 3 x chestnuts [plant:sweet_chestnut; tree:sweet_chestnut]; 1 x honeyspindle_nectar [NO SOURCE]; 1 x linseed [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar,linseed | sheets/items_10.jpg |
+| 14 | 111 | cook_fruit_leather -> 3 x fruit_leather | 2 x crab_apples [plant:wild_apple; tree:trunk]; 1 x cranberries [plant:cranberry]; 1 x honeyspindle_nectar [NO SOURCE] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for honeyspindle_nectar | sheets/items_10.jpg |
+| 15 | 113 | cook_hunters_stew -> 2 x hunters_stew | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x wild_garlic_bulbs [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | sheets/items_10.jpg |
+| 16 | 114 | cook_forager_stew -> 2 x forager_stew | 2 x greens [NO SOURCE]; 1 x burdock_roots [plant:burdock]; 1 x chanterelles [plant:chanterelle] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for greens | sheets/items_10.jpg |
+| 17 | 116 | cook_trail_bread -> 3 x trail_bread | 2 x linseed [NO SOURCE]; 2 x hazelnuts [plant:hazel]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for linseed | sheets/items_10.jpg |
+| 18 | 117 | cook_hearty_pottage -> 3 x hearty_pottage | 2 x seeds [NO SOURCE]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x dandelion_leaves [NO SOURCE]; 1 x marjoram [plant:wild_marjoram]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire_pot L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds,dandelion_leaves | sheets/items_10.jpg |
+| 19 | 118 | cook_feast_roast -> 2 x feast_roast | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_bulbs [NO SOURCE]; 1 x thyme [plant:wild_thyme]; 1 x rosemary [plant:rosemary]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | sheets/items_11.jpg |
+| 20 | 148 | tar -> 1 x tar | 5 x pine_tar [NO SOURCE] | campfire L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for pine_tar | sheets/items_12.jpg |
+| 21 | 174 | cook_flatbread -> 2 x flatbread | 3 x seeds [NO SOURCE]; 1 x water [NO SOURCE] | clay_hearth L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds | sheets/items_11.jpg |
+| 22 | 175 | cook_honey_loaf -> 2 x honey_loaf | 3 x seeds [NO SOURCE]; 1 x hazelnuts [plant:hazel]; 1 x honeyspindle_nectar [NO SOURCE] | oven L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for seeds,honeyspindle_nectar | sheets/items_11.jpg |
+| 23 | 176 | cook_roast_joint -> 2 x roast_joint | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x rosemary [plant:rosemary]; 1 x wild_garlic_bulbs [NO SOURCE] | oven L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for wild_garlic_bulbs | sheets/items_11.jpg |
 
 Checklist for chapter 5:
 
@@ -391,31 +391,31 @@ Recipes made near a placed workbench (12 sticks + 3 twine). Add-ons (tool rack, 
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 26 | stone_spade -> 1 x stone_spade | 1 x wooden_spade [recipe:wooden_spade]; 2 x stone [boulder; dig]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r41_2_crafted_tools.jpg |
-| 2 | 47 | tool_rack_kit -> 1 x tool_rack_kit | 10 x stick [ground scatter; plant:any shrub]; 4 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r46_2_crafted_workshops_and_stations.jpg |
-| 3 | 127 | cut_stone_block -> 1 x cut_stone_block | 25 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r36_2_crafted_materials.jpg |
-| 4 | 140 | stone_hoe -> 1 x stone_hoe | 1 x wooden_hoe [recipe:wooden_hoe]; 2 x stone [boulder; dig]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r41_2_crafted_tools.jpg |
-| 5 | 146 | cobblestone -> 1 x cobblestone | 3 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r36_2_crafted_materials.jpg |
-| 6 | 147 | stone_shingle -> 1 x stone_shingle | 2 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | showroom/sr_r36_2_crafted_materials.jpg |
-| 7 | 156 | stone_hammer -> 1 x stone_hammer | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r42_2_crafted_tools.jpg |
-| 8 | 166 | thatch_floor_kit -> 1 x thatch_floor_kit | 6 x twine [recipe:twine,twine_bark,sinew_cord]; 20 x thatch [plant:heather; plant:reeds] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 9 | 167 | thatch_wall_kit -> 1 x thatch_wall_kit | 20 x twine [recipe:twine,twine_bark,sinew_cord]; 50 x thatch [plant:heather; plant:reeds]; 15 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 10 | 168 | thatch_roof_kit -> 1 x thatch_roof_kit | 10 x twine [recipe:twine,twine_bark,sinew_cord]; 40 x thatch [plant:heather; plant:reeds]; 12 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r39_2_crafted_shelter_and_building.jpg |
-| 11 | 169 | thatch_doorway_kit -> 1 x thatch_doorway_kit | 12 x twine [recipe:twine,twine_bark,sinew_cord]; 25 x thatch [plant:heather; plant:reeds]; 12 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r40_2_crafted_shelter_and_building.jpg |
-| 12 | 170 | wooden_bow -> 1 x wooden_bow | 2 x stick [ground scatter; plant:any shrub]; 3 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | showroom/sr_r42_2_crafted_tools.jpg |
-| 13 | 186 | stone_pickaxe -> 1 x stone_pickaxe | 2 x stick [ground scatter; plant:any shrub]; 3 x stone [boulder; dig]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | showroom/sr_r42_2_crafted_tools.jpg |
-| 14 | 49 | log_workbench_kit -> 1 x log_workbench_kit | 4 x log [NO SOURCE]; 6 x twine [recipe:twine,twine_bark,sinew_cord]; 6 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for log | showroom/sr_r46_2_crafted_workshops_and_stations.jpg |
-| 15 | 143 | rough_plank -> 4 x rough_plank | 1 x log [NO SOURCE] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for log | showroom/sr_r36_2_crafted_materials.jpg |
-| 16 | 150 | wooden_pin -> 4 x wooden_pin | 1 x lumber [recipe:lumber,lumber_by_hand] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | showroom/sr_r37_2_crafted_materials.jpg |
-| 17 | 153 | water_wheel -> 1 x water_wheel | 20 x lumber [recipe:lumber,lumber_by_hand]; 80 x nails [recipe:nails] | workbench L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber,nails | showroom/sr_r46_2_crafted_workshops_and_stations.jpg |
-| 18 | 157 | hand_saw -> 1 x hand_saw | 1 x saw_blade [recipe:saw_blade]; 2 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for saw_blade | showroom/sr_r42_2_crafted_tools.jpg |
-| 19 | 180 | hide_scraper -> 1 x hide_scraper | 1 x flint [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | showroom/sr_r42_2_crafted_tools.jpg |
-| 20 | 181 | javelin -> 2 x javelin | 2 x stick [ground scatter; plant:any shrub]; 1 x flint [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | showroom/sr_r45_2_crafted_weapons.jpg |
-| 21 | 182 | obsidian_knife -> 1 x obsidian_knife | 1 x obsidian [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for obsidian | showroom/sr_r42_2_crafted_tools.jpg |
-| 22 | 187 | sickle -> 1 x sickle | 1 x flint [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | showroom/sr_r42_2_crafted_tools.jpg |
-| 23 | 203 | plank_shield -> 1 x plank_shield | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x hide [carcass:badger; carcass:bear] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber | showroom/sr_r43_2_crafted_tools.jpg |
-| 24 | 214 | leather_jerkin -> 1 x leather_jerkin | 3 x leather [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | showroom/sr_r29_2_crafted_clothing.jpg |
-| 25 | 216 | gambeson -> 1 x gambeson | 3 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x leather [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | showroom/sr_r30_2_crafted_clothing.jpg |
+| 1 | 26 | stone_spade -> 1 x stone_spade | 1 x wooden_spade [recipe:wooden_spade]; 2 x stone [boulder; dig]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 2 | 47 | tool_rack_kit -> 1 x tool_rack_kit | 10 x stick [ground scatter; plant:any shrub]; 4 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | sheets/items_14.jpg |
+| 3 | 127 | cut_stone_block -> 1 x cut_stone_block | 25 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_12.jpg |
+| 4 | 140 | stone_hoe -> 1 x stone_hoe | 1 x wooden_hoe [recipe:wooden_hoe]; 2 x stone [boulder; dig]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 5 | 146 | cobblestone -> 1 x cobblestone | 3 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_12.jpg |
+| 6 | 147 | stone_shingle -> 1 x stone_shingle | 2 x stone [boulder; dig] | workbench L1 | NO | MECHANIC BROKEN or not learnable (BLOCKER): not known (no learn system) | sheets/items_12.jpg |
+| 7 | 156 | stone_hammer -> 1 x stone_hammer | 1 x stone [boulder; dig]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 8 | 166 | thatch_floor_kit -> 1 x thatch_floor_kit | 6 x twine [recipe:twine,twine_bark,sinew_cord]; 20 x thatch [plant:heather; plant:reeds] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 9 | 167 | thatch_wall_kit -> 1 x thatch_wall_kit | 20 x twine [recipe:twine,twine_bark,sinew_cord]; 50 x thatch [plant:heather; plant:reeds]; 15 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 10 | 168 | thatch_roof_kit -> 1 x thatch_roof_kit | 10 x twine [recipe:twine,twine_bark,sinew_cord]; 40 x thatch [plant:heather; plant:reeds]; 12 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 11 | 169 | thatch_doorway_kit -> 1 x thatch_doorway_kit | 12 x twine [recipe:twine,twine_bark,sinew_cord]; 25 x thatch [plant:heather; plant:reeds]; 12 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 12 | 170 | wooden_bow -> 1 x wooden_bow | 2 x stick [ground scatter; plant:any shrub]; 3 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | PASS (wave 2) | sheets/items_13.jpg |
+| 13 | 186 | stone_pickaxe -> 1 x stone_pickaxe | 2 x stick [ground scatter; plant:any shrub]; 3 x stone [boulder; dig]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system) | sheets/items_14.jpg |
+| 14 | 49 | log_workbench_kit -> 1 x log_workbench_kit | 4 x log [NO SOURCE]; 6 x twine [recipe:twine,twine_bark,sinew_cord]; 6 x stick [ground scatter; plant:any shrub] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for log | sheets/items_14.jpg |
+| 15 | 143 | rough_plank -> 4 x rough_plank | 1 x log [NO SOURCE] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for log | sheets/items_12.jpg |
+| 16 | 150 | wooden_pin -> 4 x wooden_pin | 1 x lumber [recipe:lumber,lumber_by_hand] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_12.jpg |
+| 17 | 153 | water_wheel -> 1 x water_wheel | 20 x lumber [recipe:lumber,lumber_by_hand]; 80 x nails [recipe:nails] | workbench L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber,nails | sheets/items_14.jpg |
+| 18 | 157 | hand_saw -> 1 x hand_saw | 1 x saw_blade [recipe:saw_blade]; 2 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for saw_blade | sheets/items_13.jpg |
+| 19 | 180 | hide_scraper -> 1 x hide_scraper | 1 x flint [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | sheets/items_14.jpg |
+| 20 | 181 | javelin -> 2 x javelin | 2 x stick [ground scatter; plant:any shrub]; 1 x flint [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | sheets/items_14.jpg |
+| 21 | 182 | obsidian_knife -> 1 x obsidian_knife | 1 x obsidian [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for obsidian | sheets/items_14.jpg |
+| 22 | 187 | sickle -> 1 x sickle | 1 x flint [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for flint | sheets/items_14.jpg |
+| 23 | 203 | plank_shield -> 1 x plank_shield | 3 x lumber [recipe:lumber,lumber_by_hand]; 1 x hide [carcass:badger; carcass:bear] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber | sheets/items_14.jpg |
+| 24 | 214 | leather_jerkin -> 1 x leather_jerkin | 3 x leather [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | sheets/items_09.jpg |
+| 25 | 216 | gambeson -> 1 x gambeson | 3 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x leather [NO SOURCE] | workbench L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for leather | sheets/items_10.jpg |
 
 Checklist for chapter 6:
 
@@ -451,7 +451,7 @@ Higher benches are placed from the hammer with materials (blueprints.json): ston
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 17 | plank_chest_kit -> 1 x plank_chest_kit | 8 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L2 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber | showroom/sr_r31_2_crafted_containers_and_furniture.jpg |
+| 1 | 17 | plank_chest_kit -> 1 x plank_chest_kit | 8 x lumber [recipe:lumber,lumber_by_hand]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L2 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber | sheets/items_10.jpg |
 
 Checklist for chapter 7:
 
@@ -463,22 +463,22 @@ Boards and beams. A saw mill (placed from the hammer) turns one log into lumber;
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 16 | lumber -> 4 x lumber | 1 x log [NO SOURCE] | saw_mill L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for log; station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 2 | 52 | lumber_oak -> 6 x lumber_oak | 1 x log_oak [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 3 | 53 | beams_oak -> 2 x beam_oak | 1 x log_oak [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 4 | 56 | lumber_birch -> 6 x lumber_birch | 1 x log_birch [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 5 | 57 | beams_birch -> 2 x beam_birch | 1 x log_birch [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 6 | 58 | lumber_scots_pine -> 6 x lumber_scots_pine | 1 x log_scots_pine [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 7 | 59 | beams_scots_pine -> 2 x beam_scots_pine | 1 x log_scots_pine [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 8 | 60 | lumber_spruce -> 6 x lumber_spruce | 1 x log_spruce [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 9 | 61 | beams_spruce -> 2 x beam_spruce | 1 x log_spruce [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 10 | 68 | lumber_tropical_hardwood -> 6 x lumber_tropical_hardwood | 1 x log_tropical_hardwood [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 11 | 69 | beams_tropical_hardwood -> 2 x beam_tropical_hardwood | 1 x log_tropical_hardwood [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
-| 12 | 84 | lumber_walnut -> 6 x lumber_walnut | 1 x log_walnut [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
-| 13 | 85 | beams_walnut -> 2 x beam_walnut | 1 x log_walnut [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
-| 14 | 100 | lumber_maple -> 6 x lumber_maple | 1 x log_maple [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
-| 15 | 101 | beams_maple -> 2 x beam_maple | 1 x log_maple [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
-| 16 | 144 | fine_board -> 1 x fine_board | 1 x lumber [recipe:lumber,lumber_by_hand] | woodworking_table L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber; station woodworking_table level 1 not obtainable | showroom/sr_r36_2_crafted_materials.jpg |
+| 1 | 16 | lumber -> 4 x lumber | 1 x log [NO SOURCE] | saw_mill L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for log; station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 2 | 52 | lumber_oak -> 6 x lumber_oak | 1 x log_oak [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 3 | 53 | beams_oak -> 2 x beam_oak | 1 x log_oak [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 4 | 56 | lumber_birch -> 6 x lumber_birch | 1 x log_birch [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 5 | 57 | beams_birch -> 2 x beam_birch | 1 x log_birch [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 6 | 58 | lumber_scots_pine -> 6 x lumber_scots_pine | 1 x log_scots_pine [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 7 | 59 | beams_scots_pine -> 2 x beam_scots_pine | 1 x log_scots_pine [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 8 | 60 | lumber_spruce -> 6 x lumber_spruce | 1 x log_spruce [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 9 | 61 | beams_spruce -> 2 x beam_spruce | 1 x log_spruce [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 10 | 68 | lumber_tropical_hardwood -> 6 x lumber_tropical_hardwood | 1 x log_tropical_hardwood [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 11 | 69 | beams_tropical_hardwood -> 2 x beam_tropical_hardwood | 1 x log_tropical_hardwood [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 12 | 84 | lumber_walnut -> 6 x lumber_walnut | 1 x log_walnut [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 13 | 85 | beams_walnut -> 2 x beam_walnut | 1 x log_walnut [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 14 | 100 | lumber_maple -> 6 x lumber_maple | 1 x log_maple [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 15 | 101 | beams_maple -> 2 x beam_maple | 1 x log_maple [tree:log chain (shoulder, one at a time)] | saw_mill L1 | NO | MECHANIC BROKEN or not learnable (FUTURE (flagged by design)): not known (no learn system); station saw_mill level 1 not obtainable | sheets/items_11.jpg |
+| 16 | 144 | fine_board -> 1 x fine_board | 1 x lumber [recipe:lumber,lumber_by_hand] | woodworking_table L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for lumber; station woodworking_table level 1 not obtainable | sheets/items_12.jpg |
 
 Checklist for chapter 8:
 
@@ -505,33 +505,33 @@ Smelting and smithing at a forge. Needs ores, coal and ingots.
 
 | step | recipe # | make | needs (and where each comes from) | station | known | status | picture row |
 |---|---|---|---|---|---|---|---|
-| 1 | 18 | iron_pickaxe -> 1 x iron_pickaxe | 3 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r41_2_crafted_tools.jpg |
-| 2 | 19 | steel_pickaxe -> 1 x steel_pickaxe | 3 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot; station forge level 2 not obtainable | showroom/sr_r41_2_crafted_tools.jpg |
-| 3 | 145 | nails -> 100 x nails | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r36_2_crafted_materials.jpg |
-| 4 | 149 | hinges -> 4 x hinges | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r37_2_crafted_materials.jpg |
-| 5 | 152 | saw_blade -> 1 x saw_blade | 2 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r37_2_crafted_materials.jpg |
-| 6 | 183 | steel_striker -> 1 x steel_striker | 1 x steel_ingot [recipe:smelt_steel] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | showroom/sr_r42_2_crafted_tools.jpg |
-| 7 | 184 | rivets -> 50 x rivets | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r37_2_crafted_materials.jpg |
-| 8 | 185 | bronze_ingot -> 2 x bronze_ingot | 1 x copper_ingot [recipe:smelt_copper]; 1 x tin_ingot [recipe:smelt_tin] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for copper_ingot,tin_ingot; station forge level 2 not obtainable | showroom/sr_r37_2_crafted_materials.jpg |
-| 9 | 188 | scythe -> 1 x scythe | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | showroom/sr_r42_2_crafted_tools.jpg |
-| 10 | 190 | smelt_copper -> 1 x copper_ingot | 2 x copper_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for copper_ore | showroom/sr_r37_2_crafted_materials.jpg |
-| 11 | 191 | smelt_tin -> 1 x tin_ingot | 2 x tin_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for tin_ore | showroom/sr_r37_2_crafted_materials.jpg |
-| 12 | 192 | smelt_iron -> 1 x iron_ingot | 3 x iron_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ore | showroom/sr_r35_2_crafted_materials.jpg |
-| 13 | 193 | smelt_steel -> 1 x steel_ingot | 2 x iron_ingot [recipe:smelt_iron]; 1 x coal [NO SOURCE] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot,coal; station forge level 2 not obtainable | showroom/sr_r35_2_crafted_materials.jpg |
-| 14 | 204 | bronze_sword -> 1 x bronze_sword | 2 x bronze_ingot [recipe:bronze_ingot]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 15 | 205 | bronze_mace -> 1 x bronze_mace | 2 x bronze_ingot [recipe:bronze_ingot]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 16 | 206 | bronze_shield -> 1 x bronze_shield | 2 x lumber [recipe:lumber,lumber_by_hand]; 1 x bronze_ingot [recipe:bronze_ingot] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,bronze_ingot; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 17 | 207 | iron_sword -> 1 x iron_sword | 2 x iron_ingot [recipe:smelt_iron]; 1 x leather [NO SOURCE] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot,leather; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 18 | 208 | iron_mace -> 1 x iron_mace | 2 x iron_ingot [recipe:smelt_iron]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 19 | 209 | iron_shield -> 1 x iron_shield | 2 x lumber [recipe:lumber,lumber_by_hand]; 2 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,iron_ingot; station forge level 2 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 20 | 210 | steel_sword -> 1 x steel_sword | 2 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather; station forge level 3 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 21 | 211 | steel_mace -> 1 x steel_mace | 2 x steel_ingot [recipe:smelt_steel]; 1 x stick [ground scatter; plant:any shrub] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot; station forge level 3 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 22 | 212 | steel_shield -> 1 x steel_shield | 1 x lumber [recipe:lumber,lumber_by_hand]; 2 x steel_ingot [recipe:smelt_steel] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,steel_ingot; station forge level 3 not obtainable | showroom/sr_r43_2_crafted_tools.jpg |
-| 23 | 215 | bronze_helm -> 1 x bronze_helm | 3 x bronze_ingot [recipe:bronze_ingot] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | showroom/sr_r30_2_crafted_clothing.jpg |
-| 24 | 217 | iron_helm -> 1 x iron_helm | 3 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable | showroom/sr_r30_2_crafted_clothing.jpg |
-| 25 | 218 | mail_shirt -> 1 x mail_shirt | 2 x rivets [recipe:rivets]; 2 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for rivets,iron_ingot; station forge level 2 not obtainable | showroom/sr_r30_2_crafted_clothing.jpg |
-| 26 | 219 | steel_helm -> 1 x steel_helm | 2 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE]; 1 x rivets [recipe:rivets] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable | showroom/sr_r30_2_crafted_clothing.jpg |
-| 27 | 220 | plate_cuirass -> 1 x plate_cuirass | 3 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE]; 2 x rivets [recipe:rivets] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable | showroom/sr_r30_2_crafted_clothing.jpg |
+| 1 | 18 | iron_pickaxe -> 1 x iron_pickaxe | 3 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_13.jpg |
+| 2 | 19 | steel_pickaxe -> 1 x steel_pickaxe | 3 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot; station forge level 2 not obtainable | sheets/items_13.jpg |
+| 3 | 145 | nails -> 100 x nails | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for iron_ingot | sheets/items_12.jpg |
+| 4 | 149 | hinges -> 4 x hinges | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (BLOCKER): not known (no learn system); no source anywhere for iron_ingot | sheets/items_12.jpg |
+| 5 | 152 | saw_blade -> 1 x saw_blade | 2 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_12.jpg |
+| 6 | 183 | steel_striker -> 1 x steel_striker | 1 x steel_ingot [recipe:smelt_steel] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot | sheets/items_14.jpg |
+| 7 | 184 | rivets -> 50 x rivets | 1 x iron_ingot [recipe:smelt_iron] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_12.jpg |
+| 8 | 185 | bronze_ingot -> 2 x bronze_ingot | 1 x copper_ingot [recipe:smelt_copper]; 1 x tin_ingot [recipe:smelt_tin] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for copper_ingot,tin_ingot; station forge level 2 not obtainable | sheets/items_12.jpg |
+| 9 | 188 | scythe -> 1 x scythe | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot | sheets/items_14.jpg |
+| 10 | 190 | smelt_copper -> 1 x copper_ingot | 2 x copper_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for copper_ore | sheets/items_12.jpg |
+| 11 | 191 | smelt_tin -> 1 x tin_ingot | 2 x tin_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for tin_ore | sheets/items_12.jpg |
+| 12 | 192 | smelt_iron -> 1 x iron_ingot | 3 x iron_ore [NO SOURCE] | forge L1 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ore | sheets/items_11.jpg |
+| 13 | 193 | smelt_steel -> 1 x steel_ingot | 2 x iron_ingot [recipe:smelt_iron]; 1 x coal [NO SOURCE] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot,coal; station forge level 2 not obtainable | sheets/items_11.jpg |
+| 14 | 204 | bronze_sword -> 1 x bronze_sword | 2 x bronze_ingot [recipe:bronze_ingot]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 15 | 205 | bronze_mace -> 1 x bronze_mace | 2 x bronze_ingot [recipe:bronze_ingot]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 16 | 206 | bronze_shield -> 1 x bronze_shield | 2 x lumber [recipe:lumber,lumber_by_hand]; 1 x bronze_ingot [recipe:bronze_ingot] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,bronze_ingot; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 17 | 207 | iron_sword -> 1 x iron_sword | 2 x iron_ingot [recipe:smelt_iron]; 1 x leather [NO SOURCE] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot,leather; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 18 | 208 | iron_mace -> 1 x iron_mace | 2 x iron_ingot [recipe:smelt_iron]; 1 x stick [ground scatter; plant:any shrub] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 19 | 209 | iron_shield -> 1 x iron_shield | 2 x lumber [recipe:lumber,lumber_by_hand]; 2 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,iron_ingot; station forge level 2 not obtainable | sheets/items_14.jpg |
+| 20 | 210 | steel_sword -> 1 x steel_sword | 2 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather; station forge level 3 not obtainable | sheets/items_14.jpg |
+| 21 | 211 | steel_mace -> 1 x steel_mace | 2 x steel_ingot [recipe:smelt_steel]; 1 x stick [ground scatter; plant:any shrub] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot; station forge level 3 not obtainable | sheets/items_14.jpg |
+| 22 | 212 | steel_shield -> 1 x steel_shield | 1 x lumber [recipe:lumber,lumber_by_hand]; 2 x steel_ingot [recipe:smelt_steel] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for lumber,steel_ingot; station forge level 3 not obtainable | sheets/items_14.jpg |
+| 23 | 215 | bronze_helm -> 1 x bronze_helm | 3 x bronze_ingot [recipe:bronze_ingot] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable | sheets/items_09.jpg |
+| 24 | 217 | iron_helm -> 1 x iron_helm | 3 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable | sheets/items_10.jpg |
+| 25 | 218 | mail_shirt -> 1 x mail_shirt | 2 x rivets [recipe:rivets]; 2 x iron_ingot [recipe:smelt_iron] | forge L2 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for rivets,iron_ingot; station forge level 2 not obtainable | sheets/items_10.jpg |
+| 26 | 219 | steel_helm -> 1 x steel_helm | 2 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE]; 1 x rivets [recipe:rivets] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable | sheets/items_10.jpg |
+| 27 | 220 | plate_cuirass -> 1 x plate_cuirass | 3 x steel_ingot [recipe:smelt_steel]; 1 x heavy_leather [NO SOURCE]; 2 x rivets [recipe:rivets] | forge L3 | NO | MISSING ITEM (FUTURE (flagged by design)): not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable | sheets/items_10.jpg |
 
 Checklist for chapter 9:
 
@@ -569,40 +569,40 @@ How each placeable is obtained (kit recipe or hammer blueprint with its cost), i
 
 | structure | obtained by | footprint (m) | cap/chunk | gives station | add-on of | built today | built if all known | problems |
 |---|---|---|---|---|---|---|---|---|
-| lean_to | recipe lean_to_kit: 8 x stick, 6 x leaves, 2 x twine | 2.4x2.1 | 6 |  |  | 1 | 1 | ok |
-| chest | recipe chest_kit: 10 x stick, 4 x twine | 0.8x0.6 | 8 |  |  | 1 | 1 | ok |
-| chopping_block | recipe chopping_block: 2 x log | 0.7x0.7 | 4 |  |  | no | no | not obtainable even if all recipes known |
-| plank_chest | recipe plank_chest_kit: 8 x lumber, 2 x twine | 0.9x0.6 | 8 |  |  | no | no | kit recipe plank_chest_kit not known; not obtainable even if all recipes known |
-| remains | (none: placed by game or admin) | 1.8x0.7 | 50 |  |  | no | no | ok |
-| workbench | recipe workbench_kit: 12 x stick, 3 x twine | 1.5x1.0 | 4 | workbench L1 |  | 1 | 1 | ok |
-| tool_rack | recipe tool_rack_kit: 10 x stick, 4 x twine | 1.0x0.4 | 6 |  | workbench | 2 | 2 | ok |
-| vice | (none: placed by game or admin) | 0.5x0.5 | 6 |  | workbench | no | no | kit 'vice_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| log_workbench | recipe log_workbench_kit: 4 x log, 6 x twine, 6 x stick | 2.0x1.0 | 3 | workbench L2 |  | no | no | not obtainable even if all recipes known |
-| saw_mill | hammer blueprint: 40 x lumber, 100 x nails, 1 x saw_blade, 1 x water_wheel at workbench | 3.0x2.0 | 2 | saw_mill L1 |  | no | no | not obtainable even if all recipes known |
-| woodworking_table | hammer blueprint: 12 x lumber, 60 x nails at workbench | 2.0x1.0 | 4 | woodworking_table L1 |  | no | no | not obtainable even if all recipes known |
-| stone_forge | hammer blueprint: 36 x stone, 10 x clay, 2 x hide at workbench | 0.9x0.72 | 2 | workbench L3 + forge L1 |  | 2 | 2 | ok |
-| blacksmithy | hammer blueprint: 30 x stone, 10 x log, 10 x clay at workbench | 1.5x1.17 | 1 | workbench L4 + forge L2 |  | no | no | not obtainable even if all recipes known |
-| carcass | (none: placed by game or admin) | 1.0x0.6 | 50 |  |  | no | no | ok |
-| large_forge | (none: placed by game or admin) | 2.8x2.0 | 1 | workbench L4 + forge L3 |  | no | no | kit 'large_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| master_forge | (none: placed by game or admin) | 3.9x2.6 | 1 | workbench L4 + forge L4 |  | no | no | kit 'master_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| wall_section | recipe wall_section_kit: 4 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known |
-| floor_section | recipe floor_section_kit: 4 x lumber, 1 x twine | 2.0x2.0 | 200 |  |  | no | no | not obtainable even if all recipes known |
-| roof_section | recipe roof_section_kit: 5 x lumber, 2 x twine, 2 x stick | 2.4x2.4 | 100 |  |  | no | no | not obtainable even if all recipes known |
-| foundation_section | recipe foundation_section_kit: 8 x stone, 2 x clay | 4.0x4.0 | 60 |  |  | 1 | 1 | ok |
-| doorway_section | recipe doorway_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known |
-| window_section | recipe window_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known |
-| door_open | recipe doorway_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | ok |
-| timber_prop | recipe timber_prop_kit: 1 x log, 1 x twine | 0.4x0.4 | 60 |  |  | no | no | kit recipe timber_prop_kit not known; not obtainable even if all recipes known |
-| timber_set | recipe timber_set_kit: 4 x lumber, 1 x twine, 1 x stick | 2.0x0.4 | 60 |  |  | no | no | not obtainable even if all recipes known |
-| ladder | recipe ladder_kit: 4 x lumber, 2 x twine | 0.6x0.15 | 60 |  |  | no | no | not obtainable even if all recipes known |
-| path_patch | (none: placed by game or admin) | 1.0x1.0 | 400 |  |  | 1 | 1 | ok |
-| rough_bed | recipe rough_bed_kit: 10 x thatch, 4 x stick, 2 x twine | 1.0x2.0 | 6 |  |  | 1 | 1 | ok |
-| thatch_wall | recipe thatch_wall_kit: 20 x twine, 50 x thatch, 15 x stick | 2.0x0.25 | 200 |  |  | 2 | 2 | ok |
-| campfire_pot | recipe campfire_pot_kit: 3 x stick, 5 x twine, 1 x clay_pot | 1.2x1.2 | 6 | campfire_pot L1 |  | 1 | 1 | ok |
-| clay_hearth | hammer blueprint: 10 x brick, 6 x clay, 4 x stone | 1.6x1.2 | 4 | clay_hearth L2 + campfire L1 |  | no | 1 | not obtainable today (known/open recipes only) |
-| snare_trap | recipe snare: 3 x twine, 2 x stick | 0.6x0.6 | 12 |  |  | 1 | 1 | ok |
-| oven | hammer blueprint: 24 x brick, 10 x clay, 8 x stone | 1.8x1.4 | 2 | oven L3 + clay_hearth L2, campfire L1 |  | no | 1 | not obtainable today (known/open recipes only) |
-| thatch_floor | recipe thatch_floor_kit: 6 x twine, 20 x thatch | 4.0x4.0 | 60 |  |  | 2 | 2 | ok |
-| thatch_roof | recipe thatch_roof_kit: 10 x twine, 40 x thatch, 12 x stick | 2.4x2.4 | 100 |  |  | 2 | 2 | ok |
-| thatch_doorway | recipe thatch_doorway_kit: 12 x twine, 25 x thatch, 12 x stick | 2.0x0.25 | 200 |  |  | 2 | 2 | ok |
-| rock_pile | recipe rock_pile: 45 x stone | 1.2x1.2 | 12 |  |  | 1 | 1 | ok |
+| lean_to | recipe lean_to_kit: 8 x stick, 6 x leaves, 2 x twine | 2.4x2.1 | 6 |  |  | 1 | 1 | ok | sheets/structures_01.jpg |
+| chest | recipe chest_kit: 10 x stick, 4 x twine | 0.8x0.6 | 8 |  |  | 1 | 1 | ok | sheets/structures_01.jpg |
+| chopping_block | recipe chopping_block: 2 x log | 0.7x0.7 | 4 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_01.jpg |
+| plank_chest | recipe plank_chest_kit: 8 x lumber, 2 x twine | 0.9x0.6 | 8 |  |  | no | no | kit recipe plank_chest_kit not known; not obtainable even if all recipes known | sheets/structures_01.jpg |
+| remains | (none: placed by game or admin) | 1.8x0.7 | 50 |  |  | no | no | ok | sheets/structures_02.jpg |
+| workbench | recipe workbench_kit: 12 x stick, 3 x twine | 1.5x1.0 | 4 | workbench L1 |  | 1 | 1 | ok | sheets/structures_02.jpg |
+| tool_rack | recipe tool_rack_kit: 10 x stick, 4 x twine | 1.0x0.4 | 6 |  | workbench | 2 | 2 | ok | sheets/structures_02.jpg |
+| vice | (none: placed by game or admin) | 0.5x0.5 | 6 |  | workbench | no | no | kit 'vice_kit' has no recipe and no blueprint; not obtainable even if all recipes known | sheets/structures_02.jpg |
+| log_workbench | recipe log_workbench_kit: 4 x log, 6 x twine, 6 x stick | 2.0x1.0 | 3 | workbench L2 |  | no | no | not obtainable even if all recipes known | sheets/structures_03.jpg |
+| saw_mill | hammer blueprint: 40 x lumber, 100 x nails, 1 x saw_blade, 1 x water_wheel at workbench | 3.0x2.0 | 2 | saw_mill L1 |  | no | no | not obtainable even if all recipes known | sheets/structures_03.jpg |
+| woodworking_table | hammer blueprint: 12 x lumber, 60 x nails at workbench | 2.0x1.0 | 4 | woodworking_table L1 |  | no | no | not obtainable even if all recipes known | sheets/structures_03.jpg |
+| stone_forge | hammer blueprint: 36 x stone, 10 x clay, 2 x hide at workbench | 0.9x0.72 | 2 | workbench L3 + forge L1 |  | 2 | 2 | ok | sheets/structures_03.jpg |
+| blacksmithy | hammer blueprint: 30 x stone, 10 x log, 10 x clay at workbench | 1.5x1.17 | 1 | workbench L4 + forge L2 |  | no | no | not obtainable even if all recipes known | sheets/structures_04.jpg |
+| carcass | (none: placed by game or admin) | 1.0x0.6 | 50 |  |  | no | no | ok | sheets/structures_04.jpg |
+| large_forge | (none: placed by game or admin) | 2.8x2.0 | 1 | workbench L4 + forge L3 |  | no | no | kit 'large_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known | sheets/structures_04.jpg |
+| master_forge | (none: placed by game or admin) | 3.9x2.6 | 1 | workbench L4 + forge L4 |  | no | no | kit 'master_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known | sheets/structures_04.jpg |
+| wall_section | recipe wall_section_kit: 4 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_05.jpg |
+| floor_section | recipe floor_section_kit: 4 x lumber, 1 x twine | 2.0x2.0 | 200 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_05.jpg |
+| roof_section | recipe roof_section_kit: 5 x lumber, 2 x twine, 2 x stick | 2.4x2.4 | 100 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_05.jpg |
+| foundation_section | recipe foundation_section_kit: 8 x stone, 2 x clay | 4.0x4.0 | 60 |  |  | 1 | 1 | ok | sheets/structures_05.jpg |
+| doorway_section | recipe doorway_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_06.jpg |
+| window_section | recipe window_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_06.jpg |
+| door_open | recipe doorway_section_kit: 3 x lumber, 1 x twine | 2.0x0.25 | 200 |  |  | no | no | ok | sheets/structures_06.jpg |
+| timber_prop | recipe timber_prop_kit: 1 x log, 1 x twine | 0.4x0.4 | 60 |  |  | no | no | kit recipe timber_prop_kit not known; not obtainable even if all recipes known | sheets/structures_06.jpg |
+| timber_set | recipe timber_set_kit: 4 x lumber, 1 x twine, 1 x stick | 2.0x0.4 | 60 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_07.jpg |
+| ladder | recipe ladder_kit: 4 x lumber, 2 x twine | 0.6x0.15 | 60 |  |  | no | no | not obtainable even if all recipes known | sheets/structures_07.jpg |
+| path_patch | (none: placed by game or admin) | 1.0x1.0 | 400 |  |  | 1 | 1 | ok | sheets/structures_07.jpg |
+| rough_bed | recipe rough_bed_kit: 10 x thatch, 4 x stick, 2 x twine | 1.0x2.0 | 6 |  |  | 1 | 1 | ok | sheets/structures_07.jpg |
+| thatch_wall | recipe thatch_wall_kit: 20 x twine, 50 x thatch, 15 x stick | 2.0x0.25 | 200 |  |  | 2 | 2 | ok | sheets/structures_08.jpg |
+| campfire_pot | recipe campfire_pot_kit: 3 x stick, 5 x twine, 1 x clay_pot | 1.2x1.2 | 6 | campfire_pot L1 |  | 1 | 1 | ok | sheets/structures_08.jpg |
+| clay_hearth | hammer blueprint: 10 x brick, 6 x clay, 4 x stone | 1.6x1.2 | 4 | clay_hearth L2 + campfire L1 |  | no | 1 | not obtainable today (known/open recipes only) | sheets/structures_08.jpg |
+| snare_trap | recipe snare: 3 x twine, 2 x stick | 0.6x0.6 | 12 |  |  | 1 | 1 | ok | sheets/structures_08.jpg |
+| oven | hammer blueprint: 24 x brick, 10 x clay, 8 x stone | 1.8x1.4 | 2 | oven L3 + clay_hearth L2, campfire L1 |  | no | 1 | not obtainable today (known/open recipes only) | sheets/structures_09.jpg |
+| thatch_floor | recipe thatch_floor_kit: 6 x twine, 20 x thatch | 4.0x4.0 | 60 |  |  | 2 | 2 | ok | sheets/structures_09.jpg |
+| thatch_roof | recipe thatch_roof_kit: 10 x twine, 40 x thatch, 12 x stick | 2.4x2.4 | 100 |  |  | 2 | 2 | ok | sheets/structures_09.jpg |
+| thatch_doorway | recipe thatch_doorway_kit: 12 x twine, 25 x thatch, 12 x stick | 2.0x0.25 | 200 |  |  | 2 | 2 | ok | sheets/structures_09.jpg |
+| rock_pile | recipe rock_pile: 45 x stone | 1.2x1.2 | 12 |  |  | 1 | 1 | ok | sheets/structures_10.jpg |

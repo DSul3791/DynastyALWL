@@ -36,7 +36,7 @@ Status: PASS (exists, looks right, works) | LOOKS WRONG | MISSING ITEM | MECHANI
 | 12 | Food: berries, roast | | raspberry 150, bramble 250, blueberry 150 per ripe bush, summer/autumn | bushes | PASS in data; picture NOT SHOWN: in `02b_berries_herbs.jpg` a huge golden shrub fills the frame and hides the row (blueberry label sits at the bottom-left under it), so the flora row could not be read |
 | 13 | Lean-to | 8 sticks, 6 leaves, 2 twine | hand recipe #13 | lean-to | PASS: place works (first-hour test); `09_placed_shelter_wide.jpg` shows a roof of turf on posts, reads well |
 | 14 | Rough bed | 10 thatch, 4 sticks, 2 twine | hand recipe #162 | low bed with thatch | PASS: `09_placed_shelter_wide.jpg` low timber frame topped with straw. The `bedding` item (heather yield in flora.json) is unused (F-12, in progress) |
-| 15 | Chopping block | 2 logs | recipe #15 | stump-like block | PASS: `09_placed_shelter_close.jpg` |
+| 15 | Chopping block | 2 logs (`log`) | recipe #15 | stump-like block | LOOKS PASS (`09_placed_shelter_close.jpg`) but **MECHANIC BROKEN (F-16)**: a felled tree gives `log_<species>` on the shoulder, the recipe needs plain `log`; probe_logs_output.txt |
 | 16 | Workbench | 12 sticks, 3 twine | hand recipe #45 | bench | PASS: `09_placed_shelter_close.jpg` (a plain wooden table) |
 | 17 | Thatch roof, wall, floor, doorway | twine + thatch + sticks (20-50 thatch each) | at workbench; open recipes | pieces | PASS mechanic (floor probe PASS; wall/roof/doorway PASS once the 20-30 s craft time is allowed); looks PASS in `09_placed_shelter_wide.jpg` and `_close.jpg` (thatch wall is a stack of reed planks, readable). Spend is heavy (50 thatch per wall) |
 | 18 | Stone knife, wooden spade, stone spade, stone and wooden hammer, hoes | stone, sticks, twine, wooden block | recipes #6, #12, #26, #156, #161, #139/#140 | tools | PASS mechanic (probe). Looks NOT SHOWN (the `05_tools` run failed under load). Wooden hammer needs a hardwood `wooden_block`; conifer blocks are `wooden_block_soft`: a spruce-only start cannot make it (F-11) |
@@ -150,6 +150,7 @@ Severity: BLOCKER = a player cannot get past it. Owners as in the brief.
 | F-23 | **BLOCKER (by design, future)** | **No metal at all.** `copper_ore`, `tin_ore`, `iron_ore`, `coal` have no source (no mining, no ore deposit pickup), so ingots, bronze, iron and steel tools, weapons, armour, nails, hinges, rivets and the saw blade (27 recipes in chapter 9) cannot be made; the forge itself can be built (stone forge: workbench level 2 + 36 stone, 10 clay, 2 hide). The pick axe is `known:false` too, so there is no way to even try. | `audit.md` chapter 9; probe: stone forge PLACED beside workbench + tool rack | Sal plus a code owner (ore deposits and mining) | large |
 | F-24 | MEDIUM | **No learn system.** Same as F-01, now counted over the whole table: 90 of 173 live recipes cannot be learned (`known:false` and not in `open_recipes.json`). 70 of the 90 make products flagged future (by design), 20 do not; 47 recipes in all are blocked without the future flag (F-19). | `recipes.json`, `recipe_table.gd craft()` | code owner (learn system), Sal (which recipes open now) | large (system) / small (data) |
 | F-25 | LOW | The kit items of the big stations (`stone_forge_kit`, `blacksmithy_kit`, `large_forge_kit`, `master_forge_kit`, `saw_mill_kit`, `woodworking_table_kit`, `clay_hearth_kit`, `oven_kit`, `vice_kit`) are real items with no recipe: players use hammer blueprints, so the kits are dead rows (retired by Dave 25 Oct); they appear in the item table and the showroom. `large_forge` and `master_forge` have no blueprint at all, so they cannot be built by a player. | `probe_structures_output.txt`; `blueprints.json` | Sal | small |
+| F-27 | MEDIUM | **All kits look alike.** The 32 kit items (campfire, lean-to, bed, chest, workbench, wall, floor, roof, doorway, window, ladder, timber, thatch kits...) are the same wrapped box in a different tint; in a pack or on the ground a player cannot tell a lean-to kit from a bed kit. | `art/playthrough/sheets/items_12.jpg`, `items_13.jpg` | Kathleen | medium |
 | F-26 | LOW | `door`: no door item; `door_open` shares the doorway kit. `path_patch` is placed by the hoe only. Fine, noted so nobody looks for them. | `structures.json` | none | none |
 
 ## 8. Station and structure probe (real server code)
@@ -181,8 +182,11 @@ The full per-recipe tables, with exact needs, where each ingredient comes from, 
 ## 10. Photographs
 
 * `art/playthrough/*.jpg`: the first-day pictures (taken on the OLD, wrongly-read world; item looks do not depend on the terrain, flora and ground do: `02_*` should be re-taken).
-* `art/playthrough/showroom/sr_*.jpg`: one row of 14 items per picture with name tags (`rows.json` says which row holds which item). Rows taken on the corrected world.
-* Pictures that could not be taken, and why, are listed in section 12.
+* `art/playthrough/sheets/items_01.jpg` to `items_14.jpg`: **every item** (420), 30 a sheet, drawn by the game's own look code (`BasicLook.mesh_for`, so what the game ignores is ignored here), name under each; grey blobs are labelled `[grey placeholder]`, items drawn by other code `[special drawing]`. `sheets.json` lists which item is on which sheet. Made by `art/playthrough/item_sheet.gd` (about 1 minute, no server, no world).
+* `art/playthrough/sheets/structures_01.jpg` to `structures_10.jpg`: **every structure** (37), 4 a sheet, from the game's own dispatcher (`inventory_view.ghost_model`). All 37 draw something; the fires, remains and carcass included.
+* The world showroom (`rig.sh --showroom`) was tried and dropped: the fixed spawn is a dense stand of grown trees whose crowns hide the item rows, and each rig run re-bakes the terrain store (about 5 minutes of machine time). Use the sheets.
+
+What the sheets show: the structures, tools, weapons, bows, spades, hoes, hammers, saw, water wheel and foods are well drawn; the **kits are one identical box in a different colour** (campfire, lean-to, bed, wall, floor, roof, door, window, ladder, thatch kits: F-27); **all the grey blobs** are listed in F-17 and F-18; `nails`, `hinges`, `wooden_pin`, `steel_striker` are almost invisible at item size.
 
 ## 11. Fixed by the height fix (not action items)
 
@@ -191,6 +195,6 @@ The full per-recipe tables, with exact needs, where each ingredient comes from, 
 
 ## 12. What I could not photograph or run
 
-* A walk by hand in the client (real mouse clicks).
-* Pictures of kits, placed stations and structures on the fixed world: the rig needs the ground to have loaded and each run re-bakes the terrain store (about 5 minutes of machine time), so I ran the item rows first; the `--pieces` run for the 37 structures is listed in `run_all.sh`.
-* Pictures where an item has no look (it is drawn as the grey chunk) are in the showroom rows and marked in `audit.md`.
+* A walk by hand in the client (real mouse clicks), and the first-day trunk, stump, lit fire and cover pictures (the rig's world pictures need the ground to load and each run re-bakes the terrain).
+* Items in the hand, worn on the body and falling or dropped: only the sheets (loose look) and the three held pictures `08_hold_*` exist. The armour and clothing pieces are drawn on the body by `worn.json` builders; I did not photograph the 21 worn rows.
+* The `--pieces` rig run for placed structures in the world (the sheets draw the same models in isolation).
