@@ -84,8 +84,8 @@ const ART_OVERRIDES := {
 	"timber_set_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["prop"]},
 	"ladder_kit": {"shape": "parcel", "color": "#9a7a45", "size": 1.0, "bits": ["ladder"]},
 	"stone_wedge": {"shape": "stone_wedge", "color": "#7a7872", "size": 1.0},
-	"fibre_arrow": {"shape": "arrow", "color": "#c9bb7a", "size": 1.0},
-	"bone_arrow": {"shape": "arrow", "color": "#e8e2d0", "size": 1.0, "bits": ["bone"]},
+	"fibre_arrow": {"shape": "arrow_fletched", "color": "#c9bb7a", "size": 1.0},
+	"bone_arrow": {"shape": "arrow_fletched", "color": "#e8e2d0", "size": 1.0, "bits": ["bone"]},
 	"hide_glue": {"shape": "pot_goo", "color": "#c98a2a", "size": 1.0},
 	"herb_salve": {"shape": "pot_goo", "color": "#5a8a3a", "size": 1.0},
 	"quern": {"shape": "quern", "color": "#8a8780", "size": 1.0},
@@ -455,7 +455,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box_rot(parts, Vector3(0.05, 0.012, 0.03), Vector3(0.0, 0.02, 0.02), Vector3(0.0, 0.5, 0.3), color.lightened(0.2))
 			_box_rot(parts, Vector3(0.04, 0.012, 0.03), Vector3(0.02, 0.0, -0.03), Vector3(0.0, -0.6, -0.3), color.darkened(0.2))
 			_sph(parts, 0.02, Vector3(1.4, 0.7, 1.0), Vector3(-0.05, 0.02, 0.0), color.darkened(0.1), true)
-		"arrow":
+		"arrow_fletched":
 			# An arrow (bits "bone": a sharpened white bone point; otherwise a fire-hardened plain point lashed with fibre): a thin straight shaft, a point at one end and three feather vanes with a notch at the other.
 			var bone_point: bool = bits.has("bone")
 			_cyl(parts, 0.005, 0.4, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.45, 0.25))
