@@ -260,4 +260,44 @@ The whole picture in one line: **hands, stone age, fire, shelter, bed, workbench
 * **F-20 mostly a false alarm, one real fix:** plants without a drops.json row are still gatherable: the server picks a random in-season yield item that exists in the table (`gather()` natural yield). A check over all 174 gathered items found one true orphan: **rose hips** (needs a rose-hip harvest on wild rose from the flora session). Real bug fixed: flax, tall grass and nettle listed an abstract `fibre` yield next to their `plant_fibre` row, so a pick could give the useless "fibre"; removed from flora.json yields. The abstract names `wood, hardwood, softwood, hard_wood, fine_wood, timber, poles` are only yields of trees (felled, not picked) and are used by no recipe; `herbs, food, fodder, spines, stuffing, burrs` are generic items used as natural yields; none retired because the flora session owns the yield lists.
 * **F-24 FIXED (data):** 19 of the live recipes stay `known:false` (forge/workbench level 2 and up, water wheel), by design; every other recipe is known from the start (F-01). The learn system is LEARN_SYSTEM_SPEC.md.
 
+---
 
+# Part 4: second pass on systems, the spawn, and the status table (2026-10-31)
+
+New files: `PLAYTHROUGH_STATUS.md` (every F-number marked FIXED or STILL BROKEN from the current data and probes; regenerate with `bash art/playthrough/run_status.sh`), `TUTORIAL_FIRST_30_MIN.md` (a tutorial script derived only from what the game does), `art/playthrough/probe_spawn.gd` and `spawn_survey.json`.
+
+## 13. The spawn on the fixed world
+
+Real flora placer around the spawn point (53316, 68476), from `probe_spawn_output.txt`: ground 31.6 m, biome temperate forest, a pond shore (the spawn code says so). Within 50 m: 193 ferns, 88 balsam fir, 44 nettles, 30 hazels, 20 raspberry bushes, 17 beeches, 14 wild garlic, 12 comfrey, 11 wild mint, 9 elder, 9 mushrooms, 5 oaks, 4 brambles, 2 tinder fungus; **6 grown trees (shelter) within 50 m, 17 within 100 m, 80 within 200 m**. No tall grass, flax, reeds, heather or thatch grass in this biome. So: fibre comes from nettles (about 95 within 100 m), bedding from ferns, thatch only from birch, spruce, pine and fir bark on a felled trunk (88 balsam firs near), berries from raspberry, bramble, elder and hazel (hazel is autumn). Picture: `art/playthrough/world/spawn_view.jpg` (an autumn forest of grown beeches and oaks, a bramble in the foreground, the pond between the trunks, Edda standing by). Loose sticks and stones are the scatter plus `spawn_boost`; their count is in drops.json, not measurable without the server world.
+
+F-07 stays FIXED: grown trees stand within 50 m of the spawn.
+
+## 14. Second pass on the later tiers and systems
+
+| System | Reachable from a fresh start today | Looks | Placement | What is missing |
+|---|---|---|---|---|
+| **Hunting** (rabbit, deer, fox, wolf, moose, duck, horse; `animals.json`) | spear and bow are craftable, carcass work needs a stone knife (2 stones, 1 stick); parts: meat, hide, bone, sinew, fat, feather, antler, tusk, claw, down, quill | meat, hide, bone, feather real; antler, tusk, claw, down, quill grey blobs (F-18) | n/a | no tanning: `processed_hide` needs the hide scraper (flint, F-02), `leather` has no recipe; so leather, fine and heavy leather, gambeson, jerkin and cap are out of reach |
+| **Fishing** (rod 2 sticks + 2 twine, shore net 8 twine + 4 stones) | yes, items: trout, perch, pike, carp (all obtainable via fishing.json) | fish drawn well (`items_01.jpg`) | n/a | `test_fishing` and `test_shore_net` results: see section 15 |
+| **Trade and coin** | one shop only (Hob: stone axe, knife, spade, torch, twine, rope, fibre, bandage, waterskin, bowl, backpack, roast forage, firewood, stone, stick; buys materials, food, tools, containers, medicine, clothing, kits); coins live in a purse, never in the pack | coin_* items are 4 tiny discs (readable on `items_01.jpg`) | n/a | no second trader, no trader for ore, flint or seeds; coin items are orphans by design (purse) |
+| **Containers** | wooden bowl (1 firewood), clay pot (6 clay, 12 s), waterskin (2 hide + twine), backpack, quiver, chest (10 sticks + 4 twine) | all real except clay_jug (no row) | chest, plank chest place | bucket needs lumber (F-16); plank chest needs workbench level 2 + lumber |
+| **Food and dishes** | roast forage at any fire; boiled egg, roast shellfish, roast seal in `cooking.json` | the three new foods are grey blobs | n/a | 14 dishes blocked (F-19); seaweed, shellfish, crab meat, sea salt have no pickup (orphans, grey blobs) |
+| **Farming** (items 332-343, `crops.json`) | **no**: nothing reads `crops.json`, nothing sows or grows; wheat, barley, carrot, potato, turnip, flax and their six seed items are orphans; flour recipes cannot be filled | all twelve are grey blobs | no field structure | whole system (S-farm). Hoe (paths, grading) and sickle exist; quern is craftable and useless |
+| **Kiln, pottery, loom, cloth** | none exist: no kiln, loom or spinning structure, no cloth item; clay items are made by hand; brick is made at a campfire | n/a | n/a | design decision: if cloth and fired clay are wanted, they need items, recipes and stations |
+| **Clothing and armour** (19 pieces) | hide set (cloak, boots, hood, mittens, leggings, tunic, trousers, gloves), grass skirt, grass cloak, fibre sandals are craftable; leather, bronze, iron, steel pieces are not | worn rows exist for all (generic builders); item looks real except the hide tunic set (grey) | worn via `worn.json` | metal chain (F-23), leather chain (F-02) |
+| **Stations** | workbench, tool rack, stone forge (needs workbench level 2 = rack), woodworking table (needs lumber), clay hearth, oven | all draw (`structures_*.jpg`) | all place on the server except where a rule says no | log workbench and blacksmithy need plain logs (F-16); saw mill needs a foundation lift and iron-chain materials; large and master forge have **no blueprint** (F-25) |
+| **Building pieces** | thatch floor, wall, roof, doorway, rough bed, lean-to place; the wood pieces need lumber | all 37 draw | all place (probe2) | no stairs, no stone, brick or log tiers, no gate, fence or furniture beyond chest and bed (F-22) |
+
+## 15. Existing test suite, run on this branch
+
+`python tools/items_check.py --only "stations,fishing,shore net,bed,warmth,dishes,trade,animals,big_game,placement_rules,first_hour,leanto,gather,new_player_day,plantpick,chest,eat,skills,spoilage"` (GODOT set to the editor binary). Result (raw output in `art/playthrough/items_check_output.txt`): **PASS** stations, fishing, shore net, bed, spoilage, warmth, skills, big_game, trade, dishes, new_player_day, placement_rules, first_hour, chest. **animals FAILED one timing check** (150 animals average 3.2 ms against a 3 ms limit; the machine was shared with other test runs, so a load artefact, not a game bug). The client step `gather` timed out after the server tests (machine load) and stopped the run, so `leanto`, `plantpick`, `eat` were not run. None of the passing tests touches the holes in this report: they check the rules that exist, not whether the chain can be walked, which is what the audit adds.
+
+## 16. World pictures on the fixed world (`art/playthrough/world/`, `run_world.sh`)
+
+| Picture | What it shows | Status |
+|---|---|---|
+| `spawn_view.jpg` | the spawn: an autumn forest of grown beeches and oaks, bramble in front, pond between the trunks | PASS (cover and berries are there) |
+| `shelter_wide.jpg`, `shelter_close.jpg`, `shelter.jpg` | lean-to, rough bed, chopping block, workbench, tool rack, thatch roof placed in the forest | PASS: all six read well; the chopping block cannot be crafted by a player (F-16) |
+| `campfire.jpg` | the placement ghost (a green ring) on grass; **the laid fire itself is not drawn** or the placement did not happen in this run | NOT CONFIRMED: needs a hand check (does a laid, unlit fire show its sticks?) |
+| `fell.jpg` | only the spawn frame: the `--shot-fell=flat` rig produced none of its trunk and stump pictures when called through `rig.sh --client-arg` | NOT PHOTOGRAPHED (in progress, Kathleen's fell rig); trunk, stump, lit fire and under-tree cover are still missing |
+
+Re-shoot recipe (quiet machine): `bash art/playthrough/run_world.sh` (about 12 minutes).
