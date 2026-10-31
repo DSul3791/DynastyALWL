@@ -821,9 +821,17 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_USE_STRUCT:
 		_use_struct(peer, inv, a)
 	elif kind == Net.ACT_EAT:
+		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
 		_eat(peer, inv, a)
+
+		if float(vitals_of(peer).get("fed", 0.0)) > fed_before:
+			_goal_event(peer, "ate_food")
 	elif kind == Net.ACT_DRINK:
+		var wet_before: float = float(vitals_of(peer).get("wet", 0.0))
 		_drink_water(peer, a, inv)
+
+		if float(vitals_of(peer).get("wet", 0.0)) > wet_before:
+			_goal_event(peer, "drink")
 	elif kind == Net.ACT_ICEHOLE:
 		_cut_hole(peer, inv, a)
 	elif kind == Net.ACT_FISH:
@@ -849,7 +857,11 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_SLEEP:
 		_sleep(peer, a)
 	elif kind == Net.ACT_LIGHT:
+		var was_laid: bool = _items.has(a) and _items[a].has("fire") and int(_items[a]["fire"]["state"]) == 9
 		_light(peer, inv, a)
+
+		if was_laid and _items.has(a) and _items[a].has("fire") and fire_is_lit(int(_items[a]["fire"]["state"])):
+			_goal_event(peer, "fire_lit")
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
@@ -966,6 +978,7 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_goals_tick()
 		_learn_clock += spent
 
 		if _learn_clock >= LEARN_TICK_S:
@@ -1556,6 +1569,7 @@ func _process_carcass(peer: int, inv, id: int) -> void:
 	if int(st["blows"]) >= blows_total:
 		_items.erase(id)
 		practice(peer, "dress_carcass")
+		_goal_event(peer, "carcass_worked")
 
 	_dirty = true
 
@@ -3365,6 +3379,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 
 	_chops.erase(key)
 	_fell_record(chunk, info, Vector2(spot.x - _peer_pos[peer].x, spot.z - _peer_pos[peer].z))
+	_goal_event(peer, "tree_felled")
 	practice(peer, "fell_tree", clampf(float(info["trunk"]) * 3.0, 0.4, 2.0))   # a thick trunk teaches more than a sapling
 
 
@@ -4482,6 +4497,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if bool(def.get("shelter", false)):
 		_record_rest(str(_peer_key.get(peer, "")), spot, "shelter")   # a lean-to you built is a place to come back to
+
+	_goal_event(peer, "placed", str(def.get("kind", "")))
 
 	_dirty = true
 
@@ -7311,6 +7328,166 @@ func free_craft_for(peer: int) -> bool:
 	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
 
 
+# Starter goals (data/items/starter_goals.json by Sal; Tyler 31 Oct 2026): an ordered list of small first-hour goals. A goal is open when every goal in its `after` is done.
+# Checks: {event, count, what?} (the server calls _goal_event: drink, tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that
+# finished), {have_item, count} and {have_item_any: [ids], count} (true while the pack holds that many, looked at every slow tick). Events and crafts are counted from the
+# start of the character, so an early fire counts when its goal opens. A goal is done once and saved per character (characters.json goals_done and goal_counts); the reward
+# ({coin_copper: n} into the purse, or {item: [id, n]} into the pack) is given when it completes, and the player is told the goal and the next hint through the notice line.
+# The goal list on the screen needs a protocol message and a client list; until then the notices carry it, and goals_state(peer) is what that message would send.
+var _goals: Array = []
+var _goals_loaded: bool = false
+
+
+func _goals_data() -> Array:
+	if not _goals_loaded:
+		_goals_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/starter_goals.json"))
+		_goals = parsed.get("goals", []) if typeof(parsed) == TYPE_DICTIONARY else []
+
+	return _goals
+
+
+func _goal_state_of(peer: int) -> Dictionary:
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if key == "" or not _characters.has(key):
+		return {}
+
+	for name in ["goals_done", "goal_counts"]:
+		if typeof(_characters[key].get(name, null)) != TYPE_DICTIONARY:
+			_characters[key][name] = {}
+
+	return _characters[key]
+
+
+func _goal_count_key(name: String, what: String) -> String:
+	return "event:" + name + (":" + what if what != "" else "")
+
+
+func _goal_event(peer: int, name: String, what: String = "") -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or _goals_data().is_empty():
+		return
+
+	var plain: String = _goal_count_key(name, "")
+	st["goal_counts"][plain] = int(st["goal_counts"].get(plain, 0)) + 1
+
+	if what != "":
+		var specific: String = _goal_count_key(name, what)
+		st["goal_counts"][specific] = int(st["goal_counts"].get(specific, 0)) + 1
+
+	_dirty = true
+	_goals_check(peer)
+
+
+func _goal_made(peer: int, item: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or _goals_data().is_empty():
+		return
+
+	var k: String = "made:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + 1
+	_dirty = true
+	_goals_check(peer)
+
+
+func _goal_met(peer: int, st: Dictionary, check: Dictionary) -> bool:
+	var need: int = int(check.get("count", 1))
+	var inv = inventory_of(peer)
+
+	if check.has("event"):
+		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
+
+	if check.has("made_item"):
+		return int(st["goal_counts"].get("made:" + str(check["made_item"]), 0)) >= need
+
+	if inv == null:
+		return false
+
+	if check.has("have_item"):
+		return inv.count_of(table.number_of(str(check["have_item"]))) >= need
+
+	if check.has("have_item_any"):
+		var total: int = 0
+
+		for id in check["have_item_any"]:
+			total += inv.count_of(table.number_of(str(id)))
+
+		return total >= need
+
+	return false
+
+
+func _goal_open(st: Dictionary, goal: Dictionary) -> bool:
+	for before in goal.get("after", []):
+		if not st["goals_done"].has(str(before)):
+			return false
+
+	return true
+
+
+# Completes every open goal that is met (one pass can open the next, so it loops until nothing changes).
+func _goals_check(peer: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty():
+		return
+
+	var changed: bool = true
+
+	while changed:
+		changed = false
+
+		for goal in _goals_data():
+			var id: String = str(goal["id"])
+
+			if st["goals_done"].has(id) or not _goal_open(st, goal) or not _goal_met(peer, st, goal.get("check", {})):
+				continue
+
+			st["goals_done"][id] = true
+			changed = true
+			_dirty = true
+			var reward: Dictionary = goal.get("reward", {})
+
+			if reward.has("coin_copper"):
+				add_coins(peer, int(reward["coin_copper"]), "goal")
+
+			if reward.has("item"):
+				give(peer, table.number_of(str(reward["item"][0])), int(reward["item"][1]))
+
+			_say(peer, "Goal done: %s" % str(goal.get("title", id)))
+
+			for next in _goals_data():
+				if not st["goals_done"].has(str(next["id"])) and (next.get("after", []) as Array).has(id) and _goal_open(st, next):
+					_say(peer, "Next: %s. %s" % [str(next.get("title", "")), str(next.get("hint", ""))])
+					break
+
+
+func _goals_tick() -> void:
+	if _goals_data().is_empty():
+		return
+
+	for peer in _peer_key.keys():
+		_goals_check(peer)
+
+
+# What the goal list would show: [[id, title, hint, state]] with state 0 locked, 1 open, 2 done.
+func goals_state(peer: int) -> Array:
+	var st: Dictionary = _goal_state_of(peer)
+	var rows: Array = []
+
+	if st.is_empty():
+		return rows
+
+	for goal in _goals_data():
+		var state: int = 2 if st["goals_done"].has(str(goal["id"])) else (1 if _goal_open(st, goal) else 0)
+		rows.append([str(goal["id"]), str(goal.get("title", "")), str(goal.get("hint", "")), state])
+
+	return rows
+
+
 # Recipe learning (guide finding F-01, LEARN_SYSTEM_SPEC.md; Tyler 31 Oct 2026). A recipe is known when its table row says known (the data decides what a first-day
 # player gets), or the character has learned it. Learned recipes are saved with the character (characters.json "learned": recipe numbers).
 # A character learns an unknown recipe (1) by discovery: it holds every ingredient and stands at the station the recipe needs; (2) by seeing: the item the recipe
@@ -7624,6 +7801,7 @@ func _craft_tick(spent: float) -> void:
 			_gain_source = SRC_CRAFT
 			give(peer, int(recipe["gives"][0]), int(recipe["gives"][1]))
 			_gain_source = SRC_PICKUP
+			_goal_made(peer, int(recipe["gives"][0]))
 
 			if wears_tool != "" and not free_entry:
 				_wear_tool(peer, inv, wears_tool, "craft")
@@ -8237,6 +8415,8 @@ func _load_characters() -> void:
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
+			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
+			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
