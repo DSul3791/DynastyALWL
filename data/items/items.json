@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 386,
+	"next_number": 419,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4551,6 +4551,331 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1
+		},
+		"oat_porridge": {
+			"number": 386,
+			"name": "Oat porridge",
+			"description": "Oats simmered thick with crushed nuts.",
+			"kind": "food",
+			"stack": 10,
+			"value": 22,
+			"look_alikes": [],
+			"future": true
+		},
+		"barley_broth": {
+			"number": 387,
+			"name": "Barley broth",
+			"description": "A thin warm broth of barley and carrot.",
+			"kind": "food",
+			"stack": 10,
+			"value": 19,
+			"look_alikes": [],
+			"future": true
+		},
+		"rye_flatbread": {
+			"number": 388,
+			"name": "Rye flatbread",
+			"description": "A dense salty flatbread baked on the hot clay.",
+			"kind": "food",
+			"stack": 10,
+			"value": 15,
+			"look_alikes": [],
+			"future": true
+		},
+		"pea_soup": {
+			"number": 389,
+			"name": "Pea soup",
+			"description": "A thick green soup of peas and onion.",
+			"kind": "food",
+			"stack": 10,
+			"value": 18,
+			"look_alikes": [],
+			"future": true
+		},
+		"turnip_mash": {
+			"number": 390,
+			"name": "Turnip mash",
+			"description": "Boiled turnip mashed with fat.",
+			"kind": "food",
+			"stack": 10,
+			"value": 11,
+			"look_alikes": [],
+			"future": true
+		},
+		"baked_potato": {
+			"number": 391,
+			"name": "Baked potato",
+			"description": "A potato baked in the embers and split with fat.",
+			"kind": "food",
+			"stack": 10,
+			"value": 12,
+			"look_alikes": [],
+			"future": true
+		},
+		"cabbage_stew": {
+			"number": 392,
+			"name": "Cabbage stew",
+			"description": "Cabbage, meat and onion stewed together.",
+			"kind": "food",
+			"stack": 10,
+			"value": 28,
+			"look_alikes": [],
+			"future": true
+		},
+		"beet_roast": {
+			"number": 393,
+			"name": "Beet roast",
+			"description": "Beets roasted in the coals with thyme.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"onion_roast": {
+			"number": 394,
+			"name": "Onion roast",
+			"description": "Onions roasted soft and sweet in fat.",
+			"kind": "food",
+			"stack": 10,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"seaweed_soup": {
+			"number": 395,
+			"name": "Seaweed soup",
+			"description": "A salty soup of seaweed and shellfish.",
+			"kind": "food",
+			"stack": 10,
+			"value": 13,
+			"look_alikes": [],
+			"future": true
+		},
+		"mussel_stew": {
+			"number": 396,
+			"name": "Mussel stew",
+			"description": "Shellfish stewed with wild garlic.",
+			"kind": "food",
+			"stack": 10,
+			"value": 19,
+			"look_alikes": [],
+			"future": true
+		},
+		"crab_cakes": {
+			"number": 397,
+			"name": "Crab cakes",
+			"description": "Crab meat and flour fried into cakes.",
+			"kind": "food",
+			"stack": 10,
+			"value": 14,
+			"look_alikes": [],
+			"future": true
+		},
+		"egg_nettle_fry": {
+			"number": 398,
+			"name": "Egg and nettle fry",
+			"description": "Eggs fried with young nettle greens.",
+			"kind": "food",
+			"stack": 10,
+			"value": 24,
+			"look_alikes": [],
+			"future": true
+		},
+		"herb_omelette": {
+			"number": 399,
+			"name": "Herb omelette",
+			"description": "Eggs beaten with thyme and fried.",
+			"kind": "food",
+			"stack": 10,
+			"value": 13,
+			"look_alikes": [],
+			"future": true
+		},
+		"seal_stew": {
+			"number": 400,
+			"name": "Seal stew",
+			"description": "Dark seal meat stewed with turnip.",
+			"kind": "food",
+			"stack": 10,
+			"value": 28,
+			"look_alikes": [],
+			"future": true
+		},
+		"venison_pie": {
+			"number": 401,
+			"name": "Venison pie",
+			"description": "Meat and fat baked in a flour crust.",
+			"kind": "food",
+			"stack": 10,
+			"value": 33,
+			"look_alikes": [],
+			"future": true
+		},
+		"fish_pie": {
+			"number": 402,
+			"name": "Fish pie",
+			"description": "Fish and onion baked in a flour crust.",
+			"kind": "food",
+			"stack": 10,
+			"value": 31,
+			"look_alikes": [],
+			"future": true
+		},
+		"juniper_trout": {
+			"number": 403,
+			"name": "Juniper trout",
+			"description": "Trout roasted over the coals with juniper berries.",
+			"kind": "food",
+			"stack": 10,
+			"value": 16,
+			"look_alikes": []
+		},
+		"garlic_bread": {
+			"number": 404,
+			"name": "Garlic bread",
+			"description": "Flat bread rubbed with wild garlic.",
+			"kind": "food",
+			"stack": 10,
+			"value": 13,
+			"look_alikes": [],
+			"future": true
+		},
+		"oat_cakes": {
+			"number": 405,
+			"name": "Oat cakes",
+			"description": "Oats and fat pressed and baked into cakes.",
+			"kind": "food",
+			"stack": 10,
+			"value": 15,
+			"look_alikes": [],
+			"future": true
+		},
+		"jerky": {
+			"number": 406,
+			"name": "Jerky",
+			"description": "Salted meat strips dried over smoke. Keeps for weeks.",
+			"kind": "food",
+			"stack": 10,
+			"value": 12,
+			"look_alikes": [],
+			"future": true
+		},
+		"salted_fish": {
+			"number": 407,
+			"name": "Salted fish",
+			"description": "Fish cured in salt in a pot. Keeps for weeks.",
+			"kind": "food",
+			"stack": 10,
+			"value": 12,
+			"look_alikes": [],
+			"future": true
+		},
+		"dried_berries": {
+			"number": 408,
+			"name": "Dried berries",
+			"description": "Blueberries dried by the fire. Sweet and long lasting.",
+			"kind": "food",
+			"stack": 10,
+			"value": 4,
+			"look_alikes": []
+		},
+		"sauerkraut": {
+			"number": 409,
+			"name": "Sauerkraut",
+			"description": "Salted cabbage fermented in a pot.",
+			"kind": "food",
+			"stack": 10,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"hazelnut_butter": {
+			"number": 410,
+			"name": "Hazelnut butter",
+			"description": "Hazelnuts ground to a rich paste.",
+			"kind": "food",
+			"stack": 10,
+			"value": 6,
+			"look_alikes": []
+		},
+		"banana_fritter": {
+			"number": 411,
+			"name": "Banana fritter",
+			"description": "Banana and flour fried golden.",
+			"kind": "food",
+			"stack": 10,
+			"value": 14,
+			"look_alikes": [],
+			"future": true
+		},
+		"cactus_fry": {
+			"number": 412,
+			"name": "Cactus fry",
+			"description": "Prickly pear fried with onion.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"tallow": {
+			"number": 413,
+			"name": "Tallow",
+			"description": "Animal fat rendered clean in a pot. Burns well and keeps.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 4
+		},
+		"soap": {
+			"number": 414,
+			"name": "Soap",
+			"description": "Tallow and ash lye boiled and cut into a bar. Cleans wounds and cloth.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"leather_strap": {
+			"number": 415,
+			"name": "Leather strap",
+			"description": "A strip of leather for straps, belts and harness.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 10
+		},
+		"milk": {
+			"number": 416,
+			"name": "Milk",
+			"description": "Fresh milk from a tame animal. Drink it soon or make it keep.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"butter": {
+			"number": 417,
+			"name": "Butter",
+			"description": "Milk churned thick and golden. Keeps for weeks.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"cheese": {
+			"number": 418,
+			"name": "Cheese",
+			"description": "Milk curdled, pressed and salted. Keeps for months.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
 		}
 	}
 }

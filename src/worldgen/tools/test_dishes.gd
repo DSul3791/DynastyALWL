@@ -37,7 +37,7 @@ func _init() -> void:
 	var dishes: Dictionary = JSON.parse_string(text)["dishes"]
 	var recipes: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"]
 	var vitals: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/vitals.json"))
-	check(dishes.size() >= 15 and dishes.size() <= 20, "15 to 20 dishes (%d)" % dishes.size())
+	check(dishes.size() >= 15 and dishes.size() <= 80, "15 to 80 dishes (%d)" % dishes.size())   # was 15 to 20; the set grows with the crops and shore foods (Sal, 2026-10-31)
 
 	# Away from a fire nothing can be cooked.
 	var first: String = str(dishes.keys()[0])
@@ -75,6 +75,9 @@ func _init() -> void:
 
 		if int(d["shelf_h"]) <= 0:
 			check(false, "%s has a shelf life" % dish_id)
+
+		if dish_id != "hunters_stew":   # keep the pack from filling up as the dish set grows; the stew is eaten below
+			items.inventory_of(1).remove(items.table.number_of(dish_id), items.count_for(1, dish_id))
 
 	for k in range(3, 6):
 		if best_by_kinds.has(k) and best_by_kinds.has(k - 1):
