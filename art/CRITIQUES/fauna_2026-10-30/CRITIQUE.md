@@ -50,3 +50,6 @@ These are model functions only: they are not wired to species numbers in AnimalV
 | Gull (13, `_make_seabird`) | gull_round1.png | white body, grey folded wings with black tips, a heavy yellow bill with a red spot, pink legs and webbed feet: reads as a herring gull | 3 | a flight pose, a streaked head |
 
 All three are wired in AnimalView._make_for_species (numbers from Sal's proposal): they go live when animals.json has the rows.
+
+## Boar rounds 2 and 3 (2026-10-31)
+Round 2 (boar_round2.png): ears halved, legs 0.36 m, tusks longer, a bristle ridge of dark spikes along the back (too tall and blocky, floating above the body). Round 3 (boar_round3.png): the ridge lowered and thinned; it now sinks into the body and barely shows. Rating 2 to 3: a dark stocky body with tusks reads as a boar or a pig, still a slab with box legs; next: a ridge that follows the real back curve, a taper from shoulder to rump, thicker legs.
