@@ -1,4 +1,4 @@
-# Fruit trees with a real fruit store (flora session, 2026-10-31; plan, nothing built yet)
+# Fruit trees with a real fruit store (flora session, 2026-10-31; built: store, prompt, varieties, drawn thinning, starter orchard)
 
 Dave's spec (via the moderator): pick the fruit from the tree by pressing E, as many as the pack carries, come back until the tree is empty; the store is
 server state shared by all players; the drawn fruit thins out with the store; out of season there is no fruit and no prompt; the store refills when the
@@ -33,3 +33,15 @@ Pick until the weight limit; come back and pick the rest; an empty tree gives no
 
 ## Order of work and who
 Server store + gather + tests (flora session with Tyler), items and spoilage (Sal), fruit beads and counts on the model (Kathleen), then varieties as data.
+
+
+## Status (end of the night, 2026-10-31)
+Built and tested (test_fruit_tree, test_flora_density):
+- **Server store** (`server_items.gd`): per tree `{season stamp, taken}` in `_fruit`, `fruit_max/fruit_left/fruit_taken/fruit_state/_gather_fruit_tree`, saved as `"fruit"` in world_items.json (cleared under another flora layout); a press takes up to `per_pick` (drops.json `fruit_tree`) limited by the weight limit; "Too heavy to carry more"; the last piece strips the tree; refill when the season stamp changes. The server also lets fruit-tree picks through `_on_cut_flora_requested` (it refused all trees before).
+- **Network**: `flora_fruit(chunk, ids, taken)` after every pick and with each flora chunk.
+- **Client**: trees with a store are prompt candidates; "Press E to pick crab apples (63 left)" (store from the shared `GatherRules.fruit_max`, less what the server says was taken), hidden at 0 and out of season; the tree stays pickable between presses.
+- **Drawn fruit**: `FloraView.fruit_level` (0, 0.34, 0.67, 0.9, 1.0) into the instance custom alpha read by Kathleen's `FRUIT_SHADER`; a chunk redraws only when a tree changes level. Not yet rendered in a real picture (only compile-checked).
+- **Varieties** (13 rows): apple early, summer, autumn, keeping, cooking (with `fruit_color`), pear summer, autumn, winter, sour cherry, plum, damson, quince, medlar; items by Sal; seasons by season name only.
+- **Starter orchard**: 12 trees in rows 60 m east, 45 m south of the spawn (`flora_placer.gd` `ORCHARD_*`), planted first on dry gentle ground; layout 16.
+
+Open: month-level calendar; warm-climate trees (fig, olive, pomegranate, mango, orange, lemon: models by Kathleen); orchards near the old town markers (only the one at the spawn); a real picture of the thinning tree; client prompt text check in the game.

@@ -440,7 +440,7 @@
 				"marsh": 1.0
 			},
 			"active": {
-				"day": 0.05,
+				"day": 0.02,
 				"dusk": 1.0,
 				"night": 1.0
 			},
@@ -538,7 +538,7 @@
 				"temperate_forest": 1.0
 			},
 			"active": {
-				"day": 0.05,
+				"day": 0.02,
 				"dusk": 1.0,
 				"night": 1.0
 			},
@@ -781,6 +781,6 @@
 	"near_share": 0.4,
 	"near_min_m": 60.0,
 	"near_max_m": 120.0,
-	"off_hours_despawn_m": 80.0,
+	"off_hours_despawn_m": 40.0,
 	"off_hours_chance": 0.05
 }
