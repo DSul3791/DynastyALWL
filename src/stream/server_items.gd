@@ -3081,10 +3081,17 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 
 
 # The disk part of a save: the text goes to .tmp, the file it replaces is copied to .prev, then .tmp is renamed over it.
+# One write at a time: the background writer and a save from anywhere else (shutdown, a test's last save) used the same path.tmp, and the second rename failed with an error
+# line ("Error calling utility function", exit 1 or 139 in the gates, 31 Oct 2026). The lock makes the files land in order.
+static var _file_lock: Mutex = Mutex.new()
+
+
 static func _write_file(path: String, text: String) -> void:
+	_file_lock.lock()
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
+		_file_lock.unlock()
 		push_error("server items: cannot write %s" % path)
 		return
 
@@ -3095,6 +3102,7 @@ static func _write_file(path: String, text: String) -> void:
 		DirAccess.copy_absolute(path, path + ".prev")
 
 	DirAccess.rename_absolute(path + ".tmp", path)
+	_file_lock.unlock()
 
 
 # The autosave only serialises on the tick (about 3 ms at 500 records); the file writes (renames, copies) run on one short-lived
@@ -3124,6 +3132,12 @@ func _reap_writer() -> void:
 	if _writer != null and not _writer.is_alive():
 		_writer.wait_to_finish()
 		_writer = null
+
+
+# When the object goes away (a test ends, the server quits) the background writer is waited for first, so no file operation runs while the engine is shutting down.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		_finish_writer()
 
 
 func _finish_writer() -> void:

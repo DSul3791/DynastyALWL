@@ -106,6 +106,15 @@ func _init() -> void:
 	check(count("carrot_seeds") >= 1 and count("flax_seeds") >= 1, "wild carrot gives carrot seeds and flax gives flax seeds in summer (%d, %d)" % [count("carrot_seeds"), count("flax_seeds")])
 	items.inventory_of(1).remove(items.table.number_of("wheat_seeds"), count("wheat_seeds"))
 	items.inventory_of(1).remove(items.table.number_of("barley_seeds"), count("barley_seeds"))
+	# Fixed drop rows obey the plant's season too (Sal's nettles: spring and summer only).
+	season[0] = "winter"
+	items._last_gather.clear()
+	items.gather(1, "nettle", "plant", "0,0,800", 800, Vector3(501.0, 70.0, 500.0))
+	check(count("nettles") == 0, "nettles do not come in winter (%d)" % count("nettles"))
+	season[0] = "spring"
+	items._last_gather.clear()
+	items.gather(1, "nettle", "plant", "0,0,801", 801, Vector3(501.0, 70.0, 500.0))
+	check(count("nettles") >= 2, "and do in spring (%d)" % count("nettles"))
 	season[0] = "spring"
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
