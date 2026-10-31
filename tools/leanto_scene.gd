@@ -61,8 +61,8 @@ func _crawler(at: Vector3) -> void:
 func _init() -> void:
 	add_child(BuildingLook.leanto())
 	var bed: Node3D = PieceLook.rough_bed()
-	bed.position = Vector3(0.0, 0.0, 0.2)
+	bed.position = Vector3(0.0, 0.0, 0.0)
 	add_child(bed)
-	_figure(1.75, true, Vector3(-0.9, 0.55, 0.2))     # lying on the bed, feet at the left end, head to the right
-	_figure(1.75, false, Vector3(-1.9, 0.0, 0.9))      # standing beside the front upright
+	_figure(1.75, true, Vector3(-0.9, 0.55, 0.0))     # lying on the bed, feet at the left end, head to the right
+	_figure(1.75, false, Vector3(-1.9, 0.0, 0.7))      # standing beside the front upright
 	_crawler(Vector3(1.6, 0.0, 1.1))                    # crawling in at the front

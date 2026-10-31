@@ -265,12 +265,13 @@ static func _leanto_wood() -> ArrayMesh:
 	# wattle rods are woven across the leaning sticks, and leaf thatch lies on top (the leaf mesh). Footprint 2.6 x 2.4 m. Refs: bushcraft lean-to guides (https://instructables.com/Lean-To-Shelter,
 	# https://yonderjournal.com/guide/standard-lean/, https://www.advnture.com/how-to/build-a-natural-shelter).
 	var lashing: Color = Color(0.82, 0.5, 0.2)      # orange-brown twine as in the photo, more visible than plain fibre
-	var ridge_y: float = 1.9
-	var ridge_z: float = 0.95
+	var ridge_y: float = 1.5      # references 2 and 3 (art/references/leanto_reference_dave_2_stick_shelter.jpg, _3_wikihow_sleeper.jpg): ridge 1.2 to 1.6 m, roof steeper (about 57 degrees)
+	var ridge_z: float = 0.1
+	var back_z: float = -0.9      # where the roof sticks meet the ground
 
-	for x in [-1.25, 1.25]:   # tall forked uprights
-		_tube(st, Vector3(x, 0.0, ridge_z + 0.05), Vector3(x * 0.99, 2.0, ridge_z), 0.05, 0.04, WOOD, 6, rng)
-		_tube(st, Vector3(x * 0.99, 1.85, ridge_z), Vector3(x * 0.99 + signf(x) * 0.13, 2.1, ridge_z + 0.03), 0.025, 0.02, WOOD, 5, rng)
+	for x in [-1.25, 1.25]:   # forked uprights
+		_tube(st, Vector3(x, 0.0, ridge_z + 0.05), Vector3(x * 0.99, 1.68, ridge_z), 0.05, 0.04, WOOD, 6, rng)
+		_tube(st, Vector3(x * 0.99, 1.5, ridge_z), Vector3(x * 0.99 + signf(x) * 0.13, 1.76, ridge_z + 0.03), 0.025, 0.02, WOOD, 5, rng)
 		_lash(st, Vector3(x * 0.99, ridge_y, ridge_z), Vector3(1.0, 0.0, 0.0), 0.055, lashing, rng)
 
 	# The ridge pole, lashed across the uprights.
@@ -280,24 +281,25 @@ static func _leanto_wood() -> ArrayMesh:
 	for n in range(35):
 		var x: float = -1.28 + 2.56 * float(n) / 34.0 + rng.randf_range(-0.012, 0.012)
 		var top: Vector3 = Vector3(x, ridge_y + 0.02, ridge_z - 0.03)
-		var foot: Vector3 = Vector3(x + rng.randf_range(-0.05, 0.05), 0.0, -1.2 + rng.randf_range(-0.05, 0.05))
+		var foot: Vector3 = Vector3(x + rng.randf_range(-0.05, 0.05), 0.0, back_z + rng.randf_range(-0.05, 0.05))
 		var dir: Vector3 = (top - foot).normalized()
 		var r: float = rng.randf_range(0.017, 0.026)
 		_tube(st, foot, top, r, r * 0.85, _tone(WOOD, rng, 0.2), 4, rng)
-		_tube(st, top, top + dir * rng.randf_range(0.06, 0.16), r * 0.85, r * 0.8, WOOD_PALE, 4, rng)      # the cut end above the ridge
+		_tube(st, top, top + dir * rng.randf_range(0.1, 0.3), r * 0.85, r * 0.8, WOOD_PALE, 4, rng)      # the cut end above the ridge
 
 	# The ends: a few sticks leaning from each upright's top down to the ground, closing the end triangles (they lean outward slightly).
 	for sx in [-1.0, 1.0]:
 		for n in range(6):
-			var top: Vector3 = Vector3(sx * 1.27, 1.7 - 0.12 * float(n), ridge_z - 0.03 * float(n))
-			var foot: Vector3 = Vector3(sx * (1.3 + rng.randf_range(0.0, 0.06)), 0.0, 0.55 - 0.32 * float(n))
+			var u: float = float(n) / 5.0
+			var top: Vector3 = Vector3(sx * 1.27, lerpf(1.45, 0.9, u), lerpf(ridge_z, ridge_z - 0.45, u))
+			var foot: Vector3 = Vector3(sx * (1.36 + 0.03 * float(n % 2) + rng.randf_range(0.0, 0.05)), 0.0, lerpf(0.4, back_z + 0.05, u))
 			_tube(st, foot, top, 0.022, 0.018, _tone(WOOD_DARK, rng, 0.15), 4, rng)
 
 	# Wattle: thin flexible rods woven across the roof sticks in four courses, wavy (in and out of the sticks), tied with twine at the ends.
 	for course in range(4):
 		var t: float = 0.2 + 0.2 * float(course)
 		var y: float = lerpf(0.05, ridge_y - 0.05, t)
-		var z: float = lerpf(-1.2, ridge_z - 0.04, t)
+		var z: float = lerpf(back_z, ridge_z - 0.04, t)
 		var mid_x: float = rng.randf_range(-0.4, 0.4)
 		_tube(st, Vector3(-1.32, y, z), Vector3(mid_x, y + 0.025, z + 0.015), 0.011, 0.01, WOOD_PALE, 4, rng)
 		_tube(st, Vector3(mid_x, y + 0.025, z + 0.015), Vector3(1.32, y - 0.01, z), 0.01, 0.009, WOOD_PALE, 4, rng)
@@ -318,8 +320,8 @@ static func _leanto_leaves() -> ArrayMesh:
 	var greens: Array = [Color(0.20, 0.33, 0.13), Color(0.28, 0.38, 0.14), Color(0.36, 0.40, 0.15), Color(0.42, 0.33, 0.14), Color(0.25, 0.30, 0.12)]
 	# The roof plane runs from the low back (y 0.97, z -1.05) to the high front (y 2.02, z 0.9): rows of overlapping leafy
 	# cards, each row a little farther down the slope than the one above, tilted so the lower edge sticks out like shingles.
-	var back: Vector3 = Vector3(0.0, 0.07, -1.22)
-	var front: Vector3 = Vector3(0.0, 1.9, 0.93)
+	var back: Vector3 = Vector3(0.0, 0.07, -0.92)
+	var front: Vector3 = Vector3(0.0, 1.48, 0.08)
 	var slope: Vector3 = (front - back)
 	var run: Vector3 = slope.normalized()
 	var across: Vector3 = Vector3.RIGHT
@@ -328,7 +330,7 @@ static func _leanto_leaves() -> ArrayMesh:
 	if normal.y < 0.0:
 		normal = -normal
 
-	var rows: int = 13
+	var rows: int = 10
 
 	for layer in range(1):   # one layer now (the sticks show through; it was two) of leaf shingles: the under layer darker and offset, so the roof has depth and no flat paper look (guide: lean-to roof)
 		for row in range(rows):
@@ -353,8 +355,8 @@ static func _leanto_leaves() -> ArrayMesh:
 				_card(st, c - half_w * 0.9 - half_l, c + half_w * 0.9 - half_l, c + half_w * 0.12 + half_l + droop, c - half_w * 0.12 + half_l + droop, col_leaf, normal)
 
 	# The floor: a spread of boughs and dry leaves on the ground under the roof.
-	for n in range(20):
-		var p: Vector3 = Vector3(rng.randf_range(-1.0, 1.0), 0.02 + 0.004 * float(n % 3), rng.randf_range(-0.4, 0.85))
+	for n in range(30):   # leaf litter all round, as on the forest floor in the photos
+		var p: Vector3 = Vector3(rng.randf_range(-1.35, 1.35), 0.02 + 0.004 * float(n % 3), rng.randf_range(-0.8, 1.15))
 		var yaw: float = rng.randf() * TAU
 		var d: Vector3 = Vector3(cos(yaw), 0.0, sin(yaw)) * 0.17
 		var e: Vector3 = Vector3(-d.z, 0.0, d.x) * 0.6
