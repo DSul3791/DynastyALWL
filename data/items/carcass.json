@@ -477,6 +477,11 @@
 					"animal_fat",
 					1,
 					3
+				],
+				[
+					"wool",
+					2,
+					4
 				]
 			],
 			"hunt_difficulty": 1.8
