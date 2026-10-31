@@ -46,7 +46,7 @@ func load_file(path: String, item_table) -> bool:
 		var entry: Dictionary = {
 			"number": int(row["number"]), "id": id, "name": str(row["name"]), "category": str(row.get("category", "")), "needs": needs, "keeps": keeps, "identify": identify,
 			"gives": [item_table.number_of(str(row["gives"][0])), int(row["gives"][1])],
-			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)),
+			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)), "locked": bool(row.get("locked", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
 			"wears_tool": str(row.get("wears_tool", "")),
 		}

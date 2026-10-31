@@ -32,6 +32,7 @@ func make(dir: String):
 	items.setup(ItemTableScript.load_default(), dir)
 	items.recipes._by_number[900] = {"number": 900, "id": "learn_test", "name": "Learn test", "category": "", "needs": [[items.table.number_of("stick"), 2]], "keeps": [], "identify": [], "gives": [items.table.number_of("bandage"), 1], "craft_s": 1.0, "known": false, "station": "", "station_level": 1, "wears_tool": ""}
 	items.recipes._by_number[901] = {"number": 901, "id": "learn_station", "name": "Learn station", "category": "", "needs": [[items.table.number_of("stick"), 1]], "keeps": [], "identify": [], "gives": [items.table.number_of("splint"), 1], "craft_s": 1.0, "known": false, "station": "workbench", "station_level": 1, "wears_tool": ""}
+	items.recipes._by_number[902] = {"number": 902, "id": "learn_locked", "name": "Learn locked", "category": "", "needs": [[items.table.number_of("stick"), 1]], "keeps": [], "identify": [], "gives": [items.table.number_of("torch"), 1], "craft_s": 1.0, "known": false, "locked": true, "station": "", "station_level": 1, "wears_tool": ""}
 	return items
 
 
@@ -78,6 +79,12 @@ func _init() -> void:
 	check(count(items, 1, "bandage") == 2 and said.is_empty(), "once learned it is made again with no more words")
 
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 2, Vector3.ZERO)
+	craft(items, 1, 902)
+	check(count(items, 1, "torch") == 0 and not items._learned_of(1).has("902"), "a locked recipe is not learned by discovery even with every ingredient (recipes.json locked: the chain it needs does not exist yet)")
+	items.inventory_of(1).add(items.table.number_of("torch"), 1)
+	items._learn_tick()
+	check(not items._learned_of(1).has("902"), "nor by seeing the product")
+	items.inventory_of(1).remove(items.table.number_of("torch"), 1)
 	craft(items, 1, 901)
 	check(count(items, 1, "splint") == 0 and not items._learned_of(1).has("901"), "a recipe that needs a workbench is not learned away from one")
 
@@ -91,5 +98,7 @@ func _init() -> void:
 	join(again, 1, "learnkey0001")
 	check(again._learned_of(1).has("900") and not again._learned_of(1).has("901"), "the learned recipes are saved with the character and known after a restart")
 	check(again.recipe_known_for(1, again.recipes.recipe(2)) and not again.recipe_known_for(1, again.recipes.recipe(901)), "a recipe that is known in the table is known to all, an unknown one only to who learned it")
+	var wheel: Dictionary = again.recipes.recipe(153)
+	check(str(wheel.get("id", "")) == "water_wheel" and bool(wheel.get("locked", false)) and not bool(wheel.get("known", false)), "the real water wheel recipe is locked (no saw mill or forge chain yet)")
 	print("learn: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
