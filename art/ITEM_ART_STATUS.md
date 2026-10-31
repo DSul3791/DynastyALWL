@@ -4,7 +4,7 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 4, missing 38, placeholder 38, rough 453, total 533
+Counts: decent 4, missing 38, placeholder 26, rough 465, total 533
 
 Queue, by what a player meets first (the grey placeholder list comes from src/worldgen/tools/test_item_looks.gd, 56 items on 31 Oct): 1 weapons and shields (wooden club, stone mace and wicker shield done; javelin; bronze, iron and steel swords, maces, shields; plank shield), 2 armour (leather cap, leather jerkin, gambeson, bronze, iron and steel helms, mail shirt, plate cuirass), 3 seeds and crops (wheat, barley, carrot, potato, turnip, flax and their seeds), 4 hide clothes (hide tunic, trousers, gloves) and the quern, 5 animal parts (antler, tusk, claw, down, quill, hide glue, bone arrow, fibre arrow), 6 food (eggs, seal and shellfish meat, roast dishes, herb salve, splint), 7 stick, branch, rocks, flint, plant fibre, twine, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed (survival basics, in hand and dropped); then stations and tools; then the rest. The guide's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 | # | id | name | look | source | status | reference | date | picture | note |
@@ -336,18 +336,18 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 329 | mail_shirt | Mail shirt | override | ART_OVERRIDES | rough |  |  |  |  |
 | 330 | steel_helm | Steel helm | override | ART_OVERRIDES | rough |  |  |  |  |
 | 331 | plate_cuirass | Plate cuirass | override | ART_OVERRIDES | rough |  |  |  |  |
-| 332 | wheat | Wheat | chunk | looks.json | placeholder |  |  |  |  |
-| 333 | barley | Barley | chunk | looks.json | placeholder |  |  |  |  |
-| 334 | carrot | Carrot | chunk | looks.json | placeholder |  |  |  |  |
-| 335 | potato | Potato | chunk | looks.json | placeholder |  |  |  |  |
-| 336 | turnip | Turnip | chunk | looks.json | placeholder |  |  |  |  |
-| 337 | flax | Flax | chunk | looks.json | placeholder |  |  |  |  |
-| 338 | wheat_seeds | Wheat seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 339 | barley_seeds | Barley seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 340 | carrot_seeds | Carrot seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 341 | potato_seeds | Potato seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 342 | turnip_seeds | Turnip seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 343 | flax_seeds | Flax seeds | chunk | looks.json | placeholder |  |  |  |  |
+| 332 | wheat | Wheat | override | ART_OVERRIDES | rough |  |  |  |  |
+| 333 | barley | Barley | override | ART_OVERRIDES | rough |  |  |  |  |
+| 334 | carrot | Carrot | override | ART_OVERRIDES | rough |  |  |  |  |
+| 335 | potato | Potato | override | ART_OVERRIDES | rough |  |  |  |  |
+| 336 | turnip | Turnip | override | ART_OVERRIDES | rough |  |  |  |  |
+| 337 | flax | Flax | override | ART_OVERRIDES | rough |  |  |  |  |
+| 338 | wheat_seeds | Wheat seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 339 | barley_seeds | Barley seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 340 | carrot_seeds | Carrot seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 341 | potato_seeds | Potato seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 342 | turnip_seeds | Turnip seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 343 | flax_seeds | Flax seeds | override | ART_OVERRIDES | rough |  |  |  |  |
 | 344 | quern | Quern | chunk | looks.json | placeholder |  |  |  |  |
 | 345 | compost | Compost | chunk | looks.json | placeholder |  |  |  |  |
 | 346 | antler | Antler | chunk | looks.json | placeholder |  |  |  |  |
