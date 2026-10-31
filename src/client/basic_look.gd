@@ -70,6 +70,7 @@ const ART_OVERRIDES := {
 	"preserved_damsons": {"shape": "dish", "color": "#4a2a50", "size": 1.0, "bits": ["pot"]},
 	"quince_paste": {"shape": "dish", "color": "#b05a28", "size": 1.0, "bits": ["pot"]},
 	"crab_apples": {"shape": "fruit", "color": "#7c9a34", "size": 0.55},
+	"stewed_berries": {"shape": "dish", "color": "#6a2a48", "size": 1.0, "bits": ["soup", "#8a3a5a", "#4a1a3a"]},
 	"wild_apples": {"shape": "fruit", "color": "#8aa83a", "size": 0.62, "bits": ["blush"]},
 	"clay_jug": {"shape": "jug", "color": "#b8703a", "size": 1.0},
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
