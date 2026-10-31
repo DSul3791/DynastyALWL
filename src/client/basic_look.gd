@@ -237,6 +237,7 @@ const ART_OVERRIDES := {
 	"fur_boots": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["boots"]},
 	"wool": {"shape": "crumble", "color": "#d8ccae", "size": 1.0},
 	"linen": {"shape": "cloth", "color": "#e6dcc2", "size": 1.0},
+	"fibre_cloth": {"shape": "cloth", "color": "#b79f64", "size": 1.1},      # plant fibre woven flat: a folded coarse straw-brown cloth, darker and more open than the pale linen
 	"wheat": {"shape": "sheaf", "color": "#c9983a", "size": 1.0, "bits": ["wheat"]},
 	"barley": {"shape": "sheaf", "color": "#c9a850", "size": 1.0, "bits": ["barley"]},
 	"flax": {"shape": "sheaf", "color": "#b8a46a", "size": 1.0, "bits": ["flax"]},

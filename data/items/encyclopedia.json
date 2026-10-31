@@ -5720,6 +5720,1041 @@
 			"used_for": [],
 			"obtainable_now": false,
 			"status": "planned"
+		},
+		"sea_water": {
+			"name": "Sea water",
+			"kind": "material",
+			"description": "Salt water taken from the sea. Not for drinking. Boil it down for salt.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [
+				"Used in Sea salt"
+			],
+			"obtainable_now": true
+		},
+		"tilled_bed": {
+			"name": "Tilled bed",
+			"kind": "structure",
+			"description": "A metre of hoed soil, ready to sow.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fibre_cloth": {
+			"name": "Fibre cloth",
+			"kind": "material",
+			"description": "Plant fibre woven flat on a frame. Covers a bed, and wraps a canopy.",
+			"how_to_get": [
+				"Craft: 8 Plant fibre"
+			],
+			"used_for": [
+				"Used in Canopy bed",
+				"Used in Feather bed"
+			],
+			"obtainable_now": true
+		},
+		"salmon": {
+			"name": "Salmon",
+			"kind": "food",
+			"description": "A big silver river fish that runs upstream in autumn. Rich and oily.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"herring": {
+			"name": "Herring",
+			"kind": "food",
+			"description": "A small oily silver sea fish that swims in shoals.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mackerel": {
+			"name": "Mackerel",
+			"kind": "food",
+			"description": "A striped oily sea fish of summer. Spoils fast, so cook it soon.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"smelt": {
+			"name": "Smelt",
+			"kind": "food",
+			"description": "A tiny silver fish from shallow coastal water. Fry it whole.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"eel": {
+			"name": "Eel",
+			"kind": "food",
+			"description": "A long slippery fish. Must be cooked: raw eel blood is toxic.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"cod": {
+			"name": "Cod",
+			"kind": "food",
+			"description": "A big white sea fish. Lean and flaky when cooked.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"radish": {
+			"name": "Radish",
+			"kind": "material",
+			"description": "A peppery red root that grows fast in cool ground.",
+			"how_to_get": [
+				"Not yet obtainable"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"lettuce": {
+			"name": "Lettuce",
+			"kind": "material",
+			"description": "Soft green leaves that grow fast and spoil fast.",
+			"how_to_get": [
+				"Not yet obtainable"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"radish_seeds": {
+			"name": "Radish seeds",
+			"kind": "material",
+			"description": "Seeds for sowing radish. Plant in a tilled bed.",
+			"how_to_get": [
+				"Not yet obtainable"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"lettuce_seeds": {
+			"name": "Lettuce seeds",
+			"kind": "material",
+			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
+			"how_to_get": [
+				"Not yet obtainable"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"apple_early": {
+			"name": "Early summer apple",
+			"kind": "food",
+			"description": "A small tart apple of July. Eat it soon: it keeps only 3 game days.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from apple early"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"apple_summer": {
+			"name": "Summer apple",
+			"kind": "food",
+			"description": "A sweet juicy apple of August. Keeps about 7 game days.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from apple summer"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"apple_autumn": {
+			"name": "Autumn apple",
+			"kind": "food",
+			"description": "A crisp all-round apple of September and October. Keeps about 20 game days.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from apple autumn"
+			],
+			"used_for": [
+				"Used in Dried apples"
+			],
+			"obtainable_now": true
+		},
+		"apple_keeping": {
+			"name": "Keeping apple",
+			"kind": "food",
+			"description": "A hard russet apple picked late. Stored cool and dark it lasts until spring.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from apple keeping"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"apple_cooking": {
+			"name": "Cooking apple",
+			"kind": "food",
+			"description": "A big sour apple that goes soft and sweet when cooked. Keeps a month.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from apple cooking"
+			],
+			"used_for": [
+				"Used in Apple pie",
+				"Used in Apple sauce"
+			],
+			"obtainable_now": true
+		},
+		"pear_summer": {
+			"name": "Summer pear",
+			"kind": "food",
+			"description": "A small sweet pear of August. It goes soft in 4 game days.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from pear summer"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"pear_autumn": {
+			"name": "Autumn pear",
+			"kind": "food",
+			"description": "A juicy pear of September and October. Keeps a couple of weeks.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from pear autumn"
+			],
+			"used_for": [
+				"Used in Stewed pears"
+			],
+			"obtainable_now": true
+		},
+		"pear_winter": {
+			"name": "Winter pear",
+			"kind": "food",
+			"description": "A hard pear picked in November that ripens in store. Lasts into February.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from pear winter"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sour_cherries": {
+			"name": "Sour cherries",
+			"kind": "food",
+			"description": "Dark tart cherries of July. Good cooked, sharp raw. They spoil in 2 game days.",
+			"how_to_get": [
+				"Picked from sour cherry"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"plums": {
+			"name": "Plums",
+			"kind": "food",
+			"description": "Soft purple plums of August and September. They spoil in 4 game days.",
+			"how_to_get": [
+				"Picked from plum"
+			],
+			"used_for": [
+				"Used in Plum jam"
+			],
+			"obtainable_now": true
+		},
+		"damsons": {
+			"name": "Damsons",
+			"kind": "food",
+			"description": "Small tart blue plums of autumn. Best cooked or preserved.",
+			"how_to_get": [
+				"Picked from damson"
+			],
+			"used_for": [
+				"Used in Preserved damsons"
+			],
+			"obtainable_now": true
+		},
+		"quince": {
+			"name": "Quince",
+			"kind": "food",
+			"description": "A hard fragrant yellow fruit of late autumn. Bitter raw, sweet and pink cooked.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from quince"
+			],
+			"used_for": [
+				"Used in Quince paste"
+			],
+			"obtainable_now": true
+		},
+		"medlar": {
+			"name": "Medlar",
+			"kind": "food",
+			"description": "A brown fruit eaten only after frost has softened it. Sweet and winey.",
+			"how_to_get": [
+				"Picked from a fruit tree",
+				"Picked from medlar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"figs": {
+			"name": "Figs",
+			"kind": "food",
+			"description": "Soft sweet figs of late summer. They spoil in days unless dried.",
+			"how_to_get": [
+				"Picked from fig"
+			],
+			"used_for": [
+				"Used in Dried figs"
+			],
+			"obtainable_now": false
+		},
+		"olives": {
+			"name": "Olives",
+			"kind": "food",
+			"description": "Small bitter fruits of late autumn. Cured in salt they keep for months.",
+			"how_to_get": [
+				"Picked from olive"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"pomegranates": {
+			"name": "Pomegranates",
+			"kind": "food",
+			"description": "A hard red fruit full of juicy seeds. Keeps for weeks.",
+			"how_to_get": [
+				"Picked from pomegranate"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"mangoes": {
+			"name": "Mangoes",
+			"kind": "food",
+			"description": "A big sweet orange fruit of the tropics. Ripe ones spoil fast.",
+			"how_to_get": [
+				"Picked from mango"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"oranges": {
+			"name": "Oranges",
+			"kind": "food",
+			"description": "Sweet round citrus of winter. Keeps well.",
+			"how_to_get": [
+				"Picked from orange"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"lemons": {
+			"name": "Lemons",
+			"kind": "food",
+			"description": "Sour yellow citrus. A little juice brightens food, and it keeps for weeks.",
+			"how_to_get": [
+				"Picked from lemon"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"dried_apples": {
+			"name": "Dried apples",
+			"kind": "food",
+			"description": "Autumn apples sliced and dried by the fire. Chewy and sweet, they keep for months.",
+			"how_to_get": [
+				"Craft: 3 Autumn apple at a clay hearth"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"apple_sauce": {
+			"name": "Apple sauce",
+			"kind": "food",
+			"description": "Cooking apples stewed soft with sweet nectar.",
+			"how_to_get": [
+				"Craft: 3 Cooking apple, 1 Honeyspindle nectar at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"apple_pie": {
+			"name": "Apple pie",
+			"kind": "food",
+			"description": "Cooking apples and fat baked in a flour crust.",
+			"how_to_get": [
+				"Craft: 2 Cooking apple, 1 Flour, 1 Animal fat at a oven"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"plum_jam": {
+			"name": "Plum jam",
+			"kind": "food",
+			"description": "Plums boiled down with sweet nectar. Keeps through winter in a crock.",
+			"how_to_get": [
+				"Craft: 3 Plums, 1 Honeyspindle nectar at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stewed_pears": {
+			"name": "Stewed pears",
+			"kind": "food",
+			"description": "Pears stewed soft in sweet nectar. Good hot or cold.",
+			"how_to_get": [
+				"Craft: 2 Autumn pear, 1 Honeyspindle nectar at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"preserved_damsons": {
+			"name": "Preserved damsons",
+			"kind": "food",
+			"description": "Damsons sealed in sweet syrup. A winter store.",
+			"how_to_get": [
+				"Craft: 3 Damsons, 1 Honeyspindle nectar at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"dried_figs": {
+			"name": "Dried figs",
+			"kind": "food",
+			"description": "Figs dried until sticky and sweet. They last for months.",
+			"how_to_get": [
+				"Craft: 3 Figs at a clay hearth"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"quince_paste": {
+			"name": "Quince paste",
+			"kind": "food",
+			"description": "Quince boiled with nectar into a firm sweet paste.",
+			"how_to_get": [
+				"Craft: 2 Quince, 1 Honeyspindle nectar at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bronze_pickaxe": {
+			"name": "Bronze pickaxe",
+			"kind": "tool",
+			"description": "A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder.",
+			"how_to_get": [
+				"Craft: 3 Bronze ingot, 2 Stick at a forge"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_axe": {
+			"name": "Bronze axe",
+			"kind": "tool",
+			"description": "A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone.",
+			"how_to_get": [
+				"Craft: 2 Bronze ingot, 1 Stick, 1 Twine at a forge"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_hammer": {
+			"name": "Bronze hammer",
+			"kind": "tool",
+			"description": "A cast bronze head on a short haft. Hold it to place big builds from blueprints.",
+			"how_to_get": [
+				"Craft: 2 Bronze ingot, 1 Stick at a forge"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"bronze_knife": {
+			"name": "Bronze knife",
+			"kind": "tool",
+			"description": "A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark.",
+			"how_to_get": [
+				"Craft: 1 Bronze ingot, 1 Stick at a forge"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stairs_wood_kit": {
+			"name": "Wooden stairs",
+			"kind": "placeable",
+			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
+			"how_to_get": [
+				"Craft: 8 Lumber, 2 Twine at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stairs_wood": {
+			"name": "Wooden stairs",
+			"kind": "structure",
+			"description": "A wooden flight of stairs, 2.4 m long.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_wall_kit": {
+			"name": "Log wall",
+			"kind": "placeable",
+			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
+			"how_to_get": [
+				"Craft: 6 Log, 2 Twine at a workbench"
+			],
+			"used_for": [
+				"Used in Log cabin set"
+			],
+			"obtainable_now": true
+		},
+		"log_wall": {
+			"name": "Log wall",
+			"kind": "structure",
+			"description": "A log wall, two metres wide.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_floor_kit": {
+			"name": "Log floor",
+			"kind": "placeable",
+			"description": "Logs laid side by side on a frame. A rough, strong floor.",
+			"how_to_get": [
+				"Craft: 8 Log, 2 Twine at a workbench"
+			],
+			"used_for": [
+				"Used in Log cabin set"
+			],
+			"obtainable_now": true
+		},
+		"log_floor": {
+			"name": "Log floor",
+			"kind": "structure",
+			"description": "A floor of laid logs.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_roof_kit": {
+			"name": "Log roof",
+			"kind": "placeable",
+			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
+			"how_to_get": [
+				"Craft: 4 Log, 20 Thatch, 3 Twine at a workbench"
+			],
+			"used_for": [
+				"Used in Log cabin set"
+			],
+			"obtainable_now": true
+		},
+		"log_roof": {
+			"name": "Log roof",
+			"kind": "structure",
+			"description": "A log-framed thatch roof.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_wall_kit": {
+			"name": "Stone wall",
+			"kind": "placeable",
+			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
+			"how_to_get": [
+				"Craft: 12 Stone block, 4 Mortar at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_wall": {
+			"name": "Stone wall",
+			"kind": "structure",
+			"description": "A stone wall, two metres wide.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_floor_kit": {
+			"name": "Stone floor",
+			"kind": "placeable",
+			"description": "Cobbles bedded in sand. A hard dry floor.",
+			"how_to_get": [
+				"Craft: 16 Cobblestone, 4 Sand at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_floor": {
+			"name": "Stone floor",
+			"kind": "structure",
+			"description": "A cobbled stone floor.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof_kit": {
+			"name": "Stone roof",
+			"kind": "placeable",
+			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
+			"how_to_get": [
+				"Craft: 20 Stone shingle, 6 Lumber at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_roof": {
+			"name": "Stone roof",
+			"kind": "structure",
+			"description": "A stone-shingle roof.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_wall_kit": {
+			"name": "Brick wall",
+			"kind": "placeable",
+			"description": "Fired bricks laid in mortar, two metres wide.",
+			"how_to_get": [
+				"Craft: 16 Brick, 4 Mortar at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_wall": {
+			"name": "Brick wall",
+			"kind": "structure",
+			"description": "A brick wall, two metres wide.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_floor_kit": {
+			"name": "Brick floor",
+			"kind": "placeable",
+			"description": "Bricks laid on sand. A smooth hard floor.",
+			"how_to_get": [
+				"Craft: 20 Brick, 4 Sand at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_floor": {
+			"name": "Brick floor",
+			"kind": "structure",
+			"description": "A brick floor.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof_kit": {
+			"name": "Brick roof",
+			"kind": "placeable",
+			"description": "Fired tiles on a timber frame. Dry and durable.",
+			"how_to_get": [
+				"Craft: 16 Brick, 6 Lumber at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"brick_roof": {
+			"name": "Brick roof",
+			"kind": "structure",
+			"description": "A tiled brick roof.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_cabin_set_kit": {
+			"name": "Log cabin set",
+			"kind": "placeable",
+			"description": "Four log walls, a log floor and a log roof as one bundle. Sets out a small cabin.",
+			"how_to_get": [
+				"Craft: 4 Log wall, 1 Log floor, 1 Log roof at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stewed_berries": {
+			"name": "Stewed berries",
+			"kind": "food",
+			"description": "Berries stewed in a pot with a splash of water. Sweeter than raw.",
+			"how_to_get": [
+				"Craft: 3 Blackberries, 1 Water at a campfire pot",
+				"Craft: 3 Blueberries, 1 Water at a campfire pot",
+				"Craft: 3 Raspberries, 1 Water at a campfire pot",
+				"Craft: 3 Strawberries, 1 Water at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wild_apples": {
+			"name": "Wild apples",
+			"kind": "food",
+			"description": "Small green-red apples from forest trees. Sweet-sour and good raw.",
+			"how_to_get": [
+				"Picked from wild apple sweet"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"nettles": {
+			"name": "Nettles",
+			"kind": "food",
+			"description": "Stinging green leaves. Safe once steeped or cooked: make tea, soup or a fry.",
+			"how_to_get": [
+				"Picked from nettle"
+			],
+			"used_for": [
+				"Used in Egg and nettle fry",
+				"Used in Forager's stew",
+				"Used in Nettle tea"
+			],
+			"obtainable_now": true
+		},
+		"nettle_tea": {
+			"name": "Nettle tea",
+			"kind": "food",
+			"description": "Nettle leaves steeped in hot water. Green, earthy, and good for tired muscles.",
+			"how_to_get": [
+				"Craft: 3 Nettles, 1 Water at a campfire pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_seat_kit": {
+			"name": "Log seat",
+			"kind": "placeable",
+			"description": "A log set on end with the top flattened. Sit on it by the fire.",
+			"how_to_get": [
+				"Craft: 1 Log (keeps Stone axe)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stool_kit": {
+			"name": "Stool",
+			"kind": "placeable",
+			"description": "A three-legged stool of lashed sticks. Sit on it by the fire.",
+			"how_to_get": [
+				"Craft: 6 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_seat": {
+			"name": "Log seat",
+			"kind": "structure",
+			"description": "A log seat. Sit on it by the fire.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stool": {
+			"name": "Stool",
+			"kind": "structure",
+			"description": "A lashed stool. Sit on it.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bench": {
+			"name": "Bench",
+			"kind": "structure",
+			"description": "A plank bench that seats two or three.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chair": {
+			"name": "Chair",
+			"kind": "structure",
+			"description": "A chair with a back. Sit and rest.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"table": {
+			"name": "Table",
+			"kind": "structure",
+			"description": "A plank table on trestles.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_rug": {
+			"name": "Hide rug",
+			"kind": "structure",
+			"description": "A pelt on the floor.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wool_rug": {
+			"name": "Wool rug",
+			"kind": "structure",
+			"description": "A striped woven rug.",
+			"how_to_get": [
+				"Not yet obtainable"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"straw_bed": {
+			"name": "Straw bed",
+			"kind": "structure",
+			"description": "A bed with a heaped straw tick.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"feather_bed": {
+			"name": "Feather bed",
+			"kind": "structure",
+			"description": "A bed with a feather tick and a blanket.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"canopy_bed": {
+			"name": "Canopy bed",
+			"kind": "structure",
+			"description": "A canopy bed with curtains.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wall_torch": {
+			"name": "Wall torch",
+			"kind": "structure",
+			"description": "A torch on the wall. It lights when fuelled.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chandelier": {
+			"name": "Chandelier",
+			"kind": "structure",
+			"description": "A hanging hoop of candles. It lights when fuelled.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fireplace": {
+			"name": "Fireplace",
+			"kind": "structure",
+			"description": "A brick hearth with a chimney. It lights when fuelled.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"flower_pot": {
+			"name": "Flower pot",
+			"kind": "structure",
+			"description": "A pot of flowers.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"antler_mount": {
+			"name": "Antler mount",
+			"kind": "structure",
+			"description": "Antlers mounted on a board.",
+			"how_to_get": [
+				"Found in the world"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bench_kit": {
+			"name": "Bench",
+			"kind": "placeable",
+			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
+			"how_to_get": [
+				"Craft: 3 Lumber, 1 Twine at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chair_kit": {
+			"name": "Chair",
+			"kind": "placeable",
+			"description": "A plank chair with a hide seat. More comfortable than a bench.",
+			"how_to_get": [
+				"Craft: 4 Lumber, 2 Twine, 1 Hide at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"table_kit": {
+			"name": "Table",
+			"kind": "placeable",
+			"description": "A plank table to eat and work at. Adds comfort to a camp.",
+			"how_to_get": [
+				"Craft: 6 Lumber, 2 Twine at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_rug_kit": {
+			"name": "Hide rug",
+			"kind": "placeable",
+			"description": "A tanned hide spread on the floor. Warm underfoot.",
+			"how_to_get": [
+				"Craft: 3 Hide, 1 Sinew"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wool_rug_kit": {
+			"name": "Wool rug",
+			"kind": "placeable",
+			"description": "A thick wool rug. Warmer and softer than hide.",
+			"how_to_get": [
+				"Craft: 4 Wool, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"straw_bed_kit": {
+			"name": "Straw bed",
+			"kind": "placeable",
+			"description": "A frame stuffed with clean straw. Softer than a rough bed.",
+			"how_to_get": [
+				"Craft: 12 Straw, 6 Stick, 2 Twine at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"feather_bed_kit": {
+			"name": "Feather bed",
+			"kind": "placeable",
+			"description": "A rough bed topped with feathers and a wool blanket.",
+			"how_to_get": [
+				"Craft: 1 Rough bed, 30 Feather, 2 Fibre cloth at a workbench"
+			],
+			"used_for": [
+				"Used in Canopy bed"
+			],
+			"obtainable_now": true
+		},
+		"canopy_bed_kit": {
+			"name": "Canopy bed",
+			"kind": "placeable",
+			"description": "A feather bed under a timber canopy with linen curtains.",
+			"how_to_get": [
+				"Craft: 1 Feather bed, 8 Lumber, 4 Fibre cloth at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wall_torch_kit": {
+			"name": "Wall torch",
+			"kind": "placeable",
+			"description": "A torch in a bracket on a post. Lights a camp; light it first.",
+			"how_to_get": [
+				"Craft: 2 Stick, 1 Tallow"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chandelier_kit": {
+			"name": "Candle chandelier",
+			"kind": "placeable",
+			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
+			"how_to_get": [
+				"Craft: 2 Lumber, 2 Twine, 6 Candle at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fireplace_kit": {
+			"name": "Fireplace",
+			"kind": "placeable",
+			"description": "A brick hearth with a chimney. Warm and bright; light it first.",
+			"how_to_get": [
+				"Craft: 24 Brick, 4 Mortar, 6 Clay at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"flower_pot_kit": {
+			"name": "Flower pot",
+			"kind": "placeable",
+			"description": "A clay pot of soil with a living plant.",
+			"how_to_get": [
+				"Craft: 2 Clay, 1 Soil"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"antler_mount_kit": {
+			"name": "Antler mount",
+			"kind": "placeable",
+			"description": "A pair of antlers on a plaque. A hunter's trophy.",
+			"how_to_get": [
+				"Craft: 2 Antler, 1 Lumber, 1 Twine at a workbench"
+			],
+			"used_for": [],
+			"obtainable_now": true
 		}
 	}
 }

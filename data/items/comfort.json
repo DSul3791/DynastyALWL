@@ -112,7 +112,7 @@
 			"class": "rug",
 			"points": 2,
 			"needs_lit": false,
-			"status": "placeable",
+			"status": "future",
 			"source": "wool_rug_kit"
 		},
 		{
