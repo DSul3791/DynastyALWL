@@ -42,6 +42,12 @@ const ART_OVERRIDES := {
 	"mail_shirt": {"shape": "jerkin", "color": "#8c9099", "size": 1.0, "bits": ["mail"]},
 	"plate_cuirass": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.0, "bits": ["plate"]},
 	"bronze_sword": {"shape": "sword", "color": "#b5803a", "size": 1.0},
+	"clay_jug": {"shape": "jug", "color": "#b8703a", "size": 1.0},
+	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
+	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
+	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
 	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
 	"bronze_mace": {"shape": "flanged_mace", "color": "#b5803a", "size": 1.0},
@@ -1153,6 +1159,29 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var ea: float = TAU * float(k) / 3.0 + 0.4
 				_sph(parts, 0.026, Vector3(1.0, 1.28, 1.0), Vector3(cos(ea) * 0.025, -0.04, sin(ea) * 0.025), Color(0.82, 0.78, 0.6), true)
 				_sph(parts, 0.004, Vector3.ONE, Vector3(cos(ea) * 0.03, -0.022, sin(ea) * 0.02), Color(0.35, 0.27, 0.15), true)
+		"jug":
+			# A fired clay jug (refs: medieval and Roman one-handled jugs): a round belly narrowing to a short neck with a flared lip, a flat foot, a loop handle from lip to shoulder, a darker band at the shoulder,
+			# the glaze-free orange-brown clay slightly mottled.
+			_sph(parts, 0.085, Vector3(1.0, 1.05, 1.0), Vector3(0.0, -0.02, 0.0), color)
+			_sph(parts, 0.07, Vector3(1.0, 0.7, 1.0), Vector3(0.0, 0.04, 0.0), _tone(color, 2, 0.08))
+			_cyl(parts, 0.04, 0.07, Vector3(0.0, 0.1, 0.0), Vector3.ZERO, color.darkened(0.05))
+			_torus(parts, 0.045, 0.012, Vector3(0.0, 0.14, 0.0), color.lightened(0.08))
+			_cyl(parts, 0.06, 0.012, Vector3(0.0, -0.1, 0.0), Vector3.ZERO, dark)
+			_torus(parts, 0.075, 0.007, Vector3(0.0, 0.045, 0.0), dark)
+
+			for k in 5:   # the loop handle: a curve of small balls from the lip down to the shoulder
+				var ha: float = PI * 0.5 * float(k) / 4.0
+				_sph(parts, 0.014, Vector3.ONE, Vector3(0.05 + sin(ha) * 0.055, 0.13 - (1.0 - cos(ha)) * 0.1 - 0.0 * float(k), 0.0), color.darkened(0.1), true)
+		"candle":
+			# A dipped tallow candle (refs: hand-dipped tallow candles): a slightly tapering irregular cream column, drips frozen down one side, a short dark wick; bits "lit": a small flame on the wick.
+			_cyl_taper(parts, 0.022, 0.016, 0.22, Vector3(0.0, 0.0, 0.0), color)
+			_cyl(parts, 0.025, 0.012, Vector3(-0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.08))
+			_sph(parts, 0.008, Vector3(1.2, 0.8, 0.8), Vector3(0.0, 0.0, 0.016), color.lightened(0.12), true)
+			_sph(parts, 0.006, Vector3(1.5, 0.7, 0.7), Vector3(0.05, 0.0, 0.015), color.lightened(0.1), true)
+			_box(parts, Vector3(0.025, 0.003, 0.003), Vector3(0.122, 0.0, 0.0), Color(0.1, 0.07, 0.05))
+
+			if bits.has("lit"):
+				_sph(parts, 0.012, Vector3(1.9, 0.8, 0.8), Vector3(0.14, 0.0, 0.0), Color(1.0, 0.75, 0.2), true)
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
@@ -1435,7 +1464,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
 			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
-			color = _warm_stone(color)                                                                              # darker and warmer: in sunlight the plain grey read pale blue
+			color = color if bits.has("bronze") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
@@ -1458,6 +1487,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var steel_head: bool = bits.has("steel")
 			var stone_head: bool = bits.has("stone")
 			var iron: Color = Color(0.3, 0.28, 0.25) if stone_head else (Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042))   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
+			if bits.has("bronze"):
+				iron = Color(0.5, 0.26, 0.06)                                                                    # bronze: warm brown-gold (linear)
+
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
 			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
@@ -1579,7 +1611,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				for end in [-0.09, 0.09]:
 					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
 			else:
-				color = _warm_stone(color)
+				color = color if bits.has("bronze") else _warm_stone(color)
 				dark = color.darkened(0.3)
 				_box_rot(parts, Vector3(0.07, 0.06, 0.11), Vector3(0.2, 0.0, 0.0), Vector3(0.1, 0.15, 0.08), color)             # the head: a rough lump about half the old slab
 				_box_rot(parts, Vector3(0.06, 0.05, 0.08), Vector3(0.205, 0.008, -0.01), Vector3(-0.2, -0.3, 0.12), _tone(color, 5, 0.12))   # a second, uneven face so the lump is not a clean block
@@ -1641,6 +1673,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			if bits.has("glass"):                                                                                                                     # obsidian: black volcanic glass
 				stone = Color(0.012, 0.012, 0.018)
+			elif bits.has("bronze"):
+				stone = Color(0.5, 0.26, 0.06)                                                                                                          # a bronze blade
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):

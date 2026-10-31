@@ -73,6 +73,7 @@ const HELD_LOOK_TURN := {
 	"mace": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # handle to head along +x like the axe: haft forward, stone head on top (items_check: stone_mace had no held model)
 	"flanged_mace": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"club": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"candle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # a candle is held upright, flame up
 	"sword": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"quern": Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)),   # the grinding stones are carried flat in the hand as they lie
 }
