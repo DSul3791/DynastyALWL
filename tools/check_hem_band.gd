@@ -11,6 +11,8 @@ var _checked: int = 0
 
 
 func _initialize() -> void:
+	var boot_edges: int = 0
+
 	for preset in ["average", "broad", "lean", "stocky"]:
 		var built: Dictionary = Generator.build(Generator.make_genome(preset), 0.04, false)
 		var colors: PackedColorArray = (built["arrays"] as Array)[Mesh.ARRAY_COLOR]
@@ -31,9 +33,17 @@ func _initialize() -> void:
 
 		_ok(int(counts.get(0, 0)) > 0 and int(counts.get(3, 0)) > 0 and int(counts.get(4, 0)) > 0 and int(counts.get(5, 0)) > 0, "%s: skin, tunic, trousers and boots all decode from alpha" % preset)
 
+		boot_edges += int(low.get(5, 0))
+
+		# The boots now cover the toes too, so their only edge is where they meet the trousers: some presets (stocky) have none at this resolution; all four together must.
 		for id in [3, 4, 5]:
+			if id == 5:
+				_ok(int(high.get(5, 0)) > 0, "%s: boots have interior vertices (%d)" % [preset, int(high.get(5, 0))])
+				continue
+
 			_ok(int(low.get(id, 0)) > 0 and int(high.get(id, 0)) > 0, "%s: material %d has edge vertices (%d) and interior vertices (%d)" % [preset, id, int(low.get(id, 0)), int(high.get(id, 0))])
 
+	_ok(boot_edges > 0, "the boots have edge vertices in at least one body type (%d)" % boot_edges)
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 

@@ -23,19 +23,16 @@ uniform vec3 boot_color : source_color = vec3(0.14, 0.11, 0.09);
 uniform float hem_dark = 0.7;         // colour factor at the very edge of a piece of cloth (1.0 turns the band off)
 uniform float show_cloth = 1.0;      // 0: the tunic, trousers and boots regions show skin (a bare body, for fittings and the creator)
 void fragment() {
-	int id = int(floor(COLOR.a * 8.0));
-	vec3 c = skin_color;
-	if (id == 1) { c = hair_color; }
-	else if (id == 2) { c = lips_color; }
-	else if (id == 3) { c = tunic_color; }
-	else if (id == 4) { c = trouser_color; }
-	else if (id == 5) { c = boot_color; }
-	if (show_cloth < 0.5 && id >= 3) { c = skin_color; }
-	else if (id >= 3) {
-		// the fraction of alpha says how far inside its cloth the surface is: darker at hems, cuffs and collars
-		float inside = clamp((fract(COLOR.a * 8.0) - 0.05) / 0.9, 0.0, 1.0);
-		c *= mix(hem_dark, 1.0, smoothstep(0.0, 1.0, inside));
-	}
+	// Materials are blended by weight: COLOR.rgb = hair, lips, tunic; UV = trousers, boots; skin is the rest. A vertex is one material, so a triangle on the edge between
+	// two materials shows only those two (the id in alpha used to flash hair, lips or tunic colours on skin/boot and skin/trouser edges).
+	float w_tunic = COLOR.b;
+	float w_trousers = UV.x;
+	float w_boots = UV.y;
+	if (show_cloth < 0.5) { w_tunic = 0.0; w_trousers = 0.0; w_boots = 0.0; }
+	float w_skin = clamp(1.0 - COLOR.r - COLOR.g - w_tunic - w_trousers - w_boots, 0.0, 1.0);
+	// UV2.x says how far inside its cloth the surface is: darker at hems, cuffs and collars
+	float edge = mix(hem_dark, 1.0, smoothstep(0.0, 1.0, clamp(UV2.x, 0.0, 1.0)));
+	vec3 c = skin_color * w_skin + hair_color * COLOR.r + lips_color * COLOR.g + (tunic_color * w_tunic + trouser_color * w_trousers + boot_color * w_boots) * edge;
 	ALBEDO = c;
 	ROUGHNESS = 0.85;
 }

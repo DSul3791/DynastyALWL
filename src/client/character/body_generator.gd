@@ -232,9 +232,12 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	for side in [-1.0, 1.0]:
 		out.append(_ell(4, head_c + Vector3(0.099 * hs * side, 0.135 * hs, 0.005 * hs), Vector3(0.012, 0.03 * ear, 0.019)))
 
-	var cap: Dictionary = _ell(4, head_c + Vector3(0.0, 0.158 * hs, 0.012 * hs), Vector3(0.101 * hs, 0.122 * hs, 0.116 * hs), MAT_HAIR)
-	cap["cut_n"] = Vector3(0.0, 1.0, -0.12)
-	cap["cut_c"] = head_c.y + 0.19 * hs
+	# The cap covers the top and the sides of the head down to the ears and stops at a hairline that sits higher at the forehead (plane y + 0.55 z >= 0.16 hs, normalised,
+	# measured from the head centre) and lower at the nape; it is a little larger than the head all round (the front too) so it always shows over the skin.
+	var cap: Dictionary = _ell(4, head_c + Vector3(0.0, 0.150 * hs, 0.004 * hs), Vector3(0.102 * hs, 0.124 * hs, 0.118 * hs), MAT_HAIR)
+	var cap_n: Vector3 = Vector3(0.0, 1.0, 0.55).normalized()
+	cap["cut_n"] = cap_n
+	cap["cut_c"] = cap_n.dot(head_c) + 0.16 * hs / 1.1413
 	out.append(cap)
 	var back: Dictionary = _ell(4, head_c + Vector3(0.0, 0.09 * hs - 0.05 * (hair_len - 1.0), 0.052 * hs), Vector3(0.095 * hs, 0.1 * hs * hair_len, 0.07 * hs), MAT_HAIR)
 	back["cut_n"] = Vector3(0.0, 0.0, 1.0)
@@ -293,7 +296,7 @@ static func _dress(out: Array) -> void:
 			elif bone == 1 or bone == 2:
 				c["mat"] = MAT_TUNIC
 				c["r"] = r * 1.06 + Vector3(0.007, 0.007, 0.007)
-			elif bone == 15 or bone == 19:
+			elif bone == 15 or bone == 19 or bone == 16 or bone == 20:       # the foot and the toes: the boot covers both
 				c["mat"] = MAT_BOOTS
 				c["r"] = r * 1.12 + Vector3(0.006, 0.006, 0.006)
 			else:
@@ -455,6 +458,8 @@ static func build(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> D
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = skinning["colors"]
+	arrays[Mesh.ARRAY_TEX_UV] = skinning["uvs"]
+	arrays[Mesh.ARRAY_TEX_UV2] = skinning["uv2s"]
 	arrays[Mesh.ARRAY_INDEX] = tris
 	arrays[Mesh.ARRAY_BONES] = skinning["bones"]
 	arrays[Mesh.ARRAY_WEIGHTS] = skinning["weights"]
@@ -584,6 +589,10 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 	w.resize(count * bone_count)
 	var colors: PackedColorArray = PackedColorArray()
 	colors.resize(count)
+	var uvs: PackedVector2Array = PackedVector2Array()      # (trousers weight, boots weight)
+	uvs.resize(count)
+	var uv2s: PackedVector2Array = PackedVector2Array()     # (how far inside its cloth, 0)
+	uv2s.resize(count)
 
 	# The primitives and bones of each group: a vertex only looks at its own group's primitives (a hand has 9 bones, a leg 4), not all of them.
 	var group_prims: Array = []
@@ -641,8 +650,13 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 
 			inside = clampf((other - best) / HEM_REACH, 0.0, 1.0)
 
-		shown_color.a = (float(best_mat) + 0.05 + 0.9 * inside) / 8.0
+		# The shader blends the materials by weight (a vertex is one material, the triangle blends its three), so no id between two materials can ever show:
+		# the old way (the id in alpha, interpolated) made a hair, lips or tunic colour flash on the edge between skin and boots or trousers.
+		# COLOR.rgb = hair, lips, tunic weights; UV = trousers, boots weights; UV2.x = how far inside the cloth. Skin is what is left over. Alpha still carries the id.
+		shown_color = Color(1.0 if best_mat == MAT_HAIR else 0.0, 1.0 if best_mat == MAT_LIPS else 0.0, 1.0 if best_mat == MAT_TUNIC else 0.0, (float(best_mat) + 0.05 + 0.9 * inside) / 8.0)
 		colors[i] = shown_color
+		uvs[i] = Vector2(1.0 if best_mat == MAT_TROUSERS else 0.0, 1.0 if best_mat == MAT_BOOTS else 0.0)
+		uv2s[i] = Vector2(inside, 0.0)
 
 	var neighbours: Array = []
 	neighbours.resize(count)
@@ -711,7 +725,7 @@ static func _weights(verts: PackedVector3Array, tris: PackedInt32Array, prims: A
 			bones[i * 4 + s] = int(best_bones[s])
 			weights[i * 4 + s] = float(best_w[s]) / maxf(total, 0.000001)
 
-	return {"bones": bones, "weights": weights, "colors": colors}
+	return {"bones": bones, "weights": weights, "colors": colors, "uvs": uvs, "uv2s": uv2s}
 
 
 static func _material_color(mat: int, g: Dictionary) -> Color:
