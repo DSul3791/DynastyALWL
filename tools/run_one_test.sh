@@ -13,7 +13,11 @@ export XDG_DATA_HOME="$JOB/data" APPDATA="$JOB/appdata"
 START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ));; esac
 # A script that fails to compile leaves Godot idle (no quit()), so a broken test used to run to the full limit (25 min for slow tests).
 # Watch the output and stop it at once; the result says why.
-timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://src/worldgen/tools/$NAME.gd" > "$OUT/$NAME.out" 2>&1 &
+# Extra arguments for one test (tools/test_args.txt: "<test> <args>"): test_npc_view must run with --old-body, or the generated bodies it starts on worker
+# threads keep Godot from exiting for 5 minutes or more on a fresh data folder (31 Oct 2026).
+XARGS=$(grep -E "^$NAME " "$(dirname "$0")/test_args.txt" 2>/dev/null | head -1 | cut -d' ' -f2- | tr -d '')
+[ -n "$XARGS" ] && XARGS="-- $XARGS"
+timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://src/worldgen/tools/$NAME.gd" $XARGS > "$OUT/$NAME.out" 2>&1 &
 GP=$!; DEAD=""
 while kill -0 $GP 2>/dev/null; do
 	sleep 0.5
