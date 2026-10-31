@@ -13,12 +13,6 @@
 
 
 
-## pic-tall-grass | Does the tall grass clump at 10 m (circled) stand out enough from the meadow?
-Image: questions/img/tall_grass_v7_10m.png
-Note: Real game, noon, summer. Flora rates it 4.5 of 5. It is not yet readable at 25 m or more.
-- Yes
-- No
-
 ## pic-water2-dam-break | Does the new water spread out like a real puddle (a square block of water at 0, 4, 12 and 40 seconds)?
 Image: questions/img/water2_dam_break.png
 Note: Top-down render of the new Dynasty water sim on a flat floor, not the real game (nothing is drawn in the game yet). Sonny rates it 3.5 of 5: it spreads and settles, but a short-lived dry hole opens in the middle at 12 s.
