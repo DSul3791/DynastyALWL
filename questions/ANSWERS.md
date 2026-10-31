@@ -1926,3 +1926,7 @@ Answered: 2026-10-31 20:04 UTC
 Answer: Respawn at the bed until level 10, then real death
 Answered: 2026-10-31 20:05 UTC
 
+## pic-water2-basin | Does the new water fill a bowl, spill over the low rim and run down the hill around the bump (four frames, 20 / 70 / 140 / 300 s)?
+Answer: Yes | Comment: Yes, it looks like it’s working. It might be blocky. Maybe the water squares are too big but it does look like it’s working.
+Answered: 2026-10-31 20:05 UTC
+
