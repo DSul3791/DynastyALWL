@@ -359,7 +359,7 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 1005 | arnica_flowers | Arnica flowers | flower | looks.json | rough |  |  |  |  |
 | 1006 | banana_leaves | Banana leaves | frond | looks.json | rough |  |  |  |  |
 | 1007 | bananas | Bananas | fruit | looks.json | rough |  |  |  |  |
-| 1009 | bedding | Bedding | heap | looks.json | decent | motherearthnews / bushcraftuk: loose 6-10 in mound of dry grass, ferns, leaves; cgtrader / renderhub low-poly hay piles: low dome with stray strands | 2026-10-30 | art/CRITIQUES/bedding_2026-10-30/round3.png | 3 rounds offline; real game not seen (rig framing) |
+| 1009 | bedding | Bedding | heap | looks.json | decent | motherearthnews / bushcraftuk: loose 6-10 in mound of dry grass, ferns, leaves; cgtrader / renderhub low-poly hay piles: low dome with stray strands | 2026-10-30 | art/CRITIQUES/bedding_2026-10-30/round3.png | 3 rounds offline; in hand seen in game (bedding_in_hand_game.jpg); dropped on grass not yet seen (rig drops empty) |
 | 1010 | beechnuts | Beechnuts | nut | looks.json | rough |  |  |  |  |
 | 1011 | belladonna_berries | Belladonna berries | round_berries | looks.json | rough |  |  |  |  |
 | 1012 | belladonna_leaves | Belladonna leaves | frond | looks.json | rough |  |  |  |  |
