@@ -98,7 +98,7 @@ func _init() -> void:
 	join(again, 1, "learnkey0001")
 	check(again._learned_of(1).has("900") and not again._learned_of(1).has("901"), "the learned recipes are saved with the character and known after a restart")
 	check(again.recipe_known_for(1, again.recipes.recipe(2)) and not again.recipe_known_for(1, again.recipes.recipe(901)), "a recipe that is known in the table is known to all, an unknown one only to who learned it")
-	var wheel: Dictionary = again.recipes.recipe(153)
-	check(str(wheel.get("id", "")) == "water_wheel" and bool(wheel.get("locked", false)) and not bool(wheel.get("known", false)), "the real water wheel recipe is locked (no saw mill or forge chain yet)")
+	var wheel: Dictionary = again.recipes.recipe(19)   # was the water wheel (153), unlocked 31 Oct 2026 when nails and lumber became obtainable; the steel pickaxe still needs forge level 2
+	check(str(wheel.get("id", "")) == "steel_pickaxe" and bool(wheel.get("locked", false)) and not bool(wheel.get("known", false)), "the real steel pickaxe recipe is locked (no forge level 2 chain yet)")
 	print("learn: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

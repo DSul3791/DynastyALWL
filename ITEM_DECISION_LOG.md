@@ -316,3 +316,5 @@ Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shel
 
 ## Metal ladder (2026-10-31)
 Bronze ingot recipe at forge level 1 and known; Bronze pickaxe, axe, hammer, knife (458-461, recipes 290-293); boulders.json bronze tools and ore.needs_material (code check for Tyler). Guide audit taught the ore, flint and shore sources: blocked-without-future 0. Goal events verified.
+
+Status run (2026-10-31): PLAYTHROUGH_STATUS.md 24 fixed, 3 still broken. Unlocked water wheel and plank chest kit (nails, lumber via the wedge and iron are obtainable), so the saw mill is reachable (F-21 fixed; test_learn now uses the steel pickaxe as its locked example). Remaining: F-01/F-24 (16 advanced recipes locked by design: steel, bronze/iron/steel weapons and armour, forge level 2), F-18 looks (Kathleen), F-22 stairs and stone/brick/log pieces (new structures, Sal data plus Kathleen models).

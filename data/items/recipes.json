@@ -373,8 +373,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -3417,8 +3416,7 @@
 			"needs": [["lumber", 20], ["nails", 80]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
