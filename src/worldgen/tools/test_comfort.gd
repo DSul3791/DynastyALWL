@@ -131,6 +131,25 @@ func _init() -> void:
 	var View := load("res://src/client/inventory_view.gd")
 	check(View.comfort_text(7, 2, 38) == "Comfort 7   Rested 38 min" and View.comfort_text(0, 0, 0) == "" and View.comfort_text(3, 0, 0) == "Comfort 3", "the HUD words: 'Comfort 7   Rested 38 min'")
 
+	# Sitting on a seat for 30 s earns the buff too (a chair stands at 2,0).
+	items.report_position(1, Vector3(1.6, 10.0, 0.0))
+	items._stance[1] = 2
+	items._rest_credit.erase(1)
+	items._characters[items._peer_key[1]].erase("rested")
+	items._comfort_tick(20.0)
+	check(items.rested_tier(1).is_empty(), "20 s on the chair is not enough")
+	items._comfort_tick(15.0)
+	check(not items.rested_tier(1).is_empty(), "35 s sitting on a chair earns the Rested buff")
+	items._stance[1] = 0
+	items._comfort_tick(1.0)
+	items._stance[1] = 2
+	items.report_position(1, Vector3(30.0, 10.0, 30.0))
+	items._characters[items._peer_key[1]].erase("rested")
+	items._comfort_tick(40.0)
+	check(items.rested_tier(1).is_empty(), "sitting on the bare ground far from any seat earns nothing")
+	items._stance[1] = 0
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+
 	items.rest_completed(1)   # earn it again for the save check below
 
 	# Saved and cleared.

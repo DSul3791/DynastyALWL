@@ -996,7 +996,7 @@ func tick(delta: float) -> void:
 		_craft_tick(spent)
 		_crops_tick()
 		_lights_tick(spent)
-		_comfort_tick()
+		_comfort_tick(spent)
 		_goals_tick()
 		_learn_clock += spent
 
@@ -7093,6 +7093,20 @@ func station_near(peer: int, station: String, level: int = 1) -> bool:
 
 
 # Is a lit fire (any tier) within r metres of a point?
+# A seat piece (comfort class seat) within 1.2 m horizontally and 1 m vertically.
+func _seat_near(pos: Vector3) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and Vector2(it["pos"].x - pos.x, it["pos"].z - pos.z).length() <= 1.2 and absf(it["pos"].y - pos.y) <= 1.0:
+			var skind: String = str(it["struct"].get("kind", ""))
+
+			if str(_comfort_kind(str(_structures.get(skind, {}).get("comfort", skind))).get("class", "")) == "seat":
+				return true
+
+	return false
+
+
 func _lit_fire_within(pos: Vector3, r: float) -> bool:
 	for row in _lit_rows():
 		if (row[0] as Vector3).distance_to(pos) <= r:
@@ -8171,16 +8185,29 @@ func rest_completed(peer: int, half: bool = false) -> bool:
 # Called every slow tick: lying on a good bed (awake or asleep) at comfort 2+ earns the buff once per rest; the buff ending is told once.
 var send_comfort: Callable            # (peer, comfort level, rested tier level 0 = none, whole minutes of Rested left): the HUD line (protocol 80)
 var _comfort_sent: Dictionary = {}      # peer -> the last [level, rested level, minutes] told
+const SIT_REST_S := 30.0
+var _sit_s: Dictionary = {}             # peer -> seconds sat on a seat so far
 var _rest_credit: Dictionary = {}       # peer -> true while this rest has already earned the buff
 var _rested_told: Dictionary = {}       # peer -> true while "You feel rested" is in force (to say the end once)
 
 
-func _comfort_tick() -> void:
+func _comfort_tick(spent: float = 0.0) -> void:
 	for peer in _peer_key.keys():
 		if not _peer_pos.has(peer):
 			continue
 
-		var resting: bool = _asleep.has(peer) or (int(_stance.get(peer, 0)) == 3 and on_good_bed(peer))
+		# Sitting (stance 2) within 1.2 m of a seat piece for 30 s completes a rest too.
+		if int(_stance.get(peer, 0)) == 2 and _seat_near(_peer_pos[peer]):
+			_sit_s[peer] = float(_sit_s.get(peer, 0.0)) + spent
+
+			if float(_sit_s[peer]) >= SIT_REST_S and not _rest_credit.has(peer):
+				_rest_credit[peer] = true
+				rest_completed(peer)
+		else:
+			_sit_s.erase(peer)
+
+		var sitting_credit: bool = _sit_s.has(peer) and _rest_credit.has(peer)
+		var resting: bool = _asleep.has(peer) or (int(_stance.get(peer, 0)) == 3 and on_good_bed(peer)) or sitting_credit
 
 		if resting and not _rest_credit.has(peer):
 			_rest_credit[peer] = true
