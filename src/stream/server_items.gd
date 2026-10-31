@@ -1203,16 +1203,31 @@ func fruit_max(species_name: String, flora_id: int, plant_height: float) -> int:
 	if cfg.is_empty():
 		return 0
 
-	var range_: Array = cfg.get("max", [40, 100])
-	var entry: Dictionary = _flora_by_name.get(species_name, {})
-	var size: float = 1.0
+	return GatherRules.fruit_max(cfg, _flora_by_name.get(species_name, {}), flora_id, plant_height)
 
-	if plant_height > 0.0 and entry.has("height_m"):
-		var heights: Array = entry["height_m"]
-		size = clampf(plant_height / maxf((float(heights[0]) + float(heights[1])) * 0.5, 0.01), 0.6, 1.5)
 
-	var variance: float = float(hash(flora_id * 2654435761) % 1000) / 1000.0
-	return maxi(int(round(lerpf(float(range_[0]), float(range_[1]), variance) * size)), 1)
+# Pieces taken from a tree this season (0 when none, or from an older season).
+func fruit_taken(flora_key: String) -> int:
+	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var record: Array = (_fruit.get(parts[0], {}) as Dictionary).get(int(parts[1]), [])
+	return int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
+
+
+# The trees of a chunk ("cx,cz" home key) with fruit taken this season: [ids, taken] for a joining client.
+func fruit_state(chunk_key: String) -> Array:
+	var ids: PackedInt32Array = PackedInt32Array()
+	var taken: PackedInt32Array = PackedInt32Array()
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	for tree in (_fruit.get(chunk_key, {}) as Dictionary):
+		var record: Array = _fruit[chunk_key][tree]
+
+		if int(record[0]) == stamp:
+			ids.append(int(tree))
+			taken.append(int(record[1]))
+
+	return [ids, taken]
 
 
 # Pieces of fruit left on a tree this season (a new season starts it full again).

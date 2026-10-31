@@ -143,6 +143,19 @@ func _init() -> void:
 	restarted.season_stamp = func(): return stamp[0] + 4
 	check(restarted.fruit_left("walnut", "0,0,777", 777, 12.0) == restarted.fruit_max("walnut", 777, 12.0), "the next fruiting season starts the tree full again")
 
+	# Client and server agree: the shared formula gives the same store, and the server's per-chunk state carries what was taken (what the prompt's "(N left)" is made of).
+	var rules = load("res://src/shared/gather_rules.gd")
+	var flora_rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))["entries"]
+	var apple_row: Dictionary = {}
+
+	for row in flora_rows:
+		if row["name"] == "wild_apple":
+			apple_row = row
+
+	var drops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	check(rules.fruit_max(drops["fruit_tree"]["wild_apple"], apple_row, 4242, 7.0) == g.fruit_max("wild_apple", 4242, 7.0), "the client's store formula equals the server's")
+	var state: Array = save_game.fruit_state("0,0")
+	check((state[0] as PackedInt32Array).has(777) and int((state[1] as PackedInt32Array)[(state[0] as PackedInt32Array).find(777)]) == save_game.fruit_taken("0,0,777") and save_game.fruit_taken("0,0,777") > 0, "the per-chunk fruit state carries the pieces taken (%d)" % save_game.fruit_taken("0,0,777"))
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
 

@@ -724,6 +724,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
@@ -2013,6 +2014,10 @@ func _send_water_request(now: int) -> void:
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 	if flora != null:
 		_queue_in({"kind": "water", "chunk": chunk, "water": water})
+
+
+func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	flora.set_fruit_taken(chunk, ids, taken)
 
 
 func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:

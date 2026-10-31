@@ -317,6 +317,7 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var fruit_taken: Dictionary = {}         # chunk -> {tree id -> pieces taken this season} (fruit trees; set_fruit_taken, cleared when the season changes)
 var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
 var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
@@ -1391,6 +1392,15 @@ func set_fruiting(names: Array) -> void:
 
 # The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
 # are built on a worker; the chunks redraw when they are ready.
+# The server's count of fruit taken from trees of a chunk (the prompt shows what is left); a later count replaces an earlier one.
+func set_fruit_taken(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	if not fruit_taken.has(chunk):
+		fruit_taken[chunk] = {}
+
+	for n in range(ids.size()):
+		fruit_taken[chunk][int(ids[n])] = int(taken[n])
+
+
 func set_season(now_season: String) -> void:
 	if season_override != "":
 		now_season = season_override
@@ -1399,6 +1409,10 @@ func set_season(now_season: String) -> void:
 		return
 
 	var had_season: bool = season != ""
+
+	if had_season and now_season != season:
+		fruit_taken.clear()   # a new season starts every fruit tree full again
+
 	season = now_season
 	_start_seasonal()
 
