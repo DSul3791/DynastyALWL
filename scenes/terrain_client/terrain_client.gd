@@ -2674,7 +2674,7 @@ func _make_environment(root: Node3D) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	sea.material_override = WaterMaterial.make()   # the same look as the rivers
+	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
 
 
