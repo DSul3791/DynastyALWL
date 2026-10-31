@@ -723,7 +723,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "bramble",
-			"patch": {"every_m": 70, "chance": 0.4, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
+			"patch": {"every_m": 70, "chance": 0.6, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -801,7 +801,10 @@
 				"heath": 25,
 				"alpine_meadow": 12,
 				"dry_scrub": 6,
-				"boreal_forest": 6
+				"boreal_forest": 6,
+				"temperate_grassland": 8,
+				"mixed_forest": 6,
+				"temperate_forest": 4
 			},
 			"moisture": [
 				30,
@@ -1177,7 +1180,11 @@
 			],
 			"per_hectare": {
 				"marsh": 800,
-				"mangrove": 20
+				"mangrove": 20,
+				"temperate_grassland": 30,
+				"temperate_forest": 15,
+				"mixed_forest": 15,
+				"boreal_forest": 10
 			},
 			"moisture": [
 				150,
@@ -1278,9 +1285,10 @@
 			"kind": "plant",
 			"shape": "grass",
 			"model": "grass_tuft",
+			"patch": {"every_m": 24, "chance": 0.75, "count": [14, 20], "radius_m": [1.6, 3.0], "scale": [1, 1.25], "spacing_m": 0.7, "by_biome": true},
 			"height_m": [
-				0.5,
-				1.0
+				1.3,
+				1.8
 			],
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
@@ -1290,11 +1298,18 @@
 				0.3
 			],
 			"per_hectare": {
-				"temperate_grassland": 300,
-				"savanna": 300,
-				"alpine_meadow": 100,
-				"heath": 40,
-				"beach": 10
+				"temperate_grassland": 100,
+				"savanna": 100,
+				"alpine_meadow": 80,
+				"heath": 70,
+				"beach": 20,
+				"marsh": 40,
+				"temperate_forest": 40,
+				"mixed_forest": 35,
+				"boreal_forest": 15,
+				"tundra": 15,
+				"dry_scrub": 30,
+				"tropical_forest": 10
 			},
 			"moisture": [
 				20,
@@ -1340,7 +1355,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "herb_nettle",
-			"patch": {"every_m": 45, "chance": 0.55, "count": [10, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.7},
+			"patch": {"every_m": 45, "chance": 0.7, "count": [10, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.7},
 			"height_m": [
 				0.9,
 				1.5
@@ -1572,7 +1587,8 @@
 			"per_hectare": {
 				"heath": 60,
 				"boreal_forest": 70,
-				"mixed_forest": 25
+				"mixed_forest": 40,
+				"temperate_forest": 35
 			},
 			"moisture": [
 				100,
@@ -1861,7 +1877,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "raspberry",
-			"patch": {"every_m": 60, "chance": 0.45, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
+			"patch": {"every_m": 60, "chance": 0.7, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -1993,10 +2009,11 @@
 				0.22
 			],
 			"per_hectare": {
-				"temperate_forest": 4,
-				"mixed_forest": 4,
-				"temperate_grassland": 2,
-				"marsh": 3
+				"temperate_forest": 12,
+				"mixed_forest": 12,
+				"temperate_grassland": 6,
+				"marsh": 5,
+				"boreal_forest": 4
 			},
 			"moisture": [
 				110,
