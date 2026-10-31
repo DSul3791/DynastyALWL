@@ -1,0 +1,950 @@
+{
+	"_note": "Season data for the look passes (Kathleen: winter grass, snow dusting, spring blossom, autumn colour). Written 2026-10-31 by the flora session. Game year = 365 days (src/shared/game_clock.gd DAYS_PER_YEAR), four equal seasons by day of year: spring starts day 0. A game day is one real hour, so a season is about 91 real hours. Season names are spring, summer, autumn, winter (GameClock.SEASON_NAMES). transition_days is how long each change eases in before the season starts (colour, blossom, leaf fall, snow). Nothing here is read by code yet; it is the contract for the looks.",
+	"year": {
+		"days": 365,
+		"season_days": [
+			[
+				0,
+				90
+			],
+			[
+				91,
+				181
+			],
+			[
+				182,
+				272
+			],
+			[
+				273,
+				364
+			]
+		],
+		"seasons": [
+			"spring",
+			"summer",
+			"autumn",
+			"winter"
+		],
+		"transition_days": 14
+	},
+	"months_hint": {
+		"spring": "March to May",
+		"summer": "June to August",
+		"autumn": "September to November",
+		"winter": "December to February"
+	},
+	"climate_by_biome": {
+		"snow_winter": [
+			"boreal_forest",
+			"tundra",
+			"alpine_meadow",
+			"snowfield",
+			"glacier"
+		],
+		"light_snow_winter": [
+			"temperate_forest",
+			"mixed_forest",
+			"temperate_grassland",
+			"heath",
+			"marsh",
+			"bare_rock"
+		],
+		"no_snow": [
+			"beach",
+			"ocean",
+			"mangrove",
+			"tropical_forest",
+			"savanna",
+			"dry_scrub",
+			"hot_desert",
+			"volcanic_waste"
+		],
+		"no_seasonal_colour": [
+			"tropical_forest",
+			"mangrove",
+			"hot_desert",
+			"volcanic_waste",
+			"ocean"
+		],
+		"note": "snow_winter: lasting snow from day 300 to day 60 (cover 0.6 to 1.0 in the middle). light_snow_winter: dusting only, cover 0 to 0.35, melts within 3 game days of a thaw. no_snow: never. A biome in no_seasonal_colour stays summer green all year."
+	},
+	"ground": {
+		"grass": {
+			"spring": {
+				"tint": "fresh light green",
+				"blades": 1.0
+			},
+			"summer": {
+				"tint": "full green, tall layer tips straw",
+				"blades": 1.0
+			},
+			"autumn": {
+				"tint": "yellow-green to straw",
+				"blades": 0.9
+			},
+			"winter": {
+				"tint": "brown, desaturated",
+				"blades": 0.6,
+				"snow_dust_blades": 0.4
+			}
+		},
+		"litter": {
+			"autumn": "leaf litter doubles under hardwoods",
+			"winter": "leaf litter flat and dark, snow on top where snow applies"
+		},
+		"tall_grass": {
+			"spring": "green, no seed heads",
+			"summer": "green, seed heads form",
+			"autumn": "straw, seed heads full and drooping",
+			"winter": "standing straw, brown, half height where snowed"
+		}
+	},
+	"rules": {
+		"snow_cover": "0 at autumn end, rising through winter by biome class above; applies to ground, grass tufts, bush tops, log tops; not under dense canopy (half cover).",
+		"bloom_species": "flowers with 'spring' or 'summer' in their season list bloom in the first of those seasons for about 45 days; hardwood blossom (white or pink beads) in spring only.",
+		"fruit": "a berry bush shows ripe fruit in its season list, bare the rest of the year (already built: tree_builder _fruit_state / flora_view set_season).",
+		"die_back": "herbs and ferns without 'winter' in their season list shrink to 25 percent height in winter and show as brown stubs.",
+		"leaf_fall": "deciduous broadleaf trees: green in spring and summer, autumn colour in autumn (exists), bare in winter (twig curtains)."
+	},
+	"species": {
+		"oak": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"beech": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"birch": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"scots_pine": {
+			"foliage": "evergreen",
+			"winter": "snow on boughs where snow applies",
+			"bare_model_exists": false
+		},
+		"spruce": {
+			"foliage": "evergreen",
+			"winter": "snow on boughs where snow applies",
+			"bare_model_exists": false
+		},
+		"alder": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"willow": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"coconut_palm": {
+			"foliage": "evergreen",
+			"bare_model_exists": false
+		},
+		"tropical_hardwood": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"acacia": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"mangrove": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"hazel": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"bramble": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"juniper": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"autumn",
+				"winter"
+			],
+			"winter": "bare canes"
+		},
+		"gorse": {
+			"foliage": "deciduous",
+			"fruit_season": [],
+			"winter": "bare canes"
+		},
+		"dwarf_birch": {
+			"foliage": "deciduous",
+			"fruit_season": [],
+			"winter": "bare canes"
+		},
+		"saltbush": {
+			"foliage": "deciduous",
+			"fruit_season": [],
+			"winter": "bare canes"
+		},
+		"cactus": {
+			"foliage": "evergreen",
+			"fruit_season": []
+		},
+		"fern": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"heather": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"reeds": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"flax": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"tall_grass": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "brown standing straw"
+		},
+		"nettle": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"cotton_grass": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "brown standing straw"
+		},
+		"alpine_flowers": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"mushrooms": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"blueberry": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"lingonberry": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"cranberry": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"cloudberry": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"wild_strawberry": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"raspberry": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"summer"
+			],
+			"winter": "bare canes"
+		},
+		"crowberry": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"elder": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"rowan": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"wild_rose": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"blackthorn": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"hawthorn": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"spring",
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"sea_buckthorn": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"wild_apple": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": true
+		},
+		"wild_pear": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"wild_cherry": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"sweet_chestnut": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"walnut": {
+			"foliage": "deciduous",
+			"spring": "blossom",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"wild_garlic": {
+			"bloom_or_yield_season": [
+				"spring"
+			],
+			"winter": "dies back"
+		},
+		"wild_thyme": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"wild_mint": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"sorrel": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"dandelion": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"wild_carrot": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"watercress": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"samphire": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "brown standing straw"
+		},
+		"wild_marjoram": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"wild_sage": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"rosemary": {
+			"foliage": "deciduous",
+			"fruit_season": [],
+			"winter": "bare canes"
+		},
+		"lavender": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"yarrow": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"plantain": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "brown standing straw"
+		},
+		"chamomile": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"comfrey": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"st_johns_wort": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"valerian": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"meadowsweet": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"feverfew": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"burdock": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"mugwort": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"arnica": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"angelica": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"aloe": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"foxglove": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"belladonna": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"wolfsbane": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"henbane": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"chanterelle": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"porcini": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"morel": {
+			"bloom_or_yield_season": [
+				"spring"
+			],
+			"winter": "dies back"
+		},
+		"fly_agaric": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"puffball": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"tinder_fungus": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"wild_banana": {
+			"foliage": "evergreen",
+			"fruit_season": []
+		},
+		"date_palm": {
+			"foliage": "evergreen",
+			"bare_model_exists": false
+		},
+		"prickly_pear": {
+			"foliage": "evergreen",
+			"fruit_season": [
+				"summer",
+				"autumn"
+			]
+		},
+		"owlpetal": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"staunchmoss": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"emberroot": {
+			"bloom_or_yield_season": [
+				"autumn",
+				"winter"
+			]
+		},
+		"rimecap": {
+			"bloom_or_yield_season": [
+				"autumn",
+				"winter"
+			]
+		},
+		"wispbloom": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			]
+		},
+		"drakethorn": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"autumn"
+			],
+			"winter": "bare canes"
+		},
+		"mirrorbark": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"sunberry": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"summer"
+			],
+			"winter": "bare canes"
+		},
+		"hushfern": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"wardpine": {
+			"foliage": "evergreen",
+			"winter": "snow on boughs where snow applies",
+			"bare_model_exists": false
+		},
+		"lumencap": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"hagwillow": {
+			"foliage": "deciduous",
+			"fruit_season": [],
+			"winter": "bare canes"
+		},
+		"heartroot": {
+			"bloom_or_yield_season": [
+				"spring",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"tideglass_weed": {
+			"bloom_or_yield_season": [
+				"summer"
+			]
+		},
+		"gloomthistle": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"dewlantern": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"honeyspindle": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"summer"
+			],
+			"winter": "bare canes"
+		},
+		"marrowroot": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"riverbraid": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			]
+		},
+		"brinebell": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"sleetberry": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"winter"
+			],
+			"winter": "bare canes"
+		},
+		"quenchbell": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"whisperfern": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"cinderfoot": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"duskmallow": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"tanglewort": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"stormreed": {
+			"bloom_or_yield_season": [
+				"summer",
+				"autumn"
+			]
+		},
+		"truthsage": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"mirrorcap": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"echo_moss": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"hearthwood": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"nightcrown": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"mournbloom": {
+			"bloom_or_yield_season": [
+				"autumn"
+			],
+			"winter": "dies back"
+		},
+		"pilgrims_cup": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"sunsilver_vine": {
+			"foliage": "deciduous",
+			"fruit_season": [
+				"summer"
+			],
+			"winter": "bare canes"
+		},
+		"frostglass_orchid": {
+			"bloom_or_yield_season": [
+				"winter"
+			]
+		},
+		"sevenyear_lily": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"stillwater_lotus": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"gloaming_star": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"everember": {
+			"foliage": "evergreen",
+			"winter": "snow on boughs where snow applies",
+			"bare_model_exists": false
+		},
+		"witness_tree": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"tidecrown": {
+			"bloom_or_yield_season": [
+				"summer"
+			]
+		},
+		"balsam_fir": {
+			"foliage": "evergreen",
+			"winter": "snow on boughs where snow applies",
+			"bare_model_exists": false
+		},
+		"maple": {
+			"foliage": "deciduous",
+			"spring": "new leaves",
+			"autumn": "colour",
+			"winter": "bare",
+			"bare_model_exists": false
+		},
+		"thatch_grass": {
+			"bloom_or_yield_season": [
+				"all"
+			],
+			"winter": "brown standing straw"
+		},
+		"dune_grass": {
+			"bloom_or_yield_season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"winter": "brown standing straw"
+		},
+		"sea_holly": {
+			"bloom_or_yield_season": [
+				"summer"
+			],
+			"winter": "dies back"
+		},
+		"fallen_log": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"hollow_log": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		},
+		"old_stump": {
+			"bloom_or_yield_season": [
+				"all"
+			]
+		}
+	}
+}
