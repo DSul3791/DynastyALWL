@@ -1902,3 +1902,7 @@ Answered: 2026-10-31 20:02 UTC
 Answer: Yes | Comment: Yes, but they still look low quality. We want these to look photorealistic. So start with these and work on making them look better when you have the time.
 Answered: 2026-10-31 20:03 UTC
 
+## pic-crown-variety | Do these eight oaks look different enough from each other (shape, colour, dying and bare ones)?
+Answer: Yes | Comment: Yes, but they still look low quality. We want these to look photorealistic. So start with these and work on making them look better when you have the time.
+Answered: 2026-10-31 20:03 UTC
+
