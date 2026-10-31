@@ -24,6 +24,26 @@
 	"bank_reach_m": 3.0,
 	"bank_chance": 0.4,
 	"luck_extra": 0.05,
+	"ore": {
+		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id.",
+		"reach_m": 40.0,
+		"boulder_share": 0.6,
+		"piece_share": 0.5,
+		"tool_class": "pick",
+		"items": {
+			"coal": "coal",
+			"copper": "copper_ore",
+			"tin": "tin_ore",
+			"iron": "iron_ore"
+		}
+	},
+	"flint": {
+		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",
+		"item": "flint",
+		"chance": 0.04,
+		"near_water_chance": 0.08,
+		"water_reach_m": 6.0
+	},
 	"draw_cap_by_quality": [
 		24,
 		48,
