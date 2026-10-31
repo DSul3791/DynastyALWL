@@ -43,7 +43,7 @@ const CARRY_FOREARM_R := Vector3(2.0, 0.0, 0.0)
 const CARRY_HAND_R := Vector3(0.0, 0.0, 0.0)
 const CARRY_LOG_X := 0.18
 const CARRY_LOG_Y := 0.2
-const SWING_FP_S := 0.55                # the first-person chop: its keys below are in seconds of this
+const SWING_FP_S := 0.95                # the first-person chop: its keys below are in seconds of this (motion_extra.gd CHOP_LENGTH; 0.55 s until 31 Oct 2026)
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
 const ARM_BONES := ["chest", "arm_r", "forearm_r", "hand_r", "arm_l", "forearm_l", "hand_l"]
@@ -526,18 +526,18 @@ func _swing(p: float) -> Dictionary:
 	}
 
 
-# The first-person axe chop (Tyler Report 26, Dave 2026-10-21 "totally wrong"): a near-vertical diagonal, up over the shoulder and
-# down in front, the hand staying in view at the top. Backswing 0.22 s eased out, pause to 0.25, downswing eased in to the impact at
-# 0.35 s, a short recoil, recovery by 0.55. A wrist track (hand_r) cocks the head back (+) then flicks it forward and down (-) late; the body barely moves (under 8 degrees)
-# and the left arm stays at rest. The arms hang from a rig pitched 50 degrees (held_item.gd ARMS_PITCH_DEG), so the angles are relative to that.
+# The first-person axe chop (Tyler Report 26, Dave 2026-10-21 "totally wrong"; Dave 2026-10-30 "it swings like a hammer": a short vertical rhythm). Now a whole swing of 0.95 s:
+# the axe goes back over the right shoulder (the arm up and out to the right, the torso turning right), a beat at the top, then a wide diagonal stroke across the body from the upper right to
+# the lower left with the body turning into it, the impact at 0.5 s (CHOP_IMPACT_S: held_item.gd HIT_AT), a recoil, a follow-through past the target, a slow recovery and a short rest at the end.
+# The arms hang from a rig pitched 50 degrees (held_item.gd ARMS_PITCH_DEG), so the angles are relative to that. Z on the right arm: + out to the right, - across the body.
 func _swing_fp(p: float) -> Dictionary:
 	var t: float = p * SWING_FP_S
-	var arm: float = _keys_t(t, [[0.0, 0.2], [0.22, 0.7], [0.25, 0.7], [0.31, 0.65], [0.35, 0.35], [0.39, 0.33], [0.47, 0.25], [0.55, 0.2]])
-	var out: float = _keys_t(t, [[0.0, 0.07], [0.22, 0.2], [0.25, 0.2], [0.35, -0.15], [0.39, -0.15], [0.55, 0.07]])
-	var elbow: float = _keys_t(t, [[0.0, 0.12], [0.22, 1.1], [0.25, 1.1], [0.31, 0.95], [0.35, 0.45], [0.39, 0.5], [0.47, 0.4], [0.55, 0.12]])
-	var wrist: float = _keys_t(t, [[0.0, 0.0], [0.22, 1.2], [0.25, 1.2], [0.31, 0.2], [0.35, -0.9], [0.39, -0.8], [0.47, -0.3], [0.55, 0.0]])
-	var lean: float = _keys_t(t, [[0.0, 0.0], [0.22, -0.07], [0.25, -0.07], [0.35, 0.12], [0.39, 0.12], [0.55, 0.0]])
-	var twist: float = _keys_t(t, [[0.0, 0.0], [0.22, -0.1], [0.25, -0.1], [0.35, 0.1], [0.39, 0.1], [0.55, 0.0]])
+	var arm: float = _keys_t(t, [[0.0, 0.2], [0.28, 0.85], [0.36, 0.9], [0.5, 0.3], [0.56, 0.28], [0.7, 0.25], [0.9, 0.2], [0.95, 0.2]])
+	var out: float = _keys_t(t, [[0.0, 0.07], [0.28, 0.5], [0.36, 0.55], [0.5, -0.4], [0.56, -0.42], [0.7, -0.3], [0.9, 0.07], [0.95, 0.07]])
+	var elbow: float = _keys_t(t, [[0.0, 0.12], [0.28, 1.2], [0.36, 1.25], [0.5, 0.4], [0.56, 0.45], [0.7, 0.4], [0.9, 0.15], [0.95, 0.12]])
+	var wrist: float = _keys_t(t, [[0.0, 0.0], [0.28, 1.2], [0.36, 1.3], [0.44, 0.2], [0.5, -0.9], [0.56, -0.8], [0.7, -0.3], [0.9, 0.0], [0.95, 0.0]])
+	var lean: float = _keys_t(t, [[0.0, 0.0], [0.28, -0.1], [0.36, -0.1], [0.5, 0.18], [0.56, 0.18], [0.7, 0.1], [0.9, 0.0], [0.95, 0.0]])
+	var twist: float = _keys_t(t, [[0.0, 0.0], [0.28, -0.3], [0.36, -0.3], [0.5, 0.3], [0.56, 0.32], [0.7, 0.2], [0.9, 0.0], [0.95, 0.0]])
 	return {
 		"arm_r": Vector3(arm, 0.0, out), "forearm_r": Vector3(elbow, 0.0, 0.0), "hand_r": Vector3(wrist, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,

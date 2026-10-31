@@ -34,6 +34,7 @@ uniform float softness = 0.2;
 uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on STILL water (src/shared/ice.gd; flora_view.gd set_ice_cover)
 uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
+uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
 uniform float debug_flow = 0.0;      // Ctrl+Shift+V: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 #ifdef SCENE_READS
@@ -130,6 +131,20 @@ vec2 ripple_slope(vec2 p) {
 	return vec2(ripples(p + vec2(e, 0.0)) - h, ripples(p + vec2(0.0, e)) - h) / e;
 }
 
+// The sea's swell: four waves of different length and direction (slopes, not heights: the plane is flat). Long swell runs onto the beach, the short ones glitter in the sun.
+vec2 sea_slope(vec2 p, float time, float dist) {
+	vec2 slope = vec2(0.0);
+	const vec4 dirs[4] = vec4[4](vec4(0.94, 0.34, 64.0, 0.55), vec4(-0.55, 0.83, 29.0, 0.50), vec4(0.38, -0.92, 13.0, 0.45), vec4(-0.97, -0.24, 6.0, 0.40));
+	for (int i = 0; i < 4; i++) {
+		vec2 d = dirs[i].xy;
+		float k = 6.2831853 / dirs[i].z;
+		float speed = sqrt(9.81 * k) * 0.6;
+		float phase = dot(d, p) * k - time * speed;
+		slope += d * k * dirs[i].w * cos(phase) / (1.0 + dist / (dirs[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
+	}
+	return slope;
+}
+
 void fragment() {
 	// River mouth (owner, 2026-10-21: rivers run into the sea as one body, brown is only a test colour): within
 	// a few metres of sea level (0 m) the flood brown fades out, so the river water takes the sea's colour
@@ -145,6 +160,7 @@ void fragment() {
 	float through = max(VERTEX.z - behind.z, 0.0);   // meters of water along the view ray
 #else
 	float through = mix(0.1, 1.6, sheet_alpha);      // no depth read at Low: the sheet's edge fade stands in
+	if (sea > 0.5) { through = 30.0; }
 #endif
 	float murk = 1.0 - exp(-through / (clarity_m * (1.0 - 0.7 * mud_here) * (1.0 - 0.65 * storm)));
 
@@ -177,6 +193,11 @@ void fragment() {
 	// Ripples fade with distance (far away they only sparkle in single pixels).
 	float distance_m = length(VERTEX);
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
+	if (sea > 0.5) {
+		// The swell carries to the horizon, fading slowly; the shortest waves fade first so far water does not shimmer.
+		vec2 sw = sea_slope(world_pos.xz, TIME, distance_m);
+		bump += sw * 0.55;
+	}
 	// The mesh's own normal tilts differently on each 8 m square; water is nearly flat, so
 	// lean it toward straight up to hide the square seams.
 	// A fall (build 325): the sheet's own normal is near horizontal on a drop. The face is a thick
@@ -227,15 +248,31 @@ void fragment() {
 	float fall_streaks = face > 0.01 ? smoothstep(0.45, 0.8, ripples(vec2((world_pos.x + world_pos.z) * 1.7, world_pos.y * 0.22 + drift * 2.5))) : 0.0;
 	foam = max(foam, face * (0.08 + 0.55 * fall_streaks));
 
+	if (sea > 0.5) {
+		// Surf: a bright line where the water meets the sand, bands of foam that run in and out with the swell over the first metre of depth, fading with distance (the shore reads by colour far off).
+		float surf = 1.0 - smoothstep(0.0, 0.9, thickness);
+		float pulse = 0.5 + 0.5 * sin(thickness * 7.0 - TIME * 1.15 + noise(local / 7.0) * 3.5);
+		float line = 1.0 - smoothstep(0.0, 0.1, thickness);
+		float surf_foam = clamp(surf * smoothstep(0.5, 0.85, pulse) * 0.85 + line * 0.7, 0.0, 1.0) / (1.0 + distance_m / 400.0);
+		foam = max(foam, surf_foam);
+	}
 	murk = max(murk, face * 0.8);
 	vec3 water = mix(mix(shallow_color, deep_color, murk), mud_color * mix(1.0, 0.7, murk), mud_here);
+	if (sea > 0.5) {
+		// From the beach out: turquoise shallows, a mid blue, the deep sea colour (0 to 3 m, 3 to 25 m, beyond); the bottom shows through the shallows.
+		vec3 c_shore = vec3(0.30, 0.58, 0.52);
+		vec3 c_mid = vec3(0.07, 0.33, 0.43);
+		vec3 c_deep = vec3(0.025, 0.115, 0.215);
+		water = mix(mix(c_shore, c_mid, smoothstep(0.0, 3.0, thickness)), c_deep, smoothstep(3.0, 25.0, thickness));
+		murk = max(murk * 0.5, 1.0 - exp(-thickness / 3.5));
+	}
 	water = mix(water, storm_color * mix(1.0, 0.6, murk), storm * 0.65);   // storm: dark grey-brown churned water
 	foam *= 1.0 + 0.5 * storm;
 	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud_here * 0.6 + storm * 0.35, 0.0, 1.0));
 	float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);
 	// Thin water (a pond edge, a shallow shelf) is seen over its bed at a low angle; mirroring the whole sky there turned ponds into pale grey patches (build 826 play-test, 30 Oct 2026):
 	// the sky's share grows from 40 percent at the thinnest to full over about a metre of water.
-	float mirror_k = mix(0.4, 1.0, murk);
+	float mirror_k = mix(0.4, 1.0, murk) * (1.0 - 0.5 * sea);
 
 #ifdef SCENE_READS
 	if (refraction > 0.5) {
@@ -279,7 +316,8 @@ void fragment() {
 	// colour and goes opaque, so the rim and the sky meet without an edge.
 	float far_fade = smoothstep(far_fade_from_m, far_fade_to_m, distance_m);
 	ALBEDO *= 1.0 - far_fade;
-	EMISSION = mix(EMISSION, sky_horizon, far_fade);
+	vec3 far_color = mix(sky_horizon, mix(sky_horizon, deep_color * 2.2 + vec3(0.04, 0.07, 0.10), 0.5), sea);      // the sea ends in a slightly darker band than the sky at the horizon, so the line shows
+	EMISSION = mix(EMISSION, far_color, far_fade);
 	ALPHA = mix(ALPHA, 1.0, far_fade);
 	SPECULAR *= 1.0 - far_fade;
 
@@ -335,6 +373,13 @@ static func make() -> ShaderMaterial:
 
 	var material: ShaderMaterial = ShaderMaterial.new()
 	material.shader = _shader
+	return material
+
+
+# The sea plane's material: the same shader with the sea look switched on.
+static func make_sea() -> ShaderMaterial:
+	var material: ShaderMaterial = make()
+	material.set_shader_parameter("sea", 1.0)
 	return material
 
 

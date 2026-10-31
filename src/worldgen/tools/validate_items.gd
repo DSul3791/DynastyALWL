@@ -535,7 +535,7 @@ func _init() -> void:
 
 	# Core materials marked "future": true (iron and steel ingots until smelting exists) count as sources for the recipe check.
 	for id in items_file.get("items", {}):
-		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
+		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) in ["material", "food"]:   # future foods (shore foods, crops) count too, so dishes built from them are checked
 			obtainable[String(id)] = true
 
 	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.

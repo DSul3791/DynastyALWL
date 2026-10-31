@@ -124,6 +124,8 @@ var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var clip_name: String = ""       # --shot-clip=NAME: the body plays this clip (look rig, third person)
+var chop_strip: bool = false     # --shot-chop: after the main picture, swing the held axe once and save a picture at each phase of the swing (<name>_chop_NN.png; first person)
+var _chop_state: int = 0         # 0 not started, 1 running, 2 done
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
@@ -150,6 +152,8 @@ func setup(owner_client, args: Array) -> void:
 			costs = true
 		elif argument.begins_with("--shot-clip="):
 			clip_name = argument.trim_prefix("--shot-clip=")
+		elif argument == "--shot-chop":
+			chop_strip = true
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
@@ -541,6 +545,13 @@ func _process(delta: float) -> void:
 
 	if _view_i < views.size():
 		_run_view(now)
+		return
+
+	if chop_strip and _chop_state != 2 and client.held != null:
+		if _chop_state == 0:
+			_chop_state = 1
+			_run_chop_strip()
+
 		return
 
 	_print_state()
@@ -1580,3 +1591,32 @@ func _next(now: int) -> void:
 
 	if client.hotbar_strip != null and client.hotbar_strip.has_method("hide"):
 		client.hotbar_strip.hide()
+
+
+# --shot-chop: one swing of the held axe, a picture at each phase (the times are seconds into the swing; the impact is HIT_AT x SWING_S).
+func _run_chop_strip() -> void:
+	var held = client.held
+
+	if not held.holding:
+		held.select(0)
+
+	var waited: int = 0
+
+	while not (held.holding and held._arms != null and held._arms.visible) and waited < 300:
+		waited += 1
+		await get_tree().process_frame
+
+	print("shot runner: chop strip: holding %s arms visible %s after %d frames" % [str(held.holding), str(held._arms != null and held._arms.visible), waited])
+	held._start_swing()
+	var times: Array = [0.05, 0.2, 0.3, 0.4, 0.46, 0.5, 0.56, 0.68, 0.85]
+
+	for index in range(times.size()):
+		while held._swing_t >= 0.0 and held._swing_t < float(times[index]):
+			await get_tree().process_frame
+
+		await RenderingServer.frame_post_draw
+		var path: String = "%s/%s_chop_%02d.png" % [dir, shots[_index]["name"], index]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("shot runner: chop phase %d at %.2f s (swing t %.2f) saved" % [index, float(times[index]), held._swing_t])
+
+	_chop_state = 2

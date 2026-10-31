@@ -1,0 +1,5725 @@
+{
+	"_about": "Item encyclopedia data (Sal, 2026-10-31), generated from items.json, gathered.json, recipes.json, drops.json, carcass.json, blueprints.json, flora.json and item_uses.json by an ad hoc script; read by nothing yet. Descriptions are the existing one-line item descriptions (validate_items checks their length and full stop); `how_to_get` lists recipes and the places the data says it drops, `used_for` lists recipes and blueprints that spend it. `status: planned` means the item is flagged future (not obtainable in the game yet). Placed structures are not listed. Hand edits so far: item_uses.json lines were audited for truth.",
+	"items": {
+		"acorns": {
+			"name": "Acorns",
+			"kind": "material",
+			"description": "Oak nuts, bitter raw. Soaked and mashed they make a poor but filling food.",
+			"how_to_get": [
+				"From a felled oak"
+			],
+			"used_for": [
+				"Used in Acorn mash"
+			],
+			"obtainable_now": true
+		},
+		"aloe_gel": {
+			"name": "Aloe gel",
+			"kind": "material",
+			"description": "Cool clear gel from a split aloe leaf. Soothes burns and sun-reddened skin.",
+			"how_to_get": [
+				"Picked from aloe (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"amadou": {
+			"name": "Amadou",
+			"kind": "material",
+			"description": "Soft felt peeled from a tinder fungus. Dried, it takes a spark and holds an ember.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"angelica_roots": {
+			"name": "Angelica roots",
+			"kind": "material",
+			"description": "A thick aromatic root of angelica. Chewed or steeped as a warming remedy.",
+			"how_to_get": [
+				"Harvested from angelica"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"angelica_stems": {
+			"name": "Angelica stems",
+			"kind": "material",
+			"description": "Hollow green stems of angelica, sweet and sharp. Eaten fresh or candied.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"arnica_flowers": {
+			"name": "Arnica flowers",
+			"kind": "material",
+			"description": "Bright yellow mountain daisies. Their salve eases bruises; never eat them.",
+			"how_to_get": [
+				"Harvested from arnica"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"banana_leaves": {
+			"name": "Banana leaves",
+			"kind": "material",
+			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bananas": {
+			"name": "Bananas",
+			"kind": "material",
+			"description": "Short sweet wild bananas, full of seeds. Ripe ones are soft and yellow.",
+			"how_to_get": [
+				"Harvested from wild banana"
+			],
+			"used_for": [
+				"Used in Banana fritter"
+			],
+			"obtainable_now": true
+		},
+		"bedding": {
+			"name": "Bedding",
+			"kind": "material",
+			"description": "Soft dry stuff to lie on. A bed is stuffed with it.",
+			"how_to_get": [
+				"Picked from fern (spring/summer/autumn)",
+				"Picked from heather (summer/autumn)"
+			],
+			"used_for": [
+				"Used in Rough bed"
+			],
+			"obtainable_now": true
+		},
+		"beechnuts": {
+			"name": "Beechnuts",
+			"kind": "material",
+			"description": "Small three-sided beech nuts in prickly husks. Eaten roasted or pressed for oil.",
+			"how_to_get": [
+				"From a felled beech"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"belladonna_berries": {
+			"name": "Belladonna berries",
+			"kind": "material",
+			"description": "Shiny black berries of deadly nightshade. Poisonous: do not eat.",
+			"how_to_get": [
+				"Picked from belladonna (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"belladonna_leaves": {
+			"name": "Belladonna leaves",
+			"kind": "material",
+			"description": "Dull green leaves of deadly nightshade. Poisonous: a healer's herb at best.",
+			"how_to_get": [
+				"Picked from belladonna (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"birch_bark": {
+			"name": "Birch bark",
+			"kind": "material",
+			"description": "Papery white bark that peels in sheets. Burns even when damp; useful as tinder or for containers.",
+			"how_to_get": [
+				"From a felled birch"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"blackberries": {
+			"name": "Blackberries",
+			"kind": "material",
+			"description": "Dark juicy brambles berries, sweet when fully black. Eaten fresh or cooked.",
+			"how_to_get": [
+				"Picked from bramble in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"blueberries": {
+			"name": "Blueberries",
+			"kind": "material",
+			"description": "Small blue berries from low bushes. Sweet, and they stain the fingers.",
+			"how_to_get": [
+				"Picked from blueberry in season"
+			],
+			"used_for": [
+				"Used in Berry compote",
+				"Used in Dried berries"
+			],
+			"obtainable_now": true
+		},
+		"brinebells": {
+			"name": "Brinebells",
+			"kind": "material",
+			"description": "Salt-loving shore flowers that ring like little bells. Chewed, they taste of the sea.",
+			"how_to_get": [
+				"Picked from brinebell (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"burdock_roots": {
+			"name": "Burdock roots",
+			"kind": "material",
+			"description": "A long dark taproot, earthy and sweet when cooked. Dug from disturbed ground.",
+			"how_to_get": [
+				"Harvested from burdock"
+			],
+			"used_for": [
+				"Used in Forager's stew",
+				"Used in Roast Roots"
+			],
+			"obtainable_now": true
+		},
+		"burrs": {
+			"name": "Burrs",
+			"kind": "material",
+			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cactus_pads": {
+			"name": "Cactus pads",
+			"kind": "material",
+			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"chamomile_flowers": {
+			"name": "Chamomile flowers",
+			"kind": "material",
+			"description": "Small white daisies with yellow centres. A calming tea.",
+			"how_to_get": [
+				"Harvested from chamomile"
+			],
+			"used_for": [
+				"Used in Chamomile tea",
+				"Used in Stomach tea"
+			],
+			"obtainable_now": true
+		},
+		"chanterelles": {
+			"name": "Chanterelles",
+			"kind": "material",
+			"description": "Golden funnel-shaped mushrooms with a fruity smell. A good find in the woods.",
+			"how_to_get": [
+				"Harvested from chanterelle"
+			],
+			"used_for": [
+				"Used in Forager's stew",
+				"Used in Mushroom skewer"
+			],
+			"obtainable_now": true
+		},
+		"charcoal_wood": {
+			"name": "Charcoal wood",
+			"kind": "material",
+			"description": "Alder wood fit for burning down to charcoal. Hotter and cleaner than a wood fire.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cherries": {
+			"name": "Cherries",
+			"kind": "material",
+			"description": "Small dark wild cherries, tart. Eaten fresh, or pitted and cooked.",
+			"how_to_get": [
+				"From a felled wild cherry",
+				"Harvested from wild cherry"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"cherry_wood": {
+			"name": "Cherry wood",
+			"kind": "material",
+			"description": "Reddish close-grained wood of the wild cherry. Takes a polish; makes fine small work.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"chestnuts": {
+			"name": "Chestnuts",
+			"kind": "material",
+			"description": "Glossy brown nuts in spiny husks. Roasted, they are sweet and starchy.",
+			"how_to_get": [
+				"From a felled sweet chestnut",
+				"Harvested from sweet chestnut"
+			],
+			"used_for": [
+				"Used in Chestnut cakes"
+			],
+			"obtainable_now": true
+		},
+		"cinderfoot_caps": {
+			"name": "Cinderfoot caps",
+			"kind": "material",
+			"description": "Rust-orange mushroom caps with dark gills, found where old fires burned. Not for eating until identified.",
+			"how_to_get": [
+				"Picked from cinderfoot (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"cloudberries": {
+			"name": "Cloudberries",
+			"kind": "material",
+			"description": "Amber northern berries on low bogs. Rare, tart and prized.",
+			"how_to_get": [
+				"Picked from cloudberry in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"coconuts": {
+			"name": "Coconuts",
+			"kind": "material",
+			"description": "A heavy husked nut with sweet water inside. Crack it open to drink.",
+			"how_to_get": [
+				"From a felled coconut palm",
+				"Harvested from coconut palm"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"comfrey_leaves": {
+			"name": "Comfrey leaves",
+			"kind": "material",
+			"description": "Rough hairy leaves of comfrey. Bruised and bound on sprains as a poultice.",
+			"how_to_get": [
+				"Harvested from comfrey",
+				"Picked from comfrey"
+			],
+			"used_for": [
+				"Used in Comfrey poultice",
+				"Used in Herb salve"
+			],
+			"obtainable_now": true
+		},
+		"comfrey_roots": {
+			"name": "Comfrey roots",
+			"kind": "material",
+			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"crab_apples": {
+			"name": "Crab apples",
+			"kind": "material",
+			"description": "Hard sour little apples. Cooked down with honey they are good.",
+			"how_to_get": [
+				"From a felled wild apple",
+				"Harvested from wild apple"
+			],
+			"used_for": [
+				"Used in Baked apples",
+				"Used in Fruit leather"
+			],
+			"obtainable_now": true
+		},
+		"cranberries": {
+			"name": "Cranberries",
+			"kind": "material",
+			"description": "Tart red berries of the bog. They keep a long time.",
+			"how_to_get": [
+				"Picked from cranberry in season"
+			],
+			"used_for": [
+				"Used in Fruit leather"
+			],
+			"obtainable_now": true
+		},
+		"crowberries": {
+			"name": "Crowberries",
+			"kind": "material",
+			"description": "Black berries of low moorland shrubs. Watery and mild; better than nothing.",
+			"how_to_get": [
+				"Picked from crowberry in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"dandelion_flowers": {
+			"name": "Dandelion flowers",
+			"kind": "material",
+			"description": "Bright yellow flower heads. Fried or steeped for tea.",
+			"how_to_get": [
+				"Picked from dandelion (spring/summer/autumn)"
+			],
+			"used_for": [
+				"Used in Hearty pottage"
+			],
+			"obtainable_now": true
+		},
+		"dandelion_leaves": {
+			"name": "Dandelion leaves",
+			"kind": "material",
+			"description": "Bitter toothed leaves. Eaten as a spring salad or boiled.",
+			"how_to_get": [
+				"Picked from dandelion (spring/summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"dandelion_roots": {
+			"name": "Dandelion roots",
+			"kind": "material",
+			"description": "A long pale taproot, bitter. Roasted and ground as a coffee, or boiled.",
+			"how_to_get": [
+				"Picked from dandelion (spring/summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"dates": {
+			"name": "Dates",
+			"kind": "material",
+			"description": "Sticky sweet dates from a date palm. They keep well and travel well.",
+			"how_to_get": [
+				"From a felled date palm",
+				"Harvested from date palm"
+			],
+			"used_for": [
+				"Used in Energy bar"
+			],
+			"obtainable_now": true
+		},
+		"drakethorn_berries": {
+			"name": "Drakethorn berries",
+			"kind": "material",
+			"description": "Dark red berries on a thorny shrub said to grow where drakes have lain. Handle with care until identified.",
+			"how_to_get": [
+				"Harvested from drakethorn"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"duskmallow_flowers": {
+			"name": "Duskmallow flowers",
+			"kind": "material",
+			"description": "Soft violet blooms that open at dusk. Their scent is calming.",
+			"how_to_get": [
+				"Picked from duskmallow (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"duskmallow_roots": {
+			"name": "Duskmallow roots",
+			"kind": "material",
+			"description": "Pale roots of duskmallow, slimy when boiled. Soothes a sore throat.",
+			"how_to_get": [
+				"Picked from duskmallow (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"dye": {
+			"name": "Dye",
+			"kind": "material",
+			"description": "A pot of plant colour pressed from flowers and roots. Stains cloth and wood.",
+			"how_to_get": [
+				"Picked from alpine flowers (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"echo_moss": {
+			"name": "Echo moss",
+			"kind": "material",
+			"description": "Springy grey-green moss that seems to muffle sound around it. Grows in damp hollows.",
+			"how_to_get": [
+				"Picked from echo moss (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"elderberries": {
+			"name": "Elderberries",
+			"kind": "material",
+			"description": "Dark purple berries in drooping clusters. Cooked, they are good; raw they upset the stomach.",
+			"how_to_get": [
+				"Picked from elder in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"elderflowers": {
+			"name": "Elderflowers",
+			"kind": "material",
+			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"emberroots": {
+			"name": "Emberroots",
+			"kind": "material",
+			"description": "Red-brown roots that stay warm to the touch. Said to be good fuel and a hot spice.",
+			"how_to_get": [
+				"Picked from emberroot (autumn/winter)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"everember_needles": {
+			"name": "Everember needles",
+			"kind": "material",
+			"description": "Needles of the everember tree, dark green and resinous. They smoulder rather than burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"everember_sap": {
+			"name": "Everember sap",
+			"kind": "material",
+			"description": "A sticky amber sap that smells of warm spice. Burns slowly.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"everember_wood": {
+			"name": "Everember wood",
+			"kind": "material",
+			"description": "Dense dark wood of the everember, slow to burn and warm to hold.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"feverfew": {
+			"name": "Feverfew",
+			"kind": "material",
+			"description": "Small daisy-like flowers with bitter leaves. A headache remedy.",
+			"how_to_get": [
+				"Harvested from feverfew"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fibre": {
+			"name": "Fibre",
+			"kind": "material",
+			"description": "Tough plant strands. Twisted into twine.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fiddleheads": {
+			"name": "Fiddleheads",
+			"kind": "material",
+			"description": "Tightly curled young fern fronds. Cooked, they taste green and nutty.",
+			"how_to_get": [
+				"Picked from fern (spring/summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fine_wood": {
+			"name": "Fine wood",
+			"kind": "material",
+			"description": "Well-grown timber chosen for its grain. Makes quality lumber and furniture.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fly_agaric_caps": {
+			"name": "Fly agaric caps",
+			"kind": "material",
+			"description": "Bright red caps with white flecks. Poisonous: do not eat.",
+			"how_to_get": [
+				"Harvested from fly agaric"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fodder": {
+			"name": "Fodder",
+			"kind": "material",
+			"description": "Coarse leaves and twigs that animals will eat. No good for people.",
+			"how_to_get": [
+				"Picked from gorse (all)",
+				"Picked from saltbush (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"food": {
+			"name": "Food",
+			"kind": "material",
+			"description": "Plain edible things gathered in the wild. Eat to stay on your feet.",
+			"how_to_get": [
+				"Picked from mushrooms (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"foxglove_leaves": {
+			"name": "Foxglove leaves",
+			"kind": "material",
+			"description": "Soft downy leaves of foxglove. Poisonous: a heart medicine in the right hands.",
+			"how_to_get": [
+				"Harvested from foxglove"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"frostglass_petals": {
+			"name": "Frostglass petals",
+			"kind": "material",
+			"description": "Clear glassy petals of an orchid that grows on the frozen slopes. Brittle and cold to touch.",
+			"how_to_get": [
+				"Picked from frostglass orchid (winter)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"gloaming_star": {
+			"name": "Gloaming star",
+			"kind": "material",
+			"description": "A pale star-shaped flower that glows faintly at dusk. Picked, it fades by morning.",
+			"how_to_get": [
+				"Picked from gloaming star (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"gloomthistle_down": {
+			"name": "Gloomthistle down",
+			"kind": "material",
+			"description": "Dark grey thistle fluff, soft and light. Fills pillows and burns quick.",
+			"how_to_get": [
+				"Picked from gloomthistle (autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"gloomthistle_heads": {
+			"name": "Gloomthistle heads",
+			"kind": "material",
+			"description": "Spiny dark thistle heads. Handle with gloves.",
+			"how_to_get": [
+				"Picked from gloomthistle (autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"greens": {
+			"name": "Greens",
+			"kind": "material",
+			"description": "Mixed wild leaves, nettle and the like. Boiled they are a plain green food.",
+			"how_to_get": [
+				"Picked from nettle (spring/summer)"
+			],
+			"used_for": [
+				"Used in Egg and nettle fry",
+				"Used in Forager's stew"
+			],
+			"obtainable_now": true
+		},
+		"gum": {
+			"name": "Gum",
+			"kind": "material",
+			"description": "Sticky tree gum, hardened in lumps. Chewed, or used as glue.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hagwillow_bark": {
+			"name": "Hagwillow bark",
+			"kind": "material",
+			"description": "Grey twisted bark of the hag willow, bitter. Steeped it eases aches.",
+			"how_to_get": [
+				"Picked from hagwillow (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hagwillow_withies": {
+			"name": "Hagwillow withies",
+			"kind": "material",
+			"description": "Springy shoots of the hag willow. Woven into baskets and fences.",
+			"how_to_get": [
+				"Picked from hagwillow (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hard_wood": {
+			"name": "Hard wood",
+			"kind": "material",
+			"description": "Heavy dense wood, slow to cut. Makes strong tool handles and posts.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hardwood": {
+			"name": "Hardwood",
+			"kind": "material",
+			"description": "Heavy timber from broadleaf trees such as oak and beech. Strong, and slow to burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"haws": {
+			"name": "Haws",
+			"kind": "material",
+			"description": "Small red berries of the hawthorn, mealy and mild. Cooked into jelly.",
+			"how_to_get": [
+				"Harvested from hawthorn"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hawthorn_blossom": {
+			"name": "Hawthorn blossom",
+			"kind": "material",
+			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hazelnuts": {
+			"name": "Hazelnuts",
+			"kind": "material",
+			"description": "Round hard-shelled nuts. Crack and eat; they keep well.",
+			"how_to_get": [
+				"Harvested from hazel"
+			],
+			"used_for": [
+				"Used in Energy bar",
+				"Used in Hazelnut butter",
+				"Used in Honey loaf",
+				"Used in Nut paste",
+				"Used in Oat porridge",
+				"Used in Trail bread"
+			],
+			"obtainable_now": true
+		},
+		"hearthwood_logs": {
+			"name": "Hearthwood logs",
+			"kind": "material",
+			"description": "Heavy logs of the hearthwood tree, said to burn all night and never spit.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"heartroots": {
+			"name": "Heartroots",
+			"kind": "material",
+			"description": "Red knotted roots shaped like fists. A hardy food and a warming remedy.",
+			"how_to_get": [
+				"Harvested from heartroot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"henbane_leaves": {
+			"name": "Henbane leaves",
+			"kind": "material",
+			"description": "Sticky hairy leaves of henbane. Poisonous: do not eat.",
+			"how_to_get": [
+				"Picked from henbane (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"henbane_seeds": {
+			"name": "Henbane seeds",
+			"kind": "material",
+			"description": "Tiny grey seeds from a henbane pod. Poisonous: do not eat.",
+			"how_to_get": [
+				"Picked from henbane (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"herbs": {
+			"name": "Herbs",
+			"kind": "material",
+			"description": "A bundle of mixed wild herbs. Flavours food.",
+			"how_to_get": [
+				"Picked from alpine flowers (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"honey_flowers": {
+			"name": "Honey flowers",
+			"kind": "material",
+			"description": "Heather flowers heavy with nectar. Bees love them; so does a good honey.",
+			"how_to_get": [
+				"Picked from heather (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"honeyspindle_nectar": {
+			"name": "Honeyspindle nectar",
+			"kind": "material",
+			"description": "A sweet golden nectar drained from honeyspindle flowers. Sweetens any dish.",
+			"how_to_get": [
+				"Picked from honeyspindle (summer)"
+			],
+			"used_for": [
+				"Used in Baked apples",
+				"Used in Berry compote",
+				"Used in Chestnut cakes",
+				"Used in Fruit leather",
+				"Used in Honey loaf",
+				"Used in Nut paste"
+			],
+			"obtainable_now": true
+		},
+		"honeyspindle_pods": {
+			"name": "Honeyspindle pods",
+			"kind": "material",
+			"description": "Slim pods of the honeyspindle, full of sweet seed. Good to chew.",
+			"how_to_get": [
+				"Picked from honeyspindle (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hushfern_fronds": {
+			"name": "Hushfern fronds",
+			"kind": "material",
+			"description": "Soft grey fronds that deaden footfalls. Poisonous: do not eat.",
+			"how_to_get": [
+				"Picked from hushfern (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"juniper_berries": {
+			"name": "Juniper berries",
+			"kind": "material",
+			"description": "Dark blue aromatic berries. Flavour meats and ferment drinks.",
+			"how_to_get": [
+				"Picked from juniper in season"
+			],
+			"used_for": [
+				"Used in Juniper trout",
+				"Used in Smoked fish"
+			],
+			"obtainable_now": true
+		},
+		"kindling": {
+			"name": "Kindling",
+			"kind": "material",
+			"description": "Thin dry twigs and shavings that catch quickly. The start of any fire.",
+			"how_to_get": [
+				"Craft: 1 Stick",
+				"From chopping a stump",
+				"From working a felled trunk",
+				"Picked from dwarf birch (all)",
+				"Picked from gorse (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"lantern_dew": {
+			"name": "Lantern dew",
+			"kind": "material",
+			"description": "Glowing drops collected from the dewlantern plant. Faintly lights a dark corner.",
+			"how_to_get": [
+				"Picked from dewlantern (spring/summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"lavender_flowers": {
+			"name": "Lavender flowers",
+			"kind": "material",
+			"description": "Purple flower spikes with a clean scent. Dried they sweeten linen.",
+			"how_to_get": [
+				"Harvested from lavender"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"lingonberries": {
+			"name": "Lingonberries",
+			"kind": "material",
+			"description": "Small tart red berries. Keep well and cook well.",
+			"how_to_get": [
+				"Picked from lingonberry in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"linseed": {
+			"name": "Linseed",
+			"kind": "material",
+			"description": "Small shiny brown flax seeds, rich in oil. Eaten or pressed.",
+			"how_to_get": [
+				"Picked from flax (summer)"
+			],
+			"used_for": [
+				"Used in Chestnut cakes",
+				"Used in Trail bread"
+			],
+			"obtainable_now": true
+		},
+		"lumencap_caps": {
+			"name": "Lumencap caps",
+			"kind": "material",
+			"description": "Pale mushroom caps that glow softly in the dark. Not for eating until identified.",
+			"how_to_get": [
+				"Harvested from lumencap"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"marjoram": {
+			"name": "Marjoram",
+			"kind": "material",
+			"description": "A sweet herb with oval leaves. Flavours meat and stews.",
+			"how_to_get": [
+				"Harvested from wild marjoram"
+			],
+			"used_for": [
+				"Used in Hearty pottage"
+			],
+			"obtainable_now": true
+		},
+		"marrowroots": {
+			"name": "Marrowroots",
+			"kind": "material",
+			"description": "Fat pale roots as thick as a wrist. Cooked, they are soft and filling.",
+			"how_to_get": [
+				"Harvested from marrowroot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"meadowsweet_flowers": {
+			"name": "Meadowsweet flowers",
+			"kind": "material",
+			"description": "Frothy cream flowers smelling of honey and almonds. A mild remedy for aches.",
+			"how_to_get": [
+				"Harvested from meadowsweet"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mint": {
+			"name": "Mint",
+			"kind": "material",
+			"description": "Fresh green leaves with a cool sharp scent. Flavours food and tea.",
+			"how_to_get": [
+				"Harvested from wild mint"
+			],
+			"used_for": [
+				"Used in Herbal tea",
+				"Used in Stomach tea"
+			],
+			"obtainable_now": true
+		},
+		"mirrorbark_bark": {
+			"name": "Mirrorbark bark",
+			"kind": "material",
+			"description": "Smooth silver bark that gleams like a mirror in sunlight. Peels in bright sheets.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"mirrorbark_wood": {
+			"name": "Mirrorbark wood",
+			"kind": "material",
+			"description": "Fine pale wood from the mirrorbark tree. Takes a bright polish.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"mirrorcap_caps": {
+			"name": "Mirrorcap caps",
+			"kind": "material",
+			"description": "Shiny silver-grey mushroom caps. Not for eating until identified.",
+			"how_to_get": [
+				"Picked from mirrorcap (autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"morels": {
+			"name": "Morels",
+			"kind": "material",
+			"description": "Honeycombed brown mushroom caps found in spring. Eaten cooked, never raw.",
+			"how_to_get": [
+				"Harvested from morel"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mournbloom_petals": {
+			"name": "Mournbloom petals",
+			"kind": "material",
+			"description": "Dark petals of the mournbloom, grown over old graves. Not for eating.",
+			"how_to_get": [
+				"Harvested from mournbloom"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mugwort": {
+			"name": "Mugwort",
+			"kind": "material",
+			"description": "Grey-green leaves with a bitter smell. A hardy herb, steeped or burned.",
+			"how_to_get": [
+				"Harvested from mugwort"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"nightcrown_blooms": {
+			"name": "Nightcrown blooms",
+			"kind": "material",
+			"description": "Large pale flowers that open only at night. Scent heavy and sweet.",
+			"how_to_get": [
+				"Harvested from nightcrown"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"oil": {
+			"name": "Oil",
+			"kind": "material",
+			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"owlpetals": {
+			"name": "Owlpetals",
+			"kind": "material",
+			"description": "Round pale petals marked like eyes. Said to help one see in the dark.",
+			"how_to_get": [
+				"Harvested from owlpetal"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"palm_fronds": {
+			"name": "Palm fronds",
+			"kind": "material",
+			"description": "Long woody fronds. Woven into mats and roofs.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"palm_wood": {
+			"name": "Palm wood",
+			"kind": "material",
+			"description": "Fibrous trunk wood of palms. Soft to cut, poor for fuel.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"pilgrims_cup_pitchers": {
+			"name": "Pilgrims cup pitchers",
+			"kind": "material",
+			"description": "The cup-shaped leaves of the pilgrim's cup, holding rain. Pick one to drink from.",
+			"how_to_get": [
+				"Picked from pilgrims cup (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"pilgrims_cup_water": {
+			"name": "Pilgrims cup water",
+			"kind": "material",
+			"description": "Clear rainwater held in a pilgrim's cup leaf. Safe enough to drink.",
+			"how_to_get": [
+				"Picked from pilgrims cup (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"pine_tar": {
+			"name": "Pine tar",
+			"kind": "material",
+			"description": "Thick black tar boiled from pine. Seals roofs and soaks wood against rot.",
+			"how_to_get": [
+				"From a felled scots pine"
+			],
+			"used_for": [
+				"Used in Tar"
+			],
+			"obtainable_now": true
+		},
+		"plantain_leaves": {
+			"name": "Plantain leaves",
+			"kind": "material",
+			"description": "Broad ribbed leaves of the common plantain. Chewed and applied to stings and cuts.",
+			"how_to_get": [
+				"Harvested from plantain",
+				"Picked from plantain"
+			],
+			"used_for": [
+				"Used in Leaf bandage",
+				"Used in Plantain poultice"
+			],
+			"obtainable_now": true
+		},
+		"poles": {
+			"name": "Poles",
+			"kind": "material",
+			"description": "Long straight shoots cut for fencing and frames. Strong and light.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"porcini": {
+			"name": "Porcini",
+			"kind": "material",
+			"description": "Fat brown-capped mushrooms with a thick pale stem. A fine meal.",
+			"how_to_get": [
+				"Harvested from porcini"
+			],
+			"used_for": [
+				"Used in Mushroom skewer"
+			],
+			"obtainable_now": true
+		},
+		"potash": {
+			"name": "Potash",
+			"kind": "material",
+			"description": "Grey ash of salt-bush, rich in lye. Used for soap and glass.",
+			"how_to_get": [
+				"Picked from saltbush (all)"
+			],
+			"used_for": [
+				"Used in Soap"
+			],
+			"obtainable_now": true
+		},
+		"prickly_pears": {
+			"name": "Prickly pears",
+			"kind": "material",
+			"description": "Red-purple fruit of the prickly pear, covered in fine spines. Peel before eating.",
+			"how_to_get": [
+				"Harvested from prickly pear"
+			],
+			"used_for": [
+				"Used in Cactus fry"
+			],
+			"obtainable_now": true
+		},
+		"puffball": {
+			"name": "Puffball",
+			"kind": "material",
+			"description": "A round white mushroom the size of a head. Sliced and fried; spoils in a day.",
+			"how_to_get": [
+				"Harvested from puffball"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"quenchbell_heads": {
+			"name": "Quenchbell heads",
+			"kind": "material",
+			"description": "Blue bell-shaped flower heads holding a mouthful of sweet water.",
+			"how_to_get": [
+				"Picked from quenchbell (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"raspberries": {
+			"name": "Raspberries",
+			"kind": "material",
+			"description": "Soft red berries that crumble when picked. Sweet when fully ripe.",
+			"how_to_get": [
+				"Picked from raspberry in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"raspberry_leaves": {
+			"name": "Raspberry leaves",
+			"kind": "material",
+			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"reed_stems": {
+			"name": "Reed stems",
+			"kind": "material",
+			"description": "Long hollow stems of reed. Woven or bundled.",
+			"how_to_get": [
+				"Picked from reeds (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"resin": {
+			"name": "Resin",
+			"kind": "material",
+			"description": "Sticky sap from conifers, hardened into amber lumps. Burns hot, seals wood, and sticks things.",
+			"how_to_get": [
+				"From a felled balsam fir",
+				"From a felled scots pine",
+				"From a felled spruce"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rimecap_caps": {
+			"name": "Rimecap caps",
+			"kind": "material",
+			"description": "Frost-pale mushroom caps that grow on cold north slopes. Not for eating until identified.",
+			"how_to_get": [
+				"Picked from rimecap (autumn/winter)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"riverbraid_stems": {
+			"name": "Riverbraid stems",
+			"kind": "material",
+			"description": "Long flexible stems of a river plant, easily plaited into rope and baskets.",
+			"how_to_get": [
+				"Picked from riverbraid (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rose_hips": {
+			"name": "Rose hips",
+			"kind": "material",
+			"description": "Bright red seed pods of the wild rose. Tart and full of seeds; boiled into syrup.",
+			"how_to_get": [
+				"Picked from wild rose (spring/summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rose_petals": {
+			"name": "Rose petals",
+			"kind": "material",
+			"description": "Soft pink wild rose petals. Scent a room or steep in water.",
+			"how_to_get": [
+				"Picked from wild rose (spring/summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rosemary": {
+			"name": "Rosemary",
+			"kind": "material",
+			"description": "A woody herb with narrow needle-like leaves and a strong resinous scent.",
+			"how_to_get": [
+				"Harvested from rosemary"
+			],
+			"used_for": [
+				"Used in Garlic meat",
+				"Used in Roast Beast",
+				"Used in Rosemary joint"
+			],
+			"obtainable_now": true
+		},
+		"rowan_berries": {
+			"name": "Rowan berries",
+			"kind": "material",
+			"description": "Bright orange-red berries in clusters. Bitter raw; fine cooked into jelly.",
+			"how_to_get": [
+				"From a felled rowan",
+				"Harvested from rowan"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sage": {
+			"name": "Sage",
+			"kind": "material",
+			"description": "Soft grey-green leaves with a musky scent. Flavours meat and a remedy for sore throats.",
+			"how_to_get": [
+				"Harvested from wild sage"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"samphire": {
+			"name": "Samphire",
+			"kind": "material",
+			"description": "Crisp salty green shoots of the shore. Eaten fresh, or pickled.",
+			"how_to_get": [
+				"Harvested from samphire"
+			],
+			"used_for": [
+				"Used in Herb fish",
+				"Used in Smoked fish"
+			],
+			"obtainable_now": true
+		},
+		"sap": {
+			"name": "Sap",
+			"kind": "material",
+			"description": "Sweet watery sap tapped from a tree. Boils down to syrup.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"sea_buckthorn_berries": {
+			"name": "Sea buckthorn berries",
+			"kind": "material",
+			"description": "Bright orange berries on thorny shore bushes. Sour and oily, rich in vitamins.",
+			"how_to_get": [
+				"Harvested from sea buckthorn"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"seeds": {
+			"name": "Seeds",
+			"kind": "material",
+			"description": "A handful of plant seeds. Eaten, or sown in a patch.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"sevenyear_blossoms": {
+			"name": "Sevenyear blossoms",
+			"kind": "material",
+			"description": "Rare white lily blooms, they flower once in seven years. Treasured.",
+			"how_to_get": [
+				"Picked from sevenyear lily (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sevenyear_bulbs": {
+			"name": "Sevenyear bulbs",
+			"kind": "material",
+			"description": "A pale bulb of the sevenyear lily. Said to wait years for its season.",
+			"how_to_get": [
+				"Picked from sevenyear lily (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sleetberries": {
+			"name": "Sleetberries",
+			"kind": "material",
+			"description": "Small blue-white berries that ripen after the first frost. Sharp and sweet.",
+			"how_to_get": [
+				"Harvested from sleetberry"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sloes": {
+			"name": "Sloes",
+			"kind": "material",
+			"description": "Small hard blue-black plums of the blackthorn. Very sour; ripe after frost.",
+			"how_to_get": [
+				"Picked from blackthorn in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"softwood": {
+			"name": "Softwood",
+			"kind": "material",
+			"description": "Light timber from pine, spruce and fir. Easy to work, fast to burn.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"sorrel_leaves": {
+			"name": "Sorrel leaves",
+			"kind": "material",
+			"description": "Sharp lemony arrow-shaped leaves. Eaten fresh or cooked into soup.",
+			"how_to_get": [
+				"Harvested from sorrel"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"spines": {
+			"name": "Spines",
+			"kind": "material",
+			"description": "Long sharp cactus spines. Used as needles and pins.",
+			"how_to_get": [
+				"Picked from cactus (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"st_johns_wort": {
+			"name": "St johns wort",
+			"kind": "material",
+			"description": "Yellow star flowers with dotted leaves. Steeped for a gentle remedy.",
+			"how_to_get": [
+				"Harvested from st johns wort"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"staunchmoss": {
+			"name": "Staunchmoss",
+			"kind": "material",
+			"description": "Soft spongy moss that stops bleeding when packed on a wound.",
+			"how_to_get": [
+				"Picked from staunchmoss",
+				"Picked from staunchmoss (all)"
+			],
+			"used_for": [
+				"Used in Mossy bandage"
+			],
+			"obtainable_now": true
+		},
+		"stillwater_petals": {
+			"name": "Stillwater petals",
+			"kind": "material",
+			"description": "Pale petals of the stillwater lotus. Float on calm pools.",
+			"how_to_get": [
+				"Picked from stillwater lotus (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stillwater_seeds": {
+			"name": "Stillwater seeds",
+			"kind": "material",
+			"description": "Round seeds of the stillwater lotus. Eaten roasted; keep well.",
+			"how_to_get": [
+				"Picked from stillwater lotus (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stormreed_stalks": {
+			"name": "Stormreed stalks",
+			"kind": "material",
+			"description": "Tough hollow stalks of a reed that sings in a gale. Strong and flexible.",
+			"how_to_get": [
+				"Picked from stormreed (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"straw": {
+			"name": "Straw",
+			"kind": "material",
+			"description": "Dry grass stalks. Good for bedding and thatch.",
+			"how_to_get": [
+				"Picked from tall grass",
+				"Picked from tall grass (spring/summer/autumn)"
+			],
+			"used_for": [
+				"Used in Rough bed"
+			],
+			"obtainable_now": true
+		},
+		"strawberries": {
+			"name": "Strawberries",
+			"kind": "material",
+			"description": "Small sweet red wild strawberries. Better than any garden berry.",
+			"how_to_get": [
+				"Picked from wild strawberry in season"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stuffing": {
+			"name": "Stuffing",
+			"kind": "material",
+			"description": "Soft fluff for filling a bed or a pack.",
+			"how_to_get": [
+				"Picked from cotton grass (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sunberries": {
+			"name": "Sunberries",
+			"kind": "material",
+			"description": "Warm golden berries that grow in full sun. Sweet and juicy.",
+			"how_to_get": [
+				"Harvested from sunberry"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sunsilver_leaves": {
+			"name": "Sunsilver leaves",
+			"kind": "material",
+			"description": "Silvery leaves of a vine that catch the sun. Said to be a good tonic.",
+			"how_to_get": [
+				"Picked from sunsilver vine (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tanglewort_vines": {
+			"name": "Tanglewort vines",
+			"kind": "material",
+			"description": "Long wiry vines that snare ankles. Strong cord when stripped and twisted.",
+			"how_to_get": [
+				"Picked from tanglewort (all)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tannin_bark": {
+			"name": "Tannin bark",
+			"kind": "material",
+			"description": "Bark rich in tannin. Used for tanning hides.",
+			"how_to_get": [
+				"Harvested from oak"
+			],
+			"used_for": [
+				"Used in Heavy leather",
+				"Used in Leather"
+			],
+			"obtainable_now": true
+		},
+		"thatch": {
+			"name": "Thatch",
+			"kind": "material",
+			"description": "Dried grass, reed or bark in bundles. Roofs and walls are made of it.",
+			"how_to_get": [
+				"Harvested from thatch grass",
+				"Picked from heather",
+				"Picked from heather (summer/autumn)",
+				"Picked from reeds",
+				"Picked from reeds (all)",
+				"Picked from tall grass"
+			],
+			"used_for": [
+				"Used in Rough bed",
+				"Used in Thatch doorway",
+				"Used in Thatch floor",
+				"Used in Thatch roof",
+				"Used in Thatch wall",
+				"Used in Tinder"
+			],
+			"obtainable_now": true
+		},
+		"thorny_canes": {
+			"name": "Thorny canes",
+			"kind": "material",
+			"description": "Long thorny bramble canes. Used for fencing and snares.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"thorny_wood": {
+			"name": "Thorny wood",
+			"kind": "material",
+			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"thyme": {
+			"name": "Thyme",
+			"kind": "material",
+			"description": "A small tough herb with tiny leaves. A fine flavour for meat and fish.",
+			"how_to_get": [
+				"Harvested from wild thyme"
+			],
+			"used_for": [
+				"Used in Beet roast",
+				"Used in Herb fish",
+				"Used in Herb omelette",
+				"Used in Roast Beast"
+			],
+			"obtainable_now": true
+		},
+		"tidecrown_pearls": {
+			"name": "Tidecrown pearls",
+			"kind": "material",
+			"description": "Smooth pearly beads that grow on a tidal plant. Pretty and valued.",
+			"how_to_get": [
+				"Picked from tidecrown (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tideglass_fronds": {
+			"name": "Tideglass fronds",
+			"kind": "material",
+			"description": "Clear glassy sea fronds found at the tide line. Brittle; dry to a salt crust.",
+			"how_to_get": [
+				"Picked from tideglass weed (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"timber": {
+			"name": "Timber",
+			"kind": "material",
+			"description": "Rough cut trunk wood for building. Squared up it becomes lumber.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tinder": {
+			"name": "Tinder",
+			"kind": "material",
+			"description": "Fine dry stuff that takes a spark.",
+			"how_to_get": [
+				"Craft: 2 Thatch",
+				"Picked from cotton grass (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tinder_fungus": {
+			"name": "Tinder fungus",
+			"kind": "material",
+			"description": "A woody hoof-shaped fungus. Its inner flesh takes a spark.",
+			"how_to_get": [
+				"Harvested from tinder fungus",
+				"Picked from mushrooms (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"truthsage_leaves": {
+			"name": "Truthsage leaves",
+			"kind": "material",
+			"description": "Silver-grey leaves with a clean sharp smell. Said to loosen the tongue.",
+			"how_to_get": [
+				"Harvested from truthsage"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"valerian_roots": {
+			"name": "Valerian roots",
+			"kind": "material",
+			"description": "Strong-smelling pale roots. Steeped to calm the nerves and help sleep.",
+			"how_to_get": [
+				"Harvested from valerian"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"walnut_husks": {
+			"name": "Walnut husks",
+			"kind": "material",
+			"description": "Green-black husks of the walnut. Stain the hands brown; used as dye.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"walnuts": {
+			"name": "Walnuts",
+			"kind": "material",
+			"description": "Wrinkled walnut kernels in hard shells. Rich and oily; keep well.",
+			"how_to_get": [
+				"From a felled walnut",
+				"Harvested from walnut"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wardpine_resin": {
+			"name": "Wardpine resin",
+			"kind": "material",
+			"description": "Sweet clean resin of the wardpine, believed to keep ill luck away.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wardpine_wood": {
+			"name": "Wardpine wood",
+			"kind": "material",
+			"description": "Straight clean wood of the wardpine, light and strongly scented.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"water": {
+			"name": "Water",
+			"kind": "material",
+			"description": "Plain water, gathered in a container. Drink it or cook with it.",
+			"how_to_get": [
+				"Picked from cactus (all)"
+			],
+			"used_for": [
+				"Used in Acorn mash",
+				"Used in Barley broth",
+				"Used in Flatbread",
+				"Used in Leather",
+				"Used in Mussel stew",
+				"Used in Oat porridge",
+				"Used in Pea soup",
+				"Used in Rye flatbread"
+			],
+			"obtainable_now": true
+		},
+		"watercress": {
+			"name": "Watercress",
+			"kind": "material",
+			"description": "Peppery green leaves from running water. Eaten raw or in soup.",
+			"how_to_get": [
+				"Harvested from watercress"
+			],
+			"used_for": [
+				"Used in Fish stew"
+			],
+			"obtainable_now": true
+		},
+		"whisperfern_fronds": {
+			"name": "Whisperfern fronds",
+			"kind": "material",
+			"description": "Long fronds that rustle in still air. Said to hear secrets.",
+			"how_to_get": [
+				"Picked from whisperfern (summer/autumn)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wild_carrot_roots": {
+			"name": "Wild carrot roots",
+			"kind": "material",
+			"description": "Thin pale roots of wild carrot, tough but sweet. Cooked or chewed raw.",
+			"how_to_get": [
+				"Harvested from wild carrot"
+			],
+			"used_for": [
+				"Used in Barley broth",
+				"Used in Fish stew",
+				"Used in Hearty pottage",
+				"Used in Hunter's stew",
+				"Used in Roast Roots"
+			],
+			"obtainable_now": true
+		},
+		"wild_garlic_bulbs": {
+			"name": "Wild garlic bulbs",
+			"kind": "material",
+			"description": "Small white bulbs with a sharp smell. Flavour any dish.",
+			"how_to_get": [
+				"Picked from wild garlic (spring)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wild_garlic_leaves": {
+			"name": "Wild garlic leaves",
+			"kind": "material",
+			"description": "Broad green leaves smelling strongly of garlic. Eaten raw or cooked in spring.",
+			"how_to_get": [
+				"Picked from wild garlic (spring)"
+			],
+			"used_for": [
+				"Used in Garlic bread",
+				"Used in Garlic meat",
+				"Used in Hunter's stew",
+				"Used in Mushroom skewer",
+				"Used in Mussel stew",
+				"Used in Roast Beast",
+				"Used in Rosemary joint"
+			],
+			"obtainable_now": true
+		},
+		"wild_pears": {
+			"name": "Wild pears",
+			"kind": "material",
+			"description": "Small hard pears, gritty and sour. Better cooked.",
+			"how_to_get": [
+				"From a felled wild pear",
+				"Harvested from wild pear"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"willow_bark": {
+			"name": "Willow bark",
+			"kind": "material",
+			"description": "Grey-brown bark of willow, bitter. Steeped it eases pain and fever.",
+			"how_to_get": [
+				"From a felled willow"
+			],
+			"used_for": [
+				"Used in Willow bark tea"
+			],
+			"obtainable_now": true
+		},
+		"wispbloom_heads": {
+			"name": "Wispbloom heads",
+			"kind": "material",
+			"description": "Light seed heads that float away at a breath. Drifts on the wind.",
+			"how_to_get": [
+				"Harvested from wispbloom"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"withies": {
+			"name": "Withies",
+			"kind": "material",
+			"description": "Long thin willow shoots. Woven into baskets and hurdles.",
+			"how_to_get": [
+				"From a felled willow"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"witness_bark": {
+			"name": "Witness bark",
+			"kind": "material",
+			"description": "Deep-furrowed bark of the witness tree, said to carry old marks and scars.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"witness_leaves": {
+			"name": "Witness leaves",
+			"kind": "material",
+			"description": "Dark leathery leaves of the old witness tree. Not for eating.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wolfsbane_roots": {
+			"name": "Wolfsbane roots",
+			"kind": "material",
+			"description": "Dark turnip-like roots of wolfsbane. Poisonous: do not eat.",
+			"how_to_get": [
+				"Picked from wolfsbane (summer)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wood": {
+			"name": "Wood",
+			"kind": "material",
+			"description": "Plain cut branches and trunk wood. Burns, or is worked into tools and frames.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"yarrow": {
+			"name": "Yarrow",
+			"kind": "material",
+			"description": "Feathery leaves and flat white flower heads. Packed on a wound to slow bleeding.",
+			"how_to_get": [
+				"Harvested from yarrow",
+				"Picked from yarrow"
+			],
+			"used_for": [
+				"Used in Energy bar"
+			],
+			"obtainable_now": true
+		},
+		"stone": {
+			"name": "Stone",
+			"kind": "material",
+			"description": "A fist-sized stone, picked up from the ground or broken from an outcrop.",
+			"how_to_get": [
+				"Lying on the ground"
+			],
+			"used_for": [
+				"Used in Campfire",
+				"Used in Cobblestone",
+				"Used in Foundation",
+				"Used in Quern",
+				"Used in Rock pile",
+				"Used in Shore net",
+				"Used in Stone arrow",
+				"Used in Stone axe"
+			],
+			"obtainable_now": true
+		},
+		"stick": {
+			"name": "Stick",
+			"kind": "material",
+			"description": "A fallen branch, good for fuel and for tools.",
+			"how_to_get": [
+				"From chopping a stump",
+				"From working a felled trunk",
+				"Lying on the ground",
+				"Picked from fallen log",
+				"Picked from hollow log",
+				"Picked from old stump"
+			],
+			"used_for": [
+				"Used in Basic torch",
+				"Used in Bone arrow",
+				"Used in Bronze mace",
+				"Used in Bronze sword",
+				"Used in Camp bench",
+				"Used in Campfire",
+				"Used in Campfire pot",
+				"Used in Fibre arrow"
+			],
+			"obtainable_now": true
+		},
+		"plant_fibre": {
+			"name": "Plant fibre",
+			"kind": "material",
+			"description": "Stringy plant fibre that can be twisted into twine or used as tinder.",
+			"how_to_get": [
+				"Picked from flax",
+				"Picked from nettle",
+				"Picked from reeds",
+				"Picked from riverbraid",
+				"Picked from tall grass",
+				"Picked from tanglewort"
+			],
+			"used_for": [
+				"Used in Basic torch",
+				"Used in Candle",
+				"Used in Compost",
+				"Used in Fibre arrow",
+				"Used in Fibre sandals",
+				"Used in Grass cloak",
+				"Used in Grass skirt",
+				"Used in Leaf bandage"
+			],
+			"obtainable_now": true
+		},
+		"log": {
+			"name": "Log",
+			"kind": "material",
+			"description": "A heavy length of trunk. Split it into firewood or saw it into lumber.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Chopping block",
+				"Used in Log workbench",
+				"Used in Lumber",
+				"Used in Lumber by hand",
+				"Used in Rough plank",
+				"Used in Rough planks",
+				"Used in Timber prop",
+				"Used to build Medium Forge"
+			],
+			"obtainable_now": false
+		},
+		"twine": {
+			"name": "Twine",
+			"kind": "material",
+			"description": "Twisted plant fibre, strong enough to bind a tool or weave a chest.",
+			"how_to_get": [
+				"Craft: 2 Bark",
+				"Craft: 3 Plant fibre",
+				"Craft: 3 Sinew"
+			],
+			"used_for": [
+				"Used in Bucket",
+				"Used in Camp bench",
+				"Used in Campfire pot",
+				"Used in Doorway",
+				"Used in Fibre sandals",
+				"Used in Fishing rod",
+				"Used in Floor section",
+				"Used in Gambeson"
+			],
+			"obtainable_now": true
+		},
+		"stone_axe": {
+			"name": "Stone axe",
+			"kind": "tool",
+			"description": "A sharpened stone bound to a handle. Fells trees, breaks rock and cuts wood.",
+			"how_to_get": [
+				"Craft: 1 Stone, 1 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"spear": {
+			"name": "Stone spear",
+			"kind": "weapon",
+			"description": "A stone point bound to a long shaft, for jabbing and throwing.",
+			"how_to_get": [
+				"Craft: 1 Wooden spear, 2 Twine (keep Stone)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"campfire_kit": {
+			"name": "Campfire",
+			"kind": "placeable",
+			"description": "Stones and sticks ready to lay a fire where you stand.",
+			"how_to_get": [
+				"Craft: 6 Stick, 3 Stone"
+			],
+			"used_for": [
+				"Placed on the ground as a laid fire. Press E with plant fibre, tinder, birch bark or tinder fungus in your pack to light it, then feed it wood. Cooks, warms, lights."
+			],
+			"obtainable_now": true
+		},
+		"wooden_spear": {
+			"name": "Wooden spear",
+			"kind": "weapon",
+			"description": "A sharpened stick, for jabbing and throwing.",
+			"how_to_get": [
+				"Craft: 1 Stick (keep Stone)"
+			],
+			"used_for": [
+				"Used in Stone spear"
+			],
+			"obtainable_now": true
+		},
+		"stone_knife": {
+			"name": "Stone knife",
+			"kind": "tool",
+			"description": "A sharp stone flake on a handle. Cuts bark, gum and sap.",
+			"how_to_get": [
+				"Craft: 2 Stone, 1 Stick"
+			],
+			"used_for": [
+				"Used in Leather strap"
+			],
+			"obtainable_now": true
+		},
+		"torch": {
+			"name": "Basic torch",
+			"kind": "tool",
+			"description": "A stick wrapped in fibre that burns for a while and lights your way.",
+			"how_to_get": [
+				"Craft: 1 Stick, 2 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bark": {
+			"name": "Bark",
+			"kind": "material",
+			"description": "Bark stripped from a felled trunk.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Bark twine"
+			],
+			"obtainable_now": false
+		},
+		"leaves": {
+			"name": "Leaves",
+			"kind": "material",
+			"description": "A handful of leaves.",
+			"how_to_get": [
+				"From working a felled trunk"
+			],
+			"used_for": [
+				"Used in Small shelter"
+			],
+			"obtainable_now": true
+		},
+		"roast_forage": {
+			"name": "Campfire Stew",
+			"kind": "food",
+			"description": "A bowl of chunky vegetable soup, simmered over a fire.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"seed_bundle": {
+			"name": "Seeds",
+			"kind": "material",
+			"description": "A small bundle of seeds that could be eaten or planted.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Flatbread",
+				"Used in Hearty pottage",
+				"Used in Honey loaf",
+				"Eaten raw, or cooked into flatbread, hearty pottage and honey loaf. Planting waits on the farming code."
+			],
+			"obtainable_now": false
+		},
+		"poultice": {
+			"name": "Herb poultice",
+			"kind": "medicine",
+			"description": "Crushed herb leaves for a wound.",
+			"how_to_get": [
+				"Craft: 2 Comfrey leaves",
+				"Craft: 3 Plantain leaves"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bandage": {
+			"name": "Herb bandage",
+			"kind": "medicine",
+			"description": "Leaves and fibre wrapped to bind a wound.",
+			"how_to_get": [
+				"Craft: 1 Plantain leaves, 2 Plant fibre",
+				"Craft: 1 Staunchmoss, 2 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tree_roots": {
+			"name": "Roots",
+			"kind": "material",
+			"description": "Roots from the base of a felled tree.",
+			"how_to_get": [],
+			"used_for": [
+				"Roots from a felled tree. No use yet; planned as fibre for baskets."
+			],
+			"obtainable_now": false
+		},
+		"wooden_spade": {
+			"name": "Wooden spade",
+			"kind": "tool",
+			"description": "A sharpened wooden blade on a handle. Digs roots and bulbs.",
+			"how_to_get": [
+				"Craft: 2 Stick (keep Stone)"
+			],
+			"used_for": [
+				"Used in Stone spade"
+			],
+			"obtainable_now": true
+		},
+		"lean_to_kit": {
+			"name": "Small shelter",
+			"kind": "placeable",
+			"description": "Sticks, leaves and twine for a small shelter with a roof.",
+			"how_to_get": [
+				"Craft: 8 Stick, 6 Leaves, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"lean_to": {
+			"name": "Small shelter",
+			"kind": "structure",
+			"description": "A small shelter. Its roof keeps rain off.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"chest_kit": {
+			"name": "Woven chest",
+			"kind": "placeable",
+			"description": "Sticks and twine woven into a storage chest, ready to set down.",
+			"how_to_get": [
+				"Craft: 10 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chest": {
+			"name": "Woven chest",
+			"kind": "structure",
+			"description": "A woven chest for storing things.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"chopping_block": {
+			"name": "Chopping block",
+			"kind": "placeable",
+			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
+			"how_to_get": [
+				"Craft: 2 Log"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"driftwood": {
+			"name": "Driftwood",
+			"kind": "material",
+			"description": "A bleached branch washed up on a bank. Dry, so it burns well.",
+			"how_to_get": [],
+			"used_for": [
+				"Dry fuel for a fire; burns fast."
+			],
+			"obtainable_now": false
+		},
+		"firewood": {
+			"name": "Firewood",
+			"kind": "material",
+			"description": "Split wood that burns long and steady.",
+			"how_to_get": [
+				"From chopping a stump",
+				"From working a felled trunk",
+				"Picked from fallen log",
+				"Picked from hollow log",
+				"Picked from old stump"
+			],
+			"used_for": [
+				"Used in Wooden bowl"
+			],
+			"obtainable_now": true
+		},
+		"lumber": {
+			"name": "Lumber",
+			"kind": "material",
+			"description": "Sawn boards. Needs a saw mill.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Log",
+				"Craft at a workbench: 1 Log (keep Stone wedge)",
+				"Craft: 1 Log (keep Hand saw)"
+			],
+			"used_for": [
+				"Used in Bronze-rimmed shield",
+				"Used in Bucket",
+				"Used in Doorway",
+				"Used in Fine board",
+				"Used in Floor section",
+				"Used in Iron-banded shield",
+				"Used in Ladder",
+				"Used in Plank chest"
+			],
+			"obtainable_now": true
+		},
+		"plank_chest_kit": {
+			"name": "Plank chest",
+			"kind": "placeable",
+			"description": "Boards and twine for a stronger storage chest, ready to set down.",
+			"how_to_get": [
+				"Craft at a workbench: 8 Lumber, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"plank_chest": {
+			"name": "Plank chest",
+			"kind": "structure",
+			"description": "A plank chest for storing more things.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"iron_ingot": {
+			"name": "Iron ingot",
+			"kind": "material",
+			"description": "A bar of smelted iron. Placeholder until smelting exists.",
+			"how_to_get": [
+				"Craft at a forge: 3 Iron ore"
+			],
+			"used_for": [
+				"Used in Hinges",
+				"Used in Iron helm",
+				"Used in Iron hoe",
+				"Used in Iron mace",
+				"Used in Iron pickaxe",
+				"Used in Iron spade",
+				"Used in Iron sword",
+				"Used in Iron-banded shield"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_ingot": {
+			"name": "Steel ingot",
+			"kind": "material",
+			"description": "A bar of steel. Placeholder until smelting exists.",
+			"how_to_get": [
+				"Craft at a forge: 2 Iron ingot, 1 Coal"
+			],
+			"used_for": [
+				"Used in Plate cuirass",
+				"Used in Steel helm",
+				"Used in Steel hoe",
+				"Used in Steel kite shield",
+				"Used in Steel mace",
+				"Used in Steel pickaxe",
+				"Used in Steel spade",
+				"Used in Steel striker"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_pickaxe": {
+			"name": "Iron pickaxe",
+			"kind": "tool",
+			"description": "An iron head on a hardwood handle. One blow breaks one stone off a boulder.",
+			"how_to_get": [
+				"Craft at a forge: 3 Iron ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_pickaxe": {
+			"name": "Steel pickaxe",
+			"kind": "tool",
+			"description": "A steel head on a hardwood handle. One blow breaks one stone off a boulder, and it lasts longest.",
+			"how_to_get": [
+				"Craft at a forge: 3 Steel ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"soil": {
+			"name": "Soil",
+			"kind": "material",
+			"description": "A shovelful of dark earth, dug from the ground.",
+			"how_to_get": [],
+			"used_for": [
+				"Dug earth. Dig and fill the ground with it."
+			],
+			"obtainable_now": false
+		},
+		"clay": {
+			"name": "Clay",
+			"kind": "material",
+			"description": "A heavy, sticky shovelful of clay.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Brick",
+				"Used in Clay jug",
+				"Used in Clay pot",
+				"Used in Foundation",
+				"Used in Mortar",
+				"Used to build Basic Forge",
+				"Used to build Basic Oven",
+				"Used to build Clay hearth"
+			],
+			"obtainable_now": false
+		},
+		"sand": {
+			"name": "Sand",
+			"kind": "material",
+			"description": "A shovelful of sand.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Mortar"
+			],
+			"obtainable_now": false
+		},
+		"gravel": {
+			"name": "Gravel",
+			"kind": "material",
+			"description": "A shovelful of small stones and grit.",
+			"how_to_get": [],
+			"used_for": [
+				"Dug gravel. Dig and fill the ground with it; planned for paths and cobble floors."
+			],
+			"obtainable_now": false
+		},
+		"wooden_bowl": {
+			"name": "Wooden bowl",
+			"kind": "container",
+			"description": "A bowl hollowed from a bolt of wood. Carries a little water.",
+			"how_to_get": [
+				"Craft: 1 Firewood"
+			],
+			"used_for": [
+				"Used in Chamomile tea",
+				"Used in Stomach tea",
+				"Used in Willow bark tea"
+			],
+			"obtainable_now": true
+		},
+		"clay_pot": {
+			"name": "Clay pot",
+			"kind": "container",
+			"description": "A fired pot of clay. Holds three litres of water.",
+			"how_to_get": [
+				"Craft: 6 Clay"
+			],
+			"used_for": [
+				"Used in Campfire pot"
+			],
+			"obtainable_now": true
+		},
+		"bucket": {
+			"name": "Bucket",
+			"kind": "container",
+			"description": "A wooden bucket bound with cord. Holds eight litres of water.",
+			"how_to_get": [
+				"Craft: 6 Lumber, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"waterskin": {
+			"name": "Waterskin",
+			"kind": "container",
+			"description": "A skin bag sewn shut. Holds a day's drink and little weight.",
+			"how_to_get": [
+				"Craft: 2 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hide": {
+			"name": "Hide",
+			"kind": "material",
+			"description": "A raw animal skin.",
+			"how_to_get": [
+				"Dropped by badger when worked with a knife",
+				"Dropped by bear when worked with a knife",
+				"Dropped by beaver when worked with a knife",
+				"Dropped by boar when worked with a knife",
+				"Dropped by deer when worked with a knife",
+				"Dropped by fox when worked with a knife"
+			],
+			"used_for": [
+				"Used in Backpack",
+				"Used in Fur boots",
+				"Used in Fur cloak",
+				"Used in Fur hat",
+				"Used in Hide boots",
+				"Used in Hide cloak",
+				"Used in Hide gloves",
+				"Used in Hide glue"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rope": {
+			"name": "Rope",
+			"kind": "material",
+			"description": "Twisted twine, strong enough to haul and to lash a frame.",
+			"how_to_get": [
+				"Craft: 4 Twine"
+			],
+			"used_for": [
+				"Used in Backpack"
+			],
+			"obtainable_now": true
+		},
+		"stone_spade": {
+			"name": "Stone spade",
+			"kind": "tool",
+			"description": "A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Wooden spade, 2 Stone, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_spade": {
+			"name": "Iron spade",
+			"kind": "tool",
+			"description": "A spade with an iron blade.",
+			"how_to_get": [
+				"Craft: 2 Iron ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_spade": {
+			"name": "Steel spade",
+			"kind": "tool",
+			"description": "A spade with a steel blade.",
+			"how_to_get": [
+				"Craft: 2 Steel ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bone": {
+			"name": "Bone",
+			"kind": "material",
+			"description": "A cleaned animal bone.",
+			"how_to_get": [
+				"Dropped by badger when worked with a knife",
+				"Dropped by bear when worked with a knife",
+				"Dropped by beaver when worked with a knife",
+				"Dropped by boar when worked with a knife",
+				"Dropped by deer when worked with a knife",
+				"Dropped by duck when worked with a knife"
+			],
+			"used_for": [
+				"Used in Bone arrow"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"backpack": {
+			"name": "Backpack",
+			"kind": "gear",
+			"description": "A hide pack with straps. Worn on the back, it lets you carry more.",
+			"how_to_get": [
+				"Craft: 4 Hide, 1 Rope"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"energy_bar": {
+			"name": "Energy bar",
+			"kind": "food",
+			"description": "Nuts, dried fruit and herbs pressed into a cake. Quick energy that wears on your fitness.",
+			"how_to_get": [
+				"Craft: 3 Hazelnuts, 2 Dates, 1 Yarrow"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"herbal_tea": {
+			"name": "Herbal tea",
+			"kind": "food",
+			"description": "Mint leaves steeped and drunk. A small lift of energy.",
+			"how_to_get": [
+				"Craft: 3 Mint"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"magic_tonic": {
+			"name": "Magic tonic",
+			"kind": "food",
+			"description": "A shimmering draught. A great lift of energy.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"remains": {
+			"name": "Remains",
+			"kind": "structure",
+			"description": "A fallen traveller and the pack they carried.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"rotten_food": {
+			"name": "Rotten food",
+			"kind": "material",
+			"description": "Food that has gone bad. Do not eat it.",
+			"how_to_get": [],
+			"used_for": [
+				"Spoiled food: worthless. Drop it; planned as compost."
+			],
+			"obtainable_now": false
+		},
+		"medicine": {
+			"name": "Medicine",
+			"kind": "food",
+			"description": "A bitter remedy that settles a sick stomach. Placeholder until healers and herb cures exist.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"stomach_tea": {
+			"name": "Stomach tea",
+			"kind": "food",
+			"description": "A folk remedy: mint and chamomile steeped for a sick stomach. Settles vomiting and the runs.",
+			"how_to_get": [
+				"Craft: 2 Mint, 2 Chamomile flowers (keep Wooden bowl)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chamomile_tea": {
+			"name": "Chamomile tea",
+			"kind": "food",
+			"description": "A folk remedy: chamomile flowers steeped in water. Calms the stomach and helps you sleep.",
+			"how_to_get": [
+				"Craft: 3 Chamomile flowers (keep Wooden bowl)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"willow_bark_tea": {
+			"name": "Willow bark tea",
+			"kind": "food",
+			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
+			"how_to_get": [
+				"Craft: 2 Willow bark (keep Wooden bowl)"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"grass_skirt": {
+			"name": "Grass skirt",
+			"kind": "clothing",
+			"description": "Woven grass hung from the waist. Barely warm, and it rots quickly.",
+			"how_to_get": [
+				"Craft: 8 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"grass_cloak": {
+			"name": "Grass cloak",
+			"kind": "clothing",
+			"description": "A cloak of woven grass over the shoulders. Keeps a little wind off.",
+			"how_to_get": [
+				"Craft: 16 Plant fibre, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fibre_sandals": {
+			"name": "Fibre sandals",
+			"kind": "clothing",
+			"description": "Soles of twisted fibre tied to the foot.",
+			"how_to_get": [
+				"Craft: 6 Plant fibre, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_cloak": {
+			"name": "Hide cloak",
+			"kind": "clothing",
+			"description": "A wrapped animal hide. Warm, and it sheds rain.",
+			"how_to_get": [
+				"Craft: 3 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_boots": {
+			"name": "Hide boots",
+			"kind": "clothing",
+			"description": "Hide wrapped and stitched around the foot.",
+			"how_to_get": [
+				"Craft: 2 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_hood": {
+			"name": "Hide hood",
+			"kind": "clothing",
+			"description": "A close hood of hide with the hair turned in.",
+			"how_to_get": [
+				"Craft: 1 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_mittens": {
+			"name": "Hide mittens",
+			"kind": "clothing",
+			"description": "Stitched hide mittens.",
+			"how_to_get": [
+				"Craft: 1 Hide, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_leggings": {
+			"name": "Hide leggings",
+			"kind": "clothing",
+			"description": "Hide tied around each leg.",
+			"how_to_get": [
+				"Craft: 3 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"raw_meat": {
+			"name": "Raw meat",
+			"kind": "food",
+			"description": "Fresh meat. Cook it before you eat it, and do not keep it long.",
+			"how_to_get": [
+				"Dropped by badger when worked with a knife",
+				"Dropped by bear when worked with a knife",
+				"Dropped by beaver when worked with a knife",
+				"Dropped by boar when worked with a knife",
+				"Dropped by deer when worked with a knife",
+				"Dropped by duck when worked with a knife"
+			],
+			"used_for": [
+				"Used in Cabbage stew",
+				"Used in Garlic meat",
+				"Used in Hunter's stew",
+				"Used in Jerky",
+				"Used in Roast Beast",
+				"Used in Rosemary joint",
+				"Used in Venison pie"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"roast_meat": {
+			"name": "Roast Meat",
+			"kind": "food",
+			"description": "Meat cooked over a fire. Filling, and it keeps a couple of days.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"sinew": {
+			"name": "Sinew",
+			"kind": "material",
+			"description": "Tough strands from an animal's legs. Strong sewing thread when dry.",
+			"how_to_get": [
+				"Dropped by bear when worked with a knife",
+				"Dropped by boar when worked with a knife",
+				"Dropped by deer when worked with a knife",
+				"Dropped by fox when worked with a knife",
+				"Dropped by lynx when worked with a knife",
+				"Dropped by moose when worked with a knife"
+			],
+			"used_for": [
+				"Used in Fur boots",
+				"Used in Fur cloak",
+				"Used in Fur hat",
+				"Used in Sinew cord"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"animal_fat": {
+			"name": "Animal fat",
+			"kind": "material",
+			"description": "White fat for torches, cooking and waterproofing.",
+			"how_to_get": [
+				"Dropped by badger when worked with a knife",
+				"Dropped by bear when worked with a knife",
+				"Dropped by beaver when worked with a knife",
+				"Dropped by boar when worked with a knife",
+				"Dropped by deer when worked with a knife",
+				"Dropped by moose when worked with a knife"
+			],
+			"used_for": [
+				"Used in Baked potato",
+				"Used in Candle",
+				"Used in Egg and nettle fry",
+				"Used in Fine leather",
+				"Used in Hearty pottage",
+				"Used in Herb salve",
+				"Used in Oat cakes",
+				"Used in Onion roast"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"feather": {
+			"name": "Feather",
+			"kind": "material",
+			"description": "A feather for fletching and stuffing.",
+			"how_to_get": [
+				"Dropped by duck when worked with a knife",
+				"Dropped by eagle when worked with a knife",
+				"Dropped by goose when worked with a knife",
+				"Dropped by grouse when worked with a knife",
+				"Dropped by gull when worked with a knife",
+				"Dropped by pheasant when worked with a knife"
+			],
+			"used_for": [
+				"Used in Bone arrow",
+				"Used in Stone arrow",
+				"Used in Wooden arrow",
+				"Fletching for arrows; quills and bedding come later."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"workbench_kit": {
+			"name": "Camp bench",
+			"kind": "placeable",
+			"description": "Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp.",
+			"how_to_get": [
+				"Craft: 12 Stick, 3 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"workbench": {
+			"name": "Camp bench",
+			"kind": "structure",
+			"description": "A camp bench. Stand near it to make the things that need a work table.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"fishing_rod": {
+			"name": "Fishing rod",
+			"kind": "tool",
+			"description": "A stick with a line and a hook. Hold it and click at the water, then click again when something bites.",
+			"how_to_get": [
+				"Craft: 2 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"shore_net": {
+			"name": "Shore net",
+			"kind": "tool",
+			"description": "A weighted twine net. Hold the left button at the water's edge for about 20 seconds.",
+			"how_to_get": [
+				"Craft: 8 Twine, 4 Stone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"trout": {
+			"name": "Trout",
+			"kind": "food",
+			"description": "A cold-water fish from fast streams. Cook it before you eat it.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Fish pie",
+				"Used in Herb fish",
+				"Used in Juniper trout",
+				"Used in Salted fish"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"perch": {
+			"name": "Perch",
+			"kind": "food",
+			"description": "A common fish of ponds and lakes. Cook it before you eat it.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Fish stew"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"carp": {
+			"name": "Carp",
+			"kind": "food",
+			"description": "A heavy fish of still ponds. Cook it before you eat it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"pike": {
+			"name": "Pike",
+			"kind": "food",
+			"description": "A long hunting fish of lakes. Cook it before you eat it.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Smoked fish"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"roast_fish": {
+			"name": "Roast Fish",
+			"kind": "food",
+			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"coin_copper": {
+			"name": "Copper coin",
+			"kind": "coin",
+			"description": "A small copper coin. The smallest money there is.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"coin_bronze": {
+			"name": "Bronze coin",
+			"kind": "coin",
+			"description": "A bronze coin, worth ten copper.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"coin_silver": {
+			"name": "Silver coin",
+			"kind": "coin",
+			"description": "A silver coin, worth ten bronze.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"coin_gold": {
+			"name": "Gold coin",
+			"kind": "coin",
+			"description": "A gold coin, worth ten silver.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tool_rack_kit": {
+			"name": "Tool rack",
+			"kind": "placeable",
+			"description": "Pegs and a crossbar to hang tools and stretch hides. Set it beside a camp bench.",
+			"how_to_get": [
+				"Craft at a workbench: 10 Stick, 4 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"tool_rack": {
+			"name": "Tool rack",
+			"kind": "structure",
+			"description": "A tool rack. Beside a camp bench it raises the bench a level.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"vice_kit": {
+			"name": "Wooden vice",
+			"kind": "placeable",
+			"description": "Two jaws of hardwood that hold work still. Set it beside a camp bench.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"vice": {
+			"name": "Wooden vice",
+			"kind": "structure",
+			"description": "A wooden vice. Beside a camp bench it raises the bench a level.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_workbench_kit": {
+			"name": "Log workbench",
+			"kind": "placeable",
+			"description": "A heavy log bench with its own rack and vice, ready to set down.",
+			"how_to_get": [
+				"Craft at a workbench: 4 Log, 6 Twine, 6 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"log_workbench": {
+			"name": "Log workbench",
+			"kind": "structure",
+			"description": "A log workbench with its own rack and vice. Stand near it to make the things that need a work table.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_forge_kit": {
+			"name": "Basic Forge",
+			"kind": "placeable",
+			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"stone_forge": {
+			"name": "Basic Forge",
+			"kind": "structure",
+			"description": "A clay and rough stone forge under a log lean-to. Stand near it to work metal.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"blacksmithy_kit": {
+			"name": "Medium Forge",
+			"kind": "placeable",
+			"description": "A dressed stone forge with a stepped hood and iron straps, ready to raise.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"blacksmithy": {
+			"name": "Medium Forge",
+			"kind": "structure",
+			"description": "A dressed stone forge with a stepped hood and iron straps.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"carcass": {
+			"name": "Carcass",
+			"kind": "structure",
+			"description": "A freshly killed animal. Work it with a knife for meat, hide and bones.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"large_forge_kit": {
+			"name": "Large Forge",
+			"kind": "placeable",
+			"description": "A big arched forge with a riveted iron frame, ready to raise.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"large_forge": {
+			"name": "Large Forge",
+			"kind": "structure",
+			"description": "A big arched forge with a riveted iron frame and a brick-lined firebox.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"master_forge_kit": {
+			"name": "Master Forge",
+			"kind": "placeable",
+			"description": "An ornate black iron and gold forge set with red gems, ready to raise.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"master_forge": {
+			"name": "Master Forge",
+			"kind": "structure",
+			"description": "An ornate black iron and gold forge set with red gems, always glowing.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"log_oak": {
+			"name": "Oak logs",
+			"kind": "material",
+			"description": "A full-size oak log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Oak beams",
+				"Used in Oak lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_oak": {
+			"name": "Oak lumber",
+			"kind": "material",
+			"description": "Sawn oak boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Oak logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_oak": {
+			"name": "Oak beams",
+			"kind": "material",
+			"description": "Heavy squared oak beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Oak logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_birch": {
+			"name": "Birch logs",
+			"kind": "material",
+			"description": "A full-size birch log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Birch beams",
+				"Used in Birch lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_birch": {
+			"name": "Birch lumber",
+			"kind": "material",
+			"description": "Sawn birch boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Birch logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_birch": {
+			"name": "Birch beams",
+			"kind": "material",
+			"description": "Heavy squared birch beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Birch logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_scots_pine": {
+			"name": "Scots pine logs",
+			"kind": "material",
+			"description": "A full-size scots pine log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Scots pine beams",
+				"Used in Scots pine lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_scots_pine": {
+			"name": "Scots pine lumber",
+			"kind": "material",
+			"description": "Sawn scots pine boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Scots pine logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_scots_pine": {
+			"name": "Scots pine beams",
+			"kind": "material",
+			"description": "Heavy squared scots pine beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Scots pine logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_spruce": {
+			"name": "Spruce logs",
+			"kind": "material",
+			"description": "A full-size spruce log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Spruce beams",
+				"Used in Spruce lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_spruce": {
+			"name": "Spruce lumber",
+			"kind": "material",
+			"description": "Sawn spruce boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Spruce logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_spruce": {
+			"name": "Spruce beams",
+			"kind": "material",
+			"description": "Heavy squared spruce beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Spruce logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_tropical_hardwood": {
+			"name": "Tropical hardwood logs",
+			"kind": "material",
+			"description": "A full-size tropical hardwood log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Tropical hardwood beams",
+				"Used in Tropical hardwood lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_tropical_hardwood": {
+			"name": "Tropical hardwood lumber",
+			"kind": "material",
+			"description": "Sawn tropical hardwood boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Tropical hardwood logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_tropical_hardwood": {
+			"name": "Tropical hardwood beams",
+			"kind": "material",
+			"description": "Heavy squared tropical hardwood beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Tropical hardwood logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_walnut": {
+			"name": "Walnut logs",
+			"kind": "material",
+			"description": "A full-size walnut log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Walnut beams",
+				"Used in Walnut lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_walnut": {
+			"name": "Walnut lumber",
+			"kind": "material",
+			"description": "Sawn walnut boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Walnut logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_walnut": {
+			"name": "Walnut beams",
+			"kind": "material",
+			"description": "Heavy squared walnut beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Walnut logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"log_maple": {
+			"name": "Sugar maple logs",
+			"kind": "material",
+			"description": "A full-size sugar maple log. Too big for the pack: carried alone on the shoulder.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Sugar maple beams",
+				"Used in Sugar maple lumber"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"lumber_maple": {
+			"name": "Sugar maple lumber",
+			"kind": "material",
+			"description": "Sawn sugar maple boards.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Sugar maple logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beam_maple": {
+			"name": "Sugar maple beams",
+			"kind": "material",
+			"description": "Heavy squared sugar maple beams for building.",
+			"how_to_get": [
+				"Craft at a saw mill: 1 Sugar maple logs"
+			],
+			"used_for": [
+				"Old species board, kept for old saves. New boards are plain Lumber; building blueprints use Lumber."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"berry_compote": {
+			"name": "Berry compote",
+			"kind": "food",
+			"description": "Sweet stewed berries. Light, quick energy.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Blueberries, 1 Honeyspindle nectar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"nut_paste": {
+			"name": "Nut paste",
+			"kind": "food",
+			"description": "Ground hazelnuts and honey. Keeps well.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Hazelnuts, 1 Honeyspindle nectar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"roast_roots": {
+			"name": "Roast Roots",
+			"kind": "food",
+			"description": "Roots baked in the embers. Plain and filling.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Burdock roots, 2 Wild carrot roots"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"acorn_mash": {
+			"name": "Acorn mash",
+			"kind": "food",
+			"description": "Leached acorns boiled to a mash. Famine food.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Acorns, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"baked_apples": {
+			"name": "Baked apples",
+			"kind": "food",
+			"description": "Crab apples baked sweet in the ashes.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Crab apples, 1 Honeyspindle nectar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"mushroom_skewer": {
+			"name": "Mushroom skewer",
+			"kind": "food",
+			"description": "Mushrooms and wild garlic grilled on a stick.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Porcini, 1 Chanterelles, 1 Wild garlic leaves"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"herb_fish": {
+			"name": "Herb fish",
+			"kind": "food",
+			"description": "Trout roasted with thyme and sea greens.",
+			"how_to_get": [
+				"Craft at a campfire: 1 Trout, 1 Thyme, 1 Samphire"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"garlic_meat": {
+			"name": "Garlic meat",
+			"kind": "food",
+			"description": "Meat roasted with wild garlic and rosemary.",
+			"how_to_get": [
+				"Craft at a campfire: 1 Raw meat, 1 Wild garlic leaves, 1 Rosemary"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"chestnut_cakes": {
+			"name": "Chestnut cakes",
+			"kind": "food",
+			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Chestnuts, 1 Honeyspindle nectar, 1 Linseed"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fruit_leather": {
+			"name": "Fruit leather",
+			"kind": "food",
+			"description": "Dried fruit pressed flat. Keeps for a long journey.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Crab apples, 1 Cranberries, 1 Honeyspindle nectar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"smoked_fish": {
+			"name": "Smoked fish",
+			"kind": "food",
+			"description": "Pike smoked over juniper. Lasts for weeks.",
+			"how_to_get": [
+				"Craft at a campfire: 1 Pike, 1 Samphire, 1 Juniper berries"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hunters_stew": {
+			"name": "Hunter's stew",
+			"kind": "food",
+			"description": "A thick meat and root stew. Warms you through.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Raw meat, 1 Wild carrot roots, 1 Wild garlic leaves"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"forager_stew": {
+			"name": "Forager's stew",
+			"kind": "food",
+			"description": "Greens, roots and mushrooms in one pot.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Greens, 1 Burdock roots, 1 Chanterelles"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"fish_stew": {
+			"name": "Fish stew",
+			"kind": "food",
+			"description": "Perch, cress and root in a thin broth.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Perch, 1 Watercress, 1 Wild carrot roots"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"trail_bread": {
+			"name": "Trail bread",
+			"kind": "food",
+			"description": "Dense seed and nut loaves. Barely spoils.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Linseed, 2 Hazelnuts, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hearty_pottage": {
+			"name": "Hearty pottage",
+			"kind": "food",
+			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Seeds, 1 Wild carrot roots, 1 Dandelion flowers, 1 Marjoram, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"feast_roast": {
+			"name": "Roast Beast",
+			"kind": "food",
+			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Raw meat, 1 Wild garlic leaves, 1 Thyme, 1 Rosemary, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wall_section_kit": {
+			"name": "Wall section",
+			"kind": "placeable",
+			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"how_to_get": [
+				"Craft: 4 Lumber, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wall_section": {
+			"name": "Wall section",
+			"kind": "structure",
+			"description": "A plank wall, two metres wide. Set pieces edge to edge to build a house.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"floor_section_kit": {
+			"name": "Floor section",
+			"kind": "placeable",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"how_to_get": [
+				"Craft: 4 Lumber, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"floor_section": {
+			"name": "Floor section",
+			"kind": "structure",
+			"description": "A plank floor, two metres square. Set pieces edge to edge to build a house.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"roof_section_kit": {
+			"name": "Roof section",
+			"kind": "placeable",
+			"description": "A plank roof on four posts, to set over walls and floors.",
+			"how_to_get": [
+				"Craft: 5 Lumber, 2 Twine, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"roof_section": {
+			"name": "Roof section",
+			"kind": "structure",
+			"description": "A plank roof on four posts, to set over walls and floors.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"foundation_section_kit": {
+			"name": "Foundation",
+			"kind": "placeable",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"how_to_get": [
+				"Craft: 8 Stone, 2 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"foundation_section": {
+			"name": "Foundation",
+			"kind": "structure",
+			"description": "A stone and clay slab, four metres square. Walls and floors snap onto it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"doorway_section_kit": {
+			"name": "Doorway",
+			"kind": "placeable",
+			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"how_to_get": [
+				"Craft: 3 Lumber, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"doorway_section": {
+			"name": "Doorway",
+			"kind": "structure",
+			"description": "A plank wall with a gap you can walk through, one metre wide and two high.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"window_section_kit": {
+			"name": "Window wall",
+			"kind": "placeable",
+			"description": "A plank wall with an opening at chest height to see through.",
+			"how_to_get": [
+				"Craft: 3 Lumber, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"window_section": {
+			"name": "Window wall",
+			"kind": "structure",
+			"description": "A plank wall with an opening at chest height to see through.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"timber_prop_kit": {
+			"name": "Timber prop",
+			"kind": "placeable",
+			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
+			"how_to_get": [
+				"Craft: 1 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"timber_prop": {
+			"name": "Timber prop",
+			"kind": "structure",
+			"description": "A log stood on end to hold up a low roof of earth. Short reach, quick to wear.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"timber_set_kit": {
+			"name": "Timber set",
+			"kind": "placeable",
+			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
+			"how_to_get": [
+				"Craft: 4 Lumber, 1 Twine, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"timber_set": {
+			"name": "Timber set",
+			"kind": "structure",
+			"description": "A post and cap frame that braces a tunnel. Longer reach and slower to wear.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"cut_stone_block": {
+			"name": "Stone block",
+			"kind": "material",
+			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
+			"how_to_get": [
+				"Craft at a workbench: 25 Stone"
+			],
+			"used_for": [
+				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet)."
+			],
+			"obtainable_now": true
+		},
+		"brick": {
+			"name": "Brick",
+			"kind": "material",
+			"description": "A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Clay"
+			],
+			"used_for": [
+				"Used to build Basic Oven",
+				"Used to build Clay hearth",
+				"Built into the Clay hearth and the Basic Oven (hammer blueprints); planned for brick walls and chimneys."
+			],
+			"obtainable_now": true
+		},
+		"mortar": {
+			"name": "Mortar",
+			"kind": "material",
+			"description": "A bucketful of sand and clay paste that binds stone blocks and bricks.",
+			"how_to_get": [
+				"Craft: 2 Sand, 1 Clay"
+			],
+			"used_for": [
+				"Planned: binds stone blocks and bricks in masonry (no blueprint uses it yet)."
+			],
+			"obtainable_now": true
+		},
+		"ladder_kit": {
+			"name": "Ladder",
+			"kind": "placeable",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"how_to_get": [
+				"Craft: 4 Lumber, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"ladder": {
+			"name": "Ladder",
+			"kind": "structure",
+			"description": "A wooden ladder, 2.4 m tall. Set it against a wall or an edge and climb.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_hoe": {
+			"name": "Wooden hoe",
+			"kind": "tool",
+			"description": "A flat blade lashed to a long handle. Paths the ground and smooths it.",
+			"how_to_get": [
+				"Craft: 2 Stick, 1 Twine (keep Stone)"
+			],
+			"used_for": [
+				"Used in Stone hoe"
+			],
+			"obtainable_now": true
+		},
+		"stone_hoe": {
+			"name": "Stone hoe",
+			"kind": "tool",
+			"description": "A hoe with a flat stone blade. Lasts longer than bare wood.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Wooden hoe, 2 Stone, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"iron_hoe": {
+			"name": "Iron hoe",
+			"kind": "tool",
+			"description": "A hoe with an iron blade.",
+			"how_to_get": [
+				"Craft: 2 Iron ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_hoe": {
+			"name": "Steel hoe",
+			"kind": "tool",
+			"description": "A hoe with a steel blade.",
+			"how_to_get": [
+				"Craft: 2 Steel ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"path_patch": {
+			"name": "Path",
+			"kind": "structure",
+			"description": "Trodden ground, a metre of path.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"rough_plank": {
+			"name": "Rough plank",
+			"kind": "material",
+			"description": "A plank split from a log: rough, smooth on one side, bark on the other.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Log"
+			],
+			"used_for": [
+				"Rough boards from a log; planned for building, fine board and shingles at a sawmill."
+			],
+			"obtainable_now": true
+		},
+		"fine_board": {
+			"name": "Fine board",
+			"kind": "material",
+			"description": "A smooth board planed from sawn lumber. For fine woodwork.",
+			"how_to_get": [
+				"Craft at a woodworking table: 1 Lumber"
+			],
+			"used_for": [
+				"Planned: furniture and fine floors at a woodworking table."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"nails": {
+			"name": "Nails",
+			"kind": "material",
+			"description": "Iron nails, bought and used by the handful.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot"
+			],
+			"used_for": [
+				"Used in Water wheel",
+				"Used to build Sawmill",
+				"Used to build Woodworking table"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cobblestone": {
+			"name": "Cobblestone",
+			"kind": "material",
+			"description": "A rounded stone, dressed to lay in a wall or a floor.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Stone"
+			],
+			"used_for": [
+				"Planned: a cobble floor and path."
+			],
+			"obtainable_now": true
+		},
+		"stone_shingle": {
+			"name": "Stone shingle",
+			"kind": "material",
+			"description": "A thin flat slab of stone for a roof.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Stone"
+			],
+			"used_for": [
+				"Planned: a stone roof."
+			],
+			"obtainable_now": true
+		},
+		"tar": {
+			"name": "Tar",
+			"kind": "material",
+			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
+			"how_to_get": [
+				"Craft at a campfire: 5 Pine tar"
+			],
+			"used_for": [
+				"Planned: seals a flat roof and soaks logs against rot. Needs pine tar from a felled pine."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hinges": {
+			"name": "Hinges",
+			"kind": "material",
+			"description": "A pair of iron hinges for a door.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot"
+			],
+			"used_for": [
+				"Planned: doors and chests. Made at a forge from an iron ingot."
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wooden_pin": {
+			"name": "Wooden pin",
+			"kind": "material",
+			"description": "A hardwood pin or dowel that joins logs and beams without iron.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Lumber"
+			],
+			"used_for": [
+				"Planned: joins logs and beams without iron (timber frame)."
+			],
+			"obtainable_now": true
+		},
+		"wooden_block": {
+			"name": "Wooden block",
+			"kind": "material",
+			"description": "A short round of log, about 30 cm long. Split it on a chopping block.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Wooden hammer"
+			],
+			"obtainable_now": false
+		},
+		"firewood_soft": {
+			"name": "Softwood firewood",
+			"kind": "material",
+			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
+			"how_to_get": [],
+			"used_for": [
+				"Fast, short fuel for a fire (pine, spruce, fir)."
+			],
+			"obtainable_now": false
+		},
+		"wooden_block_soft": {
+			"name": "Softwood block",
+			"kind": "material",
+			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Wooden hammer",
+				"Split on a chopping block into soft firewood, or shaped into a wooden hammer."
+			],
+			"obtainable_now": false
+		},
+		"saw_blade": {
+			"name": "Saw blades",
+			"kind": "material",
+			"description": "A pair of iron saw blades for a sawmill frame.",
+			"how_to_get": [
+				"Craft at a forge: 2 Iron ingot"
+			],
+			"used_for": [
+				"Used in Hand saw",
+				"Used to build Sawmill"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"water_wheel": {
+			"name": "Water wheel",
+			"kind": "material",
+			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
+			"how_to_get": [
+				"Craft at a workbench: 20 Lumber, 80 Nails"
+			],
+			"used_for": [
+				"Used to build Sawmill"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"saw_mill_kit": {
+			"name": "Sawmill",
+			"kind": "placeable",
+			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"saw_mill": {
+			"name": "Sawmill",
+			"kind": "structure",
+			"description": "A water-driven sawmill. Stand near it to saw logs into lumber.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"woodworking_table_kit": {
+			"name": "Woodworking table",
+			"kind": "placeable",
+			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"woodworking_table": {
+			"name": "Woodworking table",
+			"kind": "structure",
+			"description": "A woodworking table. Stand near it to plane lumber into fine boards.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"rock_pile": {
+			"name": "Rock pile",
+			"kind": "placeable",
+			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
+			"how_to_get": [
+				"Craft: 45 Stone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_hammer": {
+			"name": "Wooden hammer",
+			"kind": "tool",
+			"description": "A wooden head on a stick. The weakest hammer; it wears out fast. Nails and building still to come.",
+			"how_to_get": [
+				"Craft: 1 Softwood block, 1 Stick, 1 Twine",
+				"Craft: 1 Wooden block, 1 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_hammer": {
+			"name": "Stone hammer",
+			"kind": "tool",
+			"description": "A hafted stone hammer. It does nothing yet: nails and finishing work are still to come.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Stone, 1 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hand_saw": {
+			"name": "Hand saw",
+			"kind": "tool",
+			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Saw blades, 2 Stick, 2 Twine"
+			],
+			"used_for": [
+				"Used in Lumber by hand"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rough_bed_kit": {
+			"name": "Rough bed",
+			"kind": "placeable",
+			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
+			"how_to_get": [
+				"Craft: 10 Thatch, 4 Stick, 2 Twine",
+				"Craft: 8 Bedding, 4 Stick, 2 Twine",
+				"Craft: 8 Straw, 4 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"rough_bed": {
+			"name": "Rough bed",
+			"kind": "structure",
+			"description": "A rough bed of thatch. Lie on it to rest properly.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_wall_kit": {
+			"name": "Thatch wall",
+			"kind": "placeable",
+			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
+			"how_to_get": [
+				"Craft at a workbench: 8 Twine, 50 Thatch, 15 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_wall": {
+			"name": "Thatch wall",
+			"kind": "structure",
+			"description": "A thatch wall.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"campfire_pot_kit": {
+			"name": "Campfire pot",
+			"kind": "placeable",
+			"description": "A pot on sticks and a chain. Hang it on a small fire to cook stews. The fire stays at firewood.",
+			"how_to_get": [
+				"Craft: 3 Stick, 3 Twine, 1 Clay pot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"campfire_pot": {
+			"name": "Campfire pot",
+			"kind": "structure",
+			"description": "A pot hung over a small fire. It cooks while the fire is lit. The fire stays at firewood.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_hearth_kit": {
+			"name": "Clay hearth",
+			"kind": "placeable",
+			"description": "Stones and clay built into a low hearth with a spit. Cooks better than an open fire.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"clay_hearth": {
+			"name": "Clay hearth",
+			"kind": "structure",
+			"description": "A clay hearth with a spit.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_floor_kit": {
+			"name": "Thatch floor",
+			"kind": "placeable",
+			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
+			"how_to_get": [
+				"Craft at a workbench: 4 Twine, 20 Thatch"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_floor": {
+			"name": "Thatch floor",
+			"kind": "structure",
+			"description": "A thatch floor on stakes. Walls and roofs stand on it.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_roof_kit": {
+			"name": "Thatch roof",
+			"kind": "placeable",
+			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
+			"how_to_get": [
+				"Craft at a workbench: 6 Twine, 40 Thatch, 12 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_roof": {
+			"name": "Thatch roof",
+			"kind": "structure",
+			"description": "A thatch roof. It keeps the rain off.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"thatch_doorway_kit": {
+			"name": "Thatch doorway",
+			"kind": "placeable",
+			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
+			"how_to_get": [
+				"Craft at a workbench: 6 Twine, 25 Thatch, 12 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"thatch_doorway": {
+			"name": "Thatch doorway",
+			"kind": "structure",
+			"description": "A thatch doorway with a hanging door.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"wooden_bow": {
+			"name": "Wooden bow",
+			"kind": "weapon",
+			"description": "A bow of bent wood and twine. It needs arrows.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Stick, 3 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wooden_arrow": {
+			"name": "Wooden arrow",
+			"kind": "material",
+			"description": "A straight stick with a fire-hardened tip and feather fletching.",
+			"how_to_get": [
+				"Craft: 2 Stick, 2 Feather"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_arrow": {
+			"name": "Stone arrow",
+			"kind": "material",
+			"description": "An arrow tipped with a flaked stone point.",
+			"how_to_get": [
+				"Craft: 2 Stick, 2 Feather, 2 Stone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"quiver": {
+			"name": "Quiver",
+			"kind": "gear",
+			"description": "A hide tube worn on the back. Holds 40 arrows.",
+			"how_to_get": [
+				"Craft: 2 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"oven": {
+			"name": "Basic Oven",
+			"kind": "structure",
+			"description": "A brick oven with a door. Bakes what a clay hearth cooks, and bread and joints besides.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"oven_kit": {
+			"name": "Basic Oven",
+			"kind": "placeable",
+			"description": "A brick oven, built with a hammer next to a clay hearth.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"flatbread": {
+			"name": "Flatbread",
+			"kind": "food",
+			"description": "A flat cake baked on the hot clay. Plain and filling.",
+			"how_to_get": [
+				"Craft at a clay hearth: 3 Seeds, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"honey_loaf": {
+			"name": "Honey loaf",
+			"kind": "food",
+			"description": "A sweet loaf baked in the oven. Keeps well.",
+			"how_to_get": [
+				"Craft at a oven: 3 Seeds, 1 Hazelnuts, 1 Honeyspindle nectar"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"roast_joint": {
+			"name": "Rosemary joint",
+			"kind": "food",
+			"description": "Meat roasted whole in the oven with herbs.",
+			"how_to_get": [
+				"Craft at a oven: 2 Raw meat, 1 Rosemary, 1 Wild garlic leaves"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"snare": {
+			"name": "Snare",
+			"kind": "placeable",
+			"description": "A loop of twine on a bent stick. Set it on a worn animal path.",
+			"how_to_get": [
+				"Craft: 3 Twine, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"snare_trap": {
+			"name": "Snare",
+			"kind": "structure",
+			"description": "A snare set on the ground.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false
+		},
+		"flint": {
+			"name": "Flint",
+			"kind": "material",
+			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Hide scraper",
+				"Used in Javelin",
+				"Used in Sickle"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"pyrite": {
+			"name": "Pyrite",
+			"kind": "material",
+			"description": "A brassy, heavy stone. Struck with flint it throws good sparks.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"obsidian": {
+			"name": "Obsidian",
+			"kind": "material",
+			"description": "Black volcanic glass. Breaks into razor-sharp edges, and is prized.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Obsidian knife"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"processed_hide": {
+			"name": "Processed hide",
+			"kind": "material",
+			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
+			"how_to_get": [
+				"Craft: 1 Hide (keep Hide scraper)"
+			],
+			"used_for": [
+				"Used in Leather"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"leather": {
+			"name": "Leather",
+			"kind": "material",
+			"description": "Tanned hide: tough and supple.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Processed hide, 2 Tannin bark, 1 Water"
+			],
+			"used_for": [
+				"Used in Fine leather",
+				"Used in Gambeson",
+				"Used in Heavy leather",
+				"Used in Iron sword",
+				"Used in Leather cap",
+				"Used in Leather jerkin",
+				"Used in Leather strap"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fine_leather": {
+			"name": "Fine leather",
+			"kind": "material",
+			"description": "The best of a batch of leather, soft and even.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Leather, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"heavy_leather": {
+			"name": "Heavy leather",
+			"kind": "material",
+			"description": "Thick, stiff leather for armour and harness.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Leather, 2 Tannin bark"
+			],
+			"used_for": [
+				"Used in Plate cuirass",
+				"Used in Steel helm",
+				"Used in Steel sword"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rivets": {
+			"name": "Rivets",
+			"kind": "material",
+			"description": "Small iron pins that hold layers of leather or metal together.",
+			"how_to_get": [
+				"Craft at a forge: 1 Iron ingot"
+			],
+			"used_for": [
+				"Used in Mail shirt",
+				"Used in Plate cuirass",
+				"Used in Steel helm"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"copper_ingot": {
+			"name": "Copper ingot",
+			"kind": "material",
+			"description": "Smelted copper. Soft, but good for early tools.",
+			"how_to_get": [
+				"Craft at a forge: 2 Copper ore"
+			],
+			"used_for": [
+				"Used in Bronze ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tin_ingot": {
+			"name": "Tin ingot",
+			"kind": "material",
+			"description": "Smelted tin. Mixed with copper it makes bronze.",
+			"how_to_get": [
+				"Craft at a forge: 2 Tin ore"
+			],
+			"used_for": [
+				"Used in Bronze ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bronze_ingot": {
+			"name": "Bronze ingot",
+			"kind": "material",
+			"description": "Copper and tin melted together. Harder than copper.",
+			"how_to_get": [
+				"Craft at a forge: 1 Copper ingot, 1 Tin ingot"
+			],
+			"used_for": [
+				"Used in Bronze helm",
+				"Used in Bronze mace",
+				"Used in Bronze sword",
+				"Used in Bronze-rimmed shield"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"flour": {
+			"name": "Flour",
+			"kind": "material",
+			"description": "Ground grain. The start of bread.",
+			"how_to_get": [
+				"Craft: 3 Barley (keep Quern)",
+				"Craft: 3 Oats (keep Quern)",
+				"Craft: 3 Rye (keep Quern)",
+				"Craft: 3 Wheat (keep Quern)"
+			],
+			"used_for": [
+				"Used in Banana fritter",
+				"Used in Crab cakes",
+				"Used in Fish pie",
+				"Used in Garlic bread",
+				"Used in Rye flatbread",
+				"Used in Venison pie"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"yeast": {
+			"name": "Yeast",
+			"kind": "material",
+			"description": "A frothy starter that makes dough rise and ale ferment.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"salt": {
+			"name": "Salt",
+			"kind": "material",
+			"description": "Keeps meat and fish from spoiling.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hide_scraper": {
+			"name": "Hide scraper",
+			"kind": "tool",
+			"description": "A flint blade on a handle. Scrapes flesh and hair off a raw hide.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Flint, 1 Stick, 1 Twine"
+			],
+			"used_for": [
+				"Used in Processed hide"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_striker": {
+			"name": "Steel striker",
+			"kind": "tool",
+			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
+			"how_to_get": [
+				"Craft at a forge: 1 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"javelin": {
+			"name": "Javelin",
+			"kind": "weapon",
+			"description": "A light, balanced throwing spear. Flies farther and straighter than a plain spear.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Stick, 1 Flint"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"obsidian_knife": {
+			"name": "Obsidian knife",
+			"kind": "tool",
+			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Obsidian, 1 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"stone_pickaxe": {
+			"name": "Stone pickaxe",
+			"kind": "tool",
+			"description": "A heavy stone head lashed to a haft. Breaks rock and ore, slowly.",
+			"how_to_get": [
+				"Craft at a workbench: 2 Stick, 3 Stone, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sickle": {
+			"name": "Sickle",
+			"kind": "tool",
+			"description": "A curved flint blade on a short handle. Cuts grain and grass by the handful.",
+			"how_to_get": [
+				"Craft at a workbench: 1 Flint, 1 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"scythe": {
+			"name": "Scythe",
+			"kind": "tool",
+			"description": "A long curved blade on a tall handle. Mows grass, thatch and grain in wide sweeps.",
+			"how_to_get": [
+				"Craft at a forge: 2 Iron ingot, 2 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wooden_club": {
+			"name": "Wooden club",
+			"kind": "weapon",
+			"description": "A stout length of hardwood, heavy at one end. Hits hard and needs no skill.",
+			"how_to_get": [
+				"Craft: 3 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"copper_ore": {
+			"name": "Copper ore",
+			"kind": "material",
+			"description": "A heavy lump streaked green and red. Smelts to copper.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Copper ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tin_ore": {
+			"name": "Tin ore",
+			"kind": "material",
+			"description": "A dark, very heavy lump. Smelts to tin.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Tin ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_ore": {
+			"name": "Iron ore",
+			"kind": "material",
+			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Iron ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"coal": {
+			"name": "Coal",
+			"kind": "material",
+			"description": "A black lump that burns hot. Needed to turn iron into steel.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Steel ingot"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hide_tunic": {
+			"name": "Hide tunic",
+			"kind": "clothing",
+			"description": "A sewn hide shirt with sleeves. Warmer and neater than a cloak.",
+			"how_to_get": [
+				"Craft: 3 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_trousers": {
+			"name": "Hide trousers",
+			"kind": "clothing",
+			"description": "Hide sewn into proper trousers. Better than leggings.",
+			"how_to_get": [
+				"Craft: 3 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"hide_gloves": {
+			"name": "Hide gloves",
+			"kind": "clothing",
+			"description": "Stitched hide gloves with fingers, for work and cold.",
+			"how_to_get": [
+				"Craft: 1 Hide, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"clay_jug": {
+			"name": "Clay jug",
+			"kind": "container",
+			"description": "A tall fired jug with a handle and a narrow mouth. Holds water, ale or mead.",
+			"how_to_get": [
+				"Craft: 4 Clay"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"herb_salve": {
+			"name": "Herb salve",
+			"kind": "medicine",
+			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
+			"how_to_get": [
+				"Craft: 2 Comfrey leaves, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"splint": {
+			"name": "Splint",
+			"kind": "medicine",
+			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
+			"how_to_get": [
+				"Craft: 2 Stick, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"candle": {
+			"name": "Candle",
+			"kind": "tool",
+			"description": "A wick dipped in animal fat. A small steady light for indoors.",
+			"how_to_get": [
+				"Craft: 1 Animal fat, 1 Plant fibre",
+				"Craft: 1 Tallow, 1 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"wicker_shield": {
+			"name": "Wicker shield",
+			"kind": "weapon",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"how_to_get": [
+				"Craft: 3 Stick, 2 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_mace": {
+			"name": "Stone mace",
+			"kind": "weapon",
+			"description": "A heavy stone lashed to a stick. Cracks armour and bone.",
+			"how_to_get": [
+				"Craft: 1 Stone, 1 Stick, 2 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"plank_shield": {
+			"name": "Plank shield",
+			"kind": "weapon",
+			"description": "Boards bound with hide. Sturdier than wicker.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Lumber, 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bronze_sword": {
+			"name": "Bronze sword",
+			"kind": "weapon",
+			"description": "A bronze blade on a short grip. Quick and sharp.",
+			"how_to_get": [
+				"Craft at a forge: 2 Bronze ingot, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bronze_mace": {
+			"name": "Bronze mace",
+			"kind": "weapon",
+			"description": "A cast bronze head on a stout haft.",
+			"how_to_get": [
+				"Craft at a forge: 2 Bronze ingot, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bronze_shield": {
+			"name": "Bronze-rimmed shield",
+			"kind": "weapon",
+			"description": "A plank shield with a bronze rim and boss.",
+			"how_to_get": [
+				"Craft at a forge: 2 Lumber, 1 Bronze ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_sword": {
+			"name": "Iron sword",
+			"kind": "weapon",
+			"description": "A forged iron blade with a leather grip.",
+			"how_to_get": [
+				"Craft at a forge: 2 Iron ingot, 1 Leather"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_mace": {
+			"name": "Iron mace",
+			"kind": "weapon",
+			"description": "A flanged iron head that breaks armour.",
+			"how_to_get": [
+				"Craft at a forge: 2 Iron ingot, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_shield": {
+			"name": "Iron-banded shield",
+			"kind": "weapon",
+			"description": "Boards held by iron bands. Hard to break.",
+			"how_to_get": [
+				"Craft at a forge: 2 Lumber, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_sword": {
+			"name": "Steel sword",
+			"kind": "weapon",
+			"description": "A tempered steel blade. Keeps its edge.",
+			"how_to_get": [
+				"Craft at a forge: 2 Steel ingot, 1 Heavy leather"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_mace": {
+			"name": "Steel mace",
+			"kind": "weapon",
+			"description": "A steel flanged head on a long haft.",
+			"how_to_get": [
+				"Craft at a forge: 2 Steel ingot, 1 Stick"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_shield": {
+			"name": "Steel kite shield",
+			"kind": "weapon",
+			"description": "A long steel-faced shield that covers shoulder to shin.",
+			"how_to_get": [
+				"Craft at a forge: 1 Lumber, 2 Steel ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"leather_cap": {
+			"name": "Leather cap",
+			"kind": "clothing",
+			"description": "A close leather cap. Better than bare hide.",
+			"how_to_get": [
+				"Craft: 2 Leather"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"leather_jerkin": {
+			"name": "Leather jerkin",
+			"kind": "clothing",
+			"description": "A stiff leather vest. Turns a glancing blow.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Leather"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"bronze_helm": {
+			"name": "Bronze helm",
+			"kind": "clothing",
+			"description": "A beaten bronze cap with a nose guard.",
+			"how_to_get": [
+				"Craft at a forge: 3 Bronze ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"gambeson": {
+			"name": "Gambeson",
+			"kind": "clothing",
+			"description": "Quilted padding. Cheap armour that soaks a blow.",
+			"how_to_get": [
+				"Craft at a workbench: 3 Twine, 1 Leather"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"iron_helm": {
+			"name": "Iron helm",
+			"kind": "clothing",
+			"description": "A riveted iron helmet.",
+			"how_to_get": [
+				"Craft at a forge: 3 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"mail_shirt": {
+			"name": "Mail shirt",
+			"kind": "clothing",
+			"description": "Rings of iron riveted together. Heavy but sound.",
+			"how_to_get": [
+				"Craft at a forge: 2 Rivets, 2 Iron ingot"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"steel_helm": {
+			"name": "Steel helm",
+			"kind": "clothing",
+			"description": "A fitted steel helm with leather lining.",
+			"how_to_get": [
+				"Craft at a forge: 2 Steel ingot, 1 Heavy leather, 1 Rivets"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"plate_cuirass": {
+			"name": "Plate cuirass",
+			"kind": "clothing",
+			"description": "Shaped steel plates over a leather harness. The best body armour.",
+			"how_to_get": [
+				"Craft at a forge: 3 Steel ingot, 1 Heavy leather, 2 Rivets"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wheat": {
+			"name": "Wheat",
+			"kind": "material",
+			"description": "Golden heads of grain. Thresh and grind for flour.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Flour"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"barley": {
+			"name": "Barley",
+			"kind": "material",
+			"description": "Hardy grain for bread and brewing.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Barley broth",
+				"Used in Barley flour"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"carrot": {
+			"name": "Carrot",
+			"kind": "material",
+			"description": "A sweet orange root grown in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"potato": {
+			"name": "Potato",
+			"kind": "material",
+			"description": "A starchy tuber that keeps well.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Baked potato"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"turnip": {
+			"name": "Turnip",
+			"kind": "material",
+			"description": "A round root, good in stew.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Seal stew",
+				"Used in Turnip mash"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"flax": {
+			"name": "Flax",
+			"kind": "material",
+			"description": "Tall stalks with strong fibres inside.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Linen"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wheat_seeds": {
+			"name": "Wheat seeds",
+			"kind": "material",
+			"description": "Seeds for sowing wheat. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"barley_seeds": {
+			"name": "Barley seeds",
+			"kind": "material",
+			"description": "Seeds for sowing barley. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"carrot_seeds": {
+			"name": "Carrot seeds",
+			"kind": "material",
+			"description": "Seeds for sowing carrot. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"potato_seeds": {
+			"name": "Potato seeds",
+			"kind": "material",
+			"description": "Seeds for sowing potato. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"turnip_seeds": {
+			"name": "Turnip seeds",
+			"kind": "material",
+			"description": "Seeds for sowing turnip. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"flax_seeds": {
+			"name": "Flax seeds",
+			"kind": "material",
+			"description": "Seeds for sowing flax. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"quern": {
+			"name": "Quern",
+			"kind": "tool",
+			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
+			"how_to_get": [
+				"Craft: 2 Stone, 1 Stick"
+			],
+			"used_for": [
+				"Used in Barley flour",
+				"Used in Flour",
+				"Used in Oat flour",
+				"Used in Rye flour"
+			],
+			"obtainable_now": true
+		},
+		"compost": {
+			"name": "Compost",
+			"kind": "material",
+			"description": "Rotted plant matter. Feeds a tilled bed.",
+			"how_to_get": [
+				"Craft: 3 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"antler": {
+			"name": "Antler",
+			"kind": "material",
+			"description": "A shed or taken antler. Hard, and can be worked like bone.",
+			"how_to_get": [
+				"Dropped by deer when worked with a knife",
+				"Dropped by moose when worked with a knife",
+				"Dropped by reindeer when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tusk": {
+			"name": "Tusk",
+			"kind": "material",
+			"description": "A boar's curved tusk. Ivory-hard.",
+			"how_to_get": [
+				"Dropped by boar when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"claw": {
+			"name": "Claw",
+			"kind": "material",
+			"description": "A large predator's claw. A trophy or a charm.",
+			"how_to_get": [
+				"Dropped by badger when worked with a knife",
+				"Dropped by bear when worked with a knife",
+				"Dropped by eagle when worked with a knife",
+				"Dropped by lynx when worked with a knife",
+				"Dropped by wolf when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"down": {
+			"name": "Down",
+			"kind": "material",
+			"description": "Soft insulating feathers from a water bird. Warm for its weight.",
+			"how_to_get": [
+				"Dropped by duck when worked with a knife",
+				"Dropped by goose when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"quill": {
+			"name": "Quill",
+			"kind": "material",
+			"description": "A stiff spine from a porcupine. Sharp, and can be used as a pin or a point.",
+			"how_to_get": [
+				"Dropped by porcupine when worked with a knife"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hide_glue": {
+			"name": "Hide glue",
+			"kind": "material",
+			"description": "Hide boiled down to a sticky glue. Holds wood, bone and feathers.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Hide"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"bone_arrow": {
+			"name": "Bone arrow",
+			"kind": "material",
+			"description": "An arrow tipped with a sharpened bone point.",
+			"how_to_get": [
+				"Craft: 2 Stick, 2 Feather, 2 Bone"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"stone_wedge": {
+			"name": "Stone wedge",
+			"kind": "tool",
+			"description": "A flaked stone wedge. Driven into a log it splits it into rough planks.",
+			"how_to_get": [
+				"Craft: 2 Stone, 1 Stick"
+			],
+			"used_for": [
+				"Used in Rough planks"
+			],
+			"obtainable_now": true
+		},
+		"fibre_arrow": {
+			"name": "Fibre arrow",
+			"kind": "material",
+			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
+			"how_to_get": [
+				"Craft: 2 Stick, 1 Plant fibre"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"seaweed": {
+			"name": "Seaweed",
+			"kind": "food",
+			"description": "Wet strands of kelp and wrack from the tide line. Edible, salty and rich in minerals.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Seaweed soup"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"shellfish": {
+			"name": "Shellfish",
+			"kind": "food",
+			"description": "Mussels, limpets and cockles prised off the shore rocks. Eat cooked.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Mussel stew",
+				"Used in Seaweed soup"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"crab_meat": {
+			"name": "Crab meat",
+			"kind": "food",
+			"description": "White meat from a shore crab.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Crab cakes"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"egg": {
+			"name": "Egg",
+			"kind": "food",
+			"description": "A wild bird's egg from a nest. Boil or fry it.",
+			"how_to_get": [
+				"Dropped by seabird when worked with a knife"
+			],
+			"used_for": [
+				"Used in Egg and nettle fry",
+				"Used in Herb omelette"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"seal_meat": {
+			"name": "Seal meat",
+			"kind": "food",
+			"description": "Dark, rich meat from a seal. Cook it well.",
+			"how_to_get": [
+				"Dropped by seal when worked with a knife"
+			],
+			"used_for": [
+				"Used in Seal stew"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"sea_salt": {
+			"name": "Sea salt",
+			"kind": "material",
+			"description": "Salt boiled out of sea water. Keeps meat and fish.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Cheese",
+				"Used in Jerky",
+				"Used in Rye flatbread",
+				"Used in Salted fish",
+				"Used in Sauerkraut"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"roast_shellfish": {
+			"name": "Steamed Shellfish",
+			"kind": "food",
+			"description": "Shellfish steamed open on hot coals. Salty and sweet.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"boiled_egg": {
+			"name": "Boiled egg",
+			"kind": "food",
+			"description": "An egg boiled hard. Keeps well and fills the belly.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"roast_seal": {
+			"name": "Seal Steak",
+			"kind": "food",
+			"description": "Seal meat roasted over a fire. Rich and fatty.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wool": {
+			"name": "Wool",
+			"kind": "material",
+			"description": "Fleece from a wild sheep. Warm, and spun into thread.",
+			"how_to_get": [
+				"Dropped by wild sheep when worked with a knife"
+			],
+			"used_for": [
+				"Used in Wool cap",
+				"Used in Wool mittens",
+				"Used in Wool trousers",
+				"Used in Wool tunic"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"linen": {
+			"name": "Linen",
+			"kind": "material",
+			"description": "Cloth woven from flax. Light, and cool in summer.",
+			"how_to_get": [
+				"Craft: 4 Flax"
+			],
+			"used_for": [
+				"Used in Linen shirt"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wool_tunic": {
+			"name": "Wool tunic",
+			"kind": "clothing",
+			"description": "A woven wool shirt. Warm even when damp.",
+			"how_to_get": [
+				"Craft: 3 Wool, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wool_trousers": {
+			"name": "Wool trousers",
+			"kind": "clothing",
+			"description": "Heavy woven wool trousers.",
+			"how_to_get": [
+				"Craft: 3 Wool, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wool_cap": {
+			"name": "Wool cap",
+			"kind": "clothing",
+			"description": "A snug knitted wool cap.",
+			"how_to_get": [
+				"Craft: 2 Wool"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"wool_mittens": {
+			"name": "Wool mittens",
+			"kind": "clothing",
+			"description": "Thick wool mittens.",
+			"how_to_get": [
+				"Craft: 2 Wool"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"linen_shirt": {
+			"name": "Linen shirt",
+			"kind": "clothing",
+			"description": "A light linen shirt. Cool in summer heat.",
+			"how_to_get": [
+				"Craft: 3 Linen, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fur_cloak": {
+			"name": "Fur cloak",
+			"kind": "clothing",
+			"description": "A heavy cloak of fur pelts. The warmest body cover.",
+			"how_to_get": [
+				"Craft: 3 Hide, 2 Sinew"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fur_hat": {
+			"name": "Fur hat",
+			"kind": "clothing",
+			"description": "A fur hat with ear flaps.",
+			"how_to_get": [
+				"Craft: 1 Hide, 1 Sinew"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fur_boots": {
+			"name": "Fur boots",
+			"kind": "clothing",
+			"description": "Hide boots lined with fur.",
+			"how_to_get": [
+				"Craft: 2 Hide, 1 Sinew"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"oats": {
+			"name": "Oats",
+			"kind": "material",
+			"description": "Hardy grain for porridge and bread in cool, wet ground.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Oat cakes",
+				"Used in Oat flour",
+				"Used in Oat porridge"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rye": {
+			"name": "Rye",
+			"kind": "material",
+			"description": "A tough grain that grows where wheat will not.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Rye flour"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cabbage": {
+			"name": "Cabbage",
+			"kind": "material",
+			"description": "A heavy leafy head. Keeps through the winter.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Cabbage stew",
+				"Used in Sauerkraut"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"onion": {
+			"name": "Onion",
+			"kind": "material",
+			"description": "A pungent bulb. Flavours food and keeps well.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Cabbage stew",
+				"Used in Cactus fry",
+				"Used in Fish pie",
+				"Used in Onion roast",
+				"Used in Pea soup"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"peas": {
+			"name": "Peas",
+			"kind": "material",
+			"description": "Green pods of sweet peas. Dry them for winter.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Pea soup"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beet": {
+			"name": "Beet",
+			"kind": "material",
+			"description": "A deep red root, sweet when roasted.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Beet roast"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"oats_seeds": {
+			"name": "Oats seeds",
+			"kind": "material",
+			"description": "Seeds for sowing oats. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rye_seeds": {
+			"name": "Rye seeds",
+			"kind": "material",
+			"description": "Seeds for sowing rye. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cabbage_seeds": {
+			"name": "Cabbage seeds",
+			"kind": "material",
+			"description": "Seeds for sowing cabbage. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"onion_seeds": {
+			"name": "Onion seeds",
+			"kind": "material",
+			"description": "Seeds for sowing onion. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"peas_seeds": {
+			"name": "Peas seeds",
+			"kind": "material",
+			"description": "Seeds for sowing peas. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beet_seeds": {
+			"name": "Beet seeds",
+			"kind": "material",
+			"description": "Seeds for sowing beet. Plant in a tilled bed.",
+			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"oat_porridge": {
+			"name": "Oat porridge",
+			"kind": "food",
+			"description": "Oats simmered thick with crushed nuts.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Oats, 1 Water, 1 Hazelnuts"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"barley_broth": {
+			"name": "Barley broth",
+			"kind": "food",
+			"description": "A thin warm broth of barley and carrot.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Barley, 1 Wild carrot roots, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"rye_flatbread": {
+			"name": "Rye flatbread",
+			"kind": "food",
+			"description": "A dense salty flatbread baked on the hot clay.",
+			"how_to_get": [
+				"Craft at a clay hearth: 2 Flour, 1 Water, 1 Sea salt"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"pea_soup": {
+			"name": "Pea soup",
+			"kind": "food",
+			"description": "A thick green soup of peas and onion.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Peas, 1 Onion, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"turnip_mash": {
+			"name": "Turnip mash",
+			"kind": "food",
+			"description": "Boiled turnip mashed with fat.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Turnip, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"baked_potato": {
+			"name": "Baked potato",
+			"kind": "food",
+			"description": "A potato baked in the embers and split with fat.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Potato, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cabbage_stew": {
+			"name": "Cabbage stew",
+			"kind": "food",
+			"description": "Cabbage, meat and onion stewed together.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Cabbage, 1 Raw meat, 1 Onion"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"beet_roast": {
+			"name": "Beet roast",
+			"kind": "food",
+			"description": "Beets roasted in the coals with thyme.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Beet, 1 Thyme"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"onion_roast": {
+			"name": "Onion roast",
+			"kind": "food",
+			"description": "Onions roasted soft and sweet in fat.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Onion, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"seaweed_soup": {
+			"name": "Seaweed soup",
+			"kind": "food",
+			"description": "A salty soup of seaweed and shellfish.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Seaweed, 1 Shellfish, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"mussel_stew": {
+			"name": "Mussel stew",
+			"kind": "food",
+			"description": "Shellfish stewed with wild garlic.",
+			"how_to_get": [
+				"Craft at a campfire pot: 3 Shellfish, 1 Wild garlic leaves, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"crab_cakes": {
+			"name": "Crab cakes",
+			"kind": "food",
+			"description": "Crab meat and flour fried into cakes.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Crab meat, 1 Flour"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"egg_nettle_fry": {
+			"name": "Egg and nettle fry",
+			"kind": "food",
+			"description": "Eggs fried with young nettle greens.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Egg, 1 Greens, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"herb_omelette": {
+			"name": "Herb omelette",
+			"kind": "food",
+			"description": "Eggs beaten with thyme and fried.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Egg, 1 Thyme"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"seal_stew": {
+			"name": "Seal stew",
+			"kind": "food",
+			"description": "Dark seal meat stewed with turnip.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Seal meat, 1 Turnip, 1 Water"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"venison_pie": {
+			"name": "Venison pie",
+			"kind": "food",
+			"description": "Meat and fat baked in a flour crust.",
+			"how_to_get": [
+				"Craft at a oven: 1 Raw meat, 1 Flour, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"fish_pie": {
+			"name": "Fish pie",
+			"kind": "food",
+			"description": "Fish and onion baked in a flour crust.",
+			"how_to_get": [
+				"Craft at a oven: 1 Trout, 1 Flour, 1 Onion"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"juniper_trout": {
+			"name": "Juniper trout",
+			"kind": "food",
+			"description": "Trout roasted over the coals with juniper berries.",
+			"how_to_get": [
+				"Craft at a campfire: 1 Trout, 1 Juniper berries"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"garlic_bread": {
+			"name": "Garlic bread",
+			"kind": "food",
+			"description": "Flat bread rubbed with wild garlic.",
+			"how_to_get": [
+				"Craft at a clay hearth: 2 Flour, 1 Wild garlic leaves"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"oat_cakes": {
+			"name": "Oat cakes",
+			"kind": "food",
+			"description": "Oats and fat pressed and baked into cakes.",
+			"how_to_get": [
+				"Craft at a clay hearth: 2 Oats, 1 Animal fat"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"jerky": {
+			"name": "Jerky",
+			"kind": "food",
+			"description": "Salted meat strips dried over smoke. Keeps for weeks.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Raw meat, 1 Sea salt"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"salted_fish": {
+			"name": "Salted fish",
+			"kind": "food",
+			"description": "Fish cured in salt in a pot. Keeps for weeks.",
+			"how_to_get": [
+				"Craft at a campfire pot: 1 Trout, 1 Sea salt"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"dried_berries": {
+			"name": "Dried berries",
+			"kind": "food",
+			"description": "Blueberries dried by the fire. Sweet and long lasting.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Blueberries"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"sauerkraut": {
+			"name": "Sauerkraut",
+			"kind": "food",
+			"description": "Salted cabbage fermented in a pot.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Cabbage, 1 Sea salt"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"hazelnut_butter": {
+			"name": "Hazelnut butter",
+			"kind": "food",
+			"description": "Hazelnuts ground to a rich paste.",
+			"how_to_get": [
+				"Craft at a campfire: 3 Hazelnuts"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"banana_fritter": {
+			"name": "Banana fritter",
+			"kind": "food",
+			"description": "Banana and flour fried golden.",
+			"how_to_get": [
+				"Craft at a campfire: 2 Bananas, 1 Flour"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cactus_fry": {
+			"name": "Cactus fry",
+			"kind": "food",
+			"description": "Prickly pear fried with onion.",
+			"how_to_get": [
+				"Craft at a campfire: 1 Prickly pears, 1 Onion"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"tallow": {
+			"name": "Tallow",
+			"kind": "material",
+			"description": "Animal fat rendered clean in a pot. Burns well and keeps.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Animal fat"
+			],
+			"used_for": [
+				"Used in Soap",
+				"Used in Tallow candle"
+			],
+			"obtainable_now": true
+		},
+		"soap": {
+			"name": "Soap",
+			"kind": "material",
+			"description": "Tallow and ash lye boiled and cut into a bar. Cleans wounds and cloth.",
+			"how_to_get": [
+				"Craft at a campfire pot: 2 Tallow, 1 Potash"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"leather_strap": {
+			"name": "Leather strap",
+			"kind": "material",
+			"description": "A strip of leather for straps, belts and harness.",
+			"how_to_get": [
+				"Craft: 1 Leather (keep Stone knife)"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"milk": {
+			"name": "Milk",
+			"kind": "food",
+			"description": "Fresh milk from a tame animal. Drink it soon or make it keep.",
+			"how_to_get": [],
+			"used_for": [
+				"Used in Butter",
+				"Used in Cheese"
+			],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"butter": {
+			"name": "Butter",
+			"kind": "food",
+			"description": "Milk churned thick and golden. Keeps for weeks.",
+			"how_to_get": [
+				"Craft: 3 Milk"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		},
+		"cheese": {
+			"name": "Cheese",
+			"kind": "food",
+			"description": "Milk curdled, pressed and salted. Keeps for months.",
+			"how_to_get": [
+				"Craft at a campfire pot: 4 Milk, 1 Sea salt"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "planned"
+		}
+	}
+}

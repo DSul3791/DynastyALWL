@@ -191,6 +191,7 @@ var _quality_buttons: Array = []         # Esc > Settings, one per tier; the act
 var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
+var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
@@ -2673,7 +2674,7 @@ func _make_environment(root: Node3D) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	sea.material_override = WaterMaterial.make()   # the same look as the rivers
+	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
 
 
@@ -2780,6 +2781,18 @@ func _update_view(delta: float) -> void:
 
 		if debug_clip != "":
 			clip = debug_clip
+
+		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
+		# swing and its impact frame is the moment held_item.gd sends the blow.
+		var work: String = held.work_clip() if held != null else ""
+
+		if work != "" and _avatar.animation_player.has_animation(work):
+			clip = work
+
+			if held.swing_serial != _work_serial:
+				_work_serial = held.swing_serial
+				_avatar.animation_player.play(work, 0.05)
+				_avatar.animation_player.seek(0.0, true)
 
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 

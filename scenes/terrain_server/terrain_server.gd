@@ -432,6 +432,15 @@ func _ready() -> void:
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
+	animals.hour_now = func(): return game_clock.hour()
+	var biome_names: Dictionary = {}
+
+	for biome_entry in tables.get_entries("biomes"):
+		biome_names[int(biome_entry["id"])] = str(biome_entry["name"])
+
+	animals.biome_at = func(x, z):
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+		return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -499,6 +508,7 @@ func _ready() -> void:
 			dialogue.router.mode = arg.substr(9)   # auto, static, ai or down (pretend the AI is dead: NPCs are unwell)
 
 	spawn = _spawn_point(world_dir)
+	animals.starter = Vector2(spawn.x, spawn.z)   # big game keeps out of its exclusion circle around the real spawn point (read once, from the starter tile)
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()

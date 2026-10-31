@@ -36,6 +36,9 @@ var water_level: Callable          # (x, z) -> water surface height, NAN on dry 
 var thieves = null                 # opportunists (fox; server_thieves.gd): smell loose food, creep up, take it and run
 var drop_loot: Callable            # (item number, count, position) when a thief is killed carrying food
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
+var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
+var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var starter: Vector2 = Vector2(INF, INF)   # the real spawn point (x, z) from the starter tile; "exclude" circles of big game are centred on it when set
 var wolves = null                  # the pack brain (server_wolves.gd); wired by the server, tests may leave player_info unset
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -627,6 +630,9 @@ func _top_up(players: Array, only: int) -> void:
 			if def.has("spawn_share") and rng.randf() > float(def["spawn_share"]):   # luck-exempt: rare species turn up on some top-ups only
 				continue
 
+			if rng.randf() > activity_chance(def):   # luck-exempt: night animals rarely turn up by day and the other way round
+				continue
+
 			# A few candidate spots; the first the species can live on wins, a forest animal takes a spot under trees if one turns up.
 			var x: float = 0.0
 			var z: float = 0.0
@@ -635,20 +641,31 @@ func _top_up(players: Array, only: int) -> void:
 			for attempt in int(def.get("tries", cfg.get("habitat_tries", 6))):
 				var angle: float = rng.randf() * TAU   # luck-exempt: where wildlife appears
 				var dist: float = rng.randf_range(float(cfg.get("spawn_min_m", 150.0)), float(cfg.get("spawn_max_m", 250.0)))   # luck-exempt: as above
+
+				if rng.randf() < float(cfg.get("near_share", 0.0)):   # luck-exempt: some wildlife turns up close, so a new player sees animals
+					dist = rng.randf_range(float(cfg.get("near_min_m", 60.0)), float(cfg.get("near_max_m", 120.0)))
 				var cx: float = p.x + cos(angle) * dist
 				var cz: float = p.z + sin(angle) * dist
 				var too_near: bool = false
 
 				for q in players:
-					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9)
+					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
 				if too_near or (not def.has("flock") and blocked.is_valid() and bool(blocked.call(cx, cz))):
 					continue
 
 				var keep_out: Array = def.get("exclude", [])
 
-				if keep_out.size() == 3 and Vector2(cx - float(keep_out[0]), cz - float(keep_out[1])).length() < float(keep_out[2]):
-					continue   # big game stays out of the starter tile
+				if keep_out.size() == 3:
+					var centre: Vector2 = starter if starter.x != INF else Vector2(float(keep_out[0]), float(keep_out[1]))
+
+					if Vector2(cx, cz).distance_to(centre) < float(keep_out[2]):
+						continue   # big game stays out of the starter tile
+
+				var weight: float = biome_weight(def, cx, cz)
+
+				if weight <= 0.0 or (weight < 1.0 and rng.randf() > weight):   # luck-exempt: biome suits the species this much
+					continue
 
 				var score: float = _habitat_score(def, cx, cz, p.y)
 
@@ -680,6 +697,33 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# The period of the game day for a clock hour: "dusk" for the hours around sunrise (5 to 8) and sunset (18 to 21), "day" between, "night" otherwise.
+static func period_of(hour: float) -> String:
+	if hour >= 8.0 and hour < 18.0:
+		return "day"
+
+	if (hour >= 5.0 and hour < 8.0) or (hour >= 18.0 and hour < 21.0):
+		return "dusk"
+
+	return "night"
+
+
+# The chance (0..1) that a top-up may spawn this species now: the row's "active" value for the current period, 1 without a clock or a row.
+func activity_chance(def: Dictionary) -> float:
+	if not def.has("active") or not hour_now.is_valid():
+		return 1.0
+
+	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)), 0.0, 1.0)
+
+
+# The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
+func biome_weight(def: Dictionary, x: float, z: float) -> float:
+	if not def.has("biomes") or not biome_at.is_valid():
+		return 1.0
+
+	return float((def["biomes"] as Dictionary).get(str(biome_at.call(x, z)), 0.0))
 
 
 # How well a spot suits a species: -1 when it cannot live there (too steep, a summit far above the player, at the water's edge),

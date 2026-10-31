@@ -11,6 +11,9 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const WaterLive := preload("res://src/water/water_live.gd")
 
 
+var published: PackedFloat32Array = PackedFloat32Array()      # the levels the client would draw (hold and film included)
+
+
 func _initialize() -> void:
 	var minutes: float = 30.0
 
@@ -45,6 +48,10 @@ func _initialize() -> void:
 
 	while live.seconds() < minutes * 60.0 and Time.get_ticks_msec() - started < 240000:
 		live.tick(WaterLive.DEFAULT_RATE)
+		var fresh: PackedFloat32Array = live.take_levels()
+
+		if not fresh.is_empty():
+			published = fresh
 
 		if next_mark < marks.size() and live.seconds() >= marks[next_mark]:
 			_report(live, data, wet_class, marks[next_mark])
@@ -56,7 +63,7 @@ func _initialize() -> void:
 
 func _report(live, data, wet_class: Dictionary, at: float) -> void:
 	var depth: PackedFloat32Array = live.sim.get_depth()
-	var levels: PackedFloat32Array = live.sim.level_map()
+	var levels: PackedFloat32Array = published if not published.is_empty() else live.sim.level_map()
 	var river_wet: int = 0
 	var lake_wet: int = 0
 	var river_drawn: int = 0

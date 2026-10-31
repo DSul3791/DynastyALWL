@@ -5,9 +5,6 @@
 		"thatch_grass": {"item": "thatch", "count": 10},
 		"oak": {"item": "tannin_bark", "count": 3},
 		"tinder_fungus": {"item": "tinder_fungus", "count": 3},
-		"cotton_grass": {"item": "tinder", "count": 8},
-		"fern": {"item": "bedding", "count": 6},
-		"heather": {"item": "bedding", "count": 6},
 		"wild_thyme": {"item": "thyme", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
 		"sorrel": {"item": "sorrel_leaves", "count": 12},
@@ -199,8 +196,8 @@
 				2,
 				3
 			],
-			"stones_max_boost": 4,
-			"sticks_max_boost": 4
+			"stones_max_boost": 2,
+			"sticks_max_boost": 2
 		}
 	},
 	"stump": {

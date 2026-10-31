@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 246,
+	"next_number": 281,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -46,7 +46,7 @@
 				"stone_axe",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"wooden_spear": {
@@ -69,7 +69,7 @@
 				"wooden_spear",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 6.0,
 			"known": true
 		},
 		"spear": {
@@ -96,7 +96,7 @@
 				"spear",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"stone_knife": {
@@ -117,7 +117,7 @@
 				"stone_knife",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"torch": {
@@ -159,7 +159,7 @@
 				"campfire_kit",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"poultice_plantain": {
@@ -270,7 +270,7 @@
 				"wooden_spade",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lean_to_kit": {
@@ -295,7 +295,7 @@
 				"lean_to_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"chest_kit": {
@@ -316,7 +316,7 @@
 				"chest_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true
 		},
 		"chopping_block": {
@@ -333,7 +333,7 @@
 				"chopping_block",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lumber": {
@@ -967,7 +967,7 @@
 				"rough_bed_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"campfire_pot_kit": {
@@ -1113,7 +1113,7 @@
 				"workbench_kit",
 				1
 			],
-			"craft_s": 12.0,
+			"craft_s": 40.0,
 			"known": true
 		},
 		"shore_net": {
@@ -1176,7 +1176,7 @@
 				"tool_rack_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3462,7 +3462,7 @@
 				"stone_hammer",
 				1
 			],
-			"craft_s": 6.0,
+			"craft_s": 15.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3552,7 +3552,7 @@
 				["twine", 3]
 			],
 			"gives": ["wooden_bow", 1],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3718,7 +3718,7 @@
 				"stone_pickaxe",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 25.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -4985,6 +4985,805 @@
 			],
 			"craft_s": 20.0,
 			"known": true
+		},
+		"flour_from_oats": {
+			"number": 246,
+			"name": "Oat flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"oats",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"flour_from_rye": {
+			"number": 247,
+			"name": "Rye flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"rye",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"cook_oat_porridge": {
+			"number": 248,
+			"name": "Oat porridge",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"oats",
+					2
+				],
+				[
+					"water",
+					1
+				],
+				[
+					"hazelnuts",
+					1
+				]
+			],
+			"gives": [
+				"oat_porridge",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_barley_broth": {
+			"number": 249,
+			"name": "Barley broth",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"barley",
+					2
+				],
+				[
+					"wild_carrot_roots",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"barley_broth",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_rye_flatbread": {
+			"number": 250,
+			"name": "Rye flatbread",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"flour",
+					2
+				],
+				[
+					"water",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"rye_flatbread",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_pea_soup": {
+			"number": 251,
+			"name": "Pea soup",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"peas",
+					2
+				],
+				[
+					"onion",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"pea_soup",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_turnip_mash": {
+			"number": 252,
+			"name": "Turnip mash",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"turnip",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"turnip_mash",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_baked_potato": {
+			"number": 253,
+			"name": "Baked potato",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"potato",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"baked_potato",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_cabbage_stew": {
+			"number": 254,
+			"name": "Cabbage stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"cabbage",
+					1
+				],
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"cabbage_stew",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_beet_roast": {
+			"number": 255,
+			"name": "Beet roast",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"beet",
+					2
+				],
+				[
+					"thyme",
+					1
+				]
+			],
+			"gives": [
+				"beet_roast",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_onion_roast": {
+			"number": 256,
+			"name": "Onion roast",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"onion",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"onion_roast",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_seaweed_soup": {
+			"number": 257,
+			"name": "Seaweed soup",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seaweed",
+					2
+				],
+				[
+					"shellfish",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"seaweed_soup",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_mussel_stew": {
+			"number": 258,
+			"name": "Mussel stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"shellfish",
+					3
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"mussel_stew",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_crab_cakes": {
+			"number": 259,
+			"name": "Crab cakes",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"crab_meat",
+					2
+				],
+				[
+					"flour",
+					1
+				]
+			],
+			"gives": [
+				"crab_cakes",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_egg_nettle_fry": {
+			"number": 260,
+			"name": "Egg and nettle fry",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					2
+				],
+				[
+					"greens",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"egg_nettle_fry",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_herb_omelette": {
+			"number": 261,
+			"name": "Herb omelette",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					3
+				],
+				[
+					"thyme",
+					1
+				]
+			],
+			"gives": [
+				"herb_omelette",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_seal_stew": {
+			"number": 262,
+			"name": "Seal stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seal_meat",
+					1
+				],
+				[
+					"turnip",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"seal_stew",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_venison_pie": {
+			"number": 263,
+			"name": "Venison pie",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"venison_pie",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_fish_pie": {
+			"number": 264,
+			"name": "Fish pie",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"fish_pie",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_juniper_trout": {
+			"number": 265,
+			"name": "Juniper trout",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"juniper_berries",
+					1
+				]
+			],
+			"gives": [
+				"juniper_trout",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_garlic_bread": {
+			"number": 266,
+			"name": "Garlic bread",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"flour",
+					2
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				]
+			],
+			"gives": [
+				"garlic_bread",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_oat_cakes": {
+			"number": 267,
+			"name": "Oat cakes",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"oats",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"oat_cakes",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_jerky": {
+			"number": 268,
+			"name": "Jerky",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"jerky",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_salted_fish": {
+			"number": 269,
+			"name": "Salted fish",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"salted_fish",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_dried_berries": {
+			"number": 270,
+			"name": "Dried berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blueberries",
+					3
+				]
+			],
+			"gives": [
+				"dried_berries",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_sauerkraut": {
+			"number": 271,
+			"name": "Sauerkraut",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"cabbage",
+					2
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"sauerkraut",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_hazelnut_butter": {
+			"number": 272,
+			"name": "Hazelnut butter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"hazelnuts",
+					3
+				]
+			],
+			"gives": [
+				"hazelnut_butter",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_banana_fritter": {
+			"number": 273,
+			"name": "Banana fritter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"bananas",
+					2
+				],
+				[
+					"flour",
+					1
+				]
+			],
+			"gives": [
+				"banana_fritter",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_cactus_fry": {
+			"number": 274,
+			"name": "Cactus fry",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"prickly_pears",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"cactus_fry",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "campfire",
+			"known": true
+		},
+		"tallow": {
+			"number": 275,
+			"name": "Tallow",
+			"category": "Materials",
+			"needs": [
+				[
+					"animal_fat",
+					2
+				]
+			],
+			"gives": [
+				"tallow",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"soap": {
+			"number": 276,
+			"name": "Soap",
+			"category": "Materials",
+			"needs": [
+				[
+					"tallow",
+					2
+				],
+				[
+					"potash",
+					1
+				]
+			],
+			"gives": [
+				"soap",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"tallow_candle": {
+			"number": 277,
+			"name": "Tallow candle",
+			"category": "Tools",
+			"needs": [
+				[
+					"tallow",
+					1
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"candle",
+				3
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"leather_strap": {
+			"number": 278,
+			"name": "Leather strap",
+			"category": "Materials",
+			"needs": [
+				[
+					"leather",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_knife",
+					1
+				]
+			],
+			"gives": [
+				"leather_strap",
+				2
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"butter": {
+			"number": 279,
+			"name": "Butter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"milk",
+					3
+				]
+			],
+			"gives": [
+				"butter",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true
+		},
+		"cheese": {
+			"number": 280,
+			"name": "Cheese",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"milk",
+					4
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"cheese",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "campfire_pot"
 		}
 	}
 }

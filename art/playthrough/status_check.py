@@ -48,7 +48,9 @@ def obtainable(i):
 
 
 def blocked_count():
-    return sum(1 for r in recipes.values() if r["blocked_by"] and not r["future"])
+    # a blocked recipe does not count when another recipe already makes the same product today (lumber: wedge route vs sawmill/hand saw)
+    made_now = set(r["gives"] for r in recipes.values() if r["wave_now"] is not None)
+    return sum(1 for r in recipes.values() if r["blocked_by"] and not r["future"] and r["gives"] not in made_now)
 
 
 learn = sum(1 for r in recipes.values() if r["known"])
@@ -87,8 +89,15 @@ row("F-23", "ore, coal and flint can be picked up", all(obtainable(i) in ("now",
 kit_ids = [i for i, v in items.items() if v["kind"] == "placeable" and i.endswith("_kit")]
 looks = load("data/items/looks.json")["items"]
 kit_looks = set((looks.get(i, {}).get("shape"), looks.get(i, {}).get("color"), json.dumps(looks.get(i, {}).get("bits"))) for i in kit_ids)
-kit_shapes = set(looks.get(i, {}).get("shape") for i in kit_ids)
-row("F-27", "kits are told apart by shape, not only tint", len(kit_shapes) > 3, "%d kits, %d distinct shapes, %d distinct tints/emblems" % (len(kit_ids), len(kit_shapes), len(kit_looks)), "Kathleen")
+over = {}
+for line in basic.split(chr(10)):
+    m = re.match(r'\s*"([a-z_0-9]+)": \{"shape": "([a-z_0-9]+)"(.*)', line)
+    if m:
+        over[m.group(1)] = (m.group(2), tuple(re.findall(r'"([a-z_#0-9]+)"', m.group(3).split("bits")[1].split("[", 1)[1].split("]")[0])) if "bits" in m.group(3) else ())
+def kit_look(i):
+    return over.get(i) or (looks.get(i, {}).get("shape"), tuple(looks.get(i, {}).get("bits", [])))
+kit_variants = set(kit_look(i) for i in kit_ids)
+row("F-27", "kits are told apart by an emblem or shape, not only tint", len(kit_variants) >= len(kit_ids) // 2, "%d kits, %d distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796)" % (len(kit_ids), len(kit_variants)), "Kathleen")
 row("S-farm", "farming exists (crops.json read by code)", bool(subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip()), "crops.json is read by: %s" % (subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip() or "nothing"), "Sal (spec) + Tyler (code)")
 rules_ok = ("saw_mill", "campfire_pot", "snare_trap")   # refused by a placement rule (foundation, laid fire, open ground), not a bug
 place_bad = [x for x in re.findall(r"probe2: (\S+) \| (?:kit \S+|blueprint \S+) \| REFUSED", probe2) if x not in rules_ok]
@@ -104,3 +113,32 @@ broken = sum(1 for r in rows if r[2] == "STILL BROKEN")
 out.append("\n%d fixed, %d still broken, %d manual." % (fixed, broken, len(rows) - fixed - broken))
 open(os.path.join(ROOT, "PLAYTHROUGH_STATUS.md"), "w", encoding="utf8", newline="\n").write("\n".join(out) + "\n")
 print("PLAYTHROUGH_STATUS.md:", fixed, "fixed,", broken, "still broken")
+
+# Delta against the last run (status.json), so a note can carry the change and not the whole table.
+cur = {r[0]: r[2] for r in rows}
+path = os.path.join(ROOT, "art/playthrough/status.json")
+try:
+    old = json.load(open(path, encoding="utf8"))
+except Exception:
+    old = {}
+for fid, st in cur.items():
+    if fid in old and old[fid] != st:
+        print("DELTA", fid, old[fid], "->", st)
+json.dump(cur, open(path, "w", encoding="utf8"), indent=0)
+
+# Keep the scoreboard in PLAYTHROUGH_FINDINGS.md current (between the two marker lines; the file is created with them at the end if missing).
+board = ["<!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->", "## Scoreboard: FIXED / STILL BROKEN (" + __import__("datetime").date.today().isoformat() + ")", "", "| id | what | status | evidence (short) |", "|---|---|---|---|"]
+for fid, title, st, ev, owner in rows:
+    board.append("| %s | %s | **%s** | %s |" % (fid, title, st, ev.replace("|", "/")[:110]))
+board.append("")
+board.append("%d fixed, %d still broken, %d manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`." % (fixed, broken, len(rows) - fixed - broken))
+board.append("<!-- SCOREBOARD END -->")
+fp = os.path.join(ROOT, "PLAYTHROUGH_FINDINGS.md")
+NL = chr(10)
+body = open(fp, encoding="utf8", newline="").read().replace(chr(13) + NL, NL)
+block = NL.join(board)
+if "<!-- SCOREBOARD START" in body:
+    body = re.sub(r"<!-- SCOREBOARD START.*?<!-- SCOREBOARD END -->", lambda m: block, body, flags=re.S)
+else:
+    body = body.rstrip(NL) + NL + NL + "---" + NL + NL + block + NL
+open(fp, "w", encoding="utf8", newline=NL).write(body)

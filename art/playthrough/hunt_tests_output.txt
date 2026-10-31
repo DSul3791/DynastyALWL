@@ -1,0 +1,20 @@
+== test_bow
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+server items: arrow landed at x0 z-79 after 81 m (animal false, water false): broke or lost
+== test_traps
+== test_big_game
+big game: 0 failures
+== test_fishing
+fishing tests: 0 failures
+== test_fish_schools
+== test_fish_water
+== test_fish_balance
+== test_animal_senses
+animal senses: 0 failures
+== test_carcass: no such test
+== test_shore_net
+shore net tests: 0 failures

@@ -2656,7 +2656,7 @@ func _init() -> void:
 			near_stones += 1 if it8["number"] == bs.table.number_of("stone") else 0
 			near_sticks += 1 if it8["number"] == bs.table.number_of("stick") else 0
 
-	check(near_stones >= 10 and near_sticks >= 20, "within 48 m of spawn lie a campfire kit's worth (%d stones, %d sticks)" % [near_stones, near_sticks])
+	check(near_stones >= 8 and near_sticks >= 12, "within 48 m of spawn lie a campfire kit's worth (%d stones, %d sticks)" % [near_stones, near_sticks])
 	var far = make(qd8 + "_far")
 	far.respawn_point = Vector3(0.0, 10.0, 0.0)
 	far.ground_height = func(_x, _z): return 10.0

@@ -168,6 +168,18 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"montane": bool(entry.get("montane", false)),
 		}
 
+		# Shore species (reeds, riverbraid, alder...): in the listed biomes (all when none are listed) they only stand within within_m of inland water.
+		if entry.has("shore"):
+			var shore_rule: Dictionary = entry["shore"]
+			var shore_mask: PackedByteArray = PackedByteArray()
+			shore_mask.resize(256)
+
+			for name in shore_rule.get("biomes", []):
+				if biome_ids.has(name):
+					shore_mask[biome_ids[name]] = 1
+
+			item["shore"] = {"within_m": float(shore_rule.get("within_m", 14.0)), "all_biomes": not shore_rule.has("biomes"), "mask": shore_mask}
+
 		if entry.has("stand"):
 			var stand: Dictionary = entry["stand"]
 			item["stand"] = {
@@ -362,6 +374,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				var y: float = _ground_ok(item, data, k, x, z)
 
 				if is_nan(y):
+					continue
+
+				if item.has("shore") and not _shore_ok(item, data, k, x, z):
 					continue
 
 				# Evergreens hold the ridges and dry heights; hardwoods take the valleys
@@ -602,6 +617,30 @@ func _montane_cells(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 
 					var height: float = lerpf(0.9, 3.2, size)
 					found.append([_tier(item, height), species_id, STAND_BASE + index, x, y, z, height, yaw, spacing])
+
+
+# A shore species (flora.json "shore": within_m, optional biomes) stands only within within_m of inland water in its listed biomes
+# (water cells of the tile or the settled water); elsewhere it is not restricted. Probed on three rings of eight directions.
+func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
+	var shore: Dictionary = item["shore"]
+
+	if not shore["all_biomes"] and shore["mask"][data.biome[k]] == 0:
+		return true
+
+	var reach: float = shore["within_m"]
+	var sim: PackedFloat32Array = data.sim_snapshot()
+
+	for step in range(1, 4):
+		var r: float = reach * float(step) / 3.0
+
+		for a in range(8):
+			var ang: float = TAU * float(a) / 8.0
+			var j: int = data.nearest(x + cos(ang) * r, z + sin(ang) * r)
+
+			if (data.water_class[j] > 1 and not is_nan(data.water_surface[j])) or (not sim.is_empty() and not is_nan(sim[j])):
+				return true
+
+	return false
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
