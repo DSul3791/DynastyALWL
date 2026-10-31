@@ -49,3 +49,6 @@ Items 312 to 331 and recipes 201 to 220: 4 swords/maces per metal tier, 5 shield
 
 ## Farming items (added 2026-10-30, all `future`)
 Items 332 to 345 and recipes 221 to 224: six crops with seeds, Quern, Compost. See ITEM_FARMING_GAP_CHECK.md. Crop list is a choice for Dave (rec: these six).
+
+## Fauna items (added 2026-10-30, all `future`)
+Items 346 to 352 and recipes 225 to 226: Antler, Tusk, Claw, Down, Quill, Hide glue, Bone arrow. 14 new carcass loot rows. See ANIMAL_SPEC.md and data/animals/fauna_proposal.json.
