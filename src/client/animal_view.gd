@@ -22,6 +22,35 @@ var _blood: Array = []           # MeshInstance3D pool, one per drop shown
 var _blood_mat: StandardMaterial3D
 
 
+# New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10; grouse 11, seal 12, seabird 13 follow when their models exist). The small ones hop
+# on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model yet is drawn as a rabbit, as before.
+const SMALL_SPECIES := [9, 10]
+
+
+func _make_for_species(number: int, id: int) -> Node3D:
+	match number:
+		2:
+			return _make_deer(id)
+		3:
+			return _make_wolf()
+		4:
+			return _make_moose(id)
+		5:
+			return _make_fox()
+		6:
+			return _make_flock(id)
+		7:
+			return _make_horse(id)
+		8:
+			return _make_boar()
+		9:
+			return _make_songbird()
+		10:
+			return _make_frog()
+
+	return _make_rabbit()
+
+
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
 
@@ -33,10 +62,10 @@ func on_rows(rows: Array) -> void:
 			if _bodies.size() >= MAX_DRAWN:
 				continue
 
-			var node: Node3D = _make_flock(id) if int(row[1]) == 6 else _make_horse(id) if int(row[1]) == 7 else _make_fox() if int(row[1]) == 5 else _make_moose(id) if int(row[1]) == 4 else (_make_wolf() if int(row[1]) == 3 else (_make_deer(id) if int(row[1]) == 2 else _make_rabbit()))
+			var node: Node3D = _make_for_species(int(row[1]), id)
 			node.position = row[2]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2, "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
