@@ -109,7 +109,7 @@ fi
 # 5. Items.
 if [ $ITEMS = 1 ] && [ -n "$MERGED" ]; then
 	say ""; say "## 4. items_check"
-	if GODOT="$WT/tools/godot.cmd" timeout 1200 "$PY" tools/items_check.py > "$OUT/items.txt" 2>&1; then say "pass: $(tail -1 "$OUT/items.txt")"
+	if GODOT="$(cygpath -m "$WT/tools/godot.cmd" 2>/dev/null || echo "$WT/tools/godot")" timeout 1200 "$PY" tools/items_check.py > "$OUT/items.txt" 2>&1; then say "pass: $(tail -1 "$OUT/items.txt")"
 	else FAILS=$((FAILS + 1)); say "FAIL: $(grep -iE 'FAIL|ERROR' "$OUT/items.txt" | head -5 | tr '\n' ' ' | cut -c1-400)"; fi
 fi
 say ""; [ $FAILS = 0 ] && say "RESULT: GREEN" || say "RESULT: RED ($FAILS problem(s))"
