@@ -2494,7 +2494,11 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		number = inv.numbers[slot]
 		kit_id = table.id_of(number)
 
-	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M or (kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty()):
+	if kit_id != "campfire_kit" and _structure_of_kit(kit_id).is_empty():
+		return
+
+	if _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+		_say(peer, "Too far to place that.")   # every refusal below says why, so the ghost doing nothing is never a mystery (Dave 31 Oct 2026)
 		return
 
 	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows())
@@ -2509,7 +2513,15 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
-	if is_nan(ground) or absf(ground - at.y) > (1.0 if not on_base else 1.5) or ground < 1.0:
+	if is_nan(ground):
+		return
+
+	if ground < 1.0:
+		_say(peer, "The ground is too wet here.")
+		return
+
+	if absf(ground - at.y) > (1.0 if not on_base else 1.5):
+		_say(peer, "You cannot place that there.")
 		return
 
 	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
@@ -2544,14 +2556,17 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	for id in _items:
 		if _items[id].has("fire"):
 			if _items[id]["pos"].distance_to(spot) < _fire_gap_m:
+				_say(peer, "Too close to another fire.")
 				return
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
 		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):
+			_say(peer, "Something is in the way.")
 			return
 
 	if chunk_fires >= _fires_per_chunk:
+		_say(peer, "Too many fires here.")
 		return
 
 	inv.take_from_slot(slot, 1)
@@ -4610,6 +4625,13 @@ func _structure_of_kit(kit_id: String) -> Dictionary:
 	return {}
 
 
+# Does a spot lie inside the covered box of a placed shelter (its half_x by half_z from structures.json, turned by its yaw)?
+func _inside_shelter(shelter: Dictionary, spot: Vector3) -> bool:
+	var def: Dictionary = _structures.get(str(shelter["struct"]["kind"]), {})
+	var local: Vector2 = Vector2(spot.x - shelter["pos"].x, spot.z - shelter["pos"].z).rotated(deg_to_rad(float(shelter["struct"].get("yaw", 0.0))))
+	return absf(local.x) <= float(def.get("half_x", 0.0)) and absf(local.y) <= float(def.get("half_z", 0.0)) and absf(spot.y - shelter["pos"].y) < 1.5
+
+
 func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary) -> void:
 	var attaching: bool = str(def.get("attach_to", "")) == "fire"
 
@@ -4634,7 +4656,11 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")):
+		# A rough bed goes INSIDE a lean-to (Dave 31 Oct 2026): its middle may lie within the shelter's covered box, whatever the gap.
+		var bed_in_shelter: bool = str(def.get("kind", "")) == "rough_bed" and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("shelter", false)) and _inside_shelter(other, spot)
+
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter:
+			_say(peer, "Something is in the way.")
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
