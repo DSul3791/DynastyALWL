@@ -12,7 +12,7 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
@@ -143,6 +143,10 @@ func _init() -> void:
 
 	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
 	var wood_file: Dictionary = _read("wood_species.json")
+
+	for gid in wood_file.get("ingredient_groups", {}):   # a group (plain "log") is obtainable when a member is (F-16: no server fallback gives the plain item)
+		if String(gid) != "note":
+			obtainable[String(gid)] = true
 
 	for cls in wood_file.get("class_items", {}):
 		for step in ["firewood", "block"]:
@@ -638,6 +642,41 @@ func _init() -> void:
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
+
+	# Ingredient groups (wood_species.json ingredient_groups, guide F-16): an id like plain "log" is filled by any member (log_oak ...). Each group needs
+	# members that exist, and no recipe or blueprint may ask for an id nothing yields: not gathered, not made, not a group, not marked future.
+	var groups: Dictionary = wood_file.get("ingredient_groups", {})
+
+	for gid in groups:
+		if String(gid) == "note":
+			continue
+
+		var members: Array = groups[gid]
+
+		if members.is_empty():
+			fail("wood_species.json ingredient_groups.%s has no members" % gid)
+
+		for member in members:
+			if not all.has(String(member)):
+				fail("wood_species.json ingredient_groups.%s: unknown item '%s'" % [gid, member])
+
+	var sourceless: Dictionary = {}
+
+	for rid in recipes:
+		if bool(recipes[rid].get("retired", false)):
+			continue
+
+		for list in ["needs", "keeps"]:
+			for row in recipes[rid].get(list, []):
+				var need_id: String = String(row[0])
+
+				if groups.has(need_id) or obtainable.has(need_id) or craftable.has(need_id) or bool(all.get(need_id, {}).get("future", false)):
+					continue
+
+				sourceless[need_id] = rid
+
+	for need_id in sourceless:
+		fail("recipe '%s' needs '%s', which nothing yields (not gathered, not made, not a group, not marked future)" % [sourceless[need_id], need_id])
 
 	# A player can never be asked to craft with something the game calls "Unknown" (Dave 24 Oct): an ingredient of a kit or twine recipe known from the start,
 	# must be fully familiar.

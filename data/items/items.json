@@ -712,6 +712,7 @@
 		},
 		"willow_bark_tea": {
 			"number": 59,
+			"future": true,
 			"name": "Willow bark tea",
 			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
 			"kind": "food",
@@ -2059,6 +2060,7 @@
 		},
 		"acorn_mash": {
 			"number": 178,
+			"future": true,
 			"name": "Acorn mash",
 			"description": "Leached acorns boiled to a mash. Famine food.",
 			"kind": "food",
@@ -2707,6 +2709,7 @@
 		},
 		"nails": {
 			"number": 228,
+			"future": true,
 			"name": "Nails",
 			"description": "Iron nails, bought and used by the handful.",
 			"kind": "material",
@@ -2734,6 +2737,7 @@
 		},
 		"tar": {
 			"number": 231,
+			"future": true,
 			"name": "Tar",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"kind": "material",
@@ -2743,6 +2747,7 @@
 		},
 		"hinges": {
 			"number": 232,
+			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2896,6 +2901,7 @@
 		},
 		"hand_saw": {
 			"number": 245,
+			"future": true,
 			"name": "Hand saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
 			"kind": "tool",
@@ -3128,6 +3134,7 @@
 		},
 		"flatbread": {
 			"number": 273,
+			"future": true,
 			"name": "Flatbread",
 			"description": "A flat cake baked on the hot clay. Plain and filling.",
 			"kind": "food",
@@ -3221,6 +3228,7 @@
 		},
 		"processed_hide": {
 			"number": 282,
+			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
@@ -3875,6 +3883,7 @@
 		},
 		"leather_cap": {
 			"number": 324,
+			"future": true,
 			"name": "Leather cap",
 			"description": "A close leather cap. Better than bare hide.",
 			"kind": "clothing",
