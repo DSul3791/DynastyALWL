@@ -3156,14 +3156,14 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.74, 0.66, 0.38), "reach": 1.2, "blade_h": 0.8, "blade_base": Color(0.13, 0.25, 0.07), "blade_tip": Color(0.78, 0.68, 0.38), "head_size": 1.5},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.9, 0.78, 0.4), "reach": 1.35, "blade_h": 0.85, "blade_base": Color(0.12, 0.27, 0.12), "blade_tip": Color(0.8, 0.7, 0.36), "head_size": 1.8},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
 	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
 	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
-	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.84, 0.72, 0.34), "reach": 1.1, "blade_h": 0.85, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
+	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.92, 0.78, 0.34), "reach": 1.3, "blade_h": 0.9, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
 
@@ -3201,7 +3201,7 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 	var color: Color = look["head_color"]
 
-	for k in range(3 if far else int(look["heads"])):
+	for k in range(4 if far and head == "seed" else (3 if far else int(look["heads"]))):   # a far patch needs its plumes too: four stems with one fat head each, so it reads as straw gold at 20 to 40 m (flora report 2/5)
 		var a: float = rng.randf() * TAU
 		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
 		var base: Vector3 = out * crown * rng.randf_range(0.05, 0.3)
@@ -3228,6 +3228,9 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					_bead(bark, tip, Vector3(h * 0.07, h * 0.08, h * 0.07), color)
 				elif head == "spike":
 					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
+				elif far:
+					if head == "seed":
+						_bead(bark, tip, Vector3(h * 0.04, h * 0.1, h * 0.04) * float(look.get("head_size", 1.0)), color * rng.randf_range(0.95, 1.1))
 				elif not far:
 					var hs: float = float(look.get("head_size", 1.0))
 
