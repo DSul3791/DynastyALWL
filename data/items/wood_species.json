@@ -4,6 +4,12 @@
 		"hardwood": {"firewood": "firewood", "block": "wooden_block"},
 		"softwood": {"firewood": "firewood_soft", "block": "wooden_block_soft"}
 	},
+	"ingredient_groups": {
+		"note": "An ingredient id that names a group (a recipe asking for plain log) is filled by any member. The crafting code matches members; validate_items checks every group has members and that no recipe needs a plain id with no source. Defined by Sal 2026-10-31 for guide finding F-16; code half in LOG_SPECIES_SPEC.md.",
+		"log": ["log_oak", "log_beech", "log_birch", "log_scots_pine", "log_spruce", "log_alder", "log_willow", "log_coconut_palm", "log_tropical_hardwood", "log_acacia", "log_mangrove", "log_rowan", "log_wild_apple", "log_wild_pear", "log_wild_cherry", "log_sweet_chestnut", "log_walnut", "log_date_palm", "log_mirrorbark", "log_wardpine", "log_hearthwood", "log_everember", "log_witness_tree", "log_balsam_fir", "log_maple"],
+		"wooden_block": ["wooden_block", "wooden_block_soft"],
+		"firewood": ["firewood", "firewood_soft"]
+	},
 	"key_woods": ["oak", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
 	"retired_to": {"log_": "log", "lumber_": "lumber", "beam_": "lumber"},
 	"default": {
