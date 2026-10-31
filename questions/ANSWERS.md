@@ -1862,3 +1862,7 @@ Answered: 2026-10-31 19:56 UTC
 Answer: Yes
 Answered: 2026-10-31 19:57 UTC
 
+## pic-orchard | Does the orchard read as an orchard of fruit trees (rows of trees, fruit on them)?
+Answer: No | Comment: In that picture, I can see many trees, but I only see a little bit of fruit on one tree
+Answered: 2026-10-31 19:57 UTC
+
