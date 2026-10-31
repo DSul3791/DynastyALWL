@@ -566,7 +566,22 @@
 			"clears_grass": true,
 			"use": "unpile",
 			"stones": 45
-		}
+		},
+"log_seat": {"kit": "log_seat_kit", "item": "log_seat", "state": 59, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 12, "look": "log_seat", "sound": "timber", "clears_grass": false, "comfort": "log_seat", "gap_exempt": true},
+		"stool": {"kit": "stool_kit", "item": "stool", "state": 60, "footprint_x": 0.45, "footprint_z": 0.45, "cap_per_chunk": 12, "look": "stool", "sound": "timber", "clears_grass": false, "comfort": "stool", "gap_exempt": true},
+		"bench": {"kit": "bench_kit", "item": "bench", "state": 61, "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 12, "look": "bench", "sound": "timber", "clears_grass": false, "comfort": "bench", "gap_exempt": true},
+		"chair": {"kit": "chair_kit", "item": "chair", "state": 62, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "chair", "sound": "timber", "clears_grass": false, "comfort": "chair", "gap_exempt": true},
+		"table": {"kit": "table_kit", "item": "table", "state": 63, "footprint_x": 1.4, "footprint_z": 0.7, "cap_per_chunk": 12, "look": "table", "sound": "timber", "clears_grass": false, "comfort": "table", "gap_exempt": true},
+		"hide_rug": {"kit": "hide_rug_kit", "item": "hide_rug", "state": 64, "footprint_x": 1.7, "footprint_z": 1.1, "cap_per_chunk": 12, "look": "hide_rug", "sound": "thump", "clears_grass": false, "comfort": "hide_rug", "gap_exempt": true},
+		"wool_rug": {"kit": "wool_rug_kit", "item": "wool_rug", "state": 65, "footprint_x": 1.6, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "wool_rug", "sound": "thump", "clears_grass": false, "comfort": "wool_rug", "gap_exempt": true},
+		"straw_bed": {"kit": "straw_bed_kit", "item": "straw_bed", "state": 66, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "straw_bed", "sound": "thump", "clears_grass": false, "comfort": "straw_bed", "gap_exempt": true, "shelter_needed": true},
+		"feather_bed": {"kit": "feather_bed_kit", "item": "feather_bed", "state": 67, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "feather_bed", "sound": "thump", "clears_grass": false, "comfort": "feather_bed", "gap_exempt": true, "shelter_needed": true},
+		"canopy_bed": {"kit": "canopy_bed_kit", "item": "canopy_bed", "state": 68, "footprint_x": 2.2, "footprint_z": 1.4, "cap_per_chunk": 12, "look": "canopy_bed", "sound": "timber", "clears_grass": false, "comfort": "canopy_bed", "gap_exempt": true, "shelter_needed": true},
+		"wall_torch": {"kit": "wall_torch_kit", "item": "wall_torch", "state": 69, "footprint_x": 0.2, "footprint_z": 0.2, "cap_per_chunk": 12, "look": "wall_torch", "sound": "timber", "clears_grass": false, "comfort": "wall_torch", "gap_exempt": true, "lights": true},
+		"chandelier": {"kit": "chandelier_kit", "item": "chandelier", "state": 70, "footprint_x": 0.9, "footprint_z": 0.9, "cap_per_chunk": 12, "look": "chandelier", "sound": "timber", "clears_grass": false, "comfort": "chandelier", "gap_exempt": true, "lights": true, "shelter_needed": true},
+		"fireplace": {"kit": "fireplace_kit", "item": "fireplace", "state": 71, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "fireplace", "sound": "stone", "clears_grass": false, "comfort": "fireplace", "gap_exempt": true, "lights": true, "shelter_needed": true},
+		"flower_pot": {"kit": "flower_pot_kit", "item": "flower_pot", "state": 72, "footprint_x": 0.3, "footprint_z": 0.3, "cap_per_chunk": 12, "look": "flower_pot", "sound": "thump", "clears_grass": false, "comfort": "flower_pot", "gap_exempt": true},
+		"antler_mount": {"kit": "antler_mount_kit", "item": "antler_mount", "state": 73, "footprint_x": 0.44, "footprint_z": 0.1, "cap_per_chunk": 12, "look": "antler_mount", "sound": "timber", "clears_grass": false, "comfort": "antler_mount", "gap_exempt": true}
 	},
 	"campfire": {
 		"gap_m": 2.0,

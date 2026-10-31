@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 319,
+	"next_number": 334,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -280,7 +280,7 @@
 			"needs": [
 				[
 					"stick",
-					8
+					24
 				],
 				[
 					"leaves",
@@ -288,7 +288,7 @@
 				],
 				[
 					"twine",
-					2
+					4
 				]
 			],
 			"gives": [
@@ -2370,7 +2370,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_mushroom_skewer": {
@@ -2474,7 +2474,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_fruit_leather": {
@@ -2500,7 +2500,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_smoked_fish": {
@@ -2630,7 +2630,7 @@
 				3
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_hearty_pottage": {
@@ -5244,7 +5244,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_cabbage_stew": {
@@ -5292,7 +5292,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_onion_roast": {
@@ -5314,7 +5314,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_seaweed_soup": {
@@ -5414,7 +5414,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_herb_omelette": {
@@ -5436,7 +5436,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_seal_stew": {
@@ -5660,7 +5660,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_sauerkraut": {
@@ -5700,7 +5700,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_banana_fritter": {
@@ -5722,7 +5722,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_cactus_fry": {
@@ -5744,7 +5744,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"tallow": {
@@ -5885,7 +5885,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_apple_sauce": {
@@ -6017,7 +6017,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_quince_paste": {
@@ -6153,8 +6153,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench"
 		},
 		"log_wall_kit": {
@@ -6667,6 +6666,364 @@
 			"craft_s": 10.0,
 			"known": true,
 			"station": "clay_hearth"
+		},
+		"log_seat_kit": {
+			"number": 319,
+			"name": "Log seat",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"log",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_axe",
+					1
+				]
+			],
+			"gives": [
+				"log_seat_kit",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false
+		},
+		"stool_kit": {
+			"number": 333,
+			"name": "Stool",
+			"category": "Containers and furniture",
+			"needs": [
+				["stick", 6],
+				["twine", 1]
+			],
+			"gives": ["stool_kit", 1],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"bench_kit": {
+			"number": 320,
+			"name": "Bench",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"bench_kit",
+				1
+			],
+			"craft_s": 25.0,
+			"known": false,
+			"station": "workbench"
+		},
+		"chair_kit": {
+			"number": 321,
+			"name": "Chair",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"hide",
+					1
+				]
+			],
+			"gives": [
+				"chair_kit",
+				1
+			],
+			"craft_s": 35.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"table_kit": {
+			"number": 322,
+			"name": "Table",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					6
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"table_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"hide_rug_kit": {
+			"number": 323,
+			"name": "Hide rug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"sinew",
+					1
+				]
+			],
+			"gives": [
+				"hide_rug_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false
+		},
+		"wool_rug_kit": {
+			"number": 324,
+			"name": "Wool rug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"wool",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wool_rug_kit",
+				1
+			],
+			"craft_s": 25.0,
+			"known": false
+		},
+		"straw_bed_kit": {
+			"number": 325,
+			"name": "Straw bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"straw",
+					12
+				],
+				[
+					"stick",
+					6
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"straw_bed_kit",
+				1
+			],
+			"craft_s": 30.0,
+			"known": false,
+			"station": "workbench"
+		},
+		"feather_bed_kit": {
+			"number": 326,
+			"name": "Feather bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"rough_bed_kit",
+					1
+				],
+				[
+					"feather",
+					30
+				],
+				[
+					"wool",
+					4
+				]
+			],
+			"gives": [
+				"feather_bed_kit",
+				1
+			],
+			"craft_s": 50.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"canopy_bed_kit": {
+			"number": 327,
+			"name": "Canopy bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"feather_bed_kit",
+					1
+				],
+				[
+					"lumber",
+					8
+				],
+				[
+					"linen",
+					4
+				]
+			],
+			"gives": [
+				"canopy_bed_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"wall_torch_kit": {
+			"number": 328,
+			"name": "Wall torch",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"tallow",
+					1
+				]
+			],
+			"gives": [
+				"wall_torch_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false,
+			"locked": true
+		},
+		"chandelier_kit": {
+			"number": 329,
+			"name": "Candle chandelier",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					2
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"candle",
+					6
+				]
+			],
+			"gives": [
+				"chandelier_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"fireplace_kit": {
+			"number": 330,
+			"name": "Fireplace",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"brick",
+					24
+				],
+				[
+					"mortar",
+					4
+				],
+				[
+					"clay",
+					6
+				]
+			],
+			"gives": [
+				"fireplace_kit",
+				1
+			],
+			"craft_s": 90.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"flower_pot_kit": {
+			"number": 331,
+			"name": "Flower pot",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"clay",
+					2
+				],
+				[
+					"soil",
+					1
+				]
+			],
+			"gives": [
+				"flower_pot_kit",
+				1
+			],
+			"craft_s": 15.0,
+			"known": false,
+			"locked": true
+		},
+		"antler_mount_kit": {
+			"number": 332,
+			"name": "Antler mount",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"antler",
+					2
+				],
+				[
+					"lumber",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"antler_mount_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench"
 		}
 	}
 }

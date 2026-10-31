@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Craft a Small shelter: 8 sticks, 6 leaves, 2 twine.",
+			"text": "Lash a ridge pole, lean sticks against it and weave in boughs: 24 sticks, 6 leaves, 4 twine.",
 			"goal": "shelter"
 		},
 		{
@@ -98,7 +98,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Press E on ferns for bedding, then craft a Rough bed.",
+			"text": "Gather bedding from ferns, then lash sticks and bedding into a Rough bed.",
 			"goal": "bed"
 		},
 		{

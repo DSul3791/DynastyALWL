@@ -44,3 +44,11 @@ Roasting at a fire turned ONE raw forage item into one Roast forage (400 kcal): 
 - Eggs: Boiled egg is a pot recipe (2 eggs + water give 2).
 - Nettles: now give 1-2 plant fibre and 2-4 Nettles per plant; Nettle tea is a pot recipe (3 nettles + water); Forager's stew and Egg and nettle fry use Nettles.
 Effect on the first hour: until the player has a pot, the only things a fire cooks are meat and fish; berries and apples are eaten raw (4 and 110 kcal). Other plant dishes still marked campfire in dishes.json (baked apples, trail bread, dried fruit, baked potato and similar) are open to Dave's ruling; I moved only roast roots and mushroom skewer.
+
+## All plant dishes moved off the campfire (Dave, 2026-10-31)
+Meat and fish dishes stay on the campfire (herb fish, garlic meat, smoked fish, juniper trout, jerky, crab cakes, feast roast). Every plant or egg dish now needs a pot or a hearth:
+- **Campfire pot:** soups, stews, porridge, jams, paste and boiled or fried egg things: berry compote, nut paste, acorn mash, hazelnut butter, forager's stew, hearty pottage (already), egg and nettle fry, herb omelette, plus the 4 stewed-berries and boiled-egg recipes.
+- **Clay hearth** (needs 10 bricks; bricks come from clay at a campfire): baked and roasted things and drying: baked apples, baked potato, beet roast, onion roast, chestnut cakes, trail bread, banana fritter, cactus fry, fruit leather, dried berries, dried apples, dried figs, roast roots, mushroom skewer, Campfire Stew from nuts and caps, flatbread, garlic bread, oat cakes.
+- **Oven:** pies and loaves (apple pie, venison pie, fish pie, honey loaf, rosemary joint).
+- **Drying rack:** does not exist as a station; drying food uses the clay hearth until a rack is built.
+Consequence for the first hour: before the player has a pot (clay pot kit + sticks + twine) and a hearth, the only cooked food is meat and fish; berries, apples and nuts are eaten raw. The pot is an early item; the hearth needs bricks, so baked plant food arrives in the first day or two.

@@ -1,0 +1,293 @@
+{
+	"_about": "Comfort (Dave 2026-10-31, from Valheim): the level a player enjoys near furniture and fire, and the Rested buff earned at a comfortable level. DESIGN AND DATA by Sal; server code by Tyler; models by Kathleen. Read by nothing yet. See docs/COMFORT_DESIGN.md for the rules and the code spec.",
+	"radius_m": 9.0,
+	"height_m": 3.0,
+	"recheck_s": 1.5,
+	"max_level": 20,
+	"shelter": {
+		"points": 1,
+		"counts": [
+			"inside a built roof (lean-to, roof piece)",
+			"under a grown tree crown (Cover.at, trees at 80 percent of species height)"
+		],
+		"note": "The player must be sheltered for any furniture to count. Standing near the items is enough; you do not have to be in the lean-to."
+	},
+	"rules": {
+		"each_kind_once": true,
+		"one_bed_counts": "only the best bed within the radius counts (you sleep in one)",
+		"lit_only": "fires, torches and chandeliers count only while lit; a laid, unlit or burnt-out fire gives 0",
+		"same_floor": "items within height_m above or below the player's feet"
+	},
+	"kinds": [
+		{
+			"id": "rough_bed",
+			"class": "bed",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "rough_bed (structure live)"
+		},
+		{
+			"id": "straw_bed",
+			"class": "bed",
+			"points": 2,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "straw_bed_kit"
+		},
+		{
+			"id": "feather_bed",
+			"class": "bed",
+			"points": 4,
+			"needs_lit": false,
+			"status": "future",
+			"source": "feather_bed_kit"
+		},
+		{
+			"id": "canopy_bed",
+			"class": "bed",
+			"points": 5,
+			"needs_lit": false,
+			"status": "future",
+			"source": "canopy_bed_kit"
+		},
+		{
+			"id": "log_seat",
+			"class": "seat",
+			"points": 1,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "log_seat_kit"
+		},
+		{
+			"id": "stool",
+			"class": "seat",
+			"points": 1,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "stool_kit"
+		},
+		{
+			"id": "bench",
+			"class": "seat",
+			"points": 1,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "bench_kit"
+		},
+		{
+			"id": "chair",
+			"class": "seat",
+			"points": 2,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "chair_kit"
+		},
+		{
+			"id": "table",
+			"class": "table",
+			"points": 2,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "table_kit"
+		},
+		{
+			"id": "workbench",
+			"class": "table",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "workbench (structure live)"
+		},
+		{
+			"id": "hide_rug",
+			"class": "rug",
+			"points": 1,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "hide_rug_kit"
+		},
+		{
+			"id": "wool_rug",
+			"class": "rug",
+			"points": 2,
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "wool_rug_kit"
+		},
+		{
+			"id": "campfire",
+			"class": "fire",
+			"points": 1,
+			"needs_lit": true,
+			"status": "live",
+			"source": "campfire (structure live; counts only while lit)"
+		},
+		{
+			"id": "clay_hearth",
+			"class": "fire",
+			"points": 2,
+			"needs_lit": true,
+			"status": "live",
+			"source": "clay_hearth (live; lit)"
+		},
+		{
+			"id": "fireplace",
+			"class": "fire",
+			"points": 4,
+			"needs_lit": true,
+			"status": "future",
+			"source": "fireplace_kit"
+		},
+		{
+			"id": "wall_torch",
+			"class": "light",
+			"points": 1,
+			"needs_lit": true,
+			"status": "future",
+			"source": "wall_torch_kit"
+		},
+		{
+			"id": "chandelier",
+			"class": "light",
+			"points": 3,
+			"needs_lit": true,
+			"status": "future",
+			"source": "chandelier_kit"
+		},
+		{
+			"id": "chest",
+			"class": "storage",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "chest (live)"
+		},
+		{
+			"id": "plank_chest",
+			"class": "storage",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "plank_chest (live)"
+		},
+		{
+			"id": "thatch_doorway",
+			"class": "door",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "thatch_doorway (live)"
+		},
+		{
+			"id": "window_section",
+			"class": "window",
+			"points": 1,
+			"needs_lit": false,
+			"status": "live",
+			"source": "window_section (live)"
+		},
+		{
+			"id": "flower_pot",
+			"class": "decor",
+			"points": 1,
+			"needs_lit": false,
+			"status": "future",
+			"source": "flower_pot_kit"
+		},
+		{
+			"id": "antler_mount",
+			"class": "decor",
+			"points": 1,
+			"needs_lit": false,
+			"status": "future",
+			"source": "antler_mount_kit"
+		}
+	],
+	"rested": {
+		"min_level_to_earn": 2,
+		"earned_by": [
+			"sleep or lie in a bed at that level",
+			"sit on a seat at that level for 30 s",
+			"lie on the ground at level 2 or more for 60 s (shorter buff)"
+		],
+		"note": "A game hour is 2.5 real minutes: 45 real minutes is 18 game hours. A new buff of a higher or equal level refreshes the timer and sets the tier; it never stacks.",
+		"tiers": [
+			{
+				"min_level": 2,
+				"name": "Rested",
+				"regen_mult": 1.1,
+				"exhaustion_mult": 0.9,
+				"hunger_thirst_mult": 1.0,
+				"action_speed_mult": 1.0,
+				"skill_gain_mult": 1.0,
+				"cold_stress_mult": 1.0
+			},
+			{
+				"min_level": 5,
+				"name": "Rested",
+				"regen_mult": 1.2,
+				"exhaustion_mult": 0.85,
+				"hunger_thirst_mult": 0.97,
+				"action_speed_mult": 1.0,
+				"skill_gain_mult": 1.05,
+				"cold_stress_mult": 1.0
+			},
+			{
+				"min_level": 10,
+				"name": "Well rested",
+				"regen_mult": 1.3,
+				"exhaustion_mult": 0.75,
+				"hunger_thirst_mult": 0.95,
+				"action_speed_mult": 1.03,
+				"skill_gain_mult": 1.08,
+				"cold_stress_mult": 0.95
+			},
+			{
+				"min_level": 15,
+				"name": "Very well rested",
+				"regen_mult": 1.35,
+				"exhaustion_mult": 0.7,
+				"hunger_thirst_mult": 0.94,
+				"action_speed_mult": 1.05,
+				"skill_gain_mult": 1.1,
+				"cold_stress_mult": 0.92
+			}
+		],
+		"comfort_buff_real_minutes": 45,
+		"duration_note": "Dave 31 Oct: the buff ALWAYS lasts the same time, about 45 REAL minutes; the comfort level scales the BONUSES, not the time. Game-time length is computed from the game clock (GameClock.RATIO = 24 game hours per real hour, so 45 real minutes = 18 game hours); never hard-code game units. Resting again refreshes the 45 minutes while the comfort level is at least that of the current buff (a higher level replaces the tier); resting at a lower level changes nothing.",
+		"refresh_rule": "on a completed rest at level L: if no buff, or L >= buff.level: buff = {level: L, until: now + 45 real minutes}; else leave it"
+	},
+	"bed_json_fold": "data/items/bed.json comfort 1 for the rough bed stays; its regen_mult 1.25 and drain_mult 0.5 are the SLEEP bonus and stack with Rested only for regen (take the larger, do not multiply) so a comfortable bed cannot double up.",
+	"hud": {
+		"comfort_icon": "a hearth icon with the level number; grey at 0 to 1, warm at 2 and above",
+		"rested_icon": "a moon-and-cup icon with a countdown in minutes",
+		"tooltip": [
+			"Comfort 7 (sheltered +1)",
+			"Bed +2, Bench +1, Campfire +1 (lit), Table +2",
+			"Missing: a rug, a lit torch (+2 more)",
+			"Rested: +20% health regeneration, -15% exhaustion, 24 min left"
+		],
+		"messages": {
+			"earned": "You feel rested.",
+			"expired": "You no longer feel rested.",
+			"unsheltered": "You are not sheltered: nothing here comforts you.",
+			"low": "It is too bare to rest well here (comfort 2 needed)."
+		}
+	},
+	"first_cheap_items": [
+		"log_seat",
+		"bench"
+	],
+	"model_priority": [
+		"chair",
+		"table",
+		"hide_rug",
+		"wall_torch",
+		"straw_bed",
+		"chandelier",
+		"fireplace",
+		"log_seat",
+		"bench"
+	]
+}

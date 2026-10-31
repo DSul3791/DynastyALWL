@@ -50,6 +50,21 @@ const LOOKS := {
 	"log_roof": {"builder": "tier_roof", "args": ["log"]},
 	"stone_roof": {"builder": "tier_roof", "args": ["stone"]},
 	"brick_roof": {"builder": "tier_roof", "args": ["brick"]},
+	"log_seat": {"builder": "log_seat", "args": []},
+	"stool": {"builder": "stool", "args": []},
+	"bench": {"builder": "bench", "args": []},
+	"chair": {"builder": "chair", "args": []},
+	"table": {"builder": "table", "args": []},
+	"wool_rug": {"builder": "rug", "args": []},
+	"hide_rug": {"builder": "hide_rug", "args": []},
+	"wall_torch": {"builder": "wall_torch", "args": [false]},
+	"straw_bed": {"builder": "comfort_bed", "args": ["straw"]},
+	"feather_bed": {"builder": "comfort_bed", "args": ["feather"]},
+	"canopy_bed": {"builder": "comfort_bed", "args": ["canopy"]},
+	"chandelier": {"builder": "chandelier", "args": []},
+	"fireplace": {"builder": "fireplace", "args": []},
+	"flower_pot": {"builder": "flower_pot", "args": []},
+	"antler_mount": {"builder": "antler_mount", "args": []},
 }
 
 static var _warned: Dictionary = {}

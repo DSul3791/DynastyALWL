@@ -236,6 +236,9 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"fill": float(patch.get("fill", 1.0)),
 				# by_biome: a plant of the patch is kept with the biome's per_hectare share of the species' best biome (tall grass: dense in meadows, sparser in woods).
 				"by_biome": bool(patch.get("by_biome", false)),
+				# A second ring of shorter plants round the clump (tall grass: 25 to 40 stems in about 2 m and 8 shorter ones round them).
+				"ring_count": clampi(int(patch.get("ring_count", 0)), 0, 12),
+				"ring_scale": float(patch.get("ring_scale", 0.7)),
 			}
 
 		if entry.has("young_height_m"):
@@ -581,7 +584,7 @@ const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low 
 const MONTANE_PATCH_SHARE := 0.7   # (was 0.4) a thicker evergreen belt on the hill ground
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
-const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
+const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
 const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
 const CLUMP_MIN_COLLIDER := 4       # four or more tall shrubs of one patch share one collider
@@ -957,12 +960,14 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				if float((h >> 4) % 1000) / 1000.0 >= per_biome[data.biome[centre_k]] / float(item["peak"]):
 					continue
 
-			var plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
+			var main_plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
+			var plants: int = main_plants + int(patch["ring_count"])
 
 			for n in range(plants):
 				rng.seed = _mix(_patch_seed, gi * 31 + n, gj, species_id + 977)
 				var angle: float = rng.randf() * TAU
-				var distance: float = sqrt(rng.randf()) * radius
+				var ring: bool = n >= main_plants
+				var distance: float = sqrt(rng.randf()) * radius if not ring else radius * (1.25 + 0.6 * rng.randf())
 				var size: float = rng.randf()
 				var yaw: float = rng.randf() * TAU
 				var keep: float = rng.randf()
@@ -985,7 +990,7 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				if is_nan(y):
 					continue
 
-				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale
+				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale * (float(patch["ring_scale"]) if ring else 1.0)
 				found.append([_tier(item, height), species_id, STAND_BASE + slot * PATCH_MAX_PLANTS + n, x, y, z, height, yaw, float(patch["spacing_m"]) * scale])
 
 
