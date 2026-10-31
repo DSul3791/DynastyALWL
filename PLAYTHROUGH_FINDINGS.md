@@ -341,6 +341,8 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-36 | MEDIUM | `test_playability_bot` (the "first hour from nothing" bot) now stops at step 6, "working the trunk gave no log", because logs cut off a trunk drop on the ground (028e666e) and the bot counts only the pack and the shoulder. Steps 7 to 9 (fire, shelter, well) are no longer run. `test_first_hour` passes. | `test_playability_bot.gd` line 261 | Tyler | small |
 | S-hunt | info | **The whole kill-to-roast chain passes on the server code** (spear and knife from nothing, rabbit one jab, dress, deer three jabs and dress with sinew, fat, antler, campfire, light, roast, eat, waterskin from two hides): `probe_hunt_output.txt`, 0 breaks. | `art/playthrough/probe_hunt.gd` | | |
 
+| F-37 | LOW | **The shot runner's ground reading flips while a spot loads**: at one spot the voxel raycast `_ground()` read 31.0, then 15.0, then 63.0 within a minute (the real ground is 31), so a guard that waits for a stable ground or moves the camera when it changes made the picture worse (camera 16 m under the forest). Shipped instead: a warning-only guard in `shot_runner.gd` after the saved line ("WARNING ground not loaded ...; raise --shot-settle, 75 s worked"). Root cause (a coarse or stale voxel block answering the raycast) belongs to the terrain code. | `shot_runner.gd`; a kept client.log of the guard test | Tyler (terrain), Kathleen (rig) | small |
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
