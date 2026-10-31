@@ -310,3 +310,6 @@ Worktree was clean after the crash. kindling_duplicate was already retired; it s
 
 ## Fruit trees (2026-10-31)
 Items 431-449 (apples, pears, cherries, plums, quince, medlar, figs, olives, pomegranates, mangoes, oranges, lemons), 8 fruit dishes, seasons.json fruit_and_nuts and hints, FRUIT_TREES.md. Dried apples and dried figs give 3 each (economy guard caught a money-losing 1-for-3 recipe).
+
+## Water gather landed (2026-10-31)
+Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shellfish, boiled egg, seaweed soup, mussel stew, herb omelette, egg and nettle fry, salted fish, jerky, acorn mash, flatbread, willow bark tea, tar and the leather chain (leather, heavy and fine leather, cap, jerkin, gambeson, strap). validate_items now reads shore_nodes.json as a source and treats what a fire cooks as obtainable when the raw item is.
