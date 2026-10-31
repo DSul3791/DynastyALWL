@@ -2658,6 +2658,7 @@ const WILDFLOWER_LOOKS := {
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
 	"wild_mint": {"head": "spike", "stems": 6, "petal": Color(0.72, 0.6, 0.9), "size": 0.045, "beads": 9, "span": 0.25},
 	"wolfsbane": {"head": "spike", "stems": 3, "petal": Color(0.25, 0.22, 0.65), "size": 0.06, "beads": 10, "span": 0.4},
+	"sea_holly": {"head": "bell", "stems": 5, "petal": Color(0.45, 0.58, 0.8), "size": 0.04, "beads": 6, "span": 0.2, "basal": 2},   # beach pass: steel-blue spiny heads on stiff pale stems
 	"flax": {"head": "spike", "stems": 8, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 7, "span": 0.3, "basal": 1},
 	"foxglove": {"head": "bell", "stems": 3, "petal": Color(0.85, 0.35, 0.7), "size": 0.035, "beads": 10, "span": 0.5},
 	# Family 1 of goal 1b (Kathleen, 24 Oct): the remaining flower rows. References: alpine gentian-type blue, wild thyme pink 1 cm sprays, wood sorrel red-green spikes, watercress white umbels,
@@ -3065,6 +3066,8 @@ const GRASS_LOOKS := {
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
+	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
+	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
 	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.84, 0.72, 0.34), "reach": 1.1, "blade_h": 0.85, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
