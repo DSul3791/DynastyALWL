@@ -9,7 +9,7 @@
 	"release": ["test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",
-	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/test_args.txt", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
+	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/test_args.txt", "tools/godot_slot.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
 	"slow_exclude": ["src/worldgen/tools/**"],
 	"offline_globs": ["tools/erosion_precarve/**", "tools/**/*.py", "tools/merge_day.sh", "tools/merge_watch.sh", "tools/merge_watch_loop.sh", "tools/rebake_check.sh", "tools/world_alive.sh", "tools/world_alive.gd", "TARGETS.md", "MERGE_WATCH.md", "WORLD_ALIVE_LOG.md", "TYLER_*.md"],
 	"always": ["test_inventory", "test_server_items", "test_items_persistence", "test_save_compat", "test_structure_look", "test_placement_rules", "test_new_player", "test_skills", "test_first_hour", "test_playability_bot", "test_block_roundtrip"],
