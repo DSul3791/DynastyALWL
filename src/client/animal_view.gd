@@ -23,7 +23,7 @@ var _blood_mat: StandardMaterial3D
 
 
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
-# on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model yet is drawn as a rabbit, as before.
+# on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
 
 
@@ -54,7 +54,7 @@ func _make_for_species(number: int, id: int) -> Node3D:
 		13:
 			return _make_seabird()
 
-	return _make_rabbit()
+	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
 
 func on_rows(rows: Array) -> void:
@@ -69,6 +69,10 @@ func on_rows(rows: Array) -> void:
 				continue
 
 			var node: Node3D = _make_for_species(int(row[1]), id)
+
+			if node == null:
+				continue
+
 			node.position = row[2]
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3, "quad": node.has_meta("quad"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1}
