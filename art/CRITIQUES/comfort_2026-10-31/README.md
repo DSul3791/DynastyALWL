@@ -9,3 +9,6 @@ Round 1 (r1_chair.png, r1_table.png, r1_rug.png): chair 3 (splayed legs, plank s
 Round 2 (r2_table.png, r2_rug.png): table joints cut to two board gaps; rug muted tones and weft flecks: rug 3.5. Round 3 next: chair back carved shape, table benches, rug fringe and worn edge.
 Existing to reuse: candle (basic_look candle shape and held look), clay_hearth and oven (piece_look), workbench (building_look), rough_bed, tripod_pot.
 Next in Sal's priority order: wall torch, straw bed, candle chandelier, fireplace/hearth with chimney, pot plant, canopy bed.
+
+Seats first (moderator: the first comfort items players make; piece_look.gd builders log_seat, stool, bench; seat height 0.45 m; not wired to rows yet): r1_log_seat.png (an upright log with a flat sawn top: pale wood, growth rings, dark heart, saw notch, root flare: 3.5), r1_stool.png (three-legged round-seat stool after Lund and Trondheim, wedge pegs: 3), r1_bench.png (2.0 m plank bench on slab ends with a pinned stretcher, seats two or three: 3). Each has a solid box collider of its size. The sit stance: Tyler can wire E to sit at the seat's centre (the bench has three sit spots at x -0.6, 0, 0.6 along its length).
+Priorities now: log seat, stool, bench, chair, table, rug, wall torch, straw bed, chandelier, fireplace. Chair, table and rug are modelled (round 2 for table and rug).
