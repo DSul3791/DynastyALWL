@@ -370,7 +370,7 @@ Smoke test result in one line: the select page, creator, 3-minute windowed walk 
 
 | id | what | status | evidence (short) |
 |---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 208 of 227 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 217 of 236 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present |
@@ -388,8 +388,8 @@ Smoke test result in one line: the select page, creator, 3-minute windowed walk 
 | F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **FIXED** | probe_logs round 2: rough planks from the one log on the shoulder = 4 (the unit test passes only with logs for |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 4 craftable items with a grey or missing look: chopping_block, clay_jug, candle, candle |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 8 recipes blocked and not flagged future |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 5 orphan items not flagged future (first: flint, copper_ore, tin_ore, iron_ore, coal) |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 20 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 9 orphan items not flagged future (first: flint, copper_ore, tin_ore, iron_ore, coal, seaweed) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 38, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
@@ -399,9 +399,9 @@ Smoke test result in one line: the select page, creator, 3-minute windowed walk 
 | S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
 src/worldgen/tools/test_farming.gd |
 | S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) |
-| S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] |
+| S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] |
 
-18 fixed, 9 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
+19 fixed, 8 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
 
 ---
@@ -447,3 +447,8 @@ Rating: 1 to 5 for "looks real and alive" (5 = could be a screenshot of the fini
 | 8 | Felled trunk, stump and lit-fire pictures cannot be made: the fell rig finds no tree after 60 s | Kathleen | `fell.jpg` |
 | 9 | 62 items are white blobs and the 31 kits are one box shape | Kathleen | `items_*.jpg` |
 | 10 | The NPC Edda clips into trees and stands in every spawn picture | Sonny | `spawn_view.jpg` |
+
+## Part 10: can a new player place and light a fire, lean-to and bed? (probe_place.gd, 08:35)
+
+Real server_items.gd with the real baked ground. At the spawn (53316, 68476), the walk-picture clearing, 60 m east and 60 m north: **campfire kit PLACED, lit with plant fibre (state 40), lean-to kit PLACED, rough bed kit PLACED** (each 8 m apart; two kits within 2.5 m of each other refuse, silently). On the steepest slope within 300 m (0.72 m rise over 1.6 m) campfire and lean-to are refused with "The ground is too steep there." (campfire limit 0.6 m). So the placement rules do not stop a new player at the spawn: if the green ghost never becomes a fire in the rig, look at the rig (slot, reach, y). Birch bark as tinder was not tested here (fibre lit first).
+Silent refusals in `_place` (no message to the player, so the ghost just "does nothing"): player farther than 6 m from the point; the point's y more than 1 m from the server's ground (a wrong client y); ground height under 1 m (a wet beach); another fire within the fire gap; more fires in the chunk than the cap; any structure within 2.5 m; the pot with no fire. Proposal for Tyler: say why in each case.
