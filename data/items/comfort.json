@@ -40,7 +40,7 @@
 			"class": "bed",
 			"points": 4,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "feather_bed_kit"
 		},
 		{
@@ -48,7 +48,7 @@
 			"class": "bed",
 			"points": 5,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "canopy_bed_kit"
 		},
 		{
@@ -136,7 +136,7 @@
 			"class": "fire",
 			"points": 4,
 			"needs_lit": true,
-			"status": "future",
+			"status": "placeable",
 			"source": "fireplace_kit"
 		},
 		{
@@ -144,7 +144,7 @@
 			"class": "light",
 			"points": 1,
 			"needs_lit": true,
-			"status": "future",
+			"status": "placeable",
 			"source": "wall_torch_kit"
 		},
 		{
@@ -152,7 +152,7 @@
 			"class": "light",
 			"points": 3,
 			"needs_lit": true,
-			"status": "future",
+			"status": "placeable",
 			"source": "chandelier_kit"
 		},
 		{

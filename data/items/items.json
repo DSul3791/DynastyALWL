@@ -5622,7 +5622,6 @@
 			"description": "A bed with a feather tick and a blanket.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"canopy_bed": {
@@ -5631,7 +5630,6 @@
 			"description": "A canopy bed with curtains.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"wall_torch": {
@@ -5640,7 +5638,6 @@
 			"description": "A torch on the wall. It lights when fuelled.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"chandelier": {
@@ -5649,7 +5646,6 @@
 			"description": "A hanging hoop of candles. It lights when fuelled.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"fireplace": {
@@ -5658,7 +5654,6 @@
 			"description": "A brick hearth with a chimney. It lights when fuelled.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"flower_pot": {
@@ -5737,7 +5732,6 @@
 			"description": "A rough bed topped with feathers and a wool blanket.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 137
 		},
@@ -5747,7 +5741,6 @@
 			"description": "A feather bed under a timber canopy with linen curtains.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 159
 		},
@@ -5757,7 +5750,6 @@
 			"description": "A torch in a bracket on a post. Lights a camp; light it first.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 12
 		},
@@ -5767,7 +5759,6 @@
 			"description": "A wooden hoop hung from a beam, with six candles. Light them first.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 74
 		},
@@ -5777,7 +5768,6 @@
 			"description": "A brick hearth with a chimney. Warm and bright; light it first.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 224
 		},

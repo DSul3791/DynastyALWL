@@ -6866,7 +6866,6 @@
 			],
 			"craft_s": 50.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -6894,7 +6893,6 @@
 			],
 			"craft_s": 60.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6917,8 +6915,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"locked": true
+			"known": false
 		},
 		"chandelier_kit": {
 			"number": 329,
@@ -6944,7 +6941,6 @@
 			],
 			"craft_s": 40.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -6972,7 +6968,6 @@
 			],
 			"craft_s": 90.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 2
 		},
