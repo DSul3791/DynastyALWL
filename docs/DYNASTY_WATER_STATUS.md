@@ -34,6 +34,22 @@ Why only 3: it looks identical (that is the boundary, not a visible gain yet), o
 ## Step 4 if GDScript is not enough: options (cost, risk)
 Measured: 92 ms of compute per simulated second for a 1 km window with 2,900 wet cells, on a 50 percent duty thread = 9 percent of a core. That is inside the budget for ONE window, so no native code is needed for the starter case. It is not enough for many windows (one per player) or a wide lake wake-up. Options when it is: (1) static lake levels, sim only for moving water: lakes already sleep after the rest snap, so this is mostly done; (2) skip stepping dry channel cells (a cell list instead of 16 x 16 blocks): about 2 to 3 times cheaper, 1 day, low risk; (3) a GDExtension in C++ for the flux and depth loops: about 20 to 50 times faster, 3 to 5 days, adds a build step and a platform binary to the repo (the main risk), keeps the same arrays; (4) compute shader on the client, server keeps the coarse state: biggest change, 5+ days, server and client could disagree. Recommendation: do (2) first if a second window is needed, (3) only if windows must cover whole tiles.
 
+## While the computer was off limits (31 Oct, late): code written by reading only, NOT RUN
+- **Lake-sleep review** (`water_field.gd` `_rest`): reading the rest snap I found it zeroed the east and south edge faces of a resting block even when the neighbour block was still awake (it would cut a real flow for one step). Fixed: those edge faces are kept while the block beyond is awake. Otherwise the logic holds: a block sleeps after 24 quiet substeps (depth change under 10 micrometres and discharge under 1 mm2/s), neighbours of an awake block are always stepped, so the front wakes what it reaches.
+- **Render contract code** `water_flow_texture.gd`: `build_image(field)` (RGBAF per cell: depth, flow x, flow z, foam hint), `apply(material, field, origin)`, `SHADER_INCLUDE` (uniforms `water2_tex`, `water2_origin`, `water2_size`, `water2_on` and `water2_at(world_xz)` using `textureLod`, valid in the vertex stage). Test `test_water_flow_texture.gd` written, not run.
+- **The six-line patch for `src/client/water_material.gd`, to apply only after the tests have run** (it changes the game's shader, default path must stay identical when `water2_on` is 0): (1) paste `SHADER_INCLUDE` after the uniform block (line 45); (2) in `vertex()` compute `world_pos` first; (3) after `flow = ...` add `if (water2_on > 0.5) { vec4 w = water2_at(world_pos.xz); if (w.x >= 0.0) { flow = w.gb / fastest_m_s; } }` (the flow is then the sim's, in units of the drawn top speed); (4) add `varying float water2_foam;` set in the same branch to `w.a`; (5) in `fragment()` multiply the existing foam by `1.0 + water2_foam * rough_or_turbulence` only when `water2_on > 0.5`; (6) the client calls `FlowTexture.apply` for the window it knows (needs the protocol flow channel for real play; in the demo scene it is a direct call).
+- **Cost note**: see Step 4 above; nothing new was measured.
+
+## Commands to run when COMPUTER BACK arrives (in this order; each is small)
+```
+godot --headless --path . --script res://src/water2/test_water_field.gd        # 30 checks incl. the rest-edge change
+godot --headless --path . --script res://src/water2/test_water_flow_texture.gd # new, never run: fix typos first
+godot --headless --path . --script res://src/water2/test_water_hub2.gd         # window on the real tile
+godot --headless --path . --script res://src/water2/test_water_window.gd
+godot --headless --path . --script res://src/water2/probe_water_cost.gd        # compare with 92 ms per simulated second
+tools/look_rig.sh --cam first --at 54728,75530 --agl 12 --yaw 180 --pitch -18 --wait 90 --settle 20 --out /tmp/w2 --server-arg --water2
+```
+
 ## Still to do (staged)
 (c2) the game's own shader reading depth and flow from a texture; (d) rain runoff (a per-cell rain rate added as spring volume, trivial in the sim, needs a test) and falls; (e) the `--water2` flag, old system default; (f) speed: sleep for settled lakes (check a lake really goes to sleep, it did not within 60 s), then GDExtension or compute if still needed.
 

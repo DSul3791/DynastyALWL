@@ -279,15 +279,24 @@ func _flux(a: int, b: int, q: float, qa: float, qb: float, dt: float) -> float:
 	return num / den
 
 
-# Puts a block to rest: its own discharges go to zero.
+# Puts a block to rest: its own discharges go to zero, except the faces on its east and south edge when the block beyond is still awake (that flow is the neighbour's, not at rest).
 func _rest(b: int) -> void:
-	var i0: int = (b % _bw) * BLOCK
-	var j0: int = (b / _bw) * BLOCK
+	var bx: int = b % _bw
+	var by: int = b / _bw
+	var i0: int = bx * BLOCK
+	var j0: int = by * BLOCK
+	var i1: int = mini(i0 + BLOCK, w)
+	var j1: int = mini(j0 + BLOCK, h)
+	var east_busy: bool = bx + 1 < _bw and _awake[b + 1] > 0
+	var south_busy: bool = by + 1 < _bh and _awake[b + _bw] > 0
 
-	for j in range(j0, mini(j0 + BLOCK, h)):
-		for i in range(i0, mini(i0 + BLOCK, w)):
-			qx[j * w + i] = 0.0
-			qy[j * w + i] = 0.0
+	for j in range(j0, j1):
+		for i in range(i0, i1):
+			if not (east_busy and i == i1 - 1):
+				qx[j * w + i] = 0.0
+
+			if not (south_busy and j == j1 - 1):
+				qy[j * w + i] = 0.0
 
 
 func _substep(dt: float) -> void:
