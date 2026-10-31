@@ -313,3 +313,6 @@ Items 431-449 (apples, pears, cherries, plums, quince, medlar, figs, olives, pom
 
 ## Water gather landed (2026-10-31)
 Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shellfish, boiled egg, seaweed soup, mussel stew, herb omelette, egg and nettle fry, salted fish, jerky, acorn mash, flatbread, willow bark tea, tar and the leather chain (leather, heavy and fine leather, cap, jerkin, gambeson, strap). validate_items now reads shore_nodes.json as a source and treats what a fire cooks as obtainable when the raw item is.
+
+## Metal ladder (2026-10-31)
+Bronze ingot recipe at forge level 1 and known; Bronze pickaxe, axe, hammer, knife (458-461, recipes 290-293); boulders.json bronze tools and ore.needs_material (code check for Tyler). Guide audit taught the ore, flint and shore sources: blocked-without-future 0. Goal events verified.
