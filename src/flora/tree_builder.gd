@@ -27,7 +27,8 @@ const BARK_TINT_ROWAN := Color(0.54, 0.47, 0.38)      # rowan: smooth gray-brown
 const BERRY_TINT_ROWAN := Color(0.78, 0.08, 0.04)     # rowan berries: scarlet (times the bark shader's light texture)
 const FLOWER_TINT_ROWAN := Color(0.72, 0.70, 0.62)    # rowan flower heads: creamy white
 const BARK_TINT_APPLE := Color(0.46, 0.40, 0.34)      # wild apple: scaly gray-brown
-const APPLE_TINT := Color(0.74, 0.12, 0.06)           # wild apples: small and red
+const APPLE_TINT := Color(0.74, 0.12, 0.06)           # the apple model's base colour: red (the varieties recolour it from flora.json fruit_color)
+const CRAB_APPLE_GREEN := [0.46, 0.58, 0.18]          # crab apples: small, hard, dull green (a slight yellow comes from the per-fruit shade)
 const BLOSSOM_TINT := Color(0.74, 0.62, 0.62)         # apple blossom: white flushed pink
 const BARK_TINT_PEAR := Color(0.40, 0.36, 0.32)       # wild pear: dark, blocky
 const PEAR_TINT := Color(0.56, 0.52, 0.16)            # wild pears: green-gold
@@ -255,8 +256,9 @@ static func _fruit_finish(fruit: Acc, entry: Dictionary, share: float) -> void:
 	if fruit.v.is_empty():
 		return
 
-	if entry.has("fruit_color") and str(entry.get("model", "")) == "wild_apple":
-		var want: Array = entry["fruit_color"]
+	# Crab apples are green (Dave 2026-10-31): the wild apple row has a duller, smaller green than the cooking apple unless its flora.json row names a fruit_color of its own.
+	if str(entry.get("model", "")) == "wild_apple" and (entry.has("fruit_color") or str(entry.get("name", "")) == "wild_apple"):
+		var want: Array = entry.get("fruit_color", CRAB_APPLE_GREEN)
 
 		for k in range(fruit.c.size()):
 			var col: Color = fruit.c[k]
