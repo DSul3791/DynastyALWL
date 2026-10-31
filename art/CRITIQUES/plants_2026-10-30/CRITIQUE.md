@@ -28,3 +28,14 @@ Picture: herbs_row1_yarrow_plantain_chamomile_lavender.jpg (`--flora yarrow,plan
 | Chamomile | reads as chamomile: small white and yellow daisies on a feathery mound; flowers a little sparse | 1 | open |
 | Ribwort plantain | almost invisible: a few tiny brown spikes, no leaf rosette | 2 | open: add a flat rosette of narrow ribbed leaves (the `plantain` row in tree_builder.gd already sets low leaves, so check why the cards do not show) |
 | Yarrow | hidden behind the standing rig character in this frame (flat white umbels visible at its feet) | n/a | re-shoot with the row offset from the body |
+
+## Flora batch 1 for the flora-density session (2026-10-30, Kathleen; real game, noon, summer, my branch's models, which match theirs: no model changes yet on flora-density-v2)
+
+Picture: flora_b1_tallgrass_nettle_reeds_flax.jpg (`--flora tall_grass,nettle,reeds,flax --summer --cam-above 0.6 --dist 4 --pitch -8 --wait 120`; the rig body stands in front of the first plant).
+
+| Plant | Critique | Rating | Next to improve |
+|---|---|---|---|
+| Tall grass | knee-high spiky tufts, pale yellow-green; seed heads are small tan flecks; not clearly taller than ground blades (flora wants 1.3 to 1.8 m patches) | 2 | taller, arching blades in a fan, darker green at the base fading to straw at the tips, a seed head (oval, drooping) on every third stem; keep it one cheap card cluster |
+| Nettle | serrated oval leaves stacked on stems read as nettle; the stems are black wires standing above and between the leaves, so it looks like a plant on poles | 2 | green stems (darker than the leaves, not black), shorter, leaves in opposite pairs, a few pale flower tassels near the top |
+| Reeds | good clump: tall green blades, dark brown seed heads on stiff stalks; the yellow flag triangles in the middle look odd | 3 | drop or shrink the yellow triangles; heads a little smaller |
+| Wild flax | blue five-petal flowers on thin stems read as flax; small, grey-green mound base is a blotch | 2 | slimmer taller stems, a few more flowers, base of narrow leaves along the stem instead of the grey mound |
