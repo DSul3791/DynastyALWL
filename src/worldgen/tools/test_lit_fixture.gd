@@ -62,6 +62,18 @@ func _init() -> void:
 		check(light != null and not light.visible and not light.shadow_enabled and flames >= 1, "%s: %d flame meshes and a warm light that starts off, no shadow" % [kind, flames])
 
 	var torch_light: OmniLight3D = BuildingLook.lit_fixture("wall_torch").get_node("Light")
-	check(torch_light.position.z > 0.5 and torch_light.position.y > 2.3, "the torch light sits above and in front of the head (no hard shadow cone on the wall)")
+	check(torch_light.position.z > 0.35 and torch_light.position.y > 2.3, "the torch light is at the flame, a little out from the wall")
+
+	# Short range with a real falloff and a base energy for the gentle flicker (Dave 31 Oct: the fireplace light was one huge even wash).
+	var limits: Dictionary = {"wall_torch": 6.0, "chandelier": 4.0, "fireplace": 6.0}
+
+	for kind in limits:
+		var l: OmniLight3D = BuildingLook.lit_fixture(kind).get_node("Light")
+		check(l.omni_range <= float(limits[kind]) and l.omni_attenuation >= 2.0 and l.has_meta("base_energy"), "%s light: range %.1f m (max %.0f), falloff %.1f" % [kind, l.omni_range, float(limits[kind]), l.omni_attenuation])
+
+	for tier in [1, 2, 3]:
+		var camp: OmniLight3D = BuildingLook.fire(true, false, tier).get_node("Light")
+		check(camp.omni_range <= 8.0 and camp.omni_attenuation >= 2.0 and camp.has_meta("base_energy"), "campfire tier %d light: range %.1f m, falloff %.1f" % [tier, camp.omni_range, camp.omni_attenuation])
+
 	print("lit fixture: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
