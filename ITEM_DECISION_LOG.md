@@ -321,3 +321,6 @@ Status run (2026-10-31): PLAYTHROUGH_STATUS.md 24 fixed, 3 still broken. Unlocke
 
 ## Fruit unflagged (2026-10-31)
 Merged the flora branch (0b606a24) to see the fruit trees: 13 fruit items and 6 fruit dishes (dried apples, apple sauce, plum jam, stewed pears, preserved damsons, quince paste) are no longer future; figs, olives, pomegranates, mangoes, oranges, lemons and apple pie (needs flour) stay future. validate_items counts harvest_yield rows as sources. NOTE: test_first_hour FAILS after the flora merge (gathering counts 44 stones, 59 sticks, 71 fibre against the expected 24/36/48, a new character not empty-handed): the cause is in the flora branch (summer varieties near the spawn / layout 15), not in item data; passed before the merge.
+
+## Building pieces (2026-10-31)
+F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-482, 10 structure rows with states 49-58 reusing existing looks until models exist, log cabin set kit); recipes are locked (known false, locked true) so no player can craft a piece the client cannot draw. HINTS_AND_CAMP_EVENTS_SPEC.md for Tyler.

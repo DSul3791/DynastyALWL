@@ -32,6 +32,17 @@
   "bronze_pickaxe": "bronze tool (Sal, 2026-10-31): the stone tool shape in bronze #a8743a, queued",
   "bronze_axe": "bronze tool (Sal, 2026-10-31): the stone tool shape in bronze #a8743a, queued",
   "bronze_hammer": "bronze tool (Sal, 2026-10-31): the stone tool shape in bronze #a8743a, queued",
-  "bronze_knife": "bronze tool (Sal, 2026-10-31): the stone tool shape in bronze #a8743a, queued"
+  "bronze_knife": "bronze tool (Sal, 2026-10-31): the stone tool shape in bronze #a8743a, queued",
+  "stairs_wood_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "log_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "log_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "log_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "stone_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "stone_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "stone_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "brick_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "brick_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "brick_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
+  "log_cabin_set_kit": "building set kit (Sal, 2026-10-31), queued"
  }
 }
