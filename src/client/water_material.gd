@@ -34,6 +34,7 @@ uniform float softness = 0.2;
 uniform vec2 wind_m_s = vec2(9.0, 4.0);
 uniform float ice = 0.0;             // 0 open water .. 1 a full sheet of ice on STILL water (src/shared/ice.gd; flora_view.gd set_ice_cover)
 uniform float daylight = 1.0;       // 1 day .. about 0.14 night: the body glow follows it (day_cycle.gd, set by weather_look.gd)
+uniform vec3 sun_toward = vec3(0.3, 0.8, 0.5);   // the direction to the sun (weather_look.gd), for the sea's glints
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
 uniform float debug_flow = 0.0;      // Ctrl+Shift+V: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
@@ -215,6 +216,8 @@ void fragment() {
 	float facing = clamp(dot(normal_world, to_eye), 0.0, 1.0);
 	float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
 	vec3 mirrored = reflect(-to_eye, normal_world);
+	// Sun on the swell (sea only): a tight bright glint where a wave faces the sun, a broad soft sheen around it.
+	float glint = sea > 0.5 ? pow(clamp(dot(mirrored, normalize(sun_toward)), 0.0, 1.0), 350.0) * 5.0 + pow(clamp(dot(mirrored, normalize(sun_toward)), 0.0, 1.0), 14.0) * 0.22 : 0.0;
 	vec3 sky = mix(sky_horizon, sky_top, sqrt(clamp(mirrored.y, 0.0, 1.0)));
 	vec4 cloud = fresnel > 0.03 ? mirrored_clouds(mirrored, world_pos) : vec4(0.0);
 	sky = mix(sky, cloud.rgb, cloud.a);
@@ -250,10 +253,10 @@ void fragment() {
 
 	if (sea > 0.5) {
 		// Surf: a bright line where the water meets the sand, bands of foam that run in and out with the swell over the first metre of depth, fading with distance (the shore reads by colour far off).
-		float surf = 1.0 - smoothstep(0.0, 0.9, thickness);
-		float pulse = 0.5 + 0.5 * sin(thickness * 7.0 - TIME * 1.15 + noise(local / 7.0) * 3.5);
+		float surf = 1.0 - smoothstep(0.0, 1.5, thickness);
+		float pulse = 0.5 + 0.5 * sin(thickness * 5.0 - TIME * 1.15 + noise(local / 7.0) * 3.5);
 		float line = 1.0 - smoothstep(0.0, 0.1, thickness);
-		float surf_foam = clamp(surf * smoothstep(0.5, 0.85, pulse) * 0.85 + line * 0.7, 0.0, 1.0) / (1.0 + distance_m / 400.0);
+		float surf_foam = clamp(surf * smoothstep(0.45, 0.8, pulse) * 0.9 + line * 0.9, 0.0, 1.0) / (1.0 + distance_m / 900.0);
 		foam = max(foam, surf_foam);
 	}
 	murk = max(murk, face * 0.8);
@@ -261,8 +264,8 @@ void fragment() {
 	if (sea > 0.5) {
 		// From the beach out: turquoise shallows, a mid blue, the deep sea colour (0 to 3 m, 3 to 25 m, beyond); the bottom shows through the shallows.
 		vec3 c_shore = vec3(0.30, 0.58, 0.52);
-		vec3 c_mid = vec3(0.07, 0.33, 0.43);
-		vec3 c_deep = vec3(0.025, 0.115, 0.215);
+		vec3 c_mid = vec3(0.06, 0.36, 0.47);
+		vec3 c_deep = vec3(0.02, 0.12, 0.25);
 		water = mix(mix(c_shore, c_mid, smoothstep(0.0, 3.0, thickness)), c_deep, smoothstep(3.0, 25.0, thickness));
 		murk = max(murk * 0.5, 1.0 - exp(-thickness / 3.5));
 	}
@@ -272,7 +275,7 @@ void fragment() {
 	float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);
 	// Thin water (a pond edge, a shallow shelf) is seen over its bed at a low angle; mirroring the whole sky there turned ponds into pale grey patches (build 826 play-test, 30 Oct 2026):
 	// the sky's share grows from 40 percent at the thinnest to full over about a metre of water.
-	float mirror_k = mix(0.4, 1.0, murk) * (1.0 - 0.5 * sea);
+	float mirror_k = mix(0.4, 1.0, murk) * (1.0 - 0.62 * sea);
 
 #ifdef SCENE_READS
 	if (refraction > 0.5) {
@@ -318,6 +321,7 @@ void fragment() {
 	ALBEDO *= 1.0 - far_fade;
 	vec3 far_color = mix(sky_horizon, mix(sky_horizon, deep_color * 2.2 + vec3(0.04, 0.07, 0.10), 0.5), sea);      // the sea ends in a slightly darker band than the sky at the horizon, so the line shows
 	EMISSION = mix(EMISSION, far_color, far_fade);
+	EMISSION += vec3(1.0, 0.93, 0.78) * glint * daylight * (1.0 - far_fade) * (1.0 - 0.7 * storm);
 	ALPHA = mix(ALPHA, 1.0, far_fade);
 	SPECULAR *= 1.0 - far_fade;
 

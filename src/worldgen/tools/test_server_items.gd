@@ -977,7 +977,7 @@ func _init() -> void:
 	var guard: int = 0
 
 	while w._items.has(trunk_id) and guard < 100:
-		if int(w._items[trunk_id]["tree"].get("blows", 0)) >= 3:
+		if int(w._items[trunk_id]["tree"].get("blows", 0)) >= 2:
 			w.report_position(1, w.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
 
 		w._last_process.clear()

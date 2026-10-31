@@ -10,3 +10,7 @@ Pictures: offline four views through tools/flora_model_view.gd (the real tree_bu
 | dune_grass (model grass_tuft), sea_holly (model wildflower) | dune_grass_round1.png, sea_holly_round1.png | not yet critiqued: dune grass a rounded tuft of grey-green blades with pale plumes, sea holly steel-blue heads on stiff stems | 2 | real-game check next to sand |
 
 Rule for the flora session: fallen_log length is the entry height_m (2 to 6 m), the radius is derived (max of crown_m x 0.12 and length x 0.075, between 0.14 and 0.45 m), so a collider for logs of 4 m and more can use a capsule of that radius along the log (x axis of the model, yaw random).
+
+## Seasons for tall grass and thatch grass (2026-10-31)
+
+`_grass_tuft` now takes the season name the flora view passes to `TreeBuilder.build` (flora.json rows tall_grass and thatch_grass are flagged "seasonal": true, so each is built four times): autumn dries the blades to straw (dark base toward olive, tips to a straw yellow) and tints the painted blade cards warm, winter turns them grey-brown with fewer blades (14, far 4), spring brightens the tips. Pictures tall_grass_summer/autumn/winter.png (offline four views; the blade cards show as plain white sheets there because the preview has no leaf texture, so only the stems, blades and seed heads show the season: judge the card tint in the game). Rating 2 until seen in the real game. Not done: snow dusting on bushes and grass, spring blossom beads on the hardwoods.

@@ -12,6 +12,7 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
+const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
@@ -140,6 +141,8 @@ uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black; 
 uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
+uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
+uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
 uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
@@ -186,6 +189,7 @@ void vertex() {
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -197,13 +201,15 @@ void fragment() {
 	// Light every card as if it faced up, front or back, so the ground's lighting carries over.
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	// The painted card already shades root to tip; a little more here, and light that shows through the blades.
-	ALBEDO = t.rgb * blade_color * mix(0.85, 1.05, tip);
+	ALBEDO = t.rgb * blade_color * season_tint * mix(0.85, 1.05, tip);
 	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 }
 """
 
 var radius_m: float = 30.0
+var _season_table: Dictionary = {}
+var _season: String = ""                  # the season the blades were last tinted for (set_season)
 var _near_end: float = 14.0               # band limits in metres (set_radius): near, middle, far, very far
 var _mid_end: float = 26.0
 var _far_end: float = 40.0                # the very far band starts here and runs to radius_m
@@ -440,6 +446,36 @@ func stamp(from_position: Vector3) -> void:
 
 # The wind sways the grass with the same gusts the sound stage plays
 # (strength about 0 calm to 1.6 for a strong gust high up).
+# The per-season grass numbers of data/look/seasons.json, read once.
+func _season_grass() -> Dictionary:
+	if _season_table.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SEASONS_FILE))
+
+		if typeof(parsed) == TYPE_DICTIONARY:
+			_season_table = (parsed.get("ground", {}) as Dictionary).get("grass", {})
+
+	return _season_table
+
+
+# The game season for the blades (data/look/seasons.json ground.grass): a colour tint and the share of blades kept. Cheap: two shader parameters.
+func set_season(season_name: String) -> void:
+	if season_name == _season or season_name == "":
+		return
+
+	var table: Dictionary = (_season_grass().get(season_name, {}) as Dictionary)
+
+	if table.is_empty():
+		return
+
+	_season = season_name
+	var rgb: Array = table["tint_rgb"]
+
+	for n in range(_materials.size()):
+		if not _is_solid(n) and str(LAYERS[n]["texture"]).begins_with("grass"):
+			_materials[n].set_shader_parameter("season_tint", Vector3(float(rgb[0]), float(rgb[1]), float(rgb[2])))
+			_materials[n].set_shader_parameter("season_blades", float(table["blades"]))
+
+
 func set_wind(strength: float) -> void:
 	for n in range(GRASS_LAYERS):
 		_materials[n].set_shader_parameter("wind_strength", 0.12 * float(LAYERS[n]["wind"]) * clampf(0.6 + 0.5 * strength, 0.6, 1.4))

@@ -73,20 +73,40 @@
 		"grass": {
 			"spring": {
 				"tint": "fresh light green",
-				"blades": 1.0
+				"blades": 1.0,
+				"tint_rgb": [
+					1.06,
+					1.12,
+					0.88
+				]
 			},
 			"summer": {
 				"tint": "full green, tall layer tips straw",
-				"blades": 1.0
+				"blades": 1.0,
+				"tint_rgb": [
+					1.0,
+					1.0,
+					1.0
+				]
 			},
 			"autumn": {
 				"tint": "yellow-green to straw",
-				"blades": 0.9
+				"blades": 0.9,
+				"tint_rgb": [
+					1.1,
+					0.98,
+					0.72
+				]
 			},
 			"winter": {
 				"tint": "brown, desaturated",
 				"blades": 0.6,
-				"snow_dust_blades": 0.4
+				"snow_dust_blades": 0.4,
+				"tint_rgb": [
+					0.92,
+					0.78,
+					0.6
+				]
 			}
 		},
 		"litter": {
@@ -98,7 +118,8 @@
 			"summer": "green, seed heads form",
 			"autumn": "straw, seed heads full and drooping",
 			"winter": "standing straw, brown, half height where snowed"
-		}
+		},
+		"grass_note": "tint_rgb multiplies the blade colour (grass_view.gd season_tint); blades is the share of blades drawn (hashed per cell, so the same blades stay). Read by GrassView.set_season."
 	},
 	"rules": {
 		"snow_cover": "0 at autumn end, rising through winter by biome class above; applies to ground, grass tufts, bush tops, log tops; not under dense canopy (half cover).",

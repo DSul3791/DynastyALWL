@@ -133,7 +133,7 @@ func _init() -> void:
 	var guard: int = 0
 
 	while items._items.has(trunk_id) and guard < 200:
-		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 3:
+		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 2:
 			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
 
 		items._last_process.clear()
@@ -147,7 +147,8 @@ func _init() -> void:
 		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
 			logs += 1
 
-	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [logs, count("leaves")])
+	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves, %d sticks)" % [logs, count("leaves"), count("stick")])
+	print("first hour: after felling %d leaves, %d sticks, %d bark" % [count("leaves"), count("stick"), count("bark")])
 	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")
 
