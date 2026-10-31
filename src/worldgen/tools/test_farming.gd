@@ -76,7 +76,7 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	var crops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))["crops"]
-	check(crops.size() == 12 and crops["wheat"]["grow_days"] > 20, "crops.json lists the 12 crops (wheat grows %d days)" % int(crops["wheat"]["grow_days"]))
+	check(crops.size() >= 12 and crops["wheat"]["grow_days"] > 20, "crops.json lists the crops (wheat grows %d days)" % int(crops["wheat"]["grow_days"]))
 
 	# Till.
 	check(items.till(1, items.inventory_of(1), Vector3(1.0, 10.0, 1.0)) == 0, "no hoe: nothing is tilled")

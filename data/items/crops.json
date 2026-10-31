@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet; the crop table for the farming code (FARMING_SPEC.md). 12 crops. grow_days = game days sowing to ripe, water_per_day = buckets per bed per game day (0 if rain-fed), seed_source = the wild plant that gives seeds so a player starts from forage, store = how it keeps (drying, salting, root cellar). Agronomy numbers (days to maturity, soil, storage) are general growing knowledge for temperate crops, approximate and not individually sourced; a game day is one real hour so real months are scaled down by the code owner. Items for all 12 crops and their seeds exist (332 to 337 and 374 to 385); the wild-seed drops, the cellar and the drying rack do not. 2026-10-31 audit against Tyler's farming rules: the server compares `sow_season` to the current season as ONE string (turnip is hard-coded as always sowable), and a new world starts on day 100, early summer, so spring-only crops could not be sown for 265 real hours. `sow_season` is now the single season the code accepts (summer for nearly all crops except wheat and barley, which stay spring because test_farming sows them in spring: a summer-start player grows oats and the vegetables first; so a new player can plant on day 1; rye autumn; turnip spring but exempt) and `sow_seasons` keeps the realistic list (wheat spring and summer, rye autumn, turnip spring and autumn...) for when the code accepts a list.",
+	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet; the crop table for the farming code (FARMING_SPEC.md). 12 crops. grow_days = game days sowing to ripe, water_per_day = buckets per bed per game day (0 if rain-fed), seed_source = the wild plant that gives seeds so a player starts from forage, store = how it keeps (drying, salting, root cellar). Agronomy numbers (days to maturity, soil, storage) are general growing knowledge for temperate crops, approximate and not individually sourced; a game day is one real hour so real months are scaled down by the code owner. Items for all 12 crops and their seeds exist (332 to 337 and 374 to 385); the wild-seed drops, the cellar and the drying rack do not. 2026-10-31 audit against Tyler's farming rules: the server compares `sow_season` to the current season as ONE string (turnip is hard-coded as always sowable), and a new world starts on day 100, early summer, so spring-only crops could not be sown for 265 real hours. `sow_season` is now the single season the code accepts (summer for nearly all crops except wheat and barley, which stay spring because test_farming sows them in spring: a summer-start player grows oats and the vegetables first; so a new player can plant on day 1; rye autumn; turnip spring but exempt) and `sow_seasons` keeps the realistic list (wheat spring and summer, rye autumn, turnip spring and autumn...) for when the code accepts a list. 2026-10-31 pace rebalance (moderator): grow_days are game days = real hours. Fast 4 to 6 h (radish 4, lettuce 5, turnip 5, peas 6), mid 8 to 16 h (beet 8, carrot 10, oats 12, cabbage 14, onion 16), slow 20 to 30 h (barley 20, flax 22, potato 24, rye 28, wheat 30). A game year is 365 real hours, a season about 91, so a crop sown in its season ripens inside it or the next. Water need (water_per_day x grow_days wet days) is unchanged in proportion: wheat 9 wet days of 30, radish 2 of 4.",
 	"storage_chain": {
 		"drying": "Drying rack (new structure, 4 sticks + twine 4): berries, herbs, peas, meat strips; item Jerky = raw meat 2 + salt 1 on the rack",
 		"salting": "Salt (sea salt, WATER_GATHER_SPEC.md) + fish or meat into a clay jug: Salted fish, Salted meat",
@@ -11,7 +11,7 @@
 			"name": "Wheat",
 			"seed": "wheat_seeds",
 			"sow_season": "spring",
-			"grow_days": 110,
+			"grow_days": 30,
 			"water_per_day": 0.3,
 			"soil": "loam, clay loam",
 			"yields": [
@@ -46,7 +46,7 @@
 			"name": "Barley",
 			"seed": "barley_seeds",
 			"sow_season": "spring",
-			"grow_days": 80,
+			"grow_days": 20,
 			"water_per_day": 0.2,
 			"soil": "light, well drained",
 			"yields": [
@@ -81,7 +81,7 @@
 			"name": "Oats",
 			"seed": "oats_seeds",
 			"sow_season": "summer",
-			"grow_days": 100,
+			"grow_days": 12,
 			"water_per_day": 0.3,
 			"soil": "cool, damp, acid soil",
 			"yields": [
@@ -117,7 +117,7 @@
 			"name": "Rye",
 			"seed": "rye_seeds",
 			"sow_season": "autumn",
-			"grow_days": 250,
+			"grow_days": 28,
 			"water_per_day": 0.1,
 			"soil": "poor, sandy, cold",
 			"yields": [
@@ -153,7 +153,7 @@
 			"name": "Carrot",
 			"seed": "carrot_seeds",
 			"sow_season": "summer",
-			"grow_days": 75,
+			"grow_days": 10,
 			"water_per_day": 0.2,
 			"soil": "deep, loose, stone-free",
 			"yields": [
@@ -184,7 +184,7 @@
 			"name": "Potato",
 			"seed": "potato_seeds",
 			"sow_season": "summer",
-			"grow_days": 100,
+			"grow_days": 24,
 			"water_per_day": 0.2,
 			"soil": "loose, slightly acid",
 			"yields": [
@@ -216,7 +216,7 @@
 			"name": "Turnip",
 			"seed": "turnip_seeds",
 			"sow_season": "spring",
-			"grow_days": 60,
+			"grow_days": 5,
 			"water_per_day": 0.2,
 			"soil": "most soils, cool",
 			"yields": [
@@ -249,7 +249,7 @@
 			"name": "Cabbage",
 			"seed": "cabbage_seeds",
 			"sow_season": "summer",
-			"grow_days": 90,
+			"grow_days": 14,
 			"water_per_day": 0.3,
 			"soil": "rich, moist, heavy",
 			"yields": [
@@ -281,7 +281,7 @@
 			"name": "Onion",
 			"seed": "onion_seeds",
 			"sow_season": "summer",
-			"grow_days": 110,
+			"grow_days": 16,
 			"water_per_day": 0.1,
 			"soil": "light, well drained",
 			"yields": [
@@ -312,7 +312,7 @@
 			"name": "Peas",
 			"seed": "peas_seeds",
 			"sow_season": "summer",
-			"grow_days": 65,
+			"grow_days": 6,
 			"water_per_day": 0.2,
 			"soil": "light loam, cool",
 			"yields": [
@@ -343,7 +343,7 @@
 			"name": "Beet",
 			"seed": "beet_seeds",
 			"sow_season": "summer",
-			"grow_days": 65,
+			"grow_days": 8,
 			"water_per_day": 0.2,
 			"soil": "deep loam",
 			"yields": [
@@ -374,7 +374,7 @@
 			"name": "Flax",
 			"seed": "flax_seeds",
 			"sow_season": "summer",
-			"grow_days": 95,
+			"grow_days": 22,
 			"water_per_day": 0.2,
 			"soil": "loam, moist, weed free",
 			"yields": [
@@ -404,6 +404,72 @@
 			"sow_seasons": [
 				"spring"
 			]
+		},
+		"radish": {
+			"name": "Radish",
+			"seed": "radish_seeds",
+			"sow_season": "summer",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"grow_days": 4,
+			"water_per_day": 0.3,
+			"soil": "light, moist, cool",
+			"yields": [
+				[
+					"radish",
+					6
+				]
+			],
+			"seeds_back": [
+				"radish_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild radish on coasts and verges, summer",
+			"biomes": [
+				"temperate_grassland",
+				"beach"
+			],
+			"tool_to_harvest": "hand",
+			"store": "eaten fresh; keeps a week cool"
+		},
+		"lettuce": {
+			"name": "Lettuce",
+			"seed": "lettuce_seeds",
+			"sow_season": "summer",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"grow_days": 5,
+			"water_per_day": 0.4,
+			"soil": "rich, moist",
+			"yields": [
+				[
+					"lettuce",
+					4
+				]
+			],
+			"seeds_back": [
+				"lettuce_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"seed_source": "wild prickly lettuce on dry verges, summer",
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest"
+			],
+			"tool_to_harvest": "hand",
+			"store": "eaten fresh; spoils in days"
 		}
 	}
 }

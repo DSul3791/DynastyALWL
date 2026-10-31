@@ -40,6 +40,10 @@
   "mackerel": "fish (Sal, 2026-10-31), queued",
   "smelt": "fish (Sal, 2026-10-31), queued",
   "eel": "fish (Sal, 2026-10-31), queued",
-  "cod": "fish (Sal, 2026-10-31), queued"
+  "cod": "fish (Sal, 2026-10-31), queued",
+  "radish": "crop (Sal, 2026-10-31), queued for Kathleen's crop models",
+  "radish_seeds": "crop (Sal, 2026-10-31), queued for Kathleen's crop models",
+  "lettuce": "crop (Sal, 2026-10-31), queued for Kathleen's crop models",
+  "lettuce_seeds": "crop (Sal, 2026-10-31), queued for Kathleen's crop models"
  }
 }
