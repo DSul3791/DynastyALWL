@@ -50,6 +50,34 @@ void fragment() {
 }
 """
 
+# The flames of lit fixtures (torch, chandelier, fireplace): the same flicker, but saturated orange so the additive overlap of the cones does not clip to cream-white (Kathleen, 31 Oct).
+const FIXTURE_FLAME_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabled;
+uniform float height = 0.34;
+varying float up;
+varying float flick;
+
+void vertex() {
+	up = clamp(VERTEX.y / height, 0.0, 1.0);
+	float ph = float(INSTANCE_ID) * 1.7 + VERTEX.x * 3.0 + VERTEX.z * 5.0;
+	flick = 0.5 + 0.5 * sin(TIME * 9.0 + ph) * sin(TIME * 11.3 + ph * 0.6 + 1.0);
+	float sway = sin(TIME * 6.0 + VERTEX.y * 7.0 + ph) * 0.05 + sin(TIME * 11.0 + VERTEX.y * 3.0) * 0.025;
+	VERTEX.x += sway * up;
+	VERTEX.z += cos(TIME * 5.0 + VERTEX.y * 6.0 + ph) * 0.04 * up;
+	VERTEX.y *= 0.85 + 0.3 * flick;
+}
+
+void fragment() {
+	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
+	float soft = smoothstep(0.0, 0.85, facing);
+	vec3 low = vec3(1.0, 0.4, 0.05);
+	vec3 high = vec3(1.0, 0.62, 0.12);
+	ALBEDO = mix(low, high, 1.0 - up) * (0.4 + 0.15 * flick);
+	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.2 * flick);
+}
+"""
+
 # Coals glow brighter than the flame body and breathe slowly; vertex colours are not used.
 const COAL_SHADER := """
 shader_type spatial;
@@ -266,8 +294,8 @@ static func _leanto_wood() -> ArrayMesh:
 	# https://yonderjournal.com/guide/standard-lean/, https://www.advnture.com/how-to/build-a-natural-shelter).
 	var lashing: Color = Color(0.82, 0.5, 0.2)      # orange-brown twine as in the photo, more visible than plain fibre
 	var ridge_y: float = 1.5      # references 2 and 3 (art/references/leanto_reference_dave_2_stick_shelter.jpg, _3_wikihow_sleeper.jpg): ridge 1.2 to 1.6 m, roof steeper (about 57 degrees)
-	var ridge_z: float = 0.1
-	var back_z: float = -0.9      # where the roof sticks meet the ground
+	var ridge_z: float = LEANTO_RIDGE_Z      # Dave 2026-10-31: a longer, flatter roof, about 35 degrees: 1.5 m up over 2.1 m of run, ground at the back 2.1 m behind the ridge
+	var back_z: float = LEANTO_BACK_Z      # where the roof sticks meet the ground
 
 	for x in [-1.25, 1.25]:   # forked uprights
 		_tube(st, Vector3(x, 0.0, ridge_z + 0.05), Vector3(x * 0.99, 1.68, ridge_z), 0.05, 0.04, WOOD, 6, rng)
@@ -278,8 +306,8 @@ static func _leanto_wood() -> ArrayMesh:
 	_tube(st, Vector3(-1.5, ridge_y + 0.02, ridge_z), Vector3(1.5, ridge_y - 0.01, ridge_z), 0.045, 0.04, WOOD_PALE, 6, rng)
 
 	# The roof sticks: side by side from the ridge down to the ground at the back, each a little off true; a pale cut stub stands above the ridge.
-	for n in range(35):
-		var x: float = -1.28 + 2.56 * float(n) / 34.0 + rng.randf_range(-0.012, 0.012)
+	for n in range(32):
+		var x: float = -1.28 + 2.56 * float(n) / 31.0 + rng.randf_range(-0.012, 0.012)
 		var top: Vector3 = Vector3(x, ridge_y + 0.02, ridge_z - 0.03)
 		var foot: Vector3 = Vector3(x + rng.randf_range(-0.05, 0.05), 0.0, back_z + rng.randf_range(-0.05, 0.05))
 		var dir: Vector3 = (top - foot).normalized()
@@ -289,15 +317,15 @@ static func _leanto_wood() -> ArrayMesh:
 
 	# The ends: a few sticks leaning from each upright's top down to the ground, closing the end triangles (they lean outward slightly).
 	for sx in [-1.0, 1.0]:
-		for n in range(6):
-			var u: float = float(n) / 5.0
-			var top: Vector3 = Vector3(sx * 1.27, lerpf(1.45, 0.9, u), lerpf(ridge_z, ridge_z - 0.45, u))
-			var foot: Vector3 = Vector3(sx * (1.36 + 0.03 * float(n % 2) + rng.randf_range(0.0, 0.05)), 0.0, lerpf(0.4, back_z + 0.05, u))
+		for n in range(8):
+			var u: float = float(n) / 7.0
+			var top: Vector3 = Vector3(sx * 1.27, lerpf(1.45, 0.6, u), lerpf(ridge_z, ridge_z - 1.3, u))
+			var foot: Vector3 = Vector3(sx * (1.36 + 0.03 * float(n % 2) + rng.randf_range(0.0, 0.05)), 0.0, lerpf(ridge_z + 0.3, back_z + 0.05, u))
 			_tube(st, foot, top, 0.022, 0.018, _tone(WOOD_DARK, rng, 0.15), 4, rng)
 
 	# Wattle: thin flexible rods woven across the roof sticks in four courses, wavy (in and out of the sticks), tied with twine at the ends.
-	for course in range(4):
-		var t: float = 0.2 + 0.2 * float(course)
+	for course in range(5):
+		var t: float = 0.15 + 0.17 * float(course)
 		var y: float = lerpf(0.05, ridge_y - 0.05, t)
 		var z: float = lerpf(back_z, ridge_z - 0.04, t)
 		var mid_x: float = rng.randf_range(-0.4, 0.4)
@@ -320,8 +348,8 @@ static func _leanto_leaves() -> ArrayMesh:
 	var greens: Array = [Color(0.20, 0.33, 0.13), Color(0.28, 0.38, 0.14), Color(0.36, 0.40, 0.15), Color(0.42, 0.33, 0.14), Color(0.25, 0.30, 0.12)]
 	# The roof plane runs from the low back (y 0.97, z -1.05) to the high front (y 2.02, z 0.9): rows of overlapping leafy
 	# cards, each row a little farther down the slope than the one above, tilted so the lower edge sticks out like shingles.
-	var back: Vector3 = Vector3(0.0, 0.07, -0.92)
-	var front: Vector3 = Vector3(0.0, 1.48, 0.08)
+	var back: Vector3 = Vector3(0.0, 0.07, LEANTO_BACK_Z + 0.02)
+	var front: Vector3 = Vector3(0.0, 1.48, LEANTO_RIDGE_Z - 0.02)
 	var slope: Vector3 = (front - back)
 	var run: Vector3 = slope.normalized()
 	var across: Vector3 = Vector3.RIGHT
@@ -330,7 +358,7 @@ static func _leanto_leaves() -> ArrayMesh:
 	if normal.y < 0.0:
 		normal = -normal
 
-	var rows: int = 10
+	var rows: int = 14
 
 	for layer in range(1):   # one layer now (the sticks show through; it was two) of leaf shingles: the under layer darker and offset, so the roof has depth and no flat paper look (guide: lean-to roof)
 		for row in range(rows):
@@ -355,8 +383,8 @@ static func _leanto_leaves() -> ArrayMesh:
 				_card(st, c - half_w * 0.9 - half_l, c + half_w * 0.9 - half_l, c + half_w * 0.12 + half_l + droop, c - half_w * 0.12 + half_l + droop, col_leaf, normal)
 
 	# The floor: a spread of boughs and dry leaves on the ground under the roof.
-	for n in range(30):   # leaf litter all round, as on the forest floor in the photos
-		var p: Vector3 = Vector3(rng.randf_range(-1.35, 1.35), 0.02 + 0.004 * float(n % 3), rng.randf_range(-0.8, 1.15))
+	for n in range(40):   # leaf litter all round, as on the forest floor in the photos
+		var p: Vector3 = Vector3(rng.randf_range(-1.35, 1.35), 0.02 + 0.004 * float(n % 3), rng.randf_range(-1.6, 1.5))
 		var yaw: float = rng.randf() * TAU
 		var d: Vector3 = Vector3(cos(yaw), 0.0, sin(yaw)) * 0.17
 		var e: Vector3 = Vector3(-d.z, 0.0, d.x) * 0.6
@@ -379,10 +407,10 @@ static func leanto() -> Node3D:
 	return root
 
 
-# The lean-to's solid part for the player: only the sloped roof, a thin slab from the ground at the back (z -0.9) up to the ridge (z 0.1, 1.5 m), 2.6 m wide, so the space under it can be crawled into and the
-# height over a point is 1.5 * (z + 0.9) / 1.0. (The server's Cover.at counts the whole footprint at full height; this is only the model's collider.)
-const LEANTO_BACK_Z := -0.9
-const LEANTO_RIDGE_Z := 0.1
+# The lean-to's solid part for the player: only the sloped roof, a thin slab from the ground at the back (z -1.7) up to the ridge (z 0.4, 1.5 m: about 35 degrees), 2.6 m wide, so the space under it can be crawled into and the
+# height over a point is 1.5 * (z + 1.7) / 2.1. Footprint 2.6 x 3.4 m (half 1.3 x 1.7), the open front strip z 0.4 to 1.7. (The server's Cover.at counts the whole footprint at full height; this is only the model's collider.)
+const LEANTO_BACK_Z := -1.7
+const LEANTO_RIDGE_Z := 0.4
 const LEANTO_RIDGE_Y := 1.5
 
 
@@ -901,6 +929,71 @@ static func _forge_coals() -> ArrayMesh:
 		_blob(st, at, Vector3(0.07, 0.04, 0.06), Color.WHITE, rng, 6, 2, 0.15)
 
 	return _finish_cached("forge_coals", st, _coal_material())
+
+
+# --- Lit fixtures (wall torch, chandelier, fireplace; struct.lit from the server, Tyler 31 Oct 2026): flames and a warm light added to the model, named "Light" like a campfire's so the
+# nearest-lights limit and fire_light_near treat it alike. The torch flame sits above and in front of the head and its light further out, so the wall behind gets no hard shadow cone.
+static func _fixture_flame_material() -> ShaderMaterial:
+	if _fixture_flame == null:
+		var shader: Shader = Shader.new()
+		shader.code = FIXTURE_FLAME_SHADER
+		_fixture_flame = ShaderMaterial.new()
+		_fixture_flame.shader = shader
+
+	return _fixture_flame
+
+
+static var _fixture_flame: ShaderMaterial
+
+
+static func lit_fixture(kind: String) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var spots: Array = []
+	var light_at: Vector3 = Vector3(0.0, 1.0, 0.5)
+	var range_m: float = 8.0
+	var energy: float = 1.2
+
+	match kind:
+		"wall_torch":
+			spots = [[Vector3(0.0, 2.27, 0.36), Vector3(0.9, 0.72, 0.9)]]
+			light_at = Vector3(0.0, 2.5, 0.8)
+			range_m = 7.0
+			energy = 1.1
+		"chandelier":
+			for k in 6:
+				var a: float = TAU * float(k) / 6.0
+				spots.append([Vector3(cos(a) * 0.34, 2.3 - 0.36, sin(a) * 0.34), Vector3.ONE * 0.3])
+
+			light_at = Vector3(0.0, 1.6, 0.0)
+			range_m = 8.0
+			energy = 1.2
+		"fireplace":
+			spots = [[Vector3(0.0, 0.3, 0.28), Vector3.ONE * 1.1], [Vector3(0.3, 0.3, 0.22), Vector3.ONE * 0.7]]
+			light_at = Vector3(0.0, 0.9, 0.6)
+			range_m = 10.0
+			energy = 1.5
+			var coals: MeshInstance3D = _instance(_coals())
+			coals.scale = Vector3(0.3, 1.0, 0.2)
+			coals.position = Vector3(0.0, 0.1, 0.28)
+			root.add_child(coals)
+
+	for spot in spots:
+		var flame: MeshInstance3D = _instance(_flames(1))
+		flame.position = spot[0]
+		flame.scale = spot[1]
+		flame.material_override = _fixture_flame_material()
+		root.add_child(flame)
+
+	var light: OmniLight3D = OmniLight3D.new()
+	light.name = "Light"
+	light.light_color = Color(1.0, 0.62, 0.3)
+	light.omni_range = range_m
+	light.light_energy = energy
+	light.shadow_enabled = false
+	light.position = light_at
+	light.visible = false
+	root.add_child(light)
+	return root
 
 
 static func masonry_forge() -> Node3D:

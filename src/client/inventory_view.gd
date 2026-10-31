@@ -1802,7 +1802,14 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key, "yaw": rad_to_deg(yaw)}
+			var fixture_light: OmniLight3D = null
+
+			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
+				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
+				node.add_child(fixture)
+				fixture_light = fixture.get_node_or_null("Light")
+
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
 			if StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}

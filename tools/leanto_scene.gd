@@ -65,4 +65,4 @@ func _init() -> void:
 	add_child(bed)
 	_figure(1.75, true, Vector3(-0.9, 0.55, 0.0))     # lying on the bed, feet at the left end, head to the right
 	_figure(1.75, false, Vector3(-1.9, 0.0, 0.7))      # standing beside the front upright
-	_crawler(Vector3(1.6, 0.0, 1.1))                    # crawling in at the front
+	_crawler(Vector3(0.95, 0.0, 0.2))                    # crawling in at the front

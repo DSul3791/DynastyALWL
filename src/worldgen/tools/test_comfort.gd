@@ -101,6 +101,7 @@ func _init() -> void:
 	add_struct("table", Vector3(-3.0, 10.0, -3.0))
 	var place: int = add_struct("fireplace", Vector3(5.0, 10.0, -1.0))
 	items._items[place]["struct"]["lit"] = true
+	items._items[place]["struct"]["fuel_left"] = 7200.0
 	var higher: int = level()
 	items.rest_completed(1)
 	check(higher >= 15 and items.rested_seconds_left(1) > 44.0 * 60.0 and float(items.rested_tier(1)["regen_mult"]) == 1.35, "a rest at a higher level (%d) refreshes it to 45 minutes with the better tier" % higher)
@@ -164,6 +165,20 @@ func _init() -> void:
 	again.ground_height = func(_x, _z): return 10.0
 	again.setup(ItemTableScript.load_default(), dir)
 	again.peer_connected_hello(1, "comfort000001")
+	var lit_rows: Array = items._light_rows_save()
+	check(lit_rows.size() == 1 or lit_rows.size() == 2, "the lit lights are listed for saving (%d)" % lit_rows.size())
+	var fresh = ItemsScript.new()
+	fresh.send_full = func(_p, _b): pass
+	fresh.send_slots = func(_p, _b): pass
+	fresh.send_world_items = func(_p, _a, _r): pass
+	fresh.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	fresh.send_notice = func(_p, _t): pass
+	fresh.ground_height = func(_x, _z): return 10.0
+	fresh.setup(ItemTableScript.load_default(), dir + "_fresh")
+	var cold: int = fresh._next_id
+	fresh._items[cold] = {"number": 0, "count": 1, "pos": Vector3(16.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "wall_torch", "yaw": 0.0}}
+	fresh._apply_lit_rows([[16.0, 10.0, 0.0, 900.0]])
+	check(bool(fresh._items[cold]["struct"].get("lit", false)) and float(fresh._items[cold]["struct"]["fuel_left"]) == 900.0, "a saved lit torch is lit again, with its fuel, after a load")
 	check(again.rested_seconds_left(1) > 40.0 * 60.0, "the buff is saved with the character (%.0f s left after a reload)" % again.rested_seconds_left(1))
 	items._characters[items._peer_key[1]].erase("rested")
 	check(items.rested_tier(1).is_empty(), "without a buff there is no tier")
