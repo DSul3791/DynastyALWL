@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 502,
+	"next_number": 517,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -5540,7 +5540,6 @@
 			"description": "A log set on end with the top flattened. Sit on it by the fire.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 9
 		},
@@ -5550,9 +5549,135 @@
 			"description": "A three-legged stool of lashed sticks. Sit on it by the fire.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
+		},
+		"log_seat": {
+			"number": 502,
+			"name": "Log seat",
+			"description": "A log seat. Sit on it by the fire.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"stool": {
+			"number": 503,
+			"name": "Stool",
+			"description": "A lashed stool. Sit on it.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"bench": {
+			"number": 504,
+			"name": "Bench",
+			"description": "A plank bench that seats two or three.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"chair": {
+			"number": 505,
+			"name": "Chair",
+			"description": "A chair with a back. Sit and rest.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"table": {
+			"number": 506,
+			"name": "Table",
+			"description": "A plank table on trestles.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"hide_rug": {
+			"number": 507,
+			"name": "Hide rug",
+			"description": "A pelt on the floor.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"wool_rug": {
+			"number": 508,
+			"name": "Wool rug",
+			"description": "A striped woven rug.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"straw_bed": {
+			"number": 509,
+			"name": "Straw bed",
+			"description": "A bed with a heaped straw tick.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": []
+		},
+		"feather_bed": {
+			"number": 510,
+			"name": "Feather bed",
+			"description": "A bed with a feather tick and a blanket.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"canopy_bed": {
+			"number": 511,
+			"name": "Canopy bed",
+			"description": "A canopy bed with curtains.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"wall_torch": {
+			"number": 512,
+			"name": "Wall torch",
+			"description": "A torch on the wall. It lights when fuelled.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"chandelier": {
+			"number": 513,
+			"name": "Chandelier",
+			"description": "A hanging hoop of candles. It lights when fuelled.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"fireplace": {
+			"number": 514,
+			"name": "Fireplace",
+			"description": "A brick hearth with a chimney. It lights when fuelled.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"flower_pot": {
+			"number": 515,
+			"name": "Flower pot",
+			"description": "A pot of flowers.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"antler_mount": {
+			"number": 516,
+			"name": "Antler mount",
+			"description": "Antlers mounted on a board.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
 		},
 		"bench_kit": {
 			"number": 488,
@@ -5560,7 +5685,6 @@
 			"description": "A plank seat on four legs. Seats you by the fire and adds comfort.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 49
 		},
@@ -5570,7 +5694,6 @@
 			"description": "A plank chair with a hide seat. More comfortable than a bench.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 74
 		},
@@ -5580,7 +5703,6 @@
 			"description": "A plank table to eat and work at. Adds comfort to a camp.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 96
 		},
@@ -5590,7 +5712,6 @@
 			"description": "A tanned hide spread on the floor. Warm underfoot.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 24
 		},
@@ -5600,7 +5721,6 @@
 			"description": "A thick wool rug. Warmer and softer than hide.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 43
 		},
@@ -5610,7 +5730,6 @@
 			"description": "A frame stuffed with clean straw. Softer than a rough bed.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 65
 		},

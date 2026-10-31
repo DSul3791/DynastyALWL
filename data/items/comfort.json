@@ -32,7 +32,7 @@
 			"class": "bed",
 			"points": 2,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "straw_bed_kit"
 		},
 		{
@@ -56,7 +56,7 @@
 			"class": "seat",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "log_seat_kit"
 		},
 		{
@@ -64,7 +64,7 @@
 			"class": "seat",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "stool_kit"
 		},
 		{
@@ -72,7 +72,7 @@
 			"class": "seat",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "bench_kit"
 		},
 		{
@@ -80,7 +80,7 @@
 			"class": "seat",
 			"points": 2,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "chair_kit"
 		},
 		{
@@ -88,7 +88,7 @@
 			"class": "table",
 			"points": 2,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "table_kit"
 		},
 		{
@@ -104,7 +104,7 @@
 			"class": "rug",
 			"points": 1,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "hide_rug_kit"
 		},
 		{
@@ -112,7 +112,7 @@
 			"class": "rug",
 			"points": 2,
 			"needs_lit": false,
-			"status": "future",
+			"status": "placeable",
 			"source": "wool_rug_kit"
 		},
 		{
