@@ -124,7 +124,7 @@ Note: Render of eight variants side by side with plain white leaves (the game's 
 
 ## pic-fireplace-light | Does the lit fireplace light up the ground in front of it only (front shown), with the sides and back dark?
 Image: questions/img/fireplace_light_front.png
-Note: Real game at dusk, with Tyler's front-facing spot light (the side view is questions/img/fireplace_light_side.png: dark at the side, light only in front). Kathleen rates it 3.5 of 5: the cone and shadows are right; the opening shows a floating orange dot above the fire.
+Note: Real game at dusk, with Tyler's front-facing spot light (the side view is questions/img/fireplace_light_side.png: dark at the side, light only in front). Kathleen rates it 4.5 of 5: the cone and shadows are right and the brick inside glows warm.
 - Yes
 - No
 
