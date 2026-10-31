@@ -229,7 +229,9 @@ const KINDS := ["tree", "shrub", "plant"]
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
-const PART_M_LOW := [256.0, 256.0, 256.0]   # Low and Medium: shrubs and plants also in one part per chunk (a quarter of the draws)
+const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
+# The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
+const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -260,6 +262,7 @@ var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
+var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -370,7 +373,8 @@ func set_quality(quality: int) -> void:
 	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
 	impostor_m = IMPOSTOR_M[quality]
 	far_shadows = FAR_SHADOWS[quality]
-	part_m = PART_M_LOW if quality <= 1 else PART_M
+	part_m = PART_M_LOW if quality <= 2 else PART_M
+	shrub_share = SHRUB_SHARE[clampi(quality, 0, SHRUB_SHARE.size() - 1)]
 	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
@@ -1965,6 +1969,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			# Far trees are small on the screen: one far model per species, so their draws merge (a third of the nodes).
 			if is_near == TIER_FAR:
 				variant = 0
+
+		# Lower qualities draw only a stable share of the shrubs (thickets are dense).
+		if shrub_share < 1.0 and info["kind"] == KIND_SHRUB and float((int(ids[n]) * 2654435761) % 1000) / 1000.0 >= shrub_share:
+			continue
 
 		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
 		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):

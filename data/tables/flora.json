@@ -628,6 +628,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "hazel",
+			"seasonal": true,
 			"autumn_colors": [
 				[0.86, 0.7, 0.18],
 				[0.9, 0.76, 0.24],
@@ -2025,6 +2026,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "rowan",
+			"seasonal": true,
 			"leaf": "rowan",
 			"young_below_m": 8,
 			"autumn_colors": [
@@ -2090,6 +2092,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "wild_rose",
+			"seasonal": true,
 			"patch": {"every_m": 70.0, "chance": 0.42, "count": [9, 13], "radius_m": [1.5, 2.8], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"near_m": 60,
 			"mid_m": 30,
@@ -2212,6 +2215,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"patch": {"every_m": 67, "chance": 0.7, "count": [8, 11], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 1.0, "by_biome": true},
 			"height_m": [
 				3,
@@ -2271,6 +2275,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"height_m": [
 				1.5,
 				3.5
@@ -2327,6 +2332,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [
 				[0.92, 0.66, 0.14],
@@ -2388,6 +2394,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [
 				[0.9, 0.74, 0.16],
@@ -2446,6 +2453,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_cherry",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [
 				[0.92, 0.36, 0.08],
@@ -3151,6 +3159,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"height_m": [
 				0.3,
 				0.7
@@ -5086,6 +5095,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"patch": {"every_m": 108, "chance": 0.7, "count": [8, 12], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"height_m": [
 				0.8,
@@ -5203,6 +5213,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"patch": {"every_m": 92, "chance": 0.7, "count": [9, 13], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"height_m": [
 				0.5,
@@ -5737,6 +5748,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"patch": {"every_m": 61, "chance": 0.7, "count": [8, 11], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.9, "by_biome": true},
 			"height_m": [
 				1.0,
@@ -5978,6 +5990,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"patch": {"every_m": 80, "chance": 0.7, "count": [9, 13], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"height_m": [
 				0.3,
@@ -6778,6 +6791,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"seasonal": true,
 			"height_m": [
 				1.5,
 				3.0
@@ -7532,6 +7546,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [[0.92, 0.66, 0.14], [0.86, 0.56, 0.12], [0.95, 0.75, 0.2], [0.8, 0.5, 0.14]],
 			"canopy": "light",
@@ -7560,6 +7575,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [[0.92, 0.66, 0.14], [0.86, 0.56, 0.12], [0.95, 0.75, 0.2], [0.8, 0.5, 0.14]],
 			"canopy": "light",
@@ -7588,6 +7604,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [[0.92, 0.66, 0.14], [0.86, 0.56, 0.12], [0.95, 0.75, 0.2], [0.8, 0.5, 0.14]],
 			"canopy": "light",
@@ -7616,6 +7633,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [[0.92, 0.66, 0.14], [0.86, 0.56, 0.12], [0.95, 0.75, 0.2], [0.8, 0.5, 0.14]],
 			"canopy": "light",
@@ -7644,6 +7662,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_apple",
+			"seasonal": true,
 			"young_below_m": 6,
 			"autumn_colors": [[0.92, 0.66, 0.14], [0.86, 0.56, 0.12], [0.95, 0.75, 0.2], [0.8, 0.5, 0.14]],
 			"canopy": "light",
@@ -7672,6 +7691,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.9, 0.74, 0.16], [0.84, 0.66, 0.14], [0.94, 0.8, 0.22], [0.78, 0.62, 0.18]],
 			"canopy": "light",
@@ -7699,6 +7719,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.9, 0.74, 0.16], [0.84, 0.66, 0.14], [0.94, 0.8, 0.22], [0.78, 0.62, 0.18]],
 			"canopy": "light",
@@ -7726,6 +7747,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.9, 0.74, 0.16], [0.84, 0.66, 0.14], [0.94, 0.8, 0.22], [0.78, 0.62, 0.18]],
 			"canopy": "light",
@@ -7753,6 +7775,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_cherry",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.92, 0.36, 0.08], [0.95, 0.62, 0.12], [0.82, 0.18, 0.06], [0.96, 0.76, 0.18]],
 			"canopy": "light",
@@ -7780,6 +7803,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_cherry",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.92, 0.36, 0.08], [0.95, 0.62, 0.12], [0.82, 0.18, 0.06], [0.96, 0.76, 0.18]],
 			"canopy": "light",
@@ -7807,6 +7831,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_cherry",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.92, 0.36, 0.08], [0.95, 0.62, 0.12], [0.82, 0.18, 0.06], [0.96, 0.76, 0.18]],
 			"canopy": "light",
@@ -7834,6 +7859,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.9, 0.74, 0.16], [0.84, 0.66, 0.14], [0.94, 0.8, 0.22], [0.78, 0.62, 0.18]],
 			"canopy": "light",
@@ -7861,6 +7887,7 @@
 			"kind": "tree",
 			"shape": "broadleaf",
 			"model": "wild_pear",
+			"seasonal": true,
 			"young_below_m": 8,
 			"autumn_colors": [[0.9, 0.74, 0.16], [0.84, 0.66, 0.14], [0.94, 0.8, 0.22], [0.78, 0.62, 0.18]],
 			"canopy": "light",
