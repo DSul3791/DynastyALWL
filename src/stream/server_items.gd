@@ -253,6 +253,7 @@ var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
+var send_final_death: Callable       # (peer, cause String): a death with no respawn (death.json novice_grace); the new-character / heir flow is not built, so nothing sets this yet
 var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
 var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (drowning, ...)
 var _remains_check_in: float = 0.0
@@ -6838,6 +6839,36 @@ func remains_ids() -> Array:
 	return out
 
 
+# The character level the novice grace reads (death.json novice_grace.metric): 'best_skill' is the highest effective skill value (what the skills page shows; 1 at the start, 100 at
+# the top), 'skill_total' the sum over all skills of (value - 1).
+func character_level(peer: int) -> int:
+	var records: Dictionary = _skill_records(peer)
+	var metric: String = str(_death_cfg.get("novice_grace", {}).get("metric", "best_skill"))
+	var best: float = 1.0
+	var total: float = 0.0
+
+	for id in _skills_cfg.get("skills", {}):
+		var value: float = SkillWeb.effective(_skills_cfg, str(id), records)
+		best = maxf(best, value)
+		total += value - 1.0
+
+	return int(floor(total)) if metric == "skill_total" else int(floor(best))
+
+
+# True while this character still respawns at the bed after dying (the novice grace); false = real death. Mode 'always' (the default) is the old behaviour for everyone.
+func novice_grace(peer: int) -> bool:
+	var rule: Dictionary = _death_cfg.get("novice_grace", {})
+	var mode: String = str(rule.get("mode", "always"))
+
+	if mode == "never":
+		return false
+
+	if mode == "level":
+		return character_level(peer) < int(rule.get("level", 5))
+
+	return true   # 'always', and 'heir' until children exist
+
+
 # The character dies. Returns false when there is nobody to kill (no such player, no position yet, death switched off).
 func kill(peer: int, cause: String) -> bool:
 	var key: String = str(_peer_key.get(peer, ""))
@@ -6896,6 +6927,12 @@ func kill(peer: int, cause: String) -> bool:
 	_cold_level.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
+	if not novice_grace(peer):
+		_characters[key]["final_death_pending"] = true   # real death: the remains stay; the new-character / heir flow is not built, so the character still comes back below
+
+		if send_final_death.is_valid():
+			send_final_death.call(peer, cause)
+
 	var back: Vector3 = respawn_for(peer)
 	_peer_pos[peer] = back
 	_motion.erase(peer)
