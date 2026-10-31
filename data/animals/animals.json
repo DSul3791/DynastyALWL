@@ -592,13 +592,17 @@
 				"night": 0.1
 			},
 			"spawn_share": 1.0,
-			"model": false,
-			"waiting_for": "model and draw code (Kathleen); spawn_plan.json has the numbers"
+			"model": true,
+			"herd": [
+				1,
+				4
+			],
+			"herd_pull_m": 4.0
 		},
 		"seal": {
 			"number": 12,
 			"name": "Seal",
-			"target_per_player": 1,
+			"target_per_player": 2,
 			"health": 20.0,
 			"walk_mps": 1.8,
 			"flee_mps": 12.0,
@@ -623,14 +627,13 @@
 			"trot_share": 0.5,
 			"zig_deg": 15.0,
 			"zig_leg_m": 15.0,
-			"herd_pull_m": 12.0,
+			"herd_pull_m": 6.0,
 			"eye_m": 1.3,
 			"habitat": {
-				"slope_max": 0.6,
+				"slope_max": 0.3,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 3.0,
-				"forest": true
+				"water_edge_m": 0.0
 			},
 			"biomes": {
 				"beach": 1.0
@@ -641,8 +644,11 @@
 				"night": 0.1
 			},
 			"spawn_share": 0.5,
-			"model": false,
-			"waiting_for": "model and draw code (Kathleen); spawn_plan.json has the numbers"
+			"model": true,
+			"herd": [
+				3,
+				6
+			]
 		},
 		"seabird": {
 			"number": 13,
@@ -670,10 +676,10 @@
 			"zig_leg_m": 8.0,
 			"eye_m": 0.25,
 			"habitat": {
-				"slope_max": 0.5,
+				"slope_max": 0.4,
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
-				"water_edge_m": 3.0
+				"water_edge_m": 0.0
 			},
 			"biomes": {
 				"beach": 1.0
@@ -684,8 +690,12 @@
 				"night": 0.1
 			},
 			"spawn_share": 1.0,
-			"model": false,
-			"waiting_for": "model and draw code (Kathleen); spawn_plan.json has the numbers"
+			"model": true,
+			"herd": [
+				3,
+				8
+			],
+			"herd_pull_m": 5.0
 		}
 	},
 	"senses": {

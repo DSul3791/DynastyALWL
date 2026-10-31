@@ -107,7 +107,7 @@ func _init() -> void:
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
 	var carcass: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))["species"]
 	var view = AnimalViewScript.new()
-	var cases: Array = [["boar", 8, "temperate_forest", 23.0, 12.0], ["songbirds", 9, "temperate_grassland", 12.0, 23.0], ["frog", 10, "marsh", 23.0, 12.0]]
+	var cases: Array = [["boar", 8, "temperate_forest", 23.0, 12.0], ["songbirds", 9, "temperate_grassland", 12.0, 23.0], ["frog", 10, "marsh", 23.0, 12.0], ["grouse", 11, "heath", 12.0, 23.0], ["seal", 12, "beach", 12.0, 23.0], ["seabird", 13, "beach", 12.0, 23.0]]
 
 	for c in cases:
 		var name: String = c[0]
