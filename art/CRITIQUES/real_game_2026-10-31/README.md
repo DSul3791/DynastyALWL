@@ -7,3 +7,7 @@ Next: send ACT_PLACE through the client's own place path (client.held ghost conf
 - game_leanto_bed_fire_dusk_far.png (lean-to with rough bed, lit campfire 4 m in front, 9 m away): reads as a stick shelter with a fire; rating 3.5. The campfire light pool looks good.
 - game_leanto_bed_close.png (front, 5 m): sticks, lashing, a bed with hay inside; rating 3.5. At dusk the thatch and bed are very dark; next to improve: nothing in the model, only light.
 - game_lit_furniture.png (fireplace with `lit`, wall torch and chandelier placed beside it): the fireplace is placed and brick reads well, but it shows NO fire or glow and the torch and chandelier are not visible from this spot; so the `lit` state does not reach the client picture (client draws no flame or light for a lit fireplace, or the torch is out of frame). Not a model problem; needs the game side that draws the light (Tyler or the flame code).
+
+## Lit fixtures with Tyler's client flames (branch claude/tyler-gates-fee5f7)
+- game_lit_fireplace_torch.png: fireplace and wall torch, hour 21. The warm light pool on the ground and the glowing jambs read well; rating 4. Flames are small and come out cream-white, not orange (emission too high, so the colour clips); the fire fills only about a sixth of the opening.
+- game_lit_furniture2.png / _close.png: chandelier at left, six candle flames visible, ground warm; rating 3.5 (flames tiny at 8 m).
