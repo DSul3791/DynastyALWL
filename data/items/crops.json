@@ -1,0 +1,175 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet: the crop table for the farming code (see GAP_PLANS.md section 3). grow_days are game days from sowing to ripe; water_per_day = buckets of water the bed wants per game day (0 when rain-fed); seed gives seeds back from the harvest. Growth numbers are Sal's, loosely from real crop cycles (wheat sown spring ripe ~100+ days, potato ~90-120, turnip ~60-90, carrot ~70-80, flax ~100): approximate, not individually verified.",
+	"crops": {
+		"wheat": {
+			"name": "Wheat",
+			"seed": "wheat_seeds",
+			"grow_days": 90,
+			"sow_season": "summer",
+			"water_per_day": 0.3,
+			"yields": [
+				[
+					"wheat",
+					6
+				],
+				[
+					"straw",
+					4
+				]
+			],
+			"seeds_back": [
+				"wheat_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "sickle"
+		},
+		"barley": {
+			"name": "Barley",
+			"seed": "barley_seeds",
+			"grow_days": 75,
+			"sow_season": "summer",
+			"water_per_day": 0.2,
+			"yields": [
+				[
+					"barley",
+					6
+				],
+				[
+					"straw",
+					3
+				]
+			],
+			"seeds_back": [
+				"barley_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"heath"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "sickle"
+		},
+		"carrot": {
+			"name": "Carrot",
+			"seed": "carrot_seeds",
+			"grow_days": 70,
+			"sow_season": "all warm",
+			"water_per_day": 0.2,
+			"yields": [
+				[
+					"carrot",
+					5
+				]
+			],
+			"seeds_back": [
+				"carrot_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "hand"
+		},
+		"potato": {
+			"name": "Potato",
+			"seed": "potato_seeds",
+			"grow_days": 95,
+			"sow_season": "summer",
+			"water_per_day": 0.2,
+			"yields": [
+				[
+					"potato",
+					6
+				]
+			],
+			"seeds_back": [
+				"potato_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"heath",
+				"boreal_forest"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "hand"
+		},
+		"turnip": {
+			"name": "Turnip",
+			"seed": "turnip_seeds",
+			"grow_days": 60,
+			"sow_season": "spring,autumn",
+			"water_per_day": 0.1,
+			"yields": [
+				[
+					"turnip",
+					5
+				]
+			],
+			"seeds_back": [
+				"turnip_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"boreal_forest",
+				"tundra"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "hand"
+		},
+		"flax": {
+			"name": "Flax",
+			"seed": "flax_seeds",
+			"grow_days": 100,
+			"sow_season": "summer",
+			"water_per_day": 0.2,
+			"yields": [
+				[
+					"flax",
+					5
+				],
+				[
+					"plant_fibre",
+					8
+				]
+			],
+			"seeds_back": [
+				"flax_seeds",
+				[
+					2,
+					4
+				]
+			],
+			"biomes": [
+				"temperate_grassland",
+				"marsh"
+			],
+			"tool_to_sow": "hoe",
+			"tool_to_harvest": "sickle"
+		}
+	}
+}

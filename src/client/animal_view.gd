@@ -189,26 +189,37 @@ func _ball(parent: Node3D, radius: float, scale_v: Vector3, at: Vector3, color: 
 
 # Facing -Z (the heading turns the root). About 0.45 m long, 0.3 m to the ear tips.
 func _make_rabbit() -> Node3D:
+	# A wild rabbit (refs: field-guide photos of the European rabbit: a brown-grey agouti coat, a rounded hunched body with big haunches, long hind feet, short forelegs, a small blunt head,
+	# long ears with dark tips, a rusty nape patch, pale belly and chin, a small white-underside scut). About 0.45 m long, 0.25 m high. Facing -Z; the node is named Rig for the hop animation.
 	var root: Node3D = Node3D.new()
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
 	root.add_child(rig)
-	var fur: Color = Color(0.45, 0.36, 0.26)
-	_ball(rig, 0.1, Vector3(1.0, 0.9, 1.6), Vector3(0.0, 0.11, 0.02), fur)
-	_ball(rig, 0.065, Vector3(1.0, 1.0, 1.2), Vector3(0.0, 0.19, -0.15), fur)
+	var fur: Color = Color(0.5, 0.4, 0.28)
+	var dark: Color = Color(0.3, 0.23, 0.16)
+	var pale: Color = Color(0.9, 0.86, 0.78)
+	_ball(rig, 0.09, Vector3(1.0, 1.0, 1.2), Vector3(0.0, 0.1, 0.1), fur)                       # the haunch: the big rounded rear is the rabbit's silhouette
+	_ball(rig, 0.075, Vector3(0.95, 0.9, 1.5), Vector3(0.0, 0.1, -0.02), fur)                   # the body
+	_ball(rig, 0.05, Vector3(0.9, 1.0, 1.0), Vector3(0.0, 0.14, -0.1), fur)                     # the shoulders
+	_ball(rig, 0.06, Vector3(0.8, 0.5, 1.6), Vector3(0.0, 0.05, -0.02), pale)                   # the pale belly
+	_ball(rig, 0.024, Vector3(1.3, 0.55, 0.8), Vector3(0.0, 0.18, -0.118), Color(0.6, 0.4, 0.22))   # the rusty nape patch
+	_ball(rig, 0.052, Vector3(0.85, 0.9, 1.15), Vector3(0.0, 0.17, -0.17), fur)                 # the head
+	_ball(rig, 0.03, Vector3(0.8, 0.75, 1.2), Vector3(0.0, 0.155, -0.215), pale)                # muzzle and chin
+	_ball(rig, 0.01, Vector3.ONE, Vector3(0.0, 0.16, -0.243), Color(0.2, 0.1, 0.1))             # the nose
+	_ball(rig, 0.01, Vector3.ONE, Vector3(0.036, 0.18, -0.19), Color(0.05, 0.04, 0.04))         # eyes
+	_ball(rig, 0.01, Vector3.ONE, Vector3(-0.036, 0.18, -0.19), Color(0.05, 0.04, 0.04))
 
 	for side in [-1.0, 1.0]:
-		var ear: MeshInstance3D = MeshInstance3D.new()
-		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(0.025, 0.11, 0.012)
-		box.material = _material(Color(0.5, 0.4, 0.3))
-		ear.mesh = box
-		ear.position = Vector3(side * 0.025, 0.28, -0.13)
-		ear.rotation = Vector3(0.25, 0.0, side * 0.15)
-		ear.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var ear: Node3D = Node3D.new()
+		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
+		ear.position = Vector3(side * 0.03, 0.2, -0.15)
 		rig.add_child(ear)
+		_ball(ear, 0.03, Vector3(0.62, 2.5, 0.25), Vector3(0.0, 0.07, 0.02), fur, Vector3(-0.2, 0.0, side * -0.2))     # a long ear leaning back and out
+		_ball(ear, 0.018, Vector3(0.4, 2.0, 0.15), Vector3(0.0, 0.1, 0.0), dark, Vector3(-0.2, 0.0, side * -0.2))      # the dark tip
+		_box(rig, Vector3(0.022, 0.03, 0.07), Vector3(side * 0.045, 0.02, -0.12), fur)          # a short foreleg and paw
+		_box(rig, Vector3(0.032, 0.026, 0.15), Vector3(side * 0.06, 0.013, 0.07), fur)            # the long hind foot flat on the ground
 
-	_ball(rig, 0.035, Vector3.ONE, Vector3(0.0, 0.15, 0.19), Color(0.92, 0.9, 0.86))
+	_ball(rig, 0.03, Vector3(1.0, 1.0, 0.9), Vector3(0.0, 0.14, 0.2), pale)                     # the white scut
 	return root
 
 
