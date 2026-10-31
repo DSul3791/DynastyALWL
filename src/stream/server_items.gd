@@ -376,6 +376,8 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	var crops_parsed: Variant = _read_json_version("crops.json", 1)
+	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_rebuild_supports()
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
@@ -878,6 +880,14 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_dig(peer, inv, at)
 	elif kind == Net.ACT_FILL:
 		_fill(peer, inv, at)
+	elif kind == Net.ACT_TILL:
+		till(peer, inv, at)
+	elif kind == Net.ACT_SOW:
+		sow(peer, inv, a, b)
+	elif kind == Net.ACT_HARVEST:
+		harvest(peer, inv, a)
+	elif kind == Net.ACT_WATER_BED:
+		water_bed(peer, inv, a)
 	elif kind == Net.ACT_HOE_PATH:
 		_hoe_path(peer, inv, at)
 	elif kind == Net.ACT_HOE_SMOOTH:
@@ -978,6 +988,7 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_crops_tick()
 		_goals_tick()
 		_learn_clock += spent
 
@@ -1067,6 +1078,7 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
+	_write_atomic("crops.json", {"version": 1, "crops": _crops})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
 
 
@@ -7326,6 +7338,251 @@ var admin_mode_on: Callable             # (peer) -> bool, set by the server from
 
 func free_craft_for(peer: int) -> bool:
 	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
+
+
+# --- Farming (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026) ---
+# A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47); a seed sown on it starts a crop (data/items/crops.json); a game day with rain
+# or with water poured on the bed counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
+# pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
+# where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (key "x,z" of the bed). The client side
+# (a hoe mode that sends ACT_TILL, a seed use that sends ACT_SOW, E on a crop that sends ACT_HARVEST, the stage looks) is not built: see PROTOCOL.md.
+const TILLED_STATE := 47
+var _crops: Dictionary = {}              # "x,z" -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "rained": game day it rained on, "poured": game day water was poured}
+var _crops_cfg: Dictionary = {}
+var _crops_loaded: bool = false
+
+
+func _crop_table() -> Dictionary:
+	if not _crops_loaded:
+		_crops_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+		_crops_cfg = (parsed.get("crops", {}) as Dictionary) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _crops_cfg
+
+
+func _bed_key(pos: Vector3) -> String:
+	return "%d,%d" % [int(floor(pos.x)), int(floor(pos.z))]
+
+
+func _game_day() -> int:
+	return int(floor((float(game_seconds.call()) if game_seconds.is_valid() else 0.0) / 86400.0))
+
+
+func _season() -> String:
+	return str(season_now.call()) if season_now.is_valid() else "spring"
+
+
+func _bed_at(id: int) -> Dictionary:
+	var it: Dictionary = _items.get(id, {})
+	return it if (not it.is_empty() and it.has("struct") and str(it["struct"].get("kind", "")) == "tilled_bed") else {}
+
+
+# One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
+func till(peer: int, inv, at: Vector3) -> int:
+	if not ground_height.is_valid() or not _structures.has("tilled_bed") or not _hoe_ready(peer, inv, at):
+		return 0
+
+	var cell: Vector3 = Vector3(floor(at.x) + 0.5, 0.0, floor(at.z) + 0.5)
+	var ground: float = float(ground_height.call(cell.x, cell.z))
+
+	if is_nan(ground):
+		return 0
+
+	cell.y = ground + 0.02
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(cell.x, ground, cell.z))) > 0.05:
+		_say(peer, "You cannot till ground under water.")
+		return 0
+
+	var here_chunk: Vector2i = _chunk_of(cell)
+	var of_kind: int = 0
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		var kind: String = str(other["struct"]["kind"])
+
+		if kind == "tilled_bed":
+			if absf(other["pos"].x - cell.x) < 0.25 and absf(other["pos"].z - cell.z) < 0.25:
+				return 0   # already tilled
+
+			if _chunk_of(other["pos"]) == here_chunk:
+				of_kind += 1
+		elif other["pos"].distance_to(cell) < 1.0 and not bool(_structures.get(kind, {}).get("walkover", false)):
+			_say(peer, "Something stands there.")
+			return 0
+
+	if of_kind >= int(_structures["tilled_bed"].get("cap_per_chunk", 200)):
+		_say(peer, "This ground is tilled enough.")
+		return 0
+
+	_wear_tool(peer, inv, "hoe", "dig")
+	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
+	_next_id += 1
+	_dirty = true
+	return _next_id - 1
+
+
+# A seed from the pack slot goes into the bed: right season, empty bed, the seed is used up.
+func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
+	var bed: Dictionary = _bed_at(bed_id)
+
+	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M or slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0:
+		return false
+
+	var key: String = _bed_key(bed["pos"])
+
+	if _crops.has(key):
+		_say(peer, "Something is growing there already.")
+		return false
+
+	var seed_id: String = table.id_of(inv.numbers[slot])
+	var crop_id: String = ""
+
+	for id in _crop_table():
+		if str(_crop_table()[id].get("seed", "")) == seed_id:
+			crop_id = str(id)
+
+	if crop_id == "":
+		_say(peer, "That cannot be sown.")
+		return false
+
+	var def: Dictionary = _crop_table()[crop_id]
+
+	if _season() != str(def.get("sow_season", "spring")) and crop_id != "turnip":
+		_say(peer, "Wrong season to sow %s" % str(def.get("name", crop_id)).to_lower())
+		return false
+
+	inv.remove(inv.numbers[slot], 1)
+	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "rained": -1, "poured": -1}
+	_dirty = true
+	return true
+
+
+# One `water` item from the pack on the bed: that game day counts as watered.
+func water_bed(peer: int, inv, bed_id: int) -> bool:
+	var bed: Dictionary = _bed_at(bed_id)
+
+	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		return false
+
+	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {})
+	var water: int = table.number_of("water")
+
+	if crop.is_empty() or int(crop["poured"]) == _game_day() or not inv.has(water, 1):
+		return false
+
+	inv.remove(water, 1)
+	crop["poured"] = _game_day()
+	_dirty = true
+	return true
+
+
+# Compost on the bed: +20 percent growth for this crop.
+func compost_bed(peer: int, inv, bed_id: int) -> bool:
+	var bed: Dictionary = _bed_at(bed_id)
+	var crop: Dictionary = _crops.get(_bed_key(bed["pos"]), {}) if not bed.is_empty() else {}
+	var compost: int = table.number_of("compost")
+
+	if crop.is_empty() or bool(crop["compost"]) or compost <= 0 or not inv.has(compost, 1):
+		return false
+
+	inv.remove(compost, 1)
+	crop["compost"] = true
+	_dirty = true
+	return true
+
+
+# The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
+func crop_stage(crop: Dictionary) -> int:
+	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
+	var days: float = maxf(float(def.get("grow_days", 100)), 1.0)
+	var stage: int = mini(int(floor(float(crop["age"]) / days * 4.0)), 3)
+
+	if stage >= 3 and int(crop["wet"]) < int(ceil(float(def.get("water_per_day", 0.0)) * days)):
+		return 2
+
+	return stage
+
+
+# Looks at the clock once per game day: rain or poured water makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
+func _crops_tick() -> void:
+	if _crops.is_empty():
+		return
+
+	var today: int = _game_day()
+	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= 0.05
+
+	if raining:
+		for key in _crops:
+			_crops[key]["rained"] = today
+
+	for key in _crops.keys():
+		var crop: Dictionary = _crops[key]
+		var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
+
+		while int(crop["day"]) < today:
+			crop["day"] = int(crop["day"]) + 1
+			var winter: bool = _season() == "winter" and str(crop["crop"]) != "turnip"
+
+			if winter:
+				if crop_stage(crop) == 0:
+					_crops.erase(key)   # frost kills a seedling
+					_dirty = true
+					break
+
+				continue
+
+			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
+
+			if int(crop["rained"]) >= int(crop["day"]) - 1 or int(crop["poured"]) >= int(crop["day"]) - 1:
+				crop["wet"] = int(crop["wet"]) + 1
+
+			_dirty = true
+
+
+# E on a ripe crop: its yields (half without the right tool), seeds back, and the bed is empty again. Returns true when something was harvested.
+func harvest(peer: int, inv, bed_id: int) -> bool:
+	var bed: Dictionary = _bed_at(bed_id)
+
+	if bed.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
+		return false
+
+	var key: String = _bed_key(bed["pos"])
+	var crop: Dictionary = _crops.get(key, {})
+
+	if crop.is_empty():
+		return false
+
+	if crop_stage(crop) < 3:
+		_say(peer, "It is not ripe yet.")
+		return false
+
+	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
+	var tool_class: String = str(def.get("tool_to_harvest", "hand"))
+	var full: bool = tool_class == "hand" or _has_tool(inv, tool_class)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(key) ^ int(crop["sown"])
+
+	for row in def.get("yields", []):
+		var n: int = int(row[1]) if full else maxi(int(ceil(float(row[1]) / 2.0)), 1)
+		give(peer, table.number_of(str(row[0])), n)
+
+	var back: Array = def.get("seeds_back", [])
+
+	if back.size() == 2:
+		give(peer, table.number_of(str(back[0])), roll_amount(peer, rng, int((back[1] as Array)[0]), int((back[1] as Array)[1])))
+
+	if full and tool_class != "hand":
+		_wear_tool(peer, inv, tool_class, "gather")
+
+	_crops.erase(key)
+	_dirty = true
+	return true
 
 
 # Starter goals (data/items/starter_goals.json by Sal; Tyler 31 Oct 2026): an ordered list of small first-hour goals. A goal is open when every goal in its `after` is done.

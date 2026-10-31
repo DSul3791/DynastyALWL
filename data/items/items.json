@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 419,
+	"next_number": 420,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2689,6 +2689,16 @@
 			"look_alikes": [],
 			"material": "earth",
 			"note": "Hoe path: row state 32; no kit, cannot be picked up."
+		},
+		"tilled_bed": {
+			"number": 419,
+			"name": "Tilled bed",
+			"description": "A metre of hoed soil, ready to sow.",
+			"kind": "structure",
+			"stack": 1,
+			"look_alikes": [],
+			"material": "earth",
+			"note": "Hoe till: row state 47; no kit, cannot be picked up (FARMING_SPEC.md step 2)."
 		},
 		"rough_plank": {
 			"number": 226,

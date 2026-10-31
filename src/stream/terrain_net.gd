@@ -135,6 +135,10 @@ const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots)
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
+const ACT_TILL := 50       # at = the ground point: one hoe stroke tills a metre into a tilled bed (FARMING_SPEC.md step 2)
+const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
+const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
+const ACT_WATER_BED := 53  # a = the bed's world id: pours one `water` from the pack on it (step 4)
 const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
 const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
