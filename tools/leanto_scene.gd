@@ -37,10 +37,32 @@ func _figure(height: float, lying: bool, at: Vector3) -> void:
 	add_child(root)
 
 
+func _crawler(at: Vector3) -> void:
+	var cloth: StandardMaterial3D = StandardMaterial3D.new()
+	cloth.albedo_color = Color(0.5, 0.35, 0.3)
+	var body: MeshInstance3D = MeshInstance3D.new()
+	var capsule: CapsuleMesh = CapsuleMesh.new()
+	capsule.radius = 0.16
+	capsule.height = 1.1
+	capsule.material = cloth
+	body.mesh = capsule
+	body.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	body.position = at + Vector3(0.0, 0.5, -0.4)
+	add_child(body)
+	var head: MeshInstance3D = MeshInstance3D.new()
+	var ball: SphereMesh = SphereMesh.new()
+	ball.radius = 0.11
+	ball.height = 0.22
+	head.mesh = ball
+	head.position = at + Vector3(0.0, 0.6, -1.0)
+	add_child(head)
+
+
 func _init() -> void:
 	add_child(BuildingLook.leanto())
 	var bed: Node3D = PieceLook.rough_bed()
-	bed.position = Vector3(0.0, 0.0, -0.55)
+	bed.position = Vector3(0.0, 0.0, 0.0)
 	add_child(bed)
-	_figure(1.75, true, Vector3(-0.9, 0.55, -0.55))     # lying on the bed, feet at the left end, head to the right
-	_figure(1.75, false, Vector3(-0.7, 0.0, 0.85))     # standing under the front of the roof
+	_figure(1.75, true, Vector3(-0.9, 0.55, 0.0))     # lying on the bed, feet at the left end, head to the right
+	_figure(1.75, false, Vector3(-1.9, 0.0, 0.7))      # standing beside the front upright
+	_crawler(Vector3(1.6, 0.0, 1.1))                    # crawling in at the front
