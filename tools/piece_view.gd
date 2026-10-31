@@ -10,10 +10,13 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 func _init() -> void:
 	var piece: String = "rough_bed"
 	var from_building: bool = false
+	var args: Array = []
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--piece="):
 			piece = a.trim_prefix("--piece=")
+		elif a.begins_with("--args="):
+			args = Array(a.trim_prefix("--args=").split(",", false))      # arguments for the builder, e.g. --piece=tier_roof --args=brick
 		elif a == "--building":
 			from_building = true      # the function is in building_look.gd (lean-to, forges, chest, bed...) and not in piece_look.gd
 
@@ -23,4 +26,4 @@ func _init() -> void:
 		push_error("piece_view: PieceLook has no function " + piece)
 		return
 
-	add_child(looks.call(piece))
+	add_child(looks.callv(piece, args))

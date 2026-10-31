@@ -8,19 +8,12 @@
   "apple_pie": "new dish (Sal, 2026-10-31), queued",
   "apple_sauce": "new dish (Sal, 2026-10-31), queued",
   "apple_summer": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
-  "brick_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "brick_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "brick_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
   "damsons": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
   "dried_apples": "new dish (Sal, 2026-10-31), queued",
   "dried_figs": "new dish (Sal, 2026-10-31), queued",
   "figs": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
   "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)",
   "lemons": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
-  "log_cabin_set_kit": "building set kit (Sal, 2026-10-31), queued",
-  "log_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "log_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "log_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
   "mangoes": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
   "medlar": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
   "olives": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
@@ -35,11 +28,7 @@
   "quince": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
   "quince_paste": "new dish (Sal, 2026-10-31), queued",
   "sour_cherries": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
-  "stairs_wood_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "stewed_pears": "new dish (Sal, 2026-10-31), queued",
-  "stone_floor_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "stone_roof_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "stone_wall_kit": "building kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
-  "stewed_berries": "food (Sal, 2026-10-31), queued: a small bowl of dark fruit"
+  "stewed_berries": "food (Sal, 2026-10-31), queued: a small bowl of dark fruit",
+  "stewed_pears": "new dish (Sal, 2026-10-31), queued"
  }
 }
