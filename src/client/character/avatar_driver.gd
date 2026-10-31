@@ -138,8 +138,8 @@ static func slope_tilt(on_floor: bool, local_normal: Vector3, pace: float, clip:
 
 
 # The clothes colours of the worn items: body colours the coat, legs the trousers, feet the shoes (stage-one clothing, art/MODEL_PLAN.md).
-static func outfit_colors(worn_numbers: Array, table) -> Dictionary:
-	var out: Dictionary = {"coat": COAT, "trousers": TROUSERS, "shoes": SHOES}
+static func outfit_colors(worn_numbers: Array, table, base: Dictionary = {}) -> Dictionary:
+	var out: Dictionary = {"coat": base.get("coat", COAT), "trousers": base.get("trousers", TROUSERS), "shoes": base.get("shoes", SHOES)}
 
 	for number in worn_numbers:
 		if int(number) == 0:
@@ -169,6 +169,15 @@ static func dress(avatar, items) -> void:
 	if avatar == null or items == null:
 		return
 
-	var colors: Dictionary = outfit_colors(items.worn, items.table)
-	avatar.dress(SKIN, colors["coat"], colors["trousers"], colors["shoes"])
+	# A generated body wears the clothes and skin the player chose in the creator unless an item is worn over them; the old body keeps the fixed colours.
+	var genome: Variant = avatar.get("genome")
+	var base: Dictionary = {}
+	var skin: Color = SKIN
+
+	if typeof(genome) == TYPE_DICTIONARY and (genome as Dictionary).has("tunic") and (genome as Dictionary).has("skin"):
+		skin = (genome as Dictionary)["skin"]
+		base = {"coat": (genome as Dictionary)["tunic"], "trousers": (genome as Dictionary)["trousers"], "shoes": (genome as Dictionary)["boots"]}
+
+	var colors: Dictionary = outfit_colors(items.worn, items.table, base)
+	avatar.dress(skin, colors["coat"], colors["trousers"], colors["shoes"])
 	WornSync.apply(avatar, WornSync.ids_of(items.worn, items.table), false)   # the own avatar shows in third person only, so no first-person clipping (worn_look.gd maps the old bone names to the generated body)
