@@ -935,7 +935,7 @@ static func tier_roof(kind: String = "stone") -> Node3D:
 	match kind:
 		"log":
 			for k in 8:
-				_log_at(root, 2.4, 0.3, Vector3(0.0, 2.5, -1.05 + 0.3 * float(k)), false)
+				_log_at(root, 2.4, 0.3, Vector3(0.0, 2.5, -1.05 + 0.3 * float(k)), true)
 		"stone":
 			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _slate)
 			_box(root, Vector3(2.46, 0.05, 0.1), Vector3(0.0, 2.58, 0.0), _mortar)
