@@ -345,3 +345,6 @@ Dave: crab apples must be edible. Server check: crab_apples already counted as f
 |---|---|---|---|
 | Nettles give only fibre | by_species nettle now plant_fibre 1-2 AND Nettles (new item 485) 2-4; flora nettle yields emptied so the natural-yield fallback does not double; Nettle tea (486) is a pot recipe; forager stew and egg-nettle fry use Nettles | Dave 31 Oct; limitation: by_species rows are not season-gated (needs code), the plant itself only appears in season | yes |
 | Campfire cooks only meat | cooking.json cookable_suffixes emptied; berry and egg cooks_into rows removed; pot recipes for stewed berries and boiled eggs; clay hearth recipes for roast forage from nuts, morels, bananas, fiddleheads, pears; roast roots and mushroom skewer moved to the hearth | Dave 31 Oct; tests updated (test_server_items cook block rewritten for meat); other plant dishes at campfire left for Dave | yes |
+
+## Comfort (2026-10-31)
+docs/COMFORT_DESIGN.md + data/items/comfort.json (radius 9 m, any cover counts as shelter, each kind once, fires lit only, Rested 15+3 per level cap 60, tiers) + 14 locked furniture kits (487-500, recipes 319-332). Wild apples unflagged (flora tree exists). Fixed a look_placeholders.json merge-marker commit before pushing.
