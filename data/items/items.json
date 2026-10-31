@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 413,
+	"next_number": 419,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4818,6 +4818,64 @@
 			"value": 10,
 			"look_alikes": [],
 			"future": true
+		},
+		"tallow": {
+			"number": 413,
+			"name": "Tallow",
+			"description": "Animal fat rendered clean in a pot. Burns well and keeps.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 4
+		},
+		"soap": {
+			"number": 414,
+			"name": "Soap",
+			"description": "Tallow and ash lye boiled and cut into a bar. Cleans wounds and cloth.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 8
+		},
+		"leather_strap": {
+			"number": 415,
+			"name": "Leather strap",
+			"description": "A strip of leather for straps, belts and harness.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 10
+		},
+		"milk": {
+			"number": 416,
+			"name": "Milk",
+			"description": "Fresh milk from a tame animal. Drink it soon or make it keep.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"butter": {
+			"number": 417,
+			"name": "Butter",
+			"description": "Milk churned thick and golden. Keeps for weeks.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"cheese": {
+			"number": 418,
+			"name": "Cheese",
+			"description": "Milk curdled, pressed and salted. Keeps for months.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
 		}
 	}
 }

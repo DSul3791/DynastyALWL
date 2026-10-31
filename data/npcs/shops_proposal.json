@@ -1,0 +1,279 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31), READY TO ENABLE but not enabled: same shape as data/npcs/shops.json entries. To use: copy an entry into shops.json under the NPC id, add the NPC in npcs.json with a dialogue file whose choice has the effect {\"open_shop\": true} (Mandy writes the dialogue). `buys` are item KINDS (as Hob's). Prices are not stored here: they come from items.json `value` x 1.3 when the trader sells and x 0.55 when it buys (stranger, no luck; coins.json trade), see sample_prices. Items marked future (sea_salt) can be stocked only after they exist in the world.",
+	"shops": {
+		"fisher": {
+			"title": "Bran's catch",
+			"stock": [
+				"fishing_rod",
+				"shore_net",
+				"bone_arrow",
+				"twine",
+				"sea_salt",
+				"waterskin",
+				"roast_fish"
+			],
+			"buys": [
+				"food",
+				"material"
+			],
+			"stock_rules": {
+				"fishing_rod": [
+					2,
+					1
+				],
+				"shore_net": [
+					2,
+					1
+				],
+				"bone_arrow": [
+					20,
+					10
+				],
+				"twine": [
+					10,
+					5
+				],
+				"sea_salt": [
+					10,
+					3
+				],
+				"waterskin": [
+					3,
+					1
+				],
+				"roast_fish": [
+					8,
+					4
+				]
+			},
+			"purse_cap": 250,
+			"purse_regen_per_day": 100,
+			"repairs": false
+		},
+		"hunter": {
+			"title": "Tam's hides",
+			"stock": [
+				"wooden_bow",
+				"wooden_arrow",
+				"stone_arrow",
+				"fibre_arrow",
+				"quiver",
+				"spear",
+				"stone_knife"
+			],
+			"buys": [
+				"material",
+				"food",
+				"weapon"
+			],
+			"stock_rules": {
+				"wooden_bow": [
+					2,
+					1
+				],
+				"wooden_arrow": [
+					20,
+					10
+				],
+				"stone_arrow": [
+					20,
+					10
+				],
+				"fibre_arrow": [
+					30,
+					15
+				],
+				"quiver": [
+					2,
+					1
+				],
+				"spear": [
+					2,
+					1
+				],
+				"stone_knife": [
+					3,
+					1
+				]
+			},
+			"purse_cap": 300,
+			"purse_regen_per_day": 100,
+			"repairs": true
+		},
+		"healer": {
+			"title": "Marra's herbs",
+			"stock": [
+				"bandage",
+				"herb_salve",
+				"splint",
+				"chamomile_tea",
+				"stomach_tea"
+			],
+			"buys": [
+				"material",
+				"food",
+				"medicine"
+			],
+			"stock_rules": {
+				"bandage": [
+					6,
+					3
+				],
+				"herb_salve": [
+					4,
+					2
+				],
+				"splint": [
+					3,
+					1
+				],
+				"chamomile_tea": [
+					4,
+					2
+				],
+				"stomach_tea": [
+					4,
+					2
+				]
+			},
+			"purse_cap": 200,
+			"purse_regen_per_day": 80,
+			"repairs": false
+		}
+	},
+	"sample_prices_copper": [
+		{
+			"shop": "fisher",
+			"item": "fishing_rod",
+			"value": 10,
+			"player_pays": 13,
+			"player_gets": 5
+		},
+		{
+			"shop": "fisher",
+			"item": "shore_net",
+			"value": 36,
+			"player_pays": 47,
+			"player_gets": 19
+		},
+		{
+			"shop": "fisher",
+			"item": "bone_arrow",
+			"value": 4,
+			"player_pays": 6,
+			"player_gets": 2
+		},
+		{
+			"shop": "fisher",
+			"item": "twine",
+			"value": 3,
+			"player_pays": 4,
+			"player_gets": 1
+		},
+		{
+			"shop": "fisher",
+			"item": "sea_salt",
+			"value": 4,
+			"player_pays": 6,
+			"player_gets": 2
+		},
+		{
+			"shop": "fisher",
+			"item": "waterskin",
+			"value": 15,
+			"player_pays": 20,
+			"player_gets": 8
+		},
+		{
+			"shop": "fisher",
+			"item": "roast_fish",
+			"value": 12,
+			"player_pays": 16,
+			"player_gets": 6
+		},
+		{
+			"shop": "hunter",
+			"item": "wooden_bow",
+			"value": 30,
+			"player_pays": 39,
+			"player_gets": 16
+		},
+		{
+			"shop": "hunter",
+			"item": "wooden_arrow",
+			"value": 2,
+			"player_pays": 3,
+			"player_gets": 1
+		},
+		{
+			"shop": "hunter",
+			"item": "stone_arrow",
+			"value": 4,
+			"player_pays": 6,
+			"player_gets": 2
+		},
+		{
+			"shop": "hunter",
+			"item": "fibre_arrow",
+			"value": 1,
+			"player_pays": 2,
+			"player_gets": 0
+		},
+		{
+			"shop": "hunter",
+			"item": "quiver",
+			"value": 25,
+			"player_pays": 33,
+			"player_gets": 13
+		},
+		{
+			"shop": "hunter",
+			"item": "spear",
+			"value": 25,
+			"player_pays": 33,
+			"player_gets": 13
+		},
+		{
+			"shop": "hunter",
+			"item": "stone_knife",
+			"value": 12,
+			"player_pays": 16,
+			"player_gets": 6
+		},
+		{
+			"shop": "healer",
+			"item": "bandage",
+			"value": 8,
+			"player_pays": 11,
+			"player_gets": 4
+		},
+		{
+			"shop": "healer",
+			"item": "herb_salve",
+			"value": 12,
+			"player_pays": 16,
+			"player_gets": 6
+		},
+		{
+			"shop": "healer",
+			"item": "splint",
+			"value": 6,
+			"player_pays": 8,
+			"player_gets": 3
+		},
+		{
+			"shop": "healer",
+			"item": "chamomile_tea",
+			"value": 6,
+			"player_pays": 8,
+			"player_gets": 3
+		},
+		{
+			"shop": "healer",
+			"item": "stomach_tea",
+			"value": 8,
+			"player_pays": 11,
+			"player_gets": 4
+		}
+	]
+}
