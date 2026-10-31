@@ -63,6 +63,8 @@ func _init() -> void:
 	var cx: float = 53316.0
 	var cz: float = 68476.0
 	var minutes: float = 10.0
+	var hour: float = 12.0          # the game hour for the spawn gate (flora session 2026-10-31: --hour=N, --unwired for the old behaviour)
+	var wired: bool = true
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--x="):
@@ -71,6 +73,10 @@ func _init() -> void:
 			cz = float(argument.trim_prefix("--z="))
 		elif argument.begins_with("--minutes="):
 			minutes = float(argument.trim_prefix("--minutes="))
+		elif argument.begins_with("--hour="):
+			hour = float(argument.trim_prefix("--hour="))
+		elif argument == "--unwired":
+			wired = false
 
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world + "/world.json", errors)
@@ -89,6 +95,11 @@ func _init() -> void:
 	placer.setup(generator, tables, rules)
 	_load_crowns(cx, cz, tables)
 	var state_names: Array = ["graze", "hop", "flee", "alert"]
+	var biome_names: Dictionary = {}
+
+	for biome_entry in tables.get_entries("biomes"):
+		biome_names[int(biome_entry["id"])] = str(biome_entry["name"])
+
 	var all_runs: Array = []
 
 	for seed in [7, 11, 23]:
@@ -98,6 +109,14 @@ func _init() -> void:
 		a.blocked = func(x, z): return generator.surface_height(x, z) <= 0.3
 		a.player_positions = func(): return players
 		a.canopy = func(p: Vector3): return _under_tree(p)
+
+		if wired:
+			a.hour_now = func(): return hour
+			a.starter = Vector2(cx, cz)
+			a.biome_at = func(x, z):
+				var tile_data = generator.get_tile(generator.tile_of(x, z))
+				return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
+
 		a.setup()
 		a.rng.seed = seed
 		var snapshots: Array = []
