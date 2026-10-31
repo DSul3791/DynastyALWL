@@ -23,6 +23,7 @@ const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const KIND_TREE := 0
@@ -636,6 +637,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"mid": mid_meshes,
 		"far": far_meshes,
 		"shape": shape,
+		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", [])},
 		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
@@ -1853,6 +1855,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			# Far trees are small on the screen: one far model per species, so their draws merge (a third of the nodes).
 			if is_near == TIER_FAR:
 				variant = 0
+
+		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
+		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):
+			continue
 
 		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]

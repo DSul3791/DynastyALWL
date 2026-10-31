@@ -97,6 +97,47 @@ func _init() -> void:
 	_check(rows_ok, "seasons.json has a grass tint and blade share for every season")
 	_check(rows_ok and float(grass_rows["winter"]["blades"]) < float(grass_rows["summer"]["blades"]) and float(grass_rows["winter"]["tint_rgb"][2]) < float(grass_rows["summer"]["tint_rgb"][2]), "winter grass is thinner and browner than summer grass")
 
+	# In-season rule (Dave 2026-10-31): a herb, flower or mushroom out of season is not drawn and cannot be targeted; woody plants and berry bushes stay drawn but offer nothing.
+	var GatherRulesScript = load("res://src/shared/gather_rules.gd")
+	var flora_rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))["entries"]
+	var drops_json: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var disagree: Array = []
+	var hidden_start: Array = []
+	var visible_start: int = 0
+	var always: Callable = func(_t): return true
+	var berry_names: Dictionary = drops_json.get("berry_yield", {})
+
+	for row in flora_rows:
+		if row.get("retired", false):
+			continue
+
+		for season_name in ["spring", "summer", "autumn", "winter"]:
+			var hidden: bool = GatherRulesScript.hidden_out_of_season(row, season_name, berry_names.has(str(row["name"])))
+			var verdict: Dictionary = GatherRulesScript.check(row, str(row["kind"]), drops_json, season_name, always, always)
+
+			# hidden implies not targetable; a plant whose season excludes the day never offers a pick
+			if hidden and bool(verdict["ok"]):
+				disagree.append("%s %s hidden but pickable" % [row["name"], season_name])
+
+			if not GatherRulesScript.in_season(row, season_name) and bool(verdict["ok"]) and str(row["kind"]) != "tree":
+				disagree.append("%s %s out of season but pickable" % [row["name"], season_name])
+
+			if season_name == "spring":
+				if hidden:
+					hidden_start.append(str(row["name"]))
+				elif str(row["kind"]) == "plant":
+					visible_start += 1
+
+	print("in spring (the world starts in spring, day 30) hidden herbs/flowers/mushrooms: %d %s; visible plants %d" % [hidden_start.size(), str(hidden_start), visible_start])
+	_check(disagree.is_empty(), "the season filter and the gather rule agree for every species and season %s" % str(disagree.slice(0, 6)))
+	var yarrow: Dictionary = {}
+
+	for row in flora_rows:
+		if row["name"] == "yarrow":
+			yarrow = row
+
+	_check(not yarrow.is_empty() and GatherRulesScript.hidden_out_of_season(yarrow, "winter", false) == not GatherRulesScript.in_season(yarrow, "winter") and not GatherRulesScript.hidden_out_of_season(yarrow, "summer", false), "yarrow is hidden exactly when its season excludes the day")
+
 	if settings == null or not errors.is_empty():
 		quit(1)
 		return
