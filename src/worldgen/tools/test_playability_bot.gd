@@ -80,6 +80,9 @@ func craft(id: String, crafts: int) -> String:
 	for part in r["needs"]:
 		var have: int = items.inventory_of(1).count_fill(int(part[0])) if int(part[0]) > 0 else 0
 
+		if int(part[0]) == items.table.number_of("log"):
+			have += items.logs_near_count(1)   # the shoulder log and logs lying near count (F-16)
+
 		if have < int(part[1]) * crafts:
 			return "recipe '%s' needs %d x %s, the pack holds %d" % [id, int(part[1]) * crafts, items.table.name_of(int(part[0])), have]
 
@@ -289,6 +292,18 @@ func _init() -> void:
 	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
 	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0
 	need(carried, "the log on the ground could not be picked up (shoulder empty, none in the pack)")
+	if halted:
+		return
+
+	# A chopping block from the log on the shoulder plus a second log lying on the ground (the way logs are really carried and cut).
+	step("block: a chopping block from a shoulder log and a ground log")
+	items.drop_in_world(items.table.number_of("log_oak"), 1, items._peer_pos[1] + Vector3(1.0, 0.0, 0.0))
+	why = craft("chopping_block", 1)
+	need(why == "", why)
+	if halted:
+		return
+
+	need(count("chopping_block") >= 1 and items.shoulder_of(1) == "", "the chopping block was made but the shoulder log is still on the shoulder")
 	if halted:
 		return
 
