@@ -60,6 +60,12 @@
   "leather_strap": "animal product (Sal, 2026-10-31), queued",
   "milk": "animal product (Sal, 2026-10-31), queued",
   "butter": "animal product (Sal, 2026-10-31), queued",
-  "cheese": "animal product (Sal, 2026-10-31), queued"
+  "cheese": "animal product (Sal, 2026-10-31), queued",
+  "salmon": "fish (Sal, 2026-10-31), queued",
+  "herring": "fish (Sal, 2026-10-31), queued",
+  "mackerel": "fish (Sal, 2026-10-31), queued",
+  "smelt": "fish (Sal, 2026-10-31), queued",
+  "eel": "fish (Sal, 2026-10-31), queued",
+  "cod": "fish (Sal, 2026-10-31), queued"
  }
 }
