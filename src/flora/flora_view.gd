@@ -126,6 +126,34 @@ void fragment() {
 }
 """
 
+# Fruit on a fruit tree (apples, pears, cherries; Dave 2026-10-31: the drawn fruit thins out as the tree is picked). tree_builder.gd gives every fruit a rank 0..1 in the vertex
+# alpha (spread evenly) and its colour in the vertex rgb. INSTANCE_CUSTOM.a is the share of the fruit already PICKED (0 = none, the default, so every unwired tree keeps all
+# its fruit; 0.34, 0.67, 0.9, 1.0 for the 66, 33, 10 and 0 percent levels): a fruit whose rank is at or above 1 - picked is not drawn. INSTANCE_CUSTOM.rgb is the tree's leaf tint
+# (the foliage shader's), so the fruit colour of a variety (red, yellow, green, russet) is baked per species with flora.json "fruit_color", not passed per tree.
+const FRUIT_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform float sway = 0.004;
+varying float picked;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+	picked = INSTANCE_CUSTOM.a;
+}
+
+void fragment() {
+	if (COLOR.a >= 1.0 - picked) {
+		discard;
+	}
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 0.55;
+}
+"""
+
 # Everember: dark ridged bark with glowing veins in its furrows. The glow
 # (EMISSION) is strongest where the bark texture is darkest (the furrows),
 # broken up by a second, coarser sample so not every furrow burns, and scaled
@@ -701,6 +729,11 @@ func _make_tree_materials() -> void:
 	smooth_material.shader = bark
 	smooth_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_smooth.png"))
 	_tree_materials["smooth_bark"] = smooth_material
+	var fruit_shader: Shader = Shader.new()
+	fruit_shader.code = FRUIT_SHADER
+	var fruit_material: ShaderMaterial = ShaderMaterial.new()
+	fruit_material.shader = fruit_shader
+	_tree_materials["fruit"] = fruit_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
