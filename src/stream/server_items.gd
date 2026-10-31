@@ -4313,7 +4313,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 		return false
 
 	for need in row["cost"]:
-		if inv.count_of(table.number_of(str(need[0]))) < int(need[1]):
+		if inv.count_fill(table.number_of(str(need[0]))) < int(need[1]):
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
 			return false
 
@@ -4322,7 +4322,7 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 
 func _pay_blueprint(inv, row: Dictionary) -> void:
 	for need in row["cost"]:
-		inv.remove(table.number_of(str(need[0])), int(need[1]))
+		inv.remove_fill(table.number_of(str(need[0])), int(need[1]))
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
@@ -7293,7 +7293,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 			break
 
 		for need in recipe["needs"]:
-			inv.remove(need[0], need[1])
+			inv.remove_fill(need[0], need[1])
 
 		taken += 1
 
@@ -7313,7 +7313,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 # Does the pack hold everything `times` crafts of a recipe need (kept tools once)?
 func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 	for need in recipe["needs"]:
-		if not inv.has(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
+		if not inv.has_fill(need[0], int(need[1]) * clampi(times, 1, CRAFT_QUEUE_MAX_COUNT)):
 			return false
 
 	for keep in recipe["keeps"]:
@@ -7327,7 +7327,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 # was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int) -> int:
 	var ctx: Dictionary = {
-		"have": func(item: int) -> int: return inv.count_of(item),
+		"have": func(item: int) -> int: return inv.count_fill(item),
 		"station_ok": func(r: Dictionary) -> bool: return str(r.get("station", "")) == "" or station_near(peer, str(r["station"]), int(r.get("station_level", 1))),
 		"free": false,
 	}
@@ -7364,7 +7364,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	for step in steps:
 		for need in step["take"]:
-			inv.remove(need[0], int(need[1]) * int(step["count"]))
+			inv.remove_fill(need[0], int(need[1]) * int(step["count"]))
 
 		entries.append([int(step["recipe"]), int(step["count"]), (step["take"] as Array).duplicate(true), (step["deferred"] as Array).duplicate(true), chain])
 
@@ -7380,13 +7380,13 @@ func _start_deferred(peer: int, head: Array) -> bool:
 	var times: int = int(head[1])
 
 	for need in head[3]:
-		if inv == null or not inv.has(need[0], int(need[1]) * times):
+		if inv == null or not inv.has_fill(need[0], int(need[1]) * times):
 			_cancel_craft(peer, 0)
 			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
 			return false
 
 	for need in head[3]:
-		inv.remove(need[0], int(need[1]) * times)
+		inv.remove_fill(need[0], int(need[1]) * times)
 		var merged: bool = false
 
 		for have in head[2]:

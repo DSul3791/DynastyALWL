@@ -151,11 +151,11 @@ func _init() -> void:
 	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")
 
-	# 4. A campfire: craft the kit, place it, it starts lit.
+	# 4. A campfire: craft the kit (6 sticks, 3 stones), place it (laid, not lit), light it with tinder from the pack.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	queue(4, 1)
 	pass_time(10.0, 0.2)
-	check(count("campfire_kit") == 1, "the campfire kit is made (20 sticks, 10 stones)")
+	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 3 stones)")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var lit: int = 0
 
@@ -166,7 +166,7 @@ func _init() -> void:
 	for k in items._items:
 		lit += 1 if items._items[k].has("fire") and items.fire_is_lit(int(items._items[k]["fire"]["state"])) else 0
 
-	check(lit == 1, "the campfire is placed and burning")
+	check(lit == 1, "the campfire is placed laid and then lit with tinder")
 	note("making a campfire")
 
 	# 5. Drink at the water's edge: no water, no drink; at the edge the thirst bar fills.

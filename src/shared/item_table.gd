@@ -5,18 +5,51 @@ extends RefCounted
 
 const PATH := "res://data/items/items.json"
 const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material per flora yield (tools/gen_gathered_items.py)
+const GROUPS_PATH := "res://data/items/wood_species.json"   # "ingredient_groups": a plain id (log) that any listed item (log_oak ...) fills (guide finding F-16)
 
 var _by_id: Dictionary = {}        # String id -> entry (with "id" added)
 var _by_number: Dictionary = {}    # int number -> entry
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
+var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Array of the member item numbers (the group id itself first)
 
 
 static func load_default():
 	var table = load("res://src/shared/item_table.gd").new()
 	table.load_file(PATH)
 	table.load_file(GATHERED_PATH)
+	table.load_groups(GROUPS_PATH)
 	return table
+
+
+# Reads the ingredient groups: a recipe that asks for the group id (log) is filled by the group id itself or any member (log_oak ...).
+# Inventory.count_of / has / remove follow it, so every place that counts or takes an ingredient (server, craft planner, client list) agrees.
+func load_groups(path: String) -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	var groups: Dictionary = parsed.get("ingredient_groups", {})
+
+	for id in groups:
+		if not _by_id.has(id) or typeof(groups[id]) != TYPE_ARRAY:
+			continue
+
+		var members: PackedInt32Array = PackedInt32Array([number_of(id)])
+
+		for member in groups[id]:
+			var n: int = number_of(str(member))
+
+			if n > 0 and not members.has(n):
+				members.append(n)
+
+		_groups[number_of(id)] = members
+
+
+# The item numbers that fill an ingredient: [] when the number is not a group id.
+func group_members(number: int) -> PackedInt32Array:
+	return _groups.get(number, PackedInt32Array())
 
 
 func load_file(path: String) -> bool:
