@@ -2,12 +2,10 @@ extends SceneTree
 
 # No item may draw the grey placeholder chunk when it has an art override (guide findings F-17 and F-18): BasicLook.entry() must give the override whenever looks.json holds the grey
 # chunk or no row; every look shape named by an override or a row must be one mesh() really builds (not the default blob). Also counts the items still on the placeholder, as a ceiling
-# that may only go down.
+# that is a data list with a reason per item: a new grey item fails the check until it is listed or drawn.
 #   godot --headless --path . --script res://src/worldgen/tools/test_item_looks.gd
 
 const BasicLook := preload("res://src/client/basic_look.gd")
-
-const PLACEHOLDER_CEILING := 26      # items on the grey chunk today (31 Oct, the guide counted 46 two days earlier, new items arrived since); lower it as looks are made
 
 var failures: int = 0
 
@@ -54,8 +52,15 @@ func _init() -> void:
 			placeholders.append(id)
 
 	placeholders.sort()
-	print("items still on the grey placeholder look (%d): %s" % [placeholders.size(), ", ".join(placeholders)])
-	check(placeholders.size() <= PLACEHOLDER_CEILING, "no more than %d items on the placeholder (now %d)" % [PLACEHOLDER_CEILING, placeholders.size()])
+	var known: Dictionary = _json("res://data/items/look_placeholders.json").get("items", {})
+	print("items on the grey placeholder look (%d, %d listed with a reason): %s" % [placeholders.size(), known.size(), ", ".join(placeholders)])
+
+	for id in placeholders:
+		check(known.has(id), "new placeholder: item %s draws the grey chunk: give it a look, or list it with a reason in data/items/look_placeholders.json" % id)
+
+	for id in known:
+		if rows.has(id):   # a listed id that is not in looks.json yet (an item from a branch not merged here) is skipped
+			check(placeholders.has(id), "item %s is listed as a placeholder but already has a look: delete its row in data/items/look_placeholders.json" % id)
 
 	print("item look tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
