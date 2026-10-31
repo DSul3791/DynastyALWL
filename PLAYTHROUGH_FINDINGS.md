@@ -452,3 +452,22 @@ Rating: 1 to 5 for "looks real and alive" (5 = could be a screenshot of the fini
 
 Real server_items.gd with the real baked ground. At the spawn (53316, 68476), the walk-picture clearing, 60 m east and 60 m north: **campfire kit PLACED, lit with plant fibre (state 40), lean-to kit PLACED, rough bed kit PLACED** (each 8 m apart; two kits within 2.5 m of each other refuse, silently). On the steepest slope within 300 m (0.72 m rise over 1.6 m) campfire and lean-to are refused with "The ground is too steep there." (campfire limit 0.6 m). So the placement rules do not stop a new player at the spawn: if the green ghost never becomes a fire in the rig, look at the rig (slot, reach, y). Birch bark as tinder was not tested here (fibre lit first).
 Silent refusals in `_place` (no message to the player, so the ghost just "does nothing"): player farther than 6 m from the point; the point's y more than 1 m from the server's ground (a wrong client y); ground height under 1 m (a wet beach); another fire within the fire gap; more fires in the chunk than the cap; any structure within 2.5 m; the pot with no fire. Proposal for Tyler: say why in each case.
+
+## Part 11 (2026-10-31): the lean-to as a home, probe 7 (`art/playthrough/probe_shelter.gd`, output `probe_shelter_output.txt`)
+
+Real server code, real cover index, spawn (53316, 68476), ground 31.57.
+
+| step | result | numbers |
+|---|---|---|
+| place lean-to at the spawn | PASS | roof key 1 in the cover index |
+| roof size | PASS | cover box 2.2 x 1.9 m, 2.1 m high (footprint 2.4 x 2.1) |
+| cover at the centre and at four inner points | PASS | all 1.0; 1.5 m past the edge 0.0 |
+| **place a rough bed inside the footprint** | **FAIL** | refused at the centre and at 0.5 and 0.9 m offsets, and at 1.0, 1.5, 2.0 m; first success 2.5 m from the lean-to centre; **no message to the player** |
+| bed spot under the roof | FAIL | cover 0.0 at the bed |
+| lie down, server finds the bed (reach 1.2 m) | PASS | stance 3, bed id found |
+| cover under the lying player | FAIL | 0.0 (consequence of the refused bed) |
+| good bed (bed + cover) | FAIL | sleep quality 0.6 (open dry) instead of 1.0; regen x1.25 and drain x0.5 not applied |
+| fall asleep, energy rises | PASS | "You fall asleep"; 40.10 to 44.19 in 60 s |
+| shelter noted, death respawn | PASS | respawn 2.6 m from the lean-to centre (not the world spawn), message "You come back at your shelter" |
+
+Cause: `server_items.gd` line 2551 and 4637: every placed structure refuses another within `_struct_gap_m` (structures.json `gap_m` 2.5) unless it is `walkover` (the lean-to is not). The bed's `shelter_needed: true` in structures.json is not read by any code. Fix for Tyler: exempt a rough bed from the gap when the lean-to is the near piece (or give the lean-to a smaller gap to beds), and send a reason on every silent refusal. Also the bed is 1 x 2 m and the roof 2.2 x 1.9 m: the bed must lie along the 2.2 m side, so the bed's yaw should follow the lean-to's. The respawn lands 2.6 m in front of the lean-to; there is no wall piece in a lean-to, so the closed-room bonus (3 walls near plus a roof) never applies to it.
