@@ -83,6 +83,27 @@ const ART_OVERRIDES := {
 	"timber_prop_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["prop"]},
 	"timber_set_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["prop"]},
 	"ladder_kit": {"shape": "parcel", "color": "#9a7a45", "size": 1.0, "bits": ["ladder"]},
+	"stone_wedge": {"shape": "stone_wedge", "color": "#7a7872", "size": 1.0},
+	"fibre_arrow": {"shape": "arrow", "color": "#c9bb7a", "size": 1.0},
+	"bone_arrow": {"shape": "arrow", "color": "#e8e2d0", "size": 1.0, "bits": ["bone"]},
+	"hide_glue": {"shape": "pot_goo", "color": "#c98a2a", "size": 1.0},
+	"herb_salve": {"shape": "pot_goo", "color": "#5a8a3a", "size": 1.0},
+	"quern": {"shape": "quern", "color": "#8a8780", "size": 1.0},
+	"compost": {"shape": "crumble", "color": "#4a3322", "size": 1.0, "bits": ["green"]},
+	"splint": {"shape": "splint", "color": "#a07a45", "size": 1.0},
+	"hide_tunic": {"shape": "garment", "color": "#8a6038", "size": 1.0, "bits": ["tunic"]},
+	"hide_trousers": {"shape": "garment", "color": "#7a5430", "size": 1.0, "bits": ["trousers"]},
+	"hide_gloves": {"shape": "garment", "color": "#8a6038", "size": 1.0, "bits": ["gloves"]},
+	"wool_tunic": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["tunic"]},
+	"wool_trousers": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["trousers"]},
+	"wool_cap": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["cap"]},
+	"wool_mittens": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["mittens"]},
+	"linen_shirt": {"shape": "garment", "color": "#e6dcc2", "size": 1.0, "bits": ["shirt"]},
+	"fur_cloak": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["cloak"]},
+	"fur_hat": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["cap"]},
+	"fur_boots": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["boots"]},
+	"wool": {"shape": "crumble", "color": "#d8ccae", "size": 1.0},
+	"linen": {"shape": "cloth", "color": "#e6dcc2", "size": 1.0},
 	"wheat": {"shape": "sheaf", "color": "#c9983a", "size": 1.0, "bits": ["wheat"]},
 	"barley": {"shape": "sheaf", "color": "#c9a850", "size": 1.0, "bits": ["barley"]},
 	"flax": {"shape": "sheaf", "color": "#b8a46a", "size": 1.0, "bits": ["flax"]},
@@ -428,6 +449,95 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.04, Vector3(1.0, 1.1, 1.0), Vector3(0.1, -0.02, -0.04), Color(0.72, 0.64, 0.45))
 			_sph(parts, 0.022, Vector3(1.2, 0.5, 1.2), Vector3(0.1, 0.02, -0.04), Color(0.72, 0.64, 0.45).lightened(0.1))
 			_cyl(parts, 0.015, 0.01, Vector3(0.1, 0.012, -0.04), Vector3.ZERO, Color(0.4, 0.3, 0.18))
+		"stone_wedge":
+			# A stone splitting wedge (refs: flaked and pecked stone wedges and adzes): a thick triangular slab of grey stone with flake scars, a blunt striking top and a thin working edge.
+			_wedge(parts, 0.07, 0.15, 0.09, Vector3(0.0, -0.02, 0.0), color)
+			_box_rot(parts, Vector3(0.05, 0.012, 0.03), Vector3(0.0, 0.02, 0.02), Vector3(0.0, 0.5, 0.3), color.lightened(0.2))
+			_box_rot(parts, Vector3(0.04, 0.012, 0.03), Vector3(0.02, 0.0, -0.03), Vector3(0.0, -0.6, -0.3), color.darkened(0.2))
+			_sph(parts, 0.02, Vector3(1.4, 0.7, 1.0), Vector3(-0.05, 0.02, 0.0), color.darkened(0.1), true)
+		"arrow":
+			# An arrow (bits "bone": a sharpened white bone point; otherwise a fire-hardened plain point lashed with fibre): a thin straight shaft, a point at one end and three feather vanes with a notch at the other.
+			var bone_point: bool = bits.has("bone")
+			_cyl(parts, 0.005, 0.4, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.45, 0.25))
+			_cone(parts, 0.011, 0.07, Vector3(0.235, 0.0, 0.0), Color(0.92, 0.9, 0.82) if bone_point else Color(0.5, 0.36, 0.2))
+			_cyl(parts, 0.008, 0.02, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.7, 0.6, 0.38))
+
+			for k in 3:
+				var fa: float = TAU * float(k) / 3.0
+				_box_rot(parts, Vector3(0.07, 0.002, 0.016), Vector3(-0.16, sin(fa) * 0.01, cos(fa) * 0.01), Vector3(fa, 0.0, 0.0), Color(0.9, 0.88, 0.8) if k != 0 else Color(0.35, 0.3, 0.28))
+		"pot_goo":
+			# A small clay pot holding something (hide glue: an amber blob; herb salve: green paste under a lid cloth): a round-bellied pot, a rim, the contents domed in the mouth.
+			_sph(parts, 0.07, Vector3(1.0, 0.85, 1.0), Vector3(0.0, -0.01, 0.0), Color(0.55, 0.36, 0.22))
+			_cyl(parts, 0.05, 0.02, Vector3(0.0, 0.05, 0.0), Vector3.ZERO, Color(0.5, 0.32, 0.2))
+			_sph(parts, 0.045, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.058, 0.0), color)
+			_torus(parts, 0.05, 0.006, Vector3(0.0, 0.05, 0.0), Color(0.45, 0.28, 0.17))
+		"quern":
+			# A hand quern (refs: saddle querns and rotary hand querns): a flat lower grinding stone with a worn dip and a smaller rubbing stone lying on it, a little flour spilled at the edge.
+			_sph(parts, 0.13, Vector3(1.0, 0.3, 0.75), Vector3(0.0, -0.035, 0.0), color)
+			_sph(parts, 0.11, Vector3(1.0, 0.12, 0.6), Vector3(0.0, -0.012, 0.0), color.darkened(0.15))
+			_sph(parts, 0.06, Vector3(1.6, 0.5, 0.8), Vector3(0.03, 0.0, 0.0), color.lightened(0.12))
+			_sph(parts, 0.035, Vector3(1.4, 0.3, 1.0), Vector3(-0.1, -0.02, 0.1), Color(0.93, 0.9, 0.82), true)
+		"crumble":
+			# A heap of crumbly material (compost: dark brown crumbs with a few green scraps; wool: a cream fleece tuft): a lumpy mound of many small balls.
+			for k in 16:
+				var ka: float = TAU * float(k) * 0.381966
+				var kr: float = 0.07 * sqrt(float(k) / 16.0)
+				_sph(parts, 0.028 - 0.002 * float(k % 3), Vector3(1.0, 0.8, 1.0), Vector3(cos(ka) * kr, -0.045 + 0.03 * (1.0 - kr / 0.08), sin(ka) * kr), _tone(color, k, 0.2), true)
+
+			if bits.has("green"):
+				for k in 3:
+					_box_rot(parts, Vector3(0.03, 0.004, 0.015), Vector3(0.03 * float(k - 1), 0.0, 0.02 * float(1 - k)), Vector3(0.0, 0.7 * float(k), 0.0), Color(0.3, 0.5, 0.2))
+		"splint":
+			# A splint: two flat shaped sticks laid together, bound with three strips of cloth.
+			for z in [-0.012, 0.012]:
+				_box(parts, Vector3(0.3, 0.012, 0.022), Vector3(0.0, -0.03, z), Color(0.62, 0.45, 0.26))
+
+			for k in 3:
+				_box(parts, Vector3(0.018, 0.02, 0.06), Vector3(-0.09 + 0.09 * float(k), -0.026, 0.0), Color(0.9, 0.88, 0.8))
+		"garment":
+			# Clothing lying flat (bits[0]: tunic, trousers, gloves, mittens, cap, cloak, boots; colour tells the material: hide brown, wool cream, linen pale, fur dark): simple readable silhouettes,
+			# a collar or seam line for each.
+			var gk: String = str(bits[0]) if bits.size() > 0 else "tunic"
+
+			match gk:
+				"tunic", "shirt":
+					_box(parts, Vector3(0.22, 0.03, 0.3), Vector3(0.0, 0.0, 0.0), color)
+					_box(parts, Vector3(0.1, 0.034, 0.08), Vector3(0.0, 0.0, -0.15), dark)
+					_box_rot(parts, Vector3(0.16, 0.026, 0.07), Vector3(0.17, 0.0, -0.1), Vector3(0.0, -0.5, 0.0), color.darkened(0.05))
+					_box_rot(parts, Vector3(0.16, 0.026, 0.07), Vector3(-0.17, 0.0, -0.1), Vector3(0.0, 0.5, 0.0), color.darkened(0.05))
+					_box(parts, Vector3(0.23, 0.032, 0.025), Vector3(0.0, 0.002, 0.14), dark.lightened(0.1))
+				"trousers":
+					_box(parts, Vector3(0.22, 0.03, 0.06), Vector3(0.0, 0.0, -0.14), dark)
+					_box_rot(parts, Vector3(0.09, 0.03, 0.34), Vector3(0.06, 0.0, 0.03), Vector3(0.0, -0.08, 0.0), color)
+					_box_rot(parts, Vector3(0.09, 0.03, 0.34), Vector3(-0.06, 0.0, 0.03), Vector3(0.0, 0.08, 0.0), color.darkened(0.06))
+				"gloves", "mittens":
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.07, 0.025, 0.09), Vector3(side * 0.05, 0.0, 0.0), color)
+						_box(parts, Vector3(0.075, 0.03, 0.03), Vector3(side * 0.05, 0.0, 0.06), dark)
+
+						if gk == "gloves":
+							for f in 4:
+								_box(parts, Vector3(0.012, 0.02, 0.05), Vector3(side * 0.05 + (float(f) - 1.5) * 0.016, 0.0, -0.065), color)
+						else:
+							_sph(parts, 0.035, Vector3(1.0, 0.5, 1.2), Vector3(side * 0.05, 0.0, -0.075), color)
+
+						_box_rot(parts, Vector3(0.025, 0.02, 0.05), Vector3(side * 0.095, 0.0, -0.02), Vector3(0.0, side * 0.6, 0.0), color)
+				"cap":
+					_sph(parts, 0.08, Vector3(1.0, 0.8, 1.1), Vector3(0.0, 0.0, 0.0), color)
+					_torus(parts, 0.07, 0.014, Vector3(0.0, -0.04, 0.0), dark)
+				"cloak":
+					_sph(parts, 0.17, Vector3(1.0, 0.18, 1.2), Vector3(0.0, 0.0, 0.0), color)
+					_sph(parts, 0.07, Vector3(1.2, 0.3, 0.7), Vector3(0.0, 0.015, -0.17), dark)
+
+					for k in 6:
+						_sph(parts, 0.04, Vector3(1.0, 0.5, 1.0), Vector3(cos(TAU * float(k) / 6.0) * 0.14, 0.0, sin(TAU * float(k) / 6.0) * 0.17), _tone(color, k, 0.15), true)
+				"boots":
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.07, 0.07, 0.12), Vector3(side * 0.05, 0.0, 0.0), color)
+						_box(parts, Vector3(0.075, 0.045, 0.1), Vector3(side * 0.05, -0.02, -0.1), color.darkened(0.1))
+						_box(parts, Vector3(0.078, 0.014, 0.2), Vector3(side * 0.05, -0.05, -0.04), dark)
+				_:
+					_box(parts, Vector3(0.22, 0.03, 0.3), Vector3(0.0, 0.0, 0.0), color)
 		"parcel":
 			# A kit drawn as a small bundle of what it builds (guide F-27; bits[0] names the family, the colour tints it): fire = stones and a bundle of sticks, roll = a rolled roof or wall tied with cord,
 			# planks = a tied stack of boards, bench = a tabletop with its legs bundled beside it, chest = a small chest, dome = a stone or brick dome with an arch, pot = a pot on a tripod of sticks,
