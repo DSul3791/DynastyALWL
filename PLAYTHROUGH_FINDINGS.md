@@ -341,9 +341,9 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 20 craftable items with a grey or missing look: hide_tunic, hide_trousers, hide_gloves, clay_jug, herb_salve,  |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 27 recipes blocked and not flagged future |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 96 orphan items not flagged future (first: log, aloe_gel, amadou, angelica_stems, banana_leaves, belladonna_be |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 19 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 42 orphan items not flagged future (first: log, amadou, angelica_stems, banana_leaves, burrs, cactus_pads) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
@@ -354,3 +354,13 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 11 fixed, 14 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
+
+---
+
+# Part 5: audit corrected for the server's natural-yield rule (2026-10-31, after Sal's note)
+
+`gather()` in `server_items.gd` gives a plant's harvest or berry row only when it has one, and otherwise its drops rows plus one random in-season yield from its flora.json `yields` list for any yield that exists as an item. `audit_playthrough.py` now models that. Effect: recipes blocked and not flagged future **40 → 19**, orphans not flagged future **96 → 42**, placeholder-look items 83 → 62, craftable-today items with a grey or no look **20 → 2** (clay_jug, candle), after also merging the latest DailyDev (Kathleen's looks, Sal's data, the flora session's yields).
+
+What is left of F-19: **every one of the 19 is the log chain (F-16)** (chopping block, log workbench, rough plank, lumber and everything built from lumber, wedge lumber) plus two by design (hand saw, water wheel not learnable). I count plain `log` as having no source because a felled tree gives `log_<species>` on the shoulder and recipes ask for `log` (probe_logs_output.txt); Sal's walk counts `log` as a source, which is the only difference between our tables.
+
+What is left of F-20 (42 items, none gatherable and none flagged future): tree products with no tap or bark action (sap, gum, oil, mirrorbark/witness/wardpine bark and wood, hearthwood logs, everember wood and sap, palm wood and fronds, cherry/fine/hard/thorny wood, timber, softwood, hardwood, wood, poles, charcoal_wood, walnut husks, banana leaves), second yields hidden by a harvest row (comfrey roots, raspberry leaves, amadou, elderflowers, honey flowers, hawthorn blossom, witness leaves), and abstract names (`fibre`, `seeds`, `stuffing`, `burrs`, `thorny_canes`, `angelica_stems`, `cactus_pads`, `fiddleheads`). A decision for Sal and the flora session: tap and bark actions for trees, or retire the abstract items.

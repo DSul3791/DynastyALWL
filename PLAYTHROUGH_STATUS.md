@@ -21,9 +21,9 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True | Sal |
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 20 craftable items with a grey or missing look: hide_tunic, hide_trousers, hide_gloves, clay_jug, herb_salve, splint, candle, quern, compost, hide_glue, bone_arrow, stone_wedge, fibre_arrow, wool_tunic, wool_ | Kathleen |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 27 recipes blocked and not flagged future | Sal |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 96 orphan items not flagged future (first: log, aloe_gel, amadou, angelica_stems, banana_leaves, belladonna_berries) | Sal / flora |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle | Kathleen |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 19 recipes blocked and not flagged future | Sal |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 42 orphan items not flagged future (first: log, amadou, angelica_stems, banana_leaves, burrs, cactus_pads) | Sal / flora |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None | Sal |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN | Tyler + Sal |
