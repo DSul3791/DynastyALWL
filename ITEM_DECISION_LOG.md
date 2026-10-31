@@ -245,3 +245,6 @@ Merged origin/DailyDev_20261029 into the branch (clean). Added items 346-352, re
 1. Guide findings: fix every item/recipe/reachability finding once PLAYTHROUGH_FINDINGS.md is pushed (not on disk or remote yet at this check).
 2. Tropical and desert fauna list (monkey, parrot, crocodile, camel, scorpion) with loot, same format as fauna_proposal.json.
 3. Re-run test_animals on a quiet machine and record the real timing.
+
+## Guide findings pass (2026-10-31)
+Decisions (reversible): F-01 rule = known unless forge/workbench level 2+ (76 flipped); axe twine left at 5 (tests hard-code it); stone wedge route for lumber (moderator QA yes). See PLAYTHROUGH_FINDINGS.md section 5, LEARN_SYSTEM_SPEC.md, FLINT_ORE_SPEC.md. New items: Stone wedge 353, Fibre arrow 354.

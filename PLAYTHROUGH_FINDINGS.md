@@ -100,3 +100,15 @@ tools/godot.cmd --headless --path . --script res://art/playthrough/probe_playthr
 # one row of items on the ground (needs --gy 1039.0 at the current spawn)
 bash art/playthrough/rig.sh --row stone,stick,twine --gy 1039.0 --row-dist 3.5 --agl 1.8 --pitch -35 --name my_row --out art/playthrough
 ```
+
+## 5. Fix status (Sal, 2026-10-31, branch sal-items)
+Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `known` flag, 1 mismatch (Lumber by hand, needs a hand saw), and fire lights with plant fibre, birch bark, tinder and tinder fungus.
+* **F-01 FIXED (data):** 76 recipes now `known:true` (stone pickaxe, club, mace, javelin, wicker shield, kindling, hide and grass clothing, waterskin, bucket, brick, clay jug, quern, splint, candle, compost, salve and more). 19 stay locked (forge/workbench level 2 and up, water wheel). Code half: LEARN_SYSTEM_SPEC.md.
+* **F-06 FIXED:** brick, mortar, cobblestone known; oven and clay hearth reachable.
+* **F-03 FIXED (data):** drops.json harvest: tinder fungus gives 3 tinder fungus, cotton grass gives 8 tinder; birch trunks give 2 to 4 birch bark per seed roll; new recipe Tinder (2 thatch gives 2 tinder, by hand).
+* **F-08 FIXED:** Fibre arrow (item 354, 2 sticks + 1 fibre gives 4, damage 3.5) needs no feather; Bone arrow (item 352) also added.
+* **F-11 FIXED (hammer):** recipe "Wooden hammer" also accepts `wooden_block_soft`. The `log_*` species chains still need the code change in ITEM_CODE_HANDOFF.md section 1.
+* **F-12 FIXED (data):** fern and heather harvest gives 6 bedding; recipe "Rough bed" also accepts 8 bedding instead of 10 thatch. Straw has no source yet (needs wheat or barley growing).
+* **F-14 PARTLY FIXED:** twine cut on thatch floor 6 to 4, wall 20 to 8, roof 10 to 6, doorway 12 to 6, shore net 20 to 8, campfire pot 5 to 3. **The stone axe and stone spear stay at 5 twine** because test_first_hour and test_auto_craft hard-code 5 twine and 15 fibre; changing them needs those tests rewritten (about 12 lines in test_auto_craft). Proposal: axe 2 twine.
+* **F-15 FIXED (data):** Stone pickaxe is known and no longer marked future.
+* **F-02, F-05 data FIXED, code open:** Stone wedge (353) + log at a workbench gives 2 lumber, so wooden building is reachable with no iron. Flint, coal, ore and obsidian sources are specified in FLINT_ORE_SPEC.md for the code session; until then hide scraper, javelin and sickle stay unreachable.
