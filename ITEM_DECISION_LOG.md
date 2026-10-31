@@ -334,3 +334,5 @@ FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-
 | Berries were 90 kcal each (a bush of 150 gave 13,500 kcal, five full stomachs) | vitals.json food.by_suffix.berries set to 4; bush yields unchanged | moderator for Dave; real berries about 2 to 4 kcal and 4 g; keeps apples (110-125) and meat meaningful; tests green: validate_items, dishes, economy, server_items, first_hour, inventory, stations, save_compat, new_player_day, eat_once, death | yes: set the number back to 90; Dave can overturn |
 
 Berry loophole: roasting turned one 4 kcal berry into 400 kcal Roast forage; berries now roast into new Stewed berries (483, 10 kcal) via cooks_into; test_server_items updated.
+
+Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): recipes known, kits and pieces no longer future. Stairs and the cabin set stay locked.
