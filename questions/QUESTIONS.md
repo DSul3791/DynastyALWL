@@ -13,12 +13,6 @@
 
 
 
-## pic-meadow-flowers | Are these meadow flowers (dandelion shown; stems about 1 m, heads 18 cm across) tall and bold enough to show up in grass?
-Image: questions/img/meadow_dandelion.png
-Note: Render of the model alone, four views, not the real game. Kathleen rates it 3.5 of 5. Ten flower types (dandelion, chamomile, yarrow, wild carrot and others) got the same change. The flora session turns on the densities after the merge.
-- Yes
-- No
-
 ## pic-apples | Do these apples look like round apples (stem, highlight) instead of red diamonds?
 Image: questions/img/apples_round.png
 Note: Close-up render of five apples, four views, not the real game. Kathleen rates it 3 of 5: round with a stem and a highlight, still a little faceted.
@@ -52,12 +46,6 @@ Note: Real game, noon, same spot. Flora rates it 3.5 of 5: the evenly spaced sap
 ## pic-tall-grass-25m | Can you spot the tall-grass clump (circled) from about 25 m away, standing in the meadow?
 Image: questions/img/tall_grass_25m.png
 Note: Real game, noon, camera 25 m west of a clump at (53358,68366). Flora rates it 3.5 of 5: it reads as a tuft of tall grass with dark plumes at 25 m, but small; at 40 m it is only just visible and dark in shade.
-- Yes
-- No
-
-## pic-meadow-flowers | Can you see colour from wild flowers in the starter meadow (yellow drift left of the bush, at the forest edge)?
-Image: questions/img/meadow_flowers.png
-Note: Real game, noon, low viewpoint. Flora rates it 3 of 5: flower drifts (dandelion, St John's wort, yarrow, chamomile, wild carrot) now stand above the grass with bright yellow heads, but they are few and small at this distance and sit at the meadow edge, not in the open middle.
 - Yes
 - No
 
