@@ -2,7 +2,6 @@
  "note": "Items that still draw the grey placeholder chunk, each with a reason (Kathleen, 2026-10-31). test_item_looks fails for a grey item that is not listed here and for a listed item that already has a look. Make a look, then delete the row.",
  "items": {
   "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)",
-  "nettles": "food (Sal, 2026-10-31): a bunch of green nettle leaves, queued",
   "nettle_tea": "food (Sal, 2026-10-31): a cup of green tea, queued",
   "log_seat_kit": "comfort furniture kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",
   "bench_kit": "comfort furniture kit (Sal, 2026-10-31): wrapped-box kit, uncraftable until the piece model exists",

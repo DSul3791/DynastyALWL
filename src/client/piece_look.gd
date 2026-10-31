@@ -950,3 +950,159 @@ static func tier_roof(kind: String = "stone") -> Node3D:
 	_box(root, Vector3(2.4, 0.1, 0.12), Vector3(0.0, 2.4, 0.0), _frame)
 	_solid(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0))
 	return root
+
+
+# --- Comfort furniture (Dave's comfort feature; Kathleen, 2026-10-31). References: Viking Age stools, benches and chairs (https://www.vikingage.org/wiki/wiki/Stools,_Benches_%26_Chairs), the Sala Hytta low table
+# (https://sites.google.com/site/svenskildbiter/home/how-to-reproductions/viking-table), the Oseberg chair and Lejre chair amulet (https://sites.google.com/site/thasthimindunna/home/recreations/chair),
+# the Trondheim 11th-century stool (https://sagy.vikingove.cz/en/stool-from-trondheim-norway-11th-century/). Cheap: boxes and a few rounded parts, shared textures.
+# A chair: four splayed square legs, a plank seat, a low back of two uprights, two rails and a carved-looking top board; 0.5 m wide, 0.5 m deep, 0.45 m seat, 0.95 m high. Faces -z (the back is at +z).
+static func chair() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.2, 0.2]:
+		for z in [-0.2, 0.2]:
+			var leg: MeshInstance3D = MeshInstance3D.new()
+			var shape: BoxMesh = BoxMesh.new()
+			shape.size = Vector3(0.06, 0.45, 0.06)
+			leg.mesh = shape
+			leg.material_override = _frame
+			leg.position = Vector3(x * 1.08, 0.225, z * 1.08)
+			leg.rotation = Vector3(-z * 0.25, 0.0, x * 0.25)      # splayed outward
+			root.add_child(leg)
+
+	_box(root, Vector3(0.5, 0.05, 0.5), Vector3(0.0, 0.46, 0.0), _planks)                    # the seat
+	_box(root, Vector3(0.44, 0.03, 0.04), Vector3(0.0, 0.22, -0.2), _frame)                  # stretcher rails between the legs
+	_box(root, Vector3(0.44, 0.03, 0.04), Vector3(0.0, 0.22, 0.2), _frame)
+
+	for x in [-0.21, 0.21]:
+		_box(root, Vector3(0.05, 0.5, 0.05), Vector3(x, 0.74, 0.22), _frame)                  # the back uprights
+
+	_box(root, Vector3(0.42, 0.1, 0.03), Vector3(0.0, 0.62, 0.22), _planks)                  # a back rail
+	_box(root, Vector3(0.5, 0.14, 0.04), Vector3(0.0, 0.94, 0.22), _planks)                  # the top board
+	_solid(root, Vector3(0.5, 0.95, 0.5), Vector3(0.0, 0.475, 0.0))
+	return root
+
+
+# A low table after the Sala Hytta find: a 1.4 by 0.7 m plank top 0.72 m up on two trestle ends (slab legs with a foot and a through-pin) joined by a stretcher.
+static func table() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.4, 0.05, 0.7), Vector3(0.0, 0.7, 0.0), _planks)
+
+	for k in 2:   # two dark gaps between the three boards of the top
+		_box(root, Vector3(1.4, 0.052, 0.01), Vector3(0.0, 0.7, -0.115 + 0.23 * float(k)), _frame)
+
+	for x in [-0.55, 0.55]:
+		_box(root, Vector3(0.06, 0.66, 0.5), Vector3(x, 0.34, 0.0), _frame)                   # the slab end
+		_box(root, Vector3(0.1, 0.06, 0.64), Vector3(x, 0.03, 0.0), _frame)                   # its foot
+
+	_box(root, Vector3(1.1, 0.05, 0.05), Vector3(0.0, 0.36, 0.0), _planks)                   # the stretcher through both ends
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(-0.58, 0.36, 0.0), _frame)                 # the wedge pins
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(0.58, 0.36, 0.0), _frame)
+	_solid(root, Vector3(1.4, 0.72, 0.7), Vector3(0.0, 0.36, 0.0))
+	return root
+
+
+# A flat colour material (cached by colour) for small decorative parts.
+static var _flat_mats: Dictionary = {}
+
+
+static func _tone_mat(c: Color) -> StandardMaterial3D:
+	var key: String = c.to_html()
+
+	if not _flat_mats.has(key):
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = c
+		m.roughness = 1.0
+		_flat_mats[key] = m
+
+	return _flat_mats[key]
+
+
+# A rag rug 1.6 by 1.0 m (rounded ends of shorter strips): woven stripes in four tones across the width and a fringe at each short end; 1.5 cm high, no collision.
+static func rug() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var tones: Array = [Color(0.42, 0.2, 0.15), Color(0.62, 0.52, 0.36), Color(0.26, 0.31, 0.38), Color(0.5, 0.44, 0.32)]   # undyed wool and madder red, woad blue: muted
+	var widths: Array = [0.14, 0.08, 0.2, 0.08, 0.14, 0.08, 0.2, 0.08]
+	var z: float = -0.5
+
+	for k in widths.size():
+		var w: float = float(widths[k])
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = tones[k % 4]
+		m.roughness = 1.0
+		var length: float = 1.6 - (0.12 if k == 0 or k == widths.size() - 1 else 0.0)
+		_box(root, Vector3(length, 0.015, w - 0.006), Vector3(0.0, 0.0075, z + w * 0.5), m)
+
+		for j in 5:   # weft flecks: short slightly lighter strips across the stripe, so it is woven rags and not paint
+			_box(root, Vector3(0.09, 0.0165, w - 0.012), Vector3(-0.7 + 0.35 * float(j) + 0.06 * float((k + j) % 3), 0.0083, z + w * 0.5), _tone_mat(tones[k % 4].lightened(0.12)))
+		z += w
+
+	var fringe: StandardMaterial3D = StandardMaterial3D.new()
+	fringe.albedo_color = Color(0.85, 0.78, 0.6)
+	fringe.roughness = 1.0
+
+	for end in [-1.0, 1.0]:
+		for k in 14:
+			_box(root, Vector3(0.07, 0.006, 0.012), Vector3(end * 0.835, 0.004, -0.46 + 0.07 * float(k)), fringe)
+
+	return root
+
+
+# --- Seats (Dave's comfort feature: the first comfort items players make; Kathleen, 2026-10-31). All seat height 0.45 m (the sit stance). ---
+# A log seat: an upright log 0.5 m wide and 0.45 m high with a flat sawn top (pale wood, darker heart, a few growth rings), bark on the sides, a splayed foot, and a notch where the saw started.
+static func log_seat() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.26, 0.45, Vector3(0.0, 0.225, 0.0), _log, 10, 0.24)
+	var top: StandardMaterial3D = _tone_mat(Color(0.7, 0.55, 0.36))
+	var ring: StandardMaterial3D = _tone_mat(Color(0.56, 0.42, 0.26))
+	var heart: StandardMaterial3D = _tone_mat(Color(0.4, 0.27, 0.15))
+	_cyl(root, 0.235, 0.008, Vector3(0.0, 0.452, 0.0), top, 10)
+	_cyl(root, 0.15, 0.01, Vector3(0.0, 0.453, 0.0), ring, 10)
+	_cyl(root, 0.085, 0.012, Vector3(0.0, 0.454, 0.0), top, 10)
+	_cyl(root, 0.03, 0.014, Vector3(0.0, 0.455, 0.0), heart, 8)
+
+	for k in 4:   # root flare at the foot
+		var a: float = TAU * float(k) / 4.0 + 0.4
+		_box_rot(root, Vector3(0.14, 0.1, 0.07), Vector3(cos(a) * 0.25, 0.04, sin(a) * 0.25), Vector3(0.0, -a, 0.0), _log)
+
+	_box(root, Vector3(0.02, 0.02, 0.14), Vector3(0.16, 0.45, 0.0), heart)                    # the saw's start notch
+	_solid(root, Vector3(0.5, 0.45, 0.5), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# A three-legged stool (after the Lund and Trondheim stools): a round plank seat 0.36 m across, three splayed round legs pegged through it, a pale top.
+static func stool() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.19, 0.05, Vector3(0.0, 0.425, 0.0), _planks, 12)
+
+	for k in 3:
+		var a: float = TAU * float(k) / 3.0 + 0.5
+		var leg: MeshInstance3D = _cyl(root, 0.03, 0.46, Vector3(cos(a) * 0.12, 0.22, sin(a) * 0.12), _frame, 6, 0.024)
+		leg.rotation = Vector3(-sin(a) * 0.22, 0.0, cos(a) * 0.22)
+		_cyl(root, 0.018, 0.012, Vector3(cos(a) * 0.14, 0.452, sin(a) * 0.14), _tone_mat(Color(0.28, 0.18, 0.1)), 6)   # the wedge peg in the top
+
+	_solid(root, Vector3(0.4, 0.45, 0.4), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# A plank bench 2.0 m long and 0.34 m deep for two or three people: a thick seat plank on two slab ends, a stretcher with wedge pins, the front edge rounded off by a darker line.
+static func bench() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.06, 0.34), Vector3(0.0, 0.42, 0.0), _planks)
+	_box(root, Vector3(2.0, 0.062, 0.02), Vector3(0.0, 0.42, 0.17), _frame)                  # the dark front edge line
+
+	for x in [-0.8, 0.8]:
+		_box(root, Vector3(0.07, 0.4, 0.3), Vector3(x, 0.2, 0.0), _frame)                    # the slab end
+		_box(root, Vector3(0.1, 0.05, 0.36), Vector3(x, 0.025, 0.0), _frame)                 # its foot
+
+	_box(root, Vector3(1.7, 0.05, 0.05), Vector3(0.0, 0.2, 0.0), _planks)                     # the stretcher through both ends
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(-0.86, 0.2, 0.0), _frame)                   # the wedge pins
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(0.86, 0.2, 0.0), _frame)
+	_solid(root, Vector3(2.0, 0.45, 0.34), Vector3(0.0, 0.225, 0.0))
+	return root
