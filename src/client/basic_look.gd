@@ -70,6 +70,7 @@ const ART_OVERRIDES := {
 	"preserved_damsons": {"shape": "dish", "color": "#4a2a50", "size": 1.0, "bits": ["pot"]},
 	"quince_paste": {"shape": "dish", "color": "#b05a28", "size": 1.0, "bits": ["pot"]},
 	"crab_apples": {"shape": "fruit", "color": "#7c9a34", "size": 0.55},
+	"wild_apples": {"shape": "fruit", "color": "#8aa83a", "size": 0.62, "bits": ["blush"]},
 	"clay_jug": {"shape": "jug", "color": "#b8703a", "size": 1.0},
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
@@ -1411,6 +1412,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# An apple or pear: a round body with a dip at the top, a short stalk and one small leaf, a darker underside.
 			_sph(parts, 0.07, Vector3(1.0, 0.92, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_sph(parts, 0.05, Vector3(1.0, 0.5, 1.0), Vector3(0.0, -0.045, 0.0), dark)
+			if bits.has("blush"):
+				_sph(parts, 0.045, Vector3(0.7, 0.9, 1.0), Vector3(0.045, 0.0, 0.03), Color(0.78, 0.2, 0.1), true)      # a red blush on the sun side of a green apple
 			_sph(parts, 0.03, Vector3(1.0, 0.45, 1.0), Vector3(0.0, 0.05, 0.0), dark.darkened(0.2))
 			_cyl(parts, 0.005, 0.04, Vector3(0.0, 0.065, 0.0), Vector3(0.0, 0.0, 0.2), Color(0.3, 0.22, 0.12))
 			_sph(parts, 0.018, Vector3(1.8, 0.25, 0.9), Vector3(0.022, 0.08, 0.0), Color(0.3, 0.55, 0.2))

@@ -64,7 +64,7 @@
 		{
 			"id": "place_fire",
 			"trigger": "kit_made",
-			"text": "Hold the kit and click where the ring shows."
+			"text": "Hold the fire kit and click ground. Under trees it survives rain."
 		},
 		{
 			"id": "light",
@@ -145,6 +145,56 @@
 			"id": "night",
 			"trigger": "dusk",
 			"text": "Night is dark. Craft a Basic torch: a stick and 2 fibre."
+		},
+		{
+			"id": "fruit_pick",
+			"trigger": "near_fruit_tree_in_season",
+			"text": "Press E at a fruit tree to pick. Pack weight limits you."
+		},
+		{
+			"id": "fruit_spoil",
+			"trigger": "fruit_in_pack",
+			"text": "Ripe fruit spoils fast. Eat it soon, or dry and cook it."
+		},
+		{
+			"id": "orchard",
+			"trigger": "near_orchard",
+			"text": "Apples ripen through the year. Keeping apples last until spring."
+		},
+		{
+			"id": "sea_gather",
+			"trigger": "beach_with_container",
+			"text": "At the tide line press E to gather seaweed, shellfish or crabs."
+		},
+		{
+			"id": "sea_water",
+			"trigger": "beach_with_bucket",
+			"text": "With a bucket or jug at the sea, press E for water."
+		},
+		{
+			"id": "sea_salt",
+			"trigger": "has_sea_water",
+			"text": "Boil sea water in a pot to make salt. Salt keeps meat."
+		},
+		{
+			"id": "season_change",
+			"trigger": "season_changes",
+			"text": "The season changed. Check what ripens now and what you must store."
+		},
+		{
+			"id": "winter_store",
+			"trigger": "autumn_end",
+			"text": "Winter is near. Smoke fish, dry fruit and store food now."
+		},
+		{
+			"id": "place_fire",
+			"trigger": "has_campfire_kit",
+			"text": "Hold the fire kit and click ground. Under trees it survives rain."
+		},
+		{
+			"id": "cave_in",
+			"trigger": "digging_under_ceiling",
+			"text": "Digging out a roof support can bring it down. Prop the ceiling."
 		}
 	]
 }

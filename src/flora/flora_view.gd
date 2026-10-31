@@ -320,6 +320,7 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var _plume_cells: Dictionary = {}      # 2 m cell -> number of plumed tall-grass plants in it (tall_grass, thatch_grass): the ground grass thins round them (GrassView) so the clumps stand out
 var fruit_cfg: Dictionary = {}           # drops.json "fruit_tree" (species name -> {max, per_pick}), set by the client: which trees hold fruit
 var fruit_taken: Dictionary = {}         # chunk -> {tree id -> pieces taken this season} (fruit trees; set_fruit_taken, cleared when the season changes)
 var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
@@ -473,7 +474,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_splash_material = WaterFallsScript.make_splash_material()
 	_foam_material = WaterFallsScript.make_foam_material()
 
-	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false) and not entry.get("future", false))
 	_setup_entries = _setup_queue.duplicate()
 	_setup_total = _setup_queue.size()
 	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
@@ -878,6 +879,42 @@ func instance_near(point: Vector3, radius: float) -> Array:
 	return [] if found < 0 else [chunk, found]
 
 
+# Counts the plumed tall-grass plants of a chunk into 2 m cells (delta +1 when the chunk comes, -1 when it goes).
+func _mark_plumes(chunk: Vector2i, items: Dictionary, delta: int) -> void:
+	var ids: PackedInt32Array = items.get("ids", PackedInt32Array())
+	var positions: PackedVector3Array = items.get("positions", PackedVector3Array())
+
+	for n in range(ids.size()):
+		var slug: String = str(_slugs.get(int(ids[n]) >> 16, ""))
+
+		if slug != "tall_grass" and slug != "thatch_grass":
+			continue
+
+		var cell: Vector2i = Vector2i(int(floor(positions[n].x / 2.0)), int(floor(positions[n].z / 2.0)))
+		var now: int = int(_plume_cells.get(cell, 0)) + delta
+
+		if now <= 0:
+			_plume_cells.erase(cell)
+		else:
+			_plume_cells[cell] = now
+
+
+# True when a plumed tall-grass plant stands within about 2 m of the point (its own 2 m cell or a neighbour): the ground grass is thinned there.
+func near_plume(x: float, z: float) -> bool:
+	if _plume_cells.is_empty():
+		return false
+
+	var cx: int = int(floor(x / 2.0))
+	var cz: int = int(floor(z / 2.0))
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if _plume_cells.has(Vector2i(cx + dx, cz + dz)):
+				return true
+
+	return false
+
+
 # The chunks to have, nearest first: every chunk within tree view distance.
 func wanted_chunks(from_position: Vector3) -> Array:
 	var reach: int = int(ceil(view_m[KIND_TREE] / chunk_m))
@@ -1130,6 +1167,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
 	_chunks[chunk] = entry
+	_mark_plumes(chunk, items, 1)
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
@@ -1302,6 +1340,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if ice != null:
 		ice.queue_free()
 
+	_mark_plumes(chunk, _chunks[chunk]["items"], -1)
 	_chunks.erase(chunk)
 
 

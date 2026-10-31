@@ -324,3 +324,15 @@ Merged the flora branch (0b606a24) to see the fruit trees: 13 fruit items and 6 
 
 ## Building pieces (2026-10-31)
 F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-482, 10 structure rows with states 49-58 reusing existing looks until models exist, log cabin set kit); recipes are locked (known false, locked true) so no player can craft a piece the client cannot draw. HINTS_AND_CAMP_EVENTS_SPEC.md for Tyler.
+
+## First-hour food, hints, handover (2026-10-31)
+FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-70 min; apples realistic; berries 90 kcal each look 20x too generous: question for Dave, not changed); fruit descriptions say game days; 10 more hints (36 total); docs/ITEMS_HANDOVER.md.
+
+## DECISION ROW: berry calories (2026-10-31)
+| Question | Answer | Basis | Reversible |
+|---|---|---|---|
+| Berries were 90 kcal each (a bush of 150 gave 13,500 kcal, five full stomachs) | vitals.json food.by_suffix.berries set to 4; bush yields unchanged | moderator for Dave; real berries about 2 to 4 kcal and 4 g; keeps apples (110-125) and meat meaningful; tests green: validate_items, dishes, economy, server_items, first_hour, inventory, stations, save_compat, new_player_day, eat_once, death | yes: set the number back to 90; Dave can overturn |
+
+Berry loophole: roasting turned one 4 kcal berry into 400 kcal Roast forage; berries now roast into new Stewed berries (483, 10 kcal) via cooks_into; test_server_items updated.
+
+Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): recipes known, kits and pieces no longer future. Stairs and the cabin set stay locked.

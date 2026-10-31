@@ -215,3 +215,5 @@ Notes: ingredients flagged here as GAP are a spec for the code session (FLINT_OR
 False alarms in the gap table: the species logs (log_oak and so on) come from felling those trees, which this walk does not model; the Lumber by hand, Hand saw and Saw blade rows follow from the missing iron. The Stone wedge route (Rough planks) gives lumber with no iron.
 
 Update 2026-10-31 (Tyler water-gather merged): seaweed, shellfish, crab meat, eggs and sea salt are obtainable from the tide-line nodes, and sea water fills a container, so they are no longer gaps; the dishes and leather chain that waited on them (seaweed soup, mussel stew, herb omelette, salted fish, jerky, acorn mash, flatbread, leather, heavy leather, leather cap, jerkin, gambeson, strap) are no longer `future`.
+
+Update 2026-10-31: log, stone and brick walls, floors and roofs are craftable (workbench, stone and brick at level 2) now that Kathleen modelled them; the wooden stairs and the log cabin set stay locked (stairs have only a stepped-block collider and no climb code; the set has no model).

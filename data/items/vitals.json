@@ -38,6 +38,7 @@
 			"roast_forage": 400,
 			"seed_bundle": 60,
 			"raw_meat": 250,
+			"stewed_berries": 10,
 			"dried_apples": 280,
 			"apple_sauce": 300,
 			"apple_pie": 700,
@@ -138,7 +139,7 @@
 			"feast_roast": 1200
 		},
 		"by_suffix": {
-			"berries": 90,
+			"berries": 4,
 			"nuts": 180,
 			"roots": 150,
 			"caps": 50,
