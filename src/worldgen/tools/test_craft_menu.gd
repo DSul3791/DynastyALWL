@@ -42,6 +42,6 @@ func _init() -> void:
 		check(inside.all(func(r): return str(r["category"]) == category), "the %s tab shows only %s" % [category, category])
 
 	check(str(recipes.recipe(2)["category"]) == "Tools" and str(recipes.recipe(1)["category"]) == "Materials" and str(recipes.recipe(165)["category"]) == "Fire and cooking", "axe is Tools, twine Materials, campfire pot Fire and cooking")
-	check(recipes.recipe(165)["name"] == "Campfire pot" and recipes.recipe(1)["id"] == "twine" and recipes.recipe(170)["id"] == "wooden_bow" and recipes.recipe(225).is_empty(), "no recipe number or name moved")
+	check(recipes.recipe(165)["name"] == "Campfire pot" and recipes.recipe(1)["id"] == "twine" and recipes.recipe(170)["id"] == "wooden_bow" and recipes.recipe(9999).is_empty(), "no recipe number or name moved")
 	print("craft menu tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

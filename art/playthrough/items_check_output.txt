@@ -1,0 +1,35 @@
+stations         PASS  0 failures or errors
+fishing          PASS  0 failures or errors
+shore net        PASS  0 failures or errors
+bed              PASS  0 failures or errors
+spoilage         PASS  0 failures or errors
+warmth           PASS  0 failures or errors
+skills           PASS  0 failures or errors
+    FAIL even 150 animals all near stay under 3 ms on average (3.224; was 2 ms, Dave's PC measures 2.0 to 2.4)
+animals          FAIL  1 failures or errors
+big_game         PASS  0 failures or errors
+trade            PASS  0 failures or errors
+dishes           PASS  0 failures or errors
+new_player_day   PASS  0 failures or errors
+placement_rules  PASS  0 failures or errors
+first_hour       PASS  0 failures or errors
+chest            PASS  ok
+Traceback (most recent call last):
+  File "C:\GodotProjects\DynastyALWL\.claude\worktrees\dazzling-elbakyan-e46f22\tools\items_check.py", line 227, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\GodotProjects\DynastyALWL\.claude\worktrees\dazzling-elbakyan-e46f22\tools\items_check.py", line 220, in main
+    ok, note = run_client(index, flags, frames, checks, godot, verbose)
+               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\GodotProjects\DynastyALWL\.claude\worktrees\dazzling-elbakyan-e46f22\tools\items_check.py", line 168, in run_client
+    out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=400).stdout
+          ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 1220, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 1644, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:/GodotInstaller/godot.windows.editor.x86_64.exe', '--headless', '--path', 'C:\\GodotProjects\\DynastyALWL\\.claude\\worktrees\\dazzling-elbakyan-e46f22', 'res://scenes/terrain_client/terrain_client.tscn', '--', '--server=127.0.0.1', '--port=7951', '--frames=12000', '--gather']' timed out after 400 seconds

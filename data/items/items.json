@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 346,
+	"next_number": 374,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -126,7 +126,7 @@
 					1
 				]
 			],
-			"value": 12
+			"value": 5
 		},
 		"stone_knife": {
 			"number": 11,
@@ -488,7 +488,7 @@
 			"stack": 1,
 			"capacity_ml": 8000,
 			"look_alikes": [],
-			"value": 3
+			"value": 30
 		},
 		"waterskin": {
 			"number": 42,
@@ -499,7 +499,7 @@
 			"capacity_ml": 1500,
 			"future": true,
 			"look_alikes": [],
-			"value": 3
+			"value": 15
 		},
 		"hide": {
 			"number": 43,
@@ -517,7 +517,7 @@
 			"description": "Twisted twine, strong enough to haul and to lash a frame.",
 			"kind": "material",
 			"stack": 20,
-			"value": 4,
+			"value": 15,
 			"look_alikes": []
 		},
 		"stone_spade": {
@@ -712,6 +712,7 @@
 		},
 		"willow_bark_tea": {
 			"number": 59,
+			"future": true,
 			"name": "Willow bark tea",
 			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
 			"kind": "food",
@@ -738,7 +739,7 @@
 			"slot": "body",
 			"warmth": 0.12,
 			"stack": 1,
-			"value": 5,
+			"value": 20,
 			"look_alikes": []
 		},
 		"fibre_sandals": {
@@ -905,7 +906,7 @@
 				]
 			],
 			"stack": 1,
-			"value": 12,
+			"value": 36,
 			"look_alikes": []
 		},
 		"trout": {
@@ -2059,6 +2060,7 @@
 		},
 		"acorn_mash": {
 			"number": 178,
+			"future": true,
 			"name": "Acorn mash",
 			"description": "Leached acorns boiled to a mash. Famine food.",
 			"kind": "food",
@@ -2135,7 +2137,7 @@
 			"description": "A thick meat and root stew. Warms you through.",
 			"kind": "food",
 			"stack": 10,
-			"value": 44,
+			"value": 33,
 			"look_alikes": []
 		},
 		"forager_stew": {
@@ -2144,7 +2146,7 @@
 			"description": "Greens, roots and mushrooms in one pot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 42,
+			"value": 23,
 			"look_alikes": []
 		},
 		"fish_stew": {
@@ -2153,7 +2155,7 @@
 			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
-			"value": 44,
+			"value": 28,
 			"look_alikes": []
 		},
 		"trail_bread": {
@@ -2162,7 +2164,7 @@
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"kind": "food",
 			"stack": 10,
-			"value": 46,
+			"value": 33,
 			"look_alikes": []
 		},
 		"hearty_pottage": {
@@ -2171,7 +2173,7 @@
 			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
 			"kind": "food",
 			"stack": 10,
-			"value": 65,
+			"value": 38,
 			"look_alikes": []
 		},
 		"feast_roast": {
@@ -2707,6 +2709,7 @@
 		},
 		"nails": {
 			"number": 228,
+			"future": true,
 			"name": "Nails",
 			"description": "Iron nails, bought and used by the handful.",
 			"kind": "material",
@@ -2734,6 +2737,7 @@
 		},
 		"tar": {
 			"number": 231,
+			"future": true,
 			"name": "Tar",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"kind": "material",
@@ -2743,6 +2747,7 @@
 		},
 		"hinges": {
 			"number": 232,
+			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2896,6 +2901,7 @@
 		},
 		"hand_saw": {
 			"number": 245,
+			"future": true,
 			"name": "Hand saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
 			"kind": "tool",
@@ -2947,7 +2953,7 @@
 			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 28,
 			"look_alikes": []
 		},
 		"rough_bed": {
@@ -2964,7 +2970,7 @@
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 147,
 			"look_alikes": []
 		},
 		"thatch_wall": {
@@ -3015,7 +3021,7 @@
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 54,
 			"look_alikes": []
 		},
 		"thatch_floor": {
@@ -3032,7 +3038,7 @@
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 117,
 			"look_alikes": []
 		},
 		"thatch_roof": {
@@ -3049,7 +3055,7 @@
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 93,
 			"look_alikes": []
 		},
 		"thatch_doorway": {
@@ -3128,6 +3134,7 @@
 		},
 		"flatbread": {
 			"number": 273,
+			"future": true,
 			"name": "Flatbread",
 			"description": "A flat cake baked on the hot clay. Plain and filling.",
 			"kind": "food",
@@ -3221,11 +3228,11 @@
 		},
 		"processed_hide": {
 			"number": 282,
+			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -3426,7 +3433,6 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
-			"future": true,
 			"durability": 4500,
 			"look_alikes": [],
 			"repair": [
@@ -3498,7 +3504,6 @@
 			"weapon_class": "club",
 			"tier": 1,
 			"stack": 1,
-			"future": true,
 			"damage": 7.0,
 			"durability": 350,
 			"look_alikes": [],
@@ -3558,7 +3563,6 @@
 			"slot": "body",
 			"warmth": 0.24,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -3570,7 +3574,6 @@
 			"slot": "legs",
 			"warmth": 0.18,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 26
 		},
@@ -3582,7 +3585,6 @@
 			"slot": "hands",
 			"warmth": 0.1,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 16
 		},
@@ -3593,7 +3595,6 @@
 			"kind": "container",
 			"stack": 1,
 			"capacity_ml": 2000,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3603,7 +3604,6 @@
 			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
 			"kind": "medicine",
 			"stack": 10,
-			"future": true,
 			"note": "Placeholder: heals once health exists.",
 			"look_alikes": [],
 			"value": 12
@@ -3614,7 +3614,6 @@
 			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
 			"kind": "medicine",
 			"stack": 5,
-			"future": true,
 			"note": "Placeholder: sets a break once injuries exist.",
 			"look_alikes": [],
 			"value": 6
@@ -3627,7 +3626,6 @@
 			"tool_class": "candle",
 			"tier": 1,
 			"stack": 10,
-			"future": true,
 			"light_m": 4.0,
 			"look_alikes": [],
 			"value": 3
@@ -3641,7 +3639,6 @@
 			"offhand": true,
 			"tier": 1,
 			"stack": 1,
-			"future": true,
 			"durability": 120,
 			"look_alikes": [],
 			"repair": [
@@ -3660,7 +3657,6 @@
 			"weapon_class": "mace",
 			"tier": 2,
 			"stack": 1,
-			"future": true,
 			"damage": 9.0,
 			"durability": 400,
 			"look_alikes": [],
@@ -3887,13 +3883,13 @@
 		},
 		"leather_cap": {
 			"number": 324,
+			"future": true,
 			"name": "Leather cap",
 			"description": "A close leather cap. Better than bare hide.",
 			"kind": "clothing",
 			"slot": "head",
 			"warmth": 0.08,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 25
 		},
@@ -4108,7 +4104,6 @@
 			"kind": "tool",
 			"tool_class": "quern",
 			"stack": 1,
-			"future": true,
 			"durability": 3000,
 			"repair": [
 				[
@@ -4125,9 +4120,314 @@
 			"description": "Rotted plant matter. Feeds a tilled bed.",
 			"kind": "material",
 			"stack": 20,
+			"look_alikes": [],
+			"value": 2
+		},
+		"antler": {
+			"number": 346,
+			"name": "Antler",
+			"description": "A shed or taken antler. Hard, and can be worked like bone.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"tusk": {
+			"number": 347,
+			"name": "Tusk",
+			"description": "A boar's curved tusk. Ivory-hard.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"claw": {
+			"number": 348,
+			"name": "Claw",
+			"description": "A large predator's claw. A trophy or a charm.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"down": {
+			"number": 349,
+			"name": "Down",
+			"description": "Soft insulating feathers from a water bird. Warm for its weight.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"quill": {
+			"number": 350,
+			"name": "Quill",
+			"description": "A stiff spine from a porcupine. Sharp, and can be used as a pin or a point.",
+			"kind": "material",
+			"stack": 40,
 			"future": true,
 			"look_alikes": [],
 			"value": 2
+		},
+		"hide_glue": {
+			"number": 351,
+			"name": "Hide glue",
+			"description": "Hide boiled down to a sticky glue. Holds wood, bone and feathers.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 6
+		},
+		"bone_arrow": {
+			"number": 352,
+			"name": "Bone arrow",
+			"description": "An arrow tipped with a sharpened bone point.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 8.5,
+			"tip": "bone",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 4
+		},
+		"stone_wedge": {
+			"number": 353,
+			"name": "Stone wedge",
+			"description": "A flaked stone wedge. Driven into a log it splits it into rough planks.",
+			"kind": "tool",
+			"tool_class": "wedge",
+			"stack": 1,
+			"durability": 600,
+			"repair": [
+				[
+					"stone",
+					1
+				]
+			],
+			"look_alikes": [],
+			"value": 6
+		},
+		"fibre_arrow": {
+			"number": 354,
+			"name": "Fibre arrow",
+			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 3.5,
+			"tip": "wood",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
+		},
+		"seaweed": {
+			"number": 355,
+			"name": "Seaweed",
+			"description": "Wet strands of kelp and wrack from the tide line. Edible, salty and rich in minerals.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"shellfish": {
+			"number": 356,
+			"name": "Shellfish",
+			"description": "Mussels, limpets and cockles prised off the shore rocks. Eat cooked.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"crab_meat": {
+			"number": 357,
+			"name": "Crab meat",
+			"description": "White meat from a shore crab.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"egg": {
+			"number": 358,
+			"name": "Egg",
+			"description": "A wild bird's egg from a nest. Boil or fry it.",
+			"kind": "food",
+			"stack": 12,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"seal_meat": {
+			"number": 359,
+			"name": "Seal meat",
+			"description": "Dark, rich meat from a seal. Cook it well.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"sea_salt": {
+			"number": 360,
+			"name": "Sea salt",
+			"description": "Salt boiled out of sea water. Keeps meat and fish.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"roast_shellfish": {
+			"number": 361,
+			"name": "Steamed Shellfish",
+			"description": "Shellfish steamed open on hot coals. Salty and sweet.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"boiled_egg": {
+			"number": 362,
+			"name": "Boiled egg",
+			"description": "An egg boiled hard. Keeps well and fills the belly.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"roast_seal": {
+			"number": 363,
+			"name": "Seal Steak",
+			"description": "Seal meat roasted over a fire. Rich and fatty.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
+		},
+		"wool": {
+			"number": 364,
+			"name": "Wool",
+			"description": "Fleece from a wild sheep. Warm, and spun into thread.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"linen": {
+			"number": 365,
+			"name": "Linen",
+			"description": "Cloth woven from flax. Light, and cool in summer.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"wool_tunic": {
+			"number": 366,
+			"name": "Wool tunic",
+			"description": "A woven wool shirt. Warm even when damp.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.3,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 40
+		},
+		"wool_trousers": {
+			"number": 367,
+			"name": "Wool trousers",
+			"description": "Heavy woven wool trousers.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.22,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 32
+		},
+		"wool_cap": {
+			"number": 368,
+			"name": "Wool cap",
+			"description": "A snug knitted wool cap.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
+		},
+		"wool_mittens": {
+			"number": 369,
+			"name": "Wool mittens",
+			"description": "Thick wool mittens.",
+			"kind": "clothing",
+			"slot": "hands",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
+		},
+		"linen_shirt": {
+			"number": 370,
+			"name": "Linen shirt",
+			"description": "A light linen shirt. Cool in summer heat.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 22
+		},
+		"fur_cloak": {
+			"number": 371,
+			"name": "Fur cloak",
+			"description": "A heavy cloak of fur pelts. The warmest body cover.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.42,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 70
+		},
+		"fur_hat": {
+			"number": 372,
+			"name": "Fur hat",
+			"description": "A fur hat with ear flaps.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.16,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 24
+		},
+		"fur_boots": {
+			"number": 373,
+			"name": "Fur boots",
+			"description": "Hide boots lined with fur.",
+			"kind": "clothing",
+			"slot": "feet",
+			"warmth": 0.2,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 36
 		}
 	}
 }

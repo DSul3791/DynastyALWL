@@ -1,0 +1,1032 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-30). Not read by any code. A fauna list for a lush island: one row per species with a real-world reference. kg and ranges are approximate from general reference knowledge (species encyclopaedia pages), not individually verified. status: live = in data/animals/animals.json or fish_schools; carcass row only = loot defined in data/items/carcass.json but no spawn or model; proposed = nothing yet. needs_new_work is what a code owner or Kathleen must do. Biome names are from data/tables/biomes.json.",
+	"species": [
+		{
+			"id": "rabbit",
+			"name": "Rabbit",
+			"group": "mammal",
+			"latin": "Oryctolagus cuniculus",
+			"biomes": [
+				"temperate_grassland",
+				"temperate_forest",
+				"mixed_forest",
+				"heath"
+			],
+			"diet": "grass, herbs",
+			"group_size": "1-3",
+			"activity": "dawn/dusk",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 2,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "hare",
+			"name": "Hare",
+			"group": "mammal",
+			"latin": "Lepus europaeus",
+			"biomes": [
+				"temperate_grassland",
+				"heath",
+				"tundra",
+				"alpine_meadow"
+			],
+			"diet": "grass, bark in winter",
+			"group_size": "1",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 4,
+			"status": "carcass row only",
+			"needs_new_work": "spawn row + model"
+		},
+		{
+			"id": "red_squirrel",
+			"name": "Red squirrel",
+			"group": "mammal",
+			"latin": "Sciurus vulgaris",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"boreal_forest"
+			],
+			"diet": "seeds, nuts, cones",
+			"group_size": "1",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 0.3,
+			"status": "proposed",
+			"needs_new_work": "small-critter spawn + model; caches nuts (behaviour)"
+		},
+		{
+			"id": "beaver",
+			"name": "Beaver",
+			"group": "mammal",
+			"latin": "Castor fiber",
+			"biomes": [
+				"mixed_forest",
+				"boreal_forest",
+				"marsh"
+			],
+			"diet": "bark, water plants",
+			"group_size": "2-6 (family)",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 3,
+			"role": "prey",
+			"kg": 20,
+			"status": "carcass row only",
+			"needs_new_work": "spawn at water edge, model; dam building is later behaviour"
+		},
+		{
+			"id": "otter",
+			"name": "Otter",
+			"group": "mammal",
+			"latin": "Lutra lutra",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"beach"
+			],
+			"diet": "fish, frogs",
+			"group_size": "1-3",
+			"activity": "day/dusk",
+			"rarity_1common_5rare": 3,
+			"role": "predator (small)",
+			"kg": 8,
+			"status": "carcass row only",
+			"needs_new_work": "water-edge spawn + swim model"
+		},
+		{
+			"id": "badger",
+			"name": "Badger",
+			"group": "mammal",
+			"latin": "Meles meles",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"temperate_grassland"
+			],
+			"diet": "worms, roots, small animals",
+			"group_size": "1-4 (sett)",
+			"activity": "night",
+			"rarity_1common_5rare": 3,
+			"role": "omnivore",
+			"kg": 11,
+			"status": "carcass row only",
+			"needs_new_work": "night spawn, sett (den) behaviour"
+		},
+		{
+			"id": "pine_marten",
+			"name": "Pine marten",
+			"group": "mammal",
+			"latin": "Martes martes",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest"
+			],
+			"diet": "small birds, eggs, berries",
+			"group_size": "1",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 4,
+			"role": "predator (small)",
+			"kg": 1.5,
+			"status": "proposed",
+			"needs_new_work": "spawn + model + climbing behaviour"
+		},
+		{
+			"id": "hedgehog",
+			"name": "Hedgehog",
+			"group": "mammal",
+			"latin": "Erinaceus europaeus",
+			"biomes": [
+				"temperate_grassland",
+				"temperate_forest",
+				"mixed_forest"
+			],
+			"diet": "insects, worms",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 2,
+			"role": "ambient",
+			"kg": 0.8,
+			"status": "proposed",
+			"needs_new_work": "small-critter spawn + model; curls up (behaviour)"
+		},
+		{
+			"id": "porcupine",
+			"name": "Porcupine",
+			"group": "mammal",
+			"latin": "Erethizon dorsatum",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"alpine_meadow"
+			],
+			"diet": "bark, buds",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 3,
+			"role": "prey (armed)",
+			"kg": 10,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; quills hurt a melee attacker (behaviour)"
+		},
+		{
+			"id": "fox",
+			"name": "Red fox",
+			"group": "mammal",
+			"latin": "Vulpes vulpes",
+			"biomes": [
+				"temperate_grassland",
+				"temperate_forest",
+				"mixed_forest",
+				"heath"
+			],
+			"diet": "rabbits, voles, berries",
+			"group_size": "1-2",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 2,
+			"role": "predator (small)",
+			"kg": 7,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "lynx",
+			"name": "Lynx",
+			"group": "mammal",
+			"latin": "Lynx lynx",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"alpine_meadow"
+			],
+			"diet": "hares, deer fawns",
+			"group_size": "1",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 4,
+			"role": "predator",
+			"kg": 20,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; ambush (behaviour)"
+		},
+		{
+			"id": "wolf",
+			"name": "Wolf",
+			"group": "mammal",
+			"latin": "Canis lupus",
+			"biomes": [
+				"boreal_forest",
+				"temperate_forest",
+				"mixed_forest",
+				"tundra"
+			],
+			"diet": "deer, moose",
+			"group_size": "3-5 (pack)",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 3,
+			"role": "predator",
+			"kg": 35,
+			"status": "live (wolves system)",
+			"needs_new_work": ""
+		},
+		{
+			"id": "bear",
+			"name": "Brown bear",
+			"group": "mammal",
+			"latin": "Ursus arctos",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest",
+				"alpine_meadow"
+			],
+			"diet": "berries, fish, carrion, roots",
+			"group_size": "1 (cubs with sow)",
+			"activity": "day/dusk; winters in a den",
+			"rarity_1common_5rare": 4,
+			"role": "predator (apex)",
+			"kg": 200,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; defend/charge reuses the moose pattern; hibernation (behaviour)"
+		},
+		{
+			"id": "boar",
+			"name": "Wild boar",
+			"group": "mammal",
+			"latin": "Sus scrofa",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"temperate_grassland",
+				"marsh"
+			],
+			"diet": "roots, acorns, carrion",
+			"group_size": "3-8 (sounder)",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 2,
+			"role": "omnivore (armed)",
+			"kg": 90,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; charge reuses moose defend"
+		},
+		{
+			"id": "deer",
+			"name": "Red deer",
+			"group": "mammal",
+			"latin": "Cervus elaphus",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"temperate_grassland",
+				"boreal_forest"
+			],
+			"diet": "grass, browse",
+			"group_size": "3-6",
+			"activity": "dawn/dusk",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 80,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "moose",
+			"name": "Moose",
+			"group": "mammal",
+			"latin": "Alces alces",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"marsh"
+			],
+			"diet": "browse, water plants",
+			"group_size": "1",
+			"activity": "day/dusk",
+			"rarity_1common_5rare": 3,
+			"role": "prey (armed)",
+			"kg": 350,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "reindeer",
+			"name": "Reindeer",
+			"group": "mammal",
+			"latin": "Rangifer tarandus",
+			"biomes": [
+				"tundra",
+				"boreal_forest",
+				"alpine_meadow"
+			],
+			"diet": "lichen, grass",
+			"group_size": "10-30 (herd)",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 100,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; herd size above 6 is a code change"
+		},
+		{
+			"id": "mountain_goat",
+			"name": "Mountain goat",
+			"group": "mammal",
+			"latin": "Oreamnos americanus",
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"tundra"
+			],
+			"diet": "grass, herbs on cliffs",
+			"group_size": "2-6",
+			"activity": "day",
+			"rarity_1common_5rare": 3,
+			"role": "prey",
+			"kg": 70,
+			"status": "carcass row only",
+			"needs_new_work": "spawn on steep slope (slope_max above 1.0 is a code change) + model"
+		},
+		{
+			"id": "wild_sheep",
+			"name": "Wild sheep",
+			"group": "mammal",
+			"latin": "Ovis aries musimon (mouflon)",
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"bare_rock"
+			],
+			"diet": "grass",
+			"group_size": "4-12",
+			"activity": "day",
+			"rarity_1common_5rare": 3,
+			"role": "prey",
+			"kg": 50,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model"
+		},
+		{
+			"id": "horse",
+			"name": "Wild horse",
+			"group": "mammal",
+			"latin": "Equus ferus",
+			"biomes": [
+				"temperate_grassland",
+				"savanna",
+				"heath"
+			],
+			"diet": "grass",
+			"group_size": "3-6",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 450,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "bat",
+			"name": "Bat",
+			"group": "mammal",
+			"latin": "Pipistrellus pipistrellus",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"bare_rock"
+			],
+			"diet": "insects",
+			"group_size": "colony",
+			"activity": "night",
+			"rarity_1common_5rare": 2,
+			"role": "ambient",
+			"kg": 0.01,
+			"status": "proposed",
+			"needs_new_work": "ambient flyer: model + night-only spawn"
+		},
+		{
+			"id": "grouse",
+			"name": "Grouse",
+			"group": "bird",
+			"latin": "Tetrao urogallus (capercaillie) / Lagopus",
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"tundra"
+			],
+			"diet": "berries, buds",
+			"group_size": "1-6",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 1,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; flush when startled (reuse duck flock takeoff)"
+		},
+		{
+			"id": "pheasant",
+			"name": "Pheasant",
+			"group": "bird",
+			"latin": "Phasianus colchicus",
+			"biomes": [
+				"temperate_grassland",
+				"temperate_forest",
+				"heath"
+			],
+			"diet": "seeds, insects",
+			"group_size": "1-5",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 1.2,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model"
+		},
+		{
+			"id": "duck",
+			"name": "Duck",
+			"group": "bird",
+			"latin": "Anas platyrhynchos",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"beach"
+			],
+			"diet": "water plants, insects",
+			"group_size": "6-14 (flock)",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 1.2,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "goose",
+			"name": "Wild goose",
+			"group": "bird",
+			"latin": "Anser anser",
+			"biomes": [
+				"marsh",
+				"temperate_grassland",
+				"tundra"
+			],
+			"diet": "grass, grain",
+			"group_size": "10-30 (flock)",
+			"activity": "day; migrates",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 4,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; flock code exists (duck)"
+		},
+		{
+			"id": "gull",
+			"name": "Seagull",
+			"group": "bird",
+			"latin": "Larus argentatus",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"diet": "fish, scraps",
+			"group_size": "5-20",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "scavenger",
+			"kg": 1,
+			"status": "carcass row only",
+			"needs_new_work": "spawn + model; steals dropped food (behaviour)"
+		},
+		{
+			"id": "raven",
+			"name": "Raven",
+			"group": "bird",
+			"latin": "Corvus corax",
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"bare_rock",
+				"alpine_meadow"
+			],
+			"diet": "carrion, scraps",
+			"group_size": "1-4",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "scavenger",
+			"kg": 1,
+			"status": "proposed",
+			"needs_new_work": "spawn + model; gathers near carcasses (hint to hunters)"
+		},
+		{
+			"id": "owl",
+			"name": "Owl",
+			"group": "bird",
+			"latin": "Strix aluco",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"boreal_forest"
+			],
+			"diet": "mice, voles",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 3,
+			"role": "predator (small)",
+			"kg": 0.5,
+			"status": "proposed",
+			"needs_new_work": "night ambient flyer + hoot sound"
+		},
+		{
+			"id": "eagle",
+			"name": "Eagle",
+			"group": "bird",
+			"latin": "Aquila chrysaetos",
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"boreal_forest"
+			],
+			"diet": "hares, fish, carrion",
+			"group_size": "1",
+			"activity": "day",
+			"rarity_1common_5rare": 5,
+			"role": "predator",
+			"kg": 4,
+			"status": "carcass row only",
+			"needs_new_work": "soaring ambient + model; dives on small prey (behaviour)"
+		},
+		{
+			"id": "woodpecker",
+			"name": "Woodpecker",
+			"group": "bird",
+			"latin": "Dendrocopos major",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest"
+			],
+			"diet": "insects under bark",
+			"group_size": "1",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "ambient",
+			"kg": 0.07,
+			"status": "proposed",
+			"needs_new_work": "ambient + drum sound"
+		},
+		{
+			"id": "songbirds",
+			"name": "Songbirds (finch, robin, tit)",
+			"group": "bird",
+			"latin": "Fringilla / Erithacus / Parus",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest",
+				"temperate_grassland",
+				"heath"
+			],
+			"diet": "seeds, insects",
+			"group_size": "2-10",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "ambient",
+			"kg": 0.02,
+			"status": "proposed",
+			"needs_new_work": "ambient flock + dawn chorus sound"
+		},
+		{
+			"id": "frog",
+			"name": "Frog",
+			"group": "amphibian",
+			"latin": "Rana temporaria",
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"diet": "insects",
+			"group_size": "3-20",
+			"activity": "dusk/night",
+			"rarity_1common_5rare": 1,
+			"role": "ambient",
+			"kg": 0.05,
+			"status": "proposed",
+			"needs_new_work": "water-edge ambient + croak sound"
+		},
+		{
+			"id": "toad",
+			"name": "Toad",
+			"group": "amphibian",
+			"latin": "Bufo bufo",
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"diet": "insects, slugs",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 2,
+			"role": "ambient",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "ambient"
+		},
+		{
+			"id": "newt",
+			"name": "Newt",
+			"group": "amphibian",
+			"latin": "Lissotriton vulgaris",
+			"biomes": [
+				"marsh",
+				"mixed_forest"
+			],
+			"diet": "insect larvae",
+			"group_size": "1-5",
+			"activity": "night",
+			"rarity_1common_5rare": 3,
+			"role": "ambient",
+			"kg": 0.01,
+			"status": "proposed",
+			"needs_new_work": "ambient (small model)"
+		},
+		{
+			"id": "grass_snake",
+			"name": "Grass snake",
+			"group": "reptile",
+			"latin": "Natrix natrix",
+			"biomes": [
+				"marsh",
+				"temperate_grassland",
+				"heath"
+			],
+			"diet": "frogs, fish",
+			"group_size": "1",
+			"activity": "day",
+			"rarity_1common_5rare": 3,
+			"role": "predator (small)",
+			"kg": 0.5,
+			"status": "proposed",
+			"needs_new_work": "spawn + model; harmless"
+		},
+		{
+			"id": "adder",
+			"name": "Adder",
+			"group": "reptile",
+			"latin": "Vipera berus",
+			"biomes": [
+				"heath",
+				"temperate_grassland",
+				"bare_rock"
+			],
+			"diet": "voles, lizards",
+			"group_size": "1",
+			"activity": "day (basking)",
+			"rarity_1common_5rare": 4,
+			"role": "predator (venom)",
+			"kg": 0.2,
+			"status": "proposed",
+			"needs_new_work": "spawn + model; bite sickness (sickness.json has no venom entry)"
+		},
+		{
+			"id": "lizard",
+			"name": "Lizard",
+			"group": "reptile",
+			"latin": "Zootoca vivipara",
+			"biomes": [
+				"heath",
+				"bare_rock",
+				"savanna",
+				"dry_scrub"
+			],
+			"diet": "insects",
+			"group_size": "1",
+			"activity": "day (sun)",
+			"rarity_1common_5rare": 2,
+			"role": "ambient",
+			"kg": 0.01,
+			"status": "proposed",
+			"needs_new_work": "ambient"
+		},
+		{
+			"id": "bee",
+			"name": "Honey bee",
+			"group": "insect",
+			"latin": "Apis mellifera",
+			"biomes": [
+				"temperate_grassland",
+				"mixed_forest",
+				"heath"
+			],
+			"diet": "nectar",
+			"group_size": "hive",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "ambient / resource",
+			"kg": 0.0001,
+			"status": "proposed",
+			"needs_new_work": "wild hive node gives honeycomb and wax (new gather); stings"
+		},
+		{
+			"id": "butterfly",
+			"name": "Butterfly",
+			"group": "insect",
+			"latin": "Aglais io",
+			"biomes": [
+				"temperate_grassland",
+				"heath",
+				"alpine_meadow"
+			],
+			"diet": "nectar",
+			"group_size": "1-5",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "ambient",
+			"kg": 0.0001,
+			"status": "proposed",
+			"needs_new_work": "ambient flyer + model"
+		},
+		{
+			"id": "dragonfly",
+			"name": "Dragonfly",
+			"group": "insect",
+			"latin": "Aeshna",
+			"biomes": [
+				"marsh",
+				"mixed_forest"
+			],
+			"diet": "midges",
+			"group_size": "1-3",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "ambient",
+			"kg": 0.0005,
+			"status": "proposed",
+			"needs_new_work": "ambient flyer at water"
+		},
+		{
+			"id": "firefly",
+			"name": "Firefly",
+			"group": "insect",
+			"latin": "Lampyris noctiluca",
+			"biomes": [
+				"mixed_forest",
+				"marsh",
+				"temperate_grassland"
+			],
+			"diet": "snails",
+			"group_size": "swarm",
+			"activity": "night (summer)",
+			"rarity_1common_5rare": 3,
+			"role": "ambient",
+			"kg": 0.0002,
+			"status": "proposed",
+			"needs_new_work": "night light particles"
+		},
+		{
+			"id": "beetle",
+			"name": "Ground beetle",
+			"group": "insect",
+			"latin": "Carabus",
+			"biomes": [
+				"temperate_forest",
+				"mixed_forest"
+			],
+			"diet": "insects",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 1,
+			"role": "ambient",
+			"kg": 0.001,
+			"status": "proposed",
+			"needs_new_work": "ground ambient"
+		},
+		{
+			"id": "trout",
+			"name": "Trout",
+			"group": "fish",
+			"latin": "Salmo trutta",
+			"biomes": [
+				"rivers"
+			],
+			"diet": "insects",
+			"group_size": "school",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 0.5,
+			"status": "live (fish_schools)",
+			"needs_new_work": ""
+		},
+		{
+			"id": "perch",
+			"name": "Perch",
+			"group": "fish",
+			"latin": "Perca fluviatilis",
+			"biomes": [
+				"lakes"
+			],
+			"diet": "small fish",
+			"group_size": "school",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey",
+			"kg": 0.5,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "carp",
+			"name": "Carp",
+			"group": "fish",
+			"latin": "Cyprinus carpio",
+			"biomes": [
+				"lakes"
+			],
+			"diet": "plants, worms",
+			"group_size": "school",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 3,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "pike",
+			"name": "Pike",
+			"group": "fish",
+			"latin": "Esox lucius",
+			"biomes": [
+				"lakes",
+				"rivers"
+			],
+			"diet": "fish",
+			"group_size": "1",
+			"activity": "day",
+			"rarity_1common_5rare": 3,
+			"role": "predator",
+			"kg": 5,
+			"status": "live",
+			"needs_new_work": ""
+		},
+		{
+			"id": "salmon",
+			"name": "Salmon",
+			"group": "fish",
+			"latin": "Salmo salar",
+			"biomes": [
+				"rivers (seasonal run)"
+			],
+			"diet": "none while running",
+			"group_size": "school",
+			"activity": "autumn run",
+			"rarity_1common_5rare": 3,
+			"role": "prey",
+			"kg": 4,
+			"status": "fish_schools names it; item missing",
+			"needs_new_work": "salmon item + run season"
+		},
+		{
+			"id": "eel",
+			"name": "Eel",
+			"group": "fish",
+			"latin": "Anguilla anguilla",
+			"biomes": [
+				"rivers",
+				"lakes"
+			],
+			"diet": "worms, small fish",
+			"group_size": "1",
+			"activity": "night",
+			"rarity_1common_5rare": 4,
+			"role": "prey",
+			"kg": 1,
+			"status": "proposed",
+			"needs_new_work": "fish item"
+		},
+		{
+			"id": "cod",
+			"name": "Cod",
+			"group": "fish",
+			"latin": "Gadus morhua",
+			"biomes": [
+				"beach"
+			],
+			"diet": "fish, crustaceans",
+			"group_size": "school",
+			"activity": "day",
+			"rarity_1common_5rare": 2,
+			"role": "prey",
+			"kg": 5,
+			"status": "proposed",
+			"needs_new_work": "sea-fishing code (ocean) + item"
+		},
+		{
+			"id": "crab",
+			"name": "Shore crab",
+			"group": "crustacean",
+			"latin": "Carcinus maenas",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"diet": "scraps",
+			"group_size": "1-5",
+			"activity": "night",
+			"rarity_1common_5rare": 1,
+			"role": "ambient / food",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "shore ambient; trap-able"
+		},
+		{
+			"id": "seal",
+			"name": "Harbour seal",
+			"group": "mammal",
+			"latin": "Phoca vitulina",
+			"biomes": [
+				"beach"
+			],
+			"diet": "fish, squid",
+			"group_size": "5-30 (haul-out)",
+			"activity": "day on shore, hunts at sea",
+			"rarity_1common_5rare": 3,
+			"role": "prey (shore)",
+			"kg": 80,
+			"status": "carcass row only",
+			"needs_new_work": "spawn on beach + model; slow on land, dives (behaviour); loot seal_meat, hide, fat"
+		},
+		{
+			"id": "seabird",
+			"name": "Seabird colony (gull, puffin, tern)",
+			"group": "bird",
+			"latin": "Larus / Fratercula / Sterna",
+			"biomes": [
+				"beach"
+			],
+			"diet": "fish, scraps",
+			"group_size": "10-60 (colony)",
+			"activity": "day",
+			"rarity_1common_5rare": 1,
+			"role": "prey / egg source",
+			"kg": 1.5,
+			"status": "carcass row only",
+			"needs_new_work": "nest nodes give eggs (new gather); flock reuse duck code"
+		},
+		{
+			"id": "mussel",
+			"name": "Mussel / limpet beds",
+			"group": "shellfish",
+			"latin": "Mytilus edulis / Patella",
+			"biomes": [
+				"beach"
+			],
+			"diet": "filter feeders",
+			"group_size": "bed",
+			"activity": "tide",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.05,
+			"status": "proposed",
+			"needs_new_work": "tide-line gather node gives shellfish (new code)"
+		},
+		{
+			"id": "kelp",
+			"name": "Kelp and wrack",
+			"group": "seaweed",
+			"latin": "Laminaria / Fucus",
+			"biomes": [
+				"beach"
+			],
+			"diet": "n/a",
+			"group_size": "patch",
+			"activity": "tide",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "tide-line gather node gives seaweed (new code)"
+		},
+		{
+			"id": "shore_crab_node",
+			"name": "Rock pool crabs",
+			"group": "crustacean",
+			"latin": "Carcinus maenas",
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"diet": "scraps",
+			"group_size": "1-5",
+			"activity": "night",
+			"rarity_1common_5rare": 1,
+			"role": "food node",
+			"kg": 0.1,
+			"status": "proposed",
+			"needs_new_work": "gather node gives crab_meat; or trap"
+		}
+	]
+}

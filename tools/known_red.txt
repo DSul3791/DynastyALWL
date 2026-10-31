@@ -1,0 +1,6 @@
+# Tests that are already red on the daily branch (DailyDev_20261029) because the committed tiles are the old bake. tools/merge_day.sh counts a failure of
+# these as KNOWN, not NEW. Remove a line when the test is green again. One test per line, then a reason. See TYLER_TEST_SYSTEM_REVIEW.md (31 Oct section).
+test_drainage_fill known until re-bake (old-bake tiles)
+test_river_surface known until re-bake (old-bake tiles)
+test_drainage_flow known until re-bake (old-bake tiles)
+test_head_pond_fill known until re-bake (old head-pond system)

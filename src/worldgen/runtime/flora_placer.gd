@@ -219,6 +219,8 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"scale_max": scales.y,
 				"spacing_m": maxf(float(patch.get("spacing_m", 0.8)), PLANT_MIN_GAP),
 				"fill": float(patch.get("fill", 1.0)),
+				# by_biome: a plant of the patch is kept with the biome's per_hectare share of the species' best biome (tall grass: dense in meadows, sparser in woods).
+				"by_biome": bool(patch.get("by_biome", false)),
 			}
 
 		if entry.has("young_height_m"):
@@ -523,6 +525,10 @@ const MONTANE_PATCH_SHARE := 0.7   # (was 0.4) a thicker evergreen belt on the h
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
+const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
+const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
+const SHRUB_COLLIDER_MIN_M := 0.22
+const SHRUB_COLLIDER_MAX_M := 0.5
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
 
@@ -681,6 +687,29 @@ static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int
 	return maxf(minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL), MIN_TREE_GAP)
 
 
+# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker. Shrubs: none while the
+# plant is lower than SHRUB_BLOCK_HEIGHT_M (the player's step-up limit of 0.5 m, data/movement.json, plus a margin: it is walked over
+# or through), else a thin cylinder on the stem base, never the leaf spread (no invisible wall at the leaf edge). Plants: none.
+static func collider_radius(kind: int, trunk_m: float, size_scale: float, height: float) -> float:
+	if kind == KIND_TREE:
+		return trunk_m * size_scale if trunk_m >= 0.1 else 0.0
+
+	if kind == KIND_SHRUB and height >= SHRUB_BLOCK_HEIGHT_M:
+		return clampf(0.16 + 0.07 * height, SHRUB_COLLIDER_MIN_M, SHRUB_COLLIDER_MAX_M)
+
+	return 0.0
+
+
+# A fallen log or hollow log's collider: (radius, length) of a capsule lying along the model's x axis (the model is centred on the item), or
+# Vector2.ZERO for none. Only logs of LOG_COLLIDER_MIN_M and more block; shorter ones are walk-through. The radius is the one the model is
+# built with (tree_builder _fallen_log), so a log whose top (twice the radius) is under the player's 0.5 m step-up is stepped onto.
+static func log_collider(length: float, crown: float) -> Vector2:
+	if length < LOG_COLLIDER_MIN_M:
+		return Vector2.ZERO
+
+	return Vector2(clampf(maxf(crown * 0.12, length * 0.075), 0.14, 0.45), length)
+
+
 # 2 under a dense crown, 1 under a light one, 0 in the open.
 func _shade_at(canopies: Dictionary, x: float, z: float) -> int:
 	var ci: int = int(floor(x / OCCUPANCY_CELL))
@@ -789,6 +818,9 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				var k: int = data.nearest(x, z)
 
 				if per_biome[data.biome[k]] <= 0.0:
+					continue
+
+				if patch["by_biome"] and keep >= per_biome[data.biome[k]] / float(item["peak"]):
 					continue
 
 				if item["kind"] != KIND_PLANT and keep >= float(patch["fill"]) * _soil_growth[data.soil[k]]:

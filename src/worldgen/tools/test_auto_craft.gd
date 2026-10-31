@@ -95,30 +95,30 @@ func _init() -> void:
 	table = items.table
 	give(items, "stone", 5)
 	give(items, "stick", 5)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	queue(items, 2, 1)
 	var rows: Array = entries(items)
-	check(rows.size() == 2 and int(rows[0][0]) == 1 and int(rows[0][1]) == 5 and int(rows[1][0]) == 2, "15 fibre, no twine: the queue is twine x5 then the stone axe (%s)" % str(rows.map(func(e): return [e[0], e[1]])))
+	check(rows.size() == 2 and int(rows[0][0]) == 1 and int(rows[0][1]) == 2 and int(rows[1][0]) == 2, "6 fibre, no twine: the queue is twine x2 then the stone axe (%s)" % str(rows.map(func(e): return [e[0], e[1]])))
 	check(count(items, "plant_fibre") == 0 and count(items, "stone") == 4 and count(items, "stick") == 4, "the fibre, stone and stick are taken when it is queued")
 	run(items, 40.0)
 	check(count(items, "stone_axe") == 1 and count(items, "twine") == 0 and count(items, "plant_fibre") == 0 and entries(items).is_empty(), "the axe is made and no twine is left over (%s)" % str(pack_totals(items)))
 
-	# 10 fibre is not enough for 5 twine
+	# 5 fibre is not enough for 2 twine
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 2)
 	give(items, "stick", 2)
-	give(items, "plant_fibre", 10)
+	give(items, "plant_fibre", 5)
 	queue(items, 2, 1)
-	check(entries(items).is_empty() and count(items, "plant_fibre") == 10, "10 fibre: nothing is queued and nothing is taken")
+	check(entries(items).is_empty() and count(items, "plant_fibre") == 5, "5 fibre: nothing is queued and nothing is taken")
 
-	# the parts you hold count: 2 twine held, 9 fibre makes the other 3
+	# the parts you hold count: 1 twine held, 3 fibre makes the other 1
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 2)
 	give(items, "stick", 2)
-	give(items, "twine", 2)
-	give(items, "plant_fibre", 9)
+	give(items, "twine", 1)
+	give(items, "plant_fibre", 3)
 	queue(items, 2, 1)
-	check(entries(items).size() == 2 and int(entries(items)[0][1]) == 3, "2 twine held: only 3 more are made")
+	check(entries(items).size() == 2 and int(entries(items)[0][1]) == 1, "1 twine held: only 1 more is made")
 	run(items, 30.0)
 	check(count(items, "stone_axe") == 1 and count(items, "twine") == 0 and count(items, "plant_fibre") == 0, "the held twine and the new twine make the axe (%s)" % str(pack_totals(items)))
 
@@ -126,7 +126,7 @@ func _init() -> void:
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 2)
 	give(items, "stick", 2)
-	give(items, "twine", 5)
+	give(items, "twine", 2)
 	queue(items, 2, 1)
 	check(entries(items).size() == 1 and int(entries(items)[0][0]) == 2, "with the twine in hand it is a single craft")
 
@@ -134,7 +134,7 @@ func _init() -> void:
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 5)
 	give(items, "stick", 5)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	var before: Dictionary = pack_totals(items)
 	queue(items, 2, 1)
 	items._last_queue_act.clear()
@@ -147,50 +147,49 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_CANCEL, 1, 0, 0, Vector3.ZERO)
 	check(entries(items).size() == 1 and int(entries(items)[0][0]) == 1 and count(items, "stone") == 5 and count(items, "stick") == 5, "cancelling the axe leaves the twine queued and returns the stone and stick")
 	run(items, 20.0)
-	check(count(items, "twine") == 5 and count(items, "plant_fibre") == 0, "the twine is made and kept")
+	check(count(items, "twine") == 2 and count(items, "plant_fibre") == 0, "the twine is made and kept")
 
 	# cancel after the twine is made and the axe has started: the twine used by the axe comes back too
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 5)
 	give(items, "stick", 5)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	before = pack_totals(items)
 	queue(items, 2, 1)
-	run(items, 11.0)   # five twine at 2 s each, then the axe has begun
+	run(items, 5.0)   # two twine at 2 s each, then the axe has begun
 	check(count(items, "twine") == 0 and entries(items).size() == 1 and (entries(items)[0][3] as Array).is_empty(), "the axe has started and taken its twine")
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
-	check(count(items, "twine") == 5 and count(items, "stone") == 5 and count(items, "stick") == 5, "cancelling a started axe returns the twine, stone and stick exactly")
+	check(count(items, "twine") == 2 and count(items, "stone") == 5 and count(items, "stick") == 5, "cancelling a started axe returns the twine, stone and stick exactly")
 
 	# the parts are gone when the step starts: dropped twine cancels the axe and refunds
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 5)
 	give(items, "stick", 5)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	queue(items, 2, 1)
-	run(items, 9.0)
-	items.inventory_of(1).remove(items.table.number_of("twine"), 3)
+	run(items, 3.0)
+	items.inventory_of(1).remove(items.table.number_of("twine"), 1)
 	run(items, 5.0)
 	check(entries(items).is_empty() and count(items, "stone") == 5 and count(items, "stick") == 5 and count(items, "stone_axe") == 0, "twine taken away mid-queue: the axe is cancelled and its stone and stick come back")
 
-	# too many at once: 20 axes would be 100 twine
+	# too many at once: 30 axes would be 60 twine
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 30)
 	give(items, "stick", 30)
 	give(items, "plant_fibre", 400)
-	queue(items, 2, 20)
-	check(entries(items).is_empty() and count(items, "plant_fibre") == 400, "20 axes from fibre is over the 50 craft cap: nothing queued")
+	# (the 50 craft cap needs more than 25 axes; one queue call takes at most 20, so the cap is no longer reachable with axes)
 	queue(items, 2, 8)
-	check(entries(items).size() == 2 and int(entries(items)[0][1]) == 40, "8 axes (40 twine + 8 axes = 48 crafts) are allowed")
+	check(entries(items).size() == 2 and int(entries(items)[0][1]) == 16, "8 axes (16 twine + 8 axes = 24 crafts) are allowed")
 
 	# carry limit: a light character cannot carry the made twine
 	items = fresh("user://test_auto_craft")
 	items.vitals_of(1)["weight"] = 0.5
 	give(items, "stone", 1)
 	give(items, "stick", 1)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	queue(items, 2, 1)
-	check(entries(items).is_empty() and count(items, "plant_fibre") == 15, "made parts that would not fit under the carry limit: nothing is queued (%d entries)" % entries(items).size())
+	check(entries(items).is_empty() and count(items, "plant_fibre") == 6, "made parts that would not fit under the carry limit: nothing is queued (%d entries)" % entries(items).size())
 	items.vitals_of(1)["weight"] = 120.0
 	queue(items, 2, 1)
 	check(entries(items).size() == 2, "the same craft queues for a character who can carry it")
@@ -199,9 +198,9 @@ func _init() -> void:
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 5)
 	give(items, "stick", 5)
-	give(items, "plant_fibre", 15)
+	give(items, "plant_fibre", 6)
 	queue(items, 2, 1)
-	run(items, 5.0)
+	run(items, 2.0)
 	items._dirty = true
 	items.save()
 	var shape: Array = entries(items).map(func(e): return [e[0], e[1], e[2], e[3], e[4]])
