@@ -1394,6 +1394,11 @@ func _tool_for(item_id: String) -> String:
 	return GatherRules.tool_for(item_id, _drops)
 
 
+# The factor for an action's PACE (cooldowns and craft time): the skill factor times the Rested buff's action_speed_mult (comfort.json rested.tiers; 1.0 without the buff).
+func _pace_factor(peer: int, action_name: String) -> float:
+	return skill_factor(peer, action_name) * float(rested_tier(peer).get("action_speed_mult", 1.0))
+
+
 # What a skill does to an action (data/items/skills.json): 1.0 until the skill system exists. Never below 0.25 or above 4.
 func skill_factor(peer: int, action_name: String) -> float:
 	var def: Dictionary = _skills_cfg.get("actions", {}).get(action_name, {})
@@ -2401,7 +2406,7 @@ func _mine(peer: int, inv, at: Vector3) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if not has_axe or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / skill_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
+	if not has_axe or float(now - int(_last_mine.get(peer, -100000))) < float(MINE_COOLDOWN_MS) / _pace_factor(peer, "mine_rock") or not bool(rock_at.call(at.x, at.z)):
 		return
 
 	_last_mine[peer] = now
@@ -3873,7 +3878,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / skill_factor(peer, "work_trunk"):
+	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / _pace_factor(peer, "work_trunk"):
 		return
 
 	_last_process[peer] = now
@@ -3959,7 +3964,7 @@ func _chop_stump(peer: int, inv, id: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / skill_factor(peer, "work_trunk"):
+	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / _pace_factor(peer, "work_trunk"):
 		return
 
 	_last_process[peer] = now
@@ -4894,7 +4899,7 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / skill_factor(peer, "split_log"):
+	if float(now - int(_last_use.get(peer, -100000))) < float(def.get("use_pace_ms", 600)) / _pace_factor(peer, "split_log"):
 		return
 
 	# Dave 2026-10-23: the chopping block splits WOODEN BLOCKS (a log chopped on the ground gives them), one block to one piece of firewood.
@@ -6629,6 +6634,7 @@ func warmth_target(peer: int) -> float:
 
 	if on_good_bed(peer):
 		stress *= 1.0 - float(_bed_cfg.get("warmth_bonus", 0.0))
+	stress *= float(rested_tier(peer).get("cold_stress_mult", 1.0))   # Rested: the cold bites a little less
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
 	if precip > 0.05 and not covered:
@@ -8093,7 +8099,7 @@ func _lights_tick(spent: float) -> void:
 # Rested: earned by sleeping or lying on a good bed at comfort 2 or more (sitting on a seat for 30 s is not built yet); lasts comfort_buff_real_minutes (45) REAL minutes; the tier
 # (health regeneration, exhaustion, hunger and thirst, action speed, skill gain, cold) is the highest whose min_level is reached when earned; a rest at an equal or higher level
 # refreshes it, a lower one leaves it alone; saved in characters.json "rested" {level, until (unix seconds)}; cleared by death. Hooks built: health regeneration (the larger of the
-# bed's and the buff's, never the product), hunger and thirst drain, skill gain, energy drain. Not built: action speed, cold stress, the HUD icons and tooltip (needs a protocol message).
+# bed's and the buff's, never the product), hunger and thirst drain, skill gain, energy drain. Action speed (cooldowns and craft time, _pace_factor) and cold stress (warmth_target) are built too; the HUD line and its tooltip come with protocol 80 and 81. Not built: HUD icons.
 var _comfort_cfg: Dictionary = {}
 var _comfort_loaded: bool = false
 var _comfort_cache: Dictionary = {}     # peer -> {"at": msec, "data": comfort_at result}
@@ -9214,7 +9220,7 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) / skill_factor(peer, "craft"):
+		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) / _pace_factor(peer, "craft"):
 			continue
 
 		queue["elapsed"] = 0.0
