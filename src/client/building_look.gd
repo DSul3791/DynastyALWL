@@ -73,7 +73,7 @@ void fragment() {
 	float soft = smoothstep(0.0, 0.85, facing);
 	vec3 low = vec3(1.0, 0.4, 0.05);
 	vec3 high = vec3(1.0, 0.62, 0.12);
-	ALBEDO = mix(low, high, 1.0 - up) * (0.55 + 0.2 * flick);
+	ALBEDO = mix(low, high, 1.0 - up) * (0.4 + 0.15 * flick);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.2 * flick);
 }
 """
@@ -668,7 +668,9 @@ const FLAME_TONGUES := {
 		[Vector3(0.05, 0.1, -0.2), 0.62, 0.15, 3.6], [Vector3(-0.2, 0.1, 0.14), 0.55, 0.13, 5.0]],
 }
 # Light range and energy by tier (the survival fire is dim, the bonfire carries furthest).
-const FIRE_LIGHT := {1: [6.0, 0.7], 2: [12.0, 1.6], 3: [14.0, 1.8]}
+# Short range with a real falloff (omni_attenuation 2 = inverse-square style), centred on the flame; the nearest-lights pass flickers it a few percent around meta base_energy (Dave 31 Oct).
+const FIRE_LIGHT := {1: [3.5, 1.0], 2: [5.5, 1.6], 3: [8.0, 1.8]}
+const LIGHT_FALLOFF := 2.0
 # The stone ring and ash patch scale with the fire: a small ring for a few sticks, a wide one for logs.
 const FIRE_RING_SCALE := {1: 0.6, 2: 1.0, 3: 1.3}
 
@@ -737,6 +739,8 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		light.light_color = Color(1.0, 0.62, 0.3)
 		light.omni_range = float(FIRE_LIGHT[tier][0])
 		light.light_energy = float(FIRE_LIGHT[tier][1])
+		light.omni_attenuation = LIGHT_FALLOFF
+		light.set_meta("base_energy", light.light_energy)
 		light.shadow_enabled = false
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false
@@ -956,22 +960,22 @@ static func lit_fixture(kind: String) -> Node3D:
 	match kind:
 		"wall_torch":
 			spots = [[Vector3(0.0, 2.27, 0.36), Vector3(0.9, 0.72, 0.9)]]
-			light_at = Vector3(0.0, 2.5, 0.8)
-			range_m = 7.0
-			energy = 1.1
+			light_at = Vector3(0.0, 2.4, 0.5)
+			range_m = 5.0
+			energy = 1.3
 		"chandelier":
 			for k in 6:
 				var a: float = TAU * float(k) / 6.0
 				spots.append([Vector3(cos(a) * 0.34, 2.3 - 0.36, sin(a) * 0.34), Vector3.ONE * 0.3])
 
-			light_at = Vector3(0.0, 1.6, 0.0)
-			range_m = 8.0
+			light_at = Vector3(0.0, 1.95, 0.0)
+			range_m = 4.0
 			energy = 1.2
 		"fireplace":
 			spots = [[Vector3(0.0, 0.3, 0.28), Vector3.ONE * 1.1], [Vector3(0.3, 0.3, 0.22), Vector3.ONE * 0.7]]
-			light_at = Vector3(0.0, 0.9, 0.6)
-			range_m = 10.0
-			energy = 1.5
+			light_at = Vector3(0.0, 0.55, 0.35)
+			range_m = 6.0
+			energy = 1.6
 			var coals: MeshInstance3D = _instance(_coals())
 			coals.scale = Vector3(0.3, 1.0, 0.2)
 			coals.position = Vector3(0.0, 0.1, 0.28)
@@ -989,6 +993,8 @@ static func lit_fixture(kind: String) -> Node3D:
 	light.light_color = Color(1.0, 0.62, 0.3)
 	light.omni_range = range_m
 	light.light_energy = energy
+	light.omni_attenuation = LIGHT_FALLOFF
+	light.set_meta("base_energy", energy)
 	light.shadow_enabled = false
 	light.position = light_at
 	light.visible = false
