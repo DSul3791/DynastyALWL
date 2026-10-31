@@ -318,7 +318,9 @@ func _process(delta: float) -> void:
 			at = Vector3(item_at.x, bp.y - 1.0 if is_nan(ig) else ig, item_at.y)
 
 		_item_spot = at
-		client.items.net.inventory_action.rpc_id(1, Net.ACT_PLACE if place_it else Net.ACT_DROP, 0, 0, 1 if place_it else give_count, at)
+		var kit_slot: int = maxi(client.items.inventory.numbers.find(client.items.table.number_of(give_item)), 0) if place_it else 0   # ACT_PLACE takes the slot holding the kit (a new item goes to the first free slot, not always slot 0)
+		print("shot runner: place/drop slot %d at %s" % [kit_slot, str(at)])
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_PLACE if place_it else Net.ACT_DROP, kit_slot, 0, 1 if place_it else give_count, at)
 
 	if light_it and _dropped and not _lit_sent and now - _drop_msec > 6000:
 		var fire_id: int = 0
