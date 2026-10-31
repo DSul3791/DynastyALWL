@@ -95,3 +95,26 @@ A small wooden room (four walls, floor, roof, doorway) is 28 lumber = 14 logs = 
 ## Time and quantity check
 
 `PLAYTHROUGH_BUDGET.md` says what the whole order of play costs: about 4 minutes of hands-on time (estimate, see the parameters there) from the first stick to the spear and knife, with 34 plant fibre and about 9 trees' worth of sticks and leaves; the tutorial's 30 minutes is therefore mostly reading and walking.
+
+## The in-game goal list, comfort and Rested (re-checked 31 Oct 2026, Tyler; tests `test_goals`, `test_comfort`, `test_lit_fixture`)
+
+The goal list is the 13 starter goals of `data/items/starter_goals.json` in this order, then the camp goals of `camp_goals.json`; a goal is offered when everything in its `after` is done. These numbers are the order of the files, not on-screen numbers (the client shows only the open goals' texts).
+
+| # | id | text on screen | after |
+|---|---|---|---|
+| 1 | drink | Drink at the water | |
+| 2 | fibre | Gather plant fibre | |
+| 3 | twine | Twist twine | fibre |
+| 4 | axe | Make a stone axe | twine |
+| 5 | fell | Fell a tree | axe |
+| 6 | fire | Light a fire | fell |
+| 7 | berries | Eat something wild | fire |
+| 8 | shelter | Build a lean-to | fire |
+| 9 | bed | Make a bed | shelter |
+| 10 | workbench | Build a workbench | axe |
+| 11 | spear | Make a spear | twine |
+| 12 | knife | Make a stone knife and work a kill | spear |
+| 13 | fish | Catch a fish | workbench |
+| 14 to 23 | torch_night, candle, smoke_fish, dry_berries, jerky, salted_fish, winter_store, fur_for_winter, story, night_walk | camp and winter goals | see file |
+
+Comfort and Rested (protocol 81): a line at the top right of the screen, "Comfort 7   Rested 38 min" (the Rested part only while the buff runs, hidden at comfort 0 with no buff). Hovering it with the cursor free (inventory open) shows the tooltip: what counts with its points, up to five things that could be added (lit fixtures marked "(lit)"), and the Rested bonuses with the minutes left. Rested is earned by lying in a bed, or sitting 30 s on a seat, at comfort 2 or more, and lasts 45 real minutes. Lit wall torches, chandeliers and fireplaces count only while lit, burn their fuel (stick 30 min, candle 60 min, firewood 120 min) and keep their state across a restart. The lean-to is 2.6 x 3.4 m (32 sticks, 8 leaves, 4 twine) and a bed can stand inside it.

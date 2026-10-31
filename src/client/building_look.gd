@@ -1007,11 +1007,11 @@ static func lit_fixture(kind: String) -> Node3D:
 		var glow: OmniLight3D = OmniLight3D.new()
 		glow.name = "Glow"
 		glow.light_color = Color(1.0, 0.5, 0.2)
-		glow.omni_range = 1.2
-		glow.light_energy = 0.35
+		glow.omni_range = 1.7
+		glow.light_energy = 0.45
 		glow.omni_attenuation = LIGHT_FALLOFF
-		glow.shadow_enabled = false
-		glow.position = Vector3(0.0, 0.45, 0.2)
+		glow.shadow_enabled = true      # the bricks keep it from reaching the back
+		glow.position = Vector3(0.0, -0.1, 0.0)
 		cone.add_child(glow)   # follows the cone's visibility, so it goes with the nearest-lights limit
 		return root
 
