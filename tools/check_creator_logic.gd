@@ -190,7 +190,7 @@ func _check_frames() -> void:
 
 		_ok(a.can_undo(), "frame %s is one undo step" % frame)
 		a.undo()
-		_ok(float(a.genome["hips"]) == 0.0 and float(a.genome["chest"]) == Generator.CHEST_NONE, "undo takes frame %s back" % frame)
+		_ok(float(a.genome["hips"]) == 0.0 and float(a.genome["bust"]) == Generator.BUST_NONE, "undo takes frame %s back" % frame)
 
 		a.apply_frame(frame)
 		a.set_slider("hips", -0.9)
@@ -205,7 +205,7 @@ func _check_frames() -> void:
 	locked.set_lock("tunic", true)
 	var tunic_before: Color = locked.genome["tunic"]
 	locked.apply_frame("feminine")
-	_ok(float(locked.genome["hips"]) == 0.2 and (locked.genome["tunic"] as Color).is_equal_approx(tunic_before) and float(locked.genome["chest"]) == 0.3, "a frame leaves locked values alone and sets the rest")
+	_ok(float(locked.genome["hips"]) == 0.2 and (locked.genome["tunic"] as Color).is_equal_approx(tunic_before) and float(locked.genome["bust"]) == 0.3, "a frame leaves locked values alone and sets the rest")
 	_ok(Generator.FRAMES.keys().size() == 3 and Record.FRAMES.size() == 3, "three frames")
 	_ok(Record.default_frame("woman") == "feminine" and Record.default_frame("man") == "masculine" and Record.default_frame("non_binary") == "neutral" and Record.default_frame("prefer_not_to_say") == "neutral", "gender picks its default frame")
 	_ok(Record.default_pronouns("woman") == "she_her" and Record.default_pronouns("man") == "he_him" and Record.default_pronouns("non_binary") == "they_them" and Record.default_pronouns("prefer_not_to_say") == "they_them", "gender picks its default pronouns")
@@ -213,9 +213,9 @@ func _check_frames() -> void:
 	# The chest: an old genome has none and its body does not change; a feminine frame adds a visible bump.
 	var plain: Dictionary = Generator.make_genome("average")
 	var bust: Dictionary = plain.duplicate(true)
-	bust["chest"] = 0.6
+	bust["bust"] = 0.6
 	var rg: Dictionary = Generator.rig(plain)
-	_ok(Generator.primitives(plain, rg, false).size() + 4 == Generator.primitives(bust, Generator.rig(bust), false).size(), "a chest value adds two primitives and their cloth and none leaves the body as it was")
+	_ok(Generator.primitives(plain, rg, false).size() + 4 == Generator.primitives(bust, Generator.rig(bust), false).size(), "a bust value adds two primitives and their cloth and none leaves the body as it was")
 
 	# Version 1 code: 18 sliders, no chest.
 	var bytes: PackedByteArray = PackedByteArray()
@@ -229,8 +229,8 @@ func _check_frames() -> void:
 
 	bytes.append(Generator._crc8(bytes))
 	var old: Dictionary = Generator.decode(Marshalls.raw_to_base64(bytes))
-	_ok(not old.is_empty() and float(old["chest"]) == Generator.CHEST_NONE and absf(float(old["height"])) < 0.01, "a version 1 share code still loads, with no chest")
+	_ok(not old.is_empty() and float(old["bust"]) == Generator.BUST_NONE and float(old["chest"]) == 0.0 and absf(float(old["height"])) < 0.01, "a version 1 share code still loads, with no chest")
 	var again: Dictionary = Generator.decode(Generator.encode(Generator.make_genome("average")))
-	_ok(not again.is_empty() and float(again["chest"]) == Generator.CHEST_NONE, "a version 2 code carries the chest")
-	bust["chest"] = 0.6
-	_ok(absf(float(Generator.decode(Generator.encode(bust))["chest"]) - 0.6) < 0.01, "and keeps its value")
+	_ok(not again.is_empty() and float(again["bust"]) == Generator.BUST_NONE and absf(float(again["chest"])) < 0.01, "a version 3 code carries the chest and bust")
+	bust["bust"] = 0.6
+	_ok(absf(float(Generator.decode(Generator.encode(bust))["bust"]) - 0.6) < 0.01, "and keeps its value")

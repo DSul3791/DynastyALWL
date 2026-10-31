@@ -41,18 +41,20 @@ const LOD_VOXELS := [0.03, 0.045, 0.07]  # detail levels 0 to 2: near, middle, f
 
 # Slider names, each -1 .. +1 (0 is the neutral body). Archetype presets are just different numbers.
 const SLIDERS := ["height", "build", "muscle", "belly", "shoulders", "hips", "torso", "legs", "arms", "neck", "head", "hands", "feet",
-	"jaw", "nose", "brow", "ears", "hair_length", "chest"]
-const SLIDERS_V1 := 18             # share codes of version 1 carry only the first 18 sliders; "chest" was added after them and reads as -1 (none) from an old code
-const CHEST_NONE := -1.0           # chest: -1 no bust, 0 small, 1 full; an old genome has none, so its body is unchanged
+	"jaw", "nose", "brow", "ears", "hair_length", "chest", "bust"]
+const SLIDERS_V1 := 18             # share codes of version 1 carry only the first 18 sliders; version 2 added one (the soft bump, now called "bust"); version 3 has "chest" and "bust"
+const BUST_NONE := -1.0            # bust: -1 none, 0 small, 1 full; an old genome has none, so its body is unchanged
+# Chest (the upper torso, for every frame): -1 a narrow, flat rib cage, 0 as before, +1 a wide, deep rib cage with pectoral bulk and a V-taper to the waist. It works on the torso only;
+# Muscle stays the whole-body muscle (limb thickness and a little chest depth) and does not do the V-taper, the width or the pectorals.
 
 # Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen with the Gender step of the creator or on
 # its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
 const FRAMES := {
-	"feminine": {"hips": 0.45, "chest": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
+	"feminine": {"hips": 0.45, "chest": -0.1, "bust": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
 		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.22, 0.14, 0.1)},
-	"masculine": {"hips": -0.25, "chest": -1.0, "shoulders": 0.4, "belly": 0.05, "neck": 0.35,
+	"masculine": {"hips": -0.25, "chest": 0.5, "bust": -1.0, "shoulders": 0.4, "belly": 0.05, "neck": 0.35,
 		"tunic": Color(0.36, 0.45, 0.3), "trousers": Color(0.3, 0.24, 0.18), "boots": Color(0.2, 0.13, 0.09)},
-	"neutral": {"hips": 0.0, "chest": -0.6, "shoulders": 0.0, "belly": 0.0, "neck": 0.0,
+	"neutral": {"hips": 0.0, "chest": 0.0, "bust": -0.6, "shoulders": 0.0, "belly": 0.0, "neck": 0.0,
 		"tunic": Color(0.35, 0.4, 0.5), "trousers": Color(0.28, 0.25, 0.22), "boots": Color(0.2, 0.14, 0.1)},
 }
 
@@ -67,6 +69,15 @@ const PRESETS := {
 # The Shoulders slider: the shoulder joints (and with them the upper arms and the tunic over them) move out and in by a lot; the chest follows only a little.
 static func shoulder_k(g: Dictionary) -> float:
 	return m(float(g["shoulders"]), 0.78, 1.45)
+
+
+# The rib cage of the Chest slider: width and depth factors.
+static func rib_w(g: Dictionary) -> float:
+	return m(float(g.get("chest", 0.0)), 0.86, 1.16)
+
+
+static func rib_d(g: Dictionary) -> float:
+	return m(float(g.get("chest", 0.0)), 0.82, 1.2)
 
 
 static func chest_k(g: Dictionary) -> float:
@@ -84,7 +95,7 @@ static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.
 	for key in SLIDERS:
 		g[key] = 0.0
 
-	g["chest"] = CHEST_NONE
+	g["bust"] = BUST_NONE
 
 	for key in PRESETS.get(preset, {}):
 		g[key] = float(PRESETS[preset][key])
@@ -221,15 +232,28 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	var head_c: Vector3 = p[4]
 	# Trunk
 	out.append(_ell(0, hips_c + Vector3(0.0, 0.0, 0.0), Vector3(0.165 * b * hip_w, 0.14, 0.12 * b)))
-	out.append(_ell(1, p[1] + Vector3(0.0, 0.02 * torso, -0.01), Vector3(0.155 * b, 0.15 * torso, 0.12 * b * belly)))
-	out.append(_ell(2, p[2] + Vector3(0.0, 0.08 * torso, -0.005), Vector3(0.155 * b * wide, 0.2 * torso, 0.12 * b * mu)))
-	var chest_s: float = float(g.get("chest", CHEST_NONE))
+	var chest_s: float = float(g.get("chest", 0.0))
+	var rw: float = rib_w(g)
+	var rd: float = rib_d(g)
+	var taper: float = 1.0 - 0.1 * maxf(chest_s, 0.0)       # the V-taper: the waist narrows as the chest widens
+	out.append(_ell(1, p[1] + Vector3(0.0, 0.02 * torso, -0.01), Vector3(0.155 * b * taper, 0.15 * torso, 0.12 * b * belly)))
+	out.append(_ell(2, p[2] + Vector3(0.0, 0.08 * torso, -0.005), Vector3(0.155 * b * wide * rw, 0.2 * torso, 0.12 * b * mu * rd)))
 
-	if chest_s > CHEST_NONE + 0.05:
-		var rad: float = lerpf(0.03, 0.075, (chest_s + 1.0) / 2.0)
+	# Pectoral bulk: two firm bumps on the front of the upper chest that grow with the Chest slider (none below 0.15).
+	if chest_s > 0.15:
+		var pec: float = chest_s
 
 		for side in [-1.0, 1.0]:
-			out.append(_ell(2, p[2] + Vector3(0.062 * b * wide * side, 0.03 * torso, -0.085 * b * mu), Vector3(rad, rad * 0.9, rad * 0.9)))
+			out.append(_ell(2, p[2] + Vector3(0.075 * b * wide * rw * side, 0.075 * torso, -0.07 * b * mu * rd), Vector3(0.025 + 0.04 * pec, 0.02 + 0.035 * pec, 0.02 + 0.03 * pec)))
+
+	var bust_s: float = float(g.get("bust", BUST_NONE))
+
+	# The soft bump of the Bust slider, separate from the rib cage.
+	if bust_s > BUST_NONE + 0.05:
+		var rad: float = lerpf(0.03, 0.075, (bust_s + 1.0) / 2.0)
+
+		for side in [-1.0, 1.0]:
+			out.append(_ell(2, p[2] + Vector3(0.062 * b * wide * rw * side, 0.03 * torso, -0.085 * b * mu * rd), Vector3(rad, rad * 0.9, rad * 0.9)))
 
 	out.append(_cone(3, p[3] + Vector3(0.0, -0.02, 0.0), head_c + Vector3(0.0, 0.03, 0.0), neck_r, neck_r * 0.92))
 	# Head, face and hair
@@ -842,7 +866,7 @@ static func measures(g: Dictionary) -> Dictionary:
 	var hs: float = m(float(g["head"]), 0.85, 1.4)
 	var torso: float = float(d["torso"])
 	return {
-		"chest_half_width": 0.155 * b * wide, "chest_half_depth": 0.12 * b * mu, "chest_height": 0.4 * torso,
+		"chest_half_width": 0.155 * b * wide * rib_w(g), "chest_half_depth": 0.12 * b * mu * rib_d(g), "chest_height": 0.4 * torso,
 		"waist_half_width": 0.155 * b, "waist_half_depth": 0.12 * b * m(float(g["belly"]), 0.85, 1.55),
 		"hips_half_width": 0.165 * b * hip_w, "hips_half_depth": 0.12 * b,
 		"upper_arm_radius": 0.052 * sqrt(b) * mu, "upper_arm_length": 0.29 * float(d["arm"]),
@@ -915,7 +939,7 @@ static func worn_fit(g: Dictionary) -> Dictionary:
 	var limb: float = sqrt(b) * mu
 	return {
 		"Hips": Vector3(b * hip_w, h, b),
-		"Chest": Vector3(b * wide, torso, b * mu),
+		"Chest": Vector3(b * wide * rib_w(g), torso, b * mu * rib_d(g)),
 		"Head": Vector3(hs, hs, hs),
 		"LeftUpperArm": Vector3(limb, arm, limb), "RightUpperArm": Vector3(limb, arm, limb),
 		"LeftLowerArm": Vector3(limb, arm, limb), "RightLowerArm": Vector3(limb, arm, limb),
@@ -998,7 +1022,7 @@ static func set_expression(face: Node3D, open: float, brow_raise: float) -> void
 
 # ---------------------------------------------------------------- share code and detail levels
 
-const CODE_VERSION := 2         # 2 adds the chest slider; version 1 codes still decode (chest = none)
+const CODE_VERSION := 3         # 3 splits chest (the rib cage) from bust (the soft bump, which was "chest" in version 2); versions 1 and 2 still decode
 const COLOR_KEYS := ["skin", "hair", "tunic", "trousers", "boots"]
 
 
@@ -1037,10 +1061,11 @@ static func encode(g: Dictionary) -> String:
 static func decode(code: String) -> Dictionary:
 	var bytes: PackedByteArray = Marshalls.base64_to_raw(code.strip_edges())
 
-	if bytes.is_empty() or (bytes[0] != CODE_VERSION and bytes[0] != 1):
+	if bytes.is_empty() or bytes[0] < 1 or bytes[0] > CODE_VERSION:
 		return {}
 
-	var slider_count: int = SLIDERS.size() if bytes[0] == CODE_VERSION else SLIDERS_V1
+	var version: int = int(bytes[0])
+	var slider_count: int = SLIDERS_V1 + version - 1
 	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + 1
 
 	if bytes.size() != expected:
@@ -1054,8 +1079,18 @@ static func decode(code: String) -> Dictionary:
 	var g: Dictionary = {}
 	var at: int = 1 + slider_count
 
-	for i in range(SLIDERS.size()):
-		g[SLIDERS[i]] = float(bytes[1 + i]) / 127.5 - 1.0 if i < slider_count else CHEST_NONE
+	for i in range(SLIDERS_V1):
+		g[SLIDERS[i]] = float(bytes[1 + i]) / 127.5 - 1.0
+
+	# Version 1 has neither; version 2 has the soft bump in the 19th slot (it was called chest): it becomes the bust and the rib cage is as it was; version 3 has both.
+	g["chest"] = 0.0
+	g["bust"] = BUST_NONE
+
+	if version == 2:
+		g["bust"] = float(bytes[1 + SLIDERS_V1]) / 127.5 - 1.0
+	elif version == 3:
+		g["chest"] = float(bytes[1 + SLIDERS_V1]) / 127.5 - 1.0
+		g["bust"] = float(bytes[2 + SLIDERS_V1]) / 127.5 - 1.0
 
 	for key in COLOR_KEYS:
 		g[key] = Color(float(bytes[at]) / 255.0, float(bytes[at + 1]) / 255.0, float(bytes[at + 2]) / 255.0)

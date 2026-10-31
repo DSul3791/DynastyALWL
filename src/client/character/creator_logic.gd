@@ -10,7 +10,7 @@ extends RefCounted
 const Generator := preload("res://src/client/character/body_generator.gd")
 
 const SECTIONS := {
-	"Body": ["height", "build", "muscle", "belly", "chest", "shoulders", "hips", "torso", "legs", "arms", "neck"],
+	"Body": ["height", "build", "muscle", "belly", "chest", "bust", "shoulders", "hips", "torso", "legs", "arms", "neck"],
 	"Head and face": ["head", "jaw", "nose", "brow", "ears"],
 	"Hands and feet": ["hands", "feet"],
 	"Hair": ["hair_length"],
@@ -119,7 +119,7 @@ func clear_history() -> void:
 	_redo.clear()
 
 
-# A body frame (Generator.FRAMES): sets hips, chest, shoulders, belly and neck and the default clothing colours as a starting point. Locked values keep theirs. One undo step.
+# A body frame (Generator.FRAMES): sets hips, chest, bust, shoulders, belly and neck and the default clothing colours as a starting point. Locked values keep theirs. One undo step.
 func apply_frame(frame: String) -> void:
 	if not Generator.FRAMES.has(frame):
 		return
