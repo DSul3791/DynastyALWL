@@ -302,7 +302,15 @@ F-07 stays FIXED: grown trees stand within 50 m of the spawn.
 
 Re-shoot recipe (quiet machine): `bash art/playthrough/run_world.sh` (about 12 minutes).
 
+Second round, one session (`run_world_once.sh`; the extra camera spots need `--settle 75`, with less the ground has not loaded at the new spot and the picture is of the sky from under the ground):
 
+| Picture | What it shows | Status |
+|---|---|---|
+| `once.jpg` | clearing at the spawn: lean-to, rough bed, workbench, stone forge placed on grass | PASS (forge is a dark stone block with a flame; bed is a dark frame with stacked straw) |
+| `under_beech_dry.jpg`, `under_beech_rain.jpg` | standing under a 23 m beech 19 m from the spawn, looking up into the crown, dry and in rain | the crown fills the sky; cover is only mild (rule: `cover.gd`), the pictures show it is there, not the dry ground under it |
+| `open_ground_rain.jpg` | the clearing in rain: rain streaks, dark light, the forge smokes | PASS |
+
+Still not photographed: a lit campfire (the rig cannot light one: it needs a `--shot-light` option), a felled trunk and stump (`--shot-fell` ends in "no tree loaded" after 60 s on this forest), the thatch pieces on the fixed world. Re-shoot: `bash art/playthrough/run_world.sh` and `bash art/playthrough/run_world_once.sh` (about 6 minutes each).
 ## 6. Fix status, part 2 (Sal, 2026-10-31)
 * **F-16 data FIXED:** wood_species.json `ingredient_groups` (log, wooden_block, firewood); validate_items no longer treats plain `log` as a built-in source and now fails on any recipe ingredient with no source. The recipes and blueprints that use group ids are listed in LOG_SPECIES_SPEC.md. Code half (match members when filling an ingredient) is Tyler's.
 * **F-19 FIXED (flagged):** products of recipes that no player can make yet are now `future`: willow bark tea, acorn mash, flatbread (need water; WATER_GATHER_SPEC.md), nails, hinges, hand saw (iron), tar (pine tar has no source), processed hide (flint), leather cap (leather). Everything else the guide listed (grass clothes, kindling, brick, mortar, cobblestone, wood chain via the stone wedge, cooking dishes) was already opened or made reachable by the `known` flips and the drops added earlier.
