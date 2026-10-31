@@ -16,6 +16,14 @@
    "carp",
    "pike",
    "roast_fish",
+   "seaweed",
+   "shellfish",
+   "crab_meat",
+   "egg",
+   "seal_meat",
+   "roast_shellfish",
+   "boiled_egg",
+   "roast_seal",
    "stone",
    "stick",
    "plant_fibre",
@@ -23,7 +31,13 @@
    "seed_bundle",
    "bark",
    "leaves",
-   "tree_roots",
+   "tree_roots"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_02.jpg",
+  "ids": [
    "firewood",
    "driftwood",
    "soil",
@@ -31,13 +45,7 @@
    "sand",
    "gravel",
    "hide",
-   "bone"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_02.jpg",
-  "ids": [
+   "bone",
    "rotten_food",
    "sinew",
    "animal_fat",
@@ -59,7 +67,13 @@
    "fine_leather",
    "heavy_leather",
    "yeast",
-   "salt",
+   "salt"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_03.jpg",
+  "ids": [
    "copper_ore",
    "tin_ore",
    "iron_ore",
@@ -67,13 +81,7 @@
    "wheat",
    "barley",
    "carrot",
-   "potato"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_03.jpg",
-  "ids": [
+   "potato",
    "turnip",
    "flax",
    "wheat_seeds",
@@ -87,6 +95,7 @@
    "claw",
    "down",
    "quill",
+   "sea_salt",
    "vice_kit",
    "stone_forge_kit",
    "blacksmithy_kit",
@@ -94,7 +103,13 @@
    "master_forge_kit",
    "saw_mill_kit",
    "woodworking_table_kit",
-   "clay_hearth_kit",
+   "clay_hearth_kit"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_04.jpg",
+  "ids": [
    "oven_kit",
    "birch_bark",
    "hagwillow_bark",
@@ -103,13 +118,7 @@
    "tannin_bark",
    "willow_bark",
    "witness_bark",
-   "belladonna_berries"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_04.jpg",
-  "ids": [
+   "belladonna_berries",
    "blackberries",
    "blueberries",
    "cloudberries",
@@ -130,7 +139,13 @@
    "cinderfoot_caps",
    "fly_agaric_caps",
    "lumencap_caps",
-   "mirrorcap_caps",
+   "mirrorcap_caps"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_05.jpg",
+  "ids": [
    "rimecap_caps",
    "arnica_flowers",
    "chamomile_flowers",
@@ -139,13 +154,7 @@
    "elderflowers",
    "honey_flowers",
    "lavender_flowers",
-   "meadowsweet_flowers"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_05.jpg",
-  "ids": [
+   "meadowsweet_flowers",
    "hushfern_fronds",
    "palm_fronds",
    "tideglass_fronds",
@@ -166,7 +175,13 @@
    "beechnuts",
    "chestnuts",
    "coconuts",
-   "hazelnuts",
+   "hazelnuts"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_06.jpg",
+  "ids": [
    "walnuts",
    "acorns",
    "aloe_gel",
@@ -175,13 +190,7 @@
    "bedding",
    "brinebells",
    "burrs",
-   "cactus_pads"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_06.jpg",
-  "ids": [
+   "cactus_pads",
    "chanterelles",
    "cherries",
    "crab_apples",
@@ -202,7 +211,13 @@
    "gum",
    "hagwillow_withies",
    "haws",
-   "hawthorn_blossom",
+   "hawthorn_blossom"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_07.jpg",
+  "ids": [
    "herbs",
    "honeyspindle_nectar",
    "honeyspindle_pods",
@@ -211,13 +226,7 @@
    "marjoram",
    "mint",
    "morels",
-   "mugwort"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_07.jpg",
-  "ids": [
+   "mugwort",
    "nightcrown_blooms",
    "oil",
    "pilgrims_cup_pitchers",
@@ -238,7 +247,13 @@
    "sevenyear_blossoms",
    "sloes",
    "spines",
-   "st_johns_wort",
+   "st_johns_wort"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_08.jpg",
+  "ids": [
    "staunchmoss",
    "stormreed_stalks",
    "straw",
@@ -247,15 +262,8 @@
    "thatch",
    "thorny_canes",
    "thyme",
-   "tidecrown_pearls"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_08.jpg",
-  "ids": [
+   "tidecrown_pearls",
    "timber",
-   "tinder",
    "tinder_fungus",
    "walnut_husks",
    "wardpine_resin",
@@ -275,7 +283,13 @@
    "comfrey_roots",
    "dandelion_roots",
    "duskmallow_roots",
-   "emberroots",
+   "emberroots"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_09.jpg",
+  "ids": [
    "heartroots",
    "marrowroots",
    "valerian_roots",
@@ -283,13 +297,7 @@
    "wolfsbane_roots",
    "henbane_seeds",
    "seeds",
-   "stillwater_seeds"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_09.jpg",
-  "ids": [
+   "stillwater_seeds",
    "angelica_stems",
    "reed_stems",
    "riverbraid_stems",
@@ -311,7 +319,13 @@
    "hide_cloak",
    "hide_boots",
    "hide_hood",
-   "hide_mittens",
+   "hide_mittens"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_10.jpg",
+  "ids": [
    "hide_leggings",
    "quiver",
    "hide_tunic",
@@ -319,13 +333,7 @@
    "hide_gloves",
    "leather_cap",
    "leather_jerkin",
-   "bronze_helm"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_10.jpg",
-  "ids": [
+   "bronze_helm",
    "gambeson",
    "iron_helm",
    "mail_shirt",
@@ -347,7 +355,13 @@
    "baked_apples",
    "mushroom_skewer",
    "herb_fish",
-   "garlic_meat",
+   "garlic_meat"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_11.jpg",
+  "ids": [
    "chestnut_cakes",
    "fruit_leather",
    "smoked_fish",
@@ -355,19 +369,14 @@
    "forager_stew",
    "fish_stew",
    "trail_bread",
-   "hearty_pottage"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_11.jpg",
-  "ids": [
+   "hearty_pottage",
    "feast_roast",
    "campfire_pot_kit",
    "flatbread",
    "honey_loaf",
    "roast_joint",
    "kindling",
+   "tinder",
    "energy_bar",
    "herbal_tea",
    "stomach_tea",
@@ -382,7 +391,13 @@
    "beam_oak",
    "lumber_birch",
    "beam_birch",
-   "lumber_scots_pine",
+   "lumber_scots_pine"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_12.jpg",
+  "ids": [
    "beam_scots_pine",
    "lumber_spruce",
    "beam_spruce",
@@ -391,13 +406,7 @@
    "lumber_walnut",
    "beam_walnut",
    "lumber_maple",
-   "beam_maple"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_12.jpg",
-  "ids": [
+   "beam_maple",
    "cut_stone_block",
    "brick",
    "mortar",
@@ -418,7 +427,13 @@
    "flour",
    "compost",
    "hide_glue",
-   "poultice",
+   "poultice"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_13.jpg",
+  "ids": [
    "bandage",
    "herb_salve",
    "splint",
@@ -427,13 +442,7 @@
    "wall_section_kit",
    "floor_section_kit",
    "roof_section_kit",
-   "foundation_section_kit"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_13.jpg",
-  "ids": [
+   "foundation_section_kit",
    "doorway_section_kit",
    "window_section_kit",
    "timber_prop_kit",
@@ -454,7 +463,13 @@
    "steel_spade",
    "fishing_rod",
    "wooden_hoe",
-   "stone_hoe",
+   "stone_hoe"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_14.jpg",
+  "ids": [
    "iron_hoe",
    "steel_hoe",
    "stone_hammer",
@@ -463,13 +478,7 @@
    "shore_net",
    "wooden_bow",
    "wooden_arrow",
-   "stone_arrow"
-  ],
-  "kind": "items"
- },
- {
-  "file": "items_14.jpg",
-  "ids": [
+   "stone_arrow",
    "snare",
    "hide_scraper",
    "steel_striker",
@@ -490,8 +499,16 @@
    "steel_sword",
    "steel_mace",
    "steel_shield",
-   "quern",
+   "quern"
+  ],
+  "kind": "items"
+ },
+ {
+  "file": "items_15.jpg",
+  "ids": [
    "bone_arrow",
+   "stone_wedge",
+   "fibre_arrow",
    "spear",
    "wooden_spear",
    "javelin",

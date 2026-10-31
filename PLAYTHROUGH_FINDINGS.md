@@ -216,3 +216,32 @@ Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `
 * **F-14 FIXED (update 2026-10-31):** Stone axe and Stone spear now cost 2 twine (6 fibre) instead of 5; test_first_hour, test_auto_craft (the 50-craft-cap check is dropped because one queue call takes at most 20 axes, which now needs only 40 twine), test_inventory and PLAYTHROUGH_GUIDE.md updated.
 * **F-12 straw FIXED (data):** tall grass now also gives 1 to 3 straw; recipe "Rough bed" also accepts 8 straw.
 * **F-11 spec:** LOG_SPECIES_SPEC.md (code half for Tyler).
+
+---
+
+# Part 3: re-run after merging DailyDev_20261029 (2026-10-31, Sal's data fixes and Kathleen's look fix included)
+
+Same scripts, new data (180 live recipes, 467 items): `python art/playthrough/audit_playthrough.py && python art/playthrough/make_chapters.py`. Sheets re-drawn with the game's current look code.
+
+| Number | Before the merge | After |
+|---|---|---|
+| Recipes a player can learn (known or open) | 83 of 173 | **161 of 180** (19 stay locked: workbench level 2+, forge, water wheel) |
+| Recipes blocked (any reason) | 117 | 92 |
+| Blocked and NOT flagged future (a real hole) | 47 | **40** |
+| Items with the grey placeholder look or no look | 114 | 103 (F-17 fixed) |
+
+**Fixed since part 2:** F-17 (Kathleen, 0bf6e164: an override wins over a missing row or the grey chunk; flint, club, javelin, ores, ingots, coal now have their real look in the sheets), F-01 and F-24 (Sal, 76 recipes made known), F-03 (tinder fungus, cotton grass, birch bark and a Tinder recipe), F-06 (brick, oven, hearth), F-08 (fibre arrow), F-11 (soft block accepted for the hammer), F-12 (bedding), F-14 (axe and spear cost 2 twine), F-15 (stone pickaxe known).
+
+**Still open, in the order that matters:**
+
+1. **F-16 log chain (BLOCKER, code owner).** Still every chain that needs plain `log` is dead: chopping block, log workbench kit, rough plank, lumber by hand, timber prop, Sal's new `lumber_wedge` (stone wedge + log gives 2 lumber), and the blacksmithy blueprint. All 25 trees still give `log_<species>` on the shoulder. Sal's data side is done (ITEM_CODE_HANDOFF.md section 1 specifies the code change). Until it lands, **the whole wood tier is unreachable** (chapters 7, 8 and half of 6).
+2. **F-19 cooking dishes (Sal):** 14 dishes still blocked: berry compote, nut paste, baked apples, garlic meat, chestnut cakes, fruit leather, hunter's stew, forager's stew, trail bread, hearty pottage, feast roast, flatbread, honey loaf, roast joint. Their ingredients (`honeyspindle_nectar`, `wild_garlic_bulbs`, `linseed`, `greens`, `seeds`, `dandelion_leaves`) still have no gather entry (F-20).
+3. **F-20 (Sal / flora):** 97 gathered items with no gather path and not flagged future, including the abstract names (`wood`, `hardwood`, `fibre`, `herbs`, `food`, `fodder`...).
+4. **F-18 (Kathleen):** 13 items a player can craft today still wear the grey chunk or no look: hide tunic, trousers, gloves, herb salve, splint, quern, compost, hide glue, bone arrow, stone wedge, fibre arrow; `clay_jug` and `candle` have no row.
+5. **F-27 (Kathleen):** the 32 kits are one identical box in different tints.
+6. **F-22 (Sal / Kathleen):** no stairs, no stone, brick or log wall pieces.
+7. **F-23 (code owner, Sal):** ores, coal, flint still have no pickup (specified in FLINT_ORE_SPEC.md): no metal.
+8. **F-21:** saw mill chain is circular without iron; the saw mill needs a foundation (design note).
+9. Minor: willow bark tea (`willow_bark` has no source), leather cap (`leather` has no source), processed hide (needs the hide scraper, flint), `hand_saw` (saw blade, iron).
+
+The whole picture in one line: **hands, stone age, fire, shelter, bed, workbench, tool rack, stone forge and the thatch house all work and look right; wood, metal and half the kitchen are not reachable yet, and the single biggest lever is the log recipe fix (F-16).**
