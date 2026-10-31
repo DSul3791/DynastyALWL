@@ -59,6 +59,8 @@ var _item_tries: int = 0
 var _item_views: Array = []
 var drop_settle_ms: int = 3000
 var place_it: bool = false
+var light_it: bool = false
+var _lit_sent: bool = false
 var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
 var _fell_step: int = 0
 var _fell_t: int = 0
@@ -191,6 +193,8 @@ func setup(owner_client, args: Array) -> void:
 			summer = true
 		elif argument.begins_with("--shot-drop-settle="):
 			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
+		elif argument == "--shot-light":
+			light_it = true      # with --shot-place: 6 s after the fire is placed, give plant fibre and light it, so a lit fire can be photographed
 		elif argument == "--shot-place":
 			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
@@ -291,7 +295,7 @@ func _process(delta: float) -> void:
 		_given = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
 
-	if give_item != "" and _given and not _selected and now - client.connected_msec > 10000 and client.held != null:
+	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 
@@ -308,6 +312,19 @@ func _process(delta: float) -> void:
 
 		_item_spot = at
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_PLACE if place_it else Net.ACT_DROP, 0, 0, 1 if place_it else give_count, at)
+
+	if light_it and _dropped and not _lit_sent and now - _drop_msec > 6000:
+		var fire_id: int = 0
+
+		for wid in client.items._world:
+			if int(client.items._world[wid]["state"]) == 9:
+				fire_id = wid
+
+		if fire_id != 0:
+			_lit_sent = true
+			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("plant_fibre"), 0, 3, Vector3.ZERO)
+			get_tree().create_timer(2.0).timeout.connect(func(): client.items.net.inventory_action.rpc_id(1, Net.ACT_LIGHT, fire_id, 0, 0, Vector3.ZERO))
+			print("shot runner: lighting fire ", fire_id)
 
 	if fell_mode != "" and _fell_step < 99:
 		if now - client.connected_msec > 14000:
@@ -640,8 +657,8 @@ func _fell_tick(now: int) -> void:
 					_fell_up = up
 
 		if _fell_tree.is_empty():
-			if now - client.connected_msec < 60000:
-				return   # the flora is still loading: look again next frame
+			if now - client.connected_msec < 420000:
+				return   # the flora is still loading (it follows the ground, minutes on a fresh world): look again next frame
 
 			print("shot runner: fell: no tree loaded")
 			_fell_step = 99

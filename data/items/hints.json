@@ -1,0 +1,150 @@
+{
+	"_about": "In-game hint lines (Sal, 2026-10-31), final wording for the UI: one short friendly line per tutorial step, 12 words or fewer, each checked against what the game really does (source: TUTORIAL_FIRST_30_MIN.md and starter_goals.json). `trigger` names the moment to show it (the guide's step triggers); `goal` links a starter goal where one exists. Read by nothing yet. Keys the HUD needs: id, trigger, text.",
+	"hints": [
+		{
+			"id": "move",
+			"trigger": "first_frame",
+			"text": "Walk with W A S D. Hold Shift to run."
+		},
+		{
+			"id": "bars",
+			"trigger": "moved",
+			"text": "Press Tab to see Health, Food, Water, Warmth and Energy."
+		},
+		{
+			"id": "drink",
+			"trigger": "water_in_view",
+			"text": "Stand at the water's edge and press E to drink.",
+			"goal": "drink"
+		},
+		{
+			"id": "pickup",
+			"trigger": "after_drink",
+			"text": "Press E to pick things up. Hold E to take everything near."
+		},
+		{
+			"id": "fibre",
+			"trigger": "8_sticks",
+			"text": "Press E on nettles or tall grass to get plant fibre.",
+			"goal": "fibre"
+		},
+		{
+			"id": "twine",
+			"trigger": "12_fibre",
+			"text": "Press I, pick Twine, and craft it from 3 fibre.",
+			"goal": "twine"
+		},
+		{
+			"id": "axe",
+			"trigger": "2_twine_1_stone_1_stick",
+			"text": "Craft a Stone axe: 1 stone, 1 stick, 2 twine.",
+			"goal": "axe"
+		},
+		{
+			"id": "hotbar",
+			"trigger": "axe_made",
+			"text": "Drag the axe to the hotbar, then press its number key."
+		},
+		{
+			"id": "fell",
+			"trigger": "axe_held_near_tree",
+			"text": "Hold the axe and click a tree again and again.",
+			"goal": "fell"
+		},
+		{
+			"id": "trunk",
+			"trigger": "tree_down",
+			"text": "Keep striking the fallen trunk for sticks, leaves and logs."
+		},
+		{
+			"id": "kit",
+			"trigger": "6_sticks_3_stones",
+			"text": "Craft a Campfire kit: 6 sticks and 3 stones."
+		},
+		{
+			"id": "place_fire",
+			"trigger": "kit_made",
+			"text": "Hold the kit and click where the ring shows."
+		},
+		{
+			"id": "light",
+			"trigger": "fire_placed",
+			"text": "Stand close and press E to light it with plant fibre.",
+			"goal": "fire"
+		},
+		{
+			"id": "fuel",
+			"trigger": "fire_lit",
+			"text": "Press E at the fire to add sticks or wood."
+		},
+		{
+			"id": "roast",
+			"trigger": "hungry",
+			"text": "Hold E at the fire to roast one raw food.",
+			"goal": "berries"
+		},
+		{
+			"id": "leanto",
+			"trigger": "fire_burning_cold",
+			"text": "Craft a Small shelter: 8 sticks, 6 leaves, 2 twine.",
+			"goal": "shelter"
+		},
+		{
+			"id": "place_leanto",
+			"trigger": "leanto_made",
+			"text": "Click to place it, open side towards you.",
+			"goal": "shelter"
+		},
+		{
+			"id": "bed",
+			"trigger": "leanto_placed",
+			"text": "Press E on ferns for bedding, then craft a Rough bed.",
+			"goal": "bed"
+		},
+		{
+			"id": "sleep",
+			"trigger": "bed_placed",
+			"text": "Place the bed under cover, then hold Z to sleep."
+		},
+		{
+			"id": "workbench",
+			"trigger": "bed_placed",
+			"text": "A Workbench: 12 sticks, 3 twine. It unlocks better tools.",
+			"goal": "workbench"
+		},
+		{
+			"id": "spear",
+			"trigger": "workbench_placed",
+			"text": "Make a Wooden spear, then bind it with 2 twine.",
+			"goal": "spear"
+		},
+		{
+			"id": "knife",
+			"trigger": "spear_made",
+			"text": "Craft a Stone knife, then work the animal you killed.",
+			"goal": "knife"
+		},
+		{
+			"id": "fish",
+			"trigger": "workbench_placed",
+			"text": "Make a fishing rod and try the pond.",
+			"goal": "fish"
+		},
+		{
+			"id": "berries",
+			"trigger": "hungry",
+			"text": "Pick berries and nuts with E. Cook them at the fire.",
+			"goal": "berries"
+		},
+		{
+			"id": "cold",
+			"trigger": "warmth_under_70",
+			"text": "Warmth low: stand near a fire or put on hide clothes."
+		},
+		{
+			"id": "night",
+			"trigger": "dusk",
+			"text": "Night is dark. Craft a Basic torch: a stick and 2 fibre."
+		}
+	]
+}

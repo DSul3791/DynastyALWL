@@ -590,7 +590,8 @@ func _fire_prompt(state: int) -> String:
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
 # True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
-func open_container() -> bool:
+# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens.
+func _container_near() -> int:
 	var here: Vector3 = _player_position.call()
 	var best: int = 0
 	var best_d: float = 3.0
@@ -602,6 +603,31 @@ func open_container() -> bool:
 		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
+
+	return best
+
+
+var _last_f_ms: int = -100000
+var _carried_slot: Label      # the read-only "Carried" slot: the log on the shoulder, when there is one
+
+const FPress := preload("res://src/client/f_press.gd")
+
+
+# The F key: opens the chest, station, fire or remains beside you; with a log on the shoulder and nothing to open, F twice within 0.6 s puts the log down (the first F says so).
+func press_f(now_ms: int) -> void:
+	match FPress.decide(shoulder_id != "", _container_near() != 0, now_ms, _last_f_ms):
+		"drop":
+			_last_f_ms = -100000
+			lay_down_shoulder()
+		"hint":
+			_last_f_ms = now_ms
+			_on_notice("F again to put the log down")
+		_:
+			open_container()
+
+
+func open_container() -> bool:
+	var best: int = _container_near()
 
 	if best == 0:
 		return false
@@ -1280,7 +1306,14 @@ func _refresh_purse() -> void:
 		fill_coin_line(_purse_label, ["Purse: ", purse_copper])
 
 
+func _refresh_carried() -> void:
+	if _carried_slot != null:
+		_carried_slot.visible = shoulder_id != ""
+		_carried_slot.text = ("Carried: %s   (F twice or Q puts it down)" % table.name_of(table.number_of(shoulder_id))) if shoulder_id != "" else ""
+
+
 func _refresh_weight() -> void:
+	_refresh_carried()
 	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (food %d%%, health %d)" % [weight_kg, hunger, health]
 
 	if _carry_bar != null and not _carry_cfg.is_empty():
@@ -2991,6 +3024,10 @@ func _build_panel() -> void:
 	carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
 	_carry_bar.add_theme_stylebox_override("background", carry_empty)
 	right.add_child(_carry_bar)
+	_carried_slot = Label.new()
+	_style(_carried_slot, BODY_PX - 6)
+	_carried_slot.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+	right.add_child(_carried_slot)
 	_sort_menu = OptionButton.new()
 	_style(_sort_menu, BODY_PX - 6)
 

@@ -48,7 +48,7 @@ extends RefCounted
 # Thread safe: chunk_items only reads.
 
 const KIND_TREE := 0
-const TREE_DENSITY := 2.0   # trees twice as many as the table's per-hectare figures
+const TREE_DENSITY := 4.6   # trees 2.6 times the table's per-hectare figures (was 2.0, raised in steps to reach the target; crowns cap the rest; Tyler's world_alive target 150 trees per hectare in temperate forest, 2026-10-31)
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
 const KINDS := ["tree", "shrub", "plant"]

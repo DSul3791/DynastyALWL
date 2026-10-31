@@ -22,7 +22,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.0
+			"hunt_difficulty": 1.0,
+			"blows": 2
 		},
 		"grouse": {
 			"size_kg": 1.0,
@@ -42,7 +43,8 @@
 					1,
 					1
 				]
-			]
+			],
+			"blows": 1
 		},
 		"fox": {
 			"size_kg": 7.0,
@@ -67,7 +69,8 @@
 					1,
 					2
 				]
-			]
+			],
+			"blows": 2
 		},
 		"boar": {
 			"size_kg": 90.0,
@@ -102,7 +105,8 @@
 					2,
 					2
 				]
-			]
+			],
+			"blows": 4
 		},
 		"deer": {
 			"size_kg": 80.0,
@@ -138,7 +142,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.6
+			"hunt_difficulty": 1.6,
+			"blows": 4
 		},
 		"wolf": {
 			"size_kg": 35.0,
@@ -168,7 +173,8 @@
 					1,
 					2
 				]
-			]
+			],
+			"blows": 3
 		},
 		"moose": {
 			"size_kg": 350.0,
@@ -204,7 +210,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 2.2
+			"hunt_difficulty": 2.2,
+			"blows": 8
 		},
 		"duck": {
 			"size_kg": 1.2,
@@ -230,7 +237,8 @@
 					4
 				]
 			],
-			"hunt_difficulty": 2.5
+			"hunt_difficulty": 2.5,
+			"blows": 1
 		},
 		"hare": {
 			"size_kg": 4.0,
@@ -251,7 +259,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.2
+			"hunt_difficulty": 1.2,
+			"blows": 2
 		},
 		"beaver": {
 			"size_kg": 20.0,
@@ -277,7 +286,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.5
+			"hunt_difficulty": 1.5,
+			"blows": 3
 		},
 		"otter": {
 			"size_kg": 8.0,
@@ -298,7 +308,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 2
 		},
 		"badger": {
 			"size_kg": 11.0,
@@ -329,7 +340,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 2
 		},
 		"porcupine": {
 			"size_kg": 10.0,
@@ -350,7 +362,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.6
+			"hunt_difficulty": 1.6,
+			"blows": 2
 		},
 		"lynx": {
 			"size_kg": 20.0,
@@ -381,7 +394,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 2.4
+			"hunt_difficulty": 2.4,
+			"blows": 3
 		},
 		"bear": {
 			"size_kg": 200.0,
@@ -417,7 +431,8 @@
 					4
 				]
 			],
-			"hunt_difficulty": 3.0
+			"hunt_difficulty": 3.0,
+			"blows": 6
 		},
 		"mountain_goat": {
 			"size_kg": 70.0,
@@ -448,7 +463,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 2.0
+			"hunt_difficulty": 2.0,
+			"blows": 4
 		},
 		"wild_sheep": {
 			"size_kg": 50.0,
@@ -484,7 +500,8 @@
 					4
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 3
 		},
 		"reindeer": {
 			"size_kg": 100.0,
@@ -520,7 +537,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 4
 		},
 		"pheasant": {
 			"size_kg": 1.2,
@@ -541,7 +559,8 @@
 					1
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 1
 		},
 		"goose": {
 			"size_kg": 4.0,
@@ -567,7 +586,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 2.2
+			"hunt_difficulty": 2.2,
+			"blows": 2
 		},
 		"eagle": {
 			"size_kg": 4.0,
@@ -593,7 +613,8 @@
 					2
 				]
 			],
-			"hunt_difficulty": 3.0
+			"hunt_difficulty": 3.0,
+			"blows": 2
 		},
 		"gull": {
 			"size_kg": 1.0,
@@ -614,7 +635,8 @@
 					1
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 1
 		},
 		"seal": {
 			"size_kg": 80.0,
@@ -640,7 +662,8 @@
 					7
 				]
 			],
-			"hunt_difficulty": 2.0
+			"hunt_difficulty": 2.0,
+			"blows": 4
 		},
 		"seabird": {
 			"size_kg": 1.5,
@@ -666,7 +689,211 @@
 					1
 				]
 			],
-			"hunt_difficulty": 1.8
+			"hunt_difficulty": 1.8,
+			"blows": 1
+		},
+		"horse": {
+			"size_kg": 450.0,
+			"parts": [
+				[
+					"raw_meat",
+					16,
+					22
+				],
+				[
+					"hide",
+					2,
+					3
+				],
+				[
+					"bone",
+					8,
+					12
+				],
+				[
+					"sinew",
+					5,
+					8
+				],
+				[
+					"animal_fat",
+					3,
+					5
+				]
+			],
+			"hunt_difficulty": 2.0,
+			"blows": 8
+		},
+		"red_squirrel": {
+			"size_kg": 0.3,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.0,
+			"blows": 1
+		},
+		"pine_marten": {
+			"size_kg": 1.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.0,
+			"blows": 1
+		},
+		"hedgehog": {
+			"size_kg": 0.8,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"quill",
+					3,
+					6
+				]
+			],
+			"hunt_difficulty": 1.5,
+			"blows": 1
+		},
+		"raven": {
+			"size_kg": 1.0,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					4,
+					8
+				],
+				[
+					"bone",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 1
+		},
+		"owl": {
+			"size_kg": 0.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"feather",
+					6,
+					10
+				],
+				[
+					"claw",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.6,
+			"blows": 1
+		},
+		"woodpecker": {
+			"size_kg": 0.07,
+			"parts": [
+				[
+					"feather",
+					2,
+					4
+				]
+			],
+			"hunt_difficulty": 2.4,
+			"blows": 1
+		},
+		"songbirds": {
+			"size_kg": 0.02,
+			"parts": [
+				[
+					"feather",
+					1,
+					2
+				]
+			],
+			"hunt_difficulty": 2.0,
+			"blows": 1
+		},
+		"frog": {
+			"size_kg": 0.05,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.2,
+			"blows": 1
+		},
+		"grass_snake": {
+			"size_kg": 0.5,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 1.6,
+			"blows": 1
+		},
+		"adder": {
+			"size_kg": 0.2,
+			"parts": [
+				[
+					"raw_meat",
+					1,
+					1
+				],
+				[
+					"hide",
+					1,
+					1
+				]
+			],
+			"hunt_difficulty": 2.2,
+			"blows": 1
 		}
-	}
+	},
+	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."
 }

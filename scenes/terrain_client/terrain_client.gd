@@ -2975,7 +2975,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
 		elif event.keycode == KEY_F:
 			if items != null and not flying:
-				items.open_container()   # Dave 2026-10-22: F opens the chest beside you (fly is G)
+				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
 		elif event.keycode == KEY_G:
 			flying = not flying
 			body.velocity = Vector3.ZERO

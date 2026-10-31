@@ -93,8 +93,8 @@
 				0.18
 			],
 			"per_hectare": {
-				"temperate_forest": 60,
-				"mixed_forest": 25
+				"temperate_forest": 72,
+				"mixed_forest": 30
 			},
 			"moisture": [
 				110,
@@ -649,8 +649,8 @@
 				0.19
 			],
 			"per_hectare": {
-				"temperate_forest": 5,
-				"mixed_forest": 5,
+				"temperate_forest": 9,
+				"mixed_forest": 9,
 				"temperate_grassland": 2
 			},
 			"moisture": [
@@ -1243,6 +1243,7 @@
 		{
 			"id": 22,
 			"name": "tall_grass",
+			"seasonal": true,
 			"display": "Tall grass",
 			"kind": "plant",
 			"shape": "grass",
@@ -2101,7 +2102,8 @@
 			"per_hectare": {
 				"temperate_grassland": 6,
 				"heath": 4,
-				"temperate_forest": 2
+				"temperate_forest": 4,
+				"mixed_forest": 4
 			},
 			"moisture": [
 				60,
@@ -2218,8 +2220,8 @@
 			],
 			"per_hectare": {
 				"temperate_grassland": 5,
-				"temperate_forest": 3,
-				"mixed_forest": 2
+				"temperate_forest": 5,
+				"mixed_forest": 4
 			},
 			"moisture": [
 				70,
@@ -2687,7 +2689,7 @@
 				0.55
 			],
 			"per_hectare": {
-				"temperate_grassland": 30,
+				"temperate_grassland": 45,
 				"heath": 20,
 				"alpine_meadow": 30,
 				"dry_scrub": 15
@@ -3332,9 +3334,11 @@
 				0.2
 			],
 			"per_hectare": {
-				"temperate_grassland": 30,
+				"temperate_grassland": 60,
 				"heath": 10,
-				"alpine_meadow": 15
+				"alpine_meadow": 15,
+				"temperate_forest": 6,
+				"mixed_forest": 4
 			},
 			"moisture": [
 				40,
@@ -3451,7 +3455,7 @@
 				0.2
 			],
 			"per_hectare": {
-				"temperate_grassland": 20,
+				"temperate_grassland": 40,
 				"beach": 3
 			},
 			"moisture": [
@@ -3572,8 +3576,8 @@
 				0.2
 			],
 			"per_hectare": {
-				"temperate_grassland": 15,
-				"temperate_forest": 3,
+				"temperate_grassland": 35,
+				"temperate_forest": 8,
 				"heath": 4
 			},
 			"moisture": [
@@ -4092,8 +4096,8 @@
 				0.2
 			],
 			"per_hectare": {
-				"temperate_forest": 6,
-				"mixed_forest": 6,
+				"temperate_forest": 10,
+				"mixed_forest": 10,
 				"heath": 3
 			},
 			"moisture": [
@@ -5676,9 +5680,9 @@
 				0.85
 			],
 			"per_hectare": {
-				"temperate_grassland": 8,
-				"temperate_forest": 3,
-				"mixed_forest": 3
+				"temperate_grassland": 14,
+				"temperate_forest": 6,
+				"mixed_forest": 6
 			},
 			"moisture": [
 				90,
@@ -5736,8 +5740,8 @@
 				0.3
 			],
 			"per_hectare": {
-				"mixed_forest": 3,
-				"temperate_forest": 3,
+				"mixed_forest": 6,
+				"temperate_forest": 6,
 				"heath": 2
 			},
 			"moisture": [
@@ -7331,8 +7335,8 @@
 				[0.98, 0.38, 0.06]
 			],
 			"per_hectare": {
-				"temperate_forest": 35,
-				"mixed_forest": 30
+				"temperate_forest": 42,
+				"mixed_forest": 34
 			},
 			"moisture": [
 				90,
@@ -7367,6 +7371,7 @@
 		{
 			"id": 127,
 			"name": "thatch_grass",
+			"seasonal": true,
 			"display": "Thatching grass",
 			"kind": "plant",
 			"shape": "grass",
