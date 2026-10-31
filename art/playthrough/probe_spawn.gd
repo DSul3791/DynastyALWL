@@ -55,6 +55,7 @@ func _init() -> void:
 	var counts: Array = [{}, {}, {}, {}]
 	var grown: Array = [0, 0, 0, 0]
 	var trees: Array = [0, 0, 0, 0]
+	var grown_at: Array = []
 	var lowest: Array = [1.0e9, 1.0e9, 1.0e9, 1.0e9]
 	var highest: Array = [-1.0e9, -1.0e9, -1.0e9, -1.0e9]
 	var chunk_lo: Vector2i = placer.chunk_of(cx - 400.0, cz - 400.0)
@@ -89,7 +90,12 @@ func _init() -> void:
 					if float(made["heights"][n]) >= 0.8 * top:
 						grown[ring] += 1
 
-	var out: Dictionary = {"spawn": [cx, cz], "rings_m": rings, "counts": counts, "trees": trees, "grown_trees": grown, "ground_low": lowest, "ground_high": highest}
+						if d <= 100.0:
+							grown_at.append([name, snappedf(p.x, 0.1), snappedf(p.y, 0.1), snappedf(p.z, 0.1), snappedf(float(made["heights"][n]), 0.1), snappedf(d, 0.1)])
+
+	grown_at.sort_custom(func(a, b): return a[5] < b[5])
+	grown_at = grown_at.slice(0, 8)
+	var out: Dictionary = {"spawn": [cx, cz], "rings_m": rings, "counts": counts, "trees": trees, "grown_trees": grown, "ground_low": lowest, "ground_high": highest, "grown_trees_near": grown_at}
 	print("spawn: trees (all, grown) per ring ", trees, grown)
 	print("spawn: ground height range per ring ", lowest, highest)
 
