@@ -4418,6 +4418,11 @@ func _cook(peer: int, inv, id: int) -> void:
 
 			return
 
+	# Nothing in the pack the fire can cook: say what it does cook, at most every 5 s while E is held (Sal: the refusal for plants was silent).
+	if now - int(_last_cook.get(peer, -100000)) > 5000:
+		_last_cook[peer] = now
+		_say(peer, "The campfire cooks meat and fish. Plants go in a pot or on the clay hearth.")
+
 
 # Food that should have been cooked (cooking.json raw_sick, hours of sickness by item id or id suffix; Tyler: raw meat 24 h,
 # fiddleheads and beans 12, acorns and wild mushrooms mild at 6). It still feeds you; the stomach pays afterwards.
