@@ -19,12 +19,6 @@ Note: Real game window, daily head 31 Oct. Guide rates it 2.5 of 5: the preview 
 - Yes
 - No
 
-## pic-orchard | Does the orchard read as an orchard of fruit trees (rows of trees, fruit on them)?
-Image: questions/img/orchard_game.png
-Note: Real game, noon, about 15 m from the orchard lane (53356, 68521). Kathleen rates it 3 of 5: the tree rows and pruned shapes read, but only a few red apples show from this angle.
-- Yes
-- No
-
 ## pic-fibre-cloth | Does the fibre cloth (item 517, left; linen on the right for comparison) look like a folded woven plant-fibre cloth?
 Image: questions/img/fibre_cloth_look.png
 Note: Offline render of the item model, not the real game. Kathleen rates it 3 of 5: a stack of three folds in coarse straw-brown with a selvedge edge, darker than the pale linen.
@@ -40,12 +34,6 @@ Note: Render of the item models from above, not the real game. Kathleen rates it
 ## pic-hands | Are the character's hands (now about 20 percent bigger) in proportion?
 Image: questions/img/body_idle_hands.png
 Note: Render of the idle pose, front, three-quarter, side, back; not the real game. Kathleen rates it 3.5 of 5. The side-on stance in the game is not the idle pose (it faces front here); it is the body yaw against the camera, noted for Sonny.
-- Yes
-- No
-
-## pic-orchard | Does the starter orchard look like a real apple orchard (rows of fruit trees with fruit in the crowns)?
-Image: questions/img/orchard_rows.png
-Note: Real game, noon, from the east at about (53395,68521), looking west. Flora rates it 3 of 5: the rows read as an orchard, but the fruit is flat red diamonds that look fake; thinning while picking is tested in code, not shown here.
 - Yes
 - No
 
