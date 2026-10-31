@@ -13,12 +13,6 @@
 
 
 
-## pic-tall-grass-25m | Can you spot the tall-grass clump (circled) from about 25 m away, standing in the meadow?
-Image: questions/img/tall_grass_25m.png
-Note: Real game, noon, camera 25 m west of a clump at (53358,68366). Flora rates it 3.5 of 5: it reads as a tuft of tall grass with dark plumes at 25 m, but small; at 40 m it is only just visible and dark in shade.
-- Yes
-- No
-
 ## death-novice | Our design says death is final (remains, then you play on as your child or a new character; no respawn). Should new characters get a free respawn at their bed until they reach a set level?
 Note: Today the build respawns you at your spawn bed on death, which does not match the design (DESIGN_IDEAS.md section 6.1: "dies; the player restarts as a new character", heir inherits). Your idea fixes that: a short "novice grace" so new players can learn, then real dynasty death. Recommendation: respawn at the bed until level 5, then real death with remains and an heir, because a first-hour player has no heir yet and no reason to lose a whole life to a fall.
 - Respawn at the bed until level 5, then real death
