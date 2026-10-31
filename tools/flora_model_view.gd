@@ -3,7 +3,7 @@ extends Node3D
 # One flora model built by src/flora/tree_builder.gd for tools/shot_node.gd (Kathleen): an offline four-view picture of a species or a new model name before it has a flora.json row. The entry is
 # copied from a real row (--like, default tall_grass) and given the model, name and size you pass; the real build function and vertex colours are used, plain materials (no leaf textures).
 #   godot --path . --script res://tools/shot_node.gd -- --script=res://tools/flora_model_view.gd --species=fallen_log --model=fallen_log --h=4 --crown=0.5 --trunk=0.2 --out=C:/temp/log.png --height=2
-#   --species=NAME --model=MODEL --h=METRES --crown=M --trunk=M [--like=ROWNAME] [--far=1] [--season=summer]
+#   --species=NAME --model=MODEL --h=METRES --crown=M --trunk=M [--like=ROWNAME] [--far=1] [--season=summer] [--variants=N]   (N builds of variant 0..N-1 side by side, for the variety of a species)
 
 const TreeBuilderScript := preload("res://src/flora/tree_builder.gd")
 
@@ -17,6 +17,7 @@ func _init() -> void:
 	var like: String = "tall_grass"
 	var far: bool = false
 	var season: String = ""
+	var variants: int = 1
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--species="):
@@ -33,6 +34,8 @@ func _init() -> void:
 			like = a.trim_prefix("--like=")
 		elif a.begins_with("--season="):
 			season = a.trim_prefix("--season=")
+		elif a.begins_with("--variants="):
+			variants = int(a.trim_prefix("--variants="))
 		elif a.begins_with("--far="):
 			far = a.trim_prefix("--far=") == "1"
 
@@ -61,12 +64,14 @@ func _init() -> void:
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 		materials[key] = m
 
-	var mesh: ArrayMesh = TreeBuilderScript.build(entry, h, 0, far, materials, season)
+	for v in range(variants):
+		var mesh: ArrayMesh = TreeBuilderScript.build(entry, h, v, far, materials, season)
 
-	if mesh == null:
-		push_error("flora_model_view: the builder made no mesh for " + species)
-		return
+		if mesh == null:
+			push_error("flora_model_view: the builder made no mesh for " + species)
+			return
 
-	var node: MeshInstance3D = MeshInstance3D.new()
-	node.mesh = mesh
-	add_child(node)
+		var node: MeshInstance3D = MeshInstance3D.new()
+		node.mesh = mesh
+		node.position = Vector3((float(v) - float(variants - 1) * 0.5) * crown * 2.4, 0.0, 0.0)
+		add_child(node)
