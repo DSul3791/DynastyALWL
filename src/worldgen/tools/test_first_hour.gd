@@ -186,10 +186,11 @@ func _init() -> void:
 	note("drinking")
 
 	# 6. A lean-to and a chest: twine from fibre, then the kits, then both placed.
-	queue(1, 6)
-	pass_time(30.0, 0.3)
-	check(count("twine") == 6, "fibre is twisted into twine")
+	queue(1, 7)
+	pass_time(34.0, 0.3)
+	check(count("twine") == 7, "fibre is twisted into twine (lean-to 3 + chest 4 since the lean-to grew)")
 	items._vitals_cfg["eat_pace_ms"] = 0
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 9, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the bigger lean-to needs 9 (31 Oct)
 	queue(13, 1)
 	queue(14, 1)
 	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
