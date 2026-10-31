@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing. Spawn plan generated from fauna_proposal.json in the shape of data/animals/animals.json species rows (target_per_player, spawn_share, herd, habitat) plus three NEW keys the animal code does not read yet: `biomes` (biome name -> weight, 0 = never), `active` (day / dusk / night / season keys), `class` (land, bird, water, shore, ambient). To wire in: server_animals.gd top-up loop (line ~610) needs a biome lookup for the candidate spot and a time-of-day gate; see FAUNA_SPAWN_PLAN.md. Numbers are Sal's from rarity and size, not tuned by play.",
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing. Spawn plan generated from fauna_proposal.json in the shape of data/animals/animals.json species rows (target_per_player, spawn_share, herd, habitat) plus three NEW keys the animal code does not read yet: `biomes` (biome name -> weight, 0 = never), `active` (day / dusk / night / season keys), `class` (land, bird, water, shore, ambient). To wire in: server_animals.gd top-up loop (line ~610) needs a biome lookup for the candidate spot and a time-of-day gate; see FAUNA_SPAWN_PLAN.md. Numbers are Sal's from rarity and size, not tuned by play. `number` (added 2026-10-31) is the proposed species number for animals.json rows and AnimalView.KIND_OF_SPECIES: the 7 live species keep 1 to 7 (rabbit, deer, wolf, moose, fox, duck, horse); new ones continue from 8 in first-hour priority order (boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13...). Fish are not animals (fish_schools) and carry no number.",
 	"species": {
 		"hare": {
 			"class": "land",
@@ -16,7 +16,8 @@
 				"dusk": true,
 				"night": true
 			},
-			"needs": "spawn row + model"
+			"needs": "spawn row + model",
+			"number": 17
 		},
 		"red_squirrel": {
 			"class": "ambient",
@@ -32,7 +33,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "small-critter spawn + model; caches nuts (behaviour)"
+			"needs": "small-critter spawn + model; caches nuts (behaviour)",
+			"number": 28
 		},
 		"beaver": {
 			"class": "land",
@@ -52,7 +54,8 @@
 			"herd": [
 				2,
 				6
-			]
+			],
+			"number": 21
 		},
 		"otter": {
 			"class": "land",
@@ -72,7 +75,8 @@
 			"herd": [
 				1,
 				3
-			]
+			],
+			"number": 22
 		},
 		"badger": {
 			"class": "land",
@@ -92,7 +96,8 @@
 			"herd": [
 				1,
 				4
-			]
+			],
+			"number": 23
 		},
 		"pine_marten": {
 			"class": "land",
@@ -107,7 +112,8 @@
 				"dusk": true,
 				"night": true
 			},
-			"needs": "spawn + model + climbing behaviour"
+			"needs": "spawn + model + climbing behaviour",
+			"number": 27
 		},
 		"hedgehog": {
 			"class": "ambient",
@@ -123,7 +129,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "small-critter spawn + model; curls up (behaviour)"
+			"needs": "small-critter spawn + model; curls up (behaviour)",
+			"number": 29
 		},
 		"porcupine": {
 			"class": "land",
@@ -139,7 +146,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "spawn + model; quills hurt a melee attacker (behaviour)"
+			"needs": "spawn + model; quills hurt a melee attacker (behaviour)",
+			"number": 25
 		},
 		"lynx": {
 			"class": "land",
@@ -155,7 +163,8 @@
 				"dusk": true,
 				"night": true
 			},
-			"needs": "spawn + model; ambush (behaviour)"
+			"needs": "spawn + model; ambush (behaviour)",
+			"number": 24
 		},
 		"bear": {
 			"class": "land",
@@ -172,7 +181,8 @@
 				"dusk": true,
 				"night": false
 			},
-			"needs": "spawn + model; defend/charge reuses the moose pattern; hibernation (behaviour)"
+			"needs": "spawn + model; defend/charge reuses the moose pattern; hibernation (behaviour)",
+			"number": 16
 		},
 		"boar": {
 			"class": "land",
@@ -193,7 +203,8 @@
 			"herd": [
 				3,
 				8
-			]
+			],
+			"number": 8
 		},
 		"reindeer": {
 			"class": "land",
@@ -213,7 +224,8 @@
 			"herd": [
 				10,
 				30
-			]
+			],
+			"number": 26
 		},
 		"mountain_goat": {
 			"class": "land",
@@ -233,7 +245,8 @@
 			"herd": [
 				2,
 				6
-			]
+			],
+			"number": 15
 		},
 		"wild_sheep": {
 			"class": "land",
@@ -253,7 +266,8 @@
 			"herd": [
 				4,
 				12
-			]
+			],
+			"number": 14
 		},
 		"bat": {
 			"class": "ambient",
@@ -269,7 +283,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "ambient flyer: model + night-only spawn"
+			"needs": "ambient flyer: model + night-only spawn",
+			"number": 39
 		},
 		"grouse": {
 			"class": "bird",
@@ -289,7 +304,8 @@
 			"herd": [
 				1,
 				6
-			]
+			],
+			"number": 11
 		},
 		"pheasant": {
 			"class": "bird",
@@ -309,7 +325,8 @@
 			"herd": [
 				1,
 				5
-			]
+			],
+			"number": 18
 		},
 		"goose": {
 			"class": "bird",
@@ -329,7 +346,8 @@
 			"herd": [
 				10,
 				30
-			]
+			],
+			"number": 19
 		},
 		"gull": {
 			"class": "bird",
@@ -348,7 +366,8 @@
 			"herd": [
 				5,
 				20
-			]
+			],
+			"number": 20
 		},
 		"raven": {
 			"class": "bird",
@@ -369,7 +388,8 @@
 			"herd": [
 				1,
 				4
-			]
+			],
+			"number": 30
 		},
 		"owl": {
 			"class": "bird",
@@ -385,7 +405,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "night ambient flyer + hoot sound"
+			"needs": "night ambient flyer + hoot sound",
+			"number": 31
 		},
 		"eagle": {
 			"class": "bird",
@@ -401,7 +422,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "soaring ambient + model; dives on small prey (behaviour)"
+			"needs": "soaring ambient + model; dives on small prey (behaviour)",
+			"number": 32
 		},
 		"woodpecker": {
 			"class": "ambient",
@@ -416,7 +438,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "ambient + drum sound"
+			"needs": "ambient + drum sound",
+			"number": 33
 		},
 		"songbirds": {
 			"class": "ambient",
@@ -437,7 +460,8 @@
 			"herd": [
 				2,
 				10
-			]
+			],
+			"number": 9
 		},
 		"frog": {
 			"class": "ambient",
@@ -457,7 +481,8 @@
 			"herd": [
 				3,
 				20
-			]
+			],
+			"number": 10
 		},
 		"toad": {
 			"class": "ambient",
@@ -473,7 +498,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "ambient"
+			"needs": "ambient",
+			"number": 34
 		},
 		"newt": {
 			"class": "ambient",
@@ -492,7 +518,8 @@
 			"herd": [
 				1,
 				5
-			]
+			],
+			"number": 35
 		},
 		"grass_snake": {
 			"class": "land",
@@ -508,7 +535,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "spawn + model; harmless"
+			"needs": "spawn + model; harmless",
+			"number": 36
 		},
 		"adder": {
 			"class": "ambient",
@@ -524,7 +552,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "spawn + model; bite sickness (sickness.json has no venom entry)"
+			"needs": "spawn + model; bite sickness (sickness.json has no venom entry)",
+			"number": 37
 		},
 		"lizard": {
 			"class": "ambient",
@@ -541,7 +570,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "ambient"
+			"needs": "ambient",
+			"number": 38
 		},
 		"bee": {
 			"class": "ambient",
@@ -557,7 +587,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "wild hive node gives honeycomb and wax (new gather); stings"
+			"needs": "wild hive node gives honeycomb and wax (new gather); stings",
+			"number": 40
 		},
 		"butterfly": {
 			"class": "ambient",
@@ -577,7 +608,8 @@
 			"herd": [
 				1,
 				5
-			]
+			],
+			"number": 41
 		},
 		"dragonfly": {
 			"class": "ambient",
@@ -596,7 +628,8 @@
 			"herd": [
 				1,
 				3
-			]
+			],
+			"number": 42
 		},
 		"firefly": {
 			"class": "ambient",
@@ -612,7 +645,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "night light particles"
+			"needs": "night light particles",
+			"number": 43
 		},
 		"beetle": {
 			"class": "ambient",
@@ -627,7 +661,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "ground ambient"
+			"needs": "ground ambient",
+			"number": 44
 		},
 		"salmon": {
 			"class": "water",
@@ -641,7 +676,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "salmon item + run season"
+			"needs": "salmon item + run season",
+			"number": 45
 		},
 		"eel": {
 			"class": "water",
@@ -656,7 +692,8 @@
 				"dusk": false,
 				"night": true
 			},
-			"needs": "fish item"
+			"needs": "fish item",
+			"number": 46
 		},
 		"cod": {
 			"class": "water",
@@ -670,7 +707,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "sea-fishing code (ocean) + item"
+			"needs": "sea-fishing code (ocean) + item",
+			"number": 47
 		},
 		"crab": {
 			"class": "shore",
@@ -689,7 +727,8 @@
 			"herd": [
 				1,
 				5
-			]
+			],
+			"number": 48
 		},
 		"seal": {
 			"class": "land",
@@ -707,7 +746,8 @@
 			"herd": [
 				5,
 				30
-			]
+			],
+			"number": 12
 		},
 		"seabird": {
 			"class": "bird",
@@ -725,7 +765,8 @@
 			"herd": [
 				10,
 				60
-			]
+			],
+			"number": 13
 		},
 		"mussel": {
 			"class": "shore",
@@ -739,7 +780,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "tide-line gather node gives shellfish (new code)"
+			"needs": "tide-line gather node gives shellfish (new code)",
+			"number": 49
 		},
 		"kelp": {
 			"class": "shore",
@@ -753,7 +795,8 @@
 				"dusk": false,
 				"night": false
 			},
-			"needs": "tide-line gather node gives seaweed (new code)"
+			"needs": "tide-line gather node gives seaweed (new code)",
+			"number": 50
 		},
 		"shore_crab_node": {
 			"class": "shore",
@@ -772,7 +815,8 @@
 			"herd": [
 				1,
 				5
-			]
+			],
+			"number": 51
 		}
 	}
 }
