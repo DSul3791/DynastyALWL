@@ -34,7 +34,7 @@ def describe(cmd):
         owner = m.group(1)
     else:
         m = re.search(r"--path\s+\"?([^\s\"]+)", cmd)
-        owner = os.path.basename(m.group(1).rstrip("\/")) if m else "?"
+        owner = os.path.basename(m.group(1).rstrip("\\/")) if m else "?"
     if "terrain_server" in cmd:
         kind = "server"
     elif "terrain_client" in cmd:
