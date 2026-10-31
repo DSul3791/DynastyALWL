@@ -5861,8 +5861,7 @@
 			"kind": "food",
 			"description": "A small tart apple of July. Eat it soon: it keeps only 3 game days.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from apple early"
+				"Picked from a fruit tree in July"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5872,8 +5871,7 @@
 			"kind": "food",
 			"description": "A sweet juicy apple of August. Keeps about 7 game days.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from apple summer"
+				"Picked from a fruit tree in August"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5883,8 +5881,7 @@
 			"kind": "food",
 			"description": "A crisp all-round apple of September and October. Keeps about 20 game days.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from apple autumn"
+				"Picked from a fruit tree in September and October"
 			],
 			"used_for": [
 				"Used in Dried apples"
@@ -5896,8 +5893,7 @@
 			"kind": "food",
 			"description": "A hard russet apple picked late. Stored cool and dark it lasts until spring.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from apple keeping"
+				"Picked from a fruit tree late in the year"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5907,8 +5903,7 @@
 			"kind": "food",
 			"description": "A big sour apple that goes soft and sweet when cooked. Keeps a month.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from apple cooking"
+				"Picked from a fruit tree"
 			],
 			"used_for": [
 				"Used in Apple pie",
@@ -5921,8 +5916,7 @@
 			"kind": "food",
 			"description": "A small sweet pear of August. It goes soft in 4 game days.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from pear summer"
+				"Picked from a fruit tree in August"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5932,8 +5926,7 @@
 			"kind": "food",
 			"description": "A juicy pear of September and October. Keeps a couple of weeks.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from pear autumn"
+				"Picked from a fruit tree in September and October"
 			],
 			"used_for": [
 				"Used in Stewed pears"
@@ -5945,8 +5938,7 @@
 			"kind": "food",
 			"description": "A hard pear picked in November that ripens in store. Lasts into February.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from pear winter"
+				"Picked from a fruit tree in November"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5990,8 +5982,7 @@
 			"kind": "food",
 			"description": "A hard fragrant yellow fruit of late autumn. Bitter raw, sweet and pink cooked.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from quince"
+				"Picked from a fruit tree in late autumn"
 			],
 			"used_for": [
 				"Used in Quince paste"
@@ -6003,8 +5994,7 @@
 			"kind": "food",
 			"description": "A brown fruit eaten only after frost has softened it. Sweet and winey.",
 			"how_to_get": [
-				"Picked from a fruit tree",
-				"Picked from medlar"
+				"Picked from a fruit tree after the first frost"
 			],
 			"used_for": [],
 			"obtainable_now": true
