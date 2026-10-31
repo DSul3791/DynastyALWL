@@ -1922,3 +1922,7 @@ Answered: 2026-10-31 20:04 UTC
 Answer: Yes
 Answered: 2026-10-31 20:04 UTC
 
+## death-novice | Our design says death is final (remains, then you play on as your child or a new character; no respawn). Should new characters get a free respawn at their bed until they reach a set level?
+Answer: Respawn at the bed until level 10, then real death
+Answered: 2026-10-31 20:05 UTC
+
