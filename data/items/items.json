@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 353,
+	"next_number": 364,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3225,7 +3225,6 @@
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -3426,7 +3425,6 @@
 			"material": "stone",
 			"tier": 2,
 			"stack": 1,
-			"future": true,
 			"durability": 4500,
 			"look_alikes": [],
 			"repair": [
@@ -3498,7 +3496,6 @@
 			"weapon_class": "club",
 			"tier": 1,
 			"stack": 1,
-			"future": true,
 			"damage": 7.0,
 			"durability": 350,
 			"look_alikes": [],
@@ -3558,7 +3555,6 @@
 			"slot": "body",
 			"warmth": 0.24,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 30
 		},
@@ -3570,7 +3566,6 @@
 			"slot": "legs",
 			"warmth": 0.18,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 26
 		},
@@ -3582,7 +3577,6 @@
 			"slot": "hands",
 			"warmth": 0.1,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 16
 		},
@@ -3593,7 +3587,6 @@
 			"kind": "container",
 			"stack": 1,
 			"capacity_ml": 2000,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3603,7 +3596,6 @@
 			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
 			"kind": "medicine",
 			"stack": 10,
-			"future": true,
 			"note": "Placeholder: heals once health exists.",
 			"look_alikes": [],
 			"value": 12
@@ -3614,7 +3606,6 @@
 			"description": "Two straight sticks bound to a limb to hold a broken bone still.",
 			"kind": "medicine",
 			"stack": 5,
-			"future": true,
 			"note": "Placeholder: sets a break once injuries exist.",
 			"look_alikes": [],
 			"value": 6
@@ -3627,7 +3618,6 @@
 			"tool_class": "candle",
 			"tier": 1,
 			"stack": 10,
-			"future": true,
 			"light_m": 4.0,
 			"look_alikes": [],
 			"value": 3
@@ -3641,7 +3631,6 @@
 			"offhand": true,
 			"tier": 1,
 			"stack": 1,
-			"future": true,
 			"durability": 120,
 			"look_alikes": [],
 			"repair": [
@@ -3660,7 +3649,6 @@
 			"weapon_class": "mace",
 			"tier": 2,
 			"stack": 1,
-			"future": true,
 			"damage": 9.0,
 			"durability": 400,
 			"look_alikes": [],
@@ -3893,7 +3881,6 @@
 			"slot": "head",
 			"warmth": 0.08,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 25
 		},
@@ -4108,7 +4095,6 @@
 			"kind": "tool",
 			"tool_class": "quern",
 			"stack": 1,
-			"future": true,
 			"durability": 3000,
 			"repair": [
 				[
@@ -4125,7 +4111,6 @@
 			"description": "Rotted plant matter. Feeds a tilled bed.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -4185,7 +4170,6 @@
 			"description": "Hide boiled down to a sticky glue. Holds wood, bone and feathers.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4198,9 +4182,127 @@
 			"damage": 8.5,
 			"tip": "bone",
 			"stack": 20,
+			"look_alikes": [],
+			"value": 4
+		},
+		"stone_wedge": {
+			"number": 353,
+			"name": "Stone wedge",
+			"description": "A flaked stone wedge. Driven into a log it splits it into rough planks.",
+			"kind": "tool",
+			"tool_class": "wedge",
+			"stack": 1,
+			"durability": 600,
+			"repair": [
+				[
+					"stone",
+					1
+				]
+			],
+			"look_alikes": [],
+			"value": 6
+		},
+		"fibre_arrow": {
+			"number": 354,
+			"name": "Fibre arrow",
+			"description": "A hardened stick with fibre fletching. Weak and short, but needs no feather.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 3.5,
+			"tip": "wood",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1
+		},
+		"seaweed": {
+			"number": 355,
+			"name": "Seaweed",
+			"description": "Wet strands of kelp and wrack from the tide line. Edible, salty and rich in minerals.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"shellfish": {
+			"number": 356,
+			"name": "Shellfish",
+			"description": "Mussels, limpets and cockles prised off the shore rocks. Eat cooked.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"crab_meat": {
+			"number": 357,
+			"name": "Crab meat",
+			"description": "White meat from a shore crab.",
+			"kind": "food",
+			"stack": 20,
 			"future": true,
 			"look_alikes": [],
 			"value": 4
+		},
+		"egg": {
+			"number": 358,
+			"name": "Egg",
+			"description": "A wild bird's egg from a nest. Boil or fry it.",
+			"kind": "food",
+			"stack": 12,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"seal_meat": {
+			"number": 359,
+			"name": "Seal meat",
+			"description": "Dark, rich meat from a seal. Cook it well.",
+			"kind": "food",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"sea_salt": {
+			"number": 360,
+			"name": "Sea salt",
+			"description": "Salt boiled out of sea water. Keeps meat and fish.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"roast_shellfish": {
+			"number": 361,
+			"name": "Steamed Shellfish",
+			"description": "Shellfish steamed open on hot coals. Salty and sweet.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"boiled_egg": {
+			"number": 362,
+			"name": "Boiled egg",
+			"description": "An egg boiled hard. Keeps well and fills the belly.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"roast_seal": {
+			"number": 363,
+			"name": "Seal Steak",
+			"description": "Seal meat roasted over a fire. Rich and fatty.",
+			"kind": "food",
+			"stack": 10,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
 		}
 	}
 }

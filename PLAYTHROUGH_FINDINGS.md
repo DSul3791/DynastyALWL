@@ -198,3 +198,21 @@ What the sheets show: the structures, tools, weapons, bows, spades, hoes, hammer
 * A walk by hand in the client (real mouse clicks), and the first-day trunk, stump, lit fire and cover pictures (the rig's world pictures need the ground to load and each run re-bakes the terrain).
 * Items in the hand, worn on the body and falling or dropped: only the sheets (loose look) and the three held pictures `08_hold_*` exist. The armour and clothing pieces are drawn on the body by `worn.json` builders; I did not photograph the 21 worn rows.
 * The `--pieces` rig run for placed structures in the world (the sheets draw the same models in isolation).
+* A walk by hand in the client (real mouse clicks).
+* Pictures of kits, placed stations and structures on the fixed world: the rig needs the ground to have loaded and each run re-bakes the terrain store (about 5 minutes of machine time), so I ran the item rows first; the `--pieces` run for the 37 structures is listed in `run_all.sh`.
+* Pictures where an item has no look (it is drawn as the grey chunk) are in the showroom rows and marked in `audit.md`.
+
+## 5. Fix status (Sal, 2026-10-31, branch sal-items)
+Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `known` flag, 1 mismatch (Lumber by hand, needs a hand saw), and fire lights with plant fibre, birch bark, tinder and tinder fungus.
+* **F-01 FIXED (data):** 76 recipes now `known:true` (stone pickaxe, club, mace, javelin, wicker shield, kindling, hide and grass clothing, waterskin, bucket, brick, clay jug, quern, splint, candle, compost, salve and more). 19 stay locked (forge/workbench level 2 and up, water wheel). Code half: LEARN_SYSTEM_SPEC.md.
+* **F-06 FIXED:** brick, mortar, cobblestone known; oven and clay hearth reachable.
+* **F-03 FIXED (data):** drops.json harvest: tinder fungus gives 3 tinder fungus, cotton grass gives 8 tinder; birch trunks give 2 to 4 birch bark per seed roll; new recipe Tinder (2 thatch gives 2 tinder, by hand).
+* **F-08 FIXED:** Fibre arrow (item 354, 2 sticks + 1 fibre gives 4, damage 3.5) needs no feather; Bone arrow (item 352) also added.
+* **F-11 FIXED (hammer):** recipe "Wooden hammer" also accepts `wooden_block_soft`. The `log_*` species chains still need the code change in ITEM_CODE_HANDOFF.md section 1.
+* **F-12 FIXED (data):** fern and heather harvest gives 6 bedding; recipe "Rough bed" also accepts 8 bedding instead of 10 thatch. Straw has no source yet (needs wheat or barley growing).
+* **F-14 PARTLY FIXED:** twine cut on thatch floor 6 to 4, wall 20 to 8, roof 10 to 6, doorway 12 to 6, shore net 20 to 8, campfire pot 5 to 3. **The stone axe and stone spear stay at 5 twine** because test_first_hour and test_auto_craft hard-code 5 twine and 15 fibre; changing them needs those tests rewritten (about 12 lines in test_auto_craft). Proposal: axe 2 twine.
+* **F-15 FIXED (data):** Stone pickaxe is known and no longer marked future.
+* **F-02, F-05 data FIXED, code open:** Stone wedge (353) + log at a workbench gives 2 lumber, so wooden building is reachable with no iron. Flint, coal, ore and obsidian sources are specified in FLINT_ORE_SPEC.md for the code session; until then hide scraper, javelin and sickle stay unreachable.
+* **F-14 FIXED (update 2026-10-31):** Stone axe and Stone spear now cost 2 twine (6 fibre) instead of 5; test_first_hour, test_auto_craft (the 50-craft-cap check is dropped because one queue call takes at most 20 axes, which now needs only 40 twine), test_inventory and PLAYTHROUGH_GUIDE.md updated.
+* **F-12 straw FIXED (data):** tall grass now also gives 1 to 3 straw; recipe "Rough bed" also accepts 8 straw.
+* **F-11 spec:** LOG_SPECIES_SPEC.md (code half for Tyler).

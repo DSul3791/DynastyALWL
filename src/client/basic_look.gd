@@ -31,6 +31,8 @@ const ART_OVERRIDES := {
 	"flour": {"shape": "sack", "color": "#efe6d2", "size": 0.9},
 	"salt": {"shape": "grit", "color": "#f4f4f0", "size": 0.8},
 	"wooden_club": {"shape": "club", "color": "#5a3a1c", "size": 1.2},
+	"stone_mace": {"shape": "mace", "color": "#46433e", "size": 1.0},
+	"wicker_shield": {"shape": "shield", "color": "#b8924a", "size": 1.0},
 	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
@@ -57,10 +59,15 @@ static func entry(item_id: String) -> Dictionary:
 			if parsed is Dictionary:
 				_table = parsed.get("items", {})
 
-	if ART_OVERRIDES.has(item_id) and not _table.has(item_id):
+	if ART_OVERRIDES.has(item_id) and (not _table.has(item_id) or _is_placeholder(_table[item_id])):   # a missing row or the grey placeholder chunk gives way to the real look
 		return ART_OVERRIDES[item_id]
 
 	return _table.get(item_id, {})
+
+
+# The grey chunk that gen_looks.py and the item sessions write for an item that has no model yet.
+static func _is_placeholder(row: Dictionary) -> bool:
+	return str(row.get("shape", "")) == "chunk" and str(row.get("color", "")).to_lower() == "#8a8a8a"
 
 
 static func has_look(item_id: String) -> bool:
@@ -109,6 +116,61 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var bend: float = (float(k % 3) - 1.0) * 0.05
 				_box_rot(parts, Vector3(0.34 + 0.02 * float(k % 4), 0.004, 0.006), Vector3(0.0, 0.004 * float(k % 5), spread), Vector3(0.0, bend, 0.0), color.lightened(0.07 * float(k % 3)) if k % 2 == 0 else color.darkened(0.08))
 			_cyl(parts, 0.04, 0.02, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.45, 0.36, 0.2))
+		"heap":
+			# A loose heap of dried grass (bedding): a low dome of overlapping straw clumps, darker in the hollows, with many short strands lying across it following its curve (crossed every way),
+			# a few long stray ones at the edge and a couple of dry leaves; about 0.3 m across and 0.08 m high.
+			var straw_dark: Color = color.darkened(0.3)
+
+			for k in 11:
+				var ha: float = TAU * float(k) * 0.381966
+				var hr: float = 0.012 + 0.085 * sqrt(float(k) / 11.0)
+				var lift: float = 0.045 * (1.0 - pow(hr / 0.14, 2.0))
+				_sph(parts, 0.06 - 0.012 * (hr / 0.1), Vector3(1.4, 0.55, 1.2), Vector3(cos(ha) * hr, -0.055 + lift, sin(ha) * hr), _tone(straw_dark if k % 2 == 0 else color.darkened(0.12), k, 0.12))
+
+			for k in 54:
+				var sa: float = TAU * float(k) * 0.381966
+				var sr: float = 0.15 * sqrt(float((k * 7) % 54) / 54.0)
+				var sh: float = -0.045 + 0.05 * (1.0 - pow(sr / 0.15, 2.0))
+				var tint: Color = color.lightened(0.15) if k % 4 != 3 else color.darkened(0.1)
+				_box_rot(parts, Vector3(0.14 + 0.04 * float(k % 3), 0.004, 0.006), Vector3(cos(sa) * sr, sh + 0.006 * float(k % 3), sin(sa) * sr), Vector3(0.0, sa * 2.3, 0.18 * float((k % 3) - 1)), _tone(tint, k, 0.15))
+
+			for k in 5:
+				var la: float = TAU * float(k) / 5.0 + 0.4
+				_box_rot(parts, Vector3(0.2, 0.003, 0.005), Vector3(cos(la) * 0.15, -0.045, sin(la) * 0.15), Vector3(0.0, la + 1.2, 0.0), _tone(color.lightened(0.15), k, 0.1))
+
+			for k in 2:
+				_box_rot(parts, Vector3(0.05, 0.004, 0.028), Vector3(0.05 * float(k * 2 - 1), 0.005, 0.03 * float(1 - k * 2)), Vector3(0.0, 0.8 + 2.0 * float(k), 0.2), Color(0.45, 0.33, 0.15))
+		"mace":
+			# A stone mace (ovoid macehead on a haft; refs: Fitzwilliam and Penn museum macehead records, Late Neolithic to Early Bronze Age): a wooden haft with a wrapped grip at the thin end and a pear-shaped
+			# pecked stone head slid on at the thick end, wedged and bound under the head, the haft tip showing through the top; chips and a drilled-hole collar mark the stone.
+			_cyl_taper(parts, 0.016, 0.022, 0.46, Vector3(-0.07, 0.0, 0.0), _tone(Color(0.4, 0.27, 0.13), 1, 0.08))
+
+			for k in 5:
+				_cyl(parts, 0.0185, 0.014, Vector3(-0.27 + 0.019 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.24, 0.14, 0.07) if k % 2 == 0 else Color(0.16, 0.09, 0.05))
+
+			_sph(parts, 0.07, Vector3(1.05, 1.0, 1.0), Vector3(0.15, 0.0, 0.0), _tone(color, 2, 0.08))
+			_sph(parts, 0.05, Vector3(1.0, 0.95, 0.95), Vector3(0.205, 0.0, 0.0), _tone(color, 4, 0.08))
+			_sph(parts, 0.032, Vector3(0.8, 1.0, 1.0), Vector3(0.245, 0.0, 0.0), color.lightened(0.06))
+			_cyl(parts, 0.027, 0.02, Vector3(0.08, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))   # the lashing under the head
+			_cyl(parts, 0.016, 0.02, Vector3(0.275, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.62, 0.46, 0.26))   # the haft tip through the head
+			_box_rot(parts, Vector3(0.03, 0.012, 0.025), Vector3(0.14, 0.05, 0.03), Vector3(0.0, 0.5, 0.3), color.lightened(0.25))
+			_box_rot(parts, Vector3(0.025, 0.012, 0.02), Vector3(0.19, -0.03, -0.04), Vector3(0.0, -0.6, 0.2), color.darkened(0.25))
+		"shield":
+			# A wicker shield (ref: British Museum on the Enderby Iron Age shield, a hazel rim, a woven willow dome boss and a flat handle): a round woven board, its willow rods in
+			# alternating pale and dark rings out from the boss, radial stakes under them, a heavy rim of split hazel and a woven dome boss in the middle. Lying flat, about 0.55 m across.
+			var wicker: Color = color
+			_cyl(parts, 0.27, 0.02, Vector3(0.0, -0.03, 0.0), Vector3.ZERO, wicker.darkened(0.25))
+
+			for k in 8:
+				_box_rot(parts, Vector3(0.53, 0.012, 0.014), Vector3(0.0, -0.018, 0.0), Vector3(0.0, PI * float(k) / 8.0, 0.0), _tone(wicker.darkened(0.35), k, 0.1))
+
+			for k in 5:
+				_torus(parts, 0.07 + 0.04 * float(k), 0.011, Vector3(0.0, -0.014, 0.0), wicker if k % 2 == 0 else wicker.lightened(0.15))
+
+			_torus(parts, 0.268, 0.022, Vector3(0.0, -0.025, 0.0), Color(0.34, 0.22, 0.12))
+			_sph(parts, 0.075, Vector3(1.0, 0.55, 1.0), Vector3(0.0, -0.012, 0.0), wicker.lightened(0.1))
+			_torus(parts, 0.05, 0.008, Vector3(0.0, 0.0, 0.0), wicker.darkened(0.2))
+			_torus(parts, 0.03, 0.007, Vector3(0.0, 0.008, 0.0), wicker.lightened(0.2))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)

@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 227,
+	"next_number": 234,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -39,7 +39,7 @@
 				],
 				[
 					"twine",
-					5
+					2
 				]
 			],
 			"gives": [
@@ -83,7 +83,7 @@
 				],
 				[
 					"twine",
-					5
+					2
 				]
 			],
 			"keeps": [
@@ -351,7 +351,7 @@
 				4
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"plank_chest_kit": {
@@ -396,7 +396,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"steel_pickaxe": {
@@ -475,7 +475,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"waterskin": {
 			"number": 23,
@@ -496,7 +496,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"twine_bark": {
 			"number": 24,
@@ -577,7 +577,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"steel_spade": {
 			"number": 28,
@@ -598,7 +598,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"sewing_needle": {
 			"number": 29,
@@ -779,7 +779,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"grass_cloak": {
 			"number": 37,
@@ -800,7 +800,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"fibre_sandals": {
 			"number": 38,
@@ -821,7 +821,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_cloak": {
 			"number": 39,
@@ -943,7 +943,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"rough_bed_kit": {
 			"number": 162,
@@ -981,7 +981,7 @@
 				],
 				[
 					"twine",
-					5
+					3
 				],
 				[
 					"clay_pot",
@@ -1002,7 +1002,7 @@
 			"needs": [
 				[
 					"twine",
-					6
+					4
 				],
 				[
 					"thatch",
@@ -1015,7 +1015,7 @@
 			],
 			"craft_s": 10.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_wall_kit": {
 			"number": 167,
@@ -1024,7 +1024,7 @@
 			"needs": [
 				[
 					"twine",
-					20
+					8
 				],
 				[
 					"thatch",
@@ -1041,7 +1041,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_roof_kit": {
 			"number": 168,
@@ -1050,7 +1050,7 @@
 			"needs": [
 				[
 					"twine",
-					10
+					6
 				],
 				[
 					"thatch",
@@ -1067,7 +1067,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_doorway_kit": {
 			"number": 169,
@@ -1076,7 +1076,7 @@
 			"needs": [
 				[
 					"twine",
-					12
+					6
 				],
 				[
 					"thatch",
@@ -1093,7 +1093,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"workbench_kit": {
 			"number": 45,
@@ -1123,7 +1123,7 @@
 			"needs": [
 				[
 					"twine",
-					20
+					8
 				],
 				[
 					"stone",
@@ -1135,7 +1135,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"fishing_rod": {
 			"number": 46,
@@ -1300,7 +1300,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_oak": {
@@ -1318,7 +1318,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_beech": {
@@ -1374,7 +1374,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_birch": {
@@ -1392,7 +1392,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_scots_pine": {
@@ -1410,7 +1410,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_scots_pine": {
@@ -1428,7 +1428,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_spruce": {
@@ -1446,7 +1446,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_spruce": {
@@ -1464,7 +1464,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_alder": {
@@ -1596,7 +1596,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_tropical_hardwood": {
@@ -1614,7 +1614,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_acacia": {
@@ -1898,7 +1898,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_walnut": {
@@ -1916,7 +1916,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_date_palm": {
@@ -2200,7 +2200,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_maple": {
@@ -2218,7 +2218,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"cook_berry_compote": {
@@ -2808,7 +2808,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"timber_set_kit": {
 			"number": 126,
@@ -2850,7 +2850,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -2869,7 +2869,7 @@
 				3
 			],
 			"craft_s": 14.0,
-			"known": false,
+			"known": true,
 			"station": "campfire"
 		},
 		"mortar": {
@@ -2891,7 +2891,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"ladder_kit": {
 			"number": 130,
@@ -3181,7 +3181,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"steel_hoe": {
 			"number": 142,
@@ -3202,7 +3202,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": true
 		},
 		"rough_plank": {
 			"number": 143,
@@ -3238,7 +3238,7 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": false,
+			"known": true,
 			"station": "woodworking_table",
 			"station_level": 1
 		},
@@ -3257,7 +3257,7 @@
 				100
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"cobblestone": {
@@ -3275,7 +3275,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3294,7 +3294,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3313,7 +3313,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"station": "campfire"
 		},
 		"hinges": {
@@ -3331,7 +3331,7 @@
 				4
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"wooden_pin": {
@@ -3360,7 +3360,7 @@
 			"needs": [["iron_ingot", 2]],
 			"gives": ["saw_blade", 1],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"water_wheel": {
@@ -3489,7 +3489,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"stone_adze": {
@@ -3688,13 +3688,13 @@
 			"craft_s": 6.0,
 			"known": true
 		},
-		"kindling": {"number": 178, "name": "Kindling", "category": "Fire and cooking", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": false},
-		"processed_hide": {"number": 179, "name": "Processed hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": false},
-		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": false, "station": "workbench"},
-		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": false, "station": "workbench"},
-		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": false, "station": "workbench"},
-		"steel_striker": {"number": 183, "name": "Steel striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": false, "station": "forge"},
-		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": false, "station": "forge"},
+		"kindling": {"number": 178, "name": "Kindling", "category": "Fire and cooking", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
+		"processed_hide": {"number": 179, "name": "Processed hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
+		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"steel_striker": {"number": 183, "name": "Steel striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
+		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": false, "station": "forge", "station_level": 2},
 		"stone_pickaxe": {
 			"number": 186,
@@ -3719,7 +3719,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"sickle": {
@@ -3745,7 +3745,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"scythe": {
@@ -3767,7 +3767,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"wooden_club": {
@@ -3785,7 +3785,7 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": false
+			"known": true
 		},
 		"smelt_copper": {
 			"number": 190,
@@ -3802,7 +3802,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"smelt_tin": {
@@ -3820,7 +3820,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"smelt_iron": {
@@ -3838,7 +3838,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"smelt_steel": {
@@ -3883,7 +3883,7 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false
+			"known": true
 		},
 		"hide_trousers": {
 			"number": 195,
@@ -3904,7 +3904,7 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false
+			"known": true
 		},
 		"hide_gloves": {
 			"number": 196,
@@ -3925,7 +3925,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"clay_jug": {
 			"number": 197,
@@ -3942,7 +3942,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": true
 		},
 		"herb_salve": {
 			"number": 198,
@@ -3963,7 +3963,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"splint": {
 			"number": 199,
@@ -3984,7 +3984,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"candle": {
 			"number": 200,
@@ -4005,7 +4005,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"wicker_shield": {
 			"number": 201,
@@ -4026,7 +4026,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"stone_mace": {
 			"number": 202,
@@ -4051,7 +4051,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": true
 		},
 		"plank_shield": {
 			"number": 203,
@@ -4072,7 +4072,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"bronze_sword": {
@@ -4297,7 +4297,7 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false
+			"known": true
 		},
 		"leather_jerkin": {
 			"number": 214,
@@ -4314,7 +4314,7 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"bronze_helm": {
@@ -4355,7 +4355,7 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"iron_helm": {
@@ -4473,7 +4473,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"flour_from_wheat": {
 			"number": 222,
@@ -4496,7 +4496,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"flour_from_barley": {
 			"number": 223,
@@ -4519,7 +4519,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"compost": {
 			"number": 224,
@@ -4536,7 +4536,7 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": false
+			"known": true
 		},
 		"hide_glue": {
 			"number": 225,
@@ -4553,7 +4553,7 @@
 				2
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"station": "campfire_pot"
 		},
 		"bone_arrow": {
@@ -4579,7 +4579,165 @@
 				4
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
+		},
+		"stone_wedge": {
+			"number": 227,
+			"name": "Stone wedge",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"stone_wedge",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"fibre_arrow": {
+			"number": 228,
+			"name": "Fibre arrow",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"fibre_arrow",
+				4
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"tinder": {
+			"number": 229,
+			"name": "Tinder",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"thatch",
+					2
+				]
+			],
+			"gives": [
+				"tinder",
+				2
+			],
+			"craft_s": 3.0,
+			"known": true
+		},
+		"lumber_wedge": {
+			"number": 230,
+			"name": "Rough planks",
+			"category": "Materials",
+			"needs": [
+				[
+					"log",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_wedge",
+					1
+				]
+			],
+			"gives": [
+				"lumber",
+				2
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"rough_bed_bedding": {
+			"number": 231,
+			"name": "Rough bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"bedding",
+					8
+				],
+				[
+					"stick",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"rough_bed_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"wooden_hammer_soft": {
+			"number": 232,
+			"name": "Wooden hammer",
+			"category": "Tools",
+			"needs": [
+				[
+					"wooden_block_soft",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wooden_hammer",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true
+		},
+		"rough_bed_straw": {
+			"number": 233,
+			"name": "Rough bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"straw",
+					8
+				],
+				[
+					"stick",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"rough_bed_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
 		}
 	}
 }
