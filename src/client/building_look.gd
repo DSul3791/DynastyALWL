@@ -243,6 +243,13 @@ static func _tone(color: Color, rng: RandomNumberGenerator, amount: float) -> Co
 
 # --------------------------------------------------------------- the lean-to
 
+# Three turns of plant-fibre twine round a pole at `at`, the pole running along `axis`: thin short rings a little wider than the pole.
+static func _lash(st: SurfaceTool, at: Vector3, axis: Vector3, radius: float, color: Color, rng: RandomNumberGenerator) -> void:
+	for k in range(3):
+		var off: Vector3 = axis.normalized() * (0.03 * float(k) - 0.03)
+		_tube(st, at + off, at + off + axis.normalized() * 0.022, radius + 0.014, radius + 0.014, _tone(color, rng, 0.1), 5, rng)
+
+
 static func _leanto_wood() -> ArrayMesh:
 	if _cache.has("leanto_wood"):
 		return _cache["leanto_wood"]
@@ -252,41 +259,61 @@ static func _leanto_wood() -> ArrayMesh:
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# A roomier shelter (Dave 2026-10-31: crawl in and lie down, a rough bed inside): 2.6 m wide (x), 2.4 m deep (z), the roof from 2.1 m at the open front to 0.9 m at the back; the floor
-	# between the posts is clear for a bed of 1.0 by 2.0 m. Two front posts, two back posts, a log-and-branch back wall, a low branch rail along each side at the back only.
-	# Front poles, a little crooked, with a fork at the top.
+	# A shelter of round poles only (Dave 2026-10-31: round thin logs and poles, never timber or lumber; refs: bushcraft lean-to shelters with a ridge pole, rafters and a roof of boughs, e.g.
+	# https://instructables.com/Lean-To-Shelter, https://yonderjournal.com/guide/standard-lean/ and https://www.advnture.com/how-to/build-a-natural-shelter): 2.6 m wide (x) by 2.4 m deep (z), the roof from 2.1 m at the open front to 0.9 m at the
+	# back, a clear floor for a bed of 1.0 by 2.0 m. Poles 6 to 10 cm through (radius 0.03 to 0.05), slightly crooked, with the bark colour; every joint is lashed with plant-fibre twine wraps.
+	# Two front posts with forks, two back posts, a ridge pole, a back rail, eight rafters, cross sticks, a back wall of leaning poles and stacked branches, low side branches. No sawn faces.
+	var lashing: Color = Color(0.74, 0.66, 0.4)
+
+	for x in [-1.2, 1.2]:   # front posts with a fork at the top, the ridge pole resting in it
+		_tube(st, Vector3(x, 0.0, 1.1), Vector3(x * 0.98, 2.0, 1.05), 0.05, 0.04, WOOD, 6, rng)
+		_tube(st, Vector3(x * 0.98, 1.88, 1.05), Vector3(x * 0.98 + signf(x) * 0.12, 2.1, 1.05), 0.025, 0.02, WOOD, 5, rng)
+		_lash(st, Vector3(x * 0.98, 2.0, 1.05), Vector3(0.0, 1.0, 0.0), 0.058, lashing, rng)
+
+	# Back posts, shorter.
 	for x in [-1.2, 1.2]:
-		_tube(st, Vector3(x, 0.0, 1.1), Vector3(x * 0.98, 2.0, 1.05), 0.09, 0.06, WOOD, 6, rng)
-		_tube(st, Vector3(x * 0.98, 1.88, 1.05), Vector3(x * 0.98 + signf(x) * 0.14, 2.12, 1.05), 0.04, 0.03, WOOD, 5, rng)
+		_tube(st, Vector3(x, 0.0, -1.12), Vector3(x * 0.99, 0.9, -1.15), 0.05, 0.04, WOOD_DARK, 6, rng)
+		_lash(st, Vector3(x * 0.99, 0.9, -1.15), Vector3(0.0, 1.0, 0.0), 0.058, lashing, rng)
 
-	# Back poles, shorter.
-	for x in [-1.2, 1.2]:
-		_tube(st, Vector3(x, 0.0, -1.12), Vector3(x * 0.99, 0.9, -1.15), 0.08, 0.055, WOOD_DARK, 6, rng)
+	# Ridge pole across the front top, and a low rail across the back.
+	_tube(st, Vector3(-1.35, 2.0, 1.05), Vector3(1.35, 2.02, 1.05), 0.045, 0.04, WOOD_PALE, 6, rng)
+	_tube(st, Vector3(-1.35, 0.9, -1.15), Vector3(1.35, 0.92, -1.15), 0.04, 0.035, WOOD_PALE, 6, rng)
 
-	# Ridge pole across the front top, and a low one across the back.
-	_tube(st, Vector3(-1.35, 2.0, 1.05), Vector3(1.35, 2.02, 1.05), 0.065, 0.055, WOOD_PALE, 6, rng)
-	_tube(st, Vector3(-1.35, 0.9, -1.15), Vector3(1.35, 0.92, -1.15), 0.06, 0.05, WOOD_PALE, 6, rng)
+	# Rafters (round saplings) from the high front down to the low back, each lashed to the ridge and to the back rail.
+	var rafter_x: Array = []
 
-	# Rafters from the high front down to the low back, with a few spare cross sticks.
 	for i in range(8):
 		var x: float = -1.15 + 2.3 * float(i) / 7.0
-		_tube(st, Vector3(x, 2.0, 1.05), Vector3(x + rng.randf_range(-0.03, 0.03), 0.9, -1.25), 0.04, 0.03, WOOD, 5, rng)
+		rafter_x.append(x)
+		_tube(st, Vector3(x, 2.0, 1.05), Vector3(x + rng.randf_range(-0.03, 0.03), 0.9, -1.25), 0.032, 0.024, WOOD, 5, rng)
+		_lash(st, Vector3(x, 2.0, 1.05), Vector3(1.0, 0.0, 0.0), 0.04, lashing, rng)
+		_lash(st, Vector3(x, 0.92, -1.15), Vector3(1.0, 0.0, 0.0), 0.034, lashing, rng)
 
-	for row in range(5):
+	for row in range(5):   # thin cross sticks across the rafters, lashed at the outer rafters
 		var z: float = lerpf(0.75, -0.85, float(row) / 4.0)
 		var y: float = lerpf(1.82, 1.05, float(row) / 4.0)
-		_tube(st, Vector3(-1.3, y, z), Vector3(1.3, y + rng.randf_range(-0.03, 0.03), z), 0.025, 0.022, WOOD_PALE, 4, rng)
+		_tube(st, Vector3(-1.3, y, z), Vector3(1.3, y + rng.randf_range(-0.03, 0.03), z), 0.02, 0.018, WOOD_PALE, 4, rng)
 
-	# The back wall: stacked branches laid across between the back poles.
+		if row % 2 == 1:
+			for rx in [-1.15, 1.15]:
+				_lash(st, Vector3(rx, y, z), Vector3(1.0, 0.0, 0.0), 0.028, lashing, rng)
+
+	# The back wall: poles leaning against the back rail with branches stacked between them.
 	for n in range(7):
 		var y: float = 0.1 + 0.125 * float(n)
-		_tube(st, Vector3(-1.3, y, -1.15 + rng.randf_range(-0.02, 0.02)), Vector3(1.3, y + rng.randf_range(-0.04, 0.04), -1.15), 0.045, 0.04, _tone(WOOD, rng, 0.2), 5, rng)
+		_tube(st, Vector3(-1.3, y, -1.15 + rng.randf_range(-0.02, 0.02)), Vector3(1.3, y + rng.randf_range(-0.04, 0.04), -1.15), 0.035, 0.03, _tone(WOOD, rng, 0.2), 5, rng)
 
-	# A low side wall of branches at the back of each side (the sides are otherwise open, so you can crawl in), and a pair of weather sticks leaning across the front.
+	for n in range(9):
+		var x: float = -1.1 + 0.275 * float(n)
+		_tube(st, Vector3(x, 0.0, -1.0), Vector3(x + rng.randf_range(-0.05, 0.05), 0.95, -1.19), 0.03, 0.022, _tone(WOOD_DARK, rng, 0.15), 5, rng)
+
+	# Low side branches on the back half of each side (the rest of the sides and the front stay open), tied to the back posts.
 	for sx in [-1.0, 1.0]:
 		for n in range(3):
 			var y: float = 0.1 + 0.14 * float(n)
-			_tube(st, Vector3(sx * 1.2, y, -1.1), Vector3(sx * 1.22 + rng.randf_range(-0.02, 0.02), y + rng.randf_range(-0.03, 0.03), -0.2), 0.04, 0.035, _tone(WOOD, rng, 0.2), 5, rng)
+			_tube(st, Vector3(sx * 1.2, y, -1.1), Vector3(sx * 1.22 + rng.randf_range(-0.02, 0.02), y + rng.randf_range(-0.03, 0.03), -0.2), 0.03, 0.026, _tone(WOOD, rng, 0.2), 5, rng)
+
+		_lash(st, Vector3(sx * 1.2, 0.24, -1.1), Vector3(0.0, 1.0, 0.0), 0.05, lashing, rng)
 
 	return _finish_cached("leanto_wood", st, _solid_material())
 
