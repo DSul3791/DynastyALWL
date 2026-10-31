@@ -7,10 +7,10 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-01/F-24 | recipes can be learned | **STILL BROKEN** | 208 of 227 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_s) | Sal (data), Tyler (code half) |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
-| F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks | Tyler |
+| F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present | Tyler |
 | F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False | Sal + Tyler |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 | Sal |
-| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [5, 18] | flora session |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [8, 37] | flora session |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True | Sal |
 | F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] | Kathleen |
 | F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot | Sonny |
@@ -19,7 +19,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-13 | blueberry size | **MANUAL** | needs a picture | flora session |
 | F-14 | first axe cost in twine | **FIXED** | stone axe needs 2 twine | Sal |
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True | Sal |
-| F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 | Tyler (code) + Sal |
+| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **STILL BROKEN** | probe_logs round 2: rough planks from the one log on the shoulder = 0 (the unit test passes only with logs forced into the pack: yes) | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout, dried_berries, hazelnut_butter, tallow, soap, candle | Kathleen |
 | F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future | Sal |
@@ -30,6 +30,6 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
 | S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing | Sal (spec) + Tyler (code) |
 | S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) | Tyler |
-| S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] | Tyler |
+| S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] | Tyler |
 
 12 fixed, 13 still broken, 2 manual.

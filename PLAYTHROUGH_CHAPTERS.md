@@ -36,14 +36,14 @@ Natural sources found in `drops.json`, `digging.json`, `carcass.json`, `fishing.
 | clay | material | dig | now | ok (clump) | sheets/items_02.jpg |
 | sand | material | dig | now | ok (grit) | sheets/items_02.jpg |
 | gravel | material | dig | now | ok (grit) | sheets/items_02.jpg |
-| hide | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:fox; car | now | ok (hide) | sheets/items_02.jpg |
+| hide | material | carcass:adder; carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; c | now | ok (hide) | sheets/items_02.jpg |
 | bone | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (bone) | sheets/items_02.jpg |
 | rotten_food | material | spoilage | now | ok (pile) | sheets/items_02.jpg |
-| raw_meat | food | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:duck; ca | now | ok (meat) | sheets/items_01.jpg |
+| raw_meat | food | carcass:adder; carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; c | now | ok (meat) | sheets/items_01.jpg |
 | roast_meat | food | cooking at a fire | now | ok (joint) | sheets/items_01.jpg |
-| sinew | material | carcass:bear; carcass:boar; carcass:deer; carcass:fox; carcass:lynx; carcass:moose; carcas | now | ok (bundle) | sheets/items_02.jpg |
-| animal_fat | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:moose; c | now | ok (chunk) | sheets/items_02.jpg |
-| feather | material | carcass:duck; carcass:eagle; carcass:goose; carcass:grouse; carcass:gull; carcass:pheasant | now | ok (feather) | sheets/items_02.jpg |
+| sinew | material | carcass:bear; carcass:boar; carcass:deer; carcass:fox; carcass:horse; carcass:lynx; carcas | now | ok (bundle) | sheets/items_02.jpg |
+| animal_fat | material | carcass:badger; carcass:bear; carcass:beaver; carcass:boar; carcass:deer; carcass:horse; c | now | ok (chunk) | sheets/items_02.jpg |
+| feather | material | carcass:duck; carcass:eagle; carcass:goose; carcass:grouse; carcass:gull; carcass:owl; car | now | ok (feather) | sheets/items_02.jpg |
 | trout | food | fishing | now | ok (fish) | sheets/items_01.jpg |
 | perch | food | fishing | now | ok (fish) | sheets/items_01.jpg |
 | carp | food | fishing | now | ok (fish) | sheets/items_01.jpg |
@@ -59,17 +59,23 @@ Natural sources found in `drops.json`, `digging.json`, `carcass.json`, `fishing.
 | wooden_block | material | tree:log chain | now | ok (block) | sheets/items_02.jpg |
 | firewood_soft | material | tree:log chain | now | ok (bundle) | sheets/items_02.jpg |
 | wooden_block_soft | material | tree:log chain | now | ok (block) | sheets/items_02.jpg |
-| antler | material | carcass:deer; carcass:moose; carcass:reindeer | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
-| tusk | material | carcass:boar | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
-| claw | material | carcass:badger; carcass:bear; carcass:eagle; carcass:lynx; carcass:wolf | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
-| down | material | carcass:duck; carcass:goose | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
-| quill | material | carcass:porcupine | now | PLACEHOLDER grey chunk | sheets/items_03.jpg |
-| egg | food | carcass:seabird | now | PLACEHOLDER grey chunk | sheets/items_01.jpg |
-| seal_meat | food | carcass:seal | now | PLACEHOLDER grey chunk | sheets/items_01.jpg |
-| roast_shellfish | food | cooking at a fire | now | PLACEHOLDER grey chunk | sheets/items_01.jpg |
-| boiled_egg | food | cooking at a fire | now | PLACEHOLDER grey chunk | sheets/items_01.jpg |
-| roast_seal | food | cooking at a fire | now | PLACEHOLDER grey chunk | sheets/items_01.jpg |
+| antler | material | carcass:deer; carcass:moose; carcass:reindeer | now | override look | sheets/items_03.jpg |
+| tusk | material | carcass:boar | now | override look | sheets/items_03.jpg |
+| claw | material | carcass:badger; carcass:bear; carcass:eagle; carcass:lynx; carcass:owl; carcass:wolf | now | override look | sheets/items_03.jpg |
+| down | material | carcass:duck; carcass:goose | now | override look | sheets/items_03.jpg |
+| quill | material | carcass:hedgehog; carcass:porcupine | now | override look | sheets/items_03.jpg |
+| egg | food | carcass:seabird | now | override look | sheets/items_01.jpg |
+| seal_meat | food | carcass:seal | now | override look | sheets/items_01.jpg |
+| roast_shellfish | food | cooking at a fire | now | override look | sheets/items_01.jpg |
+| boiled_egg | food | cooking at a fire | now | override look | sheets/items_01.jpg |
+| roast_seal | food | cooking at a fire | now | override look | sheets/items_01.jpg |
 | wool | material | carcass:wild_sheep | now | override look |  |
+| salmon | food | fishing | now | PLACEHOLDER grey chunk |  |
+| herring | food | fishing | now | PLACEHOLDER grey chunk |  |
+| mackerel | food | fishing | now | PLACEHOLDER grey chunk |  |
+| smelt | food | fishing | now | PLACEHOLDER grey chunk |  |
+| eel | food | fishing | now | PLACEHOLDER grey chunk |  |
+| cod | food | fishing | now | PLACEHOLDER grey chunk |  |
 | acorns | material | tree:oak; tree:trunk | now | ok (nut) | sheets/items_06.jpg |
 | aloe_gel | material | plant:aloe (natural yield) | now | ok (bowl) | sheets/items_06.jpg |
 | angelica_roots | material | plant:angelica | now | ok (root) | sheets/items_08.jpg |
@@ -247,7 +253,7 @@ The first hour. Hands only, no station. Every recipe here is open (known:true) u
 | 32 | 141 | iron_hoe -> 1 x iron_hoe | 2 x iron_ingot [recipe:smelt_iron]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for iron_ingot | sheets/items_14.jpg |
 | 33 | 142 | steel_hoe -> 1 x steel_hoe | 2 x steel_ingot [recipe:smelt_steel]; 2 x stick [ground scatter; plant:any shrub] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for steel_ingot | sheets/items_14.jpg |
 | 34 | 159 | lumber_by_hand -> 2 x lumber | 1 x log [NO SOURCE] | keeps: hand_saw kept [recipe:hand_saw] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log,hand_saw | sheets/items_11.jpg |
-| 35 | 179 | processed_hide -> 1 x processed_hide | 1 x hide [carcass:badger; carcass:bear] | keeps: hide_scraper kept [recipe:hide_scraper] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for hide_scraper | sheets/items_12.jpg |
+| 35 | 179 | processed_hide -> 1 x processed_hide | 1 x hide [carcass:adder; carcass:badger] | keeps: hide_scraper kept [recipe:hide_scraper] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for hide_scraper | sheets/items_12.jpg |
 | 36 | 222 | flour_from_wheat -> 2 x flour | 3 x wheat [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for wheat | sheets/items_12.jpg |
 | 37 | 223 | flour_from_barley -> 2 x flour | 3 x barley [NO SOURCE] | keeps: quern kept [recipe:quern] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for barley | sheets/items_12.jpg |
 | 38 | 245 | linen -> 2 x linen | 4 x flax [NO SOURCE] | hands | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flax |  |
@@ -349,24 +355,24 @@ Roofs, beds, boxes, packs and clothes. Kits are placed with left click; lean-to,
 | 2 | 13 | lean_to_kit -> 1 x lean_to_kit | 8 x stick [ground scatter; plant:any shrub]; 6 x leaves [tree:trunk]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
 | 3 | 14 | chest_kit -> 1 x chest_kit | 10 x stick [ground scatter; plant:any shrub]; 4 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 4 | 21 | clay_pot -> 1 x clay_pot | 6 x clay [dig] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 5 | 23 | waterskin -> 1 x waterskin | 2 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 6 | 30 | backpack -> 1 x backpack | 4 x hide [carcass:badger; carcass:bear]; 1 x rope [recipe:rope] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 5 | 23 | waterskin -> 1 x waterskin | 2 x hide [carcass:adder; carcass:badger]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 6 | 30 | backpack -> 1 x backpack | 4 x hide [carcass:adder; carcass:badger]; 1 x rope [recipe:rope] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 7 | 36 | grass_skirt -> 1 x grass_skirt | 8 x plant_fibre [plant:flax; plant:nettle] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
 | 8 | 37 | grass_cloak -> 1 x grass_cloak | 16 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
 | 9 | 38 | fibre_sandals -> 1 x fibre_sandals | 6 x plant_fibre [plant:flax; plant:nettle]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
-| 10 | 39 | hide_cloak -> 1 x hide_cloak | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
-| 11 | 40 | hide_boots -> 1 x hide_boots | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
-| 12 | 41 | hide_hood -> 1 x hide_hood | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
-| 13 | 42 | hide_mittens -> 1 x hide_mittens | 1 x hide [carcass:badger; carcass:bear]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
-| 14 | 43 | hide_leggings -> 1 x hide_leggings | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 10 | 39 | hide_cloak -> 1 x hide_cloak | 3 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 11 | 40 | hide_boots -> 1 x hide_boots | 2 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 12 | 41 | hide_hood -> 1 x hide_hood | 1 x hide [carcass:adder; carcass:badger]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 13 | 42 | hide_mittens -> 1 x hide_mittens | 1 x hide [carcass:adder; carcass:badger]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_09.jpg |
+| 14 | 43 | hide_leggings -> 1 x hide_leggings | 3 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 15 | 45 | workbench_kit -> 1 x workbench_kit | 12 x stick [ground scatter; plant:any shrub]; 3 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_15.jpg |
 | 16 | 122 | foundation_section_kit -> 1 x foundation_section_kit | 8 x stone [boulder; dig]; 2 x clay [dig] | hands | yes | PASS (wave 1) | sheets/items_13.jpg |
 | 17 | 151 | rock_pile -> 1 x rock_pile | 45 x stone [boulder; dig] | hands | yes | PASS (wave 1) | sheets/structures_10.jpg |
 | 18 | 162 | rough_bed_kit -> 1 x rough_bed_kit | 10 x thatch [plant:heather; plant:heather (natural yield)]; 4 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 19 | 173 | quiver -> 1 x quiver | 2 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 20 | 194 | hide_tunic -> 1 x hide_tunic | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 21 | 195 | hide_trousers -> 1 x hide_trousers | 3 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 22 | 196 | hide_gloves -> 1 x hide_gloves | 1 x hide [carcass:badger; carcass:bear]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 19 | 173 | quiver -> 1 x quiver | 2 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 20 | 194 | hide_tunic -> 1 x hide_tunic | 3 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 21 | 195 | hide_trousers -> 1 x hide_trousers | 3 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 22 | 196 | hide_gloves -> 1 x hide_gloves | 1 x hide [carcass:adder; carcass:badger]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 23 | 197 | clay_jug -> 1 x clay_jug | 4 x clay [dig] | hands | yes | LOOKS WRONG: NO LOOK ENTRY | sheets/items_10.jpg |
 | 24 | 231 | rough_bed_bedding -> 1 x rough_bed_kit | 8 x bedding [plant:fern (natural yield); plant:heather (natural yield)]; 4 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 25 | 233 | rough_bed_straw -> 1 x rough_bed_kit | 8 x straw [plant:tall_grass; plant:tall_grass (natural yield)]; 4 x stick [ground scatter; plant:any shrub]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) | sheets/items_10.jpg |
@@ -374,9 +380,9 @@ Roofs, beds, boxes, packs and clothes. Kits are placed with left click; lean-to,
 | 27 | 238 | wool_trousers -> 1 x wool_trousers | 3 x wool [carcass:wild_sheep]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | PASS (wave 1) |  |
 | 28 | 239 | wool_cap -> 1 x wool_cap | 2 x wool [carcass:wild_sheep] | hands | yes | PASS (wave 1) |  |
 | 29 | 240 | wool_mittens -> 1 x wool_mittens | 2 x wool [carcass:wild_sheep] | hands | yes | PASS (wave 1) |  |
-| 30 | 242 | fur_cloak -> 1 x fur_cloak | 3 x hide [carcass:badger; carcass:bear]; 2 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
-| 31 | 243 | fur_hat -> 1 x fur_hat | 1 x hide [carcass:badger; carcass:bear]; 1 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
-| 32 | 244 | fur_boots -> 1 x fur_boots | 2 x hide [carcass:badger; carcass:bear]; 1 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
+| 30 | 242 | fur_cloak -> 1 x fur_cloak | 3 x hide [carcass:adder; carcass:badger]; 2 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
+| 31 | 243 | fur_hat -> 1 x fur_hat | 1 x hide [carcass:adder; carcass:badger]; 1 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
+| 32 | 244 | fur_boots -> 1 x fur_boots | 2 x hide [carcass:adder; carcass:badger]; 1 x sinew [carcass:bear; carcass:boar] | hands | yes | PASS (wave 1) |  |
 | 33 | 20 | wooden_bowl -> 1 x wooden_bowl | 1 x firewood [plant:fallen_log; plant:hollow_log] | hands | yes | PASS (wave 2) | sheets/items_10.jpg |
 | 34 | 15 | chopping_block -> 1 x chopping_block | 2 x log [NO SOURCE] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for log | sheets/structures_01.jpg |
 | 35 | 22 | bucket -> 1 x bucket | 6 x lumber [recipe:lumber,lumber_by_hand,lumber_wedge]; 2 x twine [recipe:twine,twine_bark,sinew_cord] | hands | yes | MISSING ITEM (BLOCKER): no source anywhere for lumber | sheets/items_10.jpg |
@@ -447,10 +453,10 @@ Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot
 |---|---|---|---|---|---|---|---|
 | 1 | 107 | cook_mushroom_skewer -> 2 x mushroom_skewer | 2 x porcini [plant:porcini]; 1 x chanterelles [plant:chanterelle]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 2 | 108 | cook_herb_fish -> 1 x herb_fish | 1 x trout [fishing]; 1 x thyme [plant:wild_thyme]; 1 x samphire [plant:samphire] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
-| 3 | 109 | cook_garlic_meat -> 1 x garlic_meat | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)]; 1 x rosemary [plant:rosemary] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
+| 3 | 109 | cook_garlic_meat -> 1 x garlic_meat | 1 x raw_meat [carcass:adder; carcass:badger]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)]; 1 x rosemary [plant:rosemary] | campfire L1 | yes | PASS (wave 1) | sheets/items_10.jpg |
 | 4 | 112 | cook_smoked_fish -> 1 x smoked_fish | 1 x pike [fishing]; 1 x samphire [plant:samphire]; 1 x juniper_berries [plant:juniper] | campfire L1 | yes | PASS (wave 1) | sheets/items_11.jpg |
 | 5 | 116 | cook_trail_bread -> 3 x trail_bread | 2 x linseed [plant:flax (natural yield)]; 2 x hazelnuts [plant:hazel]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | PASS (wave 1) | sheets/items_11.jpg |
-| 6 | 118 | cook_feast_roast -> 2 x feast_roast | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)]; 1 x thyme [plant:wild_thyme]; 1 x rosemary [plant:rosemary]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | PASS (wave 1) | sheets/items_11.jpg |
+| 6 | 118 | cook_feast_roast -> 2 x feast_roast | 2 x raw_meat [carcass:adder; carcass:badger]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)]; 1 x thyme [plant:wild_thyme]; 1 x rosemary [plant:rosemary]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | PASS (wave 1) | sheets/items_11.jpg |
 | 7 | 128 | brick -> 3 x brick | 2 x clay [dig] | campfire L1 | yes | PASS (wave 1) | sheets/items_12.jpg |
 | 8 | 148 | tar -> 1 x tar | 5 x pine_tar [tree:scots_pine; tree:trunk] | campfire L1 | yes | PASS (wave 1) | sheets/items_12.jpg |
 | 9 | 260 | cook_egg_nettle_fry -> 2 x egg_nettle_fry | 2 x egg [carcass:seabird]; 1 x greens [plant:nettle (natural yield)]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | LOOKS WRONG: PLACEHOLDER grey chunk |  |
@@ -465,14 +471,14 @@ Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot
 | 18 | 106 | cook_baked_apples -> 2 x baked_apples | 3 x crab_apples [plant:wild_apple; tree:trunk]; 1 x honeyspindle_nectar [plant:honeyspindle (natural yield)] | campfire L1 | yes | PASS (wave 2) | sheets/items_10.jpg |
 | 19 | 110 | cook_chestnut_cakes -> 3 x chestnut_cakes | 3 x chestnuts [plant:sweet_chestnut; tree:sweet_chestnut]; 1 x honeyspindle_nectar [plant:honeyspindle (natural yield)]; 1 x linseed [plant:flax (natural yield)] | campfire L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 20 | 111 | cook_fruit_leather -> 3 x fruit_leather | 2 x crab_apples [plant:wild_apple; tree:trunk]; 1 x cranberries [plant:cranberry]; 1 x honeyspindle_nectar [plant:honeyspindle (natural yield)] | campfire L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
-| 21 | 113 | cook_hunters_stew -> 2 x hunters_stew | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
+| 21 | 113 | cook_hunters_stew -> 2 x hunters_stew | 1 x raw_meat [carcass:adder; carcass:badger]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 22 | 114 | cook_forager_stew -> 2 x forager_stew | 2 x greens [plant:nettle (natural yield)]; 1 x burdock_roots [plant:burdock]; 1 x chanterelles [plant:chanterelle] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 23 | 115 | cook_fish_stew -> 2 x fish_stew | 1 x perch [fishing]; 1 x watercress [plant:watercress]; 1 x wild_carrot_roots [plant:wild_carrot] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 24 | 117 | cook_hearty_pottage -> 3 x hearty_pottage | 2 x seed_bundle [tree:log chain]; 1 x wild_carrot_roots [plant:wild_carrot]; 1 x dandelion_flowers [plant:dandelion (natural yield)]; 1 x marjoram [plant:wild_marjoram]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 25 | 174 | cook_flatbread -> 2 x flatbread | 3 x seed_bundle [tree:log chain]; 1 x water [plant:cactus (natural yield)] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
 | 26 | 175 | cook_honey_loaf -> 2 x honey_loaf | 3 x seed_bundle [tree:log chain]; 1 x hazelnuts [plant:hazel]; 1 x honeyspindle_nectar [plant:honeyspindle (natural yield)] | oven L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
-| 27 | 176 | cook_roast_joint -> 2 x roast_joint | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x rosemary [plant:rosemary]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | oven L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
-| 28 | 225 | hide_glue -> 2 x hide_glue | 1 x hide [carcass:badger; carcass:bear] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_12.jpg |
+| 27 | 176 | cook_roast_joint -> 2 x roast_joint | 2 x raw_meat [carcass:adder; carcass:badger]; 1 x rosemary [plant:rosemary]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | oven L1 | yes | PASS (wave 2) | sheets/items_11.jpg |
+| 28 | 225 | hide_glue -> 2 x hide_glue | 1 x hide [carcass:adder; carcass:badger] | campfire_pot L1 | yes | PASS (wave 2) | sheets/items_12.jpg |
 | 29 | 275 | tallow -> 1 x tallow | 2 x animal_fat [carcass:badger; carcass:bear] | campfire_pot L1 | yes | LOOKS WRONG: PLACEHOLDER grey chunk |  |
 | 30 | 276 | soap -> 1 x soap | 2 x tallow [recipe:tallow]; 1 x potash [plant:saltbush (natural yield)] | campfire_pot L1 | yes | LOOKS WRONG: PLACEHOLDER grey chunk |  |
 | 31 | 234 | leather -> 1 x leather | 1 x processed_hide [recipe:processed_hide]; 2 x tannin_bark [plant:oak]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for processed_hide | sheets/items_02.jpg |
@@ -484,18 +490,18 @@ Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot
 | 37 | 251 | cook_pea_soup -> 2 x pea_soup | 2 x peas [NO SOURCE]; 1 x onion [NO SOURCE]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for peas,onion |  |
 | 38 | 252 | cook_turnip_mash -> 2 x turnip_mash | 2 x turnip [NO SOURCE]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for turnip |  |
 | 39 | 253 | cook_baked_potato -> 2 x baked_potato | 2 x potato [NO SOURCE]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for potato |  |
-| 40 | 254 | cook_cabbage_stew -> 2 x cabbage_stew | 1 x cabbage [NO SOURCE]; 1 x raw_meat [carcass:badger; carcass:bear]; 1 x onion [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for cabbage,onion |  |
+| 40 | 254 | cook_cabbage_stew -> 2 x cabbage_stew | 1 x cabbage [NO SOURCE]; 1 x raw_meat [carcass:adder; carcass:badger]; 1 x onion [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for cabbage,onion |  |
 | 41 | 255 | cook_beet_roast -> 2 x beet_roast | 2 x beet [NO SOURCE]; 1 x thyme [plant:wild_thyme] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for beet |  |
 | 42 | 256 | cook_onion_roast -> 2 x onion_roast | 2 x onion [NO SOURCE]; 1 x animal_fat [carcass:badger; carcass:bear] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for onion |  |
 | 43 | 257 | cook_seaweed_soup -> 2 x seaweed_soup | 2 x seaweed [NO SOURCE]; 1 x shellfish [NO SOURCE]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for seaweed,shellfish |  |
 | 44 | 258 | cook_mussel_stew -> 2 x mussel_stew | 3 x shellfish [NO SOURCE]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for shellfish |  |
 | 45 | 259 | cook_crab_cakes -> 2 x crab_cakes | 2 x crab_meat [NO SOURCE]; 1 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for crab_meat,flour |  |
 | 46 | 262 | cook_seal_stew -> 2 x seal_stew | 1 x seal_meat [carcass:seal]; 1 x turnip [NO SOURCE]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for turnip |  |
-| 47 | 263 | cook_venison_pie -> 2 x venison_pie | 1 x raw_meat [carcass:badger; carcass:bear]; 1 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl]; 1 x animal_fat [carcass:badger; carcass:bear] | oven L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flour |  |
+| 47 | 263 | cook_venison_pie -> 2 x venison_pie | 1 x raw_meat [carcass:adder; carcass:badger]; 1 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl]; 1 x animal_fat [carcass:badger; carcass:bear] | oven L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flour |  |
 | 48 | 264 | cook_fish_pie -> 2 x fish_pie | 1 x trout [fishing]; 1 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl]; 1 x onion [NO SOURCE] | oven L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flour,onion |  |
 | 49 | 266 | cook_garlic_bread -> 2 x garlic_bread | 2 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl]; 1 x wild_garlic_leaves [plant:wild_garlic (natural yield)] | clay_hearth L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flour |  |
 | 50 | 267 | cook_oat_cakes -> 2 x oat_cakes | 2 x oats [NO SOURCE]; 1 x animal_fat [carcass:badger; carcass:bear] | clay_hearth L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for oats |  |
-| 51 | 268 | cook_jerky -> 2 x jerky | 2 x raw_meat [carcass:badger; carcass:bear]; 1 x sea_salt [NO SOURCE] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for sea_salt |  |
+| 51 | 268 | cook_jerky -> 2 x jerky | 2 x raw_meat [carcass:adder; carcass:badger]; 1 x sea_salt [NO SOURCE] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for sea_salt |  |
 | 52 | 269 | cook_salted_fish -> 1 x salted_fish | 1 x trout [fishing]; 1 x sea_salt [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for sea_salt |  |
 | 53 | 271 | cook_sauerkraut -> 2 x sauerkraut | 2 x cabbage [NO SOURCE]; 1 x sea_salt [NO SOURCE] | campfire_pot L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for cabbage,sea_salt |  |
 | 54 | 273 | cook_banana_fritter -> 2 x banana_fritter | 2 x bananas [plant:wild_banana]; 1 x flour [recipe:flour_from_wheat,flour_from_barley,flour_from_oats,fl] | campfire L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flour |  |
@@ -589,7 +595,7 @@ Recipes made near a placed workbench (12 sticks + 3 twine). Add-ons (tool rack, 
 | 20 | 181 | javelin -> 2 x javelin | 2 x stick [ground scatter; plant:any shrub]; 1 x flint [NO SOURCE] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flint | sheets/items_15.jpg |
 | 21 | 182 | obsidian_knife -> 1 x obsidian_knife | 1 x obsidian [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for obsidian | sheets/items_14.jpg |
 | 22 | 187 | sickle -> 1 x sickle | 1 x flint [NO SOURCE]; 1 x stick [ground scatter; plant:any shrub]; 1 x twine [recipe:twine,twine_bark,sinew_cord] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for flint | sheets/items_14.jpg |
-| 23 | 203 | plank_shield -> 1 x plank_shield | 3 x lumber [recipe:lumber,lumber_by_hand,lumber_wedge]; 1 x hide [carcass:badger; carcass:bear] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for lumber | sheets/items_14.jpg |
+| 23 | 203 | plank_shield -> 1 x plank_shield | 3 x lumber [recipe:lumber,lumber_by_hand,lumber_wedge]; 1 x hide [carcass:adder; carcass:badger] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for lumber | sheets/items_14.jpg |
 | 24 | 214 | leather_jerkin -> 1 x leather_jerkin | 3 x leather [recipe:leather] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for leather | sheets/items_10.jpg |
 | 25 | 216 | gambeson -> 1 x gambeson | 3 x twine [recipe:twine,twine_bark,sinew_cord]; 1 x leather [recipe:leather] | workbench L1 | yes | MISSING ITEM (FUTURE (flagged by design)): no source anywhere for leather | sheets/items_10.jpg |
 | 26 | 230 | lumber_wedge -> 2 x lumber | 1 x log [NO SOURCE] | keeps: stone_wedge kept [recipe:stone_wedge] | workbench L1 | yes | MISSING ITEM (BLOCKER): no source anywhere for log | sheets/items_11.jpg |
