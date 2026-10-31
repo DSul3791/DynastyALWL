@@ -2895,17 +2895,17 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 # made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
 const WILD_STEM := Color(0.38, 0.5, 0.22)
 const WILDFLOWER_LOOKS := {
-	"chamomile": {"head": "daisy", "stems": 7, "tall": 0.45, "head_min": 0.055, "petal": Color(1.0, 1.0, 0.95), "centre": Color(1.0, 0.82, 0.1), "size": 0.045, "petals": 10},
-	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.4, "head_min": 0.05, "petal": Color(1.0, 1.0, 0.95), "centre": Color(0.95, 0.85, 0.2), "size": 0.04, "petals": 9},
-	"arnica": {"head": "daisy", "stems": 4, "tall": 0.45, "head_min": 0.075, "petal": Color(1.0, 0.72, 0.1), "centre": Color(0.85, 0.5, 0.05), "size": 0.08, "petals": 12},
-	"dandelion": {"head": "daisy", "stems": 5, "tall": 0.4, "head_min": 0.06, "petal": Color(1.0, 0.85, 0.05), "centre": Color(0.95, 0.7, 0.05), "size": 0.05, "petals": 14},
-	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 0.5, "head_min": 0.05, "petal": Color(1.0, 0.85, 0.1), "centre": Color(0.9, 0.6, 0.05), "size": 0.045, "petals": 5},
-	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 0.5, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
+	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.09, "petal": Color(1.0, 1.0, 1.0), "centre": Color(1.0, 0.75, 0.0), "size": 0.045, "petals": 10},
+	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.08, "petal": Color(1.0, 1.0, 0.97), "centre": Color(1.0, 0.8, 0.1), "size": 0.04, "petals": 9},
+	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.1, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
+	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.09, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
+	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.08, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
+	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.16, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
-	"yarrow": {"head": "umbel", "stems": 5, "tall": 0.5, "head_min": 0.11, "petal": Color(0.98, 0.96, 0.9), "size": 0.14, "rays": 8},
-	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 0.5, "head_min": 0.11, "petal": Color(0.98, 0.95, 0.82), "size": 0.15, "rays": 9},
-	"valerian": {"head": "umbel", "stems": 4, "tall": 0.5, "head_min": 0.1, "petal": Color(0.97, 0.82, 0.86), "size": 0.14, "rays": 9},
-	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.4, "head_min": 0.1, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
+	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.97, 0.82), "size": 0.14, "rays": 8},
+	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.14, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
+	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.14, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
+	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.13, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
@@ -2942,12 +2942,15 @@ const WILDFLOWER_LOOKS := {
 
 static func _daisy(acc: Acc, rng: RandomNumberGenerator, at: Vector3, size: float, petal: Color, centre: Color, count: int) -> void:
 	var turn: float = rng.randf() * TAU
+	var tilt_axis: Vector3 = Vector3(sin(turn * 3.1), 0.0, -cos(turn * 3.1))      # the head is tilted about 50 degrees so a low viewer sees it face on, not edge on
+	var tilt: float = 0.85
+	var normal: Vector3 = Vector3.UP.rotated(tilt_axis, tilt)
 
 	for k in range(count):
 		var a: float = turn + TAU * float(k) / float(count)
-		_bead(acc, at + Vector3(cos(a), 0.0, sin(a)) * size * 0.7, Vector3(size * 0.55, size * 0.08, size * 0.22).rotated(Vector3.UP, 0.0), petal)
+		_bead(acc, at + (Vector3(cos(a), 0.0, sin(a)) * size * 0.7).rotated(tilt_axis, tilt), Vector3(size * 0.55, size * 0.08, size * 0.22).rotated(Vector3.UP, 0.0), petal)
 
-	_bead(acc, at + Vector3(0.0, size * 0.1, 0.0), Vector3(size * 0.35, size * 0.2, size * 0.35), centre)
+	_bead(acc, at + normal * size * 0.12, Vector3(size * 0.4, size * 0.3, size * 0.4), centre)
 
 
 static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
