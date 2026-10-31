@@ -1084,7 +1084,7 @@
    "size": 1.3
   },
   "bedding": {
-   "shape": "bundle",
+   "shape": "heap",
    "color": "#c9b46a",
    "size": 1.0
   },
