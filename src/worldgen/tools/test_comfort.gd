@@ -105,6 +105,20 @@ func _init() -> void:
 	items.rest_completed(1)
 	check(higher >= 15 and items.rested_seconds_left(1) > 44.0 * 60.0 and float(items.rested_tier(1)["regen_mult"]) == 1.35, "a rest at a higher level (%d) refreshes it to 45 minutes with the better tier" % higher)
 
+	# Lights: E with the fuel lights a wall torch; it counts while it burns and goes out when the fuel is used up.
+	var lamp: int = add_struct("wall_torch", Vector3(-5.0, 10.0, -2.0))
+	items.report_position(1, Vector3(-4.0, 10.0, -2.0))
+	var before_lamp: int = level()
+	items._use_struct(1, items.inventory_of(1), lamp)
+	check(not bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp, "without a stick the torch does not light")
+	items.inventory_of(1).add(items.table.number_of("stick"), 2)
+	items._use_struct(1, items.inventory_of(1), lamp)
+	check(bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp + 1, "with a stick the torch burns and adds 1")
+	items._lights_tick(1799.0)
+	check(bool(items._items[lamp]["struct"].get("lit", false)), "it still burns after 1799 s")
+	items._lights_tick(5.0)
+	check(not bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp, "and goes out when the stick is used up")
+
 	# Saved and cleared.
 	items._save_characters()
 	items._finish_writer()

@@ -90,6 +90,25 @@ func _init() -> void:
 	check(said.has("Spawn point set") and items.respawn_for(1).distance_to(bed) < 0.5, "E on the bed (use set_spawn) sets the spawn point too")
 
 
+	# A straw bed (comfort kind of class bed) in a third lean-to is a bed too: placed inside, lying on it is a good bed, E sets the spawn point.
+	give("lean_to_kit", 1)
+	give("straw_bed_kit", 1)
+	place("lean_to_kit", Vector3(60.0, 10.0, 6.0))
+	place("straw_bed_kit", Vector3(60.0, 10.0, 6.0))
+	var straw: Array = struct_ids("straw_bed")
+	check(straw.size() == 1, "a straw bed goes inside a lean-to too")
+
+	if straw.size() == 1:
+		var spos: Vector3 = items._items[straw[0]]["pos"]
+		items.report_position(1, spos + Vector3(0.0, 0.2, 0.0))
+		items._stance[1] = 3
+		items._bed_cache.erase(1)
+		check(items.on_good_bed(1), "lying on the straw bed under the lean-to is a good bed")
+		items.action(1, Net.ACT_USE_STRUCT, straw[0], 0, 0, Vector3.ZERO)
+		check(items.respawn_for(1).distance_to(spos) < 0.5, "E on the straw bed sets the spawn point")
+		items._characters[items._peer_key[1]].erase("spawn_bed")
+		items._stance[1] = 0
+
 	# A second bed (in a second lean-to) replaces the first.
 	give("lean_to_kit", 1)
 	give("rough_bed_kit", 1)

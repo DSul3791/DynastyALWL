@@ -995,6 +995,7 @@ func tick(delta: float) -> void:
 		_vitals_tick(spent)
 		_craft_tick(spent)
 		_crops_tick()
+		_lights_tick(spent)
 		_comfort_tick()
 		_goals_tick()
 		_learn_clock += spent
@@ -4681,7 +4682,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
 
 		# A rough bed goes INSIDE a lean-to (Dave 31 Oct 2026): its middle may lie within the shelter's covered box, whatever the gap.
-		var bed_in_shelter: bool = str(def.get("kind", "")) == "rough_bed" and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("shelter", false)) and _inside_shelter(other, spot)
+		var bed_in_shelter: bool = _is_bed_kind(str(def.get("kind", ""))) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("shelter", false)) and _inside_shelter(other, spot)
 
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
@@ -4863,6 +4864,10 @@ func _use_struct(peer: int, inv, id: int) -> void:
 			it["struct"]["kind"] = str(def["toggle"])
 			_dirty = true
 
+		return
+
+	if str(def.get("use", "")) == "light":   # a torch, chandelier or fireplace: E with its fuel in the pack lights it (comfort counts only lit lights)
+		_light_fixture(peer, inv, it, def)
 		return
 
 	if str(def.get("use", "")) == "set_spawn":   # E on a bed: it becomes this character's spawn point (set_spawn_bed)
@@ -5562,7 +5567,7 @@ func set_spawn_bed(peer: int, bed_id: int) -> bool:
 	var it: Dictionary = _items.get(bed_id, {})
 	var key: String = str(_peer_key.get(peer, ""))
 
-	if it.is_empty() or not it.has("struct") or str(it["struct"].get("kind", "")) != "rough_bed" or key == "" or not _characters.has(key) or not _peer_pos.has(peer):
+	if it.is_empty() or not it.has("struct") or not _is_bed_kind(str(it["struct"].get("kind", ""))) or key == "" or not _characters.has(key) or not _peer_pos.has(peer):
 		return false
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
@@ -5588,7 +5593,7 @@ func _spawn_bed_id(peer: int) -> int:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and str(it["struct"].get("kind", "")) == "rough_bed" and it["pos"].distance_to(spot) <= 0.5:
+		if it.has("struct") and _is_bed_kind(str(it["struct"].get("kind", ""))) and it["pos"].distance_to(spot) <= 0.5:
 			return id
 
 	return 0
@@ -5663,6 +5668,15 @@ func sleep_eta(peer: int) -> float:
 
 
 # 1 under a roof or crown, the open-dry value in the open, -1 when rain reaches the sleeper (cannot sleep there).
+# A bed is a structure whose comfort kind (comfort.json) is of class "bed": the rough bed, the straw bed, the feather bed, the canopy bed. Sleep, the good-bed bonuses, the
+# spawn point and the bed-in-a-shelter placement all find any of them.
+func _is_bed_kind(kind: String) -> bool:
+	if kind == "rough_bed":
+		return true
+
+	return str(_comfort_kind(str(_structures.get(kind, {}).get("comfort", kind))).get("class", "")) == "bed"
+
+
 # The rough bed under a lying player (bed.json): the world id of the nearest placed rough_bed within reach, or 0. Looked up at most every
 # recheck_s; a bed that is gone (taken up, destroyed) is dropped from the cache at once, so nothing keeps a sleeper "in bed".
 func _bed_of(peer: int) -> int:
@@ -5687,7 +5701,7 @@ func _bed_of(peer: int) -> int:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if not it.has("struct") or str(it["struct"].get("kind", "")) != "rough_bed":
+		if not it.has("struct") or not _is_bed_kind(str(it["struct"].get("kind", ""))):
 			continue
 
 		var d: float = Vector2(it["pos"].x - here.x, it["pos"].z - here.z).length()
@@ -7949,6 +7963,40 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 	_crops.erase(key)
 	_dirty = true
 	return true
+
+
+# Lights (wall torch: a stick, chandelier: a candle, fireplace: firewood; structures.json fuel and fuel_s = burning seconds per fuel item, topped up to twice that). Lit lights count
+# for comfort; the flag and the fuel left live on the placed row and burn down on the slow tick (not saved: a restart puts them out).
+func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
+	var fuel: int = table.number_of(str(def.get("fuel", "")))
+	var burn: float = float(def.get("fuel_s", 1800.0))
+	var left: float = float(it["struct"].get("fuel_left", 0.0)) if bool(it["struct"].get("lit", false)) else 0.0
+
+	if fuel <= 0 or not inv.has(fuel, 1):
+		_say(peer, "You need %s to light that." % table.name_of(fuel).to_lower() if fuel > 0 else "It cannot be lit.")
+		return
+
+	if left + burn > burn * 2.0:
+		_say(peer, "It is burning well already.")
+		return
+
+	inv.remove(fuel, 1)
+	it["struct"]["lit"] = true
+	it["struct"]["fuel_left"] = left + burn
+	_dirty = true
+	_say(peer, "It burns.")
+
+
+func _lights_tick(spent: float) -> void:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and bool(it["struct"].get("lit", false)):
+			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - spent
+
+			if float(it["struct"]["fuel_left"]) <= 0.0:
+				it["struct"]["lit"] = false
+				it["struct"].erase("fuel_left")
 
 
 # --- Comfort and the Rested buff (docs/COMFORT_DESIGN.md, data/items/comfort.json; Sal's design, Tyler 31 Oct 2026) ---

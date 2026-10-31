@@ -186,7 +186,7 @@ static func _chunk(p: Vector3) -> Vector2i:
 # A rough bed may lie inside a lean-to (any shelter structure): its middle within the shelter's half_x by half_z box, turned by the shelter's yaw (server_items.gd _inside_shelter
 # uses the same box). The row's yaw is in degrees when the client's world rows carry one.
 static func _bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
-	if str(def.get("kind", def.get("item", ""))) != "rough_bed" and str(def.get("item", "")) != "rough_bed":
+	if str(def.get("use", "")) != "set_spawn":   # a bed: the rough, straw, feather and canopy beds carry use set_spawn
 		return false
 
 	var shelter: Dictionary = structure_of_state(cfg, int(row["state"]))
