@@ -8244,8 +8244,7 @@ func comfort_tip(peer: int) -> String:
 	else:
 		lines.append("Rest on a bed or sit 30 s at comfort 2 or more to become Rested.")
 
-	return "
-".join(lines)
+	return "\n".join(lines)
 
 
 func _comfort_name(id: String) -> String:
