@@ -5,3 +5,5 @@ Pictures (real game, same spot, noon): before_noon.png, after_noon.png (round 1:
 Round 1 rating 3: crowns now have a dark core and darker undersides; the sun side is only slightly lighter, trunks still read pale grey. Next: stronger sun-side lift, bark darker, check birch and beech limbs.
 
 Round 2 (gain 1.4, darker warmer bark), 08:00: round2_morning.png. Crowns show a lit sun side (upper right), a dark core and dark undersides: rating 3-4. Trunks still read pale grey-white and flat (bark rating 2): the bark texture is bright; next, darken the bark shader's texture multiply (flora_view.gd BARK_SHADER `* 1.8`) for hardwood trunks. 18:00 shot pending.
+
+Round 3 (bark material, flora_view.gd BARK_SHADER: texture gain 1.8 to 1.3, warmer, furrows darker, per-patch tone variation, foot shaded), noon: round3_bark_noon.png vs before_noon.png. Trunks are now warm brown with plates of different tone and a dark foot instead of pale grey concrete: bark rating 3-4 (from 2). Next: a species-specific tint check (oak darker, beech grey-brown, birch white with black marks) at 08:00 and 18:00 (shots queued), roughness variation only by tone (no normal map).

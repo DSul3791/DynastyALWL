@@ -106,8 +106,12 @@ void vertex() {
 
 void fragment() {
 	vec4 t = texture(bark, UV);
-	vec3 c = t.rgb * COLOR.rgb * 1.8;
-	c *= mix(0.72, 1.12, t.a);                                       // furrows darker, ridges lighter
+	vec3 c = t.rgb * COLOR.rgb * 1.3;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
+	c *= vec3(1.06, 0.97, 0.88);                                     // warmer
+	c *= mix(0.62, 1.12, t.a);                                       // furrows darker, ridges lighter
+	vec2 patch = floor(UV * vec2(5.0, 12.0));
+	c *= 0.86 + 0.28 * fract(sin(dot(patch, vec2(12.9898, 78.233))) * 43758.5453);   // plates and patches of different tone, no two alike
+	c *= mix(0.62, 1.0, smoothstep(0.0, 1.6, base_h));               // shade where the trunk meets the ground
 	float moss = (1.0 - smoothstep(0.1, 1.1, base_h)) * (0.35 + 0.65 * (1.0 - t.a));   // damp moss at the foot
 	c = mix(c, c * vec3(0.55, 0.75, 0.32), moss * 0.6);
 	// Moss on the north side of the trunk (ART_DIRECTION.md section 32), thinning up the trunk.
