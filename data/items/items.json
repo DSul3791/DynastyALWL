@@ -126,7 +126,7 @@
 					1
 				]
 			],
-			"value": 12
+			"value": 5
 		},
 		"stone_knife": {
 			"number": 11,
@@ -488,7 +488,7 @@
 			"stack": 1,
 			"capacity_ml": 8000,
 			"look_alikes": [],
-			"value": 3
+			"value": 30
 		},
 		"waterskin": {
 			"number": 42,
@@ -499,7 +499,7 @@
 			"capacity_ml": 1500,
 			"future": true,
 			"look_alikes": [],
-			"value": 3
+			"value": 15
 		},
 		"hide": {
 			"number": 43,
@@ -517,7 +517,7 @@
 			"description": "Twisted twine, strong enough to haul and to lash a frame.",
 			"kind": "material",
 			"stack": 20,
-			"value": 4,
+			"value": 15,
 			"look_alikes": []
 		},
 		"stone_spade": {
@@ -739,7 +739,7 @@
 			"slot": "body",
 			"warmth": 0.12,
 			"stack": 1,
-			"value": 5,
+			"value": 20,
 			"look_alikes": []
 		},
 		"fibre_sandals": {
@@ -906,7 +906,7 @@
 				]
 			],
 			"stack": 1,
-			"value": 12,
+			"value": 36,
 			"look_alikes": []
 		},
 		"trout": {
@@ -2137,7 +2137,7 @@
 			"description": "A thick meat and root stew. Warms you through.",
 			"kind": "food",
 			"stack": 10,
-			"value": 44,
+			"value": 33,
 			"look_alikes": []
 		},
 		"forager_stew": {
@@ -2146,7 +2146,7 @@
 			"description": "Greens, roots and mushrooms in one pot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 42,
+			"value": 23,
 			"look_alikes": []
 		},
 		"fish_stew": {
@@ -2155,7 +2155,7 @@
 			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
-			"value": 44,
+			"value": 28,
 			"look_alikes": []
 		},
 		"trail_bread": {
@@ -2164,7 +2164,7 @@
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"kind": "food",
 			"stack": 10,
-			"value": 46,
+			"value": 33,
 			"look_alikes": []
 		},
 		"hearty_pottage": {
@@ -2173,7 +2173,7 @@
 			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
 			"kind": "food",
 			"stack": 10,
-			"value": 65,
+			"value": 38,
 			"look_alikes": []
 		},
 		"feast_roast": {
@@ -2953,7 +2953,7 @@
 			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 28,
 			"look_alikes": []
 		},
 		"rough_bed": {
@@ -2970,7 +2970,7 @@
 			"description": "Bundled thatch on a frame of sticks. Set it up to close in a shelter.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 147,
 			"look_alikes": []
 		},
 		"thatch_wall": {
@@ -3021,7 +3021,7 @@
 			"description": "A mat of thatch on stakes. The first foundation: walls and roofs stand on it.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 54,
 			"look_alikes": []
 		},
 		"thatch_floor": {
@@ -3038,7 +3038,7 @@
 			"description": "Bundled thatch on a frame of sticks. Set it up over your walls.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 117,
 			"look_alikes": []
 		},
 		"thatch_roof": {
@@ -3055,7 +3055,7 @@
 			"description": "A thatch wall with a gap and a hanging door. Set it up in your wall.",
 			"kind": "placeable",
 			"stack": 1,
-			"value": 10,
+			"value": 93,
 			"look_alikes": []
 		},
 		"thatch_doorway": {

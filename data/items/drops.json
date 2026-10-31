@@ -9,7 +9,6 @@
 		"fern": {"item": "bedding", "count": 6},
 		"heather": {"item": "bedding", "count": 6},
 		"wild_thyme": {"item": "thyme", "count": 12},
-		"wild_rose": {"item": "rose_petals", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
 		"sorrel": {"item": "sorrel_leaves", "count": 12},
 		"wild_marjoram": {"item": "marjoram", "count": 12},
@@ -17,7 +16,6 @@
 		"plantain": {"item": "plantain_leaves", "count": 12},
 		"comfrey": {"item": "comfrey_leaves", "count": 12},
 		"truthsage": {"item": "truthsage_leaves", "count": 12},
-		"wild_garlic": {"item": "wild_garlic_leaves", "count": 12},
 		"watercress": {"item": "watercress", "count": 12},
 		"rosemary": {"item": "rosemary", "count": 12},
 		"st_johns_wort": {"item": "st_johns_wort", "count": 12},
@@ -30,7 +28,6 @@
 		"chamomile": {"item": "chamomile_flowers", "count": 20},
 		"arnica": {"item": "arnica_flowers", "count": 20},
 		"meadowsweet": {"item": "meadowsweet_flowers", "count": 20},
-		"dandelion": {"item": "dandelion_flowers", "count": 20},
 		"valerian": {"item": "valerian_roots", "count": 2},
 		"burdock": {"item": "burdock_roots", "count": 2},
 		"angelica": {"item": "angelica_roots", "count": 2},
@@ -245,6 +242,10 @@
 			"birch": [
 				["birch_bark", 2, 4]
 			],
+			"willow": [
+				["willow_bark", 1, 3],
+				["withies", 2, 4]
+			],
 			"oak": [
 				[
 					"acorns",
@@ -306,7 +307,8 @@
 					"resin",
 					1,
 					2
-				]
+				],
+				["pine_tar", 1, 2]
 			],
 			"spruce": [
 				[
