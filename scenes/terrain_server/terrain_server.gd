@@ -14,12 +14,14 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: processor count - 1)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
 #
 # Clients start at the starter spawn point of tile (3,4).
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -131,6 +133,8 @@ var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
 var _peers: Dictionary = {}            # peer -> {"blocks": n, "bytes": n}
 var _quit_at_msec: int = -1
+var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
+var _watch_next_msec: int = 0
 var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
@@ -193,6 +197,15 @@ func _ready() -> void:
 			_quit_when_empty = true
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
+
+	# Testing only (self_timeout.gd): --timeout=N (or --timeout N) quits after N seconds the same clean way as --quit-after; --watch-parent=PID quits when that process is gone.
+	var self_flags: Dictionary = SelfTimeoutScript.parse(OS.get_cmdline_user_args())
+
+	if float(self_flags["seconds"]) > 0.0:
+		var due: int = Time.get_ticks_msec() + int(float(self_flags["seconds"]) * 1000.0)
+		_quit_at_msec = due if _quit_at_msec < 0 else mini(_quit_at_msec, due)
+
+	_watch_parent_pid = int(self_flags["parent"])
 
 	var errors: Array = []
 	settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
@@ -1898,6 +1911,14 @@ func _process(delta: float) -> void:
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
 			_run_note("closing", _link_port - 1)
+
+	if _watch_parent_pid > 0 and now >= _watch_next_msec and _quit_at_msec < 0:
+		_watch_next_msec = now + 3000
+
+		if not OS.is_process_running(_watch_parent_pid):
+			print("server: the parent process %d is gone, closing" % _watch_parent_pid)
+			_events.event("QUIT: the parent process %d is gone" % _watch_parent_pid)
+			_quit_at_msec = now
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
