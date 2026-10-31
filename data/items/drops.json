@@ -95,6 +95,9 @@
 			["straw", 1, 3]
 		],
 		"heather": [["thatch", 4, 4]],
+		"fallen_log": [["stick", 3, 6], ["firewood", 1, 2]],
+		"hollow_log": [["stick", 2, 4], ["firewood", 1, 3]],
+		"old_stump": [["stick", 1, 3], ["firewood", 1, 1]],
 		"nettle": [
 			[
 				"plant_fibre",
