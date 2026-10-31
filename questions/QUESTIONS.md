@@ -13,12 +13,6 @@
 
 
 
-## pic-fh-spawn | Standing at the spawn, third person: does the character (hair, hands, feet, clothes) and the meadow look right for a new player's first minute?
-Image: questions/img/fh_spawn_third_person.png
-Note: Real game, daily head 31 Oct afternoon, rig picture (windowed client, real server), summer. Guide rates it 3.5 of 5: the meadow, trees and flowers look good; the character stands side-on looking up, hands hang open and are small, and the grass hides the feet.
-- Yes
-- No
-
 ## pic-fh-leanto | Do the stick lean-to (24 sticks, 6 leaves, 4 twine) and the rough bed look like a place to sleep?
 Image: questions/img/fh_leanto_and_bed.png
 Note: Real game, daily head 31 Oct, building-piece row (placed by the game's own ghost model, not a player's hand). Guide rates it 4 of 5: the lean-to reads as poles and woven boughs, the bed as a bedding heap on a frame; the server lets the bed go inside the lean-to now. Not shown: lying in it.
