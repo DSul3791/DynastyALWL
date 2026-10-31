@@ -318,3 +318,9 @@ Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shel
 Bronze ingot recipe at forge level 1 and known; Bronze pickaxe, axe, hammer, knife (458-461, recipes 290-293); boulders.json bronze tools and ore.needs_material (code check for Tyler). Guide audit taught the ore, flint and shore sources: blocked-without-future 0. Goal events verified.
 
 Status run (2026-10-31): PLAYTHROUGH_STATUS.md 24 fixed, 3 still broken. Unlocked water wheel and plank chest kit (nails, lumber via the wedge and iron are obtainable), so the saw mill is reachable (F-21 fixed; test_learn now uses the steel pickaxe as its locked example). Remaining: F-01/F-24 (16 advanced recipes locked by design: steel, bronze/iron/steel weapons and armour, forge level 2), F-18 looks (Kathleen), F-22 stairs and stone/brick/log pieces (new structures, Sal data plus Kathleen models).
+
+## Fruit unflagged (2026-10-31)
+Merged the flora branch (0b606a24) to see the fruit trees: 13 fruit items and 6 fruit dishes (dried apples, apple sauce, plum jam, stewed pears, preserved damsons, quince paste) are no longer future; figs, olives, pomegranates, mangoes, oranges, lemons and apple pie (needs flour) stay future. validate_items counts harvest_yield rows as sources. NOTE: test_first_hour FAILS after the flora merge (gathering counts 44 stones, 59 sticks, 71 fibre against the expected 24/36/48, a new character not empty-handed): the cause is in the flora branch (summer varieties near the spawn / layout 15), not in item data; passed before the merge.
+
+## Building pieces (2026-10-31)
+F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-482, 10 structure rows with states 49-58 reusing existing looks until models exist, log cabin set kit); recipes are locked (known false, locked true) so no player can craft a piece the client cannot draw. HINTS_AND_CAMP_EVENTS_SPEC.md for Tyler.

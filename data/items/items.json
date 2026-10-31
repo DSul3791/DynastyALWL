@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 462,
+	"next_number": 483,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4960,8 +4960,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_summer": {
 			"number": 432,
@@ -4970,8 +4969,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_autumn": {
 			"number": 433,
@@ -4980,8 +4978,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_keeping": {
 			"number": 434,
@@ -4990,8 +4987,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_cooking": {
 			"number": 435,
@@ -5000,8 +4996,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_summer": {
 			"number": 436,
@@ -5010,8 +5005,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_autumn": {
 			"number": 437,
@@ -5020,8 +5014,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_winter": {
 			"number": 438,
@@ -5030,8 +5023,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"sour_cherries": {
 			"number": 439,
@@ -5040,8 +5032,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"plums": {
 			"number": 440,
@@ -5050,8 +5041,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"damsons": {
 			"number": 441,
@@ -5060,8 +5050,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"quince": {
 			"number": 442,
@@ -5070,8 +5059,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"medlar": {
 			"number": 443,
@@ -5080,8 +5068,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"figs": {
 			"number": 444,
@@ -5150,8 +5137,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_sauce": {
 			"number": 451,
@@ -5160,8 +5146,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_pie": {
 			"number": 452,
@@ -5180,8 +5165,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"stewed_pears": {
 			"number": 454,
@@ -5190,8 +5174,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"preserved_damsons": {
 			"number": 455,
@@ -5200,8 +5183,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"dried_figs": {
 			"number": 456,
@@ -5220,8 +5202,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"bronze_pickaxe": {
 			"number": 458,
@@ -5322,6 +5303,220 @@
 			"repair_station": "forge",
 			"look_alikes": [],
 			"value": 30
+		},
+		"stairs_wood_kit": {
+			"number": 462,
+			"name": "Wooden stairs",
+			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 117
+		},
+		"stairs_wood": {
+			"number": 463,
+			"name": "Wooden stairs",
+			"description": "A wooden flight of stairs, 2.4 m long.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"log_wall_kit": {
+			"number": 464,
+			"name": "Log wall",
+			"description": "Round logs lashed in a wall, two metres wide. Warm and sturdy.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 58
+		},
+		"log_wall": {
+			"number": 465,
+			"name": "Log wall",
+			"description": "A log wall, two metres wide.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"log_floor_kit": {
+			"number": 466,
+			"name": "Log floor",
+			"description": "Logs laid side by side on a frame. A rough, strong floor.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 71
+		},
+		"log_floor": {
+			"number": 467,
+			"name": "Log floor",
+			"description": "A floor of laid logs.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"log_roof_kit": {
+			"number": 468,
+			"name": "Log roof",
+			"description": "A log frame covered in thatch. Keeps the rain off a cabin.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 114
+		},
+		"log_roof": {
+			"number": 469,
+			"name": "Log roof",
+			"description": "A log-framed thatch roof.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"stone_wall_kit": {
+			"number": 470,
+			"name": "Stone wall",
+			"description": "Cut stone laid in mortar, two metres wide. Fire proof and strong.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 533
+		},
+		"stone_wall": {
+			"number": 471,
+			"name": "Stone wall",
+			"description": "A stone wall, two metres wide.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"stone_floor_kit": {
+			"number": 472,
+			"name": "Stone floor",
+			"description": "Cobbles bedded in sand. A hard dry floor.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 93
+		},
+		"stone_floor": {
+			"number": 473,
+			"name": "Stone floor",
+			"description": "A cobbled stone floor.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"stone_roof_kit": {
+			"number": 474,
+			"name": "Stone roof",
+			"description": "Stone shingles on a timber frame. Heavy, and nearly fire proof.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 156
+		},
+		"stone_roof": {
+			"number": 475,
+			"name": "Stone roof",
+			"description": "A stone-shingle roof.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"brick_wall_kit": {
+			"number": 476,
+			"name": "Brick wall",
+			"description": "Fired bricks laid in mortar, two metres wide.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 156
+		},
+		"brick_wall": {
+			"number": 477,
+			"name": "Brick wall",
+			"description": "A brick wall, two metres wide.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"brick_floor_kit": {
+			"number": 478,
+			"name": "Brick floor",
+			"description": "Bricks laid on sand. A smooth hard floor.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 144
+		},
+		"brick_floor": {
+			"number": 479,
+			"name": "Brick floor",
+			"description": "A brick floor.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"brick_roof_kit": {
+			"number": 480,
+			"name": "Brick roof",
+			"description": "Fired tiles on a timber frame. Dry and durable.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 194
+		},
+		"brick_roof": {
+			"number": 481,
+			"name": "Brick roof",
+			"description": "A tiled brick roof.",
+			"kind": "structure",
+			"stack": 1,
+			"future": true,
+			"look_alikes": []
+		},
+		"log_cabin_set_kit": {
+			"number": 482,
+			"name": "Log cabin set",
+			"description": "Four log walls, a log floor and a log roof as one bundle. Sets out a small cabin.",
+			"kind": "placeable",
+			"stack": 1,
+			"future": true,
+			"set_of": [
+				[
+					"log_wall_kit",
+					4
+				],
+				[
+					"log_floor_kit",
+					1
+				],
+				[
+					"log_roof_kit",
+					1
+				]
+			],
+			"look_alikes": [],
+			"value": 300
 		}
 	}
 }
