@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 305,
+	"next_number": 319,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -2326,7 +2326,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_acorn_mash": {
@@ -2396,7 +2396,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_herb_fish": {
@@ -2561,7 +2561,7 @@
 			"category": "Fire and cooking",
 			"needs": [
 				[
-					"greens",
+					"nettles",
 					2
 				],
 				[
@@ -5401,7 +5401,7 @@
 					2
 				],
 				[
-					"greens",
+					"nettles",
 					1
 				],
 				[
@@ -6391,6 +6391,282 @@
 			"known": false,
 			"locked": true,
 			"station": "workbench"
+		},
+		"nettle_tea": {
+			"number": 305,
+			"name": "Nettle tea",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"nettles",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"nettle_tea",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_raspberries": {
+			"number": 306,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raspberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_blueberries": {
+			"number": 307,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blueberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_blackberries": {
+			"number": 308,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blackberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_strawberries": {
+			"number": 309,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"strawberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"boil_eggs": {
+			"number": 310,
+			"name": "Boiled egg",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					2
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"boiled_egg",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"roast_hazelnuts": {
+			"number": 311,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"hazelnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_chestnuts": {
+			"number": 312,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"chestnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_walnuts": {
+			"number": 313,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"walnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_beechnuts": {
+			"number": 314,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"beechnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_morels": {
+			"number": 315,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"morels",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_bananas": {
+			"number": 316,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"bananas",
+					2
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_fiddleheads": {
+			"number": 317,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"fiddleheads",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_wild_pears": {
+			"number": 318,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"wild_pears",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
 		}
 	}
 }

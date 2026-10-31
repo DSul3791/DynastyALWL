@@ -38,6 +38,7 @@
 			"roast_forage": 400,
 			"seed_bundle": 60,
 			"raw_meat": 250,
+			"nettles": 20,
 			"crab_apples": 60,
 			"wild_apples": 80,
 			"stewed_berries": 10,
@@ -188,6 +189,10 @@
 		},
 		"herbal_tea": {
 			"energy": 12,
+			"fitness": 0.1
+		},
+		"nettle_tea": {
+			"energy": 8,
 			"fitness": 0.1
 		},
 		"magic_tonic": {

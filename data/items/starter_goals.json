@@ -96,7 +96,7 @@
 		{
 			"id": "berries",
 			"title": "Eat something wild",
-			"hint": "Pick berries or nuts with E. Hold E at the fire to roast them, then eat.",
+			"hint": "Pick berries or fruit with E and eat them. Roast meat at the fire; cook plants in a pot.",
 			"after": [
 				"fire"
 			],
