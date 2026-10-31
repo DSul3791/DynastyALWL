@@ -1,0 +1,3 @@
+# Tall grass patches read at 20 to 40 m (flora report 2/5), 2026-10-31, Kathleen
+Cause: the far model drew no seed heads at all (the head beads were near-only), so a patch past near_m was blades and cards only. Now the far model has four stems with one fat gold head each (tall_grass and thatch_grass), the look rows are golder (head 0.9,0.78,0.4; thatch 0.92,0.78,0.34), the plumes stand higher (reach 1.35 and 1.3), blue-green blade bases. Tri budget kept (thatch far 144 of 150).
+Picture: tall_grass_r4_far1.png (far model, plain cards, sheet light): plumes stand clear above the blades. Rating 3 until seen at 30 m in the real game.

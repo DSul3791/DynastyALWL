@@ -1129,6 +1129,30 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			for k in 3:
 				_sph(parts, 0.009, Vector3(1.0, 1.0, 0.4), Vector3(0.0, -0.03 + 0.012 * float(k % 2), 0.0), color.darkened(0.35), true)
+		"crab_live":
+			# A shore crab walking sideways (refs: Carcinus maenas photographs): a broad flat dark-green carapace, two stalked eyes, two raised claws held forward, four legs a side angled out and down, orange at the claws.
+			_sph(parts, 0.05, Vector3(1.25, 0.42, 1.0), Vector3(0.0, -0.035, 0.0), color)
+			_sph(parts, 0.04, Vector3(1.2, 0.3, 0.9), Vector3(0.0, -0.022, 0.0), color.lightened(0.15))
+
+			for side in [-1.0, 1.0]:
+				_sph(parts, 0.007, Vector3.ONE, Vector3(side * 0.02, -0.012, -0.045), Color(0.05, 0.05, 0.05), true)
+				_box_rot(parts, Vector3(0.04, 0.006, 0.012), Vector3(side * 0.075, -0.02, -0.055), Vector3(0.0, side * -0.7, 0.0), color.darkened(0.1))
+				_sph(parts, 0.022, Vector3(1.2, 0.8, 1.5), Vector3(side * 0.11, -0.018, -0.085), Color(0.75, 0.4, 0.18), true)
+
+				for k in 4:
+					_box_rot(parts, Vector3(0.055, 0.005, 0.008), Vector3(side * (0.085 + 0.004 * float(k)), -0.045, -0.02 + 0.02 * float(k)), Vector3(0.0, side * (0.3 + 0.1 * float(k)), side * -0.35), color.darkened(0.2))
+		"nest":
+			# A ground nest (refs: gull and wader scrapes lined with dry grass): a shallow ring of dry grass stems and bits of seaweed round a hollow, with three speckled pale eggs in it.
+			for k in 12:
+				var na: float = TAU * float(k) / 12.0
+				_box_rot(parts, Vector3(0.1, 0.01, 0.014), Vector3(cos(na) * 0.075, -0.045 + 0.006 * float(k % 3), sin(na) * 0.075), Vector3(0.0, -na + PI * 0.5, 0.0), _tone(color, k, 0.2))
+
+			_cyl(parts, 0.06, 0.01, Vector3(0.0, -0.058, 0.0), Vector3.ZERO, color.darkened(0.3))
+
+			for k in 3:
+				var ea: float = TAU * float(k) / 3.0 + 0.4
+				_sph(parts, 0.026, Vector3(1.0, 1.28, 1.0), Vector3(cos(ea) * 0.025, -0.04, sin(ea) * 0.025), Color(0.82, 0.78, 0.6), true)
+				_sph(parts, 0.004, Vector3.ONE, Vector3(cos(ea) * 0.03, -0.022, sin(ea) * 0.02), Color(0.35, 0.27, 0.15), true)
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
