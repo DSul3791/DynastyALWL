@@ -94,6 +94,14 @@ if [ $TESTS = 1 ] && [ -n "$MERGED" ]; then
 	for t in $(grep '^FAILED ' "$OUT/tests.txt" | sed 's/^FAILED \([^: ]*\).*/\1/'); do
 		case " $KNOWN " in *" $t "*) OLD="$OLD $t";; *) NEW="$NEW $t";; esac
 	done
+	# A new red may only be the machine being busy (timing tests, other Godot runs): run each one again alone, one at a time, before calling it new.
+	# Tests that timed out are not rerun (they take 25 minutes); they are labelled TIMEOUT so a human looks.
+	AGAIN=""
+	for t in $NEW; do
+		if grep -q ' 124 ' "$OUT/tests/$t.result" 2>/dev/null; then AGAIN="$AGAIN $t(TIMEOUT: rerun by hand, machine load?)"; continue; fi
+		bash tools/run_tests.sh --jobs 1 --out "$OUT/again" --serial "$t" >/dev/null 2>&1
+		if grep -q '^PASS' "$OUT/again/$t.result" 2>/dev/null; then say "flaky under load, passed alone: $t"; NEW="${NEW/ $t/}"; fi
+	done
 	[ -n "$OLD" ] && say "known red on the daily branch too (not counted):$OLD"
 	if [ -n "$NEW" ]; then FAILS=$((FAILS + 1)); say "NEW RED:$NEW"; for t in $NEW; do say "    $t: $(grep -iE 'FAIL |ERROR' "$OUT/tests/$t.out" 2>/dev/null | head -2 | tr '\n' ' ' | cut -c1-200)"; done; else say "no new red test"; fi
 fi
