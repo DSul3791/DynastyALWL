@@ -1,7 +1,6 @@
 {
  "counts": [
   {
-   "alder": 2,
    "balsam_fir": 88,
    "beech": 17,
    "blueberry": 11,
@@ -20,22 +19,19 @@
    "old_stump": 3,
    "porcini": 8,
    "raspberry": 29,
-   "reeds": 15,
-   "riverbraid": 2,
    "scots_pine": 1,
    "tall_grass": 67,
    "tanglewort": 3,
    "tinder_fungus": 2,
    "valerian": 1,
-   "watercress": 1,
    "whisperfern": 1,
    "wild_garlic": 14,
    "wild_mint": 11
   },
   {
-   "alder": 37,
+   "alder": 33,
    "balsam_fir": 169,
-   "beech": 114,
+   "beech": 115,
    "birch": 7,
    "blueberry": 79,
    "bramble": 23,
@@ -55,25 +51,24 @@
    "old_stump": 5,
    "porcini": 27,
    "raspberry": 35,
-   "reeds": 33,
-   "riverbraid": 6,
+   "reeds": 18,
+   "riverbraid": 7,
    "scots_pine": 5,
    "tall_grass": 214,
    "tanglewort": 4,
    "tinder_fungus": 8,
    "valerian": 1,
-   "watercress": 5,
    "whisperfern": 4,
    "wild_garlic": 34,
    "wild_mint": 7
   },
   {
-   "alder": 60,
-   "balsam_fir": 78,
-   "beech": 284,
+   "alder": 68,
+   "balsam_fir": 77,
+   "beech": 281,
    "birch": 34,
    "blueberry": 297,
-   "bramble": 27,
+   "bramble": 28,
    "chanterelle": 70,
    "comfrey": 40,
    "elder": 241,
@@ -95,38 +90,38 @@
    "porcini": 92,
    "puffball": 1,
    "raspberry": 115,
-   "reeds": 104,
-   "riverbraid": 25,
+   "reeds": 268,
+   "riverbraid": 120,
    "scots_pine": 21,
    "tall_grass": 747,
    "tanglewort": 11,
    "tinder_fungus": 15,
    "valerian": 13,
-   "watercress": 13,
+   "watercress": 25,
    "whisperfern": 10,
    "wild_garlic": 191,
    "wild_mint": 166
   },
   {
-   "alder": 420,
+   "alder": 365,
    "balsam_fir": 893,
-   "beech": 1105,
+   "beech": 1111,
    "belladonna": 4,
    "birch": 351,
    "blackthorn": 19,
    "blueberry": 1114,
-   "bramble": 177,
+   "bramble": 176,
    "burdock": 68,
    "chanterelle": 274,
    "comfrey": 317,
    "dewlantern": 16,
-   "elder": 1077,
+   "elder": 1079,
    "fallen_log": 115,
    "fern": 9076,
    "flax": 1,
    "foxglove": 57,
    "hawthorn": 44,
-   "hazel": 1550,
+   "hazel": 1552,
    "heartroot": 5,
    "hollow_log": 23,
    "honeyspindle": 17,
@@ -143,8 +138,8 @@
    "porcini": 366,
    "puffball": 6,
    "raspberry": 570,
-   "reeds": 477,
-   "riverbraid": 113,
+   "reeds": 451,
+   "riverbraid": 181,
    "scots_pine": 153,
    "st_johns_wort": 1,
    "staunchmoss": 212,
@@ -154,7 +149,7 @@
    "thatch_grass": 10,
    "tinder_fungus": 95,
    "valerian": 75,
-   "watercress": 54,
+   "watercress": 27,
    "whisperfern": 49,
    "wild_apple": 6,
    "wild_cherry": 7,
@@ -178,10 +173,10 @@
   10.948338508606
  ],
  "grown_trees": [
-  6,
-  17,
-  80,
-  346
+  5,
+  18,
+  84,
+  338
  ],
  "grown_trees_near": [
   [
@@ -207,14 +202,6 @@
    68506.4,
    24.3,
    31.7
-  ],
-  [
-   "alder",
-   53354.2,
-   31.0,
-   68472.4,
-   15.0,
-   38.3
   ],
   [
    "beech",
@@ -247,6 +234,14 @@
    68460.8,
    30.8,
    55.2
+  ],
+  [
+   "balsam_fir",
+   53273.4,
+   30.3,
+   68518.5,
+   17.1,
+   60.2
   ]
  ],
  "rings_m": [
@@ -260,9 +255,9 @@
   68476.0
  ],
  "trees": [
-  113,
-  354,
-  542,
-  3224
+  111,
+  351,
+  546,
+  3175
  ]
 }

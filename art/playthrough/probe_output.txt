@@ -126,6 +126,8 @@ probe: fur_cloak | known=true | station= | crafted=true
 probe: fur_hat | known=true | station= | crafted=true
 probe: fur_boots | known=true | station= | crafted=true
 probe: linen | known=true | station= | crafted=true
+probe: flour_from_oats | known=true | station= | crafted=true
+probe: flour_from_rye | known=true | station= | crafted=true
 probe: fire lit with plant_fibre = true
 probe: fire lit with birch_bark = true
 probe: fire lit with tinder = true
@@ -134,8 +136,8 @@ probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with amadou = false
 probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with twine = false
-probe: recipes where 'known' matched what the server did: 122, mismatches: 1
-WARNING: 145 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+probe: recipes where 'known' matched what the server did: 124, mismatches: 1
+WARNING: 147 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: ObjectDB::cleanup (core\object\object.cpp:2536)
 ERROR: 6 resources still in use at exit (run with --verbose for details).
    at: ResourceCache::clear (core\io\resource.cpp:822)

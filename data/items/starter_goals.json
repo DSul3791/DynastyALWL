@@ -1,0 +1,210 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {have_item_any, count}), and `reward` ({coin_copper: n} through the purse, or {item: [id, n]} given to the pack; both small on purpose). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked. Rewards total about 70 copper plus a few sticks and kindling.",
+	"goals": [
+		{
+			"id": "drink",
+			"title": "Drink at the water",
+			"hint": "Walk to the water's edge and press E to drink.",
+			"after": [],
+			"check": {
+				"event": "drink",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 2
+			}
+		},
+		{
+			"id": "fibre",
+			"title": "Gather plant fibre",
+			"hint": "Nettles and tall grass give plant fibre. Press E on a plant.",
+			"after": [],
+			"check": {
+				"have_item": "plant_fibre",
+				"count": 12
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
+			"id": "twine",
+			"title": "Twist twine",
+			"hint": "Open the inventory (I), pick Twine and craft it: 3 plant fibre make 1 twine.",
+			"after": [
+				"fibre"
+			],
+			"check": {
+				"made_item": "twine",
+				"count": 2
+			},
+			"reward": {
+				"item": [
+					"stick",
+					4
+				]
+			}
+		},
+		{
+			"id": "axe",
+			"title": "Make a stone axe",
+			"hint": "1 stone, 1 stick and 2 twine make a stone axe. Put it on the hotbar to use it.",
+			"after": [
+				"twine"
+			],
+			"check": {
+				"made_item": "stone_axe",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 5
+			}
+		},
+		{
+			"id": "fell",
+			"title": "Fell a tree",
+			"hint": "Hold the axe and strike a tree again and again. Then work the trunk for logs.",
+			"after": [
+				"axe"
+			],
+			"check": {
+				"event": "tree_felled",
+				"count": 1
+			},
+			"reward": {
+				"item": [
+					"kindling",
+					3
+				]
+			}
+		},
+		{
+			"id": "fire",
+			"title": "Light a fire",
+			"hint": "Make a Campfire kit (6 sticks, 3 stones), place it, then press E near it with plant fibre to light it.",
+			"after": [
+				"fell"
+			],
+			"check": {
+				"event": "fire_lit",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 5
+			}
+		},
+		{
+			"id": "berries",
+			"title": "Eat something wild",
+			"hint": "Pick berries or nuts with E. Hold E at the fire to roast them, then eat.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"event": "ate_food",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 3
+			}
+		},
+		{
+			"id": "shelter",
+			"title": "Build a lean-to",
+			"hint": "8 sticks, 6 leaves, 2 twine make a Small shelter. Place it with the open side towards you.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"event": "placed",
+				"what": "lean_to",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 8
+			}
+		},
+		{
+			"id": "bed",
+			"title": "Make a bed",
+			"hint": "Gather bedding from ferns or thatch from grass, then craft a Rough bed and place it under cover.",
+			"after": [
+				"shelter"
+			],
+			"check": {
+				"event": "placed",
+				"what": "rough_bed",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 8
+			}
+		},
+		{
+			"id": "workbench",
+			"title": "Build a workbench",
+			"hint": "12 sticks and 3 twine make a Workbench. It unlocks better tools.",
+			"after": [
+				"axe"
+			],
+			"check": {
+				"event": "placed",
+				"what": "workbench",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 10
+			}
+		},
+		{
+			"id": "spear",
+			"title": "Make a spear",
+			"hint": "A wooden spear (1 stick, keep a stone) then 2 twine for a stone spear.",
+			"after": [
+				"twine"
+			],
+			"check": {
+				"made_item": "spear",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 5
+			}
+		},
+		{
+			"id": "knife",
+			"title": "Make a stone knife and work a kill",
+			"hint": "2 stones and a stick make a knife. Strike a rabbit with the spear, then work the body with the knife.",
+			"after": [
+				"spear"
+			],
+			"check": {
+				"event": "carcass_worked",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 10
+			}
+		},
+		{
+			"id": "fish",
+			"title": "Catch a fish",
+			"hint": "Make a fishing rod (or a shore net) and fish at the pond.",
+			"after": [
+				"workbench"
+			],
+			"check": {
+				"have_item_any": [
+					"trout",
+					"perch",
+					"carp",
+					"pike"
+				],
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 10
+			}
+		}
+	]
+}

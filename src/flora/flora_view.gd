@@ -280,6 +280,7 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
 var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
 var clear_m: float = 5.0
@@ -397,6 +398,12 @@ func set_flow_rate(rate: float) -> void:
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
+	for argument in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+		if argument.begins_with("--flora-season="):
+			season_override = argument.trim_prefix("--flora-season=")
+		elif argument.begins_with("--flora-day="):
+			season_override = season_of_day(int(argument.trim_prefix("--flora-day=")))
+
 	var rules: Dictionary = tile_rules.get("runtime_flora", {})
 	chunk_m = float(rules.get("chunk_m", 256.0))
 	var view: Dictionary = rules.get("view_m", {})
@@ -1337,11 +1344,20 @@ func set_fruiting(names: Array) -> void:
 # The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
 # are built on a worker; the chunks redraw when they are ready.
 func set_season(now_season: String) -> void:
+	if season_override != "":
+		now_season = season_override
+
 	if now_season == season:
 		return
 
+	var had_season: bool = season != ""
 	season = now_season
 	_start_seasonal()
+
+	# Hardwood leaf colour follows the season (green in spring and summer, colour in autumn, dead leaves in winter): every drawn chunk redraws once.
+	if had_season or season_override != "":
+		for chunk in _chunks.keys():
+			_redraw(chunk)
 
 	if stripped.is_empty():
 		return
@@ -1912,7 +1928,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			buffer[o + 11] = origin.z
 
 			if tinted:
-				var custom: Color = _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
+				var custom: Color = _leaf_tint(ids[n], info) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
 				# Glowing leaves: young trees glow weakly, grown ones fully.
 				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
 				buffer[o + 12] = custom.r
@@ -2199,6 +2215,30 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
 
 	return _natural(base) * 1.5
+
+
+# The season of a day of the year (0 to 364), as GameClock.season() names it.
+static func season_of_day(day: int) -> String:
+	return ["spring", "summer", "autumn", "winter"][clampi(posmod(day, 365) * 4 / 365, 0, 3)]
+
+
+# A hardwood's leaf tint for the season the view was told: fresh yellow-green in spring, the species' green in summer, its autumn colour in autumn
+# (before any season is known: autumn, as before), brown dead leaves in winter (trees with a winter-bare model draw that instead).
+# data/look/seasons.json is the contract; the per-tree variation stays fixed by the tree's id.
+func _leaf_tint(id: int, info: Dictionary) -> Color:
+	var autumn: Color = _autumn_tint(id, info.get("autumn", AUTUMN))
+	var jitter: float = 0.9 + 0.2 * float(((id * 2654435761) & 0x7fffffff) % 1000) / 1000.0
+	var green: Color = (info["tint"] as Color) * jitter
+
+	match season:
+		"spring":
+			return green * Color(1.25, 1.3, 0.8)
+		"summer":
+			return green
+		"winter":
+			return autumn.lerp(Color(0.62, 0.46, 0.3) * 1.5, 0.7)
+
+	return autumn
 
 
 # The leaf tint for a hardwood tree: its autumn color, scaled up because the

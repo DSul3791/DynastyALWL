@@ -324,13 +324,13 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 | id | what | status | evidence (short) |
 |---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 173 of 192 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 175 of 194 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks |
 | F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 |
-| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [6, 17] |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [5, 18] |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True |
 | F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] |
 | F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot |
@@ -342,8 +342,8 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 19 recipes blocked and not flagged future |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 42 orphan items not flagged future (first: log, amadou, angelica_stems, banana_leaves, burrs, cactus_pads) |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |

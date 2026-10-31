@@ -4,13 +4,13 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 
 | id | what | status | evidence | owner |
 |---|---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 173 of 192 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_s) | Sal (data), Tyler (code half) |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 175 of 194 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_s) | Sal (data), Tyler (code half) |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
 | F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks | Tyler |
 | F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False | Sal + Tyler |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 | Sal |
-| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [6, 17] | flora session |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [5, 18] | flora session |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True | Sal |
 | F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] | Kathleen |
 | F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot | Sonny |
@@ -22,8 +22,8 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle | Kathleen |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 19 recipes blocked and not flagged future | Sal |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 42 orphan items not flagged future (first: log, amadou, angelica_stems, banana_leaves, burrs, cactus_pads) | Sal / flora |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future | Sal |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) | Sal / flora |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None | Sal |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN | Tyler + Sal |

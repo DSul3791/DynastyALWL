@@ -96,6 +96,7 @@ for e_ in flora.values():
         continue
     for y_ in e_.get("yields", []):
         add(y_, "plant:" + e_["name"] + " (natural yield)")
+# wood_species.json ingredient_groups (plain log filled by any log_*): the DATA half is done but the server does not match groups yet, so it is NOT counted as a source here (F-16 stays broken until probe_logs says otherwise).
 for i in ("stone", "stick"):
     add(i, "ground scatter")
 add("driftwood", "ground scatter (water bank)")
