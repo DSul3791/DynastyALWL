@@ -1918,3 +1918,7 @@ Answered: 2026-10-31 20:04 UTC
 Answer: No | Comment: I can’t tell because there’s no character in the picture
 Answered: 2026-10-31 20:04 UTC
 
+## pic-tall-grass-25m | Can you spot the tall-grass clump (circled) from about 25 m away, standing in the meadow?
+Answer: Yes
+Answered: 2026-10-31 20:04 UTC
+
