@@ -249,7 +249,7 @@
 		"lean_to_kit": {
 			"number": 20,
 			"name": "Small shelter",
-			"description": "Poles, boughs and twine lashed into a small shelter. Gives cover from rain.",
+			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -258,7 +258,7 @@
 		"lean_to": {
 			"number": 21,
 			"name": "Small shelter",
-			"description": "A small shelter of lashed poles with a leafy roof. Its roof keeps rain off.",
+			"description": "A ridge pole on two forks, with a roof of leaned sticks and boughs down to the ground. Crawl in under it.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
