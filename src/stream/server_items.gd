@@ -7903,6 +7903,9 @@ func _try_learn(peer: int, inv, recipe: Dictionary) -> bool:
 	if recipe_known_for(peer, recipe):
 		return true
 
+	if bool(recipe.get("locked", false)):
+		return false   # a chain it depends on does not exist yet (recipes.json "locked"): discovery and seeing do not teach it
+
 	var learned: Dictionary = _learned_of(peer)
 
 	if inv == null or recipe.is_empty() or not _characters.has(str(_peer_key.get(peer, ""))):
