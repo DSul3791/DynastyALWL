@@ -6176,8 +6176,7 @@
 				1
 			],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench"
 		},
 		"log_floor_kit": {
@@ -6199,8 +6198,7 @@
 				1
 			],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench"
 		},
 		"log_roof_kit": {
@@ -6226,8 +6224,7 @@
 				1
 			],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench"
 		},
 		"stone_wall_kit": {
@@ -6249,8 +6246,7 @@
 				1
 			],
 			"craft_s": 60.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6273,8 +6269,7 @@
 				1
 			],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6297,8 +6292,7 @@
 				1
 			],
 			"craft_s": 60.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6321,8 +6315,7 @@
 				1
 			],
 			"craft_s": 60.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6345,8 +6338,7 @@
 				1
 			],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -6369,8 +6361,7 @@
 				1
 			],
 			"craft_s": 60.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
