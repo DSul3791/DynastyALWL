@@ -3954,8 +3954,15 @@ func _light(peer: int, inv, id: int) -> void:
 
 	var tinder: String = str(_cooking.get("tinder", "plant_fibre"))
 
+	# Dave 2026-10-30: plant fibre is the main tinder, but birch bark, tinder and tinder fungus (cooking.json "tinder_also") light a fire too, so a forest start is not stuck.
 	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs %s to light" % table.name_of(table.number_of(tinder)).to_lower())
+		for other in _cooking.get("tinder_also", []):
+			if table.number_of(str(other)) > 0 and inv.has(table.number_of(str(other)), 1):
+				tinder = str(other)
+				break
+
+	if not inv.has(table.number_of(tinder), 1):
+		_say(peer, "Needs plant fibre, birch bark or tinder to light")
 		return
 
 	inv.remove(table.number_of(tinder), 1)
