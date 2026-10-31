@@ -3135,12 +3135,6 @@ func _reap_writer() -> void:
 		_writer = null
 
 
-# When the object goes away (a test ends, the server quits) the background writer is waited for first, so no file operation runs while the engine is shutting down.
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		_finish_writer()
-
-
 func _finish_writer() -> void:
 	if _writer != null:
 		_writer.wait_to_finish()
