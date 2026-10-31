@@ -233,6 +233,9 @@ void fragment() {
 	foam *= 1.0 + 0.5 * storm;
 	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud_here * 0.6 + storm * 0.35, 0.0, 1.0));
 	float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);
+	// Thin water (a pond edge, a shallow shelf) is seen over its bed at a low angle; mirroring the whole sky there turned ponds into pale grey patches (build 826 play-test, 30 Oct 2026):
+	// the sky's share grows from 40 percent at the thinnest to full over about a metre of water.
+	float mirror_k = mix(0.4, 1.0, murk);
 
 #ifdef SCENE_READS
 	if (refraction > 0.5) {
@@ -257,7 +260,7 @@ void fragment() {
 			below += vec3(1.0, 0.95, 0.8) * pow(c1 * c2, 5.0) * 0.9 * caustic_fade;
 		}
 		vec3 seen = mix(below, water, body_alpha);
-		seen = mix(seen, sky, fresnel * 0.8 * (1.0 - 0.7 * face));
+		seen = mix(seen, sky, fresnel * 0.8 * mirror_k * (1.0 - 0.7 * face));
 		// The lighting adds the sun glint on top; keep the body itself unlit-looking.
 		ALBEDO = mix(seen * 0.6, foam_tint, foam * 0.85);
 		EMISSION = seen * 0.4 * (1.0 - foam) * daylight;
@@ -265,8 +268,8 @@ void fragment() {
 	} else
 #endif
 	{
-		ALBEDO = mix(mix(water, sky, fresnel * 0.8 * (1.0 - 0.7 * face)), foam_tint, foam * 0.85);
-		ALPHA = max(max(body_alpha, fresnel * 0.8), foam * 0.9) * sheet_alpha;
+		ALBEDO = mix(mix(water, sky, fresnel * 0.8 * mirror_k * (1.0 - 0.7 * face)), foam_tint, foam * 0.85);
+		ALPHA = max(max(body_alpha, fresnel * 0.8 * mirror_k), foam * 0.9) * sheet_alpha;
 	}
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
