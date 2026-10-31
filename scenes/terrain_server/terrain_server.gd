@@ -296,6 +296,19 @@ func _ready() -> void:
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
+		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if ore_tile.placeholder:
+			return ""
+
+		var flat: Vector2 = Vector2(pos.x, pos.z)
+
+		for ore in ore_tile.ores:
+			if (ore["rect"] as Rect2).grow(reach).has_point(flat):
+				return str(ore.get("resource", ""))
+
+		return ""
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 

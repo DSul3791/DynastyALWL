@@ -146,6 +146,7 @@ var water_kind_at: Callable        # (x, z) -> {"kind": brook | river | lake | p
 var ice_cover_at: Callable       # (position) -> 0..1 ice cover on still water there (ice.gd); unset: no ice
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
+var ore_near: Callable           # (position, reach in metres) -> name of the ore body (data/tables/resources.json) within reach, "" when none; set by the server scene (unset: no ore)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var roof_add: Callable          # (roof Array from Cover.box_roof) -> key; the server's cover index gets the lean-to's roof
@@ -3077,8 +3078,28 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, rng: RandomNumberGenerator
 		if left <= 0:
 			continue
 
-		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": {"radius": radius, "yaw": yaw, "total": total}}
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
+		var ore_name: String = _boulder_ore(spot, key)
+
+		if ore_name != "":
+			row["ore"] = ore_name   # an outcrop: a pick takes this ore out of it (boulders.json ore)
+
+		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+
+
+# The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
+func _boulder_ore(spot: Vector3, key: int) -> String:
+	var cfg: Dictionary = _boulder_cfg.get("ore", {})
+
+	if cfg.is_empty() or not ore_near.is_valid():
+		return ""
+
+	if float(hash(key) % 1000) >= 1000.0 * float(cfg.get("boulder_share", 0.0)):
+		return ""
+
+	var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0))))
+	return name if (cfg.get("items", {}) as Dictionary).has(name) else ""
 
 
 # The blows a stone takes from the best tool on the hotbar (items.json material, boulders.json tools), as [slot, blows], or [].
@@ -3147,6 +3168,20 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if int(it["count"]) > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
 		out = 2
 
+	# Ore (F-23): a pick on an outcrop takes ore out of it now and then, else stone.
+	var ore_cfg: Dictionary = _boulder_cfg.get("ore", {})
+	var ore_item: int = 0
+
+	if info.has("ore") and not ore_cfg.is_empty():
+		var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
+
+		if str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
+			ore_item = table.number_of(str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), "")))
+
+	if ore_item > 0:
+		inv.add(ore_item, 1)
+		out = 1
+
 	# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule is one piece, never a double.
 	var flint_cfg: Dictionary = _boulder_cfg.get("flint", {})
 	var flint_n: int = table.number_of(str(flint_cfg.get("item", "flint"))) if not flint_cfg.is_empty() else 0
@@ -3155,7 +3190,9 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if flint_n > 0 and water_near.is_valid() and bool(water_near.call(it["pos"], float(flint_cfg.get("water_reach_m", 6.0)))):
 		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
 
-	if flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
+	if ore_item > 0:
+		pass   # the piece was ore
+	elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
 		inv.add(flint_n, 1)
 		out = 1
 	else:
