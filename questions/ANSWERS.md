@@ -1746,3 +1746,83 @@ Answered: 2026-10-30 16:40 UTC
 Answer: Handed to Tyler, who decides when coding starts (see TYLER_GATES_REVIEW.md)
 Answered: 2026-10-30 16:40 UTC
 
+## chars-per-player | How many characters can one player have?
+Answer: One active character at a time, up to 3 saved slots (the moderator took the recommendation). Sonny: cap the local character list at 3 and keep the data able to grow.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## bench-rule | What can a workbench craft?
+Answer: Tools, weapons and bench-class goods (what Sal did). Kathleen/Sal: update CRAFTING_STATIONS_RULE.md to match.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## vice-bench | Is the log workbench level 2 on its own, with a tool rack beside it giving level 3?
+Answer: Keep it: log workbench level 2 alone, tool rack makes level 3.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## stone-wedge | Add a Stone wedge (stone plus stick, hand-made) that splits a log into 2 rough planks?
+Answer: Yes, add the Stone wedge as a future item (Sal builds it); early iron stays a later option.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## code-owner | Should a code session start now on the item jobs only a coder can do?
+Answer: Yes, but gathering (ore, flint, obsidian, coal) first. The moderator starts the code session when the guide playthrough list confirms the gathering blockers.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## rivers-on | Switch the new natural rivers on for the real world?
+Answer: Yes: bake the nine tiles locally, show pictures, commit only after Dave says yes. Sonny now owns this (land and water plan).
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## lake-sources | How should we get more lakes?
+Answer: Crater lake only, for now. Sonny owns it in the land and water plan.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## art-vision-name | Rename ART_DIRECTION.md to ART_VISION.md?
+Answer: Yes, rename ART_DIRECTION.md to ART_VISION.md now that Kathleen's branch is merged into the daily branch (Kathleen does the rename and fixes references).
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## ancestry-boons | Should fantasy peoples get small ancestry traits?
+Answer: Middle path: small physical traits for fantasy peoples only; bigger bonuses in backgrounds and traits.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## pottage-five | May Hearty pottage and Roast Beast keep 5 ingredients?
+Answer: Yes, keep both at 5 as showpiece exceptions.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## generated-body | Should the generated body become the default for players and NPCs?
+Answer: Yes, the generated body is now the default (Dave asked on 30 Oct; --old-body brings the ragdoll back).
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## merge-order | When should the three agents' branches go toward main?
+Answer: Hold all three until Dave has played the daily branch. Everything is merged into DailyDev_20261029; main waits for Dave's go.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## shield-offhand | Should a shield go in the off-hand slot?
+Answer: Yes, a shield goes in the off-hand slot.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## top-tier-armour | What should happen to the plate cuirass and steel helm (4 ingredients each)?
+Answer: Keep them as future items with 4 ingredients.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## log-inventory-link | How should the carried shoulder log show up in the inventory?
+Answer: A: a read-only Carried slot in the inventory window. Kathleen/Sal own it after the current queue.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
+## double-f-window | How fast must the second F press be to put the shoulder log down?
+Answer: 0.6 seconds.
+Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
+Answered: 2026-10-31 02:30 UTC
+
