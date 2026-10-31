@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 374,
+	"next_number": 386,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -332,6 +332,7 @@
 		},
 		"plank_chest_kit": {
 			"number": 28,
+			"future": true,
 			"name": "Plank chest",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"kind": "placeable",
@@ -2700,6 +2701,7 @@
 		},
 		"fine_board": {
 			"number": 227,
+			"future": true,
 			"name": "Fine board",
 			"description": "A smooth board planed from sawn lumber. For fine woodwork.",
 			"kind": "material",
@@ -2803,6 +2805,7 @@
 		},
 		"water_wheel": {
 			"number": 239,
+			"future": true,
 			"name": "Water wheel",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"kind": "material",
@@ -4428,6 +4431,126 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 36
+		},
+		"oats": {
+			"number": 374,
+			"name": "Oats",
+			"description": "Hardy grain for porridge and bread in cool, wet ground.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"rye": {
+			"number": 375,
+			"name": "Rye",
+			"description": "A tough grain that grows where wheat will not.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"cabbage": {
+			"number": 376,
+			"name": "Cabbage",
+			"description": "A heavy leafy head. Keeps through the winter.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
+		},
+		"onion": {
+			"number": 377,
+			"name": "Onion",
+			"description": "A pungent bulb. Flavours food and keeps well.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"peas": {
+			"number": 378,
+			"name": "Peas",
+			"description": "Green pods of sweet peas. Dry them for winter.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"beet": {
+			"number": 379,
+			"name": "Beet",
+			"description": "A deep red root, sweet when roasted.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"oats_seeds": {
+			"number": 380,
+			"name": "Oats seeds",
+			"description": "Seeds for sowing oats. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"rye_seeds": {
+			"number": 381,
+			"name": "Rye seeds",
+			"description": "Seeds for sowing rye. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"cabbage_seeds": {
+			"number": 382,
+			"name": "Cabbage seeds",
+			"description": "Seeds for sowing cabbage. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"onion_seeds": {
+			"number": 383,
+			"name": "Onion seeds",
+			"description": "Seeds for sowing onion. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"peas_seeds": {
+			"number": 384,
+			"name": "Peas seeds",
+			"description": "Seeds for sowing peas. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"beet_seeds": {
+			"number": 385,
+			"name": "Beet seeds",
+			"description": "Seeds for sowing beet. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
 		}
 	}
 }
