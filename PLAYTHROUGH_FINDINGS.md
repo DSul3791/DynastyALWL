@@ -364,3 +364,37 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 What is left of F-19: **every one of the 19 is the log chain (F-16)** (chopping block, log workbench, rough plank, lumber and everything built from lumber, wedge lumber) plus two by design (hand saw, water wheel not learnable). I count plain `log` as having no source because a felled tree gives `log_<species>` on the shoulder and recipes ask for `log` (probe_logs_output.txt); Sal's walk counts `log` as a source, which is the only difference between our tables.
 
 What is left of F-20 (42 items, none gatherable and none flagged future): tree products with no tap or bark action (sap, gum, oil, mirrorbark/witness/wardpine bark and wood, hearthwood logs, everember wood and sap, palm wood and fronds, cherry/fine/hard/thorny wood, timber, softwood, hardwood, wood, poles, charcoal_wood, walnut husks, banana leaves), second yields hidden by a harvest row (comfrey roots, raspberry leaves, amadou, elderflowers, honey flowers, hawthorn blossom, witness leaves), and abstract names (`fibre`, `seeds`, `stuffing`, `burrs`, `thorny_canes`, `angelica_stems`, `cactus_pads`, `fiddleheads`). A decision for Sal and the flora session: tap and bark actions for trees, or retire the abstract items.
+
+---
+
+# Part 6: critical pass over the world pictures (2026-10-31)
+
+Rating: 1 to 5 for "looks real and alive" (5 = could be a screenshot of the finished game). Owners as in the brief.
+
+| Picture | Rating | Problems | Owner |
+|---|---|---|---|
+| `world/spawn_view.jpg` | 4 | rich autumn forest, bramble with berries, pond between the trunks; the NPC Edda stands inside a young fir at the lower left (clipping) | Sonny (NPC placement) |
+| `world/shelter_wide.jpg` | 3.5 | lean-to roof is flat green slabs (reads as painted boards, no thatch or turf texture); the thatch roof is four posts and a thin ridge; the bed is a plain frame with stacked planks; the stump-like chopping block is fine | Kathleen |
+| `world/shelter_close.jpg` | 3 | workbench is a bare table; the rough bed shows stacked planks, not a bed (no bedding or straw look); tool rack readable | Kathleen |
+| `world/once.jpg` | 3 | the **whole foreground is a dark rippled plane** (the camera stands at the spawn, 53316, 68476, which the server comment calls "pond A shore, in about 0.9 m of water"): it is water, not shading; the **stone forge is a torn grey block with ragged orange edges**; lean-to roof flat green; bed plain planks | Sonny (water), Kathleen (forge, roof, bed) |
+| `world/open_ground_rain.jpg` | 3.5 | rain streaks, dark light and the forge smoke work well; same dark rippled plane in the foreground | Sonny |
+| `world/under_beech_dry.jpg` | 2 | the crown is floating clumps of leaves with large sky gaps and bright blue-grey spikes where the branches meet; it does not read as a roof, though cover.gd treats it as a 2 m disc | Kathleen (trees), flora session |
+| `world/under_beech_rain.jpg` | 2 | same crown; rain is visible in the gaps and on the far trees, so the player cannot see why under here is dry | Kathleen, flora session |
+| `world/campfire.jpg` | 2 | only the green placement ring is drawn (no sticks, no fire); a moss-green boulder with a hard bright top; a fern frond as big as the boulder | Kathleen (fire), flora session (fern scale) |
+| `world/fell.jpg` | 1 | not a felling picture: the rig printed "fell: no tree loaded" and kept the spawn frame | Kathleen (rig) |
+| `sheets/items_*.jpg`, `structures_*.jpg` | 4 / 4.5 | structures look good; 62 items are still white blobs (F-18); the 31 kits are one box shape (F-27) | Kathleen |
+
+## Top ten problems (all pictures, all sheets)
+
+| # | Problem | Owner | Evidence |
+|---|---|---|---|
+| 1 | The player spawns in or at the edge of a pond: the foreground is a dark rippled plane with the pieces on grass behind it | Sonny (water); Tyler if the spawn point should move to the dry bench 12 m east, 53330, 68466 (the server comment gives it) | `once.jpg`, `open_ground_rain.jpg` |
+| 2 | The tree crown reads as floating clumps with sky gaps: standing under it does not look sheltered, and the game's rule says it is | Kathleen, flora session | `under_beech_dry.jpg` |
+| 3 | Branch spikes under the crown are bright blue-grey | Kathleen | `under_beech_dry.jpg` |
+| 4 | Stone forge looks like a torn grey block with ragged orange edges | Kathleen | `once.jpg` |
+| 5 | Lean-to roof is flat green slabs | Kathleen | `once.jpg`, `shelter_wide.jpg` |
+| 6 | Rough bed is plain stacked planks (no bedding, no straw) | Kathleen | `shelter_close.jpg` |
+| 7 | A laid campfire is not drawn at all (only the ghost ring) and cannot be lit by the rig | Kathleen | `campfire.jpg` |
+| 8 | Felled trunk, stump and lit-fire pictures cannot be made: the fell rig finds no tree after 60 s | Kathleen | `fell.jpg` |
+| 9 | 62 items are white blobs and the 31 kits are one box shape | Kathleen | `items_*.jpg` |
+| 10 | The NPC Edda clips into trees and stands in every spawn picture | Sonny | `spawn_view.jpg` |
