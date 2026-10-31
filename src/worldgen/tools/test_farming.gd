@@ -78,6 +78,37 @@ func _init() -> void:
 	var crops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))["crops"]
 	check(crops.size() >= 12 and crops["wheat"]["grow_days"] > 20, "crops.json lists the crops (wheat grows %d days)" % int(crops["wheat"]["grow_days"]))
 
+	# Wild seeds (step 1): tall grass gives wheat or barley seeds in summer and autumn, none in winter; wild carrot gives carrot seeds; flax flax seeds.
+	items.gather_pace_ms = 0
+	items.report_position(1, Vector3(500.0, 70.0, 500.0))
+	season[0] = "autumn"
+	var got: int = 0
+
+	for n in range(12):
+		items._last_gather.clear()
+		items.gather(1, "tall_grass", "plant", "0,0,%d" % (500 + n), 500 + n, Vector3(501.0, 70.0, 500.0))
+
+	got = count("wheat_seeds") + count("barley_seeds")
+	check(got >= 6, "gathering tall grass in autumn gives wheat and barley seeds (%d from 12 plants)" % got)
+	season[0] = "winter"
+	var before_winter: int = got
+
+	for n in range(12):
+		items._last_gather.clear()
+		items.gather(1, "tall_grass", "plant", "0,0,%d" % (600 + n), 600 + n, Vector3(501.0, 70.0, 500.0))
+
+	check(count("wheat_seeds") + count("barley_seeds") == before_winter, "and none in winter")
+	season[0] = "summer"
+	items._last_gather.clear()
+	items.gather(1, "wild_carrot", "plant", "0,0,700", 700, Vector3(501.0, 70.0, 500.0))
+	items._last_gather.clear()
+	items.gather(1, "flax", "plant", "0,0,701", 701, Vector3(501.0, 70.0, 500.0))
+	check(count("carrot_seeds") >= 1 and count("flax_seeds") >= 1, "wild carrot gives carrot seeds and flax gives flax seeds in summer (%d, %d)" % [count("carrot_seeds"), count("flax_seeds")])
+	items.inventory_of(1).remove(items.table.number_of("wheat_seeds"), count("wheat_seeds"))
+	items.inventory_of(1).remove(items.table.number_of("barley_seeds"), count("barley_seeds"))
+	season[0] = "spring"
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+
 	# Till.
 	check(items.till(1, items.inventory_of(1), Vector3(1.0, 10.0, 1.0)) == 0, "no hoe: nothing is tilled")
 	give("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe", 1)

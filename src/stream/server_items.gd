@@ -1149,7 +1149,9 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 				_reject(peer, 1)
 
-	if rows.is_empty() and natural == "":
+	var seed_rows: Array = _seed_rows(species_name)
+
+	if rows.is_empty() and natural == "" and seed_rows.is_empty():
 		return false
 
 	var more: float = skill_factor(peer, "gather_plant")
@@ -1161,9 +1163,23 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if natural != "":
 		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
 
+	for row in seed_rows:
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
 	_picked[flora_key] = now_s
 	_dirty = true
 	return true
+
+
+# Wild seeds a plant gives in this season (drops.json seed_drops), [] when none.
+func _seed_rows(species_name: String) -> Array:
+	var def: Dictionary = (_drops.get("seed_drops", {}) as Dictionary).get(species_name, {})
+
+	if def.is_empty():
+		return []
+
+	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	return def.get("rows", []) if (def.get("seasons", []) as Array).has(season) else []
 
 
 # A berry bush (data/items/drops.json "berry_yield"): E gives that berry only, count scaled by the plant's size, in its season, once a season;
@@ -1194,6 +1210,12 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 	var count: int = GatherRules.harvest_count(berry, GatherRules.harvest_scale(_drops, plant_height, entry))      # the one count rule (Dave: size scaled, 3x cap, rounded up, never 0)
 	practice(peer, "gather_plant")
 	give(peer, number, count)
+
+	var seed_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	seed_rng.seed = hash(flora_key) ^ stamp ^ 0x2545f491
+
+	for row in _seed_rows(species_name):   # wild seeds beside the harvest (drops.json seed_drops, e.g. wild carrot)
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, seed_rng, int(row[1]), int(row[2])))
 
 	if not _stripped.has(parts[0]):
 		_stripped[parts[0]] = {}
