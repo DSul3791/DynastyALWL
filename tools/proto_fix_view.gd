@@ -108,7 +108,7 @@ func _run() -> void:
 		var row: Array = []
 
 		for yaw in YAWS:
-			row.append(await _shot(b, yaw, Vector3(0.0, head_y + (0.05 if v[0] == "lean" else (-0.1 if v[0] == "stocky" else 0.0)), 0.0), 1.0))
+			row.append(await _shot(b, yaw, Vector3(0.0, float(Generator.rig(g)["global"][4].y) + 0.06, 0.0), 1.0))
 
 		vrows.append(row)
 		b.queue_free()

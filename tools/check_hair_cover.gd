@@ -39,8 +39,8 @@ func _initialize() -> void:
 					top_total += 1
 					top_bare += 0 if hair else 1
 
-				# The sides above the ears: x beyond 7 cm, y between 0.21 and 0.23 head heights (above the largest ears), in front of the ear line and behind the brow.
-				if absf(p.x) > 0.07 * hs and p.y > 0.21 * hs and p.y < 0.23 * hs and p.z > -0.04 * hs:
+				# The sides above the ears: x beyond 7 cm, y between 0.22 and 0.24 head heights (above the largest ears), in front of the ear line and behind the brow.
+				if absf(p.x) > 0.07 * hs and p.y > 0.22 * hs and p.y < 0.24 * hs and p.z > -0.04 * hs:
 					side_total += 1
 					side_bare += 0 if hair else 1
 
