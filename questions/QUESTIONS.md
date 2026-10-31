@@ -13,12 +13,6 @@
 
 
 
-## pic-leanto-bed | Does this in-game lean-to with a bed inside look right?
-Image: questions/img/leanto_bed_game.png
-Note: Real game (older, steeper roof version). Kathleen rates it 3.5 of 5.
-- Yes
-- No
-
 ## pic-lit-fixtures | Do the lit fireplace, wall torch and chandelier look right at dusk?
 Image: questions/img/lit_fixtures_game.png
 Note: Real game, before the front-only fireplace light fix. Kathleen rates it 4 of 5.
