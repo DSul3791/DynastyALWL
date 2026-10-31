@@ -1337,6 +1337,11 @@ func set_fruiting(names: Array) -> void:
 	for plant_name in names:
 		fruiting[str(plant_name)] = true
 
+	# Any species whose flora.json row says "seasonal": true is built per season too (its model reads the season name TreeBuilder.build gets).
+	for entry in _setup_entries:
+		if bool(entry.get("seasonal", false)):
+			fruiting[str(entry["name"])] = true
+
 	if season != "":
 		_start_seasonal()
 
