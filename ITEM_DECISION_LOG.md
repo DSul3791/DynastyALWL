@@ -237,3 +237,6 @@ Farming items built (332-345, recipes 221-224), tests green. ITEM_GLOSSARY.md ge
 1. Storage items: basket, sack, barrel, shelf as future items (3 ingredients max). Starting.
 2. Animals and beehive item spec (egg, milk, wool, honeycomb, wax; no live animals).
 3. Final consistency pass: every new item has a weight, look, recipe, art request line.
+
+## Fauna data pass (2026-10-30, moderator job 1)
+Merged origin/DailyDev_20261029 into the branch (clean). Added items 346-352, recipes 225-226, 14 carcass rows, fauna_proposal.json (50 species), ANIMAL_SPEC.md. Tests green except the animals timing check (machine load, unrelated). Choice made (reversible): kept spawn rows out of animals.json because the code and models do not exist; the proposal file is read by nothing.
