@@ -5310,7 +5310,6 @@
 			"description": "Planks and twine for a flight of stairs. Set it against a floor edge to climb up.",
 			"kind": "placeable",
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 117
 		},
@@ -5320,7 +5319,6 @@
 			"description": "A wooden flight of stairs, 2.4 m long.",
 			"kind": "structure",
 			"stack": 1,
-			"future": true,
 			"look_alikes": []
 		},
 		"log_wall_kit": {
