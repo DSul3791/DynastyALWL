@@ -20,7 +20,7 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	var cfg: Dictionary = Rules.load_config()
-	check(Rules.footprint(cfg, "lean_to_kit") == Vector2(2.4, 2.1) and Rules.footprint(cfg, "campfire_kit") == Vector2.ZERO, "footprints come from structures.json (lean-to 2.4 x 2.1, fire none)")
+	check(Rules.footprint(cfg, "lean_to_kit") == Vector2(2.6, 2.4) and Rules.footprint(cfg, "campfire_kit") == Vector2.ZERO, "footprints come from structures.json (lean-to 2.6 x 2.4, fire none)")
 	check(Rules.blocked(cfg, "chest_kit", Vector3(0, 10, 0), []) == "", "an empty world blocks nothing")
 	var rows: Array = [{"pos": Vector3(0, 10, 0), "state": 1}]
 	check(Rules.blocked(cfg, "chest_kit", Vector3(1.0, 10, 0), rows) == "close", "a chest too near a fire is blocked")
