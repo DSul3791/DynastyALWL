@@ -8,14 +8,13 @@ extends Control
 const Logic := preload("res://src/client/character/creator_logic.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBody := preload("res://src/client/character/generated_body.gd")
-const MyCharacter := preload("res://src/client/character/my_character.gd")
+const Store := preload("res://src/client/character/character_store.gd")
+const Record := preload("res://src/client/character/character_record.gd")
+const Style := preload("res://src/client/character/page_style.gd")
 
+const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
-const FONT_BASE := 22          # labels, values, text boxes
-const FONT_SECTION := 28       # section headers
-const FONT_BUTTON := 24        # the big bar buttons
-const FONT_TITLE := 30         # the page title and the Save and play button
 
 var logic: RefCounted = Logic.new()
 var _sliders: Dictionary = {}       # slider name -> HSlider
@@ -28,6 +27,9 @@ var _status: Label
 var _undo_button: Button
 var _redo_button: Button
 var _wild: CheckBox
+var _name_dialog: ConfirmationDialog
+var _name_message: Label
+var _name_edit: LineEdit
 var _preview: SubViewport
 var _body: Node3D
 var _turn: float = 25.0
@@ -38,11 +40,6 @@ var turntable: bool = true
 
 
 func _ready() -> void:
-	var saved: String = MyCharacter.saved_code()
-
-	if saved != "":
-		logic.load_code(saved)
-
 	_build_ui()
 	_refresh_controls()
 	_rebuild_body()
@@ -63,22 +60,7 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------- screen
 
 func _build_ui() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	theme = _make_theme()
-	var back: ColorRect = ColorRect.new()
-	back.color = Color(0.13, 0.14, 0.16)
-	back.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(back)
-	var margin: MarginContainer = MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
-
-	add_child(margin)
-	var page: VBoxContainer = VBoxContainer.new()
-	page.add_theme_constant_override("separation", 10)
-	margin.add_child(page)
+	var page: VBoxContainer = Style.page(self)
 	_build_bar(page)
 	var split: HBoxContainer = HBoxContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -126,52 +108,6 @@ func _build_ui() -> void:
 	_build_preview_world()
 
 
-# One theme for the whole screen so every label, button and box is readable at 1920x1080 (labels 20 px, buttons and section titles bigger).
-func _make_theme() -> Theme:
-	var t: Theme = Theme.new()
-	t.default_font_size = FONT_BASE
-
-	for type_name in ["Label", "Button", "CheckBox", "LineEdit", "ColorPickerButton"]:
-		t.set_font_size("font_size", type_name, FONT_BASE)
-
-	t.set_constant("icon_max_width", "CheckBox", 24)
-
-	for state in ["normal", "hover", "pressed", "disabled"]:
-		var box: StyleBoxFlat = StyleBoxFlat.new()
-		box.bg_color = Color(0.3, 0.33, 0.4).lightened(0.12 if state == "hover" else 0.0).darkened(0.15 if state == "pressed" else (0.4 if state == "disabled" else 0.0))
-		box.set_corner_radius_all(6)
-		box.content_margin_left = 14.0
-		box.content_margin_right = 14.0
-		box.content_margin_top = 6.0
-		box.content_margin_bottom = 6.0
-		t.set_stylebox(state, "Button", box)
-
-	var grabber: StyleBoxFlat = StyleBoxFlat.new()
-	grabber.bg_color = Color(0.3, 0.32, 0.36)
-	grabber.set_corner_radius_all(6)
-	grabber.content_margin_top = 14.0
-	grabber.content_margin_bottom = 14.0
-	t.set_stylebox("slider", "HSlider", grabber)
-	return t
-
-
-func _big_button(text: String, size: int, tint: Color) -> Button:
-	var b: Button = Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(0, 64)
-	b.add_theme_font_size_override("font_size", size)
-
-	for state in ["normal", "hover", "pressed", "disabled"]:
-		var box: StyleBoxFlat = StyleBoxFlat.new()
-		box.bg_color = tint.lightened(0.12) if state == "hover" else (tint.darkened(0.15) if state == "pressed" else (tint.darkened(0.45) if state == "disabled" else tint))
-		box.set_corner_radius_all(8)
-		box.content_margin_left = 18.0
-		box.content_margin_right = 18.0
-		b.add_theme_stylebox_override(state, box)
-
-	return b
-
-
 # The bar across the top: everything a person needs to finish: randomise, save and play, play, undo, redo.
 func _build_bar(page: VBoxContainer) -> void:
 	var bar: PanelContainer = PanelContainer.new()
@@ -183,35 +119,36 @@ func _build_bar(page: VBoxContainer) -> void:
 	box.add_child(row)
 	var title: Label = Label.new()
 	title.text = "Create your character"
-	title.add_theme_font_size_override("font_size", FONT_TITLE)
+	title.add_theme_font_size_override("font_size", Style.FONT_TITLE)
 	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(title)
+
+	if Store.count() > 0:
+		var back_button: Button = Style.big_button("Back to my characters", Style.FONT_BUTTON, Style.NEUTRAL)
+		back_button.pressed.connect(func() -> void: get_tree().change_scene_to_file(SELECT_SCENE))
+		row.add_child(back_button)
+
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
-	var dice: Button = _big_button("Randomise everything", FONT_BUTTON, Color(0.36, 0.3, 0.52))
+	var dice: Button = Style.big_button("Randomise everything", Style.FONT_BUTTON, Style.ACCENT)
 	dice.pressed.connect(func() -> void:
 		logic.dice_all()
 		_changed("Rolled everything (locked values kept)"))
 	row.add_child(dice)
-	_undo_button = _big_button("Undo", FONT_BUTTON, Color(0.3, 0.32, 0.38))
+	var play: Button = Style.big_button("Save and play", Style.FONT_TITLE, Style.PRIMARY)
+	play.pressed.connect(_ask_name)
+	row.add_child(play)
+	_undo_button = Style.big_button("Undo", Style.FONT_BUTTON, Style.NEUTRAL)
 	_undo_button.pressed.connect(func() -> void:
 		if logic.undo():
 			_changed("Undone"))
 	row.add_child(_undo_button)
-	_redo_button = _big_button("Redo", FONT_BUTTON, Color(0.3, 0.32, 0.38))
+	_redo_button = Style.big_button("Redo", Style.FONT_BUTTON, Style.NEUTRAL)
 	_redo_button.pressed.connect(func() -> void:
 		if logic.redo():
 			_changed("Redone"))
 	row.add_child(_redo_button)
-	var skip: Button = _big_button("Play without saving", FONT_BUTTON, Color(0.3, 0.32, 0.38))
-	skip.pressed.connect(_start_game)
-	row.add_child(skip)
-	var play: Button = _big_button("Save and play", FONT_TITLE, Color(0.2, 0.55, 0.28))
-	play.pressed.connect(func() -> void:
-		MyCharacter.save_code(logic.code())
-		_start_game())
-	row.add_child(play)
 	var info: HBoxContainer = HBoxContainer.new()
 	box.add_child(info)
 	_status = Label.new()
@@ -225,14 +162,48 @@ func _build_bar(page: VBoxContainer) -> void:
 	info.add_child(_wild)
 
 
-func _start_game() -> void:
+# Save and play: asks for a name, saves the character, makes it the active one and goes on into the game (the only way in).
+func _ask_name(message: String = "") -> void:
+	if _name_dialog == null:
+		_name_dialog = ConfirmationDialog.new()
+		_name_dialog.title = "Name your character"
+		_name_dialog.ok_button_text = "Save and play"
+		_name_dialog.cancel_button_text = "Back"
+		_name_dialog.min_size = Vector2i(640, 220)
+		var box: VBoxContainer = VBoxContainer.new()
+		_name_message = Label.new()
+		box.add_child(_name_message)
+		_name_edit = LineEdit.new()
+		_name_edit.max_length = Record.NAME_MAX
+		_name_edit.placeholder_text = "Name (up to %d letters)" % Record.NAME_MAX
+		_name_edit.custom_minimum_size = Vector2(0, 48)
+		_name_edit.text_submitted.connect(func(_text: String) -> void: _name_dialog.get_ok_button().pressed.emit())
+		box.add_child(_name_edit)
+		_name_dialog.add_child(box)
+		_name_dialog.confirmed.connect(_save_and_play)
+		add_child(_name_dialog)
+
+	_name_message.text = message if message != "" else "Every character needs a name."
+	_name_dialog.popup_centered()
+	_name_edit.grab_focus()
+
+
+func _save_and_play() -> void:
+	var chosen: String = _name_edit.text.strip_edges()
+	var id: String = Store.add(chosen, logic.code())
+
+	if id == "":
+		_ask_name("That name will not do (1 to %d characters). Try another." % Record.NAME_MAX)
+		return
+
+	Store.set_active(id)
 	Engine.set_meta("creator_done", true)
 	get_tree().change_scene_to_file("res://scenes/launcher.tscn")
 
 
 # A section header button with its content below it; only one section is open at a time. Returns the content box.
 func _add_accordion(column: VBoxContainer, title: String) -> VBoxContainer:
-	var head: Button = _big_button("", FONT_SECTION, Color(0.24, 0.28, 0.36))
+	var head: Button = Style.big_button("", Style.FONT_SECTION, Color(0.24, 0.28, 0.36))
 	head.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	column.add_child(head)
 	var body: VBoxContainer = VBoxContainer.new()

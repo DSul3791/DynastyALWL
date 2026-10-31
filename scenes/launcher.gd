@@ -24,9 +24,10 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
-			# The character creator is the first page (until there are accounts); its "Save and play" button comes back here with creator_done set.
+			# The character select page is the first page (until there are accounts); it sends a player with no characters to the creator, and
+			# both come back here with creator_done set once a character is chosen.
 			if not Engine.has_meta("creator_done"):
-				get_tree().change_scene_to_file("res://scenes/creator_proto/creator_proto.tscn")
+				get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
 			else:
 				_host_and_play()
 
