@@ -111,7 +111,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Lash a ridge pole, lean 24 sticks against it and weave in 6 leaves with 4 twine. Place it with the open side towards you.",
+			"hint": "Lash a ridge pole, lean 32 sticks against it and weave in 8 leaves with 4 twine. Place it with the open side towards you.",
 			"after": [
 				"fire"
 			],

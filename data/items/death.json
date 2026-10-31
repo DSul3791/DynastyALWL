@@ -6,5 +6,7 @@
 	"sink_m": 0.35,
 	"per_chunk_cap": 50,
 	"per_owner_cap": 5,
-	"recheck_s": 30
+	"recheck_s": 30,
+	"novice_grace_note": "Novice grace (Dave 31 Oct 2026; QA card death-novice): who comes back at the spawn bed after dying and who dies for good (DESIGN_IDEAS.md 6.1). mode: 'always' = everyone respawns (the build as it was, the default); 'level' = respawn only while the character level is below `level`, then real death; 'never' = real death for everyone; 'heir' = respawn until the character has a child (children are not built, so this acts like 'always' today). character level = `metric`: 'best_skill' = the highest effective skill value on the skills page (a new character has 1; practice raises it to 100), 'skill_total' = the sum over all skills of (value - 1). Real death today: the remains are left and the character is marked final_death_pending, and the server calls send_final_death if the client flow exists; it does not exist yet, so the character still respawns (see TYLER_TEST_SYSTEM_REVIEW.md, section Death).",
+	"novice_grace": {"mode": "always", "level": 5, "metric": "best_skill"}
 }

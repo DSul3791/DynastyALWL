@@ -20,7 +20,7 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	var cfg: Dictionary = Rules.load_config()
-	check(Rules.footprint(cfg, "lean_to_kit") == Vector2(2.6, 2.4) and Rules.footprint(cfg, "campfire_kit") == Vector2.ZERO, "footprints come from structures.json (lean-to 2.6 x 2.4, fire none)")
+	check(Rules.footprint(cfg, "lean_to_kit") == Vector2(2.6, 3.4) and Rules.footprint(cfg, "campfire_kit") == Vector2.ZERO, "footprints come from structures.json (lean-to 2.6 x 3.4, fire none)")
 	check(Rules.blocked(cfg, "chest_kit", Vector3(0, 10, 0), []) == "", "an empty world blocks nothing")
 	var rows: Array = [{"pos": Vector3(0, 10, 0), "state": 1}]
 	check(Rules.blocked(cfg, "chest_kit", Vector3(1.0, 10, 0), rows) == "close", "a chest too near a fire is blocked")
@@ -39,7 +39,7 @@ func _init() -> void:
 	var ramp: Callable = func(x, _z): return 10.0 + 0.5 * x   # rises 0.5 m per metre along x
 	var hole: Callable = func(_x, _z): return NAN
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, flat) == "", "flat ground takes a lean-to")
-	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a lean-to on a 50 percent slope is red (rise 1.2 m over 2.4 m)")
+	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a lean-to on a 50 percent slope is red (rise 1.7 m over 3.4 m)")
 	check(Rules.steep(cfg, "campfire_kit", Vector3(0, 10, 0), 0.0, ramp) == "steep", "a campfire on the same slope is red (rise 0.8 m over 1.6 m, limit 0.6)")
 	check(Rules.steep(cfg, "chest_kit", Vector3(0, 10, 0), 0.0, func(x, _z): return 10.0 + 0.2 * x) == "", "a gentle slope is fine")
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), PI * 0.5, func(_x, z): return 10.0 + 0.5 * z) == "steep", "turning the lean-to turns its footprint (the slope runs along z)")

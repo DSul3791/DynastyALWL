@@ -253,6 +253,7 @@ var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
+var send_final_death: Callable       # (peer, cause String): a death with no respawn (death.json novice_grace); the new-character / heir flow is not built, so nothing sets this yet
 var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
 var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (drowning, ...)
 var _remains_check_in: float = 0.0
@@ -6838,6 +6839,36 @@ func remains_ids() -> Array:
 	return out
 
 
+# The character level the novice grace reads (death.json novice_grace.metric): 'best_skill' is the highest effective skill value (what the skills page shows; 1 at the start, 100 at
+# the top), 'skill_total' the sum over all skills of (value - 1).
+func character_level(peer: int) -> int:
+	var records: Dictionary = _skill_records(peer)
+	var metric: String = str(_death_cfg.get("novice_grace", {}).get("metric", "best_skill"))
+	var best: float = 1.0
+	var total: float = 0.0
+
+	for id in _skills_cfg.get("skills", {}):
+		var value: float = SkillWeb.effective(_skills_cfg, str(id), records)
+		best = maxf(best, value)
+		total += value - 1.0
+
+	return int(floor(total)) if metric == "skill_total" else int(floor(best))
+
+
+# True while this character still respawns at the bed after dying (the novice grace); false = real death. Mode 'always' (the default) is the old behaviour for everyone.
+func novice_grace(peer: int) -> bool:
+	var rule: Dictionary = _death_cfg.get("novice_grace", {})
+	var mode: String = str(rule.get("mode", "always"))
+
+	if mode == "never":
+		return false
+
+	if mode == "level":
+		return character_level(peer) < int(rule.get("level", 5))
+
+	return true   # 'always', and 'heir' until children exist
+
+
 # The character dies. Returns false when there is nobody to kill (no such player, no position yet, death switched off).
 func kill(peer: int, cause: String) -> bool:
 	var key: String = str(_peer_key.get(peer, ""))
@@ -6896,6 +6927,12 @@ func kill(peer: int, cause: String) -> bool:
 	_cold_level.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
+	if not novice_grace(peer):
+		_characters[key]["final_death_pending"] = true   # real death: the remains stay; the new-character / heir flow is not built, so the character still comes back below
+
+		if send_final_death.is_valid():
+			send_final_death.call(peer, cause)
+
 	var back: Vector3 = respawn_for(peer)
 	_peer_pos[peer] = back
 	_motion.erase(peer)
@@ -8156,6 +8193,73 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 	return out
 
 
+# The tooltip of the comfort line (protocol 81): what counts now with its points, what a few more pieces would add, and the Rested buff with its bonuses and minutes left.
+func comfort_tip(peer: int) -> String:
+	var cfg: Dictionary = _comfort_data()
+	var data: Dictionary = comfort_at(peer)
+	var lines: PackedStringArray = PackedStringArray()
+
+	if not bool(data["sheltered"]):
+		lines.append("Comfort 0: you are not under a roof or a tree crown.")
+		lines.append("Shelter gives +1, and then furniture and fire nearby count.")
+	else:
+		lines.append("Comfort %d of %d" % [int(data["level"]), int(cfg.get("max_level", 20))])
+		lines.append("+%d  Shelter" % int(cfg.get("shelter", {}).get("points", 1)))
+		var have: Dictionary = {}
+
+		for row in data["items"]:
+			var id: String = str(row[0])
+			have[id] = true
+			lines.append("+%d  %s" % [int(row[1]), _comfort_name(id)])
+
+		var missing: Array = []
+
+		for kind in cfg.get("kinds", []):
+			var id: String = str(kind["id"])
+
+			if have.has(id) or (str(kind.get("class", "")) == "bed" and have.has("bed")) or not (str(kind.get("status", "")) in ["live", "placeable"]):
+				continue
+
+			missing.append([int(kind["points"]), id, bool(kind.get("needs_lit", false))])
+
+		missing.sort_custom(func(a, b): return a[0] > b[0])
+
+		if not missing.is_empty():
+			lines.append("Could add:")
+
+			for n in mini(missing.size(), 5):
+				lines.append("  +%d  %s%s" % [missing[n][0], _comfort_name(missing[n][1]), " (lit)" if missing[n][2] else ""])
+
+	var tier: Dictionary = rested_tier(peer)
+
+	if not tier.is_empty():
+		lines.append("%s, %d min left:" % [str(tier.get("name", "Rested")), int(ceil(rested_seconds_left(peer) / 60.0))])
+		lines.append_array(_rested_bonus_lines(tier))
+	else:
+		lines.append("Rest on a bed or sit 30 s at comfort 2 or more to become Rested.")
+
+	return "
+".join(lines)
+
+
+func _comfort_name(id: String) -> String:
+	var words: String = id.replace("_", " ")
+	return words.substr(0, 1).to_upper() + words.substr(1)
+
+
+func _rested_bonus_lines(tier: Dictionary) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var rows: Array = [["regen_mult", "health regeneration +%d%%"], ["exhaustion_mult", "exhaustion %d%% slower"], ["hunger_thirst_mult", "hunger and thirst %d%% slower"], ["action_speed_mult", "work %d%% faster"], ["skill_gain_mult", "skill gain +%d%%"], ["cold_stress_mult", "cold %d%% weaker"]]
+
+	for r in rows:
+		var change: int = int(round(absf(float(tier.get(r[0], 1.0)) - 1.0) * 100.0))
+
+		if change > 0:
+			out.append("  " + str(r[1]) % change)
+
+	return out
+
+
 func _comfort_lit_fire_near(pos: Vector3, radius: float) -> bool:
 	for id in _items:
 		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])) and _items[id]["pos"].distance_to(pos) <= radius:
@@ -8219,7 +8323,7 @@ func rest_completed(peer: int, half: bool = false) -> bool:
 
 
 # Called every slow tick: lying on a good bed (awake or asleep) at comfort 2+ earns the buff once per rest; the buff ending is told once.
-var send_comfort: Callable            # (peer, comfort level, rested tier level 0 = none, whole minutes of Rested left): the HUD line (protocol 80)
+var send_comfort: Callable            # (peer, comfort level, rested tier level 0 = none, whole minutes of Rested left, tooltip text): the HUD line and its tooltip (protocol 80, 81)
 var _comfort_sent: Dictionary = {}      # peer -> the last [level, rested level, minutes] told
 const SIT_REST_S := 30.0
 var _sit_s: Dictionary = {}             # peer -> seconds sat on a seat so far
@@ -8254,11 +8358,11 @@ func _comfort_tick(spent: float = 0.0) -> void:
 		var rested: bool = not rested_tier(peer).is_empty()
 
 		if send_comfort.is_valid():
-			var told: Array = [int(comfort_at(peer)["level"]), int(_characters.get(_peer_key.get(peer, ""), {}).get("rested", {}).get("level", 0)) if rested else 0, int(ceil(rested_seconds_left(peer) / 60.0)) if rested else 0]
+			var told: Array = [int(comfort_at(peer)["level"]), int(_characters.get(_peer_key.get(peer, ""), {}).get("rested", {}).get("level", 0)) if rested else 0, int(ceil(rested_seconds_left(peer) / 60.0)) if rested else 0, comfort_tip(peer)]
 
 			if _comfort_sent.get(peer, []) != told:
 				_comfort_sent[peer] = told
-				send_comfort.call(peer, told[0], told[1], told[2])
+				send_comfort.call(peer, told[0], told[1], told[2], told[3])
 
 		if rested:
 			_rested_told[peer] = true

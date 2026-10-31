@@ -12,3 +12,12 @@ Next: send ACT_PLACE through the client's own place path (client.held ghost conf
 - game_lit_fireplace_torch.png: fireplace and wall torch, hour 21. The warm light pool on the ground and the glowing jambs read well; rating 4. Flames are small and come out cream-white, not orange (emission too high, so the colour clips); the fire fills only about a sixth of the opening.
 - game_lit_furniture2.png / _close.png: chandelier at left, six candle flames visible, ground warm; rating 3.5 (flames tiny at 8 m).
 - game_lit_v2.png (after Tyler's flame tuning): fireplace fire now fills more of the opening with a second cone, torch flame fatter, chandelier candles larger and clearly seen; rating 4. Flame bases are orange, tips still cream-pale (could drop emission a little more); otherwise done.
+- game_lit_pools_3m.png / _10m.png (after Tyler's short-range falloff): at 3 m the fireplace lights the hearth, jambs and about 3 m of ground well, rating 4; the torch flame is a flat cream triangle at close range (3). At 10 m the fireplace pool reads as a tight warm patch and the fire is clearly visible; the torch and chandelier add almost no ground light and the campfire at the left is a small spot; pools are a little small and tight, rating 3.5.
+
+## Tyler's spot light and shadows (branch claude/tyler-gates-fee5f7), hour 21
+- fire_front.png (3 m... 6 m): the light now throws a clear cone onto the ground in front; the jambs and brick no longer glow, the opening is dark except the flames and a bright orange dot floating above them (the inner glow reads as a floating ball); rating 3.5.
+- fire_side.png: side is dark, the lit cone only lies in front; rating 4 (exactly the intended look).
+- fire_back.png: back is dark, only a thin orange line under the hearth; rating 4.
+- torch_chandelier_10m.png: torch and chandelier each have a visible pool on the ground at 10 m, flames small but clear; rating 4.
+(Ground behind z 68430 is not loaded in the rig, so side and back views were taken from the north and west.)
+- fire_front2.png (after the inner glow rework, 4 m): jambs and inside brick glow warm, the floating orange dot is gone, the flames sit on the log, the ground cone in front is unchanged; rating 4.5. Remaining: flames are still pale-cream at the tips.
