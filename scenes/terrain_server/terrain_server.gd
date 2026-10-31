@@ -277,6 +277,10 @@ func _ready() -> void:
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
+
+	for dev_arg in OS.get_cmdline_user_args():   # testing only (rigs and screenshots): --dev-place=name@x,z,yaw[,lit], repeatable; normal play never passes it
+		if dev_arg.begins_with("--dev-place="):
+			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed
