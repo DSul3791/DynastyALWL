@@ -378,6 +378,7 @@ func _init() -> void:
 		return
 	var took: float = float(Time.get_ticks_msec() - bot_start) / 1000.0
 	print("playability bot: all %d steps done in %.1f s" % [step_no, took])
+	items._finish_writer()
 	quit(0)
 
 
