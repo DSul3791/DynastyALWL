@@ -14,3 +14,10 @@ Pictures taken with `tools/look_rig.sh --flora <species> --summer` at the spawn 
 | Tropical hardwood | hardwood_v2_far.jpg | reads as a tall rainforest tree (slim bole, high dark crown); the bark spots look like leopard blotches on such a tall trunk; buttress roots barely show at this scale; the crown is mostly above the frame | 1 | trunk slimmed to 0.7 x listed width (done). open: finer bark texture for tall trunks, bigger buttress fins |
 
 Source of the method: the in-repo rig (`tools/look_rig.sh`) and the offline preview scripts I wrote in the session scratchpad (Godot SubViewport, vertex colours, leaf textures, no game tint) which were used for the first-pass shape checks only.
+
+## Tree fall and stumps (2026-10-30, Kathleen, Dave's tree-fall job)
+
+- Server (src/flora/fell_pose.gd, server_items.gd `_fell_record`): the fall direction and resting pitch are chosen from the real ground height along the trunk; the trunk record carries `pitch`; checked headlessly in src/worldgen/tools/test_fell_pose.gd (flat, rising, falling, 56 degree mountainside, cliff face, unknown ground).
+- Client (inventory_view.gd `_make_felled`): the existing 1.5 s fall tween now ends at the server's pitch, and the collision capsule follows it.
+- Stump: stump_chop.jpg (real game, `--shot-fell=flat`): the axe on a stump shows "Chopping the stump: 2 of 6", "+2 Stick"; finished in the same run.
+- NOT yet pictured: a clean before / falling / resting set. The `--shot-fell` rig runs end to end and saves the files, but the frames are poor (ground still building at 3 fps, the side camera facing the trunk end), so none of them proves the resting pose. The pose rests on the headless checks until a better camera is set up.
