@@ -150,6 +150,22 @@ static func build(tile_data):
 			if (i == 0 or j == 0 or i == WINDOW - 1 or j == WINDOW - 1) and f.depth[j * WINDOW + i] > 0.0:
 				f.fix_level(i, j, f.bed[j * WINDOW + i] + f.depth[j * WINDOW + i])
 
+	for k in range(WINDOW * WINDOW):
+		if f.bed[k] < 0.0 and not f.fixed.has(k):
+			f.fix_level(k % WINDOW, k / WINDOW, 0.0)   # the sea is held at level 0 (it is drawn by the sea plane, not by these levels), so rivers end in it instead of filling the sea bed
+
+	var allowed: PackedByteArray = PackedByteArray()
+	allowed.resize(WINDOW * WINDOW)
+
+	for j in range(WINDOW):
+		for i in range(WINDOW):
+			var m: int = j * WINDOW + i
+
+			if f.depth[m] > 0.0 or f.bed[m] < 0.0:
+				allowed[m] = 1
+
+	f.set_channel_mask(allowed)
+	f.hold_steady()
 	apply_sources(f, Vector2i(int(spot["i0"]), int(spot["j0"])), tile_data.x0, tile_data.z0, JSON.parse_string(FileAccess.get_file_as_string(SOURCES_PATH)).get("%d_%d" % [tile_data.tile.x, tile_data.tile.y], {}))
 	return {"field": f, "origin": Vector2i(int(spot["i0"]), int(spot["j0"])), "base": levels}
 
@@ -186,7 +202,9 @@ static func publish_levels(base: PackedFloat32Array, samples: int, f, origin: Ve
 			var m: int = j * f.w + i
 			var d: float = f.depth[m]
 
-			if d >= DRAW_M:
+			if f.bed[m] < 0.0:
+				out[k] = base[k]
+			elif d >= DRAW_M:
 				out[k] = f.bed[m] + d
 			elif not is_nan(base[k]) and base[k] - f.bed[m] <= FILM_M:
 				out[k] = base[k]

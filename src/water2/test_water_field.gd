@@ -237,5 +237,29 @@ func _init() -> void:
 			high += r.depth[j * 48 + i]
 
 	_check(low > 3.0 * high, "and runs off the slope into the low ground (%.1f vs %.1f m of depth summed)" % [low, high])
+	# 9. hold_steady: a baked 0.5 m deep river on a slope keeps its depth with its headwater spring, a plain start (no hold) drains it
+	var lane: PackedFloat32Array = _flat(80, 7)
+
+	for j in range(7):
+		for i in range(80):
+			lane[j * 80 + i] = 20.0 - 0.1 * i + (0.0 if j >= 2 and j <= 4 else 2.0)
+
+	var held = Field.new(80, 7, 4.0, lane)
+	var loose = Field.new(80, 7, 4.0, lane)
+
+	for j in range(2, 5):
+		for i in range(1, 79):
+			held.depth[j * 80 + i] = 0.5
+			loose.depth[j * 80 + i] = 0.5
+
+	held.open_edges = true
+	loose.open_edges = true
+	loose.wake_all()
+	var made: int = held.hold_steady()
+	_run(held, 300.0)
+	_run(loose, 300.0)
+	_check(made > 0 and made < 10, "hold_steady finds the headwater of the river (%d springs; open edges drop water at both ends)" % made)
+	_check(absf(held.depth[3 * 80 + 40] - 0.5) < 0.1, "a held river keeps its depth (%.2f m of 0.50 after 300 s)" % held.depth[3 * 80 + 40])
+	_check(loose.depth[3 * 80 + 10] < 0.5 * 0.7, "the same river with no hold drains out of its upper reach (%.2f m)" % loose.depth[3 * 80 + 10])
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)

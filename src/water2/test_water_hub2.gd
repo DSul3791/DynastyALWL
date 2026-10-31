@@ -66,7 +66,7 @@ func _init() -> void:
 			if is_nan(base[k]) and not is_nan(later[k]):
 				flooded += 1
 
-	_check(float(still) / float(maxi(wet_base, 1)) > 0.8, "after 180 s %d of %d baked wet cells are still drawn" % [still, wet_base])
+	_check(float(still) / float(maxi(wet_base, 1)) > 0.95, "after 180 s %d of %d baked wet cells are still drawn" % [still, wet_base])
 	_check(float(flooded) / float(maxi(wet_base, 1)) < 0.25, "and %d cells that were dry are newly drawn (under a quarter of the wet count)" % flooded)
 	var outside: int = 0
 

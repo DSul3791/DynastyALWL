@@ -15,10 +15,12 @@ const CFL := 0.7
 const MAX_DT := 1.0
 const THETA := 0.85
 const WAKE_STEPS := 24
-const SLEEP_CHANGE := 2.0e-6
-const SLEEP_Q := 2.0e-5
+const SLEEP_CHANGE := 1.0e-5   # a block is at rest when no depth moves more than this (m) in a substep ...
+const SLEEP_Q := 1.0e-3        # ... and no discharge is above this (m^2/s: 0.1 mm/s in 10 m of water); the discharges are then set to zero, so a lake does not ring for minutes (theta and viscosity damp slowly)
 const DRY := 1.0e-5
 const RAIN_DEPOSIT_M := 0.002
+const HOLD_MAX_Q := 3.0       # m^2/s: the most discharge per metre of width hold_steady believes (a 1 m deep river at 3 m/s)
+const HOLD_MAX_SPEED := 6.0   # m/s: the fastest water hold_steady believes (the tile's falls measured 6.1)
 
 var w: int
 var h: int
@@ -32,6 +34,7 @@ var springs: Dictionary = {}    # cell index -> m^3/s
 var sinks: Dictionary = {}      # cell index -> m^3/s (most it takes out)
 var fixed: Dictionary = {}      # cell index -> water level held there
 var rain_mps: float = 0.0       # rain in metres of depth per second on every cell (0.0005 is a hard storm, about 1.8 m an hour); deposited in bulk every RAIN_DEPOSIT_M so dry ground does not wake every step
+var mask: PackedByteArray = PackedByteArray()   # channel mode (optional): water exists only where mask is 1; what spills onto a 0 cell is dropped (shortcut: baked rivers stay in their channels; revisit when digging or floods should spread)
 var open_edges: bool = false    # edge cells lose their water to the outside (a river leaving the field)
 var time_s: float = 0.0
 var cells_stepped: int = 0      # cells visited by the last step() (the cost measure)
@@ -43,6 +46,8 @@ var _awake: PackedInt32Array
 var _keep: PackedFloat32Array
 var _hmax: float = 0.1
 var _rain_acc: float = 0.0
+var _held: PackedByteArray = PackedByteArray()   # 1 on fixed cells: their depth (a deep sea) does not set the time step
+var _live_block: PackedByteArray = PackedByteArray()   # channel mode: 1 on blocks holding any allowed cell
 var _g: float
 var _n2: float
 
@@ -78,6 +83,17 @@ func index_of(i: int, j: int) -> int:
 	return j * w + i
 
 
+# Channel mode: water exists only where `allowed` is 1 (see `mask`); blocks without an allowed cell are never stepped.
+func set_channel_mask(allowed: PackedByteArray) -> void:
+	mask = allowed
+	_live_block = PackedByteArray()
+	_live_block.resize(_bw * _bh)
+
+	for k in range(w * h):
+		if allowed[k] == 1:
+			_live_block[((k / w) / BLOCK) * _bw + (k % w) / BLOCK] = 1
+
+
 func wake_all() -> void:
 	_awake.fill(WAKE_STEPS)
 
@@ -111,6 +127,10 @@ func add_sink(i: int, j: int, m3_per_s: float) -> void:
 
 func fix_level(i: int, j: int, level: float) -> void:
 	fixed[j * w + i] = level
+	if _held.is_empty():
+		_held.resize(w * h)
+
+	_held[j * w + i] = 1
 	depth[j * w + i] = maxf(0.0, level - bed[j * w + i])
 	wake_cell(i, j)
 
@@ -153,6 +173,62 @@ func velocity(i: int, j: int) -> Vector2:
 	return Vector2(0.5 * (east + west), 0.5 * (south + north)) / d
 
 
+# Makes the current depths a steady state (Sonny, 31 Oct 2026, stage e): every face gets the discharge Manning's law gives for its water-surface slope (the same balance the flow law settles to),
+# and every headwater (water leaves, almost none arrives) gets the spring that feeds it, so baked rivers keep running instead of draining and lakes stay put. Held cells get none. Nothing is
+# sunk: the sea and the window border take the water away. Returns the number of springs placed.
+func hold_steady() -> int:
+	var n2: float = _n2
+	var count: int = 0
+
+	for j in range(h):
+		for i in range(w):
+			var a: int = j * w + i
+
+			if i < w - 1:
+				qx[a] = _manning(a, a + 1, n2)
+
+			if j < h - 1:
+				qy[a] = _manning(a, a + w, n2)
+
+	for j in range(h):
+		for i in range(w):
+			var a: int = j * w + i
+
+			if fixed.has(a) or depth[a] <= traits.film_m:
+				continue
+
+			var inflow: float = 0.0
+			var outflow: float = 0.0
+
+			for face in [[i > 0, a - 1, true, 1.0], [i < w - 1, a, true, -1.0], [j > 0, a - w, false, 1.0], [j < h - 1, a, false, -1.0]]:
+				if not face[0]:
+					continue
+
+				var q: float = (qx[face[1]] if face[2] else qy[face[1]]) * face[3]
+				inflow += maxf(q, 0.0)
+				outflow += maxf(-q, 0.0)
+
+			# a headwater: water leaves and (almost) none arrives, so something upstream that the data does not hold feeds it
+			if outflow > 1.0e-4 and inflow < 0.1 * outflow:
+				springs[a] = float(springs.get(a, 0.0)) + (outflow - inflow) * cell_m
+				count += 1
+
+	wake_all()
+	return count
+
+
+func _manning(a: int, b: int, n2: float) -> float:
+	var sa: float = bed[a] + depth[a]
+	var sb: float = bed[b] + depth[b]
+	var hf: float = maxf(sa, sb) - maxf(bed[a], bed[b])
+
+	if hf <= traits.film_m:
+		return 0.0
+
+	var slope: float = (sa - sb) / cell_m
+	return signf(slope) * minf(hf * pow(hf, 2.0 / 3.0) * sqrt(absf(slope)) / sqrt(n2), minf(hf * HOLD_MAX_SPEED, HOLD_MAX_Q))   # a fall's slope would give hundreds of m/s, and a deep sea beside a river a huge discharge: capped
+
+
 # Advances the sim by dt_total seconds in stable substeps.
 func step(dt_total: float) -> void:
 	cells_stepped = 0
@@ -183,7 +259,7 @@ func _blocks_to_run() -> PackedInt32Array:
 					if nx >= 0 and ny >= 0 and nx < _bw and ny < _bh and _awake[ny * _bw + nx] > 0:
 						on = true
 
-			if on:
+			if on and (_live_block.is_empty() or _live_block[by * _bw + bx] == 1):
 				run.append(by * _bw + bx)
 
 	return run
@@ -203,13 +279,24 @@ func _flux(a: int, b: int, q: float, qa: float, qb: float, dt: float) -> float:
 	return num / den
 
 
+# Puts a block to rest: its own discharges go to zero.
+func _rest(b: int) -> void:
+	var i0: int = (b % _bw) * BLOCK
+	var j0: int = (b / _bw) * BLOCK
+
+	for j in range(j0, mini(j0 + BLOCK, h)):
+		for i in range(i0, mini(i0 + BLOCK, w)):
+			qx[j * w + i] = 0.0
+			qy[j * w + i] = 0.0
+
+
 func _substep(dt: float) -> void:
 	if rain_mps > 0.0:
 		_rain_acc += rain_mps * dt
 
 		if _rain_acc >= RAIN_DEPOSIT_M:
 			for k in range(w * h):
-				if not fixed.has(k):
+				if not fixed.has(k) and (mask.is_empty() or mask[k] == 1):
 					depth[k] += _rain_acc
 
 			_rain_acc = 0.0
@@ -324,8 +411,13 @@ func _substep(dt: float) -> void:
 					after = 0.0
 
 				after = maxf(after, 0.0)
+
+				if not mask.is_empty() and mask[a] == 0:
+					after = 0.0
 				depth[a] = 0.0 if after < DRY else after
-				hmax = maxf(hmax, depth[a])
+				if _held.is_empty() or _held[a] == 0:
+					hmax = maxf(hmax, depth[a])
+
 				change = maxf(change, absf(depth[a] - before))
 
 		block_change[b] = change
@@ -335,12 +427,14 @@ func _substep(dt: float) -> void:
 
 	for k in fixed:
 		depth[k] = maxf(0.0, float(fixed[k]) - bed[k])
-		hmax = maxf(hmax, depth[k])
 
 	for b in run:
 		if float(block_change[b]) > SLEEP_CHANGE or float(block_q[b]) > SLEEP_Q:
 			_awake[b] = WAKE_STEPS
 		elif _awake[b] > 0:
 			_awake[b] -= 1
+
+			if _awake[b] == 0:
+				_rest(b)
 
 	_hmax = maxf(hmax, 0.05)
