@@ -76,7 +76,7 @@ fi
 [ -z "$NAME" ] && NAME="${ITEM:-empty}_${CAM}"
 if [ -n "$WIN" ]; then WAIT="${WAIT:-25}"; SETTLE="${SETTLE:-12}"; else WAIT="${WAIT:-120}"; SETTLE="${SETTLE:-20}"; fi
 X="${AT%,*}"; Z="${AT#*,}"
-RIG=$(mktemp -d); STORE="$RIG/store"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then UD="$RIG/appdata/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
+RIG=$(mktemp -d); STORE="${PERSIST_STORE:-$RIG/store}"; mkdir -p "$RIG/home"; if [ -n "$WIN" ]; then UD="$RIG/appdata/Godot/app_userdata/Dynasty a life well lived"; else UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; fi
 mkdir -p "$STORE" "$UD" "$OUT"
 KEY="00112233445566778899aabb"; echo -n "$KEY" > "$UD/player_key.txt"; echo -n "0" > "$UD/hotbar.txt"
 if [ -n "$ITEM" ]; then

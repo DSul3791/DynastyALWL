@@ -301,4 +301,40 @@ Re-shoot recipe (quiet machine): `bash art/playthrough/run_world.sh` (about 12 m
 * **F-20 mostly a false alarm, one real fix:** plants without a drops.json row are still gatherable: the server picks a random in-season yield item that exists in the table (`gather()` natural yield). A check over all 174 gathered items found one true orphan: **rose hips** (needs a rose-hip harvest on wild rose from the flora session). Real bug fixed: flax, tall grass and nettle listed an abstract `fibre` yield next to their `plant_fibre` row, so a pick could give the useless "fibre"; removed from flora.json yields. The abstract names `wood, hardwood, softwood, hard_wood, fine_wood, timber, poles` are only yields of trees (felled, not picked) and are used by no recipe; `herbs, food, fodder, spines, stuffing, burrs` are generic items used as natural yields; none retired because the flora session owns the yield lists.
 * **F-24 FIXED (data):** 19 of the live recipes stay `known:false` (forge/workbench level 2 and up, water wheel), by design; every other recipe is known from the start (F-01). The learn system is LEARN_SYSTEM_SPEC.md.
 
+---
 
+<!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
+## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
+
+| id | what | status | evidence (short) |
+|---|---|---|---|
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 173 of 192 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
+| F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
+| F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
+| F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks |
+| F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False |
+| F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [6, 17] |
+| F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True |
+| F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] |
+| F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot |
+| F-11 | hammer can be made from a softwood block | **FIXED** | recipes giving wooden_hammer with a soft block: ['wooden_hammer_soft'] |
+| F-12 | bedding can be gathered | **FIXED** | bedding: now; straw: now |
+| F-13 | blueberry size | **MANUAL** | needs a picture |
+| F-14 | first axe cost in twine | **FIXED** | stone axe needs 2 twine |
+| F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
+| F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
+| F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 20 craftable items with a grey or missing look: hide_tunic, hide_trousers, hide_gloves, clay_jug, herb_salve,  |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 27 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 96 orphan items not flagged future (first: log, aloe_gel, amadou, angelica_stems, banana_leaves, belladonna_be |
+| F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
+| F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
+| F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
+| F-27 | kits are told apart by shape, not only tint | **STILL BROKEN** | 31 kits, 1 distinct shapes, 23 distinct tints/emblems |
+| S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing |
+| S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) |
+| S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] |
+
+11 fixed, 14 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
+<!-- SCOREBOARD END -->

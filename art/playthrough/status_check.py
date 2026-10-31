@@ -125,20 +125,11 @@ board.append("")
 board.append("%d fixed, %d still broken, %d manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`." % (fixed, broken, len(rows) - fixed - broken))
 board.append("<!-- SCOREBOARD END -->")
 fp = os.path.join(ROOT, "PLAYTHROUGH_FINDINGS.md")
-body = open(fp, encoding="utf8", newline="").read().replace("
-", "
-")
-block = "
-".join(board)
+NL = chr(10)
+body = open(fp, encoding="utf8", newline="").read().replace(chr(13) + NL, NL)
+block = NL.join(board)
 if "<!-- SCOREBOARD START" in body:
     body = re.sub(r"<!-- SCOREBOARD START.*?<!-- SCOREBOARD END -->", lambda m: block, body, flags=re.S)
 else:
-    body = body.rstrip("
-") + "
-
----
-
-" + block + "
-"
-open(fp, "w", encoding="utf8", newline="
-").write(body)
+    body = body.rstrip(NL) + NL + NL + "---" + NL + NL + block + NL
+open(fp, "w", encoding="utf8", newline=NL).write(body)
