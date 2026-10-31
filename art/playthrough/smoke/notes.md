@@ -27,3 +27,7 @@ Not photographed this run: lit campfire and log cutting close-ups (the picture r
 - Self-tests: cook PASS. SLEEP and SNARE both print "was not set down" (placement 0.9 m ahead of the spawn returned no row; the placement refusal is silent). Likely cause, not verified: all clients share one server, and the earlier tests (fire, lean-to, placed) leave pieces at the same spawn, so the 2.5 m structure gap or the per-chunk cap refuses the bed and snare. Probe 6 and 7 place the same bed fine on a fresh server.
 - Chest test still errors at inventory_view.gd:4562 (Nil inventory, Tyler).
 - New HIGH: flora_view.gd:2270 `_decimate_task` invalid cast to PackedInt32Array (client_eat.log, once).
+
+## Fresh-server reruns and pictures (31 Oct night)
+- SNARE alone on a clean server: placed (row found). SLEEP alone: bed placed, lying OK, but ACT_SLEEP refused at energy 100 (test must lower energy first). So the earlier "not set down" was shared-server leftovers. Logs: smoke/logs/fresh/.
+- Rig: lit campfire picture shows no flames or glow (stones in grass plus a green glow); felled trunk looks dark and smooth, bark fix not visible. Both posted as QA cards. Creator preview not taken.
