@@ -508,6 +508,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if item["montane"]:
 				_montane_cells(item, data, chunk, origin, species_id, rng, found, stand_used)
 
+	_orchard_items(origin, data, found)
+
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
 	found.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and (a[1] < b[1] or (a[1] == b[1] and a[2] < b[2]))))
@@ -586,6 +588,7 @@ const CLUMP_MIN_COLLIDER := 4       # four or more tall shrubs of one patch shar
 const CLUMP_COLLIDER_MAX_M := 3.0   # its radius never above this
 const SHRUB_COLLIDER_MIN_M := 0.22
 const SHRUB_COLLIDER_MAX_M := 0.5
+const ORCHARD_MAX_SLOPE := 0.2     # the starter orchard stands on ground gentler than this (rise over run)
 const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
 const CLEAR_MARKER_M := 6.0         # ... or this close to an NPC marker
 const CLEAR_SOFT_M := 5.0           # and the wood thins back in over this much more
@@ -686,6 +689,69 @@ func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
 				return true
 
 	return false
+
+
+# The starter orchard (Dave 2026-10-31: fruit to pick near the spawn): ORCHARD_COLS x ORCHARD_ROWS fruit trees in rows ORCHARD_OFFSET metres from the spawn point (the shared
+# spawn_point.gd), early and summer varieties on the near rows so something is in season at the start of the world. Planted on dry gentle ground (orchard_ground_ok), item numbers
+# ORCHARD_BASE + n (the species id is part of the item id, and no wild stand or patch of these species exists), stable from the table and the spawn point alone; they claim their ground
+# first (the landmark tier), so the wild wood makes room for the rows.
+const ORCHARD_OFFSET := Vector2(60.0, 45.0)
+const ORCHARD_COLS := 4
+const ORCHARD_ROWS := 3
+const ORCHARD_BASE := 65500
+const ORCHARD_TREES := [
+	"apple_early", "apple_summer", "apple_early", "apple_summer",
+	"pear_summer", "sour_cherry", "pear_summer", "sour_cherry",
+	"apple_autumn", "apple_cooking", "apple_keeping", "plum",
+]
+
+
+# World positions of the orchard's trees: [index, species name, x, z].
+static func orchard_places() -> Array:
+	var places: Array = []
+	var centre: Vector2 = SpawnPointScript.OVERRIDE + ORCHARD_OFFSET
+
+	for row in range(ORCHARD_ROWS):
+		for col in range(ORCHARD_COLS):
+			var n: int = row * ORCHARD_COLS + col
+			places.append([n, ORCHARD_TREES[n], centre.x + (float(col) - 0.5 * float(ORCHARD_COLS - 1)) * 7.0, centre.y + (float(row) - 0.5 * float(ORCHARD_ROWS - 1)) * 8.0])
+
+	return places
+
+
+# Adds the orchard trees that stand in this chunk to `found`.
+func _orchard_items(origin: Vector2, data, found: Array) -> void:
+	for place in orchard_places():
+		var x: float = place[2]
+		var z: float = place[3]
+
+		if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m:
+			continue
+
+		var item: Dictionary = {}
+
+		for sp in species:
+			if sp["name"] == place[1]:
+				item = sp
+
+		if item.is_empty():
+			continue
+
+		var k: int = data.nearest(x, z)
+
+		if not orchard_ground_ok(item, data, k, x, z):
+			continue
+
+		var height: float = lerpf(float(item["height_min"]), float(item["height_max"]), 0.45 + 0.4 * rng_pick(x, z, int(item["id"])))
+		found.append([TIER_FIRST, int(item["id"]), ORCHARD_BASE + int(place[0]), x, generator.surface_height(x, z), z, height, rng_pick(x + 3.0, z + 5.0, int(item["id"])) * TAU, 0.0])
+
+
+# Ground for the starter orchard: dry and gentle ground away from water. Moisture and altitude are not asked (an orchard is planted where it is dry and flat, the wild rules do not apply).
+func orchard_ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
+	if int(data.water_class[k]) > 1 or _near_water(data, x, z) or _slope_at(data, x, z) > ORCHARD_MAX_SLOPE:
+		return false
+
+	return not is_nan(generator.surface_height(x, z)) and generator.surface_height(x, z) > SEA_LEVEL_M + WET_FOOT_M * 4.0
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
