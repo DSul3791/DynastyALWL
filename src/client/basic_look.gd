@@ -109,6 +109,30 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var bend: float = (float(k % 3) - 1.0) * 0.05
 				_box_rot(parts, Vector3(0.34 + 0.02 * float(k % 4), 0.004, 0.006), Vector3(0.0, 0.004 * float(k % 5), spread), Vector3(0.0, bend, 0.0), color.lightened(0.07 * float(k % 3)) if k % 2 == 0 else color.darkened(0.08))
 			_cyl(parts, 0.04, 0.02, Vector3.ZERO, Vector3(0.0, 0.0, PI * 0.5), Color(0.45, 0.36, 0.2))
+		"heap":
+			# A loose heap of dried grass (bedding): a low dome of overlapping straw clumps, darker in the hollows, with many short strands lying across it following its curve (crossed every way),
+			# a few long stray ones at the edge and a couple of dry leaves; about 0.3 m across and 0.08 m high.
+			var straw_dark: Color = color.darkened(0.3)
+
+			for k in 11:
+				var ha: float = TAU * float(k) * 0.381966
+				var hr: float = 0.012 + 0.085 * sqrt(float(k) / 11.0)
+				var lift: float = 0.045 * (1.0 - pow(hr / 0.14, 2.0))
+				_sph(parts, 0.06 - 0.012 * (hr / 0.1), Vector3(1.4, 0.55, 1.2), Vector3(cos(ha) * hr, -0.055 + lift, sin(ha) * hr), _tone(straw_dark if k % 2 == 0 else color.darkened(0.12), k, 0.12))
+
+			for k in 54:
+				var sa: float = TAU * float(k) * 0.381966
+				var sr: float = 0.15 * sqrt(float((k * 7) % 54) / 54.0)
+				var sh: float = -0.045 + 0.05 * (1.0 - pow(sr / 0.15, 2.0))
+				var tint: Color = color.lightened(0.15) if k % 4 != 3 else color.darkened(0.1)
+				_box_rot(parts, Vector3(0.14 + 0.04 * float(k % 3), 0.004, 0.006), Vector3(cos(sa) * sr, sh + 0.006 * float(k % 3), sin(sa) * sr), Vector3(0.0, sa * 2.3, 0.18 * float((k % 3) - 1)), _tone(tint, k, 0.15))
+
+			for k in 5:
+				var la: float = TAU * float(k) / 5.0 + 0.4
+				_box_rot(parts, Vector3(0.2, 0.003, 0.005), Vector3(cos(la) * 0.15, -0.045, sin(la) * 0.15), Vector3(0.0, la + 1.2, 0.0), _tone(color.lightened(0.15), k, 0.1))
+
+			for k in 2:
+				_box_rot(parts, Vector3(0.05, 0.004, 0.028), Vector3(0.05 * float(k * 2 - 1), 0.005, 0.03 * float(1 - k * 2)), Vector3(0.0, 0.8 + 2.0 * float(k), 0.2), Color(0.45, 0.33, 0.15))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
