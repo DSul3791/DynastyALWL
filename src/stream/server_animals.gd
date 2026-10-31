@@ -365,6 +365,11 @@ func tick(delta: float) -> void:
 			gone.append(id)
 			continue
 
+		# An animal whose hours are over (a songbird at night, a boar at noon: its activity chance is at most off_hours_chance) leaves once no player is close to it.
+		if near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
+			gone.append(id)
+			continue
+
 		if near_d > active_r:
 			a["acc"] = 0.0
 			continue   # frozen: nothing runs until a player comes within active_radius_m
