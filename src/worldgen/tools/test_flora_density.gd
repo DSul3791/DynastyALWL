@@ -69,6 +69,19 @@ func _init() -> void:
 	var step: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json"))["step_up_m"])
 	_check(K.SHRUB_BLOCK_HEIGHT_M >= step + 0.3, "shrubs block only above the step-up height plus a margin (%.2f vs %.2f m)" % [K.SHRUB_BLOCK_HEIGHT_M, step])
 
+	# Fallen-log colliders: short logs are walk-through, long ones get a capsule of the model's radius that a 0.5 m step-up can only clear when low.
+	_check(K.log_collider(3.9, 0.5) == Vector2.ZERO, "a 3.9 m log has no collider")
+	var long_log: Vector2 = K.log_collider(5.0, 0.5)
+	_check(long_log.x >= 0.14 and long_log.x <= 0.45 and is_equal_approx(long_log.y, 5.0), "a 5 m log gets a capsule %.2f m radius, %.1f m long" % [long_log.x, long_log.y])
+	_check(K.log_collider(4.0, 0.5).x * 2.0 >= step, "the shortest collidable log's top (%.2f m) is at or above the step-up height (%.2f m); shorter logs have no collider and are walked over" % [K.log_collider(4.0, 0.5).x * 2.0, step])
+	var log_names: Dictionary = {}
+
+	for entry in tables.get_entries("flora"):
+		if entry["name"] in ["fallen_log", "hollow_log", "old_stump"]:
+			log_names[entry["name"]] = entry
+
+	_check(log_names.size() == 3 and str(log_names["fallen_log"]["model"]) == "fallen_log" and float(log_names["fallen_log"]["height_m"][1]) >= 4.0, "fallen_log, hollow_log and old_stump are flora rows and logs reach 4 m")
+
 	if settings == null or not errors.is_empty():
 		quit(1)
 		return

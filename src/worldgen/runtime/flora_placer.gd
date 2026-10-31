@@ -526,6 +526,7 @@ const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
 const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
+const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
 const SHRUB_COLLIDER_MIN_M := 0.22
 const SHRUB_COLLIDER_MAX_M := 0.5
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
@@ -697,6 +698,16 @@ static func collider_radius(kind: int, trunk_m: float, size_scale: float, height
 		return clampf(0.16 + 0.07 * height, SHRUB_COLLIDER_MIN_M, SHRUB_COLLIDER_MAX_M)
 
 	return 0.0
+
+
+# A fallen log or hollow log's collider: (radius, length) of a capsule lying along the model's x axis (the model is centred on the item), or
+# Vector2.ZERO for none. Only logs of LOG_COLLIDER_MIN_M and more block; shorter ones are walk-through. The radius is the one the model is
+# built with (tree_builder _fallen_log), so a log whose top (twice the radius) is under the player's 0.5 m step-up is stepped onto.
+static func log_collider(length: float, crown: float) -> Vector2:
+	if length < LOG_COLLIDER_MIN_M:
+		return Vector2.ZERO
+
+	return Vector2(clampf(maxf(crown * 0.12, length * 0.075), 0.14, 0.45), length)
 
 
 # 2 under a dense crown, 1 under a light one, 0 in the open.
