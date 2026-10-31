@@ -1906,3 +1906,7 @@ Answered: 2026-10-31 20:03 UTC
 Answer: Yes | Comment: Yes, but they still look low quality. We want these to look photorealistic. So start with these and work on making them look better when you have the time.
 Answered: 2026-10-31 20:03 UTC
 
+## pic-fireplace-light | Does the lit fireplace light up the ground in front of it only (front shown), with the sides and back dark?
+Answer: Yes | Comment: That is perfect exactly what I wanted
+Answered: 2026-10-31 20:03 UTC
+
