@@ -7,7 +7,7 @@ extends SceneTree
 
 const BasicLook := preload("res://src/client/basic_look.gd")
 
-const PLACEHOLDER_CEILING := 56      # items on the grey chunk today (31 Oct, the guide counted 46 two days earlier, new items arrived since); lower it as looks are made
+const PLACEHOLDER_CEILING := 38      # items on the grey chunk today (31 Oct, the guide counted 46 two days earlier, new items arrived since); lower it as looks are made
 
 var failures: int = 0
 
