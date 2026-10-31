@@ -5511,7 +5511,6 @@
 		},
 		"wild_apples": {
 			"number": 484,
-			"future": true,
 			"name": "Wild apples",
 			"description": "Small green-red apples from forest trees. Sweet-sour and good raw.",
 			"kind": "food",
