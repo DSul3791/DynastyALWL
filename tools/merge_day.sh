@@ -109,7 +109,11 @@ fi
 # 5. Items.
 if [ $ITEMS = 1 ] && [ -n "$MERGED" ]; then
 	say ""; say "## 4. items_check"
-	if GODOT="$(cygpath -m "$WT/tools/godot.cmd" 2>/dev/null || echo "$WT/tools/godot")" timeout 1200 "$PY" tools/items_check.py > "$OUT/items.txt" 2>&1; then say "pass: $(tail -1 "$OUT/items.txt")"
+	# The unit steps of items_check are the same scripts the test lanes already run; what only items_check does is the client-and-server flows (chest, gather,
+	# arrival, ...: each starts a server and a client, up to 400 s each) and the luck-roll check. Those are run here (about 15 to 40 minutes on a busy PC).
+	CLIENT_STEPS=$("$PY" tools/items_check.py --list | sed '1,/^first_hour$/d' | tr '
+' ',' | sed 's/,$//')
+	if GODOT="$(cygpath -m "$WT/tools/godot.cmd" 2>/dev/null || echo "$WT/tools/godot")" timeout 3000 "$PY" -u tools/items_check.py --only "luck,$CLIENT_STEPS" > "$OUT/items.txt" 2>&1; then say "pass: $(tail -1 "$OUT/items.txt")"
 	else FAILS=$((FAILS + 1)); say "FAIL: $(grep -iE 'FAIL|ERROR' "$OUT/items.txt" | head -5 | tr '\n' ' ' | cut -c1-400)"; fi
 fi
 say ""; [ $FAILS = 0 ] && say "RESULT: GREEN" || say "RESULT: RED ($FAILS problem(s))"
