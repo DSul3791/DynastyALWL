@@ -327,3 +327,8 @@ F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-
 
 ## First-hour food, hints, handover (2026-10-31)
 FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-70 min; apples realistic; berries 90 kcal each look 20x too generous: question for Dave, not changed); fruit descriptions say game days; 10 more hints (36 total); docs/ITEMS_HANDOVER.md.
+
+## DECISION ROW: berry calories (2026-10-31)
+| Question | Answer | Basis | Reversible |
+|---|---|---|---|
+| Berries were 90 kcal each (a bush of 150 gave 13,500 kcal, five full stomachs) | vitals.json food.by_suffix.berries set to 4; bush yields unchanged | moderator for Dave; real berries about 2 to 4 kcal and 4 g; keeps apples (110-125) and meat meaningful; tests green: validate_items, dishes, economy, server_items, first_hour, inventory, stations, save_compat, new_player_day, eat_once, death | yes: set the number back to 90; Dave can overturn |
