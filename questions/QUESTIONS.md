@@ -13,12 +13,6 @@
 
 
 
-## pic-fibre-cloth | Does the fibre cloth (item 517, left; linen on the right for comparison) look like a folded woven plant-fibre cloth?
-Image: questions/img/fibre_cloth_look.png
-Note: Offline render of the item model, not the real game. Kathleen rates it 3 of 5: a stack of three folds in coarse straw-brown with a selvedge edge, darker than the pale linen.
-- Yes
-- No
-
 ## pic-kits | Are these building kits now easy to tell apart from each other (lean-to, three beds, log seat, stool, bench, table, workbench, two chests, campfire, chopping block)?
 Image: questions/img/kits_r1.png
 Note: Render of the item models from above, not the real game. Kathleen rates it 3 of 5: ten kits that shared looks now have their own shape; the stool and bench look plain from above.
