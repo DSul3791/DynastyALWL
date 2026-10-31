@@ -545,41 +545,88 @@ static func _rod(parent: Node3D, a: Vector3, b: Vector3, thick: float, material:
 	parent.add_child(mesh)
 
 
-# A rough bed (Dave 24 Oct), 2 m by 0.9 m: a frame of four split logs on short feet, a thick mat of straw bundles with a dent where a body lies,
-# and a rolled-up straw pillow at the head. Walk-over height 0.35 m. About 20 triangles-boxes, one material each.
+# A crooked pole between two points (a four-sided stick with caps: cheap), for the rough bed's frame of sticks and branches.
+static func _pole(parent: Node3D, a: Vector3, b: Vector3, radius: float, material: StandardMaterial3D, sides: int = 4) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: CylinderMesh = CylinderMesh.new()
+	shape.top_radius = radius * 0.8
+	shape.bottom_radius = radius
+	shape.height = a.distance_to(b)
+	shape.radial_segments = sides
+	shape.rings = 1
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = (a + b) * 0.5
+	var up: Vector3 = (b - a).normalized()
+	var axis: Vector3 = Vector3.UP.cross(up)
+
+	if axis.length() > 0.0001:
+		mesh.basis = Basis(axis.normalized(), Vector3.UP.angle_to(up))
+
+	parent.add_child(mesh)
+
+
+# A rough bed (Dave 24 Oct; reworked 2026-10-31: "sticks and branches, bedding very rough like a manger"), about 2.0 by 0.9 m, walk-over height 0.45 m: a low frame of crooked sticks and forked branches
+# (irregular lengths, thin sticks lashed across, nothing machined), and a loose uneven heap of straw, dry grass and fern fronds overflowing the frame like hay in a manger, stalks sticking out over the edges
+# and a few loose bits on the ground, in dull yellow-brown and green-brown. No cloth, no blanket, no neat mattress (those are for the straw and feather beds).
 static func rough_bed() -> Node3D:
-	_materials()
+	_tier_materials()
 	var root: Node3D = Node3D.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 77
+	var bark: StandardMaterial3D = _tone_mat(Color(0.34, 0.24, 0.15))
+	var bark_pale: StandardMaterial3D = _tone_mat(Color(0.46, 0.34, 0.2))
+	var twine: StandardMaterial3D = _tone_mat(Color(0.7, 0.62, 0.38))
+	var hay: Array = [_thatch, _tone_mat(Color(0.42, 0.4, 0.2)), _thatch, _tone_mat(Color(0.36, 0.38, 0.2))]      # two lumps with the striped straw texture (stalks show), two flat green-brown (fern and leaves)
 
-	# A frame of round poles, like the lean-to (Dave 2026-10-31: no sawn faces): two long rails and two end rails of 9 cm poles resting on four round legs, each corner lashed with plant-fibre twine.
-	var twine: StandardMaterial3D = _tone_mat(Color(0.74, 0.66, 0.4))
+	for sx in [-1.0, 1.0]:   # forked branches for legs: a stem with a short side fork, a little out of true
+		for sz in [-1.0, 1.0]:
+			var foot: Vector3 = Vector3(sx * (0.85 + rng.randf_range(-0.04, 0.04)), 0.0, sz * (0.38 + rng.randf_range(-0.03, 0.03)))
+			var top: Vector3 = foot + Vector3(rng.randf_range(-0.04, 0.04), 0.3 + rng.randf_range(-0.02, 0.03), rng.randf_range(-0.04, 0.04))
+			_pole(root, foot, top, 0.032, bark)
+			_pole(root, foot.lerp(top, 0.55), top + Vector3(sx * 0.1, 0.07, 0.0), 0.02, bark_pale)
 
-	for z in [-0.4, 0.4]:
-		_cyl(root, 0.045, 2.0, Vector3(0.0, 0.2, z), _log, 5).rotation = Vector3(0.0, 0.0, PI * 0.5)
+	for sz in [-1.0, 1.0]:   # two long crooked rails, each two sticks meeting in a bend, of different length
+		var z0: float = sz * 0.4 + rng.randf_range(-0.03, 0.03)
+		var bend: Vector3 = Vector3(rng.randf_range(-0.3, 0.3), 0.3 + rng.randf_range(-0.03, 0.05), z0 + rng.randf_range(-0.04, 0.04))
+		_pole(root, Vector3(-1.05 + rng.randf_range(0.0, 0.1), 0.29, z0), bend, 0.034, bark)
+		_pole(root, bend, Vector3(1.0 + rng.randf_range(-0.1, 0.05), 0.3, z0 + rng.randf_range(-0.03, 0.03)), 0.03, bark_pale)
 
-	for x in [-0.95, 0.95]:
-		_cyl(root, 0.045, 0.9, Vector3(x, 0.2, 0.0), _log, 5).rotation = Vector3(PI * 0.5, 0.0, 0.0)
+	for sx in [-1.0, 1.0]:   # the end rails across, sticking out a little past the long rails
+		_pole(root, Vector3(sx * 0.9, 0.3, -0.5 + rng.randf_range(0.0, 0.06)), Vector3(sx * 0.9 + rng.randf_range(-0.04, 0.04), 0.3, 0.5 - rng.randf_range(0.0, 0.06)), 0.03, bark)
 
-	for x in [-0.9, 0.9]:
-		for z in [-0.4, 0.4]:
-			_cyl(root, 0.05, 0.2, Vector3(x, 0.1, z), _frame, 5)
-			_cyl(root, 0.06, 0.03, Vector3(x, 0.2, z), twine, 5)
+	for k in 6:   # thin sticks laid across the frame as the base, lashed
+		var x: float = -0.8 + 0.32 * float(k) + rng.randf_range(-0.04, 0.04)
+		_pole(root, Vector3(x, 0.34, -0.46 - rng.randf_range(0.0, 0.07)), Vector3(x + rng.randf_range(-0.05, 0.05), 0.34, 0.46 + rng.randf_range(0.0, 0.07)), 0.014, bark_pale)
 
-	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat (under the heaped straw)
-	_dome(root, 0.5, Vector3(-0.45, 0.3, 0.0), Vector3(0.95, 0.38, 0.62), _thatch, 9, 3)       # heaped, lumpy straw at the foot and
-	_dome(root, 0.5, Vector3(0.4, 0.3, 0.0), Vector3(0.9, 0.42, 0.62), _thatch, 9, 3)           # the head, a dent between them
-	_dome(root, 0.3, Vector3(0.0, 0.29, 0.05), Vector3(1.1, 0.22, 0.9), _thatch, 9, 3)          # the lower straw in the dent
-	_dome(root, 0.25, Vector3(0.78, 0.4, 0.0), Vector3(0.7, 0.75, 1.5), _thatch, 9, 3)          # the rolled pillow
-	_dome(root, 0.2, Vector3(-0.3, 0.33, 0.28), Vector3(1.4, 0.4, 0.9), _thatch, 9, 3)          # a corner of straw folded back
+	for sx in [-0.9, 0.9]:   # twine wraps at the corners
+		for sz in [-0.4, 0.4]:
+			_cyl(root, 0.045, 0.025, Vector3(sx, 0.3, sz), twine, 5)
 
-	# Loose straw strands lying over the mat every way and a few hanging over the edge, and two twine bands round the pillow: it reads as a bed of straw, not stacked boards (guide: rough bed).
-	for k in 8:
-		var sa: float = TAU * float(k) * 0.381966
-		_box_rot(root, Vector3(0.55 + 0.1 * float(k % 3), 0.012, 0.014), Vector3(-0.6 + 1.5 * fposmod(float(k) * 0.37, 1.0), 0.395 - 0.06 * float((k % 4) == 0), -0.3 + 0.6 * fposmod(float(k) * 0.61, 1.0)), Vector3(0.0, sa, 0.06 * float(k % 3 - 1)), _thatch)
+	# The bedding: a loose heap in dull yellow-brown and green-brown, lumpy, higher at the head, spilling over both long rails.
+	_dome(root, 0.58, Vector3(0.0, 0.3, 0.0), Vector3(1.75, 0.55, 0.85), hay[0], 8, 3)
+	_dome(root, 0.34, Vector3(-0.2, 0.33, 0.0), Vector3(1.3, 0.55, 0.9), hay[1], 6, 3)
 
-	for z in [-0.32, 0.32]:
-		_box(root, Vector3(0.016, 0.16, 0.03), Vector3(0.75, 0.4, z), _frame)       # twine bands round the pillow
-	_solid(root, Vector3(2.0, 0.35, 0.9), Vector3(0.0, 0.175, 0.0))
+	for k in 5:
+		var p: Vector3 = Vector3(rng.randf_range(-0.8, 0.8), 0.38 + rng.randf_range(0.0, 0.12), rng.randf_range(-0.38, 0.38))
+		_dome(root, rng.randf_range(0.2, 0.3), p, Vector3(rng.randf_range(1.0, 1.6), rng.randf_range(0.5, 0.9), rng.randf_range(0.8, 1.2)), hay[k % 4], 6, 3)
+
+	_dome(root, 0.3, Vector3(0.7, 0.4, 0.0), Vector3(0.8, 0.8, 1.6), hay[2], 7, 3)         # a bigger pile at the head end
+
+	for k in 4:   # a few fern fronds laid on top: long thin leaves in green-brown
+		_box_rot(root, Vector3(0.45, 0.01, 0.1), Vector3(-0.6 + 0.4 * float(k), 0.5, rng.randf_range(-0.2, 0.2)), Vector3(0.0, rng.randf() * TAU, 0.15), hay[1 + (k % 2) * 2])
+
+	for k in 12:   # stalks sticking out over the edges (and a few over the ends)
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		var x: float = -0.9 + 1.8 * fposmod(float(k) * 0.37, 1.0)
+		var length: float = rng.randf_range(0.35, 0.7)
+		_box_rot(root, Vector3(0.012, 0.012, length), Vector3(x, 0.38 - rng.randf_range(0.0, 0.1), side * (0.5 + length * 0.3)), Vector3(side * 0.35, rng.randf_range(-0.4, 0.4), 0.0), hay[k % 4])
+
+	for k in 8:   # loose bits on the ground round the bed
+		var ang: float = TAU * float(k) / 8.0 + 0.3
+		_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.01, 0.014), Vector3(cos(ang) * (1.0 + rng.randf_range(0.0, 0.2)), 0.008, sin(ang) * (0.62 + rng.randf_range(0.0, 0.2))), Vector3(0.0, rng.randf() * TAU, 0.0), hay[k % 4])
+
+	_solid(root, Vector3(2.0, 0.45, 0.9), Vector3(0.0, 0.225, 0.0))
 	return root
 
 
