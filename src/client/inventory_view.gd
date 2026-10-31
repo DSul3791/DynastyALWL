@@ -1489,6 +1489,11 @@ func edible_slot(slot: int) -> bool:
 	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
 
 
+# Is this item number food, a drink or medicine by the vitals rules the server uses too (data/items/vitals.json)?
+func is_edible_item(number: int) -> bool:
+	return number > 0 and VitalsRules.edible(table.id_of(number), _vitals_cfg)
+
+
 func equippable_slot(slot: int) -> bool:
 	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
 		return false
@@ -3895,6 +3900,15 @@ func run_strain_test(client) -> void:
 	print("Strain test: %s" % " | ".join(factors))
 
 
+func _pack_items() -> int:
+	var total: int = 0
+
+	for slot in range(inventory.SLOTS):
+		total += inventory.counts[slot] if inventory.numbers[slot] != 0 else 0
+
+	return total
+
+
 func run_gather_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
 	var real_view: Callable = view_direction
@@ -3908,7 +3922,7 @@ func run_gather_test(client) -> void:
 		for n in range(held["ids"].size()):
 			var sid: int = held["ids"][n] >> 16
 
-			if client.flora._species.get(sid, {}).get("kind", 0) == 1:
+			if client.flora._species.get(sid, {}).get("kind", 0) in [1, 2]:   # shrubs and plants: whatever is in season at the test clock gives something
 				shrubs.append([held["positions"][n].distance_to(here), held["positions"][n]])
 
 	if shrubs.is_empty():
@@ -3918,9 +3932,10 @@ func run_gather_test(client) -> void:
 	shrubs.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var sticks: int = table.number_of("stick")
 	var before: int = inventory.count_of(sticks)
+	var items_before: int = _pack_items()
 
 	# A shrub out of season gives nothing (the server refuses it quietly): try the nearest few until one gives sticks, so the check does not depend on the season of the test clock.
-	for candidate in range(mini(shrubs.size(), 8)):
+	for candidate in range(mini(shrubs.size(), 14)):
 		client.body.global_position = shrubs[candidate][1] + Vector3(0.5, 1.0, 0.0)
 		client.body.velocity = Vector3.ZERO
 		await get_tree().create_timer(3.0).timeout
@@ -3929,9 +3944,10 @@ func run_gather_test(client) -> void:
 		client.harvest.tap()
 		await get_tree().create_timer(2.0).timeout
 
-		if inventory.count_of(sticks) > before:
+		if _pack_items() > items_before:
 			break
 
+	print("Gather test: pack items %d -> %d" % [items_before, _pack_items()])
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
 	var after_tap: int = inventory.count_of(sticks)
 	client.harvest.update(0.0, true)
@@ -4245,7 +4261,16 @@ func run_plant_test(client) -> void:
 func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the kit
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("lean_to_kit")):
+			break
+
+		if wait == 16 and inventory.count_of(table.number_of("lean_to_kit")) == 0:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+
 	var here: Vector3 = _player_position.call()
 	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
 	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)

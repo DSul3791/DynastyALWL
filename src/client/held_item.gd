@@ -374,7 +374,9 @@ func is_holdable(number: int) -> bool:
 		return false
 
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
-	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.edible_slot(held_slot)
+	# Food of ANY item kind can be held and eaten: the check is on THIS item (it used the currently held slot, so crab apples, a "material", could not be taken in hand
+	# unless something edible was already held: Dave, 31 Oct 2026).
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number)
 
 
 # Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
