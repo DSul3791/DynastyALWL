@@ -1501,6 +1501,9 @@ func _tunnel_tick() -> void:
 	for quake in result["quake"]:
 		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
 
+	for warned in result["warn"]:
+		net.notice.rpc_id(int(warned), "The tunnel ceiling is creaking: brace it or leave.")
+
 	for leak in result["leak"]:
 		net.leak.rpc_id(leak[0], leak[1], leak[2])
 
