@@ -309,5 +309,17 @@ func _init() -> void:
 	_check(orchard_trees.size() >= 8 and orchard_names.has("apple_early") and orchard_names.has("apple_summer"), "the starter orchard has fruit trees including the early and summer apples (%d)" % orchard_trees.size())
 	_check(nearest_spawn >= 20.0 and nearest_spawn <= 150.0, "the orchard stands outside the starter clearing and within 150 m of the spawn (%.0f m)" % nearest_spawn)
 
+	# Zero-model guard: rows flagged "future" (fig, olive, pomegranate, mango, orange, lemon: models by Kathleen) are never placed.
+	var future_names: Array = []
+	var placed_future: Array = []
+
+	for row in tables.get_entries("flora"):
+		if row.get("future", false):
+			future_names.append(str(row["name"]))
+
+			if not placer.species_by_id(int(row["id"])).is_empty():
+				placed_future.append(str(row["name"]))
+
+	_check(future_names.size() >= 6 and placed_future.is_empty(), "future fruit trees (%d) are never placed %s" % [future_names.size(), str(placed_future)])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

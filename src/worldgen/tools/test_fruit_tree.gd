@@ -178,7 +178,7 @@ func _init() -> void:
 		for season_name in seasons:
 			in_count += 1 if rules.in_season(row, season_name) else 0
 
-		if in_count == 0 or in_count == 4:
+		if in_count == 0 or (in_count == 4 and not (row["season"] as Array).has("all")):   # coconuts bear all year
 			bad.append("%s season %d of 4" % [species_name, in_count])
 
 	check(bad.is_empty() and drops["fruit_tree"].size() >= 19, "every fruit tree variety (%d) has a flora row, its item, a store and a limited season %s" % [drops["fruit_tree"].size(), str(bad)])
