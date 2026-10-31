@@ -149,7 +149,8 @@ func _pick(c: Dictionary) -> void:
 
 # "Nothing to pick" (out of season, no yield) is not worth a prompt: only say why when a tool is missing.
 func _is_nothing(c: Dictionary) -> bool:
-	return str(c["reason"]).begins_with("nothing to pick")
+	var why: String = str(c["reason"])   # Dave 2026-10-31: nothing to pick, out of season or picked bare means no prompt at all
+	return why.begins_with("nothing to pick") or why == "not in season" or why == "nothing left to pick this season"
 
 
 func _hint() -> String:

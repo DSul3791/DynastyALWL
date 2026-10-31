@@ -51,6 +51,24 @@ static func harvest_count(row: Dictionary, scale: float) -> int:
 
 # Can this plant be picked now? {"ok": bool, "reason": String}. `flora_row` is the flora table row,
 # `has_tool` a Callable(tool class) -> bool, `item_exists` a Callable(item id) -> bool.
+# True when the plant's flora.json "season" list allows the season now (an empty list or "all" always does).
+static func in_season(flora_row: Dictionary, season: String) -> bool:
+	var seasons: Array = flora_row.get("season", [])
+	return seasons.is_empty() or seasons.has("all") or season == "" or seasons.has(season)
+
+
+# Out of season, a herb, flower or mushroom is not drawn at all (FloraView) and offers nothing; woody plants and berry bushes stay drawn but offer nothing either.
+# Plants of the shapes below stay drawn all year (ground cover that is not a seasonal product).
+const ALWAYS_DRAWN_SHAPES := ["grass", "fern", "reed"]
+
+
+static func hidden_out_of_season(flora_row: Dictionary, season: String, berry_bush: bool) -> bool:
+	if str(flora_row.get("kind", "")) != "plant" or berry_bush or ALWAYS_DRAWN_SHAPES.has(str(flora_row.get("shape", ""))):
+		return false
+
+	return not in_season(flora_row, season)
+
+
 static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season: String, has_tool: Callable, item_exists: Callable) -> Dictionary:
 	var name: String = str(flora_row.get("name", ""))
 	var rows: Array = drops.get("by_species", {}).get(name, drops.get("by_kind", {}).get(kind, []))
@@ -61,7 +79,7 @@ static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season
 		return {"ok": true, "reason": ""} if berry_seasons.is_empty() or berry_seasons.has("all") or berry_seasons.has(season) else {"ok": false, "reason": "not in season"}
 
 	if not rows.is_empty():
-		return {"ok": true, "reason": ""}
+		return {"ok": true, "reason": ""} if in_season(flora_row, season) else {"ok": false, "reason": "not in season"}
 
 	var yields: Array = flora_row.get("yields", [])
 	var seasons: Array = flora_row.get("season", [])
