@@ -995,6 +995,7 @@ func tick(delta: float) -> void:
 		_vitals_tick(spent)
 		_craft_tick(spent)
 		_crops_tick()
+		_comfort_tick()
 		_goals_tick()
 		_learn_clock += spent
 
@@ -1460,7 +1461,7 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	last[skill] = now
 	_last_practice[peer] = last
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
-	var d: float = difficulty * float(def.get("difficulty", 1.0))
+	var d: float = difficulty * float(def.get("difficulty", 1.0)) * float(rested_tier(peer).get("skill_gain_mult", 1.0))   # Rested: skills come a little faster
 	var gained: float = SkillWeb.practice(_skills_cfg, skill, attributes_of(peer), records, d, now_s)
 
 	if gained > 0.0:
@@ -2563,7 +2564,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("gap_exempt", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):
 			_say(peer, "Something is in the way.")
 			return
 
@@ -4691,7 +4692,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		if bed_in_shelter:
 			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter:
+		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
 			_say(peer, "Something is in the way.")
 			return
 
@@ -5348,7 +5349,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 	var hours: float = game_s / 3600.0
 	var drain: Dictionary = _energy_cfg.get("drain_per_game_day", {})
 	var rec: Dictionary = _energy_cfg.get("recover_per_game_hour", {})
-	e -= (float(drain.get("rest", 12.0)) + float(drain.get("work", 42.0)) * exertion_of(peer)) * game_s / 86400.0
+	e -= (float(drain.get("rest", 12.0)) + float(drain.get("work", 42.0)) * exertion_of(peer)) * game_s / 86400.0 * float(rested_tier(peer).get("exhaustion_mult", 1.0))   # Rested: slower exhaustion
 	var stance: int = int(_stance.get(peer, 0))
 
 	if _forced_sleep(peer):
@@ -6203,7 +6204,7 @@ func _vitals_tick(spent: float) -> void:
 			_dirty = _dirty or float(crow["grace_s"]) <= 0.0
 
 		var burn_per_day: float = float(_vitals_cfg.get("rest_kcal_per_kg_day", 22)) * float(v["weight"]) + float(_vitals_cfg.get("work_kcal_day", 1500)) * exertion_of(peer)
-		var drain_mult: float = _drain_mult(peer)
+		var drain_mult: float = _drain_mult(peer) * float(rested_tier(peer).get("hunger_thirst_mult", 1.0))   # Rested: a little less hunger and thirst
 		var burn: float = burn_per_day * game_s / 86400.0 * drain_mult
 		v["fed"] = float(v["fed"]) - burn
 
@@ -6227,6 +6228,11 @@ func _vitals_tick(spent: float) -> void:
 
 			if on_good_bed(peer):
 				regen *= float(_bed_cfg.get("regen_mult", 1.0))   # asleep or just lying on it
+
+			var rested: Dictionary = rested_tier(peer)
+
+			if not rested.is_empty():   # the Rested buff: the larger of the two, never the product (comfort spec)
+				regen = maxf(regen, float(_vitals_cfg.get("health_regen_per_s", 0.05)) * float(rested.get("regen_mult", 1.0)))
 
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
@@ -6821,6 +6827,8 @@ func kill(peer: int, cause: String) -> bool:
 	if key == "" or inv == null or not _peer_pos.has(peer) or _death_cfg.is_empty() or not _structures.has("remains"):
 		return false
 
+	_characters[key].erase("rested")   # death ends the Rested buff
+	_rest_credit.erase(peer)
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
@@ -7943,6 +7951,202 @@ func harvest(peer: int, inv, bed_id: int) -> bool:
 	_crops.erase(key)
 	_dirty = true
 	return true
+
+
+# --- Comfort and the Rested buff (docs/COMFORT_DESIGN.md, data/items/comfort.json; Sal's design, Tyler 31 Oct 2026) ---
+# comfort_at(peer): 0 when not sheltered; else 1 for the shelter plus the points of every DIFFERENT comfort kind within radius_m (9 m) and height_m (3 m) of the player, each kind
+# once, only the best bed, fires/torches/chandeliers only while lit, clamped to max_level (20). A placed structure counts by its structures.json `comfort` id (or its own kind
+# when comfort.json has a kind of that name: rough_bed, workbench, chest ...); lit fires count as `campfire`, a clay hearth as lit when a lit fire burns within 3 m.
+# Rested: earned by sleeping or lying on a good bed at comfort 2 or more (sitting on a seat for 30 s is not built yet); lasts comfort_buff_real_minutes (45) REAL minutes; the tier
+# (health regeneration, exhaustion, hunger and thirst, action speed, skill gain, cold) is the highest whose min_level is reached when earned; a rest at an equal or higher level
+# refreshes it, a lower one leaves it alone; saved in characters.json "rested" {level, until (unix seconds)}; cleared by death. Hooks built: health regeneration (the larger of the
+# bed's and the buff's, never the product), hunger and thirst drain, skill gain, energy drain. Not built: action speed, cold stress, the HUD icons and tooltip (needs a protocol message).
+var _comfort_cfg: Dictionary = {}
+var _comfort_loaded: bool = false
+var _comfort_cache: Dictionary = {}     # peer -> {"at": msec, "data": comfort_at result}
+
+
+func _comfort_data() -> Dictionary:
+	if not _comfort_loaded:
+		_comfort_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/comfort.json"))
+		_comfort_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _comfort_cfg
+
+
+func _comfort_kind(id: String) -> Dictionary:
+	for row in _comfort_data().get("kinds", []):
+		if str(row["id"]) == id:
+			return row
+
+	return {}
+
+
+func comfort_at(peer: int, force: bool = false) -> Dictionary:
+	var cfg: Dictionary = _comfort_data()
+	var out: Dictionary = {"level": 0, "sheltered": false, "items": [], "missing": []}
+
+	if cfg.is_empty() or not _peer_pos.has(peer):
+		return out
+
+	var now: int = Time.get_ticks_msec()
+	var cached: Dictionary = _comfort_cache.get(peer, {})
+
+	if not force and not cached.is_empty() and now - int(cached["at"]) < int(float(cfg.get("recheck_s", 1.5)) * 1000.0):
+		return cached["data"]
+
+	var here: Vector3 = _peer_pos[peer]
+	var sheltered: bool = cover_at.is_valid() and float(cover_at.call(here)) > 0.0
+	out["sheltered"] = sheltered
+
+	if not sheltered:
+		_comfort_cache[peer] = {"at": now, "data": out}
+		return out
+
+	var radius: float = float(cfg.get("radius_m", 9.0))
+	var height: float = float(cfg.get("height_m", 3.0))
+	var found: Dictionary = {}     # comfort kind id -> true (each kind once)
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+		var pos: Vector3 = it["pos"]
+
+		if Vector2(pos.x - here.x, pos.z - here.z).length() > radius or absf(pos.y - here.y) > height:
+			continue
+
+		var kind_id: String = ""
+
+		if it.has("fire"):
+			if fire_is_lit(int(it["fire"]["state"])):
+				kind_id = "campfire"
+		elif it.has("struct"):
+			var skind: String = str(it["struct"].get("kind", ""))
+			var row: Dictionary = _structures.get(skind, {})
+			kind_id = str(row.get("comfort", skind))
+
+			if not _comfort_kind(kind_id).is_empty() and bool(_comfort_kind(kind_id).get("needs_lit", false)):
+				if kind_id == "clay_hearth":
+					kind_id = "clay_hearth" if _comfort_lit_fire_near(pos, 3.0) else ""
+				elif not bool(it["struct"].get("lit", false)):
+					kind_id = ""   # torches, chandeliers and fireplaces count only while lit
+
+		if kind_id != "" and not _comfort_kind(kind_id).is_empty():
+			found[kind_id] = true
+
+	var level: int = int(cfg.get("shelter", {}).get("points", 1))
+	var best_bed: int = 0
+	var items: Array = []
+
+	for kind_id in found:
+		var kind: Dictionary = _comfort_kind(kind_id)
+		var points: int = int(kind["points"])
+
+		if str(kind.get("class", "")) == "bed":
+			best_bed = maxi(best_bed, points)
+			continue
+
+		level += points
+		items.append([kind_id, points, bool(kind.get("needs_lit", false))])
+
+	level += best_bed
+
+	if best_bed > 0:
+		items.append(["bed", best_bed, false])
+
+	out["level"] = clampi(level, 0, int(cfg.get("max_level", 20)))
+	out["items"] = items
+	_comfort_cache[peer] = {"at": now, "data": out}
+	return out
+
+
+func _comfort_lit_fire_near(pos: Vector3, radius: float) -> bool:
+	for id in _items:
+		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])) and _items[id]["pos"].distance_to(pos) <= radius:
+			return true
+
+	return false
+
+
+# The tier of the Rested buff a player has now ({} when none or run out): the comfort.json rested.tiers row picked when it was earned.
+func rested_tier(peer: int) -> Dictionary:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rested", {})
+
+	if row.is_empty() or Time.get_unix_time_from_system() >= float(row.get("until", 0.0)):
+		return {}
+
+	var best: Dictionary = {}
+
+	for tier in _comfort_data().get("rested", {}).get("tiers", []):
+		if int(tier["min_level"]) <= int(row.get("level", 0)):
+			best = tier
+
+	return best
+
+
+func rested_seconds_left(peer: int) -> float:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rested", {})
+	return maxf(float(row.get("until", 0.0)) - Time.get_unix_time_from_system(), 0.0)
+
+
+# A rest was completed (slept, or lay on a good bed). At comfort 2 or more the buff is set or refreshed; a lower level than the buff in force changes nothing.
+func rest_completed(peer: int, half: bool = false) -> bool:
+	var key: String = str(_peer_key.get(peer, ""))
+	var cfg: Dictionary = _comfort_data().get("rested", {})
+
+	if key == "" or not _characters.has(key) or cfg.is_empty():
+		return false
+
+	var level: int = int(comfort_at(peer, true)["level"])
+
+	if level < int(cfg.get("min_level_to_earn", 2)):
+		var data: Dictionary = comfort_at(peer)
+
+		if not bool(data["sheltered"]):
+			_say(peer, "You are not sheltered: nothing here comforts you.")
+		else:
+			_say(peer, "It is too bare to rest well here (comfort 2 needed).")
+
+		return false
+
+	var current: Dictionary = _characters[key].get("rested", {})
+	var minutes: float = float(cfg.get("comfort_buff_real_minutes", 45)) * (0.5 if half else 1.0)
+	var active: bool = not current.is_empty() and Time.get_unix_time_from_system() < float(current.get("until", 0.0))
+
+	if active and level < int(current.get("level", 0)):
+		return false
+
+	_characters[key]["rested"] = {"level": level, "until": Time.get_unix_time_from_system() + minutes * 60.0}
+	_dirty = true
+	_say(peer, "You feel rested.")
+	return true
+
+
+# Called every slow tick: lying on a good bed (awake or asleep) at comfort 2+ earns the buff once per rest; the buff ending is told once.
+var _rest_credit: Dictionary = {}       # peer -> true while this rest has already earned the buff
+var _rested_told: Dictionary = {}       # peer -> true while "You feel rested" is in force (to say the end once)
+
+
+func _comfort_tick() -> void:
+	for peer in _peer_key.keys():
+		if not _peer_pos.has(peer):
+			continue
+
+		var resting: bool = _asleep.has(peer) or (int(_stance.get(peer, 0)) == 3 and on_good_bed(peer))
+
+		if resting and not _rest_credit.has(peer):
+			_rest_credit[peer] = true
+			rest_completed(peer)
+		elif not resting:
+			_rest_credit.erase(peer)
+
+		var rested: bool = not rested_tier(peer).is_empty()
+
+		if rested:
+			_rested_told[peer] = true
+		elif _rested_told.has(peer):
+			_rested_told.erase(peer)
+			_say(peer, "You no longer feel rested.")
 
 
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
@@ -9257,6 +9461,7 @@ func _load_characters() -> void:
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
+			"rested": parsed["players"][key].get("rested", {}) if typeof(parsed["players"][key].get("rested", {})) == TYPE_DICTIONARY else {},
 			"spawn_bed": parsed["players"][key].get("spawn_bed", []) if typeof(parsed["players"][key].get("spawn_bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("spawn_bed", []) as Array).size() == 3 else [],
 			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
 			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},
