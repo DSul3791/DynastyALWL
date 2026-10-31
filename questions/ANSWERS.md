@@ -1890,3 +1890,7 @@ Answered: 2026-10-31 20:00 UTC
 Answer: Yes | Comment: Yes, it looks great, but it does need some flowers and colour
 Answered: 2026-10-31 20:01 UTC
 
+## pic-meadow-flowers | Are these meadow flowers (dandelion shown; stems about 1 m, heads 18 cm across) tall and bold enough to show up in grass?
+Answer: Yes
+Answered: 2026-10-31 20:02 UTC
+
