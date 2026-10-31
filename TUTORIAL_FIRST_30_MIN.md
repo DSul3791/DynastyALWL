@@ -38,7 +38,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
 14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: sticks burn 15 game minutes each, firewood an hour, a log two hours. One game hour is 2.5 real minutes." Check: one fuel added.
-15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast one raw forage item at a time: nuts, berries, roots, mushrooms. Hazelnuts are ripe in autumn; raspberries in summer." Check: one item roasted.
+15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast raw meat or fish, one at a time. Plants are cooked in a pot, or on a hearth; berries and fruit you can eat raw." (Dave 31 Oct: a campfire cooks only meat.) Check: one item roasted.
 
 ## Minute 18 to 26: shelter and bed
 
