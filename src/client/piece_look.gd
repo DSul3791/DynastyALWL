@@ -551,15 +551,19 @@ static func rough_bed() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 
+	# A frame of round poles, like the lean-to (Dave 2026-10-31: no sawn faces): two long rails and two end rails of 9 cm poles resting on four round legs, each corner lashed with plant-fibre twine.
+	var twine: StandardMaterial3D = _tone_mat(Color(0.74, 0.66, 0.4))
+
 	for z in [-0.4, 0.4]:
-		_box(root, Vector3(2.0, 0.12, 0.1), Vector3(0.0, 0.2, z), _log)
+		_cyl(root, 0.045, 2.0, Vector3(0.0, 0.2, z), _log, 5).rotation = Vector3(0.0, 0.0, PI * 0.5)
 
 	for x in [-0.95, 0.95]:
-		_box(root, Vector3(0.1, 0.12, 0.9), Vector3(x, 0.2, 0.0), _log)
+		_cyl(root, 0.045, 0.9, Vector3(x, 0.2, 0.0), _log, 5).rotation = Vector3(PI * 0.5, 0.0, 0.0)
 
 	for x in [-0.9, 0.9]:
 		for z in [-0.4, 0.4]:
-			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.08, z), _frame)
+			_cyl(root, 0.05, 0.2, Vector3(x, 0.1, z), _frame, 5)
+			_cyl(root, 0.06, 0.03, Vector3(x, 0.2, z), twine, 5)
 
 	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat (under the heaped straw)
 	_dome(root, 0.5, Vector3(-0.45, 0.3, 0.0), Vector3(0.95, 0.38, 0.62), _thatch, 9, 3)       # heaped, lumpy straw at the foot and
