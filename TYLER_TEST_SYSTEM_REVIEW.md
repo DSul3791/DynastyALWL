@@ -280,3 +280,9 @@ Out of range against TARGETS.md: shrubs in the three forest/heath biomes (5 agai
 | F-04 docs vs data | CONTROLS.md (campfire 6 sticks and 3 stones, placed laid, E to light; chopping block one wooden block to one firewood), test_first_hour text, and the playability bot now compares CONTROLS.md with the recipe | test_playability_bot step "docs" | |
 Also: test_new_player_day was red on the daily branch because crafts take longer than the listed seconds; it waits longer now.
 Not done: farming (FARMING_SPEC.md), water gather (WATER_GATHER_SPEC.md), starter goals (data/items/starter_goals.json), the client side of recipe learning.
+
+### Goals, farming and wild seeds (31 Oct, later)
+- Starter goals: server events and per-character goals_done in characters.json (test_goals, 14 checks; mutations: fire event removed FAIL, reward removed FAIL). The on-screen goal list is not built (notices only).
+- Farming server rules: till, sow (season), wet days, growth, frost, compost, harvest, save (test_farming, 25 checks; mutations: sow season off, wetness off, sickle off, compost off: all FAIL). New actions ACT_TILL 50, ACT_SOW 51, ACT_HARVEST 52, ACT_WATER_BED 53 (PROTOCOL.md). Client side not built.
+- Wild seeds: drops.json `seed_drops` (tall grass: wheat and barley seeds, wild carrot, flax; summer and autumn).
+- Not built: WATER_GATHER_SPEC.md (sea water, salt, shore nodes), the client sides above, test_spawn_dry (red: flora density on the spawn pad, not mine).
