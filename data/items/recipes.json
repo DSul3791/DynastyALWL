@@ -2370,7 +2370,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_mushroom_skewer": {
@@ -2474,7 +2474,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_fruit_leather": {
@@ -2500,7 +2500,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_smoked_fish": {
@@ -2630,7 +2630,7 @@
 				3
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_hearty_pottage": {
@@ -5244,7 +5244,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_cabbage_stew": {
@@ -5292,7 +5292,7 @@
 				2
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_onion_roast": {
@@ -5314,7 +5314,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_seaweed_soup": {
@@ -5414,7 +5414,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_herb_omelette": {
@@ -5436,7 +5436,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_seal_stew": {
@@ -5660,7 +5660,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_sauerkraut": {
@@ -5700,7 +5700,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "campfire_pot",
 			"known": true
 		},
 		"cook_banana_fritter": {
@@ -5722,7 +5722,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_cactus_fry": {
@@ -5744,7 +5744,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"tallow": {
@@ -5885,7 +5885,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_apple_sauce": {
@@ -6017,7 +6017,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_quince_paste": {

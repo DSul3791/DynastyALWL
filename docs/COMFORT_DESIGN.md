@@ -5,7 +5,7 @@ Dave's request: "bring in the comfort concept from Valheim where you place diffe
 Owners: design and data Sal (this file, data/items/comfort.json, 14 locked kit items); server code Tyler; models Kathleen. Nothing is coded yet.
 
 ## 1. The rule in one paragraph
-Your **comfort level** (0 to 20) is 1 for being sheltered, plus the points of every DIFFERENT comfort piece within 9 m of you (on the same floor), each kind counted once (five chairs count as one chair, so players vary their camp). Fires, torches and chandeliers count only while LIT. At level 2 or more, sleeping, lying, or sitting on a seat for a while earns the **Rested** buff, which lasts 15 + 3 x level real minutes (cap 60) and gives modest bonuses to health regeneration, exhaustion, hunger and thirst drain, action speed, skill gain and cold. The level also shows while you stand awake near the items; the buff is what you EARN by resting there.
+Your **comfort level** (0 to 20) is 1 for being sheltered, plus the points of every DIFFERENT comfort piece within 9 m of you (on the same floor), each kind counted once (five chairs count as one chair, so players vary their camp). Fires, torches and chandeliers count only while LIT. At level 2 or more, sleeping, lying, or sitting on a seat for a while earns the **Rested** buff, which always lasts **45 real minutes** (18 game hours) and gives bonuses that grow with the level: health regeneration, exhaustion, hunger and thirst drain, action speed, skill gain and cold. The level also shows while you stand awake near the items; the buff is what you EARN by resting there.
 
 ## 2. Sheltered (the exact rule)
 You are sheltered when ANY of these holds at your feet (the cover the game already knows):
@@ -30,14 +30,14 @@ So a camp can have its lean-to or only a big tree; the comfort items need not be
 A kind counts once however many you place. A sensible camp: shelter 1 + straw bed 2 + bench 1 + workbench 1 + lit campfire 1 + chest 1 = **7**. A fine house: shelter 1 + canopy bed 5 + chair 2 + table 2 + rugs 3 + fireplace 4 + chandelier 3 + wall torch 1 + chest 1 + door 1 + window 1 + pot 1 = capped at **20**. The sum of everything is 39, so the cap of 20 matters. The existing rough bed (comfort 1 in bed.json) is the starting point: a bare lean-to with a rough bed is comfort 2 (shelter + bed) and just earns the buff.
 
 ## 4. The Rested buff
-Earned (comfort 2 or more at that moment) by: sleeping or lying in a bed; sitting on a seat for 30 s; lying on bare ground for 60 s (a shorter buff, see below). Duration `minutes_real = min(15 + 3 x level, 60)`: level 2 is 21 real minutes (about 8.4 game hours), 5 is 30, 10 is 45, 15 or more is 60. A game hour is 2.5 real minutes, so these are Valheim-sized (its Rested is about 8 minutes plus 1 per level). A new buff replaces an older one only if longer; it does not stack.
+Earned (comfort 2 or more at that moment) by: sleeping or lying in a bed; sitting on a seat for 30 s; lying on bare ground for 60 s (a half-length buff, see below). Duration is **fixed: `comfort_buff_real_minutes` = 45 real minutes** at every level (Dave, 31 Oct): the level scales the bonuses below, not the time. In game time it is computed from the game clock (`GameClock.RATIO` = 24 game hours per real hour, so 45 real minutes = 18 game hours), never hard-coded in game units. Resting again **refreshes** the 45 minutes while the comfort level is at least that of the current buff (a higher level also raises the tier); resting at a lower level changes nothing. It does not stack.
 | Comfort at the moment | Health regen | Exhaustion (energy and strain) | Hunger and thirst drain | Action speed (crafting, tool blows) | Skill gain | Cold stress |
 |---|---|---|---|---|---|---|
 | 2 to 4 | +10% | -10% | - | - | - | - |
 | 5 to 9 | +20% | -15% | -3% | - | +5% | - |
 | 10 to 14 | +30% | -25% | -5% | +3% | +8% | -5% |
 | 15 and up | +35% | -30% | -6% | +5% | +10% | -8% |
-Kept modest on purpose: it never beats eating or a fire, it only smooths a long expedition. It folds into the existing sleep numbers (bed.json regen_mult 1.25, drain_mult 0.5 while asleep): take the LARGER health regeneration of the two, do not multiply, so a good bed cannot double up. Lying on bare ground at comfort 2 or more earns a half-length buff.
+Kept modest on purpose: it never beats eating or a fire, it only smooths a long expedition. It folds into the existing sleep numbers (bed.json regen_mult 1.25, drain_mult 0.5 while asleep): take the LARGER health regeneration of the two, do not multiply, so a good bed cannot double up. Lying on bare ground at comfort 2 or more earns the buff at half length (about 22 real minutes).
 
 ## 5. HUD and messages
 - A comfort icon (a small hearth with the number): grey at 0 to 1, warm at 2 and above.
@@ -53,7 +53,7 @@ Fourteen kits, items 487 to 500, recipes 319 to 332: log seat (1 log, keep a sto
    - `sheltered = cover_at(pos) > 0` using the same Cover query the server already uses for rain and beds (roofs plus grown trees); if not sheltered, level 0.
    - Collect placed structures (world items with `struct.kind`) within `radius_m` 9.0 horizontally and `height_m` 3.0 vertically of the player; map kind to `comfort.json kinds[id]`; skip kinds needing light unless lit (fires: `fire_is_lit(state)`; torches and chandeliers: a lit flag when they exist).
    - Dedupe by kind id. For class `bed` keep only the best (highest points). Sum points, add shelter 1, clamp to `max_level` 20.
-2. **Rested buff**: stored on the character, `{level, until_game_s}` in characters.json (`rested`); set when the sleep/lie/sit rule completes with `comfort_at >= 2`; `minutes_real = min(15 + 3*level, 60)`, converted to game seconds x 24 x 60 (24 game seconds per real second); replace only if the new `until` is later. Clear on death.
+2. **Rested buff**: stored on the character, `{level, until_game_s}` in characters.json (`rested`); set when the sleep/lie/sit rule completes with `comfort_at >= 2`; `until = now + comfort_buff_real_minutes (45) x 60 real seconds`, converted with the game clock's ratio (GameClock.RATIO, never a literal 24 or 1080). Refresh rule: on a completed rest at level L, if there is no buff or L >= buff.level then buff = {level: L, until: now + 45 min}; otherwise leave it. Clear on death.
 3. **Hooks** (read `tier = the highest rested.tiers entry with min_level <= level at the moment of earning`, stored with the buff so it does not change while it runs):
    - health regeneration: multiply `health_regen_per_s` (vitals.json) by `regen_mult`; with sleeping/bed take max, not product;
    - exhaustion: multiply energy `drain_per_game_day` (energy.json) and strain climb (exertion.json) by `exhaustion_mult`;
@@ -62,7 +62,7 @@ Fourteen kits, items 487 to 500, recipes 319 to 332: log seat (1 log, keep a sto
    - skill gain: multiply the amount in `practice()` by `skill_gain_mult`;
    - cold: multiply the cold stress in warmth.json's formula by `cold_stress_mult` (like bed.json warmth_bonus).
 4. **Protocol/HUD**: send `comfort(level, sheltered, [ [id, points, lit], ... ], missing)` when it changes (at most every 1.5 s) and `rested(level, seconds_left)`. Client draws the two icons and the tooltip above.
-5. **Tests** (test_comfort.gd): level 0 outside cover; sheltered with nothing = 1; a rough bed adds 1; five chairs count once; unlit campfire adds 0, lit adds 1; the best bed only; the cap 20; sleeping at level 2 earns 21 real minutes; at level 10 earns 45; the buff replaces only when longer; regen takes max with the bed; save and reload keeps `rested`.
+5. **Tests** (test_comfort.gd): level 0 outside cover; sheltered with nothing = 1; a rough bed adds 1; five chairs count once; unlit campfire adds 0, lit adds 1; the best bed only; the cap 20; sleeping at level 2 earns 45 real minutes and so does level 10 (the tier differs, not the time); a rest at a lower level does not shorten or lower the buff; a rest at an equal or higher level refreshes it; regen takes max with the bed; save and reload keeps `rested`.
 
 ## 8. Open questions for Dave (my defaults in brackets)
 1. Should Rested also give a small speed (walking) bonus? [no]

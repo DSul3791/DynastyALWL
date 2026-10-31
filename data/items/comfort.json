@@ -203,12 +203,7 @@
 			"sit on a seat at that level for 30 s",
 			"lie on the ground at level 2 or more for 60 s (shorter buff)"
 		],
-		"minutes_real": {
-			"base": 15,
-			"per_level": 3,
-			"cap": 60
-		},
-		"note": "A game hour is 2.5 real minutes: 21 minutes at level 2 is about 8.4 game hours. A new buff replaces an older one only if it is longer; it never stacks.",
+		"note": "A game hour is 2.5 real minutes: 45 real minutes is 18 game hours. A new buff of a higher or equal level refreshes the timer and sets the tier; it never stacks.",
 		"tiers": [
 			{
 				"min_level": 2,
@@ -250,7 +245,10 @@
 				"skill_gain_mult": 1.1,
 				"cold_stress_mult": 0.92
 			}
-		]
+		],
+		"comfort_buff_real_minutes": 45,
+		"duration_note": "Dave 31 Oct: the buff ALWAYS lasts the same time, about 45 REAL minutes; the comfort level scales the BONUSES, not the time. Game-time length is computed from the game clock (GameClock.RATIO = 24 game hours per real hour, so 45 real minutes = 18 game hours); never hard-code game units. Resting again refreshes the 45 minutes while the comfort level is at least that of the current buff (a higher level replaces the tier); resting at a lower level changes nothing.",
+		"refresh_rule": "on a completed rest at level L: if no buff, or L >= buff.level: buff = {level: L, until: now + 45 real minutes}; else leave it"
 	},
 	"bed_json_fold": "data/items/bed.json comfort 1 for the rough bed stays; its regen_mult 1.25 and drain_mult 0.5 are the SLEEP bonus and stack with Rested only for regen (take the larger, do not multiply) so a comfortable bed cannot double up.",
 	"hud": {

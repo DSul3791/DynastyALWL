@@ -4,7 +4,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 
 | id | what | status | evidence | owner |
 |---|---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 233 of 251 recipes known or open (blockers: steel_pickaxe, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_sword, iron_mace, iron_shield, steel_sword, s) | Sal (data), Tyler (code half) |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 247 of 279 recipes known or open (blockers: steel_pickaxe, smelt_steel, bronze_sword, bronze_mace, bronze_shield, iron_sword, iron_mace, iron_shield, steel_sword, s) | Sal (data), Tyler (code half) |
 | F-02 | flint can be picked up | **FIXED** | flint: now | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present | Tyler |
@@ -21,13 +21,13 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True | Sal |
 | F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **FIXED** | probe_logs round 2: rough planks from the one log on the shoulder = 4 (the unit test passes only with logs forced into the pack: yes) | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 7 craftable items with a grey or missing look: chopping_block, dried_apples, apple_sauce, plum_jam, stewed_pears, preserved_damsons, quince_paste | Kathleen |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: chopping_block, nettle_tea | Kathleen |
 | F-19 | no blocked recipe without a future flag | **FIXED** | 0 recipes blocked and not flagged future | Sal |
 | F-20 | every non-future gathered item has a gather path | **FIXED** | 0 orphan items not flagged future (first: ) | Sal / flora |
 | F-21 | saw mill reachable | **FIXED** | saw mill built wave: 4 | Sal |
 | F-22 | stairs and stone/brick/log pieces exist | **FIXED** | structures: 48, stairs: True | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **FIXED** | iron_ore now, coal now, flint now | Tyler + Sal |
-| F-27 | kits are told apart by an emblem or shape, not only tint | **STILL BROKEN** | 42 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
+| F-27 | kits are told apart by an emblem or shape, not only tint | **STILL BROKEN** | 56 kits, 19 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
 | F-35 | berries and nuts are in season near the start (a new world starts in summer, day >= 92) | **FIXED** | game_clock.gd START_SECONDS = day 100 (spring is days 0 to 91, summer from 92) | Dave / Sal |
 | F-36 | the first-hour playability bot reaches the end | **FIXED** | playability bot: all 11 steps done (06:56, DailyDev a00c2e04) | Tyler |
 | S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
