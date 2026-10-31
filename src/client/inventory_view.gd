@@ -3829,6 +3829,15 @@ func run_strain_test(client) -> void:
 	print("Strain test: %s" % " | ".join(factors))
 
 
+func _pack_items() -> int:
+	var total: int = 0
+
+	for slot in range(inventory.SLOTS):
+		total += inventory.counts[slot] if inventory.numbers[slot] != 0 else 0
+
+	return total
+
+
 func run_gather_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
 	var real_view: Callable = view_direction
@@ -3842,7 +3851,7 @@ func run_gather_test(client) -> void:
 		for n in range(held["ids"].size()):
 			var sid: int = held["ids"][n] >> 16
 
-			if client.flora._species.get(sid, {}).get("kind", 0) == 1:
+			if client.flora._species.get(sid, {}).get("kind", 0) in [1, 2]:   # shrubs and plants: whatever is in season at the test clock gives something
 				shrubs.append([held["positions"][n].distance_to(here), held["positions"][n]])
 
 	if shrubs.is_empty():
@@ -3852,9 +3861,10 @@ func run_gather_test(client) -> void:
 	shrubs.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var sticks: int = table.number_of("stick")
 	var before: int = inventory.count_of(sticks)
+	var items_before: int = _pack_items()
 
 	# A shrub out of season gives nothing (the server refuses it quietly): try the nearest few until one gives sticks, so the check does not depend on the season of the test clock.
-	for candidate in range(mini(shrubs.size(), 8)):
+	for candidate in range(mini(shrubs.size(), 14)):
 		client.body.global_position = shrubs[candidate][1] + Vector3(0.5, 1.0, 0.0)
 		client.body.velocity = Vector3.ZERO
 		await get_tree().create_timer(3.0).timeout
@@ -3863,9 +3873,10 @@ func run_gather_test(client) -> void:
 		client.harvest.tap()
 		await get_tree().create_timer(2.0).timeout
 
-		if inventory.count_of(sticks) > before:
+		if _pack_items() > items_before:
 			break
 
+	print("Gather test: pack items %d -> %d" % [items_before, _pack_items()])
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
 	var after_tap: int = inventory.count_of(sticks)
 	client.harvest.update(0.0, true)
