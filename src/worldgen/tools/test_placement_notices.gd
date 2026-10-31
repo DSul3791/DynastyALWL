@@ -92,10 +92,17 @@ func _init() -> void:
 			lean = items._items[k]
 
 	check(not lean.is_empty(), "the lean-to is placed")
-	place("rough_bed_kit", Vector3(8.0, 10.0, 6.0))
+	place("rough_bed_kit", Vector3(8.0, 10.0, 6.0), 37)
 	check(rows("rough_bed") == 1 and said.is_empty(), "a rough bed goes inside the lean-to (%s)" % str(said))
 	place("rough_bed_kit", Vector3(8.0, 10.0, 8.0))
 	check(rows("rough_bed") == 1 and said.has("Something is in the way."), "a second bed 2.0 m off, outside the box but within the gap, is refused (%s)" % str(said))
+	var bed_row: Dictionary = {}
+
+	for k in items._items:
+		if items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "rough_bed":
+			bed_row = items._items[k]
+
+	check(not bed_row.is_empty() and is_equal_approx(float(bed_row["struct"]["yaw"]), float(lean["struct"]["yaw"])), "the bed lies along the lean-to (yaw %s against %s)" % [str(bed_row["struct"].get("yaw")), str(lean["struct"]["yaw"])])
 	var def: Dictionary = items._structures.get("lean_to", {})
 	check(float(def.get("half_x", 0.0)) >= 1.3 and float(def.get("half_z", 0.0)) >= 1.2, "the lean-to is big enough for a bed: covered box %.1f x %.1f m half-sizes" % [float(def.get("half_x", 0.0)), float(def.get("half_z", 0.0))])
 	print("placement notices: %d failures" % failures)

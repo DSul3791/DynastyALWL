@@ -1516,8 +1516,10 @@ func equip_with_move(slot: int) -> void:
 				break
 
 		if target < 0:
-			_on_notice("Your hotbar is full. Clear a slot first.")
-			return
+			# A full hotbar: the tool swaps places with what the hand holds (or the last slot), so using a tool from deep in a full pack always works (moderator, 31 Oct 2026).
+			var in_hand: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
+			target = in_hand if in_hand >= 0 and in_hand < 10 else 9
+			_on_notice("Hotbar full: swapped with slot %d." % (target + 1))
 
 		move_slot(slot, target)
 
@@ -3883,9 +3885,15 @@ func run_strain_test(client) -> void:
 
 	var start_strain: float = strain
 	var start_pos: Vector3 = client.body.global_position
-	await get_tree().create_timer(25.0).timeout
+	var peak_strain: float = strain
+
+	for sample in 50:   # the highest strain seen during the run, not only the last value: it does not depend on how fast the frames came on a busy PC
+		await get_tree().create_timer(0.5).timeout
+		peak_strain = maxf(peak_strain, strain)
+
 	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
 	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
+	print("Strain test: peak strain %.2f" % peak_strain)
 
 	# The server's walk from normal to over-exerted to blackout is proven in test_server_items; here the client's side of it:
 	# over-exerted is a 10 percent slow-down with no speed cap and running still allowed, fainted locks movement.
@@ -4545,7 +4553,17 @@ func run_eat_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for both, and ask once more after 8 s if nothing came
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("roast_forage")) and inventory.numbers.has(table.number_of("poultice")):
+			break
+
+		if wait == 16 and inventory.count_of(table.number_of("roast_forage")) == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
+
 	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
 	var roasts_before: int = inventory.count_of(table.number_of("roast_forage"))
 	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
