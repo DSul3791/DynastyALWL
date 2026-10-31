@@ -127,3 +127,10 @@ Image: questions/img/fireplace_light_front.png
 Note: Real game at dusk, with Tyler's front-facing spot light (the side view is questions/img/fireplace_light_side.png: dark at the side, light only in front). Kathleen rates it 3.5 of 5: the cone and shadows are right; the opening shows a floating orange dot above the fire.
 - Yes
 - No
+
+
+## pic-grass-feet | Do the character's feet and lower legs now show above the grass in third person (left: before, right: after)?
+Image: questions/img/grass_feet_before_after.png
+Note: Real game, third person, noon, same spot. Flora rates it 4 of 5: grass within 1.8 m of the player is cut low with a soft edge (done in the grass shader, no extra draw), boots and legs are visible; the cut patch is a little visible as a soft hollow.
+- Yes
+- No
