@@ -1882,3 +1882,7 @@ Answered: 2026-10-31 19:58 UTC
 Answer: No | Comment: Most of these are only showing a 2-D division they should be tilted at an access so you can see them in a 3-D view, but there’s also some of these things that will have to be made from the blueprints of a wooden hammer like the lean two. Before you ever make a lie to you should make a hammer and learn how to use it and then you put down the blueprint for the lien too and you fill it in with material.
 Answered: 2026-10-31 20:00 UTC
 
+## pic-hands | Are the character's hands (now about 20 percent bigger) in proportion?
+Answer: Yes
+Answered: 2026-10-31 20:00 UTC
+
