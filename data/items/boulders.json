@@ -7,10 +7,12 @@
 		"pick": {
 			"iron": 1,
 			"steel": 1,
-			"stone": 3
+			"stone": 3,
+			"bronze": 2
 		},
 		"axe": {
-			"stone": 3
+			"stone": 3,
+			"bronze": 2
 		}
 	},
 	"radius_min": 0.3,
@@ -25,7 +27,7 @@
 	"bank_chance": 0.4,
 	"luck_extra": 0.05,
 	"ore": {
-		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id.",
+		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id. 2026-10-31 (Sal): `needs_material` lists which pick materials may take each ore: coal, copper and tin with any pick, iron only with a bronze, iron or steel pick, so the ladder is stone pick (copper, tin, coal) -> forge -> bronze ingot -> bronze pickaxe -> iron. The server does not read needs_material yet (see CODE_MISMATCHES.md); today a stone pick can take iron.",
 		"reach_m": 40.0,
 		"boulder_share": 0.4,
 		"piece_share": 0.3,
@@ -35,6 +37,31 @@
 			"copper": "copper_ore",
 			"tin": "tin_ore",
 			"iron": "iron_ore"
+		},
+		"needs_material": {
+			"coal": [
+				"stone",
+				"bronze",
+				"iron",
+				"steel"
+			],
+			"copper": [
+				"stone",
+				"bronze",
+				"iron",
+				"steel"
+			],
+			"tin": [
+				"stone",
+				"bronze",
+				"iron",
+				"steel"
+			],
+			"iron": [
+				"bronze",
+				"iron",
+				"steel"
+			]
 		}
 	},
 	"flint": {

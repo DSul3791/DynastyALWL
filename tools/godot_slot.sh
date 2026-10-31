@@ -36,6 +36,14 @@ slot_release() {
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
 	[ $# -eq 0 ] && { sed -n 2,12p "$0"; exit 2; }
 	slot_acquire
-	trap slot_release EXIT
-	"$@"
+	# The command runs in the background and is killed with us: if this wrapper is stopped or its owner dies, the job does not outlive it (31 Oct: orphans saturated the PC).
+	"$@" &
+	CHILD=$!
+	reap() { kill "$CHILD" 2>/dev/null; sleep 1; kill -9 "$CHILD" 2>/dev/null; slot_release; }
+	trap reap EXIT TERM INT HUP
+	wait "$CHILD"
+	RC=$?
+	trap - EXIT TERM INT HUP
+	slot_release
+	exit $RC
 fi

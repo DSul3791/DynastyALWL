@@ -124,6 +124,19 @@ func _init() -> void:
 		if int(file.get("next_number", 0)) <= highest:
 			fail("%s: next_number %s is not above the highest number %d" % [pair[1], file.get("next_number"), highest])
 
+	# Every structure has its own world-item state (the client finds the structure of a row by its state): two with the same state made the plank chest (6) shadow the
+	# woven chest, so the chest could not be placed (31 Oct 2026, the chest client self-test).
+	var states_seen: Dictionary = {}
+
+	for sid in _read("structures.json").get("structures", {}):
+		var srow: Variant = _read("structures.json")["structures"][sid]
+
+		if typeof(srow) == TYPE_DICTIONARY and srow.has("state"):
+			if states_seen.has(int(srow["state"])):
+				fail("structures.json: state %d is used by '%s' and '%s'" % [int(srow["state"]), states_seen[int(srow["state"])], sid])
+
+			states_seen[int(srow["state"])] = sid
+
 	var species: Dictionary = {}
 
 	for entry in _read("../tables/flora.json").get("entries", []):

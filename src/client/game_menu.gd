@@ -187,6 +187,15 @@ func _build_controls() -> void:
 	_button(controls, "Back", func(): show_page("main"))
 
 
+const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
+var _idle_button: Button
+
+
+func _refresh_idle_button() -> void:
+	if _idle_button != null:
+		_idle_button.text = "Idle timeout: %d min (change)   closes after a 60 s warning" % _c.display.idle_minutes
+
+
 func _build_settings() -> void:
 	var settings: VBoxContainer = _page("settings")
 	_button(settings, "Display", func(): show_page("display"))
@@ -272,6 +281,13 @@ func _build_sound() -> void:
 
 func _build_gameplay() -> void:
 	var gameplay: VBoxContainer = _page("gameplay")
+	_idle_button = _button(gameplay, "", func():
+		_c.display.idle_minutes = IdleTimeoutScript.next_step(_c.display.idle_minutes)
+		_c.set_idle_minutes(_c.display.idle_minutes)
+		_c._save_display()
+		_refresh_idle_button()
+		note.text = "Idle timeout: the game closes after %d minutes without the mouse or a key (saved)." % _c.display.idle_minutes)
+	_refresh_idle_button()
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))

@@ -334,8 +334,17 @@ static func looks_zeroed(buffer: VoxelBuffer) -> bool:
 	return zero >= 20
 
 
+# Reads a block from the edit database under the same lock the edits are written under. The SQLite file has one writer at a time; a worker reading while an edit or a flush was
+# writing logged "database is locked" (31 Oct 2026, two lines in the server log of the shared-server run; the Mutex is recursive, so a reader inside an edit is fine).
+func _load_edit(buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	_edit_mutex.lock()
+	var result: int = _edits.load_voxel_block(buffer, block, lod)
+	_edit_mutex.unlock()
+	return result
+
+
 func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
-	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		if not looks_zeroed(buffer):
 			_count("edit")
 			return
@@ -390,7 +399,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 func ensure_block(block: Vector3i, lod: int) -> bool:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _edits.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
 	var cache: VoxelStreamSQLite = _cache_now()
@@ -461,7 +470,7 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	lines.append("server: %d logged dig/fill operations within 24 m of this voxel%s" % [near.size(), "" if near.is_empty() else ": " + ", ".join(near.slice(0, 6).map(func(op): return "%s r%.1f at %s" % ["fill" if int(op[0]) == 1 else "dig", float(op[2]), str(Vector3(op[1]).round())]))])
 	var edited: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _edits.load_voxel_block(edited, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _load_edit(edited, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
 		lines.append("server: saved edit of this block: " + _cell_text(edited, local))
 	else:
 		lines.append("server: no saved edit of this block")
@@ -566,7 +575,9 @@ func flush() -> void:
 	settle.close()
 	save_revisions()
 	_cache_now().flush()
+	_edit_mutex.lock()
 	_edits.flush()
+	_edit_mutex.unlock()
 
 
 func _time(piece: String, usec: int) -> void:

@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 458,
+	"next_number": 462,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -5222,6 +5222,106 @@
 			"value": 9,
 			"look_alikes": [],
 			"future": true
+		},
+		"bronze_pickaxe": {
+			"number": 458,
+			"name": "Bronze pickaxe",
+			"description": "A bronze head on a hardwood handle. Breaks rock quickly and takes iron ore out of a boulder.",
+			"kind": "tool",
+			"stack": 1,
+			"future": true,
+			"material": "bronze",
+			"tool_class": "pick",
+			"tier": 2,
+			"durability": 7000,
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 80
+		},
+		"bronze_axe": {
+			"number": 459,
+			"name": "Bronze axe",
+			"description": "A bronze blade on a hardwood handle. Fells trees faster and lasts longer than stone.",
+			"kind": "tool",
+			"stack": 1,
+			"future": true,
+			"material": "bronze",
+			"tool_class": "axe",
+			"tier": 2,
+			"durability": 2500,
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 60
+		},
+		"bronze_hammer": {
+			"number": 460,
+			"name": "Bronze hammer",
+			"description": "A cast bronze head on a short haft. Hold it to place big builds from blueprints.",
+			"kind": "tool",
+			"stack": 1,
+			"future": true,
+			"material": "bronze",
+			"tool_class": "hammer",
+			"tier": 3,
+			"durability": 6000,
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 60
+		},
+		"bronze_knife": {
+			"number": 461,
+			"name": "Bronze knife",
+			"description": "A bronze blade on a bone grip. Dresses a kill cleanly and cuts bark.",
+			"kind": "tool",
+			"stack": 1,
+			"future": true,
+			"material": "bronze",
+			"tool_class": "knife",
+			"tier": 2,
+			"durability": 1500,
+			"repair": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"repair_station": "forge",
+			"look_alikes": [],
+			"value": 30
 		}
 	}
 }

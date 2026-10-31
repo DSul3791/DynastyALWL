@@ -71,9 +71,7 @@ probe: rough_plank | known=true | station=workbench | crafted=true
 probe: cobblestone | known=true | station=workbench | crafted=true
 probe: stone_shingle | known=true | station=workbench | crafted=true
 probe: wooden_pin | known=true | station=workbench | crafted=true
-probe: notice: You work out how to make water wheel
-probe: water_wheel | known=false | station=workbench | crafted=true
-probe: MISMATCH water_wheel known/open=false crafted=true
+probe: water_wheel | known=false | station=workbench | crafted=false
 probe: rock_pile | known=true | station= | crafted=true
 probe: wooden_hammer | known=true | station= | crafted=true
 probe: stone_hammer | known=true | station=workbench | crafted=true
@@ -141,7 +139,7 @@ probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with amadou = false
 probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with twine = false
-probe: recipes where 'known' matched what the server did: 126, mismatches: 2
+probe: recipes where 'known' matched what the server did: 127, mismatches: 1
 WARNING: 150 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: ObjectDB::cleanup (core\object\object.cpp:2536)
 ERROR: 6 resources still in use at exit (run with --verbose for details).

@@ -647,7 +647,7 @@ func _top_up(players: Array, only: int) -> void:
 				var dist: float = rng.randf_range(float(cfg.get("spawn_min_m", 150.0)), float(cfg.get("spawn_max_m", 250.0)))   # luck-exempt: as above
 
 				if rng.randf() < float(cfg.get("near_share", 0.0)):   # luck-exempt: some wildlife turns up close, so a new player sees animals
-					dist = rng.randf_range(float(cfg.get("near_min_m", 60.0)), float(cfg.get("near_max_m", 120.0)))
+					dist = rng.randf_range(float(cfg.get("near_min_m", 60.0)), float(cfg.get("near_max_m", 120.0)))   # luck-exempt: where wildlife appears near a player, no outcome for the player
 				var cx: float = p.x + cos(angle) * dist
 				var cz: float = p.z + sin(angle) * dist
 				var too_near: bool = false

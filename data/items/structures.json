@@ -65,7 +65,7 @@
 		"plank_chest": {
 			"kit": "plank_chest_kit",
 			"item": "plank_chest",
-			"state": 6,
+			"state": 48,
 			"footprint_x": 0.9,
 			"footprint_z": 0.6,
 			"cap_per_chunk": 8,

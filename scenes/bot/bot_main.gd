@@ -1,5 +1,7 @@
 extends Node
 
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
+
 # A protocol-only player for load tests (tools/bots.sh): joins the server, walks, asks for ground, digs now and then, and prints
 # how the server treated it (heartbeat gaps, how long blocks took to arrive). No world, no rendering; the node is named Main with a
 # TerrainNet child like the real client so the RPC paths match. Blocks come by RPC here (the real client also has the block line).
@@ -37,6 +39,7 @@ var _done: bool = false
 
 
 func _ready() -> void:
+	SelfTimeoutScript.install(self, OS.get_cmdline_user_args())   # testing only: --timeout=S / --watch-parent=PID, no flag = no limit
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--server="):
 			_host = argument.trim_prefix("--server=")

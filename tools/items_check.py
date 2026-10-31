@@ -126,13 +126,13 @@ CLIENTS = [
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [
-        ("S splits the stack", r"stacks of stone 1 -> " + NUM, 2, 2),
-        ("Shift+D drops one", r"Shift\+D dropped one, stones \d+ -> " + NUM, 5, 5),
-        ("E eats", r"E ate, roasts \d+ -> " + NUM, 1, 1),
+        ("S splits the stack (one more stack)", r"S added stacks " + NUM, 1, 1),
+        ("Shift+D drops one", r"Shift\+D dropped " + NUM, 1, 1),
+        ("E eats one", r"E ate " + NUM, 1, 1),
     ]),
     ("eat", ["--eat"], 7000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
-        ("roast eaten", r"roasts left " + NUM, 1, 1),
+        ("roast eaten", r"roasts eaten " + NUM, 1, 1),
         ("craft queue shows the entry", r"Queue test: entries 1, fibre \d+ -> \d+, buttons shown " + NUM, 1, 1),
         ("cancel empties the queue and refunds", r"after cancel entries " + NUM + r", fibre", 0, 0),
         ("queue strip hides again", r"queue strip hidden (true)", None, None),
@@ -149,8 +149,37 @@ CLIENTS = [
 ]
 
 
+def kill_tree(proc):
+    """Ends a process and everything it started (godot.cmd is a wrapper: killing only the wrapper leaves the real Godot running, which saturated the PC on 30-31 Oct)."""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        proc.kill()
+
+
+def run_limited(cmd, timeout):
+    """Runs a command, returns (output, timed_out). On the time limit the whole process tree is killed; nothing outlives the call."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+        return out or "", False
+    except subprocess.TimeoutExpired:
+        kill_tree(proc)
+        try:
+            out, _ = proc.communicate(timeout=20)
+        except Exception:
+            out = ""
+        return out or "", True
+    finally:
+        kill_tree(proc)
+
+
 def run_unit(name, path, godot, verbose):
-    out = subprocess.run([godot, "--headless", "--path", ROOT, "-s", "res://" + path], capture_output=True, text=True, timeout=600).stdout
+    out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "-s", "res://" + path], 600)
+    if timed_out:
+        return False, "timed out after 600 s (killed)"
     if verbose:
         print(out)
     for line in out.splitlines():
@@ -165,12 +194,15 @@ def run_unit(name, path, godot, verbose):
 def run_client(index, flags, frames, checks, godot, verbose):
     port = PORT_BASE + index
     store = tempfile.mkdtemp(prefix="items_check_")
-    server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store, "--quit-after=600"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(40)
-        out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=400).stdout
+        out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames, "--timeout=390", "--watch-parent=%d" % os.getpid()] + flags, 400)
     finally:
-        server.kill()
+        kill_tree(server)
+
+    if timed_out:
+        return False, "timed out after 400 s (client killed; the other scenes still run)"
     if verbose:
         print(out)
     if "SCRIPT ERROR" in out:
