@@ -94,4 +94,5 @@ func _init() -> void:
 	queue_and_finish("chopping_block", 1)
 	check(count("chopping_block") == 1 and count("log_spruce") == 1, "one log is not enough for a chopping block: nothing is taken and nothing is made")
 	print("ingredient groups: %d failures" % failures)
+	items._finish_writer()
 	quit(1 if failures > 0 else 0)
