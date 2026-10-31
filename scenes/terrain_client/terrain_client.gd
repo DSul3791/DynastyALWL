@@ -106,6 +106,7 @@ const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
+const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
@@ -1269,6 +1270,11 @@ func _welcome_body(info: Dictionary) -> void:
 			return {"prompt": "Press E to fill", "tap": items.drink}
 
 		return {"prompt": "Press E to drink", "tap": items.drink} if items.thirst < 100 and _water_ahead() else {})
+	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a bucket, clay jug or waterskin in the pack E fills it with sea water; otherwise on a tide-line node
+	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
+	items.register_interactable("gather_edge", 34, func():
+		var text: String = _shore_prompt()
+		return {"prompt": text, "tap": _shore_tap} if text != "" else {})
 	items.register_interactable("drink_held", 36, func():
 		return {"prompt": "Press E to drink", "tap": func(): items.eat_slot(items.held_container_slot())} if items.thirst < 100 and items.held_container_has_water() else {})
 	items.register_interactable("plant", 40, func():
@@ -1605,6 +1611,72 @@ func _sync_cleared() -> void:
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
+var _shore_cfg: Dictionary = {}
+var _shore_used: Dictionary = {}          # "cx,cz" -> game day this client gathered that tide-line node
+var _shore_text: String = ""
+var _shore_msec: int = -1000
+
+
+# What E does at the sea's edge now, "" when nothing: the sea within 4 m (the ground under it below sea level at the player or 4 m around), a container in the pack, or a node in this cell.
+# Worked out at most four times a second (five ground rays).
+func _shore_prompt() -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _shore_msec < 250:
+		return _shore_text
+
+	_shore_msec = now
+	_shore_text = ""
+
+	if _shore_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/shore_nodes.json"))
+		_shore_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	if body == null or items == null or items.inventory == null or _shore_cfg.has("none"):
+		return ""
+
+	var here: Vector3 = body.global_position
+	var reach: float = float(_shore_cfg.get("reach_m", 4.0))
+	var container: String = ""
+
+	for id in _shore_cfg.get("containers", []):
+		var number: int = items.table.number_of(str(id))
+
+		if number > 0 and items.inventory.numbers.has(number):
+			container = str(id)
+			break
+
+	var ground: float = _ground_below(here)
+
+	if is_nan(ground) or ground > float(_shore_cfg.get("beach_max_height_m", 4.0)) + 1.0:
+		return ""
+
+	var sea: bool = false
+
+	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var g: float = _ground_below(here + Vector3(offset.x, 0.0, offset.y))
+
+		if not is_nan(g) and g < 0.0:
+			sea = true
+			break
+
+	var day: int = int(floor(game_clock.seconds / 86400.0))
+	_shore_text = ShoreRules.prompt(_shore_cfg, here, sea, container, ground, day, game_clock.hour(), game_clock.season(), _shore_used)
+	return _shore_text
+
+
+func _shore_tap() -> void:
+	var here: Vector3 = body.global_position
+	net.inventory_action.rpc_id(1, NetScript.ACT_GATHER_EDGE, 0, 0, 0, here)
+
+	# A tide-line gather uses the cell up for today (a container fill does not).
+	if not _shore_text.begins_with("Press E to fill"):
+		_shore_used[ShoreRules.cell_key(_shore_cfg, here)] = int(floor(game_clock.seconds / 86400.0))
+
+	_shore_msec = -1000
+
+
+
 func _water_ahead() -> bool:
 	var forward: Vector3 = -camera.global_transform.basis.z
 	forward.y = 0.0

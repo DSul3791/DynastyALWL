@@ -103,7 +103,7 @@ class Acc:
 # "birch_bark": Material, "twig": Material, "oak": Material, "smooth_bark": Material}. `season`: "winter" gives species that
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
-static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false) -> ArrayMesh:
+static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> ArrayMesh:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
@@ -111,6 +111,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	var white: Acc = Acc.new()   # birch bark
 	var twigs: Acc = Acc.new()   # bare winter twig curtains
 	var smooth: Acc = Acc.new()  # smooth gray bark (beech)
+	var fruit: Acc = Acc.new()   # the apples, pears and cherries of the fruit trees on their own surface: vertex alpha = a per-fruit rank 0..1, so a shader can hide the highest ranks as the tree is picked (5 levels 100/66/33/10/0 percent)
 	var chrome: Acc = Acc.new()  # mirror-polished bark (mirrorbark)
 	var ember: Acc = Acc.new()   # bark with glowing veins (everember); vertex alpha = glow
 	var crown: float = float(entry["crown_m"])
@@ -129,11 +130,11 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"wardpine":
 			_wardpine(bark, leaves, rng, h, crown, trunk, variant, far)
 		"wild_apple":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, false, fruit)
 		"wild_pear":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, true, false, fruit)
 		"wild_cherry":
-			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true)
+			_wild_apple(bark, smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season, false, true, fruit)
 		"rowan":
 			_rowan(smooth, leaves, twigs, rng, h, crown, trunk, variant, far, season)
 		"willow":
@@ -214,6 +215,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		_:
 			_shrub(bark, leaves, rng, h, crown, far)
 
+	_fruit_finish(fruit, entry, fruit_share)
+
 	if h >= 3.0 and str(entry["shape"]) not in ["grass", "reed", "fern", "flower", "mushroom"]:
 		_crown_shading(leaves, twigs, [bark, white, smooth])
 
@@ -221,6 +224,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	bark.commit(mesh, materials["bark"])
 	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
 	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
+	fruit.commit(mesh, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
 	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
 	ember.commit(mesh, materials.get("ember", materials["bark"]))
 	twigs.commit(mesh, materials.get("twig", materials["broad"]))
@@ -238,6 +242,43 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	leaf_kind = str(entry.get("leaf", leaf_kind))
 	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
 	return mesh
+
+
+# The fruit surface of a fruit tree: an optional entry "fruit_color" [r, g, b] recolours an apple (the apple varieties share one model: the base is APPLE_TINT, the per-bead shade is kept),
+# and `fruit_share` (0..1) keeps only the fruits whose rank (vertex alpha) is below it, so one model builds as 100, 66, 33, 10 or 0 percent of its fruit. Whole beads (six vertices) are dropped.
+static func _fruit_finish(fruit: Acc, entry: Dictionary, share: float) -> void:
+	if fruit.v.is_empty():
+		return
+
+	if entry.has("fruit_color") and str(entry.get("model", "")) == "wild_apple":
+		var want: Array = entry["fruit_color"]
+
+		for k in range(fruit.c.size()):
+			var col: Color = fruit.c[k]
+			fruit.c[k] = Color(col.r / APPLE_TINT.r * float(want[0]), col.g / APPLE_TINT.g * float(want[1]), col.b / APPLE_TINT.b * float(want[2]), col.a)
+
+	if share >= 0.999:
+		return
+
+	var keep: Acc = Acc.new()
+
+	for first in range(0, fruit.v.size(), 6):
+		if fruit.c[first].a >= share:
+			continue
+
+		var base: int = keep.v.size()
+
+		for k in range(6):
+			keep.vert(fruit.v[first + k], fruit.n[first + k], fruit.uv[first + k], fruit.c[first + k])
+
+		for q in [[0, 4, 2], [1, 2, 4], [0, 3, 4], [1, 4, 3], [0, 5, 3], [1, 3, 5], [0, 2, 5], [1, 5, 2]]:
+			keep.tri(base + q[0], base + q[1], base + q[2])
+
+	fruit.v = keep.v
+	fruit.n = keep.n
+	fruit.uv = keep.uv
+	fruit.c = keep.c
+	fruit.i = keep.i
 
 
 # Baked shading in the vertex colours, no extra triangles (Dave 2026-10-31: trees looked evenly lit). Leaves darken toward the crown's centre and underside
@@ -2028,7 +2069,7 @@ static func _rowan(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 
 # A cluster of small round fruit (or a flat flower head): little diamonds
 # heaped into a dome that hangs (berries) or sits flat (flowers).
-static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool, count: int = 0) -> void:
+static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: float, color: Color, flat: bool, count: int = 0, rank: float = -1.0) -> void:
 	if count <= 0:
 		count = rng.randi_range(8, 10)
 	var bead: float = radius * 0.36
@@ -2039,7 +2080,7 @@ static func _cluster(acc: Acc, rng: RandomNumberGenerator, at: Vector3, radius: 
 		var drop: float = (radius - r) * (0.15 if flat else 0.8)
 		var p: Vector3 = at + Vector3(cos(a) * r, -drop if not flat else -drop * 0.3, sin(a) * r)
 		var shade: float = rng.randf_range(0.85, 1.15)
-		_bead(acc, p, Vector3.ONE * bead, Color(color.r * shade, color.g * shade, color.b * shade))
+		_bead(acc, p, Vector3.ONE * bead, Color(color.r * shade, color.g * shade, color.b * shade, color.a if rank < 0.0 else rank))
 
 
 # A small octahedron (a berry, an apple, part of a pear) with half-extents `size`.
@@ -2060,7 +2101,10 @@ static func _bead(acc: Acc, p: Vector3, size: Vector3, c: Color) -> void:
 # Wild cherry (owner's photos, 2026-10-18) shares this model: a taller clear
 # trunk of smooth gray banded bark, a rounded crown, white blossom in spring
 # and red cherries in summer and autumn.
-static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false) -> void:
+static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, variant: int, far: bool, season: String, pear: bool = false, cherry: bool = false, fruit: Acc = null) -> void:
+	if fruit == null:
+		fruit = smooth
+
 	var bare: bool = season == "winter"
 	# A wild cherry in spring is all blossom: its leaf cards become light purple flowers.
 	var in_bloom: bool = cherry and season == "spring"
@@ -2153,15 +2197,16 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 			_cluster(smooth, rng, at, rng.randf_range(0.35, 0.5), BLOSSOM_TINT_PEAR if pear or cherry else BLOSSOM_TINT, true)
 		elif cherry:
 			# Cherries hang in small bunches; real ones are 1 to 2 cm, drawn larger so they read.
-			_cluster(smooth, rng, at, 0.2, CHERRY_TINT, false, rng.randi_range(2, 4))
+			_cluster(fruit, rng, at, 0.2, CHERRY_TINT, false, rng.randi_range(2, 4), fposmod(float(n) * 0.618034, 1.0))
 		elif pear:
 			# A small pear, drawn about twice life size: a round body under a narrower neck.
 			var c: Color = PEAR_TINT.lerp(Color(0.6, 0.24, 0.1), rng.randf() * 0.4)
-			_bead(smooth, at, Vector3(0.075, 0.08, 0.075), c)
-			_bead(smooth, at + Vector3(0.0, 0.09, 0.0), Vector3(0.045, 0.06, 0.045), c)
+			c.a = fposmod(float(n) * 0.618034, 1.0)
+			_bead(fruit, at, Vector3(0.075, 0.08, 0.075), c)
+			_bead(fruit, at + Vector3(0.0, 0.09, 0.0), Vector3(0.045, 0.06, 0.045), c)
 		else:
 			# Real crab apples are 3 to 4 cm; drawn about twice that so they read.
-			_cluster(smooth, rng, at, 0.26, APPLE_TINT, false, rng.randi_range(1, 3))
+			_cluster(fruit, rng, at, 0.26, APPLE_TINT, false, rng.randi_range(1, 3), fposmod(float(n) * 0.618034, 1.0))
 
 
 static func acc_bough(acc: Acc, at: Vector3, right: Vector3, up: Vector3, half_w: float, half_h: float, normal: Vector3, color: Color) -> void:

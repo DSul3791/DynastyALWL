@@ -57,6 +57,20 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 - [ ] **Blacksmithy**: the blueprint places when 10 logs lie near you (probe).
 - Still not possible: **flint, copper, tin, iron and coal cannot be picked up** (no source yet); no stairs; the saw mill; hide scraper and leather.
 
+## 2c. New since 07:12 (merged on the daily head, not yet checked by me in the client unless noted)
+
+- [ ] **Bark and felling**: felled trunks and stumps now use the standing trees' bark shader (was flat black in my 07:40 pictures; look again at a felled tree and its stump).
+- [ ] **Tree shading**: round 2 of the tree shading and a darker, warmer bark (picture-checked by Kathleen).
+- [ ] **Thickets**: shrubs and berry bushes now grow in clumps (13 species); a clump of four or more tall ones is one collider, so you may bump into a thicket.
+- [ ] **In-season rule**: herbs, flowers and mushrooms out of season are not drawn and give no gather prompt; a plant picked bare gives no prompt either. At the summer start, expect fewer of them.
+- [ ] **Sea edge**: at the water's edge a prompt says "Press E to fill the bucket" or "gather seaweed". Sea water into containers, sea salt, shore foods, jerky and salted fish are no longer "future".
+- [ ] **Fruit trees**: only the plan, the items (19 fruits, 8 dishes, a calendar) and the fruit mesh and shader landed. **Fruit trees are still pending**: do not expect to pick apples, pears or cherries yet.
+- [ ] **Held looks**: stone mace, club, flanged maces, swords and the quern no longer show a rod and block in the hand.
+- [ ] **Beach**: wet sand shines and mirrors the sky; bigger stones.
+- Not landed yet, so do not look for them: **double F** and the **idle timeout** (Tyler).
+- Known still broken: the **chest** self-test fails (the chest screen may not open); lit-campfire picture not taken.
+- **Sound**: the occasional cave-in rumble and the rain-like hiss in clear weather are explained in SOUND_AUDIT.md (listen at the clearing and in a forest and tell me what you hear).
+
 ## 3. The character creator (do this first if you like, or after)
 
 - [ ] Hair: **ten styles**, a dice button and a lock; the share code works.

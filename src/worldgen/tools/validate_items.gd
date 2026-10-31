@@ -425,6 +425,16 @@ func _init() -> void:
 	if all.has(String(boulders.get("flint", {}).get("item", ""))):
 		obtainable[String(boulders["flint"]["item"])] = true
 
+	# Tide-line nodes (shore_nodes.json): seaweed, shellfish, crab meat and eggs are gathered at the shore; sea water fills a container (Tyler, WATER_GATHER_SPEC.md).
+	var shore: Dictionary = _read("shore_nodes.json")
+
+	for node in shore.get("nodes", []):
+		if all.has(String(node.get("item", ""))):
+			obtainable[String(node["item"])] = true
+
+	if all.has(String(shore.get("sea_water_item", ""))):
+		obtainable[String(shore["sea_water_item"])] = true
+
 	# Hunting: every part a carcass can give is obtainable (by hunting and working the carcass).
 	for species_id in _read("carcass.json").get("species", {}):
 		for row in _read("carcass.json")["species"][species_id].get("parts", []):
@@ -562,6 +572,11 @@ func _init() -> void:
 	for kind in _read("structures.json").get("structures", {}):
 		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
 			obtainable["wooden_block"] = true
+
+	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
+	for raw_id in cooking.get("cooks_into", {}):
+		if obtainable.has(String(raw_id)):
+			obtainable[String(cooking["cooks_into"][raw_id])] = true
 
 	var changed: bool = true
 

@@ -2,7 +2,7 @@ extends Node3D
 
 # A felled trunk as the client draws it, for tools/shot_node.gd (Kathleen): the trunk model of inventory_view.gd `_make_felled` with a given remaining length, and the logs that lie beside it.
 #   godot --path . --script res://tools/shot_node.gd -- --script=res://tools/trunk_view.gd --arg-len=18 --logs=0 --out=C:/temp/trunk.png --height=4 --pitch=-30
-#   --arg-len=METRES remaining trunk (18 whole tree)  --logs=N cut logs lying beside it  --orig=METRES whole tree length (default 18)
+#   --arg-len=METRES remaining trunk (18 whole tree)  --logs=N cut logs lying beside it  --orig=METRES whole tree length (default 18)  --species=oak|birch|beech|maple|pine ...
 
 const InventoryView := preload("res://src/client/inventory_view.gd")
 
@@ -11,6 +11,7 @@ func _init() -> void:
 	var length: float = 18.0
 	var logs: int = 0
 	var orig: float = 18.0
+	var species: String = "oak"
 	var stump: bool = false
 
 	for a in OS.get_cmdline_user_args():
@@ -20,11 +21,13 @@ func _init() -> void:
 			logs = int(a.trim_prefix("--logs="))
 		elif a == "--stump":
 			stump = true      # the stump left standing (the model of a felled tree's foot)
+		elif a.begins_with("--species="):
+			species = a.trim_prefix("--species=")
 		elif a.begins_with("--orig="):
 			orig = float(a.trim_prefix("--orig="))
 
 	var iv: Node = InventoryView.new()   # not added to the tree: only its model builder is used
-	var extra: Dictionary = {"radius": 0.3, "length": length, "yaw": 0.0, "pitch": -0.02, "orig_length": orig, "landed": true, "keywood": true}
+	var extra: Dictionary = {"radius": 0.3, "length": length, "yaw": 0.0, "pitch": -0.02, "orig_length": orig, "landed": true, "keywood": true, "species": species}
 	var trunk: Node3D = iv._make_felled(not stump, extra)
 	add_child(trunk)
 

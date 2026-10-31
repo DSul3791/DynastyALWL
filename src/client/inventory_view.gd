@@ -931,12 +931,34 @@ func _update_trunk_colliders() -> void:
 
 
 # A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
+# The bark of a felled trunk or stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
+func _felled_bark(species: String, radius: float, span: float) -> Material:
+	var flora_script: GDScript = load("res://src/flora/flora_view.gd")
+	var builder_script: GDScript = load("res://src/flora/tree_builder.gd")
+	var shader: Shader = Shader.new()
+	shader.code = flora_script.BARK_SHADER
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = shader
+	var texture: String = "bark"
+
+	if species.contains("birch"):
+		texture = "bark_birch"
+	elif species.contains("beech") or species.contains("fir"):
+		texture = "bark_smooth"
+
+	mat.set_shader_parameter("bark", load("res://assets/trees/%s.png" % texture))
+	var tint: Color = builder_script.get_script_constant_map().get("BARK_TINT_" + species.to_upper(), Color(0.46, 0.40, 0.34))
+	mat.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
+	mat.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(span / 1.6, 1.0)))
+	mat.set_shader_parameter("foot_offset", span * 0.5)
+	return mat
+
+
 func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var radius: float = float(extra.get("radius", 0.3))
 	var length: float = float(extra.get("length", 8.0))
-	var bark: StandardMaterial3D = StandardMaterial3D.new()
-	bark.albedo_color = Color(0.32, 0.23, 0.15)
+	var bark: Material = _felled_bark(str(extra.get("species", "")), radius, length if trunk else maxf(radius * 1.2, 0.5))
 	var mesh_node: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
 	var orig_length: float = maxf(float(extra.get("orig_length", length)), length)

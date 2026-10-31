@@ -1,6 +1,33 @@
 {
  "note": "Items that still draw the grey placeholder chunk, each with a reason (Kathleen, 2026-10-31). test_item_looks fails for a grey item that is not listed here and for a listed item that already has a look. Make a look, then delete the row.",
  "items": {
-  "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)"
+  "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)",
+  "dried_apples": "new dish (Sal, 2026-10-31), queued",
+  "apple_sauce": "new dish (Sal, 2026-10-31), queued",
+  "apple_pie": "new dish (Sal, 2026-10-31), queued",
+  "plum_jam": "new dish (Sal, 2026-10-31), queued",
+  "stewed_pears": "new dish (Sal, 2026-10-31), queued",
+  "preserved_damsons": "new dish (Sal, 2026-10-31), queued",
+  "dried_figs": "new dish (Sal, 2026-10-31), queued",
+  "quince_paste": "new dish (Sal, 2026-10-31), queued",
+  "apple_early": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "apple_summer": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "apple_autumn": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "apple_keeping": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "apple_cooking": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "pear_summer": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "pear_autumn": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "pear_winter": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "sour_cherries": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "plums": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "damsons": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "quince": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "medlar": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "figs": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "olives": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "pomegranates": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "mangoes": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "oranges": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued",
+  "lemons": "fruit (Sal, 2026-10-31): one apple/pear/plum model with colour tints, queued"
  }
 }

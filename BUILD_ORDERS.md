@@ -213,3 +213,5 @@ Rule of thumb for order inside a tier: tools first (they speed everything else),
 Notes: ingredients flagged here as GAP are a spec for the code session (FLINT_ORE_SPEC.md); 'known' recipes are only those available from the start (LEARN_SYSTEM_SPEC.md covers the 19 locked ones). Times are crafting seconds only, not gathering time.
 
 False alarms in the gap table: the species logs (log_oak and so on) come from felling those trees, which this walk does not model; the Lumber by hand, Hand saw and Saw blade rows follow from the missing iron. The Stone wedge route (Rough planks) gives lumber with no iron.
+
+Update 2026-10-31 (Tyler water-gather merged): seaweed, shellfish, crab meat, eggs and sea salt are obtainable from the tide-line nodes, and sea water fills a container, so they are no longer gaps; the dishes and leather chain that waited on them (seaweed soup, mussel stew, herb omelette, salted fish, jerky, acorn mash, flatbread, leather, heavy leather, leather cap, jerkin, gambeson, strap) are no longer `future`.

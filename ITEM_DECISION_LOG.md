@@ -307,3 +307,9 @@ data/items/descriptions_voice.json (105 items; 82 written back to items/gathered
 
 ## Final tidy and full suite (2026-10-31, after the 05:41 crash)
 Worktree was clean after the crash. kindling_duplicate was already retired; it stays listed in look_placeholders.json with that reason because test_item_looks does not skip retired items. Full suite run once on daily head a00c2e04 via godot_slot.sh: 42 steps PASS; reds: luck_rolls (server_animals.gd:650 raw randf_range without luck: owner Tyler/animal wiring), npcs timing (1.77 ms against a load-scaled limit of 1.67: machine load, owner Radar/Tyler), client scenes chest ("script error", but its own checks pass when rerun verbose), gather (no pickups registered in the headless client) and plantpick (400 s timeout, which aborted the remaining client scenes, so leanto, quickkeys, eat and later were NOT run). Owner of the client scenes: Tyler.
+
+## Fruit trees (2026-10-31)
+Items 431-449 (apples, pears, cherries, plums, quince, medlar, figs, olives, pomegranates, mangoes, oranges, lemons), 8 fruit dishes, seasons.json fruit_and_nuts and hints, FRUIT_TREES.md. Dried apples and dried figs give 3 each (economy guard caught a money-losing 1-for-3 recipe).
+
+## Water gather landed (2026-10-31)
+Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shellfish, boiled egg, seaweed soup, mussel stew, herb omelette, egg and nettle fry, salted fish, jerky, acorn mash, flatbread, willow bark tea, tar and the leather chain (leather, heavy and fine leather, cap, jerkin, gambeson, strap). validate_items now reads shore_nodes.json as a source and treats what a fire cooks as obtainable when the raw item is.

@@ -1,0 +1,4 @@
+# Felled trunk, log and stump bark (guide: drawn flat near-black), 2026-10-31, Kathleen
+Cause: _make_felled used a plain brown StandardMaterial. Now it uses the standing trees' bark shader with the species texture (birch, smooth for beech and fir, else the standard) and the species BARK_TINT, bark UVs scaled by trunk size, and the shaded foot. Pictures (direct scene, sheet light brighter than the game): bark_oak.png (far), bark_oak_close.png (close: textured grey-brown bark, pale cut face with a darker core ring, the pale cut-line band), bark_birch.png.
+Rating 3 (from 1): reads as bark now, but from the sheet it is paler than the standing trees in the game, snapped stubs are twigs, and the logs cut off it are still plain cylinders (log_look.gd is a separate path: next).
+Not seen in the real game yet (the rig shot of a falling tree is not working).

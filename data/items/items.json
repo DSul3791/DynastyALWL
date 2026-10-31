@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 431,
+	"next_number": 458,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -712,7 +712,6 @@
 		},
 		"willow_bark_tea": {
 			"number": 59,
-			"future": true,
 			"name": "Willow bark tea",
 			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
 			"kind": "food",
@@ -2060,7 +2059,6 @@
 		},
 		"acorn_mash": {
 			"number": 178,
-			"future": true,
 			"name": "Acorn mash",
 			"description": "Leached acorns boiled to a mash. Famine food.",
 			"kind": "food",
@@ -2756,7 +2754,6 @@
 		},
 		"tar": {
 			"number": 231,
-			"future": true,
 			"name": "Tar",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"kind": "material",
@@ -3152,7 +3149,6 @@
 		},
 		"flatbread": {
 			"number": 273,
-			"future": true,
 			"name": "Flatbread",
 			"description": "A flat cake baked on hot clay. Plain and filling.",
 			"kind": "food",
@@ -3258,7 +3254,6 @@
 			"description": "Tanned hide: tough and supple.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 8
 		},
@@ -3268,7 +3263,6 @@
 			"description": "The best of a batch of leather, soft and even.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 20
 		},
@@ -3278,7 +3272,6 @@
 			"description": "Thick, stiff leather for armour and harness.",
 			"kind": "material",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 20
 		},
@@ -3892,7 +3885,6 @@
 		},
 		"leather_cap": {
 			"number": 324,
-			"future": true,
 			"name": "Leather cap",
 			"description": "A close leather cap. Better than bare hide.",
 			"kind": "clothing",
@@ -3910,7 +3902,6 @@
 			"slot": "body",
 			"warmth": 0.22,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 60
 		},
@@ -3934,7 +3925,6 @@
 			"slot": "body",
 			"warmth": 0.3,
 			"stack": 1,
-			"future": true,
 			"look_alikes": [],
 			"value": 70
 		},
@@ -4238,7 +4228,6 @@
 			"description": "Wet strands of kelp and wrack from the tide line. Edible, salty and rich in minerals.",
 			"kind": "food",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -4248,7 +4237,6 @@
 			"description": "Mussels, limpets and cockles prised off the shore rocks. Eat cooked.",
 			"kind": "food",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4258,7 +4246,6 @@
 			"description": "White meat from a shore crab.",
 			"kind": "food",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4268,7 +4255,6 @@
 			"description": "A wild bird's egg from a nest. Boil or fry it.",
 			"kind": "food",
 			"stack": 12,
-			"future": true,
 			"look_alikes": [],
 			"value": 3
 		},
@@ -4288,7 +4274,6 @@
 			"description": "Salt boiled out of sea water. Keeps meat and fish.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
@@ -4298,7 +4283,6 @@
 			"description": "Shellfish steamed open on hot coals. Salty and sweet.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 8
 		},
@@ -4308,7 +4292,6 @@
 			"description": "An egg boiled hard. Keeps well and fills the belly.",
 			"kind": "food",
 			"stack": 10,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -4655,8 +4638,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"mussel_stew": {
 			"number": 396,
@@ -4665,8 +4647,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 17,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"crab_cakes": {
 			"number": 397,
@@ -4685,8 +4666,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 16,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"herb_omelette": {
 			"number": 399,
@@ -4695,8 +4675,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 13,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"seal_stew": {
 			"number": 400,
@@ -4764,8 +4743,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"salted_fish": {
 			"number": 407,
@@ -4774,8 +4752,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"dried_berries": {
 			"number": 408,
@@ -4849,7 +4826,6 @@
 			"description": "A strip of leather for straps, belts and harness.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 10
 		},
@@ -4976,6 +4952,276 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1
+		},
+		"apple_early": {
+			"number": 431,
+			"name": "Early summer apple",
+			"description": "A small tart apple that ripens in July. Eat it soon: it keeps only days.",
+			"kind": "food",
+			"stack": 20,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_summer": {
+			"number": 432,
+			"name": "Summer apple",
+			"description": "A sweet juicy apple of August. Keeps about a week.",
+			"kind": "food",
+			"stack": 20,
+			"value": 7,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_autumn": {
+			"number": 433,
+			"name": "Autumn apple",
+			"description": "A crisp all-round apple of September and October. Keeps a few weeks.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_keeping": {
+			"number": 434,
+			"name": "Keeping apple",
+			"description": "A hard russet apple picked late. Stored cool and dark it lasts until spring.",
+			"kind": "food",
+			"stack": 20,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_cooking": {
+			"number": 435,
+			"name": "Cooking apple",
+			"description": "A big sour apple that goes soft and sweet when cooked. Keeps a month.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"pear_summer": {
+			"number": 436,
+			"name": "Summer pear",
+			"description": "A small sweet pear of August. It goes soft in days.",
+			"kind": "food",
+			"stack": 20,
+			"value": 7,
+			"look_alikes": [],
+			"future": true
+		},
+		"pear_autumn": {
+			"number": 437,
+			"name": "Autumn pear",
+			"description": "A juicy pear of September and October. Keeps a couple of weeks.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"pear_winter": {
+			"number": 438,
+			"name": "Winter pear",
+			"description": "A hard pear picked in November that ripens in store. Lasts into February.",
+			"kind": "food",
+			"stack": 20,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"sour_cherries": {
+			"number": 439,
+			"name": "Sour cherries",
+			"description": "Dark tart cherries of July. Good cooked, sharp raw.",
+			"kind": "food",
+			"stack": 20,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"plums": {
+			"number": 440,
+			"name": "Plums",
+			"description": "Soft purple plums of August and September. They spoil fast.",
+			"kind": "food",
+			"stack": 20,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"damsons": {
+			"number": 441,
+			"name": "Damsons",
+			"description": "Small tart blue plums of autumn. Best cooked or preserved.",
+			"kind": "food",
+			"stack": 20,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"quince": {
+			"number": 442,
+			"name": "Quince",
+			"description": "A hard fragrant yellow fruit of late autumn. Bitter raw, sweet and pink cooked.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"medlar": {
+			"number": 443,
+			"name": "Medlar",
+			"description": "A brown fruit eaten only after frost has softened it. Sweet and winey.",
+			"kind": "food",
+			"stack": 20,
+			"value": 7,
+			"look_alikes": [],
+			"future": true
+		},
+		"figs": {
+			"number": 444,
+			"name": "Figs",
+			"description": "Soft sweet figs of late summer. They spoil in days unless dried.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"olives": {
+			"number": 445,
+			"name": "Olives",
+			"description": "Small bitter fruits of late autumn. Cured in salt they keep for months.",
+			"kind": "food",
+			"stack": 20,
+			"value": 6,
+			"look_alikes": [],
+			"future": true
+		},
+		"pomegranates": {
+			"number": 446,
+			"name": "Pomegranates",
+			"description": "A hard red fruit full of juicy seeds. Keeps for weeks.",
+			"kind": "food",
+			"stack": 20,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"mangoes": {
+			"number": 447,
+			"name": "Mangoes",
+			"description": "A big sweet orange fruit of the tropics. Ripe ones spoil fast.",
+			"kind": "food",
+			"stack": 20,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"oranges": {
+			"number": 448,
+			"name": "Oranges",
+			"description": "Sweet round citrus of winter. Keeps well.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"lemons": {
+			"number": 449,
+			"name": "Lemons",
+			"description": "Sour yellow citrus. A little juice brightens food, and it keeps for weeks.",
+			"kind": "food",
+			"stack": 20,
+			"value": 8,
+			"look_alikes": [],
+			"future": true
+		},
+		"dried_apples": {
+			"number": 450,
+			"name": "Dried apples",
+			"description": "Autumn apples sliced and dried by the fire. Chewy and sweet, they keep for months.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_sauce": {
+			"number": 451,
+			"name": "Apple sauce",
+			"description": "Cooking apples stewed soft with sweet nectar.",
+			"kind": "food",
+			"stack": 10,
+			"value": 7,
+			"look_alikes": [],
+			"future": true
+		},
+		"apple_pie": {
+			"number": 452,
+			"name": "Apple pie",
+			"description": "Cooking apples and fat baked in a flour crust.",
+			"kind": "food",
+			"stack": 10,
+			"value": 25,
+			"look_alikes": [],
+			"future": true
+		},
+		"plum_jam": {
+			"number": 453,
+			"name": "Plum jam",
+			"description": "Plums boiled down with sweet nectar. Keeps through winter in a crock.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"stewed_pears": {
+			"number": 454,
+			"name": "Stewed pears",
+			"description": "Pears stewed soft in sweet nectar. Good hot or cold.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"preserved_damsons": {
+			"number": 455,
+			"name": "Preserved damsons",
+			"description": "Damsons sealed in sweet syrup. A winter store.",
+			"kind": "food",
+			"stack": 10,
+			"value": 10,
+			"look_alikes": [],
+			"future": true
+		},
+		"dried_figs": {
+			"number": 456,
+			"name": "Dried figs",
+			"description": "Figs dried until sticky and sweet. They last for months.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
+		},
+		"quince_paste": {
+			"number": 457,
+			"name": "Quince paste",
+			"description": "Quince boiled with nectar into a firm sweet paste.",
+			"kind": "food",
+			"stack": 10,
+			"value": 9,
+			"look_alikes": [],
+			"future": true
 		}
 	}
 }

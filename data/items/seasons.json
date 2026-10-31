@@ -1,5 +1,5 @@
 {
-	"_about": "Seasonal availability (Sal, 2026-10-31), generated from flora.json (via wild_foods.json), crops.json, fish_schools.json and carcass.json; read by nothing yet. Calendar: a game year is 365 game days = 365 real hours (a game day is one real hour). Day 0 is the first day of spring (March 1 for this table); a new world starts on day 100, early summer (about June 10). Seasons are 91 days: spring 0 to 90, summer 91 to 181, autumn 182 to 272, winter 273 to 364 (GameClock.season_index). Month names are a convenience for UI and dialogue; the code only knows seasons. Game species are year round in the data today.",
+	"_about": "Seasonal availability (Sal, 2026-10-31), generated from flora.json (via wild_foods.json), crops.json, fish_schools.json and carcass.json; read by nothing yet. Calendar: a game year is 365 game days = 365 real hours (a game day is one real hour). Day 0 is the first day of spring (March 1 for this table); a new world starts on day 100, early summer (about June 10). Seasons are 91 days: spring 0 to 90, summer 91 to 181, autumn 182 to 272, winter 273 to 364 (GameClock.season_index). Month names are a convenience for UI and dialogue; the code only knows seasons. Game species are year round in the data today. Fruit and nuts (2026-10-31): `fruit_and_nuts` lists every fruit tree product with its months, how long it keeps and whether the tree exists in flora.json; the habits are general horticulture knowledge, not individually sourced, and months follow the table's calendar (day 0 = 1 March).",
 	"calendar": [
 		{
 			"month": "March",
@@ -2546,5 +2546,357 @@
 			"Winter: a fur cloak and a fire keep you alive; stay near your shelter.",
 			"Winter: only turnips grow; juniper berries and rosemary still grow wild."
 		]
-	}
+	},
+	"fruit_and_nuts": {
+		"apple_early": {
+			"name": "Early summer apple",
+			"months": [
+				"July"
+			],
+			"season": "summer",
+			"keeps": "days (about 3 game days)",
+			"source": "needs a cultivated apple tree in flora.json",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"apple_summer": {
+			"name": "Summer apple",
+			"months": [
+				"August"
+			],
+			"season": "summer",
+			"keeps": "about a week",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"apple_autumn": {
+			"name": "Autumn apple",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "about 3 weeks",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"apple_keeping": {
+			"name": "Keeping apple",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "until spring in a cool store (about 3 months)",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"apple_cooking": {
+			"name": "Cooking apple",
+			"months": [
+				"August",
+				"September",
+				"October"
+			],
+			"season": "summer/autumn",
+			"keeps": "about a month",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"crab_apples": {
+			"name": "Crab / cider apple (existing wild_apple)",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "weeks",
+			"source": "exists: wild_apple",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"pear_summer": {
+			"name": "Summer pear",
+			"months": [
+				"August"
+			],
+			"season": "summer",
+			"keeps": "days",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"pear_autumn": {
+			"name": "Autumn pear",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "2 weeks",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"pear_winter": {
+			"name": "Winter pear",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "until February in store",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"wild_pears": {
+			"name": "Wild pear (existing wild_pear)",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "weeks",
+			"source": "exists: wild_pear",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"cherries": {
+			"name": "Sweet cherries (existing wild_cherry)",
+			"months": [
+				"June",
+				"July"
+			],
+			"season": "summer",
+			"keeps": "days",
+			"source": "exists: wild_cherry",
+			"biomes": "temperate_forest, mixed_forest"
+		},
+		"sour_cherries": {
+			"name": "Sour cherries",
+			"months": [
+				"July"
+			],
+			"season": "summer",
+			"keeps": "days",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, mixed_forest"
+		},
+		"plums": {
+			"name": "Plums",
+			"months": [
+				"August",
+				"September"
+			],
+			"season": "summer/autumn",
+			"keeps": "days",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"damsons": {
+			"name": "Damsons",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "about a week",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
+		},
+		"quince": {
+			"name": "Quince",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "about 6 weeks",
+			"source": "needs flora tree",
+			"biomes": "temperate_grassland, dry_scrub"
+		},
+		"medlar": {
+			"name": "Medlar",
+			"months": [
+				"November"
+			],
+			"season": "autumn/winter",
+			"keeps": "ripens after frost, about 10 days",
+			"source": "needs flora tree",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"rowan_berries": {
+			"name": "Rowan berries (existing rowan)",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "weeks",
+			"source": "exists: rowan",
+			"biomes": "mixed_forest, boreal_forest, heath, alpine_meadow"
+		},
+		"sea_buckthorn_berries": {
+			"name": "Sea buckthorn berries (existing)",
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "weeks",
+			"source": "exists: sea_buckthorn",
+			"biomes": "beach, dry_scrub"
+		},
+		"figs": {
+			"name": "Figs",
+			"months": [
+				"August",
+				"September"
+			],
+			"season": "summer/autumn",
+			"keeps": "3 days fresh; dried months",
+			"source": "needs flora tree",
+			"biomes": "dry_scrub, savanna, hot_desert"
+		},
+		"olives": {
+			"name": "Olives",
+			"months": [
+				"November",
+				"December"
+			],
+			"season": "autumn/winter",
+			"keeps": "months once cured",
+			"source": "needs flora tree",
+			"biomes": "dry_scrub, savanna"
+		},
+		"pomegranates": {
+			"name": "Pomegranates",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "about 7 weeks",
+			"source": "needs flora tree",
+			"biomes": "dry_scrub, savanna, hot_desert"
+		},
+		"dates": {
+			"name": "Dates (existing date_palm)",
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "months dried",
+			"source": "exists: date_palm",
+			"biomes": "hot_desert, dry_scrub, savanna"
+		},
+		"bananas": {
+			"name": "Bananas (existing wild_banana)",
+			"months": [
+				"all year"
+			],
+			"season": "all",
+			"keeps": "days",
+			"source": "exists: wild_banana",
+			"biomes": "tropical_forest"
+		},
+		"coconuts": {
+			"name": "Coconuts (existing coconut_palm)",
+			"months": [
+				"all year"
+			],
+			"season": "all",
+			"keeps": "weeks",
+			"source": "exists: coconut_palm",
+			"biomes": "beach, tropical_forest, mangrove"
+		},
+		"mangoes": {
+			"name": "Mangoes",
+			"months": [
+				"April",
+				"May",
+				"June"
+			],
+			"season": "spring/summer",
+			"keeps": "days",
+			"source": "needs flora tree",
+			"biomes": "tropical_forest"
+		},
+		"oranges": {
+			"name": "Oranges",
+			"months": [
+				"December",
+				"January",
+				"February",
+				"March"
+			],
+			"season": "winter",
+			"keeps": "about 3 weeks",
+			"source": "needs flora tree (subtropical)",
+			"biomes": "dry_scrub, savanna"
+		},
+		"lemons": {
+			"name": "Lemons",
+			"months": [
+				"November",
+				"December",
+				"January",
+				"February"
+			],
+			"season": "winter",
+			"keeps": "about a month",
+			"source": "needs flora tree (subtropical)",
+			"biomes": "dry_scrub, savanna"
+		},
+		"hazelnuts": {
+			"name": "Hazelnuts (existing hazel)",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "months",
+			"source": "exists: hazel",
+			"biomes": "temperate_forest, mixed_forest, temperate_grassland"
+		},
+		"chestnuts": {
+			"name": "Chestnuts (existing sweet_chestnut)",
+			"months": [
+				"October",
+				"November"
+			],
+			"season": "autumn",
+			"keeps": "weeks",
+			"source": "exists: sweet_chestnut",
+			"biomes": "temperate_forest"
+		},
+		"walnuts": {
+			"name": "Walnuts (existing walnut)",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "months",
+			"source": "exists: walnut",
+			"biomes": "temperate_forest, temperate_grassland"
+		},
+		"acorns": {
+			"name": "Acorns (existing oak)",
+			"months": [
+				"September",
+				"October"
+			],
+			"season": "autumn",
+			"keeps": "months",
+			"source": "exists: oak",
+			"biomes": "temperate_forest, mixed_forest"
+		}
+	},
+	"fruit_hints": [
+		"Early apples spoil in days. Eat them first.",
+		"Keeping apples last until spring in a cool store.",
+		"Winter pears and late apples: pick last, store cool and dark.",
+		"Dry apples, figs and berries by the fire for winter.",
+		"Quince and medlar are for after frost. Cook them.",
+		"Preserve plums and damsons in sweet syrup for winter."
+	]
 }
