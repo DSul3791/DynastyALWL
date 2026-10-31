@@ -1,0 +1,8089 @@
+{
+ "counts": {
+  "items": 456,
+  "recipes": 173,
+  "recipes_known_or_open": 83,
+  "structures": 37,
+  "blueprints": 6
+ },
+ "recipes": [
+  {
+   "id": "twine",
+   "number": 1,
+   "category": "Materials",
+   "gives": "twine",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_axe",
+   "number": 2,
+   "category": "Tools",
+   "gives": "stone_axe",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "spear",
+   "number": 3,
+   "category": "Weapons",
+   "gives": "spear",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "campfire",
+   "number": 4,
+   "category": "Shelter and building",
+   "gives": "campfire_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "wooden_spear",
+   "number": 5,
+   "category": "Weapons",
+   "gives": "wooden_spear",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_knife",
+   "number": 6,
+   "category": "Tools",
+   "gives": "stone_knife",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "torch",
+   "number": 7,
+   "category": "Tools",
+   "gives": "torch",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "poultice_plantain",
+   "number": 8,
+   "category": "Medicine",
+   "gives": "poultice",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "poultice_comfrey",
+   "number": 9,
+   "category": "Medicine",
+   "gives": "poultice",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "bandage_plantain",
+   "number": 10,
+   "category": "Medicine",
+   "gives": "bandage",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "bandage_staunchmoss",
+   "number": 11,
+   "category": "Medicine",
+   "gives": "bandage",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "wooden_spade",
+   "number": 12,
+   "category": "Tools",
+   "gives": "wooden_spade",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "lean_to_kit",
+   "number": 13,
+   "category": "Shelter and building",
+   "gives": "lean_to_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "chest_kit",
+   "number": 14,
+   "category": "Containers and furniture",
+   "gives": "chest_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "chopping_block",
+   "number": 15,
+   "category": "Workshops and stations",
+   "gives": "chopping_block",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
+   "future": false
+  },
+  {
+   "id": "lumber",
+   "number": 16,
+   "category": "Materials",
+   "gives": "lumber",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for log",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": false
+  },
+  {
+   "id": "plank_chest_kit",
+   "number": 17,
+   "category": "Containers and furniture",
+   "gives": "plank_chest_kit",
+   "station": "workbench",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "iron_pickaxe",
+   "number": 18,
+   "category": "Tools",
+   "gives": "iron_pickaxe",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_pickaxe",
+   "number": 19,
+   "category": "Tools",
+   "gives": "steel_pickaxe",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "wooden_bowl",
+   "number": 20,
+   "category": "Containers and furniture",
+   "gives": "wooden_bowl",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "clay_pot",
+   "number": 21,
+   "category": "Containers and furniture",
+   "gives": "clay_pot",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "bucket",
+   "number": 22,
+   "category": "Containers and furniture",
+   "gives": "bucket",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "waterskin",
+   "number": 23,
+   "category": "Containers and furniture",
+   "gives": "waterskin",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "twine_bark",
+   "number": 24,
+   "category": "Materials",
+   "gives": "twine",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "rope",
+   "number": 25,
+   "category": "Materials",
+   "gives": "rope",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_spade",
+   "number": 26,
+   "category": "Tools",
+   "gives": "stone_spade",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "iron_spade",
+   "number": 27,
+   "category": "Tools",
+   "gives": "iron_spade",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_spade",
+   "number": 28,
+   "category": "Tools",
+   "gives": "steel_spade",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "backpack",
+   "number": 30,
+   "category": "Containers and furniture",
+   "gives": "backpack",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "energy_bar",
+   "number": 31,
+   "category": "Food and drink",
+   "gives": "energy_bar",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "herbal_tea",
+   "number": 32,
+   "category": "Food and drink",
+   "gives": "herbal_tea",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stomach_tea",
+   "number": 33,
+   "category": "Food and drink",
+   "gives": "stomach_tea",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "chamomile_tea",
+   "number": 34,
+   "category": "Food and drink",
+   "gives": "chamomile_tea",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "willow_bark_tea",
+   "number": 35,
+   "category": "Food and drink",
+   "gives": "willow_bark_tea",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for willow_bark"
+   ],
+   "future": false
+  },
+  {
+   "id": "grass_skirt",
+   "number": 36,
+   "category": "Clothing",
+   "gives": "grass_skirt",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "grass_cloak",
+   "number": 37,
+   "category": "Clothing",
+   "gives": "grass_cloak",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "fibre_sandals",
+   "number": 38,
+   "category": "Clothing",
+   "gives": "fibre_sandals",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "hide_cloak",
+   "number": 39,
+   "category": "Clothing",
+   "gives": "hide_cloak",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "hide_boots",
+   "number": 40,
+   "category": "Clothing",
+   "gives": "hide_boots",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "hide_hood",
+   "number": 41,
+   "category": "Clothing",
+   "gives": "hide_hood",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "hide_mittens",
+   "number": 42,
+   "category": "Clothing",
+   "gives": "hide_mittens",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "hide_leggings",
+   "number": 43,
+   "category": "Clothing",
+   "gives": "hide_leggings",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "sinew_cord",
+   "number": 44,
+   "category": "Materials",
+   "gives": "twine",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "workbench_kit",
+   "number": 45,
+   "category": "Workshops and stations",
+   "gives": "workbench_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "fishing_rod",
+   "number": 46,
+   "category": "Tools",
+   "gives": "fishing_rod",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "tool_rack_kit",
+   "number": 47,
+   "category": "Workshops and stations",
+   "gives": "tool_rack_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "log_workbench_kit",
+   "number": 49,
+   "category": "Workshops and stations",
+   "gives": "log_workbench_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
+   "future": false
+  },
+  {
+   "id": "lumber_oak",
+   "number": 52,
+   "category": "Materials",
+   "gives": "lumber_oak",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_oak",
+   "number": 53,
+   "category": "Materials",
+   "gives": "beam_oak",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_birch",
+   "number": 56,
+   "category": "Materials",
+   "gives": "lumber_birch",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_birch",
+   "number": 57,
+   "category": "Materials",
+   "gives": "beam_birch",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_scots_pine",
+   "number": 58,
+   "category": "Materials",
+   "gives": "lumber_scots_pine",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_scots_pine",
+   "number": 59,
+   "category": "Materials",
+   "gives": "beam_scots_pine",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_spruce",
+   "number": 60,
+   "category": "Materials",
+   "gives": "lumber_spruce",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_spruce",
+   "number": 61,
+   "category": "Materials",
+   "gives": "beam_spruce",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_tropical_hardwood",
+   "number": 68,
+   "category": "Materials",
+   "gives": "lumber_tropical_hardwood",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_tropical_hardwood",
+   "number": 69,
+   "category": "Materials",
+   "gives": "beam_tropical_hardwood",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_walnut",
+   "number": 84,
+   "category": "Materials",
+   "gives": "lumber_walnut",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_walnut",
+   "number": 85,
+   "category": "Materials",
+   "gives": "beam_walnut",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "lumber_maple",
+   "number": 100,
+   "category": "Materials",
+   "gives": "lumber_maple",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "beams_maple",
+   "number": 101,
+   "category": "Materials",
+   "gives": "beam_maple",
+   "station": "saw_mill",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "station saw_mill level 1 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_berry_compote",
+   "number": 102,
+   "category": "Fire and cooking",
+   "gives": "berry_compote",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for honeyspindle_nectar"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_nut_paste",
+   "number": 103,
+   "category": "Fire and cooking",
+   "gives": "nut_paste",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for honeyspindle_nectar"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_roast_roots",
+   "number": 104,
+   "category": "Fire and cooking",
+   "gives": "roast_roots",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_acorn_mash",
+   "number": 105,
+   "category": "Fire and cooking",
+   "gives": "acorn_mash",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_baked_apples",
+   "number": 106,
+   "category": "Fire and cooking",
+   "gives": "baked_apples",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for honeyspindle_nectar"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_mushroom_skewer",
+   "number": 107,
+   "category": "Fire and cooking",
+   "gives": "mushroom_skewer",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_herb_fish",
+   "number": 108,
+   "category": "Fire and cooking",
+   "gives": "herb_fish",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_garlic_meat",
+   "number": 109,
+   "category": "Fire and cooking",
+   "gives": "garlic_meat",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for wild_garlic_bulbs"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_chestnut_cakes",
+   "number": 110,
+   "category": "Fire and cooking",
+   "gives": "chestnut_cakes",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for honeyspindle_nectar,linseed"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_fruit_leather",
+   "number": 111,
+   "category": "Fire and cooking",
+   "gives": "fruit_leather",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for honeyspindle_nectar"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_smoked_fish",
+   "number": 112,
+   "category": "Fire and cooking",
+   "gives": "smoked_fish",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_hunters_stew",
+   "number": 113,
+   "category": "Fire and cooking",
+   "gives": "hunters_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for wild_garlic_bulbs"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_forager_stew",
+   "number": 114,
+   "category": "Fire and cooking",
+   "gives": "forager_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for greens"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_fish_stew",
+   "number": 115,
+   "category": "Fire and cooking",
+   "gives": "fish_stew",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_trail_bread",
+   "number": 116,
+   "category": "Fire and cooking",
+   "gives": "trail_bread",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for linseed"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_hearty_pottage",
+   "number": 117,
+   "category": "Fire and cooking",
+   "gives": "hearty_pottage",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for seeds,dandelion_leaves"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_feast_roast",
+   "number": 118,
+   "category": "Fire and cooking",
+   "gives": "feast_roast",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for wild_garlic_bulbs"
+   ],
+   "future": false
+  },
+  {
+   "id": "wall_section_kit",
+   "number": 119,
+   "category": "Shelter and building",
+   "gives": "wall_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "floor_section_kit",
+   "number": 120,
+   "category": "Shelter and building",
+   "gives": "floor_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "roof_section_kit",
+   "number": 121,
+   "category": "Shelter and building",
+   "gives": "roof_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "foundation_section_kit",
+   "number": 122,
+   "category": "Shelter and building",
+   "gives": "foundation_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "doorway_section_kit",
+   "number": 123,
+   "category": "Shelter and building",
+   "gives": "doorway_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "window_section_kit",
+   "number": 124,
+   "category": "Shelter and building",
+   "gives": "window_section_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "timber_prop_kit",
+   "number": 125,
+   "category": "Shelter and building",
+   "gives": "timber_prop_kit",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for log"
+   ],
+   "future": false
+  },
+  {
+   "id": "timber_set_kit",
+   "number": 126,
+   "category": "Shelter and building",
+   "gives": "timber_set_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "cut_stone_block",
+   "number": 127,
+   "category": "Materials",
+   "gives": "cut_stone_block",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 2,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "brick",
+   "number": 128,
+   "category": "Materials",
+   "gives": "brick",
+   "station": "campfire",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "mortar",
+   "number": 129,
+   "category": "Materials",
+   "gives": "mortar",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "ladder_kit",
+   "number": 130,
+   "category": "Shelter and building",
+   "gives": "ladder_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "wooden_hoe",
+   "number": 139,
+   "category": "Tools",
+   "gives": "wooden_hoe",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_hoe",
+   "number": 140,
+   "category": "Tools",
+   "gives": "stone_hoe",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "iron_hoe",
+   "number": 141,
+   "category": "Tools",
+   "gives": "iron_hoe",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_hoe",
+   "number": 142,
+   "category": "Tools",
+   "gives": "steel_hoe",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "rough_plank",
+   "number": 143,
+   "category": "Materials",
+   "gives": "rough_plank",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
+   "future": false
+  },
+  {
+   "id": "fine_board",
+   "number": 144,
+   "category": "Materials",
+   "gives": "fine_board",
+   "station": "woodworking_table",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber",
+    "station woodworking_table level 1 not obtainable"
+   ],
+   "future": false
+  },
+  {
+   "id": "nails",
+   "number": 145,
+   "category": "Materials",
+   "gives": "nails",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": false
+  },
+  {
+   "id": "cobblestone",
+   "number": 146,
+   "category": "Materials",
+   "gives": "cobblestone",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 2,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "stone_shingle",
+   "number": 147,
+   "category": "Materials",
+   "gives": "stone_shingle",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 2,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "tar",
+   "number": 148,
+   "category": "Materials",
+   "gives": "tar",
+   "station": "campfire",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for pine_tar"
+   ],
+   "future": false
+  },
+  {
+   "id": "hinges",
+   "number": 149,
+   "category": "Materials",
+   "gives": "hinges",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": false
+  },
+  {
+   "id": "wooden_pin",
+   "number": 150,
+   "category": "Materials",
+   "gives": "wooden_pin",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for lumber"
+   ],
+   "future": false
+  },
+  {
+   "id": "rock_pile",
+   "number": 151,
+   "category": "Shelter and building",
+   "gives": "rock_pile",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "saw_blade",
+   "number": 152,
+   "category": "Materials",
+   "gives": "saw_blade",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "water_wheel",
+   "number": 153,
+   "category": "Workshops and stations",
+   "gives": "water_wheel",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber,nails"
+   ],
+   "future": false
+  },
+  {
+   "id": "stone_hammer",
+   "number": 156,
+   "category": "Tools",
+   "gives": "stone_hammer",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "hand_saw",
+   "number": 157,
+   "category": "Tools",
+   "gives": "hand_saw",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for saw_blade"
+   ],
+   "future": false
+  },
+  {
+   "id": "lumber_by_hand",
+   "number": 159,
+   "category": "Materials",
+   "gives": "lumber",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log,hand_saw"
+   ],
+   "future": false
+  },
+  {
+   "id": "wooden_hammer",
+   "number": 161,
+   "category": "Tools",
+   "gives": "wooden_hammer",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "rough_bed_kit",
+   "number": 162,
+   "category": "Containers and furniture",
+   "gives": "rough_bed_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "shore_net",
+   "number": 163,
+   "category": "Tools",
+   "gives": "shore_net",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "campfire_pot_kit",
+   "number": 165,
+   "category": "Fire and cooking",
+   "gives": "campfire_pot_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "thatch_floor_kit",
+   "number": 166,
+   "category": "Shelter and building",
+   "gives": "thatch_floor_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "thatch_wall_kit",
+   "number": 167,
+   "category": "Shelter and building",
+   "gives": "thatch_wall_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "thatch_roof_kit",
+   "number": 168,
+   "category": "Shelter and building",
+   "gives": "thatch_roof_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "thatch_doorway_kit",
+   "number": 169,
+   "category": "Shelter and building",
+   "gives": "thatch_doorway_kit",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "wooden_bow",
+   "number": 170,
+   "category": "Tools",
+   "gives": "wooden_bow",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 2,
+   "wave_potential": 2,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "wooden_arrow",
+   "number": 171,
+   "category": "Tools",
+   "gives": "wooden_arrow",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_arrow",
+   "number": 172,
+   "category": "Tools",
+   "gives": "stone_arrow",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "quiver",
+   "number": 173,
+   "category": "Clothing",
+   "gives": "quiver",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "cook_flatbread",
+   "number": 174,
+   "category": "Fire and cooking",
+   "gives": "flatbread",
+   "station": "clay_hearth",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for seeds"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_honey_loaf",
+   "number": 175,
+   "category": "Fire and cooking",
+   "gives": "honey_loaf",
+   "station": "oven",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for seeds,honeyspindle_nectar"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_roast_joint",
+   "number": 176,
+   "category": "Fire and cooking",
+   "gives": "roast_joint",
+   "station": "oven",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for wild_garlic_bulbs"
+   ],
+   "future": false
+  },
+  {
+   "id": "snare",
+   "number": 177,
+   "category": "Tools",
+   "gives": "snare",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "kindling",
+   "number": 178,
+   "category": "Fire and cooking",
+   "gives": "kindling",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "processed_hide",
+   "number": 179,
+   "category": "Materials",
+   "gives": "processed_hide",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for hide_scraper"
+   ],
+   "future": true
+  },
+  {
+   "id": "hide_scraper",
+   "number": 180,
+   "category": "Tools",
+   "gives": "hide_scraper",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for flint"
+   ],
+   "future": true
+  },
+  {
+   "id": "javelin",
+   "number": 181,
+   "category": "Weapons",
+   "gives": "javelin",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for flint"
+   ],
+   "future": true
+  },
+  {
+   "id": "obsidian_knife",
+   "number": 182,
+   "category": "Tools",
+   "gives": "obsidian_knife",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for obsidian"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_striker",
+   "number": 183,
+   "category": "Tools",
+   "gives": "steel_striker",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "rivets",
+   "number": 184,
+   "category": "Materials",
+   "gives": "rivets",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "bronze_ingot",
+   "number": 185,
+   "category": "Materials",
+   "gives": "bronze_ingot",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for copper_ingot,tin_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "stone_pickaxe",
+   "number": 186,
+   "category": "Tools",
+   "gives": "stone_pickaxe",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 2,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "sickle",
+   "number": 187,
+   "category": "Tools",
+   "gives": "sickle",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for flint"
+   ],
+   "future": true
+  },
+  {
+   "id": "scythe",
+   "number": 188,
+   "category": "Tools",
+   "gives": "scythe",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot"
+   ],
+   "future": true
+  },
+  {
+   "id": "wooden_club",
+   "number": 189,
+   "category": "Weapons",
+   "gives": "wooden_club",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "smelt_copper",
+   "number": 190,
+   "category": "Materials",
+   "gives": "copper_ingot",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for copper_ore"
+   ],
+   "future": true
+  },
+  {
+   "id": "smelt_tin",
+   "number": 191,
+   "category": "Materials",
+   "gives": "tin_ingot",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for tin_ore"
+   ],
+   "future": true
+  },
+  {
+   "id": "smelt_iron",
+   "number": 192,
+   "category": "Materials",
+   "gives": "iron_ingot",
+   "station": "forge",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ore"
+   ],
+   "future": true
+  },
+  {
+   "id": "smelt_steel",
+   "number": 193,
+   "category": "Materials",
+   "gives": "steel_ingot",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot,coal",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "hide_tunic",
+   "number": 194,
+   "category": "Clothing",
+   "gives": "hide_tunic",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "hide_trousers",
+   "number": 195,
+   "category": "Clothing",
+   "gives": "hide_trousers",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "hide_gloves",
+   "number": 196,
+   "category": "Clothing",
+   "gives": "hide_gloves",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "clay_jug",
+   "number": 197,
+   "category": "Containers and furniture",
+   "gives": "clay_jug",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "herb_salve",
+   "number": 198,
+   "category": "Medicine",
+   "gives": "herb_salve",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "splint",
+   "number": 199,
+   "category": "Medicine",
+   "gives": "splint",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "candle",
+   "number": 200,
+   "category": "Tools",
+   "gives": "candle",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "wicker_shield",
+   "number": 201,
+   "category": "Tools",
+   "gives": "wicker_shield",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "stone_mace",
+   "number": 202,
+   "category": "Tools",
+   "gives": "stone_mace",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "plank_shield",
+   "number": 203,
+   "category": "Tools",
+   "gives": "plank_shield",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber"
+   ],
+   "future": true
+  },
+  {
+   "id": "bronze_sword",
+   "number": 204,
+   "category": "Tools",
+   "gives": "bronze_sword",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "bronze_mace",
+   "number": 205,
+   "category": "Tools",
+   "gives": "bronze_mace",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "bronze_shield",
+   "number": 206,
+   "category": "Tools",
+   "gives": "bronze_shield",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber,bronze_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "iron_sword",
+   "number": 207,
+   "category": "Tools",
+   "gives": "iron_sword",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot,leather",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "iron_mace",
+   "number": 208,
+   "category": "Tools",
+   "gives": "iron_mace",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "iron_shield",
+   "number": 209,
+   "category": "Tools",
+   "gives": "iron_shield",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber,iron_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_sword",
+   "number": 210,
+   "category": "Tools",
+   "gives": "steel_sword",
+   "station": "forge",
+   "station_level": 3,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot,heavy_leather",
+    "station forge level 3 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_mace",
+   "number": 211,
+   "category": "Tools",
+   "gives": "steel_mace",
+   "station": "forge",
+   "station_level": 3,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot",
+    "station forge level 3 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_shield",
+   "number": 212,
+   "category": "Tools",
+   "gives": "steel_shield",
+   "station": "forge",
+   "station_level": 3,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for lumber,steel_ingot",
+    "station forge level 3 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "leather_cap",
+   "number": 213,
+   "category": "Clothing",
+   "gives": "leather_cap",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for leather"
+   ],
+   "future": true
+  },
+  {
+   "id": "leather_jerkin",
+   "number": 214,
+   "category": "Clothing",
+   "gives": "leather_jerkin",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for leather"
+   ],
+   "future": true
+  },
+  {
+   "id": "bronze_helm",
+   "number": 215,
+   "category": "Clothing",
+   "gives": "bronze_helm",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "gambeson",
+   "number": 216,
+   "category": "Clothing",
+   "gives": "gambeson",
+   "station": "workbench",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for leather"
+   ],
+   "future": true
+  },
+  {
+   "id": "iron_helm",
+   "number": 217,
+   "category": "Clothing",
+   "gives": "iron_helm",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for iron_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "mail_shirt",
+   "number": 218,
+   "category": "Clothing",
+   "gives": "mail_shirt",
+   "station": "forge",
+   "station_level": 2,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for rivets,iron_ingot",
+    "station forge level 2 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "steel_helm",
+   "number": 219,
+   "category": "Clothing",
+   "gives": "steel_helm",
+   "station": "forge",
+   "station_level": 3,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot,heavy_leather,rivets",
+    "station forge level 3 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "plate_cuirass",
+   "number": 220,
+   "category": "Clothing",
+   "gives": "plate_cuirass",
+   "station": "forge",
+   "station_level": 3,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for steel_ingot,heavy_leather,rivets",
+    "station forge level 3 not obtainable"
+   ],
+   "future": true
+  },
+  {
+   "id": "quern",
+   "number": 221,
+   "category": "Tools",
+   "gives": "quern",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "flour_from_wheat",
+   "number": 222,
+   "category": "Materials",
+   "gives": "flour",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for wheat"
+   ],
+   "future": true
+  },
+  {
+   "id": "flour_from_barley",
+   "number": 223,
+   "category": "Materials",
+   "gives": "flour",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "not known (no learn system)",
+    "no source anywhere for barley"
+   ],
+   "future": true
+  },
+  {
+   "id": "compost",
+   "number": 224,
+   "category": "Materials",
+   "gives": "compost",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "hide_glue",
+   "number": 225,
+   "category": "Materials",
+   "gives": "hide_glue",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 2,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  },
+  {
+   "id": "bone_arrow",
+   "number": 226,
+   "category": "Tools",
+   "gives": "bone_arrow",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": true
+  }
+ ],
+ "items": [
+  {
+   "id": "stone",
+   "number": 1,
+   "kind": "material",
+   "sources": [
+    "boulder",
+    "dig",
+    "ground scatter"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": false
+  },
+  {
+   "id": "stick",
+   "number": 2,
+   "kind": "material",
+   "sources": [
+    "ground scatter",
+    "plant:any shrub",
+    "tree:stump",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": false
+  },
+  {
+   "id": "plant_fibre",
+   "number": 3,
+   "kind": "material",
+   "sources": [
+    "plant:flax",
+    "plant:nettle",
+    "plant:reeds",
+    "plant:riverbraid",
+    "plant:tall_grass",
+    "plant:tanglewort"
+   ],
+   "obtainable": "now",
+   "look": "ok (fibre)",
+   "future": false
+  },
+  {
+   "id": "log",
+   "number": 4,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "NO LOOK ENTRY",
+   "future": false
+  },
+  {
+   "id": "twine",
+   "number": 5,
+   "kind": "material",
+   "sources": [
+    "recipe:twine,twine_bark,sinew_cord"
+   ],
+   "obtainable": "now",
+   "look": "ok (coil)",
+   "future": false
+  },
+  {
+   "id": "stone_axe",
+   "number": 6,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_axe"
+   ],
+   "obtainable": "now",
+   "look": "ok (axe)",
+   "future": false
+  },
+  {
+   "id": "spear",
+   "number": 7,
+   "kind": "weapon",
+   "sources": [
+    "recipe:spear"
+   ],
+   "obtainable": "now",
+   "look": "ok (shaft)",
+   "future": false
+  },
+  {
+   "id": "campfire_kit",
+   "number": 8,
+   "kind": "placeable",
+   "sources": [
+    "recipe:campfire"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "seed_bundle",
+   "number": 9,
+   "kind": "material",
+   "sources": [
+    "tree:log chain"
+   ],
+   "obtainable": "now",
+   "look": "ok (sack)",
+   "future": false
+  },
+  {
+   "id": "wooden_spear",
+   "number": 10,
+   "kind": "weapon",
+   "sources": [
+    "recipe:wooden_spear"
+   ],
+   "obtainable": "now",
+   "look": "ok (shaft)",
+   "future": false
+  },
+  {
+   "id": "stone_knife",
+   "number": 11,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_knife"
+   ],
+   "obtainable": "now",
+   "look": "ok (knife)",
+   "future": false
+  },
+  {
+   "id": "torch",
+   "number": 12,
+   "kind": "tool",
+   "sources": [
+    "recipe:torch"
+   ],
+   "obtainable": "now",
+   "look": "ok (torch)",
+   "future": false
+  },
+  {
+   "id": "bark",
+   "number": 13,
+   "kind": "material",
+   "sources": [
+    "tree:log chain"
+   ],
+   "obtainable": "now",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "leaves",
+   "number": 14,
+   "kind": "material",
+   "sources": [
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (leaves)",
+   "future": false
+  },
+  {
+   "id": "roast_forage",
+   "number": 15,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "poultice",
+   "number": 16,
+   "kind": "medicine",
+   "sources": [
+    "recipe:poultice_plantain,poultice_comfrey"
+   ],
+   "obtainable": "now",
+   "look": "ok (mound)",
+   "future": false
+  },
+  {
+   "id": "bandage",
+   "number": 17,
+   "kind": "medicine",
+   "sources": [
+    "recipe:bandage_plantain,bandage_staunchmoss"
+   ],
+   "obtainable": "now",
+   "look": "ok (coil)",
+   "future": false
+  },
+  {
+   "id": "tree_roots",
+   "number": 18,
+   "kind": "material",
+   "sources": [
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "wooden_spade",
+   "number": 19,
+   "kind": "tool",
+   "sources": [
+    "recipe:wooden_spade"
+   ],
+   "obtainable": "now",
+   "look": "ok (spade)",
+   "future": false
+  },
+  {
+   "id": "lean_to_kit",
+   "number": 20,
+   "kind": "placeable",
+   "sources": [
+    "recipe:lean_to_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "lean_to",
+   "number": 21,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "chest_kit",
+   "number": 22,
+   "kind": "placeable",
+   "sources": [
+    "recipe:chest_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "chest",
+   "number": 23,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "chopping_block",
+   "number": 25,
+   "kind": "placeable",
+   "sources": [
+    "recipe:chopping_block"
+   ],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "firewood",
+   "number": 26,
+   "kind": "material",
+   "sources": [
+    "tree:log chain",
+    "tree:stump",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "lumber",
+   "number": 27,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber,lumber_by_hand"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": false
+  },
+  {
+   "id": "plank_chest_kit",
+   "number": 28,
+   "kind": "placeable",
+   "sources": [
+    "recipe:plank_chest_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "plank_chest",
+   "number": 29,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "driftwood",
+   "number": 30,
+   "kind": "material",
+   "sources": [
+    "ground scatter (water bank)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": false
+  },
+  {
+   "id": "iron_ingot",
+   "number": 31,
+   "kind": "material",
+   "sources": [
+    "recipe:smelt_iron"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (ingot)",
+   "future": true
+  },
+  {
+   "id": "steel_ingot",
+   "number": 32,
+   "kind": "material",
+   "sources": [
+    "recipe:smelt_steel"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (ingot)",
+   "future": true
+  },
+  {
+   "id": "iron_pickaxe",
+   "number": 33,
+   "kind": "tool",
+   "sources": [
+    "recipe:iron_pickaxe"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (pick)",
+   "future": true
+  },
+  {
+   "id": "steel_pickaxe",
+   "number": 34,
+   "kind": "tool",
+   "sources": [
+    "recipe:steel_pickaxe"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (pick)",
+   "future": true
+  },
+  {
+   "id": "soil",
+   "number": 35,
+   "kind": "material",
+   "sources": [
+    "dig"
+   ],
+   "obtainable": "now",
+   "look": "ok (clump)",
+   "future": false
+  },
+  {
+   "id": "clay",
+   "number": 36,
+   "kind": "material",
+   "sources": [
+    "dig"
+   ],
+   "obtainable": "now",
+   "look": "ok (clump)",
+   "future": false
+  },
+  {
+   "id": "sand",
+   "number": 37,
+   "kind": "material",
+   "sources": [
+    "dig"
+   ],
+   "obtainable": "now",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "gravel",
+   "number": 38,
+   "kind": "material",
+   "sources": [
+    "dig"
+   ],
+   "obtainable": "now",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "wooden_bowl",
+   "number": 39,
+   "kind": "container",
+   "sources": [
+    "recipe:wooden_bowl"
+   ],
+   "obtainable": "now",
+   "look": "ok (bowl)",
+   "future": false
+  },
+  {
+   "id": "clay_pot",
+   "number": 40,
+   "kind": "container",
+   "sources": [
+    "recipe:clay_pot"
+   ],
+   "obtainable": "now",
+   "look": "ok (pot)",
+   "future": false
+  },
+  {
+   "id": "bucket",
+   "number": 41,
+   "kind": "container",
+   "sources": [
+    "recipe:bucket"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (bucket)",
+   "future": false
+  },
+  {
+   "id": "waterskin",
+   "number": 42,
+   "kind": "container",
+   "sources": [
+    "recipe:waterskin"
+   ],
+   "obtainable": "potential",
+   "look": "ok (skin)",
+   "future": true
+  },
+  {
+   "id": "hide",
+   "number": 43,
+   "kind": "material",
+   "sources": [
+    "carcass:badger",
+    "carcass:bear",
+    "carcass:beaver",
+    "carcass:boar",
+    "carcass:deer",
+    "carcass:fox",
+    "carcass:hare",
+    "carcass:lynx",
+    "carcass:moose",
+    "carcass:mountain_goat",
+    "carcass:otter",
+    "carcass:rabbit",
+    "carcass:reindeer",
+    "carcass:wild_sheep",
+    "carcass:wolf"
+   ],
+   "obtainable": "now",
+   "look": "ok (hide)",
+   "future": true
+  },
+  {
+   "id": "rope",
+   "number": 44,
+   "kind": "material",
+   "sources": [
+    "recipe:rope"
+   ],
+   "obtainable": "now",
+   "look": "ok (coil)",
+   "future": false
+  },
+  {
+   "id": "stone_spade",
+   "number": 45,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_spade"
+   ],
+   "obtainable": "now",
+   "look": "ok (spade)",
+   "future": false
+  },
+  {
+   "id": "iron_spade",
+   "number": 46,
+   "kind": "tool",
+   "sources": [
+    "recipe:iron_spade"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (spade)",
+   "future": true
+  },
+  {
+   "id": "steel_spade",
+   "number": 47,
+   "kind": "tool",
+   "sources": [
+    "recipe:steel_spade"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (spade)",
+   "future": true
+  },
+  {
+   "id": "bone",
+   "number": 48,
+   "kind": "material",
+   "sources": [
+    "carcass:badger",
+    "carcass:bear",
+    "carcass:beaver",
+    "carcass:boar",
+    "carcass:deer",
+    "carcass:duck",
+    "carcass:eagle",
+    "carcass:fox",
+    "carcass:goose",
+    "carcass:grouse",
+    "carcass:gull",
+    "carcass:hare",
+    "carcass:lynx",
+    "carcass:moose",
+    "carcass:mountain_goat",
+    "carcass:otter",
+    "carcass:pheasant",
+    "carcass:porcupine",
+    "carcass:rabbit",
+    "carcass:reindeer",
+    "carcass:wild_sheep",
+    "carcass:wolf"
+   ],
+   "obtainable": "now",
+   "look": "ok (bone)",
+   "future": true
+  },
+  {
+   "id": "backpack",
+   "number": 50,
+   "kind": "gear",
+   "sources": [
+    "recipe:backpack"
+   ],
+   "obtainable": "now",
+   "look": "ok (backpack)",
+   "future": false
+  },
+  {
+   "id": "energy_bar",
+   "number": 51,
+   "kind": "food",
+   "sources": [
+    "recipe:energy_bar"
+   ],
+   "obtainable": "now",
+   "look": "ok (bar)",
+   "future": false
+  },
+  {
+   "id": "herbal_tea",
+   "number": 52,
+   "kind": "food",
+   "sources": [
+    "recipe:herbal_tea"
+   ],
+   "obtainable": "now",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "magic_tonic",
+   "number": 53,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": true
+  },
+  {
+   "id": "remains",
+   "number": 54,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "rotten_food",
+   "number": 55,
+   "kind": "material",
+   "sources": [
+    "spoilage"
+   ],
+   "obtainable": "now",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "medicine",
+   "number": 56,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": true
+  },
+  {
+   "id": "stomach_tea",
+   "number": 57,
+   "kind": "food",
+   "sources": [
+    "recipe:stomach_tea"
+   ],
+   "obtainable": "now",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "chamomile_tea",
+   "number": 58,
+   "kind": "food",
+   "sources": [
+    "recipe:chamomile_tea"
+   ],
+   "obtainable": "now",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "willow_bark_tea",
+   "number": 59,
+   "kind": "food",
+   "sources": [
+    "recipe:willow_bark_tea"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "grass_skirt",
+   "number": 60,
+   "kind": "clothing",
+   "sources": [
+    "recipe:grass_skirt"
+   ],
+   "obtainable": "potential",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "grass_cloak",
+   "number": 61,
+   "kind": "clothing",
+   "sources": [
+    "recipe:grass_cloak"
+   ],
+   "obtainable": "potential",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "fibre_sandals",
+   "number": 62,
+   "kind": "clothing",
+   "sources": [
+    "recipe:fibre_sandals"
+   ],
+   "obtainable": "potential",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "hide_cloak",
+   "number": 63,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_cloak"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "hide_boots",
+   "number": 64,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_boots"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "hide_hood",
+   "number": 65,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_hood"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "hide_mittens",
+   "number": 66,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_mittens"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "hide_leggings",
+   "number": 67,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_leggings"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "raw_meat",
+   "number": 68,
+   "kind": "food",
+   "sources": [
+    "carcass:badger",
+    "carcass:bear",
+    "carcass:beaver",
+    "carcass:boar",
+    "carcass:deer",
+    "carcass:duck",
+    "carcass:eagle",
+    "carcass:fox",
+    "carcass:goose",
+    "carcass:grouse",
+    "carcass:gull",
+    "carcass:hare",
+    "carcass:lynx",
+    "carcass:moose",
+    "carcass:mountain_goat",
+    "carcass:otter",
+    "carcass:pheasant",
+    "carcass:porcupine",
+    "carcass:rabbit",
+    "carcass:reindeer",
+    "carcass:wild_sheep",
+    "carcass:wolf"
+   ],
+   "obtainable": "now",
+   "look": "ok (meat)",
+   "future": true
+  },
+  {
+   "id": "roast_meat",
+   "number": 69,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "ok (joint)",
+   "future": true
+  },
+  {
+   "id": "sinew",
+   "number": 70,
+   "kind": "material",
+   "sources": [
+    "carcass:bear",
+    "carcass:boar",
+    "carcass:deer",
+    "carcass:fox",
+    "carcass:lynx",
+    "carcass:moose",
+    "carcass:mountain_goat",
+    "carcass:reindeer",
+    "carcass:wild_sheep",
+    "carcass:wolf"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": true
+  },
+  {
+   "id": "animal_fat",
+   "number": 71,
+   "kind": "material",
+   "sources": [
+    "carcass:badger",
+    "carcass:bear",
+    "carcass:beaver",
+    "carcass:boar",
+    "carcass:deer",
+    "carcass:moose",
+    "carcass:mountain_goat",
+    "carcass:reindeer",
+    "carcass:wild_sheep"
+   ],
+   "obtainable": "now",
+   "look": "ok (chunk)",
+   "future": true
+  },
+  {
+   "id": "feather",
+   "number": 72,
+   "kind": "material",
+   "sources": [
+    "carcass:duck",
+    "carcass:eagle",
+    "carcass:goose",
+    "carcass:grouse",
+    "carcass:gull",
+    "carcass:pheasant"
+   ],
+   "obtainable": "now",
+   "look": "ok (feather)",
+   "future": true
+  },
+  {
+   "id": "workbench_kit",
+   "number": 73,
+   "kind": "placeable",
+   "sources": [
+    "recipe:workbench_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "workbench",
+   "number": 74,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "fishing_rod",
+   "number": 75,
+   "kind": "tool",
+   "sources": [
+    "recipe:fishing_rod"
+   ],
+   "obtainable": "now",
+   "look": "ok (rod)",
+   "future": false
+  },
+  {
+   "id": "trout",
+   "number": 76,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": true
+  },
+  {
+   "id": "perch",
+   "number": 77,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": true
+  },
+  {
+   "id": "carp",
+   "number": 78,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": true
+  },
+  {
+   "id": "pike",
+   "number": 79,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": true
+  },
+  {
+   "id": "roast_fish",
+   "number": 80,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": true
+  },
+  {
+   "id": "tool_rack_kit",
+   "number": 81,
+   "kind": "placeable",
+   "sources": [
+    "recipe:tool_rack_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "tool_rack",
+   "number": 82,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "vice_kit",
+   "number": 83,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "vice",
+   "number": 84,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "log_workbench_kit",
+   "number": 85,
+   "kind": "placeable",
+   "sources": [
+    "recipe:log_workbench_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "log_workbench",
+   "number": 86,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "stone_forge_kit",
+   "number": 87,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "stone_forge",
+   "number": 88,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "blacksmithy_kit",
+   "number": 89,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "blacksmithy",
+   "number": 90,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "carcass",
+   "number": 91,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "large_forge_kit",
+   "number": 92,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "large_forge",
+   "number": 93,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "master_forge_kit",
+   "number": 94,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "master_forge",
+   "number": 95,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "coin_copper",
+   "number": 96,
+   "kind": "coin",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (coin)",
+   "future": true
+  },
+  {
+   "id": "coin_bronze",
+   "number": 97,
+   "kind": "coin",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (coin)",
+   "future": true
+  },
+  {
+   "id": "coin_silver",
+   "number": 98,
+   "kind": "coin",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (coin)",
+   "future": true
+  },
+  {
+   "id": "coin_gold",
+   "number": 99,
+   "kind": "coin",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (coin)",
+   "future": true
+  },
+  {
+   "id": "log_oak",
+   "number": 100,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_oak",
+   "number": 101,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_oak"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_oak",
+   "number": 102,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_oak"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_birch",
+   "number": 106,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_birch",
+   "number": 107,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_birch"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_birch",
+   "number": 108,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_birch"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_scots_pine",
+   "number": 109,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_scots_pine",
+   "number": 110,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_scots_pine"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_scots_pine",
+   "number": 111,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_scots_pine"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_spruce",
+   "number": 112,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_spruce",
+   "number": 113,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_spruce"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_spruce",
+   "number": 114,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_spruce"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_tropical_hardwood",
+   "number": 124,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_tropical_hardwood",
+   "number": 125,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_tropical_hardwood"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_tropical_hardwood",
+   "number": 126,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_tropical_hardwood"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_walnut",
+   "number": 148,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_walnut",
+   "number": 149,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_walnut"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_walnut",
+   "number": 150,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_walnut"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "log_maple",
+   "number": 172,
+   "kind": "material",
+   "sources": [
+    "tree:log chain (shoulder, one at a time)"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "lumber_maple",
+   "number": 173,
+   "kind": "material",
+   "sources": [
+    "recipe:lumber_maple"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": true
+  },
+  {
+   "id": "beam_maple",
+   "number": 174,
+   "kind": "material",
+   "sources": [
+    "recipe:beams_maple"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (beams)",
+   "future": true
+  },
+  {
+   "id": "berry_compote",
+   "number": 175,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_berry_compote"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "nut_paste",
+   "number": 176,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_nut_paste"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (mound)",
+   "future": false
+  },
+  {
+   "id": "roast_roots",
+   "number": 177,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_roast_roots"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "acorn_mash",
+   "number": 178,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_acorn_mash"
+   ],
+   "obtainable": "now",
+   "look": "ok (mound)",
+   "future": false
+  },
+  {
+   "id": "baked_apples",
+   "number": 179,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_baked_apples"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "mushroom_skewer",
+   "number": 180,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_mushroom_skewer"
+   ],
+   "obtainable": "now",
+   "look": "ok (skewer)",
+   "future": false
+  },
+  {
+   "id": "herb_fish",
+   "number": 181,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_herb_fish"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": false
+  },
+  {
+   "id": "garlic_meat",
+   "number": 182,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_garlic_meat"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (joint)",
+   "future": false
+  },
+  {
+   "id": "chestnut_cakes",
+   "number": 183,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_chestnut_cakes"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (loaf)",
+   "future": false
+  },
+  {
+   "id": "fruit_leather",
+   "number": 184,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_fruit_leather"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "smoked_fish",
+   "number": 185,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_smoked_fish"
+   ],
+   "obtainable": "now",
+   "look": "ok (fish)",
+   "future": false
+  },
+  {
+   "id": "hunters_stew",
+   "number": 186,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_hunters_stew"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "forager_stew",
+   "number": 187,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_forager_stew"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "fish_stew",
+   "number": 188,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_fish_stew"
+   ],
+   "obtainable": "now",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "trail_bread",
+   "number": 189,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_trail_bread"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (loaf)",
+   "future": false
+  },
+  {
+   "id": "hearty_pottage",
+   "number": 190,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_hearty_pottage"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (stew)",
+   "future": false
+  },
+  {
+   "id": "feast_roast",
+   "number": 191,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_feast_roast"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (joint)",
+   "future": false
+  },
+  {
+   "id": "wall_section_kit",
+   "number": 192,
+   "kind": "placeable",
+   "sources": [
+    "recipe:wall_section_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "wall_section",
+   "number": 193,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "floor_section_kit",
+   "number": 194,
+   "kind": "placeable",
+   "sources": [
+    "recipe:floor_section_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "floor_section",
+   "number": 195,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "roof_section_kit",
+   "number": 196,
+   "kind": "placeable",
+   "sources": [
+    "recipe:roof_section_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "roof_section",
+   "number": 197,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "foundation_section_kit",
+   "number": 198,
+   "kind": "placeable",
+   "sources": [
+    "recipe:foundation_section_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "foundation_section",
+   "number": 199,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "doorway_section_kit",
+   "number": 200,
+   "kind": "placeable",
+   "sources": [
+    "recipe:doorway_section_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "doorway_section",
+   "number": 201,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "window_section_kit",
+   "number": 202,
+   "kind": "placeable",
+   "sources": [
+    "recipe:window_section_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "window_section",
+   "number": 203,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "timber_prop_kit",
+   "number": 204,
+   "kind": "placeable",
+   "sources": [
+    "recipe:timber_prop_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "timber_prop",
+   "number": 205,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "timber_set_kit",
+   "number": 206,
+   "kind": "placeable",
+   "sources": [
+    "recipe:timber_set_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "timber_set",
+   "number": 207,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "cut_stone_block",
+   "number": 208,
+   "kind": "material",
+   "sources": [
+    "recipe:cut_stone_block"
+   ],
+   "obtainable": "potential",
+   "look": "ok (block)",
+   "future": false
+  },
+  {
+   "id": "brick",
+   "number": 209,
+   "kind": "material",
+   "sources": [
+    "recipe:brick"
+   ],
+   "obtainable": "potential",
+   "look": "ok (brick)",
+   "future": false
+  },
+  {
+   "id": "mortar",
+   "number": 210,
+   "kind": "material",
+   "sources": [
+    "recipe:mortar"
+   ],
+   "obtainable": "potential",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "ladder_kit",
+   "number": 211,
+   "kind": "placeable",
+   "sources": [
+    "recipe:ladder_kit"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "ladder",
+   "number": 212,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "wooden_hoe",
+   "number": 221,
+   "kind": "tool",
+   "sources": [
+    "recipe:wooden_hoe"
+   ],
+   "obtainable": "now",
+   "look": "ok (hoe)",
+   "future": false
+  },
+  {
+   "id": "stone_hoe",
+   "number": 222,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_hoe"
+   ],
+   "obtainable": "now",
+   "look": "ok (hoe)",
+   "future": false
+  },
+  {
+   "id": "iron_hoe",
+   "number": 223,
+   "kind": "tool",
+   "sources": [
+    "recipe:iron_hoe"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (hoe)",
+   "future": true
+  },
+  {
+   "id": "steel_hoe",
+   "number": 224,
+   "kind": "tool",
+   "sources": [
+    "recipe:steel_hoe"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (hoe)",
+   "future": true
+  },
+  {
+   "id": "path_patch",
+   "number": 225,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "rough_plank",
+   "number": 226,
+   "kind": "material",
+   "sources": [
+    "recipe:rough_plank"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": false
+  },
+  {
+   "id": "fine_board",
+   "number": 227,
+   "kind": "material",
+   "sources": [
+    "recipe:fine_board"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (planks)",
+   "future": false
+  },
+  {
+   "id": "nails",
+   "number": 228,
+   "kind": "material",
+   "sources": [
+    "recipe:nails"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (needle)",
+   "future": false
+  },
+  {
+   "id": "cobblestone",
+   "number": 229,
+   "kind": "material",
+   "sources": [
+    "recipe:cobblestone"
+   ],
+   "obtainable": "potential",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "stone_shingle",
+   "number": 230,
+   "kind": "material",
+   "sources": [
+    "recipe:stone_shingle"
+   ],
+   "obtainable": "potential",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "tar",
+   "number": 231,
+   "kind": "material",
+   "sources": [
+    "recipe:tar"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "hinges",
+   "number": 232,
+   "kind": "material",
+   "sources": [
+    "recipe:hinges"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (ingot)",
+   "future": false
+  },
+  {
+   "id": "wooden_pin",
+   "number": 233,
+   "kind": "material",
+   "sources": [
+    "recipe:wooden_pin"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (rod)",
+   "future": false
+  },
+  {
+   "id": "wooden_block",
+   "number": 234,
+   "kind": "material",
+   "sources": [
+    "tree:log chain"
+   ],
+   "obtainable": "now",
+   "look": "ok (block)",
+   "future": false
+  },
+  {
+   "id": "rock_pile",
+   "number": 235,
+   "kind": "placeable",
+   "sources": [
+    "recipe:rock_pile"
+   ],
+   "obtainable": "now",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "firewood_soft",
+   "number": 236,
+   "kind": "material",
+   "sources": [
+    "tree:log chain"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "wooden_block_soft",
+   "number": 237,
+   "kind": "material",
+   "sources": [
+    "tree:log chain"
+   ],
+   "obtainable": "now",
+   "look": "ok (block)",
+   "future": false
+  },
+  {
+   "id": "saw_blade",
+   "number": 238,
+   "kind": "material",
+   "sources": [
+    "recipe:saw_blade"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (bar)",
+   "future": true
+  },
+  {
+   "id": "water_wheel",
+   "number": 239,
+   "kind": "material",
+   "sources": [
+    "recipe:water_wheel"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (coil)",
+   "future": false
+  },
+  {
+   "id": "saw_mill_kit",
+   "number": 240,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "saw_mill",
+   "number": 241,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "woodworking_table_kit",
+   "number": 242,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "woodworking_table",
+   "number": 243,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "stone_hammer",
+   "number": 244,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_hammer"
+   ],
+   "obtainable": "now",
+   "look": "ok (hammer)",
+   "future": false
+  },
+  {
+   "id": "hand_saw",
+   "number": 245,
+   "kind": "tool",
+   "sources": [
+    "recipe:hand_saw"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (saw)",
+   "future": false
+  },
+  {
+   "id": "wooden_hammer",
+   "number": 247,
+   "kind": "tool",
+   "sources": [
+    "recipe:wooden_hammer"
+   ],
+   "obtainable": "now",
+   "look": "ok (hammer)",
+   "future": false
+  },
+  {
+   "id": "rough_bed_kit",
+   "number": 250,
+   "kind": "placeable",
+   "sources": [
+    "recipe:rough_bed_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "rough_bed",
+   "number": 251,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "thatch_wall_kit",
+   "number": 252,
+   "kind": "placeable",
+   "sources": [
+    "recipe:thatch_wall_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "thatch_wall",
+   "number": 253,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "campfire_pot_kit",
+   "number": 254,
+   "kind": "placeable",
+   "sources": [
+    "recipe:campfire_pot_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "campfire_pot",
+   "number": 255,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "clay_hearth_kit",
+   "number": 256,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "clay_hearth",
+   "number": 257,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "shore_net",
+   "number": 260,
+   "kind": "tool",
+   "sources": [
+    "recipe:shore_net"
+   ],
+   "obtainable": "now",
+   "look": "ok (cloth)",
+   "future": false
+  },
+  {
+   "id": "thatch_floor_kit",
+   "number": 261,
+   "kind": "placeable",
+   "sources": [
+    "recipe:thatch_floor_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "thatch_floor",
+   "number": 262,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "thatch_roof_kit",
+   "number": 263,
+   "kind": "placeable",
+   "sources": [
+    "recipe:thatch_roof_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "thatch_roof",
+   "number": 264,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "thatch_doorway_kit",
+   "number": 265,
+   "kind": "placeable",
+   "sources": [
+    "recipe:thatch_doorway_kit"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "thatch_doorway",
+   "number": 266,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "oven",
+   "number": 267,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "oven_kit",
+   "number": 268,
+   "kind": "placeable",
+   "sources": [],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "wooden_bow",
+   "number": 269,
+   "kind": "weapon",
+   "sources": [
+    "recipe:wooden_bow"
+   ],
+   "obtainable": "now",
+   "look": "ok (bow)",
+   "future": false
+  },
+  {
+   "id": "wooden_arrow",
+   "number": 270,
+   "kind": "material",
+   "sources": [
+    "recipe:wooden_arrow"
+   ],
+   "obtainable": "now",
+   "look": "ok (arrow)",
+   "future": false
+  },
+  {
+   "id": "stone_arrow",
+   "number": 271,
+   "kind": "material",
+   "sources": [
+    "recipe:stone_arrow"
+   ],
+   "obtainable": "now",
+   "look": "ok (arrow)",
+   "future": false
+  },
+  {
+   "id": "quiver",
+   "number": 272,
+   "kind": "gear",
+   "sources": [
+    "recipe:quiver"
+   ],
+   "obtainable": "now",
+   "look": "ok (quiver)",
+   "future": false
+  },
+  {
+   "id": "flatbread",
+   "number": 273,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_flatbread"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (loaf)",
+   "future": false
+  },
+  {
+   "id": "honey_loaf",
+   "number": 274,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_honey_loaf"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (loaf)",
+   "future": false
+  },
+  {
+   "id": "roast_joint",
+   "number": 275,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_roast_joint"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "snare",
+   "number": 276,
+   "kind": "placeable",
+   "sources": [
+    "recipe:snare"
+   ],
+   "obtainable": "now",
+   "look": "ok (kit)",
+   "future": false
+  },
+  {
+   "id": "snare_trap",
+   "number": 277,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "flint",
+   "number": 279,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "pyrite",
+   "number": 280,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "obsidian",
+   "number": 281,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "processed_hide",
+   "number": 282,
+   "kind": "material",
+   "sources": [
+    "recipe:processed_hide"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "leather",
+   "number": 283,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "fine_leather",
+   "number": 284,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "heavy_leather",
+   "number": 285,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "rivets",
+   "number": 286,
+   "kind": "material",
+   "sources": [
+    "recipe:rivets"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "copper_ingot",
+   "number": 287,
+   "kind": "material",
+   "sources": [
+    "recipe:smelt_copper"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "tin_ingot",
+   "number": 288,
+   "kind": "material",
+   "sources": [
+    "recipe:smelt_tin"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "bronze_ingot",
+   "number": 289,
+   "kind": "material",
+   "sources": [
+    "recipe:bronze_ingot"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "flour",
+   "number": 290,
+   "kind": "material",
+   "sources": [
+    "recipe:flour_from_wheat,flour_from_barley"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "yeast",
+   "number": 291,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "salt",
+   "number": 292,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "hide_scraper",
+   "number": 293,
+   "kind": "tool",
+   "sources": [
+    "recipe:hide_scraper"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "steel_striker",
+   "number": 294,
+   "kind": "tool",
+   "sources": [
+    "recipe:steel_striker"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "javelin",
+   "number": 295,
+   "kind": "weapon",
+   "sources": [
+    "recipe:javelin"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "obsidian_knife",
+   "number": 296,
+   "kind": "tool",
+   "sources": [
+    "recipe:obsidian_knife"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "stone_pickaxe",
+   "number": 297,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_pickaxe"
+   ],
+   "obtainable": "potential",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "sickle",
+   "number": 298,
+   "kind": "tool",
+   "sources": [
+    "recipe:sickle"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "scythe",
+   "number": 299,
+   "kind": "tool",
+   "sources": [
+    "recipe:scythe"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "override look",
+   "future": true
+  },
+  {
+   "id": "wooden_club",
+   "number": 300,
+   "kind": "weapon",
+   "sources": [
+    "recipe:wooden_club"
+   ],
+   "obtainable": "potential",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "copper_ore",
+   "number": 301,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "tin_ore",
+   "number": 302,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "iron_ore",
+   "number": 303,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "coal",
+   "number": 304,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "future": true
+  },
+  {
+   "id": "hide_tunic",
+   "number": 305,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_tunic"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "hide_trousers",
+   "number": 306,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_trousers"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "hide_gloves",
+   "number": 307,
+   "kind": "clothing",
+   "sources": [
+    "recipe:hide_gloves"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "clay_jug",
+   "number": 308,
+   "kind": "container",
+   "sources": [
+    "recipe:clay_jug"
+   ],
+   "obtainable": "potential",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "herb_salve",
+   "number": 309,
+   "kind": "medicine",
+   "sources": [
+    "recipe:herb_salve"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "splint",
+   "number": 310,
+   "kind": "medicine",
+   "sources": [
+    "recipe:splint"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "candle",
+   "number": 311,
+   "kind": "tool",
+   "sources": [
+    "recipe:candle"
+   ],
+   "obtainable": "potential",
+   "look": "NO LOOK ENTRY",
+   "future": true
+  },
+  {
+   "id": "wicker_shield",
+   "number": 312,
+   "kind": "weapon",
+   "sources": [
+    "recipe:wicker_shield"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "stone_mace",
+   "number": 313,
+   "kind": "weapon",
+   "sources": [
+    "recipe:stone_mace"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "plank_shield",
+   "number": 314,
+   "kind": "weapon",
+   "sources": [
+    "recipe:plank_shield"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "bronze_sword",
+   "number": 315,
+   "kind": "weapon",
+   "sources": [
+    "recipe:bronze_sword"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "bronze_mace",
+   "number": 316,
+   "kind": "weapon",
+   "sources": [
+    "recipe:bronze_mace"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "bronze_shield",
+   "number": 317,
+   "kind": "weapon",
+   "sources": [
+    "recipe:bronze_shield"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "iron_sword",
+   "number": 318,
+   "kind": "weapon",
+   "sources": [
+    "recipe:iron_sword"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "iron_mace",
+   "number": 319,
+   "kind": "weapon",
+   "sources": [
+    "recipe:iron_mace"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "iron_shield",
+   "number": 320,
+   "kind": "weapon",
+   "sources": [
+    "recipe:iron_shield"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "steel_sword",
+   "number": 321,
+   "kind": "weapon",
+   "sources": [
+    "recipe:steel_sword"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "steel_mace",
+   "number": 322,
+   "kind": "weapon",
+   "sources": [
+    "recipe:steel_mace"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "steel_shield",
+   "number": 323,
+   "kind": "weapon",
+   "sources": [
+    "recipe:steel_shield"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "leather_cap",
+   "number": 324,
+   "kind": "clothing",
+   "sources": [
+    "recipe:leather_cap"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "leather_jerkin",
+   "number": 325,
+   "kind": "clothing",
+   "sources": [
+    "recipe:leather_jerkin"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "bronze_helm",
+   "number": 326,
+   "kind": "clothing",
+   "sources": [
+    "recipe:bronze_helm"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "gambeson",
+   "number": 327,
+   "kind": "clothing",
+   "sources": [
+    "recipe:gambeson"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "iron_helm",
+   "number": 328,
+   "kind": "clothing",
+   "sources": [
+    "recipe:iron_helm"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "mail_shirt",
+   "number": 329,
+   "kind": "clothing",
+   "sources": [
+    "recipe:mail_shirt"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "steel_helm",
+   "number": 330,
+   "kind": "clothing",
+   "sources": [
+    "recipe:steel_helm"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "plate_cuirass",
+   "number": 331,
+   "kind": "clothing",
+   "sources": [
+    "recipe:plate_cuirass"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wheat",
+   "number": 332,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "barley",
+   "number": 333,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "carrot",
+   "number": 334,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "potato",
+   "number": 335,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "turnip",
+   "number": 336,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "flax",
+   "number": 337,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "wheat_seeds",
+   "number": 338,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "barley_seeds",
+   "number": 339,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "carrot_seeds",
+   "number": 340,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "potato_seeds",
+   "number": 341,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "turnip_seeds",
+   "number": 342,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "flax_seeds",
+   "number": 343,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "quern",
+   "number": 344,
+   "kind": "tool",
+   "sources": [
+    "recipe:quern"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "compost",
+   "number": 345,
+   "kind": "material",
+   "sources": [
+    "recipe:compost"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "antler",
+   "number": 346,
+   "kind": "material",
+   "sources": [
+    "carcass:deer",
+    "carcass:moose",
+    "carcass:reindeer"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "tusk",
+   "number": 347,
+   "kind": "material",
+   "sources": [
+    "carcass:boar"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "claw",
+   "number": 348,
+   "kind": "material",
+   "sources": [
+    "carcass:badger",
+    "carcass:bear",
+    "carcass:eagle",
+    "carcass:lynx",
+    "carcass:wolf"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "down",
+   "number": 349,
+   "kind": "material",
+   "sources": [
+    "carcass:duck",
+    "carcass:goose"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "quill",
+   "number": 350,
+   "kind": "material",
+   "sources": [
+    "carcass:porcupine"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "hide_glue",
+   "number": 351,
+   "kind": "material",
+   "sources": [
+    "recipe:hide_glue"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "bone_arrow",
+   "number": 352,
+   "kind": "material",
+   "sources": [
+    "recipe:bone_arrow"
+   ],
+   "obtainable": "potential",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "acorns",
+   "number": 1000,
+   "kind": "material",
+   "sources": [
+    "tree:oak",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "aloe_gel",
+   "number": 1001,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bowl)",
+   "future": false
+  },
+  {
+   "id": "amadou",
+   "number": 1002,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "angelica_roots",
+   "number": 1003,
+   "kind": "material",
+   "sources": [
+    "plant:angelica"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "angelica_stems",
+   "number": 1004,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "arnica_flowers",
+   "number": 1005,
+   "kind": "material",
+   "sources": [
+    "plant:arnica"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "banana_leaves",
+   "number": 1006,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "bananas",
+   "number": 1007,
+   "kind": "material",
+   "sources": [
+    "plant:wild_banana"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "bedding",
+   "number": 1009,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "beechnuts",
+   "number": 1010,
+   "kind": "material",
+   "sources": [
+    "tree:beech",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "belladonna_berries",
+   "number": 1011,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "belladonna_leaves",
+   "number": 1012,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "birch_bark",
+   "number": 1013,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "blackberries",
+   "number": 1014,
+   "kind": "material",
+   "sources": [
+    "plant:bramble"
+   ],
+   "obtainable": "now",
+   "look": "ok (berries)",
+   "future": false
+  },
+  {
+   "id": "blueberries",
+   "number": 1015,
+   "kind": "material",
+   "sources": [
+    "plant:blueberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "brinebells",
+   "number": 1016,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "burdock_roots",
+   "number": 1017,
+   "kind": "material",
+   "sources": [
+    "plant:burdock"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "burrs",
+   "number": 1018,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "cactus_pads",
+   "number": 1019,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "chamomile_flowers",
+   "number": 1020,
+   "kind": "material",
+   "sources": [
+    "plant:chamomile"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "chanterelles",
+   "number": 1021,
+   "kind": "material",
+   "sources": [
+    "plant:chanterelle"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "charcoal_wood",
+   "number": 1022,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "cherries",
+   "number": 1023,
+   "kind": "material",
+   "sources": [
+    "plant:wild_cherry",
+    "tree:trunk",
+    "tree:wild_cherry"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "cherry_wood",
+   "number": 1024,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "chestnuts",
+   "number": 1025,
+   "kind": "material",
+   "sources": [
+    "plant:sweet_chestnut",
+    "tree:sweet_chestnut",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "cinderfoot_caps",
+   "number": 1026,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "cloudberries",
+   "number": 1027,
+   "kind": "material",
+   "sources": [
+    "plant:cloudberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (berries)",
+   "future": false
+  },
+  {
+   "id": "coconuts",
+   "number": 1028,
+   "kind": "material",
+   "sources": [
+    "plant:coconut_palm",
+    "tree:coconut_palm",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "comfrey_leaves",
+   "number": 1029,
+   "kind": "material",
+   "sources": [
+    "plant:comfrey"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "comfrey_roots",
+   "number": 1030,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "crab_apples",
+   "number": 1031,
+   "kind": "material",
+   "sources": [
+    "plant:wild_apple",
+    "tree:trunk",
+    "tree:wild_apple"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "cranberries",
+   "number": 1032,
+   "kind": "material",
+   "sources": [
+    "plant:cranberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "crowberries",
+   "number": 1033,
+   "kind": "material",
+   "sources": [
+    "plant:crowberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "dandelion_flowers",
+   "number": 1034,
+   "kind": "material",
+   "sources": [
+    "plant:dandelion"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "dandelion_leaves",
+   "number": 1035,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "dandelion_roots",
+   "number": 1036,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "dates",
+   "number": 1037,
+   "kind": "material",
+   "sources": [
+    "plant:date_palm",
+    "tree:date_palm",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "drakethorn_berries",
+   "number": 1038,
+   "kind": "material",
+   "sources": [
+    "plant:drakethorn"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "duskmallow_flowers",
+   "number": 1039,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "duskmallow_roots",
+   "number": 1040,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "dye",
+   "number": 1041,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "echo_moss",
+   "number": 1042,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "elderberries",
+   "number": 1043,
+   "kind": "material",
+   "sources": [
+    "plant:elder"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "elderflowers",
+   "number": 1044,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "emberroots",
+   "number": 1045,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "everember_needles",
+   "number": 1046,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "everember_sap",
+   "number": 1047,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "everember_wood",
+   "number": 1048,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "feverfew",
+   "number": 1049,
+   "kind": "material",
+   "sources": [
+    "plant:feverfew"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "fibre",
+   "number": 1050,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "fiddleheads",
+   "number": 1051,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "fine_wood",
+   "number": 1052,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "fly_agaric_caps",
+   "number": 1053,
+   "kind": "material",
+   "sources": [
+    "plant:fly_agaric"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "fodder",
+   "number": 1054,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "food",
+   "number": 1055,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bowl)",
+   "future": false
+  },
+  {
+   "id": "foxglove_leaves",
+   "number": 1056,
+   "kind": "material",
+   "sources": [
+    "plant:foxglove"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "frostglass_petals",
+   "number": 1057,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "gloaming_star",
+   "number": 1058,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "gloomthistle_down",
+   "number": 1059,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "gloomthistle_heads",
+   "number": 1060,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "greens",
+   "number": 1061,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "gum",
+   "number": 1062,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "hagwillow_bark",
+   "number": 1063,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "hagwillow_withies",
+   "number": 1064,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "hard_wood",
+   "number": 1065,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "hardwood",
+   "number": 1066,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "haws",
+   "number": 1067,
+   "kind": "material",
+   "sources": [
+    "plant:hawthorn"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "hawthorn_blossom",
+   "number": 1068,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "hazelnuts",
+   "number": 1069,
+   "kind": "material",
+   "sources": [
+    "plant:hazel"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "hearthwood_logs",
+   "number": 1070,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "heartroots",
+   "number": 1071,
+   "kind": "material",
+   "sources": [
+    "plant:heartroot"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "henbane_leaves",
+   "number": 1072,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "henbane_seeds",
+   "number": 1073,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "herbs",
+   "number": 1074,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "honey_flowers",
+   "number": 1075,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "honeyspindle_nectar",
+   "number": 1076,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "honeyspindle_pods",
+   "number": 1077,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "hushfern_fronds",
+   "number": 1078,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "juniper_berries",
+   "number": 1079,
+   "kind": "material",
+   "sources": [
+    "plant:juniper"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "kindling",
+   "number": 1080,
+   "kind": "material",
+   "sources": [
+    "tree:stump",
+    "tree:trunk",
+    "recipe:kindling"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "lantern_dew",
+   "number": 1081,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "lavender_flowers",
+   "number": 1082,
+   "kind": "material",
+   "sources": [
+    "plant:lavender"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "lingonberries",
+   "number": 1084,
+   "kind": "material",
+   "sources": [
+    "plant:lingonberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "linseed",
+   "number": 1085,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "lumencap_caps",
+   "number": 1086,
+   "kind": "material",
+   "sources": [
+    "plant:lumencap"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "marjoram",
+   "number": 1087,
+   "kind": "material",
+   "sources": [
+    "plant:wild_marjoram"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "marrowroots",
+   "number": 1088,
+   "kind": "material",
+   "sources": [
+    "plant:marrowroot"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "meadowsweet_flowers",
+   "number": 1089,
+   "kind": "material",
+   "sources": [
+    "plant:meadowsweet"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "mint",
+   "number": 1090,
+   "kind": "material",
+   "sources": [
+    "plant:wild_mint"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "mirrorbark_bark",
+   "number": 1091,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "mirrorbark_wood",
+   "number": 1092,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "mirrorcap_caps",
+   "number": 1093,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "morels",
+   "number": 1094,
+   "kind": "material",
+   "sources": [
+    "plant:morel"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "mournbloom_petals",
+   "number": 1095,
+   "kind": "material",
+   "sources": [
+    "plant:mournbloom"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "mugwort",
+   "number": 1096,
+   "kind": "material",
+   "sources": [
+    "plant:mugwort"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "nightcrown_blooms",
+   "number": 1097,
+   "kind": "material",
+   "sources": [
+    "plant:nightcrown"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "oil",
+   "number": 1098,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "owlpetals",
+   "number": 1099,
+   "kind": "material",
+   "sources": [
+    "plant:owlpetal"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "palm_fronds",
+   "number": 1100,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "palm_wood",
+   "number": 1101,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "pilgrims_cup_pitchers",
+   "number": 1102,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "pilgrims_cup_water",
+   "number": 1103,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "pine_tar",
+   "number": 1104,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "plantain_leaves",
+   "number": 1105,
+   "kind": "material",
+   "sources": [
+    "plant:plantain"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "poles",
+   "number": 1106,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "porcini",
+   "number": 1107,
+   "kind": "material",
+   "sources": [
+    "plant:porcini"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "potash",
+   "number": 1108,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "prickly_pears",
+   "number": 1109,
+   "kind": "material",
+   "sources": [
+    "plant:prickly_pear"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "puffball",
+   "number": 1110,
+   "kind": "material",
+   "sources": [
+    "plant:puffball"
+   ],
+   "obtainable": "now",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "quenchbell_heads",
+   "number": 1111,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "raspberries",
+   "number": 1112,
+   "kind": "material",
+   "sources": [
+    "plant:raspberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (berries)",
+   "future": false
+  },
+  {
+   "id": "raspberry_leaves",
+   "number": 1113,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "reed_stems",
+   "number": 1114,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "resin",
+   "number": 1115,
+   "kind": "material",
+   "sources": [
+    "tree:balsam_fir",
+    "tree:scots_pine",
+    "tree:spruce",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "rimecap_caps",
+   "number": 1116,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (cap)",
+   "future": false
+  },
+  {
+   "id": "riverbraid_stems",
+   "number": 1117,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "rose_hips",
+   "number": 1118,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "rose_petals",
+   "number": 1119,
+   "kind": "material",
+   "sources": [
+    "plant:wild_rose"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "rosemary",
+   "number": 1120,
+   "kind": "material",
+   "sources": [
+    "plant:rosemary"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "rowan_berries",
+   "number": 1121,
+   "kind": "material",
+   "sources": [
+    "plant:rowan",
+    "tree:rowan",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "sage",
+   "number": 1122,
+   "kind": "material",
+   "sources": [
+    "plant:wild_sage"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "samphire",
+   "number": 1123,
+   "kind": "material",
+   "sources": [
+    "plant:samphire"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "sap",
+   "number": 1124,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "sea_buckthorn_berries",
+   "number": 1125,
+   "kind": "material",
+   "sources": [
+    "plant:sea_buckthorn"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "seeds",
+   "number": 1126,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "sevenyear_blossoms",
+   "number": 1127,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "sevenyear_bulbs",
+   "number": 1128,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "sleetberries",
+   "number": 1129,
+   "kind": "material",
+   "sources": [
+    "plant:sleetberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "sloes",
+   "number": 1130,
+   "kind": "material",
+   "sources": [
+    "plant:blackthorn"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "softwood",
+   "number": 1131,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "sorrel_leaves",
+   "number": 1132,
+   "kind": "material",
+   "sources": [
+    "plant:sorrel"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "spines",
+   "number": 1133,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "st_johns_wort",
+   "number": 1134,
+   "kind": "material",
+   "sources": [
+    "plant:st_johns_wort"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "staunchmoss",
+   "number": 1135,
+   "kind": "material",
+   "sources": [
+    "plant:staunchmoss"
+   ],
+   "obtainable": "now",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "stillwater_petals",
+   "number": 1136,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "stillwater_seeds",
+   "number": 1137,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (grit)",
+   "future": false
+  },
+  {
+   "id": "stormreed_stalks",
+   "number": 1138,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "straw",
+   "number": 1139,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "strawberries",
+   "number": 1140,
+   "kind": "material",
+   "sources": [
+    "plant:wild_strawberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (berries)",
+   "future": false
+  },
+  {
+   "id": "stuffing",
+   "number": 1141,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "sunberries",
+   "number": 1142,
+   "kind": "material",
+   "sources": [
+    "plant:sunberry"
+   ],
+   "obtainable": "now",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "sunsilver_leaves",
+   "number": 1143,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "tanglewort_vines",
+   "number": 1144,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "tannin_bark",
+   "number": 1145,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "thatch",
+   "number": 1146,
+   "kind": "material",
+   "sources": [
+    "plant:heather",
+    "plant:reeds",
+    "plant:tall_grass",
+    "plant:thatch_grass",
+    "tree:birch/spruce/pine bark"
+   ],
+   "obtainable": "now",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "thorny_canes",
+   "number": 1147,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "thorny_wood",
+   "number": 1148,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "thyme",
+   "number": 1149,
+   "kind": "material",
+   "sources": [
+    "plant:wild_thyme"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "tidecrown_pearls",
+   "number": 1150,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (round_berries)",
+   "future": false
+  },
+  {
+   "id": "tideglass_fronds",
+   "number": 1151,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "timber",
+   "number": 1152,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "tinder",
+   "number": 1153,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (pile)",
+   "future": false
+  },
+  {
+   "id": "tinder_fungus",
+   "number": 1154,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "truthsage_leaves",
+   "number": 1155,
+   "kind": "material",
+   "sources": [
+    "plant:truthsage"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "valerian_roots",
+   "number": 1156,
+   "kind": "material",
+   "sources": [
+    "plant:valerian"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "walnut_husks",
+   "number": 1157,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "walnuts",
+   "number": 1158,
+   "kind": "material",
+   "sources": [
+    "plant:walnut",
+    "tree:trunk",
+    "tree:walnut"
+   ],
+   "obtainable": "now",
+   "look": "ok (nut)",
+   "future": false
+  },
+  {
+   "id": "wardpine_resin",
+   "number": 1159,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (chunk)",
+   "future": false
+  },
+  {
+   "id": "wardpine_wood",
+   "number": 1160,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "water",
+   "number": 1161,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "now",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "watercress",
+   "number": 1162,
+   "kind": "material",
+   "sources": [
+    "plant:watercress"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "whisperfern_fronds",
+   "number": 1163,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "wild_carrot_roots",
+   "number": 1164,
+   "kind": "material",
+   "sources": [
+    "plant:wild_carrot"
+   ],
+   "obtainable": "now",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "wild_garlic_bulbs",
+   "number": 1165,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "wild_garlic_leaves",
+   "number": 1166,
+   "kind": "material",
+   "sources": [
+    "plant:wild_garlic"
+   ],
+   "obtainable": "now",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "wild_pears",
+   "number": 1167,
+   "kind": "material",
+   "sources": [
+    "plant:wild_pear",
+    "tree:trunk",
+    "tree:wild_pear"
+   ],
+   "obtainable": "now",
+   "look": "ok (fruit)",
+   "future": false
+  },
+  {
+   "id": "willow_bark",
+   "number": 1168,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "wispbloom_heads",
+   "number": 1169,
+   "kind": "material",
+   "sources": [
+    "plant:wispbloom"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  },
+  {
+   "id": "withies",
+   "number": 1170,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bundle)",
+   "future": false
+  },
+  {
+   "id": "witness_bark",
+   "number": 1171,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bark)",
+   "future": false
+  },
+  {
+   "id": "witness_leaves",
+   "number": 1172,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (frond)",
+   "future": false
+  },
+  {
+   "id": "wolfsbane_roots",
+   "number": 1173,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (root)",
+   "future": false
+  },
+  {
+   "id": "wood",
+   "number": 1174,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (beams)",
+   "future": false
+  },
+  {
+   "id": "yarrow",
+   "number": 1175,
+   "kind": "material",
+   "sources": [
+    "plant:yarrow"
+   ],
+   "obtainable": "now",
+   "look": "ok (flower)",
+   "future": false
+  }
+ ],
+ "structures": [
+  {
+   "id": "lean_to",
+   "state": 5,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.4,
+    2.1
+   ],
+   "cap": 6,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "chest",
+   "state": 6,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.8,
+    0.6
+   ],
+   "cap": 8,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "chopping_block",
+   "state": 7,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.7,
+    0.7
+   ],
+   "cap": 4,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "plank_chest",
+   "state": 6,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.9,
+    0.6
+   ],
+   "cap": 8,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "kit recipe plank_chest_kit not known",
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "remains",
+   "state": 11,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.8,
+    0.7
+   ],
+   "cap": 50,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": []
+  },
+  {
+   "id": "workbench",
+   "state": 13,
+   "station": "workbench",
+   "station_level": 1,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.5,
+    1.0
+   ],
+   "cap": 4,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "tool_rack",
+   "state": 14,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "workbench",
+   "footprint": [
+    1.0,
+    0.4
+   ],
+   "cap": 6,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "vice",
+   "state": 15,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "workbench",
+   "footprint": [
+    0.5,
+    0.5
+   ],
+   "cap": 6,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "kit 'vice_kit' has no recipe and no blueprint",
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "log_workbench",
+   "state": 16,
+   "station": "workbench",
+   "station_level": 2,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    1.0
+   ],
+   "cap": 3,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "saw_mill",
+   "state": 34,
+   "station": "saw_mill",
+   "station_level": 1,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    3.0,
+    2.0
+   ],
+   "cap": 2,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "woodworking_table",
+   "state": 35,
+   "station": "woodworking_table",
+   "station_level": 1,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    1.0
+   ],
+   "cap": 4,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "stone_forge",
+   "state": 17,
+   "station": "workbench",
+   "station_level": 3,
+   "also": {
+    "forge": 1
+   },
+   "addon_of": "",
+   "footprint": [
+    0.9,
+    0.72
+   ],
+   "cap": 2,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "blacksmithy",
+   "state": 18,
+   "station": "workbench",
+   "station_level": 4,
+   "also": {
+    "forge": 2
+   },
+   "addon_of": "",
+   "footprint": [
+    1.5,
+    1.17
+   ],
+   "cap": 1,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "carcass",
+   "state": 19,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.0,
+    0.6
+   ],
+   "cap": 50,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": []
+  },
+  {
+   "id": "large_forge",
+   "state": 20,
+   "station": "workbench",
+   "station_level": 4,
+   "also": {
+    "forge": 3
+   },
+   "addon_of": "",
+   "footprint": [
+    2.8,
+    2.0
+   ],
+   "cap": 1,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "kit 'large_forge_kit' has no recipe and no blueprint",
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "master_forge",
+   "state": 21,
+   "station": "workbench",
+   "station_level": 4,
+   "also": {
+    "forge": 4
+   },
+   "addon_of": "",
+   "footprint": [
+    3.9,
+    2.6
+   ],
+   "cap": 1,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "kit 'master_forge_kit' has no recipe and no blueprint",
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "wall_section",
+   "state": 22,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "floor_section",
+   "state": 23,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    2.0
+   ],
+   "cap": 200,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "roof_section",
+   "state": 24,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.4,
+    2.4
+   ],
+   "cap": 100,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "foundation_section",
+   "state": 25,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    4.0,
+    4.0
+   ],
+   "cap": 60,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "doorway_section",
+   "state": 26,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "window_section",
+   "state": 27,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "door_open",
+   "state": 28,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": []
+  },
+  {
+   "id": "timber_prop",
+   "state": 29,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.4,
+    0.4
+   ],
+   "cap": 60,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "kit recipe timber_prop_kit not known",
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "timber_set",
+   "state": 30,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.4
+   ],
+   "cap": 60,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "ladder",
+   "state": 31,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.6,
+    0.15
+   ],
+   "cap": 60,
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
+  },
+  {
+   "id": "path_patch",
+   "state": 32,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.0,
+    1.0
+   ],
+   "cap": 400,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "rough_bed",
+   "state": 36,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.0,
+    2.0
+   ],
+   "cap": 6,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "thatch_wall",
+   "state": 37,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "campfire_pot",
+   "state": 38,
+   "station": "campfire_pot",
+   "station_level": 1,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.2,
+    1.2
+   ],
+   "cap": 6,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "clay_hearth",
+   "state": 39,
+   "station": "clay_hearth",
+   "station_level": 2,
+   "also": {
+    "campfire": 1
+   },
+   "addon_of": "",
+   "footprint": [
+    1.6,
+    1.2
+   ],
+   "cap": 4,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "snare_trap",
+   "state": 46,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.6,
+    0.6
+   ],
+   "cap": 12,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  },
+  {
+   "id": "oven",
+   "state": 45,
+   "station": "oven",
+   "station_level": 3,
+   "also": {
+    "clay_hearth": 2,
+    "campfire": 1
+   },
+   "addon_of": "",
+   "footprint": [
+    1.8,
+    1.4
+   ],
+   "cap": 2,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "thatch_floor",
+   "state": 42,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    4.0,
+    4.0
+   ],
+   "cap": 60,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "thatch_roof",
+   "state": 43,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.4,
+    2.4
+   ],
+   "cap": 100,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "thatch_doorway",
+   "state": 44,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.25
+   ],
+   "cap": 200,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
+   "problems": []
+  },
+  {
+   "id": "rock_pile",
+   "state": 33,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.2,
+    1.2
+   ],
+   "cap": 12,
+   "built_wave_now": 1,
+   "built_wave_potential": 1,
+   "problems": []
+  }
+ ],
+ "tools_now": [
+  "axe",
+  "hammer",
+  "hoe",
+  "knife",
+  "net",
+  "rod",
+  "spade",
+  "torch"
+ ],
+ "tools_potential": [
+  "axe",
+  "candle",
+  "hammer",
+  "hoe",
+  "knife",
+  "net",
+  "pick",
+  "quern",
+  "rod",
+  "shield",
+  "spade",
+  "torch"
+ ],
+ "stations_potential": [
+  [
+   "campfire",
+   1
+  ],
+  [
+   "campfire_pot",
+   1
+  ],
+  [
+   "clay_hearth",
+   2
+  ],
+  [
+   "forge",
+   1
+  ],
+  [
+   "oven",
+   3
+  ],
+  [
+   "workbench",
+   1
+  ],
+  [
+   "workbench",
+   3
+  ]
+ ],
+ "stations_now": [
+  [
+   "campfire_pot",
+   1
+  ],
+  [
+   "forge",
+   1
+  ],
+  [
+   "workbench",
+   1
+  ],
+  [
+   "workbench",
+   3
+  ]
+ ]
+}

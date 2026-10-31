@@ -215,3 +215,30 @@ Verified after the changes: `selftest_gate_tools.sh` 16 pass, 0 fail; `tests_for
 **C. When only gate tooling changes (the lists, the runner, the selector), run what?** (1) All 96 fast tests (today). (2) Recommended: the lane check and the selftest (1 min). Lose: a lane edit that wrongly moves a test is caught by the next real change instead.
 
 **D. Godot's `.import` files change line endings on every import.** (1) Leave as is. (2) Recommended: mark `*.import` as LF-only in `.gitattributes`. Lose: one commit that rewrites 85 small files.
+
+## 31 Oct night: the four known-red tests, merge watch, bot and world-alive tool
+
+### The four tests that are red on the daily branch (decision: "known until re-bake")
+They are listed in `tools/known_red.txt`; `tools/merge_day.sh` reports them as KNOWN, not NEW, so a red that is really new is not hidden among them. They are red because the committed tiles are the old bake and these tests read the baked tile 3,4 (GENERATOR_NOTES: "tests run before a re-bake test the OLD terrain"). Natural rivers stay off by default until the re-bake, so each test is judged against what the NEW system keeps:
+
+| test | what it checks | new system | decision | covered meanwhile by |
+|---|---|---|---|---|
+| test_head_pond_fill | a spring lands in a head pond and the pond fills (build 623) | natural rivers have no head ponds | ARCHIVE when natural rivers are switched on (move to proposed_removals/ then); keep as known red until then | test_water_small (dry start fills, no stranded wet stretch) |
+| test_drainage_flow | runoff gathers into rivers and agrees with the rule-based rivers, channel shape | channels are replaced by drainage_natural.gd | ARCHIVE after the re-bake; the mass-balance part is already in test_drainage_small | test_drainage_small, test_drainage_natural |
+| test_drainage_fill | depressions become lakes, outlet at the lowest rim, on the baked tile | lakes from the fill are the new lake system | RE-PIN after the re-bake (keep the test, refresh its numbers on the new tile) | test_drainage_small (made-up bowl) |
+| test_river_surface | river surface flat across, shore is the zero contour, on the baked tile and its settled water file | still true of natural rivers (cross-section numbers will change with meanders) | RE-PIN after the re-bake; loosen the cross-section limit only with a recorded reason | none for real tiles; test_water_small checks the settler only |
+
+Rule for whoever re-bakes: after the bake, delete the line of each re-pinned test from `tools/known_red.txt` in the same commit; a test archived goes to `proposed_removals/` with a row in REMOVALS.md.
+
+### New tools
+- `tools/merge_day.sh branch...`: dry-run merge of several branches into a scratch tree from the daily branch (pair conflicts, sequential merge, tests against main, items_check, one-page result). Hourly results: MERGE_WATCH.md.
+- `src/worldgen/tools/test_playability_bot.gd` (always lane, 1.2 s): the first hour by recipe name, stops at the first step that cannot be done and says which. Mutation checks in the section below.
+- `tools/world_alive.sh` with TARGETS.md and WORLD_ALIVE_LOG.md: flora per hectare by layer, nominal animals per km2, water and rivers per biome on the nine centre tiles.
+
+### Playability bot mutation checks (31 Oct, tools/mutation_check.sh, small tests only)
+| mutation | test_playability_bot | test_first_hour |
+|---|---|---|
+| fire_is_lit always false (server_items.gd) | FAIL, "BOT STOPPED at step 7 (fire): ... could not be lit" | FAIL |
+| every recipe gives 0 (recipe_table.gd) | FAIL at the first craft step | FAIL |
+| every recipe needs the station saw_mill (recipe_table.gd) | FAIL, names the station | FAIL |
+Honest note: both tests catch the same faults; the bot adds a message that names the step and the reason, finds recipes by name instead of number, and a gather budget (60 sticks, 40 stones, 90 fibre, 20 leaves by hand for axe + fire + lean-to; today the plan asks 15 / 4 / 21 / 6). The data-file mutations I first tried (twine and axe costs in recipes.json) could not be applied: the file is multi-line JSON and mutation_check.sh takes one-line text only.

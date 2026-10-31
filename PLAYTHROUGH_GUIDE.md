@@ -56,11 +56,11 @@ Pictures: `02_fibre_plants.jpg` (reeds, wild flax, thatching grass, heather labe
 
 Open the crafting screen (I). Recipe **Twine** (#1, known from the start): **3 plant fibre -> 1 twine**, 2 seconds. Twine can also come from 2 bark (#24 "Twine from bark").
 
-You need **5 twine for the first axe = 15 plant fibre**. Gather 20 fibre before you go on.
+You need **2 twine for the first axe = 6 plant fibre**. Gather 10 fibre before you go on.
 
 ## Step 05. Make the first stone axe
 
-Recipe **Stone axe** (#2, known, no station): **1 stone + 1 stick + 5 twine -> stone axe**, 4 seconds, anywhere. It lasts 900 uses (durability), wears 1 per tree blow, 5 per boulder blow.
+Recipe **Stone axe** (#2, known, no station): **1 stone + 1 stick + 2 twine -> stone axe**, 4 seconds, anywhere. It lasts 900 uses (durability), wears 1 per tree blow, 5 per boulder blow.
 
 Put it on the hotbar: drag it from the pack onto a hotbar box, or press E on it in the inventory. Press its number to hold it.
 
@@ -124,7 +124,7 @@ Recipe **Rough bed kit** (#162, known): **10 thatch + 4 sticks + 2 twine**. That
 
 | Tool | Recipe | Notes |
 |---|---|---|
-| Stone axe (#2) | stone, stick, 5 twine | step 05 |
+| Stone axe (#2) | stone, stick, 2 twine | step 05 |
 | Stone knife (#6) | 2 stone + stick | bark, gum, sap, carcasses |
 | Wooden spade (#12) | 2 sticks, keeps a stone | digs soil, roots, clay |
 | Stone spade (#26) | workbench: wooden spade + 2 stone + twine | 2x the dig |
@@ -141,7 +141,7 @@ Recipe **Rough bed kit** (#162, known): **10 thatch + 4 sticks + 2 twine**. That
 | Weapon | Recipe | Damage / life |
 |---|---|---|
 | Wooden spear (#5) | 1 stick (keeps a stone) | 6, 300 uses |
-| Stone spear `spear` (#3) | wooden spear + 5 twine (keeps a stone) | 8, 450 uses |
+| Stone spear `spear` (#3) | wooden spear + 2 twine (keeps a stone) | 8, 450 uses |
 | Wooden bow (#170) | workbench: 2 sticks + 3 twine | needs arrows |
 | Wooden arrow (#171) | 2 sticks + **2 feathers** -> 4 | feathers only drop from grouse and ducks (needs a kill and a knife) |
 | Stone arrow (#172) | 2 sticks + 2 feathers + 2 stones -> 4 | |
@@ -154,11 +154,11 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 ## Quick order of play (the whole thing in one list)
 
 1. Hold E around you: 6 sticks, 4 stones, then 20 plant fibre from nettles or tall grass.
-2. Craft 5 twine, then the stone axe; put it on the hotbar.
+2. Craft 2 twine, then the stone axe; put it on the hotbar.
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
 4. Craft the campfire kit, place it under a big tree, light it with a plant fibre.
 5. Roast berries, drink at the water.
 6. Craft the lean-to kit (8 sticks, 6 leaves, 2 twine) and place it by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed kit, place it under the lean-to.
 8. Workbench (12 sticks, 3 twine) -> stone hammer, bow, thatch pieces.
-9. Spear (stick, then 5 twine) for hunting; knife (2 stones, stick) for carcasses.
+9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.

@@ -1,5 +1,7 @@
 # Playthrough findings: spawn to first shelter, tools and weapons
 
+**Update 2026-10-31:** the height fix (TERRAIN_VERSION 44) changed the world; the pictures of items and structures are unaffected, the plant and ground pictures of 2026-10-30 were taken on the old world (see Part 2 sections 10 and 11).
+
 Date 2026-10-30, branch `claude/dazzling-elbakyan-e46f22`, based on DailyDev_20261029 (4efe6b1d). Read `PLAYTHROUGH_GUIDE.md` first: every step number below is a step of that guide.
 
 **How this was checked (and what was not)**
@@ -63,7 +65,7 @@ Status: PASS (exists, looks right, works) | LOOKS WRONG | MISSING ITEM | MECHANI
 |---|---|---|---|---|
 | F-03 | **Three of four tinder fallbacks cannot be obtained.** `tinder_also` lists birch_bark, tinder, tinder_fungus, but no plant, tree or recipe yields them: `tinder_fungus` (flora) has no drops.json entry (it yields `amadou` on paper, also ungatherable), birch trunks give *thatch* from bark blows, not `birch_bark`. Only plant fibre lights a fire. In a forest with no nettle, the player is stuck. | probe: lighting works with each, but `grep -rn birch_bark src data/items/drops.json` finds no source | Sal (drops.json: birch trunk gives birch_bark; tinder_fungus plant gives tinder_fungus) / flora session | small |
 | F-04 | **Doc says the opposite of the game in several places.** CONTROLS.md: campfire "10 stones and 20 sticks" (recipe is 6 sticks, 3 stones); "starts lit" (it is placed laid, light with E); chopping block "splits one log into 4 firewood" (code: one wooden block to one firewood, blocks come from chopping a log on the ground) A guide written from CONTROLS would send the player wrong. test_first_hour.gd also still says "20 sticks, 10 stones". | CONTROLS.md vs recipes.json #4 and server_items.gd 4505-4525 | doc owner (Tyler) | small |
-| F-07 | **The spawn meadow has no cover.** Only trees >= 0.8 of full height shelter, and every tree in the spawn-area pictures is a young conifer. A new player cold or in rain has no tree to stand under until they find woods. | `03_raw_materials.jpg`, `06_weapons.jpg`; cover.gd SHELTER_MIN_SCALE | flora session (a few grown trees near spawn) / Dave to confirm design | small |
+| F-07 | **(fixed by the height fix, see Part 2 section 11) The spawn meadow has no cover.** Only trees >= 0.8 of full height shelter, and every tree in the spawn-area pictures is a young conifer. A new player cold or in rain has no tree to stand under until they find woods. | `03_raw_materials.jpg`, `06_weapons.jpg`; cover.gd SHELTER_MIN_SCALE | flora session (a few grown trees near spawn) / Dave to confirm design | small |
 | F-08 | **Bow is useless without feathers.** Arrows need feathers; feathers only come from killing a grouse or duck (carcass.json), which a new player cannot do reliably. Quiver needs hide (rabbit). | recipes #171-#173 | Sal (a second arrow source, e.g. fletching from bark or reeds) | small |
 
 **MEDIUM / looks**
@@ -101,6 +103,98 @@ tools/godot.cmd --headless --path . --script res://art/playthrough/probe_playthr
 bash art/playthrough/rig.sh --row stone,stick,twine --gy 1039.0 --row-dist 3.5 --agl 1.8 --pitch -35 --name my_row --out art/playthrough
 ```
 
+
+---
+
+# Part 2: the whole tree (all tiers, every recipe, station, structure and look)
+
+Dave widened the job: every bench, tool, weapon, armour piece, construction piece, container, food and item. Everything below was produced by three scripts that read the data and the real server code, and by pictures from the real client.
+
+| Script | What it does | Output |
+|---|---|---|
+| `art/playthrough/audit_playthrough.py` | walks every recipe, item, station and structure; traces every ingredient to a world source (ground, plant, tree, dig, carcass, fish, NPC, another recipe), now (known and open recipes only) and "if every recipe were known"; checks station levels against structures that can really be built; checks looks (missing, grey placeholder, ignored override) | `audit.md`, `audit.json` |
+| `art/playthrough/make_chapters.py` | turns the audit plus the data into the tier chapters with exact steps, a status per recipe and a checklist | `PLAYTHROUGH_CHAPTERS.md` |
+| `art/playthrough/probe_playthrough.gd`, `probe_structures.gd`, `probe_logs.gd` | run the real `server_items.gd`: every recipe queued with exactly its ingredients; every structure placed from its kit and from its hammer blueprint; bench levels; the log problem | `probe_output.txt`, `probe_structures_output.txt`, `probe_logs_output.txt` |
+| `art/playthrough/make_showroom.py`, `run_showroom.sh`, `rig.sh` | a temporary showroom of every item (14 per row, name tags) photographed from the real client | `art/playthrough/showroom/` |
+
+## 5. Scoreboard by chapter (from `PLAYTHROUGH_CHAPTERS.md`)
+
+See the table at the top of `PLAYTHROUGH_CHAPTERS.md` (regenerated each run). Reading it: **FUTURE** = the product is flagged `future:true` in items.json (not yet in play by design). **BLOCKER** = not flagged, so a real hole: either the recipe is `known:false` with no way to learn it, or an ingredient has no source, or the station cannot be built.
+
+## 6. What the existing checks miss
+
+`validate_items.gd` (run: 0 errors, 177 warnings), `tools/check_look_names.py` ("all 35 structure looks are drawable") and `test_first_hour.gd` all pass, yet the audit finds real holes:
+
+| Hole | Why the existing checks do not see it |
+|---|---|
+| Every tree drops `log_<species>` (shoulder, one at a time) but five recipes and the blacksmithy blueprint ask for plain `log` (F-16) | validate_items counts `log` as "gatherable" because the server has a fallback that gives plain `log` for a species without a `log_*` item; all 25 tree species have one, so the fallback never fires |
+| `ART_OVERRIDES` in basic_look.gd is ignored for 20 items whose looks.json row is still the grey chunk (F-17) | validate_items says "looks: 0 GENERIC items remaining" because it only counts items with no row at all |
+| 46 items still use the grey "chunk" (armour, crops, three hide garments, quern, compost, bone items), two (clay_jug, candle) have no row (F-18) | same |
+| 47 recipes are `known:false` or blocked but their product is not flagged `future` (F-19) | validate_items checks the item, not whether a player can learn the recipe (there is no learn system) |
+| 100+ gathered items (herbs, flowers, mushrooms, saps, fibres) have no gather path although flora.json lists them as yields (F-20) | "95 gathered materials have no use yet" is a use check, not a source check; drops.json says a plant with no entry cannot be gathered, silently |
+| Station levels, the foundation rule for the saw mill, "needs a clay hearth beside" for the oven | `test_stations.gd` checks the levels it knows; nothing checks that the chain can be walked from nothing |
+
+## 7. New action items (continuing the numbering of section 2)
+
+Severity: BLOCKER = a player cannot get past it. Owners as in the brief.
+
+| ID | Sev | What is wrong | Evidence | Owner | Size |
+|---|---|---|---|---|---|
+| F-16 | **BLOCKER** | **Recipes that ask for plain `log` can never be filled.** Every one of the 25 tree species drops `log_<species>` (carried on the shoulder, one at a time, not in the pack). Chopping block (#15, 2 log), log workbench kit (#49, 4 log), rough plank (#143), lumber (#16), timber prop (#125), lumber by hand (#159) and the blacksmithy blueprint (10 log) need `log` and the crafting code does no matching of `log_oak` to `log`. So: **no chopping block, no log workbench (workbench level 2 by that route), no rough planks, no blacksmithy.** | `probe_logs_output.txt`: oak log on the shoulder, craft of the chopping block: "You do not have what that needs"; with 2 plain logs given by admin: crafted. `flora.json`: all 25 trees have a `log_*` item | Sal (data: let recipes name a class, or accept any `log_*`) plus a code owner (ingredient groups in recipe_table / inventory) | small to medium |
+| F-17 | HIGH | **Real looks exist but are never drawn.** `basic_look.gd entry()` uses `ART_OVERRIDES` only when looks.json has no row, but 20 items still carry the grey `chunk` row: flint, pyrite, obsidian, processed hide, leather, fine leather, heavy leather, rivets, copper/tin/bronze ingot, flour, yeast, salt, javelin, wooden club, copper/tin/iron ore, coal. They are drawn as grey blobs. (This is the white blob seen for the club and javelin in `06_weapons.jpg`.) | `audit.md` "OVERRIDE IGNORED"; `src/client/basic_look.gd` lines 17-62 | Kathleen (one line: prefer the override when the row's shape is `chunk`; or delete the 20 grey rows) | small |
+| F-18 | MEDIUM | **46 items still have the grey placeholder look and 2 have no look.** Hide tunic, trousers, gloves; herb salve, splint; wicker shield, stone mace; plank, bronze, iron and steel shields, swords, maces; leather cap, jerkin, bronze/iron/steel helm, gambeson, mail shirt, plate cuirass; wheat, barley, carrot, potato, turnip, flax and their six seed items; quern, compost, antler, tusk, claw, down, quill, hide glue, bone arrow. `clay_jug` and `candle` have no row. Most are `future` so players do not see them yet. | `audit.md` "Item looks that are missing or placeholders" | Kathleen | medium |
+| F-19 | HIGH | **47 recipes cannot be crafted and their products are not flagged `future`.** Cooking: berry compote, nut paste, baked apples, garlic meat, chestnut cakes, fruit leather, hunter's, forager's stew, trail bread, hearty pottage, feast roast, flatbread, honey loaf, roast joint (ingredients `honeyspindle_nectar`, `wild_garlic_bulbs`, `linseed`, `greens`, `seeds`, `dandelion_leaves` have no gather entry). Wood and building: lumber, plank chest, bucket, wall, floor, roof, doorway, window, timber prop, timber set, ladder kits, fine board, wooden pin, nails, tar, hinges, water wheel, hand saw (all downstream of F-16 and F-21). Clothes and cord: grass skirt, grass cloak, fibre sandals, sinew cord (known:false). Stone: cut stone block, brick, mortar, cobblestone, stone shingle (known:false). Kindling (known:false). Willow bark tea (`willow_bark` has no source). | `audit.md` "Recipes blocked", column "future? NO" | Sal | medium |
+| F-20 | HIGH | **About 100 gathered items cannot be gathered.** drops.json gives a plant yield only for the species listed in `by_species`, `harvest_yield` and `berry_yield`; the rest of flora.json's yields became items that nothing produces: wild garlic bulbs, linseed, dandelion leaves and roots, comfrey roots, honey flowers, elderflowers, rose hips, willow bark, birch bark, amadou, tinder, tinder fungus, sap, gum, oil, fiddleheads, reed stems, straw, bedding and many fantasy plants. Plus abstract yield names that became items and should probably be removed: `wood`, `hardwood`, `softwood`, `hard_wood`, `fine_wood`, `timber`, `fibre`, `herbs`, `food`, `fodder`, `poles`, `stuffing`, `spines`, `burrs`. | `audit.md` "ORPHAN items" with "NOT marked future" | Sal (add yields) / flora session (which species to harvest) | medium |
+| F-21 | MEDIUM | **Saw mill chain is circular without iron.** Saw mill blueprint = 40 lumber + 100 nails + saw blade + water wheel (itself 20 lumber + 80 nails); lumber comes only from a saw mill or a hand saw; a hand saw needs a saw blade from a forge and iron. No iron ore exists (F-23). The saw mill also needs a tall foundation (0.5 m lift) under it. | `probe_structures_output.txt`: saw mill "It needs a tall foundation"; audit: recipes #16, #52-#101 blocked | Sal | medium |
+| F-22 | MEDIUM | **Building tiers are incomplete.** Present: lean-to, thatch (wall, roof, floor, doorway), wood sections (wall, floor, roof, foundation, doorway, window, timber prop, timber set, ladder), rock pile. Missing: **stairs**, thatch window, any stone, brick, cobble or log wall/floor/roof pieces (blueprints.json says "when they land"), gates, fences, furniture (table, chair, shelf, door as its own piece: a door is only `door_open` of the doorway), storage beyond chest and plank chest. | `structures.json` (37 rows), `blueprints.json` (6 rows) | Sal (design and data), Kathleen (looks) | large |
+| F-23 | **BLOCKER (by design, future)** | **No metal at all.** `copper_ore`, `tin_ore`, `iron_ore`, `coal` have no source (no mining, no ore deposit pickup), so ingots, bronze, iron and steel tools, weapons, armour, nails, hinges, rivets and the saw blade (27 recipes in chapter 9) cannot be made; the forge itself can be built (stone forge: workbench level 2 + 36 stone, 10 clay, 2 hide). The pick axe is `known:false` too, so there is no way to even try. | `audit.md` chapter 9; probe: stone forge PLACED beside workbench + tool rack | Sal plus a code owner (ore deposits and mining) | large |
+| F-24 | MEDIUM | **No learn system.** Same as F-01, now counted over the whole table: 90 of 173 live recipes cannot be learned (`known:false` and not in `open_recipes.json`). 70 of the 90 make products flagged future (by design), 20 do not; 47 recipes in all are blocked without the future flag (F-19). | `recipes.json`, `recipe_table.gd craft()` | code owner (learn system), Sal (which recipes open now) | large (system) / small (data) |
+| F-25 | LOW | The kit items of the big stations (`stone_forge_kit`, `blacksmithy_kit`, `large_forge_kit`, `master_forge_kit`, `saw_mill_kit`, `woodworking_table_kit`, `clay_hearth_kit`, `oven_kit`, `vice_kit`) are real items with no recipe: players use hammer blueprints, so the kits are dead rows (retired by Dave 25 Oct); they appear in the item table and the showroom. `large_forge` and `master_forge` have no blueprint at all, so they cannot be built by a player. | `probe_structures_output.txt`; `blueprints.json` | Sal | small |
+| F-26 | LOW | `door`: no door item; `door_open` shares the doorway kit. `path_patch` is placed by the hoe only. Fine, noted so nobody looks for them. | `structures.json` | none | none |
+
+## 8. Station and structure probe (real server code)
+
+From `probe_structures_output.txt`:
+
+* Every kit in structures.json places (campfire pot only on a laid fire; snare only on open ground away from buildings; the saw mill needs a foundation under it).
+* Hammer blueprints: woodworking table, clay hearth, oven (beside a clay hearth) place; **stone forge needs workbench level 2** (a workbench with a tool rack within 5 m, or a log workbench) and places; **blacksmithy needs workbench level 3** (the stone forge) and 10 `log` which cannot be paid (F-16); the saw mill needs a foundation lift.
+* Bench levels measured with `station_near`: workbench 1; workbench + tool rack 2; log workbench 2; stone forge 3 (+ forge 1); blacksmithy 4 (+ forge 2).
+* The vice is a retired add-on ("the log workbench carries its own vice").
+
+## 9. Chapters (in the order a player unlocks them)
+
+The full per-recipe tables, with exact needs, where each ingredient comes from, station, known flag, status and the picture row, are in **`PLAYTHROUGH_CHAPTERS.md`**. Chapter 1 (the first day) is `PLAYTHROUGH_GUIDE.md`.
+
+| Ch | Tier | State today |
+|---|---|---|
+| 1 | Hands: pick up sticks, stones, fibre, thatch, leaves; twine; stone axe; chop; campfire; lean-to; bed | works (see sections 1 and 2 above). Chopping block and the log chain blocked by F-16 |
+| 2 | Stone age by hand | 16 PASS of 33; the rest are future (club, mace, candle, quern, compost, bone arrow, metal spades, hide scraper) or known:false (mortar, sinew cord) |
+| 3 | Fire, food and medicine by hand | works: torch, tea, poultices, bandages, energy bar |
+| 4 | Shelter, clothes, containers by hand | lean-to, chest, bed, backpack, hide clothes, wooden bowl, clay pot work; bucket, waterskin, clay jug, grass clothes, hide tunic set blocked (known:false) |
+| 5 | Cooking stations | pot kit, simple campfire dishes work; 14 dishes blocked by gather holes (F-19, F-20); clay hearth and oven blocked by brick (known:false) |
+| 6 | Workbench tier 1 | stone hammer, bow, hoes, spades, thatch pieces, hide scraper (flint missing) |
+| 7 | Bigger benches | stone forge works; log workbench and blacksmithy blocked by F-16 |
+| 8 | Wood tier | blocked (F-16, F-21) |
+| 9 | Forge and metal | blocked (F-23, by design) |
+| 10 | Every structure | see the table at the end of `PLAYTHROUGH_CHAPTERS.md` |
+
+## 10. Photographs
+
+* `art/playthrough/*.jpg`: the first-day pictures (taken on the OLD, wrongly-read world; item looks do not depend on the terrain, flora and ground do: `02_*` should be re-taken).
+* `art/playthrough/showroom/sr_*.jpg`: one row of 14 items per picture with name tags (`rows.json` says which row holds which item). Rows taken on the corrected world.
+* Pictures that could not be taken, and why, are listed in section 12.
+
+## 11. Fixed by the height fix (not action items)
+
+* F-07 (no cover on the spawn meadow): the fixed world's spawn is by a pond in a stand of grown oaks and beeches (`showroom/` pictures); the old pictures showed young conifers on a 1,000 m plateau. Re-check cover with `tools/look_rig.sh` once the ground loads in the picture.
+* My first rig note that the spawn ground is y=1039: that was the old height error. After the fix the spawn ground is 31.0 m again and `look_rig.sh --gy 31` (its default) is right.
+
+## 12. What I could not photograph or run
+
+* A walk by hand in the client (real mouse clicks).
+* Pictures of kits, placed stations and structures on the fixed world: the rig needs the ground to have loaded and each run re-bakes the terrain store (about 5 minutes of machine time), so I ran the item rows first; the `--pieces` run for the 37 structures is listed in `run_all.sh`.
+* Pictures where an item has no look (it is drawn as the grey chunk) are in the showroom rows and marked in `audit.md`.
+
 ## 5. Fix status (Sal, 2026-10-31, branch sal-items)
 Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `known` flag, 1 mismatch (Lumber by hand, needs a hand saw), and fire lights with plant fibre, birch bark, tinder and tinder fungus.
 * **F-01 FIXED (data):** 76 recipes now `known:true` (stone pickaxe, club, mace, javelin, wicker shield, kindling, hide and grass clothing, waterskin, bucket, brick, clay jug, quern, splint, candle, compost, salve and more). 19 stay locked (forge/workbench level 2 and up, water wheel). Code half: LEARN_SYSTEM_SPEC.md.
@@ -112,3 +206,6 @@ Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `
 * **F-14 PARTLY FIXED:** twine cut on thatch floor 6 to 4, wall 20 to 8, roof 10 to 6, doorway 12 to 6, shore net 20 to 8, campfire pot 5 to 3. **The stone axe and stone spear stay at 5 twine** because test_first_hour and test_auto_craft hard-code 5 twine and 15 fibre; changing them needs those tests rewritten (about 12 lines in test_auto_craft). Proposal: axe 2 twine.
 * **F-15 FIXED (data):** Stone pickaxe is known and no longer marked future.
 * **F-02, F-05 data FIXED, code open:** Stone wedge (353) + log at a workbench gives 2 lumber, so wooden building is reachable with no iron. Flint, coal, ore and obsidian sources are specified in FLINT_ORE_SPEC.md for the code session; until then hide scraper, javelin and sickle stay unreachable.
+* **F-14 FIXED (update 2026-10-31):** Stone axe and Stone spear now cost 2 twine (6 fibre) instead of 5; test_first_hour, test_auto_craft (the 50-craft-cap check is dropped because one queue call takes at most 20 axes, which now needs only 40 twine), test_inventory and PLAYTHROUGH_GUIDE.md updated.
+* **F-12 straw FIXED (data):** tall grass now also gives 1 to 3 straw; recipe "Rough bed" also accepts 8 straw.
+* **F-11 spec:** LOG_SPECIES_SPEC.md (code half for Tyler).
