@@ -1,0 +1,2165 @@
+{
+	"_about": "Wild foods bestiary (Sal, 2026-10-31), generated from flora.json (plants and shrubs), drops.json, gathered.json look-alike lists and the 'Poisonous' wording of item descriptions; read by nothing yet. `edible` = plants whose yields are not marked poisonous; `warning` appears where a look-alike is poisonous. `poisonous` = plants whose yields say poisonous or 'not for eating'. Biomes are the keys of flora.json per_hectare. Meant for the encyclopedia and the hint system (e.g. the Foraging inspection mode). Plants without a harvest row yield a random in-season yield item. Real-world species are generally as in nature; the made-up plants (names like hushfern, dewlantern) have no real counterpart.",
+	"edible": {
+		"hazel": {
+			"display": "Hazel",
+			"parts": [
+				"hazelnuts"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Elder",
+				"Hawthorn",
+				"Honeyspindle"
+			]
+		},
+		"bramble": {
+			"display": "Bramble",
+			"parts": [
+				"blackberries"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Raspberry",
+				"Sunsilver vine",
+				"Tanglewort",
+				"Wild rose"
+			]
+		},
+		"juniper": {
+			"display": "Juniper",
+			"parts": [
+				"juniper_berries"
+			],
+			"season": [
+				"autumn",
+				"winter"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"dry_scrub",
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Gorse",
+				"Sea buckthorn"
+			]
+		},
+		"gorse": {
+			"display": "Gorse",
+			"parts": [
+				"kindling",
+				"fodder"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"heath",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Juniper",
+				"Sea buckthorn"
+			]
+		},
+		"dwarf_birch": {
+			"display": "Dwarf birch",
+			"parts": [
+				"kindling"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"tundra"
+			],
+			"look_alikes": [
+				"Juniper",
+				"Sea buckthorn"
+			]
+		},
+		"saltbush": {
+			"display": "Saltbush",
+			"parts": [
+				"fodder",
+				"potash"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert"
+			],
+			"look_alikes": [
+				"Juniper",
+				"Samphire",
+				"Sea buckthorn",
+				"Tideglass weed"
+			]
+		},
+		"cactus": {
+			"display": "Cactus",
+			"parts": [
+				"water",
+				"spines"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert"
+			],
+			"look_alikes": [
+				"Aloe",
+				"Prickly pear"
+			]
+		},
+		"fern": {
+			"display": "Fern",
+			"parts": [
+				"bedding",
+				"fiddleheads"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Echo moss",
+				"Hushfern",
+				"Staunchmoss",
+				"Whisperfern"
+			],
+			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"heather": {
+			"display": "Heather",
+			"parts": [
+				"thatch",
+				"bedding",
+				"honey_flowers"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Crowberry",
+				"Duskmallow",
+				"Dwarf birch",
+				"Echo moss",
+				"Hushfern",
+				"Lavender",
+				"Staunchmoss",
+				"Whisperfern"
+			],
+			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"reeds": {
+			"display": "Reeds",
+			"parts": [
+				"thatch",
+				"reed_stems"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mangrove",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Crowberry",
+				"Duskmallow",
+				"Dwarf birch",
+				"Lavender",
+				"Riverbraid",
+				"Stormreed",
+				"Tall grass",
+				"Tidecrown",
+				"Wispbloom"
+			]
+		},
+		"flax": {
+			"display": "Wild flax",
+			"parts": [
+				"linseed"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Cotton grass",
+				"Ribwort plantain",
+				"Tall grass"
+			]
+		},
+		"tall_grass": {
+			"display": "Tall grass",
+			"parts": [
+				"thatch",
+				"straw"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"beach",
+				"boreal_forest",
+				"dry_scrub",
+				"heath",
+				"marsh",
+				"mixed_forest",
+				"savanna",
+				"temperate_forest",
+				"temperate_grassland",
+				"tropical_forest",
+				"tundra"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Cotton grass",
+				"Crowberry",
+				"Duskmallow",
+				"Dwarf birch",
+				"Lavender",
+				"Reeds",
+				"Riverbraid",
+				"Stormreed",
+				"Tidecrown",
+				"Wispbloom"
+			]
+		},
+		"nettle": {
+			"display": "Nettle",
+			"parts": [
+				"greens"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Comfrey",
+				"Mugwort"
+			]
+		},
+		"cotton_grass": {
+			"display": "Cotton grass",
+			"parts": [
+				"tinder",
+				"stuffing"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"marsh",
+				"tundra"
+			],
+			"look_alikes": [
+				"Ribwort plantain",
+				"Tall grass",
+				"Wild flax"
+			]
+		},
+		"alpine_flowers": {
+			"display": "Alpine flowers",
+			"parts": [
+				"herbs",
+				"dye"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow"
+			],
+			"look_alikes": [
+				"Burdock",
+				"Duskmallow",
+				"Gloomthistle",
+				"Heather",
+				"Lavender"
+			]
+		},
+		"mushrooms": {
+			"display": "Mushrooms",
+			"parts": [
+				"food",
+				"tinder_fungus"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Chanterelle",
+				"Fly agaric",
+				"Porcini"
+			],
+			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"blueberry": {
+			"display": "Blueberry",
+			"parts": [
+				"blueberries"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Cranberry",
+				"Crowberry",
+				"Deadly nightshade",
+				"Lingonberry",
+				"Sleetberry",
+				"Sunberry"
+			],
+			"warning": "Looks like Deadly nightshade, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"lingonberry": {
+			"display": "Lingonberry",
+			"parts": [
+				"lingonberries"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"tundra"
+			],
+			"look_alikes": [
+				"Blueberry",
+				"Cranberry",
+				"Crowberry",
+				"Deadly nightshade",
+				"Sleetberry",
+				"Sunberry"
+			],
+			"warning": "Looks like Deadly nightshade, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"cranberry": {
+			"display": "Cranberry",
+			"parts": [
+				"cranberries"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			],
+			"look_alikes": [
+				"Blueberry",
+				"Crowberry",
+				"Deadly nightshade",
+				"Lingonberry",
+				"Sleetberry",
+				"Sunberry"
+			],
+			"warning": "Looks like Deadly nightshade, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"cloudberry": {
+			"display": "Cloudberry",
+			"parts": [
+				"cloudberries"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			],
+			"look_alikes": [
+				"Wild rose",
+				"Wild strawberry"
+			]
+		},
+		"wild_strawberry": {
+			"display": "Wild strawberry",
+			"parts": [
+				"strawberries"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Cloudberry",
+				"Wild rose"
+			]
+		},
+		"raspberry": {
+			"display": "Raspberry",
+			"parts": [
+				"raspberries"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Bramble",
+				"Sunsilver vine",
+				"Tanglewort",
+				"Wild rose"
+			]
+		},
+		"crowberry": {
+			"display": "Crowberry",
+			"parts": [
+				"crowberries"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"tundra"
+			],
+			"look_alikes": [
+				"Blueberry",
+				"Cranberry",
+				"Dwarf birch",
+				"Heather",
+				"Lingonberry",
+				"Sunberry"
+			]
+		},
+		"elder": {
+			"display": "Elder",
+			"parts": [
+				"elderberries"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Hawthorn",
+				"Hazel",
+				"Honeyspindle"
+			]
+		},
+		"wild_rose": {
+			"display": "Wild rose",
+			"parts": [
+				"rose_petals",
+				"rose_hips"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Bramble",
+				"Raspberry",
+				"Sunsilver vine",
+				"Tanglewort",
+				"Wild strawberry"
+			]
+		},
+		"blackthorn": {
+			"display": "Blackthorn",
+			"parts": [
+				"sloes"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Bramble",
+				"Drakethorn",
+				"Raspberry",
+				"Sunsilver vine",
+				"Tanglewort",
+				"Wild rose"
+			]
+		},
+		"hawthorn": {
+			"display": "Hawthorn",
+			"parts": [
+				"haws"
+			],
+			"season": [
+				"spring",
+				"autumn"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Crab apple",
+				"Elder",
+				"Hazel",
+				"Honeyspindle",
+				"Wild cherry",
+				"Wild pear"
+			]
+		},
+		"sea_buckthorn": {
+			"display": "Sea buckthorn",
+			"parts": [
+				"sea_buckthorn_berries"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"beach",
+				"dry_scrub"
+			],
+			"look_alikes": [
+				"Gorse",
+				"Juniper"
+			]
+		},
+		"wild_garlic": {
+			"display": "Wild garlic",
+			"parts": [
+				"wild_garlic_leaves",
+				"wild_garlic_bulbs"
+			],
+			"season": [
+				"spring"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Sorrel",
+				"Wild marjoram"
+			]
+		},
+		"wild_thyme": {
+			"display": "Wild thyme",
+			"parts": [
+				"thyme"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"dry_scrub",
+				"heath",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Lavender",
+				"Rosemary",
+				"Truthsage",
+				"Water mint",
+				"Wild marjoram",
+				"Wild sage"
+			]
+		},
+		"wild_mint": {
+			"display": "Water mint",
+			"parts": [
+				"mint"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Dewlantern",
+				"Pilgrim's cup",
+				"Sorrel",
+				"Watercress",
+				"Wild marjoram",
+				"Wild thyme"
+			]
+		},
+		"sorrel": {
+			"display": "Sorrel",
+			"parts": [
+				"sorrel_leaves"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Dewlantern",
+				"Water mint",
+				"Watercress",
+				"Wild garlic",
+				"Wild marjoram"
+			]
+		},
+		"dandelion": {
+			"display": "Dandelion",
+			"parts": [
+				"dandelion_flowers",
+				"dandelion_leaves",
+				"dandelion_roots"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"beach",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Arnica",
+				"Marrowroot",
+				"St John's wort"
+			]
+		},
+		"wild_carrot": {
+			"display": "Wild carrot",
+			"parts": [
+				"wild_carrot_roots"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Angelica",
+				"Heartroot",
+				"Marrowroot",
+				"Meadowsweet",
+				"Valerian",
+				"Yarrow"
+			]
+		},
+		"watercress": {
+			"display": "Watercress",
+			"parts": [
+				"watercress"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Dewlantern",
+				"Sorrel",
+				"Water mint"
+			]
+		},
+		"samphire": {
+			"display": "Samphire",
+			"parts": [
+				"samphire"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			],
+			"look_alikes": [
+				"Saltbush",
+				"Tideglass weed"
+			]
+		},
+		"wild_marjoram": {
+			"display": "Wild marjoram",
+			"parts": [
+				"marjoram"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Sorrel",
+				"Water mint",
+				"Wild garlic",
+				"Wild thyme"
+			]
+		},
+		"wild_sage": {
+			"display": "Wild sage",
+			"parts": [
+				"sage"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"dry_scrub",
+				"savanna"
+			],
+			"look_alikes": [
+				"Lavender",
+				"Rosemary",
+				"Truthsage",
+				"Wild thyme"
+			]
+		},
+		"rosemary": {
+			"display": "Rosemary",
+			"parts": [
+				"rosemary"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"dry_scrub",
+				"savanna"
+			],
+			"look_alikes": [
+				"Lavender",
+				"Truthsage",
+				"Wild sage",
+				"Wild thyme"
+			]
+		},
+		"lavender": {
+			"display": "Lavender",
+			"parts": [
+				"lavender_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Heather",
+				"Rosemary",
+				"Truthsage",
+				"Wild sage",
+				"Wild thyme"
+			]
+		},
+		"yarrow": {
+			"display": "Yarrow",
+			"parts": [
+				"yarrow"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Angelica",
+				"Chamomile",
+				"Feverfew",
+				"Meadowsweet",
+				"Valerian",
+				"Wild carrot"
+			]
+		},
+		"plantain": {
+			"display": "Ribwort plantain",
+			"parts": [
+				"plantain_leaves"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Cotton grass",
+				"Tall grass",
+				"Wild flax"
+			]
+		},
+		"chamomile": {
+			"display": "Chamomile",
+			"parts": [
+				"chamomile_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Feverfew",
+				"Yarrow"
+			]
+		},
+		"comfrey": {
+			"display": "Comfrey",
+			"parts": [
+				"comfrey_leaves"
+			],
+			"season": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Burdock",
+				"Foxglove",
+				"Mugwort",
+				"Nettle",
+				"Wolfsbane"
+			],
+			"warning": "Looks like Foxglove and Wolfsbane, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"st_johns_wort": {
+			"display": "St John's wort",
+			"parts": [
+				"st_johns_wort"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"heath",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Arnica",
+				"Dandelion",
+				"Marrowroot"
+			]
+		},
+		"valerian": {
+			"display": "Valerian",
+			"parts": [
+				"valerian_roots"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Angelica",
+				"Meadowsweet",
+				"Wild carrot",
+				"Yarrow"
+			]
+		},
+		"meadowsweet": {
+			"display": "Meadowsweet",
+			"parts": [
+				"meadowsweet_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Angelica",
+				"Valerian",
+				"Wild carrot",
+				"Yarrow"
+			]
+		},
+		"feverfew": {
+			"display": "Feverfew",
+			"parts": [
+				"feverfew"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Chamomile",
+				"Yarrow"
+			]
+		},
+		"burdock": {
+			"display": "Burdock",
+			"parts": [
+				"burdock_roots"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Comfrey",
+				"Foxglove",
+				"Gloomthistle",
+				"Wolfsbane"
+			],
+			"warning": "Looks like Foxglove and Wolfsbane, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"mugwort": {
+			"display": "Mugwort",
+			"parts": [
+				"mugwort"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Comfrey",
+				"Deadly nightshade",
+				"Henbane",
+				"Nettle"
+			],
+			"warning": "Looks like Deadly nightshade and Henbane, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"arnica": {
+			"display": "Arnica",
+			"parts": [
+				"arnica_flowers"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			],
+			"look_alikes": [
+				"Dandelion",
+				"Marrowroot",
+				"St John's wort"
+			]
+		},
+		"angelica": {
+			"display": "Angelica",
+			"parts": [
+				"angelica_roots"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"marsh"
+			],
+			"look_alikes": [
+				"Meadowsweet",
+				"Valerian",
+				"Wild carrot",
+				"Yarrow"
+			]
+		},
+		"aloe": {
+			"display": "Aloe",
+			"parts": [
+				"aloe_gel"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert",
+				"savanna"
+			],
+			"look_alikes": [
+				"Cactus",
+				"Pilgrim's cup",
+				"Prickly pear",
+				"Water mint"
+			]
+		},
+		"chanterelle": {
+			"display": "Chanterelle",
+			"parts": [
+				"chanterelles"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Fly agaric",
+				"Mushrooms",
+				"Porcini"
+			],
+			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"porcini": {
+			"display": "Porcini",
+			"parts": [
+				"porcini"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Chanterelle",
+				"Fly agaric",
+				"Mushrooms"
+			],
+			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"morel": {
+			"display": "Morel",
+			"parts": [
+				"morels"
+			],
+			"season": [
+				"spring"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Giant puffball",
+				"Tinder fungus"
+			]
+		},
+		"puffball": {
+			"display": "Giant puffball",
+			"parts": [
+				"puffball"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Morel",
+				"Tinder fungus"
+			]
+		},
+		"tinder_fungus": {
+			"display": "Tinder fungus",
+			"parts": [
+				"tinder_fungus"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Chanterelle",
+				"Fly agaric",
+				"Porcini"
+			],
+			"warning": "Looks like Fly agaric, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"wild_banana": {
+			"display": "Wild banana",
+			"parts": [
+				"bananas"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Coconut palm",
+				"Date palm"
+			]
+		},
+		"prickly_pear": {
+			"display": "Prickly pear",
+			"parts": [
+				"prickly_pears"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert",
+				"savanna"
+			],
+			"look_alikes": [
+				"Aloe",
+				"Cactus"
+			]
+		},
+		"owlpetal": {
+			"display": "Owlpetal",
+			"parts": [
+				"owlpetals"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Duskmallow",
+				"Mournbloom",
+				"Nightcrown"
+			],
+			"warning": "Looks like Mournbloom, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"staunchmoss": {
+			"display": "Staunchmoss",
+			"parts": [
+				"staunchmoss"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Echo moss",
+				"Fern",
+				"Hushfern",
+				"Whisperfern"
+			],
+			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"emberroot": {
+			"display": "Emberroot",
+			"parts": [
+				"emberroots"
+			],
+			"season": [
+				"autumn",
+				"winter"
+			],
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"volcanic_waste"
+			],
+			"look_alikes": [
+				"Heartroot",
+				"Marrowroot",
+				"Wild carrot"
+			]
+		},
+		"wispbloom": {
+			"display": "Wispbloom",
+			"parts": [
+				"wispbloom_heads"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"marsh"
+			],
+			"look_alikes": [
+				"Reeds",
+				"Riverbraid",
+				"Stormreed",
+				"Tall grass",
+				"Tidecrown"
+			]
+		},
+		"drakethorn": {
+			"display": "Drakethorn",
+			"parts": [
+				"drakethorn_berries"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Hawthorn"
+			]
+		},
+		"sunberry": {
+			"display": "Sunberry",
+			"parts": [
+				"sunberries"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"heath",
+				"savanna",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Blueberry",
+				"Cranberry",
+				"Crowberry",
+				"Deadly nightshade",
+				"Lingonberry",
+				"Sleetberry"
+			],
+			"warning": "Looks like Deadly nightshade, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"hagwillow": {
+			"display": "Hag willow",
+			"parts": [
+				"hagwillow_bark",
+				"hagwillow_withies"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"marsh"
+			],
+			"look_alikes": [
+				"Alder",
+				"Willow"
+			]
+		},
+		"heartroot": {
+			"display": "Heartroot",
+			"parts": [
+				"heartroots"
+			],
+			"season": [
+				"spring",
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Emberroot",
+				"Marrowroot",
+				"Wild carrot"
+			]
+		},
+		"tideglass_weed": {
+			"display": "Tideglass weed",
+			"parts": [
+				"tideglass_fronds"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"look_alikes": [
+				"Saltbush",
+				"Samphire"
+			]
+		},
+		"gloomthistle": {
+			"display": "Gloomthistle",
+			"parts": [
+				"gloomthistle_heads",
+				"gloomthistle_down"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"bare_rock",
+				"heath",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Burdock"
+			]
+		},
+		"dewlantern": {
+			"display": "Dewlantern",
+			"parts": [
+				"lantern_dew"
+			],
+			"season": [
+				"spring",
+				"summer"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Brinebell",
+				"Quenchbell",
+				"Sorrel",
+				"Water mint",
+				"Watercress"
+			]
+		},
+		"honeyspindle": {
+			"display": "Honeyspindle",
+			"parts": [
+				"honeyspindle_nectar",
+				"honeyspindle_pods"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Elder",
+				"Hawthorn",
+				"Hazel"
+			]
+		},
+		"marrowroot": {
+			"display": "Marrowroot",
+			"parts": [
+				"marrowroots"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"savanna",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Arnica",
+				"Dandelion",
+				"Emberroot",
+				"Heartroot",
+				"St John's wort",
+				"Wild carrot"
+			]
+		},
+		"riverbraid": {
+			"display": "Riverbraid",
+			"parts": [
+				"riverbraid_stems"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Reeds",
+				"Stormreed",
+				"Tall grass",
+				"Tidecrown",
+				"Wispbloom"
+			]
+		},
+		"brinebell": {
+			"display": "Brinebell",
+			"parts": [
+				"brinebells"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			],
+			"look_alikes": [
+				"Dewlantern",
+				"Quenchbell"
+			]
+		},
+		"sleetberry": {
+			"display": "Sleetberry",
+			"parts": [
+				"sleetberries"
+			],
+			"season": [
+				"winter"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"tundra"
+			],
+			"look_alikes": [
+				"Blueberry",
+				"Cranberry",
+				"Crowberry",
+				"Deadly nightshade",
+				"Lingonberry",
+				"Sunberry"
+			],
+			"warning": "Looks like Deadly nightshade, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"quenchbell": {
+			"display": "Quenchbell",
+			"parts": [
+				"quenchbell_heads"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"heath"
+			],
+			"look_alikes": [
+				"Brinebell",
+				"Dewlantern"
+			]
+		},
+		"whisperfern": {
+			"display": "Whisperfern",
+			"parts": [
+				"whisperfern_fronds"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"look_alikes": [
+				"Echo moss",
+				"Fern",
+				"Hushfern",
+				"Staunchmoss"
+			],
+			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"duskmallow": {
+			"display": "Duskmallow",
+			"parts": [
+				"duskmallow_flowers",
+				"duskmallow_roots"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Heather",
+				"Lavender",
+				"Mournbloom",
+				"Nightcrown",
+				"Owlpetal"
+			],
+			"warning": "Looks like Mournbloom, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"tanglewort": {
+			"display": "Tanglewort",
+			"parts": [
+				"tanglewort_vines"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Bramble",
+				"Raspberry",
+				"Sunsilver vine",
+				"Wild rose"
+			]
+		},
+		"stormreed": {
+			"display": "Stormreed",
+			"parts": [
+				"stormreed_stalks"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"marsh"
+			],
+			"look_alikes": [
+				"Reeds",
+				"Riverbraid",
+				"Tall grass",
+				"Tidecrown",
+				"Wispbloom"
+			]
+		},
+		"truthsage": {
+			"display": "Truthsage",
+			"parts": [
+				"truthsage_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			],
+			"look_alikes": [
+				"Lavender",
+				"Rosemary",
+				"Wild sage",
+				"Wild thyme"
+			]
+		},
+		"echo_moss": {
+			"display": "Echo moss",
+			"parts": [
+				"echo_moss"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"boreal_forest"
+			],
+			"look_alikes": [
+				"Fern",
+				"Hushfern",
+				"Staunchmoss",
+				"Whisperfern"
+			],
+			"warning": "Looks like Hushfern, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"nightcrown": {
+			"display": "Nightcrown",
+			"parts": [
+				"nightcrown_blooms"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			],
+			"look_alikes": [
+				"Duskmallow",
+				"Mournbloom",
+				"Owlpetal"
+			],
+			"warning": "Looks like Mournbloom, which is poisonous. Check the leaf and where it grows before you eat."
+		},
+		"pilgrims_cup": {
+			"display": "Pilgrim's cup",
+			"parts": [
+				"pilgrims_cup_water",
+				"pilgrims_cup_pitchers"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"mangrove",
+				"marsh",
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Aloe",
+				"Water mint"
+			]
+		},
+		"sunsilver_vine": {
+			"display": "Sunsilver vine",
+			"parts": [
+				"sunsilver_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Blackthorn",
+				"Bramble",
+				"Raspberry",
+				"Tanglewort",
+				"Wild rose"
+			]
+		},
+		"frostglass_orchid": {
+			"display": "Frostglass orchid",
+			"parts": [
+				"frostglass_petals"
+			],
+			"season": [
+				"winter"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			],
+			"look_alikes": [
+				"Gloaming star",
+				"Sevenyear lily",
+				"Stillwater lotus"
+			]
+		},
+		"sevenyear_lily": {
+			"display": "Sevenyear lily",
+			"parts": [
+				"sevenyear_bulbs",
+				"sevenyear_blossoms"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Frostglass orchid",
+				"Gloaming star",
+				"Stillwater lotus"
+			]
+		},
+		"stillwater_lotus": {
+			"display": "Stillwater lotus",
+			"parts": [
+				"stillwater_seeds",
+				"stillwater_petals"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"look_alikes": [
+				"Frostglass orchid",
+				"Gloaming star",
+				"Sevenyear lily"
+			]
+		},
+		"gloaming_star": {
+			"display": "Gloaming star",
+			"parts": [
+				"gloaming_star"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Frostglass orchid",
+				"Sevenyear lily",
+				"Stillwater lotus"
+			]
+		},
+		"tidecrown": {
+			"display": "Tidecrown",
+			"parts": [
+				"tidecrown_pearls"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"mangrove"
+			],
+			"look_alikes": [
+				"Reeds",
+				"Riverbraid",
+				"Stormreed",
+				"Tall grass",
+				"Wispbloom"
+			]
+		},
+		"thatch_grass": {
+			"display": "Thatching grass",
+			"parts": [
+				"thatch"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"marsh",
+				"mixed_forest",
+				"savanna",
+				"temperate_forest",
+				"temperate_grassland"
+			],
+			"look_alikes": [
+				"Alpine flowers",
+				"Crowberry",
+				"Duskmallow",
+				"Dwarf birch",
+				"Lavender"
+			]
+		}
+	},
+	"poisonous": {
+		"belladonna": {
+			"display": "Deadly nightshade",
+			"parts": [
+				"belladonna_berries",
+				"belladonna_leaves"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"looks_like": [
+				"Blueberry",
+				"Cranberry",
+				"Crowberry",
+				"Lingonberry",
+				"Sleetberry",
+				"Sunberry"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Blueberry, Cranberry, Crowberry."
+		},
+		"cinderfoot": {
+			"display": "Cinderfoot",
+			"parts": [
+				"cinderfoot_caps"
+			],
+			"season": [
+				"all"
+			],
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"volcanic_waste"
+			],
+			"looks_like": [
+				"Fly agaric",
+				"Lumencap",
+				"Mirrorcap",
+				"Rimecap"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Fly agaric, Lumencap, Mirrorcap."
+		},
+		"fly_agaric": {
+			"display": "Fly agaric",
+			"parts": [
+				"fly_agaric_caps"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest"
+			],
+			"looks_like": [
+				"Chanterelle",
+				"Lumencap",
+				"Mirrorcap",
+				"Mushrooms",
+				"Porcini",
+				"Rimecap"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Chanterelle, Lumencap, Mirrorcap."
+		},
+		"foxglove": {
+			"display": "Foxglove",
+			"parts": [
+				"foxglove_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			],
+			"looks_like": [
+				"Burdock",
+				"Comfrey",
+				"Wolfsbane"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Burdock, Comfrey, Wolfsbane."
+		},
+		"henbane": {
+			"display": "Henbane",
+			"parts": [
+				"henbane_seeds",
+				"henbane_leaves"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"beach",
+				"dry_scrub",
+				"temperate_grassland"
+			],
+			"looks_like": [
+				"Deadly nightshade",
+				"Mugwort"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Deadly nightshade, Mugwort."
+		},
+		"hushfern": {
+			"display": "Hushfern",
+			"parts": [
+				"hushfern_fronds"
+			],
+			"season": [
+				"summer",
+				"autumn"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"looks_like": [
+				"Echo moss",
+				"Fern",
+				"Staunchmoss",
+				"Whisperfern"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Echo moss, Fern, Staunchmoss."
+		},
+		"lumencap": {
+			"display": "Lumencap",
+			"parts": [
+				"lumencap_caps"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			],
+			"looks_like": [
+				"Cinderfoot",
+				"Fly agaric",
+				"Mirrorcap",
+				"Rimecap"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Cinderfoot, Fly agaric, Mirrorcap."
+		},
+		"mirrorcap": {
+			"display": "Mirrorcap",
+			"parts": [
+				"mirrorcap_caps"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest"
+			],
+			"looks_like": [
+				"Cinderfoot",
+				"Fly agaric",
+				"Lumencap",
+				"Rimecap"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Cinderfoot, Fly agaric, Lumencap."
+		},
+		"mournbloom": {
+			"display": "Mournbloom",
+			"parts": [
+				"mournbloom_petals"
+			],
+			"season": [
+				"autumn"
+			],
+			"biomes": [
+				"bare_rock",
+				"boreal_forest",
+				"heath"
+			],
+			"looks_like": [
+				"Duskmallow",
+				"Nightcrown",
+				"Owlpetal"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Duskmallow, Nightcrown, Owlpetal."
+		},
+		"rimecap": {
+			"display": "Rimecap",
+			"parts": [
+				"rimecap_caps"
+			],
+			"season": [
+				"autumn",
+				"winter"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"tundra"
+			],
+			"looks_like": [
+				"Cinderfoot",
+				"Fly agaric",
+				"Lumencap",
+				"Mirrorcap"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Cinderfoot, Fly agaric, Lumencap."
+		},
+		"wolfsbane": {
+			"display": "Wolfsbane",
+			"parts": [
+				"wolfsbane_roots"
+			],
+			"season": [
+				"summer"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"mixed_forest"
+			],
+			"looks_like": [
+				"Burdock",
+				"Comfrey",
+				"Foxglove"
+			],
+			"effect": "Poisonous: no food value (vitals.json); a poison status is planned (MEDICINE_CHAIN.md).",
+			"warning": "Do not eat. Often mistaken for Burdock, Comfrey, Foxglove."
+		}
+	}
+}

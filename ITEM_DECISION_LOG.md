@@ -289,3 +289,6 @@ Applied (moderator): starter-kit craft times 98 -> 250 s (twine stays 2 s becaus
 
 ## Carcass rows, hints, first day (2026-10-31)
 carcass.json now has 35 species (added horse, red squirrel, pine marten, hedgehog, raven, owl, woodpecker, songbirds, frog, grass snake, adder) and per-species `blows` (code reads the single global 4 today). ANIMAL_SPEC.md has the first-hour model priority. data/items/hints.json (26 lines, 12 words or fewer), FIRST_DAY_GUIDE.md. test_new_player_day waits raised for the new craft times. Full suite (items_check, all steps) run once: remaining reds are test_animals timing (machine load), npc view / faint smooth / placed clearing (no result), client scenes gather, eat and quickkeys (not investigated; gather may follow the spawn boost cut). Plans (self-approved): 1 wild foods bestiary with look-alike warnings per biome; 2 fishing data (species per water, season, bait, rods, edible); 3 camp-life night quests.
+
+## Fishing, wild foods, camp goals (2026-10-31)
+Fish items salmon..cod (419-424) wired into schools (river eel, sea cod, seasons), vitals, spoilage, cooking; validate_items reads fish_schools as a source. FISHING_DATA.md. data/items/wild_foods.json (92 edible plants, 20 with look-alike warnings, 11 poisonous). data/items/camp_goals.json (10 camp and winter goals, 4 need code). Looks queued in look_placeholders.json.

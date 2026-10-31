@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 419,
+	"next_number": 425,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4876,6 +4876,60 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 14
+		},
+		"salmon": {
+			"number": 419,
+			"name": "Salmon",
+			"description": "A big silver river fish that runs upstream in autumn. Rich and oily.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 12
+		},
+		"herring": {
+			"number": 420,
+			"name": "Herring",
+			"description": "A small oily silver sea fish that swims in shoals.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 5
+		},
+		"mackerel": {
+			"number": 421,
+			"name": "Mackerel",
+			"description": "A striped oily sea fish of summer. Spoils fast, so cook it soon.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 6
+		},
+		"smelt": {
+			"number": 422,
+			"name": "Smelt",
+			"description": "A tiny silver fish from shallow coastal water. Fry it whole.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 3
+		},
+		"eel": {
+			"number": 423,
+			"name": "Eel",
+			"description": "A long slippery fish. Must be cooked: raw eel blood is toxic.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 10
+		},
+		"cod": {
+			"number": 424,
+			"name": "Cod",
+			"description": "A big white sea fish. Lean and flaky when cooked.",
+			"kind": "food",
+			"stack": 10,
+			"look_alikes": [],
+			"value": 9
 		}
 	}
 }
