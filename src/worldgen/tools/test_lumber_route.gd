@@ -39,7 +39,7 @@ func craft(recipe_id: String, n: int) -> void:
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, n, Vector3.ZERO)
 
-	for s in range(120):
+	for s in range(400):
 		items.tick(1.0)
 
 
@@ -63,16 +63,14 @@ func _init() -> void:
 	items.vitals_of(1)["weight"] = 2000.0
 	items._admin_mode_off[1] = true   # play by the rules: no free crafting
 	items.admin_mode_on = func(_p): return false
-	give("stone", 2)
-	give("stick", 1)
+	give("stone", 8)   # the wedge (2 stones) and the bench kit (pace pass: 20 sticks, 6 twine, 4 stones, 60 s)
+	give("stick", 30)
+	give("twine", 8)
 	craft("stone_wedge", 1)
-	check(count("stone_wedge") == 1 and count("stone") == 0, "a stone wedge from 2 stones and a stick, by hand")
-	give("stone", 4)
-	give("stick", 20)
-	give("twine", 6)   # the workbench kit costs 20 sticks, 6 twine and 4 stones since the pacing pass
+	check(count("stone_wedge") == 1 and count("stone") == 6, "a stone wedge from 2 stones and a stick, by hand")
 	craft("workbench_kit", 1)
-	check(count("workbench_kit") == 1, "a workbench kit from 20 sticks, 6 twine and 4 stones, by hand")
-	give("log_oak", 3)
+	check(count("workbench_kit") == 1, "a workbench kit from sticks, twine and stones, by hand")
+	items.inventory_of(1).add(items.table.number_of("log_oak"), 3)   # logs in the pack: the real carry (shoulder, ground) is test_logs_carry
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 0 and count("log_oak") == 3, "no workbench near: no lumber, the log is kept")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("workbench_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))

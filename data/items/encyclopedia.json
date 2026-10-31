@@ -148,7 +148,7 @@
 		"blueberries": {
 			"name": "Blueberries",
 			"kind": "material",
-			"description": "Small blue berries from low bushes. Sweet, and they stain the fingers.",
+			"description": "Small blue berries from low bushes. Ripe in summer.",
 			"how_to_get": [
 				"Picked from blueberry in season"
 			],
@@ -202,7 +202,7 @@
 		"chamomile_flowers": {
 			"name": "Chamomile flowers",
 			"kind": "material",
-			"description": "Small white daisies with yellow centres. A calming tea.",
+			"description": "Small white daisies. Make a calming tea.",
 			"how_to_get": [
 				"Harvested from chamomile"
 			],
@@ -301,7 +301,7 @@
 		"comfrey_leaves": {
 			"name": "Comfrey leaves",
 			"kind": "material",
-			"description": "Rough hairy leaves of comfrey. Bruised and bound on sprains as a poultice.",
+			"description": "Rough hairy leaves. Bruise and bind on sprains.",
 			"how_to_get": [
 				"Harvested from comfrey",
 				"Picked from comfrey"
@@ -835,7 +835,7 @@
 		"kindling": {
 			"name": "Kindling",
 			"kind": "material",
-			"description": "Thin dry twigs and shavings that catch quickly. The start of any fire.",
+			"description": "Thin dry twigs. The start of any fire.",
 			"how_to_get": [
 				"Craft: 1 Stick",
 				"From chopping a stump",
@@ -1084,7 +1084,7 @@
 		"plantain_leaves": {
 			"name": "Plantain leaves",
 			"kind": "material",
-			"description": "Broad ribbed leaves of the common plantain. Chewed and applied to stings and cuts.",
+			"description": "Broad ribbed leaves. Chew and bind on stings and cuts.",
 			"how_to_get": [
 				"Harvested from plantain",
 				"Picked from plantain"
@@ -1163,7 +1163,7 @@
 		"raspberries": {
 			"name": "Raspberries",
 			"kind": "material",
-			"description": "Soft red berries that crumble when picked. Sweet when fully ripe.",
+			"description": "Soft red berries that crumble when picked. Ripe in summer.",
 			"how_to_get": [
 				"Picked from raspberry in season"
 			],
@@ -1399,7 +1399,7 @@
 		"staunchmoss": {
 			"name": "Staunchmoss",
 			"kind": "material",
-			"description": "Soft spongy moss that stops bleeding when packed on a wound.",
+			"description": "Spongy moss that stops bleeding when packed on a wound.",
 			"how_to_get": [
 				"Picked from staunchmoss",
 				"Picked from staunchmoss (all)"
@@ -1518,7 +1518,7 @@
 		"thatch": {
 			"name": "Thatch",
 			"kind": "material",
-			"description": "Dried grass, reed or bark in bundles. Roofs and walls are made of it.",
+			"description": "Bundled dry grass and reed. Roofs, walls and beds are made of it.",
 			"how_to_get": [
 				"Harvested from thatch grass",
 				"Picked from heather",
@@ -1602,7 +1602,7 @@
 		"tinder": {
 			"name": "Tinder",
 			"kind": "material",
-			"description": "Fine dry stuff that takes a spark.",
+			"description": "Fine dry stuff that takes a spark. Two thatch make two.",
 			"how_to_get": [
 				"Craft: 2 Thatch",
 				"Picked from cotton grass (summer)"
@@ -1723,7 +1723,7 @@
 		"wild_carrot_roots": {
 			"name": "Wild carrot roots",
 			"kind": "material",
-			"description": "Thin pale roots of wild carrot, tough but sweet. Cooked or chewed raw.",
+			"description": "Thin pale roots, tough but sweet. Cook them or chew them raw.",
 			"how_to_get": [
 				"Harvested from wild carrot"
 			],
@@ -1778,7 +1778,7 @@
 		"willow_bark": {
 			"name": "Willow bark",
 			"kind": "material",
-			"description": "Grey-brown bark of willow, bitter. Steeped it eases pain and fever.",
+			"description": "Bitter grey bark. Steeped, it eases pain and fever.",
 			"how_to_get": [
 				"From a felled willow"
 			],
@@ -1860,7 +1860,7 @@
 		"stone": {
 			"name": "Stone",
 			"kind": "material",
-			"description": "A fist-sized stone, picked up from the ground or broken from an outcrop.",
+			"description": "A fist-sized stone. Pick it up from the ground, or break it off a boulder.",
 			"how_to_get": [
 				"Lying on the ground"
 			],
@@ -1879,7 +1879,7 @@
 		"stick": {
 			"name": "Stick",
 			"kind": "material",
-			"description": "A fallen branch, good for fuel and for tools.",
+			"description": "A fallen branch. Burns, and makes handles, frames and fences.",
 			"how_to_get": [
 				"From chopping a stump",
 				"From working a felled trunk",
@@ -1903,7 +1903,7 @@
 		"plant_fibre": {
 			"name": "Plant fibre",
 			"kind": "material",
-			"description": "Stringy plant fibre that can be twisted into twine or used as tinder.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
 			"how_to_get": [
 				"Picked from flax",
 				"Picked from nettle",
@@ -1927,7 +1927,7 @@
 		"log": {
 			"name": "Log",
 			"kind": "material",
-			"description": "A heavy length of trunk. Split it into firewood or saw it into lumber.",
+			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Chopping block",
@@ -1944,7 +1944,7 @@
 		"twine": {
 			"name": "Twine",
 			"kind": "material",
-			"description": "Twisted plant fibre, strong enough to bind a tool or weave a chest.",
+			"description": "Twisted fibre cord. Binds tools, frames and kits.",
 			"how_to_get": [
 				"Craft: 2 Bark",
 				"Craft: 3 Plant fibre",
@@ -1965,7 +1965,7 @@
 		"stone_axe": {
 			"name": "Stone axe",
 			"kind": "tool",
-			"description": "A sharpened stone bound to a handle. Fells trees, breaks rock and cuts wood.",
+			"description": "A stone bound to a handle. Fells trees, breaks rock and works wood.",
 			"how_to_get": [
 				"Craft: 1 Stone, 1 Stick, 2 Twine"
 			],
@@ -1975,7 +1975,7 @@
 		"spear": {
 			"name": "Stone spear",
 			"kind": "weapon",
-			"description": "A stone point bound to a long shaft, for jabbing and throwing.",
+			"description": "A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow.",
 			"how_to_get": [
 				"Craft: 1 Wooden spear, 2 Twine (keep Stone)"
 			],
@@ -1985,7 +1985,7 @@
 		"campfire_kit": {
 			"name": "Campfire",
 			"kind": "placeable",
-			"description": "Stones and sticks ready to lay a fire where you stand.",
+			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
 			"how_to_get": [
 				"Craft: 6 Stick, 3 Stone"
 			],
@@ -1997,7 +1997,7 @@
 		"wooden_spear": {
 			"name": "Wooden spear",
 			"kind": "weapon",
-			"description": "A sharpened stick, for jabbing and throwing.",
+			"description": "A sharpened stick. Jab with it or throw it.",
 			"how_to_get": [
 				"Craft: 1 Stick (keep Stone)"
 			],
@@ -2009,7 +2009,7 @@
 		"stone_knife": {
 			"name": "Stone knife",
 			"kind": "tool",
-			"description": "A sharp stone flake on a handle. Cuts bark, gum and sap.",
+			"description": "A flaked stone on a handle. Dresses a kill and cuts bark.",
 			"how_to_get": [
 				"Craft: 2 Stone, 1 Stick"
 			],
@@ -2021,7 +2021,7 @@
 		"torch": {
 			"name": "Basic torch",
 			"kind": "tool",
-			"description": "A stick wrapped in fibre that burns for a while and lights your way.",
+			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"how_to_get": [
 				"Craft: 1 Stick, 2 Plant fibre"
 			],
@@ -2041,7 +2041,7 @@
 		"leaves": {
 			"name": "Leaves",
 			"kind": "material",
-			"description": "A handful of leaves.",
+			"description": "A handful of green leaves from a felled tree. Roofs a shelter.",
 			"how_to_get": [
 				"From working a felled trunk"
 			],
@@ -2061,7 +2061,7 @@
 		"seed_bundle": {
 			"name": "Seeds",
 			"kind": "material",
-			"description": "A small bundle of seeds that could be eaten or planted.",
+			"description": "A bundle of seeds. Eat them, or plant them.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Flatbread",
@@ -2074,7 +2074,7 @@
 		"poultice": {
 			"name": "Herb poultice",
 			"kind": "medicine",
-			"description": "Crushed herb leaves for a wound.",
+			"description": "Crushed herb leaves bound on a wound.",
 			"how_to_get": [
 				"Craft: 2 Comfrey leaves",
 				"Craft: 3 Plantain leaves"
@@ -2085,7 +2085,7 @@
 		"bandage": {
 			"name": "Herb bandage",
 			"kind": "medicine",
-			"description": "Leaves and fibre wrapped to bind a wound.",
+			"description": "Leaves and fibre bound round a wound.",
 			"how_to_get": [
 				"Craft: 1 Plantain leaves, 2 Plant fibre",
 				"Craft: 1 Staunchmoss, 2 Plant fibre"
@@ -2106,7 +2106,7 @@
 		"wooden_spade": {
 			"name": "Wooden spade",
 			"kind": "tool",
-			"description": "A sharpened wooden blade on a handle. Digs roots and bulbs.",
+			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"how_to_get": [
 				"Craft: 2 Stick (keep Stone)"
 			],
@@ -2118,7 +2118,7 @@
 		"lean_to_kit": {
 			"name": "Small shelter",
 			"kind": "placeable",
-			"description": "Sticks, leaves and twine for a small shelter with a roof.",
+			"description": "Sticks, leaves and twine for a small shelter. Gives cover from rain.",
 			"how_to_get": [
 				"Craft: 8 Stick, 6 Leaves, 2 Twine"
 			],
@@ -2136,7 +2136,7 @@
 		"chest_kit": {
 			"name": "Woven chest",
 			"kind": "placeable",
-			"description": "Sticks and twine woven into a storage chest, ready to set down.",
+			"description": "Woven sticks and twine. A chest to store things in.",
 			"how_to_get": [
 				"Craft: 10 Stick, 4 Twine"
 			],
@@ -2154,7 +2154,7 @@
 		"chopping_block": {
 			"name": "Chopping block",
 			"kind": "placeable",
-			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
+			"description": "A log set on end. Split wooden blocks into firewood on it.",
 			"how_to_get": [
 				"Craft: 2 Log"
 			],
@@ -2174,7 +2174,7 @@
 		"firewood": {
 			"name": "Firewood",
 			"kind": "material",
-			"description": "Split wood that burns long and steady.",
+			"description": "Split wood. Burns long and steady.",
 			"how_to_get": [
 				"From chopping a stump",
 				"From working a felled trunk",
@@ -2190,7 +2190,7 @@
 		"lumber": {
 			"name": "Lumber",
 			"kind": "material",
-			"description": "Sawn boards. Needs a saw mill.",
+			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
 			"how_to_get": [
 				"Craft at a saw mill: 1 Log",
 				"Craft at a workbench: 1 Log (keep Stone wedge)",
@@ -2230,7 +2230,7 @@
 		"iron_ingot": {
 			"name": "Iron ingot",
 			"kind": "material",
-			"description": "A bar of smelted iron. Placeholder until smelting exists.",
+			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
 				"Craft at a forge: 3 Iron ore"
 			],
@@ -2302,7 +2302,7 @@
 		"clay": {
 			"name": "Clay",
 			"kind": "material",
-			"description": "A heavy, sticky shovelful of clay.",
+			"description": "A heavy, sticky shovelful of clay. Fire it for bricks and pots.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Brick",
@@ -2375,7 +2375,7 @@
 		"waterskin": {
 			"name": "Waterskin",
 			"kind": "container",
-			"description": "A skin bag sewn shut. Holds a day's drink and little weight.",
+			"description": "A sewn skin bag for carrying a drink.",
 			"how_to_get": [
 				"Craft: 2 Hide, 1 Twine"
 			],
@@ -2386,7 +2386,7 @@
 		"hide": {
 			"name": "Hide",
 			"kind": "material",
-			"description": "A raw animal skin.",
+			"description": "A raw animal skin. Scrape and tan it for leather, or sew it into clothes.",
 			"how_to_get": [
 				"Dropped by badger when worked with a knife",
 				"Dropped by bear when worked with a knife",
@@ -2423,7 +2423,7 @@
 		"stone_spade": {
 			"name": "Stone spade",
 			"kind": "tool",
-			"description": "A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer.",
+			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
 			"how_to_get": [
 				"Craft at a workbench: 1 Wooden spade, 2 Stone, 1 Twine"
 			],
@@ -2455,7 +2455,7 @@
 		"bone": {
 			"name": "Bone",
 			"kind": "material",
-			"description": "A cleaned animal bone.",
+			"description": "A cleaned bone. Sharpen it into an arrow point, or boil it with hide for glue.",
 			"how_to_get": [
 				"Dropped by badger when worked with a knife",
 				"Dropped by bear when worked with a knife",
@@ -2580,7 +2580,7 @@
 		"grass_cloak": {
 			"name": "Grass cloak",
 			"kind": "clothing",
-			"description": "A cloak of woven grass over the shoulders. Keeps a little wind off.",
+			"description": "Woven grass over the shoulders. Keeps a little wind off.",
 			"how_to_get": [
 				"Craft: 16 Plant fibre, 1 Twine"
 			],
@@ -2590,7 +2590,7 @@
 		"fibre_sandals": {
 			"name": "Fibre sandals",
 			"kind": "clothing",
-			"description": "Soles of twisted fibre tied to the foot.",
+			"description": "Twisted fibre soles tied to the foot.",
 			"how_to_get": [
 				"Craft: 6 Plant fibre, 1 Twine"
 			],
@@ -2600,7 +2600,7 @@
 		"hide_cloak": {
 			"name": "Hide cloak",
 			"kind": "clothing",
-			"description": "A wrapped animal hide. Warm, and it sheds rain.",
+			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"how_to_get": [
 				"Craft: 3 Hide, 2 Twine"
 			],
@@ -2610,7 +2610,7 @@
 		"hide_boots": {
 			"name": "Hide boots",
 			"kind": "clothing",
-			"description": "Hide wrapped and stitched around the foot.",
+			"description": "Hide stitched around the foot. Warm and tough.",
 			"how_to_get": [
 				"Craft: 2 Hide, 2 Twine"
 			],
@@ -2630,7 +2630,7 @@
 		"hide_mittens": {
 			"name": "Hide mittens",
 			"kind": "clothing",
-			"description": "Stitched hide mittens.",
+			"description": "Stitched hide mittens. Warm hands.",
 			"how_to_get": [
 				"Craft: 1 Hide, 1 Twine"
 			],
@@ -2674,7 +2674,7 @@
 		"roast_meat": {
 			"name": "Roast Meat",
 			"kind": "food",
-			"description": "Meat cooked over a fire. Filling, and it keeps a couple of days.",
+			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2683,7 +2683,7 @@
 		"sinew": {
 			"name": "Sinew",
 			"kind": "material",
-			"description": "Tough strands from an animal's legs. Strong sewing thread when dry.",
+			"description": "Tough strands from an animal's legs. Makes strong thread and bowstrings.",
 			"how_to_get": [
 				"Dropped by bear when worked with a knife",
 				"Dropped by boar when worked with a knife",
@@ -2704,7 +2704,7 @@
 		"animal_fat": {
 			"name": "Animal fat",
 			"kind": "material",
-			"description": "White fat for torches, cooking and waterproofing.",
+			"description": "Fat from a kill. Render it for tallow, or cook with it.",
 			"how_to_get": [
 				"Dropped by badger when worked with a knife",
 				"Dropped by bear when worked with a knife",
@@ -2729,7 +2729,7 @@
 		"feather": {
 			"name": "Feather",
 			"kind": "material",
-			"description": "A feather for fletching and stuffing.",
+			"description": "A bird's feather. Fletch arrows with it, or stuff a bed.",
 			"how_to_get": [
 				"Dropped by duck when worked with a knife",
 				"Dropped by eagle when worked with a knife",
@@ -2750,7 +2750,7 @@
 		"workbench_kit": {
 			"name": "Camp bench",
 			"kind": "placeable",
-			"description": "Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp.",
+			"description": "Lashed sticks and a flat top. A work table for better tools.",
 			"how_to_get": [
 				"Craft: 12 Stick, 3 Twine"
 			],
@@ -2768,7 +2768,7 @@
 		"fishing_rod": {
 			"name": "Fishing rod",
 			"kind": "tool",
-			"description": "A stick with a line and a hook. Hold it and click at the water, then click again when something bites.",
+			"description": "A stick, line and hook. Cast at water, then click again when something bites.",
 			"how_to_get": [
 				"Craft: 2 Stick, 2 Twine"
 			],
@@ -2778,7 +2778,7 @@
 		"shore_net": {
 			"name": "Shore net",
 			"kind": "tool",
-			"description": "A weighted twine net. Hold the left button at the water's edge for about 20 seconds.",
+			"description": "A weighted twine net. Hold the button at the water's edge for about 20 seconds.",
 			"how_to_get": [
 				"Craft: 8 Twine, 4 Stone"
 			],
@@ -2788,7 +2788,7 @@
 		"trout": {
 			"name": "Trout",
 			"kind": "food",
-			"description": "A cold-water fish from fast streams. Cook it before you eat it.",
+			"description": "A cold-water fish from streams. Cook it before you eat it.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Fish pie",
@@ -2833,7 +2833,7 @@
 		"roast_fish": {
 			"name": "Roast Fish",
 			"kind": "food",
-			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
+			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
@@ -2878,7 +2878,7 @@
 		"tool_rack_kit": {
 			"name": "Tool rack",
 			"kind": "placeable",
-			"description": "Pegs and a crossbar to hang tools and stretch hides. Set it beside a camp bench.",
+			"description": "Pegs and a crossbar. Set it beside a bench to raise its level.",
 			"how_to_get": [
 				"Craft at a workbench: 10 Stick, 4 Twine"
 			],
@@ -3268,7 +3268,7 @@
 		"berry_compote": {
 			"name": "Berry compote",
 			"kind": "food",
-			"description": "Sweet stewed berries. Light, quick energy.",
+			"description": "Berries stewed sweet. Quick energy.",
 			"how_to_get": [
 				"Craft at a campfire pot: 2 Blueberries, 1 Honeyspindle nectar"
 			],
@@ -3278,7 +3278,7 @@
 		"nut_paste": {
 			"name": "Nut paste",
 			"kind": "food",
-			"description": "Ground hazelnuts and honey. Keeps well.",
+			"description": "Ground hazelnuts and sweet nectar. Keeps well.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Hazelnuts, 1 Honeyspindle nectar"
 			],
@@ -3369,7 +3369,7 @@
 		"smoked_fish": {
 			"name": "Smoked fish",
 			"kind": "food",
-			"description": "Pike smoked over juniper. Lasts for weeks.",
+			"description": "Fish smoked over juniper. Lasts for weeks.",
 			"how_to_get": [
 				"Craft at a campfire: 1 Pike, 1 Samphire, 1 Juniper berries"
 			],
@@ -3595,7 +3595,7 @@
 		"brick": {
 			"name": "Brick",
 			"kind": "material",
-			"description": "A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar.",
+			"description": "A fired clay brick. Builds the clay hearth and the oven.",
 			"how_to_get": [
 				"Craft at a campfire: 2 Clay"
 			],
@@ -3639,7 +3639,7 @@
 		"wooden_hoe": {
 			"name": "Wooden hoe",
 			"kind": "tool",
-			"description": "A flat blade lashed to a long handle. Paths the ground and smooths it.",
+			"description": "A flat blade on a long handle. Paths the ground and tills beds.",
 			"how_to_get": [
 				"Craft: 2 Stick, 1 Twine (keep Stone)"
 			],
@@ -3651,7 +3651,7 @@
 		"stone_hoe": {
 			"name": "Stone hoe",
 			"kind": "tool",
-			"description": "A hoe with a flat stone blade. Lasts longer than bare wood.",
+			"description": "A hoe with a stone blade. Lasts longer than wood.",
 			"how_to_get": [
 				"Craft at a workbench: 1 Wooden hoe, 2 Stone, 1 Twine"
 			],
@@ -3716,7 +3716,7 @@
 		"nails": {
 			"name": "Nails",
 			"kind": "material",
-			"description": "Iron nails, bought and used by the handful.",
+			"description": "Small iron nails. Fix boards in builds.",
 			"how_to_get": [
 				"Craft at a forge: 1 Iron ingot"
 			],
@@ -3793,7 +3793,7 @@
 		"wooden_block": {
 			"name": "Wooden block",
 			"kind": "material",
-			"description": "A short round of log, about 30 cm long. Split it on a chopping block.",
+			"description": "A short round of log. Split it on a chopping block.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Wooden hammer"
@@ -3904,7 +3904,7 @@
 		"stone_hammer": {
 			"name": "Stone hammer",
 			"kind": "tool",
-			"description": "A hafted stone hammer. It does nothing yet: nails and finishing work are still to come.",
+			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
 			"how_to_get": [
 				"Craft at a workbench: 1 Stone, 1 Stick, 1 Twine"
 			],
@@ -3927,7 +3927,7 @@
 		"rough_bed_kit": {
 			"name": "Rough bed",
 			"kind": "placeable",
-			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
+			"description": "Thatch bound with twine. Set it under a roof and lie down to sleep.",
 			"how_to_get": [
 				"Craft: 10 Thatch, 4 Stick, 2 Twine",
 				"Craft: 8 Bedding, 4 Stick, 2 Twine",
@@ -4053,7 +4053,7 @@
 		"wooden_bow": {
 			"name": "Wooden bow",
 			"kind": "weapon",
-			"description": "A bow of bent wood and twine. It needs arrows.",
+			"description": "A bow of bent wood and twine. Needs arrows.",
 			"how_to_get": [
 				"Craft at a workbench: 2 Stick, 3 Twine"
 			],
@@ -4063,7 +4063,7 @@
 		"wooden_arrow": {
 			"name": "Wooden arrow",
 			"kind": "material",
-			"description": "A straight stick with a fire-hardened tip and feather fletching.",
+			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"how_to_get": [
 				"Craft: 2 Stick, 2 Feather"
 			],
@@ -4073,7 +4073,7 @@
 		"stone_arrow": {
 			"name": "Stone arrow",
 			"kind": "material",
-			"description": "An arrow tipped with a flaked stone point.",
+			"description": "An arrow with a flaked stone point. Hits harder than wood.",
 			"how_to_get": [
 				"Craft: 2 Stick, 2 Feather, 2 Stone"
 			],
@@ -4109,7 +4109,7 @@
 		"flatbread": {
 			"name": "Flatbread",
 			"kind": "food",
-			"description": "A flat cake baked on the hot clay. Plain and filling.",
+			"description": "A flat cake baked on hot clay. Plain and filling.",
 			"how_to_get": [
 				"Craft at a clay hearth: 3 Seeds, 1 Water"
 			],
@@ -4158,7 +4158,7 @@
 		"flint": {
 			"name": "Flint",
 			"kind": "material",
-			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
+			"description": "A hard grey stone that sparks when struck. Common near rivers.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Hide scraper",
@@ -4391,7 +4391,7 @@
 		"stone_pickaxe": {
 			"name": "Stone pickaxe",
 			"kind": "tool",
-			"description": "A heavy stone head lashed to a haft. Breaks rock and ore, slowly.",
+			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"how_to_get": [
 				"Craft at a workbench: 2 Stick, 3 Stone, 2 Twine"
 			],
@@ -4433,7 +4433,7 @@
 		"copper_ore": {
 			"name": "Copper ore",
 			"kind": "material",
-			"description": "A heavy lump streaked green and red. Smelts to copper.",
+			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Copper ingot"
@@ -4444,7 +4444,7 @@
 		"tin_ore": {
 			"name": "Tin ore",
 			"kind": "material",
-			"description": "A dark, very heavy lump. Smelts to tin.",
+			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Tin ingot"
@@ -4455,7 +4455,7 @@
 		"iron_ore": {
 			"name": "Iron ore",
 			"kind": "material",
-			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
+			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Iron ingot"
@@ -4466,7 +4466,7 @@
 		"coal": {
 			"name": "Coal",
 			"kind": "material",
-			"description": "A black lump that burns hot. Needed to turn iron into steel.",
+			"description": "A black lump that burns hot. Smelts iron and makes steel.",
 			"how_to_get": [],
 			"used_for": [
 				"Used in Steel ingot"
@@ -4477,7 +4477,7 @@
 		"hide_tunic": {
 			"name": "Hide tunic",
 			"kind": "clothing",
-			"description": "A sewn hide shirt with sleeves. Warmer and neater than a cloak.",
+			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"how_to_get": [
 				"Craft: 3 Hide, 2 Twine"
 			],
@@ -4487,7 +4487,7 @@
 		"hide_trousers": {
 			"name": "Hide trousers",
 			"kind": "clothing",
-			"description": "Hide sewn into proper trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Better than leggings.",
 			"how_to_get": [
 				"Craft: 3 Hide, 2 Twine"
 			],
@@ -4497,7 +4497,7 @@
 		"hide_gloves": {
 			"name": "Hide gloves",
 			"kind": "clothing",
-			"description": "Stitched hide gloves with fingers, for work and cold.",
+			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"how_to_get": [
 				"Craft: 1 Hide, 2 Twine"
 			],
@@ -4517,7 +4517,7 @@
 		"herb_salve": {
 			"name": "Herb salve",
 			"kind": "medicine",
-			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
+			"description": "Comfrey worked into fat. Soothes burns and sore skin.",
 			"how_to_get": [
 				"Craft: 2 Comfrey leaves, 1 Animal fat"
 			],
@@ -4537,7 +4537,7 @@
 		"candle": {
 			"name": "Candle",
 			"kind": "tool",
-			"description": "A wick dipped in animal fat. A small steady light for indoors.",
+			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"how_to_get": [
 				"Craft: 1 Animal fat, 1 Plant fibre",
 				"Craft: 1 Tallow, 1 Plant fibre"
@@ -4832,7 +4832,7 @@
 		"wheat_seeds": {
 			"name": "Wheat seeds",
 			"kind": "material",
-			"description": "Seeds for sowing wheat. Plant in a tilled bed.",
+			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
@@ -4983,7 +4983,7 @@
 		"bone_arrow": {
 			"name": "Bone arrow",
 			"kind": "material",
-			"description": "An arrow tipped with a sharpened bone point.",
+			"description": "An arrow with a sharpened bone point.",
 			"how_to_get": [
 				"Craft: 2 Stick, 2 Feather, 2 Bone"
 			],
@@ -4993,7 +4993,7 @@
 		"stone_wedge": {
 			"name": "Stone wedge",
 			"kind": "tool",
-			"description": "A flaked stone wedge. Driven into a log it splits it into rough planks.",
+			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two rough planks.",
 			"how_to_get": [
 				"Craft: 2 Stone, 1 Stick"
 			],
@@ -5147,7 +5147,7 @@
 		"wool_tunic": {
 			"name": "Wool tunic",
 			"kind": "clothing",
-			"description": "A woven wool shirt. Warm even when damp.",
+			"description": "A woven wool shirt. Warm.",
 			"how_to_get": [
 				"Craft: 3 Wool, 1 Twine"
 			],
