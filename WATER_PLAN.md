@@ -19,6 +19,8 @@ Dave made me responsible for land and water (the generator, rivers, lakes, ocean
 - The flora finding is the same fact: baked forests at 1,000 to 2,100 m are really at 0 to 850 m, which fits the altitude caps of flora.json (oak 900, beech 1000, maple 1100). He flew the nine centre tiles at y about 1,040 to 1,055 with the ground "not far below": the ground was really 0 to 100 m (read as 1,000 to 1,100) near the coast.
 - Are there outer tiles that are placeholders? Yes, by design: a tile with no file is an ocean placeholder (WORLD_FORMAT_SPEC.md); only 9 of the 21 by 21 tiles are baked, the rest is flat deep ocean.
 
+In game after the fix (look rig, first person, standing at the beach x 52600 z 66592 facing west, `art/water/coast_first_person_after_fix.png`): the sea now exists, but it is a flat, featureless grey plane to the horizon with no waves, shore or depth colour, and the shot shows no beach in the foreground, so either the ground blocks had not arrived when the rig took the picture or the player stood in the water; phase 1 repeats it with a longer wait and a second view. That flat sea is the starting point of phase 3.
+
 ### 1.2 Rivers: why the water appears late, patchy, and slowly (symptoms a, b, c)
 
 - `terrain_server._start_water` started the water with `dry_start = true` unless `--settled-water` was given ("Owner 2026-10-18: the world starts dry and the springs fill it so the real water paths show"). The launcher's "play" does not pass the flag, so every play session started dry.
