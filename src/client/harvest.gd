@@ -244,10 +244,10 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 			var species: Dictionary = _client.flora._species.get(id >> 16, {})
 			var kind: int = int(species.get("kind", 0))
 
-			if kind == 0:
-				continue
-
 			var row: Dictionary = _flora_by_id.get(id >> 16, {})
+
+			if kind == 0 and not (_drops.get("fruit_tree", {}) as Dictionary).has(str(row.get("name", ""))):
+				continue   # only fruit trees (drops.json "fruit_tree") can be picked from the tree
 
 			if row.is_empty():
 				continue
