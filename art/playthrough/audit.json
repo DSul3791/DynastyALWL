@@ -1,8 +1,8 @@
 {
  "counts": {
   "items": 467,
-  "recipes": 180,
-  "recipes_known_or_open": 161,
+  "recipes": 183,
+  "recipes_known_or_open": 164,
   "structures": 37,
   "blueprints": 6
  },
@@ -2568,6 +2568,51 @@
    "wave_potential": 1,
    "blocked_by": [],
    "future": false
+  },
+  {
+   "id": "leather",
+   "number": 234,
+   "category": "Materials",
+   "gives": "leather",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for processed_hide"
+   ],
+   "future": true
+  },
+  {
+   "id": "heavy_leather",
+   "number": 235,
+   "category": "Materials",
+   "gives": "heavy_leather",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for leather"
+   ],
+   "future": true
+  },
+  {
+   "id": "fine_leather",
+   "number": 236,
+   "category": "Materials",
+   "gives": "fine_leather",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for leather"
+   ],
+   "future": true
   }
  ],
  "items": [
@@ -4897,8 +4942,10 @@
    "id": "leather",
    "number": 283,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "recipe:leather"
+   ],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": true
   },
@@ -4906,8 +4953,10 @@
    "id": "fine_leather",
    "number": 284,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "recipe:fine_leather"
+   ],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": true
   },
@@ -4915,8 +4964,10 @@
    "id": "heavy_leather",
    "number": 285,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "recipe:heavy_leather"
+   ],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
    "future": true
   },
@@ -5224,7 +5275,7 @@
     "recipe:plank_shield"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5235,7 +5286,7 @@
     "recipe:bronze_sword"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5246,7 +5297,7 @@
     "recipe:bronze_mace"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5257,7 +5308,7 @@
     "recipe:bronze_shield"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5268,7 +5319,7 @@
     "recipe:iron_sword"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5279,7 +5330,7 @@
     "recipe:iron_mace"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5290,7 +5341,7 @@
     "recipe:iron_shield"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5301,7 +5352,7 @@
     "recipe:steel_sword"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5312,7 +5363,7 @@
     "recipe:steel_mace"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5323,7 +5374,7 @@
     "recipe:steel_shield"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5334,7 +5385,7 @@
     "recipe:leather_cap"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": false
   },
   {
@@ -5345,7 +5396,7 @@
     "recipe:leather_jerkin"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5356,7 +5407,7 @@
     "recipe:bronze_helm"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5367,7 +5418,7 @@
     "recipe:gambeson"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5378,7 +5429,7 @@
     "recipe:iron_helm"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5389,7 +5440,7 @@
     "recipe:mail_shirt"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5400,7 +5451,7 @@
     "recipe:steel_helm"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -5411,7 +5462,7 @@
     "recipe:plate_cuirass"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -7181,8 +7232,10 @@
    "id": "tannin_bark",
    "number": 1145,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "plant:oak"
+   ],
+   "obtainable": "now",
    "look": "ok (bark)",
    "future": false
   },
