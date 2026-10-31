@@ -218,7 +218,10 @@ Verified after the changes: `selftest_gate_tools.sh` 16 pass, 0 fail; `tests_for
 
 ## 31 Oct night: the four known-red tests, merge watch, bot and world-alive tool
 
-### The four tests that are red on the daily branch (decision: "known until re-bake")
+### UPDATE 31 Oct 04:30: the four reds are green again
+In the second merge dry run (daily 72feac47 plus the working branches, result 111337b2) all four passed: test_drainage_fill 6.8 s, test_river_surface 2.7 s, test_drainage_flow 80.6 s, test_head_pond_fill 529 s (98 pass, 0 fail in 631 s). The natural-rivers commits (066a4e7d to 4a3e9e62) landed on the daily branch between the two runs. `tools/known_red.txt` is now empty. The decision table below still holds for the day the tiles are re-baked with natural rivers switched on (head_pond_fill and drainage_flow to archive, drainage_fill and river_surface to re-pin).
+
+### The four tests that were red on the daily branch (decision: "known until re-bake")
 They are listed in `tools/known_red.txt`; `tools/merge_day.sh` reports them as KNOWN, not NEW, so a red that is really new is not hidden among them. They are red because the committed tiles are the old bake and these tests read the baked tile 3,4 (GENERATOR_NOTES: "tests run before a re-bake test the OLD terrain"). Natural rivers stay off by default until the re-bake, so each test is judged against what the NEW system keeps:
 
 | test | what it checks | new system | decision | covered meanwhile by |
