@@ -1910,3 +1910,7 @@ Answered: 2026-10-31 20:03 UTC
 Answer: Yes | Comment: That is perfect exactly what I wanted
 Answered: 2026-10-31 20:03 UTC
 
+## pic-meadow-saplings | Does the starter meadow look more natural now, with no lone young conifers standing in the open grass (left: before, right: after)?
+Answer: No | Comment: I can’t tell because there’s no character in the picture
+Answered: 2026-10-31 20:04 UTC
+
