@@ -195,6 +195,10 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
 		"reed_stand":
 			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), bark, leaves, rng, h, crown, far)
+		"fallen_log":
+			_fallen_log(FALLEN_LOGS.get(str(entry["name"]), FALLEN_LOGS["fallen_log"]), bark, leaves, rng, h, crown, far)
+		"kelp":
+			_kelp(bark, rng, h, crown, far)
 		"grass_tuft":
 			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
@@ -3122,6 +3126,94 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 
 					for b in range(5 if hs > 1.0 else 4):   # a seed head droops: beads stepping down and out from the stem top
 						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03 * hs, 0.0) + out * crown * 0.03 * float(b), Vector3(h * 0.012, h * 0.022, h * 0.012) * hs, color * rng.randf_range(0.9, 1.1))
+
+
+# Fallen logs and old stumps for the forest floor (Kathleen, beach and forest pass; flora.json rows name the look, `h` is the log length 2 to 6 m, `trunk` the radius). Reference: a rotting
+# trunk lying in woodland: bark brown-grey, moss growing thick along the top and the damp side, snapped branch stubs, a pale broken end, a hollow end with a dark opening; an old stump is a
+# short squat butt with splayed roots and a mossy cap.
+const FALLEN_LOGS := {
+	"fallen_log": {"kind": "log", "bark": Color(0.27, 0.19, 0.12), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+	"hollow_log": {"kind": "log", "bark": Color(0.25, 0.18, 0.12), "moss": Color(0.24, 0.42, 0.16), "hollow": true},
+	"old_stump": {"kind": "stump", "bark": Color(0.28, 0.2, 0.13), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+}
+
+
+static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var colour: Color = look["bark"]
+	var moss: Color = look["moss"]
+	var radius: float = clampf(maxf(crown * 0.12, h * 0.075), 0.14, 0.45)
+
+	if str(look["kind"]) == "stump":
+		var height: float = maxf(radius * 2.2, 0.5)
+		_branch(bark, Vector3(0.0, 0.0, 0.0), Vector3(0.0, height, 0.0), radius * 1.15, radius, colour, 8)
+		_bead(bark, Vector3(0.0, height, 0.0), Vector3(radius * 1.05, radius * 0.25, radius * 1.05), colour.lightened(0.28))   # the broken, paler top
+
+		for k in range(4 if far else 7):
+			var a: float = TAU * float(k) / 7.0 + rng.randf() * 0.3
+			_branch(bark, Vector3(cos(a) * radius * 0.9, radius * 0.5, sin(a) * radius * 0.9), Vector3(cos(a) * radius * 2.1, 0.0, sin(a) * radius * 2.1), radius * 0.38, radius * 0.1, colour.darkened(0.1), 5)   # splayed roots
+
+		for k in range(2 if far else 5):
+			var b: float = rng.randf() * TAU
+			_bead(bark, Vector3(cos(b) * radius * 0.5, height + radius * 0.1, sin(b) * radius * 0.5), Vector3(radius * 0.5, radius * 0.22, radius * 0.4), moss * rng.randf_range(0.85, 1.15))
+
+		return
+
+	var rise: float = rng.randf_range(0.0, radius * 0.4)
+	_branch(bark, Vector3(-h * 0.5, radius, 0.0), Vector3(h * 0.5, radius + rise, 0.0), radius, radius * 0.82, colour, 8)
+	_bead(bark, Vector3(h * 0.5 + radius * 0.02, radius + rise, 0.0), Vector3(radius * 0.1, radius * 0.8, radius * 0.8), colour.lightened(0.35))      # the pale broken far end
+
+	if bool(look["hollow"]):
+		_bead(bark, Vector3(-h * 0.5 - radius * 0.02, radius, 0.0), Vector3(radius * 0.12, radius * 0.62, radius * 0.62), Color(0.06, 0.05, 0.04))      # the dark mouth of the hollow
+	else:
+		_bead(bark, Vector3(-h * 0.5 - radius * 0.02, radius, 0.0), Vector3(radius * 0.12, radius * 0.85, radius * 0.85), colour.lightened(0.3))
+
+	for k in range(2 if far else 4):   # snapped branch stubs
+		var x: float = rng.randf_range(-0.4, 0.4) * h
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		_branch(bark, Vector3(x, radius * 1.4, side * radius * 0.7), Vector3(x + radius * 0.5, radius * 1.4 + radius * 0.5, side * radius * 1.5), radius * 0.2, radius * 0.1, colour.darkened(0.15), 5)
+
+	for k in range(5 if far else 9):   # bark ridges: long thin lighter and darker strips along the trunk
+		var ra: float = TAU * float(k) / 9.0
+		var ry: float = radius + sin(ra) * radius * 0.96
+		var rz: float = cos(ra) * radius * 0.96
+		_branch(bark, Vector3(-h * 0.48, ry, rz), Vector3(h * 0.48, ry + rise * 0.9, rz), radius * 0.1, radius * 0.08, colour.lightened(0.12) if k % 2 == 0 else colour.darkened(0.2), 4)
+
+	for k in range(6 if far else 17):   # moss: thick on the top and down the damp sides
+		var mx: float = rng.randf_range(-0.48, 0.48) * h
+		var ma: float = rng.randf_range(-1.3, 1.3)
+		var size: float = rng.randf_range(0.04, 0.1) * h * 0.5 + radius * 0.5
+		_bead(bark, Vector3(mx, radius + cos(ma) * radius * 0.95 + radius * 0.12 + rise * (mx / h + 0.5), sin(ma) * radius * 0.95), Vector3(size, radius * 0.34, size * 0.55), moss * rng.randf_range(0.8, 1.25))
+
+
+# Kelp (beach pass): a holdfast of short roots and a clump of long, wavy brown-olive ribbons with a few round gas bladders near the tips. `h` is the ribbon length.
+static func _kelp(bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	for k in range(3 if far else 6):   # the holdfast: short grasping roots on the seabed
+		var ra: float = rng.randf() * TAU
+		_branch(bark, Vector3(0.0, 0.04, 0.0), Vector3(cos(ra) * crown * 0.6, 0.0, sin(ra) * crown * 0.6), 0.03, 0.01, Color(0.2, 0.15, 0.07), 4)
+
+	for k in range(5 if far else 11):   # wavy olive stipes, each ending in a wide frilled blade of flattened lobes
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+		var len: float = h * rng.randf_range(0.7, 1.0)
+		var colour: Color = Color(0.34, 0.3, 0.1).lerp(Color(0.5, 0.42, 0.14), rng.randf())
+		var prev: Vector3 = out * crown * 0.2 + Vector3(0.0, 0.05, 0.0)
+		var steps: int = 4 if far else 6
+
+		for seg in range(1, steps + 1):
+			var t: float = float(seg) / float(steps)
+			var at: Vector3 = out * crown * (0.2 + 0.7 * t) + side * sin(t * 6.0 + a * 3.0) * crown * 0.25 + Vector3(0.0, len * t, 0.0)
+			_branch(bark, prev, at, 0.03 * (1.0 - 0.6 * t) + 0.008, 0.03 * (1.0 - 0.6 * float(seg) / float(steps)) + 0.006, colour, 4)
+
+			if seg >= steps - 2 and not far:
+				var wide: Vector3 = Vector3(0.1, 0.11, 0.012) if seg % 2 == 0 else Vector3(0.012, 0.11, 0.1)
+				_bead(bark, at, wide, colour.lightened(0.1))
+				_bead(bark, at + side * 0.06 + Vector3(0.0, 0.05, 0.0), wide * 0.8, colour)
+
+			prev = at
+
+		if not far and k % 3 == 0:
+			_bead(bark, prev - Vector3(0.0, len * 0.18, 0.0), Vector3(0.035, 0.05, 0.035), Color(0.66, 0.58, 0.26))      # a gas bladder
 
 
 # Ferns and mosses, family 3 of goal 1b (Kathleen, 24 Oct). Reference: bracken/common fern 50-120 cm, a rosette of arching fronds; moss cushions 3-10 cm of tiny green domes with thin spore stalks.
