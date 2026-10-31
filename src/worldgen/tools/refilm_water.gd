@@ -5,7 +5,9 @@ extends SceneTree
 # ("broken patches", 48 percent of the painted cells wet). This tool works on the SAVED settled water of every tile (no simulation, no tile bake): a dry painted river cell takes the
 # water LEVEL of the wet painted river cells within --reach cells (default 3, about the half width), so the surface stays flat across the channel and the water stops where the bank
 # rises above it (never deeper than --max-depth, default 1.5 m). Old files are copied to worlds/<world>/water_archive/ first (never overwritten).
-#   godot --headless --path . --script res://src/worldgen/tools/refilm_water.gd -- [--tile=3,4] [--reach=3] [--max-depth=1.5] [--dry-run] [--world=DIR]
+# --film (31 Oct 2026, the choice for the committed files): instead of the level-fill, apply the settle tool's own film floor to every painted river cell whatever its catchment and whether
+# or not it holds water (min_seen 0, min_km2 --min-km2, default 0): every painted channel holds 13 cm from head to sea, so a headwater reach is a thin sheet, not a dry bed.
+#   godot --headless --path . --script res://src/worldgen/tools/refilm_water.gd -- [--tile=3,4] [--film [--min-km2=0] [--depth=0.13]] [--reach=3] [--max-depth=1.5] [--dry-run] [--world=DIR]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -18,6 +20,9 @@ const WaterStore := preload("res://src/water/water_store.gd")
 func _initialize() -> void:
 	var world: String = "res://worlds/base_world"
 	var only: Vector2i = Vector2i(-99, -99)
+	var film: bool = false
+	var min_km2: float = 0.0
+	var film_depth: float = 0.13
 	var reach: int = 3
 	var max_depth: float = 1.5
 	var dry: bool = false
@@ -28,6 +33,12 @@ func _initialize() -> void:
 		elif argument.begins_with("--tile="):
 			var parts: PackedStringArray = argument.trim_prefix("--tile=").split(",")
 			only = Vector2i(int(parts[0]), int(parts[1]))
+		elif argument == "--film":
+			film = true
+		elif argument.begins_with("--min-km2="):
+			min_km2 = float(argument.trim_prefix("--min-km2="))
+		elif argument.begins_with("--depth="):
+			film_depth = float(argument.trim_prefix("--depth="))
 		elif argument.begins_with("--reach="):
 			reach = int(argument.trim_prefix("--reach="))
 		elif argument.begins_with("--max-depth="):
@@ -71,7 +82,12 @@ func _initialize() -> void:
 			if data.water_class[k] == 3 and depth[k] >= 0.12:
 				wet_before += 1
 
-		var result: Dictionary = _fill_sides(depth, data.heights, data.water_class, data.samples, reach, max_depth)
+		var result: Dictionary = {}
+
+		if film:
+			result = WaterSettler.film_floor(depth, data.water_class, WaterSettler.flow_of(data, generator), data.spacing_m, {"enabled": true, "depth_m": film_depth, "min_seen_m": 0.0, "min_km2": min_km2})
+		else:
+			result = _fill_sides(depth, data.heights, data.water_class, data.samples, reach, max_depth)
 		var wet_after: int = 0
 		var painted: int = 0
 
