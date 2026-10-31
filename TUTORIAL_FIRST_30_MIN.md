@@ -49,9 +49,17 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## Minute 26 to 30: tools and what comes next
 
-20. Trigger: bed placed. Line: "A Workbench (12 sticks, 3 twine) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
+20. Trigger: bed placed. Line: "A Workbench (16 sticks, 6 twine, 4 stones) lets you make better tools: a stone hammer, a bow, a stone spade, a pickaxe." (recipes 45, 156, 170, 26, 186.) Check: workbench placed.
 21. Trigger: workbench placed. Line: "For defence make a Wooden spear: 1 stick (keep a stone in your pack), then bind it with 2 twine for a stone spear. Left click jabs; hold right click to aim a throw." (recipes 5 and 3.) Check: spear made.
 22. Trigger: spear made. Line: "Food runs out in about an hour of work. Rabbits give meat, hide and bone: strike them with the spear, then work the body with a stone knife (2 stones, 1 stick)." (recipe 6.) Check: knife made.
+
+## After the first meal: the pot and the hearth (added 31 Oct, paper only)
+
+23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
+24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, and a brick is 2 clay fired at the campfire." Check: first pot dish cooked.
+
+Hints: data/items/hints.json already has "cook_rule" ("Roast raw meat on the campfire. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
+
 
 ## What the tutorial must NOT promise yet
 
