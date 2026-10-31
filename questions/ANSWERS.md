@@ -1886,3 +1886,7 @@ Answered: 2026-10-31 20:00 UTC
 Answer: Yes
 Answered: 2026-10-31 20:00 UTC
 
+## pic-starter-meadow | Does the starter meadow at noon look real and alive (density, variety, ground cover)?
+Answer: Yes | Comment: Yes, it looks great, but it does need some flowers and colour
+Answered: 2026-10-31 20:01 UTC
+
