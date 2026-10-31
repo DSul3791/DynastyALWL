@@ -40,3 +40,13 @@ References: Eurasian wild boar, European robin, common frog and brown trout phot
 | Trout (`_make_fish`) | trout_round1.png | torpedo body, dorsal and side fins, a tail fan, dark spots on the back and red ones on the flank: reads as a fish; the spots look like black studs and the tail a plain box | 2 | smaller spots, a forked tail, a gill line |
 
 These are model functions only: they are not wired to species numbers in AnimalView.on_rows yet (the animals.json species have no boar, songbird, frog or fish rows); once Sal gives the numbers I add them to `KIND_OF_SPECIES` and the dispatch.
+
+## Grouse, seal and gull, round 1 (2026-10-31, offline)
+
+| Species (number) | Picture | Critique | Rating | Next |
+|---|---|---|---|---|
+| Red grouse (11, `_make_grouse`) | grouse_round1.png | a plump reddish bird with a thick neck, dark back, red combs over the eyes, short tail, feathered legs: reads as a grouse or a small hen | 3 | barring, a rounder tail, a shorter neck |
+| Grey seal (12, `_make_seal`) | seal_round1.png | a thick grey spindle with a head, snout and flippers; the dark blotches hover above the back and the flippers are small: reads as a seal at a glance but weak | 2 | blotches on the skin, bigger front flippers, a visible whiskered face, a curved posture |
+| Gull (13, `_make_seabird`) | gull_round1.png | white body, grey folded wings with black tips, a heavy yellow bill with a red spot, pink legs and webbed feet: reads as a herring gull | 3 | a flight pose, a streaked head |
+
+All three are wired in AnimalView._make_for_species (numbers from Sal's proposal): they go live when animals.json has the rows.
