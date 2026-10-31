@@ -12,6 +12,8 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
+const PLAYER_CLEAR_M := 1.8              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
+const PLAYER_KEEP := 0.12
 const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
 const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
@@ -150,6 +152,7 @@ uniform float season_blades = 1.0;      // share of blades kept (hashed per cell
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
 uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
+uniform vec4 player_clear = vec4(0.0);  // the local player: x, z, clear radius, share of height kept inside it (radius 0 = off): the feet stay in view in third person
 varying vec3 blade_color;
 varying float tip;
 
@@ -191,6 +194,7 @@ void vertex() {
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
+	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, player_clear.z, length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
@@ -1091,6 +1095,15 @@ func _push_trunks(center: Vector3) -> void:
 			_materials[n].set_shader_parameter("trunk_squash", trunk_squash)
 
 
+# The local player's spot goes to the grass shader (blades are lowered per blade there, no cell is rebuilt, no extra draw).
+func _push_player(at: Vector3) -> void:
+	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M, PLAYER_KEEP)
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("player_clear", v)
+
+
 # Is (x, z) under or within the margin of a lying trunk?
 func _flat_at(x: float, z: float) -> bool:
 	for t in trunks:
@@ -1168,6 +1181,7 @@ func update(from_position: Vector3) -> void:
 	_center = from_position
 	var now: int = Time.get_ticks_msec()
 	_trample.flush()
+	_push_player(from_position)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500

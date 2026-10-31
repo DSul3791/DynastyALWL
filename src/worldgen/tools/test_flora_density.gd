@@ -321,5 +321,46 @@ func _init() -> void:
 				placed_future.append(str(row["name"]))
 
 	_check(future_names.size() >= 6 and placed_future.is_empty(), "future fruit trees (%d) are never placed %s" % [future_names.size(), str(placed_future)])
+	# Young conifers come in nurseries or beside a grown tree, never one by one in the middle of a meadow (Dave 2026-10-31).
+	var young: Array = []
+	var grown: Array = []
+	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
+
+	for dz in range(-3, 4):
+		for dx in range(-3, 4):
+			var made: Dictionary = placer.chunk_items(Vector2i(spawn_chunk.x + dx, spawn_chunk.y + dz))
+
+			for n in range(made["ids"].size()):
+				var sp: Dictionary = placer.species_of(made["ids"][n])
+
+				if int(sp["kind"]) != PlacerScript.KIND_TREE:
+					continue
+
+				var at: Vector3 = made["positions"][n]
+				var h: float = float(made["heights"][n])
+
+				if h >= 8.0:
+					grown.append(Vector2(at.x, at.z))
+				elif h < 4.0 and str(sp["shape"]) == "conifer" and absi(dx) <= 2 and absi(dz) <= 2:
+					young.append(Vector2(at.x, at.z))
+
+	var lonely: int = 0
+
+	for q in young:
+		if placer._nursery_at(q.x, q.y):
+			continue
+
+		var has_parent: bool = false
+
+		for g in grown:
+			if g.distance_to(q) < 22.0:
+				has_parent = true
+				break
+
+		if not has_parent:
+			lonely += 1
+
+	print("young conifers near the spawn: %d, lonely (no nursery, no grown tree within 22 m): %d" % [young.size(), lonely])
+	_check(lonely * 50 <= young.size(), "at most 2 percent of young conifers stand alone in open ground (a parent crown across a chunk edge is not seen) (%d of %d)" % [lonely, young.size()])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
