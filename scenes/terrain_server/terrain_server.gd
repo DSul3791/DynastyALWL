@@ -592,6 +592,8 @@ func _ready() -> void:
 # Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
+# Checked 31 Oct 2026 (tools/spawn_probe.gd, test_spawn_dry): in the current world this spot is dry, ground 31.6 m, the nearest settled water 113 m away and 7 m lower; the 0.9 m of
+# water noted above was the old x10 flow. The guide's dark rippled plane here came from the build before the tile height fix (31 Oct), not from a pond.
 const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
 
 
