@@ -78,3 +78,11 @@ Things the diagnosis changes: the world Dave has been playing since 29 Oct was t
 1. Re-bake all nine tiles with the current generator (phase 7) or keep the 25 Oct tiles for now: the compatibility decode makes the old tiles work; the re-bake brings rolling ground, taller peaks and natural rivers but changes the world.
 2. Saved player edits made since 29 Oct (Dave's test worlds): drop them (default) or shift them by the same transform.
 3. `--dry-water` stays as a developer option; the default is start-full.
+
+### Decisions taken 31 Oct 2026 (moderator, relaying Dave)
+
+1. Keep the 25 Oct tiles for now and decode them at 0.1 m (done, `TileFile.height_step_of`). No re-bake until Dave's go; phase 7 prepares it (pictures, numbers), commits no baked tile.
+2. No migration of saved player edits made since 29 Oct.
+3. Start-full stays the default; `--dry-water` is the developer option.
+4. Lake share (QA, 0.10 percent of cells against the 0.2 target, measured by `tools/world_alive.gd` on the baked classes): it needs the bake, so it joins phase 7: crater lake first (the volcano crater in `sketch_rules.json`, a lake class and a settled fill up to its spill), then lower `lake_min_depth_m` and `lake_min_catchment_km2`; measure the share on one tile before any bake.
+5. The spawn (53316, 68476) is dry (`test_spawn_dry`); the NPC town stands on the spawn pad clear of trees.
