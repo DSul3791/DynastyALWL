@@ -11,3 +11,4 @@ Next: send ACT_PLACE through the client's own place path (client.held ghost conf
 ## Lit fixtures with Tyler's client flames (branch claude/tyler-gates-fee5f7)
 - game_lit_fireplace_torch.png: fireplace and wall torch, hour 21. The warm light pool on the ground and the glowing jambs read well; rating 4. Flames are small and come out cream-white, not orange (emission too high, so the colour clips); the fire fills only about a sixth of the opening.
 - game_lit_furniture2.png / _close.png: chandelier at left, six candle flames visible, ground warm; rating 3.5 (flames tiny at 8 m).
+- game_lit_v2.png (after Tyler's flame tuning): fireplace fire now fills more of the opening with a second cone, torch flame fatter, chandelier candles larger and clearly seen; rating 4. Flame bases are orange, tips still cream-pale (could drop emission a little more); otherwise done.
