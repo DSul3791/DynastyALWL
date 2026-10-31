@@ -285,6 +285,9 @@ func _init() -> void:
 	var unstick: Array = ["stick", "thorny_canes", "log", "twine"]
 	print("harvest table: species | product | count 1x | count 3x | sticks | stays | second try | label agrees")
 	for species_name in harvest_names:
+		if (g._drops.get("fruit_tree", {}) as Dictionary).has(str(species_name)):
+			continue   # fruit trees have a real fruit store (a few pieces a press): test_fruit_tree.gd
+
 		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name))
 		var entry: Dictionary = flora_rows.get(str(species_name), {})
 		if entry.is_empty() or row.is_empty():

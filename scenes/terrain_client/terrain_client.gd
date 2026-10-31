@@ -63,6 +63,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
+const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -70,6 +71,8 @@ const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
+const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const MachineProbeScript := preload("res://src/debug/machine_probe.gd")
@@ -412,6 +415,7 @@ var dig_applied: int = 0
 var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
+var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -439,6 +443,7 @@ var _bake_status: String = ""
 var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
+var idle_timeout = IdleTimeoutScript.new()   # the game closes after the idle minutes of Esc > Settings > Gameplay without input (idle_timeout.gd)
 var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
@@ -489,6 +494,15 @@ func _ready() -> void:
 
 	net = $TerrainNet
 	display.load_saved()
+	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
+		_telemetry.event("EXIT: %s" % why)
+		_finish(0))
+	idle_timeout.name = "IdleTimeout"
+	add_child(idle_timeout)
+	idle_timeout.setup(OS.get_cmdline_user_args(), display.idle_minutes, DisplayServer.get_name() == "headless")
+	idle_timeout.timed_out.connect(func():
+		_telemetry.event("EXIT: idle timeout after %d minutes without input" % idle_timeout.minutes)
+		_finish(0))
 
 	if display.quality >= 0:
 		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
@@ -1026,6 +1040,9 @@ func _welcome_body(info: Dictionary) -> void:
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	shore_props = ShoreProps.new()
+	shore_props.name = "ShoreProps"
+	root.add_child(shore_props)
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
@@ -1645,6 +1662,9 @@ func _shore_prompt() -> String:
 		if number > 0 and items.inventory.numbers.has(number):
 			container = str(id)
 			break
+
+	if shore_props != null:
+		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
 
 	var ground: float = _ground_below(here)
 
@@ -2371,6 +2391,12 @@ func _report_display(prefix: String = "") -> void:
 		text += ", window %dx%d." % [win.x, win.y]
 
 	_menu_note.text = text
+
+
+# The idle timeout minutes were changed in the menu (idle_timeout.gd): 5 to 120, never below.
+func set_idle_minutes(value: int) -> void:
+	display.idle_minutes = IdleTimeoutScript.clamp_minutes(value)
+	idle_timeout.set_minutes(display.idle_minutes)
 
 
 # Saves the window, VSync and quality choices (display_settings.gd).

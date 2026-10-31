@@ -3833,7 +3833,7 @@ func run_gather_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
 	var real_view: Callable = view_direction
 	view_direction = Callable()   # the prompt checks below stand wherever the test camera happens to look
-	var best: Array = []
+	var shrubs: Array = []
 	var here: Vector3 = _player_position.call()
 
 	for chunk in client.flora._chunks:
@@ -3843,24 +3843,29 @@ func run_gather_test(client) -> void:
 			var sid: int = held["ids"][n] >> 16
 
 			if client.flora._species.get(sid, {}).get("kind", 0) == 1:
-				var d: float = held["positions"][n].distance_to(here)
+				shrubs.append([held["positions"][n].distance_to(here), held["positions"][n]])
 
-				if best.is_empty() or d < best[0]:
-					best = [d, held["positions"][n]]
-
-	if best.is_empty():
+	if shrubs.is_empty():
 		print("Gather test: no shrub loaded")
 		return
 
-	client.body.global_position = best[1] + Vector3(0.5, 1.0, 0.0)
-	client.body.velocity = Vector3.ZERO
-	await get_tree().create_timer(3.0).timeout
+	shrubs.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var sticks: int = table.number_of("stick")
 	var before: int = inventory.count_of(sticks)
-	await get_tree().create_timer(0.6).timeout
-	print("Gather test: prompt \"%s\"" % plant_hint)
-	client.harvest.tap()
-	await get_tree().create_timer(2.0).timeout
+
+	# A shrub out of season gives nothing (the server refuses it quietly): try the nearest few until one gives sticks, so the check does not depend on the season of the test clock.
+	for candidate in range(mini(shrubs.size(), 8)):
+		client.body.global_position = shrubs[candidate][1] + Vector3(0.5, 1.0, 0.0)
+		client.body.velocity = Vector3.ZERO
+		await get_tree().create_timer(3.0).timeout
+		await get_tree().create_timer(0.6).timeout
+		print("Gather test: prompt \"%s\"" % plant_hint)
+		client.harvest.tap()
+		await get_tree().create_timer(2.0).timeout
+
+		if inventory.count_of(sticks) > before:
+			break
+
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
 	var after_tap: int = inventory.count_of(sticks)
 	client.harvest.update(0.0, true)
@@ -3982,18 +3987,24 @@ func run_quickkey_test(_client) -> void:
 		event.pressed = true
 		return quick_key(event)
 
+	# Deltas, not absolute counts: the pack may hold more than was given (late syncs, stones picked up by themselves at the spawn).
+	var stacks_before: int = _stone_stacks(stone)
 	var handled: bool = press.call(KEY_S)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), 1, _stone_stacks(stone)])
+	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), stacks_before, _stone_stacks(stone)])
+	print("Quick key test: S added stacks %d" % (_stone_stacks(stone) - stacks_before))
 	_hover = inventory.numbers.find(stone)
+	var stones_now: int = inventory.count_of(stone)
 	press.call(KEY_D, true)
 	await get_tree().create_timer(1.0).timeout
 	print("Quick key test: Shift+D dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
+	print("Quick key test: Shift+D dropped %d" % (stones_now - inventory.count_of(stone)))
 	_hover = inventory.numbers.find(roast)
 	var roasts: int = inventory.count_of(roast)
 	press.call(KEY_E)
 	await get_tree().create_timer(1.0).timeout
 	print("Quick key test: E ate, roasts %d -> %d" % [roasts, inventory.count_of(roast)])
+	print("Quick key test: E ate %d" % (roasts - inventory.count_of(roast)))
 	print("Quick key test: T outside a container handled %s, nothing moved" % str(press.call(KEY_T)))
 
 
@@ -4445,9 +4456,11 @@ func run_eat_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
+	var roasts_before: int = inventory.count_of(table.number_of("roast_forage"))
 	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])
+	print("Eat test: roasts eaten %d" % (roasts_before - inventory.count_of(table.number_of("roast_forage"))))   # a delta: the pack may hold more than was given
 	eat_slot(inventory.numbers.find(table.number_of("poultice")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
