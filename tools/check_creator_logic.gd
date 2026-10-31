@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_check_code()
 	_check_seed()
 	_check_frames()
+	_check_hair_style()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -69,6 +70,8 @@ func _check_locks_and_sections() -> void:
 
 	for key in Logic.COLOR_NAMES:
 		all.set_lock(key, true)
+
+	all.set_lock("hair_style", true)
 
 	var h: Dictionary = all.genome.duplicate(true)
 	var undo_before: bool = all.can_undo()
@@ -234,3 +237,32 @@ func _check_frames() -> void:
 	_ok(not again.is_empty() and float(again["bust"]) == Generator.BUST_NONE and absf(float(again["chest"])) < 0.01, "a version 3 code carries the chest and bust")
 	bust["bust"] = 0.6
 	_ok(absf(float(Generator.decode(Generator.encode(bust))["bust"]) - 0.6) < 0.01, "and keeps its value")
+
+
+# Hair style: one undo step, the dice roll it unless locked, the share code keeps it.
+func _check_hair_style() -> void:
+	var a: RefCounted = Logic.new({}, 21)
+	_ok(int(a.genome["hair_style"]) == 0, "a new body starts with the first hair style")
+	a.set_hair_style(5)
+	_ok(int(a.genome["hair_style"]) == 5 and a.can_undo(), "set_hair_style changes it, as an undo step")
+	a.undo()
+	_ok(int(a.genome["hair_style"]) == 0, "and undo takes it back")
+	a.set_hair_style(99)
+	a.set_hair_style(-1)
+	_ok(int(a.genome["hair_style"]) == 0, "a style that does not exist is ignored")
+	var seen: Dictionary = {}
+
+	for i in range(60):
+		a.dice_section("Hair")
+		seen[int(a.genome["hair_style"])] = true
+
+	_ok(seen.size() >= 6, "the Hair dice reach the styles (%d of %d)" % [seen.size(), Generator.HAIR_STYLES.size()])
+	a.set_hair_style(4)
+	a.set_lock("hair_style", true)
+
+	for i in range(20):
+		a.dice_section("Hair")
+		a.dice_all()
+
+	_ok(int(a.genome["hair_style"]) == 4, "a locked hair style survives every dice")
+	_ok(Generator.decode(a.code())["hair_style"] == 4, "and the share code keeps it")

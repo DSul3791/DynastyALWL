@@ -167,4 +167,4 @@ func _check_codes() -> void:
 	var pa: Array = Generator.primitives(same, Generator.rig(same), false)
 	var pb: Array = Generator.primitives(v2, Generator.rig(v2), false)
 	_ok(pa.size() == pb.size(), "a version 2 body has the same primitives as before the split")
-	_ok(Generator.CODE_VERSION == 3, "new codes are version 3")
+	_ok(Generator.CODE_VERSION == 4, "new codes are version 4 (3 and 2 and 1 still decode)")

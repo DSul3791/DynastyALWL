@@ -47,6 +47,13 @@ const BUST_NONE := -1.0            # bust: -1 none, 0 small, 1 full; an old geno
 # Chest (the upper torso, for every frame): -1 a narrow, flat rib cage, 0 as before, +1 a wide, deep rib cage with pectoral bulk and a V-taper to the waist. It works on the torso only;
 # Muscle stays the whole-body muscle (limb thickness and a little chest depth) and does not do the V-taper, the width or the pectorals.
 
+# Hair styles (Sonny, 30 Oct 2026): index into this list, kept in the genome as "hair_style" and in the share code (version 4; older codes have the first, which is the look
+# every body had before styles existed). The Hair Length slider acts where it makes sense: long_loose (hair to the shoulders and beyond), side_part (the nape), ponytail and braid
+# (the length of the tail), bun (its size) and curly (its volume); bald, buzz, short_crop and shaved_sides ignore it.
+const HAIR_STYLES := ["long_loose", "bald", "buzz", "short_crop", "side_part", "ponytail", "bun", "braid", "curly", "shaved_sides"]
+const HAIR_STYLE_LABELS := {"long_loose": "Long and loose", "bald": "Bald", "buzz": "Buzz cut", "short_crop": "Short crop", "side_part": "Side part", "ponytail": "Ponytail",
+	"bun": "Bun", "braid": "Braid", "curly": "Curly", "shaved_sides": "Shaved sides"}
+
 # Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen with the Gender step of the creator or on
 # its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
 const FRAMES := {
@@ -96,6 +103,7 @@ static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.
 		g[key] = 0.0
 
 	g["bust"] = BUST_NONE
+	g["hair_style"] = 0
 
 	for key in PRESETS.get(preset, {}):
 		g[key] = float(PRESETS[preset][key])
@@ -143,8 +151,13 @@ static func rig(g: Dictionary) -> Dictionary:
 		var o: int = 5 if side < 0.0 else 9
 		pos[o] = Vector3(0.06 * side, shoulder_y, 0.0)
 		pos[o + 1] = Vector3(arm_x * side, shoulder_y, 0.0)
-		pos[o + 2] = pos[o + 1] + Vector3(0.0, -0.29 * arm, 0.0)
-		pos[o + 3] = pos[o + 2] + Vector3(0.0, -0.26 * arm, 0.0)
+		# Broad shoulders: the arms hang angled a little in toward the body (the upper arm up to 7 degrees, the forearm up to 11), so the hands do not hang far out from the
+		# ribs; the segment lengths stay 0.29 and 0.26 of the arm.
+		var in_k: float = clampf((sw - 1.0) / 0.45, 0.0, 1.0)
+		var a1: float = 0.12 * in_k
+		var a2: float = 0.2 * in_k
+		pos[o + 2] = pos[o + 1] + Vector3(-side * sin(a1), -cos(a1), 0.0) * 0.29 * arm
+		pos[o + 3] = pos[o + 2] + Vector3(-side * sin(a2), -cos(a2), 0.0) * 0.26 * arm
 		var l: int = 13 if side < 0.0 else 17
 		pos[l] = Vector3(hip_x * side, hips_y - 0.05 * h, 0.0)
 		pos[l + 1] = pos[l] + Vector3(0.0, -thigh, 0.0)
@@ -178,6 +191,72 @@ static func rig(g: Dictionary) -> Dictionary:
 
 
 # ---------------------------------------------------------------- primitives
+
+# The hair of the chosen style, all on the head bone in the hair material. Every style except bald and the colour-only buzz is a shell a little larger than the head, cut by one
+# hairline plane that sits higher at the forehead and lower at the nape (the face below it stays bare), plus whatever the style adds (a nape, a swoop, a tail, a bun, a braid).
+static func _hair(out: Array, g: Dictionary, head_c: Vector3, hs: float, hair_len: float) -> void:
+	var style: String = HAIR_STYLES[clampi(int(g.get("hair_style", 0)), 0, HAIR_STYLES.size() - 1)]
+
+	if style == "bald":
+		return
+
+	var cap_n: Vector3 = Vector3(0.0, 1.0, 0.55).normalized()
+	var cap_c: float = cap_n.dot(head_c) + 0.16 * hs / 1.1413
+	var cap: Dictionary = _ell(4, head_c + Vector3(0.0, 0.150 * hs, 0.004 * hs), Vector3(0.102 * hs, 0.124 * hs, 0.118 * hs), MAT_HAIR)
+
+	if style == "buzz" or style == "shaved_sides":
+		# A shell only 3.5 mm thick over the scalp: it shows as hair colour on the skin rather than as hair.
+		cap = _ell(4, head_c + Vector3(0.0, 0.14 * hs, 0.0), Vector3(0.0985 * hs, 0.1215 * hs, 0.1115 * hs), MAT_HAIR)
+	elif style == "curly":
+		cap = _ell(4, head_c + Vector3(0.0, 0.162 * hs, 0.01 * hs), Vector3(0.122 * hs * (0.95 + 0.1 * hair_len), 0.14 * hs, 0.13 * hs * (0.95 + 0.1 * hair_len)), MAT_HAIR)
+
+	cap["cut_n"] = cap_n
+	cap["cut_c"] = cap_c
+	out.append(cap)
+
+	if style == "long_loose" or style == "short_crop" or style == "side_part" or style == "ponytail" or style == "bun" or style == "braid":
+		var len: float = hair_len
+
+		if style == "short_crop":
+			len = 0.35
+		elif style == "side_part":
+			len = 0.4 + 0.25 * hair_len
+		elif style != "long_loose":
+			len = 0.4
+
+		var back: Dictionary = _ell(4, head_c + Vector3(0.0, 0.09 * hs - 0.05 * (len - 1.0), 0.052 * hs), Vector3(0.095 * hs, 0.1 * hs * len, 0.07 * hs), MAT_HAIR)
+		back["cut_n"] = Vector3(0.0, 0.0, 1.0)
+		back["cut_c"] = 0.012 * hs
+		out.append(back)
+
+	match style:
+		"side_part":
+			# A swoop of hair over the right of the forehead, above the brows.
+			out.append(_ell(4, head_c + Vector3(0.05 * hs, 0.222 * hs, -0.078 * hs), Vector3(0.07 * hs, 0.034 * hs, 0.04 * hs), MAT_HAIR))
+		"ponytail":
+			var tail: float = (0.07 + 0.1 * hair_len) * hs
+			out.append(_ell(4, head_c + Vector3(0.0, 0.135 * hs, 0.112 * hs), Vector3(0.03 * hs, 0.03 * hs, 0.03 * hs), MAT_HAIR))
+			out.append(_cone(4, head_c + Vector3(0.0, 0.135 * hs, 0.115 * hs), head_c + Vector3(0.0, 0.135 * hs - tail, 0.135 * hs), 0.03 * hs, 0.019 * hs, MAT_HAIR))
+		"bun":
+			out.append(_ell(4, head_c + Vector3(0.0, 0.3 * hs, 0.065 * hs), Vector3(0.056 * hs, 0.05 * hs, 0.056 * hs) * (0.9 + 0.12 * hair_len), MAT_HAIR))
+		"braid":
+			var length: float = (0.1 + 0.12 * hair_len) * hs
+			var top: Vector3 = head_c + Vector3(0.0, 0.07 * hs, 0.105 * hs)
+			var tip: Vector3 = head_c + Vector3(0.0, 0.07 * hs - length, 0.125 * hs)
+			out.append(_cone(4, top, tip, 0.03 * hs, 0.018 * hs, MAT_HAIR))
+
+			for k in range(1, 4):
+				var at: Vector3 = top.lerp(tip, float(k) / 3.5)
+				out.append(_ell(4, at + Vector3(0.0, 0.0, 0.004), Vector3(0.026 * hs, 0.022 * hs, 0.026 * hs) * (1.0 - 0.15 * float(k)), MAT_HAIR))
+		"curly":
+			for ring in [[0.1, 0.2, 0.02], [-0.1, 0.2, 0.02], [0.075, 0.27, -0.01], [-0.075, 0.27, -0.01], [0.0, 0.295, 0.03], [0.0, 0.25, 0.1], [0.09, 0.2, 0.085], [-0.09, 0.2, 0.085]]:
+				out.append(_ell(4, head_c + Vector3(float(ring[0]) * hs, float(ring[1]) * hs, float(ring[2]) * hs), Vector3(0.04, 0.04, 0.04) * hs, MAT_HAIR))
+		"shaved_sides":
+			var top_strip: Dictionary = _ell(4, head_c + Vector3(0.0, 0.205 * hs, 0.0), Vector3(0.045 * hs, 0.075 * hs, 0.115 * hs), MAT_HAIR)
+			top_strip["cut_n"] = cap_n
+			top_strip["cut_c"] = cap_c
+			out.append(top_strip)
+
 
 # A primitive: {t: "cone" | "ell", bone, mat, a, b, ra, rb (cone) | c, r (ellipsoid), cut_n, cut_c (optional plane: keep dot(n, p) >= c)}.
 static func _cone(bone: int, a: Vector3, b: Vector3, ra: float, rb: float, mat: int = MAT_SKIN) -> Dictionary:
@@ -265,26 +344,19 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	for side in [-1.0, 1.0]:
 		out.append(_ell(4, head_c + Vector3(0.099 * hs * side, 0.135 * hs, 0.005 * hs), Vector3(0.012, 0.03 * ear, 0.019)))
 
-	# The cap covers the top and the sides of the head down to the ears and stops at a hairline that sits higher at the forehead (plane y + 0.55 z >= 0.16 hs, normalised,
-	# measured from the head centre) and lower at the nape; it is a little larger than the head all round (the front too) so it always shows over the skin.
-	var cap: Dictionary = _ell(4, head_c + Vector3(0.0, 0.150 * hs, 0.004 * hs), Vector3(0.102 * hs, 0.124 * hs, 0.118 * hs), MAT_HAIR)
-	var cap_n: Vector3 = Vector3(0.0, 1.0, 0.55).normalized()
-	cap["cut_n"] = cap_n
-	cap["cut_c"] = cap_n.dot(head_c) + 0.16 * hs / 1.1413
-	out.append(cap)
-	var back: Dictionary = _ell(4, head_c + Vector3(0.0, 0.09 * hs - 0.05 * (hair_len - 1.0), 0.052 * hs), Vector3(0.095 * hs, 0.1 * hs * hair_len, 0.07 * hs), MAT_HAIR)
-	back["cut_n"] = Vector3(0.0, 0.0, 1.0)
-	back["cut_c"] = 0.012 * hs
-	out.append(back)
+	_hair(out, g, head_c, hs, hair_len)
 
 	# Arms and hands
 	for side in [-1.0, 1.0]:
 		var o: int = 5 if side < 0.0 else 9
 		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.07 * mu, 0.053 * mu))       # the shoulder bar: thicker at the neck (trapezius), the deltoid at the joint
 		out.append(_cone(o + 1, p[o + 1], p[o + 2], 0.052 * mu * sqrt(b), 0.042 * mu))
-		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
+		# The forearm runs a little into the hand (1.2 cm) and keeps a real wrist (3.5 cm radius, not 3.2 whatever the muscle): the arm and the hand are separate meshes, so
+		# a bare butt joint showed as a pinched, ringed wrist.
+		var fore_dir: Vector3 = (p[o + 3] - p[o + 2]).normalized()
+		out.append(_cone(o + 2, p[o + 2], p[o + 3] + fore_dir * 0.012, 0.043 * mu, 0.036 * mu * clampf(hand_k, 0.85, 1.1)))       # the wrist follows the hand size a little
 		var f: int = 21 if side < 0.0 else 29
-		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.047 * hand_k, 0.0), Vector3(0.038 * hand_k, 0.046 * hand_k, 0.017 * hand_k)))
+		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.046 * hand_k, 0.0), Vector3(0.036 * hand_k, 0.048 * hand_k, 0.02 * hand_k)))
 		if fingers:
 			out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
 			out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
@@ -919,6 +991,7 @@ static func genome_from_seed(seed_value: int) -> Dictionary:
 	for key in SLIDERS:
 		g[key] = clampf(rng.randfn(0.0, 0.4), -0.9, 0.9)
 
+	g["hair_style"] = 0 if rng.randi() % 2 == 0 else 3      # NPCs wear one of two styles (long and loose, or a short crop), so the hair costs nothing extra
 	return g
 
 
@@ -1022,7 +1095,7 @@ static func set_expression(face: Node3D, open: float, brow_raise: float) -> void
 
 # ---------------------------------------------------------------- share code and detail levels
 
-const CODE_VERSION := 3         # 3 splits chest (the rib cage) from bust (the soft bump, which was "chest" in version 2); versions 1 and 2 still decode
+const CODE_VERSION := 4         # 4 adds the hair style (one byte after the colours); 3 split chest (the rib cage) from bust (the soft bump, "chest" in version 2); older codes still decode, with the first hair style
 const COLOR_KEYS := ["skin", "hair", "tunic", "trousers", "boots"]
 
 
@@ -1053,6 +1126,7 @@ static func encode(g: Dictionary) -> String:
 		bytes.append(clampi(roundi(c.g * 255.0), 0, 255))
 		bytes.append(clampi(roundi(c.b * 255.0), 0, 255))
 
+	bytes.append(clampi(int(g.get("hair_style", 0)), 0, HAIR_STYLES.size() - 1))
 	bytes.append(_crc8(bytes))
 	return Marshalls.raw_to_base64(bytes)
 
@@ -1065,8 +1139,8 @@ static func decode(code: String) -> Dictionary:
 		return {}
 
 	var version: int = int(bytes[0])
-	var slider_count: int = SLIDERS_V1 + version - 1
-	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + 1
+	var slider_count: int = SLIDERS_V1 + mini(version, 3) - 1
+	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + (1 if version >= 4 else 0) + 1
 
 	if bytes.size() != expected:
 		return {}
@@ -1088,7 +1162,7 @@ static func decode(code: String) -> Dictionary:
 
 	if version == 2:
 		g["bust"] = float(bytes[1 + SLIDERS_V1]) / 127.5 - 1.0
-	elif version == 3:
+	elif version >= 3:
 		g["chest"] = float(bytes[1 + SLIDERS_V1]) / 127.5 - 1.0
 		g["bust"] = float(bytes[2 + SLIDERS_V1]) / 127.5 - 1.0
 
@@ -1096,6 +1170,7 @@ static func decode(code: String) -> Dictionary:
 		g[key] = Color(float(bytes[at]) / 255.0, float(bytes[at + 1]) / 255.0, float(bytes[at + 2]) / 255.0)
 		at += 3
 
+	g["hair_style"] = clampi(int(bytes[at]), 0, HAIR_STYLES.size() - 1) if version >= 4 else 0
 	g["lips"] = (g["skin"] as Color).lerp(Color(0.7, 0.25, 0.25), 0.5)
 	return g
 

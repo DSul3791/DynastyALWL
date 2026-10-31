@@ -131,6 +131,14 @@ func apply_frame(frame: String) -> void:
 			genome[key] = Generator.FRAMES[frame][key]
 
 
+func set_hair_style(index: int) -> void:
+	if index < 0 or index >= Generator.HAIR_STYLES.size() or index == int(genome.get("hair_style", 0)):
+		return
+
+	_remember()
+	genome["hair_style"] = index
+
+
 func _draw() -> float:
 	return clampf(_rng.randfn(0.0, WILD_SIGMA if wild else GENTLE_SIGMA), -1.0, 1.0)
 
@@ -145,6 +153,10 @@ func dice_section(section: String) -> Array:
 			if not locks.has(key):
 				genome[key] = _draw()
 				changed.append(key)
+
+	if section == "Hair" and not locks.has("hair_style"):
+		genome["hair_style"] = _rng.randi() % Generator.HAIR_STYLES.size()
+		changed.append("hair_style")
 
 	if COLOR_SECTIONS.has(section):
 		for key in COLOR_SECTIONS[section]:
