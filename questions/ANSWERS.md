@@ -1842,3 +1842,7 @@ Answered: 2026-10-31 19:54 UTC
 Answer: Yes
 Answered: 2026-10-31 19:54 UTC
 
+## pic-water2-dam-break | Does the new water spread out like a real puddle (a square block of water at 0, 4, 12 and 40 seconds)?
+Answer: Yes | Comment: I agree with Sonny. It’s a good start, but it’s not perfect.
+Answered: 2026-10-31 19:55 UTC
+
