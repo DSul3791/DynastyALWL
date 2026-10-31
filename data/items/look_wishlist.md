@@ -49,3 +49,6 @@ Items still on the grey placeholder (the same 43 as data/items/look_placeholders
 | 4 | milk | Milk | #f4f4ec | wooden bowl of white milk |
 
 Dishes (the 27 'new dish' rows) share one idea: show the finished food in or on a simple vessel, tinted by the main ingredient (oats cream, peas green, meat brown, fish silver-pink, pies golden with a crust). One bowl model with five or six tints covers most of them; pies and breads need the baked shapes.
+
+## Fruit (added 2026-10-31, items 431 to 449)
+Priority 2. One apple model with colour tints covers the five apple varieties: early #c8d870 (small, green-yellow), summer #e8c060 (yellow-red), autumn #c03828 (red), keeping #a86a38 (russet brown), cooking #8fc060 (big, green). One pear model with tints: summer #d8d878, autumn #c8b850, winter #a89860 (brown-green). Sour cherries #801828 (dark pair on a stalk). Plums #603878 (purple, bloom), damsons #384878 (small blue). Quince #e8d048 (lumpy yellow pear), medlar #8a6a3a (brown, open crown), figs #603048 (purple teardrop), olives #5a6a38 (small green-black oval), pomegranates #b02828 (red round with a crown), mangoes #e89030 (orange-red kidney shape), oranges #f09020 (round), lemons #f0e048 (lemon shape). Dishes: dried apples, dried figs, apple sauce, apple pie, plum jam, stewed pears, preserved damsons, quince paste use the dish bowl model with tints.
