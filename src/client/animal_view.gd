@@ -265,13 +265,18 @@ func _make_rabbit() -> Node3D:
 # A wild boar (refs: Eurasian wild boar photographs): a stocky wedge, deepest at the shoulder and tapering to a small rump, a heavy head with a long snout and small ears, short legs, a dark bristly mane along the
 # neck and back, a thin tail, two curved ivory tusks beside the mouth; coat dark grizzled brown. About 1.3 m long, 0.8 m at the shoulder. Built on the shared four-legged body so it animates like the others.
 func _make_boar() -> Node3D:
-	var node: Node3D = _make_quad({"leg_h": 0.32, "rb": 0.24, "len": 1.15, "neck": 0.16, "head": 0.34, "snout": 1.6, "hump": true, "pale_belly": false, "dark_head": true, "coat": Color(0.3, 0.24, 0.18), "dark": Color(0.14, 0.11, 0.09), "pale": Color(0.5, 0.42, 0.34), "mane": true, "socks": false})
+	var node: Node3D = _make_quad({"leg_h": 0.36, "rb": 0.24, "len": 1.15, "neck": 0.16, "head": 0.34, "snout": 1.6, "hump": true, "ear": 0.5, "pale_belly": false, "dark_head": true, "coat": Color(0.3, 0.24, 0.18), "dark": Color(0.14, 0.11, 0.09), "pale": Color(0.5, 0.42, 0.34), "mane": true, "socks": false})
 	var head: Node3D = node.get_node("Rig/Head")
 	var hd: float = 0.34
 	var top: Vector3 = Vector3(0.0, 0.16 * 0.78, -0.16 * 0.85)
 
 	for side in [-1.0, 1.0]:
-		_box(head, Vector3(hd * 0.05, hd * 0.05, hd * 0.3), top + Vector3(side * hd * 0.16, -hd * 0.22, -hd * 0.62), Color(0.93, 0.9, 0.8), Vector3(0.5, side * 0.15, side * -0.5))   # a tusk beside the snout, curving up
+		_box(head, Vector3(hd * 0.07, hd * 0.07, hd * 0.45), top + Vector3(side * hd * 0.17, -hd * 0.2, -hd * 0.66), Color(0.93, 0.9, 0.8), Vector3(0.6, side * 0.2, side * -0.55))   # a tusk beside the snout, curving up
+
+	var rig: Node3D = node.get_node("Rig")
+
+	for k in 9:   # the bristle ridge: a row of stiff dark spikes along the neck and back, tallest over the shoulders
+		_box(rig, Vector3(0.02, 0.05 + 0.035 * sin(float(k) * 0.35 + 0.4), 0.045), Vector3(0.0, 0.575 + 0.03 * sin(float(k) * 0.35), -0.46 + 0.1 * float(k)), Color(0.1, 0.08, 0.07), Vector3(0.0, 0.0, 0.0))
 
 	return node
 
@@ -623,7 +628,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 		ear.name = "Ear_L" if side < 0.0 else "Ear_R"
 		ear.position = top + Vector3(side * hd * 0.2, hd * 0.2, hd * 0.1)
 		head.add_child(ear)
-		_ball(ear, hd * 0.13, Vector3(0.4, 1.7, 0.22), Vector3(0.0, hd * 0.17, 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
+		_ball(ear, hd * 0.13, Vector3(0.4, 1.7 * float(spec.get("ear", 1.0)), 0.22), Vector3(0.0, hd * 0.17 * float(spec.get("ear", 1.0)), 0.0), dark, Vector3(0.0, 0.0, side * -0.35))      # a leaf-shaped ear
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.

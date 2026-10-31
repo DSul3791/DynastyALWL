@@ -1149,7 +1149,9 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 				_say(peer, "You need a %s for that." % str(_drops.get("tool_rules", {}).get("tool_names", {}).get(missing, missing)))
 				_reject(peer, 1)
 
-	if rows.is_empty() and natural == "":
+	var seed_rows: Array = _seed_rows(species_name)
+
+	if rows.is_empty() and natural == "" and seed_rows.is_empty():
 		return false
 
 	var more: float = skill_factor(peer, "gather_plant")
@@ -1161,9 +1163,23 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	if natural != "":
 		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
 
+	for row in seed_rows:
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
 	_picked[flora_key] = now_s
 	_dirty = true
 	return true
+
+
+# Wild seeds a plant gives in this season (drops.json seed_drops), [] when none.
+func _seed_rows(species_name: String) -> Array:
+	var def: Dictionary = (_drops.get("seed_drops", {}) as Dictionary).get(species_name, {})
+
+	if def.is_empty():
+		return []
+
+	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	return def.get("rows", []) if (def.get("seasons", []) as Array).has(season) else []
 
 
 # A berry bush (data/items/drops.json "berry_yield"): E gives that berry only, count scaled by the plant's size, in its season, once a season;
@@ -1194,6 +1210,12 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 	var count: int = GatherRules.harvest_count(berry, GatherRules.harvest_scale(_drops, plant_height, entry))      # the one count rule (Dave: size scaled, 3x cap, rounded up, never 0)
 	practice(peer, "gather_plant")
 	give(peer, number, count)
+
+	var seed_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	seed_rng.seed = hash(flora_key) ^ stamp ^ 0x2545f491
+
+	for row in _seed_rows(species_name):   # wild seeds beside the harvest (drops.json seed_drops, e.g. wild carrot)
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, seed_rng, int(row[1]), int(row[2])))
 
 	if not _stripped.has(parts[0]):
 		_stripped[parts[0]] = {}
@@ -4402,6 +4424,13 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 		_say(peer, "You need a %s close by." % str(row["near"]).replace("_", " "))
 		return false
 
+	var cost_rows: Array = []
+
+	for need in row["cost"]:
+		cost_rows.append([table.number_of(str(need[0])), int(need[1])])
+
+	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
+
 	for need in row["cost"]:
 		if inv.count_fill(table.number_of(str(need[0]))) < int(need[1]):
 			_say(peer, "Not enough %s (%d needed)." % [str(table.entry(str(need[0])).get("name", need[0])).to_lower(), int(need[1])])
@@ -7453,7 +7482,9 @@ func sow(peer: int, inv, bed_id: int, slot: int) -> bool:
 
 	var def: Dictionary = _crop_table()[crop_id]
 
-	if _season() != str(def.get("sow_season", "spring")) and crop_id != "turnip":
+	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
+
+	if not sow_seasons.has(_season()):
 		_say(peer, "Wrong season to sow %s" % str(def.get("name", crop_id)).to_lower())
 		return false
 
@@ -7527,7 +7558,7 @@ func _crops_tick() -> void:
 
 		while int(crop["day"]) < today:
 			crop["day"] = int(crop["day"]) + 1
-			var winter: bool = _season() == "winter" and str(crop["crop"]) != "turnip"
+			var winter: bool = _season() == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
 
 			if winter:
 				if crop_stage(crop) == 0:
@@ -7745,6 +7776,104 @@ func goals_state(peer: int) -> Array:
 	return rows
 
 
+# --- Logs from the shoulder and the ground (guide finding F-16, moderator decision for Dave, 31 Oct 2026) ---
+# A log is carried on the shoulder (one at a time) and a cut log lies on the ground; neither is in the pack. A craft or blueprint that needs the log group (plain `log`)
+# takes its logs in this order: the log on the shoulder, then log items lying on the ground within LOG_NEAR_M of the player, then the pack. The ones taken from the
+# shoulder or the ground move into the pack at that moment and are used up by the craft like any ingredient (a craft that is refused takes nothing). The player is told
+# "Using nearby logs". Ground logs go with the same authority as a pickup (removed on the server, the clients see them vanish).
+const LOG_NEAR_M := 3.0
+
+
+func _log_need(rows: Array, times: int) -> int:
+	var log_n: int = table.number_of("log")
+	var total: int = 0
+
+	for need in rows:
+		if int(need[0]) == log_n and log_n > 0:
+			total += int(need[1]) * times
+
+	return total
+
+
+# Log items lying on the ground within reach of the player: [[world id, count], ...], nearest first.
+func _ground_logs_near(peer: int) -> Array:
+	var out: Array = []
+
+	if not _peer_pos.has(peer):
+		return out
+
+	var members: PackedInt32Array = table.group_members(table.number_of("log"))
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or not members.has(int(it.get("number", 0))):
+			continue
+
+		var d: float = _peer_pos[peer].distance_to(it["pos"])
+
+		if d <= LOG_NEAR_M:
+			out.append([id, int(it["count"]), d])
+
+	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	return out
+
+
+# How many logs the shoulder and the ground near the player offer.
+func logs_near_count(peer: int) -> int:
+	var total: int = 1 if shoulder_of(peer) != "" else 0
+
+	for row in _ground_logs_near(peer):
+		total += int(row[1])
+
+	return total
+
+
+# Moves up to `want` logs (shoulder first, then the ground) into the pack when the pack plus those logs can cover `want`; returns how many moved. Takes nothing when they cannot.
+func _pull_nearby_logs(peer: int, inv, want: int) -> int:
+	if want <= 0 or inv == null or not _peer_pos.has(peer):
+		return 0
+
+	var log_n: int = table.number_of("log")
+
+	if inv.count_fill(log_n) + logs_near_count(peer) < want:
+		return 0
+
+	var moved: int = 0
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if shoulder_of(peer) != "" and moved < want:
+		var number: int = table.number_of(shoulder_of(peer))
+
+		if inv.add(number, 1) == 0:
+			_characters[key]["shoulder"] = ""
+			sync_shoulder(peer)
+			moved += 1
+
+	for row in _ground_logs_near(peer):
+		if moved >= want:
+			break
+
+		var it: Dictionary = _items.get(int(row[0]), {})
+		var take: int = mini(int(row[1]), want - moved)
+
+		if it.is_empty() or inv.add(int(it["number"]), take) > 0:
+			continue
+
+		if int(it["count"]) > take:
+			it["count"] = int(it["count"]) - take
+		else:
+			_items.erase(int(row[0]))
+
+		moved += take
+
+	if moved > 0:
+		_dirty = true
+		_say(peer, "Using nearby logs")
+
+	return moved
+
+
 # Recipe learning (guide finding F-01, LEARN_SYSTEM_SPEC.md; Tyler 31 Oct 2026). A recipe is known when its table row says known (the data decides what a first-day
 # player gets), or the character has learned it. Learned recipes are saved with the character (characters.json "learned": recipe numbers).
 # A character learns an unknown recipe (1) by discovery: it holds every ingredient and stands at the station the recipe needs; (2) by seeing: the item the recipe
@@ -7829,6 +7958,8 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int) -> void:
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 		_say(peer, "That needs a %s nearby" % _station_name(str(recipe["station"])))
 		return
+
+	_pull_nearby_logs(peer, inv, _log_need(recipe["needs"], clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)))   # shoulder and ground logs count (F-16)
 
 	# Short of a part the pack could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct).
 	if not _pack_covers(inv, recipe, count):

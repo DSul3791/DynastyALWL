@@ -54,6 +54,7 @@ UNITS = [
     ("trails", "src/worldgen/tools/test_trails.gd"),
     ("first town", "src/worldgen/tools/test_first_town.gd"),
     ("dishes", "src/worldgen/tools/test_dishes.gd"),
+    ("economy", "src/worldgen/tools/test_economy_guard.gd"),
     ("npc routines", "src/worldgen/tools/test_npc_routines.gd"),
     ("horses", "src/worldgen/tools/test_horses.gd"),
     ("ai_contract", "src/worldgen/tools/test_ai_contract.gd"),
@@ -156,6 +157,8 @@ def run_unit(name, path, godot, verbose):
         if "FAIL" in line:
             print("   ", line)
     found = re.findall(r"(\d+) (?:failures|errors)", out)
+    if not found and re.search(r"^\S+: PASS\s*$", out, re.M) and "FAIL" not in out:
+        return True, "PASS"   # tests that print "<name>: PASS" instead of a failure count (npc view, faint smooth, placed clearing)
     return bool(found) and all(n == "0" for n in found), "%s failures or errors" % (found[-1] if found else "no result")
 
 

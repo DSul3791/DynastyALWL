@@ -1,6 +1,6 @@
 {
  "counts": {
-  "items": 522,
+  "items": 528,
   "recipes": 227,
   "recipes_known_or_open": 208,
   "structures": 37,
@@ -3680,17 +3680,21 @@
    "number": 43,
    "kind": "material",
    "sources": [
+    "carcass:adder",
     "carcass:badger",
     "carcass:bear",
     "carcass:beaver",
     "carcass:boar",
     "carcass:deer",
     "carcass:fox",
+    "carcass:grass_snake",
     "carcass:hare",
+    "carcass:horse",
     "carcass:lynx",
     "carcass:moose",
     "carcass:mountain_goat",
     "carcass:otter",
+    "carcass:pine_marten",
     "carcass:rabbit",
     "carcass:reindeer",
     "carcass:seal",
@@ -3762,13 +3766,17 @@
     "carcass:grouse",
     "carcass:gull",
     "carcass:hare",
+    "carcass:horse",
     "carcass:lynx",
     "carcass:moose",
     "carcass:mountain_goat",
     "carcass:otter",
     "carcass:pheasant",
+    "carcass:pine_marten",
     "carcass:porcupine",
     "carcass:rabbit",
+    "carcass:raven",
+    "carcass:red_squirrel",
     "carcass:reindeer",
     "carcass:seabird",
     "carcass:seal",
@@ -3976,6 +3984,7 @@
    "number": 68,
    "kind": "food",
    "sources": [
+    "carcass:adder",
     "carcass:badger",
     "carcass:bear",
     "carcass:beaver",
@@ -3984,17 +3993,25 @@
     "carcass:duck",
     "carcass:eagle",
     "carcass:fox",
+    "carcass:frog",
     "carcass:goose",
+    "carcass:grass_snake",
     "carcass:grouse",
     "carcass:gull",
     "carcass:hare",
+    "carcass:hedgehog",
+    "carcass:horse",
     "carcass:lynx",
     "carcass:moose",
     "carcass:mountain_goat",
     "carcass:otter",
+    "carcass:owl",
     "carcass:pheasant",
+    "carcass:pine_marten",
     "carcass:porcupine",
     "carcass:rabbit",
+    "carcass:raven",
+    "carcass:red_squirrel",
     "carcass:reindeer",
     "carcass:seabird",
     "carcass:wild_sheep",
@@ -4024,6 +4041,7 @@
     "carcass:boar",
     "carcass:deer",
     "carcass:fox",
+    "carcass:horse",
     "carcass:lynx",
     "carcass:moose",
     "carcass:mountain_goat",
@@ -4045,6 +4063,7 @@
     "carcass:beaver",
     "carcass:boar",
     "carcass:deer",
+    "carcass:horse",
     "carcass:moose",
     "carcass:mountain_goat",
     "carcass:reindeer",
@@ -4065,8 +4084,12 @@
     "carcass:goose",
     "carcass:grouse",
     "carcass:gull",
+    "carcass:owl",
     "carcass:pheasant",
-    "carcass:seabird"
+    "carcass:raven",
+    "carcass:seabird",
+    "carcass:songbirds",
+    "carcass:woodpecker"
    ],
    "obtainable": "now",
    "look": "ok (feather)",
@@ -6209,7 +6232,7 @@
     "carcass:reindeer"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6220,7 +6243,7 @@
     "carcass:boar"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6232,10 +6255,11 @@
     "carcass:bear",
     "carcass:eagle",
     "carcass:lynx",
+    "carcass:owl",
     "carcass:wolf"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6247,7 +6271,7 @@
     "carcass:goose"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6255,10 +6279,11 @@
    "number": 350,
    "kind": "material",
    "sources": [
+    "carcass:hedgehog",
     "carcass:porcupine"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6311,7 +6336,7 @@
    "kind": "food",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6320,7 +6345,7 @@
    "kind": "food",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6329,7 +6354,7 @@
    "kind": "food",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6340,7 +6365,7 @@
     "carcass:seabird"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6351,7 +6376,7 @@
     "carcass:seal"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6360,7 +6385,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6371,7 +6396,7 @@
     "cooking at a fire"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6382,7 +6407,7 @@
     "cooking at a fire"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6393,7 +6418,7 @@
     "cooking at a fire"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6512,7 +6537,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6521,7 +6546,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6530,7 +6555,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6539,7 +6564,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6548,7 +6573,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6557,7 +6582,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6566,7 +6591,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6575,7 +6600,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6584,7 +6609,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6593,7 +6618,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6602,7 +6627,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6611,7 +6636,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -6974,6 +6999,72 @@
    "obtainable": "RECIPE BLOCKED",
    "look": "PLACEHOLDER grey chunk",
    "future": true
+  },
+  {
+   "id": "salmon",
+   "number": 419,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "herring",
+   "number": 420,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "mackerel",
+   "number": 421,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "smelt",
+   "number": 422,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "eel",
+   "number": 423,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "cod",
+   "number": 424,
+   "kind": "food",
+   "sources": [
+    "fishing"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
   },
   {
    "id": "acorns",

@@ -1,0 +1,294 @@
+{
+	"_about": "Animal sign for the hunting trail and 'teeming wildlife' (Sal, 2026-10-31), data and hints only; read by nothing yet. Per species: `group` and `track` (the words a skilled tracker reads from prints) and `signs` = a kind of sign with its one-line hint (12 words or fewer, each says only what the sign is). Tracking levels come from data/items/tracking.json species_reading (40 tells the group, 65 names the species, 90 age and injury). Proposed use: the world places sign near where each species lives (deterministic from the cell hash, like ground scatter), and a hint shows when the player looks at it or passes within 3 m. Feathers and wool tufts already exist as items; droppings could become Manure (compost) later. Sign types are common to many species: droppings, tracks, burrow, den, feathers, rubbing, browse, gnawing.",
+	"tracking_levels": {
+		"group": 40,
+		"species": 65,
+		"age_injury": 90
+	},
+	"species": {
+		"rabbit": {
+			"group": "small hoofless",
+			"track": "small paired prints with a long gap",
+			"signs": [
+				{
+					"kind": "droppings",
+					"hint": "Small round pellets. A rabbit feeds here."
+				},
+				{
+					"kind": "burrow",
+					"hint": "A hole under roots. Something lives below."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Hopping tracks, long strides. A rabbit is near."
+				}
+			]
+		},
+		"deer": {
+			"group": "hoofed",
+			"track": "two-toed heart-shaped prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Split hoof prints. Deer passed here lately."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Dark pellets in a heap. A deer fed here."
+				},
+				{
+					"kind": "rubbing",
+					"hint": "Bark rubbed off a trunk. A stag marked this tree."
+				}
+			]
+		},
+		"wolf": {
+			"group": "clawed",
+			"track": "four toes with claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Big paw prints in a line. A wolf passed this way."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Grey scat full of hair. Wolves hunt here."
+				},
+				{
+					"kind": "howl",
+					"hint": "A distant howl. A pack holds this country."
+				}
+			]
+		},
+		"moose": {
+			"group": "hoofed",
+			"track": "huge splayed prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Deep split hoof prints. A moose crossed here."
+				},
+				{
+					"kind": "browse",
+					"hint": "Twigs stripped high up. Moose feed here."
+				}
+			]
+		},
+		"fox": {
+			"group": "clawed",
+			"track": "small neat prints in a straight line",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Neat paw prints. A fox trotted past."
+				},
+				{
+					"kind": "den",
+					"hint": "A hole with scattered feathers. A fox den."
+				}
+			]
+		},
+		"duck": {
+			"group": "webbed",
+			"track": "webbed prints at the water's edge",
+			"signs": [
+				{
+					"kind": "feathers",
+					"hint": "Down and feathers on the bank. Ducks rest here."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Webbed prints in the mud."
+				}
+			]
+		},
+		"horse": {
+			"group": "hoofed",
+			"track": "round single hoof prints",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Single round hoof prints. Wild horses graze nearby."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Big round dung balls. Horses were here."
+				}
+			]
+		},
+		"boar": {
+			"group": "hoofed",
+			"track": "two-toed prints with dewclaws",
+			"signs": [
+				{
+					"kind": "rooting",
+					"hint": "Turned-over soil. Boar have been digging for roots."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Split hoof prints with dewclaws. A boar passed."
+				},
+				{
+					"kind": "wallow",
+					"hint": "A muddy hollow. Boar wallow here."
+				}
+			]
+		},
+		"bear": {
+			"group": "clawed",
+			"track": "wide flat prints with long claws",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Wide clawed prints. A bear walked here."
+				},
+				{
+					"kind": "scratch",
+					"hint": "Deep claw marks high on a trunk. A bear marked it."
+				},
+				{
+					"kind": "droppings",
+					"hint": "Berry-filled scat. A bear feeds nearby."
+				}
+			]
+		},
+		"beaver": {
+			"group": "webbed",
+			"track": "webbed hind prints and a tail drag",
+			"signs": [
+				{
+					"kind": "gnawing",
+					"hint": "Trees gnawed to pointed stumps. Beavers work here."
+				},
+				{
+					"kind": "lodge",
+					"hint": "A mound of sticks in the water. A beaver lodge."
+				}
+			]
+		},
+		"otter": {
+			"group": "webbed",
+			"track": "five-toed webbed prints",
+			"signs": [
+				{
+					"kind": "slide",
+					"hint": "A muddy slide down the bank. Otters play here."
+				},
+				{
+					"kind": "scat",
+					"hint": "Scat full of fish scales. An otter hunts here."
+				}
+			]
+		},
+		"badger": {
+			"group": "clawed",
+			"track": "five long claws and a wide pad",
+			"signs": [
+				{
+					"kind": "sett",
+					"hint": "Big holes and piles of earth. A badger sett."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Wide prints with long claws."
+				}
+			]
+		},
+		"lynx": {
+			"group": "clawed",
+			"track": "round prints without claw marks",
+			"signs": [
+				{
+					"kind": "tracks",
+					"hint": "Round cat prints, no claws. A lynx is near."
+				},
+				{
+					"kind": "kill",
+					"hint": "A half-eaten hare. A lynx made this kill."
+				}
+			]
+		},
+		"grouse": {
+			"group": "bird",
+			"track": "three-toed bird prints",
+			"signs": [
+				{
+					"kind": "feathers",
+					"hint": "Brown feathers in a patch. Grouse feed here."
+				},
+				{
+					"kind": "dust bath",
+					"hint": "A hollow scraped in dry earth. Grouse bathe here."
+				}
+			]
+		},
+		"seal": {
+			"group": "flipper",
+			"track": "a smooth flipper trail across the sand",
+			"signs": [
+				{
+					"kind": "trail",
+					"hint": "A smooth trail to the water. Seals rest on this beach."
+				}
+			]
+		},
+		"seabird": {
+			"group": "bird",
+			"track": "scattered feathers and shell bits",
+			"signs": [
+				{
+					"kind": "nests",
+					"hint": "Nests in the rock ledges. Seabirds breed here; eggs in season."
+				}
+			]
+		},
+		"frog": {
+			"group": "webbed",
+			"track": "tiny prints at the pond's edge",
+			"signs": [
+				{
+					"kind": "croak",
+					"hint": "A chorus of croaks at dusk. Frogs live by this water."
+				}
+			]
+		},
+		"songbirds": {
+			"group": "bird",
+			"track": "none",
+			"signs": [
+				{
+					"kind": "song",
+					"hint": "Birdsong at dawn. The wood is alive."
+				},
+				{
+					"kind": "nest",
+					"hint": "A small cup of moss and twigs. A nest."
+				}
+			]
+		},
+		"wild_sheep": {
+			"group": "hoofed",
+			"track": "small split hooves",
+			"signs": [
+				{
+					"kind": "wool",
+					"hint": "Tufts of wool on a thornbush. Sheep graze on this slope."
+				},
+				{
+					"kind": "tracks",
+					"hint": "Small split hooves in the turf."
+				}
+			]
+		},
+		"mountain_goat": {
+			"group": "hoofed",
+			"track": "narrow split hooves on rock",
+			"signs": [
+				{
+					"kind": "hair",
+					"hint": "White hair snagged on rock. Goats climb here."
+				}
+			]
+		}
+	}
+}

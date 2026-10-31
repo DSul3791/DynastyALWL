@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: 12 sticks, 3 twine. It unlocks better tools.",
+			"text": "A Workbench: 20 sticks, 6 twine, 4 stones. Better tools.",
 			"goal": "workbench"
 		},
 		{

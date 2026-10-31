@@ -2,12 +2,12 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 426,
+	"next_number": 430,
 	"items": {
 		"stone": {
 			"number": 1,
 			"name": "Stone",
-			"description": "A fist-sized stone, picked up from the ground or broken from an outcrop.",
+			"description": "A fist-sized stone. Pick it up from the ground, or break it off a boulder.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -17,7 +17,7 @@
 		"stick": {
 			"number": 2,
 			"name": "Stick",
-			"description": "A fallen branch, good for fuel and for tools.",
+			"description": "A fallen branch. Burns, and makes handles, frames and fences.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -26,7 +26,7 @@
 		"plant_fibre": {
 			"number": 3,
 			"name": "Plant fibre",
-			"description": "Stringy plant fibre that can be twisted into twine or used as tinder.",
+			"description": "Stringy strands from nettles and grass. Twist 3 into twine, or use one to light a fire.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -35,7 +35,7 @@
 		"log": {
 			"number": 4,
 			"name": "Log",
-			"description": "A heavy length of trunk. Split it into firewood or saw it into lumber.",
+			"description": "A heavy length of trunk. Split it for firewood, or wedge it into planks.",
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
@@ -44,7 +44,7 @@
 		"twine": {
 			"number": 5,
 			"name": "Twine",
-			"description": "Twisted plant fibre, strong enough to bind a tool or weave a chest.",
+			"description": "Twisted fibre cord. Binds tools, frames and kits.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -53,7 +53,7 @@
 		"stone_axe": {
 			"number": 6,
 			"name": "Stone axe",
-			"description": "A sharpened stone bound to a handle. Fells trees, breaks rock and cuts wood.",
+			"description": "A stone bound to a handle. Fells trees, breaks rock and works wood.",
 			"kind": "tool",
 			"tool_class": "axe",
 			"tier": 1,
@@ -78,7 +78,7 @@
 		"spear": {
 			"number": 7,
 			"name": "Stone spear",
-			"description": "A stone point bound to a long shaft, for jabbing and throwing.",
+			"description": "A stone point on a long shaft. Jab with it or throw it; it kills a rabbit in one blow.",
 			"kind": "weapon",
 			"weapon_class": "spear",
 			"tier": 2,
@@ -102,7 +102,7 @@
 		"campfire_kit": {
 			"number": 8,
 			"name": "Campfire",
-			"description": "Stones and sticks ready to lay a fire where you stand.",
+			"description": "Stones and sticks for a fire. Set it down, then light it with fibre.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -111,7 +111,7 @@
 		"wooden_spear": {
 			"number": 10,
 			"name": "Wooden spear",
-			"description": "A sharpened stick, for jabbing and throwing.",
+			"description": "A sharpened stick. Jab with it or throw it.",
 			"kind": "weapon",
 			"weapon_class": "spear",
 			"tier": 1,
@@ -131,7 +131,7 @@
 		"stone_knife": {
 			"number": 11,
 			"name": "Stone knife",
-			"description": "A sharp stone flake on a handle. Cuts bark, gum and sap.",
+			"description": "A flaked stone on a handle. Dresses a kill and cuts bark.",
 			"kind": "tool",
 			"tool_class": "knife",
 			"tier": 1,
@@ -154,7 +154,7 @@
 		"torch": {
 			"number": 12,
 			"name": "Basic torch",
-			"description": "A stick wrapped in fibre that burns for a while and lights your way.",
+			"description": "A stick wrapped in fibre. Lights your way after dark.",
 			"kind": "tool",
 			"tool_class": "torch",
 			"offhand": true,
@@ -176,7 +176,7 @@
 		"leaves": {
 			"number": 14,
 			"name": "Leaves",
-			"description": "A handful of leaves.",
+			"description": "A handful of green leaves from a felled tree. Roofs a shelter.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -194,7 +194,7 @@
 		"seed_bundle": {
 			"number": 9,
 			"name": "Seeds",
-			"description": "A small bundle of seeds that could be eaten or planted.",
+			"description": "A bundle of seeds. Eat them, or plant them.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -203,7 +203,7 @@
 		"poultice": {
 			"number": 16,
 			"name": "Herb poultice",
-			"description": "Crushed herb leaves for a wound.",
+			"description": "Crushed herb leaves bound on a wound.",
 			"kind": "medicine",
 			"stack": 10,
 			"look_alikes": [],
@@ -213,7 +213,7 @@
 		"bandage": {
 			"number": 17,
 			"name": "Herb bandage",
-			"description": "Leaves and fibre wrapped to bind a wound.",
+			"description": "Leaves and fibre bound round a wound.",
 			"kind": "medicine",
 			"stack": 10,
 			"look_alikes": [],
@@ -232,7 +232,7 @@
 		"wooden_spade": {
 			"number": 19,
 			"name": "Wooden spade",
-			"description": "A sharpened wooden blade on a handle. Digs roots and bulbs.",
+			"description": "A sharpened wooden blade. Digs roots and bulbs.",
 			"kind": "tool",
 			"tool_class": "spade",
 			"stack": 1,
@@ -249,7 +249,7 @@
 		"lean_to_kit": {
 			"number": 20,
 			"name": "Small shelter",
-			"description": "Sticks, leaves and twine for a small shelter with a roof.",
+			"description": "Sticks, leaves and twine for a small shelter. Gives cover from rain.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -266,7 +266,7 @@
 		"chest_kit": {
 			"number": 22,
 			"name": "Woven chest",
-			"description": "Sticks and twine woven into a storage chest, ready to set down.",
+			"description": "Woven sticks and twine. A chest to store things in.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -296,7 +296,7 @@
 		"chopping_block": {
 			"number": 25,
 			"name": "Chopping block",
-			"description": "A heavy log set on end. Set it down and split logs into firewood on it.",
+			"description": "A log set on end. Split wooden blocks into firewood on it.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -314,7 +314,7 @@
 		"firewood": {
 			"number": 26,
 			"name": "Firewood",
-			"description": "Split wood that burns long and steady.",
+			"description": "Split wood. Burns long and steady.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -323,7 +323,7 @@
 		"lumber": {
 			"number": 27,
 			"name": "Lumber",
-			"description": "Sawn boards. Needs a saw mill.",
+			"description": "Boards from a log. Make them at a saw mill, or wedge them at a workbench.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -354,12 +354,11 @@
 		"iron_ingot": {
 			"number": 31,
 			"name": "Iron ingot",
-			"description": "A bar of smelted iron. Placeholder until smelting exists.",
+			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 30,
-			"future": true
+			"value": 30
 		},
 		"steel_ingot": {
 			"number": 32,
@@ -434,7 +433,7 @@
 		"clay": {
 			"number": 36,
 			"name": "Clay",
-			"description": "A heavy, sticky shovelful of clay.",
+			"description": "A heavy, sticky shovelful of clay. Fire it for bricks and pots.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -494,7 +493,7 @@
 		"waterskin": {
 			"number": 42,
 			"name": "Waterskin",
-			"description": "A skin bag sewn shut. Holds a day's drink and little weight.",
+			"description": "A sewn skin bag for carrying a drink.",
 			"kind": "container",
 			"stack": 1,
 			"capacity_ml": 1500,
@@ -505,7 +504,7 @@
 		"hide": {
 			"number": 43,
 			"name": "Hide",
-			"description": "A raw animal skin.",
+			"description": "A raw animal skin. Scrape and tan it for leather, or sew it into clothes.",
 			"kind": "material",
 			"stack": 10,
 			"future": true,
@@ -524,7 +523,7 @@
 		"stone_spade": {
 			"number": 45,
 			"name": "Stone spade",
-			"description": "A wooden spade shod with a flat stone blade. Digs deeper than bare wood and lasts longer.",
+			"description": "A spade with a stone blade. Digs deeper and lasts longer than wood.",
 			"kind": "tool",
 			"tool_class": "spade",
 			"spade_size": "medium",
@@ -600,7 +599,7 @@
 		"bone": {
 			"number": 48,
 			"name": "Bone",
-			"description": "A cleaned animal bone.",
+			"description": "A cleaned bone. Sharpen it into an arrow point, or boil it with hide for glue.",
 			"kind": "material",
 			"stack": 20,
 			"value": 2,
@@ -735,7 +734,7 @@
 		"grass_cloak": {
 			"number": 61,
 			"name": "Grass cloak",
-			"description": "A cloak of woven grass over the shoulders. Keeps a little wind off.",
+			"description": "Woven grass over the shoulders. Keeps a little wind off.",
 			"kind": "clothing",
 			"slot": "body",
 			"warmth": 0.12,
@@ -746,7 +745,7 @@
 		"fibre_sandals": {
 			"number": 62,
 			"name": "Fibre sandals",
-			"description": "Soles of twisted fibre tied to the foot.",
+			"description": "Twisted fibre soles tied to the foot.",
 			"kind": "clothing",
 			"slot": "feet",
 			"warmth": 0.04,
@@ -757,7 +756,7 @@
 		"hide_cloak": {
 			"number": 63,
 			"name": "Hide cloak",
-			"description": "A wrapped animal hide. Warm, and it sheds rain.",
+			"description": "A wrapped animal hide. Warm over the shoulders.",
 			"kind": "clothing",
 			"slot": "body",
 			"warmth": 0.3,
@@ -768,7 +767,7 @@
 		"hide_boots": {
 			"number": 64,
 			"name": "Hide boots",
-			"description": "Hide wrapped and stitched around the foot.",
+			"description": "Hide stitched around the foot. Warm and tough.",
 			"kind": "clothing",
 			"slot": "feet",
 			"warmth": 0.15,
@@ -790,7 +789,7 @@
 		"hide_mittens": {
 			"number": 66,
 			"name": "Hide mittens",
-			"description": "Stitched hide mittens.",
+			"description": "Stitched hide mittens. Warm hands.",
 			"kind": "clothing",
 			"slot": "hands",
 			"warmth": 0.08,
@@ -822,7 +821,7 @@
 		"roast_meat": {
 			"number": 69,
 			"name": "Roast Meat",
-			"description": "Meat cooked over a fire. Filling, and it keeps a couple of days.",
+			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
 			"kind": "food",
 			"stack": 10,
 			"future": true,
@@ -832,7 +831,7 @@
 		"sinew": {
 			"number": 70,
 			"name": "Sinew",
-			"description": "Tough strands from an animal's legs. Strong sewing thread when dry.",
+			"description": "Tough strands from an animal's legs. Makes strong thread and bowstrings.",
 			"kind": "material",
 			"stack": 20,
 			"future": true,
@@ -842,7 +841,7 @@
 		"animal_fat": {
 			"number": 71,
 			"name": "Animal fat",
-			"description": "White fat for torches, cooking and waterproofing.",
+			"description": "Fat from a kill. Render it for tallow, or cook with it.",
 			"kind": "material",
 			"stack": 20,
 			"future": true,
@@ -852,7 +851,7 @@
 		"feather": {
 			"number": 72,
 			"name": "Feather",
-			"description": "A feather for fletching and stuffing.",
+			"description": "A bird's feather. Fletch arrows with it, or stuff a bed.",
 			"kind": "material",
 			"stack": 40,
 			"future": true,
@@ -862,7 +861,7 @@
 		"workbench_kit": {
 			"number": 73,
 			"name": "Camp bench",
-			"description": "Lashed sticks and a flat top: a work table for tools, packs and sewing. Set it down where you camp.",
+			"description": "Lashed sticks and a flat top. A work table for better tools.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 30,
@@ -879,7 +878,7 @@
 		"fishing_rod": {
 			"number": 75,
 			"name": "Fishing rod",
-			"description": "A stick with a line and a hook. Hold it and click at the water, then click again when something bites.",
+			"description": "A stick, line and hook. Cast at water, then click again when something bites.",
 			"kind": "tool",
 			"tool_class": "rod",
 			"durability": 360,
@@ -896,7 +895,7 @@
 		"shore_net": {
 			"number": 260,
 			"name": "Shore net",
-			"description": "A weighted twine net. Hold the left button at the water's edge for about 20 seconds.",
+			"description": "A weighted twine net. Hold the button at the water's edge for about 20 seconds.",
 			"kind": "tool",
 			"tool_class": "net",
 			"durability": 20,
@@ -913,7 +912,7 @@
 		"trout": {
 			"number": 76,
 			"name": "Trout",
-			"description": "A cold-water fish from fast streams. Cook it before you eat it.",
+			"description": "A cold-water fish from streams. Cook it before you eat it.",
 			"kind": "food",
 			"stack": 10,
 			"value": 8,
@@ -953,7 +952,7 @@
 		"roast_fish": {
 			"number": 80,
 			"name": "Roast Fish",
-			"description": "Fish cooked over a fire. Filling, and it keeps a day or two.",
+			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
@@ -1003,7 +1002,7 @@
 		"tool_rack_kit": {
 			"number": 81,
 			"name": "Tool rack",
-			"description": "Pegs and a crossbar to hang tools and stretch hides. Set it beside a camp bench.",
+			"description": "Pegs and a crossbar. Set it beside a bench to raise its level.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 20,
@@ -2035,7 +2034,7 @@
 		"berry_compote": {
 			"number": 175,
 			"name": "Berry compote",
-			"description": "Sweet stewed berries. Light, quick energy.",
+			"description": "Berries stewed sweet. Quick energy.",
 			"kind": "food",
 			"stack": 10,
 			"value": 8,
@@ -2044,10 +2043,10 @@
 		"nut_paste": {
 			"number": 176,
 			"name": "Nut paste",
-			"description": "Ground hazelnuts and honey. Keeps well.",
+			"description": "Ground hazelnuts and sweet nectar. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 11,
+			"value": 10,
 			"look_alikes": []
 		},
 		"roast_roots": {
@@ -2084,7 +2083,7 @@
 			"description": "Mushrooms and wild garlic grilled on a stick.",
 			"kind": "food",
 			"stack": 10,
-			"value": 21,
+			"value": 11,
 			"look_alikes": []
 		},
 		"herb_fish": {
@@ -2111,7 +2110,7 @@
 			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 9,
 			"look_alikes": []
 		},
 		"fruit_leather": {
@@ -2120,13 +2119,13 @@
 			"description": "Dried fruit pressed flat. Keeps for a long journey.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 7,
 			"look_alikes": []
 		},
 		"smoked_fish": {
 			"number": 185,
 			"name": "Smoked fish",
-			"description": "Pike smoked over juniper. Lasts for weeks.",
+			"description": "Fish smoked over juniper. Lasts for weeks.",
 			"kind": "food",
 			"stack": 10,
 			"value": 25,
@@ -2138,7 +2137,7 @@
 			"description": "A thick meat and root stew. Warms you through.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 16,
 			"look_alikes": []
 		},
 		"forager_stew": {
@@ -2147,7 +2146,7 @@
 			"description": "Greens, roots and mushrooms in one pot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 23,
+			"value": 11,
 			"look_alikes": []
 		},
 		"fish_stew": {
@@ -2156,7 +2155,7 @@
 			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": []
 		},
 		"trail_bread": {
@@ -2165,7 +2164,7 @@
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 11,
 			"look_alikes": []
 		},
 		"hearty_pottage": {
@@ -2174,7 +2173,7 @@
 			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
 			"kind": "food",
 			"stack": 10,
-			"value": 38,
+			"value": 12,
 			"look_alikes": []
 		},
 		"feast_roast": {
@@ -2183,7 +2182,7 @@
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"kind": "food",
 			"stack": 10,
-			"value": 75,
+			"value": 34,
 			"look_alikes": []
 		},
 		"wall_section_kit": {
@@ -2350,7 +2349,7 @@
 		"brick": {
 			"number": 209,
 			"name": "Brick",
-			"description": "A fired clay brick, 22 by 10 by 7 cm. Laid in courses with mortar.",
+			"description": "A fired clay brick. Builds the clay hearth and the oven.",
 			"kind": "material",
 			"stack": 40,
 			"look_alikes": [],
@@ -2593,7 +2592,7 @@
 		"wooden_hoe": {
 			"number": 221,
 			"name": "Wooden hoe",
-			"description": "A flat blade lashed to a long handle. Paths the ground and smooths it.",
+			"description": "A flat blade on a long handle. Paths the ground and tills beds.",
 			"kind": "tool",
 			"tool_class": "hoe",
 			"stack": 1,
@@ -2610,7 +2609,7 @@
 		"stone_hoe": {
 			"number": 222,
 			"name": "Stone hoe",
-			"description": "A hoe with a flat stone blade. Lasts longer than bare wood.",
+			"description": "A hoe with a stone blade. Lasts longer than wood.",
 			"kind": "tool",
 			"tool_class": "hoe",
 			"material": "stone",
@@ -2721,9 +2720,8 @@
 		},
 		"nails": {
 			"number": 228,
-			"future": true,
 			"name": "Nails",
-			"description": "Iron nails, bought and used by the handful.",
+			"description": "Small iron nails. Fix boards in builds.",
 			"kind": "material",
 			"stack": 200,
 			"look_alikes": [],
@@ -2759,7 +2757,6 @@
 		},
 		"hinges": {
 			"number": 232,
-			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2779,7 +2776,7 @@
 		"wooden_block": {
 			"number": 234,
 			"name": "Wooden block",
-			"description": "A short round of log, about 30 cm long. Split it on a chopping block.",
+			"description": "A short round of log. Split it on a chopping block.",
 			"kind": "material",
 			"stack": 10,
 			"look_alikes": [],
@@ -2810,8 +2807,7 @@
 			"kind": "material",
 			"stack": 10,
 			"look_alikes": [],
-			"value": 60,
-			"future": true
+			"value": 60
 		},
 		"water_wheel": {
 			"number": 239,
@@ -2892,7 +2888,7 @@
 		"stone_hammer": {
 			"number": 244,
 			"name": "Stone hammer",
-			"description": "A hafted stone hammer. It does nothing yet: nails and finishing work are still to come.",
+			"description": "A hafted stone hammer. Hold it to place big builds from blueprints.",
 			"kind": "tool",
 			"tool_class": "hammer",
 			"material": "stone",
@@ -2963,7 +2959,7 @@
 		"rough_bed_kit": {
 			"number": 250,
 			"name": "Rough bed",
-			"description": "A heap of thatch bound with twine and stakes. Set it down under a roof.",
+			"description": "Thatch bound with twine. Set it under a roof and lie down to sleep.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 28,
@@ -3082,7 +3078,7 @@
 		"wooden_bow": {
 			"number": 269,
 			"name": "Wooden bow",
-			"description": "A bow of bent wood and twine. It needs arrows.",
+			"description": "A bow of bent wood and twine. Needs arrows.",
 			"kind": "weapon",
 			"weapon_class": "bow",
 			"tier": 1,
@@ -3095,7 +3091,7 @@
 		"wooden_arrow": {
 			"number": 270,
 			"name": "Wooden arrow",
-			"description": "A straight stick with a fire-hardened tip and feather fletching.",
+			"description": "A hardened stick with feather fletching. Needs a bow.",
 			"kind": "material",
 			"ammo_class": "arrow",
 			"damage": 5.0,
@@ -3107,7 +3103,7 @@
 		"stone_arrow": {
 			"number": 271,
 			"name": "Stone arrow",
-			"description": "An arrow tipped with a flaked stone point.",
+			"description": "An arrow with a flaked stone point. Hits harder than wood.",
 			"kind": "material",
 			"ammo_class": "arrow",
 			"damage": 8.0,
@@ -3149,7 +3145,7 @@
 			"number": 273,
 			"future": true,
 			"name": "Flatbread",
-			"description": "A flat cake baked on the hot clay. Plain and filling.",
+			"description": "A flat cake baked on hot clay. Plain and filling.",
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
@@ -3161,7 +3157,7 @@
 			"description": "A sweet loaf baked in the oven. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 14,
 			"look_alikes": []
 		},
 		"roast_joint": {
@@ -3212,10 +3208,9 @@
 		"flint": {
 			"number": 279,
 			"name": "Flint",
-			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
+			"description": "A hard grey stone that sparks when struck. Common near rivers.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3241,7 +3236,6 @@
 		},
 		"processed_hide": {
 			"number": 282,
-			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
@@ -3285,7 +3279,6 @@
 			"description": "Small iron pins that hold layers of leather or metal together.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3295,7 +3288,6 @@
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3305,7 +3297,6 @@
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3440,7 +3431,7 @@
 		"stone_pickaxe": {
 			"number": 297,
 			"name": "Stone pickaxe",
-			"description": "A heavy stone head lashed to a haft. Breaks rock and ore, slowly.",
+			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "stone",
@@ -3531,47 +3522,43 @@
 		"copper_ore": {
 			"number": 301,
 			"name": "Copper ore",
-			"description": "A heavy lump streaked green and red. Smelts to copper.",
+			"description": "A heavy lump streaked green and red. Smelts to copper in a forge.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
 		"tin_ore": {
 			"number": 302,
 			"name": "Tin ore",
-			"description": "A dark, very heavy lump. Smelts to tin.",
+			"description": "A dark, very heavy lump. Smelts to tin in a forge.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
 		"iron_ore": {
 			"number": 303,
 			"name": "Iron ore",
-			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
+			"description": "A rusty brown lump. Smelts to iron with coal in a forge.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
 		"coal": {
 			"number": 304,
 			"name": "Coal",
-			"description": "A black lump that burns hot. Needed to turn iron into steel.",
+			"description": "A black lump that burns hot. Smelts iron and makes steel.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},
 		"hide_tunic": {
 			"number": 305,
 			"name": "Hide tunic",
-			"description": "A sewn hide shirt with sleeves. Warmer and neater than a cloak.",
+			"description": "A sewn hide shirt with sleeves. Warmer than a cloak.",
 			"kind": "clothing",
 			"slot": "body",
 			"warmth": 0.24,
@@ -3582,7 +3569,7 @@
 		"hide_trousers": {
 			"number": 306,
 			"name": "Hide trousers",
-			"description": "Hide sewn into proper trousers. Better than leggings.",
+			"description": "Hide sewn into trousers. Better than leggings.",
 			"kind": "clothing",
 			"slot": "legs",
 			"warmth": 0.18,
@@ -3593,7 +3580,7 @@
 		"hide_gloves": {
 			"number": 307,
 			"name": "Hide gloves",
-			"description": "Stitched hide gloves with fingers, for work and cold.",
+			"description": "Stitched hide gloves with fingers. For work and cold.",
 			"kind": "clothing",
 			"slot": "hands",
 			"warmth": 0.1,
@@ -3614,7 +3601,7 @@
 		"herb_salve": {
 			"number": 309,
 			"name": "Herb salve",
-			"description": "Healing herbs worked into animal fat. Soothes burns, rashes and sore skin.",
+			"description": "Comfrey worked into fat. Soothes burns and sore skin.",
 			"kind": "medicine",
 			"stack": 10,
 			"note": "Placeholder: heals once health exists.",
@@ -3634,7 +3621,7 @@
 		"candle": {
 			"number": 311,
 			"name": "Candle",
-			"description": "A wick dipped in animal fat. A small steady light for indoors.",
+			"description": "A wick dipped in fat. A small steady light for indoors.",
 			"kind": "tool",
 			"tool_class": "candle",
 			"tier": 1,
@@ -4053,7 +4040,7 @@
 		"wheat_seeds": {
 			"number": 338,
 			"name": "Wheat seeds",
-			"description": "Seeds for sowing wheat. Plant in a tilled bed.",
+			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
 			"kind": "material",
 			"stack": 40,
 			"future": true,
@@ -4198,7 +4185,7 @@
 		"bone_arrow": {
 			"number": 352,
 			"name": "Bone arrow",
-			"description": "An arrow tipped with a sharpened bone point.",
+			"description": "An arrow with a sharpened bone point.",
 			"kind": "material",
 			"ammo_class": "arrow",
 			"damage": 8.5,
@@ -4210,7 +4197,7 @@
 		"stone_wedge": {
 			"number": 353,
 			"name": "Stone wedge",
-			"description": "A flaked stone wedge. Driven into a log it splits it into rough planks.",
+			"description": "A flaked stone wedge. Driven into a log at a workbench, it splits two rough planks.",
 			"kind": "tool",
 			"tool_class": "wedge",
 			"stack": 1,
@@ -4349,7 +4336,7 @@
 		"wool_tunic": {
 			"number": 366,
 			"name": "Wool tunic",
-			"description": "A woven wool shirt. Warm even when damp.",
+			"description": "A woven wool shirt. Warm.",
 			"kind": "clothing",
 			"slot": "body",
 			"warmth": 0.3,
@@ -4568,7 +4555,7 @@
 			"description": "Oats simmered thick with crushed nuts.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4578,7 +4565,7 @@
 			"description": "A thin warm broth of barley and carrot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4598,7 +4585,7 @@
 			"description": "A thick green soup of peas and onion.",
 			"kind": "food",
 			"stack": 10,
-			"value": 18,
+			"value": 15,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4628,7 +4615,7 @@
 			"description": "Cabbage, meat and onion stewed together.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4658,7 +4645,7 @@
 			"description": "A salty soup of seaweed and shellfish.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 12,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4668,7 +4655,7 @@
 			"description": "Shellfish stewed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 17,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4688,7 +4675,7 @@
 			"description": "Eggs fried with young nettle greens.",
 			"kind": "food",
 			"stack": 10,
-			"value": 24,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4708,7 +4695,7 @@
 			"description": "Dark seal meat stewed with turnip.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4718,7 +4705,7 @@
 			"description": "Meat and fat baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4728,7 +4715,7 @@
 			"description": "Fish and onion baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 31,
+			"value": 19,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4747,7 +4734,7 @@
 			"description": "Flat bread rubbed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 11,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4815,7 +4802,7 @@
 			"description": "Banana and flour fried golden.",
 			"kind": "food",
 			"stack": 10,
-			"value": 14,
+			"value": 9,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4940,6 +4927,46 @@
 			"stack": 10,
 			"look_alikes": [],
 			"value": 9
+		},
+		"radish": {
+			"number": 426,
+			"name": "Radish",
+			"description": "A peppery red root that grows fast in cool ground.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"lettuce": {
+			"number": 427,
+			"name": "Lettuce",
+			"description": "Soft green leaves that grow fast and spoil fast.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"radish_seeds": {
+			"number": 428,
+			"name": "Radish seeds",
+			"description": "Seeds for sowing radish. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
+		},
+		"lettuce_seeds": {
+			"number": 429,
+			"name": "Lettuce seeds",
+			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 1
 		}
 	}
 }

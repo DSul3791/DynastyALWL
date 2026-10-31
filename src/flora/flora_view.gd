@@ -272,6 +272,7 @@ var fall_cap: int = 4
 # Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
 # fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
 var ground_ready: Callable = Callable()
+const GROUND_MESH_WAIT_MS := 1500      # a chunk whose ground data has just arrived stays hidden this long more, for the ground mesh to be built
 var stripped: Dictionary = {}          # chunk -> {plant id -> true}: berry bushes that are bare this season (set_stripped); they are drawn bare ("bare" models, when a species has them)
 var _setup_entries: Array = []         # the flora table rows, kept for the seasonal models
 var fruiting: Dictionary = {}          # species name -> true: the berry bushes (drops.json "berry_yield"), drawn per season and stripped (set_fruiting)
@@ -1521,6 +1522,13 @@ func _check_ground() -> void:
 		var entry: Dictionary = _chunks[chunk]
 
 		if not bool(entry.get("ground", true)) and _ground_here(chunk):
+			# The ground data is in, but its mesh is built a moment later: wait a little more so no forest stands over bare sea (Sonny, 31 Oct 2026; the sea plane shows where the ground is not drawn yet).
+			if not entry.has("ground_seen"):
+				entry["ground_seen"] = now
+
+			if now - int(entry["ground_seen"]) < GROUND_MESH_WAIT_MS:
+				continue
+
 			entry["ground"] = true
 			var node: Node3D = entry.get("node")
 			var falls: Node3D = entry.get("falls")

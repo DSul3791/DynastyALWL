@@ -13,7 +13,7 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 | 7 | Light it with plant fibre, roast food | 1 fibre | - | goal: eat something wild |
 | 8 | Make a Small shelter (lean-to) | 8 sticks, 6 leaves, 2 twine | 25 s | goal: build a shelter |
 | 9 | Make a Rough bed and sleep | 10 thatch (or 8 bedding or straw), 4 sticks, 2 twine | 25 s | goal: make a bed |
-| 10 | Build a Workbench | 12 sticks, 3 twine | 40 s | goal: build a workbench |
+| 10 | Build a Workbench | 20 sticks, 6 twine, 4 stones | 60 s | goal: build a workbench |
 | 11 | Make a spear, a knife, hunt a rabbit | stick, 2 twine; 2 stones + stick | 10 s, 8 s | goals: spear, knife |
 | 12 | Fish at the pond | rod or shore net | - | goal: catch a fish |
 

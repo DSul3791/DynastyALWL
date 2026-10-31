@@ -292,3 +292,15 @@ carcass.json now has 35 species (added horse, red squirrel, pine marten, hedgeho
 
 ## Fishing, wild foods, camp goals (2026-10-31)
 Fish items salmon..cod (419-424) wired into schools (river eel, sea cod, seasons), vitals, spoilage, cooking; validate_items reads fish_schools as a source. FISHING_DATA.md. data/items/wild_foods.json (92 edible plants, 20 with look-alike warnings, 11 poisonous). data/items/camp_goals.json (10 camp and winter goals, 4 need code). Looks queued in look_placeholders.json.
+
+## Audit against Tyler systems, first week, animal sign (2026-10-31)
+crops.json sow_season fixed for a summer start (see CODE_MISMATCHES.md); flint, ores, coal, ingots, nails, hinges, rivets, saw blade, processed hide unflagged; validate_items reads boulders.json as a source. FIRST_WEEK_WALK.md (paper walk, rates unmeasured), data/animals/animal_sign.json (20 species, 41 sign hints). Plans (self-approved): 1 timed play-through numbers into FIRST_WEEK_WALK; 2 halve grow_days after Dave answers; 3 unflag iron tools when held models exist.
+
+## Pace pass 2 and crop times (2026-10-31)
+See CRAFT_PACING.md section Pace pass 2: workbench 20 sticks/6 twine/4 stones/60 s; smelting slower and iron needs coal; ore scarcer; crop grow_days 4 to 30; radish and lettuce added (426-429). Guide asked for a stopwatch run (queued).
+
+## Look wishlist, economy guard, Dave checklist (2026-10-31)
+data/items/look_wishlist.md (43 items, prioritised, colour and shape hints); test_economy_guard.gd added; dish values corrected to batch caps (see ECONOMY_PLAN.md); DAVE_MORNING_ITEMS.md. Moderator decision: wait for Dave play-through before raising stick/twine quantities.
+
+## Voice descriptions, seasons, dialogue (2026-10-31)
+data/items/descriptions_voice.json (105 items; 82 written back to items/gathered descriptions, including truth fixes: stone hammer now places blueprints, lumber has the wedge route, iron ingot is no longer a placeholder); data/items/seasons.json (calendar with months, forage, crops, fish, game, 12 season hints); data/npcs/dialogue_lines.json (36 lines for 6 NPCs tied to goals or seasons, 3 rumours). Encyclopedia descriptions refreshed.

@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Wood without iron (guide finding F-05, FLINT_ORE_SPEC.md; Tyler 31 Oct 2026): the route a player can really walk from bare hands to lumber and planks:
-# stone wedge (2 stones, 1 stick, by hand) -> workbench kit (12 sticks, 3 twine, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
+# stone wedge (2 stones, 1 stick, by hand) -> workbench kit (20 sticks, 6 twine, 4 stones, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
 # gives 2 lumber ("Rough planks", recipe lumber_wedge); and 1 log at the workbench gives rough planks (recipe rough_plank). Before the ingredient groups (F-16) the log
 # step could never be filled. The wedge is kept (not used up). Without the workbench near, nothing is made; without the wedge, no lumber from the wedge recipe.
 #   godot --headless --path . --script res://src/worldgen/tools/test_lumber_route.gd
@@ -64,12 +64,14 @@ func _init() -> void:
 	items._admin_mode_off[1] = true   # play by the rules: no free crafting
 	items.admin_mode_on = func(_p): return false
 	give("stone", 2)
-	give("stick", 14)
-	give("twine", 3)
+	give("stick", 1)
 	craft("stone_wedge", 1)
 	check(count("stone_wedge") == 1 and count("stone") == 0, "a stone wedge from 2 stones and a stick, by hand")
+	give("stone", 4)
+	give("stick", 20)
+	give("twine", 6)   # the workbench kit costs 20 sticks, 6 twine and 4 stones since the pacing pass
 	craft("workbench_kit", 1)
-	check(count("workbench_kit") == 1, "a workbench kit from 12 sticks and 3 twine, by hand")
+	check(count("workbench_kit") == 1, "a workbench kit from 20 sticks, 6 twine and 4 stones, by hand")
 	give("log_oak", 3)
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 0 and count("log_oak") == 3, "no workbench near: no lumber, the log is kept")

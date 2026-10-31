@@ -73,6 +73,12 @@
 		"juniper": {"item": "juniper_berries", "count": 100}
 	},
 	"note": "What gathering gives. by_species wins over by_kind; each entry is [item id, min, max]. A plant or shrub with no entry here cannot be gathered yet (food and herb items come with the gatherer, cook and potion work). Trees are felled, not gathered (tree-fall comes later).",
+	"seed_drops": {
+		"note": "Wild seeds (FARMING_SPEC.md step 1; Tyler 31 Oct 2026): gathering one of these plants in the listed seasons also gives seeds, [item, min, max] each, so a player starts farming from forage. Rolled like the other yields. Potato and turnip seeds come from a dug root, not here.",
+		"tall_grass": {"seasons": ["summer", "autumn"], "rows": [["wheat_seeds", 1, 2], ["barley_seeds", 1, 2]]},
+		"wild_carrot": {"seasons": ["summer", "autumn"], "rows": [["carrot_seeds", 1, 3]]},
+		"flax": {"seasons": ["summer", "autumn"], "rows": [["flax_seeds", 1, 3]]}
+	},
 	"by_species": {
 		"wild_rose": [],
 		"flax": [

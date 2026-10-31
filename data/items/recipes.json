@@ -1102,18 +1102,22 @@
 			"needs": [
 				[
 					"stick",
-					12
+					20
 				],
 				[
 					"twine",
-					3
+					6
+				],
+				[
+					"stone",
+					4
 				]
 			],
 			"gives": [
 				"workbench_kit",
 				1
 			],
-			"craft_s": 40.0,
+			"craft_s": 60.0,
 			"known": true
 		},
 		"shore_net": {
@@ -3794,14 +3798,14 @@
 			"needs": [
 				[
 					"copper_ore",
-					2
+					3
 				]
 			],
 			"gives": [
 				"copper_ingot",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 30.0,
 			"known": true,
 			"station": "forge"
 		},
@@ -3812,14 +3816,14 @@
 			"needs": [
 				[
 					"tin_ore",
-					2
+					3
 				]
 			],
 			"gives": [
 				"tin_ingot",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 30.0,
 			"known": true,
 			"station": "forge"
 		},
@@ -3830,14 +3834,18 @@
 			"needs": [
 				[
 					"iron_ore",
-					3
+					4
+				],
+				[
+					"coal",
+					1
 				]
 			],
 			"gives": [
 				"iron_ingot",
 				1
 			],
-			"craft_s": 12.0,
+			"craft_s": 45.0,
 			"known": true,
 			"station": "forge"
 		},

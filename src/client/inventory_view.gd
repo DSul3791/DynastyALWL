@@ -2083,7 +2083,47 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or recipes.can_make(number, inventory) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+
+
+# The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
+func nearby_logs() -> int:
+	var total: int = 1 if shoulder_id != "" else 0
+	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
+	var members: PackedInt32Array = table.group_members(table.number_of("log"))
+
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry.get("state", -1)) == 0 and members.has(int(entry.get("number", 0))) and here.distance_to(entry["pos"]) <= 3.0:
+			total += int(entry.get("count", 1))
+
+	return total
+
+
+# Is the recipe covered once the nearby logs are counted with the pack (everything else in the pack, the station near)?
+func _logs_cover(number: int) -> bool:
+	var r: Dictionary = recipes.recipe(number)
+	var log_n: int = table.number_of("log")
+
+	if r.is_empty() or log_n <= 0 or not _station_ok(r):
+		return false
+
+	var uses_log: bool = false
+
+	for need in r["needs"]:
+		if int(need[0]) == log_n:
+			uses_log = true
+			if inventory.count_fill(log_n) + nearby_logs() < int(need[1]):
+				return false
+		elif not inventory.has_fill(int(need[0]), int(need[1])):
+			return false
+
+	for keep in r["keeps"]:
+		if not inventory.has(int(keep[0]), int(keep[1])):
+			return false
+
+	return uses_log
 
 
 var _plan_cache: Dictionary = {}   # recipe number -> its auto-make plan, cleared on every refresh
@@ -3654,7 +3694,7 @@ func _refresh_detail() -> void:
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
-		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0])
+		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0]) + (nearby_logs() if int(need[0]) == table.number_of("log") else 0)
 		var line: Label = Label.new()
 		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
@@ -3896,10 +3936,13 @@ func run_quickkey_test(_client) -> void:
 	var roast: int = table.number_of("roast_forage")
 	await get_tree().create_timer(6.0).timeout
 
-	# A slow join (cold server) drops a give sent too early: ask again every 3 s until the stones arrive.
+	# A slow join (cold server) drops a give sent too early: ask again, but only every 30 s and then wait for the pack to catch up. (Asking every 3 s gave the stones
+	# again and again on a busy PC, where the pack arrives late: 63 stones instead of 6 and a failed check, 31 Oct.)
 	for attempt in range(30):
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+		if attempt % 10 == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+
 		await get_tree().create_timer(3.0).timeout
 
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:

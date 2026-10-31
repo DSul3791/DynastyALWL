@@ -341,6 +341,14 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-36 | MEDIUM | `test_playability_bot` (the "first hour from nothing" bot) now stops at step 6, "working the trunk gave no log", because logs cut off a trunk drop on the ground (028e666e) and the bot counts only the pack and the shoulder. Steps 7 to 9 (fire, shelter, well) are no longer run. `test_first_hour` passes. | `test_playability_bot.gd` line 261 | Tyler | small |
 | S-hunt | info | **The whole kill-to-roast chain passes on the server code** (spear and knife from nothing, rabbit one jab, dress, deer three jabs and dress with sinew, fat, antler, campfire, light, roast, eat, waterskin from two hides): `probe_hunt_output.txt`, 0 breaks. | `art/playthrough/probe_hunt.gd` | | |
 
+| F-37 | LOW | **The shot runner's ground reading flips while a spot loads**: at one spot the voxel raycast `_ground()` read 31.0, then 15.0, then 63.0 within a minute (the real ground is 31), so a guard that waits for a stable ground or moves the camera when it changes made the picture worse (camera 16 m under the forest). Shipped instead: a warning-only guard in `shot_runner.gd` after the saved line ("WARNING ground not loaded ...; raise --shot-settle, 75 s worked"). Root cause (a coarse or stale voxel block answering the raycast) belongs to the terrain code. | `shot_runner.gd`; a kept client.log of the guard test | Tyler (terrain), Kathleen (rig) | small |
+
+**Correction (2026-10-31, from Sonny):** top problem 1 of Part 6 (the dark rippled plane at the spawn) is not a pond. At 53316, 68476 the spawn is dry (ground 31.6 m, nearest water 113 m away and 7 m lower, `test_spawn_dry`). The plane in `once.jpg` and `open_ground_rain.jpg` was most likely the sea plane showing under the forest before the ground mesh had built (fixed by 291e9715, "flora waits 1.5 s more after its ground data arrives"); the NPC town markers (Edda's clipping, problem 10) were moved onto the clear spawn pad (e241e6de). No spawn move is needed. Re-shoot to confirm is pending (the machine was saturated).
+
+**F-16 after Tyler's 3e7a1cb5 (2026-10-31): the group fix works only for logs in the pack, and a player cannot hold a log in the pack.** `test_ingredient_groups` passes because it adds logs to the pack with `pack.add`. In play, a picked-up log goes to the shoulder (one at a time, `carry: shoulder`) and cut logs drop on the ground. `probe_logs.gd` round 2 (a real shoulder log, workbench placed, 1 log needed): rough planks = 0 ("You do not have what that needs"); a chopping block (2 logs) with one log on the shoulder and one on the ground = 0 ("Put your log down first (Q)"); the same crafts with the logs forced into the pack: chopping block 1, rough planks 4. So the chopping block (2 logs), log workbench (4), blacksmithy (10), rough plank, lumber wedge all remain unreachable in play. Suggested fix (Tyler): let a recipe use the shoulder log and the logs lying within reach of the player or station (the player stands at the cut, the logs lie beside the trunk), or make short cut logs pack items. Evidence: `art/playthrough/probe_logs_output.txt`.
+
+Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a1cb5); S-craft now shows two mismatches: `lumber_by_hand` (expected, needs the hand saw) and **`water_wheel`, which has `known:false` but crafted on the server** in the probe (a hole in the known check or a recipe-number clash; Tyler, small, unreachable today because lumber and nails are).
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
@@ -349,10 +357,10 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-01/F-24 | recipes can be learned | **STILL BROKEN** | 208 of 227 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
-| F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks |
+| F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present |
 | F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 |
-| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [5, 18] |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [8, 37] |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True |
 | F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] |
 | F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot |
@@ -361,7 +369,7 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-13 | blueberry size | **MANUAL** | needs a picture |
 | F-14 | first axe cost in twine | **FIXED** | stone axe needs 2 twine |
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
-| F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
+| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **STILL BROKEN** | probe_logs round 2: rough planks from the one log on the shoulder = 0 (the unit test passes only with logs for |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout |
 | F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future |
@@ -372,7 +380,7 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) |
 | S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing |
 | S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) |
-| S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] |
+| S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] |
 
 12 fixed, 13 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->

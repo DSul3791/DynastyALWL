@@ -1,0 +1,274 @@
+{
+	"_about": "NPC dialogue lines for the first-island town (Sal, 2026-10-31), data for Mandy and the dialogue files; read by nothing yet. Six lines per NPC in the voice of the role, each tied to a starter goal (`when` = goal id from data/items/starter_goals.json) or a season (spring, summer, autumn, winter, or any). They fit the barks/nodes in data/npcs/dialogue/*.json: use a line as a bark when the player's goal state or the season matches, or as a node text. Facts in the lines are true of the game's data today (fibre arrows, dawn and dusk fishing, salmon in autumn, ice holes cut with an axe, only turnip grows in winter, radish ripens in 4 hours). Marra, Tam, Bran and Gil are proposed NPCs (data/npcs/town_proposal.json). Rumours: three hints that point to resources without naming coordinates (unknown).",
+	"npcs": {
+		"hob": {
+			"role": "shopkeeper",
+			"lines": [
+				{
+					"id": "hob_1",
+					"when": "fibre",
+					"text": "Plant fibre sells all day. Bring me twenty and I will pay you for the trouble.",
+					"tied_to": "goal fibre"
+				},
+				{
+					"id": "hob_2",
+					"when": "axe",
+					"text": "A stone axe made and ready, if you would rather not bind your own.",
+					"tied_to": "goal axe"
+				},
+				{
+					"id": "hob_3",
+					"when": "fire",
+					"text": "A fire under a tree's crown keeps burning in rain. Remember that.",
+					"tied_to": "goal fire"
+				},
+				{
+					"id": "hob_4",
+					"when": "summer",
+					"text": "Berries are ripe. Bring them in and I will take the lot.",
+					"tied_to": "season summer"
+				},
+				{
+					"id": "hob_5",
+					"when": "autumn",
+					"text": "Smoked fish and dried berries keep. Fill your store before winter.",
+					"tied_to": "season autumn"
+				},
+				{
+					"id": "hob_6",
+					"when": "winter",
+					"text": "Little comes in this time of year. Firewood and meat are always welcome.",
+					"tied_to": "season winter"
+				}
+			]
+		},
+		"edda": {
+			"role": "guard",
+			"lines": [
+				{
+					"id": "edda_1",
+					"when": "fire",
+					"text": "Keep close to your fire at night. Wolves hesitate at light, fire or torch.",
+					"tied_to": "goal fire"
+				},
+				{
+					"id": "edda_2",
+					"when": "shelter",
+					"text": "A lean-to is cover, not safety. Build near the camp if you can.",
+					"tied_to": "goal shelter"
+				},
+				{
+					"id": "edda_3",
+					"when": "spear",
+					"text": "A spear is no use if you flinch. Aim for the chest and stand your ground.",
+					"tied_to": "goal spear"
+				},
+				{
+					"id": "edda_4",
+					"when": "night",
+					"text": "Take a torch after dark. The woods are different at night.",
+					"tied_to": "season any"
+				},
+				{
+					"id": "edda_5",
+					"when": "autumn",
+					"text": "Wolves hunt in packs of three to five. Never face them alone.",
+					"tied_to": "season autumn"
+				},
+				{
+					"id": "edda_6",
+					"when": "winter",
+					"text": "Winter is quiet and dangerous. Stay near your fire.",
+					"tied_to": "season winter"
+				}
+			]
+		},
+		"marra": {
+			"role": "healer",
+			"lines": [
+				{
+					"id": "marra_1",
+					"when": "fibre",
+					"text": "Plantain leaves and plant fibre make a bandage. Bring me six leaves and I will teach you.",
+					"tied_to": "goal fibre"
+				},
+				{
+					"id": "marra_2",
+					"when": "shelter",
+					"text": "A warm bed heals faster than any herb. Look after your shelter.",
+					"tied_to": "goal shelter"
+				},
+				{
+					"id": "marra_3",
+					"when": "bed",
+					"text": "Sleep under cover and you wake with your health back. I have seen it.",
+					"tied_to": "goal bed"
+				},
+				{
+					"id": "marra_4",
+					"when": "spring",
+					"text": "Wild garlic and nettle are up. Eat greens after a long winter.",
+					"tied_to": "season spring"
+				},
+				{
+					"id": "marra_5",
+					"when": "summer",
+					"text": "Comfrey and yarrow are at their best. Gather them now and dry some.",
+					"tied_to": "season summer"
+				},
+				{
+					"id": "marra_6",
+					"when": "winter",
+					"text": "Willow bark tea for the fever. Keep some by you in the cold.",
+					"tied_to": "season winter"
+				}
+			]
+		},
+		"tam": {
+			"role": "hunter",
+			"lines": [
+				{
+					"id": "tam_1",
+					"when": "spear",
+					"text": "A spear will take a rabbit. For deer you want a bow and patience.",
+					"tied_to": "goal spear"
+				},
+				{
+					"id": "tam_2",
+					"when": "knife",
+					"text": "Dress the kill at once with your stone knife. Meat, hide, bone and sinew.",
+					"tied_to": "goal knife"
+				},
+				{
+					"id": "tam_3",
+					"when": "axe",
+					"text": "Fibre arrows fly short and weak, but you can make them with no feather.",
+					"tied_to": "goal axe"
+				},
+				{
+					"id": "tam_4",
+					"when": "autumn",
+					"text": "Deer are fat in autumn. Hunt now and smoke what you cannot eat.",
+					"tied_to": "season autumn"
+				},
+				{
+					"id": "tam_5",
+					"when": "night",
+					"text": "Foxes steal from a sleeping camp. Keep your food in a chest.",
+					"tied_to": "season any"
+				},
+				{
+					"id": "tam_6",
+					"when": "winter",
+					"text": "Trampled grass shows where a deer has passed. Learn to read the trail.",
+					"tied_to": "season winter"
+				}
+			]
+		},
+		"bran": {
+			"role": "fisher",
+			"lines": [
+				{
+					"id": "bran_1",
+					"when": "fish",
+					"text": "Dawn and dusk are the hours. Midday the fish go deep and sulk.",
+					"tied_to": "goal fish"
+				},
+				{
+					"id": "bran_2",
+					"when": "fire",
+					"text": "Fish roast well over a fire. Smoke them and they last for weeks.",
+					"tied_to": "goal fire"
+				},
+				{
+					"id": "bran_3",
+					"when": "summer",
+					"text": "Mackerel run in the sea shallows in summer. Take a net.",
+					"tied_to": "season summer"
+				},
+				{
+					"id": "bran_4",
+					"when": "autumn",
+					"text": "The salmon run up the rivers in autumn. That is the best fishing of the year.",
+					"tied_to": "season autumn"
+				},
+				{
+					"id": "bran_5",
+					"when": "winter",
+					"text": "In hard winters the pond freezes. Cut a hole in the ice with your axe.",
+					"tied_to": "season winter"
+				},
+				{
+					"id": "bran_6",
+					"when": "spring",
+					"text": "Herring and smelt come in spring. Salt them and you will not go hungry.",
+					"tied_to": "season spring"
+				}
+			]
+		},
+		"gil": {
+			"role": "farmer",
+			"lines": [
+				{
+					"id": "gil_1",
+					"when": "shelter",
+					"text": "A farm needs a roof and a store. Build the house first, then plant.",
+					"tied_to": "goal shelter"
+				},
+				{
+					"id": "gil_2",
+					"when": "workbench",
+					"text": "Tools make a farm: a hoe to till, a sickle to reap.",
+					"tied_to": "goal workbench"
+				},
+				{
+					"id": "gil_3",
+					"when": "spring",
+					"text": "Sow wheat and barley in spring. The ground is soft and the rain comes.",
+					"tied_to": "season spring"
+				},
+				{
+					"id": "gil_4",
+					"when": "summer",
+					"text": "Plant oats and the quick vegetables now. Radishes are ripe in four days.",
+					"tied_to": "season summer"
+				},
+				{
+					"id": "gil_5",
+					"when": "autumn",
+					"text": "Bring in the grain before the frost and keep seeds back for next year.",
+					"tied_to": "season autumn"
+				},
+				{
+					"id": "gil_6",
+					"when": "winter",
+					"text": "Nothing grows but turnips. Live on the cellar and mend your tools.",
+					"tied_to": "season winter"
+				}
+			]
+		}
+	},
+	"rumours": [
+		{
+			"id": "rumour_ore",
+			"teller": "hob",
+			"text": "Folk say some boulders on the stony hills hold ore, green and red like old copper. Break a few with a pick.",
+			"points_to": "ore outcrops: boulders near ore bodies (boulders.json ore, pick needed)",
+			"true_because": "boulders within 40 m of an ore body are outcrops 40 percent of the time"
+		},
+		{
+			"id": "rumour_fish",
+			"teller": "bran",
+			"text": "Trout in the cold brooks, perch and pike in the lakes, salmon up the rivers in autumn. Learn the water.",
+			"points_to": "fish schools by water type and season",
+			"true_because": "fish_schools.json species_by_kind and only_in"
+		},
+		{
+			"id": "rumour_flint",
+			"teller": "edda",
+			"text": "Flint lies along the riverbanks. Strike it against steel for a spark, or chip it for a blade.",
+			"points_to": "flint nodules on river banks and from boulders",
+			"true_because": "boulders.json flint chance doubles within 6 m of water"
+		}
+	]
+}

@@ -1,0 +1,2550 @@
+{
+	"_about": "Seasonal availability (Sal, 2026-10-31), generated from flora.json (via wild_foods.json), crops.json, fish_schools.json and carcass.json; read by nothing yet. Calendar: a game year is 365 game days = 365 real hours (a game day is one real hour). Day 0 is the first day of spring (March 1 for this table); a new world starts on day 100, early summer (about June 10). Seasons are 91 days: spring 0 to 90, summer 91 to 181, autumn 182 to 272, winter 273 to 364 (GameClock.season_index). Month names are a convenience for UI and dialogue; the code only knows seasons. Game species are year round in the data today.",
+	"calendar": [
+		{
+			"month": "March",
+			"from_day": 0,
+			"to_day": 30,
+			"season": "spring"
+		},
+		{
+			"month": "April",
+			"from_day": 31,
+			"to_day": 60,
+			"season": "spring"
+		},
+		{
+			"month": "May",
+			"from_day": 61,
+			"to_day": 90,
+			"season": "spring"
+		},
+		{
+			"month": "June",
+			"from_day": 91,
+			"to_day": 121,
+			"season": "summer"
+		},
+		{
+			"month": "July",
+			"from_day": 122,
+			"to_day": 151,
+			"season": "summer"
+		},
+		{
+			"month": "August",
+			"from_day": 152,
+			"to_day": 181,
+			"season": "summer"
+		},
+		{
+			"month": "September",
+			"from_day": 182,
+			"to_day": 212,
+			"season": "autumn"
+		},
+		{
+			"month": "October",
+			"from_day": 213,
+			"to_day": 242,
+			"season": "autumn"
+		},
+		{
+			"month": "November",
+			"from_day": 243,
+			"to_day": 272,
+			"season": "autumn"
+		},
+		{
+			"month": "December",
+			"from_day": 273,
+			"to_day": 303,
+			"season": "winter"
+		},
+		{
+			"month": "January",
+			"from_day": 304,
+			"to_day": 333,
+			"season": "winter"
+		},
+		{
+			"month": "February",
+			"from_day": 334,
+			"to_day": 364,
+			"season": "winter"
+		}
+	],
+	"world_start_day": 100,
+	"forage": {
+		"hazel": {
+			"name": "Hazel",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"hazelnuts"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"bramble": {
+			"name": "Bramble",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"blackberries"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"juniper": {
+			"name": "Juniper",
+			"seasons": [
+				"autumn",
+				"winter"
+			],
+			"months": [
+				"September",
+				"October",
+				"November",
+				"December",
+				"January",
+				"February"
+			],
+			"parts": [
+				"juniper_berries"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"dry_scrub",
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"gorse": {
+			"name": "Gorse",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"kindling",
+				"fodder"
+			],
+			"biomes": [
+				"heath",
+				"temperate_grassland"
+			]
+		},
+		"dwarf_birch": {
+			"name": "Dwarf birch",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"kindling"
+			],
+			"biomes": [
+				"tundra"
+			]
+		},
+		"saltbush": {
+			"name": "Saltbush",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"fodder",
+				"potash"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert"
+			]
+		},
+		"cactus": {
+			"name": "Cactus",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"water",
+				"spines"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert"
+			]
+		},
+		"fern": {
+			"name": "Fern",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"bedding",
+				"fiddleheads"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			]
+		},
+		"heather": {
+			"name": "Heather",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"thatch",
+				"bedding",
+				"honey_flowers"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath"
+			]
+		},
+		"reeds": {
+			"name": "Reeds",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"thatch",
+				"reed_stems"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mangrove",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"flax": {
+			"name": "Wild flax",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"linseed"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"tall_grass": {
+			"name": "Tall grass",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"thatch",
+				"straw"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"beach",
+				"boreal_forest",
+				"dry_scrub",
+				"heath",
+				"marsh",
+				"mixed_forest",
+				"savanna",
+				"temperate_forest",
+				"temperate_grassland",
+				"tropical_forest",
+				"tundra"
+			]
+		},
+		"nettle": {
+			"name": "Nettle",
+			"seasons": [
+				"spring",
+				"summer"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"greens"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"cotton_grass": {
+			"name": "Cotton grass",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"tinder",
+				"stuffing"
+			],
+			"biomes": [
+				"marsh",
+				"tundra"
+			]
+		},
+		"alpine_flowers": {
+			"name": "Alpine flowers",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"herbs",
+				"dye"
+			],
+			"biomes": [
+				"alpine_meadow"
+			]
+		},
+		"mushrooms": {
+			"name": "Mushrooms",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"food",
+				"tinder_fungus"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"blueberry": {
+			"name": "Blueberry",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"blueberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"lingonberry": {
+			"name": "Lingonberry",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"lingonberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"heath",
+				"tundra"
+			]
+		},
+		"cranberry": {
+			"name": "Cranberry",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"cranberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			]
+		},
+		"cloudberry": {
+			"name": "Cloudberry",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"cloudberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"tundra"
+			]
+		},
+		"wild_strawberry": {
+			"name": "Wild strawberry",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"strawberries"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"raspberry": {
+			"name": "Raspberry",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"raspberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"crowberry": {
+			"name": "Crowberry",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"crowberries"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"tundra"
+			]
+		},
+		"elder": {
+			"name": "Elder",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"elderberries"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"wild_rose": {
+			"name": "Wild rose",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"rose_petals",
+				"rose_hips"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"blackthorn": {
+			"name": "Blackthorn",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"sloes"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"hawthorn": {
+			"name": "Hawthorn",
+			"seasons": [
+				"spring",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"haws"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"sea_buckthorn": {
+			"name": "Sea buckthorn",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"sea_buckthorn_berries"
+			],
+			"biomes": [
+				"beach",
+				"dry_scrub"
+			]
+		},
+		"wild_garlic": {
+			"name": "Wild garlic",
+			"seasons": [
+				"spring"
+			],
+			"months": [
+				"March",
+				"April",
+				"May"
+			],
+			"parts": [
+				"wild_garlic_leaves",
+				"wild_garlic_bulbs"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"wild_thyme": {
+			"name": "Wild thyme",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"thyme"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"dry_scrub",
+				"heath",
+				"temperate_grassland"
+			]
+		},
+		"wild_mint": {
+			"name": "Water mint",
+			"seasons": [
+				"spring",
+				"summer"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"mint"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"sorrel": {
+			"name": "Sorrel",
+			"seasons": [
+				"spring",
+				"summer"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"sorrel_leaves"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			]
+		},
+		"dandelion": {
+			"name": "Dandelion",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"dandelion_flowers",
+				"dandelion_leaves",
+				"dandelion_roots"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"beach",
+				"temperate_grassland"
+			]
+		},
+		"wild_carrot": {
+			"name": "Wild carrot",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"wild_carrot_roots"
+			],
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			]
+		},
+		"watercress": {
+			"name": "Watercress",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"watercress"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"samphire": {
+			"name": "Samphire",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"samphire"
+			],
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			]
+		},
+		"wild_marjoram": {
+			"name": "Wild marjoram",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"marjoram"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			]
+		},
+		"wild_sage": {
+			"name": "Wild sage",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"sage"
+			],
+			"biomes": [
+				"dry_scrub",
+				"savanna"
+			]
+		},
+		"rosemary": {
+			"name": "Rosemary",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"rosemary"
+			],
+			"biomes": [
+				"dry_scrub",
+				"savanna"
+			]
+		},
+		"lavender": {
+			"name": "Lavender",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"lavender_flowers"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			]
+		},
+		"yarrow": {
+			"name": "Yarrow",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"yarrow"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"plantain": {
+			"name": "Ribwort plantain",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"plantain_leaves"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"temperate_grassland"
+			]
+		},
+		"chamomile": {
+			"name": "Chamomile",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"chamomile_flowers"
+			],
+			"biomes": [
+				"beach",
+				"temperate_grassland"
+			]
+		},
+		"comfrey": {
+			"name": "Comfrey",
+			"seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"comfrey_leaves"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"st_johns_wort": {
+			"name": "St John's wort",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"st_johns_wort"
+			],
+			"biomes": [
+				"heath",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"valerian": {
+			"name": "Valerian",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"valerian_roots"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"meadowsweet": {
+			"name": "Meadowsweet",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"meadowsweet_flowers"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_grassland"
+			]
+		},
+		"feverfew": {
+			"name": "Feverfew",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"feverfew"
+			],
+			"biomes": [
+				"dry_scrub",
+				"temperate_grassland"
+			]
+		},
+		"burdock": {
+			"name": "Burdock",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"burdock_roots"
+			],
+			"biomes": [
+				"marsh",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"mugwort": {
+			"name": "Mugwort",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"mugwort"
+			],
+			"biomes": [
+				"beach",
+				"dry_scrub",
+				"temperate_grassland"
+			]
+		},
+		"arnica": {
+			"name": "Arnica",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"arnica_flowers"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			]
+		},
+		"angelica": {
+			"name": "Angelica",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"angelica_roots"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"marsh"
+			]
+		},
+		"aloe": {
+			"name": "Aloe",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"aloe_gel"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert",
+				"savanna"
+			]
+		},
+		"chanterelle": {
+			"name": "Chanterelle",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"chanterelles"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"porcini": {
+			"name": "Porcini",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"porcini"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"morel": {
+			"name": "Morel",
+			"seasons": [
+				"spring"
+			],
+			"months": [
+				"March",
+				"April",
+				"May"
+			],
+			"parts": [
+				"morels"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"puffball": {
+			"name": "Giant puffball",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"puffball"
+			],
+			"biomes": [
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"tinder_fungus": {
+			"name": "Tinder fungus",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"tinder_fungus"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"wild_banana": {
+			"name": "Wild banana",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"bananas"
+			],
+			"biomes": [
+				"tropical_forest"
+			]
+		},
+		"prickly_pear": {
+			"name": "Prickly pear",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"prickly_pears"
+			],
+			"biomes": [
+				"dry_scrub",
+				"hot_desert",
+				"savanna"
+			]
+		},
+		"owlpetal": {
+			"name": "Owlpetal",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"owlpetals"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"staunchmoss": {
+			"name": "Staunchmoss",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"staunchmoss"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"emberroot": {
+			"name": "Emberroot",
+			"seasons": [
+				"autumn",
+				"winter"
+			],
+			"months": [
+				"September",
+				"October",
+				"November",
+				"December",
+				"January",
+				"February"
+			],
+			"parts": [
+				"emberroots"
+			],
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"volcanic_waste"
+			]
+		},
+		"wispbloom": {
+			"name": "Wispbloom",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"wispbloom_heads"
+			],
+			"biomes": [
+				"marsh"
+			]
+		},
+		"drakethorn": {
+			"name": "Drakethorn",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"drakethorn_berries"
+			],
+			"biomes": [
+				"dry_scrub",
+				"heath",
+				"temperate_grassland"
+			]
+		},
+		"sunberry": {
+			"name": "Sunberry",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"sunberries"
+			],
+			"biomes": [
+				"heath",
+				"savanna",
+				"temperate_grassland"
+			]
+		},
+		"hagwillow": {
+			"name": "Hag willow",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"hagwillow_bark",
+				"hagwillow_withies"
+			],
+			"biomes": [
+				"marsh"
+			]
+		},
+		"heartroot": {
+			"name": "Heartroot",
+			"seasons": [
+				"spring",
+				"autumn"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"heartroots"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"tideglass_weed": {
+			"name": "Tideglass weed",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"tideglass_fronds"
+			],
+			"biomes": [
+				"beach",
+				"mangrove"
+			]
+		},
+		"gloomthistle": {
+			"name": "Gloomthistle",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"gloomthistle_heads",
+				"gloomthistle_down"
+			],
+			"biomes": [
+				"bare_rock",
+				"heath",
+				"temperate_grassland"
+			]
+		},
+		"dewlantern": {
+			"name": "Dewlantern",
+			"seasons": [
+				"spring",
+				"summer"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"lantern_dew"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"honeyspindle": {
+			"name": "Honeyspindle",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"honeyspindle_nectar",
+				"honeyspindle_pods"
+			],
+			"biomes": [
+				"heath",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"marrowroot": {
+			"name": "Marrowroot",
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"marrowroots"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"savanna",
+				"temperate_grassland"
+			]
+		},
+		"riverbraid": {
+			"name": "Riverbraid",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"riverbraid_stems"
+			],
+			"biomes": [
+				"boreal_forest",
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		},
+		"brinebell": {
+			"name": "Brinebell",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"brinebells"
+			],
+			"biomes": [
+				"beach",
+				"mangrove",
+				"marsh"
+			]
+		},
+		"sleetberry": {
+			"name": "Sleetberry",
+			"seasons": [
+				"winter"
+			],
+			"months": [
+				"December",
+				"January",
+				"February"
+			],
+			"parts": [
+				"sleetberries"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"tundra"
+			]
+		},
+		"quenchbell": {
+			"name": "Quenchbell",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"quenchbell_heads"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"heath"
+			]
+		},
+		"whisperfern": {
+			"name": "Whisperfern",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"whisperfern_fronds"
+			],
+			"biomes": [
+				"boreal_forest",
+				"mixed_forest",
+				"temperate_forest"
+			]
+		},
+		"duskmallow": {
+			"name": "Duskmallow",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"duskmallow_flowers",
+				"duskmallow_roots"
+			],
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			]
+		},
+		"tanglewort": {
+			"name": "Tanglewort",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"tanglewort_vines"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			]
+		},
+		"stormreed": {
+			"name": "Stormreed",
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"parts": [
+				"stormreed_stalks"
+			],
+			"biomes": [
+				"marsh"
+			]
+		},
+		"truthsage": {
+			"name": "Truthsage",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"truthsage_leaves"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath"
+			]
+		},
+		"echo_moss": {
+			"name": "Echo moss",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"echo_moss"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"bare_rock",
+				"boreal_forest"
+			]
+		},
+		"nightcrown": {
+			"name": "Nightcrown",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"nightcrown_blooms"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			]
+		},
+		"pilgrims_cup": {
+			"name": "Pilgrim's cup",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"pilgrims_cup_water",
+				"pilgrims_cup_pitchers"
+			],
+			"biomes": [
+				"mangrove",
+				"marsh",
+				"tropical_forest"
+			]
+		},
+		"sunsilver_vine": {
+			"name": "Sunsilver vine",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"sunsilver_leaves"
+			],
+			"biomes": [
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			]
+		},
+		"frostglass_orchid": {
+			"name": "Frostglass orchid",
+			"seasons": [
+				"winter"
+			],
+			"months": [
+				"December",
+				"January",
+				"February"
+			],
+			"parts": [
+				"frostglass_petals"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"tundra"
+			]
+		},
+		"sevenyear_lily": {
+			"name": "Sevenyear lily",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"sevenyear_bulbs",
+				"sevenyear_blossoms"
+			],
+			"biomes": [
+				"heath",
+				"marsh",
+				"temperate_grassland"
+			]
+		},
+		"stillwater_lotus": {
+			"name": "Stillwater lotus",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"stillwater_seeds",
+				"stillwater_petals"
+			],
+			"biomes": [
+				"marsh",
+				"mixed_forest",
+				"temperate_forest",
+				"tropical_forest"
+			]
+		},
+		"gloaming_star": {
+			"name": "Gloaming star",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"gloaming_star"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"heath",
+				"temperate_grassland"
+			]
+		},
+		"tidecrown": {
+			"name": "Tidecrown",
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			],
+			"parts": [
+				"tidecrown_pearls"
+			],
+			"biomes": [
+				"beach",
+				"mangrove"
+			]
+		},
+		"thatch_grass": {
+			"name": "Thatching grass",
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"parts": [
+				"thatch"
+			],
+			"biomes": [
+				"alpine_meadow",
+				"boreal_forest",
+				"heath",
+				"marsh",
+				"mixed_forest",
+				"savanna",
+				"temperate_forest",
+				"temperate_grassland"
+			]
+		}
+	},
+	"crops": {
+		"wheat": {
+			"name": "Wheat",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 30,
+			"note": "ripe about 30 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"barley": {
+			"name": "Barley",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 20,
+			"note": "ripe about 20 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"oats": {
+			"name": "Oats",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 12,
+			"note": "ripe about 12 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"rye": {
+			"name": "Rye",
+			"sow_seasons": [
+				"autumn"
+			],
+			"sow_months": [
+				"September",
+				"October",
+				"November"
+			],
+			"grow_hours": 28,
+			"note": "ripe about 28 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"carrot": {
+			"name": "Carrot",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 10,
+			"note": "ripe about 10 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"potato": {
+			"name": "Potato",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 24,
+			"note": "ripe about 24 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"turnip": {
+			"name": "Turnip",
+			"sow_seasons": [
+				"spring",
+				"autumn"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May",
+				"September",
+				"October",
+				"November"
+			],
+			"grow_hours": 5,
+			"note": "ripe about 5 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"cabbage": {
+			"name": "Cabbage",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 14,
+			"note": "ripe about 14 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"onion": {
+			"name": "Onion",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 16,
+			"note": "ripe about 16 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"peas": {
+			"name": "Peas",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 6,
+			"note": "ripe about 6 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"beet": {
+			"name": "Beet",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 8,
+			"note": "ripe about 8 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"flax": {
+			"name": "Flax",
+			"sow_seasons": [
+				"spring"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May"
+			],
+			"grow_hours": 22,
+			"note": "ripe about 22 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"radish": {
+			"name": "Radish",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"grow_hours": 4,
+			"note": "ripe about 4 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		},
+		"lettuce": {
+			"name": "Lettuce",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"sow_months": [
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			],
+			"grow_hours": 5,
+			"note": "ripe about 5 real hours after sowing; frost kills seedlings and winter pauses growth (turnip excepted)"
+		}
+	},
+	"fish": {
+		"trout": {
+			"waters": [
+				"brook",
+				"river"
+			],
+			"seasons": [
+				"all"
+			],
+			"months": "all year"
+		},
+		"salmon": {
+			"waters": [
+				"river"
+			],
+			"seasons": [
+				"autumn"
+			],
+			"months": [
+				"September",
+				"October",
+				"November"
+			]
+		},
+		"eel": {
+			"waters": [
+				"river"
+			],
+			"seasons": [
+				"summer",
+				"autumn"
+			],
+			"months": [
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November"
+			]
+		},
+		"perch": {
+			"waters": [
+				"lake",
+				"pond"
+			],
+			"seasons": [
+				"all"
+			],
+			"months": "all year"
+		},
+		"pike": {
+			"waters": [
+				"lake"
+			],
+			"seasons": [
+				"all"
+			],
+			"months": "all year"
+		},
+		"carp": {
+			"waters": [
+				"lake",
+				"pond"
+			],
+			"seasons": [
+				"all"
+			],
+			"months": "all year"
+		},
+		"herring": {
+			"waters": [
+				"sea_shallow"
+			],
+			"seasons": [
+				"spring",
+				"autumn",
+				"winter"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"September",
+				"October",
+				"November",
+				"December",
+				"January",
+				"February"
+			]
+		},
+		"mackerel": {
+			"waters": [
+				"sea_shallow"
+			],
+			"seasons": [
+				"summer"
+			],
+			"months": [
+				"June",
+				"July",
+				"August"
+			]
+		},
+		"smelt": {
+			"waters": [
+				"sea_shallow"
+			],
+			"seasons": [
+				"spring",
+				"winter"
+			],
+			"months": [
+				"March",
+				"April",
+				"May",
+				"December",
+				"January",
+				"February"
+			]
+		},
+		"cod": {
+			"waters": [
+				"sea_shallow"
+			],
+			"seasons": [
+				"all"
+			],
+			"months": "all year"
+		}
+	},
+	"game": {
+		"rabbit": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"grouse": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"fox": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"boar": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"deer": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"wolf": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"moose": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"duck": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"hare": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"beaver": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"otter": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"badger": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"porcupine": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"lynx": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"bear": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "no migration or hibernation in the data yet; bears and hedgehogs should be absent in winter (ANIMAL_SPEC.md)"
+		},
+		"mountain_goat": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"wild_sheep": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"reindeer": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"pheasant": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"goose": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"eagle": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"gull": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"seal": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"seabird": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"horse": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"red_squirrel": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"pine_marten": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"hedgehog": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "no migration or hibernation in the data yet; bears and hedgehogs should be absent in winter (ANIMAL_SPEC.md)"
+		},
+		"raven": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"owl": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"woodpecker": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"songbirds": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"frog": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"grass_snake": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		},
+		"adder": {
+			"seasons": [
+				"all"
+			],
+			"months": "all year",
+			"note": "year round"
+		}
+	},
+	"season_hints": {
+		"spring": [
+			"Spring: nettle greens, wild garlic and morels are up. Sow wheat and barley now.",
+			"Spring: trout bite best at dawn and dusk.",
+			"Spring: berries are not ripe yet; hunt and fish while you wait."
+		],
+		"summer": [
+			"Summer: berries ripen. Eat your fill and dry the rest for winter.",
+			"Summer: sow oats and vegetables; fast crops ripen within a day or two.",
+			"Summer: wear light; linen and grass keep you cool."
+		],
+		"autumn": [
+			"Autumn: nuts, sloes and cranberries. Salmon run in the rivers.",
+			"Autumn: smoke fish and dry berries now; winter is long.",
+			"Autumn: sew hide and wool clothes before the first frost."
+		],
+		"winter": [
+			"Winter: little grows. Live on your stored food: smoked fish, dried berries, trail bread.",
+			"Winter: a fur cloak and a fire keep you alive; stay near your shelter.",
+			"Winter: only turnips grow; juniper berries and rosemary still grow wild."
+		]
+	}
+}

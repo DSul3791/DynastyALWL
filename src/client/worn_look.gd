@@ -7,7 +7,7 @@ extends RefCounted
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
-const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves"]
+const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded"]
 const HUMANOID_NAMES := {
 	"hips": "Hips", "chest": "Chest", "head": "Head",
 	"hand_r": "RightHand", "hand_l": "LeftHand", "forearm_r": "RightLowerArm", "forearm_l": "LeftLowerArm", "arm_r": "RightUpperArm", "arm_l": "LeftUpperArm",
@@ -203,6 +203,56 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 
 			out.append(_p("chest", "cyl", Vector3(0.0, 0.25, 0.0), Vector3(0.17 + o * 2.0, 0.05, 0.17 + o * 2.0), Vector3.ZERO, true, 0.25))
 			out.append(_p("chest", "box", Vector3(0.0, 0.2, -0.135 - o), Vector3(0.025, 0.1, 0.012), Vector3.ZERO, true, 0.4))
+		"helm":
+			# A helmet (refs: Bronze Age and Viking spectacle-free round helms, medieval kettle caps): a skull dome, a rolled rim round the brow, a nasal bar down the face and a small crest ridge.
+			out.append(_p("head", "sph", Vector3(0.0, 0.13, 0.04), Vector3(0.29 + o * 2.0, 0.27 + o * 2.0, 0.3 + o * 2.0)))
+			out.append(_p("head", "cyl", Vector3(0.0, 0.05, 0.035), Vector3(0.31 + o * 2.0, 0.035, 0.32 + o * 2.0), Vector3.ZERO, true, 0.25))
+			out.append(_p("head", "box", Vector3(0.0, 0.07, -0.125 - o), Vector3(0.025, 0.1, 0.012), Vector3.ZERO, true, 0.2))
+			out.append(_p("head", "box", Vector3(0.0, 0.26, 0.04), Vector3(0.02, 0.04, 0.26), Vector3.ZERO, true, 0.2))
+		"jerkin":
+			# A sleeveless leather jerkin (refs: boiled-leather jerkins): a torso tube with a lower skirt flare, shoulder straps, a laced front seam and a belt.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.39 + o * 2.0, 0.5, 0.28 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.06, 0.0), Vector3(0.44 + o * 2.0, 0.26, 0.32 + o * 2.0), Vector3.ZERO, false, 0.06))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.04, 0.0), Vector3(0.41 + o * 2.0, 0.04, 0.29 + o * 2.0), Vector3.ZERO, true, 0.4))
+			out.append(_p("chest", "box", Vector3(0.0, 0.0, -0.145 - o), Vector3(0.025, 0.42, 0.012), Vector3.ZERO, true, 0.4))
+
+			for side in [-1.0, 1.0]:
+				out.append(_p("chest", "box", Vector3(0.13 * side, 0.26, 0.0), Vector3(0.07, 0.05, 0.3 + o * 2.0), Vector3.ZERO, true, 0.15))
+		"mailshirt":
+			# A mail shirt (refs: Norman and Viking byrnies): a torso tube and short sleeves to the elbow, a skirt to mid-thigh, and rows of ring bands that catch the light.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.4 + o * 2.0, 0.5, 0.29 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.1, 0.0), Vector3(0.45 + o * 2.0, 0.34, 0.33 + o * 2.0), Vector3.ZERO, false, 0.05))
+
+			for k in range(5):
+				out.append(_p("chest", "cyl", Vector3(0.0, 0.18 - 0.1 * float(k), 0.0), Vector3(0.405 + o * 2.0, 0.012, 0.295 + o * 2.0), Vector3.ZERO, true, 0.3))
+
+			for side in ["r", "l"]:
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.1, 0.0), Vector3(0.13 + o * 2.0, 0.22, 0.13 + o * 2.0)))
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.2, 0.0), Vector3(0.135 + o * 2.0, 0.015, 0.135 + o * 2.0), Vector3.ZERO, true, 0.3))
+
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.27, 0.0), Vector3(0.455 + o * 2.0, 0.02, 0.335 + o * 2.0), Vector3.ZERO, true, 0.3))
+		"cuirass":
+			# A plate cuirass (refs: 15th century breastplates): a rounded breast and back plate with a ridge down the middle, shoulder plates, an overlapping waist band and short tassets over the hips.
+			out.append(_p("chest", "sph", Vector3(0.0, 0.03, -0.01), Vector3(0.4 + o * 2.0, 0.46, 0.3 + o * 2.0)))
+			out.append(_p("chest", "box", Vector3(0.0, 0.03, -0.155 - o), Vector3(0.03, 0.4, 0.02), Vector3.ZERO, true, 0.2))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.4 + o * 2.0, 0.09, 0.285 + o * 2.0), Vector3.ZERO, true, 0.15))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.08, 0.0), Vector3(0.43 + o * 2.0, 0.1, 0.31 + o * 2.0), Vector3.ZERO, false, 0.05))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.17, 0.0), Vector3(0.45 + o * 2.0, 0.09, 0.325 + o * 2.0), Vector3.ZERO, true, 0.1))
+
+			for side in [-1.0, 1.0]:
+				out.append(_p("chest", "sphl", Vector3(0.22 * side, 0.22, 0.0), Vector3(0.16, 0.1, 0.2 + o * 2.0), Vector3(0.0, 0.0, 0.3 * side), false, 0.03))
+		"padded":
+			# A quilted gambeson (refs: arming doublets): a thick sleeved torso with vertical quilting lines, a high collar, and long sleeves to the wrist.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.41 + o * 2.0, 0.5, 0.3 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.08, 0.0), Vector3(0.45 + o * 2.0, 0.3, 0.33 + o * 2.0), Vector3.ZERO, false, 0.03))
+			out.append(_p("chest", "cyl", Vector3(0.0, 0.26, 0.0), Vector3(0.2 + o * 2.0, 0.08, 0.2 + o * 2.0), Vector3.ZERO, true, 0.12))
+
+			for k in range(5):
+				out.append(_p("chest", "box", Vector3(-0.16 + 0.08 * float(k), -0.02, -0.15 - o), Vector3(0.01, 0.44, 0.012), Vector3.ZERO, true, 0.2))
+
+			for side in ["r", "l"]:
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.14 + o * 2.0, 0.32, 0.14 + o * 2.0)))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.115 + o * 2.0, 0.25, 0.115 + o * 2.0), Vector3.ZERO, false, 0.03))
 		"trousers":
 			# Sewn hide trousers: a waistband with a cord, a seat and two full legs, a darker seam down the outside of each leg and a turned cuff at each ankle.
 			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.38 + o * 2.0, 0.07, 0.27 + o * 2.0), Vector3.ZERO, false, 0.3))
