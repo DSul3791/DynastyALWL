@@ -10,7 +10,15 @@ The measurements below come from bakes into untracked scratch worlds (`scratch_w
 
 ## Lake numbers (tile 3,4, baked locally, share of all cells of the tile; the QA target is 0.2 percent of all cells over the nine tiles)
 
-LAKE_TABLE
+| Tile 3,4 | lake cells | lake share of the tile | river share | bake time |
+|---|---|---|---|---|
+| the 25 Oct tile on disk (0.1 m steps) | 14,092 | 0.382 % | 0.497 % | |
+| re-bake, current rules (0.125 m steps) | 14,072 | 0.381 % | 0.513 % | 261 s |
+| re-bake, A: `lake_min_depth_m` 0.25 and `lake_min_catchment_km2` 0.01 (was 0.5 and 0.05) | 15,389 | 0.417 % | 0.514 % | 751 s (PC busier) |
+
+Maps: `art/water/lake_map_25oct_tile.png`, `lake_map_base.png`, `lake_map_lakes.png` (yellow lakes, cyan rivers, blue ocean, land green to white by height; 480 x 480, one pixel per 4 cells).
+
+Reading it: (1) a re-bake with today's rules gives the same lakes as the 25 Oct tile (14,072 against 14,092 cells), so a re-bake alone changes no lake numbers. (2) Lowering the two limits adds only 9 percent more lake cells (0.381 to 0.417 percent): not a fix. (3) Tile 3,4 already holds 0.38 percent; the nine-tile 0.10 percent that world_alive reports is low because most cells of the other tiles are ocean (3,3 0.12 percent, 4,4 0.08 percent, 4,5 0.23 percent). So the number that matters is lakes per square kilometre of LAND, not per cell, and the QA target should say which. (4) The crater lake is not in the nine tiles' sketch (the volcano island lies elsewhere in `world_sketch.json`); it needs its own tile bake and is not measured here. Recommended for Dave: do not re-bake for lakes; either change the QA target to share of land (tile 3,4 would be 0.8 percent of its land) or add lakes by a small authored list (hollow fills through `hollow_springs` in the settler, which wets cells in the `.water` files without a re-bake; cheap, reversible).
 
 ## What a re-bake changes (the cost for the player)
 
@@ -21,7 +29,7 @@ LAKE_TABLE
 ## Commands (in this order, each from the repo root)
 
 ```bash
-# 1. bake (about BAKE_MIN min per tile unloaded; 9 tiles; --threads 2 halves it on 16 GB: each thread holds a tile)
+# 1. bake (about 4.5 min per tile on a quiet PC, measured 261 s for tile 3,4; 9 tiles; --threads 2 halves it on 16 GB: each thread holds a tile)
 godot --headless --path . --script res://src/worldgen/tools/bake_tiles.gd -- --tiles="2,3;2,4;2,5;3,3;3,4;3,5;4,3;4,4;4,5" --threads=2
 # 2. settle the water per tile (stop rule in data/water_settle.json: 7200 to 21600 ticks), then the film
 for t in 2,3 2,4 2,5 3,3 3,4 3,5 4,3 4,4 4,5; do godot --headless --path . --script res://src/worldgen/tools/settle_water.gd -- --tile=$t; done

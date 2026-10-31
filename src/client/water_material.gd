@@ -19,7 +19,7 @@ uniform float storm = 0.0;           // 0 calm, 1 big storm: darker, dirtier, mu
 uniform vec3 storm_color : source_color = vec3(0.13, 0.12, 0.09);
 uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
 uniform float clarity_m = 1.1;       // water this thick hides about two thirds of what is behind it (clear brook water: the bed shows)
-uniform float edge_alpha = 0.12;     // the thinnest water
+uniform float edge_alpha = 0.34;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
 uniform vec3 sky_top : source_color = vec3(0.33, 0.47, 0.68);         // the sky shader's colours (sky_clouds.gd)
 uniform vec3 sky_horizon : source_color = vec3(0.63, 0.68, 0.75);
@@ -190,7 +190,7 @@ void fragment() {
 	vec2 swell = running && rough > 0.001 ? mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend) : vec2(0.0);
 	float drift = mod(TIME, 2000.0);
 	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
-	vec2 bump = (run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
+	vec2 bump = (run * (0.12 + 0.5 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
 	// Ripples fade with distance (far away they only sparkle in single pixels).
 	float distance_m = length(VERTEX);
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
