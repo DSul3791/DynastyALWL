@@ -46,14 +46,39 @@ probe2: oven | blueprint oven | PLACED | missing items: []
 probe2: thatch_floor | kit thatch_floor_kit | PLACED
 probe2: thatch_roof | kit thatch_roof_kit | PLACED
 probe2: thatch_doorway | kit thatch_doorway_kit | PLACED
+probe2: stairs_wood | kit stairs_wood_kit | PLACED
+probe2: log_wall | kit log_wall_kit | PLACED
+probe2: log_floor | kit log_floor_kit | PLACED
+probe2: log_roof | kit log_roof_kit | PLACED
+probe2: stone_wall | kit stone_wall_kit | PLACED
+probe2: stone_floor | kit stone_floor_kit | PLACED
+probe2: stone_roof | kit stone_roof_kit | PLACED
+probe2: brick_wall | kit brick_wall_kit | PLACED
+probe2: brick_floor | kit brick_floor_kit | PLACED
+probe2: brick_roof | kit brick_roof_kit | PLACED
 probe2: rock_pile | kit rock_pile | PLACED
+probe2: log_seat | kit log_seat_kit | PLACED
+probe2: stool | kit stool_kit | PLACED
+probe2: bench | kit bench_kit | PLACED
+probe2: chair | kit chair_kit | PLACED
+probe2: table | kit table_kit | PLACED
+probe2: hide_rug | kit hide_rug_kit | PLACED
+probe2: wool_rug | kit wool_rug_kit | PLACED
+probe2: straw_bed | kit straw_bed_kit | PLACED
+probe2: feather_bed | kit feather_bed_kit | PLACED
+probe2: canopy_bed | kit canopy_bed_kit | PLACED
+probe2: wall_torch | kit wall_torch_kit | PLACED
+probe2: chandelier | kit chandelier_kit | PLACED
+probe2: fireplace | kit fireplace_kit | PLACED
+probe2: flower_pot | kit flower_pot_kit | PLACED
+probe2: antler_mount | kit antler_mount_kit | PLACED
 probe2: bench workbench gives workbench levels [1]
 probe2: bench log_workbench gives workbench levels [1, 2]
 probe2: bench stone_forge gives workbench levels [1, 2, 3]
 probe2: bench blacksmithy gives workbench levels [1, 2, 3, 4]
 probe2: workbench + tool rack gives workbench levels [1, 2]
 probe2: stone forge from the hammer beside workbench + tool rack: PLACED
-WARNING: 61 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+WARNING: 86 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: ObjectDB::cleanup (core\object\object.cpp:2536)
 ERROR: 6 resources still in use at exit (run with --verbose for details).
    at: ResourceCache::clear (core\io\resource.cpp:822)
