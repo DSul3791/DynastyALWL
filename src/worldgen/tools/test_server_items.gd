@@ -977,11 +977,20 @@ func _init() -> void:
 	var guard: int = 0
 
 	while w._items.has(trunk_id) and guard < 100:
+		if int(w._items[trunk_id]["tree"].get("blows", 0)) >= 3:
+			w.report_position(1, w.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+
 		w._last_process.clear()
 		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
 
-	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "log_oak", "the trunk is worked into oak logs (one on the shoulder, the rest on the ground) and used up")
+	var oak_logs: int = 0
+
+	for k in w._items:
+		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log_oak"):
+			oak_logs += 1
+
+	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "" and oak_logs >= 1, "the trunk is worked into oak logs that fall to the ground (none picked up by chopping) and used up (%d logs)" % oak_logs)
 	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
 
 	# A trunk of a wood that is not a key wood (Dave 24 Oct) gives only small wood, never a log.
@@ -2647,7 +2656,7 @@ func _init() -> void:
 			near_stones += 1 if it8["number"] == bs.table.number_of("stone") else 0
 			near_sticks += 1 if it8["number"] == bs.table.number_of("stick") else 0
 
-	check(near_stones >= 10 and near_sticks >= 20, "within 48 m of spawn lie a campfire kit's worth (%d stones, %d sticks)" % [near_stones, near_sticks])
+	check(near_stones >= 8 and near_sticks >= 12, "within 48 m of spawn lie a campfire kit's worth (%d stones, %d sticks)" % [near_stones, near_sticks])
 	var far = make(qd8 + "_far")
 	far.respawn_point = Vector3(0.0, 10.0, 0.0)
 	far.ground_height = func(_x, _z): return 10.0

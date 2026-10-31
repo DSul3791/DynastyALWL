@@ -112,6 +112,8 @@ var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
+var swing_serial: int = 0                  # +1 at every swing start: the third-person body restarts its chop clip on a change
+var _pause_t: float = 0.0
 var _swing_hit: bool = false
 var _cover_at: Callable                   # (point) -> true when under a tree's crown
 var _blueprint: Node3D
@@ -125,9 +127,13 @@ var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
-const SWING_S := 0.55
+const MotionExtra := preload("res://src/client/character/motion_extra.gd")
+const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
+const PICK_SWING_S := MotionExtra.PICK_LENGTH
+const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
 const HIT_STOP_S := 0.045
-const HIT_AT := 0.636                      # share of the swing where the tool reaches the target (the swing_fp clip's impact key, 0.35 s of 0.55); the thump and the server's hit are this same tick
+const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
+const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
 const REACH_M := 3.0
 
 
@@ -385,7 +391,30 @@ func _is_axe() -> bool:
 func _start_swing() -> void:
 	_swing_t = 0.0
 	_swing_hit = false
-	_arm_play("swing_fp", SWING_S)
+	_pause_t = 0.0
+	swing_serial += 1
+	_arm_play("swing_fp", _swing_length())
+
+
+# This tool's swing: the axe's wide chop, the pick axe's overhead arc (a hammer keeps its own short rhythm elsewhere).
+func _swing_length() -> float:
+	return PICK_SWING_S if _tool_class() == "pick" else SWING_S
+
+
+func _hit_share() -> float:
+	return PICK_HIT_AT if _tool_class() == "pick" else HIT_AT
+
+
+func _tool_class() -> String:
+	return str(_inv.table.entry(held_id()).get("tool_class", ""))
+
+
+# The clip the third-person body plays for the swing in progress ("" when none): `chop` for an axe, `pick_overhead` for a pick axe. Restart it when swing_serial changes.
+func work_clip() -> String:
+	if _swing_t < 0.0 or not holding:
+		return ""
+
+	return "pick_overhead" if _tool_class() == "pick" else "chop"
 
 
 
@@ -669,7 +698,7 @@ func _process_body(delta: float) -> void:
 	if _swing_t >= 0.0 and _stop_t <= 0.0:
 		_swing_t += delta
 
-		if not _swing_hit and _swing_t >= SWING_S * HIT_AT:
+		if not _swing_hit and _swing_t >= _swing_length() * _hit_share():
 			_swing_hit = true
 			_strike()
 			_stop_t = HIT_STOP_S
@@ -677,12 +706,16 @@ func _process_body(delta: float) -> void:
 			if _arms != null and _arms.visible:
 				_arms.animation_player.speed_scale = 0.0
 
-		if _swing_t >= SWING_S:
+		if _swing_t >= _swing_length():
 			_swing_t = -1.0
+			_pause_t = SWING_PAUSE_S
 
-			# Dave 2026-10-21: holding the button keeps chopping, one swing after another (no gap, no clicking).
-			if holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-				_start_swing()
+	if _swing_t < 0.0 and _pause_t > 0.0:
+		_pause_t -= delta
+
+		# Dave 2026-10-21: holding the button keeps chopping, one swing after another (a short pause between, 31 Oct 2026).
+		if _pause_t <= 0.0 and holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			_start_swing()
 
 	if _model != null and _is_torch():
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
@@ -699,7 +732,7 @@ func _process_body(delta: float) -> void:
 	elif _model != null and _is_knife():
 		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
 	elif _model != null and _is_axe():
-		var u: float = clampf(_swing_t / SWING_S, 0.0, 1.0) if _swing_t >= 0.0 else 0.0
+		var u: float = clampf(_swing_t / _swing_length(), 0.0, 1.0) if _swing_t >= 0.0 else 0.0
 		var arc: float = sin(u * PI)
 		_model.position = _model.position.lerp(REST + Vector3(-0.1 * arc, -0.15 * arc, -0.2 * arc), clampf(delta * 20.0, 0.0, 1.0))
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(70.0) * (1.0 - 2.0 * u) if _swing_t >= 0.0 else deg_to_rad(20.0), clampf(delta * 20.0, 0.0, 1.0))

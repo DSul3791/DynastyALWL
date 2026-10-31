@@ -197,6 +197,13 @@ void fragment() {
 	// Sea bed and shallows: wet, muddy.
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
 
+	// Beach (31 Oct 2026): within a few metres of sea level the ground is sand whatever the cover below it: pale above the waterline, darker and wet at it. Not on steep ground (cliffs and
+	// rock stay rock), and the edge of the beach wanders with noise so it is not a contour line.
+	float beach = (1.0 - smoothstep(0.9, 3.0 + 1.6 * vnoise(world_pos * 0.06), world_pos.y)) * smoothstep(-0.5, 0.1, world_pos.y) * (1.0 - smoothstep(0.35, 0.6, slope));
+	vec3 sand = mix(vec3(0.58, 0.50, 0.35), vec3(0.68, 0.60, 0.44), vnoise(world_pos * 0.9));
+	sand = mix(sand, vec3(0.36, 0.31, 0.23), 1.0 - smoothstep(0.0, 0.8, world_pos.y));
+	color = mix(color, sand, beach);
+
 	// Waterfall base (owner, 2026-10-20): the spray keeps the rock and ground around a fall wet:
 	// darker, glossy, with moss and ferny green on the walls and down the banks.
 	float damp = 0.0;

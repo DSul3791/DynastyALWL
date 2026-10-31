@@ -9,8 +9,8 @@ const RATIO := 24.0              # game hours per real hour: a game day is one r
 const DAYS_PER_YEAR := 365
 const SEASON_NAMES := ["spring", "summer", "autumn", "winter"]
 const SECONDS_PER_DAY := 86400.0
-# A new world starts on day 30 of spring at 08:00.
-const START_SECONDS := (30.0 * 24.0 + 8.0) * 3600.0
+# A new world starts on day 100 (early summer) at 08:00 (moderator, 31 Oct 2026: from day 30 of spring nothing with berries or nuts was in season for about 62 real hours).
+const START_SECONDS := (100.0 * 24.0 + 8.0) * 3600.0
 
 var seconds: float = START_SECONDS    # game seconds since the world began
 

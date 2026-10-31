@@ -45,7 +45,7 @@
 		{
 			"why": "Sonny: baked tiles, water and plan inputs",
 			"paths": ["worlds/base_world/tiles/**", "worlds/base_world/water/**", "worlds/base_world/plan/*.json", "data/water_settle.json", "addons/**"],
-			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_gen_core"],
+			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_tile_height_format", "test_gen_core"],
 			"pin": true
 		}
 	],

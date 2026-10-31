@@ -2,7 +2,7 @@
 	"table": "flora",
 	"format_version": 1,
 	"note": "IDs are append-only. Never renumber or reuse an ID; retire an entry with \"retired\": true and take the next ID from next_id for new entries. Placement (plan step 15) reads per_hectare (plants per hectare by biome name, before the density setting in tile_rules.json runtime_flora), moisture (0 to 255 map value), max_slope_deg, altitude_m (ground height above sea level) and water (water classes it may stand in; empty = dry land only). crown_m is the spacing radius of trees and shrubs, trunk_m the collision radius (0 = walk through). yields are names for the harvesting tables to come. season: when the main yield can be gathered (spring, summer, autumn, winter or all). rarity: common, uncommon, rare (a label for players; how often a plant appears comes from per_hectare). uses: what the yields are good for (food, seasoning, sauce, jam, tea, brewing, medicine, ointment, potion, poison, dye, fibre, timber and so on). properties: effects for the crafting tables to come (wound_healing, fever, sleep, toxic, ...). fantasy: true marks invented species (the owner chose real plus fantasy plants, 2026-10-16); they are rarer than real plants and carry magical properties (glow, arcane, revival, ghost_warding, water_breathing and so on). rarity can also be very_rare or legendary. Optional: time_of_day (dawn, dusk or night: when it can be found or gathered), discovery (true: rare enough that finding one is worth recording and protecting), bloom_years (flowers only every N game years). Placement does not read these yet. model (trees): a model of its own in src/flora/tree_builder.gd (for example balsam_fir); without it the shape picks the model. autumn_colors: the autumn leaf colors this species picks from (birch: golden yellow); without it a hardwood takes one from the shared autumn palette in flora_view.gd. A conifer with autumn_colors (wardpine) turns color like a hardwood. young_below_m (trees with a young and a mature model, beech): trees shorter than this use the young variants. leaf (trees): a leaf texture of its own (oak: lobed leaves, leaf_oak.png); without it the shape picks one. glow (trees): an emissive bark or leaf glow color; glow_energy and glow_height set the warm light near the player (everember, witness tree). leaf_glow: the leaves glow at night (witness tree). grove: grows only in groves (everember; see flora_placer.gd). place_first: a landmark tree that claims its ground before the common woods (witness tree; grove species always do). canopy (trees): \"dense\" (default; little light below) or \"light\" (birch, alder, pines, fruit trees); young trees grow under a light canopy only. shade_tolerant: young ones grow fully under a light canopy (firs, beech). stand: dense stands of this species inside circles on a world grid (every_m, chance, radius_m, spacing_m apart, fill share, height scale), on top of the per-hectare trees (owner, 2026-10-18: birch in groups of hundreds about 10 ft apart; alder and young firs in thickets at least 6 ft apart). thicket_chance and thicket_fill in a stand: that share of the circles are thickets filled that full (hazel, owner 2026-10-19: mostly groups of 3 to 12 clumps, sometimes thickets of 20 to 50). young_share and young_height_m: that share of the trees are young, with heights from that range. young_color and young_m (trees): a tree at or below young_m[0] meters takes young_color, darkening to color by young_m[1]. patch (herbs, berry bushes): plants grow in patches close together (Dave 2026-10-23): every_m and chance pick patch cells like a stand, count [min, max] plants per patch, radius_m the patch radius and spacing_m the gap between plants at scale 1, scale [min, max] one size multiplier per patch (1 = the model as drawn, 3 = three times as big, the same for every plant of the patch; radius and spacing grow with it). near_m: the full model only this close (metres), then the far model. look_alikes: names of species this one might be mistaken for on sight (real-world or visual resemblance); the inspection check draws a wrong guess from this list. familiarity (0 to 100, on every inspectable table): the base chance in percent that a character already recognizes the thing the first time they see it; it feeds the inspection memory check. High for everyday things and for famous or legendary ones, low for obscure ones.",
-	"next_id": 128,
+	"next_id": 133,
 	"entries": [
 		{
 			"id": 0,
@@ -45,11 +45,7 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"acorns",
-				"bark"
-			],
+			"yields": ["acorns", "bark"],
 			"season": [
 				"all"
 			],
@@ -110,10 +106,7 @@
 				1000
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"beechnuts"
-			],
+			"yields": ["beechnuts"],
 			"season": [
 				"all"
 			],
@@ -172,11 +165,7 @@
 				1300
 			],
 			"water": [],
-			"yields": [
-				"wood",
-				"birch_bark",
-				"sap"
-			],
+			"yields": ["birch_bark", "sap"],
 			"season": [
 				"all"
 			],
@@ -232,11 +221,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin",
-				"pine_tar"
-			],
+			"yields": ["resin", "pine_tar"],
 			"season": [
 				"all"
 			],
@@ -288,10 +273,7 @@
 				1800
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin"
-			],
+			"yields": ["resin"],
 			"season": [
 				"all"
 			],
@@ -338,9 +320,10 @@
 			],
 			"per_hectare": {
 				"marsh": 30,
-				"temperate_forest": 5,
-				"mixed_forest": 5
+				"temperate_forest": 14,
+				"mixed_forest": 14
 			},
+			"shore": {"within_m": 30, "biomes": ["temperate_forest", "mixed_forest"]},
 			"moisture": [
 				170,
 				255
@@ -353,10 +336,7 @@
 			"water": [
 				"marsh"
 			],
-			"yields": [
-				"wood",
-				"charcoal_wood"
-			],
+			"yields": ["charcoal_wood"],
 			"season": [
 				"all"
 			],
@@ -406,8 +386,9 @@
 			],
 			"per_hectare": {
 				"marsh": 15,
-				"temperate_grassland": 1
+				"temperate_grassland": 12
 			},
+			"shore": {"within_m": 25, "biomes": ["temperate_grassland"]},
 			"moisture": [
 				190,
 				255
@@ -420,11 +401,7 @@
 			"water": [
 				"marsh"
 			],
-			"yields": [
-				"wood",
-				"withies",
-				"willow_bark"
-			],
+			"yields": ["withies", "willow_bark"],
 			"season": [
 				"all"
 			],
@@ -527,10 +504,7 @@
 				1200
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"resin"
-			],
+			"yields": ["resin"],
 			"season": [
 				"all"
 			],
@@ -579,10 +553,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"hardwood",
-				"gum"
-			],
+			"yields": ["gum"],
 			"season": [
 				"all"
 			],
@@ -634,10 +605,7 @@
 				"estuary",
 				"ocean"
 			],
-			"yields": [
-				"wood",
-				"tannin_bark"
-			],
+			"yields": ["tannin_bark"],
 			"season": [
 				"all"
 			],
@@ -695,10 +663,7 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"poles",
-				"hazelnuts"
-			],
+			"yields": ["hazelnuts"],
 			"season": [
 				"autumn"
 			],
@@ -723,7 +688,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "bramble",
-			"patch": {"every_m": 70, "chance": 0.4, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
+			"patch": {"every_m": 70, "chance": 0.6, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -801,7 +766,10 @@
 				"heath": 25,
 				"alpine_meadow": 12,
 				"dry_scrub": 6,
-				"boreal_forest": 6
+				"boreal_forest": 6,
+				"temperate_grassland": 8,
+				"mixed_forest": 6,
+				"temperate_forest": 4
 			},
 			"moisture": [
 				30,
@@ -813,10 +781,7 @@
 				2000
 			],
 			"water": [],
-			"yields": [
-				"juniper_berries",
-				"wood"
-			],
+			"yields": ["juniper_berries"],
 			"season": [
 				"autumn",
 				"winter"
@@ -1177,8 +1142,13 @@
 			],
 			"per_hectare": {
 				"marsh": 800,
-				"mangrove": 20
+				"mangrove": 20,
+				"temperate_grassland": 200,
+				"temperate_forest": 160,
+				"mixed_forest": 160,
+				"boreal_forest": 100
 			},
+			"shore": {"within_m": 14, "biomes": ["temperate_forest", "mixed_forest", "temperate_grassland", "boreal_forest"]},
 			"moisture": [
 				150,
 				255
@@ -1250,7 +1220,6 @@
 			],
 			"water": [],
 			"yields": [
-				"fibre",
 				"linseed"
 			],
 			"season": [
@@ -1278,9 +1247,10 @@
 			"kind": "plant",
 			"shape": "grass",
 			"model": "grass_tuft",
+			"patch": {"every_m": 24, "chance": 0.75, "count": [14, 20], "radius_m": [1.6, 3.0], "scale": [1, 1.25], "spacing_m": 0.7, "by_biome": true},
 			"height_m": [
-				0.5,
-				1.0
+				1.3,
+				1.8
 			],
 			"crown_m": 0.4,
 			"trunk_m": 0.0,
@@ -1290,11 +1260,18 @@
 				0.3
 			],
 			"per_hectare": {
-				"temperate_grassland": 300,
-				"savanna": 300,
-				"alpine_meadow": 100,
-				"heath": 40,
-				"beach": 10
+				"temperate_grassland": 100,
+				"savanna": 100,
+				"alpine_meadow": 80,
+				"heath": 70,
+				"beach": 40,
+				"marsh": 40,
+				"temperate_forest": 40,
+				"mixed_forest": 35,
+				"boreal_forest": 15,
+				"tundra": 15,
+				"dry_scrub": 30,
+				"tropical_forest": 10
 			},
 			"moisture": [
 				20,
@@ -1308,8 +1285,7 @@
 			"water": [],
 			"yields": [
 				"thatch",
-				"straw",
-				"fibre"
+				"straw"
 			],
 			"season": [
 				"spring",
@@ -1340,7 +1316,7 @@
 			"kind": "plant",
 			"shape": "shrub",
 			"model": "herb_nettle",
-			"patch": {"every_m": 45, "chance": 0.55, "count": [10, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.7},
+			"patch": {"every_m": 45, "chance": 0.7, "count": [10, 20], "radius_m": 3.0, "scale": [1, 1.5], "spacing_m": 0.7},
 			"height_m": [
 				0.9,
 				1.5
@@ -1368,7 +1344,6 @@
 			],
 			"water": [],
 			"yields": [
-				"fibre",
 				"greens"
 			],
 			"season": [
@@ -1515,8 +1490,8 @@
 				0.3
 			],
 			"per_hectare": {
-				"temperate_forest": 12,
-				"mixed_forest": 15,
+				"temperate_forest": 24,
+				"mixed_forest": 30,
 				"boreal_forest": 12
 			},
 			"moisture": [
@@ -1572,7 +1547,8 @@
 			"per_hectare": {
 				"heath": 60,
 				"boreal_forest": 70,
-				"mixed_forest": 25
+				"mixed_forest": 40,
+				"temperate_forest": 35
 			},
 			"moisture": [
 				100,
@@ -1861,7 +1837,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "raspberry",
-			"patch": {"every_m": 60, "chance": 0.45, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
+			"patch": {"every_m": 60, "chance": 0.7, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -1993,10 +1969,11 @@
 				0.22
 			],
 			"per_hectare": {
-				"temperate_forest": 4,
-				"mixed_forest": 4,
-				"temperate_grassland": 2,
-				"marsh": 3
+				"temperate_forest": 12,
+				"mixed_forest": 12,
+				"temperate_grassland": 6,
+				"marsh": 5,
+				"boreal_forest": 4
 			},
 			"moisture": [
 				110,
@@ -2008,11 +1985,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"elderberries",
-				"elderflowers",
-				"wood"
-			],
+			"yields": ["elderberries", "elderflowers"],
 			"season": [
 				"spring",
 				"summer",
@@ -2082,10 +2055,7 @@
 				1500
 			],
 			"water": [],
-			"yields": [
-				"rowan_berries",
-				"wood"
-			],
+			"yields": ["rowan_berries"],
 			"season": [
 				"autumn"
 			],
@@ -2143,13 +2113,8 @@
 				900
 			],
 			"water": [],
-			"yields": [
-				"rose_petals"
-			],
-			"season": [
-				"spring",
-				"summer"
-			],
+			"yields": ["rose_petals", "rose_hips"],
+			"season": ["spring", "summer", "autumn"],
 			"rarity": "common",
 			"familiarity": 93,
 			"uses": [
@@ -2266,11 +2231,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"haws",
-				"hawthorn_blossom",
-				"hard_wood"
-			],
+			"yields": ["haws", "hawthorn_blossom"],
 			"season": [
 				"spring",
 				"autumn"
@@ -2314,7 +2275,7 @@
 				0.48
 			],
 			"per_hectare": {
-				"beach": 8,
+				"beach": 25,
 				"dry_scrub": 3
 			},
 			"moisture": [
@@ -2392,10 +2353,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"crab_apples",
-				"wood"
-			],
+			"yields": ["crab_apples"],
 			"season": [
 				"autumn"
 			],
@@ -2455,10 +2413,7 @@
 				600
 			],
 			"water": [],
-			"yields": [
-				"wild_pears",
-				"wood"
-			],
+			"yields": ["wild_pears"],
 			"season": [
 				"autumn"
 			],
@@ -2579,10 +2534,7 @@
 				800
 			],
 			"water": [],
-			"yields": [
-				"chestnuts",
-				"timber"
-			],
+			"yields": ["chestnuts"],
 			"season": [
 				"autumn"
 			],
@@ -2640,11 +2592,7 @@
 				600
 			],
 			"water": [],
-			"yields": [
-				"walnuts",
-				"walnut_husks",
-				"fine_wood"
-			],
+			"yields": ["walnuts", "walnut_husks"],
 			"season": [
 				"autumn"
 			],
@@ -2698,10 +2646,7 @@
 				700
 			],
 			"water": [],
-			"yields": [
-				"wild_garlic_leaves",
-				"wild_garlic_bulbs"
-			],
+			"yields": ["wild_garlic_leaves", "wild_garlic_bulbs"],
 			"season": [
 				"spring"
 			],
@@ -2807,9 +2752,10 @@
 			],
 			"per_hectare": {
 				"marsh": 40,
-				"temperate_grassland": 4,
-				"temperate_forest": 3
+				"temperate_grassland": 30,
+				"temperate_forest": 20
 			},
+			"shore": {"within_m": 10, "biomes": ["temperate_grassland", "temperate_forest"]},
 			"moisture": [
 				170,
 				255
@@ -2939,11 +2885,7 @@
 				1800
 			],
 			"water": [],
-			"yields": [
-				"dandelion_leaves",
-				"dandelion_roots",
-				"dandelion_flowers"
-			],
+			"yields": ["dandelion_flowers", "dandelion_leaves", "dandelion_roots"],
 			"season": [
 				"spring",
 				"summer",
@@ -3043,9 +2985,10 @@
 			],
 			"per_hectare": {
 				"marsh": 30,
-				"temperate_forest": 2,
-				"temperate_grassland": 2
+				"temperate_forest": 20,
+				"temperate_grassland": 20
 			},
+			"shore": {"within_m": 8, "biomes": ["temperate_forest", "temperate_grassland"]},
 			"moisture": [
 				170,
 				255
@@ -4375,9 +4318,9 @@
 				0.2
 			],
 			"per_hectare": {
-				"mixed_forest": 8,
+				"mixed_forest": 14,
 				"boreal_forest": 6,
-				"temperate_forest": 4
+				"temperate_forest": 8
 			},
 			"moisture": [
 				140,
@@ -4427,8 +4370,8 @@
 				0.22
 			],
 			"per_hectare": {
-				"temperate_forest": 5,
-				"mixed_forest": 6,
+				"temperate_forest": 10,
+				"mixed_forest": 12,
 				"boreal_forest": 4
 			},
 			"moisture": [
@@ -4908,9 +4851,11 @@
 				0.1
 			],
 			"per_hectare": {
-				"boreal_forest": 5,
+				"boreal_forest": 25,
 				"alpine_meadow": 3,
-				"heath": 2
+				"heath": 2,
+				"temperate_forest": 30,
+				"mixed_forest": 30
 			},
 			"moisture": [
 				120,
@@ -5616,7 +5561,7 @@
 				0.7
 			],
 			"per_hectare": {
-				"beach": 2,
+				"beach": 20,
 				"mangrove": 2
 			},
 			"moisture": [
@@ -5909,12 +5854,13 @@
 				0.4
 			],
 			"per_hectare": {
-				"temperate_grassland": 3,
-				"temperate_forest": 3,
-				"mixed_forest": 3,
-				"boreal_forest": 2,
+				"temperate_grassland": 60,
+				"temperate_forest": 60,
+				"mixed_forest": 60,
+				"boreal_forest": 40,
 				"marsh": 3
 			},
+			"shore": {"within_m": 14, "biomes": ["temperate_forest", "mixed_forest", "temperate_grassland", "boreal_forest"]},
 			"moisture": [
 				150,
 				255
@@ -5973,7 +5919,7 @@
 				0.85
 			],
 			"per_hectare": {
-				"beach": 6,
+				"beach": 30,
 				"marsh": 2,
 				"mangrove": 2
 			},
@@ -7331,11 +7277,7 @@
 				1700
 			],
 			"water": [],
-			"yields": [
-				"softwood",
-				"resin",
-				"bedding"
-			],
+			"yields": ["resin", "bedding"],
 			"season": [
 				"all"
 			],
@@ -7402,10 +7344,7 @@
 				1100
 			],
 			"water": [],
-			"yields": [
-				"wood",
-				"sap"
-			],
+			"yields": ["sap"],
 			"season": [
 				"spring"
 			],
@@ -7448,6 +7387,126 @@
 			"familiarity": 70,
 			"uses": ["thatch", "fibre", "bedding"],
 			"look_alikes": ["tall_grass", "reeds", "cotton_grass"],
+			"properties": []
+		},
+		{
+			"id": 128,
+			"name": "dune_grass",
+			"display": "Dune grass",
+			"kind": "plant",
+			"shape": "grass",
+			"model": "grass_tuft",
+			"height_m": [0.5, 1.1],
+			"crown_m": 0.35,
+			"trunk_m": 0.0,
+			"color": [0.5, 0.62, 0.45],
+			"per_hectare": {"beach": 120, "temperate_grassland": 6},
+			"moisture": [0, 255],
+			"max_slope_deg": 30,
+			"altitude_m": [0.3, 40],
+			"water": [],
+			"yields": [],
+			"season": ["spring", "summer", "autumn"],
+			"rarity": "common",
+			"familiarity": 60,
+			"uses": ["fibre", "binding"],
+			"look_alikes": ["tall_grass", "samphire", "reeds"],
+			"properties": []
+		},
+		{
+			"id": 129,
+			"name": "sea_holly",
+			"display": "Sea holly",
+			"kind": "plant",
+			"shape": "flower",
+			"model": "wildflower",
+			"height_m": [0.3, 0.6],
+			"crown_m": 0.3,
+			"trunk_m": 0.0,
+			"color": [0.45, 0.58, 0.8],
+			"per_hectare": {"beach": 14},
+			"moisture": [0, 255],
+			"max_slope_deg": 25,
+			"altitude_m": [0.3, 40],
+			"water": [],
+			"yields": [],
+			"season": ["summer"],
+			"rarity": "common",
+			"familiarity": 55,
+			"uses": ["medicine", "food"],
+			"look_alikes": ["brinebell", "gloomthistle"],
+			"properties": []
+		},
+		{
+			"id": 130,
+			"name": "fallen_log",
+			"display": "Fallen log",
+			"kind": "plant",
+			"shape": "shrub",
+			"model": "fallen_log",
+			"height_m": [2, 6],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [0.27, 0.19, 0.12],
+			"per_hectare": {"temperate_forest": 3, "mixed_forest": 4, "boreal_forest": 4, "marsh": 1, "tropical_forest": 2},
+			"moisture": [60, 255],
+			"max_slope_deg": 20,
+			"altitude_m": [1, 3000],
+			"water": [],
+			"yields": [],
+			"season": ["all"],
+			"rarity": "common",
+			"familiarity": 95,
+			"uses": ["firewood", "kindling", "shelter"],
+			"look_alikes": [],
+			"properties": []
+		},
+		{
+			"id": 131,
+			"name": "hollow_log",
+			"display": "Hollow log",
+			"kind": "plant",
+			"shape": "shrub",
+			"model": "fallen_log",
+			"height_m": [2, 5],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [0.27, 0.19, 0.12],
+			"per_hectare": {"temperate_forest": 0.5, "mixed_forest": 0.6, "boreal_forest": 0.5},
+			"moisture": [60, 255],
+			"max_slope_deg": 20,
+			"altitude_m": [1, 3000],
+			"water": [],
+			"yields": [],
+			"season": ["all"],
+			"rarity": "common",
+			"familiarity": 95,
+			"uses": ["firewood", "kindling", "shelter"],
+			"look_alikes": [],
+			"properties": []
+		},
+		{
+			"id": 132,
+			"name": "old_stump",
+			"display": "Old stump",
+			"kind": "plant",
+			"shape": "shrub",
+			"model": "fallen_log",
+			"height_m": [0.3, 0.7],
+			"crown_m": 0.5,
+			"trunk_m": 0.0,
+			"color": [0.27, 0.19, 0.12],
+			"per_hectare": {"temperate_forest": 2, "mixed_forest": 2, "boreal_forest": 2, "heath": 0.5},
+			"moisture": [60, 255],
+			"max_slope_deg": 20,
+			"altitude_m": [1, 3000],
+			"water": [],
+			"yields": [],
+			"season": ["all"],
+			"rarity": "common",
+			"familiarity": 95,
+			"uses": ["firewood", "kindling", "shelter"],
+			"look_alikes": [],
 			"properties": []
 		}
 	]

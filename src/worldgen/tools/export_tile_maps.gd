@@ -48,7 +48,7 @@ func _init() -> void:
 				print("no tile %d,%d" % [x, z])
 				continue
 
-			var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"])
+			var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"], TileFileScript.height_step_of(head["header"]))
 			var classes: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
 			_write("%s/h_%d_%d.f32" % [out_dir, x, z], heights.to_byte_array())
 			_write("%s/c_%d_%d.u8" % [out_dir, x, z], classes)

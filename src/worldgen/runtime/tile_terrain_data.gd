@@ -101,13 +101,13 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 
 		maps[name] = section["raw"]
 
-	heights = TileFileScript.decode_height(maps["height"])
+	heights = TileFileScript.decode_height(maps["height"], TileFileScript.height_step_of(header))
 	layer_offset = TileFileScript.decode_layer_offset(maps["layer_offset"])
 	cover = maps["cover"]
 	province = maps["province"]
 	soil = maps["soil"]
 	water_class = maps["water_class"]
-	water_surface = TileFileScript.decode_water_surface(maps["water_surface"])
+	water_surface = TileFileScript.decode_water_surface(maps["water_surface"], TileFileScript.height_step_of(header))
 	biome = maps["biome"]
 	moisture = maps["moisture"]
 

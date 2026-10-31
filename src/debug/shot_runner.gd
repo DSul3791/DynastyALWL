@@ -57,6 +57,7 @@ var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
 var _item_views: Array = []
+var drop_settle_ms: int = 3000
 var place_it: bool = false
 var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
 var _fell_step: int = 0
@@ -121,6 +122,8 @@ var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var clip_name: String = ""       # --shot-clip=NAME: the body plays this clip (look rig, third person)
+var chop_strip: bool = false     # --shot-chop: after the main picture, swing the held axe once and save a picture at each phase of the swing (<name>_chop_NN.png; first person)
+var _chop_state: int = 0         # 0 not started, 1 running, 2 done
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
@@ -147,6 +150,8 @@ func setup(owner_client, args: Array) -> void:
 			costs = true
 		elif argument.begins_with("--shot-clip="):
 			clip_name = argument.trim_prefix("--shot-clip=")
+		elif argument == "--shot-chop":
+			chop_strip = true
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
@@ -184,6 +189,8 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-drop-settle="):
+			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
 		elif argument == "--shot-place":
 			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
@@ -471,7 +478,7 @@ func _process(delta: float) -> void:
 			return
 
 	# A drop or a seeded pile: a short step back, then look down at the spot (TEST_RECIPE.md), settle, then the picture.
-	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > 3000)):
+	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > drop_settle_ms)):
 		_finish_done = true
 		var behind: Vector3 = client.body.global_transform.basis.z
 		var bx: float = client.body.global_position.x + behind.x * back_m
@@ -487,7 +494,7 @@ func _process(delta: float) -> void:
 		client.flora.visible = false
 
 		if not _item_built:
-			if _dropped and now - _drop_msec > 3000:
+			if _dropped and now - _drop_msec > drop_settle_ms:
 				_build_item_views(now)
 
 			return
@@ -521,6 +528,13 @@ func _process(delta: float) -> void:
 
 	if _view_i < views.size():
 		_run_view(now)
+		return
+
+	if chop_strip and _chop_state != 2 and client.held != null:
+		if _chop_state == 0:
+			_chop_state = 1
+			_run_chop_strip()
+
 		return
 
 	_print_state()
@@ -687,8 +701,9 @@ func _fell_tick(now: int) -> void:
 			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))
 			var mid: Vector3 = tp + Vector3(dir.x, 0.0, dir.y) * float(extra.get("length", 10.0)) * 0.5
 			var side: Vector2 = Vector2(-dir.y, dir.x)
-			_fell_stand(Vector3(mid.x + side.x * 16.0, 0.0, mid.z + side.y * 16.0))
-			_fell_face(client.body.global_position, mid + Vector3(0.0, 1.0, 0.0), -4.0)
+			_fell_stand(Vector3(mid.x + side.x * 18.0, 0.0, mid.z + side.y * 18.0))
+			client.body.global_position.y += 4.0      # a few metres up, looking down at the trunk from the side, so grass and the stump do not hide it
+			_fell_face(client.body.global_position, mid + Vector3(0.0, 0.5, 0.0), -14.0)
 			_fell_t = now
 			_fell_step = 5
 
@@ -1559,3 +1574,32 @@ func _next(now: int) -> void:
 
 	if client.hotbar_strip != null and client.hotbar_strip.has_method("hide"):
 		client.hotbar_strip.hide()
+
+
+# --shot-chop: one swing of the held axe, a picture at each phase (the times are seconds into the swing; the impact is HIT_AT x SWING_S).
+func _run_chop_strip() -> void:
+	var held = client.held
+
+	if not held.holding:
+		held.select(0)
+
+	var waited: int = 0
+
+	while not (held.holding and held._arms != null and held._arms.visible) and waited < 300:
+		waited += 1
+		await get_tree().process_frame
+
+	print("shot runner: chop strip: holding %s arms visible %s after %d frames" % [str(held.holding), str(held._arms != null and held._arms.visible), waited])
+	held._start_swing()
+	var times: Array = [0.05, 0.2, 0.3, 0.4, 0.46, 0.5, 0.56, 0.68, 0.85]
+
+	for index in range(times.size()):
+		while held._swing_t >= 0.0 and held._swing_t < float(times[index]):
+			await get_tree().process_frame
+
+		await RenderingServer.frame_post_draw
+		var path: String = "%s/%s_chop_%02d.png" % [dir, shots[_index]["name"], index]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("shot runner: chop phase %d at %.2f s (swing t %.2f) saved" % [index, float(times[index]), held._swing_t])
+
+	_chop_state = 2

@@ -1,0 +1,122 @@
+== items listed as natural source in drops/digging/carcass/fishing: 108
+stations reachable: ['campfire_pot', 'workbench']
+
+== recipes the player CAN make (known/open, ingredients and station reachable): 59
+backpack, bandage_plantain, bandage_staunchmoss, campfire, campfire_pot_kit, chamomile_tea, chest_kit, chopping_block, clay_pot, cook_acorn_mash, cook_fish_stew, cook_herb_fish, cook_mushroom_skewer, cook_roast_roots, cook_smoked_fish, energy_bar, fishing_rod, foundation_section_kit, herbal_tea, hide_boots, hide_cloak, hide_hood, hide_leggings, hide_mittens, lean_to_kit, log_workbench_kit, poultice_comfrey, poultice_plantain, quiver, rock_pile, rope, rough_bed_kit, rough_plank, shore_net, snare, spear, stomach_tea, stone_arrow, stone_axe, stone_hammer, stone_hoe, stone_knife, stone_spade, thatch_doorway_kit, thatch_floor_kit, thatch_roof_kit, thatch_wall_kit, tool_rack_kit, torch, twine, twine_bark, wooden_arrow, wooden_bow, wooden_bowl, wooden_hammer, wooden_hoe, wooden_spade, wooden_spear, workbench_kit
+
+== recipes NOT makeable and why
+16 lumber -> lumber | Materials | NOT KNOWN (known:false, not in open_recipes); station saw_mill not reachable
+17 plank_chest_kit -> plank_chest_kit | Containers and furniture | NOT KNOWN (known:false, not in open_recipes); no source for lumber
+18 iron_pickaxe -> iron_pickaxe | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+19 steel_pickaxe -> steel_pickaxe | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot; station forge not reachable
+22 bucket -> bucket | Containers and furniture | NOT KNOWN (known:false, not in open_recipes); no source for lumber
+23 waterskin -> waterskin | Containers and furniture | NOT KNOWN (known:false, not in open_recipes)
+27 iron_spade -> iron_spade | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot
+28 steel_spade -> steel_spade | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot
+35 willow_bark_tea -> willow_bark_tea | Food and drink | no source for willow_bark
+36 grass_skirt -> grass_skirt | Clothing | NOT KNOWN (known:false, not in open_recipes)
+37 grass_cloak -> grass_cloak | Clothing | NOT KNOWN (known:false, not in open_recipes)
+38 fibre_sandals -> fibre_sandals | Clothing | NOT KNOWN (known:false, not in open_recipes)
+44 sinew_cord -> twine | Materials | NOT KNOWN (known:false, not in open_recipes)
+52 lumber_oak -> lumber_oak | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_oak; station saw_mill not reachable
+53 beams_oak -> beam_oak | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_oak; station saw_mill not reachable
+56 lumber_birch -> lumber_birch | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_birch; station saw_mill not reachable
+57 beams_birch -> beam_birch | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_birch; station saw_mill not reachable
+58 lumber_scots_pine -> lumber_scots_pine | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_scots_pine; station saw_mill not reachable
+59 beams_scots_pine -> beam_scots_pine | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_scots_pine; station saw_mill not reachable
+60 lumber_spruce -> lumber_spruce | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_spruce; station saw_mill not reachable
+61 beams_spruce -> beam_spruce | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_spruce; station saw_mill not reachable
+68 lumber_tropical_hardwood -> lumber_tropical_hardwood | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_tropical_hardwood; station saw_mill not reachable
+69 beams_tropical_hardwood -> beam_tropical_hardwood | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_tropical_hardwood; station saw_mill not reachable
+84 lumber_walnut -> lumber_walnut | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_walnut; station saw_mill not reachable
+85 beams_walnut -> beam_walnut | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_walnut; station saw_mill not reachable
+100 lumber_maple -> lumber_maple | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_maple; station saw_mill not reachable
+101 beams_maple -> beam_maple | Materials | NOT KNOWN (known:false, not in open_recipes); no source for log_maple; station saw_mill not reachable
+102 cook_berry_compote -> berry_compote | Fire and cooking | no source for honeyspindle_nectar
+103 cook_nut_paste -> nut_paste | Fire and cooking | no source for honeyspindle_nectar
+106 cook_baked_apples -> baked_apples | Fire and cooking | no source for honeyspindle_nectar
+109 cook_garlic_meat -> garlic_meat | Fire and cooking | no source for wild_garlic_bulbs
+110 cook_chestnut_cakes -> chestnut_cakes | Fire and cooking | no source for honeyspindle_nectar,linseed
+111 cook_fruit_leather -> fruit_leather | Fire and cooking | no source for honeyspindle_nectar
+113 cook_hunters_stew -> hunters_stew | Fire and cooking | no source for wild_garlic_bulbs
+114 cook_forager_stew -> forager_stew | Fire and cooking | no source for greens
+116 cook_trail_bread -> trail_bread | Fire and cooking | no source for linseed
+117 cook_hearty_pottage -> hearty_pottage | Fire and cooking | no source for seeds,dandelion_leaves
+118 cook_feast_roast -> feast_roast | Fire and cooking | no source for wild_garlic_bulbs
+119 wall_section_kit -> wall_section_kit | Shelter and building | no source for lumber
+120 floor_section_kit -> floor_section_kit | Shelter and building | no source for lumber
+121 roof_section_kit -> roof_section_kit | Shelter and building | no source for lumber
+123 doorway_section_kit -> doorway_section_kit | Shelter and building | no source for lumber
+124 window_section_kit -> window_section_kit | Shelter and building | no source for lumber
+125 timber_prop_kit -> timber_prop_kit | Shelter and building | NOT KNOWN (known:false, not in open_recipes)
+126 timber_set_kit -> timber_set_kit | Shelter and building | no source for lumber
+127 cut_stone_block -> cut_stone_block | Materials | NOT KNOWN (known:false, not in open_recipes)
+128 brick -> brick | Materials | NOT KNOWN (known:false, not in open_recipes)
+129 mortar -> mortar | Materials | NOT KNOWN (known:false, not in open_recipes)
+130 ladder_kit -> ladder_kit | Shelter and building | no source for lumber
+141 iron_hoe -> iron_hoe | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot
+142 steel_hoe -> steel_hoe | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot
+144 fine_board -> fine_board | Materials | NOT KNOWN (known:false, not in open_recipes); no source for lumber; station woodworking_table not reachable
+145 nails -> nails | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+146 cobblestone -> cobblestone | Materials | NOT KNOWN (known:false, not in open_recipes)
+147 stone_shingle -> stone_shingle | Materials | NOT KNOWN (known:false, not in open_recipes)
+148 tar -> tar | Materials | NOT KNOWN (known:false, not in open_recipes); no source for pine_tar
+149 hinges -> hinges | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+150 wooden_pin -> wooden_pin | Materials | no source for lumber
+152 saw_blade -> saw_blade | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+153 water_wheel -> water_wheel | Workshops and stations | NOT KNOWN (known:false, not in open_recipes); no source for lumber,nails
+157 hand_saw -> hand_saw | Tools | NOT KNOWN (known:false, not in open_recipes); no source for saw_blade
+159 lumber_by_hand -> lumber | Materials | no source for hand_saw
+174 cook_flatbread -> flatbread | Fire and cooking | no source for seeds; station clay_hearth not reachable
+175 cook_honey_loaf -> honey_loaf | Fire and cooking | no source for seeds,honeyspindle_nectar; station oven not reachable
+176 cook_roast_joint -> roast_joint | Fire and cooking | no source for wild_garlic_bulbs; station oven not reachable
+178 kindling -> kindling | Fire and cooking | NOT KNOWN (known:false, not in open_recipes)
+179 processed_hide -> processed_hide | Materials | NOT KNOWN (known:false, not in open_recipes); no source for hide_scraper
+180 hide_scraper -> hide_scraper | Tools | NOT KNOWN (known:false, not in open_recipes); no source for flint
+181 javelin -> javelin | Weapons | NOT KNOWN (known:false, not in open_recipes); no source for flint
+182 obsidian_knife -> obsidian_knife | Tools | NOT KNOWN (known:false, not in open_recipes); no source for obsidian
+183 steel_striker -> steel_striker | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot; station forge not reachable
+184 rivets -> rivets | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+185 bronze_ingot -> bronze_ingot | Materials | NOT KNOWN (known:false, not in open_recipes); no source for copper_ingot,tin_ingot; station forge not reachable
+186 stone_pickaxe -> stone_pickaxe | Tools | NOT KNOWN (known:false, not in open_recipes)
+187 sickle -> sickle | Tools | NOT KNOWN (known:false, not in open_recipes); no source for flint
+188 scythe -> scythe | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+189 wooden_club -> wooden_club | Weapons | NOT KNOWN (known:false, not in open_recipes)
+190 smelt_copper -> copper_ingot | Materials | NOT KNOWN (known:false, not in open_recipes); no source for copper_ore; station forge not reachable
+191 smelt_tin -> tin_ingot | Materials | NOT KNOWN (known:false, not in open_recipes); no source for tin_ore; station forge not reachable
+192 smelt_iron -> iron_ingot | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ore; station forge not reachable
+193 smelt_steel -> steel_ingot | Materials | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot,coal; station forge not reachable
+194 hide_tunic -> hide_tunic | Clothing | NOT KNOWN (known:false, not in open_recipes)
+195 hide_trousers -> hide_trousers | Clothing | NOT KNOWN (known:false, not in open_recipes)
+196 hide_gloves -> hide_gloves | Clothing | NOT KNOWN (known:false, not in open_recipes)
+197 clay_jug -> clay_jug | Containers and furniture | NOT KNOWN (known:false, not in open_recipes)
+198 herb_salve -> herb_salve | Medicine | NOT KNOWN (known:false, not in open_recipes)
+199 splint -> splint | Medicine | NOT KNOWN (known:false, not in open_recipes)
+200 candle -> candle | Tools | NOT KNOWN (known:false, not in open_recipes)
+201 wicker_shield -> wicker_shield | Tools | NOT KNOWN (known:false, not in open_recipes)
+202 stone_mace -> stone_mace | Tools | NOT KNOWN (known:false, not in open_recipes)
+203 plank_shield -> plank_shield | Tools | NOT KNOWN (known:false, not in open_recipes); no source for lumber
+204 bronze_sword -> bronze_sword | Tools | NOT KNOWN (known:false, not in open_recipes); no source for bronze_ingot; station forge not reachable
+205 bronze_mace -> bronze_mace | Tools | NOT KNOWN (known:false, not in open_recipes); no source for bronze_ingot; station forge not reachable
+206 bronze_shield -> bronze_shield | Tools | NOT KNOWN (known:false, not in open_recipes); no source for lumber,bronze_ingot; station forge not reachable
+207 iron_sword -> iron_sword | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot,leather; station forge not reachable
+208 iron_mace -> iron_mace | Tools | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+209 iron_shield -> iron_shield | Tools | NOT KNOWN (known:false, not in open_recipes); no source for lumber,iron_ingot; station forge not reachable
+210 steel_sword -> steel_sword | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot,heavy_leather; station forge not reachable
+211 steel_mace -> steel_mace | Tools | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot; station forge not reachable
+212 steel_shield -> steel_shield | Tools | NOT KNOWN (known:false, not in open_recipes); no source for lumber,steel_ingot; station forge not reachable
+213 leather_cap -> leather_cap | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for leather
+214 leather_jerkin -> leather_jerkin | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for leather
+215 bronze_helm -> bronze_helm | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for bronze_ingot; station forge not reachable
+216 gambeson -> gambeson | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for leather
+217 iron_helm -> iron_helm | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for iron_ingot; station forge not reachable
+218 mail_shirt -> mail_shirt | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for rivets,iron_ingot; station forge not reachable
+219 steel_helm -> steel_helm | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot,heavy_leather,rivets; station forge not reachable
+220 plate_cuirass -> plate_cuirass | Clothing | NOT KNOWN (known:false, not in open_recipes); no source for steel_ingot,heavy_leather,rivets; station forge not reachable
+221 quern -> quern | Tools | NOT KNOWN (known:false, not in open_recipes)
+222 flour_from_wheat -> flour | Materials | NOT KNOWN (known:false, not in open_recipes); no source for wheat,quern
+223 flour_from_barley -> flour | Materials | NOT KNOWN (known:false, not in open_recipes); no source for barley,quern
+224 compost -> compost | Materials | NOT KNOWN (known:false, not in open_recipes)
+
+== items with no natural source and no recipe producing them (excluding retired)
+ingredients still unreachable: ['barley', 'bronze_ingot', 'coal', 'copper_ingot', 'copper_ore', 'dandelion_leaves', 'flint', 'greens', 'hand_saw', 'heavy_leather', 'hide_scraper', 'honeyspindle_nectar', 'iron_ingot', 'iron_ore', 'leather', 'linseed', 'log_birch', 'log_maple', 'log_oak', 'log_scots_pine', 'log_spruce', 'log_tropical_hardwood', 'log_walnut', 'lumber', 'nails', 'obsidian', 'pine_tar', 'quern', 'rivets', 'saw_blade', 'seeds', 'steel_ingot', 'tin_ingot', 'tin_ore', 'wheat', 'wild_garlic_bulbs', 'willow_bark']

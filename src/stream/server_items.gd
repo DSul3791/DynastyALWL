@@ -687,7 +687,7 @@ func _give_shoulder(peer: int, number: int, count: int) -> int:
 	var here: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 
 	if shoulder_of(peer) != "":
-		_say(peer, "You can only carry one large log on your shoulder.")
+		_say(peer, "Put your log down first (Q).")
 		drop_in_world(number, count, here)
 		return 0
 
@@ -2559,7 +2559,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 
 	if is_shoulder_item(int(it["number"])):
 		if shoulder_of(peer) != "":
-			_say(peer, "You can only carry one large log on your shoulder.")
+			_say(peer, "Put your log down first (Q).")
 			return
 
 		if _fit(peer, inv, int(it["number"]), 1) == 0:
@@ -2640,6 +2640,9 @@ func _sync_world_items() -> void:
 
 				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
 				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))   # the height too: an item that comes down onto the ground after a dig is sent again
+
+				if it.has("tree"):
+					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", ""))} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
@@ -3327,6 +3330,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
 	trunk["pitch"] = pitch
+	trunk["keywood"] = (_wood_species.get("key_woods", []) as Array).has(str(info["name"]))   # only these trees are cut into logs: the client marks the next cut line on them
 	trunk["chunk"] = [chunk.x, chunk.y]
 	var stump: Dictionary = base.duplicate()
 	stump["state"] = 4
@@ -3559,10 +3563,21 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	var cfg: Dictionary = _drops.get("trunk", {})
 	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
 	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
-	var t: float = clampf(from_base.dot(along), 0.0, float(tree["length"]) * cos(float(tree.get("pitch", 0.0))))
+	var flat: float = cos(float(tree.get("pitch", 0.0)))
+	var length_now: float = float(tree["length"])
+	var logs_phase: bool = int(tree.get("blows", 0)) >= int(cfg.get("branch_blows", 3)) and int(tree.get("logs_left", 0)) > 0
+	var t: float = clampf(from_base.dot(along), 0.0, length_now * flat)
+
+	if logs_phase:   # logs come off the far end: the player stands by the next cut line (the middle of the piece that comes off)
+		var piece: float = length_now if int(tree["logs_left"]) <= 1 else minf(float(cfg.get("log_length_m", 2.44)), length_now)
+		t = (length_now - piece * 0.5) * flat
+
 	var nearest: Vector3 = it["pos"] + along * t
 
 	if Vector2(_peer_pos[peer].x - nearest.x, _peer_pos[peer].z - nearest.z).length() > PROCESS_REACH_M + float(tree["radius"]):
+		if logs_phase and _peer_pos[peer].distance_to(it["pos"]) < length_now + 6.0:
+			_say(peer, "Walk along the trunk to the cut line.")
+
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -3573,6 +3588,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	_last_process[peer] = now
 	_wear_tool(peer, inv, "axe", "trunk")
 	practice(peer, "work_trunk")
+	tree["landed"] = true   # the client draws it lying from now on (a shorter trunk is not felled again)
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
@@ -3597,10 +3613,15 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
 			_items.erase(id)
 	else:
-		if (blows - int(cfg.get("branch_blows", 3))) % int(cfg.get("blows_per_log", 3)) == 2:
-			var log_n: int = table.number_of("log_" + str(tree.get("species", "")))
-			give(peer, log_n if log_n > 0 else table.number_of("log"), 1)   # "Oak log" for an oak; an unknown species gives the plain log
-			tree["logs_left"] = int(tree["logs_left"]) - 1
+		var cut_in: int = int(tree.get("cut_blows", 0)) + 1
+		tree["cut_blows"] = cut_in
+
+		if cut_in >= int(cfg.get("blows_per_log", 3)):   # the cut goes through: the log drops on the ground beside the trunk (never into the pack or onto the shoulder)
+			if _cut_log_off(peer, id, tree, cfg):
+				tree["cut_blows"] = 0
+				tree["logs_left"] = int(tree["logs_left"]) - 1
+			else:
+				tree["cut_blows"] = cut_in - 1   # no room for it: the next blow tries the cut again
 
 		var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(str(tree.get("species", "")), {})
 
@@ -3674,6 +3695,51 @@ func _chop_stump(peer: int, inv, id: int) -> void:
 		_items.erase(id)
 
 	_dirty = true
+
+
+# Where the next cut goes (the middle of the piece that comes off the far end), as a world position: the spot a player stands at to cut the next log (tests and the cut-line hint use it).
+func cut_line_point(id: int) -> Vector3:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("tree"):
+		return Vector3.ZERO
+
+	var tree: Dictionary = it["tree"]
+	var log_len: float = float(_drops.get("trunk", {}).get("log_length_m", 2.44))
+	var length_now: float = float(tree["length"])
+	var piece: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
+	var yaw: float = float(tree["yaw"])
+	return it["pos"] + Vector3(sin(yaw), 0.0, cos(yaw)) * ((length_now - piece * 0.5) * cos(float(tree.get("pitch", 0.0))))
+
+
+# One log cut off the far end of a felled trunk (Dave: a log must land on the ground, never in the pack or on the shoulder; the trunk gets shorter with a fresh cut face). The log is an ordinary
+# dropped log item beside the trunk, so it obeys the drop rules; false (nothing changes, the next blow tries again) when the spot is too crowded. The last log takes whatever is left of the trunk.
+func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool:
+	var it: Dictionary = _items[id]
+	var log_len: float = float(cfg.get("log_length_m", 2.44))
+	var length_now: float = float(tree["length"])
+	var seg: float = length_now if int(tree.get("logs_left", 1)) <= 1 else minf(log_len, length_now)
+	var yaw: float = float(tree["yaw"])
+	var pitch: float = float(tree.get("pitch", 0.0))
+	var along: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
+	var side: Vector3 = Vector3(-along.z, 0.0, along.x)
+	var mid: float = length_now - seg * 0.5
+	var radius: float = float(tree["radius"])
+	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
+	var log_n: int = table.number_of("log_" + str(tree.get("species", "")))
+
+	if log_n <= 0:
+		log_n = table.number_of("log")
+
+	if not drop_in_world(log_n, 1, at):
+		_say(peer, "Too many things lie here. Clear some away first.")
+		return false
+
+	if not tree.has("orig_length"):
+		tree["orig_length"] = length_now
+
+	tree["length"] = maxf(length_now - seg, 0.0)
+	return true
 
 
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. Nothing
@@ -4779,7 +4845,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 		if is_shoulder_item(number):   # a large log goes on the shoulder, never into the pack
 			if shoulder_of(peer) != "":
-				_say(peer, "You can only carry one large log on your shoulder.")
+				_say(peer, "Put your log down first (Q).")
 			elif _give_shoulder(peer, number, 1) == 1:
 				chest.take_from_slot(a, 1)
 				_dirty = true

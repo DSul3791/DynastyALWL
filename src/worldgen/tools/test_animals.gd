@@ -60,7 +60,7 @@ func _init() -> void:
 	for id in a.animals:
 		nearest = minf(nearest, Vector2(a.animals[id]["home"].x, a.animals[id]["home"].z).length())
 
-	check(nearest >= 135.0, "they appear out of sight, at least 135 m away (%.0f)" % nearest)
+	check(nearest >= 59.0, "they appear at least 60 m away, some within 120 m so a new player sees animals (%.0f)" % nearest)
 	run(a, 30.0)
 	var count2: int = 0
 

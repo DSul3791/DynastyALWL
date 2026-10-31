@@ -35,6 +35,8 @@ const WEIGHT_FALLOFF := 0.03           # skin weight falloff with distance to a 
 const WEIGHT_PASSES := 2
 const GROUPS := 7                      # trunk and head, left arm, right arm, left leg, right leg, left hand, right hand
 const HAND_VOXEL := 0.009              # the hands are meshed on their own finer grid (fingers are about 2 cm wide)
+const ARM_VOXEL_PLAYER := 0.03
+const HAND_VOXEL_FINGERS := 0.0075     # with fingers the hand grid is this fine whatever the body's voxel size (the creator's 5 cm body made 1.5 cm hands and ragged fingers)
 const HAND_K := 0.008
 const HAND_FALLOFF := 0.007
 const LOD_VOXELS := [0.03, 0.045, 0.07]  # detail levels 0 to 2: near, middle, far
@@ -58,11 +60,11 @@ const HAIR_STYLE_LABELS := {"long_loose": "Long and loose", "bald": "Bald", "buz
 # its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
 const FRAMES := {
 	"feminine": {"hips": 0.45, "chest": -0.1, "bust": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
-		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.22, 0.14, 0.1)},
+		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.34, 0.22, 0.13)},
 	"masculine": {"hips": -0.25, "chest": 0.5, "bust": -1.0, "shoulders": 0.4, "belly": 0.05, "neck": 0.35,
-		"tunic": Color(0.36, 0.45, 0.3), "trousers": Color(0.3, 0.24, 0.18), "boots": Color(0.2, 0.13, 0.09)},
+		"tunic": Color(0.36, 0.45, 0.3), "trousers": Color(0.3, 0.24, 0.18), "boots": Color(0.32, 0.21, 0.12)},
 	"neutral": {"hips": 0.0, "chest": 0.0, "bust": -0.6, "shoulders": 0.0, "belly": 0.0, "neck": 0.0,
-		"tunic": Color(0.35, 0.4, 0.5), "trousers": Color(0.28, 0.25, 0.22), "boots": Color(0.2, 0.14, 0.1)},
+		"tunic": Color(0.35, 0.4, 0.5), "trousers": Color(0.28, 0.25, 0.22), "boots": Color(0.33, 0.22, 0.13)},
 }
 
 const PRESETS := {
@@ -96,7 +98,7 @@ static func m(s: float, lo: float, hi: float) -> float:
 	return lerpf(1.0, hi, s) if s >= 0.0 else lerpf(1.0, lo, -s)
 
 
-static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.62, 0.48), hair: Color = Color(0.25, 0.16, 0.09), tunic: Color = Color(0.36, 0.45, 0.3), trousers: Color = Color(0.3, 0.24, 0.18), boots: Color = Color(0.2, 0.13, 0.09)) -> Dictionary:
+static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.62, 0.48), hair: Color = Color(0.25, 0.16, 0.09), tunic: Color = Color(0.36, 0.45, 0.3), trousers: Color = Color(0.3, 0.24, 0.18), boots: Color = Color(0.32, 0.21, 0.12)) -> Dictionary:
 	var g: Dictionary = {}
 
 	for key in SLIDERS:
@@ -154,7 +156,7 @@ static func rig(g: Dictionary) -> Dictionary:
 		# Broad shoulders: the arms hang angled a little in toward the body (the upper arm up to 7 degrees, the forearm up to 11), so the hands do not hang far out from the
 		# ribs; the segment lengths stay 0.29 and 0.26 of the arm.
 		var in_k: float = clampf((sw - 1.0) / 0.45, 0.0, 1.0)
-		var a1: float = 0.12 * in_k
+		var a1: float = 0.12 * in_k       # only under broad shoulders do the arms angle in (any angle at rest put the hands into the thighs of narrow-hipped bodies)
 		var a2: float = 0.2 * in_k
 		pos[o + 2] = pos[o + 1] + Vector3(-side * sin(a1), -cos(a1), 0.0) * 0.29 * arm
 		pos[o + 3] = pos[o + 2] + Vector3(-side * sin(a2), -cos(a2), 0.0) * 0.26 * arm
@@ -354,27 +356,30 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 		# The forearm runs a little into the hand (1.2 cm) and keeps a real wrist (3.5 cm radius, not 3.2 whatever the muscle): the arm and the hand are separate meshes, so
 		# a bare butt joint showed as a pinched, ringed wrist.
 		var fore_dir: Vector3 = (p[o + 3] - p[o + 2]).normalized()
+		# A stub of the forearm on the hand's own (finer) grid, so the wrist and the hand are one smooth mesh and the join with the coarse forearm is hidden higher up.
+		out.append(_cone(o + 3, p[o + 3] - fore_dir * 0.05, p[o + 3] + fore_dir * 0.012, 0.0345 * mu * clampf(hand_k, 0.85, 1.1), 0.0345 * mu * clampf(hand_k, 0.85, 1.1)))
 		out.append(_cone(o + 2, p[o + 2], p[o + 3] + fore_dir * 0.012, 0.043 * mu, 0.036 * mu * clampf(hand_k, 0.85, 1.1)))       # the wrist follows the hand size a little
 		var f: int = 21 if side < 0.0 else 29
 		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.046 * hand_k, 0.0), Vector3(0.036 * hand_k, 0.048 * hand_k, 0.02 * hand_k)))
 		if fingers:
 			out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
-			out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
+			out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.0080 * hand_k))
 			out.append(_cone(f + 2, p[f + 2], p[f + 3], 0.0115 * hand_k, 0.0095 * hand_k))
 			out.append(_cone(f + 3, p[f + 3], p[f + 3] + Vector3(0.0, -0.03 * hand_k, 0.0), 0.0095 * hand_k, 0.0075 * hand_k))
 			out.append(_cone(f + 4, p[f + 4], p[f + 5], 0.0165 * hand_k, 0.0135 * hand_k))
 			out.append(_cone(f + 5, p[f + 5], p[f + 5] + Vector3(0.0, -0.034 * hand_k, 0.0), 0.0135 * hand_k, 0.0105 * hand_k))
-			out.append(_cone(f + 6, p[f + 6], p[f + 7], 0.0105 * hand_k, 0.009 * hand_k))
-			out.append(_cone(f + 7, p[f + 7], p[f + 7] + Vector3(0.0, -0.026 * hand_k, 0.0), 0.009 * hand_k, 0.007 * hand_k))
+			out.append(_cone(f + 6, p[f + 6], p[f + 7], 0.0105 * hand_k, 0.0090 * hand_k))
+			out.append(_cone(f + 7, p[f + 7], p[f + 7] + Vector3(0.0, -0.026 * hand_k, 0.0), 0.0090 * hand_k, 0.0070 * hand_k))
 
 	# Legs and feet
 	for side in [-1.0, 1.0]:
 		var l: int = 13 if side < 0.0 else 17
 		out.append(_cone(l, p[l], p[l + 1], 0.085 * sqrt(b) * mu * hip_w, 0.062 * mu))
 		out.append(_cone(l + 1, p[l + 1], p[l + 2], 0.058 * mu, 0.041))
-		var foot_c: Vector3 = p[l + 2] + Vector3(0.0, -0.025 * h, -0.065 * foot_k)
-		out.append(_ell(l + 2, foot_c, Vector3(0.05 * foot_k, 0.04, 0.115 * foot_k)))
-		out.append(_ell(l + 3, p[l + 3] + Vector3(0.0, 0.0, -0.01), Vector3(0.045 * foot_k, 0.03, 0.04 * foot_k)))
+		var foot_c: Vector3 = p[l + 2] + Vector3(0.0, -0.025 * h, -0.08 * foot_k)
+		out.append(_ell(l + 2, foot_c, Vector3(0.052 * foot_k, 0.042, 0.135 * foot_k)))
+		out.append(_ell(l + 3, p[l + 3] + Vector3(0.0, 0.0, -0.045 * foot_k), Vector3(0.05 * foot_k, 0.032, 0.055 * foot_k)))       # the toe box, pointing forward
+		out.append(_ell(l + 2, p[l + 2] + Vector3(0.0, -0.045 * h, 0.035 * foot_k), Vector3(0.042 * foot_k, 0.045, 0.045 * foot_k)))        # the heel, behind the ankle
 
 	_dress(out)
 	return out
@@ -499,7 +504,10 @@ static func build(g: Dictionary, voxel: float = 0.03, fingers: bool = true) -> D
 
 	for gi in range(GROUPS):
 		var gp: Array = []
-		var vox: float = minf(voxel, HAND_VOXEL * voxel / 0.03) if gi >= 5 else voxel
+		var vox: float = (minf(voxel, HAND_VOXEL_FINGERS if fingers else HAND_VOXEL * voxel / 0.03)) if gi >= 5 else voxel
+
+		if fingers and (gi == 1 or gi == 2):
+			vox = minf(voxel, ARM_VOXEL_PLAYER)       # a body with fingers (the player, the creator) meshes its arms at 3 cm at most, so the wrist is not pinched by a coarse grid
 		var kk: float = HAND_K if gi >= 5 else SMOOTH_K
 
 		for q in prims:
@@ -977,6 +985,12 @@ static func prewarm(g: Dictionary, voxel: float = 0.03, fingers: bool = true) ->
 
 	if not _mesh_cache.has(key) and not _jobs.has(key):
 		_jobs[key] = start_build(g, voxel, fingers)
+
+
+# Waits for every prewarm job still running (call before the program quits: worker threads still building a body when the engine shuts down hold it up).
+static func wait_for_jobs() -> void:
+	for key in _jobs:
+		finish_build(_jobs[key])
 
 
 # A body type from a number: sliders drawn around the neutral body (a bell-shaped spread, so most people are ordinary and a few are extreme), a skin tone and a

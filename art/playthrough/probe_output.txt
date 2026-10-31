@@ -1,0 +1,146 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+probe: workbench placed, station_near workbench = true
+probe: twine | known=true | station= | crafted=true
+probe: stone_axe | known=true | station= | crafted=true
+probe: wooden_spear | known=true | station= | crafted=true
+probe: spear | known=true | station= | crafted=true
+probe: stone_knife | known=true | station= | crafted=true
+probe: torch | known=true | station= | crafted=true
+probe: campfire | known=true | station= | crafted=true
+probe: poultice_plantain | known=true | station= | crafted=true
+probe: poultice_comfrey | known=true | station= | crafted=true
+probe: bandage_plantain | known=true | station= | crafted=true
+probe: bandage_staunchmoss | known=true | station= | crafted=true
+probe: wooden_spade | known=true | station= | crafted=true
+probe: lean_to_kit | known=true | station= | crafted=true
+probe: chest_kit | known=true | station= | crafted=true
+probe: chopping_block | known=true | station= | crafted=true
+probe: plank_chest_kit | known=false | station=workbench | crafted=false
+probe: wooden_bowl | known=true | station= | crafted=true
+probe: clay_pot | known=true | station= | crafted=true
+probe: bucket | known=true | station= | crafted=true
+probe: waterskin | known=true | station= | crafted=true
+probe: twine_bark | known=true | station= | crafted=true
+probe: rope | known=true | station= | crafted=true
+probe: stone_spade | known=true | station=workbench | crafted=true
+probe: iron_spade | known=true | station= | crafted=true
+probe: steel_spade | known=true | station= | crafted=true
+probe: backpack | known=true | station= | crafted=true
+probe: energy_bar | known=true | station= | crafted=true
+probe: herbal_tea | known=true | station= | crafted=true
+probe: stomach_tea | known=true | station= | crafted=true
+probe: chamomile_tea | known=true | station= | crafted=true
+probe: willow_bark_tea | known=true | station= | crafted=true
+probe: grass_skirt | known=true | station= | crafted=true
+probe: grass_cloak | known=true | station= | crafted=true
+probe: fibre_sandals | known=true | station= | crafted=true
+probe: hide_cloak | known=true | station= | crafted=true
+probe: hide_boots | known=true | station= | crafted=true
+probe: hide_hood | known=true | station= | crafted=true
+probe: hide_mittens | known=true | station= | crafted=true
+probe: hide_leggings | known=true | station= | crafted=true
+probe: sinew_cord | known=true | station= | crafted=true
+probe: rough_bed_kit | known=true | station= | crafted=true
+probe: campfire_pot_kit | known=true | station= | crafted=true
+probe: thatch_floor_kit | known=true | station=workbench | crafted=true
+probe: thatch_wall_kit | known=true | station=workbench | crafted=true
+probe: thatch_roof_kit | known=true | station=workbench | crafted=true
+probe: thatch_doorway_kit | known=true | station=workbench | crafted=true
+probe: workbench_kit | known=true | station= | crafted=true
+probe: shore_net | known=true | station= | crafted=true
+probe: fishing_rod | known=true | station= | crafted=true
+probe: tool_rack_kit | known=true | station=workbench | crafted=true
+probe: log_workbench_kit | known=true | station=workbench | crafted=true
+probe: wall_section_kit | known=true | station= | crafted=true
+probe: floor_section_kit | known=true | station= | crafted=true
+probe: roof_section_kit | known=true | station= | crafted=true
+probe: foundation_section_kit | known=true | station= | crafted=true
+probe: doorway_section_kit | known=true | station= | crafted=true
+probe: window_section_kit | known=true | station= | crafted=true
+probe: timber_prop_kit | known=true | station= | crafted=true
+probe: timber_set_kit | known=true | station= | crafted=true
+probe: cut_stone_block | known=true | station=workbench | crafted=true
+probe: mortar | known=true | station= | crafted=true
+probe: ladder_kit | known=true | station= | crafted=true
+probe: wooden_hoe | known=true | station= | crafted=true
+probe: stone_hoe | known=true | station=workbench | crafted=true
+probe: iron_hoe | known=true | station= | crafted=true
+probe: steel_hoe | known=true | station= | crafted=true
+probe: rough_plank | known=true | station=workbench | crafted=true
+probe: cobblestone | known=true | station=workbench | crafted=true
+probe: stone_shingle | known=true | station=workbench | crafted=true
+probe: wooden_pin | known=true | station=workbench | crafted=true
+probe: water_wheel | known=false | station=workbench | crafted=false
+probe: rock_pile | known=true | station= | crafted=true
+probe: wooden_hammer | known=true | station= | crafted=true
+probe: stone_hammer | known=true | station=workbench | crafted=true
+probe: hand_saw | known=true | station=workbench | crafted=true
+probe: notice: Lumber by hand was cancelled: a tool is missing
+probe: lumber_by_hand | known=true | station= | crafted=false
+probe: MISMATCH lumber_by_hand known/open=true crafted=false
+probe: wooden_bow | known=true | station=workbench | crafted=true
+probe: wooden_arrow | known=true | station= | crafted=true
+probe: stone_arrow | known=true | station= | crafted=true
+probe: quiver | known=true | station= | crafted=true
+probe: snare | known=true | station= | crafted=true
+probe: kindling | known=true | station= | crafted=true
+probe: processed_hide | known=true | station= | crafted=true
+probe: hide_scraper | known=true | station=workbench | crafted=true
+probe: javelin | known=true | station=workbench | crafted=true
+probe: obsidian_knife | known=true | station=workbench | crafted=true
+probe: stone_pickaxe | known=true | station=workbench | crafted=true
+probe: sickle | known=true | station=workbench | crafted=true
+probe: wooden_club | known=true | station= | crafted=true
+probe: hide_tunic | known=true | station= | crafted=true
+probe: hide_trousers | known=true | station= | crafted=true
+probe: hide_gloves | known=true | station= | crafted=true
+probe: clay_jug | known=true | station= | crafted=true
+probe: herb_salve | known=true | station= | crafted=true
+probe: splint | known=true | station= | crafted=true
+probe: candle | known=true | station= | crafted=true
+probe: wicker_shield | known=true | station= | crafted=true
+probe: stone_mace | known=true | station= | crafted=true
+probe: plank_shield | known=true | station=workbench | crafted=true
+probe: leather_cap | known=true | station= | crafted=true
+probe: leather_jerkin | known=true | station=workbench | crafted=true
+probe: gambeson | known=true | station=workbench | crafted=true
+probe: quern | known=true | station= | crafted=true
+probe: flour_from_wheat | known=true | station= | crafted=true
+probe: flour_from_barley | known=true | station= | crafted=true
+probe: compost | known=true | station= | crafted=true
+probe: bone_arrow | known=true | station= | crafted=true
+probe: stone_wedge | known=true | station= | crafted=true
+probe: fibre_arrow | known=true | station= | crafted=true
+probe: tinder | known=true | station= | crafted=true
+probe: lumber_wedge | known=true | station=workbench | crafted=true
+probe: rough_bed_bedding | known=true | station= | crafted=true
+probe: wooden_hammer_soft | known=true | station= | crafted=true
+probe: rough_bed_straw | known=true | station= | crafted=true
+probe: wool_tunic | known=true | station= | crafted=true
+probe: wool_trousers | known=true | station= | crafted=true
+probe: wool_cap | known=true | station= | crafted=true
+probe: wool_mittens | known=true | station= | crafted=true
+probe: linen_shirt | known=true | station= | crafted=true
+probe: fur_cloak | known=true | station= | crafted=true
+probe: fur_hat | known=true | station= | crafted=true
+probe: fur_boots | known=true | station= | crafted=true
+probe: linen | known=true | station= | crafted=true
+probe: flour_from_oats | known=true | station= | crafted=true
+probe: flour_from_rye | known=true | station= | crafted=true
+probe: tallow_candle | known=true | station= | crafted=true
+probe: leather_strap | known=true | station= | crafted=true
+probe: butter | known=true | station= | crafted=true
+probe: fire lit with plant_fibre = true
+probe: fire lit with birch_bark = true
+probe: fire lit with tinder = true
+probe: fire lit with tinder_fungus = true
+probe: notice: Needs plant fibre, birch bark or tinder to light
+probe: fire lit with amadou = false
+probe: notice: Needs plant fibre, birch bark or tinder to light
+probe: fire lit with twine = false
+probe: recipes where 'known' matched what the server did: 127, mismatches: 1
+WARNING: 150 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: ObjectDB::cleanup (core\object\object.cpp:2536)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: ResourceCache::clear (core\io\resource.cpp:822)

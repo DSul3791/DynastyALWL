@@ -11,6 +11,7 @@ extends RefCounted
 # vertex color; foliage takes a per-tree tint from the instance custom data.
 
 const VARIANTS := 4
+const LIMB_DARK := Color(0.30, 0.22, 0.16)         # crown limbs (depth 1 and up) are drawn this much toward warm dark brown, so no pale spikes show through the leaves (guide F, 2026-10-31)
 const BARK_TINT_HARD := Color(0.45, 0.42, 0.35)       # hardwood: gray (owner, 2026-10-17)
 const BARK_TINT_SOFT := Color(0.50, 0.34, 0.22)       # softwood and evergreens: brown
 const BARK_TINT_PALM := Color(0.60, 0.50, 0.36)
@@ -195,6 +196,10 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 			_fern_rosette(FERN_LOOKS.get(str(entry["name"]), FERN_LOOKS["fern"]), bark, leaves, rng, h, crown, far)
 		"reed_stand":
 			_reed_stand(REED_LOOKS.get(str(entry["name"]), REED_LOOKS["reeds"]), bark, leaves, rng, h, crown, far)
+		"fallen_log":
+			_fallen_log(FALLEN_LOGS.get(str(entry["name"]), FALLEN_LOGS["fallen_log"]), bark, leaves, rng, h, crown, far)
+		"kelp":
+			_kelp(bark, rng, h, crown, far)
 		"grass_tuft":
 			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
 		"grass", "reed":
@@ -346,7 +351,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 	# the height to the top, like a street maple; a few limbs show through.
 	var base_y: float = h * 0.25
 	var limbs: int = 5 if far else rng.randi_range(9, 11)
-	var size_base: float = crown * (0.95 if far else 0.6)
+	var size_base: float = crown * (0.95 if far else 0.72)
 
 	# Limbs sweep up and out from the trunk at an angle, like a young maple, and carry
 	# the leaves along their length so the crown is built from them.
@@ -362,7 +367,7 @@ static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: fl
 		var tip: Vector3 = start + dirv * reach
 		tip.y = minf(tip.y, h * 0.97)
 		if not far:
-			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint, 5)
+			_branch(bark, start, tip, trunk * lerpf(0.34, 0.14, f), trunk * 0.07, tint.lerp(LIMB_DARK, 0.5), 5)
 		var along: int = 3 if far else 5
 		for m in range(along):
 			var t: float = lerpf(0.3, 1.0, float(m) / float(along - 1))
@@ -753,13 +758,13 @@ static func _maple_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGen
 	to.y = minf(to.y, h)
 
 	if not far:
-		_branch(bark, from, to, r, r * 0.62, tint, 6 if depth == 0 else (5 if depth == 1 else 4))
+		_branch(bark, from, to, r, r * 0.62, tint if depth == 0 else tint.lerp(LIMB_DARK, 0.5), 6 if depth == 0 else (5 if depth == 1 else 4))
 
 	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - half_h)) / (2.0 * half_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
 
 	if not bare and depth < last:
 		# Leaves all along the inner limbs too, so the crown is full down to the fork.
-		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.08, center, crown_w * (0.5 if far else 0.3), shade * 0.88, 2 if far else 3)
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.08, center, crown_w * (0.5 if far else 0.36), shade * 0.88, 2 if far else 3)
 
 	if depth >= last:
 
@@ -771,7 +776,7 @@ static func _maple_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGen
 					var turn: float = yaw + PI * 0.5 * float(c)
 					twigs.card(to + Vector3(0.0, length * 0.45, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.6, length * 0.55, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
 		else:
-			var size: float = crown_w * (0.5 if far else 0.3) * rng.randf_range(0.85, 1.15)
+			var size: float = crown_w * (0.5 if far else 0.36) * rng.randf_range(0.85, 1.15)
 			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
 			if not far:
 				_clump(leaves, rng, from.lerp(to, 0.5) + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
@@ -1614,13 +1619,14 @@ static func _oak_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 
 	if not far:
 		var sides: int = 6 if depth == 0 else (5 if depth == 1 else 4)
-		_branch(bark, from, mid, r, r * 0.8, BARK_TINT_OAK, sides)
-		_branch(bark, mid, to, r * 0.8, r * 0.62, BARK_TINT_OAK, sides)
+		var limb: Color = BARK_TINT_OAK if depth == 0 else BARK_TINT_OAK.lerp(LIMB_DARK, 0.5)
+		_branch(bark, from, mid, r, r * 0.8, limb, sides)
+		_branch(bark, mid, to, r * 0.8, r * 0.62, limb, sides)
 
 	var shade: float = lerpf(0.66, 1.0, clampf((to.y - (center.y - low_h)) / (half_h + low_h), 0.0, 1.0)) * rng.randf_range(0.92, 1.06)
 
 	if not bare and depth >= 1 and depth < last:
-		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.05, center, crown_w * (0.36 if far else 0.24), shade * 0.88, 2 if far else 3)
+		_clump(leaves, rng, to + (to - center).normalized() * crown_w * 0.05, center, crown_w * (0.36 if far else 0.29), shade * 0.88, 2 if far else 3)
 
 	if depth >= last:
 		if bare:
@@ -1631,7 +1637,7 @@ static func _oak_limb(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 					var turn: float = yaw + PI * 0.5 * float(c)
 					twigs.card(to + Vector3(0.0, length * 0.35, 0.0), Vector3(cos(turn), 0.0, sin(turn)), Vector3.DOWN, length * 0.55, length * 0.5, (to - center).normalized(), Color(1.0, 1.0, 1.0, 0.3))
 		else:
-			var size: float = crown_w * (0.4 if far else 0.26) * rng.randf_range(0.85, 1.15)
+			var size: float = crown_w * (0.4 if far else 0.31) * rng.randf_range(0.85, 1.15)
 			_clump(leaves, rng, to, center, size, shade, 2 if far else 3)
 			if not far:
 				_clump(leaves, rng, mid + (to - center).normalized() * size * 0.2, center, size * 0.8, shade * 0.85, 2)
@@ -2658,7 +2664,8 @@ const WILDFLOWER_LOOKS := {
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
 	"wild_mint": {"head": "spike", "stems": 6, "petal": Color(0.72, 0.6, 0.9), "size": 0.045, "beads": 9, "span": 0.25},
 	"wolfsbane": {"head": "spike", "stems": 3, "petal": Color(0.25, 0.22, 0.65), "size": 0.06, "beads": 10, "span": 0.4},
-	"flax": {"head": "spike", "stems": 7, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 5, "span": 0.2},
+	"sea_holly": {"head": "bell", "stems": 5, "petal": Color(0.45, 0.58, 0.8), "size": 0.04, "beads": 6, "span": 0.2, "basal": 2},   # beach pass: steel-blue spiny heads on stiff pale stems
+	"flax": {"head": "spike", "stems": 8, "petal": Color(0.35, 0.5, 0.95), "size": 0.04, "beads": 7, "span": 0.3, "basal": 1},
 	"foxglove": {"head": "bell", "stems": 3, "petal": Color(0.85, 0.35, 0.7), "size": 0.035, "beads": 10, "span": 0.5},
 	# Family 1 of goal 1b (Kathleen, 24 Oct): the remaining flower rows. References: alpine gentian-type blue, wild thyme pink 1 cm sprays, wood sorrel red-green spikes, watercress white umbels,
 	# thistle purple, mallow 5 petals, lily and bluebell bells; the fantasy plants keep their listed colours.
@@ -2704,7 +2711,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var az: float = rng.randf() * TAU
 
 	# Basal leaves: a few low clumps round the foot.
-	for k in range(2 if far else 3):
+	for k in range(mini(2, int(look.get("basal", 3))) if far else int(look.get("basal", 3))):
 		var a: float = rng.randf() * TAU
 		_clump(leaves, rng, Vector3(cos(a), 0.0, sin(a)) * crown * 0.25 + Vector3(0.0, h * 0.12, 0.0), Vector3(0.0, -h, 0.0), maxf(crown * 0.7, h * 0.3), rng.randf_range(0.85, 1.05), 2)
 
@@ -2856,12 +2863,12 @@ static func _herb(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, 
 		var height: float = h * rng.randf_range(0.7, 1.1)
 		var lean: Vector3 = Vector3(rng.randfn(), 0.0, rng.randfn()) * 0.03 * height
 		var top: Vector3 = base + lean + Vector3(0.0, height, 0.0)
-		_branch(bark, base, top, 0.006, 0.003, Color(0.42, 0.30, 0.28), 4)
+		_branch(bark, base, top, 0.006, 0.003, Color(0.36, 0.4, 0.22), 4)   # green-brown, not dark purple: dark stems read as black wires against the sky
 		var pairs: int = 3 if far else rng.randi_range(5, 7)
 		var turn: float = rng.randf() * PI
 
 		for m in range(pairs):
-			var t: float = 0.12 + 0.88 * float(m) / float(pairs)
+			var t: float = 0.12 + 0.88 * float(m) / float(pairs - 1)   # the top pair sits at the stem top, so no bare black stem shows above the leaves
 			var at: Vector3 = base.lerp(top, t)
 			var length: float = h * lerpf(0.34, 0.14, t) * rng.randf_range(0.85, 1.1)
 			var shade: float = lerpf(0.78, 1.05, t) * rng.randf_range(0.92, 1.06)
@@ -3060,12 +3067,14 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 7, "head_color": Color(0.74, 0.66, 0.38), "reach": 0.9},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.74, 0.66, 0.38), "reach": 1.2, "blade_h": 0.8, "blade_base": Color(0.13, 0.25, 0.07), "blade_tip": Color(0.78, 0.68, 0.38), "head_size": 1.5},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
-	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 11, "head_color": Color(0.84, 0.72, 0.34), "reach": 0.95},
+	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
+	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
+	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 9, "head_color": Color(0.84, 0.72, 0.34), "reach": 1.1, "blade_h": 0.85, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
 
@@ -3083,7 +3092,7 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
 
 	if head != "succulent":
-		_blades(bark, rng, h * low, crown, 6 if far else 22, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
+		_blades(bark, rng, h * low * float(look.get("blade_h", 1.0)), crown, 6 if far else 22, look.get("blade_base", Color(0.2, 0.32, 0.1)), look.get("blade_tip", Color(0.52, 0.62, 0.26)))
 
 	var color: Color = look["head_color"]
 
@@ -3115,8 +3124,98 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 				elif head == "spike":
 					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
 				elif not far:
-					for b in range(4):
-						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03, 0.0) + out * crown * 0.02 * float(b % 2), Vector3(h * 0.012, h * 0.022, h * 0.012), color * rng.randf_range(0.9, 1.1))
+					var hs: float = float(look.get("head_size", 1.0))
+
+					for b in range(5 if hs > 1.0 else 4):   # a seed head droops: beads stepping down and out from the stem top
+						_bead(bark, tip - Vector3(0.0, float(b) * h * 0.03 * hs, 0.0) + out * crown * 0.03 * float(b), Vector3(h * 0.012, h * 0.022, h * 0.012) * hs, color * rng.randf_range(0.9, 1.1))
+
+
+# Fallen logs and old stumps for the forest floor (Kathleen, beach and forest pass; flora.json rows name the look, `h` is the log length 2 to 6 m, `trunk` the radius). Reference: a rotting
+# trunk lying in woodland: bark brown-grey, moss growing thick along the top and the damp side, snapped branch stubs, a pale broken end, a hollow end with a dark opening; an old stump is a
+# short squat butt with splayed roots and a mossy cap.
+const FALLEN_LOGS := {
+	"fallen_log": {"kind": "log", "bark": Color(0.27, 0.19, 0.12), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+	"hollow_log": {"kind": "log", "bark": Color(0.25, 0.18, 0.12), "moss": Color(0.24, 0.42, 0.16), "hollow": true},
+	"old_stump": {"kind": "stump", "bark": Color(0.28, 0.2, 0.13), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+}
+
+
+static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	var colour: Color = look["bark"]
+	var moss: Color = look["moss"]
+	var radius: float = clampf(maxf(crown * 0.12, h * 0.075), 0.14, 0.45)
+
+	if str(look["kind"]) == "stump":
+		var height: float = maxf(radius * 2.2, 0.5)
+		_branch(bark, Vector3(0.0, 0.0, 0.0), Vector3(0.0, height, 0.0), radius * 1.15, radius, colour, 8)
+		_bead(bark, Vector3(0.0, height, 0.0), Vector3(radius * 1.05, radius * 0.25, radius * 1.05), colour.lightened(0.28))   # the broken, paler top
+
+		for k in range(4 if far else 7):
+			var a: float = TAU * float(k) / 7.0 + rng.randf() * 0.3
+			_branch(bark, Vector3(cos(a) * radius * 0.9, radius * 0.5, sin(a) * radius * 0.9), Vector3(cos(a) * radius * 2.1, 0.0, sin(a) * radius * 2.1), radius * 0.38, radius * 0.1, colour.darkened(0.1), 5)   # splayed roots
+
+		for k in range(2 if far else 5):
+			var b: float = rng.randf() * TAU
+			_bead(bark, Vector3(cos(b) * radius * 0.5, height + radius * 0.1, sin(b) * radius * 0.5), Vector3(radius * 0.5, radius * 0.22, radius * 0.4), moss * rng.randf_range(0.85, 1.15))
+
+		return
+
+	var rise: float = rng.randf_range(0.0, radius * 0.4)
+	_branch(bark, Vector3(-h * 0.5, radius, 0.0), Vector3(h * 0.5, radius + rise, 0.0), radius, radius * 0.82, colour, 8)
+	_bead(bark, Vector3(h * 0.5 + radius * 0.02, radius + rise, 0.0), Vector3(radius * 0.1, radius * 0.8, radius * 0.8), colour.lightened(0.35))      # the pale broken far end
+
+	if bool(look["hollow"]):
+		_bead(bark, Vector3(-h * 0.5 - radius * 0.02, radius, 0.0), Vector3(radius * 0.12, radius * 0.62, radius * 0.62), Color(0.06, 0.05, 0.04))      # the dark mouth of the hollow
+	else:
+		_bead(bark, Vector3(-h * 0.5 - radius * 0.02, radius, 0.0), Vector3(radius * 0.12, radius * 0.85, radius * 0.85), colour.lightened(0.3))
+
+	for k in range(2 if far else 4):   # snapped branch stubs
+		var x: float = rng.randf_range(-0.4, 0.4) * h
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		_branch(bark, Vector3(x, radius * 1.4, side * radius * 0.7), Vector3(x + radius * 0.5, radius * 1.4 + radius * 0.5, side * radius * 1.5), radius * 0.2, radius * 0.1, colour.darkened(0.15), 5)
+
+	for k in range(5 if far else 9):   # bark ridges: long thin lighter and darker strips along the trunk
+		var ra: float = TAU * float(k) / 9.0
+		var ry: float = radius + sin(ra) * radius * 0.96
+		var rz: float = cos(ra) * radius * 0.96
+		_branch(bark, Vector3(-h * 0.48, ry, rz), Vector3(h * 0.48, ry + rise * 0.9, rz), radius * 0.1, radius * 0.08, colour.lightened(0.12) if k % 2 == 0 else colour.darkened(0.2), 4)
+
+	for k in range(6 if far else 17):   # moss: thick on the top and down the damp sides
+		var mx: float = rng.randf_range(-0.48, 0.48) * h
+		var ma: float = rng.randf_range(-1.3, 1.3)
+		var size: float = rng.randf_range(0.04, 0.1) * h * 0.5 + radius * 0.5
+		_bead(bark, Vector3(mx, radius + cos(ma) * radius * 0.95 + radius * 0.12 + rise * (mx / h + 0.5), sin(ma) * radius * 0.95), Vector3(size, radius * 0.34, size * 0.55), moss * rng.randf_range(0.8, 1.25))
+
+
+# Kelp (beach pass): a holdfast of short roots and a clump of long, wavy brown-olive ribbons with a few round gas bladders near the tips. `h` is the ribbon length.
+static func _kelp(bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+	for k in range(3 if far else 6):   # the holdfast: short grasping roots on the seabed
+		var ra: float = rng.randf() * TAU
+		_branch(bark, Vector3(0.0, 0.04, 0.0), Vector3(cos(ra) * crown * 0.6, 0.0, sin(ra) * crown * 0.6), 0.03, 0.01, Color(0.2, 0.15, 0.07), 4)
+
+	for k in range(5 if far else 11):   # wavy olive stipes, each ending in a wide frilled blade of flattened lobes
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var side: Vector3 = Vector3(-out.z, 0.0, out.x)
+		var len: float = h * rng.randf_range(0.7, 1.0)
+		var colour: Color = Color(0.34, 0.3, 0.1).lerp(Color(0.5, 0.42, 0.14), rng.randf())
+		var prev: Vector3 = out * crown * 0.2 + Vector3(0.0, 0.05, 0.0)
+		var steps: int = 4 if far else 6
+
+		for seg in range(1, steps + 1):
+			var t: float = float(seg) / float(steps)
+			var at: Vector3 = out * crown * (0.2 + 0.7 * t) + side * sin(t * 6.0 + a * 3.0) * crown * 0.25 + Vector3(0.0, len * t, 0.0)
+			_branch(bark, prev, at, 0.03 * (1.0 - 0.6 * t) + 0.008, 0.03 * (1.0 - 0.6 * float(seg) / float(steps)) + 0.006, colour, 4)
+
+			if seg >= steps - 2 and not far:
+				var wide: Vector3 = Vector3(0.1, 0.11, 0.012) if seg % 2 == 0 else Vector3(0.012, 0.11, 0.1)
+				_bead(bark, at, wide, colour.lightened(0.1))
+				_bead(bark, at + side * 0.06 + Vector3(0.0, 0.05, 0.0), wide * 0.8, colour)
+
+			prev = at
+
+		if not far and k % 3 == 0:
+			_bead(bark, prev - Vector3(0.0, len * 0.18, 0.0), Vector3(0.035, 0.05, 0.035), Color(0.66, 0.58, 0.26))      # a gas bladder
 
 
 # Ferns and mosses, family 3 of goal 1b (Kathleen, 24 Oct). Reference: bracken/common fern 50-120 cm, a rosette of arching fronds; moss cushions 3-10 cm of tiny green domes with thin spore stalks.

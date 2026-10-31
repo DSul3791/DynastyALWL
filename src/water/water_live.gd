@@ -26,6 +26,7 @@ const START_SECONDS := 21600.0    # a dry start runs this long on its own, so th
 const START_PUBLISH_TICKS := 40
 const FALL_FILM_M := 0.02        # thin water on a baked channel this deep counts for finding falls
 const HOLD_M := 0.03             # drawn channel water stays drawn until it is thinner than this (hysteresis)
+const FILM_DRAW_M := 0.13        # a painted river cell the simulation holds no water on is drawn with this film (a look setting, as the settled files' film: data/water_settle.json "film"; 31 Oct 2026)
 
 var data
 var sim = null                    # the tile's WaterSim, built by begin() on the water thread
@@ -46,6 +47,7 @@ var _dry_start: bool = false
 var _digs: Array = []              # [center, radius, filled] waiting for the water thread
 var _since: int = 0
 var _channel: PackedInt32Array = PackedInt32Array()
+var _rivers: PackedInt32Array = PackedInt32Array()      # the painted river cells above the sea: drawn as a thin film wherever the live water has drained off them
 var _held: PackedByteArray = PackedByteArray()
 
 
@@ -84,9 +86,14 @@ func begin(saved: PackedFloat32Array = PackedFloat32Array()) -> void:
 	_since = 0
 	_channel = PackedInt32Array()
 
+	_rivers = PackedInt32Array()
+
 	for k in range(data.water_class.size()):
 		if data.water_class[k] != 0 and data.heights[k] > 0.0:
 			_channel.append(k)
+
+		if data.water_class[k] == 3 and data.heights[k] > 0.0:
+			_rivers.append(k)
 
 	_held = PackedByteArray()
 	_held.resize(_channel.size())
@@ -189,6 +196,7 @@ func tick(multiplier: float) -> float:
 		_since = 0
 		var levels: PackedFloat32Array = sim.level_map()
 		_hold_channel(sim, levels, _channel, _held)
+		_film_rivers(sim, levels, _rivers)
 		var falls: PackedFloat32Array = _fall_levels(sim, levels, _channel)
 		_mutex.lock()
 		_pending = levels
@@ -196,6 +204,18 @@ func tick(multiplier: float) -> float:
 		_mutex.unlock()
 
 	return sim.dt
+
+
+# The live sim moves the water by gravity, so the 13 cm film the settled files give every painted channel drains away from the headwater reaches in the first minutes and leaves them
+# dry beds (31 Oct 2026: 48 percent of the painted river cells of the starter tile wet, 54 percent a minute after a start with the film). The drawn levels keep the film: a painted river cell
+# with no drawn water gets ground + FILM_DRAW_M. This is what is DRAWN; the simulated water is not changed.
+static func _film_rivers(water, levels: PackedFloat32Array, rivers: PackedInt32Array) -> void:
+	if levels.size() != water.ground.size():
+		return
+
+	for k in rivers:
+		if is_nan(levels[k]):
+			levels[k] = water.ground[k] + FILM_DRAW_M
 
 
 # Owner report (2026-10-21): near the ocean the rivers ran low and blotchy, patches flipping

@@ -64,8 +64,7 @@ func _run() -> void:
 	_cam.fov = 24.0
 	_viewport.add_child(_cam)
 	var variants: Array = [
-		["default", {}], ["arms-1", {"arms": -1.0}], ["arms+1", {"arms": 1.0}], ["hands-1", {"hands": -1.0}], ["hands+1", {"hands": 1.0}],
-		["muscle-1", {"muscle": -1.0}], ["muscle+1", {"muscle": 1.0}], ["shoulders+1", {"shoulders": 1.0}], ["shoulders-1", {"shoulders": -1.0}],
+		["default", {}], ["hands+1", {"hands": 1.0}], ["muscle-1", {"muscle": -1.0}], ["shoulders+1", {"shoulders": 1.0}], ["feminine", {"shoulders": -0.3, "hips": 0.45, "bust": 0.6}],
 	]
 	var rows: Array = []
 
@@ -75,7 +74,7 @@ func _run() -> void:
 		for key in v[1]:
 			g[key] = v[1][key]
 
-		var body: Node3D = GeneratedBody.new(g, 0.03, true)
+		var body: Node3D = GeneratedBody.new(g, 0.05, true)
 		_viewport.add_child(body)
 		await _frames(3)
 		var rg: Dictionary = Generator.rig(g)

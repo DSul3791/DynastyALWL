@@ -104,10 +104,10 @@ func _init() -> void:
 	check(heaps == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 48, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
 	note("gathering")
 
-	# 2. Twist five twine from fibre by hand, then craft a stone axe (a stone, a stick and 5 twine).
-	queue(1, 5)
+	# 2. Twist two twine from fibre by hand, then craft a stone axe (a stone, a stick and 2 twine).
+	queue(1, 2)
 	pass_time(20.0, 0.2)
-	check(count("twine") == 5, "five twine are twisted by hand from fibre")
+	check(count("twine") == 2, "two twine are twisted by hand from fibre")
 	queue(2, 1)
 	pass_time(10.0, 0.2)
 	check(count("stone_axe") == 1, "the stone axe is made by hand")
@@ -133,12 +133,20 @@ func _init() -> void:
 	var guard: int = 0
 
 	while items._items.has(trunk_id) and guard < 200:
+		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 3:
+			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+
 		items._last_process.clear()
 		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
 
 	pass_time(120.0, 0.8)
 	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
+
+	for k in items._items:   # the logs now fall to the ground beside the trunk (Dave): count the loose ones too
+		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
+			logs += 1
+
 	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [logs, count("leaves")])
 	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")
@@ -183,7 +191,7 @@ func _init() -> void:
 	items._vitals_cfg["eat_pace_ms"] = 0
 	queue(13, 1)
 	queue(14, 1)
-	pass_time(40.0, 0.3)
+	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
 	check(count("lean_to_kit") == 1 and count("chest_kit") == 1, "the lean-to and the woven chest are made")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(0.0, 10.0, 4.0))

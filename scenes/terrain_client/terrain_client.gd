@@ -116,6 +116,7 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
+const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
@@ -191,6 +192,7 @@ var _quality_buttons: Array = []         # Esc > Settings, one per tier; the act
 var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
+var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
@@ -421,6 +423,7 @@ var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
@@ -1035,6 +1038,9 @@ func _welcome_body(info: Dictionary) -> void:
 	grass = GrassViewScript.new()
 	grass.name = "Grass"
 	root.add_child(grass)
+	critters = AmbientCrittersScript.new()
+	critters.name = "Critters"
+	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
@@ -1980,6 +1986,7 @@ func _update_flora() -> void:
 		fall_growth.update(falls, p)
 
 	flora.set_season(game_clock.season())
+	grass.set_season(flora.season)   # the season the flora view shows (the game season, or the --flora-season preview)
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -2673,7 +2680,7 @@ func _make_environment(root: Node3D) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	sea.material_override = WaterMaterial.make()   # the same look as the rivers
+	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
 
 
@@ -2780,6 +2787,18 @@ func _update_view(delta: float) -> void:
 
 		if debug_clip != "":
 			clip = debug_clip
+
+		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
+		# swing and its impact frame is the moment held_item.gd sends the blow.
+		var work: String = held.work_clip() if held != null else ""
+
+		if work != "" and _avatar.animation_player.has_animation(work):
+			clip = work
+
+			if held.swing_serial != _work_serial:
+				_work_serial = held.swing_serial
+				_avatar.animation_player.play(work, 0.05)
+				_avatar.animation_player.seek(0.0, true)
 
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 
@@ -3527,6 +3546,9 @@ func _process(delta: float) -> void:
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
+
+	if critters != null and body != null and sound != null and sound.ambient != null:
+		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
