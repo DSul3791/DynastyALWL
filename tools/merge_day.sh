@@ -87,6 +87,9 @@ if [ $TESTS = 1 ] && [ -n "$MERGED" ]; then
 	say ""; say "## 3. Tests"
 	[ ! -f .godot/global_script_class_cache.cfg ] && { say "(first run in the scratch tree: importing, about 2 min)"; godot --headless --path . --import >/dev/null 2>&1; }
 	if [ $RELEASE = 1 ]; then "$PY" tools/tests_for_diff.py --paths project.godot --full > "$OUT/plan.json"; else "$PY" tools/tests_for_diff.py "$MAIN" HEAD > "$OUT/plan.json"; fi
+	# Item data checks always run on a merge (duplicate item numbers or ids, next_number): they are cheap and a collision between branches is exactly what a merge causes.
+	if godot --headless --path . --script res://src/worldgen/tools/validate_items.gd > "$OUT/validate_items.txt" 2>&1 && ! grep -qE "^FAIL|[1-9][0-9]* errors" "$OUT/validate_items.txt"; then say "validate_items: pass"; else FAILS=$((FAILS + 1)); say "validate_items: FAIL: $(grep -E 'FAIL|error' "$OUT/validate_items.txt" | head -3 | tr '
+' ' ')"; fi
 	say "plan: $("$PY" -c "import json,sys;d=json.load(open(sys.argv[1]));print(d.get('class'), len(d['fast']),'fast', len(d['timing']),'timing', len(d['slow']),'slow')" "$OUT/plan.json")"
 	bash tools/run_tests.sh --jobs "${GATE_JOBS:-4}" --plan "$OUT/plan.json" --out "$OUT/tests" > "$OUT/tests.txt" 2>&1
 	say "$(grep -E '^(Test done|wall time|slowest)' "$OUT/tests.txt")"
