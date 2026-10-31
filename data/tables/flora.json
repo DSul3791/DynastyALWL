@@ -320,9 +320,10 @@
 			],
 			"per_hectare": {
 				"marsh": 30,
-				"temperate_forest": 5,
-				"mixed_forest": 5
+				"temperate_forest": 14,
+				"mixed_forest": 14
 			},
+			"shore": {"within_m": 30, "biomes": ["temperate_forest", "mixed_forest"]},
 			"moisture": [
 				170,
 				255
@@ -385,8 +386,9 @@
 			],
 			"per_hectare": {
 				"marsh": 15,
-				"temperate_grassland": 1
+				"temperate_grassland": 12
 			},
+			"shore": {"within_m": 25, "biomes": ["temperate_grassland"]},
 			"moisture": [
 				190,
 				255
@@ -1141,11 +1143,12 @@
 			"per_hectare": {
 				"marsh": 800,
 				"mangrove": 20,
-				"temperate_grassland": 30,
-				"temperate_forest": 15,
-				"mixed_forest": 15,
-				"boreal_forest": 10
+				"temperate_grassland": 200,
+				"temperate_forest": 160,
+				"mixed_forest": 160,
+				"boreal_forest": 100
 			},
+			"shore": {"within_m": 14, "biomes": ["temperate_forest", "mixed_forest", "temperate_grassland", "boreal_forest"]},
 			"moisture": [
 				150,
 				255
@@ -2749,9 +2752,10 @@
 			],
 			"per_hectare": {
 				"marsh": 40,
-				"temperate_grassland": 4,
-				"temperate_forest": 3
+				"temperate_grassland": 30,
+				"temperate_forest": 20
 			},
+			"shore": {"within_m": 10, "biomes": ["temperate_grassland", "temperate_forest"]},
 			"moisture": [
 				170,
 				255
@@ -2981,9 +2985,10 @@
 			],
 			"per_hectare": {
 				"marsh": 30,
-				"temperate_forest": 2,
-				"temperate_grassland": 2
+				"temperate_forest": 20,
+				"temperate_grassland": 20
 			},
+			"shore": {"within_m": 8, "biomes": ["temperate_forest", "temperate_grassland"]},
 			"moisture": [
 				170,
 				255
@@ -5849,12 +5854,13 @@
 				0.4
 			],
 			"per_hectare": {
-				"temperate_grassland": 3,
-				"temperate_forest": 3,
-				"mixed_forest": 3,
-				"boreal_forest": 2,
+				"temperate_grassland": 60,
+				"temperate_forest": 60,
+				"mixed_forest": 60,
+				"boreal_forest": 40,
 				"marsh": 3
 			},
+			"shore": {"within_m": 14, "biomes": ["temperate_forest", "mixed_forest", "temperate_grassland", "boreal_forest"]},
 			"moisture": [
 				150,
 				255
