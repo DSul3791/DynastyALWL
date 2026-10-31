@@ -63,6 +63,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
+const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -412,6 +413,7 @@ var dig_applied: int = 0
 var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
+var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -1026,6 +1028,9 @@ func _welcome_body(info: Dictionary) -> void:
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	shore_props = ShoreProps.new()
+	shore_props.name = "ShoreProps"
+	root.add_child(shore_props)
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
@@ -1645,6 +1650,9 @@ func _shore_prompt() -> String:
 		if number > 0 and items.inventory.numbers.has(number):
 			container = str(id)
 			break
+
+	if shore_props != null:
+		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
 
 	var ground: float = _ground_below(here)
 

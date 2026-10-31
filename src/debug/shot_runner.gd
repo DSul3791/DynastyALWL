@@ -508,6 +508,9 @@ func _process(delta: float) -> void:
 		_moved_msec = now
 		return
 
+	if ground_test and drop_it and dig_steps == 0 and not _finish_done:
+		return      # a drop or a placement is still to happen (13 s after joining, then the settle time): never take the picture before it (the lit fire frame was blank)
+
 	if item_mode:
 		client.flora.visible = false
 
