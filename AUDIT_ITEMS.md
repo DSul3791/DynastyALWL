@@ -114,3 +114,7 @@ Structures with no `sound` field: none
 - items fireplace_kit (#498): no encyclopedia row (the tooltip description still shows)
 - items flower_pot_kit (#499): no encyclopedia row (the tooltip description still shows)
 - items antler_mount_kit (#500): no encyclopedia row (the tooltip description still shows)
+
+## Fixed 31 Oct
+- Encyclopedia: the 98 missing rows (and Fibre cloth) written from the data; none missing now.
+- Place sounds mapped to existing kinds: clay_hearth, oven, rock_pile, fireplace (stone) -> foundation; workbench, tool_rack, vice, log_workbench, woodworking_table -> timber; stone_forge, large_forge, master_forge, blacksmithy -> foundation; path_patch, tilled_bed -> thump. remains and carcass stay silent (not placed by a player). For Dave to judge by ear; test_structure_look updated (a workbench is no longer silent).

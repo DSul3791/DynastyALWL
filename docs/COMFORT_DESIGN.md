@@ -82,3 +82,5 @@ Code needed:
 5. Lit logic (before we unlock torch, chandelier, fireplace): a `lit` flag per placed light fuelled with a stick (torch), candles (chandelier) or firewood (fireplace); only lit lights count. Fire states for the campfire and clay hearth already exist.
 6. Wall pieces (wall_torch, antler_mount) need a wall to hang on (or accept floor placement for now); the chandelier hangs from a roof.
 7. test_comfort.gd as listed in section 7.
+
+Update 31 Oct (moderator decision): no sheep or goats are spawned, so wool has no source in play. Wool rug is `future` and its recipe locked again (test_learn checks it). Feather bed now takes 2 Fibre cloth instead of 4 wool and the canopy bed 4 Fibre cloth instead of 4 linen (flax has no gatherable item yet). Fibre cloth (item 517) is 8 plant fibre woven by hand in 30 s. Feathers come from duck, songbird, grouse and seabird carcasses.

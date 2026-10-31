@@ -29,3 +29,6 @@ Comfort level 2 is the first Rested buff (shelter 1 + rough bed 1). By day 3 a p
 3. **Fireplace:** 24 bricks is most of a day of clay work after the 10 for the hearth. Leave it; it is the aspirational piece.
 4. **Seats count once:** a player is paid for variety. If a stool and a bench both fit the camp they add nothing; the tooltip in COMFORT_DESIGN.md shows the missing kinds, which is the guidance.
 5. Sticks: the lean-to now takes 32, the chest 10, the stool 6 and the straw bed 6; sticks are the first-hour bottleneck, so the stool and straw bed are cheap on purpose.
+
+## Update 31 Oct (moderator decision)
+Wool and linen have no source on the island (the animals file spawns no sheep or goats; flax gives plant fibre and seeds only). Wool rug: back to future and locked. Feather bed: rough bed kit + 30 feathers + 2 Fibre cloth. Canopy bed: feather bed kit + 8 lumber + 4 Fibre cloth. Fibre cloth (new, item 517): 8 plant fibre, 30 s, by hand; Kathleen needs to draw its look (grey placeholder until then). Feathers come from duck, songbird, grouse and seabird carcasses, so 30 is a few hunts.
