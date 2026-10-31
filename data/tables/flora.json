@@ -1243,6 +1243,7 @@
 		{
 			"id": 22,
 			"name": "tall_grass",
+			"seasonal": true,
 			"display": "Tall grass",
 			"kind": "plant",
 			"shape": "grass",
@@ -7367,6 +7368,7 @@
 		{
 			"id": 127,
 			"name": "thatch_grass",
+			"seasonal": true,
 			"display": "Thatching grass",
 			"kind": "plant",
 			"shape": "grass",

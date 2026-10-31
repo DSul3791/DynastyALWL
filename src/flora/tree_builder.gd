@@ -201,7 +201,7 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		"kelp":
 			_kelp(bark, rng, h, crown, far)
 		"grass_tuft":
-			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far)
+			_grass_tuft(GRASS_LOOKS.get(str(entry["name"]), GRASS_LOOKS["tall_grass"]), bark, leaves, rng, h, crown, far, season)
 		"grass", "reed":
 			_grass(leaves, rng, h, crown, 2 if far else 3)
 			_blades(bark, rng, h, crown, 6 if far else 20, Color(0.2, 0.32, 0.1), Color(0.52, 0.62, 0.26))
@@ -3078,10 +3078,11 @@ const GRASS_LOOKS := {
 }
 
 
-static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
+static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool, season: String = "") -> void:
 	var cards: int = int(look["cards"])
 	var head: String = str(look["head"])
 	var low: float = 0.45 if head == "spike" else 1.0       # plantain leaves lie low, only the spikes stand tall
+	var card_tint: Color = {"autumn": Color(0.95, 0.8, 0.5), "winter": Color(0.72, 0.62, 0.48), "spring": Color(0.85, 1.0, 0.8)}.get(season, Color.WHITE)   # the painted blade cards dry to straw in autumn, fade in winter
 
 	if cards > 0:
 		var yaw: float = rng.randf() * PI
@@ -3089,10 +3090,25 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		for k in range(maxi(cards - (1 if far else 0), 1)):
 			var turn: float = yaw + PI * float(k) / float(cards)
 			var right: Vector3 = Vector3(cos(turn), 0.0, sin(turn))
-			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(1.0, 1.0, 1.0, 0.15))
+			leaves.card(Vector3(0.0, h * 0.5 * low, 0.0), right, Vector3.UP, maxf(crown * float(look["width"]), h * 0.22), h * 0.5 * low, Vector3.UP, Color(card_tint.r, card_tint.g, card_tint.b, 0.15))
 
 	if head != "succulent":
-		_blades(bark, rng, h * low * float(look.get("blade_h", 1.0)), crown, 6 if far else 22, look.get("blade_base", Color(0.2, 0.32, 0.1)), look.get("blade_tip", Color(0.52, 0.62, 0.26)))
+		var blade_base: Color = look.get("blade_base", Color(0.2, 0.32, 0.1))
+		var blade_tip: Color = look.get("blade_tip", Color(0.52, 0.62, 0.26))
+		var blade_count: int = 6 if far else 22
+
+		match season:   # seasons (data/look/seasons.json via the flora view): the tuft dries to straw in autumn, goes grey-brown and thin in winter, fresh in spring
+			"autumn":
+				blade_base = blade_base.lerp(Color(0.5, 0.42, 0.2), 0.55)
+				blade_tip = blade_tip.lerp(Color(0.82, 0.68, 0.34), 0.75)
+			"winter":
+				blade_base = blade_base.lerp(Color(0.36, 0.29, 0.18), 0.75)
+				blade_tip = blade_tip.lerp(Color(0.62, 0.55, 0.4), 0.85)
+				blade_count = 4 if far else 14
+			"spring":
+				blade_tip = blade_tip.lerp(Color(0.5, 0.75, 0.28), 0.45)
+
+		_blades(bark, rng, h * low * float(look.get("blade_h", 1.0)), crown, blade_count, blade_base, blade_tip)
 
 	var color: Color = look["head_color"]
 

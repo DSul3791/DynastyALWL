@@ -16,6 +16,7 @@ func _init() -> void:
 	var trunk: float = 0.0
 	var like: String = "tall_grass"
 	var far: bool = false
+	var season: String = ""
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--species="):
@@ -30,6 +31,8 @@ func _init() -> void:
 			trunk = float(a.trim_prefix("--trunk="))
 		elif a.begins_with("--like="):
 			like = a.trim_prefix("--like=")
+		elif a.begins_with("--season="):
+			season = a.trim_prefix("--season=")
 		elif a.begins_with("--far="):
 			far = a.trim_prefix("--far=") == "1"
 
@@ -58,7 +61,7 @@ func _init() -> void:
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 		materials[key] = m
 
-	var mesh: ArrayMesh = TreeBuilderScript.build(entry, h, 0, far, materials)
+	var mesh: ArrayMesh = TreeBuilderScript.build(entry, h, 0, far, materials, season)
 
 	if mesh == null:
 		push_error("flora_model_view: the builder made no mesh for " + species)
