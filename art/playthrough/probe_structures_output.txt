@@ -18,8 +18,7 @@ probe2: woodworking_table | blueprint woodworking_table | PLACED | missing items
 probe2: stone_forge | kit stone_forge_kit | PLACED
 probe2: stone_forge | blueprint stone_forge | PLACED | missing items: []
 probe2: blacksmithy | kit blacksmithy_kit | PLACED
-probe2:   notice: Too many of these stand here already.
-probe2: blacksmithy | blueprint blacksmithy | REFUSED | missing items: []
+probe2: blacksmithy | blueprint blacksmithy | PLACED | missing items: []
 probe2: carcass | not player placed (game or admin makes it)
 probe2: large_forge | kit large_forge_kit | PLACED
 probe2: master_forge | kit master_forge_kit | PLACED

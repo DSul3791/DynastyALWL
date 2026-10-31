@@ -1,6 +1,6 @@
 # Morning playtest checklist
 
-For Dave, 2026-10-31 build (the daily branch). About 45 minutes. Tick the boxes as you go. "Status" is what my checks say about this build (probes on the real server code, the tests, the pictures); "Known limits" is what is already broken or in progress, so you do not have to report it. Anything that does not match, write it in the last box.
+For Dave, 2026-10-31 build (the daily branch head a00c2e04 plus the playthrough files; updated 06:50 after the PC crash and the merges of the night). About 45 minutes. Tick the boxes as you go. "Status" is what my checks say about this build (probes on the real server code, the tests, the pictures); "Known limits" is what is already broken or in progress, so you do not have to report it. Anything that does not match, write it in the last box.
 
 ## 0. Start the game
 
@@ -11,9 +11,9 @@ For Dave, 2026-10-31 build (the daily branch). About 45 minutes. Tick the boxes 
 
 | Look at | You should see | Known limits |
 |---|---|---|
-| [ ] The ground under you | the spawn is on the pond shore at 53316, 68476. If the **foreground is a dark rippled plane**, that is the pond water: it was reported to Sonny with the coordinates (a dry spawn is his fix) | the spawn was a pond edge in my pictures |
+| [ ] The ground under you | the spawn is at 53316, 68476 and is dry (Sonny: ground 31.6 m, water 113 m away). If you see a **dark rippled plane** in the foreground it is the sea showing before the ground mesh has built: wait a few seconds and tell us if it stays | the plane was in my pictures before that fix; I have not re-shot it yet |
 | [ ] The sea and horizon | a shelf sea with islands, land 0 to about 850 m (the height fix is in: no more "everything 1,000 m high") | the sea is a flat plane, no shore foam yet (Sonny's water plan, in progress) |
-| [ ] The trees | a forest of grown beeches, oaks and firs; **new worlds start on day 30 of spring** so leaves should be green (leaf colour by season landed) | the crowns look like floating clumps with sky gaps (reported) |
+| [ ] The trees | a forest of grown beeches, oaks and firs; **new worlds now start on day 100, early summer** (changed from day 30 of spring) so leaves should be green and berries ripe (leaf colour by season landed) | the crowns look like floating clumps with sky gaps (reported) |
 | [ ] Tab | five bars: Health, Food, Water, Warmth, Energy | |
 | [ ] The NPC Edda | stands near you | she can stand inside a young fir (reported) |
 
@@ -40,14 +40,22 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 | 15 | [ ] Craft and place a **Lean-to** (8 sticks, 6 leaves, 2 twine; 25 s craft) | a roof of green slabs on posts | PASS | the roof is flat green slabs (reported to Kathleen) |
 | 16 | [ ] Craft a **Rough bed** (8 bedding from 2 ferns, or 10 thatch; plus 4 sticks and 2 twine), place it under the lean-to, press **Z** and hold 3 s | you sleep; you wake rested | PASS | the bed looks like stacked planks |
 | 17 | [ ] Craft a **Workbench** (12 sticks, 3 twine); then a **Tool rack** (10 sticks, 4 twine) beside it | bench level 2 with the rack; makes the stone hammer, bow, stone spade, pickaxe | PASS (bench and rack place; level 2 measured) | |
-| 18 | [ ] **The log chain**: try a **Chopping block** (2 logs) or **Rough planks** (1 log at the bench) with a log you cut | **expect it to fail**: "You do not have what that needs" | **STILL BROKEN (F-16)**: every felled tree gives `log_oak` etc. and the recipes want plain `log`; Tyler has the code half | blocks the chopping block, log workbench, planks, lumber, wooden house |
+| 18 | [ ] **The log chain**: with a log on your shoulder (or lying near you) try a **Chopping block** (2 logs), **Rough planks** (1 log at the bench), a **Log workbench** (4 logs) | **should now work**: the game says "Using nearby logs"; rough planks from the shoulder log gave 4 planks, the chopping block 1 | **FIXED (F-16)** in the probe; I did not do it by hand in the client | lumber needs the **stone wedge** (2 stones + 1 stick) and a log at the workbench; the saw mill is still out of reach (iron) |
 | 19 | [ ] Make a **Wooden spear** (1 stick, keep a stone) then a **Stone spear** (+2 twine); a **Stone knife** (2 stones, 1 stick) | spear jabs, hold right click to aim a throw | PASS (probe: rabbit 1 jab, deer 3) | |
 | 20 | [ ] **Find animals**: walk about 150 m and look around | rabbits, a deer herd, a fox; they freeze, then bolt; creep upwind and crouch | PASS | **none live within 100 m of the spawn**; only 3 species near it (rabbit, deer, fox) |
 | 21 | [ ] Kill a rabbit, then press E with the knife on its carcass (4 blows); roast the meat on your fire; eat it | meat, hide, bone; roast meat; food bar rises | **PASS: I drove the whole chain on the server code** (spear, kill, dress, fire, roast, eat, waterskin from hide) | I did not test the client aiming; antler is a grey blob |
-| 22 | [ ] **Food**: look for berries and nuts | **none will be in season**: the world starts in spring; raspberries are summer, hazelnuts autumn (about 60 real hours away at one game day an hour) | by design, but it means a hungry first hour must hunt, fish or eat greens | try wild mint, watercress, comfrey leaves, elder; food falls to about 20 % after 40 minutes of work (test_first_hour), so plan a meal early |
+| 22 | [ ] **Food**: look for berries and nuts | the world starts in early summer, so raspberries, brambles, strawberries and blueberries should be ripe; hazelnuts are autumn | the start day moved from 30 to 100 to fix exactly this (F-35 FIXED) | hunting, fishing and snares also feed you; nuts and mushrooms come later in the year |
 | 23 | [ ] Craft a **Fishing rod** (2 sticks, 2 twine) and cast at the pond; or a **shore net** (8 twine, 4 stones) at the water's edge | carp or perch bite; roast fish | PASS in tests (fishing, schools, water, balance: 0 failures) | I did not cast in the client |
 | 24 | [ ] **The sea and a river** | drink at the edge (E); wade; swimming in deep water | works; rivers start full | water look is Sonny's work in progress |
 | 25 | [ ] **Rain and the cave**: wait for rain; if you can, go into a cave or dig a tunnel | rain sounds; under cover you are dry; cave-in sounds when a tunnel is unsafe | not tested by me | sound is Sonny's/Tyler's; tell us what you hear |
+
+## 2b. New since yesterday: things to try
+
+- [ ] **Starter goals**: the server now fires goal events for drinking, gathering fibre, twine, axe, felling a tree, a lit fire, eating something wild, the lean-to, a bed, workbench, spear, knife and a caught fish (data/items/starter_goals.json; test_goals passes). Look for a goal list or hints; if you see none, the client part is not there yet.
+- [ ] **Farming**: a hoe tills a bed; seeds sow only in their season; rain keeps a bed wet; winter kills seedlings (server rules, test_farming). Crop and seed items now exist; I did not try it in the client.
+- [ ] **Recipes**: 208 of 227 recipes are learnable now (the 19 left are forge, steel and bronze things, plank chest, water wheel).
+- [ ] **Blacksmithy**: the blueprint places when 10 logs lie near you (probe).
+- Still not possible: **flint, copper, tin, iron and coal cannot be picked up** (no source yet); no stairs; the saw mill; hide scraper and leather.
 
 ## 3. The character creator (do this first if you like, or after)
 
