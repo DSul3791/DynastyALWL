@@ -8610,6 +8610,42 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return not v.is_empty() and float(v.get("warmth", 100.0)) < 70.0
 		"dusk":
 			return hour >= 18.0 and hour < 20.0
+		"has_plant_food_at_fire":
+			return _plant_food_at_fire(peer, inv)
+		"campfire_pot_placed":
+			return _hint_count(st, "event:placed:campfire_pot") >= 1
+
+	return false
+
+
+# Hint trigger has_plant_food_at_fire (Sal's tutorial steps 23 and 24): the player stands within 4 m of a lit fire with an ingredient of a campfire_pot or clay hearth recipe in the pack
+# (berries, nectar, pears ...; the plain campfire does not cook plants) and no campfire pot stands at that fire yet. The ingredient set is read from recipes.json by station.
+func _plant_food_at_fire(peer: int, inv) -> bool:
+	var pos: Vector3 = _peer_pos[peer]
+
+	if not _lit_fire_within(pos, 4.0) or _struct_kind_within(pos, "campfire_pot", 4.0):
+		return false
+
+	for number in recipes.numbers():
+		var r: Dictionary = recipes.recipe(int(number))
+
+		if not (str(r.get("station", "")) in ["campfire_pot", "clay_hearth"]):
+			continue
+
+		for need in r["needs"]:
+			if int(need[0]) > 0 and inv.count_of(int(need[0])) >= int(need[1]):
+				return true
+
+	return false
+
+
+# True when a placed structure of this kind stands within r metres of the point.
+func _struct_kind_within(pos: Vector3, kind: String, r: float) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"].get("kind", "")) == kind and (it["pos"] as Vector3).distance_to(pos) <= r:
+			return true
 
 	return false
 

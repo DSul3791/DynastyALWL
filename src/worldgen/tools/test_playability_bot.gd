@@ -13,8 +13,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 # What a first hour can fairly ask of the hands (the guide's pace: about 10 minutes of gathering). The bot fails when the recipes ask for more.
-# Sticks 70 (was 60): steps 11 to 20 need about 62 now the lean-to takes 32 (Guide 31 Oct; Sal decides the data side, change this to match his answer).
-const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 20}
+const GATHER_BUDGET := {"stick": 60, "stone": 40, "plant_fibre": 90, "leaves": 20}
 const STARTING_MATERIALS := ["stick", "stone", "plant_fibre", "leaves", "log"]
 
 var items
