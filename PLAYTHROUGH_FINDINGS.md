@@ -349,6 +349,22 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 
 Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a1cb5); S-craft now shows two mismatches: `lumber_by_hand` (expected, needs the hand saw) and **`water_wheel`, which has `known:false` but crafted on the server** in the probe (a hole in the known check or a recipe-number clash; Tyler, small, unreachable today because lumber and nails are).
 
+# Part 9: the night's run on the quiet PC (2026-10-31 06:30 to 07:30, daily a00c2e04)
+
+Pictures in `art/playthrough/world3/` and `art/playthrough/smoke/`; errors in `SMOKE_TEST.md`.
+
+| Picture | Rating (1 to 5) | What changed since part 6 |
+|---|---|---|
+| `smoke/walk3min.jpg` (spawn 53301, 68427, hour 12) | 4.5 | thick fresh grass in blades with flowers, bramble with ripe berries, the generated body standing in it, no shader error (the new season grass shader is fine) |
+| `world3/clearing_wide.jpg` | 4 | the lean-to roof now has leaf texture, the bed shows straw, the stone forge is a cream block with a flame; a dark flat shadow patch fills the foreground |
+| `world3/coast.jpg` (52600, 66592) | 4.5 | beach, teal sea with a horizon, island trees, clouds: the corrected world reads well |
+| `world3/under_beech.jpg` | 4 | in summer the beech crown is a dense green roof (the autumn clumps with sky gaps were the problem) |
+| `world3/campfire_lit.png` | failed | the `--shot-light` run took a blank grey frame (ground not loaded or the camera under the world); not kept |
+
+New small findings: an odd concentric-square textured cube lies at the lower left of `clearing_wide.jpg` (a placeholder or missing-texture look on a dropped item: Kathleen, check which item); the foreground is a very dark green flat patch (canopy shadow plus the ground shader, probably fine).
+
+Smoke test result in one line: the select page, creator, 3-minute windowed walk and 16 headless client self-tests all ran; one SCRIPT ERROR (`run_chest_test`, the chest never opened in the shared-server run, re-run alone pending); `database is locked` x2 in the server log; `Error loading voxel block` on every client start; no shader errors.
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
@@ -358,7 +374,7 @@ Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present |
-| F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False |
+| F-05 | wood is reachable without iron (lumber) | **FIXED** | lumber now; lumber_wedge makeable now: True |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 |
 | F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [8, 37] |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True |
@@ -369,20 +385,23 @@ Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a
 | F-13 | blueberry size | **MANUAL** | needs a picture |
 | F-14 | first axe cost in twine | **FIXED** | stone axe needs 2 twine |
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
-| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **STILL BROKEN** | probe_logs round 2: rough planks from the one log on the shoulder = 0 (the unit test passes only with logs for |
+| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **FIXED** | probe_logs round 2: rough planks from the one log on the shoulder = 4 (the unit test passes only with logs for |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 4 craftable items with a grey or missing look: chopping_block, clay_jug, candle, candle |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 8 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 5 orphan items not flagged future (first: flint, copper_ore, tin_ore, iron_ore, coal) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
-| F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
+| F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 38, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) |
-| S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing |
-| S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) |
+| F-35 | berries and nuts are in season near the start (a new world starts in summer, day >= 92) | **FIXED** | game_clock.gd START_SECONDS = day 100 (spring is days 0 to 91, summer from 92) |
+| F-36 | the first-hour playability bot reaches the end | **FIXED** | playability bot: all 11 steps done (06:56, DailyDev a00c2e04) |
+| S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
+src/worldgen/tools/test_farming.gd |
+| S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) |
 | S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] |
 
-12 fixed, 13 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
+18 fixed, 9 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
 
 ---

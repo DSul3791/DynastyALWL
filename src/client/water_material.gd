@@ -19,7 +19,7 @@ uniform float storm = 0.0;           // 0 calm, 1 big storm: darker, dirtier, mu
 uniform vec3 storm_color : source_color = vec3(0.13, 0.12, 0.09);
 uniform float mud = 0.0;             // 0 clear, 1 brown flood water (rivers and ponds above x1, set by the client)
 uniform float clarity_m = 1.1;       // water this thick hides about two thirds of what is behind it (clear brook water: the bed shows)
-uniform float edge_alpha = 0.12;     // the thinnest water
+uniform float edge_alpha = 0.34;     // the thinnest water
 uniform float fastest_m_s = 2.5;     // drawn speed of the steepest running water
 uniform vec3 sky_top : source_color = vec3(0.33, 0.47, 0.68);         // the sky shader's colours (sky_clouds.gd)
 uniform vec3 sky_horizon : source_color = vec3(0.63, 0.68, 0.75);
@@ -190,7 +190,7 @@ void fragment() {
 	vec2 swell = running && rough > 0.001 ? mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend) : vec2(0.0);
 	float drift = mod(TIME, 2000.0);
 	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
-	vec2 bump = (run * (0.05 + 0.35 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
+	vec2 bump = (run * (0.12 + 0.5 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
 	// Ripples fade with distance (far away they only sparkle in single pixels).
 	float distance_m = length(VERTEX);
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
@@ -242,7 +242,7 @@ void fragment() {
 	// White water breaking on the fastest stretches when the flow is high.
 	float white = running && rough > 0.001 ? mix(ripples(p * 1.7 - velocity * phase0 * cycle * 1.7 / scale), ripples(p * 1.7 + 5.0 - velocity * phase1 * cycle * 1.7 / scale), blend) : 0.0;
 	foam = max(foam, smoothstep(0.5, 0.75, white) * rough * smoothstep(0.4, 0.7, speed));
-	foam = max(foam, shore_foam * 0.8 * smoothstep(0.25, 0.55, speed));
+	foam = max(foam, shore_foam * 0.28 * smoothstep(0.25, 0.55, speed));   // 31 Oct: the 13 cm film of a shallow reach is all 'shore' to this term; at 0.8 it drew pale foam strips over whole brooks
 	// Soft foam where the river's fresh water meets the sea (moving water only).
 	float meet = mouth_band * step(0.001, steep) * smoothstep(0.45, 0.75, ripples(local / 2.2 + vec2(drift * 0.1, -drift * 0.07)));
 	foam = max(foam, meet * 0.45);
@@ -275,8 +275,8 @@ void fragment() {
 	vec3 foam_tint = mix(foam_color, mud_color * 1.6, clamp(mud_here * 0.6 + storm * 0.35, 0.0, 1.0));
 	float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);
 	// Thin water (a pond edge, a shallow shelf) is seen over its bed at a low angle; mirroring the whole sky there turned ponds into pale grey patches (build 826 play-test, 30 Oct 2026):
-	// the sky's share grows from 40 percent at the thinnest to full over about a metre of water.
-	float mirror_k = mix(0.4, 1.0, murk) * (1.0 - 0.62 * sea);
+	// the sky's share grows from 22 percent at the thinnest (31 Oct: was 40, shallow brook reaches still read as pale grey strips) to full over about a metre of water.
+	float mirror_k = mix(0.22, 1.0, murk) * (1.0 - 0.62 * sea);
 
 #ifdef SCENE_READS
 	if (refraction > 0.5) {
@@ -312,6 +312,7 @@ void fragment() {
 		ALBEDO = mix(mix(water, sky, fresnel * 0.8 * mirror_k * (1.0 - 0.7 * face)), foam_tint, foam * 0.85);
 		ALPHA = max(max(body_alpha, fresnel * 0.8 * mirror_k), foam * 0.9) * sheet_alpha;
 	}
+	EMISSION += foam_tint * foam * (sea > 0.5 ? 0.45 : 0.12) * daylight;   // foam is lit by the whole sky, not only the sun, so it stays white against pale sand and a pale sea
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
 

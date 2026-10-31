@@ -40,7 +40,7 @@ var _name_message: Label
 var _name_edit: LineEdit
 var _preview: SubViewport
 var _body: Node3D
-var _turn: float = 25.0
+var _turn: float = 180.0      # 180 faces the camera (the select page uses the same); it opened on the back at 25 (guide, 31 Oct 2026)
 var _rebuild_in: float = -1.0
 var _updating: bool = false
 var _dragging: bool = false

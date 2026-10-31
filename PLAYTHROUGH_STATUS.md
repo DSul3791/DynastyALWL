@@ -8,7 +8,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN | Tyler |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now | Sal |
 | F-04 | CONTROLS.md campfire cost matches recipe | **FIXED** | text no longer present | Tyler |
-| F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False | Sal + Tyler |
+| F-05 | wood is reachable without iron (lumber) | **FIXED** | lumber now; lumber_wedge makeable now: True | Sal + Tyler |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 | Sal |
 | F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [8, 37] | flora session |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True | Sal |
@@ -19,17 +19,20 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-13 | blueberry size | **MANUAL** | needs a picture | flora session |
 | F-14 | first axe cost in twine | **FIXED** | stone axe needs 2 twine | Sal |
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True | Sal |
-| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **STILL BROKEN** | probe_logs round 2: rough planks from the one log on the shoulder = 0 (the unit test passes only with logs forced into the pack: yes) | Tyler (code) + Sal |
+| F-16 | a log a player really holds (shoulder, one at a time) works in the log recipes | **FIXED** | probe_logs round 2: rough planks from the one log on the shoulder = 4 (the unit test passes only with logs forced into the pack: yes) | Tyler (code) + Sal |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 10 craftable items with a grey or missing look: clay_jug, candle, egg_nettle_fry, herb_omelette, juniper_trout, dried_berries, hazelnut_butter, tallow, soap, candle | Kathleen |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future | Sal |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) | Sal / flora |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 4 craftable items with a grey or missing look: chopping_block, clay_jug, candle, candle | Kathleen |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 8 recipes blocked and not flagged future | Sal |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 5 orphan items not flagged future (first: flint, copper_ore, tin_ore, iron_ore, coal) | Sal / flora |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None | Sal |
-| F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False | Sal / Kathleen |
+| F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 38, stairs: False | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN | Tyler + Sal |
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
-| S-farm | farming exists (crops.json read by code) | **STILL BROKEN** | crops.json is read by: nothing | Sal (spec) + Tyler (code) |
-| S-place | every kit and blueprint places on the server | **STILL BROKEN** | refused beyond the placement rules: ['blacksmithy'] (blacksmithy: its 10 plain logs, F-16) | Tyler |
+| F-35 | berries and nuts are in season near the start (a new world starts in summer, day >= 92) | **FIXED** | game_clock.gd START_SECONDS = day 100 (spring is days 0 to 91, summer from 92) | Dave / Sal |
+| F-36 | the first-hour playability bot reaches the end | **FIXED** | playability bot: all 11 steps done (06:56, DailyDev a00c2e04) | Tyler |
+| S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
+src/worldgen/tools/test_farming.gd | Sal (spec) + Tyler (code) |
+| S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) | Tyler |
 | S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] | Tyler |
 
-12 fixed, 13 still broken, 2 manual.
+18 fixed, 9 still broken, 2 manual.

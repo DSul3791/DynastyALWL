@@ -198,17 +198,20 @@ void fragment() {
 	color = mix(vec3(0.07, 0.065, 0.05), color, smoothstep(-3.0, 0.0, world_pos.y));
 
 	// Beach (31 Oct 2026): within a few metres of sea level the ground is sand whatever the cover below it: pale above the waterline, darker and wet at it. Not on steep ground (cliffs and
-	// rock stay rock), and the edge of the beach wanders with noise so it is not a contour line.
-	float beach = (1.0 - smoothstep(0.9, 3.0 + 1.6 * vnoise(world_pos * 0.06), world_pos.y)) * smoothstep(-0.5, 0.1, world_pos.y) * (1.0 - smoothstep(0.35, 0.6, slope));
+	// rock stay rock), and the edge of the beach wanders with noise so it is not a contour line. The beach reaches up to about 5 to 7 m (it was 3 to 4.6 m): the soil layers change at 8 m cells, and a 12 to 16 m dark square of forest soil stood in the sand under a willow at x 52548, z 66528 (ground 3 to 4.5 m, soil 6 and 8 among 15); the wider soft blend covers such cell borders.
+	float beach = (1.0 - smoothstep(1.2, 5.0 + 2.2 * vnoise(world_pos * 0.05), world_pos.y)) * smoothstep(-0.5, 0.1, world_pos.y) * (1.0 - smoothstep(0.35, 0.6, slope));
 	vec3 sand = mix(vec3(0.58, 0.50, 0.35), vec3(0.68, 0.60, 0.44), vnoise(world_pos * 0.9));
 	sand = mix(sand, vec3(0.78, 0.70, 0.52), 0.35 * vnoise(world_pos * 0.13));      // broad pale and darker drifts, so the beach is not one flat tone
 	// Wet sand: a narrow darker band at the waterline (it was a wide dark patch on flat shore), lighter than before.
+	float wet_sand = beach * (1.0 - smoothstep(0.05, 0.5 + 0.2 * vnoise(world_pos * 0.5), world_pos.y));
 	sand = mix(sand, vec3(0.42, 0.36, 0.27), 0.85 * (1.0 - smoothstep(0.05, 0.4 + 0.15 * vnoise(world_pos * 0.5), world_pos.y)));
 	// Pebbles and shells: small grey and pale stones in patches, more of them near the waterline and where the beach meets the land.
 	float pebble_zone = max(1.0 - smoothstep(0.0, 1.2, world_pos.y), smoothstep(1.2, 2.4, world_pos.y)) * smoothstep(0.35, 0.6, vnoise(world_pos * 0.35));
 	float pebble = smoothstep(0.64, 0.7, vnoise(world_pos * 4.0)) * pebble_zone;
 	vec3 pebble_color = mix(vec3(0.36, 0.35, 0.34), vec3(0.62, 0.60, 0.55), vnoise(world_pos * 11.0));
-	sand = mix(sand, pebble_color, pebble * 0.85);
+	float cobble = smoothstep(0.7, 0.74, vnoise(world_pos * 1.6 + 5.0)) * pebble_zone;      // a few larger stones
+	sand = mix(sand, pebble_color * mix(0.8, 1.15, vnoise(world_pos * 3.0)), max(pebble * 0.85, cobble * 0.9));
+	sand *= 1.0 - 0.07 * smoothstep(0.45, 0.8, vnoise(world_pos * vec3(0.7, 0.0, 0.45)));      // faint ripple marks and dune drifts
 	color = mix(color, sand, beach);
 
 	// Waterfall base (owner, 2026-10-20): the spray keeps the rock and ground around a fall wet:
@@ -258,6 +261,7 @@ void fragment() {
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
 	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 }
 """
 

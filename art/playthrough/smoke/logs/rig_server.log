@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+server: terrain or tile files changed, old generated ground thrown away
+server: 0 ground edits loaded from digs.dat
+Terrain server listening on port 7895 with 11 worker threads; store C:/Users/david/AppData/Local/Temp/tmp.Ikamb5EkAZ/store; spawn (53316.0, 33.57495, 68476.0)
+server: weather summer, rain 0.00 snow 0.00 storm 0.00, 21 C, rivers x1.00 of the start flow
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 443725749 connected
+Showroom: peer 443725749 filled it, 185 to place
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 15 made, 119 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 18 made, 245 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0

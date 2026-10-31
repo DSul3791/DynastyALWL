@@ -880,6 +880,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_dig(peer, inv, at)
 	elif kind == Net.ACT_FILL:
 		_fill(peer, inv, at)
+	elif kind == Net.ACT_GATHER_EDGE:
+		gather_edge(peer, inv)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at)
 	elif kind == Net.ACT_SOW:
@@ -7372,6 +7374,129 @@ func free_craft_for(peer: int) -> bool:
 	return admin_ok.is_valid() and bool(admin_ok.call(peer)) and (not admin_mode_on.is_valid() or bool(admin_mode_on.call(peer)))
 
 
+# --- Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026) ---
+# ACT_GATHER_EDGE: with a bucket, clay jug or waterskin in the pack and the sea within reach, one `sea_water`; otherwise the tide-line node of the cell the player stands in
+# (data/items/shore_nodes.json), the same node every time that game day, used up until the next. `water_kind` is set by the server scene (position -> "sea_shallow", "river", ...;
+# unset: no sea anywhere). Fresh water into a container is the existing drink action (_drink_water).
+var _shore_taken: Dictionary = {} # "cx,cz" -> game day the node was used
+var _shore_cfg: Dictionary = {}
+var _shore_loaded: bool = false
+
+
+func _shore_data() -> Dictionary:
+	if not _shore_loaded:
+		_shore_loaded = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/shore_nodes.json"))
+		_shore_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	return _shore_cfg
+
+
+func _sea_near(pos: Vector3, reach: float) -> bool:
+	if not water_kind_at.is_valid():
+		return false
+
+	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		if str((water_kind_at.call(pos.x + offset.x, pos.z + offset.y) as Dictionary).get("kind", "")).begins_with("sea"):
+			return true
+
+	return false
+
+
+# The node of a cell on a game day: {} when none, else the row of shore_nodes.json "nodes" (deterministic from the cell and the day).
+func shore_node_at(pos: Vector3, day: int, hour: float, season: String) -> Dictionary:
+	var cfg: Dictionary = _shore_data()
+	var cell_m: float = float(cfg.get("cell_m", 8.0))
+	var cell: Vector2i = Vector2i(int(floor(pos.x / cell_m)), int(floor(pos.z / cell_m)))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(Vector3i(cell.x, cell.y, day)) ^ 0x51ed270b
+
+	if rng.randf() >= float(cfg.get("node_chance", 0.5)):   # luck-exempt: seeded world layout
+		return {}
+
+	var usable: Array = []
+	var total: float = 0.0
+
+	for node in cfg.get("nodes", []):
+		var hours: Array = node.get("only_hours", [])
+
+		if hours.size() == 2:
+			var inside: bool = (hour >= float(hours[0]) and hour < float(hours[1])) if float(hours[0]) < float(hours[1]) else (hour >= float(hours[0]) or hour < float(hours[1]))
+
+			if not inside:
+				continue
+
+		var seasons: Array = node.get("only_seasons", [])
+
+		if not seasons.is_empty() and not seasons.has(season):
+			continue
+
+		usable.append(node)
+		total += float(node.get("weight", 1))
+
+	if usable.is_empty():
+		return {}
+
+	var pick: float = rng.randf() * total   # luck-exempt: seeded world layout
+
+	for node in usable:
+		pick -= float(node.get("weight", 1))
+
+		if pick <= 0.0:
+			return node
+
+	return usable[usable.size() - 1]
+
+
+func gather_edge(peer: int, inv) -> bool:
+	if not _peer_pos.has(peer) or inv == null:
+		return false
+
+	var cfg: Dictionary = _shore_data()
+	var here: Vector3 = _peer_pos[peer]
+	var reach: float = float(cfg.get("reach_m", 4.0))
+
+	if not _sea_near(here, reach):
+		_say(peer, "There is no sea water here.")
+		return false
+
+	for id in cfg.get("containers", []):
+		if table.number_of(str(id)) > 0 and inv.count_of(table.number_of(str(id))) > 0:
+			var water: int = table.number_of(str(cfg.get("sea_water_item", "sea_water")))
+
+			if water > 0 and _fit(peer, inv, water, 1) > 0:
+				give(peer, water, 1)
+				_dirty = true
+				return true
+
+			_say(peer, "Too heavy to carry any more")
+			return false
+
+	if float(ground_height.call(here.x, here.z)) > float(cfg.get("beach_max_height_m", 4.0)):
+		return false
+
+	var day: int = _game_day()
+	var hour: float = fmod(float(game_seconds.call()) if game_seconds.is_valid() else 0.0, 86400.0) / 3600.0
+	var node: Dictionary = shore_node_at(here, day, hour, _season())
+	var key: String = "%d,%d" % [int(floor(here.x / float(cfg.get("cell_m", 8.0)))), int(floor(here.z / float(cfg.get("cell_m", 8.0))))]
+
+	if node.is_empty():
+		_say(peer, "Nothing on the tide line here.")
+		return false
+
+	if int(_shore_taken.get(key, -1)) == day:
+		_say(peer, "Nothing left here today.")
+		return false
+
+	var count: Array = node.get("count", [1, 1])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(key) ^ day ^ 0x3c6ef372
+	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
+	_shore_taken[key] = day
+	_dirty = true
+	return true
+
+
 # --- Farming (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026) ---
 # A hoe tills a metre of ground into a tilled bed (structure kind tilled_bed, state 47); a seed sown on it starts a crop (data/items/crops.json); a game day with rain
 # or with water poured on the bed counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
@@ -7905,6 +8030,9 @@ func recipe_known_for(peer: int, recipe: Dictionary) -> bool:
 func _try_learn(peer: int, inv, recipe: Dictionary) -> bool:
 	if recipe_known_for(peer, recipe):
 		return true
+
+	if bool(recipe.get("locked", false)):
+		return false   # a chain it depends on does not exist yet (recipes.json "locked"): discovery and seeing do not teach it
 
 	var learned: Dictionary = _learned_of(peer)
 

@@ -100,6 +100,13 @@ def kit_look(i):
     return over.get(i) or (looks.get(i, {}).get("shape"), tuple(looks.get(i, {}).get("bits", [])))
 kit_variants = set(kit_look(i) for i in kit_ids)
 row("F-27", "kits are told apart by an emblem or shape, not only tint", len(kit_variants) >= len(kit_ids) // 2, "%d kits, %d distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796)" % (len(kit_ids), len(kit_variants)), "Kathleen")
+clock = text("src/shared/game_clock.gd")
+m_day = re.search(r"START_SECONDS := \(([0-9.]+) \* 24", clock)
+start_day = float(m_day.group(1)) if m_day else -1.0
+row("F-35", "berries and nuts are in season near the start (a new world starts in summer, day >= 92)", start_day >= 92.0, "game_clock.gd START_SECONDS = day %.0f (spring is days 0 to 91, summer from 92)" % start_day, "Dave / Sal")
+bot = text("art/playthrough/probe_bot_output.txt")
+if bot:
+    row("F-36", "the first-hour playability bot reaches the end", "FAILED at step" not in bot and "playability bot" in bot, (re.findall(r"playability bot.*", bot) or ["no result line"])[-1], "Tyler")
 row("S-farm", "farming exists (crops.json read by code)", bool(subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip()), "crops.json is read by: %s" % (subprocess.run(["git", "grep", "-l", "crops.json", "--", "src", "scenes"], cwd=ROOT, capture_output=True, text=True).stdout.strip() or "nothing"), "Sal (spec) + Tyler (code)")
 rules_ok = ("saw_mill", "campfire_pot", "snare_trap")   # refused by a placement rule (foundation, laid fire, open ground), not a bug
 place_bad = [x for x in re.findall(r"probe2: (\S+) \| (?:kit \S+|blueprint \S+) \| REFUSED", probe2) if x not in rules_ok]
