@@ -1797,6 +1797,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
+	var clumps: Dictionary = {}           # (species, patch slot) -> [[position, radius]]: the tall shrubs of one thicket
 	var lights: Array = []
 	# Never past the shortest of the item arrays (they change together; a mismatch must not crash the worker).
 	var count: int = mini(mini(ids.size(), items["positions"].size()), mini(items["heights"].size(), items["yaws"].size()))
@@ -1874,7 +1875,17 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
 
-			if radius > 0.0:
+			var item_number: int = int(ids[n]) & 0xffff
+
+			if radius > 0.0 and int(info["kind"]) == KIND_SHRUB and item_number >= PlacerScript.STAND_BASE:
+				# A tall shrub of a patch (a thicket): collected per patch, one collider round a clump of CLUMP_MIN_COLLIDER or more (below).
+				var clump_key: Vector2i = Vector2i(species_id, (item_number - PlacerScript.STAND_BASE) / PlacerScript.PATCH_MAX_PLANTS)
+
+				if not clumps.has(clump_key):
+					clumps[clump_key] = []
+
+				(clumps[clump_key] as Array).append([p, radius])
+			elif radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
 			elif bool(info.get("log", false)):
 				# A long fallen log: a capsule along its length at its yaw (shape entry: species, radius, position, length, yaw).
@@ -1882,6 +1893,30 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 				if log_size.x > 0.0:
 					shapes.append([species_id, log_size.x, p + Vector3(0.0, log_size.x, 0.0), log_size.y, float(items["yaws"][n])])
+
+	# One collider per thicket: four or more tall shrubs of one patch act as one big bush (a cylinder round their middle), fewer keep their own.
+	for clump_key in clumps:
+		var members: Array = clumps[clump_key]
+
+		if members.size() < PlacerScript.CLUMP_MIN_COLLIDER:
+			for member in members:
+				shapes.append([int(clump_key.x), float(member[1]), (member[0] as Vector3) + Vector3(0.0, 1.2, 0.0)])
+
+			continue
+
+		var middle: Vector3 = Vector3.ZERO
+
+		for member in members:
+			middle += member[0] as Vector3
+
+		middle /= float(members.size())
+		var reach: float = 0.0
+
+		for member in members:
+			reach += Vector2((member[0] as Vector3).x - middle.x, (member[0] as Vector3).z - middle.z).length()
+
+		reach = reach / float(members.size()) + 0.5
+		shapes.append([int(clump_key.x), clampf(reach, 0.6, PlacerScript.CLUMP_COLLIDER_MAX_M), middle + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.

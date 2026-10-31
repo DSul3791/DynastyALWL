@@ -688,7 +688,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "bramble",
-			"patch": {"every_m": 70, "chance": 0.6, "count": [4, 8], "radius_m": 8.0, "scale": [1, 3], "spacing_m": 2.5},
+			"patch": {"every_m": 70.0, "chance": 0.28, "count": [11, 15], "radius_m": [2.0, 3.5], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -751,6 +751,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 32, "chance": 0.7, "count": [9, 13], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.9, "by_biome": true},
 			"height_m": [
 				1,
 				4
@@ -809,6 +810,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 22, "chance": 0.7, "count": [11, 15], "radius_m": [2.0, 3.5], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"height_m": [
 				1,
 				2.5
@@ -862,6 +864,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 28, "chance": 0.7, "count": [11, 15], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.5, "by_biome": true},
 			"height_m": [
 				0.4,
 				1.2
@@ -1839,7 +1842,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "raspberry",
-			"patch": {"every_m": 60, "chance": 0.7, "count": [10, 20], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.3},
+			"patch": {"every_m": 60.0, "chance": 0.75, "count": [12, 16], "radius_m": [1.8, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -1959,6 +1962,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 58, "chance": 0.7, "count": [16, 19], "radius_m": [3.0, 4.5], "scale": [0.9, 1.3], "spacing_m": 1.0, "by_biome": true},
 			"height_m": [
 				3,
 				7
@@ -2086,7 +2090,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "wild_rose",
-			"patch": {"every_m": 70, "chance": 0.4, "count": [8, 15], "radius_m": 4.5, "scale": [1, 3], "spacing_m": 1.4},
+			"patch": {"every_m": 70.0, "chance": 0.42, "count": [9, 13], "radius_m": [1.5, 2.8], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -2146,7 +2150,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "blackthorn",
-			"patch": {"every_m": 80, "chance": 0.4, "count": [8, 15], "radius_m": 5.0, "scale": [1, 3], "spacing_m": 1.6},
+			"patch": {"every_m": 80.0, "chance": 0.38, "count": [10, 14], "radius_m": [1.8, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.9, "by_biome": true},
 			"near_m": 60,
 			"mid_m": 30,
 			"height_m": [
@@ -2208,6 +2212,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 67, "chance": 0.7, "count": [8, 11], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 1.0, "by_biome": true},
 			"height_m": [
 				3,
 				7
@@ -5081,6 +5086,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 108, "chance": 0.7, "count": [8, 12], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.8, "by_biome": true},
 			"height_m": [
 				0.8,
 				2.0
@@ -5197,6 +5203,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 92, "chance": 0.7, "count": [9, 13], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"height_m": [
 				0.5,
 				1.4
@@ -5730,6 +5737,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 61, "chance": 0.7, "count": [8, 11], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.9, "by_biome": true},
 			"height_m": [
 				1.0,
 				2.2
@@ -5970,6 +5978,7 @@
 			"kind": "shrub",
 			"shape": "shrub",
 			"model": "cane_shrub",
+			"patch": {"every_m": 80, "chance": 0.7, "count": [9, 13], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"height_m": [
 				0.3,
 				0.8
