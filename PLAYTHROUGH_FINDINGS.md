@@ -343,6 +343,8 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 
 | F-37 | LOW | **The shot runner's ground reading flips while a spot loads**: at one spot the voxel raycast `_ground()` read 31.0, then 15.0, then 63.0 within a minute (the real ground is 31), so a guard that waits for a stable ground or moves the camera when it changes made the picture worse (camera 16 m under the forest). Shipped instead: a warning-only guard in `shot_runner.gd` after the saved line ("WARNING ground not loaded ...; raise --shot-settle, 75 s worked"). Root cause (a coarse or stale voxel block answering the raycast) belongs to the terrain code. | `shot_runner.gd`; a kept client.log of the guard test | Tyler (terrain), Kathleen (rig) | small |
 
+**Correction (2026-10-31, from Sonny):** top problem 1 of Part 6 (the dark rippled plane at the spawn) is not a pond. At 53316, 68476 the spawn is dry (ground 31.6 m, nearest water 113 m away and 7 m lower, `test_spawn_dry`). The plane in `once.jpg` and `open_ground_rain.jpg` was most likely the sea plane showing under the forest before the ground mesh had built (fixed by 291e9715, "flora waits 1.5 s more after its ground data arrives"); the NPC town markers (Edda's clipping, problem 10) were moved onto the clear spawn pad (e241e6de). No spawn move is needed. Re-shoot to confirm is pending (the machine was saturated).
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
