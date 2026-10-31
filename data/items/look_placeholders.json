@@ -1,6 +1,6 @@
 {
  "note": "Items that still draw the grey placeholder chunk, each with a reason (Kathleen, 2026-10-31). test_item_looks fails for a grey item that is not listed here and for a listed item that already has a look. Make a look, then delete the row.",
  "items": {
-  "kindling_duplicate": "duplicate row of kindling: remove the item or give it kindling's look"
+  "kindling_duplicate": "retired duplicate of kindling, kept only for its item number (test_item_looks does not skip retired items)"
  }
 }
