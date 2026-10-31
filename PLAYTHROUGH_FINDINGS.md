@@ -112,3 +112,6 @@ Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `
 * **F-14 PARTLY FIXED:** twine cut on thatch floor 6 to 4, wall 20 to 8, roof 10 to 6, doorway 12 to 6, shore net 20 to 8, campfire pot 5 to 3. **The stone axe and stone spear stay at 5 twine** because test_first_hour and test_auto_craft hard-code 5 twine and 15 fibre; changing them needs those tests rewritten (about 12 lines in test_auto_craft). Proposal: axe 2 twine.
 * **F-15 FIXED (data):** Stone pickaxe is known and no longer marked future.
 * **F-02, F-05 data FIXED, code open:** Stone wedge (353) + log at a workbench gives 2 lumber, so wooden building is reachable with no iron. Flint, coal, ore and obsidian sources are specified in FLINT_ORE_SPEC.md for the code session; until then hide scraper, javelin and sickle stay unreachable.
+* **F-14 FIXED (update 2026-10-31):** Stone axe and Stone spear now cost 2 twine (6 fibre) instead of 5; test_first_hour, test_auto_craft (the 50-craft-cap check is dropped because one queue call takes at most 20 axes, which now needs only 40 twine), test_inventory and PLAYTHROUGH_GUIDE.md updated.
+* **F-12 straw FIXED (data):** tall grass now also gives 1 to 3 straw; recipe "Rough bed" also accepts 8 straw.
+* **F-11 spec:** LOG_SPECIES_SPEC.md (code half for Tyler).
