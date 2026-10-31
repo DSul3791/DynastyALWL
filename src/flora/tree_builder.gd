@@ -104,6 +104,10 @@ class Acc:
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
 static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> ArrayMesh:
+	# A flower or herb out of its season is not there at all (Dave 2026-10-31); only rows flagged "seasonal": true in flora.json are built per season, so the flag is also the switch.
+	if season != "" and bool(entry.get("seasonal", false)) and str(entry.get("model", entry.get("shape", ""))) in ["wildflower", "herb_nettle", "flower"] and not in_season(entry, season):
+		return ArrayMesh.new()
+
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
 	var bark: Acc = Acc.new()
@@ -2531,6 +2535,12 @@ const SHRUB_LOOKS := {
 	"blackthorn": {"canes": [14, 18], "base": 0.2, "arch": 0.55, "reach": 1.4, "rate": 0.12, "cane": Color(0.20, 0.17, 0.15), "leaf": 0.32, "fruit": Color(0.4, 0.45, 0.9), "unripe": Color(0.5, 0.6, 0.5), "flower": null, "thorns": true},
 	"blueberry": {"fill": 6, "canes": [9, 11], "sprays": 5, "arch": 0.1, "reach": 0.7, "rate": 0.5, "cluster": 0.06, "cane": Color(0.50, 0.38, 0.28), "leaf": 0.4, "fruit": Color(0.30, 0.38, 0.85), "unripe": Color(0.75, 0.9, 0.55), "flower": null, "thorns": false},
 }
+
+
+# Whether `season` is one of the species' flora.json "season" list (or the list has "all"); an empty season counts as in season (offline checks).
+static func in_season(entry: Dictionary, season: String) -> bool:
+	var list: Array = entry.get("season", [])
+	return season == "" or list.has(season) or list.has("all") or list.is_empty()
 
 
 # What a fruiting plant shows in `season` (Dave 2026-10-23: fruit only in the right season). `fruit`: ripe berries are drawn (the season is one of
