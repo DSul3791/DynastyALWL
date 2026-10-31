@@ -72,6 +72,7 @@ const ART_OVERRIDES := {
 	"crab_apples": {"shape": "fruit", "color": "#7c9a34", "size": 0.55},
 	"stewed_berries": {"shape": "dish", "color": "#6a2a48", "size": 1.0, "bits": ["soup", "#8a3a5a", "#4a1a3a"]},
 	"log_seat_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["dome"]},
+	"stool_kit": {"shape": "parcel", "color": "#7a5a30", "size": 0.8, "bits": ["bench"]},
 	"bench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["bench"]},
 	"chair_kit": {"shape": "parcel", "color": "#7a5a30", "size": 1.0, "bits": ["bench"]},
 	"table_kit": {"shape": "parcel", "color": "#9a7a44", "size": 1.0, "bits": ["bench"]},
