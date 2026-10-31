@@ -133,12 +133,20 @@ func _init() -> void:
 	var guard: int = 0
 
 	while items._items.has(trunk_id) and guard < 200:
+		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 3:
+			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+
 		items._last_process.clear()
 		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
 
 	pass_time(120.0, 0.8)
 	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
+
+	for k in items._items:   # the logs now fall to the ground beside the trunk (Dave): count the loose ones too
+		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
+			logs += 1
+
 	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [logs, count("leaves")])
 	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")

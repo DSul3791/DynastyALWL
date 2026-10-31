@@ -913,7 +913,8 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	bark.albedo_color = Color(0.32, 0.23, 0.15)
 	var mesh_node: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
-	cyl.top_radius = radius * (0.55 if trunk else 0.95)
+	var orig_length: float = maxf(float(extra.get("orig_length", length)), length)
+	cyl.top_radius = radius * ((1.0 - 0.45 * length / orig_length) if trunk else 0.95)   # a shortened trunk is thicker at its fresh cut end
 	cyl.bottom_radius = radius
 	cyl.height = length if trunk else maxf(radius * 1.2, 0.5)
 	cyl.material = bark
@@ -946,6 +947,23 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 		core.mesh = inner
 		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
 		mesh_node.add_child(core)
+
+	if trunk and bool(extra.get("keywood", false)) and length > 2.44 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
+		var cut_at: float = (length - 2.44) / length
+		var band: MeshInstance3D = MeshInstance3D.new()
+		var band_cyl: CylinderMesh = CylinderMesh.new()
+		var band_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, cut_at) * 1.04
+		band_cyl.top_radius = band_r
+		band_cyl.bottom_radius = band_r
+		band_cyl.height = 0.07
+		var band_mat: StandardMaterial3D = StandardMaterial3D.new()
+		band_mat.albedo_color = Color(0.92, 0.82, 0.55)
+		band_mat.emission_enabled = true
+		band_mat.emission = Color(0.35, 0.3, 0.15)
+		band_cyl.material = band_mat
+		band.mesh = band_cyl
+		band.position = Vector3(0.0, length * 0.5 - 2.44, 0.0)
+		mesh_node.add_child(band)
 
 	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	stub_rng.seed = int(radius * 1000.0) + int(length)
@@ -995,9 +1013,13 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	var rest: float = lie - pitch if has_pose else lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5))   # an older record keeps the level lie with the taper dip
 	pivot.position.y = radius   # the axis rides one butt radius up, so the log rests ON the ground instead of sunk in it (collision is at this height)
 	pivot.rotation.x = 0.0
-	var tween: Tween = pivot.create_tween()
-	# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
-	tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if bool(extra.get("landed", false)):
+		pivot.rotation.x = rest      # already lying (a log was cut off it): no fall again
+	else:
+		var tween: Tween = pivot.create_tween()
+		# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
+		tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 0
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -1691,9 +1713,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_snap_loose(id)
 
 			if _world[id]["state"] == state:
-				continue
+				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
-			_forget(id)
+				if not shorter:
+					continue
+
+			_forget(id)   # a changed state, or a felled trunk with a log cut off: draw it again
 
 		var node: Node3D
 		var light: OmniLight3D = null
