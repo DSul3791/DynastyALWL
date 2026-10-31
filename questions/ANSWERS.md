@@ -1858,3 +1858,7 @@ Answered: 2026-10-31 19:56 UTC
 Answer: No | Comment: This looks good enough for us attempting to make our very first model, but it looks terrible. It’s gonna need many many many iterations because we wanted to look photo realistic and heroic.
 Answered: 2026-10-31 19:56 UTC
 
+## pic-fh-leanto | Do the stick lean-to (24 sticks, 6 leaves, 4 twine) and the rough bed look like a place to sleep?
+Answer: Yes
+Answered: 2026-10-31 19:57 UTC
+
