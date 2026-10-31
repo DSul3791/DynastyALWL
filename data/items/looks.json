@@ -3014,6 +3014,16 @@
    "shape": "chunk",
    "color": "#8a8a8a",
    "size": 1.0
+  },
+  "stewed_berries": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
+  "wild_apples": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
   }
 
  }

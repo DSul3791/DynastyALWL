@@ -41,6 +41,15 @@ const LOOKS := {
 	"thatch_floor": {"builder": "thatch_floor", "args": []},
 	"thatch_roof": {"builder": "thatch_roof", "args": []},
 	"thatch_doorway": {"builder": "thatch_doorway", "args": []},
+	"stairs": {"builder": "stairs", "args": []},
+	"stone_wall": {"builder": "masonry_wall", "args": ["stone"]},
+	"brick_wall": {"builder": "masonry_wall", "args": ["brick"]},
+	"log_floor": {"builder": "tier_floor", "args": ["log"]},
+	"stone_floor": {"builder": "tier_floor", "args": ["stone"]},
+	"brick_floor": {"builder": "tier_floor", "args": ["brick"]},
+	"log_roof": {"builder": "tier_roof", "args": ["log"]},
+	"stone_roof": {"builder": "tier_roof", "args": ["stone"]},
+	"brick_roof": {"builder": "tier_roof", "args": ["brick"]},
 }
 
 static var _warned: Dictionary = {}
