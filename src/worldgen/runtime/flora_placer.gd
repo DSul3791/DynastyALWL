@@ -582,6 +582,8 @@ const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the tab
 const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
 const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
+const CLUMP_MIN_COLLIDER := 4       # four or more tall shrubs of one patch share one collider
+const CLUMP_COLLIDER_MAX_M := 3.0   # its radius never above this
 const SHRUB_COLLIDER_MIN_M := 0.22
 const SHRUB_COLLIDER_MAX_M := 0.5
 const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
@@ -882,6 +884,13 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 			if center.x + radius < origin.x or center.x - radius > origin.x + chunk_m or center.y + radius < origin.y or center.y - radius > origin.y + chunk_m:
 				continue
 
+			# by_biome decides for the whole patch (at its centre), not plant by plant, so a thicket is never thinned into single bushes.
+			if patch["by_biome"]:
+				var centre_k: int = data.nearest(center.x, center.y)
+
+				if float((h >> 4) % 1000) / 1000.0 >= per_biome[data.biome[centre_k]] / float(item["peak"]):
+					continue
+
 			var plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
 
 			for n in range(plants):
@@ -900,9 +909,6 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				var k: int = data.nearest(x, z)
 
 				if per_biome[data.biome[k]] <= 0.0:
-					continue
-
-				if patch["by_biome"] and keep >= per_biome[data.biome[k]] / float(item["peak"]):
 					continue
 
 				if item["kind"] != KIND_PLANT and keep >= float(patch["fill"]) * _soil_growth[data.soil[k]]:

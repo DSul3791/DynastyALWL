@@ -1119,6 +1119,9 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(flora_id) ^ int(now_s / REGROW_GAME_S) ^ 0x5bd1e995
 	var entry: Dictionary = _flora_by_name.get(species_name, {})
+
+	if not entry.is_empty() and season_now.is_valid() and not GatherRules.in_season(entry, str(season_now.call())):
+		return false   # out of season: nothing to pick (the client shows no prompt either); refused quietly, no item and no tool wear
 	var natural: String = ""
 
 	if not entry.is_empty() and not entry["yields"].is_empty():
