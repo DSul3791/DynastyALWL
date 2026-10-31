@@ -22,6 +22,7 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const KIND_TREE := 0
@@ -1837,9 +1838,13 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		if (level & 8) != 0 and int(info["kind"]) != KIND_PLANT and float(info["trunk"]) >= 0.1:
+		# Trees from collision_m, tall shrubs only within the shrub model range (level bit 32), so the collider count stays low.
+		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
-			shapes.append([species_id, float(info["trunk"]) * size_scale, p + Vector3(0.0, 1.2, 0.0)])
+			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
+
+			if radius > 0.0:
+				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.

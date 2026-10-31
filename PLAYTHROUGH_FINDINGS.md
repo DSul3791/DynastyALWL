@@ -217,6 +217,8 @@ Probe re-run after the fixes (`probe_playthrough.gd`): 112 recipes match their `
 * **F-12 straw FIXED (data):** tall grass now also gives 1 to 3 straw; recipe "Rough bed" also accepts 8 straw.
 * **F-11 spec:** LOG_SPECIES_SPEC.md (code half for Tyler).
 
+
+
 ## 6. Fix status, part 2 (Sal, 2026-10-31)
 * **F-16 data FIXED:** wood_species.json `ingredient_groups` (log, wooden_block, firewood); validate_items no longer treats plain `log` as a built-in source and now fails on any recipe ingredient with no source. The recipes and blueprints that use group ids are listed in LOG_SPECIES_SPEC.md. Code half (match members when filling an ingredient) is Tyler's.
 * **F-19 FIXED (flagged):** products of recipes that no player can make yet are now `future`: willow bark tea, acorn mash, flatbread (need water; WATER_GATHER_SPEC.md), nails, hinges, hand saw (iron), tar (pine tar has no source), processed hide (flint), leather cap (leather). Everything else the guide listed (grass clothes, kindling, brick, mortar, cobblestone, wood chain via the stone wedge, cooking dishes) was already opened or made reachable by the `known` flips and the drops added earlier.
@@ -257,3 +259,5 @@ The whole picture in one line: **hands, stone age, fire, shelter, bed, workbench
 * **F-19 FIXED (flagged):** products of recipes that no player can make yet are now `future`: willow bark tea, acorn mash, flatbread (need water; WATER_GATHER_SPEC.md), nails, hinges, hand saw (iron), tar (pine tar has no source), processed hide (flint), leather cap (leather). Everything else the guide listed (grass clothes, kindling, brick, mortar, cobblestone, wood chain via the stone wedge, cooking dishes) was already opened or made reachable by the `known` flips and the drops added earlier.
 * **F-20 mostly a false alarm, one real fix:** plants without a drops.json row are still gatherable: the server picks a random in-season yield item that exists in the table (`gather()` natural yield). A check over all 174 gathered items found one true orphan: **rose hips** (needs a rose-hip harvest on wild rose from the flora session). Real bug fixed: flax, tall grass and nettle listed an abstract `fibre` yield next to their `plant_fibre` row, so a pick could give the useless "fibre"; removed from flora.json yields. The abstract names `wood, hardwood, softwood, hard_wood, fine_wood, timber, poles` are only yields of trees (felled, not picked) and are used by no recipe; `herbs, food, fodder, spines, stuffing, burrs` are generic items used as natural yields; none retired because the flora session owns the yield lists.
 * **F-24 FIXED (data):** 19 of the live recipes stay `known:false` (forge/workbench level 2 and up, water wheel), by design; every other recipe is known from the start (F-01). The learn system is LEARN_SYSTEM_SPEC.md.
+
+
