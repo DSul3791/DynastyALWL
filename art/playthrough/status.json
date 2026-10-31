@@ -3,7 +3,7 @@
 "F-02": "STILL BROKEN",
 "F-03": "FIXED",
 "F-04": "FIXED",
-"F-05": "STILL BROKEN",
+"F-05": "FIXED",
 "F-06": "FIXED",
 "F-07": "FIXED",
 "F-08": "FIXED",
@@ -14,7 +14,7 @@
 "F-13": "MANUAL",
 "F-14": "FIXED",
 "F-15": "FIXED",
-"F-16": "STILL BROKEN",
+"F-16": "FIXED",
 "F-17": "FIXED",
 "F-18": "STILL BROKEN",
 "F-19": "STILL BROKEN",
@@ -23,7 +23,8 @@
 "F-22": "STILL BROKEN",
 "F-23": "STILL BROKEN",
 "F-27": "FIXED",
-"S-farm": "STILL BROKEN",
-"S-place": "STILL BROKEN",
+"F-35": "FIXED",
+"S-farm": "FIXED",
+"S-place": "FIXED",
 "S-craft": "STILL BROKEN"
 }

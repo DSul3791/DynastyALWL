@@ -92,15 +92,15 @@ func _init() -> void:
 			if str(bp.get("structure", "")) != kind or bool(bp.get("retired", false)):
 				continue
 
-			var p2: int = fresh(x + 30.0)
+			var p2: int = fresh(x + 300.0)
 			items.give(p2, n("stone_hammer"), 1)
 			items.action(p2, Net.ACT_MOVE, items.inventory_of(p2).numbers.find(n("stone_hammer")), 0, 0, Vector3.ZERO)
 			var bench_kit: String = ["workbench_kit", "workbench_kit", "log_workbench_kit", "stone_forge_kit"][clampi(int(bp.get("station_level", 1)), 0, 3)]
 			items.give(p2, n(bench_kit), 1)
-			items.action(p2, Net.ACT_PLACE, items.inventory_of(p2).numbers.find(n(bench_kit)), 0, 0, Vector3(x + 31.5, 10.0, -1.0))
+			items.action(p2, Net.ACT_PLACE, items.inventory_of(p2).numbers.find(n(bench_kit)), 0, 0, Vector3(x + 301.5, 10.0, -1.0))
 			if str(bp.get("near", "")) == "clay_hearth":
 				items.give(p2, n("clay_hearth_kit"), 1)
-				items.action(p2, Net.ACT_PLACE, items.inventory_of(p2).numbers.find(n("clay_hearth_kit")), 0, 0, Vector3(x + 28.0, 10.0, -2.0))
+				items.action(p2, Net.ACT_PLACE, items.inventory_of(p2).numbers.find(n("clay_hearth_kit")), 0, 0, Vector3(x + 298.0, 10.0, -2.0))
 			var lacking: Array = []
 
 			for need in bp["cost"]:
@@ -110,7 +110,7 @@ func _init() -> void:
 					items.give(p2, n(str(need[0])), int(need[1]))
 
 			var before2: int = count_kind(kind)
-			items.action(p2, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 4, 0, Vector3(x + 30.0, 10.0, -4.0))
+			items.action(p2, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 4, 0, Vector3(x + 300.0, 10.0, -4.0))
 			var ok2: bool = count_kind(kind) > before2
 			print("probe2: ", kind, " | blueprint ", bp_id, " | ", "PLACED" if ok2 else "REFUSED", " | missing items: ", lacking)
 

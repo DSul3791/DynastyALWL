@@ -1,13 +1,14 @@
 probe3: give 3 x log_oak -> 1 (shoulder: log_oak)
 probe3: pack has log_oak 0 plain log 0
-probe3: notice: You do not have what that needs
-probe3: chopping block crafted from an oak log on the shoulder: 0
-probe3: chopping block crafted from 2 plain logs: 1
+probe3: notice: Using nearby logs
+probe3: chopping block crafted from an oak log on the shoulder: 1
+probe3: notice: Using nearby logs
+probe3: chopping block crafted from 2 plain logs: 2
 probe3: round 2: shoulder log log_oak, pack log_oak 0
-probe3: notice: You do not have what that needs
-probe3: round 2: rough planks from the one log on the shoulder (1 log needed): 0
-probe3: notice: Put your log down first (Q).
+probe3: notice: Using nearby logs
+probe3: round 2: rough planks from the one log on the shoulder (1 log needed): 4
 probe3: notice: You do not have what that needs
 probe3: round 2: chopping block from the shoulder log plus one on the ground (2 logs needed): 0
+probe3: notice: Using nearby logs
 probe3: round 2: chopping block with two logs forced into the pack (what the unit test does, not what a player can hold): 1
-probe3: round 2: rough planks with one log forced into the pack (checks the bench is in reach): 4
+probe3: round 2: rough planks with one log forced into the pack (checks the bench is in reach): 8
