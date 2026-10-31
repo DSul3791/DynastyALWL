@@ -82,4 +82,5 @@ func _init() -> void:
 	craft("lumber_wedge", 1)
 	check(count("lumber") == 2 and count("log_oak") == 1, "without the wedge the wedge recipe makes nothing")
 	print("lumber route: %d failures" % failures)
+	items._finish_writer()
 	quit(1 if failures > 0 else 0)
