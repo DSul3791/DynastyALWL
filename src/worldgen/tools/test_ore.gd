@@ -82,6 +82,23 @@ func _init() -> void:
 	blows(h, 200)
 	check(count(h, "coal") > 10 and count(h, "stone") > 10, "at a half, a pick on a coal outcrop gives both coal and stone (%d, %d)" % [count(h, "coal"), count(h, "stone")])
 
+	# The ladder: iron ore needs a bronze, iron or steel pick; a stone pick gets only stone from an iron outcrop but copper from a copper one.
+	var st = make("test_ore_stone_pick_iron", "stone_pickaxe")
+	st._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(st, "iron")
+	blows(st, 30)
+	check(count(st, "iron_ore") == 0 and count(st, "stone") > 0, "a stone pick takes no iron ore from an iron outcrop (%d ore, %d stone)" % [count(st, "iron_ore"), count(st, "stone")])
+	var br = make("test_ore_bronze_pick_iron", "bronze_pickaxe")
+	br._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(br, "iron")
+	blows(br, 30)
+	check(count(br, "iron_ore") > 0, "a bronze pick takes iron ore (%d)" % count(br, "iron_ore"))
+	var sc = make("test_ore_stone_pick_copper", "stone_pickaxe")
+	sc._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(sc, "copper")
+	blows(sc, 30)
+	check(count(sc, "copper_ore") > 0, "a stone pick still takes copper ore (%d)" % count(sc, "copper_ore"))
+
 	var x = make("test_ore_axe", "stone_axe")
 	outcrop(x, "iron")
 	blows(x, 60)
