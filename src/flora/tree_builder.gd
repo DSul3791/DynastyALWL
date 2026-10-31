@@ -3253,7 +3253,7 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					_bead(bark, tip, Vector3(h * 0.025, h * 0.1, h * 0.025), color)
 				elif far:
 					if head == "seed":
-						_bead(bark, tip - Vector3(0.0, 0.16, 0.0) + out * 0.07, Vector3(0.022, 0.26, 0.022), color * rng.randf_range(0.95, 1.1))      # one long pale drooping panicle seen from afar (it must read at 10 to 40 m)
+						_bead(bark, tip - Vector3(0.0, 0.2, 0.0) + out * 0.07, Vector3(0.03, 0.36, 0.03), color.lightened(0.1) * rng.randf_range(0.97, 1.1))      # one long pale drooping panicle seen from afar (it must read at 10 to 40 m)
 				elif not far:
 					var hs: float = float(look.get("head_size", 1.0))
 
