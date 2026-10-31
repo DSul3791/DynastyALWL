@@ -129,7 +129,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 - `everember_wood` (material) F look: ok (beams)
 - `fibre` (material) F look: ok (bundle)
 - `fine_wood` (material) F look: ok (beams)
-- `greens` (material) **NOT marked future** look: ok (frond)
+- `greens` (material) F look: ok (frond)
 - `gum` (material) F look: ok (chunk)
 - `hard_wood` (material) F look: ok (beams)
 - `hardwood` (material) F look: ok (beams)

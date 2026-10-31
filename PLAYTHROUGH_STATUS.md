@@ -23,7 +23,7 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row | Kathleen |
 | F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: chopping_block, nettle_tea | Kathleen |
 | F-19 | no blocked recipe without a future flag | **FIXED** | 0 recipes blocked and not flagged future | Sal |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: greens) | Sal / flora |
+| F-20 | every non-future gathered item has a gather path | **FIXED** | 0 orphan items not flagged future (first: ) | Sal / flora |
 | F-21 | saw mill reachable | **FIXED** | saw mill built wave: 4 | Sal |
 | F-22 | stairs and stone/brick/log pieces exist | **FIXED** | structures: 48, stairs: True | Sal / Kathleen |
 | F-23 | ore, coal and flint can be picked up | **FIXED** | iron_ore now, coal now, flint now | Tyler + Sal |
@@ -35,4 +35,4 @@ src/worldgen/tools/test_farming.gd | Sal (spec) + Tyler (code) |
 | S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) | Tyler |
 | S-craft | every recipe behaves as its known flag says | **FIXED** | mismatches: ['lumber_by_hand'] | Tyler |
 
-23 fixed, 4 still broken, 2 manual.
+24 fixed, 3 still broken, 2 manual.
