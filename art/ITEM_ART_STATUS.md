@@ -597,3 +597,18 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 1173 | wolfsbane_roots | Wolfsbane roots | root | looks.json | rough |  |  |  |  |
 | 1174 | wood | Wood | beams | looks.json | rough |  |  |  |  |
 | 1175 | yarrow | Yarrow | flower | looks.json | rough |  |  |  |  |
+
+## Art session 2026-10-31: status and queued checks
+
+Done and pushed (kathleen-art): lean-to long roof and collider, lit fixtures, fibre cloth, chopping block, ten distinct kits, larger hands, meadow flowers (round 3, flora 4/5 at 10 m), round apples, crown variety, tall-grass panicle tips.
+
+Render and test checks queued until the computer is free (nothing below has been run since the pause):
+- Real-game shot of the long-roof lean-to with a bed (rig, north of z 68430).
+- Real-game orchard fruit (round apples) at 10 m and 15 m.
+- Real-game crown variety on a forest edge.
+- One shot per kit family (ten kits) in the rig, not only offline renders.
+- Hands at the new radii, idle and holding a tool.
+- White (yarrow, chamomile) and pink (valerian) meadow drifts in game.
+- Headless tests after any further edit: test_leanto_collider, test_item_looks, test_look_table, test_structure_looks, test_tool_looks, test_flora_budget, test_fruit_share.
+
+Known gaps: log cabin set piece, woven texture on fibre cloth, flame tip colour (Tyler), thatch seen from behind (second offset layer idea), furniture rows in structures.json (Tyler/Sal).
