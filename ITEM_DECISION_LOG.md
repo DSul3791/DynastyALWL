@@ -336,3 +336,6 @@ FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-
 Berry loophole: roasting turned one 4 kcal berry into 400 kcal Roast forage; berries now roast into new Stewed berries (483, 10 kcal) via cooks_into; test_server_items updated.
 
 Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): recipes known, kits and pieces no longer future. Stairs and the cabin set stay locked.
+
+## Crab apples edible, wild apples (2026-10-31)
+Dave: crab apples must be edible. Server check: crab_apples already counted as food (vitals by_suffix apples = 120; VitalsRules.edible true), so the cause was the description wording ("Cooked down with honey they are good") reading as not edible; fixed: description now "Hard, sour little green apples. Edible raw, better cooked with honey." and by_id crab_apples = 60 kcal (small and sour). New item Wild apples (484, 80 kcal, 240 h, future until the flora session adds the forest eating-apple tree). test_apples_edible.gd added (crab apple 60 < wild apple 80 < early apple 110 kcal gain, each uses up one). Crab apples are GREEN (Dave): told Kathleen.

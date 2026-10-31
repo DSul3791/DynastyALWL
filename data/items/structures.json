@@ -27,7 +27,7 @@
 			"half_x": 1.1,
 			"half_z": 0.95,
 			"height": 2.1,
-			"look": "log_wall",
+			"look": "lean_to",
 			"sound": "leanto",
 			"clears_grass": true
 		},
