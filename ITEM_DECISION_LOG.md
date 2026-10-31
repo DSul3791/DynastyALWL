@@ -283,3 +283,6 @@ Added 27 dishes (oat porridge ... cactus fry, FOOD_VARIETY.md list; rose hip tea
 
 ## Animal products, shops, pacing (2026-10-31)
 Items 413-418 (tallow, soap, leather strap, milk, butter, cheese) and recipes 275-280; ANIMAL_PRODUCTS.md; data/npcs/shops_proposal.json (fisher, hunter, healer, ready to enable, not enabled); CRAFT_PACING.md (proposal only: craft seconds 98 -> 251 for the starter kit, plus spawn boost 4 -> 2; needs a timed play-through before applying). Starter-goal events sent to Tyler.
+
+## Pacing applied, quality grades, town, encyclopedia (2026-10-31)
+Applied (moderator): starter-kit craft times 98 -> 250 s (twine stays 2 s because tests hard-code it), spawn boost max 4 -> 2; fibre quantities unchanged. Tests updated: test_server_items campfire-kit-worth thresholds (8 stones, 12 sticks), test_first_hour lean-to/chest wait 40 -> 70 s. QUALITY_GRADES_SPEC.md (four grades, score formula, multipliers, burn chance). data/npcs/town_proposal.json (4 NPCs, 11 markers, 7 jobs, buildings from kits). data/items/encyclopedia.json (522 entries, 250 obtainable now, generated). The suite run (python tools/items_check.py, all steps) was started in the background; results below if it finishes.

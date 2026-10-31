@@ -1,0 +1,422 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing. Town data for the first island in the shapes the NPC code already reads: `npcs` rows are npcs.json entries (24 hourly package slots), `markers` are markers.json entries (coordinates next to the existing beds and chairs at x 53296..53306, z 68422..68424; y comes from the ground), `outfits` are outfits.json entries (items with worn.json rows), dialogue files and voices are Mandy's (voices reuse hob and edda until new ones are cast). Shops: data/npcs/shops_proposal.json. NEW shape for Tyler: `jobs` = the jobs board, each job {id, giver NPC, title, text, take (an [item, n] or a list of them the player hands over), reward {coin_copper, item?, rep?}, repeat_game_days (cooldown per player), rank (reputation rank needed)}. A job is offered by the giver's dialogue (effect set_flag on accept, take_item/give_item on turn-in) or by a board object; the existing dialogue effects (take_item, give_item, add_rep, set_flag) already cover the turn-in, so the board is data plus a list screen. `buildings` is a layout list for the world builder, made only from kits the player can also craft.",
+	"npcs": [
+		{
+			"id": "marra",
+			"name": "Marra",
+			"role": "healer",
+			"voice": "hob",
+			"outfit": "healer",
+			"schedule": [
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sit",
+				"wander",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"work",
+				"work",
+				"work",
+				"work",
+				"wander",
+				"eat",
+				"wander",
+				"wander",
+				"sit",
+				"sleep",
+				"sleep"
+			]
+		},
+		{
+			"id": "tam",
+			"name": "Tam",
+			"role": "hunter",
+			"voice": "edda",
+			"outfit": "hunter",
+			"schedule": [
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sit",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"work",
+				"work",
+				"work",
+				"wander",
+				"eat",
+				"wander",
+				"wander",
+				"wander",
+				"sleep",
+				"sleep",
+				"sleep"
+			]
+		},
+		{
+			"id": "bran",
+			"name": "Bran",
+			"role": "fisher",
+			"voice": "hob",
+			"outfit": "fisher",
+			"schedule": [
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"work",
+				"work",
+				"wander",
+				"eat",
+				"wander",
+				"wander",
+				"wander",
+				"wander",
+				"sleep",
+				"sleep",
+				"sleep"
+			]
+		},
+		{
+			"id": "gil",
+			"name": "Gil",
+			"role": "farmer",
+			"voice": "edda",
+			"outfit": "farmer",
+			"schedule": [
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sleep",
+				"sit",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"work",
+				"eat",
+				"work",
+				"work",
+				"work",
+				"work",
+				"wander",
+				"eat",
+				"wander",
+				"wander",
+				"sleep",
+				"sleep",
+				"sleep"
+			]
+		}
+	],
+	"markers": [
+		{
+			"id": "bed_3",
+			"kind": "bed",
+			"x": 53296.0,
+			"z": 68428.0,
+			"slots": 1,
+			"yaw": 45
+		},
+		{
+			"id": "bed_4",
+			"kind": "bed",
+			"x": 53306.0,
+			"z": 68428.0,
+			"slots": 1,
+			"yaw": 135
+		},
+		{
+			"id": "bed_5",
+			"kind": "bed",
+			"x": 53296.0,
+			"z": 68434.0,
+			"slots": 1,
+			"yaw": 45
+		},
+		{
+			"id": "bed_6",
+			"kind": "bed",
+			"x": 53306.0,
+			"z": 68434.0,
+			"slots": 1,
+			"yaw": 135
+		},
+		{
+			"id": "post_healer",
+			"kind": "post",
+			"x": 53290.0,
+			"z": 68422.0,
+			"slots": 1,
+			"yaw": 90
+		},
+		{
+			"id": "post_hunter",
+			"kind": "post",
+			"x": 53312.0,
+			"z": 68422.0,
+			"slots": 1,
+			"yaw": 270
+		},
+		{
+			"id": "post_fisher",
+			"kind": "post",
+			"x": 53290.0,
+			"z": 68430.0,
+			"slots": 1,
+			"yaw": 90
+		},
+		{
+			"id": "post_farmer",
+			"kind": "post",
+			"x": 53312.0,
+			"z": 68430.0,
+			"slots": 1,
+			"yaw": 270
+		},
+		{
+			"id": "table_1",
+			"kind": "table",
+			"x": 53301.0,
+			"z": 68418.0,
+			"slots": 1,
+			"yaw": 0
+		},
+		{
+			"id": "square_1",
+			"kind": "square",
+			"x": 53301.0,
+			"z": 68425.0,
+			"slots": 1,
+			"yaw": 0
+		},
+		{
+			"id": "shelter_1",
+			"kind": "shelter",
+			"x": 53301.0,
+			"z": 68414.0,
+			"slots": 1,
+			"yaw": 0
+		}
+	],
+	"outfits": {
+		"healer": [
+			"hide_boots",
+			"hide_cloak"
+		],
+		"hunter": [
+			"hide_boots",
+			"hide_leggings",
+			"hide_hood",
+			"quiver"
+		],
+		"fisher": [
+			"hide_boots",
+			"hide_hood"
+		],
+		"farmer": [
+			"hide_boots",
+			"hide_mittens"
+		]
+	},
+	"jobs": [
+		{
+			"id": "fibre_for_hob",
+			"giver": "hob",
+			"title": "Fibre for the stall",
+			"text": "Bring me 20 plant fibre and I will pay you.",
+			"take": [
+				"plant_fibre",
+				20
+			],
+			"reward": {
+				"coin_copper": 30
+			},
+			"repeat_game_days": 2,
+			"rank": "Stranger"
+		},
+		{
+			"id": "sticks_for_hob",
+			"giver": "hob",
+			"title": "Firewood for the winter",
+			"text": "Bring 30 sticks.",
+			"take": [
+				"stick",
+				30
+			],
+			"reward": {
+				"coin_copper": 40
+			},
+			"repeat_game_days": 2,
+			"rank": "Stranger"
+		},
+		{
+			"id": "wolf_for_edda",
+			"giver": "edda",
+			"title": "A wolf at the door",
+			"text": "Bring me a wolf hide.",
+			"take": [
+				"hide",
+				2
+			],
+			"reward": {
+				"coin_copper": 60,
+				"rep": 2
+			},
+			"repeat_game_days": 5,
+			"rank": "Known"
+		},
+		{
+			"id": "herbs_for_marra",
+			"giver": "marra",
+			"title": "Plantain and comfrey",
+			"text": "Bring me 6 plantain leaves and 4 comfrey leaves.",
+			"take": [
+				[
+					"plantain_leaves",
+					6
+				],
+				[
+					"comfrey_leaves",
+					4
+				]
+			],
+			"reward": {
+				"coin_copper": 35,
+				"item": [
+					"herb_salve",
+					1
+				]
+			},
+			"repeat_game_days": 3,
+			"rank": "Stranger"
+		},
+		{
+			"id": "meat_for_tam",
+			"giver": "tam",
+			"title": "Fresh meat",
+			"text": "Bring 4 raw meat and 2 feathers.",
+			"take": [
+				[
+					"raw_meat",
+					4
+				],
+				[
+					"feather",
+					2
+				]
+			],
+			"reward": {
+				"coin_copper": 40
+			},
+			"repeat_game_days": 2,
+			"rank": "Stranger"
+		},
+		{
+			"id": "fish_for_bran",
+			"giver": "bran",
+			"title": "Three trout",
+			"text": "I need 3 trout.",
+			"take": [
+				"trout",
+				3
+			],
+			"reward": {
+				"coin_copper": 30
+			},
+			"repeat_game_days": 2,
+			"rank": "Stranger"
+		},
+		{
+			"id": "straw_for_gil",
+			"giver": "gil",
+			"title": "Straw for the beds",
+			"text": "Bring 20 straw.",
+			"take": [
+				"straw",
+				20
+			],
+			"reward": {
+				"coin_copper": 25
+			},
+			"repeat_game_days": 3,
+			"rank": "Stranger"
+		}
+	],
+	"buildings": [
+		{
+			"id": "town_hall",
+			"kind": "hall",
+			"note": "Elder's house and the jobs board; placed with thatch kits",
+			"made_of": [
+				"thatch_wall_kit x8",
+				"thatch_roof_kit x4",
+				"thatch_floor_kit x4",
+				"thatch_doorway_kit x1"
+			]
+		},
+		{
+			"id": "inn",
+			"kind": "house",
+			"note": "A bed for coin (15 copper a night, COINS.md); rough beds x4",
+			"made_of": [
+				"thatch_wall_kit x6",
+				"thatch_roof_kit x3",
+				"thatch_floor_kit x3",
+				"rough_bed_kit x4"
+			]
+		},
+		{
+			"id": "stall_row",
+			"kind": "stalls",
+			"note": "Hob's stall and the three new shops (shops_proposal.json)",
+			"made_of": [
+				"workbench_kit x4",
+				"thatch_roof_kit x4"
+			]
+		},
+		{
+			"id": "healer_house",
+			"kind": "house",
+			"note": "Marra, herb drying (drying rack planned)",
+			"made_of": [
+				"thatch_wall_kit x4",
+				"thatch_roof_kit x2",
+				"thatch_floor_kit x2"
+			]
+		},
+		{
+			"id": "smithy",
+			"kind": "forge",
+			"note": "appears when a player builds a forge; Wyn (later)",
+			"made_of": [
+				"stone_forge"
+			]
+		}
+	]
+}
