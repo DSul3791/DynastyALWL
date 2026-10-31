@@ -75,8 +75,10 @@ axe = raw_recipes.get("stone_axe", {})
 twine = next((n for i, n in axe.get("needs", []) if i == "twine"), 0)
 row("F-14", "first axe cost in twine", twine <= 3, "stone axe needs %s twine" % twine, "Sal")
 row("F-15", "pickaxe craftable", recipes.get("stone_pickaxe", {}).get("wave_now") is not None, "stone_pickaxe makeable now: %s" % (recipes.get("stone_pickaxe", {}).get("wave_now") is not None), "Sal")
-fixed16 = "chopping block crafted from an oak log on the shoulder: 1" in probe3
-row("F-16", "a felled log works in the log recipes", fixed16, "probe_logs: " + (re.findall(r"probe3: chopping block crafted from an oak.*", probe3) or ["no output"])[0], "Tyler (code) + Sal")
+planks = re.findall(r"rough planks from the one log on the shoulder.*?: (\d+)", probe3)
+planks_n = int(planks[0]) if planks else -1
+fixed16 = planks_n >= 1 or "chopping block crafted from an oak log on the shoulder: 1" in probe3
+row("F-16", "a log a player really holds (shoulder, one at a time) works in the log recipes", fixed16, "probe_logs round 2: rough planks from the one log on the shoulder = %s (the unit test passes only with logs forced into the pack: %s)" % (planks_n, "yes" if "forced into the pack (what the unit test does, not what a player can hold): 1" in probe3 else "no"), "Tyler (code) + Sal")
 row("F-17", "override looks are drawn", "_is_placeholder" in basic, "basic_look.entry() %s" % ("prefers the override over a placeholder row" if "_is_placeholder" in basic else "ignores the override when a grey row exists"), "Kathleen")
 bad = [r["gives"] for r in recipes.values() if r["wave_now"] and (items.get(r["gives"], {}).get("look", "").startswith(("PLACEHOLDER", "NO LOOK")))]
 row("F-18", "everything craftable today has a real look", not bad, "%d craftable items with a grey or missing look: %s" % (len(bad), ", ".join(bad)[:160]), "Kathleen")

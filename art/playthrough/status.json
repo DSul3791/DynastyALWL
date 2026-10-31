@@ -2,7 +2,7 @@
 "F-01/F-24": "STILL BROKEN",
 "F-02": "STILL BROKEN",
 "F-03": "FIXED",
-"F-04": "STILL BROKEN",
+"F-04": "FIXED",
 "F-05": "STILL BROKEN",
 "F-06": "FIXED",
 "F-07": "FIXED",
@@ -25,5 +25,5 @@
 "F-27": "FIXED",
 "S-farm": "STILL BROKEN",
 "S-place": "STILL BROKEN",
-"S-craft": "FIXED"
+"S-craft": "STILL BROKEN"
 }

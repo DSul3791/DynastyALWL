@@ -46,4 +46,45 @@ func _init() -> void:
 		items.tick(1.0)
 
 	print("probe3: chopping block crafted from 2 plain logs: ", items.inventory_of(2).count_of(n.call("chopping_block")))
+
+	# Round 2 (after Tyler's 3e7a1cb5, ingredient groups): what a REAL player holds. A picked-up log goes to the shoulder, one at a time, never into the pack.
+	items.peer_connected_hello(3, "probe300000003")
+	items.report_position(3, Vector3(50.0, 10.0, 0.0))
+	items.vitals_of(3)["weight"] = 900.0
+	items.give(3, n.call("workbench_kit"), 1)
+	items.action(3, Net.ACT_PLACE, items.inventory_of(3).numbers.find(n.call("workbench_kit")), 0, 0, Vector3(52.0, 10.0, 0.0))
+	items.give(3, n.call("log_oak"), 1)
+	print("probe3: round 2: shoulder log ", items.shoulder_of(3), ", pack log_oak ", items.inventory_of(3).count_of(n.call("log_oak")))
+	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, Vector3.ZERO)
+
+	for s in range(12):
+		items.tick(1.0)
+
+	print("probe3: round 2: rough planks from the one log on the shoulder (1 log needed): ", items.inventory_of(3).count_of(n.call("rough_plank")))
+	items.give(3, n.call("log_oak"), 1)
+	items._last_queue_act.clear()
+	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+
+	for s in range(12):
+		items.tick(1.0)
+
+	print("probe3: round 2: chopping block from the shoulder log plus one on the ground (2 logs needed): ", items.inventory_of(3).count_of(n.call("chopping_block")))
+	items.inventory_of(3).add(n.call("log_oak"), 1)
+	items.inventory_of(3).add(n.call("log_birch"), 1)
+	items._last_queue_act.clear()
+	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+
+	for s in range(12):
+		items.tick(1.0)
+
+	print("probe3: round 2: chopping block with two logs forced into the pack (what the unit test does, not what a player can hold): ", items.inventory_of(3).count_of(n.call("chopping_block")))
+
+	items.inventory_of(3).add(n.call("log_spruce"), 1)
+	items._last_queue_act.clear()
+	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, Vector3.ZERO)
+
+	for s in range(12):
+		items.tick(1.0)
+
+	print("probe3: round 2: rough planks with one log forced into the pack (checks the bench is in reach): ", items.inventory_of(3).count_of(n.call("rough_plank")))
 	quit(0)
