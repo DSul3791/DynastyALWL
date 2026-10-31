@@ -51,6 +51,19 @@
 				"slope_run_m": 6.0,
 				"above_player_m": 250.0,
 				"water_edge_m": 3.0
+			},
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"heath": 0.8,
+				"temperate_forest": 0.6,
+				"mixed_forest": 0.5,
+				"alpine_meadow": 0.4,
+				"boreal_forest": 0.3
+			},
+			"active": {
+				"day": 0.5,
+				"dusk": 1.0,
+				"night": 0.15
 			}
 		},
 		"deer": {
@@ -93,6 +106,19 @@
 				"above_player_m": 250.0,
 				"water_edge_m": 3.0,
 				"forest": true
+			},
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"boreal_forest": 0.8,
+				"temperate_grassland": 0.5,
+				"heath": 0.3,
+				"marsh": 0.3
+			},
+			"active": {
+				"day": 0.4,
+				"dusk": 1.0,
+				"night": 0.2
 			}
 		},
 		"wolf": {
@@ -188,6 +214,17 @@
 				"corner_warn_s": 1.2,
 				"provoked_m": 10.0,
 				"provoked_warn_s": 0.8
+			},
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 0.8,
+				"marsh": 1.0,
+				"temperate_forest": 0.4
+			},
+			"active": {
+				"day": 0.6,
+				"dusk": 1.0,
+				"night": 0.3
 			}
 		},
 		"fox": {
@@ -234,6 +271,19 @@
 				"run_mps": 9.0,
 				"run_m": 70.0,
 				"again_s": 20.0
+			},
+			"biomes": {
+				"temperate_forest": 0.8,
+				"mixed_forest": 0.8,
+				"temperate_grassland": 0.8,
+				"heath": 0.7,
+				"boreal_forest": 0.6,
+				"alpine_meadow": 0.3
+			},
+			"active": {
+				"day": 0.2,
+				"dusk": 0.8,
+				"night": 1.0
 			}
 		},
 		"duck": {
@@ -334,6 +384,16 @@
 				"above_player_m": 250.0,
 				"water_edge_m": 3.0,
 				"forest": false
+			},
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"savanna": 1.0,
+				"heath": 0.5
+			},
+			"active": {
+				"day": 1.0,
+				"dusk": 0.4,
+				"night": 0.0
 			}
 		}
 	},
@@ -416,5 +476,8 @@
 		"say_watched": "Something is watching you from the trees.",
 		"say_rush": "The wolves are coming for you!",
 		"say_return": "The wolves are back."
-	}
+	},
+	"near_share": 0.25,
+	"near_min_m": 60.0,
+	"near_max_m": 120.0
 }
