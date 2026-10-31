@@ -1846,3 +1846,7 @@ Answered: 2026-10-31 19:54 UTC
 Answer: Yes | Comment: I agree with Sonny. It’s a good start, but it’s not perfect.
 Answered: 2026-10-31 19:55 UTC
 
+## pic-water2-river | Does the new water run as a river down a valley (top-down, water brighter where it is faster)?
+Answer: No | Comment: This picture doesn’t look like water
+Answered: 2026-10-31 19:55 UTC
+
