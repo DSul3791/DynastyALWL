@@ -2495,6 +2495,10 @@ func _mesh_for(number: int) -> Mesh:
 			_meshes[number] = basic
 			return basic
 
+		if id == "log" or id.begins_with("log_"):
+			_meshes[number] = _log_mesh(id)      # a lying log: the standing trees' bark shader and a pale cut face at each end (guide 2026-10-31: logs were plain flat cylinders)
+			return _meshes[number]
+
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.roughness = 1.0
 		var mesh: Mesh
@@ -2530,6 +2534,68 @@ func _mesh_for(number: int) -> Mesh:
 		_meshes[number] = mesh
 
 	return _meshes[number]
+
+
+# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 2.5 m for a species log, 1 m for the plain log.
+func _log_mesh(id: String) -> ArrayMesh:
+	var plain: bool = id == "log"
+	var length: float = 1.0 if plain else 2.5
+	var r0: float = 0.13 if plain else 0.28
+	var r1: float = 0.11 if plain else 0.22
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = r1
+	cyl.bottom_radius = r0
+	cyl.height = length
+	cyl.radial_segments = 10
+	cyl.rings = 1
+	cyl.cap_top = false
+	cyl.cap_bottom = false
+	var turn: Transform3D = Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3.ZERO)   # the cylinder's axis y becomes x
+	var mesh: ArrayMesh = ArrayMesh.new()
+	var side: Array = cyl.get_mesh_arrays()
+	var verts: PackedVector3Array = side[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = side[Mesh.ARRAY_NORMAL]
+
+	for k in range(verts.size()):
+		verts[k] = turn * verts[k]
+		normals[k] = turn.basis * normals[k]
+
+	side[Mesh.ARRAY_VERTEX] = verts
+	side[Mesh.ARRAY_NORMAL] = normals
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, side)
+	mesh.surface_set_material(0, _felled_bark("" if plain else id.substr(4), r0, length))
+	var cut: StandardMaterial3D = StandardMaterial3D.new()
+	cut.albedo_color = Color(0.72, 0.58, 0.38)
+	cut.roughness = 1.0
+	var heart: StandardMaterial3D = StandardMaterial3D.new()
+	heart.albedo_color = Color(0.5, 0.36, 0.2)
+	heart.roughness = 1.0
+
+	for end in [-1.0, 1.0]:
+		var r_end: float = r1 if end > 0.0 else r0
+
+		for layer in range(2):
+			var disc: CylinderMesh = CylinderMesh.new()
+			disc.top_radius = r_end * (0.97 if layer == 0 else 0.5)
+			disc.bottom_radius = disc.top_radius
+			disc.height = 0.006
+			disc.radial_segments = 10
+			disc.rings = 1
+			var arrays: Array = disc.get_mesh_arrays()
+			var dv: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var dn: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var place: Transform3D = Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(end * (length * 0.5 + 0.002 + 0.001 * float(layer)), 0.0, 0.0))
+
+			for k in range(dv.size()):
+				dv[k] = place * dv[k]
+				dn[k] = place.basis * dn[k]
+
+			arrays[Mesh.ARRAY_VERTEX] = dv
+			arrays[Mesh.ARRAY_NORMAL] = dn
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, cut if layer == 0 else heart)
+
+	return mesh
 
 
 # A thin tapered, slightly bent branch lying along X (six sides, four segments), r0 at the base, r1 at the tip.

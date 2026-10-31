@@ -2555,7 +2555,7 @@
 			],
 			"season": "summer",
 			"keeps": "days (about 3 game days)",
-			"source": "needs a cultivated apple tree in flora.json",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"apple_summer": {
@@ -2565,7 +2565,7 @@
 			],
 			"season": "summer",
 			"keeps": "about a week",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"apple_autumn": {
@@ -2576,7 +2576,7 @@
 			],
 			"season": "autumn",
 			"keeps": "about 3 weeks",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"apple_keeping": {
@@ -2587,7 +2587,7 @@
 			],
 			"season": "autumn",
 			"keeps": "until spring in a cool store (about 3 months)",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"apple_cooking": {
@@ -2599,7 +2599,7 @@
 			],
 			"season": "summer/autumn",
 			"keeps": "about a month",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"crab_apples": {
@@ -2620,7 +2620,7 @@
 			],
 			"season": "summer",
 			"keeps": "days",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland"
 		},
 		"pear_autumn": {
@@ -2631,7 +2631,7 @@
 			],
 			"season": "autumn",
 			"keeps": "2 weeks",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland"
 		},
 		"pear_winter": {
@@ -2642,7 +2642,7 @@
 			],
 			"season": "autumn",
 			"keeps": "until February in store",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland"
 		},
 		"wild_pears": {
@@ -2674,7 +2674,7 @@
 			],
 			"season": "summer",
 			"keeps": "days",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, mixed_forest"
 		},
 		"plums": {
@@ -2685,7 +2685,7 @@
 			],
 			"season": "summer/autumn",
 			"keeps": "days",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland"
 		},
 		"damsons": {
@@ -2696,7 +2696,7 @@
 			],
 			"season": "autumn",
 			"keeps": "about a week",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland, mixed_forest"
 		},
 		"quince": {
@@ -2707,7 +2707,7 @@
 			],
 			"season": "autumn",
 			"keeps": "about 6 weeks",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_grassland, dry_scrub"
 		},
 		"medlar": {
@@ -2717,7 +2717,7 @@
 			],
 			"season": "autumn/winter",
 			"keeps": "ripens after frost, about 10 days",
-			"source": "needs flora tree",
+			"source": "exists: fruit tree in flora.json (flora session, 31 Oct)",
 			"biomes": "temperate_forest, temperate_grassland"
 		},
 		"rowan_berries": {

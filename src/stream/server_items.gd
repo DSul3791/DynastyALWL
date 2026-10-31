@@ -292,6 +292,7 @@ var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
+var _fruit: Dictionary = {}           # fruit trees: chunk key -> {tree id -> [season stamp, pieces taken this season]} (drops.json "fruit_tree"); saved with the world items
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
 var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
@@ -1082,7 +1083,7 @@ func save() -> void:
 	_save_characters()
 	_save_craft_queues()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
+	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -1110,6 +1111,9 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 	if now_s - float(_picked.get(flora_key, -1.0e12)) < REGROW_GAME_S:
 		return false
+
+	if (_drops.get("fruit_tree", {}) as Dictionary).has(species_name):
+		return _gather_fruit_tree(peer, species_name, flora_key, plant_height, flora_id)
 
 	var berry: Dictionary = GatherRules.harvest_row(_drops, species_name)      # berries and every other harvest plant: one path
 
@@ -1191,6 +1195,105 @@ func _seed_rows(species_name: String) -> Array:
 # A berry bush (data/items/drops.json "berry_yield"): E gives that berry only, count scaled by the plant's size, in its season, once a season;
 # the plant stays standing and bare until the season changes (Dave 2026-10-23). A full pack: give() drops the rest on the ground at the
 # player, beside the plant, so everything is taken and the bush is stripped.
+# How many pieces of fruit a tree holds when full: the species range, by the tree's height against the species reference (0.6 to 1.5 times) and a stable
+# variance from its id, so no two trees match and the same tree always holds the same.
+func fruit_max(species_name: String, flora_id: int, plant_height: float) -> int:
+	var cfg: Dictionary = (_drops.get("fruit_tree", {}) as Dictionary).get(species_name, {})
+
+	if cfg.is_empty():
+		return 0
+
+	return GatherRules.fruit_max(cfg, _flora_by_name.get(species_name, {}), flora_id, plant_height)
+
+
+# Pieces taken from a tree this season (0 when none, or from an older season).
+func fruit_taken(flora_key: String) -> int:
+	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var record: Array = (_fruit.get(parts[0], {}) as Dictionary).get(int(parts[1]), [])
+	return int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
+
+
+# The trees of a chunk ("cx,cz" home key) with fruit taken this season: [ids, taken] for a joining client.
+func fruit_state(chunk_key: String) -> Array:
+	var ids: PackedInt32Array = PackedInt32Array()
+	var taken: PackedInt32Array = PackedInt32Array()
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	for tree in (_fruit.get(chunk_key, {}) as Dictionary):
+		var record: Array = _fruit[chunk_key][tree]
+
+		if int(record[0]) == stamp:
+			ids.append(int(tree))
+			taken.append(int(record[1]))
+
+	return [ids, taken]
+
+
+# Pieces of fruit left on a tree this season (a new season starts it full again).
+func fruit_left(species_name: String, flora_key: String, flora_id: int, plant_height: float) -> int:
+	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var record: Array = (_fruit.get(parts[0], {}) as Dictionary).get(int(parts[1]), [])
+	var taken: int = int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
+	return maxi(fruit_max(species_name, flora_id, plant_height) - taken, 0)
+
+
+# One press on a fruit tree: up to per_pick pieces, as many as the weight limit lets the player carry, from the tree's real store (shared by all players, saved).
+# Partial picks leave the rest on the tree; the last piece strips the tree (the existing bare-plant mark: no prompt, drawn bare) until the next season.
+func _gather_fruit_tree(peer: int, species_name: String, flora_key: String, plant_height: float, flora_id: int) -> bool:
+	var entry: Dictionary = _flora_by_name.get(species_name, {})
+	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+
+	if not GatherRules.in_season(entry, season):
+		return false
+
+	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
+	var plant: int = int(parts[1])
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var left: int = fruit_left(species_name, flora_key, flora_id, plant_height)
+
+	if left <= 0:
+		return false
+
+	var item_row: Dictionary = GatherRules.harvest_row(_drops, species_name)
+	var number: int = table.number_of(str(item_row.get("item", "")))
+	var inv = inventory_of(peer)
+
+	if number == 0 or inv == null:
+		return false
+
+	var want: int = mini(int((_drops["fruit_tree"][species_name] as Dictionary).get("per_pick", 5)), left)
+	var fits: int = _fit(peer, inv, number, want)
+
+	if fits <= 0:
+		_say(peer, "Too heavy to carry more")
+		return false
+
+	practice(peer, "gather_plant")
+	var given: int = give(peer, number, fits)
+
+	if given <= 0:
+		return false
+
+	if not _fruit.has(parts[0]):
+		_fruit[parts[0]] = {}
+
+	var record: Array = (_fruit[parts[0]] as Dictionary).get(plant, [])
+	var taken: int = int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
+	_fruit[parts[0]][plant] = [stamp, taken + given]
+
+	if left - given <= 0:
+		if not _stripped.has(parts[0]):
+			_stripped[parts[0]] = {}
+
+		_stripped[parts[0]][plant] = stamp
+
+	plant_stays = true   # the tree stays; its store is what shrinks
+	_dirty = true
+	return true
+
+
 func _gather_berries(peer: int, species_name: String, flora_key: String, berry: Dictionary, plant_height: float) -> bool:
 	var entry: Dictionary = _flora_by_name.get(species_name, {})
 	var seasons: Array = entry.get("season", [])
@@ -1242,6 +1345,23 @@ func stripped_ids(chunk_key: String) -> PackedInt32Array:
 			out.append(int(plant))
 
 	return out
+
+
+# Fruit stores of this season only (an older stamp means the tree is full again).
+func _fruit_now() -> Dictionary:
+	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+
+	for chunk_key in _fruit.keys():
+		var trees: Dictionary = _fruit[chunk_key]
+
+		for tree in trees.keys():
+			if int((trees[tree] as Array)[0]) != stamp:
+				trees.erase(tree)
+
+		if trees.is_empty():
+			_fruit.erase(chunk_key)
+
+	return _fruit
 
 
 # Only this season's bare plants are kept (and saved): an older stamp means the bush bears again.
@@ -2815,6 +2935,17 @@ func _load_world_items() -> void:
 			ids[int(plant)] = int(parsed["stripped"][chunk_key][plant])
 
 		_stripped[str(chunk_key)] = ids
+
+	_fruit = {}
+
+	for chunk_key in (parsed.get("fruit", {}) if same_layout else {}):      # JSON gives the numbers back as floats
+		var trees: Dictionary = {}
+
+		for tree in parsed["fruit"][chunk_key]:
+			var record: Array = parsed["fruit"][chunk_key][tree]
+			trees[int(tree)] = [int(record[0]), int(record[1])]
+
+		_fruit[str(chunk_key)] = trees
 
 	for key in parsed.get("taken", []):
 		_taken[int(key)] = true

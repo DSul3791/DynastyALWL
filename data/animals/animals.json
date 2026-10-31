@@ -440,7 +440,7 @@
 				"marsh": 1.0
 			},
 			"active": {
-				"day": 0.1,
+				"day": 0.02,
 				"dusk": 1.0,
 				"night": 1.0
 			},
@@ -490,8 +490,8 @@
 			},
 			"active": {
 				"day": 1.0,
-				"dusk": 0.1,
-				"night": 0.1
+				"dusk": 0.5,
+				"night": 0.02
 			},
 			"spawn_share": 1.0,
 			"herd": [
@@ -538,7 +538,7 @@
 				"temperate_forest": 1.0
 			},
 			"active": {
-				"day": 0.1,
+				"day": 0.02,
 				"dusk": 1.0,
 				"night": 1.0
 			},
@@ -588,8 +588,8 @@
 			},
 			"active": {
 				"day": 1.0,
-				"dusk": 0.1,
-				"night": 0.1
+				"dusk": 0.5,
+				"night": 0.02
 			},
 			"spawn_share": 1.0,
 			"model": true,
@@ -640,7 +640,7 @@
 			},
 			"active": {
 				"day": 1.0,
-				"dusk": 0.1,
+				"dusk": 0.5,
 				"night": 0.1
 			},
 			"spawn_share": 0.5,
@@ -686,8 +686,8 @@
 			},
 			"active": {
 				"day": 1.0,
-				"dusk": 0.1,
-				"night": 0.1
+				"dusk": 0.4,
+				"night": 0.02
 			},
 			"spawn_share": 1.0,
 			"model": true,
@@ -780,5 +780,7 @@
 	},
 	"near_share": 0.4,
 	"near_min_m": 60.0,
-	"near_max_m": 120.0
+	"near_max_m": 120.0,
+	"off_hours_despawn_m": 40.0,
+	"off_hours_chance": 0.05
 }

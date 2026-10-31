@@ -285,6 +285,9 @@ func _init() -> void:
 	var unstick: Array = ["stick", "thorny_canes", "log", "twine"]
 	print("harvest table: species | product | count 1x | count 3x | sticks | stays | second try | label agrees")
 	for species_name in harvest_names:
+		if (g._drops.get("fruit_tree", {}) as Dictionary).has(str(species_name)):
+			continue   # fruit trees have a real fruit store (a few pieces a press): test_fruit_tree.gd
+
 		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name))
 		var entry: Dictionary = flora_rows.get(str(species_name), {})
 		if entry.is_empty() or row.is_empty():
@@ -499,7 +502,7 @@ func _init() -> void:
 	var berries: int = f.table.number_of("blueberries") if f.table.has_id("blueberries") else 0
 	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire roasts one berry item")
+	check(f.inventory_of(1).count_of(f.table.number_of("stewed_berries")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire stews one berry item (roast_forage became stewed_berries for berries, 31 Oct)")
 	# Cooking: a half-stale berry (half its life left) roasts into a roast with twice that left (cooked_life_mult 2), and a hot meal warms.
 	var ck_inv: Variant = f.inventory_of(1)
 	var ck_bslot: int = -1
@@ -511,7 +514,7 @@ func _init() -> void:
 	ck_inv.wear[ck_bslot] = int(f.table.shelf_units(berries) / 2)
 	f._last_cook.clear()
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	var ck_roast_n: int = f.table.number_of("roast_forage")
+	var ck_roast_n: int = f.table.number_of("stewed_berries")
 	var ck_aged: bool = false
 
 	for sl in range(ck_inv.SLOTS):
@@ -547,7 +550,7 @@ func _init() -> void:
 	f.report_position(1, Vector3(40.0, 10.0, 0.0))
 	f._last_cook.clear()
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 1, "too far from the fire to cook")
+	check(f.inventory_of(1).count_of(f.table.number_of("stewed_berries")) == 1, "too far from the fire to cook")
 	rain[0] = 0.6
 	rain[0] = 0.0
 	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 20):

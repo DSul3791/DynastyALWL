@@ -112,3 +112,14 @@ godot --headless --path . --script res://art/playthrough/probe_wildlife.gd      
 godot --path . --script res://art/playthrough/animal_sheet.gd -- --out=art/playthrough/animals   # pictures
 bash art/playthrough/run_hunt_tests.sh                                              # the existing hunting, fishing and trap tests
 ```
+
+## Re-check 08:20 on the daily head (probe_wildlife, 10 simulated minutes, 3 seeds, spawn; day = hour 12, night = hour 2)
+
+Within 100 m / within 300 m (counts per seed, 3 seeds):
+- Day: boar 5, 5, 0 within 100 m (4 at 300 m in seed 23); deer 3, 3, 0 (5 to 6 at 300 m); frog 0, 3, 2; songbirds 0 within 100 m but 4 to 5 at 300 m; rabbit 1, 0, 0 (5 to 6 at 300 m); fox 1 at 300 m. Totals 26 to 30.
+- Night: boar 6, 3, 0 within 100 m; deer 5, 0, 0; frog 3, 0, 0 (2 to 4 at 300 m); **songbirds 4, 5, 3 within 100 m**; fox 1 within 100 m in seed 23; totals 25 to 27.
+
+Findings:
+- Boar, songbirds and frog are live. Boar are close (3 to 6 within 100 m in 2 of 3 seeds), which is a danger or a food source at the spawn: check they do not charge a new player.
+- **Songbirds are as common at night (3 to 5 within 100 m) as by day (0 within 100 m)**: the hour gate does not keep them off at night, and by day they sit 100 to 300 m out. Owner: Tyler (animals). Expected: more by day, none at night.
+- Seed 23 day has almost nothing within 100 m except frogs: the spawn can feel empty by day depending on the seed.

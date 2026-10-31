@@ -1,0 +1,24 @@
+probe6: SPOT spawn at (53316.0, 68476.0) ground 31.57
+probe6:   campfire_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:     light with plant_fibre -> fire state 40 notice ''
+probe6:   lean_to_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:   rough_bed_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6: SPOT clearing (walk picture) at (53301.0, 68427.0) ground 30.76
+probe6:   campfire_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:     light with plant_fibre -> fire state 40 notice ''
+probe6:   lean_to_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:   rough_bed_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6: SPOT 60 m east at (53376.0, 68476.0) ground 31.27
+probe6:   campfire_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:     light with plant_fibre -> fire state 40 notice ''
+probe6:   lean_to_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:   rough_bed_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6: SPOT 60 m north at (53316.0, 68416.0) ground 29.64
+probe6:   campfire_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:     light with plant_fibre -> fire state 40 notice ''
+probe6:   lean_to_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6:   rough_bed_kit -> PLACED notice: '(silent: no reason sent to the player)
+probe6: SPOT steepest slope in 300 m (rise 0.72 m over 1.6 m) at (53274.0, 68380.0) ground 23.05
+probe6:   campfire_kit -> REFUSED notice: 'The ground is too steep there.'
+probe6:   lean_to_kit -> REFUSED notice: 'The ground is too steep there.'
+probe6:   rough_bed_kit -> PLACED notice: '(silent: no reason sent to the player)

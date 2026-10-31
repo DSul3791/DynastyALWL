@@ -26,7 +26,7 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 | 1 | [ ] Walk, jog (double-tap W), run (Shift+W), crouch (C), jump (Space) | smooth movement | works | arms and hands in progress (Sonny) |
 | 2 | [ ] Hold E near **sticks** on the ground, and press E at a shrub | sticks into the pack | PASS (probe) | sticks may jump into the pack by themselves with P on |
 | 3 | [ ] Pick up **stones** near the water and on slopes | stones | PASS | |
-| 4 | [ ] Pick **nettles** (E on the plant) and **tall grass** | nettle: 1-2 plant fibre; tall grass: fibre and 4 thatch | PASS; tall grass patches are now thick (67 within 50 m) | in progress: flora density tuning |
+| 4 | [ ] Pick **nettles** (E on the plant) and **tall grass** | nettle: 1-2 plant fibre AND nettle leaves for tea (Dave 2026-10-31; data change by Sal pending); tall grass: fibre and 4 thatch | PASS; tall grass patches are now thick (67 within 50 m) | in progress: flora density tuning |
 | 5 | [ ] Press I, craft **Twine** (3 fibre) | 1 twine, 2 s | PASS | |
 | 6 | [ ] Craft a **Stone axe** (1 stone, 1 stick, **2 twine** now) | axe in the pack, 10 s craft | PASS (test_first_hour 0 failures) | |
 | 7 | [ ] Put the axe on the **hotbar** and hold it | axe in hand | PASS | the axe looks oversized and held stiff (Sonny) |
@@ -35,7 +35,7 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 | 10 | [ ] **Pick a log up on purpose** (E), carry it on your shoulder, put it down with **Q** | one log on the shoulder at a time; Q lays it down; "Put your log down first (Q)" if you try to cut with a log on you | per the commit notes; the carry look is Kathleen's/Sonny's | the shouldered log is hard to see in first person |
 | 11 | [ ] Craft a **Campfire kit** (6 sticks, 3 stones), hold it, click to place | a ring: yellow on open ground, green under a tree crown; the laid fire shows a **plant-fibre bed, a criss-cross twig lattice and a teepee of bigger sticks** | PASS (test_fire_state_look 0 failures) | the kit crafts in 8 s now |
 | 12 | [ ] Press **E at the fire** to light it with a plant fibre (birch bark or tinder also work; 2 thatch make 2 tinder) | flames; stand within 4 m to warm up | PASS (all four tinders light in the probe) | it will not light on open ground in rain |
-| 13 | [ ] Feed it (E adds firewood, then sticks, then logs); **hold E** at a lit fire to roast a raw item | roast food | PASS | a lit fire has no picture from me yet |
+| 13 | [ ] Feed it (E adds firewood, then sticks, then logs); **hold E** at a lit fire to roast raw MEAT, fish or shellfish (the campfire cooks only meat now; berries, nuts, roots and mushrooms go in the campfire pot, hearth or oven; data change by Sal pending) | roast meat; a berry is refused | PASS | a lit fire has no picture from me yet |
 | 14 | [ ] **Stand under a big tree** (not a young fir) | cover: rain does not reach you; fire placed here is green and survives rain | PASS in code (6 grown trees within 50 m of the spawn) | only grown trees count; from under the crown it does not look like a roof |
 | 15 | [ ] Craft and place a **Lean-to** (8 sticks, 6 leaves, 2 twine; 25 s craft) | a roof of green slabs on posts | PASS | the roof is flat green slabs (reported to Kathleen) |
 | 16 | [ ] Craft a **Rough bed** (8 bedding from 2 ferns, or 10 thatch; plus 4 sticks and 2 twine), place it under the lean-to, press **Z** and hold 3 s | you sleep; you wake rested | PASS | the bed looks like stacked planks |
@@ -55,7 +55,22 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 - [ ] **Farming**: a hoe tills a bed; seeds sow only in their season; rain keeps a bed wet; winter kills seedlings (server rules, test_farming). Crop and seed items now exist; I did not try it in the client.
 - [ ] **Recipes**: 208 of 227 recipes are learnable now (the 19 left are forge, steel and bronze things, plank chest, water wheel).
 - [ ] **Blacksmithy**: the blueprint places when 10 logs lie near you (probe).
+- Status at 08:15 on the daily head: 19 fixed, 8 still broken (water wheel craft now FIXED). Flint, ore and coal are **still orphans** on the head (Tyler's fix is not in yet); recipes 217 of 236 learnable.
 - Still not possible: **flint, copper, tin, iron and coal cannot be picked up** (no source yet); no stairs; the saw mill; hide scraper and leather.
+
+## 2c. New since 07:12 (merged on the daily head, not yet checked by me in the client unless noted)
+
+- [ ] **Bark and felling**: felled trunks and stumps now use the standing trees' bark shader (was flat black in my 07:40 pictures; look again at a felled tree and its stump).
+- [ ] **Tree shading**: round 2 of the tree shading and a darker, warmer bark (picture-checked by Kathleen).
+- [ ] **Thickets**: shrubs and berry bushes now grow in clumps (13 species); a clump of four or more tall ones is one collider, so you may bump into a thicket.
+- [ ] **In-season rule**: herbs, flowers and mushrooms out of season are not drawn and give no gather prompt; a plant picked bare gives no prompt either. At the summer start, expect fewer of them.
+- [ ] **Sea edge**: at the water's edge a prompt says "Press E to fill the bucket" or "gather seaweed". Sea water into containers, sea salt, shore foods, jerky and salted fish are no longer "future".
+- [ ] **Fruit trees**: only the plan, the items (19 fruits, 8 dishes, a calendar) and the fruit mesh and shader landed. **Fruit trees are still pending**: do not expect to pick apples, pears or cherries yet.
+- [ ] **Held looks**: stone mace, club, flanged maces, swords and the quern no longer show a rod and block in the hand.
+- [ ] **Beach**: wet sand shines and mirrors the sky; bigger stones.
+- **Double F** and the **Carried slot** have landed (Kathleen, test_f_press): try pressing F twice. Not landed yet: the **idle timeout** and the `--timeout` flag (Tyler).
+- Known still broken: the **chest** self-test fails (the chest screen may not open); lit-campfire picture not taken.
+- **Sound**: the occasional cave-in rumble and the rain-like hiss in clear weather are explained in SOUND_AUDIT.md (listen at the clearing and in a forest and tell me what you hear).
 
 ## 3. The character creator (do this first if you like, or after)
 

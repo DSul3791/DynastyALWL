@@ -1161,6 +1161,11 @@ func _send_stripped(peer: int, chunk: Vector2i) -> void:
 	if not ids.is_empty():
 		net.flora_stripped.rpc_id(peer, chunk, ids)
 
+	var fruit: Array = items.fruit_state("%d,%d" % [home.x, home.y])
+
+	if not (fruit[0] as PackedInt32Array).is_empty():
+		net.flora_fruit.rpc_id(peer, chunk, fruit[0], fruit[1])
+
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# Gathering (E): a plant or shrub is picked: it gives what drops.json and its season allow and then rests.
@@ -1189,7 +1194,9 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
-	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
+	var fruit_tree: bool = not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and (items._drops.get("fruit_tree", {}) as Dictionary).has(str(species["name"]))
+
+	if at < 0 or species.is_empty() or (int(species["kind"]) == PlacerScript.KIND_TREE and not fruit_tree):
 		return
 
 	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
@@ -1199,7 +1206,13 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
-	if gave and items.plant_stays:
+	if gave and fruit_tree:
+		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
+		net.flora_fruit.rpc(chunk, PackedInt32Array([id]), PackedInt32Array([items.fruit_taken(key)]))
+
+		if items.fruit_left(str(species["name"]), key, id, float(all["heights"][at])) <= 0:
+			net.flora_stripped.rpc(chunk, PackedInt32Array([id]))
+	elif gave and items.plant_stays:
 		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
 	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)

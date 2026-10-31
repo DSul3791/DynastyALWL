@@ -11,3 +11,7 @@
 ### Felling pictures (art/playthrough/world3/fell*.jpg, stump_*.jpg), 07:40
 The felling rig now works: tree falls (creak sound plays), lands, stump can be chopped 6 times (+16 stick, +4 firewood, +8 kindling), stump goes away.
 Finding: the falling and resting trunk, the lying log and the stump are all one flat near-black colour with no bark texture (a standing tree has bark). Looks like a missing material on the felled-trunk, log and stump meshes. Rating 2.5/5. Owner: Kathleen (looks) / flora session.
+
+### Rerun 08:00 to 08:10 on the daily head (merge 2be59394)
+Select, creator and the 3-minute windowed walk completed (walk3min2.jpg: third person at the spawn clearing, brown hair, green top, brown trousers; feet and hands hidden in the grass; head tilted up at the sky; rating 4). 16 headless self-tests ran, none timed out. Still failing: the chest self-test (inventory_view.gd:4584, chest_inv Nil, "screen open false"). The "crash report" line in rig_client.log is the 04:18 to 07:49 freeze text copied from an older rig folder, not from this run (no new file in crash_reports/). Fire self-test: lit, grows to a bonfire, fire loops play; cook self-test: 1 lit fire, loops present.
+Not photographed this run: lit campfire and log cutting close-ups (the picture rig does not support them without Kathleen's --shot-light; the headless self-tests only prove the server and sound side).

@@ -2,12 +2,49 @@ Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - ht
 
 server: terrain or tile files changed, old generated ground thrown away
 server: 0 ground edits loaded from digs.dat
-Terrain server listening on port 7895 with 11 worker threads; store C:/Users/david/AppData/Local/Temp/tmp.Ikamb5EkAZ/store; spawn (53316.0, 33.57495, 68476.0)
+Terrain server listening on port 7857 with 11 worker threads; store C:/Users/david/AppData/Local/Temp/tmp.tibeZ4DrND/store; spawn (53316.0, 33.57495, 68476.0)
 server: weather summer, rain 0.00 snow 0.00 storm 0.00, 21 C, rivers x1.00 of the start flow
 server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
 server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
-server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
-Client 443725749 connected
-Showroom: peer 443725749 filled it, 185 to place
-server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 15 made, 119 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
-server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 18 made, 245 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 1327138189 connected
+Showroom: peer 1327138189 filled it, 185 to place
+server: 1 urgent and 61 prefetch queued; generated 52, cache hits 2, edit hits 0; flora chunks 11 made, 155 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 54 blocks sent on the block line (0.0 MB)
+server: 1 urgent and 83 prefetch queued; generated 53, cache hits 2, edit hits 0; flora chunks 12 made, 281 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 55 blocks sent on the block line (0.0 MB)
+server: 0 urgent and 137 prefetch queued; generated 198, cache hits 2, edit hits 0; flora chunks 32 made, 601 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 228 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 9 prefetch queued; generated 2840, cache hits 13, edit hits 0; flora chunks 32 made, 1816 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 2883 blocks sent on the block line (2.0 MB)
+server: 0 urgent and 52 prefetch queued; generated 6205, cache hits 53, edit hits 0; flora chunks 32 made, 2518 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 6263 blocks sent on the block line (4.0 MB)
+server: 0 urgent and 8 prefetch queued; generated 9120, cache hits 68, edit hits 0; flora chunks 32 made, 3220 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 9193 blocks sent on the block line (5.6 MB)
+server: ZEROED BLOCK (3332, 1, 4280) LOD 0 after generating; serving it anyway (failed tile loads 0)
+server: ZEROED BLOCK (3332, 2, 4279) LOD 0 after generating; serving it anyway (failed tile loads 0)
+server: ZEROED BLOCK (3329, 0, 4280) LOD 0 after generating; serving it anyway (failed tile loads 0)
+server: 0 urgent and 2 prefetch queued; generated 12874, cache hits 149, edit hits 0; flora chunks 32 made, 3922 from memory; idle-built 26 columns; bad blocks 0, failed tile loads 0
+server: 12955 blocks sent on the block line (7.2 MB)
+server: 0 urgent and 0 prefetch queued; generated 15796, cache hits 301, edit hits 0; flora chunks 32 made, 4624 from memory; idle-built 263 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+  lateral inflow: 1409 springs, 57.46 m3/s at the x1 flow key, 5261 ms
+water (3, 4): running on the C++ core, 1534 springs
+server: 0 urgent and 0 prefetch queued; generated 17627, cache hits 301, edit hits 0; flora chunks 32 made, 5326 from memory; idle-built 851 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+water: loaded tile (3, 4) (1 active, 345 MB of water memory)
+server: 0 urgent and 0 prefetch queued; generated 18419, cache hits 301, edit hits 0; flora chunks 32 made, 6028 from memory; idle-built 1099 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+server: 0 urgent and 0 prefetch queued; generated 18419, cache hits 301, edit hits 0; flora chunks 32 made, 6730 from memory; idle-built 1099 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+  lateral inflow: 278 springs, 8.10 m3/s at the x1 flow key, 3685 ms
+water (4, 4): running on the C++ core, 307 springs
+water: loaded tile (4, 4) (2 active, 366 MB of water memory)
+server: 0 urgent and 0 prefetch queued; generated 18419, cache hits 301, edit hits 0; flora chunks 32 made, 7450 from memory; idle-built 1099 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+server: 0 urgent and 0 prefetch queued; generated 18419, cache hits 301, edit hits 0; flora chunks 32 made, 8152 from memory; idle-built 1099 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+  lateral inflow: 43 springs, 3.30 m3/s at the x1 flow key, 3419 ms
+water (3, 5): running on the C++ core, 50 springs
+server: 0 urgent and 0 prefetch queued; generated 18419, cache hits 301, edit hits 0; flora chunks 32 made, 8854 from memory; idle-built 1099 columns; bad blocks 0, failed tile loads 0
+server: 15333 blocks sent on the block line (7.8 MB)
+water: loaded tile (3, 5) (3 active, 387 MB of water memory)

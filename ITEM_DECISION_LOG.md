@@ -313,3 +313,29 @@ Items 431-449 (apples, pears, cherries, plums, quince, medlar, figs, olives, pom
 
 ## Water gather landed (2026-10-31)
 Unflagged `future` on seaweed, shellfish, crab meat, egg, sea salt, steamed shellfish, boiled egg, seaweed soup, mussel stew, herb omelette, egg and nettle fry, salted fish, jerky, acorn mash, flatbread, willow bark tea, tar and the leather chain (leather, heavy and fine leather, cap, jerkin, gambeson, strap). validate_items now reads shore_nodes.json as a source and treats what a fire cooks as obtainable when the raw item is.
+
+## Metal ladder (2026-10-31)
+Bronze ingot recipe at forge level 1 and known; Bronze pickaxe, axe, hammer, knife (458-461, recipes 290-293); boulders.json bronze tools and ore.needs_material (code check for Tyler). Guide audit taught the ore, flint and shore sources: blocked-without-future 0. Goal events verified.
+
+Status run (2026-10-31): PLAYTHROUGH_STATUS.md 24 fixed, 3 still broken. Unlocked water wheel and plank chest kit (nails, lumber via the wedge and iron are obtainable), so the saw mill is reachable (F-21 fixed; test_learn now uses the steel pickaxe as its locked example). Remaining: F-01/F-24 (16 advanced recipes locked by design: steel, bronze/iron/steel weapons and armour, forge level 2), F-18 looks (Kathleen), F-22 stairs and stone/brick/log pieces (new structures, Sal data plus Kathleen models).
+
+## Fruit unflagged (2026-10-31)
+Merged the flora branch (0b606a24) to see the fruit trees: 13 fruit items and 6 fruit dishes (dried apples, apple sauce, plum jam, stewed pears, preserved damsons, quince paste) are no longer future; figs, olives, pomegranates, mangoes, oranges, lemons and apple pie (needs flour) stay future. validate_items counts harvest_yield rows as sources. NOTE: test_first_hour FAILS after the flora merge (gathering counts 44 stones, 59 sticks, 71 fibre against the expected 24/36/48, a new character not empty-handed): the cause is in the flora branch (summer varieties near the spawn / layout 15), not in item data; passed before the merge.
+
+## Building pieces (2026-10-31)
+F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-482, 10 structure rows with states 49-58 reusing existing looks until models exist, log cabin set kit); recipes are locked (known false, locked true) so no player can craft a piece the client cannot draw. HINTS_AND_CAMP_EVENTS_SPEC.md for Tyler.
+
+## First-hour food, hints, handover (2026-10-31)
+FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-70 min; apples realistic; berries 90 kcal each look 20x too generous: question for Dave, not changed); fruit descriptions say game days; 10 more hints (36 total); docs/ITEMS_HANDOVER.md.
+
+## DECISION ROW: berry calories (2026-10-31)
+| Question | Answer | Basis | Reversible |
+|---|---|---|---|
+| Berries were 90 kcal each (a bush of 150 gave 13,500 kcal, five full stomachs) | vitals.json food.by_suffix.berries set to 4; bush yields unchanged | moderator for Dave; real berries about 2 to 4 kcal and 4 g; keeps apples (110-125) and meat meaningful; tests green: validate_items, dishes, economy, server_items, first_hour, inventory, stations, save_compat, new_player_day, eat_once, death | yes: set the number back to 90; Dave can overturn |
+
+Berry loophole: roasting turned one 4 kcal berry into 400 kcal Roast forage; berries now roast into new Stewed berries (483, 10 kcal) via cooks_into; test_server_items updated.
+
+Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): recipes known, kits and pieces no longer future. Stairs and the cabin set stay locked.
+
+## Crab apples edible, wild apples (2026-10-31)
+Dave: crab apples must be edible. Server check: crab_apples already counted as food (vitals by_suffix apples = 120; VitalsRules.edible true), so the cause was the description wording ("Cooked down with honey they are good") reading as not edible; fixed: description now "Hard, sour little green apples. Edible raw, better cooked with honey." and by_id crab_apples = 60 kcal (small and sour). New item Wild apples (484, 80 kcal, 240 h, future until the flora session adds the forest eating-apple tree). test_apples_edible.gd added (crab apple 60 < wild apple 80 < early apple 110 kcal gain, each uses up one). Crab apples are GREEN (Dave): told Kathleen.

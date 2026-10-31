@@ -51,6 +51,23 @@ static func harvest_count(row: Dictionary, scale: float) -> int:
 
 # Can this plant be picked now? {"ok": bool, "reason": String}. `flora_row` is the flora table row,
 # `has_tool` a Callable(tool class) -> bool, `item_exists` a Callable(item id) -> bool.
+# How many pieces of fruit a tree holds when full (drops.json "fruit_tree" max range, the flora row's height range, the tree's id and height): the species range, scaled by
+# the tree's height against the species reference (0.6 to 1.5 times) with a stable variance from its id. Server and client use this one formula.
+static func fruit_max(fruit_cfg: Dictionary, flora_row: Dictionary, flora_id: int, plant_height: float) -> int:
+	if fruit_cfg.is_empty():
+		return 0
+
+	var range_: Array = fruit_cfg.get("max", [40, 100])
+	var size: float = 1.0
+
+	if plant_height > 0.0 and flora_row.has("height_m"):
+		var heights: Array = flora_row["height_m"]
+		size = clampf(plant_height / maxf((float(heights[0]) + float(heights[1])) * 0.5, 0.01), 0.6, 1.5)
+
+	var variance: float = float(hash(flora_id * 2654435761) % 1000) / 1000.0
+	return maxi(int(round(lerpf(float(range_[0]), float(range_[1]), variance) * size)), 1)
+
+
 # True when the plant's flora.json "season" list allows the season now (an empty list or "all" always does).
 static func in_season(flora_row: Dictionary, season: String) -> bool:
 	var seasons: Array = flora_row.get("season", [])

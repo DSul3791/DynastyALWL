@@ -42,6 +42,42 @@ const ART_OVERRIDES := {
 	"mail_shirt": {"shape": "jerkin", "color": "#8c9099", "size": 1.0, "bits": ["mail"]},
 	"plate_cuirass": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.0, "bits": ["plate"]},
 	"bronze_sword": {"shape": "sword", "color": "#b5803a", "size": 1.0},
+	"apple_early": {"shape": "fruit", "color": "#e0a030", "size": 0.9},
+	"apple_summer": {"shape": "fruit", "color": "#c0402a", "size": 0.95},
+	"apple_autumn": {"shape": "fruit", "color": "#b02a22", "size": 1.0},
+	"apple_keeping": {"shape": "fruit", "color": "#9a6030", "size": 0.95},
+	"apple_cooking": {"shape": "fruit", "color": "#9ab832", "size": 1.15},
+	"pear_summer": {"shape": "fruit", "color": "#b8c04a", "size": 1.0},
+	"pear_autumn": {"shape": "fruit", "color": "#c8b04a", "size": 1.05},
+	"pear_winter": {"shape": "fruit", "color": "#a08040", "size": 1.0},
+	"plums": {"shape": "fruit", "color": "#5a2a5a", "size": 0.7},
+	"damsons": {"shape": "fruit", "color": "#3a2a4a", "size": 0.55},
+	"sour_cherries": {"shape": "fruit", "color": "#a0182a", "size": 0.5},
+	"quince": {"shape": "fruit", "color": "#d0b830", "size": 1.2},
+	"medlar": {"shape": "fruit", "color": "#7a5a30", "size": 0.8},
+	"figs": {"shape": "fruit", "color": "#5a3a4a", "size": 0.7},
+	"olives": {"shape": "fruit", "color": "#6a7a3a", "size": 0.4},
+	"pomegranates": {"shape": "fruit", "color": "#b02a2a", "size": 1.0},
+	"mangoes": {"shape": "fruit", "color": "#e8a030", "size": 1.2},
+	"oranges": {"shape": "fruit", "color": "#e88a20", "size": 1.0},
+	"lemons": {"shape": "fruit", "color": "#e8d838", "size": 0.9},
+	"apple_pie": {"shape": "dish", "color": "#c89040", "size": 1.0, "bits": ["pie", "#d8c080"]},
+	"apple_sauce": {"shape": "dish", "color": "#d8c890", "size": 1.0, "bits": ["mash"]},
+	"dried_apples": {"shape": "dish", "color": "#c8a868", "size": 1.0, "bits": ["balls"]},
+	"dried_figs": {"shape": "dish", "color": "#5a3a2a", "size": 1.0, "bits": ["balls"]},
+	"plum_jam": {"shape": "dish", "color": "#6a2a50", "size": 1.0, "bits": ["pot"]},
+	"stewed_pears": {"shape": "dish", "color": "#c8a860", "size": 1.0, "bits": ["soup", "#d8c070", "#e0d090"]},
+	"preserved_damsons": {"shape": "dish", "color": "#4a2a50", "size": 1.0, "bits": ["pot"]},
+	"quince_paste": {"shape": "dish", "color": "#b05a28", "size": 1.0, "bits": ["pot"]},
+	"crab_apples": {"shape": "fruit", "color": "#7c9a34", "size": 0.55},
+	"stewed_berries": {"shape": "dish", "color": "#6a2a48", "size": 1.0, "bits": ["soup", "#8a3a5a", "#4a1a3a"]},
+	"wild_apples": {"shape": "fruit", "color": "#8aa83a", "size": 0.62, "bits": ["blush"]},
+	"clay_jug": {"shape": "jug", "color": "#b8703a", "size": 1.0},
+	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
+	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
+	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
 	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
 	"bronze_mace": {"shape": "flanged_mace", "color": "#b5803a", "size": 1.0},
@@ -52,6 +88,17 @@ const ART_OVERRIDES := {
 	"steel_shield": {"shape": "metal_shield", "color": "#9aa3ad", "size": 1.0},
 	"plank_shield": {"shape": "plank_shield", "color": "#a07a45", "size": 1.0},
 	"campfire_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["fire"]},
+	"log_wall_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.0, "bits": ["planks"]},
+	"log_floor_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["planks"]},
+	"log_roof_kit": {"shape": "parcel", "color": "#4a3018", "size": 1.0, "bits": ["planks"]},
+	"stone_wall_kit": {"shape": "parcel", "color": "#8a8880", "size": 1.0, "bits": ["planks"]},
+	"stone_floor_kit": {"shape": "parcel", "color": "#a09c92", "size": 1.0, "bits": ["planks"]},
+	"stone_roof_kit": {"shape": "parcel", "color": "#4a4f58", "size": 1.0, "bits": ["planks"]},
+	"brick_wall_kit": {"shape": "parcel", "color": "#a8482c", "size": 1.0, "bits": ["planks"]},
+	"brick_floor_kit": {"shape": "parcel", "color": "#8a3a24", "size": 1.0, "bits": ["planks"]},
+	"brick_roof_kit": {"shape": "parcel", "color": "#b85a2c", "size": 1.0, "bits": ["planks"]},
+	"stairs_wood_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["ladder"]},
+	"log_cabin_set_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.3, "bits": ["chest"]},
 	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["roll"]},
 	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest"]},
 	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["chest"]},
@@ -1129,6 +1176,53 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			for k in 3:
 				_sph(parts, 0.009, Vector3(1.0, 1.0, 0.4), Vector3(0.0, -0.03 + 0.012 * float(k % 2), 0.0), color.darkened(0.35), true)
+		"crab_live":
+			# A shore crab walking sideways (refs: Carcinus maenas photographs): a broad flat dark-green carapace, two stalked eyes, two raised claws held forward, four legs a side angled out and down, orange at the claws.
+			_sph(parts, 0.05, Vector3(1.25, 0.42, 1.0), Vector3(0.0, -0.035, 0.0), color)
+			_sph(parts, 0.04, Vector3(1.2, 0.3, 0.9), Vector3(0.0, -0.022, 0.0), color.lightened(0.15))
+
+			for side in [-1.0, 1.0]:
+				_sph(parts, 0.007, Vector3.ONE, Vector3(side * 0.02, -0.012, -0.045), Color(0.05, 0.05, 0.05), true)
+				_box_rot(parts, Vector3(0.04, 0.006, 0.012), Vector3(side * 0.075, -0.02, -0.055), Vector3(0.0, side * -0.7, 0.0), color.darkened(0.1))
+				_sph(parts, 0.022, Vector3(1.2, 0.8, 1.5), Vector3(side * 0.11, -0.018, -0.085), Color(0.75, 0.4, 0.18), true)
+
+				for k in 4:
+					_box_rot(parts, Vector3(0.055, 0.005, 0.008), Vector3(side * (0.085 + 0.004 * float(k)), -0.045, -0.02 + 0.02 * float(k)), Vector3(0.0, side * (0.3 + 0.1 * float(k)), side * -0.35), color.darkened(0.2))
+		"nest":
+			# A ground nest (refs: gull and wader scrapes lined with dry grass): a shallow ring of dry grass stems and bits of seaweed round a hollow, with three speckled pale eggs in it.
+			for k in 12:
+				var na: float = TAU * float(k) / 12.0
+				_box_rot(parts, Vector3(0.1, 0.01, 0.014), Vector3(cos(na) * 0.075, -0.045 + 0.006 * float(k % 3), sin(na) * 0.075), Vector3(0.0, -na + PI * 0.5, 0.0), _tone(color, k, 0.2))
+
+			_cyl(parts, 0.06, 0.01, Vector3(0.0, -0.058, 0.0), Vector3.ZERO, color.darkened(0.3))
+
+			for k in 3:
+				var ea: float = TAU * float(k) / 3.0 + 0.4
+				_sph(parts, 0.026, Vector3(1.0, 1.28, 1.0), Vector3(cos(ea) * 0.025, -0.04, sin(ea) * 0.025), Color(0.82, 0.78, 0.6), true)
+				_sph(parts, 0.004, Vector3.ONE, Vector3(cos(ea) * 0.03, -0.022, sin(ea) * 0.02), Color(0.35, 0.27, 0.15), true)
+		"jug":
+			# A fired clay jug (refs: medieval and Roman one-handled jugs): a round belly narrowing to a short neck with a flared lip, a flat foot, a loop handle from lip to shoulder, a darker band at the shoulder,
+			# the glaze-free orange-brown clay slightly mottled.
+			_sph(parts, 0.085, Vector3(1.0, 1.05, 1.0), Vector3(0.0, -0.02, 0.0), color)
+			_sph(parts, 0.07, Vector3(1.0, 0.7, 1.0), Vector3(0.0, 0.04, 0.0), _tone(color, 2, 0.08))
+			_cyl(parts, 0.04, 0.07, Vector3(0.0, 0.1, 0.0), Vector3.ZERO, color.darkened(0.05))
+			_torus(parts, 0.045, 0.012, Vector3(0.0, 0.14, 0.0), color.lightened(0.08))
+			_cyl(parts, 0.06, 0.012, Vector3(0.0, -0.1, 0.0), Vector3.ZERO, dark)
+			_torus(parts, 0.075, 0.007, Vector3(0.0, 0.045, 0.0), dark)
+
+			for k in 5:   # the loop handle: a curve of small balls from the lip down to the shoulder
+				var ha: float = PI * 0.5 * float(k) / 4.0
+				_sph(parts, 0.014, Vector3.ONE, Vector3(0.05 + sin(ha) * 0.055, 0.13 - (1.0 - cos(ha)) * 0.1 - 0.0 * float(k), 0.0), color.darkened(0.1), true)
+		"candle":
+			# A dipped tallow candle (refs: hand-dipped tallow candles): a slightly tapering irregular cream column, drips frozen down one side, a short dark wick; bits "lit": a small flame on the wick.
+			_cyl_taper(parts, 0.022, 0.016, 0.22, Vector3(0.0, 0.0, 0.0), color)
+			_cyl(parts, 0.025, 0.012, Vector3(-0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.08))
+			_sph(parts, 0.008, Vector3(1.2, 0.8, 0.8), Vector3(0.0, 0.0, 0.016), color.lightened(0.12), true)
+			_sph(parts, 0.006, Vector3(1.5, 0.7, 0.7), Vector3(0.05, 0.0, 0.015), color.lightened(0.1), true)
+			_box(parts, Vector3(0.025, 0.003, 0.003), Vector3(0.122, 0.0, 0.0), Color(0.1, 0.07, 0.05))
+
+			if bits.has("lit"):
+				_sph(parts, 0.012, Vector3(1.9, 0.8, 0.8), Vector3(0.14, 0.0, 0.0), Color(1.0, 0.75, 0.2), true)
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
@@ -1319,6 +1413,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# An apple or pear: a round body with a dip at the top, a short stalk and one small leaf, a darker underside.
 			_sph(parts, 0.07, Vector3(1.0, 0.92, 1.0), Vector3(0.0, -0.01, 0.0), color)
 			_sph(parts, 0.05, Vector3(1.0, 0.5, 1.0), Vector3(0.0, -0.045, 0.0), dark)
+			if bits.has("blush"):
+				_sph(parts, 0.045, Vector3(0.7, 0.9, 1.0), Vector3(0.045, 0.0, 0.03), Color(0.78, 0.2, 0.1), true)      # a red blush on the sun side of a green apple
 			_sph(parts, 0.03, Vector3(1.0, 0.45, 1.0), Vector3(0.0, 0.05, 0.0), dark.darkened(0.2))
 			_cyl(parts, 0.005, 0.04, Vector3(0.0, 0.065, 0.0), Vector3(0.0, 0.0, 0.2), Color(0.3, 0.22, 0.12))
 			_sph(parts, 0.018, Vector3(1.8, 0.25, 0.9), Vector3(0.022, 0.08, 0.0), Color(0.3, 0.55, 0.2))
@@ -1411,7 +1507,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
 			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
-			color = _warm_stone(color)                                                                              # darker and warmer: in sunlight the plain grey read pale blue
+			color = color if bits.has("bronze") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
@@ -1434,6 +1530,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var steel_head: bool = bits.has("steel")
 			var stone_head: bool = bits.has("stone")
 			var iron: Color = Color(0.3, 0.28, 0.25) if stone_head else (Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042))   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
+			if bits.has("bronze"):
+				iron = Color(0.5, 0.26, 0.06)                                                                    # bronze: warm brown-gold (linear)
+
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
 			for k in range(12):                                                                                              # weathered grain: the haft in twelve slightly different tones
@@ -1555,7 +1654,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				for end in [-0.09, 0.09]:
 					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
 			else:
-				color = _warm_stone(color)
+				color = color if bits.has("bronze") else _warm_stone(color)
 				dark = color.darkened(0.3)
 				_box_rot(parts, Vector3(0.07, 0.06, 0.11), Vector3(0.2, 0.0, 0.0), Vector3(0.1, 0.15, 0.08), color)             # the head: a rough lump about half the old slab
 				_box_rot(parts, Vector3(0.06, 0.05, 0.08), Vector3(0.205, 0.008, -0.01), Vector3(-0.2, -0.3, 0.12), _tone(color, 5, 0.12))   # a second, uneven face so the lump is not a clean block
@@ -1617,6 +1716,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			if bits.has("glass"):                                                                                                                     # obsidian: black volcanic glass
 				stone = Color(0.012, 0.012, 0.018)
+			elif bits.has("bronze"):
+				stone = Color(0.5, 0.26, 0.06)                                                                                                          # a bronze blade
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):

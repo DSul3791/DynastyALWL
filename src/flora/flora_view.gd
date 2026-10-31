@@ -229,7 +229,9 @@ const KINDS := ["tree", "shrub", "plant"]
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
-const PART_M_LOW := [256.0, 256.0, 256.0]   # Low and Medium: shrubs and plants also in one part per chunk (a quarter of the draws)
+const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
+# The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
+const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -260,6 +262,7 @@ var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
+var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -317,6 +320,9 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var _plume_cells: Dictionary = {}      # 2 m cell -> number of plumed tall-grass plants in it (tall_grass, thatch_grass): the ground grass thins round them (GrassView) so the clumps stand out
+var fruit_cfg: Dictionary = {}           # drops.json "fruit_tree" (species name -> {max, per_pick}), set by the client: which trees hold fruit
+var fruit_taken: Dictionary = {}         # chunk -> {tree id -> pieces taken this season} (fruit trees; set_fruit_taken, cleared when the season changes)
 var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
 var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
@@ -368,7 +374,8 @@ func set_quality(quality: int) -> void:
 	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
 	impostor_m = IMPOSTOR_M[quality]
 	far_shadows = FAR_SHADOWS[quality]
-	part_m = PART_M_LOW if quality <= 1 else PART_M
+	part_m = PART_M_LOW if quality <= 2 else PART_M
+	shrub_share = SHRUB_SHARE[clampi(quality, 0, SHRUB_SHARE.size() - 1)]
 	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
@@ -467,7 +474,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_splash_material = WaterFallsScript.make_splash_material()
 	_foam_material = WaterFallsScript.make_foam_material()
 
-	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false) and not entry.get("future", false))
 	_setup_entries = _setup_queue.duplicate()
 	_setup_total = _setup_queue.size()
 	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
@@ -672,7 +679,7 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"mid": mid_meshes,
 		"far": far_meshes,
 		"shape": shape,
-		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", [])},
+		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
 		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
@@ -870,6 +877,42 @@ func instance_near(point: Vector3, radius: float) -> Array:
 			found = ids[n]
 
 	return [] if found < 0 else [chunk, found]
+
+
+# Counts the plumed tall-grass plants of a chunk into 2 m cells (delta +1 when the chunk comes, -1 when it goes).
+func _mark_plumes(chunk: Vector2i, items: Dictionary, delta: int) -> void:
+	var ids: PackedInt32Array = items.get("ids", PackedInt32Array())
+	var positions: PackedVector3Array = items.get("positions", PackedVector3Array())
+
+	for n in range(ids.size()):
+		var slug: String = str(_slugs.get(int(ids[n]) >> 16, ""))
+
+		if slug != "tall_grass" and slug != "thatch_grass":
+			continue
+
+		var cell: Vector2i = Vector2i(int(floor(positions[n].x / 2.0)), int(floor(positions[n].z / 2.0)))
+		var now: int = int(_plume_cells.get(cell, 0)) + delta
+
+		if now <= 0:
+			_plume_cells.erase(cell)
+		else:
+			_plume_cells[cell] = now
+
+
+# True when a plumed tall-grass plant stands within about 2 m of the point (its own 2 m cell or a neighbour): the ground grass is thinned there.
+func near_plume(x: float, z: float) -> bool:
+	if _plume_cells.is_empty():
+		return false
+
+	var cx: int = int(floor(x / 2.0))
+	var cz: int = int(floor(z / 2.0))
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if _plume_cells.has(Vector2i(cx + dx, cz + dz)):
+				return true
+
+	return false
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.
@@ -1124,6 +1167,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
 	_chunks[chunk] = entry
+	_mark_plumes(chunk, items, 1)
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
@@ -1296,6 +1340,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if ice != null:
 		ice.queue_free()
 
+	_mark_plumes(chunk, _chunks[chunk]["items"], -1)
 	_chunks.erase(chunk)
 
 
@@ -1391,6 +1436,69 @@ func set_fruiting(names: Array) -> void:
 
 # The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
 # are built on a worker; the chunks redraw when they are ready.
+# The share of fruit picked, in the five levels the fruit shader draws (0, 0.34, 0.67, 0.9, 1.0 = 100, 66, 33, 10 and 0 percent left).
+static func fruit_level(picked_share: float) -> float:
+	if picked_share < 0.17:
+		return 0.0
+
+	if picked_share < 0.5:
+		return 0.34
+
+	if picked_share < 0.78:
+		return 0.67
+
+	if picked_share < 0.95:
+		return 0.9
+
+	return 1.0
+
+
+# {tree id -> level} for the fruit trees of a chunk with fruit taken (main thread: the draw task only reads it).
+func _fruit_levels_of(chunk: Vector2i, items: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var taken: Dictionary = fruit_taken.get(chunk, {})
+
+	if taken.is_empty() or fruit_cfg.is_empty():
+		return out
+
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(ids.size()):
+		var id: int = int(ids[n])
+
+		if not taken.has(id):
+			continue
+
+		var species: Dictionary = _species.get(id >> 16, {})
+		var cfg: Dictionary = fruit_cfg.get(str(_slugs.get(id >> 16, "")), {})
+
+		if cfg.is_empty() or not species.has("season_row"):
+			continue
+
+		var full: int = GatherRules.fruit_max(cfg, species["season_row"], id, float((items["heights"] as PackedFloat32Array)[n]))
+		out[id] = fruit_level(float(taken[id]) / float(maxi(full, 1)))
+
+	return out
+
+
+# The server's count of fruit taken from trees of a chunk (the prompt shows what is left); a later count replaces an earlier one.
+func set_fruit_taken(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	if not fruit_taken.has(chunk):
+		fruit_taken[chunk] = {}
+
+	var before: Dictionary = {}
+
+	if _chunks.has(chunk):
+		before = _fruit_levels_of(chunk, _chunks[chunk]["items"])
+
+	for n in range(ids.size()):
+		fruit_taken[chunk][int(ids[n])] = int(taken[n])
+
+	# Only a change of level (100, 66, 33, 10, 0 percent) redraws the chunk: one pick never rebuilds it.
+	if _chunks.has(chunk) and _fruit_levels_of(chunk, _chunks[chunk]["items"]) != before:
+		_redraw(chunk)
+
+
 func set_season(now_season: String) -> void:
 	if season_override != "":
 		now_season = season_override
@@ -1399,6 +1507,10 @@ func set_season(now_season: String) -> void:
 		return
 
 	var had_season: bool = season != ""
+
+	if had_season and now_season != season:
+		fruit_taken.clear()   # a new season starts every fruit tree full again
+
 	season = now_season
 	_start_seasonal()
 
@@ -1703,6 +1815,7 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
 
 	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+	items["fruit_levels"] = _fruit_levels_of(chunk, items)
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
@@ -1896,6 +2009,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			if is_near == TIER_FAR:
 				variant = 0
 
+		# Lower qualities draw only a stable share of the shrubs (thickets are dense).
+		if shrub_share < 1.0 and info["kind"] == KIND_SHRUB and float((int(ids[n]) * 2654435761) % 1000) / 1000.0 >= shrub_share:
+			continue
+
 		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
 		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):
 			continue
@@ -2025,6 +2142,9 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 				var custom: Color = _leaf_tint(ids[n], info) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
 				# Glowing leaves: young trees glow weakly, grown ones fully.
 				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
+
+				if (items.get("fruit_levels", {}) as Dictionary).has(int(ids[n])):
+					custom.a = float(items["fruit_levels"][int(ids[n])])   # a fruit tree: the share of its fruit already picked (FRUIT_SHADER discards that share)
 				buffer[o + 12] = custom.r
 				buffer[o + 13] = custom.g
 				buffer[o + 14] = custom.b
@@ -2097,7 +2217,7 @@ func _apply_step(job: Dictionary) -> bool:
 	# A berry bush draws the models of the game's season (ripe berries, blossom, bare canes) and, once picked, the stripped ones (TreeBuilder.build's
 	# season and stripped flags, Kathleen). Until the worker has built a season's models the plain ones above are used.
 	if fruiting.has(str(_slugs.get(key[0], ""))):
-		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if bool(key[5]) else 0], {})
+		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if key.size() > 5 and bool(key[5]) else 0], {})   # a proxy-tier key has no stripped flag (5 entries)
 
 		if seasonal.has(key[0]):
 			var wanted_set: Array = seasonal[key[0]]

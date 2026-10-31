@@ -21,6 +21,7 @@ extends Node
 #   server -> client  flora_cut        a flora item was removed
 #   server -> client  vent             the nearest volcanic vent within 1500 m (x, y, z), or INF when none: the volcano rumble bed sits there
 #   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
+#   server -> client  flora_fruit      fruit trees of a chunk: pieces taken from each this season (the prompt shows what is left)
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
@@ -46,6 +47,7 @@ signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 signal flora_stripped_received(chunk: Vector2i, ids: PackedInt32Array)
+signal flora_fruit_received(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array)
 signal zone_received(biome_id: int)
 signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
@@ -223,6 +225,12 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
 	flora_stripped_received.emit(chunk, ids)
+
+
+# Fruit trees: how many pieces were taken from each of these trees this season (sent with a flora chunk and after every pick).
+@rpc("authority", "call_remote", "reliable")
+func flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	flora_fruit_received.emit(chunk, ids, taken)
 
 
 @rpc("authority", "call_remote", "reliable")
