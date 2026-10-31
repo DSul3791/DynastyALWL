@@ -127,7 +127,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Gather bedding from ferns or thatch from grass, then craft a Rough bed and place it under cover.",
+			"hint": "Gather bedding from ferns or thatch from grass, then lash a Rough bed from sticks and bedding and place it under cover.",
 			"after": [
 				"shelter"
 			],

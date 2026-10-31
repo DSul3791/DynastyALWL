@@ -2965,7 +2965,7 @@
 		"rough_bed_kit": {
 			"number": 250,
 			"name": "Rough bed",
-			"description": "Thatch bound with twine. Set it under a roof and lie down to sleep.",
+			"description": "Sticks, branches and rough bedding lashed with twine. Set it under a roof and lie down to sleep.",
 			"kind": "placeable",
 			"stack": 1,
 			"value": 28,
@@ -2974,7 +2974,7 @@
 		"rough_bed": {
 			"number": 251,
 			"name": "Rough bed",
-			"description": "A rough bed of thatch. Lie on it to rest properly.",
+			"description": "A low frame of sticks and branches with a heap of rough bedding, like a manger.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
