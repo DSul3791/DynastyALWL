@@ -1830,3 +1830,7 @@ Answered: 2026-10-31 02:30 UTC
 Answer: Yes
 Answered: 2026-10-31 19:52 UTC
 
+## pic-leanto-bed | Does this in-game lean-to with a bed inside look right?
+Answer: No
+Answered: 2026-10-31 19:53 UTC
+
