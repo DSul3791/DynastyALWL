@@ -1489,6 +1489,11 @@ func edible_slot(slot: int) -> bool:
 	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
 
 
+# Is this item number food, a drink or medicine by the vitals rules the server uses too (data/items/vitals.json)?
+func is_edible_item(number: int) -> bool:
+	return number > 0 and VitalsRules.edible(table.id_of(number), _vitals_cfg)
+
+
 func equippable_slot(slot: int) -> bool:
 	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
 		return false
