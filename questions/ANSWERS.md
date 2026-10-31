@@ -1838,3 +1838,7 @@ Answered: 2026-10-31 19:53 UTC
 Answer: No | Comment: If this is before we made the front only light from the fireplace then this picture is not accurate
 Answered: 2026-10-31 19:54 UTC
 
+## pic-tall-grass | Does the tall grass clump at 10 m (circled) stand out enough from the meadow?
+Answer: Yes
+Answered: 2026-10-31 19:54 UTC
+
