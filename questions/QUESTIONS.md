@@ -103,3 +103,21 @@ Image: questions/img/starter_meadow_noon.png
 Note: Real game, noon, at the spawn looking east. Flora rates it 3 of 5: dense and lush, but one uniform yellow-green lawn with no flowers, same round crowns and evenly spaced tiny conifers.
 - Yes
 - No
+
+## pic-meadow-flowers | Are these meadow flowers (dandelion shown; stems 0.3 to 0.5 m, bigger heads) tall and bold enough to show up in grass?
+Image: questions/img/meadow_dandelion.png
+Note: Render of the model alone, four views, not the real game. Kathleen rates it 3.5 of 5. Ten flower types (dandelion, chamomile, yarrow, wild carrot and others) got the same change. The flora session turns on the densities after the merge.
+- Yes
+- No
+
+## pic-apples | Do these apples look like round apples (stem, highlight) instead of red diamonds?
+Image: questions/img/apples_round.png
+Note: Close-up render of five apples, four views, not the real game. Kathleen rates it 3 of 5: round with a stem and a highlight, still a little faceted.
+- Yes
+- No
+
+## pic-crown-variety | Do these eight oaks look different enough from each other (shape, colour, dying and bare ones)?
+Image: questions/img/oak_variants.png
+Note: Render of eight variants side by side with plain white leaves (the game's leaf texture and tint will change the colour), not the real game. Kathleen rates it 3.5 of 5. Shrubs hazel, blackthorn, bramble, rose get the same shape and colour variety.
+- Yes
+- No
