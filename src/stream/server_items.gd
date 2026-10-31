@@ -3287,7 +3287,8 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	chop["hits"] = int(chop["hits"]) + 1
 	chop["msec"] = now
 	_chops[key] = chop
-	var needed: int = maxi(1, int(ceil(float(clampi(int(4.0 + float(info["trunk"]) * 30.0), 4, 40)) / skill_factor(peer, "fell_tree"))))
+	var fell: Dictionary = _drops.get("felling", {})   # data/items/drops.json "felling": the blow counts follow the swing time (balance, Dave tunes)
+	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + float(info["trunk"]) * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
 
 	if int(chop["hits"]) < needed:
 		return
@@ -3613,15 +3614,16 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		if blows + 1 >= int(cfg.get("branch_blows", 3)) + int(cfg.get("small_blows", 3)):
 			_items.erase(id)
 	else:
-		var cut_in: int = int(tree.get("cut_blows", 0)) + 1
-		tree["cut_blows"] = cut_in
+		var per_log: float = float(cfg.get("blows_per_log", 3))   # a fraction is fine (1.6: a log every 1 or 2 blows, the remainder carries over)
+		var progress: float = float(tree.get("cut_progress", 0.0)) + 1.0
+		tree["cut_progress"] = progress
 
-		if cut_in >= int(cfg.get("blows_per_log", 3)):   # the cut goes through: the log drops on the ground beside the trunk (never into the pack or onto the shoulder)
+		if progress >= per_log - 0.001:   # the cut goes through: the log drops on the ground beside the trunk (never into the pack or onto the shoulder)
 			if _cut_log_off(peer, id, tree, cfg):
-				tree["cut_blows"] = 0
+				tree["cut_progress"] = progress - per_log
 				tree["logs_left"] = int(tree["logs_left"]) - 1
 			else:
-				tree["cut_blows"] = cut_in - 1   # no room for it: the next blow tries the cut again
+				tree["cut_progress"] = maxf(per_log - 1.0, 0.0)   # no room for it: the next blow tries the cut again
 
 		var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(str(tree.get("species", "")), {})
 
@@ -3673,7 +3675,7 @@ func _chop_stump(peer: int, inv, id: int) -> void:
 	_last_process[peer] = now
 	_wear_tool(peer, inv, "axe", "trunk")
 	practice(peer, "work_trunk")
-	var needed: int = clampi(int(ceil(float(cfg.get("blows_base", 3)) + float(tree["radius"]) * float(cfg.get("blows_per_radius_m", 15)))), 3, int(cfg.get("blows_max", 14)))
+	var needed: int = clampi(int(ceil(float(cfg.get("blows_base", 3)) + float(tree["radius"]) * float(cfg.get("blows_per_radius_m", 15)))), int(cfg.get("blows_min", 3)), int(cfg.get("blows_max", 14)))
 	var blows: int = int(tree.get("blows", 0)) + 1
 	tree["blows"] = blows
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
