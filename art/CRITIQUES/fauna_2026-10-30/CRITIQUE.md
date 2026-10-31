@@ -27,3 +27,16 @@ New ratings (offline, no game light, not yet seen in the real game): fox 3, deer
 References: field-guide photographs of the European rabbit (agouti brown-grey coat, hunched rounded body with big haunches, short forelegs, long hind feet, small blunt head, long dark-tipped ears, rusty nape patch, pale belly and chin, white-underside scut). Round 1 (rabbit_round1_before.png) was an egg with stick ears; round 2 (rabbit_round2.png) rebuilt it: a big rounded haunch, hunched body, small head with a pale muzzle and nose, long leaf-shaped ears with dark tips, a rusty nape patch, forelegs and long hind feet, white scut; round 3 (rabbit_round3.png) widened the ears, shrank the nape patch and tucked the hind feet under the haunch. Node names (Rig, Ear_L, Ear_R) kept, so the hop animation is unchanged.
 
 Rating 3 (reads clearly as a rabbit from all four sides, offline). To reach 4: fur tone variation (a darker back, lighter flanks), a hint of white on the inside of the ears, the feet merged into the body so no boxes show, and a check in the real game at 10 and 30 m with the hop animation.
+
+## New first-hour species, round 1 (2026-10-31, offline four views)
+
+References: Eurasian wild boar, European robin, common frog and brown trout photographs and field guides.
+
+| Species | Picture | Critique | Rating | Next |
+|---|---|---|---|---|
+| Boar (`_make_boar`, shared four-legged body with tusks) | boar_round1.png | a dark stocky wedge with a heavy head and a long snout, bristle mane along the shoulders, small curved ivory tusks; reads as a boar or a pig; ears too tall, the mane a saddle-like blob, tusks small | 2 | smaller ears, a ridge of bristles along the whole back, bigger tusks, a smaller rump |
+| Songbird (`_make_songbird`, a robin) | songbird_round1.png | plump body, round head, short beak, slanting tail, folded wings, thin legs, brown back and orange breast: reads as a robin | 3 | a paler belly, a thicker tail, a flight pose |
+| Frog (`_make_frog`) | frog_round1.png | squat olive body, bulging yellow eyes, dark patches behind them, folded hind legs: reads as a frog | 3 | webbed feet, a lighter throat, spots |
+| Trout (`_make_fish`) | trout_round1.png | torpedo body, dorsal and side fins, a tail fan, dark spots on the back and red ones on the flank: reads as a fish; the spots look like black studs and the tail a plain box | 2 | smaller spots, a forked tail, a gill line |
+
+These are model functions only: they are not wired to species numbers in AnimalView.on_rows yet (the animals.json species have no boar, songbird, frog or fish rows); once Sal gives the numbers I add them to `KIND_OF_SPECIES` and the dispatch.
