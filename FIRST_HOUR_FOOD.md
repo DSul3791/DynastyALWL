@@ -11,7 +11,7 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 ## What a new player can eat in the first hour, near the spawn (early summer)
 | Food | Where | kcal each | How many to fill the stomach (2400) | Notes |
 |---|---|---|---|---|
-| Raspberries, blueberries, strawberries | bushes (one E gives up to 150 per bush; scaled by plant size) | **90** (suffix "berries") | 27 berries | **The berry number looks too generous**: 150 berries x 90 kcal = 13,500 kcal per bush, and they weigh 4 g each. See the question below. |
+| Raspberries, blueberries, strawberries | bushes (one E gives up to 150 per bush; scaled by plant size) | **4** (suffix "berries", was 90) | 600 berries | one bush of 150 = 600 kcal, about a quarter of a stomach (a snack); a berry weighs 4 g |
 | Early summer apples | orchard near the spawn (30 to 80 per tree, 5 per press, limited by pack weight) | 110 | 22 apples | weight 0.15 kg each: 22 apples = 3.3 kg. Spoil in 72 game hours (3 real hours) |
 | Summer apples, summer pears, plums, sour cherries | orchard | 120, 105, 70, 75 | 20, 23, 34, 32 | spoil in 7, 4, 4 and 2 game days |
 | Crab apples, wild pears, cherries (wild) | forest trees | 120 (suffix "apples", "pears", "cherries") | 20 | autumn |
@@ -30,5 +30,5 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 ## Findings and data changes
 1. **Apples are about right:** 110 to 125 kcal is a real apple; one bite is 5 percent of the stomach, a handful of 8 to 10 is a snack, 22 a full meal. No change.
 2. **Early apple rots in 3 real hours:** the item description now says "it keeps only 3 game days" (and the others name "game days" as the unit). The hint "Ripe fruit spoils fast. Eat it soon" fires when fruit is in the pack.
-3. **Berries at 90 kcal each are out of scale** (a real berry is about 1 to 5 kcal; the other fruit here use realistic per-piece numbers). Because a bush gives 150 at once, one bush can fill the stomach five times over in summer, which makes starvation impossible and apples and meat pointless in summer. **Question for Dave: scale berries to about 5 kcal each (a handful of 20 is a snack, a bush of 150 is 750 kcal, a third of a stomach)?** I did not change it because the berry numbers are Dave's (vitals.json by_suffix, Dave's 2026-10-21 hunger design).
+3. **Berries were 90 kcal each, out of scale** (a real berry is about 2 to 4 kcal). One bush gave 13,500 kcal. **Changed on 2026-10-31 by the moderator's decision for Dave (reversible): `vitals.json food.by_suffix.berries` 90 -> 4**; bush yields unchanged, so a bush of 150 is 600 kcal, a snack. Dave can overturn it by setting the number back. The other per-piece fruit and nut numbers (hips 60, haws 70, hazelnuts 200, acorns 150) were left alone.
 4. Starting food: the character starts with a full stomach and nothing in the pack; nothing in the data blocks the first meal.
