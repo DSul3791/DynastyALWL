@@ -8,6 +8,7 @@ extends SceneTree
 #   godot --path . --script res://tools/shot_node.gd -- --scene=res://path/model.tscn --out=C:/temp/model.png
 #   options: --play=walk   (ragdoll-style bodies: call node.play(name) and wait --wait=0.4 s, default 0.3)
 #            --height=1.9  (frame this many metres, default: the model's AABB height)
+#            --pitch=-40   (camera pitch in degrees, default -8)
 #            --arg=true    (pass one constructor argument to the script, e.g. the first-person flag)
 # Written by Kathleen (art) for Sonny's body prototype; the output size is 4 x 400 px wide.
 
@@ -22,6 +23,7 @@ func _init() -> void:
 	var wait_s: float = 0.3
 	var height: float = 0.0
 	var ctor_arg: String = ""
+	var pitch_deg: float = -8.0
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--script="):
@@ -36,6 +38,8 @@ func _init() -> void:
 			wait_s = float(a.trim_prefix("--wait="))
 		elif a.begins_with("--height="):
 			height = float(a.trim_prefix("--height="))
+		elif a.begins_with("--pitch="):
+			pitch_deg = float(a.trim_prefix("--pitch="))
 		elif a.begins_with("--arg="):
 			ctor_arg = a.trim_prefix("--arg=")
 
@@ -94,7 +98,7 @@ func _init() -> void:
 	var yaws: Array = [0.0, 40.0, 90.0, 180.0]   # the model faces -Z, so yaw 0 looks at its front from +Z
 
 	for v in range(4):
-		cam.rotation_degrees = Vector3(-8, yaws[v], 0)
+		cam.rotation_degrees = Vector3(pitch_deg, yaws[v], 0)
 		cam.position = centre + cam.transform.basis.z * 5.0
 		vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 		await process_frame
