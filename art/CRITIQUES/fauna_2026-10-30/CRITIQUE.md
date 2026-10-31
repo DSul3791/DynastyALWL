@@ -11,3 +11,13 @@ Source of the list and sizes: Sal's ANIMAL_SPEC.md and data/animals/fauna_propos
 | Songbird, frog, trout | - | not modelled | 0 | small bodies with simple hop / swim / perch hooks |
 
 The three live models share one builder (`_make_quad`) whose node names (Rig, Head, Tail, Leg_*, Ear_*) the animation code uses: improving shapes inside those nodes keeps animation unchanged, so fixes help every four-legged animal at once (neck and head first).
+
+## Rounds 2 to 4: shared four-legged builder (deer, fox, horse, moose), offline
+
+| Round | Picture | Change | Result |
+|---|---|---|---|
+| 2 | fox_round2.png, deer_round2.png | the bead-chain neck became five overlapping, thinning segments; a jaw ball so the head tapers; ears as leaf-shaped ovals | neck now reads as one tapering neck; ears better |
+| 3 | fox_round3.png, deer_round3.png | muzzle a tapered ball with a dark nose instead of a box; fox brush shorter, thickest in the middle with a white tip; fox and deer lose the pale belly ball that showed as a white band mid-body; deer neck 0.5 to 0.42 | fox: one smooth body, white muzzle, brush with white tip: reads as a fox (3). deer: tapered muzzle and nose, reads as a deer (3) |
+| 4 | deer_fox_rabbit_round4.png | check of all three side by side | consistent style; rabbit still the old model |
+
+New ratings (offline, no game light, not yet seen in the real game): fox 3, deer 3, rabbit 2 (unchanged: needs haunch, long ears, muzzle). Horse and moose use the same builder and inherit the neck, head and ear changes unchecked: look at them next. Remaining flaws seen: legs still thin straight boxes, bodies two joined blobs, fox ears thin and dark. test_animals: 1 failure, the known 150-animal server timing check (3.4 ms against 3 ms on this loaded machine), unrelated to shapes.
