@@ -21,3 +21,9 @@ Not photographed this run: lit campfire and log cutting close-ups (the picture r
 - `rig_client.log` "Crash report written" at +18 s of every rig run is the 15 s main-thread-silent watchdog (crash_report.gd), not a process crash: the same run took its picture. Meaning: at join the client freezes about 15 s (fps 1) while the voxel engine starts; a new player stares at a frozen window for that long. Tyler/Sonny.
 - Dummy-renderer mesh errors (headless clients, "Parameter m is null", DummyMesh leaks) are noise from headless runs, 9 distinct; one `Couldn't create an ENet host` on port 7990 was a port already in use by another session's server.
 - Pictures: smoke/walk3min.png (third person at the clearing), world3/shelter_row_wide.png; cards on the QA branch (pic-fh-*).
+
+## Rerun on daily d05e86b3 (31 Oct evening, after COMPUTER BACK)
+- No freeze, no "Crash report written" in any log. Server log clean.
+- Self-tests: cook PASS. SLEEP and SNARE both print "was not set down" (placement 0.9 m ahead of the spawn returned no row; the placement refusal is silent). Likely cause, not verified: all clients share one server, and the earlier tests (fire, lean-to, placed) leave pieces at the same spawn, so the 2.5 m structure gap or the per-chunk cap refuses the bed and snare. Probe 6 and 7 place the same bed fine on a fresh server.
+- Chest test still errors at inventory_view.gd:4562 (Nil inventory, Tyler).
+- New HIGH: flora_view.gd:2270 `_decimate_task` invalid cast to PackedInt32Array (client_eat.log, once).

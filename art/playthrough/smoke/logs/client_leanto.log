@@ -1,10 +1,91 @@
 Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
 
 Terrain client: connecting to 127.0.0.1:7990
-Terrain client: welcome after 122 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
-Terrain client: 2026-10-31T15:19:24 [+0.9 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
+Terrain client: welcome after 50 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
+Terrain client: 2026-10-31T20:12:06 [+0.5 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
 Terrain client: block line open
-client: 2 s, 0 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 1 fps, at (53316.0, 34.0, 68476.0)
-Terrain client: 2026-10-31T15:19:26 [+2.8 s] JOIN: waiting for ground 2 s after the welcome: loads 57, received 0 (total 0), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 32.9, viewer y 34.1
-Terrain client: ground under (53312, 68465) is at 31.0 m
-Terrain client: 2026-10-31T15:19:27 [+2.9 s] JOIN: column answer 2.9 s after the welcome: ground 31.0 m, player 32.9 m, viewer y 34.1
+client: 1 s, 0 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 1 fps, at (53316.0, 34.0, 68476.0)
+Terrain client: 2026-10-31T20:12:07 [+1.6 s] JOIN: waiting for ground 1 s after the welcome: loads 35, received 0 (total 0), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 32.9, viewer y 34.1
+Terrain client: ground under (53307, 68477) is at 31.0 m
+Terrain client: 2026-10-31T20:12:07 [+1.7 s] JOIN: column answer 1.7 s after the welcome: ground 31.0 m, player 32.9 m, viewer y 34.1
+Terrain client: 2026-10-31T20:12:10 [+4.3 s] JOIN: ground ready after 0 retries, test drops 0, player (53306.51, 32.88725, 68476.92), viewer y 32.9
+client: 11 s, 10056 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 120 fps, at (53306.0, 32.0, 68477.0)
+Lean-to test: 1 lean-to rows in view, cover under it 1.0, in the open 0.0
+client: 21 s, 10056 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 145 fps, at (53306.0, 32.0, 68477.0)
+client: 31 s, 10056 blocks loaded, 0 from the server (0.0 MB), 0 waiting, 145 fps, at (53306.0, 32.0, 68477.0)
+Terrain client: last block asked for 6073 ms after the welcome; 10056 blocks loaded; 0 from the server (0.00 MB, 0 bytes each), 10056 from the cache, 0 cache misses, 0 timeouts, 0 still waiting, 0 prefetched blocks used
+Terrain client: cache folder 32.8 MB
+Terrain client: flora 19 chunks (0.41 MB with water, last 1682 ms after the welcome), 29361 items held, 22682 drawn, 4799 colliders, 0 cuts; water in 11 chunks, 9441 cells
+Terrain client: flora draws: [418, 80, 319] nodes (tree, shrub, plant) for [13732, 614, 8336] instances, 711 nodes under 50 instances
+Terrain client: fall columns: 3 meshes drawn (cap 12 per chunk)
+Terrain client: cover index 7132 tree crowns in 19 chunks
+Terrain client: grass 125765 tufts in 2412 cells (radius 160 m), 1747 MultiMesh draws
+Terrain client: water sounds: none (1 falls known)
+Terrain client: nature calls { "bird_chirp": 2 }, zones { "forest": 0.00004062398267, "meadow": 0.69993378290825, "water": 0.0, "highland": 0.0 }
+Terrain client: tree sounds: 0 falls, 1 stump sprays, last stump_chips_2 (generated)
+Terrain client: faint run: world muted to 0.00, heart gain down to 1.00, 0 heaves, 0 heartbeats, done false, breaths while fainted 0, wake mute -1.00, bpm max 0, step 0.00
+Terrain client: fire world: 0 fuel, 0 lit, 0 out
+Terrain client: fire sounds: 0 lit, 0 put out, 1 loops, last 
+Terrain client: item sounds 3, last item_drop_0 (generated)
+Terrain client: harvest sounds {  }, last ; plant kinds { "pluck": 26, "snap": 20, "snip": 38, "twist": 11, "pull": 13 }
+Terrain client: spear sounds {  }, last 
+Terrain client: interior sounds: 0 objects, 0 creaks, last 
+Terrain client: gear: worn [], 0 steps, last 
+Terrain client: creature calls {  }, last 
+Terrain client: sounds shed over the cap: 0
+Terrain client: interface sounds 0 played, last 
+Terrain client: swim sounds 0 splashes, 0 strokes, 0 dives, 0 surfacings, last 
+Terrain client: town sounds 0 loops, 0 bells
+Terrain client: tool hits 0, last 
+Terrain client: muffled sounds: 0 filtered, 0 behind hills
+Terrain client: cave enclosure 0.00, drips 0
+Terrain client: dig sounds {  }, last 
+Terrain client: wind 0.71 (world 0.40, exposure +0.08: -1 valley, +1 ridge)
+Terrain client: sounds heard (8): |   fire_small 2 m -16 dB generated |   fire_large 2 m -20 dB generated |   bird_chirp_1 14 m -13 dB generated |   wind_gust here -34 dB generated |   wind_low here -36 dB generated |   treewind_leaves 8 m -39 dB generated |   treewind_pine 8 m -39 dB generated |   fire_rain 2 m -80 dB generated
+Terrain client: sound budget: sounds 11/96 playing (peak 12), 6.9/600 MB loaded (High), 0 loads refused
+Terrain client: snow hush 0.00 (nature bus 0.0 dB, wind bus 0.0 dB)
+Terrain client: rain ground soft (weights { "stone": 0.0, "mud": 0.0, "litter": 0.0, "snow": 0.0 })
+Terrain client: weather clear rain 0.00 wind 0.00 calls 1.00 thunders 0; ground wet 0.00 snow 0.00, covered 0.0, puddle splashes 0, leaf drips 0, roofed 0.0, loops []
+Terrain client: sound: footsteps {  }, grass swishes 0, last ground , gust 0.40
+Terrain client: npcs drawn 2 (roster 2), nearest Hob 19.5 m away, player at 53306 68477
+Terrain client: blocks waited for 0 times, 0 ms on average, worst 0 ms; at most 0 loader threads waiting at once; 0 blocks came on the block line
+frame probe: 4009 frames, 7 slower than 50 ms
+  sound                8000 calls  total   4871.8 ms  avg   0.61 ms  worst  1073.4 ms
+  step player          4009 calls  total   4441.5 ms  avg   1.11 ms  worst  1073.7 ms
+  grass                4000 calls  total   2893.9 ms  avg   0.72 ms  worst    23.7 ms
+  player move          4000 calls  total   1156.8 ms  avg   0.29 ms  worst     1.4 ms
+  update view          4009 calls  total   1104.8 ms  avg   0.28 ms  worst  1034.6 ms
+  harvest, clock, weather   4009 calls  total    827.9 ms  avg   0.21 ms  worst     8.4 ms
+  incoming             4000 calls  total    700.3 ms  avg   0.18 ms  worst   225.9 ms
+  flora chunk in         19 calls  total    685.3 ms  avg  36.07 ms  worst   225.8 ms
+  welcome                 1 calls  total    504.3 ms  avg 504.30 ms  worst   504.3 ms
+  held item            3999 calls  total    475.4 ms  avg   0.12 ms  worst     3.8 ms
+  weather look         3999 calls  total    401.2 ms  avg   0.10 ms  worst     3.9 ms
+  p slide              4000 calls  total    241.3 ms  avg   0.06 ms  worst     0.5 ms
+  inventory view       3999 calls  total    226.5 ms  avg   0.06 ms  worst     7.2 ms
+  flora apply          4000 calls  total    217.3 ms  avg   0.05 ms  worst    17.8 ms
+  welcome: sound setup      1 calls  total    183.7 ms  avg 183.71 ms  worst   183.7 ms
+  p ground_ready       4000 calls  total    159.4 ms  avg   0.04 ms  worst     0.2 ms
+  flora update           61 calls  total    124.2 ms  avg   2.04 ms  worst     2.6 ms
+  p bob                4000 calls  total    109.2 ms  avg   0.03 ms  worst     0.5 ms
+  welcome: ground material      1 calls  total     59.3 ms  avg  59.27 ms  worst    59.3 ms
+  welcome: flora setup      1 calls  total     45.0 ms  avg  44.95 ms  worst    45.0 ms
+  anchor               4000 calls  total     30.0 ms  avg   0.01 ms  worst     0.7 ms
+  admin compass        3999 calls  total     21.9 ms  avg   0.01 ms  worst     0.1 ms
+  faint effect         3999 calls  total     17.6 ms  avg   0.00 ms  worst     0.0 ms
+  emitters             3999 calls  total     14.6 ms  avg   0.00 ms  worst     0.0 ms
+  welcome: tables         1 calls  total     11.0 ms  avg  11.04 ms  worst    11.0 ms
+  fall growth          3999 calls  total      8.4 ms  avg   0.00 ms  worst     0.0 ms
+  welcome: environment      1 calls  total      5.2 ms  avg   5.23 ms  worst     5.2 ms
+  slow frame 143 ms: ~script process 1570.1, frame no. 39, harvest, clock, weather 6.5, step player 6.0, sound 6.0, flora apply 1.4, grass 0.8, player move 0.6, ~physics step 0.5, held item 0.1, flora update 0.1, weather look 0.1, update view 0.0, p bob 0.0, p ground_ready 0.0, inventory view 0.0, p slide 0.0, incoming 0.0, anchor 0.0, admin compass 0.0, faint effect 0.0, emitters 0.0, fall growth 0.0
+  slow frame 141 ms: ~script process 718.6, incoming 225.9, flora chunk in 225.8, frame no. 62, harvest, clock, weather 2.6, sound 2.5, step player 2.3, grass 0.5, ~physics step 0.4, player move 0.3, flora apply 0.2, inventory view 0.2, held item 0.1, weather look 0.1, p bob 0.0, p ground_ready 0.0, p slide 0.0, update view 0.0, anchor 0.0, admin compass 0.0, faint effect 0.0, emitters 0.0, fall growth 0.0
+  slow frame 141 ms: ~script process 231.4, incoming 200.2, flora chunk in 200.1, frame no. 63, flora apply 17.8, weather look 3.0, sound 2.0, step player 1.8, grass 0.5, ~physics step 0.4, player move 0.3, inventory view 0.2, flora update 0.2, held item 0.1, p bob 0.0, update view 0.0, p ground_ready 0.0, p slide 0.0, harvest, clock, weather 0.0, anchor 0.0, admin compass 0.0, faint effect 0.0, emitters 0.0, fall growth 0.0
+  slow frame 140 ms: frame no. 617, sound 23.9, step player 23.7, ~script process 21.7, grass 10.6, harvest, clock, weather 5.2, inventory view 4.8, flora update 1.7, ~physics step 0.4, player move 0.2, held item 0.2, weather look 0.1, p slide 0.1, update view 0.0, p bob 0.0, p ground_ready 0.0, anchor 0.0, admin compass 0.0, faint effect 0.0, flora apply 0.0, incoming 0.0, emitters 0.0, fall growth 0.0
+  slow frame 129 ms: ~script process 231.4, incoming 189.8, flora chunk in 189.8, frame no. 75, sound 43.3, step player 22.9, flora apply 1.8, grass 0.7, ~physics step 0.4, held item 0.3, inventory view 0.2, player move 0.2, weather look 0.2, update view 0.0, p bob 0.0, p slide 0.0, p ground_ready 0.0, harvest, clock, weather 0.0, admin compass 0.0, anchor 0.0, faint effect 0.0, emitters 0.0, fall growth 0.0
+  slow frame 117 ms: ~script process 718.6, frame no. 40, sound 12.4, step player 12.1, grass 3.6, inventory view 2.9, ~physics step 0.4, player move 0.3, weather look 0.2, flora apply 0.2, held item 0.2, p bob 0.0, update view 0.0, p ground_ready 0.0, anchor 0.0, p slide 0.0, harvest, clock, weather 0.0, admin compass 0.0, incoming 0.0, emitters 0.0, faint effect 0.0, fall growth 0.0
+  slow frame 50 ms: ~script process 1094.2, frame no. 618, sound 38.2, step player 19.5, grass 9.8, player move 0.4, ~physics step 0.4, weather look 0.1, held item 0.1, p slide 0.1, p ground_ready 0.1, p bob 0.0, update view 0.0, inventory view 0.0, harvest, clock, weather 0.0, anchor 0.0, admin compass 0.0, faint effect 0.0, flora apply 0.0, emitters 0.0, incoming 0.0, fall growth 0.0
+Terrain client: ground value 3 m under the spawn -0.56 (above 0 is open)
+WARNING: 14 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: ObjectDB::cleanup (core\object\object.cpp:2536)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: ResourceCache::clear (core\io\resource.cpp:822)
