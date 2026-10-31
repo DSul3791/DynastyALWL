@@ -57,6 +57,13 @@ var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
 var _item_views: Array = []
+var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
+var _fell_step: int = 0
+var _fell_t: int = 0
+var _fell_tree: Array = []
+var _fell_trunk: int = 0
+var _fell_stump: int = 0
+var _fell_up: Vector2 = Vector2.ZERO
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
 var _stance_msec: int = 0
@@ -176,6 +183,9 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-fell="):
+			fell_mode = argument.trim_prefix("--shot-fell=")
+			print("shot runner: fell mode ", fell_mode)
 		elif argument.begins_with("--shot-stance="):
 			stance_index = ["stand", "crouch", "sit", "lie"].find(argument.trim_prefix("--shot-stance="))
 		elif argument.begins_with("--shot-give="):
@@ -288,6 +298,12 @@ func _process(delta: float) -> void:
 
 		_item_spot = at
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
+
+	if fell_mode != "" and _fell_step < 99:
+		if now - client.connected_msec > 14000:
+			_fell_tick(now)
+
+		return
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
 	if dig_steps > 0 and heavy and not _dig_ballast and now - client.connected_msec > 9000:
@@ -540,6 +556,171 @@ func _process(delta: float) -> void:
 
 # One line of facts so pass or fail is not by eye only: where the player is, what the pack holds, and every loose world item within 6 m
 # with its height above the ground under it (a gap over 0.15 m is floating).
+
+# The tree-fall rig (--shot-fell=flat|steep): picks a loaded tree on the flattest or steepest ground, stands on its downhill side, fells it with real axe blows
+# (so the server's resting pose is what shows), photographs before, falling and resting (from the side), then chops the stump with pictures.
+func _fell_snap(name: String) -> void:
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("%s/%s.png" % [dir, name])
+	print("shot runner: saved fell picture %s" % name)
+
+
+func _fell_face(from: Vector3, target: Vector3, pitch_deg: float) -> void:
+	var v: Vector3 = target - from
+	client.body.rotation.y = atan2(-v.x, -v.z)
+	client.pitch = deg_to_rad(pitch_deg)
+	client.camera.rotation.x = client.pitch
+	client.body.velocity = Vector3.ZERO
+
+
+func _fell_stand(at: Vector3) -> void:
+	var g: float = _ground(at.x, at.z)
+	client.body.global_position = Vector3(at.x, (client.body.global_position.y if is_nan(g) else g) + 0.1, at.z)
+	client.body.velocity = Vector3.ZERO
+
+
+func _fell_tick(now: int) -> void:
+	var items = client.items
+	var here: Vector3 = client.body.global_position
+
+	if client.held != null:
+		client.held.set_first_person(false)   # no arms or axe in the pictures
+
+	if _fell_step == 0:
+		items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+		var best_score: float = INF
+
+		for chunk in client.flora._chunks:
+			var held: Dictionary = client.flora._chunks[chunk]["items"]
+
+			for n in range(held["ids"].size()):
+				if int(client.flora._species.get(held["ids"][n] >> 16, {}).get("kind", 2)) != 0:
+					continue
+
+				var pos: Vector3 = held["positions"][n]
+
+				if pos.distance_to(here) > 220.0 or float(held["heights"][n]) < 8.0:
+					continue
+
+				var up: Vector2 = Vector2.ZERO
+				var rise: float = 0.0
+
+				for k in 8:
+					var a: float = TAU * float(k) / 8.0
+					var d: Vector2 = Vector2(cos(a), sin(a))
+					var g1: float = _ground(pos.x + d.x * 8.0, pos.z + d.y * 8.0)
+					var g0: float = _ground(pos.x - d.x * 8.0, pos.z - d.y * 8.0)
+
+					if not is_nan(g1) and not is_nan(g0) and (g1 - g0) / 16.0 > rise:
+						rise = (g1 - g0) / 16.0
+						up = d
+
+				var score: float = rise if fell_mode == "flat" else -rise
+
+				if up != Vector2.ZERO and score < best_score:
+					best_score = score
+					_fell_tree = [chunk, held["ids"][n], pos, float(held["heights"][n])]
+					_fell_up = up
+
+		if _fell_tree.is_empty():
+			if now - client.connected_msec < 60000:
+				return   # the flora is still loading: look again next frame
+
+			print("shot runner: fell: no tree loaded")
+			_fell_step = 99
+			return
+
+		print("shot runner: fell tree %s at %s height %.1f, slope %.2f toward %s" % [str(_fell_tree[1]), str(_fell_tree[2]), _fell_tree[3], absf(best_score), str(_fell_up)])
+		var tp: Vector3 = _fell_tree[2]
+		var stand: Vector2 = Vector2(tp.x, tp.z) - _fell_up * 3.0
+		_fell_stand(Vector3(stand.x, 0.0, stand.y))
+		_fell_face(client.body.global_position, tp + Vector3(0.0, 4.0, 0.0), 22.0)
+		_fell_t = now
+		_fell_step = 1
+		return
+
+	if _fell_step == 1:
+		if now - _fell_t > 4000:
+			_fell_snap("fell_before")
+			_fell_t = now
+			_fell_step = 2
+
+		return
+
+	if _fell_step == 2:
+		if now - _fell_t < 1500:
+			return
+
+		for id in items._world:
+			if int(items._world[id]["state"]) == 3:
+				_fell_trunk = id
+
+			if int(items._world[id]["state"]) == 4:
+				_fell_stump = id
+
+		if _fell_trunk != 0:
+			_fell_t = now
+			_fell_step = 3
+			return
+
+		var tree: Array = _fell_tree
+		items.net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+		_fell_t = now - 800
+		return
+
+	if _fell_step == 3:
+		if now - _fell_t > 500:
+			_fell_snap("fell_falling")
+			_fell_t = now
+			_fell_step = 4
+
+		return
+
+	if _fell_step == 4:
+		if now - _fell_t > 3500:
+			var extra: Dictionary = items._world[_fell_trunk].get("extra", {})
+			print("shot runner: fell trunk yaw %.3f pitch %.3f length %.1f radius %.2f" % [float(extra.get("yaw", 0.0)), float(extra.get("pitch", 0.0)), float(extra.get("length", 0.0)), float(extra.get("radius", 0.0))])
+			var tp: Vector3 = _fell_tree[2]
+			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))
+			var mid: Vector3 = tp + Vector3(dir.x, 0.0, dir.y) * float(extra.get("length", 10.0)) * 0.5
+			var side: Vector2 = Vector2(-dir.y, dir.x)
+			_fell_stand(Vector3(mid.x + side.x * 16.0, 0.0, mid.z + side.y * 16.0))
+			_fell_face(client.body.global_position, mid + Vector3(0.0, 1.0, 0.0), -4.0)
+			_fell_t = now
+			_fell_step = 5
+
+		return
+
+	if _fell_step == 5:
+		if now - _fell_t > 3500:
+			_fell_snap("fell_resting")
+			var tp2: Vector3 = _fell_tree[2]
+			_fell_stand(Vector3(tp2.x + 1.6, 0.0, tp2.z))
+			_fell_face(client.body.global_position, tp2 + Vector3(0.0, 0.3, 0.0), -35.0)
+			_fell_t = now
+			_fell_step = 6
+
+		return
+
+	if _fell_step == 6:
+		if now - _fell_t < 2500:
+			return
+
+		if not items._world.has(_fell_stump):
+			_fell_snap("stump_gone")
+			_fell_step = 99
+			return
+
+		var blows: int = int(items._world[_fell_stump].get("blows", 0)) + 1
+		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3.ZERO)
+		_fell_t = now - 1900
+		items._world[_fell_stump]["blows"] = blows
+
+		if blows == 3:
+			_fell_snap("stump_chop")
+
+		return
+
 func _print_state() -> void:
 	if client.items == null:
 		return

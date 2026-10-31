@@ -832,6 +832,20 @@ func loose_log_near(point: Vector3) -> int:
 	return 0
 
 
+# The id of a stump within reach of a point (the axe struck near it), 0 when none: the axe chops it up (server_items.gd _chop_stump).
+func stump_near(point: Vector3) -> int:
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry["state"]) == 4 and is_instance_valid(entry["node"]):
+			var radius: float = float(entry.get("extra", {}).get("radius", 0.3))
+
+			if Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length() < radius + 0.9 and absf(point.y - entry["pos"].y) < 1.6:
+				return id
+
+	return 0
+
+
 func felled_trunk_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]
@@ -841,7 +855,7 @@ func felled_trunk_near(point: Vector3) -> int:
 			var yaw: float = float(extra.get("yaw", 0.0))
 			var length: float = float(extra.get("length", 8.0))
 			var along: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
-			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length)
+			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length * cos(float(extra.get("pitch", 0.0))))
 			var nearest: Vector3 = entry["pos"] + along * t
 
 			if Vector2(point.x - nearest.x, point.z - nearest.z).length() < 1.5 + float(extra.get("radius", 0.3)):
@@ -976,11 +990,14 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	pivot.add_child(mesh_node)
 	mesh_node.position = Vector3(0.0, length * 0.5, 0.0)
 	var lie: float = deg_to_rad(90.0)
+	var pitch: float = float(extra.get("pitch", 0.0))   # the server's resting pitch (fell_pose.gd): rises with a slope, follows a falling one
+	var has_pose: bool = extra.has("pitch")
+	var rest: float = lie - pitch if has_pose else lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5))   # an older record keeps the level lie with the taper dip
 	pivot.position.y = radius   # the axis rides one butt radius up, so the log rests ON the ground instead of sunk in it (collision is at this height)
 	pivot.rotation.x = 0.0
 	var tween: Tween = pivot.create_tween()
 	# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
-	tween.tween_property(pivot, "rotation:x", lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5)), 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 0
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -988,8 +1005,8 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	capsule.radius = radius * 0.8
 	capsule.height = length
 	shape.shape = capsule
-	shape.rotation.x = lie
-	shape.position = Vector3(0.0, radius, length * 0.5)
+	shape.rotation.x = rest
+	shape.position = Vector3(0.0, radius + sin(pitch) * length * 0.5, cos(pitch) * length * 0.5)
 	body.add_child(shape)
 	root.add_child(body)
 	_collide.append([root, body])
