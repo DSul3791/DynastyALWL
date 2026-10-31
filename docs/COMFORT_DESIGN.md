@@ -71,3 +71,14 @@ Fourteen kits, items 487 to 500, recipes 319 to 332: log seat (1 log, keep a sto
 
 ## 9. References (checked by web search, 31 Oct 2026; guides disagree on details, so treat as a model, not a spec)
 Valheim: Rested lasts about 7 to 8 minutes plus 1 minute per comfort level, and comfort comes from nearby furniture and fire inside a sheltered area (sources: [exitlag comfort guide](https://www.exitlag.com/blog/valheim-comfort/), [PC Gamer comfort guide](https://pcgamer.com/increase-valheim-comfort-level-max), [mobalytics comfort and rested guide](https://mobalytics.gg/gamebase/guides/valheim-comfort-rested-guide), [Indifferent Broccoli wiki](https://wiki.indifferentbroccoli.com/en/Valheim/Comfort), [corrosionhour how comfort works](https://www.corrosionhour.com/valheim-how-does-comfort-work/)). One guide puts the practical range at about 10 m. The "each kind counts once" rule is Dave's and the commonly described Valheim behaviour; the results I read did not state it outright. I did not research Rust, Vintage Story or The Sims for this pass, so none is cited.
+
+## 10. Data is in; code list for Tyler (Sal, 2026-10-31)
+Done in data: 15 furniture rows in structures.json (states 59 to 73: log_seat, stool, bench, chair, table, hide_rug, wool_rug, straw_bed, feather_bed, canopy_bed, wall_torch, chandelier, fireplace, flower_pot, antler_mount), each with `comfort` (the id in comfort.json `kinds`), `gap_exempt: true`, `lights: true` (torch, chandelier, fireplace), `shelter_needed: true` (beds, chandelier, fireplace). Placed items 502 to 516; kits 487 to 501. Kits UNLOCKED: log seat, stool, bench, chair, table, hide rug, wool rug, straw bed. Still locked and future: feather bed, canopy bed, wall torch, chandelier, fireplace, flower pot, antler mount. Placement: `placement_rules.gd` now skips the 2.5 m gap for `gap_exempt` rows (test line added).
+Code needed:
+1. `comfort_at(peer)` as in section 7, reading each nearby world item's state -> structures row -> `comfort` id -> comfort.json `kinds`.
+2. Rested buff on the character, its hooks (regen, exhaustion, hunger/thirst, action speed, skill gain, cold) and the comfort/rested messages to the client with the HUD icons.
+3. Sitting: E on log_seat, stool, bench (three sit spots at x -0.6, 0, 0.6), chair; sit stance at the piece centre, 30 s earns the buff when comfort is at least 2.
+4. Beds: bed.json keys the good-bed effect to `rough_bed`; add `straw_bed`, `feather_bed`, `canopy_bed` (comfort points 2, 4, 5) and let sleep find any of them.
+5. Lit logic (before we unlock torch, chandelier, fireplace): a `lit` flag per placed light fuelled with a stick (torch), candles (chandelier) or firewood (fireplace); only lit lights count. Fire states for the campfire and clay hearth already exist.
+6. Wall pieces (wall_torch, antler_mount) need a wall to hang on (or accept floor placement for now); the chandelier hangs from a roof.
+7. test_comfort.gd as listed in section 7.

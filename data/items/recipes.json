@@ -6688,8 +6688,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
-			"locked": true
+			"known": false
 		},
 		"stool_kit": {
 			"number": 333,
@@ -6701,8 +6700,7 @@
 			],
 			"gives": ["stool_kit", 1],
 			"craft_s": 10.0,
-			"known": false,
-			"locked": true
+			"known": false
 		},
 		"bench_kit": {
 			"number": 320,
@@ -6724,7 +6722,6 @@
 			],
 			"craft_s": 25.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench"
 		},
 		"chair_kit": {
@@ -6751,7 +6748,6 @@
 			],
 			"craft_s": 35.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -6775,7 +6771,6 @@
 			],
 			"craft_s": 40.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -6798,8 +6793,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"locked": true
+			"known": false
 		},
 		"wool_rug_kit": {
 			"number": 324,
@@ -6820,8 +6814,7 @@
 				1
 			],
 			"craft_s": 25.0,
-			"known": false,
-			"locked": true
+			"known": false
 		},
 		"straw_bed_kit": {
 			"number": 325,
@@ -6847,7 +6840,6 @@
 			],
 			"craft_s": 30.0,
 			"known": false,
-			"locked": true,
 			"station": "workbench"
 		},
 		"feather_bed_kit": {
