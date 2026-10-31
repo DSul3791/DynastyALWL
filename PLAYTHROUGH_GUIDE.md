@@ -78,7 +78,7 @@ Work the trunk with the axe (one blow each, press the use key at it):
 Small trees (a sapling) give only 3 blows of firewood 1-2, kindling 2-4, stick 2-4.
 A **stump** can be chopped up with the axe too: 3 + 15 x radius blows (max 14), some blows chip off 1-2 sticks, the last gives 2-4 firewood, 2-4 kindling and 1-3 sticks.
 
-A log is carried on the shoulder, alone (Q lays it down). Chop a log on the ground with the axe to get **wooden blocks** (`wooden_block`, hardwood; `wooden_block_soft` from conifers). A **chopping block** (recipe #15: 2 logs) splits one block into one firewood with the axe (E at the block).
+A log is carried on the shoulder, alone (Q lays it down). **[BLOCKED F-16]** The log you get is `log_oak`, `log_beech`... (one per species); the recipes that need a plain `log` (chopping block, log workbench, rough plank, lumber) cannot use it. Chop a log on the ground with the axe to get **wooden blocks** (`wooden_block`, hardwood; `wooden_block_soft` from conifers). A **chopping block** (recipe #15: 2 logs) splits one block into one firewood with the axe (E at the block).
 
 Pictures: `art/playthrough/` has no stump or trunk picture from this run (see findings, "could not photograph").
 

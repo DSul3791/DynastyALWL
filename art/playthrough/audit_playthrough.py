@@ -244,10 +244,8 @@ for k, v in recipes.items():
     giver[v["gives"][0]].append(k)
 for k, v in sorted(live_items.items(), key=lambda x: x[1].get("number", 0)):
     look = looks.get(k)
-    if k in override_ids and look is not None and look.get("shape") == "chunk":
-        lk = "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)"
-    elif look is None and k in override_ids:
-        lk = "override look"
+    if k in override_ids:
+        lk = "override look"   # basic_look.entry(): the override wins over a missing row or the grey placeholder row
     elif look is None:
         lk = "NO LOOK (structure or kit-less item: drawn by structure look)" if k in structures else "NO LOOK ENTRY"
     elif look.get("shape") == "chunk" and look.get("color") == "#8a8a8a":
