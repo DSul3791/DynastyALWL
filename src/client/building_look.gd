@@ -903,6 +903,57 @@ static func _forge_coals() -> ArrayMesh:
 	return _finish_cached("forge_coals", st, _coal_material())
 
 
+# --- Lit fixtures (wall torch, chandelier, fireplace; struct.lit from the server, Tyler 31 Oct 2026): flames and a warm light added to the model, named "Light" like a campfire's so the
+# nearest-lights limit and fire_light_near treat it alike. The torch flame sits above and in front of the head and its light further out, so the wall behind gets no hard shadow cone.
+static func lit_fixture(kind: String) -> Node3D:
+	var root: Node3D = Node3D.new()
+	var spots: Array = []
+	var light_at: Vector3 = Vector3(0.0, 1.0, 0.5)
+	var range_m: float = 8.0
+	var energy: float = 1.2
+
+	match kind:
+		"wall_torch":
+			spots = [[Vector3(0.0, 2.27, 0.36), 0.55]]
+			light_at = Vector3(0.0, 2.5, 0.8)
+			range_m = 7.0
+			energy = 1.1
+		"chandelier":
+			for k in 6:
+				var a: float = TAU * float(k) / 6.0
+				spots.append([Vector3(cos(a) * 0.34, 2.3 - 0.36, sin(a) * 0.34), 0.2])
+
+			light_at = Vector3(0.0, 1.6, 0.0)
+			range_m = 8.0
+			energy = 1.2
+		"fireplace":
+			spots = [[Vector3(0.0, 0.3, 0.28), 0.75], [Vector3(0.18, 0.3, 0.22), 0.45]]
+			light_at = Vector3(0.0, 0.9, 0.6)
+			range_m = 10.0
+			energy = 1.5
+			var coals: MeshInstance3D = _instance(_coals())
+			coals.scale = Vector3(0.3, 1.0, 0.2)
+			coals.position = Vector3(0.0, 0.1, 0.28)
+			root.add_child(coals)
+
+	for spot in spots:
+		var flame: MeshInstance3D = _instance(_flames(1))
+		flame.position = spot[0]
+		flame.scale = Vector3.ONE * float(spot[1])
+		root.add_child(flame)
+
+	var light: OmniLight3D = OmniLight3D.new()
+	light.name = "Light"
+	light.light_color = Color(1.0, 0.62, 0.3)
+	light.omni_range = range_m
+	light.light_energy = energy
+	light.shadow_enabled = false
+	light.position = light_at
+	light.visible = false
+	root.add_child(light)
+	return root
+
+
 static func masonry_forge() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_masonry_forge_mesh()))
