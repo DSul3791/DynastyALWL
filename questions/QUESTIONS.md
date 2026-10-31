@@ -13,12 +13,6 @@
 
 
 
-## pic-fh-creator | Does the character creator preview look right when you open it?
-Image: questions/img/fh_creator_preview.png
-Note: Real game window, daily head 31 Oct. Guide rates it 2.5 of 5: the preview opens on the BACK of the body, in flat colours with no face or clothes shown, so a new player cannot see what they are making until they turn it.
-- Yes
-- No
-
 ## pic-fibre-cloth | Does the fibre cloth (item 517, left; linen on the right for comparison) look like a folded woven plant-fibre cloth?
 Image: questions/img/fibre_cloth_look.png
 Note: Offline render of the item model, not the real game. Kathleen rates it 3 of 5: a stack of three folds in coarse straw-brown with a selvedge edge, darker than the pale linen.
