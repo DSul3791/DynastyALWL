@@ -108,6 +108,11 @@ func _check_identity() -> void:
 	_ok(Store.rename(w, "Wren Ash") and Store.get_character(w)["gender"] == "woman" and Store.get_character(w)["pronouns"] == "she_her" and Store.get_character(w)["frame"] == "feminine", "rename keeps gender, pronouns and frame")
 	_ok(Store.set_pronouns(m, "they_them") and Store.get_character(m)["pronouns"] == "they_them" and Store.get_character(m)["gender"] == "man" and Store.get_character(m)["name"] == "Brock", "pronouns can be changed later")
 	_ok(not Store.set_pronouns(m, "xe") and not Store.set_pronouns("nope", "he_him"), "bad pronouns or an unknown character change nothing")
+	# The hair style rides in the share code, so a saved character keeps it.
+	var styled: Dictionary = Generator.make_genome("average")
+	styled["hair_style"] = 7
+	var sid: String = Store.add("Braida", Generator.encode(styled))
+	_ok(int(Store.get_character(sid)["genome"]["hair_style"]) == 7, "a saved character keeps its hair style")
 	# A version 1 file (before gender, pronouns and frame).
 	var legacy := FileAccess.open(TEST_DIR + "/1.json", FileAccess.WRITE)
 	legacy.store_string(JSON.stringify({"name": "Old Hob", "genome_code": _code("average"), "ancestry": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": {"luck": 0, "fitness": 0, "strength": 0, "dexterity": 0, "memory": 0, "wisdom": 0, "courage": 0}}))

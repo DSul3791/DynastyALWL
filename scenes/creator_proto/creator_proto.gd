@@ -34,6 +34,7 @@ var _name_field: LineEdit
 var _gender_pick: OptionButton
 var _pronoun_pick: OptionButton
 var _frame_buttons: Dictionary = {}
+var _style_pick: OptionButton
 var _name_dialog: ConfirmationDialog
 var _name_message: Label
 var _name_edit: LineEdit
@@ -102,6 +103,9 @@ func _build_ui() -> void:
 			_build_presets(body)
 
 		_build_sliders(body, section)
+
+		if section == "Hair":
+			_build_hair_style(body)
 
 	_build_colors(_add_accordion(column, "Colours"))
 	_build_code(_add_accordion(column, "Share code"))
@@ -403,6 +407,34 @@ func _build_sliders(body: VBoxContainer, section: String) -> void:
 		row.add_child(_lock_box(key))
 
 
+# The hair style: one of the styles of Generator.HAIR_STYLES, with a lock; the Hair Length slider and the hair colour work with it where it makes sense.
+func _build_hair_style(body: VBoxContainer) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	body.add_child(row)
+	var label: Label = Label.new()
+	label.text = "Style"
+	label.custom_minimum_size = Vector2(150, 0)
+	row.add_child(label)
+	_style_pick = OptionButton.new()
+	_style_pick.custom_minimum_size = Vector2(0, 48)
+	_style_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	for style in Generator.HAIR_STYLES:
+		_style_pick.add_item(Generator.HAIR_STYLE_LABELS[style])
+
+	_style_pick.select(int(logic.genome.get("hair_style", 0)))
+	_style_pick.item_selected.connect(func(index: int) -> void:
+		logic.set_hair_style(index)
+		_changed("Hair style: " + Generator.HAIR_STYLE_LABELS[Generator.HAIR_STYLES[index]]))
+	row.add_child(_style_pick)
+	row.add_child(_lock_box("hair_style"))
+	var note: Label = Label.new()
+	note.text = "Hair Length changes long, side part, ponytail, bun, braid and curly; bald, buzz, crop and shaved sides ignore it."
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
+	body.add_child(note)
+
+
 func _lock_box(key: String) -> CheckBox:
 	var lock: CheckBox = CheckBox.new()
 	lock.text = "Lock"
@@ -510,6 +542,9 @@ func _schedule_rebuild() -> void:
 
 func _refresh_controls() -> void:
 	_updating = true
+
+	if _style_pick != null:
+		_style_pick.select(int(logic.genome.get("hair_style", 0)))
 
 	for key in _sliders:
 		(_sliders[key] as HSlider).value = float(logic.genome[key])

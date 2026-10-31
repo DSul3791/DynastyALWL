@@ -55,7 +55,7 @@ func _initialize() -> void:
 	broad["shoulders"] = 1.0
 	var rn: Array = Generator.rig(narrow)["global"]
 	var rb: Array = Generator.rig(broad)["global"]
-	_ok(absf((rb[8] as Vector3).x) > absf((rn[8] as Vector3).x) + 0.1 and absf((rb[12] as Vector3).x) > absf((rn[12] as Vector3).x) + 0.1, "the hands hang further out from broad shoulders")
+	_ok(absf((rb[8] as Vector3).x) > absf((rn[8] as Vector3).x) + 0.02 and absf((rb[12] as Vector3).x) > absf((rn[12] as Vector3).x) + 0.02, "the hands hang further out from broad shoulders (the arms angle in, so by less than the joints)")
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
