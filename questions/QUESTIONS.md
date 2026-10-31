@@ -19,12 +19,6 @@ Note: Real game, third person, noon, same spot. Flora rates it 4 of 5: grass wit
 - Yes
 - No
 
-## pic-meadow-saplings | Does the starter meadow look more natural now, with no lone young conifers standing in the open grass (left: before, right: after)?
-Image: questions/img/meadow_saplings_before_after.png
-Note: Real game, noon, same spot. Flora rates it 3.5 of 5: the evenly spaced saplings are gone from the open meadow (young conifers now only in patches or next to a parent tree); the meadow is still one uniform lawn without flowers.
-- Yes
-- No
-
 ## pic-tall-grass-25m | Can you spot the tall-grass clump (circled) from about 25 m away, standing in the meadow?
 Image: questions/img/tall_grass_25m.png
 Note: Real game, noon, camera 25 m west of a clump at (53358,68366). Flora rates it 3.5 of 5: it reads as a tuft of tall grass with dark plumes at 25 m, but small; at 40 m it is only just visible and dark in shade.
