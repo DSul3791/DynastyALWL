@@ -64,6 +64,15 @@ const PRESETS := {
 }
 
 
+# The Shoulders slider: the shoulder joints (and with them the upper arms and the tunic over them) move out and in by a lot; the chest follows only a little.
+static func shoulder_k(g: Dictionary) -> float:
+	return m(float(g["shoulders"]), 0.78, 1.45)
+
+
+static func chest_k(g: Dictionary) -> float:
+	return 1.0 + 0.45 * (m(float(g["shoulders"]), 0.85, 1.3) - 1.0)
+
+
 # Maps a slider value s (-1 .. 1) to lo .. hi, with 0 mapping to 1.0 when lo < 1 < hi.
 static func m(s: float, lo: float, hi: float) -> float:
 	return lerpf(1.0, hi, s) if s >= 0.0 else lerpf(1.0, lo, -s)
@@ -97,7 +106,7 @@ static func rig(g: Dictionary) -> Dictionary:
 	var legs: float = h * m(float(g["legs"]), 0.9, 1.12)
 	var torso: float = h * m(float(g["torso"]), 0.9, 1.12)
 	var arm: float = h * m(float(g["arms"]), 0.88, 1.15)
-	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var sw: float = shoulder_k(g)
 	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
 	var foot_k: float = m(float(g["feet"]), 0.85, 1.3)
 	var ankle_y: float = 0.06 * h
@@ -109,7 +118,7 @@ static func rig(g: Dictionary) -> Dictionary:
 	var shoulder_y: float = chest_y + 0.18 * torso
 	var neck_y: float = chest_y + 0.22 * torso
 	var head_y: float = neck_y + 0.07 * h + 0.04 * float(g["neck"])
-	var arm_x: float = 0.07 + 0.16 * wide * m(float(g["build"]), 0.9, 1.15)
+	var arm_x: float = 0.05 + 0.18 * sw * m(float(g["build"]), 0.9, 1.15)
 	var hip_x: float = 0.108 * hip_w
 	var pos: Array = []
 	pos.resize(BONES.size())
@@ -196,7 +205,7 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	var torso: float = d["torso"]
 	var b: float = m(float(g["build"]), 0.8, 1.3)
 	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
-	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var wide: float = chest_k(g)
 	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
 	var belly: float = m(float(g["belly"]), 0.85, 1.55)
 	var hs: float = m(float(g["head"]), 0.85, 1.4)
@@ -247,7 +256,7 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	# Arms and hands
 	for side in [-1.0, 1.0]:
 		var o: int = 5 if side < 0.0 else 9
-		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.05 * mu, 0.05 * mu))
+		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.07 * mu, 0.053 * mu))       # the shoulder bar: thicker at the neck (trapezius), the deltoid at the joint
 		out.append(_cone(o + 1, p[o + 1], p[o + 2], 0.052 * mu * sqrt(b), 0.042 * mu))
 		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
 		var f: int = 21 if side < 0.0 else 29
@@ -826,7 +835,7 @@ static func measures(g: Dictionary) -> Dictionary:
 	var d: Dictionary = rg["dims"]
 	var b: float = m(float(g["build"]), 0.8, 1.3)
 	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
-	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var wide: float = chest_k(g)
 	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
 	var hk: float = m(float(g["hands"]), 0.8, 1.5)
 	var fk: float = m(float(g["feet"]), 0.85, 1.3)
@@ -895,7 +904,7 @@ static func worn_fit(g: Dictionary) -> Dictionary:
 	var h: float = m(float(g["height"]), 0.9, 1.12)
 	var b: float = m(float(g["build"]), 0.8, 1.3)
 	var mu: float = m(float(g["muscle"]), 0.9, 1.22)
-	var wide: float = m(float(g["shoulders"]), 0.85, 1.3)
+	var wide: float = chest_k(g)
 	var hip_w: float = m(float(g["hips"]), 0.85, 1.25)
 	var torso: float = h * m(float(g["torso"]), 0.9, 1.12)
 	var legs: float = h * m(float(g["legs"]), 0.9, 1.12)
