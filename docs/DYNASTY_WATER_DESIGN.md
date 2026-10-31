@@ -2,7 +2,11 @@
 
 A water system of our own, built beside the live one (`src/water/`, untouched) and swapped in behind a flag only when it beats it. Why: `docs/WATER_OWN_SYSTEM_PROPOSAL.md`. Stage (a), the core sim, is built and tested; this page is the whole plan.
 
-## 1. Research: what the field does (from my own knowledge of the papers; I did not browse today, so check the citations before quoting them)
+## 0. Ponytail ladder (Dave's rule, `docs/PONYTAIL_RULES.md`): what we reuse and what we write
+
+Reused, not rewritten: baked tiles and `TileFile` (header, height step, sections), `TileTerrainData._load_sim_water` (the settled `.water` depth), the 8 m grid of the heights as the sim grid (no resampling), the water shader and its look, `ShoreRules`, JSON for traits (Godot's `JSON`), `PackedFloat32Array` and `Dictionary` (no new containers), `class` free scripts like the rest of the repo, the repo's headless-test style. Written, because nothing in the codebase or Godot does it: the shallow-water step (`water_field.gd`, one file), the trait table (`water_kinds.json` + a 40-line loader), the rules (pure functions, one file), the tile window (`water_window.gd`, 70 lines). Not written: no new renderer yet (the existing shader is the render boundary), no copy of the old sim, no custom serialisation (the tile and the `.water` files are the save format). Shortcuts are marked `shortcut:` in the code. Validation kept: unreadable tile gives `{}`, depths never negative or NaN (tested), tile file never written (tested).
+
+## 1. Research: what the field does (the Bates paper is confirmed by search: Journal of Hydrology 387(1) 33-45, doi 10.1016/j.jhydrol.2010.03.027; de Almeida et al. 2012 report instability in low-friction areas, which is why every kind here has a base viscosity of at least 0.05; the other citations are from memory and unchecked)
 
 | Approach | Good | Bad for us |
 |---|---|---|
@@ -65,7 +69,7 @@ The sim exposes per cell: surface height `bed + depth`, depth, velocity (`veloci
 
 ## 10. Performance budget
 
-Target: under 2 ms a frame on the server for all awake windows, under 0.3 ms on the client for texture upload. Measured (GDScript, release off, `probe_water_field.gd`): 3,072 awake cells cost 11.5 ms per simulated second on a 256 x 256 field and 15.6 ms on 512 x 512 (the extra is the block scan). A river of 400 m is 50 cells long, so a handful of rivers fit; a sleeping field is exactly zero cells. If a window with many awake blocks exceeds the budget: a GDExtension (the arrays port as they are) or a compute pass on the client with the server keeping only the coarse state. **Not yet measured:** a big lake wake-up (thousands of cells awake together); that is the stress test for stage (b).
+Target: under 2 ms a frame on the server for all awake windows, under 0.3 ms on the client for texture upload. Measured on a real tile (stage b, `test_water_window.gd`, 96 x 96 window with a 14 m deep lake, one quarter of the cells wet): **about 27 microseconds per wet-cell substep, 500 ms per simulated second** for the whole window, far over budget; so GDScript is fine for rivers and ponds but a lake needs the GDExtension or compute path, or the lake stays a flat level (sleeping) until a player disturbs it. Earlier probe (mostly dry cells, cheap): 3,072 awake cells cost 11.5 ms per simulated second on a 256 x 256 field and 15.6 ms on 512 x 512 (the extra is the block scan). A river of 400 m is 50 cells long, so a handful of rivers fit; a sleeping field is exactly zero cells. If a window with many awake blocks exceeds the budget: a GDExtension (the arrays port as they are) or a compute pass on the client with the server keeping only the coarse state. **Not yet measured:** a big lake wake-up (thousands of cells awake together); that is the stress test for stage (b).
 
 ## 11. Tests (`src/water2/test_water_field.gd`, 21 checks, passes, about 60 s; small and headless)
 
