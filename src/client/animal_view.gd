@@ -223,6 +223,103 @@ func _make_rabbit() -> Node3D:
 	return root
 
 
+# A wild boar (refs: Eurasian wild boar photographs): a stocky wedge, deepest at the shoulder and tapering to a small rump, a heavy head with a long snout and small ears, short legs, a dark bristly mane along the
+# neck and back, a thin tail, two curved ivory tusks beside the mouth; coat dark grizzled brown. About 1.3 m long, 0.8 m at the shoulder. Built on the shared four-legged body so it animates like the others.
+func _make_boar() -> Node3D:
+	var node: Node3D = _make_quad({"leg_h": 0.32, "rb": 0.24, "len": 1.15, "neck": 0.16, "head": 0.34, "snout": 1.6, "hump": true, "pale_belly": false, "dark_head": true, "coat": Color(0.3, 0.24, 0.18), "dark": Color(0.14, 0.11, 0.09), "pale": Color(0.5, 0.42, 0.34), "mane": true, "socks": false})
+	var head: Node3D = node.get_node("Rig/Head")
+	var hd: float = 0.34
+	var top: Vector3 = Vector3(0.0, 0.16 * 0.78, -0.16 * 0.85)
+
+	for side in [-1.0, 1.0]:
+		_box(head, Vector3(hd * 0.05, hd * 0.05, hd * 0.3), top + Vector3(side * hd * 0.16, -hd * 0.22, -hd * 0.62), Color(0.93, 0.9, 0.8), Vector3(0.5, side * 0.15, side * -0.5))   # a tusk beside the snout, curving up
+
+	return node
+
+
+# A songbird (refs: European robin and blackbird photographs): a plump round body tipped forward, a round head, a short pointed beak, a tail slanting down behind, folded wings along the sides, two thin legs;
+# the robin's colours: brown back, orange-red breast and face, pale belly. About 0.15 m long. Facing -Z.
+func _make_songbird() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var back: Color = Color(0.45, 0.34, 0.22)
+	var breast: Color = Color(0.85, 0.38, 0.14)
+	_ball(rig, 0.045, Vector3(0.9, 1.0, 1.25), Vector3(0.0, 0.09, 0.0), back)                       # body
+	_ball(rig, 0.038, Vector3(0.9, 0.9, 1.0), Vector3(0.0, 0.085, -0.025), breast)                   # breast
+	_ball(rig, 0.03, Vector3(1.0, 1.0, 1.0), Vector3(0.0, 0.125, -0.04), back)                        # head
+	_ball(rig, 0.022, Vector3(1.0, 0.9, 0.8), Vector3(0.0, 0.118, -0.058), breast)                    # the orange face
+	_box(rig, Vector3(0.008, 0.008, 0.02), Vector3(0.0, 0.12, -0.08), Color(0.2, 0.15, 0.1), Vector3(0.1, 0.0, 0.0))   # beak
+	_ball(rig, 0.006, Vector3.ONE, Vector3(0.016, 0.13, -0.062), Color(0.04, 0.04, 0.04))            # eyes
+	_ball(rig, 0.006, Vector3.ONE, Vector3(-0.016, 0.13, -0.062), Color(0.04, 0.04, 0.04))
+	_box(rig, Vector3(0.026, 0.008, 0.07), Vector3(0.0, 0.082, 0.07), back.darkened(0.1), Vector3(-0.35, 0.0, 0.0))   # tail
+
+	for side in [-1.0, 1.0]:
+		_ball(rig, 0.03, Vector3(0.35, 0.8, 1.7), Vector3(side * 0.036, 0.09, 0.02), back.darkened(0.15), Vector3(0.1, 0.0, side * -0.15))   # a folded wing
+		_box(rig, Vector3(0.004, 0.05, 0.004), Vector3(side * 0.014, 0.035, 0.0), Color(0.35, 0.28, 0.2))   # a leg
+
+	return root
+
+
+# A frog (refs: common frog photographs): a squat olive-brown body with a pale throat, a broad blunt head with two big bulging eyes on top, folded hind legs bent in a Z, small front legs, a dark patch behind each eye.
+# About 0.08 m long, sitting. Facing -Z.
+func _make_frog() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var skin: Color = Color(0.42, 0.45, 0.2)
+	_ball(rig, 0.03, Vector3(1.0, 0.8, 1.3), Vector3(0.0, 0.026, 0.01), skin)                         # body
+	_ball(rig, 0.024, Vector3(1.1, 0.7, 1.0), Vector3(0.0, 0.03, -0.03), skin.lightened(0.05))        # head
+	_ball(rig, 0.016, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.016, -0.034), Color(0.85, 0.82, 0.6))    # pale throat
+
+	for side in [-1.0, 1.0]:
+		_ball(rig, 0.01, Vector3.ONE, Vector3(side * 0.014, 0.046, -0.034), Color(0.82, 0.7, 0.2))    # a bulging eye
+		_ball(rig, 0.004, Vector3.ONE, Vector3(side * 0.014, 0.049, -0.043), Color(0.04, 0.04, 0.03))
+		_ball(rig, 0.012, Vector3(0.6, 0.8, 1.1), Vector3(side * 0.025, 0.036, -0.012), Color(0.22, 0.2, 0.1))   # the dark patch behind the eye
+		_ball(rig, 0.018, Vector3(0.7, 1.0, 1.4), Vector3(side * 0.03, 0.022, 0.025), skin.darkened(0.05))      # the folded thigh
+		_box(rig, Vector3(0.01, 0.01, 0.045), Vector3(side * 0.03, 0.008, 0.05), skin.darkened(0.1))            # the long hind foot
+		_box(rig, Vector3(0.008, 0.02, 0.008), Vector3(side * 0.018, 0.01, -0.025), skin)                       # a front leg
+
+	return root
+
+
+# A trout (refs: brown trout photographs): a long torpedo body, deepest ahead of the middle, a small head with a pale mouth, olive-brown back with dark and red spots, a golden-cream flank and belly, a fan tail,
+# a dorsal fin and small side fins. About 0.35 m long. Facing -Z, swimming level.
+func _make_fish() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var back: Color = Color(0.36, 0.34, 0.16)
+	var flank: Color = Color(0.74, 0.62, 0.34)
+	_ball(rig, 0.05, Vector3(0.9, 0.9, 3.2), Vector3(0.0, 0.0, 0.0), back)                            # body
+	_ball(rig, 0.043, Vector3(0.9, 0.7, 3.0), Vector3(0.0, -0.014, 0.0), flank)                       # the paler flank and belly
+	_ball(rig, 0.03, Vector3(0.9, 0.9, 1.5), Vector3(0.0, 0.0, -0.15), back.lightened(0.05))          # head
+	_box(rig, Vector3(0.02, 0.006, 0.03), Vector3(0.0, -0.012, -0.19), Color(0.85, 0.8, 0.6))         # the mouth
+	_ball(rig, 0.008, Vector3.ONE, Vector3(0.022, 0.012, -0.155), Color(0.03, 0.03, 0.03))            # eyes
+	_ball(rig, 0.008, Vector3.ONE, Vector3(-0.022, 0.012, -0.155), Color(0.03, 0.03, 0.03))
+	var tail: Node3D = Node3D.new()
+	tail.name = "Tail"
+	tail.position = Vector3(0.0, 0.0, 0.14)
+	rig.add_child(tail)
+	_box(tail, Vector3(0.006, 0.07, 0.05), Vector3(0.0, 0.0, 0.03), back.darkened(0.1), Vector3(0.0, 0.0, 0.0))   # the fan tail
+	_box(rig, Vector3(0.006, 0.03, 0.06), Vector3(0.0, 0.05, 0.01), back.darkened(0.1), Vector3(0.3, 0.0, 0.0))   # the dorsal fin
+
+	for side in [-1.0, 1.0]:
+		_box(rig, Vector3(0.025, 0.004, 0.035), Vector3(side * 0.045, -0.025, -0.07), flank.darkened(0.1), Vector3(0.0, side * 0.4, side * 0.3))   # a side fin
+
+	for k in 9:   # dark spots along the back and a few red ones on the flank
+		var sp: float = -0.1 + 0.025 * float(k)
+		_ball(rig, 0.005, Vector3.ONE, Vector3(0.012 * float(k % 3 - 1), 0.043, sp), Color(0.12, 0.1, 0.06))
+
+		if k % 3 == 0:
+			_ball(rig, 0.005, Vector3.ONE, Vector3(0.042, 0.0, sp), Color(0.75, 0.15, 0.1))
+
+	return root
+
+
 func _box(parent: Node3D, size: Vector3, at: Vector3, color: Color, rot: Vector3 = Vector3.ZERO) -> void:
 	var mesh: BoxMesh = BoxMesh.new()
 	mesh.size = size
