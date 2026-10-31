@@ -254,7 +254,7 @@ New files: `PLAYTHROUGH_STATUS.md` (every F-number marked FIXED or STILL BROKEN 
 
 ## 13. The spawn on the fixed world
 
-Real flora placer around the spawn point (53316, 68476), from `probe_spawn_output.txt`: ground 31.6 m, biome temperate forest, a pond shore (the spawn code says so). Within 50 m: 193 ferns, 88 balsam fir, 44 nettles, 30 hazels, 20 raspberry bushes, 17 beeches, 14 wild garlic, 12 comfrey, 11 wild mint, 9 elder, 9 mushrooms, 5 oaks, 4 brambles, 2 tinder fungus; **6 grown trees (shelter) within 50 m, 17 within 100 m, 80 within 200 m**. No tall grass, flax, reeds, heather or thatch grass in this biome. So: fibre comes from nettles (about 95 within 100 m), bedding from ferns, thatch only from birch, spruce, pine and fir bark on a felled trunk (88 balsam firs near), berries from raspberry, bramble, elder and hazel (hazel is autumn). Picture: `art/playthrough/world/spawn_view.png` (an autumn forest of grown beeches and oaks, a bramble in the foreground, the pond between the trunks, Edda standing by). Loose sticks and stones are the scatter plus `spawn_boost`; their count is in drops.json, not measurable without the server world.
+Real flora placer around the spawn point (53316, 68476), from `probe_spawn_output.txt`: ground 31.6 m, biome temperate forest, a pond shore (the spawn code says so). Within 50 m: 193 ferns, 88 balsam fir, 44 nettles, 30 hazels, 20 raspberry bushes, 17 beeches, 14 wild garlic, 12 comfrey, 11 wild mint, 9 elder, 9 mushrooms, 5 oaks, 4 brambles, 2 tinder fungus; **6 grown trees (shelter) within 50 m, 17 within 100 m, 80 within 200 m**. No tall grass, flax, reeds, heather or thatch grass in this biome. So: fibre comes from nettles (about 95 within 100 m), bedding from ferns, thatch only from birch, spruce, pine and fir bark on a felled trunk (88 balsam firs near), berries from raspberry, bramble, elder and hazel (hazel is autumn). Picture: `art/playthrough/world/spawn_view.jpg` (an autumn forest of grown beeches and oaks, a bramble in the foreground, the pond between the trunks, Edda standing by). Loose sticks and stones are the scatter plus `spawn_boost`; their count is in drops.json, not measurable without the server world.
 
 F-07 stays FIXED: grown trees stand within 50 m of the spawn.
 
@@ -276,3 +276,14 @@ F-07 stays FIXED: grown trees stand within 50 m of the spawn.
 ## 15. Existing test suite, run on this branch
 
 `python tools/items_check.py --only "stations,fishing,shore net,bed,warmth,dishes,trade,animals,big_game,placement_rules,first_hour,leanto,gather,new_player_day,plantpick,chest,eat,skills,spoilage"` (GODOT set to the editor binary). Result (raw output in `art/playthrough/items_check_output.txt`): **PASS** stations, fishing, shore net, bed, spoilage, warmth, skills, big_game, trade, dishes, new_player_day, placement_rules, first_hour, chest. **animals FAILED one timing check** (150 animals average 3.2 ms against a 3 ms limit; the machine was shared with other test runs, so a load artefact, not a game bug). The client step `gather` timed out after the server tests (machine load) and stopped the run, so `leanto`, `plantpick`, `eat` were not run. None of the passing tests touches the holes in this report: they check the rules that exist, not whether the chain can be walked, which is what the audit adds.
+
+## 16. World pictures on the fixed world (`art/playthrough/world/`, `run_world.sh`)
+
+| Picture | What it shows | Status |
+|---|---|---|
+| `spawn_view.jpg` | the spawn: an autumn forest of grown beeches and oaks, bramble in front, pond between the trunks | PASS (cover and berries are there) |
+| `shelter_wide.jpg`, `shelter_close.jpg`, `shelter.jpg` | lean-to, rough bed, chopping block, workbench, tool rack, thatch roof placed in the forest | PASS: all six read well; the chopping block cannot be crafted by a player (F-16) |
+| `campfire.jpg` | the placement ghost (a green ring) on grass; **the laid fire itself is not drawn** or the placement did not happen in this run | NOT CONFIRMED: needs a hand check (does a laid, unlit fire show its sticks?) |
+| `fell.jpg` | only the spawn frame: the `--shot-fell=flat` rig produced none of its trunk and stump pictures when called through `rig.sh --client-arg` | NOT PHOTOGRAPHED (in progress, Kathleen's fell rig); trunk, stump, lit fire and under-tree cover are still missing |
+
+Re-shoot recipe (quiet machine): `bash art/playthrough/run_world.sh` (about 12 minutes).
