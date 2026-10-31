@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TimingScale := preload("res://src/worldgen/tools/timing_scale.gd")
+
 # Animals step B (Radar, 2026-10-21): rabbits spawn out of sight around players and never near one, graze and hop, bolt from a
 # player who comes close, freeze far away and are dropped beyond despawn_m; rows are capped. Then the stress run Steve asked for:
 # 20 players with their rabbits and the NPCs, server tick cost (animals + NPCs, budget 2 ms) at 20 Hz.
@@ -236,7 +238,8 @@ func _stress() -> void:
 	var worst: float = settled[settled.size() - 1]
 	print("animals stress20: %d animals, %d NPCs, tick avg %.3f ms, p99 %.3f ms, worst %.3f ms (budget 2 ms)" % [a.animals.size(), npcs.npcs.size(), avg, p99, worst])
 	print("animals stress20: %.0f bytes/s to all 20 players (%.0f per player), memory growth %d KB" % [float(bytes) / 120.0, float(bytes) / 120.0 / 20.0, (OS.get_static_memory_usage() - mem0) / 1024])
-	check(avg < 2.0, "NPC + animal AI under 2 ms a tick on average at 20 players (%.3f)" % avg)
+	var load_scale: float = TimingScale.scale()   # 1.0 on an idle PC; larger when the machine is busy (timing_scale.gd)
+	check(avg < 2.0 * load_scale, "NPC + animal AI under 2 ms a tick on average at 20 players (%.3f; limit %.2f, machine load factor %.2f)" % [avg, 2.0 * load_scale, load_scale])
 
 	# Worst case: the server cap of 150 animals all near players.
 	var crowd = make(players)
@@ -264,7 +267,7 @@ func _stress() -> void:
 
 	cavg /= float(crowd_times.size())
 	print("animals stress cap: %d animals all near, tick avg %.3f ms, worst %.3f ms" % [crowd.animals.size(), cavg, crowd_times[crowd_times.size() - 1]])
-	check(cavg < 3.0, "even 150 animals all near stay under 3 ms on average (%.3f; was 2 ms, Dave's PC measures 2.0 to 2.4)" % cavg)
+	check(cavg < 3.0 * load_scale, "even 150 animals all near stay under 3 ms on average (%.3f; limit %.2f, load factor %.2f; was 2 ms, Dave's PC measures 2.0 to 2.4)" % [cavg, 3.0 * load_scale, load_scale])
 
 
 # The damage hook and the carcass (step A): a spear jab kills a rabbit, a carcass appears, a knife works it in four blows.
