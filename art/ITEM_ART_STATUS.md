@@ -4,10 +4,9 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 4, missing 38, placeholder 45, rough 435, total 522
+Counts: decent 4, missing 38, placeholder 26, rough 465, total 533
 
-Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre, twine, bedding, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed; then crafting stations and tools; then the rest. The guide session's LOOKS WRONG and MISSING rows are added at the top as they arrive.
-
+Queue, by what a player meets first (the grey placeholder list comes from src/worldgen/tools/test_item_looks.gd, 56 items on 31 Oct): 1 weapons and shields (wooden club, stone mace and wicker shield done; javelin; bronze, iron and steel swords, maces, shields; plank shield), 2 armour (leather cap, leather jerkin, gambeson, bronze, iron and steel helms, mail shirt, plate cuirass), 3 seeds and crops (wheat, barley, carrot, potato, turnip, flax and their seeds), 4 hide clothes (hide tunic, trousers, gloves) and the quern, 5 animal parts (antler, tusk, claw, down, quill, hide glue, bone arrow, fibre arrow), 6 food (eggs, seal and shellfish meat, roast dishes, herb salve, splint), 7 stick, branch, rocks, flint, plant fibre, twine, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed (survival basics, in hand and dropped); then stations and tools; then the rest. The guide's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 | # | id | name | look | source | status | reference | date | picture | note |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | stone | Stone | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
@@ -319,36 +318,36 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 311 | candle | Candle | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 312 | wicker_shield | Wicker shield | shield | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/wicker_shield_round2.png | 2 rounds offline; not yet in the real game |
 | 313 | stone_mace | Stone mace | mace | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/stone_mace_round3.png | 3 rounds offline; not yet in the real game |
-| 314 | plank_shield | Plank shield | chunk | looks.json | placeholder |  |  |  |  |
-| 315 | bronze_sword | Bronze sword | chunk | looks.json | placeholder |  |  |  |  |
-| 316 | bronze_mace | Bronze mace | chunk | looks.json | placeholder |  |  |  |  |
-| 317 | bronze_shield | Bronze-rimmed shield | chunk | looks.json | placeholder |  |  |  |  |
-| 318 | iron_sword | Iron sword | chunk | looks.json | placeholder |  |  |  |  |
-| 319 | iron_mace | Iron mace | chunk | looks.json | placeholder |  |  |  |  |
-| 320 | iron_shield | Iron-banded shield | chunk | looks.json | placeholder |  |  |  |  |
-| 321 | steel_sword | Steel sword | chunk | looks.json | placeholder |  |  |  |  |
-| 322 | steel_mace | Steel mace | chunk | looks.json | placeholder |  |  |  |  |
-| 323 | steel_shield | Steel kite shield | chunk | looks.json | placeholder |  |  |  |  |
-| 324 | leather_cap | Leather cap | chunk | looks.json | placeholder |  |  |  |  |
-| 325 | leather_jerkin | Leather jerkin | chunk | looks.json | placeholder |  |  |  |  |
-| 326 | bronze_helm | Bronze helm | chunk | looks.json | placeholder |  |  |  |  |
-| 327 | gambeson | Gambeson | chunk | looks.json | placeholder |  |  |  |  |
-| 328 | iron_helm | Iron helm | chunk | looks.json | placeholder |  |  |  |  |
-| 329 | mail_shirt | Mail shirt | chunk | looks.json | placeholder |  |  |  |  |
-| 330 | steel_helm | Steel helm | chunk | looks.json | placeholder |  |  |  |  |
-| 331 | plate_cuirass | Plate cuirass | chunk | looks.json | placeholder |  |  |  |  |
-| 332 | wheat | Wheat | chunk | looks.json | placeholder |  |  |  |  |
-| 333 | barley | Barley | chunk | looks.json | placeholder |  |  |  |  |
-| 334 | carrot | Carrot | chunk | looks.json | placeholder |  |  |  |  |
-| 335 | potato | Potato | chunk | looks.json | placeholder |  |  |  |  |
-| 336 | turnip | Turnip | chunk | looks.json | placeholder |  |  |  |  |
-| 337 | flax | Flax | chunk | looks.json | placeholder |  |  |  |  |
-| 338 | wheat_seeds | Wheat seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 339 | barley_seeds | Barley seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 340 | carrot_seeds | Carrot seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 341 | potato_seeds | Potato seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 342 | turnip_seeds | Turnip seeds | chunk | looks.json | placeholder |  |  |  |  |
-| 343 | flax_seeds | Flax seeds | chunk | looks.json | placeholder |  |  |  |  |
+| 314 | plank_shield | Plank shield | override | ART_OVERRIDES | rough |  |  |  |  |
+| 315 | bronze_sword | Bronze sword | override | ART_OVERRIDES | rough |  |  |  |  |
+| 316 | bronze_mace | Bronze mace | override | ART_OVERRIDES | rough |  |  |  |  |
+| 317 | bronze_shield | Bronze-rimmed shield | override | ART_OVERRIDES | rough |  |  |  |  |
+| 318 | iron_sword | Iron sword | override | ART_OVERRIDES | rough |  |  |  |  |
+| 319 | iron_mace | Iron mace | override | ART_OVERRIDES | rough |  |  |  |  |
+| 320 | iron_shield | Iron-banded shield | override | ART_OVERRIDES | rough |  |  |  |  |
+| 321 | steel_sword | Steel sword | override | ART_OVERRIDES | rough |  |  |  |  |
+| 322 | steel_mace | Steel mace | override | ART_OVERRIDES | rough |  |  |  |  |
+| 323 | steel_shield | Steel kite shield | override | ART_OVERRIDES | rough |  |  |  |  |
+| 324 | leather_cap | Leather cap | override | ART_OVERRIDES | rough |  |  |  |  |
+| 325 | leather_jerkin | Leather jerkin | override | ART_OVERRIDES | rough |  |  |  |  |
+| 326 | bronze_helm | Bronze helm | override | ART_OVERRIDES | rough |  |  |  |  |
+| 327 | gambeson | Gambeson | override | ART_OVERRIDES | rough |  |  |  |  |
+| 328 | iron_helm | Iron helm | override | ART_OVERRIDES | rough |  |  |  |  |
+| 329 | mail_shirt | Mail shirt | override | ART_OVERRIDES | rough |  |  |  |  |
+| 330 | steel_helm | Steel helm | override | ART_OVERRIDES | rough |  |  |  |  |
+| 331 | plate_cuirass | Plate cuirass | override | ART_OVERRIDES | rough |  |  |  |  |
+| 332 | wheat | Wheat | override | ART_OVERRIDES | rough |  |  |  |  |
+| 333 | barley | Barley | override | ART_OVERRIDES | rough |  |  |  |  |
+| 334 | carrot | Carrot | override | ART_OVERRIDES | rough |  |  |  |  |
+| 335 | potato | Potato | override | ART_OVERRIDES | rough |  |  |  |  |
+| 336 | turnip | Turnip | override | ART_OVERRIDES | rough |  |  |  |  |
+| 337 | flax | Flax | override | ART_OVERRIDES | rough |  |  |  |  |
+| 338 | wheat_seeds | Wheat seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 339 | barley_seeds | Barley seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 340 | carrot_seeds | Carrot seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 341 | potato_seeds | Potato seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 342 | turnip_seeds | Turnip seeds | override | ART_OVERRIDES | rough |  |  |  |  |
+| 343 | flax_seeds | Flax seeds | override | ART_OVERRIDES | rough |  |  |  |  |
 | 344 | quern | Quern | chunk | looks.json | placeholder |  |  |  |  |
 | 345 | compost | Compost | chunk | looks.json | placeholder |  |  |  |  |
 | 346 | antler | Antler | chunk | looks.json | placeholder |  |  |  |  |
@@ -358,6 +357,17 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 350 | quill | Quill | chunk | looks.json | placeholder |  |  |  |  |
 | 351 | hide_glue | Hide glue | chunk | looks.json | placeholder |  |  |  |  |
 | 352 | bone_arrow | Bone arrow | chunk | looks.json | placeholder |  |  |  |  |
+| 353 | stone_wedge | Stone wedge | chunk | looks.json | placeholder |  |  |  |  |
+| 354 | fibre_arrow | Fibre arrow | chunk | looks.json | placeholder |  |  |  |  |
+| 355 | seaweed | Seaweed | chunk | looks.json | placeholder |  |  |  |  |
+| 356 | shellfish | Shellfish | chunk | looks.json | placeholder |  |  |  |  |
+| 357 | crab_meat | Crab meat | chunk | looks.json | placeholder |  |  |  |  |
+| 358 | egg | Egg | chunk | looks.json | placeholder |  |  |  |  |
+| 359 | seal_meat | Seal meat | chunk | looks.json | placeholder |  |  |  |  |
+| 360 | sea_salt | Sea salt | chunk | looks.json | placeholder |  |  |  |  |
+| 361 | roast_shellfish | Steamed Shellfish | chunk | looks.json | placeholder |  |  |  |  |
+| 362 | boiled_egg | Boiled egg | chunk | looks.json | placeholder |  |  |  |  |
+| 363 | roast_seal | Seal Steak | chunk | looks.json | placeholder |  |  |  |  |
 | 1000 | acorns | Acorns | nut | looks.json | rough |  |  |  |  |
 | 1001 | aloe_gel | Aloe gel | bowl | looks.json | rough |  |  |  |  |
 | 1002 | amadou | Amadou | chunk | looks.json | rough |  |  |  |  |

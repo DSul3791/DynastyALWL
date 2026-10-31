@@ -11,6 +11,7 @@ def load(p):
     return json.load(open(os.path.join(ROOT, p), encoding="utf8"))
 
 
+load_list = load
 audit = load("art/playthrough/audit.json")
 recipes = {k: v for k, v in load("data/items/recipes.json")["recipes"].items() if not v.get("retired")}
 items = {**load("data/items/items.json")["items"], **load("data/items/gathered.json")["items"]}
@@ -19,7 +20,10 @@ structs = load("data/items/structures.json")["structures"]
 irow = {r["id"]: r for r in audit["items"]}
 rrow = {r["id"]: r for r in audit["recipes"]}
 try:
-    shelf = {k: "showroom/sr_" + v + ".jpg" for k, v in load("art/playthrough/showroom/rows.json").items()}
+    shelf = {}
+    for sh in load_list("art/playthrough/sheets/sheets.json"):
+        for i in sh["ids"]:
+            shelf[i] = "sheets/" + sh["file"]
 except Exception:
     shelf = {}
 
@@ -136,7 +140,7 @@ for s in audit["structures"]:
     st = ("%s L%s" % (s["station"], s["station_level"])) if s["station"] else ""
     if s["also"]:
         st += " + " + ", ".join("%s L%s" % (k, v) for k, v in s["also"].items())
-    out.append("| %s | %s | %sx%s | %s | %s | %s | %s | %s | %s |" % (s["id"], " ; ".join(how)[:140], s["footprint"][0], s["footprint"][1], s["cap"], st, s["addon_of"], s["built_wave_now"] or "no", s["built_wave_potential"] or "no", "; ".join(s["problems"]) or "ok"))
+    out.append("| %s | %s | %sx%s | %s | %s | %s | %s | %s | %s | %s |" % (s["id"], " ; ".join(how)[:140], s["footprint"][0], s["footprint"][1], s["cap"], st, s["addon_of"], s["built_wave_now"] or "no", s["built_wave_potential"] or "no", "; ".join(s["problems"]) or "ok", shelf.get(s["id"], "")))
 
 board = [chr(10) + "## Scoreboard (recipes per chapter)" + chr(10), "| chapter | recipes | PASS | LOOKS WRONG | BLOCKER (not flagged future) | FUTURE (flagged by design) |", "|---|---|---|---|---|---|"]
 for num, title, n, c in score:

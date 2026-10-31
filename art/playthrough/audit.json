@@ -1,8 +1,8 @@
 {
  "counts": {
-  "items": 456,
-  "recipes": 173,
-  "recipes_known_or_open": 83,
+  "items": 467,
+  "recipes": 180,
+  "recipes_known_or_open": 161,
   "structures": 37,
   "blueprints": 6
  },
@@ -211,11 +211,10 @@
    "gives": "lumber",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for log",
     "station saw_mill level 1 not obtainable"
    ],
@@ -244,11 +243,10 @@
    "gives": "iron_pickaxe",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -303,11 +301,10 @@
    "gives": "bucket",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for lumber"
    ],
    "future": false
@@ -319,12 +316,10 @@
    "gives": "waterskin",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": true
   },
   {
@@ -373,11 +368,10 @@
    "gives": "iron_spade",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -389,11 +383,10 @@
    "gives": "steel_spade",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for steel_ingot"
    ],
    "future": true
@@ -485,12 +478,10 @@
    "gives": "grass_skirt",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -500,12 +491,10 @@
    "gives": "grass_cloak",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -515,12 +504,10 @@
    "gives": "fibre_sandals",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -595,12 +582,10 @@
    "gives": "twine",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -664,11 +649,10 @@
    "gives": "lumber_oak",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -680,11 +664,10 @@
    "gives": "beam_oak",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -696,11 +679,10 @@
    "gives": "lumber_birch",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -712,11 +694,10 @@
    "gives": "beam_birch",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -728,11 +709,10 @@
    "gives": "lumber_scots_pine",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -744,11 +724,10 @@
    "gives": "beam_scots_pine",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -760,11 +739,10 @@
    "gives": "lumber_spruce",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -776,11 +754,10 @@
    "gives": "beam_spruce",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -792,11 +769,10 @@
    "gives": "lumber_tropical_hardwood",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -808,11 +784,10 @@
    "gives": "beam_tropical_hardwood",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -824,11 +799,10 @@
    "gives": "lumber_walnut",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -840,11 +814,10 @@
    "gives": "beam_walnut",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -856,11 +829,10 @@
    "gives": "lumber_maple",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -872,11 +844,10 @@
    "gives": "beam_maple",
    "station": "saw_mill",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "station saw_mill level 1 not obtainable"
    ],
    "future": true
@@ -1219,11 +1190,10 @@
    "gives": "timber_prop_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for log"
    ],
    "future": false
@@ -1250,12 +1220,10 @@
    "gives": "cut_stone_block",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1265,12 +1233,10 @@
    "gives": "brick",
    "station": "campfire",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1280,12 +1246,10 @@
    "gives": "mortar",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1336,11 +1300,10 @@
    "gives": "iron_hoe",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -1352,11 +1315,10 @@
    "gives": "steel_hoe",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for steel_ingot"
    ],
    "future": true
@@ -1383,11 +1345,10 @@
    "gives": "fine_board",
    "station": "woodworking_table",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for lumber",
     "station woodworking_table level 1 not obtainable"
    ],
@@ -1400,11 +1361,10 @@
    "gives": "nails",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": false
@@ -1416,12 +1376,10 @@
    "gives": "cobblestone",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1431,12 +1389,10 @@
    "gives": "stone_shingle",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1446,11 +1402,10 @@
    "gives": "tar",
    "station": "campfire",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for pine_tar"
    ],
    "future": false
@@ -1462,11 +1417,10 @@
    "gives": "hinges",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": false
@@ -1506,11 +1460,10 @@
    "gives": "saw_blade",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -1551,11 +1504,10 @@
    "gives": "hand_saw",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for saw_blade"
    ],
    "future": false
@@ -1796,12 +1748,10 @@
    "gives": "kindling",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -1811,14 +1761,13 @@
    "gives": "processed_hide",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for hide_scraper"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "hide_scraper",
@@ -1827,11 +1776,10 @@
    "gives": "hide_scraper",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for flint"
    ],
    "future": true
@@ -1843,11 +1791,10 @@
    "gives": "javelin",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for flint"
    ],
    "future": true
@@ -1859,11 +1806,10 @@
    "gives": "obsidian_knife",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for obsidian"
    ],
    "future": true
@@ -1875,11 +1821,10 @@
    "gives": "steel_striker",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for steel_ingot"
    ],
    "future": true
@@ -1891,11 +1836,10 @@
    "gives": "rivets",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -1924,13 +1868,11 @@
    "gives": "stone_pickaxe",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "sickle",
@@ -1939,11 +1881,10 @@
    "gives": "sickle",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for flint"
    ],
    "future": true
@@ -1955,11 +1896,10 @@
    "gives": "scythe",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ingot"
    ],
    "future": true
@@ -1971,13 +1911,11 @@
    "gives": "wooden_club",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "smelt_copper",
@@ -1986,11 +1924,10 @@
    "gives": "copper_ingot",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for copper_ore"
    ],
    "future": true
@@ -2002,11 +1939,10 @@
    "gives": "tin_ingot",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for tin_ore"
    ],
    "future": true
@@ -2018,11 +1954,10 @@
    "gives": "iron_ingot",
    "station": "forge",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for iron_ore"
    ],
    "future": true
@@ -2051,13 +1986,11 @@
    "gives": "hide_tunic",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "hide_trousers",
@@ -2066,13 +1999,11 @@
    "gives": "hide_trousers",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "hide_gloves",
@@ -2081,13 +2012,11 @@
    "gives": "hide_gloves",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "clay_jug",
@@ -2096,13 +2025,11 @@
    "gives": "clay_jug",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "herb_salve",
@@ -2111,13 +2038,11 @@
    "gives": "herb_salve",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "splint",
@@ -2126,13 +2051,11 @@
    "gives": "splint",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "candle",
@@ -2141,13 +2064,11 @@
    "gives": "candle",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "wicker_shield",
@@ -2156,13 +2077,11 @@
    "gives": "wicker_shield",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "stone_mace",
@@ -2171,13 +2090,11 @@
    "gives": "stone_mace",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "plank_shield",
@@ -2186,11 +2103,10 @@
    "gives": "plank_shield",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for lumber"
    ],
    "future": true
@@ -2355,14 +2271,13 @@
    "gives": "leather_cap",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "leather_jerkin",
@@ -2371,11 +2286,10 @@
    "gives": "leather_jerkin",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for leather"
    ],
    "future": true
@@ -2404,11 +2318,10 @@
    "gives": "gambeson",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for leather"
    ],
    "future": true
@@ -2488,13 +2401,11 @@
    "gives": "quern",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "flour_from_wheat",
@@ -2503,11 +2414,10 @@
    "gives": "flour",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for wheat"
    ],
    "future": true
@@ -2519,11 +2429,10 @@
    "gives": "flour",
    "station": "",
    "station_level": 1,
-   "known": false,
+   "known": true,
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
     "no source anywhere for barley"
    ],
    "future": true
@@ -2535,13 +2444,11 @@
    "gives": "compost",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "hide_glue",
@@ -2550,13 +2457,11 @@
    "gives": "hide_glue",
    "station": "campfire_pot",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "bone_arrow",
@@ -2565,13 +2470,104 @@
    "gives": "bone_arrow",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "stone_wedge",
+   "number": 227,
+   "category": "Tools",
+   "gives": "stone_wedge",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "fibre_arrow",
+   "number": 228,
+   "category": "Tools",
+   "gives": "fibre_arrow",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "tinder",
+   "number": 229,
+   "category": "Fire and cooking",
+   "gives": "tinder",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "lumber_wedge",
+   "number": 230,
+   "category": "Materials",
+   "gives": "lumber",
+   "station": "workbench",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)"
+    "no source anywhere for log"
    ],
-   "future": true
+   "future": false
+  },
+  {
+   "id": "rough_bed_bedding",
+   "number": 231,
+   "category": "Containers and furniture",
+   "gives": "rough_bed_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "wooden_hammer_soft",
+   "number": 232,
+   "category": "Tools",
+   "gives": "wooden_hammer",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
+  },
+  {
+   "id": "rough_bed_straw",
+   "number": 233,
+   "category": "Containers and furniture",
+   "gives": "rough_bed_kit",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
   }
  ],
  "items": [
@@ -2861,7 +2857,7 @@
    "number": 27,
    "kind": "material",
    "sources": [
-    "recipe:lumber,lumber_by_hand"
+    "recipe:lumber,lumber_by_hand,lumber_wedge"
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "ok (planks)",
@@ -3026,7 +3022,7 @@
    "sources": [
     "recipe:waterskin"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (skin)",
    "future": true
   },
@@ -3048,6 +3044,7 @@
     "carcass:otter",
     "carcass:rabbit",
     "carcass:reindeer",
+    "carcass:seal",
     "carcass:wild_sheep",
     "carcass:wolf"
    ],
@@ -3124,6 +3121,8 @@
     "carcass:porcupine",
     "carcass:rabbit",
     "carcass:reindeer",
+    "carcass:seabird",
+    "carcass:seal",
     "carcass:wild_sheep",
     "carcass:wolf"
    ],
@@ -3242,7 +3241,7 @@
    "sources": [
     "recipe:grass_skirt"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (cloth)",
    "future": false
   },
@@ -3253,7 +3252,7 @@
    "sources": [
     "recipe:grass_cloak"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (cloth)",
    "future": false
   },
@@ -3264,7 +3263,7 @@
    "sources": [
     "recipe:fibre_sandals"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (cloth)",
    "future": false
   },
@@ -3348,6 +3347,7 @@
     "carcass:porcupine",
     "carcass:rabbit",
     "carcass:reindeer",
+    "carcass:seabird",
     "carcass:wild_sheep",
     "carcass:wolf"
    ],
@@ -3399,6 +3399,7 @@
     "carcass:moose",
     "carcass:mountain_goat",
     "carcass:reindeer",
+    "carcass:seal",
     "carcass:wild_sheep"
    ],
    "obtainable": "now",
@@ -3415,7 +3416,8 @@
     "carcass:goose",
     "carcass:grouse",
     "carcass:gull",
-    "carcass:pheasant"
+    "carcass:pheasant",
+    "carcass:seabird"
    ],
    "obtainable": "now",
    "look": "ok (feather)",
@@ -4267,7 +4269,7 @@
    "sources": [
     "recipe:cut_stone_block"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (block)",
    "future": false
   },
@@ -4278,7 +4280,7 @@
    "sources": [
     "recipe:brick"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (brick)",
    "future": false
   },
@@ -4289,7 +4291,7 @@
    "sources": [
     "recipe:mortar"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (pile)",
    "future": false
   },
@@ -4406,7 +4408,7 @@
    "sources": [
     "recipe:cobblestone"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (chunk)",
    "future": false
   },
@@ -4417,7 +4419,7 @@
    "sources": [
     "recipe:stone_shingle"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "ok (chunk)",
    "future": false
   },
@@ -4583,7 +4585,7 @@
    "number": 247,
    "kind": "tool",
    "sources": [
-    "recipe:wooden_hammer"
+    "recipe:wooden_hammer,wooden_hammer_soft"
    ],
    "obtainable": "now",
    "look": "ok (hammer)",
@@ -4594,7 +4596,7 @@
    "number": 250,
    "kind": "placeable",
    "sources": [
-    "recipe:rough_bed_kit"
+    "recipe:rough_bed_kit,rough_bed_bedding,rough_bed_straw"
    ],
    "obtainable": "now",
    "look": "ok (kit)",
@@ -4859,7 +4861,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4868,7 +4870,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4877,7 +4879,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4888,8 +4890,8 @@
     "recipe:processed_hide"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "leather",
@@ -4897,7 +4899,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4906,7 +4908,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4915,7 +4917,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4926,7 +4928,7 @@
     "recipe:rivets"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4937,7 +4939,7 @@
     "recipe:smelt_copper"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4948,7 +4950,7 @@
     "recipe:smelt_tin"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4959,7 +4961,7 @@
     "recipe:bronze_ingot"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4970,7 +4972,7 @@
     "recipe:flour_from_wheat,flour_from_barley"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4979,7 +4981,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -4988,7 +4990,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5021,7 +5023,7 @@
     "recipe:javelin"
    ],
    "obtainable": "RECIPE BLOCKED",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5042,9 +5044,9 @@
    "sources": [
     "recipe:stone_pickaxe"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "sickle",
@@ -5075,9 +5077,9 @@
    "sources": [
     "recipe:wooden_club"
    ],
-   "obtainable": "potential",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
-   "future": true
+   "obtainable": "now",
+   "look": "override look",
+   "future": false
   },
   {
    "id": "copper_ore",
@@ -5085,7 +5087,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5094,7 +5096,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5103,7 +5105,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5112,7 +5114,7 @@
    "kind": "material",
    "sources": [],
    "obtainable": "ORPHAN",
-   "look": "OVERRIDE IGNORED (looks.json grey chunk wins over ART_OVERRIDES)",
+   "look": "override look",
    "future": true
   },
   {
@@ -5122,9 +5124,9 @@
    "sources": [
     "recipe:hide_tunic"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "hide_trousers",
@@ -5133,9 +5135,9 @@
    "sources": [
     "recipe:hide_trousers"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "hide_gloves",
@@ -5144,9 +5146,9 @@
    "sources": [
     "recipe:hide_gloves"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "clay_jug",
@@ -5155,9 +5157,9 @@
    "sources": [
     "recipe:clay_jug"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "NO LOOK ENTRY",
-   "future": true
+   "future": false
   },
   {
    "id": "herb_salve",
@@ -5166,9 +5168,9 @@
    "sources": [
     "recipe:herb_salve"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "splint",
@@ -5177,9 +5179,9 @@
    "sources": [
     "recipe:splint"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "candle",
@@ -5188,9 +5190,9 @@
    "sources": [
     "recipe:candle"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "NO LOOK ENTRY",
-   "future": true
+   "future": false
   },
   {
    "id": "wicker_shield",
@@ -5199,9 +5201,9 @@
    "sources": [
     "recipe:wicker_shield"
    ],
-   "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "obtainable": "now",
+   "look": "override look",
+   "future": false
   },
   {
    "id": "stone_mace",
@@ -5210,9 +5212,9 @@
    "sources": [
     "recipe:stone_mace"
    ],
-   "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "obtainable": "now",
+   "look": "override look",
+   "future": false
   },
   {
    "id": "plank_shield",
@@ -5333,7 +5335,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "leather_jerkin",
@@ -5527,9 +5529,9 @@
    "sources": [
     "recipe:quern"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "compost",
@@ -5538,9 +5540,9 @@
    "sources": [
     "recipe:compost"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "antler",
@@ -5611,9 +5613,9 @@
    "sources": [
     "recipe:hide_glue"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "future": false
   },
   {
    "id": "bone_arrow",
@@ -5622,7 +5624,120 @@
    "sources": [
     "recipe:bone_arrow"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "stone_wedge",
+   "number": 353,
+   "kind": "tool",
+   "sources": [
+    "recipe:stone_wedge"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "fibre_arrow",
+   "number": 354,
+   "kind": "material",
+   "sources": [
+    "recipe:fibre_arrow"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": false
+  },
+  {
+   "id": "seaweed",
+   "number": 355,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "shellfish",
+   "number": 356,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "crab_meat",
+   "number": 357,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "egg",
+   "number": 358,
+   "kind": "food",
+   "sources": [
+    "carcass:seabird"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "seal_meat",
+   "number": 359,
+   "kind": "food",
+   "sources": [
+    "carcass:seal"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "sea_salt",
+   "number": 360,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "roast_shellfish",
+   "number": 361,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "boiled_egg",
+   "number": 362,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "roast_seal",
+   "number": 363,
+   "kind": "food",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
    "look": "PLACEHOLDER grey chunk",
    "future": true
   },
@@ -5711,9 +5826,12 @@
    "id": "bedding",
    "number": 1009,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
-   "look": "ok (bundle)",
+   "sources": [
+    "plant:fern",
+    "plant:heather"
+   ],
+   "obtainable": "now",
+   "look": "ok (heap)",
    "future": false
   },
   {
@@ -5750,8 +5868,11 @@
    "id": "birch_bark",
    "number": 1013,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "tree:birch",
+    "tree:trunk"
+   ],
+   "obtainable": "now",
    "look": "ok (bark)",
    "future": false
   },
@@ -7000,8 +7121,10 @@
    "id": "straw",
    "number": 1139,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "plant:tall_grass"
+   ],
+   "obtainable": "now",
    "look": "ok (bundle)",
    "future": false
   },
@@ -7138,8 +7261,11 @@
    "id": "tinder",
    "number": 1153,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "plant:cotton_grass",
+    "recipe:tinder"
+   ],
+   "obtainable": "now",
    "look": "ok (pile)",
    "future": false
   },
@@ -7147,8 +7273,10 @@
    "id": "tinder_fungus",
    "number": 1154,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "plant:tinder_fungus"
+   ],
+   "obtainable": "now",
    "look": "ok (chunk)",
    "future": false
   },
@@ -7788,7 +7916,6 @@
    "built_wave_now": null,
    "built_wave_potential": null,
    "problems": [
-    "kit recipe timber_prop_kit not known",
     "not obtainable even if all recipes known"
    ]
   },
@@ -7906,11 +8033,9 @@
     1.2
    ],
    "cap": 4,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "snare_trap",
@@ -7943,11 +8068,9 @@
     1.4
    ],
    "cap": 2,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "thatch_floor",
@@ -8016,13 +8139,18 @@
  ],
  "tools_now": [
   "axe",
+  "candle",
   "hammer",
   "hoe",
   "knife",
   "net",
+  "pick",
+  "quern",
   "rod",
+  "shield",
   "spade",
-  "torch"
+  "torch",
+  "wedge"
  ],
  "tools_potential": [
   "axe",
@@ -8036,7 +8164,8 @@
   "rod",
   "shield",
   "spade",
-  "torch"
+  "torch",
+  "wedge"
  ],
  "stations_potential": [
   [
@@ -8070,12 +8199,24 @@
  ],
  "stations_now": [
   [
+   "campfire",
+   1
+  ],
+  [
    "campfire_pot",
    1
   ],
   [
+   "clay_hearth",
+   2
+  ],
+  [
    "forge",
    1
+  ],
+  [
+   "oven",
+   3
   ],
   [
    "workbench",
