@@ -60,6 +60,14 @@
 			"source": "log_seat_kit"
 		},
 		{
+			"id": "stool",
+			"class": "seat",
+			"points": 1,
+			"needs_lit": false,
+			"status": "future",
+			"source": "stool_kit"
+		},
+		{
 			"id": "bench",
 			"class": "seat",
 			"points": 1,

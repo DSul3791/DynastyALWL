@@ -3040,6 +3040,11 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "stool_kit": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
   "bench_kit": {
    "shape": "chunk",
    "color": "#8a8a8a",
