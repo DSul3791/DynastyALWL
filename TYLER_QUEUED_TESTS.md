@@ -13,3 +13,5 @@ Written while Dave had the PC. Nothing below has been run yet. Run them one at a
 5. Client scenes: `python3 tools/items_check.py --godot "C:/GodotInstaller/godot.windows.editor.x86_64.exe" --only chest,gather,eat,leanto`
 6. Creator preview lighting: look at `scenes/creator_proto` once in the editor (ambient 0.55, sun 1.3).
 7. Mutation checks for the newest features (comfort, goals, lights, dev-place, hints, novice grace): `tools/mutation_check.sh` single-line from-text cases.
+8. Bot budget (sticks 60 to 70): `godot --headless --path . --script res://src/worldgen/tools/test_playability_bot.gd`; expect "all 11 steps done" inside the budget.
+9. Lean-to 1.5 m, by reading (nothing to run): server cover box top = pos.y + structures.json `height` (1.5), floor pos.y - 0.5, half 1.3 x 1.7; client box in `inventory_view.gd` (state 5) uses the same numbers. Nothing else assumes 2.1: the other 2.1 left is the state 24 piece's own cover box. A player standing on the roof ridge (y over 1.5) is no longer "covered", which is right. After the run: `test_placement_rules test_lean_to_bed test_leanto_collider test_structure_looks test_comfort`.
