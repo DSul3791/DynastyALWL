@@ -4,7 +4,7 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 1, missing 38, placeholder 40, rough 436, total 515
+Counts: decent 4, missing 38, placeholder 45, rough 435, total 522
 
 Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre, twine, bedding, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed; then crafting stations and tools; then the rest. The guide session's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 
@@ -305,7 +305,7 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 297 | stone_pickaxe | Stone pickaxe | override | ART_OVERRIDES | rough |  |  |  |  |
 | 298 | sickle | Sickle | override | ART_OVERRIDES | rough |  |  |  |  |
 | 299 | scythe | Scythe | override | ART_OVERRIDES | rough |  |  |  |  |
-| 300 | wooden_club | Wooden club | override | ART_OVERRIDES | rough |  |  |  |  |
+| 300 | wooden_club | Wooden club | club | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/club_after_override.png | 1 round offline (override was being ignored: fixed); needs more rounds |
 | 301 | copper_ore | Copper ore | override | ART_OVERRIDES | rough |  |  |  |  |
 | 302 | tin_ore | Tin ore | override | ART_OVERRIDES | rough |  |  |  |  |
 | 303 | iron_ore | Iron ore | override | ART_OVERRIDES | rough |  |  |  |  |
@@ -317,8 +317,8 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 309 | herb_salve | Herb salve | chunk | looks.json | placeholder |  |  |  |  |
 | 310 | splint | Splint | chunk | looks.json | placeholder |  |  |  |  |
 | 311 | candle | Candle | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 312 | wicker_shield | Wicker shield | chunk | looks.json | placeholder |  |  |  |  |
-| 313 | stone_mace | Stone mace | chunk | looks.json | placeholder |  |  |  |  |
+| 312 | wicker_shield | Wicker shield | shield | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/wicker_shield_round2.png | 2 rounds offline; not yet in the real game |
+| 313 | stone_mace | Stone mace | mace | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/stone_mace_round3.png | 3 rounds offline; not yet in the real game |
 | 314 | plank_shield | Plank shield | chunk | looks.json | placeholder |  |  |  |  |
 | 315 | bronze_sword | Bronze sword | chunk | looks.json | placeholder |  |  |  |  |
 | 316 | bronze_mace | Bronze mace | chunk | looks.json | placeholder |  |  |  |  |
@@ -351,6 +351,13 @@ Queue (what a new player meets first): stick, branch, rocks, flint, plant fibre,
 | 343 | flax_seeds | Flax seeds | chunk | looks.json | placeholder |  |  |  |  |
 | 344 | quern | Quern | chunk | looks.json | placeholder |  |  |  |  |
 | 345 | compost | Compost | chunk | looks.json | placeholder |  |  |  |  |
+| 346 | antler | Antler | chunk | looks.json | placeholder |  |  |  |  |
+| 347 | tusk | Tusk | chunk | looks.json | placeholder |  |  |  |  |
+| 348 | claw | Claw | chunk | looks.json | placeholder |  |  |  |  |
+| 349 | down | Down | chunk | looks.json | placeholder |  |  |  |  |
+| 350 | quill | Quill | chunk | looks.json | placeholder |  |  |  |  |
+| 351 | hide_glue | Hide glue | chunk | looks.json | placeholder |  |  |  |  |
+| 352 | bone_arrow | Bone arrow | chunk | looks.json | placeholder |  |  |  |  |
 | 1000 | acorns | Acorns | nut | looks.json | rough |  |  |  |  |
 | 1001 | aloe_gel | Aloe gel | bowl | looks.json | rough |  |  |  |  |
 | 1002 | amadou | Amadou | chunk | looks.json | rough |  |  |  |  |

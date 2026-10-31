@@ -29,5 +29,5 @@ func _init() -> void:
 		var node: MeshInstance3D = MeshInstance3D.new()
 		node.mesh = mesh
 		node.material_override = material
-		node.position = Vector3((float(n) - float(ids.size() - 1) * 0.5) * 0.5, 0.0, 0.0)
+		node.position = Vector3((float(n) - float(ids.size() - 1) * 0.5) * 0.5, 0.06, 0.0)   # items are modelled to lie 0.06 m below their origin: lift them clear of the preview ground
 		add_child(node)
