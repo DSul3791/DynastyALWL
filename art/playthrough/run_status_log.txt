@@ -1,0 +1,7 @@
+wrote art/playthrough/audit.md and audit.json
+recipes blocked and NOT flagged future: 14 ['log_seat_kit', 'bench_kit', 'chair_kit', 'table_kit', 'hide_rug_kit', 'straw_bed_kit', 'feather_bed_kit', 'canopy_bed_kit', 'wall_torch_kit', 'chandelier_kit', 'fireplace_kit', 'flower_pot_kit', 'antler_mount_kit', 'stool_kit']
+recipes blocked: 60 of 281 | orphan items: 78 | recipe-blocked items: 39 | placeholder looks: 71
+wrote PLAYTHROUGH_CHAPTERS.md 897 lines
+PLAYTHROUGH_STATUS.md: 24 fixed, 3 still broken
+DELTA F-18 STILL BROKEN -> FIXED
+DELTA F-27 STILL BROKEN -> FIXED

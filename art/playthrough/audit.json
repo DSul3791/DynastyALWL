@@ -1,8 +1,8 @@
 {
  "counts": {
-  "items": 620,
-  "recipes": 280,
-  "recipes_known_or_open": 248,
+  "items": 621,
+  "recipes": 281,
+  "recipes_known_or_open": 249,
   "structures": 63,
   "blueprints": 6
  },
@@ -3635,7 +3635,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": false
+   "future": true
   },
   {
    "id": "straw_bed_kit",
@@ -3676,10 +3676,9 @@
    "station_level": 2,
    "known": false,
    "wave_now": null,
-   "wave_potential": null,
+   "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)",
-    "no source anywhere for linen"
+    "not known (no learn system)"
    ],
    "future": false
   },
@@ -3771,6 +3770,19 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
+   "future": false
+  },
+  {
+   "id": "fibre_cloth",
+   "number": 334,
+   "category": "Materials",
+   "gives": "fibre_cloth",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
    "future": false
   }
  ],
@@ -4047,7 +4059,7 @@
     "recipe:chopping_block"
    ],
    "obtainable": "now",
-   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "look": "override look",
    "future": false
   },
   {
@@ -8366,7 +8378,7 @@
    ],
    "obtainable": "potential",
    "look": "override look",
-   "future": false
+   "future": true
   },
   {
    "id": "straw_bed_kit",
@@ -8397,7 +8409,7 @@
    "sources": [
     "recipe:canopy_bed_kit"
    ],
-   "obtainable": "RECIPE BLOCKED",
+   "obtainable": "potential",
    "look": "override look",
    "future": false
   },
@@ -8532,7 +8544,7 @@
    "sources": [],
    "obtainable": "structure",
    "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
-   "future": false
+   "future": true
   },
   {
    "id": "straw_bed",
@@ -8604,6 +8616,17 @@
    "sources": [],
    "obtainable": "structure",
    "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "fibre_cloth",
+   "number": 517,
+   "kind": "material",
+   "sources": [
+    "recipe:fibre_cloth"
+   ],
+   "obtainable": "now",
+   "look": "override look",
    "future": false
   },
   {
@@ -10495,7 +10518,7 @@
    "addon_of": "",
    "footprint": [
     2.6,
-    2.4
+    3.4
    ],
    "cap": 6,
    "built_wave_now": 1,
@@ -11462,10 +11485,10 @@
    ],
    "cap": 12,
    "built_wave_now": null,
-   "built_wave_potential": null,
+   "built_wave_potential": 3,
    "problems": [
     "kit recipe canopy_bed_kit not known",
-    "not obtainable even if all recipes known"
+    "not obtainable today (known/open recipes only)"
    ]
   },
   {

@@ -1,3 +1,5 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
 probe8: fire state 40 (lit when not 9)
 probe8: raspberries: REFUSED (still raw), pack: raspberries | notice 'The campfire cooks meat and fish. Plants go in a pot or on the clay hearth.'
 probe8: hazelnuts: REFUSED (still raw), pack: hazelnuts | notice 'The campfire cooks meat and fish. Plants go in a pot or on the clay hearth.'
@@ -10,3 +12,7 @@ probe8: shellfish: COOKED -> roast_shellfish | notice ''
 probe8: crab_meat: COOKED -> roast_shellfish | notice ''
 probe8: seal_meat: COOKED -> roast_seal | notice ''
 probe8: nettle item 'nettles' exists: true, 'nettle' exists: false
+WARNING: 16 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: ObjectDB::cleanup (core\object\object.cpp:2536)
+ERROR: 6 resources still in use at exit (run with --verbose for details).
+   at: ResourceCache::clear (core\io\resource.cpp:822)

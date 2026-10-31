@@ -1,0 +1,6 @@
+wrote art/playthrough/audit.md and audit.json
+recipes blocked and NOT flagged future: 22 ['lumber', 'nails', 'hinges', 'saw_blade', 'lumber_by_hand', 'processed_hide', 'rivets', 'smelt_copper', 'smelt_tin', 'smelt_iron', 'leather_cap', 'leather_jerkin', 'gambeson', 'leather', 'heavy_leather', 'fine_leather', 'cook_seaweed_soup', 'cook_mussel_stew', 'cook_jerky', 'cook_salted_fish', 'leather_strap', 'sea_salt']
+recipes blocked: 102 of 236 | orphan items: 105 | recipe-blocked items: 105 | placeholder looks: 76
+wrote PLAYTHROUGH_CHAPTERS.md 752 lines
+PLAYTHROUGH_STATUS.md: 19 fixed, 8 still broken
+DELTA S-craft STILL BROKEN -> FIXED
