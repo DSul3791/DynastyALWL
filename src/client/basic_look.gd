@@ -51,6 +51,18 @@ const ART_OVERRIDES := {
 	"iron_shield": {"shape": "metal_shield", "color": "#6c6f75", "size": 1.0},
 	"steel_shield": {"shape": "metal_shield", "color": "#9aa3ad", "size": 1.0},
 	"plank_shield": {"shape": "plank_shield", "color": "#a07a45", "size": 1.0},
+	"wheat": {"shape": "sheaf", "color": "#c9983a", "size": 1.0, "bits": ["wheat"]},
+	"barley": {"shape": "sheaf", "color": "#c9a850", "size": 1.0, "bits": ["barley"]},
+	"flax": {"shape": "sheaf", "color": "#b8a46a", "size": 1.0, "bits": ["flax"]},
+	"carrot": {"shape": "carrot", "color": "#e0782a", "size": 1.0},
+	"turnip": {"shape": "turnip", "color": "#ece6d8", "size": 1.0},
+	"potato": {"shape": "potato", "color": "#7d5f38", "size": 1.0},
+	"wheat_seeds": {"shape": "seedpile", "color": "#d9bd6a", "size": 1.0, "bits": ["long"]},
+	"barley_seeds": {"shape": "seedpile", "color": "#cdb36c", "size": 1.0, "bits": ["long"]},
+	"carrot_seeds": {"shape": "seedpile", "color": "#8a6a3a", "size": 0.9},
+	"potato_seeds": {"shape": "seedpile", "color": "#c9a878", "size": 1.1},
+	"turnip_seeds": {"shape": "seedpile", "color": "#3a2a22", "size": 0.9},
+	"flax_seeds": {"shape": "seedpile", "color": "#7a5230", "size": 0.9, "bits": ["long"]},
 	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
@@ -304,6 +316,74 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_torus(parts, 0.248, 0.01, Vector3(0.0, -0.03, 0.0), Color(0.3, 0.19, 0.1))
 			_sph(parts, 0.065, Vector3(1.0, 0.6, 1.0), Vector3(0.0, -0.012, 0.0), Color(0.22, 0.22, 0.24))
 			_metal(parts)
+		"sheaf":
+			# A bundle of cereal or flax stalks (refs: harvested wheat sheaves, barley with its long awns, retted flax bundles): a dozen long thin stalks lying together, tied with a twist of cord a third of the way along, the ear heads
+			# at the far end (wheat: plump golden oval ears; barley: slimmer ears each with a brush of long awns; flax: pale bare stems ending in small round seed capsules and a few blue petals).
+			var kind: String = str(bits[0]) if bits.size() > 0 else "wheat"
+			var stalk: Color = color.darkened(0.12) if kind != "flax" else color.lightened(0.08)
+
+			for k in 13:
+				var ca: float = TAU * float(k) / 13.0
+				var cr: float = 0.02 * (0.4 + 0.3 * float(k % 3))
+				var cy: float = sin(ca) * cr
+				var cz: float = cos(ca) * cr
+				_cyl(parts, 0.005, 0.4 + 0.02 * float(k % 3), Vector3(0.0, cy, cz), Vector3(0.0, 0.0, PI * 0.5), _tone(stalk, k, 0.1))
+				_cyl(parts, 0.004, 0.08, Vector3(0.16, cy * 1.6, cz * 1.6), Vector3(cz * 2.0, 0.0, PI * 0.5 - cy * 2.0), _tone(stalk, k, 0.1))   # the stalk fans out below the ear
+
+				if kind == "flax":
+					_sph(parts, 0.009, Vector3.ONE, Vector3(0.2 + 0.01 * float(k % 3), cy, cz), Color(0.62, 0.5, 0.28), true)
+					if k % 4 == 0:
+						_sph(parts, 0.008, Vector3(0.4, 1.0, 1.0), Vector3(0.215, cy + 0.008, cz), Color(0.4, 0.55, 0.92), true)
+				else:
+					_sph(parts, 0.016, Vector3(2.8, 0.85, 0.85), Vector3(0.2 + 0.02 * float(k % 3), cy * 2.2, cz * 2.2), _tone(color, k * 2, 0.1), true)
+
+					if kind == "barley":
+						for a in 3:
+							_box_rot(parts, Vector3(0.09, 0.0025, 0.0025), Vector3(0.29 + 0.02 * float(k % 3), cy * 2.2 + 0.006 * float(a - 1), cz * 2.2 + 0.006 * float(a - 1)), Vector3(0.0, 0.12 * float(a - 1), 0.08 * float(a - 1)), color.lightened(0.2))
+
+			_cyl(parts, 0.032, 0.012, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.38, 0.2))
+		"carrot":
+			# A carrot (ref: garden carrots): a long orange taproot with faint ridge rings tapering to a thin tip, a fat crown at the top and a tuft of feathery green leaves.
+			_cone(parts, 0.04, 0.22, Vector3(0.02, 0.0, 0.0), color)
+
+			for k in 4:
+				_cyl(parts, 0.04 * (1.0 - (-0.04 + 0.045 * float(k) + 0.09) / 0.22) + 0.0015, 0.0035, Vector3(-0.04 + 0.045 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.12))
+
+			_sph(parts, 0.04, Vector3(0.6, 1.0, 1.0), Vector3(-0.092, 0.0, 0.0), color.lightened(0.05))
+
+			for k in 5:
+				var la: float = TAU * float(k) / 5.0
+				_box_rot(parts, Vector3(0.14, 0.004, 0.016), Vector3(-0.17, sin(la) * 0.02, cos(la) * 0.02), Vector3(la, 0.15, 0.0), Color(0.3, 0.55, 0.2) if k % 2 == 0 else Color(0.22, 0.45, 0.15))
+		"turnip":
+			# A turnip (ref: garden purple-top turnips): a round white bulb with a purple flush over the top shoulder, a thin tap root and the cut stumps of the leaf stalks.
+			_sph(parts, 0.055, Vector3(1.0, 0.9, 1.0), Vector3(0.0, 0.0, 0.0), color)
+			_sph(parts, 0.054, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.022, 0.0), Color(0.55, 0.3, 0.55))
+			_cone(parts, 0.012, 0.05, Vector3(0.0, -0.075, 0.0), color.darkened(0.1))
+
+			for k in 4:
+				var ta: float = TAU * float(k) / 4.0 + 0.4
+				_cyl(parts, 0.006, 0.05, Vector3(cos(ta) * 0.015, 0.075, sin(ta) * 0.015), Vector3(sin(ta) * 0.25, 0.0, cos(ta) * 0.25), Color(0.35, 0.55, 0.25))
+		"potato":
+			# Potatoes (ref: garden potatoes): four uneven, lumpy, flattened tubers of different sizes lying together, each with a few dark eyes and a knob.
+			for k in 4:
+				var pa: float = TAU * float(k) / 4.0 + 0.3
+				var at: Vector3 = Vector3(cos(pa) * 0.05, -0.028 + 0.012 * float(k % 2), sin(pa) * 0.05)
+				_sph(parts, 0.05 - 0.008 * float(k % 3), Vector3(1.25 - 0.15 * float(k % 2), 0.8, 0.95 + 0.1 * float(k % 3)), at, _tone(color, k, 0.14))
+				_sph(parts, 0.022, Vector3(1.0, 0.7, 1.0), at + Vector3(0.03, 0.004, -0.02 + 0.01 * float(k)), _tone(color, k + 5, 0.14))
+				_sph(parts, 0.008, Vector3(1.0, 0.6, 1.0), at + Vector3(-0.01, 0.022, 0.012), color.darkened(0.45), true)
+				_sph(parts, 0.007, Vector3(1.0, 0.6, 1.0), at + Vector3(0.02, 0.02, -0.014), color.darkened(0.45), true)
+		"seedpile":
+			# A small heap of seed grains beside a closed cloth pouch (refs: seed packets and handfuls of grain): about 30 tiny grains in the item colour, a little tone variation; wheat and barley
+			# grains elongated, turnip and flax round.
+			for k in 30:
+				var ga: float = TAU * float(k) * 0.381966
+				var gr: float = 0.07 * sqrt(float(k) / 30.0)
+				var gh: float = -0.05 + 0.03 * (1.0 - pow(gr / 0.07, 2.0))
+				_sph(parts, 0.008, Vector3(1.7, 0.8, 0.8) if bits.has("long") else Vector3(1.0, 0.9, 1.0), Vector3(cos(ga) * gr, gh, sin(ga) * gr), _tone(color, k, 0.14), true)
+
+			_sph(parts, 0.04, Vector3(1.0, 1.1, 1.0), Vector3(0.1, -0.02, -0.04), Color(0.72, 0.64, 0.45))
+			_sph(parts, 0.022, Vector3(1.2, 0.5, 1.2), Vector3(0.1, 0.02, -0.04), Color(0.72, 0.64, 0.45).lightened(0.1))
+			_cyl(parts, 0.015, 0.01, Vector3(0.1, 0.012, -0.04), Vector3.ZERO, Color(0.4, 0.3, 0.18))
 		"bar":
 			# A trail-mix bar: a bar of oats and syrup with nuts, raisins, seeds and dried fruit pressed into it.
 			_box(parts, Vector3(0.2, 0.035, 0.07), Vector3(0.0, -0.04, 0.0), color)
