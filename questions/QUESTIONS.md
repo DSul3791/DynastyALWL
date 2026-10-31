@@ -90,3 +90,16 @@ Image: questions/img/body_idle_hands.png
 Note: Render of the idle pose, front, three-quarter, side, back; not the real game. Kathleen rates it 3.5 of 5. The side-on stance in the game is not the idle pose (it faces front here); it is the body yaw against the camera, noted for Sonny.
 - Yes
 - No
+
+
+## pic-orchard | Does the starter orchard look like a real apple orchard (rows of fruit trees with fruit in the crowns)?
+Image: questions/img/orchard_rows.png
+Note: Real game, noon, from the east at about (53395,68521), looking west. Flora rates it 3 of 5: the rows read as an orchard, but the fruit is flat red diamonds that look fake; thinning while picking is tested in code, not shown here.
+- Yes
+- No
+
+## pic-starter-meadow | Does the starter meadow at noon look real and alive (density, variety, ground cover)?
+Image: questions/img/starter_meadow_noon.png
+Note: Real game, noon, at the spawn looking east. Flora rates it 3 of 5: dense and lush, but one uniform yellow-green lawn with no flowers, same round crowns and evenly spaced tiny conifers.
+- Yes
+- No
