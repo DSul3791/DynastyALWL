@@ -57,6 +57,7 @@ var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
 var _item_views: Array = []
+var drop_settle_ms: int = 3000
 var place_it: bool = false
 var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
 var _fell_step: int = 0
@@ -184,6 +185,8 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-drop-settle="):
+			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
 		elif argument == "--shot-place":
 			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
@@ -471,7 +474,7 @@ func _process(delta: float) -> void:
 			return
 
 	# A drop or a seeded pile: a short step back, then look down at the spot (TEST_RECIPE.md), settle, then the picture.
-	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > 3000)):
+	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > drop_settle_ms)):
 		_finish_done = true
 		var behind: Vector3 = client.body.global_transform.basis.z
 		var bx: float = client.body.global_position.x + behind.x * back_m
@@ -487,7 +490,7 @@ func _process(delta: float) -> void:
 		client.flora.visible = false
 
 		if not _item_built:
-			if _dropped and now - _drop_msec > 3000:
+			if _dropped and now - _drop_msec > drop_settle_ms:
 				_build_item_views(now)
 
 			return
