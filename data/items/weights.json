@@ -87,6 +87,8 @@
 		"herb_salve": 0.1,
 		"splint": 0.4,
 		"candle": 0.05,
+		"stone_wedge": 1.0,
+		"fibre_arrow": 0.02,
 		"antler": 1.0,
 		"tusk": 0.3,
 		"claw": 0.05,
