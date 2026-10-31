@@ -28,7 +28,7 @@ func _init() -> void:
 	check(not StructureLook.clears_grass(22) and not StructureLook.clears_grass(24) and not StructureLook.clears_grass(26), "walls, doorways and roofs do not clear grass")
 	check(StructureLook.clears_grass(1) and StructureLook.clears_grass(8) and StructureLook.clears_grass(9) and StructureLook.sound_of(8) == "thump", "the campfire states clear and thump")
 	check(StructureLook.look_of(12) == "remains" and not StructureLook.clears_grass(12), "old remains look like remains and do not clear grass")
-	check(StructureLook.sound_of(13) == "" and StructureLook.sound_of(5) == "leanto", "stations make no placed sound, the lean-to its own")
+	check(StructureLook.sound_of(13) == "timber" and StructureLook.sound_of(5) == "leanto", "a workbench sets down with the timber sound (was silent until 31 Oct), the lean-to has its own")
 	var view = InventoryViewScript.new()
 
 	for state in states.keys() + [1, 8, 9, 12]:

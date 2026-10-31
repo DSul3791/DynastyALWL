@@ -2490,6 +2490,11 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "fibre_cloth": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
   "wool_tunic": {
    "shape": "chunk",
    "color": "#8a8a8a",

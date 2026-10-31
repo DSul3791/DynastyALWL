@@ -1,0 +1,8 @@
+# Kit looks round 1 (2026-10-31)
+kits_r1.png: lean_to_kit (sticks on a ridge with leaf cards), rough_bed_kit (stick frame and hay), straw_bed_kit (yellow mat, unchanged), feather_bed_kit (white mattress and pillow), canopy_bed_kit (posts and red cloth), log_seat_kit (log with pale top), stool_kit (round seat, three legs), bench_kit (plank on two ends), table_kit (plank top with trestle ends), workbench_kit (top with dog holes, vice, mallet), chest_kit (rounded lid, unchanged), plank_chest_kit (flat lid, iron straps), campfire_kit (stones and sticks, unchanged), chopping_block (squat log, axe-scarred top, chips), nettle_tea (bowl, already drawn; the grey look Guide saw is gone: test_item_looks lists only kindling_duplicate).
+Rating 3/5: all of these now have different silhouettes. The sheet looks down from above (the --pitch option is ignored), so legs of the stool and bench hide; in the game they are held and dropped at an angle.
+
+# Character stance and hands
+- Hands: ragdoll_body.gd hand ellipsoids were 0.042 x 0.075 x 0.03 m radii (a hand about 0.15 m long, small beside the 0.26 m forearm); now 0.05 x 0.09 x 0.036 (about 0.18 m long). Picture body_idle_bigger_hands.png.
+- Side-on: the idle pose itself faces the camera (front view in body_idle.png, arms at the sides). Any side-on look in the game is the body yaw against the camera in the third-person code (terrain_client.gd), not a pose number: for Sonny to check.
+- Grass hiding the feet: the ground grass cards are taller than the ankle at the foot position; not a model number (grass height or a clear-radius round the player: flora/grass session).
