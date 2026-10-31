@@ -9,6 +9,7 @@ extends SceneTree
 
 const Field := preload("res://src/water2/water_field.gd")
 const Traits := preload("res://src/water2/water_traits.gd")
+const WaterMaterial := preload("res://src/client/water_material.gd")   # the game's own water shader (stage c2): per-vertex flow in COLOR, traits in its uniforms
 
 const WATER_SHADER := """
 shader_type spatial;
@@ -146,7 +147,8 @@ func _water(f, turb: float) -> MeshInstance3D:
 			var y: float = f.bed[k] + f.depth[k] if wet else f.bed[k] - 0.05
 			verts.append(Vector3(i * f.cell_m, y + 0.02, j * f.cell_m))
 			var v: Vector2 = f.velocity(i, j)
-			cols.append(Color(clampf(f.depth[k] / 3.0, 0.0, 1.0), clampf(v.length() / 4.0, 0.0, 1.0), 0.0, 1.0))
+			var dir: Vector2 = v.normalized() * clampf(v.length() / 6.0, 0.0, 1.0) if v.length() > 0.02 else Vector2.ZERO
+			cols.append(Color(0.5 + 0.5 * dir.x, 0.5 + 0.5 * dir.y, 0.0, 1.0))
 			uvs.append(v)
 
 	for j in range(f.h - 1):
@@ -175,15 +177,15 @@ func _water(f, turb: float) -> MeshInstance3D:
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mi.mesh = mesh
-	var sm: ShaderMaterial = ShaderMaterial.new()
-	var sh: Shader = Shader.new()
-	sh.code = WATER_SHADER
-	sm.shader = sh
+	var sm: ShaderMaterial = WaterMaterial.make()
 	var t = f.traits
-	sm.set_shader_parameter("tint", Vector3(t.color.r, t.color.g, t.color.b))
-	sm.set_shader_parameter("clarity", maxf(t.clarity_m, 0.05))
-	sm.set_shader_parameter("turb", turb)
-	sm.set_shader_parameter("glow", 1.6 if t.harm_per_s > 0.0 else 0.0)
+	var base: Color = t.color
+	sm.set_shader_parameter("shallow_color", Vector3(base.r * 1.4, base.g * 1.4, base.b * 1.4))
+	sm.set_shader_parameter("deep_color", Vector3(base.r * 0.4, base.g * 0.4, base.b * 0.5))
+	sm.set_shader_parameter("clarity_m", maxf(t.clarity_m * 0.3, 0.05))
+	sm.set_shader_parameter("rough", turb)   # calm or choppy: a trait, NOT the flow speed (the game ties it to the flow rate)
+	sm.set_shader_parameter("fastest_m_s", 6.0)
+	sm.set_shader_parameter("mud", clampf(1.0 - t.clarity_m / 2.0, 0.0, 1.0))
 	mi.material_override = sm
 	return mi
 
@@ -275,7 +277,7 @@ func _valley() -> void:
 	for j in range(n):
 		for i in range(n):
 			var across: float = absf(float(j) * cell - 96.0)
-			bed[j * n + i] += minf(across * across * 0.012, 14.0) - 1.5 * exp(-pow(across, 2.0) / 40.0)
+			bed[j * n + i] += minf(across * across * 0.012, 14.0) - 2.2 * exp(-pow(across, 2.0) / 120.0)
 
 	var f = Field.new(n, n, cell, bed)
 	f.open_edges = true
@@ -288,8 +290,8 @@ func _valley() -> void:
 
 	var mid: Vector2 = f.velocity(48, 48)
 	print("valley: speed in mid channel %.2f m/s, depth %.2f m" % [mid.length(), f.depth[48 * n + 48]])
-	var calm: Image = await _shot(f, 0.05, Vector3(50.0, 58.0, 175.0), Vector3(110.0, 8.0, 96.0))
-	var rough: Image = await _shot(f, 0.95, Vector3(50.0, 58.0, 175.0), Vector3(110.0, 8.0, 96.0))
+	var calm: Image = await _shot(f, 0.05, Vector3(14.0, 28.0, 102.0), Vector3(90.0, 16.0, 96.0))
+	var rough: Image = await _shot(f, 0.95, Vector3(14.0, 28.0, 102.0), Vector3(90.0, 16.0, 96.0))
 	_save(calm, "valley_calm")
 	_save(rough, "valley_rough")
 	var pair: Image = Image.create(1280, 360, false, Image.FORMAT_RGB8)
