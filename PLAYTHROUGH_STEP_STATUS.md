@@ -15,12 +15,12 @@ Written with no Godot run (Dave has the computer): from the daily head code and 
 | 9 | fell a tree | WORKS, CLIENT | bot and chop self-test; aiming and the swing not driven |
 | 10 | work the trunk, logs on the shoulder | WORKS | probe_logs (rough planks from the shoulder log); felled-trunk look was flat black this morning, bark fix commit 993aafab not re-photographed |
 | 11 | campfire kit (6 sticks, 3 stones, **8 s**) | WORKS | bot; tutorial time fixed (was 3 s) |
-| 12 | place the fire | WORKS | probe 6: places at the spawn and 4 other spots; refuses silently beyond 6 m, a wet beach, within the fire gap or the per-chunk cap (message added since for some; re-check) |
+| 12 | place the fire | WORKS | probe 6 (re-run on the 14:40 head): places at the spawn and the other flat spots; the only refusal seen is the steep slope, with its message. The silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) were not re-tested after Tyler's changes |
 | 13 | light it (fibre, bark) | WORKS | probe 6: state 40 with both |
 | 14 | feed it, warmth | WORKS, CLIENT | fire self-test ran; warmth numbers from data |
 | 15 | roast meat (campfire cooks only meat) | WORKS | probe 8: refuses berries, nuts, bulbs, fiddleheads with a message; cooks meat, fish, shellfish, seal. Plants now need a pot or hearth: **steps for the pot and hearth are not in the tutorial yet** |
 | 16 | lean-to kit (**32 sticks, 8 leaves, 4 twine**, 25 s) | WORKS, OPEN | bot builds it within its gather budget; 32 sticks is a lot for a 10-minute hour: watch the pace (budget is 60) |
-| 17 | place the lean-to | WORKS | probe 7: roof 2.6 x 3.4 m by the data now, **height 1.5 m** (was 2.1: not re-run, the "2.1 m" in older notes is out of date); cover under it |
+| 17 | place the lean-to | WORKS | probe 7 ran on the 14:40 head with a 2.6 x 2.4 m roof, 2.1 m high; the data now says 2.6 x 3.4 m and **height 1.5 m** (a later daily merge: probe 7 not re-run on it, so a lying player under a 1.5 m roof is unchecked); cover under it |
 | 18 | bedding and rough bed (8 bedding, 4 sticks, 2 twine, 10 s) | WORKS | recipe 231 known; ferns give bedding |
 | 19 | bed inside the lean-to, lie, sleep, spawn point | WORKS, CLIENT | probe 7: placed at the centre, cover, good bed (quality 1.0), E sets spawn, respawn on the bed. Not lain in, in the client |
 | 20 | workbench (**Camp bench: 20 sticks, 6 twine, 4 stones, 60 s**) | OPEN | tutorial said 12 sticks 3 twine: text fixed; 60 s and 20 sticks make this a long step, and the playability bot stops before it (not covered) |
