@@ -25,13 +25,23 @@ func _initialize() -> void:
 		var on_old: int = WornLook.attach(old, [id], false)
 		var on_new: int = WornLook.attach(fresh, [id], false)
 		_ok(on_old > 0, "%s hangs on the old body (%d parts)" % [id, on_old])
-		_ok(on_new == on_old, "%s hangs on the generated body with the same number of parts (%d vs %d)" % [id, on_new, on_old])
-		_ok(_anchors_valid(fresh), "%s: every anchor on the generated body names a real bone" % id)
+		# Builders in the body's skip list (tunic and trousers, which its mesh draws itself) add no separate pieces: since Kathleen's builder overrides, hide_tunic and
+		# hide_trousers use those builders, so on the generated body they show the body's own cloth instead of a second layer.
+		var skipped: bool = str(WornLook.table()[id].get("builder", "")) in (fresh.get_meta("worn_skip_builders", []) as Array)
+		_ok(on_new == (0 if skipped else on_old), "%s hangs on the generated body with the same number of parts (%d vs %d%s)" % [id, on_new, on_old, ", skipped: the body draws it" if skipped else ""])
+		_ok(skipped or _anchors_valid(fresh), "%s: every anchor on the generated body names a real bone" % id)
 		_ok(_anchors_valid(old), "%s: every anchor on the old body names a real bone" % id)
 
 	var all_old: int = WornLook.attach(old, ids, false)
 	var all_new: int = WornLook.attach(fresh, ids, false)
-	_ok(all_old == all_new and all_new > 20, "everything at once: %d parts on both bodies" % all_new)
+	var drawn_by_body: int = 0
+
+	for id in ids:
+		if str(WornLook.table()[id].get("builder", "")) in (fresh.get_meta("worn_skip_builders", []) as Array):
+			drawn_by_body += WornLook.attach(old, [id], false)
+
+	var all_old_again: int = WornLook.attach(old, ids, false)
+	_ok(all_old == all_old_again and all_new == all_old - drawn_by_body and all_new > 20, "everything at once: %d parts on the generated body, %d on the old one (%d are the tunic and trousers the generated body draws itself)" % [all_new, all_old, drawn_by_body])
 	var far_new: int = WornLook.attach(fresh, ids, true)
 	_ok(far_new > 0 and far_new <= all_new, "far detail hangs fewer or equal parts (%d)" % far_new)
 	_check_fit()

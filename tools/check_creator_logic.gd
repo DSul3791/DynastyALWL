@@ -18,6 +18,7 @@ func _initialize() -> void:
 	_check_presets()
 	_check_code()
 	_check_seed()
+	_check_frames()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -66,7 +67,7 @@ func _check_locks_and_sections() -> void:
 	for key in Generator.SLIDERS:
 		all.set_lock(key, true)
 
-	for key in ["skin", "hair"]:
+	for key in Logic.COLOR_NAMES:
 		all.set_lock(key, true)
 
 	var h: Dictionary = all.genome.duplicate(true)
@@ -174,3 +175,62 @@ func _check_seed() -> void:
 	var c: RefCounted = Logic.new({}, 100)
 	c.dice_all()
 	_ok(a.genome.hash() != c.genome.hash(), "a different seed gives a different result")
+
+
+# Frames (Generator.FRAMES): starting values only; locks, undo and every slider and colour keep working; a version 1 share code still loads and its body has no chest.
+func _check_frames() -> void:
+	var Record = load("res://src/client/character/character_record.gd")
+
+	for frame in ["feminine", "masculine", "neutral"]:
+		var a: RefCounted = Logic.new({}, 5)
+		a.apply_frame(frame)
+
+		for key in Generator.FRAMES[frame]:
+			_ok(a.genome[key] == Generator.FRAMES[frame][key], "frame %s sets %s" % [frame, key])
+
+		_ok(a.can_undo(), "frame %s is one undo step" % frame)
+		a.undo()
+		_ok(float(a.genome["hips"]) == 0.0 and float(a.genome["chest"]) == Generator.CHEST_NONE, "undo takes frame %s back" % frame)
+
+		a.apply_frame(frame)
+		a.set_slider("hips", -0.9)
+		a.set_color("tunic", Color(0.1, 0.2, 0.3))
+		_ok(float(a.genome["hips"]) == -0.9 and (a.genome["tunic"] as Color).is_equal_approx(Color(0.1, 0.2, 0.3)), "after frame %s every slider and clothing colour can still be changed" % frame)
+		a.dice_section("Body")
+		_ok(float(a.genome["hips"]) != -0.9, "and the dice still work after frame %s" % frame)
+
+	var locked: RefCounted = Logic.new({}, 6)
+	locked.set_slider("hips", 0.2)
+	locked.set_lock("hips", true)
+	locked.set_lock("tunic", true)
+	var tunic_before: Color = locked.genome["tunic"]
+	locked.apply_frame("feminine")
+	_ok(float(locked.genome["hips"]) == 0.2 and (locked.genome["tunic"] as Color).is_equal_approx(tunic_before) and float(locked.genome["chest"]) == 0.3, "a frame leaves locked values alone and sets the rest")
+	_ok(Generator.FRAMES.keys().size() == 3 and Record.FRAMES.size() == 3, "three frames")
+	_ok(Record.default_frame("woman") == "feminine" and Record.default_frame("man") == "masculine" and Record.default_frame("non_binary") == "neutral" and Record.default_frame("prefer_not_to_say") == "neutral", "gender picks its default frame")
+	_ok(Record.default_pronouns("woman") == "she_her" and Record.default_pronouns("man") == "he_him" and Record.default_pronouns("non_binary") == "they_them" and Record.default_pronouns("prefer_not_to_say") == "they_them", "gender picks its default pronouns")
+
+	# The chest: an old genome has none and its body does not change; a feminine frame adds a visible bump.
+	var plain: Dictionary = Generator.make_genome("average")
+	var bust: Dictionary = plain.duplicate(true)
+	bust["chest"] = 0.6
+	var rg: Dictionary = Generator.rig(plain)
+	_ok(Generator.primitives(plain, rg, false).size() + 4 == Generator.primitives(bust, Generator.rig(bust), false).size(), "a chest value adds two primitives and their cloth and none leaves the body as it was")
+
+	# Version 1 code: 18 sliders, no chest.
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.append(1)
+
+	for i in range(Generator.SLIDERS_V1):
+		bytes.append(128)
+
+	for i in range(15):
+		bytes.append(100)
+
+	bytes.append(Generator._crc8(bytes))
+	var old: Dictionary = Generator.decode(Marshalls.raw_to_base64(bytes))
+	_ok(not old.is_empty() and float(old["chest"]) == Generator.CHEST_NONE and absf(float(old["height"])) < 0.01, "a version 1 share code still loads, with no chest")
+	var again: Dictionary = Generator.decode(Generator.encode(Generator.make_genome("average")))
+	_ok(not again.is_empty() and float(again["chest"]) == Generator.CHEST_NONE, "a version 2 code carries the chest")
+	bust["chest"] = 0.6
+	_ok(absf(float(Generator.decode(Generator.encode(bust))["chest"]) - 0.6) < 0.01, "and keeps its value")

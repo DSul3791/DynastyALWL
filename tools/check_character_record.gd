@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_check_points()
 	_check_validate()
 	_check_text()
+	_check_identity()
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -144,3 +145,35 @@ func _check_text() -> void:
 	_ok(back == rec, "the text form round-trips exactly")
 	_ok(Record.validate(back, ANCESTRIES).is_empty(), "and the record read back still passes")
 	_ok(Record.from_text("not json").is_empty() and Record.from_text("[1, 2]").is_empty() and Record.from_text("{}").is_empty(), "text that is not a record gives an empty one")
+
+
+# Gender, pronouns and frame (format version 2); a version 1 file loads with the plain defaults.
+func _check_identity() -> void:
+	var rec: Dictionary = _good()
+	_ok(int(rec["version"]) == Record.FORMAT_VERSION and rec["gender"] == "prefer_not_to_say" and rec["pronouns"] == "they_them" and rec["frame"] == "neutral", "a new record has the plain defaults")
+
+	for g in Record.GENDERS:
+		_ok(Record.GENDER_LABELS.has(g) and Record.PRONOUNS.has(Record.default_pronouns(g)) and Record.FRAMES.has(Record.default_frame(g)), "gender %s has a label, default pronouns and a default frame" % g)
+
+	_ok(Record.GENDER_LABELS["woman"] == "Woman" and Record.GENDER_LABELS["man"] == "Man" and Record.GENDER_LABELS["non_binary"] == "Non-binary" and Record.GENDER_LABELS["prefer_not_to_say"] == "Prefer not to say", "the four gender labels")
+	_ok(Record.describe(rec) == "Prefer not to say, they/them", "describe: " + Record.describe(rec))
+	rec["gender"] = "woman"
+	rec["pronouns"] = "he_him"
+	_ok(Record.describe(rec) == "Woman, he/him" and Record.validate(rec, ANCESTRIES).is_empty(), "any pronouns go with any gender")
+
+	for key in ["gender", "pronouns", "frame"]:
+		var bad: Dictionary = _good()
+		bad[key] = "nonsense"
+		_ok(not Record.validate(bad, ANCESTRIES).is_empty(), "an unknown %s is refused" % key)
+
+	var back: Dictionary = Record.from_text(Record.to_text(rec))
+	_ok(back == rec, "gender, pronouns and frame round-trip")
+	# A version 1 file: no version, gender, pronouns or frame.
+	var old: Dictionary = _good()
+
+	for key in ["version", "gender", "pronouns", "frame"]:
+		old.erase(key)
+
+	var loaded: Dictionary = Record.from_text(Record.to_text(old))
+	_ok(int(loaded["version"]) == 1 and loaded["gender"] == "prefer_not_to_say" and loaded["pronouns"] == "they_them" and loaded["frame"] == "neutral", "a version 1 file loads with the plain defaults")
+	_ok(Record.validate(loaded, ANCESTRIES).is_empty(), "and still passes the checks")

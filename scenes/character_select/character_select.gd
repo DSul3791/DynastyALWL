@@ -127,7 +127,6 @@ func _make_row(one: Dictionary) -> Button:
 	var row: Button = Button.new()
 	row.toggle_mode = true
 	row.button_group = _group
-	row.text = str(one["name"])
 	row.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
 	row.add_theme_font_size_override("font_size", Style.FONT_SECTION)
@@ -152,7 +151,33 @@ func _make_row(one: Dictionary) -> Button:
 		selected_id = str(one["id"])
 		_update_buttons())
 	row.add_child(_make_picture(one["genome"]))
+	row.add_child(_make_labels(one))
 	return row
+
+
+# The name, and under it the gender and pronouns the player chose (plain labels; nothing in the game depends on them).
+func _make_labels(one: Dictionary) -> Control:
+	var margin: MarginContainer = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", PICTURE.x + 36)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box: VBoxContainer = VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(box)
+	var name_label: Label = Label.new()
+	name_label.name = "NameLabel"
+	name_label.text = str(one["name"])
+	name_label.add_theme_font_size_override("font_size", Style.FONT_SECTION)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(name_label)
+	var sub: Label = Label.new()
+	sub.name = "AboutLabel"
+	sub.text = Record.describe(one)
+	sub.add_theme_color_override("font_color", Color(0.75, 0.8, 0.85))
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(sub)
+	return margin
 
 
 # A small picture of the body: a viewport of its own, drawn once. Cheap: a coarse body (7 cm voxels, no fingers) and one frame.

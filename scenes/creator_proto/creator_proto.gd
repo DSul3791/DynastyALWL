@@ -27,6 +27,13 @@ var _status: Label
 var _undo_button: Button
 var _redo_button: Button
 var _wild: CheckBox
+var _gender: String = Record.DEFAULT_GENDER
+var _pronouns: String = Record.DEFAULT_PRONOUNS
+var _frame: String = Record.DEFAULT_FRAME
+var _name_field: LineEdit
+var _gender_pick: OptionButton
+var _pronoun_pick: OptionButton
+var _frame_buttons: Dictionary = {}
 var _name_dialog: ConfirmationDialog
 var _name_message: Label
 var _name_edit: LineEdit
@@ -40,6 +47,8 @@ var turntable: bool = true
 
 
 func _ready() -> void:
+	logic.apply_frame(_frame)       # the neutral frame to start with (no gender chosen yet); not an undo step
+	logic.clear_history()
 	_build_ui()
 	_refresh_controls()
 	_rebuild_body()
@@ -84,6 +93,8 @@ func _build_ui() -> void:
 	column.add_theme_constant_override("separation", 8)
 	scroll.add_child(column)
 
+	_build_about(_add_accordion(column, "About you"))
+
 	for section in Logic.SECTIONS:
 		var body: VBoxContainer = _add_accordion(column, section)
 
@@ -94,7 +105,7 @@ func _build_ui() -> void:
 
 	_build_colors(_add_accordion(column, "Colours"))
 	_build_code(_add_accordion(column, "Share code"))
-	_open_section("Body")
+	_open_section("About you")
 	var holder: SubViewportContainer = SubViewportContainer.new()
 	holder.stretch = true
 	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -137,7 +148,7 @@ func _build_bar(page: VBoxContainer) -> void:
 		_changed("Rolled everything (locked values kept)"))
 	row.add_child(dice)
 	var play: Button = Style.big_button("Save and play", Style.FONT_TITLE, Style.PRIMARY)
-	play.pressed.connect(_ask_name)
+	play.pressed.connect(_press_save)
 	row.add_child(play)
 	_undo_button = Style.big_button("Undo", Style.FONT_BUTTON, Style.NEUTRAL)
 	_undo_button.pressed.connect(func() -> void:
@@ -162,6 +173,120 @@ func _build_bar(page: VBoxContainer) -> void:
 	info.add_child(_wild)
 
 
+# The About you section: name, gender, pronouns and the body frame. Gender sets a starting frame and the default pronouns, nothing more: the frame row lets any gender pick any
+# frame, pronouns can always be changed, and every slider and colour below stays editable. No gameplay number depends on these.
+func _build_about(body: VBoxContainer) -> void:
+	var name_row: HBoxContainer = HBoxContainer.new()
+	body.add_child(name_row)
+	var name_label: Label = Label.new()
+	name_label.text = "Name"
+	name_label.custom_minimum_size = Vector2(150, 0)
+	name_row.add_child(name_label)
+	_name_field = LineEdit.new()
+	_name_field.max_length = Record.NAME_MAX
+	_name_field.placeholder_text = "Up to %d letters" % Record.NAME_MAX
+	_name_field.custom_minimum_size = Vector2(0, 48)
+	_name_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_row.add_child(_name_field)
+	var gender_row: HBoxContainer = HBoxContainer.new()
+	body.add_child(gender_row)
+	var gender_label: Label = Label.new()
+	gender_label.text = "Gender"
+	gender_label.custom_minimum_size = Vector2(150, 0)
+	gender_row.add_child(gender_label)
+	_gender_pick = OptionButton.new()
+	_gender_pick.custom_minimum_size = Vector2(0, 48)
+	_gender_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	for g in Record.GENDERS:
+		_gender_pick.add_item(Record.GENDER_LABELS[g])
+
+	_gender_pick.select(Record.GENDERS.find(_gender))
+	_gender_pick.item_selected.connect(func(index: int) -> void: set_gender(Record.GENDERS[index]))
+	gender_row.add_child(_gender_pick)
+	var pronoun_row: HBoxContainer = HBoxContainer.new()
+	body.add_child(pronoun_row)
+	var pronoun_label: Label = Label.new()
+	pronoun_label.text = "Pronouns"
+	pronoun_label.custom_minimum_size = Vector2(150, 0)
+	pronoun_row.add_child(pronoun_label)
+	_pronoun_pick = OptionButton.new()
+	_pronoun_pick.custom_minimum_size = Vector2(0, 48)
+	_pronoun_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	for pr in Record.PRONOUNS:
+		_pronoun_pick.add_item(Record.PRONOUN_LABELS[pr])
+
+	_pronoun_pick.select(Record.PRONOUNS.find(_pronouns))
+	_pronoun_pick.item_selected.connect(func(index: int) -> void: _pronouns = Record.PRONOUNS[index])
+	pronoun_row.add_child(_pronoun_pick)
+	var frame_row: HBoxContainer = HBoxContainer.new()
+	body.add_child(frame_row)
+	var frame_label: Label = Label.new()
+	frame_label.text = "Frame"
+	frame_label.custom_minimum_size = Vector2(150, 0)
+	frame_row.add_child(frame_label)
+
+	for f in Record.FRAMES:
+		var b: Button = Button.new()
+		b.text = Record.FRAME_LABELS[f]
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(0, 48)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func() -> void: set_frame(f))
+		frame_row.add_child(b)
+		_frame_buttons[f] = b
+
+	_show_frame()
+	var note: Label = Label.new()
+	note.text = "Gender and frame only set a starting body and clothes. Every slider and colour can still be changed, and your pronouns are yours to pick."
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
+	body.add_child(note)
+
+
+# Choosing a gender sets its default pronouns and its starting frame (one undo step for the body); both can be changed afterwards.
+func set_gender(gender: String) -> void:
+	if not Record.GENDERS.has(gender):
+		return
+
+	_gender = gender
+	_pronouns = Record.default_pronouns(gender)
+
+	if _pronoun_pick != null:
+		_gender_pick.select(Record.GENDERS.find(gender))
+		_pronoun_pick.select(Record.PRONOUNS.find(_pronouns))
+
+	set_frame(Record.default_frame(gender))
+
+
+func set_frame(frame: String) -> void:
+	if not Record.FRAMES.has(frame):
+		return
+
+	_frame = frame
+	logic.apply_frame(frame)
+	_show_frame()
+
+	if _status != null:
+		_changed("%s frame: a starting point, change anything you like" % Record.FRAME_LABELS[frame])
+
+
+func _show_frame() -> void:
+	for f in _frame_buttons:
+		(_frame_buttons[f] as Button).button_pressed = f == _frame
+
+
+# Save and play: a name typed in the About you section is used; without one the name box is asked for.
+func _press_save() -> void:
+	var typed: String = _name_field.text.strip_edges()
+
+	if Store.name_ok(typed):
+		_finish(typed)
+	else:
+		_ask_name("Every character needs a name." if typed == "" else "That name will not do (1 to %d characters)." % Record.NAME_MAX)
+
+
 # Save and play: asks for a name, saves the character, makes it the active one and goes on into the game (the only way in).
 func _ask_name(message: String = "") -> void:
 	if _name_dialog == null:
@@ -180,17 +305,18 @@ func _ask_name(message: String = "") -> void:
 		_name_edit.text_submitted.connect(func(_text: String) -> void: _name_dialog.get_ok_button().pressed.emit())
 		box.add_child(_name_edit)
 		_name_dialog.add_child(box)
-		_name_dialog.confirmed.connect(_save_and_play)
+		_name_dialog.confirmed.connect(func() -> void: _finish(_name_edit.text.strip_edges()))
 		add_child(_name_dialog)
 
 	_name_message.text = message if message != "" else "Every character needs a name."
+	_name_edit.text = _name_field.text.strip_edges()
 	_name_dialog.popup_centered()
 	_name_edit.grab_focus()
 
 
-func _save_and_play() -> void:
-	var chosen: String = _name_edit.text.strip_edges()
-	var id: String = Store.add(chosen, logic.code())
+func _finish(chosen: String) -> void:
+	_name_field.text = chosen
+	var id: String = Store.add(chosen, logic.code(), _gender, _pronouns, _frame)
 
 	if id == "":
 		_ask_name("That name will not do (1 to %d characters). Try another." % Record.NAME_MAX)

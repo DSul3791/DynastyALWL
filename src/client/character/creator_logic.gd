@@ -10,14 +10,16 @@ extends RefCounted
 const Generator := preload("res://src/client/character/body_generator.gd")
 
 const SECTIONS := {
-	"Body": ["height", "build", "muscle", "belly", "shoulders", "hips", "torso", "legs", "arms", "neck"],
+	"Body": ["height", "build", "muscle", "belly", "chest", "shoulders", "hips", "torso", "legs", "arms", "neck"],
 	"Head and face": ["head", "jaw", "nose", "brow", "ears"],
 	"Hands and feet": ["hands", "feet"],
 	"Hair": ["hair_length"],
 }
-const COLOR_SECTIONS := {"Hair": ["hair"], "Skin": ["skin"]}   # colours have their own dice in the Skin and Hair sections
+const COLOR_SECTIONS := {"Hair": ["hair"], "Skin": ["skin"], "Tunic": ["tunic"], "Trousers": ["trousers"], "Boots": ["boots"]}   # colours have their own dice in the Skin and Hair sections
 const SKINS := [Color(0.93, 0.78, 0.66), Color(0.85, 0.66, 0.52), Color(0.72, 0.52, 0.38), Color(0.55, 0.38, 0.27), Color(0.42, 0.28, 0.2), Color(0.32, 0.21, 0.15)]
 const HAIRS := [Color(0.08, 0.06, 0.05), Color(0.25, 0.16, 0.09), Color(0.45, 0.28, 0.12), Color(0.7, 0.55, 0.25), Color(0.55, 0.2, 0.1), Color(0.6, 0.58, 0.55), Color(0.85, 0.82, 0.75)]
+const CLOTHS := [Color(0.36, 0.45, 0.3), Color(0.52, 0.34, 0.42), Color(0.35, 0.4, 0.5), Color(0.55, 0.42, 0.22), Color(0.5, 0.25, 0.2), Color(0.28, 0.25, 0.22), Color(0.62, 0.58, 0.5), Color(0.2, 0.2, 0.26)]
+const COLOR_NAMES := ["skin", "hair", "tunic", "trousers", "boots"]       # the colours a person can set
 const UNDO_LIMIT := 60
 const GENTLE_SIGMA := 0.35
 const WILD_SIGMA := 0.75
@@ -61,7 +63,7 @@ func set_slider_live(name: String, value: float) -> void:
 
 
 func set_color_live(name: String, color: Color) -> void:
-	if name in ["skin", "hair"]:
+	if name in COLOR_NAMES:
 		genome[name] = color
 
 		if name == "skin":
@@ -77,7 +79,7 @@ func set_slider(name: String, value: float) -> void:
 
 
 func set_color(name: String, color: Color) -> void:
-	if not (name in ["skin", "hair"]):
+	if not (name in COLOR_NAMES):
 		return
 
 	_remember()
@@ -111,6 +113,24 @@ func apply_preset(preset: String) -> void:
 			genome[key] = fresh[key]
 
 
+# Forgets undo and redo (the starting frame of a new creator is not a step to undo).
+func clear_history() -> void:
+	_undo.clear()
+	_redo.clear()
+
+
+# A body frame (Generator.FRAMES): sets hips, chest, shoulders, belly and neck and the default clothing colours as a starting point. Locked values keep theirs. One undo step.
+func apply_frame(frame: String) -> void:
+	if not Generator.FRAMES.has(frame):
+		return
+
+	_remember()
+
+	for key in Generator.FRAMES[frame]:
+		if not locks.has(key):
+			genome[key] = Generator.FRAMES[frame][key]
+
+
 func _draw() -> float:
 	return clampf(_rng.randfn(0.0, WILD_SIGMA if wild else GENTLE_SIGMA), -1.0, 1.0)
 
@@ -129,7 +149,7 @@ func dice_section(section: String) -> Array:
 	if COLOR_SECTIONS.has(section):
 		for key in COLOR_SECTIONS[section]:
 			if not locks.has(key):
-				var palette: Array = SKINS if key == "skin" else HAIRS
+				var palette: Array = SKINS if key == "skin" else (HAIRS if key == "hair" else CLOTHS)
 				genome[key] = palette[_rng.randi() % palette.size()]
 				changed.append(key)
 

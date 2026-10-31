@@ -53,7 +53,8 @@ static func get_character(id: String) -> Dictionary:
 	if rec.is_empty() or genome.is_empty() or not name_ok(str(rec.get("name", ""))):
 		return {}
 
-	return {"id": id, "name": str(rec["name"]), "code": code, "genome": genome}
+	return {"id": id, "name": str(rec["name"]), "code": code, "genome": genome, "gender": str(rec.get("gender", Record.DEFAULT_GENDER)),
+		"pronouns": str(rec.get("pronouns", Record.DEFAULT_PRONOUNS)), "frame": str(rec.get("frame", Record.DEFAULT_FRAME))}
 
 
 static func count() -> int:
@@ -61,8 +62,14 @@ static func count() -> int:
 
 
 # Saves a new character and returns its id, or "" when the name is not acceptable or the code does not decode.
-static func add(name: String, code: String) -> String:
-	if not name_ok(name) or Generator.decode(code).is_empty():
+static func add(name: String, code: String, gender: String = Record.DEFAULT_GENDER, pronouns: String = "", frame: String = "") -> String:
+	if not name_ok(name) or Generator.decode(code).is_empty() or not Record.GENDERS.has(gender):
+		return ""
+
+	pronouns = pronouns if pronouns != "" else Record.default_pronouns(gender)
+	frame = frame if frame != "" else Record.default_frame(gender)
+
+	if not Record.PRONOUNS.has(pronouns) or not Record.FRAMES.has(frame):
 		return ""
 
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir) if dir.begins_with("user://") else dir)
@@ -71,6 +78,9 @@ static func add(name: String, code: String) -> String:
 	var rec: Dictionary = Record.blank()
 	rec["name"] = name
 	rec["genome_code"] = code
+	rec["gender"] = gender
+	rec["pronouns"] = pronouns
+	rec["frame"] = frame
 	return id if _write(id, rec) else ""
 
 
@@ -80,10 +90,27 @@ static func rename(id: String, name: String) -> bool:
 	if one.is_empty() or not name_ok(name):
 		return false
 
+	return _write(id, _record_of(one, name, str(one["pronouns"])))
+
+
+# Changes the pronouns of a saved character (a player may change them any time). False for an unknown character or pronouns.
+static func set_pronouns(id: String, pronouns: String) -> bool:
+	var one: Dictionary = get_character(id)
+
+	if one.is_empty() or not Record.PRONOUNS.has(pronouns):
+		return false
+
+	return _write(id, _record_of(one, str(one["name"]), pronouns))
+
+
+static func _record_of(one: Dictionary, name: String, pronouns: String) -> Dictionary:
 	var rec: Dictionary = Record.blank()
 	rec["name"] = name
 	rec["genome_code"] = one["code"]
-	return _write(id, rec)
+	rec["gender"] = one["gender"]
+	rec["pronouns"] = pronouns
+	rec["frame"] = one["frame"]
+	return rec
 
 
 static func delete(id: String) -> bool:

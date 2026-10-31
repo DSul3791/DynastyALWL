@@ -41,7 +41,20 @@ const LOD_VOXELS := [0.03, 0.045, 0.07]  # detail levels 0 to 2: near, middle, f
 
 # Slider names, each -1 .. +1 (0 is the neutral body). Archetype presets are just different numbers.
 const SLIDERS := ["height", "build", "muscle", "belly", "shoulders", "hips", "torso", "legs", "arms", "neck", "head", "hands", "feet",
-	"jaw", "nose", "brow", "ears", "hair_length"]
+	"jaw", "nose", "brow", "ears", "hair_length", "chest"]
+const SLIDERS_V1 := 18             # share codes of version 1 carry only the first 18 sliders; "chest" was added after them and reads as -1 (none) from an old code
+const CHEST_NONE := -1.0           # chest: -1 no bust, 0 small, 1 full; an old genome has none, so its body is unchanged
+
+# Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen with the Gender step of the creator or on
+# its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
+const FRAMES := {
+	"feminine": {"hips": 0.45, "chest": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
+		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.22, 0.14, 0.1)},
+	"masculine": {"hips": -0.25, "chest": -1.0, "shoulders": 0.4, "belly": 0.05, "neck": 0.35,
+		"tunic": Color(0.36, 0.45, 0.3), "trousers": Color(0.3, 0.24, 0.18), "boots": Color(0.2, 0.13, 0.09)},
+	"neutral": {"hips": 0.0, "chest": -0.6, "shoulders": 0.0, "belly": 0.0, "neck": 0.0,
+		"tunic": Color(0.35, 0.4, 0.5), "trousers": Color(0.28, 0.25, 0.22), "boots": Color(0.2, 0.14, 0.1)},
+}
 
 const PRESETS := {
 	"average": {},
@@ -61,6 +74,8 @@ static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.
 
 	for key in SLIDERS:
 		g[key] = 0.0
+
+	g["chest"] = CHEST_NONE
 
 	for key in PRESETS.get(preset, {}):
 		g[key] = float(PRESETS[preset][key])
@@ -199,6 +214,14 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 	out.append(_ell(0, hips_c + Vector3(0.0, 0.0, 0.0), Vector3(0.165 * b * hip_w, 0.14, 0.12 * b)))
 	out.append(_ell(1, p[1] + Vector3(0.0, 0.02 * torso, -0.01), Vector3(0.155 * b, 0.15 * torso, 0.12 * b * belly)))
 	out.append(_ell(2, p[2] + Vector3(0.0, 0.08 * torso, -0.005), Vector3(0.155 * b * wide, 0.2 * torso, 0.12 * b * mu)))
+	var chest_s: float = float(g.get("chest", CHEST_NONE))
+
+	if chest_s > CHEST_NONE + 0.05:
+		var rad: float = lerpf(0.03, 0.075, (chest_s + 1.0) / 2.0)
+
+		for side in [-1.0, 1.0]:
+			out.append(_ell(2, p[2] + Vector3(0.062 * b * wide * side, 0.03 * torso, -0.085 * b * mu), Vector3(rad, rad * 0.9, rad * 0.9)))
+
 	out.append(_cone(3, p[3] + Vector3(0.0, -0.02, 0.0), head_c + Vector3(0.0, 0.03, 0.0), neck_r, neck_r * 0.92))
 	# Head, face and hair
 	out.append(_ell(4, head_c + Vector3(0.0, 0.14 * hs, 0.0), Vector3(0.095 * hs, 0.118 * hs, 0.108 * hs)))
@@ -952,7 +975,7 @@ static func set_expression(face: Node3D, open: float, brow_raise: float) -> void
 
 # ---------------------------------------------------------------- share code and detail levels
 
-const CODE_VERSION := 1
+const CODE_VERSION := 2         # 2 adds the chest slider; version 1 codes still decode (chest = none)
 const COLOR_KEYS := ["skin", "hair", "tunic", "trousers", "boots"]
 
 
@@ -990,9 +1013,14 @@ static func encode(g: Dictionary) -> String:
 # Returns the genome, or an empty dictionary when the code is damaged, has the wrong length or another version. Never executes anything from the text.
 static func decode(code: String) -> Dictionary:
 	var bytes: PackedByteArray = Marshalls.base64_to_raw(code.strip_edges())
-	var expected: int = 1 + SLIDERS.size() + COLOR_KEYS.size() * 3 + 1
 
-	if bytes.size() != expected or bytes[0] != CODE_VERSION:
+	if bytes.is_empty() or (bytes[0] != CODE_VERSION and bytes[0] != 1):
+		return {}
+
+	var slider_count: int = SLIDERS.size() if bytes[0] == CODE_VERSION else SLIDERS_V1
+	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + 1
+
+	if bytes.size() != expected:
 		return {}
 
 	var body: PackedByteArray = bytes.slice(0, expected - 1)
@@ -1001,11 +1029,10 @@ static func decode(code: String) -> Dictionary:
 		return {}
 
 	var g: Dictionary = {}
-	var at: int = 1
+	var at: int = 1 + slider_count
 
-	for key in SLIDERS:
-		g[key] = float(bytes[at]) / 127.5 - 1.0
-		at += 1
+	for i in range(SLIDERS.size()):
+		g[SLIDERS[i]] = float(bytes[1 + i]) / 127.5 - 1.0 if i < slider_count else CHEST_NONE
 
 	for key in COLOR_KEYS:
 		g[key] = Color(float(bytes[at]) / 255.0, float(bytes[at + 1]) / 255.0, float(bytes[at + 2]) / 255.0)

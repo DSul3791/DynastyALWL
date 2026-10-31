@@ -10,8 +10,35 @@ const Generator := preload("res://src/client/character/body_generator.gd")
 const ATTRIBUTES := ["luck", "fitness", "strength", "dexterity", "memory", "wisdom", "courage"]     # Part 9.1: Courage is the proposed new one
 const ATTR_MIN := -10
 const ATTR_MAX := 10
+const FORMAT_VERSION := 2       # 1 had no gender, pronouns or frame; old files load with the plain defaults below
 const FEAR_COUNT := 35          # the draft list of 5.8.8
 const NAME_MAX := 24
+
+# Gender, pronouns and frame (decisions of 30 Oct 2026). Gender and pronouns are what the player says about themselves; the creator's Gender step only sets a starting
+# frame and clothing, every slider stays editable, and NO gameplay number depends on any of the three.
+const GENDERS := ["woman", "man", "non_binary", "prefer_not_to_say"]
+const GENDER_LABELS := {"woman": "Woman", "man": "Man", "non_binary": "Non-binary", "prefer_not_to_say": "Prefer not to say"}
+const PRONOUNS := ["she_her", "he_him", "they_them"]
+const PRONOUN_LABELS := {"she_her": "she/her", "he_him": "he/him", "they_them": "they/them"}
+const FRAMES := ["feminine", "masculine", "neutral"]
+const FRAME_LABELS := {"feminine": "Feminine", "masculine": "Masculine", "neutral": "Neutral"}
+const DEFAULT_GENDER := "prefer_not_to_say"
+const DEFAULT_PRONOUNS := "they_them"
+const DEFAULT_FRAME := "neutral"
+
+
+static func default_pronouns(gender: String) -> String:
+	return "she_her" if gender == "woman" else ("he_him" if gender == "man" else DEFAULT_PRONOUNS)
+
+
+static func default_frame(gender: String) -> String:
+	return "feminine" if gender == "woman" else ("masculine" if gender == "man" else DEFAULT_FRAME)
+
+
+# "Woman, she/her" for showing under a name.
+static func describe(rec: Dictionary) -> String:
+	return "%s, %s" % [GENDER_LABELS.get(str(rec.get("gender", DEFAULT_GENDER)), "Prefer not to say"), PRONOUN_LABELS.get(str(rec.get("pronouns", DEFAULT_PRONOUNS)), "they/them")]
+
 
 # Point buy (draft): everything starts at 0; the first three steps up cost 1 each, the next three cost 2 each (so +6 costs 9); going down to -3 gives 1 point back per step.
 const POOL := 14
@@ -40,7 +67,7 @@ static func blank() -> Dictionary:
 	for a in ATTRIBUTES:
 		base[a] = 0
 
-	return {"name": "", "ancestry": "", "genome_code": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": base}
+	return {"version": FORMAT_VERSION, "gender": DEFAULT_GENDER, "pronouns": DEFAULT_PRONOUNS, "frame": DEFAULT_FRAME, "name": "", "ancestry": "", "genome_code": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": base}
 
 
 # What the next step up costs from a value, or -1 when it is at the cap.
@@ -122,6 +149,16 @@ static func validate(rec: Dictionary, ancestries: Array) -> PackedStringArray:
 	if not ancestries.has(str(rec.get("ancestry", ""))):
 		errors.append("unknown ancestry")
 
+	if int(rec.get("version", 1)) >= 2:
+		if not GENDERS.has(str(rec.get("gender", ""))):
+			errors.append("unknown gender")
+
+		if not PRONOUNS.has(str(rec.get("pronouns", ""))):
+			errors.append("unknown pronouns")
+
+		if not FRAMES.has(str(rec.get("frame", ""))):
+			errors.append("unknown frame")
+
 	if not BACKGROUNDS.has(str(rec.get("background", ""))):
 		errors.append("unknown background")
 
@@ -197,5 +234,13 @@ static func from_text(text: String) -> Dictionary:
 
 	for key in ["fear", "roll_seed", "rerolls"]:
 		rec[key] = int(rec.get(key, 0))
+
+	rec["version"] = int(rec.get("version", 1))
+
+	# A version 1 file has no gender, pronouns or frame: it loads with the plain defaults and keeps its version until it is saved again.
+	if rec["version"] < 2:
+		rec["gender"] = DEFAULT_GENDER
+		rec["pronouns"] = DEFAULT_PRONOUNS
+		rec["frame"] = DEFAULT_FRAME
 
 	return rec
