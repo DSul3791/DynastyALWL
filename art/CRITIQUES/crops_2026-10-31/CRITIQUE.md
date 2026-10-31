@@ -16,3 +16,7 @@ None of these has been seen in the real game. Honest status: none is at 4 yet; t
 ## Round 3 (cereals), 2026-10-31
 
 New idea per the moderator: a different silhouette each round. Round 3 bends the upper stalk down under the weight of the ear (wheat a little, barley a lot, flax straight), adds narrow green-brown leaf blades at the foot and keeps the awns on barley. Pictures: wheat_round3.png, barley_round3.png, sheet_round3_cereals.png. Reads as a bundle of stalks with nodding ears; the ears are small against the stalks and bunch at the tip. Rating stays 3: rounds 4 and 5 (a looser, fanned head end; ears with grain rows) are still to do, and the real-game check.
+
+## Round 4 (cereals), 2026-10-31
+
+New silhouette idea: a fanned head end: the ears and the upper stalks spread out from the tied bundle like a bouquet (radius x2.4 at the head), instead of one compact tip. Pictures wheat_round4.png, barley_round4.png (offline). The bundle now has a clear wide head with separate ears: reads as a sheaf of wheat or barley at a glance. Rating 3 (honest: the upper stalks do not join the lower ones exactly, small gaps show; the ears are still plain ovals). Next (round 5): joined stalks, a flag leaf, grain rows on the ear, a second bundle size.

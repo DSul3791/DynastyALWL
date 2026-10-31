@@ -11,19 +11,25 @@ func _init() -> void:
 	var length: float = 18.0
 	var logs: int = 0
 	var orig: float = 18.0
+	var stump: bool = false
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--arg-len="):
 			length = float(a.trim_prefix("--arg-len="))
 		elif a.begins_with("--logs="):
 			logs = int(a.trim_prefix("--logs="))
+		elif a == "--stump":
+			stump = true      # the stump left standing (the model of a felled tree's foot)
 		elif a.begins_with("--orig="):
 			orig = float(a.trim_prefix("--orig="))
 
 	var iv: Node = InventoryView.new()   # not added to the tree: only its model builder is used
 	var extra: Dictionary = {"radius": 0.3, "length": length, "yaw": 0.0, "pitch": -0.02, "orig_length": orig, "landed": true, "keywood": true}
-	var trunk: Node3D = iv._make_felled(true, extra)
+	var trunk: Node3D = iv._make_felled(not stump, extra)
 	add_child(trunk)
+
+	if stump:
+		return
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.32, 0.23, 0.15)
 	var cut: StandardMaterial3D = StandardMaterial3D.new()
