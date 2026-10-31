@@ -8147,6 +8147,81 @@ func _comfort_tick() -> void:
 			_say(peer, "You no longer feel rested.")
 
 
+# --- Camp goals' own checks (data/items/camp_goals.json, HINTS_AND_CAMP_EVENTS_SPEC.md section 2; Tyler 31 Oct 2026) ---
+# worn_warmth {min}: the warmth of the worn pieces (items.json `warmth`, summed, capped at 0.85) is at least min. talked {npc, hour_between}: note_talked(peer, npc) is called when a
+# dialogue with that NPC opens, and counts when the game hour is inside the band. moved_lit_night {metres}: walking while holding a torch (in the pack) or within 4 m of a lit fire, between
+# dusk (hour 19) and dawn (hour 6); the metres are added up once a slow tick and kept in the goal counts.
+var _night_last_pos: Dictionary = {}
+
+
+func _worn_warmth(peer: int) -> float:
+	var total: float = 0.0
+
+	for number in worn_of(peer):
+		if int(number) > 0:
+			total += float(table.entry(table.id_of(int(number))).get("warmth", 0.0))
+
+	return minf(total, 0.85)
+
+
+func _game_hour() -> float:
+	return fmod(float(game_seconds.call()) if game_seconds.is_valid() else 0.0, 86400.0) / 3600.0
+
+
+func note_talked(peer: int, npc_id: String) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty():
+		return
+
+	var hour: float = _game_hour()
+
+	for goal in _goals_data():
+		var check: Dictionary = goal.get("check", {})
+
+		if str(check.get("event", "")) != "talked" or str(check.get("npc", npc_id)) != npc_id:
+			continue
+
+		var band: Array = check.get("hour_between", [])
+
+		if band.size() == 2 and not (hour >= float(band[0]) and hour < float(band[1])):
+			continue
+
+		var key: String = "hit:" + str(goal["id"])
+		st["goal_counts"][key] = int(st["goal_counts"].get(key, 0)) + 1
+		_dirty = true
+
+	_goals_check(peer)
+
+
+func _night_walk_tick() -> void:
+	var hour: float = _game_hour()
+	var night: bool = hour >= 19.0 or hour < 6.0
+
+	for peer in _peer_key.keys():
+		if not _peer_pos.has(peer):
+			continue
+
+		var last: Vector3 = _night_last_pos.get(peer, _peer_pos[peer])
+		_night_last_pos[peer] = _peer_pos[peer]
+		var st: Dictionary = _goal_state_of(peer)
+
+		if st.is_empty() or not night:
+			continue
+
+		var step: float = Vector2(_peer_pos[peer].x - last.x, _peer_pos[peer].z - last.z).length()
+
+		if step <= 0.0 or step > 30.0:
+			continue   # standing still, or a jump (respawn, teleport)
+
+		var inv = inventory_of(peer)
+		var lit: bool = _lit_fire_within(_peer_pos[peer], 4.0) or (inv != null and inv.count_of(table.number_of("torch")) > 0)
+
+		if lit:
+			st["goal_counts"]["moved_lit_night"] = float(st["goal_counts"].get("moved_lit_night", 0.0)) + step
+			_dirty = true
+
+
 # --- Hints (data/items/hints.json by Sal, HINTS_AND_CAMP_EVENTS_SPEC.md; Tyler 31 Oct 2026) ---
 # A hint is a one-line notice (the same line as the goal notices) said once per character and hint id when its trigger becomes true; the ids said are saved in
 # characters.json "hints_seen". Triggers by name (below); a trigger the server cannot judge yet (axe_held_near_tree, the fruit and orchard ones, beach_with_container) never fires.
@@ -8283,6 +8358,10 @@ func _goals_data() -> Array:
 		_goals_loaded = true
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/starter_goals.json"))
 		_goals = parsed.get("goals", []) if typeof(parsed) == TYPE_DICTIONARY else []
+		var camp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/camp_goals.json")) if FileAccess.file_exists("res://data/items/camp_goals.json") else {}
+
+		if typeof(camp) == TYPE_DICTIONARY:
+			_goals = _goals + (camp.get("goals", []) as Array)   # the camp and winter goals follow the starter ones (their `after` may name a starter goal)
 
 	return _goals
 
@@ -8333,9 +8412,18 @@ func _goal_made(peer: int, item: int) -> void:
 	_goals_check(peer)
 
 
-func _goal_met(peer: int, st: Dictionary, check: Dictionary) -> bool:
+func _goal_met(peer: int, st: Dictionary, check: Dictionary, goal_id: String = "") -> bool:
 	var need: int = int(check.get("count", 1))
 	var inv = inventory_of(peer)
+
+	if str(check.get("event", "")) == "worn_warmth":
+		return _worn_warmth(peer) >= float(check.get("min", 0.7))
+
+	if str(check.get("event", "")) == "talked":
+		return int(st["goal_counts"].get("hit:" + goal_id, 0)) >= need
+
+	if str(check.get("event", "")) == "moved_lit_night":
+		return float(st["goal_counts"].get("moved_lit_night", 0.0)) >= float(check.get("metres", 100.0))
 
 	if check.has("event"):
 		return int(st["goal_counts"].get(_goal_count_key(str(check["event"]), str(check.get("what", ""))), 0)) >= need
@@ -8383,7 +8471,7 @@ func _goals_check(peer: int) -> void:
 		for goal in _goals_data():
 			var id: String = str(goal["id"])
 
-			if st["goals_done"].has(id) or not _goal_open(st, goal) or not _goal_met(peer, st, goal.get("check", {})):
+			if st["goals_done"].has(id) or not _goal_open(st, goal) or not _goal_met(peer, st, goal.get("check", {}), id):
 				continue
 
 			st["goals_done"][id] = true
@@ -8408,6 +8496,8 @@ func _goals_check(peer: int) -> void:
 func _goals_tick() -> void:
 	if _goals_data().is_empty():
 		return
+
+	_night_walk_tick()
 
 	for peer in _peer_key.keys():
 		_goals_check(peer)
