@@ -48,3 +48,21 @@ Image: questions/img/water2_river_valley.png
 Note: Top-down render of the new Dynasty water sim, not the real game. Sonny rates it 2 of 5: it flows the whole valley, but the river is only one cell wide, so it says little about looks.
 - Yes
 - No
+
+## pic-fh-spawn | Standing at the spawn, third person: does the character (hair, hands, feet, clothes) and the meadow look right for a new player's first minute?
+Image: questions/img/fh_spawn_third_person.png
+Note: Real game, daily head 31 Oct afternoon, rig picture (windowed client, real server), summer. Guide rates it 3.5 of 5: the meadow, trees and flowers look good; the character stands side-on looking up, hands hang open and are small, and the grass hides the feet.
+- Yes
+- No
+
+## pic-fh-leanto | Do the stick lean-to (24 sticks, 6 leaves, 4 twine) and the rough bed look like a place to sleep?
+Image: questions/img/fh_leanto_and_bed.png
+Note: Real game, daily head 31 Oct, building-piece row (placed by the game's own ghost model, not a player's hand). Guide rates it 4 of 5: the lean-to reads as poles and woven boughs, the bed as a bedding heap on a frame; the server lets the bed go inside the lean-to now. Not shown: lying in it.
+- Yes
+- No
+
+## pic-fh-creator | Does the character creator preview look right when you open it?
+Image: questions/img/fh_creator_preview.png
+Note: Real game window, daily head 31 Oct. Guide rates it 2.5 of 5: the preview opens on the BACK of the body, in flat colours with no face or clothes shown, so a new player cannot see what they are making until they turn it.
+- Yes
+- No
