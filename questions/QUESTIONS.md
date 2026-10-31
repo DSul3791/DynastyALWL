@@ -13,12 +13,6 @@
 
 
 
-## pic-fh-leanto | Do the stick lean-to (24 sticks, 6 leaves, 4 twine) and the rough bed look like a place to sleep?
-Image: questions/img/fh_leanto_and_bed.png
-Note: Real game, daily head 31 Oct, building-piece row (placed by the game's own ghost model, not a player's hand). Guide rates it 4 of 5: the lean-to reads as poles and woven boughs, the bed as a bedding heap on a frame; the server lets the bed go inside the lean-to now. Not shown: lying in it.
-- Yes
-- No
-
 ## pic-fh-creator | Does the character creator preview look right when you open it?
 Image: questions/img/fh_creator_preview.png
 Note: Real game window, daily head 31 Oct. Guide rates it 2.5 of 5: the preview opens on the BACK of the body, in flat colours with no face or clothes shown, so a new player cannot see what they are making until they turn it.
