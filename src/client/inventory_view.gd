@@ -1098,7 +1098,7 @@ func _update_fire_lights() -> void:
 	lit.sort_custom(func(a, b): return a[0] < b[0])
 
 	for n in lit.size():
-		var light: OmniLight3D = lit[n][1]
+		var light: Light3D = lit[n][1]
 		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
 		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
@@ -1106,7 +1106,7 @@ func _update_fire_lights() -> void:
 # Is a fire light that is switched on within `radius` of the point?
 func fire_light_near(point: Vector3, radius: float) -> bool:
 	for id in _world:
-		var light: OmniLight3D = _world[id]["light"]
+		var light: Light3D = _world[id]["light"]
 
 		if light != null and light.visible and point.distance_to(_world[id]["pos"]) <= radius:
 			return true
@@ -1802,7 +1802,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			var fixture_light: OmniLight3D = null
+			var fixture_light: Light3D = null
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
