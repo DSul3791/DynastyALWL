@@ -33,6 +33,9 @@ func _init() -> void:
 			"songbird": model = view._make_songbird()
 			"frog": model = view._make_frog()
 			"trout": model = view._make_fish()
+			"grouse": model = view._make_grouse()
+			"seal": model = view._make_seal()
+			"gull": model = view._make_seabird()
 
 		if model == null:
 			push_warning("animal_sheet: unknown species " + names[n])

@@ -22,9 +22,9 @@ var _blood: Array = []           # MeshInstance3D pool, one per drop shown
 var _blood_mat: StandardMaterial3D
 
 
-# New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10; grouse 11, seal 12, seabird 13 follow when their models exist). The small ones hop
+# New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
-const SMALL_SPECIES := [9, 10]
+const SMALL_SPECIES := [9, 10, 11, 13]
 
 
 func _make_for_species(number: int, id: int) -> Node3D:
@@ -47,6 +47,12 @@ func _make_for_species(number: int, id: int) -> Node3D:
 			return _make_songbird()
 		10:
 			return _make_frog()
+		11:
+			return _make_grouse()
+		12:
+			return _make_seal()
+		13:
+			return _make_seabird()
 
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
@@ -349,6 +355,89 @@ func _make_fish() -> Node3D:
 
 		if k % 3 == 0:
 			_ball(rig, 0.005, Vector3.ONE, Vector3(0.042, 0.0, sp), Color(0.75, 0.15, 0.1))
+
+	return root
+
+
+# A red grouse (refs: red and black grouse photographs): a plump ground bird, round chunky body held horizontally, a short thick neck and small head with a short curved beak and a red comb over the eye, a short
+# rounded tail, feathered legs; rich reddish-brown barred plumage, darker on the back. About 0.38 m long. Facing -Z.
+func _make_grouse() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var plume: Color = Color(0.5, 0.2, 0.12)
+	var dark: Color = Color(0.3, 0.14, 0.1)
+	_ball(rig, 0.085, Vector3(0.85, 0.85, 1.3), Vector3(0.0, 0.14, 0.02), plume)                      # body
+	_ball(rig, 0.075, Vector3(0.9, 0.5, 1.2), Vector3(0.0, 0.17, 0.03), dark)                         # the darker back
+	_ball(rig, 0.05, Vector3(0.9, 1.0, 0.9), Vector3(0.0, 0.19, -0.09), plume)                        # the thick neck
+	_ball(rig, 0.034, Vector3(0.9, 0.9, 1.0), Vector3(0.0, 0.23, -0.115), plume.lightened(0.05))      # the head
+	_box(rig, Vector3(0.01, 0.014, 0.025), Vector3(0.0, 0.222, -0.15), Color(0.15, 0.1, 0.06), Vector3(0.2, 0.0, 0.0))   # the short beak
+	_box(rig, Vector3(0.012, 0.01, 0.03), Vector3(0.022, 0.247, -0.12), Color(0.85, 0.1, 0.08))        # a red comb above each eye
+	_box(rig, Vector3(0.012, 0.01, 0.03), Vector3(-0.022, 0.247, -0.12), Color(0.85, 0.1, 0.08))
+	_ball(rig, 0.006, Vector3.ONE, Vector3(0.026, 0.236, -0.13), Color(0.03, 0.03, 0.03))
+	_ball(rig, 0.006, Vector3.ONE, Vector3(-0.026, 0.236, -0.13), Color(0.03, 0.03, 0.03))
+	_box(rig, Vector3(0.05, 0.012, 0.07), Vector3(0.0, 0.14, 0.14), dark, Vector3(-0.1, 0.0, 0.0))     # the short tail
+
+	for k in 6:   # barring: pale flecks along the flank
+		_ball(rig, 0.008, Vector3(1.6, 0.5, 1.0), Vector3(0.07 * float(k % 2 * 2 - 1), 0.14 + 0.012 * float(k % 3), -0.03 + 0.03 * float(k)), plume.lightened(0.35))
+
+	for side in [-1.0, 1.0]:
+		_ball(rig, 0.03, Vector3(0.45, 0.9, 1.7), Vector3(side * 0.07, 0.15, 0.03), dark.lightened(0.05), Vector3(0.0, 0.0, side * -0.1))   # a folded wing
+		_box(rig, Vector3(0.012, 0.07, 0.012), Vector3(side * 0.03, 0.04, 0.0), Color(0.65, 0.45, 0.3))   # a feathered leg
+
+	return root
+
+
+# A grey seal (refs: grey and harbour seal photographs): a thick spindle body tapering to the hind flippers, a round head with a long blunt snout (grey seal) and big dark eyes, small whiskers, short front flippers
+# set low, the hind flippers joined behind; silver-grey coat with dark blotches. About 1.8 m long, lying on the shore. Facing -Z.
+func _make_seal() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var coat: Color = Color(0.55, 0.55, 0.52)
+	_ball(rig, 0.28, Vector3(0.8, 0.7, 2.6), Vector3(0.0, 0.2, 0.0), coat)                            # the thick body
+	_ball(rig, 0.2, Vector3(0.7, 0.55, 1.5), Vector3(0.0, 0.15, 0.45), coat.darkened(0.05))           # the tapering rear
+	_ball(rig, 0.2, Vector3(0.95, 0.9, 1.0), Vector3(0.0, 0.3, -0.5), coat.lightened(0.04))           # the head
+	_ball(rig, 0.1, Vector3(0.8, 0.7, 1.4), Vector3(0.0, 0.26, -0.68), coat.lightened(0.08))          # the long blunt snout
+	_ball(rig, 0.025, Vector3(1.0, 0.9, 0.9), Vector3(0.0, 0.275, -0.78), Color(0.05, 0.04, 0.04))   # the nose
+	_box(rig, Vector3(0.1, 0.01, 0.01), Vector3(0.0, 0.24, -0.76), Color(0.9, 0.88, 0.8))             # whiskers
+
+	for side in [-1.0, 1.0]:
+		_ball(rig, 0.03, Vector3.ONE, Vector3(side * 0.1, 0.36, -0.6), Color(0.04, 0.04, 0.04))      # a big dark eye
+		_ball(rig, 0.1, Vector3(0.25, 0.5, 1.2), Vector3(side * 0.24, 0.1, -0.2), coat.darkened(0.15), Vector3(0.0, 0.0, side * -0.4))   # a front flipper set low
+		_ball(rig, 0.1, Vector3(1.4, 0.2, 1.2), Vector3(side * 0.08, 0.06, 0.82), coat.darkened(0.2))   # a hind flipper
+
+	for k in 7:   # dark blotches over the back and flanks
+		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(0.14 * float(k % 3 - 1), 0.34 - 0.02 * float(k % 2), -0.3 + 0.17 * float(k)), Color(0.28, 0.28, 0.27))
+
+	return root
+
+
+# A gull (refs: herring gull photographs): a sturdy white body with a grey back and wings folded to black-tipped points, a white head, a heavy yellow bill with a red spot, pale eyes, pink legs and webbed feet; standing.
+# About 0.6 m long. Facing -Z.
+func _make_seabird() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var rig: Node3D = Node3D.new()
+	rig.name = "Rig"
+	root.add_child(rig)
+	var white: Color = Color(0.94, 0.94, 0.92)
+	var grey: Color = Color(0.62, 0.66, 0.7)
+	_ball(rig, 0.07, Vector3(0.85, 0.9, 1.6), Vector3(0.0, 0.2, 0.02), white)                         # body
+	_ball(rig, 0.055, Vector3(0.9, 1.0, 1.0), Vector3(0.0, 0.25, -0.09), white)                       # the chest and neck
+	_ball(rig, 0.04, Vector3(0.9, 0.9, 1.05), Vector3(0.0, 0.29, -0.115), white)                      # the head
+	_box(rig, Vector3(0.016, 0.018, 0.06), Vector3(0.0, 0.282, -0.16), Color(0.95, 0.78, 0.15))       # the heavy yellow bill
+	_box(rig, Vector3(0.008, 0.006, 0.008), Vector3(0.0, 0.272, -0.178), Color(0.8, 0.1, 0.08))       # the red spot
+	_ball(rig, 0.006, Vector3.ONE, Vector3(0.022, 0.298, -0.135), Color(0.9, 0.85, 0.5))              # pale eyes
+	_ball(rig, 0.006, Vector3.ONE, Vector3(-0.022, 0.298, -0.135), Color(0.9, 0.85, 0.5))
+	_box(rig, Vector3(0.05, 0.012, 0.09), Vector3(0.0, 0.2, 0.16), white, Vector3(-0.25, 0.0, 0.0))   # the tail
+
+	for side in [-1.0, 1.0]:
+		_ball(rig, 0.045, Vector3(0.3, 0.8, 2.3), Vector3(side * 0.06, 0.215, 0.06), grey, Vector3(0.0, 0.0, side * -0.12))   # a folded grey wing
+		_box(rig, Vector3(0.025, 0.01, 0.05), Vector3(side * 0.06, 0.22, 0.17), Color(0.08, 0.08, 0.1))                    # the black wing tip
+		_box(rig, Vector3(0.008, 0.11, 0.008), Vector3(side * 0.025, 0.055, 0.0), Color(0.9, 0.55, 0.55))                  # a pink leg
+		_box(rig, Vector3(0.03, 0.004, 0.04), Vector3(side * 0.025, 0.003, -0.015), Color(0.9, 0.55, 0.55))                # a webbed foot
 
 	return root
 

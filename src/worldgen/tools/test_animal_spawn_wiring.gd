@@ -133,6 +133,6 @@ func _init() -> void:
 	waiting.biome_at = func(x, z): return "beach"
 	run(waiting, 40.0)
 	check(count(waiting, "seal") == 0, "a species waiting for its model never spawns")
-	check(view._make_for_species(12, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
+	check(view._make_for_species(14, 1) == null and view._make_for_species(99, 1) == null, "an unknown species number draws nothing, not a rabbit")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
