@@ -375,7 +375,35 @@ static func leanto() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_leanto_wood()))
 	root.add_child(_instance(_leanto_leaves()))
+	root.add_child(_leanto_roof_body())
 	return root
+
+
+# The lean-to's solid part for the player: only the sloped roof, a thin slab from the ground at the back (z -0.9) up to the ridge (z 0.1, 1.5 m), 2.6 m wide, so the space under it can be crawled into and the
+# height over a point is 1.5 * (z + 0.9) / 1.0. (The server's Cover.at counts the whole footprint at full height; this is only the model's collider.)
+const LEANTO_BACK_Z := -0.9
+const LEANTO_RIDGE_Z := 0.1
+const LEANTO_RIDGE_Y := 1.5
+
+
+static func leanto_roof_height(z: float) -> float:
+	if z < LEANTO_BACK_Z or z > LEANTO_RIDGE_Z:
+		return 0.0
+
+	return LEANTO_RIDGE_Y * (z - LEANTO_BACK_Z) / (LEANTO_RIDGE_Z - LEANTO_BACK_Z)
+
+
+static func _leanto_roof_body() -> StaticBody3D:
+	var body: StaticBody3D = StaticBody3D.new()
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var slab: BoxShape3D = BoxShape3D.new()
+	var run: float = LEANTO_RIDGE_Z - LEANTO_BACK_Z
+	slab.size = Vector3(2.6, 0.08, Vector2(run, LEANTO_RIDGE_Y).length())
+	shape.shape = slab
+	shape.position = Vector3(0.0, LEANTO_RIDGE_Y * 0.5, (LEANTO_BACK_Z + LEANTO_RIDGE_Z) * 0.5)
+	shape.rotation = Vector3(-atan2(LEANTO_RIDGE_Y, run), 0.0, 0.0)
+	body.add_child(shape)
+	return body
 
 
 # --------------------------------------------------------------- the chopping block

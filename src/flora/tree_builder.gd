@@ -3261,6 +3261,11 @@ static func _grass_tuft(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var plen: float = rng.randf_range(0.4, 0.5)      # longer and larger so it reads at 10 m (moderator 2026-10-31)
 					var grains: int = 7
 
+					if head == "seed":      # the top of the stalk and a rachis along the arch are gold-white too, so the panicle is not a thin dark spike at 10 m (flora 2026-10-31)
+						var arch_end: Vector3 = tip + out * (0.1 * sin(2.0)) + Vector3(0.0, 0.03 - plen, 0.0)
+						_branch(bark, tip - Vector3(0.0, 0.2, 0.0), tip, 0.006, 0.005, color.lightened(0.1), 3)
+						_branch(bark, tip, arch_end, 0.005, 0.003, color, 3)
+
 					for b in range(grains):
 						var t: float = float(b) / float(grains - 1)
 						var at_g: Vector3 = tip + out * (0.1 * sin(t * 2.0)) + Vector3(0.0, 0.03 * t - plen * t * t, 0.0)

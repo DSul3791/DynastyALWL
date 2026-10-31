@@ -172,5 +172,41 @@ func _init() -> void:
 	check(said.has("Press E on nettles or tall grass to get plant fibre."), "nine sticks in the pack bring the fibre hint")
 	var seen: Dictionary = hinter._goal_state_of(1)["hints_seen"]
 	check(seen.has("move") and seen.has("bars") and seen.has("fibre"), "the said hints are saved with the character (%s)" % str(seen.keys()))
+	# Camp goals: worn_warmth, talked (npc and hours), moved_lit_night (metres), through the same machinery.
+	var camp = make("user://test_goals_camp", {}, [false])
+	camp.game_seconds = func(): return 21.0 * 3600.0   # 21:00
+	camp.peer_connected_hello(1, "campgoals0001")
+	camp.report_position(1, Vector3(0.0, 10.0, 0.0))
+	camp.vitals_of(1)["weight"] = 2000.0
+	var camp_state: Dictionary = camp._goal_state_of(1)
+	for id in ["fire", "knife", "torch_night"]:
+		camp_state["goals_done"][id] = true
+
+	check(not camp._goal_met(1, camp_state, {"event": "worn_warmth", "min": 0.7}, "fur_for_winter"), "bare: not warm enough")
+	camp._characters[camp._peer_key[1]]["worn"] = [camp.table.number_of("hide_hood"), camp.table.number_of("hide_cloak"), camp.table.number_of("hide_boots"), 0, 0, 0]
+	check(absf(camp._worn_warmth(1) - 0.55) < 0.01, "hood, cloak and boots add up to %.2f warmth" % camp._worn_warmth(1))
+	camp.note_talked(1, "hob")
+	check(not camp._goal_state_of(1)["goals_done"].has("story"), "talking to someone else does not count for the story goal")
+	camp.note_talked(1, "edda")
+	check(camp._goal_state_of(1)["goals_done"].has("story"), "talking to Edda at 21:00 completes the story goal")
+	var other = make("user://test_goals_camp2", {}, [false])
+	other.game_seconds = func(): return 12.0 * 3600.0
+	other.peer_connected_hello(1, "campgoals0002")
+	other.report_position(1, Vector3(0.0, 10.0, 0.0))
+	other._goal_state_of(1)["goals_done"]["fire"] = true
+	other.note_talked(1, "edda")
+	check(not other._goal_state_of(1)["goals_done"].has("story"), "at noon the same talk does not count")
+
+	# A night walk with a torch in the pack: 100 m.
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("torch"), 0, 1, Vector3.ZERO)
+	camp._night_walk_tick()
+
+	for n in range(12):
+		camp.report_position(1, Vector3(float(n + 1) * 10.0, 10.0, 0.0))
+		camp._night_walk_tick()
+
+	check(float(camp._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0)) >= 110.0, "walking 120 m with a torch at night adds up (%.0f m)" % float(camp._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0)))
+	camp._goals_check(1)
+	check(camp._goal_state_of(1)["goals_done"].has("night_walk"), "and completes the night walk goal")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

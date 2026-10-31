@@ -28,6 +28,12 @@ func _init() -> void:
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(1.5, 10, 0), rows) == "close" and Rules.blocked(cfg, "campfire_kit", Vector3(2.5, 10, 0), rows) == "", "a fire needs 2 m from another fire")
 	check(Rules.blocked(cfg, "campfire_kit", Vector3(2.2, 10, 0), [{"pos": Vector3(0, 10, 0), "state": 6}]) == "close", "a fire too near a structure is blocked")
 
+	# A rough bed inside a lean-to is free (the server allows it); outside the box but within the gap it is red.
+	var lean_row: Array = [{"pos": Vector3(0, 10, 0), "state": 5, "yaw": 0.0}]
+	check(Rules.blocked(cfg, "rough_bed_kit", Vector3(0.3, 10, 0.2), lean_row) == "", "the ghost of a rough bed inside a lean-to is free")
+	check(Rules.blocked(cfg, "rough_bed_kit", Vector3(0.0, 10, 2.0), lean_row) == "close", "and red 2 m out, beyond the lean-to's box")
+	check(Rules.blocked(cfg, "chest_kit", Vector3(0.3, 10, 0.2), lean_row) == "close", "a chest inside the lean-to is still too close")
+
 	# Slope (design 10.1): the ghost is red until the ground is a reasonable shape.
 	var flat: Callable = func(_x, _z): return 10.0
 	var ramp: Callable = func(x, _z): return 10.0 + 0.5 * x   # rises 0.5 m per metre along x
