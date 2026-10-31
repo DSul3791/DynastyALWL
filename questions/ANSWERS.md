@@ -1874,3 +1874,7 @@ Answered: 2026-10-31 19:58 UTC
 Answer: Yes | Comment: Yes, it looks functional, but it is ugly. Eventually you wanna be a grade a top-tier video game we need nice design and nice looking screens.
 Answered: 2026-10-31 19:58 UTC
 
+## pic-fibre-cloth | Does the fibre cloth (item 517, left; linen on the right for comparison) look like a folded woven plant-fibre cloth?
+Answer: No | Comment: No, they just look like coloured squares. They need texture and lines
+Answered: 2026-10-31 19:58 UTC
+
