@@ -8169,6 +8169,8 @@ func rest_completed(peer: int, half: bool = false) -> bool:
 
 
 # Called every slow tick: lying on a good bed (awake or asleep) at comfort 2+ earns the buff once per rest; the buff ending is told once.
+var send_comfort: Callable            # (peer, comfort level, rested tier level 0 = none, whole minutes of Rested left): the HUD line (protocol 80)
+var _comfort_sent: Dictionary = {}      # peer -> the last [level, rested level, minutes] told
 var _rest_credit: Dictionary = {}       # peer -> true while this rest has already earned the buff
 var _rested_told: Dictionary = {}       # peer -> true while "You feel rested" is in force (to say the end once)
 
@@ -8187,6 +8189,13 @@ func _comfort_tick() -> void:
 			_rest_credit.erase(peer)
 
 		var rested: bool = not rested_tier(peer).is_empty()
+
+		if send_comfort.is_valid():
+			var told: Array = [int(comfort_at(peer)["level"]), int(_characters.get(_peer_key.get(peer, ""), {}).get("rested", {}).get("level", 0)) if rested else 0, int(ceil(rested_seconds_left(peer) / 60.0)) if rested else 0]
+
+			if _comfort_sent.get(peer, []) != told:
+				_comfort_sent[peer] = told
+				send_comfort.call(peer, told[0], told[1], told[2])
 
 		if rested:
 			_rested_told[peer] = true

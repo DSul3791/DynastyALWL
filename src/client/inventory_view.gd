@@ -171,6 +171,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
+	net.comfort_received.connect(_on_comfort)
 	net.sick_received.connect(_on_sick)
 	net.body_received.connect(func(bpm, eta, phase): body_bpm = bpm; sleep_eta_s = eta; body_phase = phase)
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
@@ -3010,6 +3011,51 @@ func _on_sick(hours: int) -> void:
 
 	if _character != null:
 		_character.refresh()
+
+
+# The comfort line (protocol 80): "Comfort 7" and, while the buff runs, "Rested 38 min", small at the top right; hidden at comfort 0 with no buff.
+var comfort_level: int = 0
+var rested_level: int = 0
+var rested_minutes: int = 0
+var _comfort_label: Label
+
+
+func _on_comfort(level: int, rested_tier_level: int, minutes: int) -> void:
+	comfort_level = level
+	rested_level = rested_tier_level
+	rested_minutes = minutes
+
+	if _comfort_label == null:
+		_comfort_label = Label.new()
+		_comfort_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		_comfort_label.anchor_left = 1.0
+		_comfort_label.anchor_right = 1.0
+		_comfort_label.offset_left = -420.0
+		_comfort_label.offset_right = -20.0
+		_comfort_label.offset_top = 18.0
+		_comfort_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_comfort_label.add_theme_font_size_override("font_size", 26)
+		_comfort_label.add_theme_constant_override("outline_size", 6)
+		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+		_comfort_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_layer.add_child(_comfort_label)
+
+	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
+	_comfort_label.visible = _comfort_label.text != ""
+	_comfort_label.modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
+
+
+# The words of the comfort line: "" when there is nothing to say.
+static func comfort_text(level: int, rested_tier_level: int, minutes: int) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	if level > 0:
+		parts.append("Comfort %d" % level)
+
+	if rested_tier_level > 0 and minutes > 0:
+		parts.append("Rested %d min" % minutes)
+
+	return "   ".join(parts)
 
 
 func _on_warmth(percent: int) -> void:

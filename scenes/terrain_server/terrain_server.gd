@@ -290,6 +290,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
+	items.send_comfort = func(peer, level, rested_level, rested_minutes): net.comfort.rpc_id(peer, level, rested_level, rested_minutes)
 	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
 	@warning_ignore("confusable_local_declaration")

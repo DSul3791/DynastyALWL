@@ -119,6 +119,20 @@ func _init() -> void:
 	items._lights_tick(5.0)
 	check(not bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp, "and goes out when the stick is used up")
 
+	# The HUD message (protocol 80): level, buff level, whole minutes; told once, again when something changes.
+	var told: Array = []
+	items.send_comfort = func(_p, l, r, m): told.append([l, r, m])
+	items._comfort_tick()
+	items._comfort_tick()
+	check(told.size() == 1 and told[0][0] == level() and told[0][1] > 0 and told[0][2] > 40, "the client is told the comfort level, the buff and its minutes once (%s)" % str(told))
+	items._characters[items._peer_key[1]].erase("rested")
+	items._comfort_tick()
+	check(told.size() == 2 and told[1][1] == 0 and told[1][2] == 0, "and again when the buff ends")
+	var View := load("res://src/client/inventory_view.gd")
+	check(View.comfort_text(7, 2, 38) == "Comfort 7   Rested 38 min" and View.comfort_text(0, 0, 0) == "" and View.comfort_text(3, 0, 0) == "Comfort 3", "the HUD words: 'Comfort 7   Rested 38 min'")
+
+	items.rest_completed(1)   # earn it again for the save check below
+
 	# Saved and cleared.
 	items._save_characters()
 	items._finish_writer()
