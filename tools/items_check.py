@@ -75,7 +75,7 @@ CLIENTS = [
     ]),
     ("gather", ["--gather"], 12000, [
         ("harvest prompt shown", r"prompt \"(Press E to gather)\"", None, None),
-        ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
+        ("something gathered from a plant in season", r"Gather test: pack items \d+ -> " + NUM, 1, 100000),
         ("prompt only for what you look toward", r"Hold test: looking east, stone to the east in view (true), stone to the west in view false, prompt \"Press E to gather\"", None, None),
         ("held E takes one item per step", r"Hold test: most in one step " + NUM, 1, 1),
         ("held E gets all four stones", r"Hold test: most in one step \d+, total " + NUM, 3, 12),

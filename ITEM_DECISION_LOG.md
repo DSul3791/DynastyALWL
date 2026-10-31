@@ -339,3 +339,16 @@ Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): 
 
 ## Crab apples edible, wild apples (2026-10-31)
 Dave: crab apples must be edible. Server check: crab_apples already counted as food (vitals by_suffix apples = 120; VitalsRules.edible true), so the cause was the description wording ("Cooked down with honey they are good") reading as not edible; fixed: description now "Hard, sour little green apples. Edible raw, better cooked with honey." and by_id crab_apples = 60 kcal (small and sour). New item Wild apples (484, 80 kcal, 240 h, future until the flora session adds the forest eating-apple tree). test_apples_edible.gd added (crab apple 60 < wild apple 80 < early apple 110 kcal gain, each uses up one). Crab apples are GREEN (Dave): told Kathleen.
+
+## Nettles and the campfire rule (2026-10-31, Dave)
+| Question | Answer | Basis | Reversible |
+|---|---|---|---|
+| Nettles give only fibre | by_species nettle now plant_fibre 1-2 AND Nettles (new item 485) 2-4; flora nettle yields emptied so the natural-yield fallback does not double; Nettle tea (486) is a pot recipe; forager stew and egg-nettle fry use Nettles | Dave 31 Oct; limitation: by_species rows are not season-gated (needs code), the plant itself only appears in season | yes |
+| Campfire cooks only meat | cooking.json cookable_suffixes emptied; berry and egg cooks_into rows removed; pot recipes for stewed berries and boiled eggs; clay hearth recipes for roast forage from nuts, morels, bananas, fiddleheads, pears; roast roots and mushroom skewer moved to the hearth | Dave 31 Oct; tests updated (test_server_items cook block rewritten for meat); other plant dishes at campfire left for Dave | yes |
+
+## Comfort (2026-10-31)
+docs/COMFORT_DESIGN.md + data/items/comfort.json (radius 9 m, any cover counts as shelter, each kind once, fires lit only, Rested 15+3 per level cap 60, tiers) + 14 locked furniture kits (487-500, recipes 319-332). Wild apples unflagged (flora tree exists). Fixed a look_placeholders.json merge-marker commit before pushing.
+
+Moved all plant dishes off the campfire (12 to the clay hearth, 3 to the pot); comfort buff fixed at 45 real minutes (level scales the bonus) in docs/COMFORT_DESIGN.md, comfort.json, DESIGN_IDEAS.md. Kathleen asked about +50 percent lean-to materials for the bigger model: declined for now (fibre/stick grind risk, first-hour tests); the numbers wait for a play-through.
+
+Stairs unlocked (Tyler: climbs at walking pace; a limping walker under about 1.2 m/s cannot use them). Lean-to recipe raised for the 2.6 x 2.4 m model: 12 sticks, 9 leaves, 3 twine (was 8, 6, 2; about +50 percent); tests updated (test_first_hour gives the 9 leaves, one felled tree gives only 3-9; twine 7 for lean-to + chest; test_goals). Comfort buff fixed at 45 real minutes already pushed (eebc13a3). Kit-to-look mapping sent to Kathleen. Tyler: ore ladder check, crab-apple holdable fix, placement notices done.

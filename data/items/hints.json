@@ -80,13 +80,13 @@
 		{
 			"id": "roast",
 			"trigger": "hungry",
-			"text": "Hold E at the fire to roast one raw food.",
+			"text": "Hold E at the fire to roast raw meat or fish.",
 			"goal": "berries"
 		},
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Craft a Small shelter: 8 sticks, 6 leaves, 2 twine.",
+			"text": "Lash poles into a lean-to: 12 sticks, 9 leaves, 3 twine.",
 			"goal": "shelter"
 		},
 		{
@@ -98,7 +98,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Press E on ferns for bedding, then craft a Rough bed.",
+			"text": "Gather bedding from ferns, then lash sticks and bedding into a Rough bed.",
 			"goal": "bed"
 		},
 		{
@@ -133,7 +133,7 @@
 		{
 			"id": "berries",
 			"trigger": "hungry",
-			"text": "Pick berries and nuts with E. Cook them at the fire.",
+			"text": "Pick berries or fruit with E and eat them. Roast meat.",
 			"goal": "berries"
 		},
 		{
@@ -195,6 +195,16 @@
 			"id": "cave_in",
 			"trigger": "digging_under_ceiling",
 			"text": "Digging out a roof support can bring it down. Prop the ceiling."
+		},
+		{
+			"id": "cook_rule",
+			"trigger": "near_fire_with_food",
+			"text": "Roast raw meat on the campfire. Cook plants in a pot."
+		},
+		{
+			"id": "nettles",
+			"trigger": "near_nettle",
+			"text": "Nettles give fibre and leaves. Steep leaves in a pot for tea."
 		}
 	]
 }

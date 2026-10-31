@@ -35,3 +35,20 @@ Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.jso
 
 ## Loophole closed in the same change (2026-10-31)
 Roasting at a fire turned ONE raw forage item into one Roast forage (400 kcal): a 4 kcal berry became 400 kcal, so a bush of 150 roasted to 60,000 kcal and undid the berry fix. Berries now roast into **Stewed berries** (item 483, 10 kcal, 144 hours shelf life, same warmth as a hot meal) through per-berry rows in cooking.json `cooks_into`; nuts, roots, caps and the rest still roast into Roast forage (400 kcal). A bush of 150 berries stewed is 1,500 kcal, about two thirds of a stomach: a real meal for the effort of cooking, no longer a free week of food. Tests updated: test_server_items (three checks now expect Stewed berries for blueberries).
+
+## Campfire cooks only meat (Dave, 2026-10-31)
+`cooking.json cookable_suffixes` is now empty and the berry and egg rows are gone from `cooks_into`: pressing E at a campfire roasts only raw meat (roast meat), fish (roast fish), shellfish and crab meat (steamed shellfish) and seal meat. Plants are cooked in a pot or on a clay hearth:
+- Berries: pot recipes Stewed berries (3 raspberries, blueberries, blackberries or strawberries + water give 2).
+- Nuts, caps, bananas, fiddleheads, pears: clay hearth recipes Roast forage (3 hazelnuts, chestnuts, walnuts, beechnuts, morels, fiddleheads or pears, or 2 bananas give 2; Campfire Stew item).
+- Roots and mushrooms: Roast Roots and Mushroom skewer moved to the clay hearth. Acorn mash and berry compote were already pot recipes.
+- Eggs: Boiled egg is a pot recipe (2 eggs + water give 2).
+- Nettles: now give 1-2 plant fibre and 2-4 Nettles per plant; Nettle tea is a pot recipe (3 nettles + water); Forager's stew and Egg and nettle fry use Nettles.
+Effect on the first hour: until the player has a pot, the only things a fire cooks are meat and fish; berries and apples are eaten raw (4 and 110 kcal). Other plant dishes still marked campfire in dishes.json (baked apples, trail bread, dried fruit, baked potato and similar) are open to Dave's ruling; I moved only roast roots and mushroom skewer.
+
+## All plant dishes moved off the campfire (Dave, 2026-10-31)
+Meat and fish dishes stay on the campfire (herb fish, garlic meat, smoked fish, juniper trout, jerky, crab cakes, feast roast). Every plant or egg dish now needs a pot or a hearth:
+- **Campfire pot:** soups, stews, porridge, jams, paste and boiled or fried egg things: berry compote, nut paste, acorn mash, hazelnut butter, forager's stew, hearty pottage (already), egg and nettle fry, herb omelette, plus the 4 stewed-berries and boiled-egg recipes.
+- **Clay hearth** (needs 10 bricks; bricks come from clay at a campfire): baked and roasted things and drying: baked apples, baked potato, beet roast, onion roast, chestnut cakes, trail bread, banana fritter, cactus fry, fruit leather, dried berries, dried apples, dried figs, roast roots, mushroom skewer, Campfire Stew from nuts and caps, flatbread, garlic bread, oat cakes.
+- **Oven:** pies and loaves (apple pie, venison pie, fish pie, honey loaf, rosemary joint).
+- **Drying rack:** does not exist as a station; drying food uses the clay hearth until a rack is built.
+Consequence for the first hour: before the player has a pot (clay pot kit + sticks + twine) and a hearth, the only cooked food is meat and fish; berries, apples and nuts are eaten raw. The pot is an early item; the hearth needs bricks, so baked plant food arrives in the first day or two.

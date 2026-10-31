@@ -499,29 +499,36 @@ func _init() -> void:
 	check(ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])) and f.inventory_of(1).count_of(f.table.number_of("plant_fibre")) == 0, "tinder lights it once the rain stops")
 	f.action(1, Net.ACT_FUEL, open_id, 0, 0, Vector3.ZERO)
 	check(f.inventory_of(1).count_of(f.table.number_of("stick")) == 1, "a lit fire takes another stick")
+	# A campfire cooks only meat (Dave 31 Oct 2026): berries, nuts and roots do nothing on it (they are pot and hearth recipes).
 	var berries: int = f.table.number_of("blueberries") if f.table.has_id("blueberries") else 0
 	f.action(1, Net.ACT_ADMIN_GIVE, berries, 0, 2, Vector3.ZERO)
-	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(f.table.number_of("stewed_berries")) == 1 and f.inventory_of(1).count_of(berries) == 1, "a lit fire stews one berry item (roast_forage became stewed_berries for berries, 31 Oct)")
-	# Cooking: a half-stale berry (half its life left) roasts into a roast with twice that left (cooked_life_mult 2), and a hot meal warms.
-	var ck_inv: Variant = f.inventory_of(1)
-	var ck_bslot: int = -1
-
-	for sl in range(ck_inv.SLOTS):
-		if ck_inv.numbers[sl] == berries:
-			ck_bslot = sl
-
-	ck_inv.wear[ck_bslot] = int(f.table.shelf_units(berries) / 2)
 	f._last_cook.clear()
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	var ck_roast_n: int = f.table.number_of("stewed_berries")
+	check(f.inventory_of(1).count_of(f.table.number_of("stewed_berries")) == 0 and f.inventory_of(1).count_of(f.table.number_of("roast_forage")) == 0 and f.inventory_of(1).count_of(berries) == 2, "a campfire does not cook berries")
+	# Cooking: half-stale raw meat (half its life left) roasts into meat with twice that left (cooked_life_mult 2, never more than the roast's own life), and a hot meal warms.
+	var ck_inv: Variant = f.inventory_of(1)
+	var ck_meat: int = f.table.number_of("raw_meat")
+	f.action(1, Net.ACT_ADMIN_GIVE, ck_meat, 0, 1, Vector3.ZERO)
+	var ck_mslot: int = -1
+
+	for sl in range(ck_inv.SLOTS):
+		if ck_inv.numbers[sl] == ck_meat:
+			ck_mslot = sl
+
+	ck_inv.wear[ck_mslot] = int(f.table.shelf_units(ck_meat) / 2)
+	var ck_left: float = float(f.table.shelf_units(ck_meat) - int(ck_inv.wear[ck_mslot]))
+	f._last_cook.clear()
+	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
+	var ck_roast_n: int = f.table.number_of("roast_meat")
+	var ck_life: int = f.table.shelf_units(ck_roast_n)
+	var ck_want: int = maxi(ck_life - int(minf(ck_left * 2.0, float(ck_life))), 0)
 	var ck_aged: bool = false
 
 	for sl in range(ck_inv.SLOTS):
-		if ck_inv.numbers[sl] == ck_roast_n and ck_inv.wear[sl] > 0:
-			ck_aged = ck_aged or absf(float(ck_inv.wear[sl]) / float(f.table.shelf_units(ck_roast_n)) - 0.75) < 0.02
+		if ck_inv.numbers[sl] == ck_roast_n:
+			ck_aged = ck_aged or absi(int(ck_inv.wear[sl]) - ck_want) <= 1
 
-	check(ck_aged, "a roast carries twice the raw life left")
+	check(ck_aged, "a roast carries twice the raw life left (wear %d wanted)" % ck_want)
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 
@@ -536,9 +543,10 @@ func _init() -> void:
 	var meat_n: int = f.table.number_of("raw_meat")
 	f.action(1, Net.ACT_ADMIN_GIVE, meat_n, 0, 2, Vector3.ZERO)
 	f._last_cook.clear()
+	var roast_before: int = f.inventory_of(1).count_of(f.table.number_of("roast_meat"))
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	var made: int = f.inventory_of(1).count_of(f.table.number_of("roast_meat"))
-	check(made == 1 or f.inventory_of(1).count_of(meat_n) == 1, "a lit fire roasts one raw meat (%d roast)" % made)
+	var made: int = f.inventory_of(1).count_of(f.table.number_of("roast_meat")) - roast_before
+	check(made == 1, "a lit fire roasts one raw meat (%d roast)" % made)
 	f._last_eat.clear()
 
 	for sl in range(ck_inv.SLOTS):
@@ -549,8 +557,9 @@ func _init() -> void:
 	check(float(f.vitals_of(1).get("sick", 0.0)) > 0.0, "raw meat makes you sick")
 	f.report_position(1, Vector3(40.0, 10.0, 0.0))
 	f._last_cook.clear()
+	roast_before = f.inventory_of(1).count_of(f.table.number_of("roast_meat"))
 	f.action(1, Net.ACT_COOK, open_id, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(f.table.number_of("stewed_berries")) == 1, "too far from the fire to cook")
+	check(f.inventory_of(1).count_of(f.table.number_of("roast_meat")) == roast_before, "too far from the fire to cook")
 	rain[0] = 0.6
 	rain[0] = 0.0
 	for n in range(int(ItemsScript.FIRE_BURN_S / 10.0) + 20):

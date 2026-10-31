@@ -96,7 +96,7 @@
 		{
 			"id": "berries",
 			"title": "Eat something wild",
-			"hint": "Pick berries or nuts with E. Hold E at the fire to roast them, then eat.",
+			"hint": "Pick berries or fruit with E and eat them. Roast meat at the fire; cook plants in a pot.",
 			"after": [
 				"fire"
 			],
@@ -111,7 +111,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "8 sticks, 6 leaves, 2 twine make a Small shelter. Place it with the open side towards you.",
+			"hint": "Lash 12 sticks, 9 leaves and 3 twine into a lean-to. Place it with the open side towards you.",
 			"after": [
 				"fire"
 			],
@@ -127,7 +127,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Gather bedding from ferns or thatch from grass, then craft a Rough bed and place it under cover.",
+			"hint": "Gather bedding from ferns or thatch from grass, then lash a Rough bed from sticks and bedding and place it under cover.",
 			"after": [
 				"shelter"
 			],

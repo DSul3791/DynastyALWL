@@ -216,7 +216,7 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 			elif STRUCTURE_STATES.has(state) and row["pos"].distance_to(spot) < gap:
 				return "close"
 		else:
-			if (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:
+			if not bool(def.get("gap_exempt", false)) and (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:   # furniture may stand beside a fire or a shelter
 				return "close"
 
 			if int(def.get("state", -1)) == state and _chunk(row["pos"]) == _chunk(spot):

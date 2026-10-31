@@ -22,7 +22,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 ## Minute 3 to 8: sticks, stones, fibre
 
 4. Trigger: after the drink. Line: "Pick things up with E. Tap E takes the nearest loose thing; hold E keeps taking everything within reach. Dead branches (sticks) lie under the trees; stones lie along the water's edge and on slopes." Check: 8 sticks and 3 stones in the pack.
-5. Trigger: 8 sticks. Line: "Nettles grow here in patches. Press E on a nettle to pick it: you get plant fibre." (1 to 2 fibre a plant, no tool.) Check: 12 plant fibre.
+5. Trigger: 8 sticks. Line: "Nettles grow here in patches. Press E on a nettle to pick it: you get plant fibre and nettle leaves (for tea)." (1 to 2 fibre a plant, no tool; the leaves are a second drop, rule from Dave 2026-10-31, Sal changing the data.) Check: 12 plant fibre.
 6. Trigger: 12 plant fibre. Line: "Press I. Pick Twine and Craft: 3 plant fibre make 1 twine." (recipe 1, 2 s). Check: 4 twine.
 
 ## Minute 8 to 12: the first tool, the first tree
@@ -38,14 +38,14 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
 14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: sticks burn 15 game minutes each, firewood an hour, a log two hours. One game hour is 2.5 real minutes." Check: one fuel added.
-15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast one raw forage item at a time: nuts, berries, roots, mushrooms. Hazelnuts are ripe in autumn; raspberries in summer." Check: one item roasted.
+15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast raw meat, fish or shellfish. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
-16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Make a Lean-to kit: 8 sticks, 6 leaves, 2 twine." (recipe 13, 8 s). Check: kit in the pack.
-17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover. Hold E at it to take it down." Check: lean-to placed.
-18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then craft a Rough bed: 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
-19. Trigger: bed kit. Line: "Place the bed under the lean-to. Lie down on it with Z. Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
+16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash poles, boughs and twine into a lean-to: 12 sticks, 9 leaves, 3 twine (the sticks are the long thin branches under the trees; about two felled trees give the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
+17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 2.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
+18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then lash a Rough bed, a low frame of sticks and branches with a heap of bedding like a manger: 10 thatch or 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
+19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. [BROKEN on 2026-10-31: the server refuses a bed within 2.5 m of the lean-to centre, silently, so the nearest bed spot is outside the roof and is not covered. Waiting on Tyler: let a bed be placed inside a shelter.] Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 
 ## Minute 26 to 30: tools and what comes next
 

@@ -1,0 +1,12 @@
+probe8: fire state 40 (lit when not 9)
+probe8: raspberries: REFUSED (still raw), pack: raspberries | notice ''
+probe8: hazelnuts: REFUSED (still raw), pack: hazelnuts | notice ''
+probe8: morel is not an item
+probe8: wild_garlic_bulbs: REFUSED (still raw), pack: wild_garlic_bulbs | notice ''
+probe8: fiddleheads: REFUSED (still raw), pack: fiddleheads | notice ''
+probe8: raw_meat: COOKED -> roast_meat | notice ''
+probe8: carp: COOKED -> roast_fish | notice ''
+probe8: shellfish: COOKED -> roast_shellfish | notice ''
+probe8: crab_meat: COOKED -> roast_shellfish | notice ''
+probe8: seal_meat: COOKED -> roast_seal | notice ''
+probe8: nettle item 'nettles' exists: true, 'nettle' exists: false
