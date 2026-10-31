@@ -214,6 +214,9 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 		_:
 			_shrub(bark, leaves, rng, h, crown, far)
 
+	if h >= 3.0 and str(entry["shape"]) not in ["grass", "reed", "fern", "flower", "mushroom"]:
+		_crown_shading(leaves, twigs, [bark, white, smooth])
+
 	var mesh: ArrayMesh = ArrayMesh.new()
 	bark.commit(mesh, materials["bark"])
 	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
@@ -235,6 +238,47 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 	leaf_kind = str(entry.get("leaf", leaf_kind))
 	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
 	return mesh
+
+
+# Baked shading in the vertex colours, no extra triangles (Dave 2026-10-31: trees looked evenly lit). Leaves darken toward the crown's centre and underside
+# (1.4 on the outer top, 0.63 deep inside and underneath), so the shader's soft outward normals plus this read as a lit sun side and a dark core. Bark is warmed and
+# darkened a little, darker at the foot of the trunk and where it lies under the crown (beneath the leaf mass).
+static func _crown_shading(leaves: Acc, twigs: Acc, barks: Array) -> void:
+	var lo: Vector3 = Vector3(INF, INF, INF)
+	var hi: Vector3 = Vector3(-INF, -INF, -INF)
+
+	for pt in leaves.v:
+		lo = lo.min(pt)
+		hi = hi.max(pt)
+
+	if leaves.v.is_empty():
+		return
+
+	var centre: Vector3 = (lo + hi) * 0.5
+	var half: Vector3 = ((hi - lo) * 0.5).max(Vector3(0.05, 0.05, 0.05))
+
+	for acc in [leaves, twigs]:
+		for k in range(acc.v.size()):
+			var u: Vector3 = (acc.v[k] - centre) / half
+			var outer: float = pow(clampf(u.length() / 1.3, 0.0, 1.0), 1.4)
+			var up: float = pow(clampf(u.y * 0.5 + 0.5, 0.0, 1.0), 0.8)
+			var ao: float = (0.45 + 0.55 * clampf(0.55 * outer + 0.45 * up, 0.0, 1.0)) * 1.4
+			var col: Color = acc.c[k]
+			acc.c[k] = Color(col.r * ao, col.g * ao, col.b * ao, col.a)
+
+	for acc in barks:
+		for k in range(acc.v.size()):
+			var p: Vector3 = acc.v[k]
+			var foot: float = lerpf(0.7, 1.0, smoothstep(0.0, 2.2, p.y))
+			var under: float = 1.0
+
+			if p.y > lo.y and p.y < hi.y:   # a limb or trunk top inside the leaf mass is in its shade
+				var inside: float = 1.0 - clampf(Vector2((p.x - centre.x) / half.x, (p.z - centre.z) / half.z).length(), 0.0, 1.0)
+				under = lerpf(1.0, 0.62, inside * smoothstep(lo.y, lo.y + (hi.y - lo.y) * 0.4, p.y))
+
+			var f: float = foot * under * 0.8
+			var col: Color = acc.c[k]
+			acc.c[k] = Color(col.r * f * 1.1, col.g * f, col.b * f * 0.82, col.a)
 
 
 # A tapered tube along a gently leaning path, flared at the base.

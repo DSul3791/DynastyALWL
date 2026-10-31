@@ -396,6 +396,7 @@ func _process(delta: float) -> void:
 			print("shot runner: FAILED %s never landed (y %.1f, wanted %.1f)" % [shots[_index]["name"], at.y, _want_y])
 		else:
 			print("shot runner: landed %s at y %.1f (wanted %.1f) after %.1f s" % [shots[_index]["name"], at.y, _want_y, float(now - _placed_msec) * 0.001])
+			print("shot runner: flags give=%s drop=%s place=%s light=%s ground_test=%s" % [give_item, drop_it, place_it, light_it, ground_test])
 
 		return
 
