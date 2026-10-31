@@ -1826,3 +1826,7 @@ Answer: 0.6 seconds.
 Comment: Answered by the moderator on Dave's standing instruction (decide and document when he is away); Dave can overturn it.
 Answered: 2026-10-31 02:30 UTC
 
+## pic-leanto-roof | Does this lean-to look right (long, flat stick roof to the ground, no back wall, open front)?
+Answer: Yes
+Answered: 2026-10-31 19:52 UTC
+
