@@ -837,3 +837,116 @@ static func oven() -> Node3D:
 	_cyl(root, 0.09, 0.02, Vector3(0.35, 1.31, -0.25), _tar, 10)
 	_solid(root, Vector3(1.8, 1.1, 1.4), Vector3(0.0, 0.55, 0.0))
 	return root
+
+
+# --- Building tiers (Sal's F-22 pieces: stairs, log, stone and brick walls, floors and roofs; Kathleen, 2026-10-31) ---
+# Same footprints and heights as the wood pieces (wall 2 x 2.4 m, floor 2 x 2 m, roof slab 2.4 m square 2.5 m up) so they snap and stack the same way.
+static var _brick: StandardMaterial3D
+static var _slate: StandardMaterial3D
+static var _tile: StandardMaterial3D
+static var _flag: StandardMaterial3D
+static var _mortar: StandardMaterial3D
+
+
+static func _tier_materials() -> void:
+	_materials()
+
+	if _brick != null:
+		return
+
+	_brick = _blocks_material(Color(0.62, 0.3, 0.2), 12, 101, 0.28)      # fired brick: red-brown, twelve courses a tile, dark mortar joints
+	_slate = _blocks_material(Color(0.3, 0.32, 0.35), 6, 103, 0.3)       # slate: blue-grey overlapping courses
+	_tile = _blocks_material(Color(0.7, 0.36, 0.2), 8, 107, 0.25)        # clay roof tiles: orange-red courses
+	_flag = _blocks_material(Color(0.52, 0.5, 0.46), 2, 109, 0.3)        # flagstones: big slabs, wide joints
+	_mortar = _blocks_material(Color(0.62, 0.6, 0.55), 1, 113, 0.2)
+
+
+# A straight flight of stairs 1 m wide and 2.4 m long (z) rising 2.4 m: ten treads of 0.24 m, two side stringers and a handrail on one side. Mesh runs from z = +1.2 (the foot,
+# on the ground) to z = -1.2 (the top). Collision is the stepped blocks themselves. Walking up it needs the climb code (structures.json note).
+static func stairs() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for i in 10:
+		var top: float = 0.24 * float(i + 1)
+		_box(root, Vector3(0.9, 0.06, 0.26), Vector3(0.0, top - 0.03, 1.2 - 0.24 * float(i) - 0.12), _planks)      # the tread
+		_box(root, Vector3(0.9, 0.2, 0.03), Vector3(0.0, top - 0.16, 1.2 - 0.24 * float(i) - 0.005), _frame)      # the riser
+		_solid(root, Vector3(0.9, 0.24, 0.24), Vector3(0.0, top - 0.12, 1.2 - 0.24 * float(i) - 0.12))
+
+	for x in [-0.47, 0.47]:
+		var stringer: MeshInstance3D = MeshInstance3D.new()
+		var plank: BoxMesh = BoxMesh.new()
+		plank.size = Vector3(0.06, 0.2, 3.4)
+		stringer.mesh = plank
+		stringer.material_override = _frame
+		stringer.position = Vector3(x, 1.2, 0.0)
+		stringer.rotation = Vector3(atan2(2.4, 2.4), 0.0, 0.0)
+		root.add_child(stringer)
+
+	return root
+
+
+# A wall of one material (stone, brick) 2 m wide, 0.25 m thick, 2.4 m high with a coping slab on top and a corner block course at each end, so it reads as masonry and not a textured plank wall.
+static func masonry_wall(material: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var body: StandardMaterial3D = _stone if material == "stone" else _brick
+	_box(root, Vector3(2.0, 2.3, 0.25), Vector3(0.0, 1.15, 0.0), body)
+
+	for k in 6:   # corner blocks at each end, alternating long and short courses
+		var long: bool = k % 2 == 0
+		for x in [-1.0, 1.0]:
+			_box(root, Vector3(0.3 if long else 0.2, 0.36, 0.29), Vector3(x * (0.85 if long else 0.9), 0.2 + 0.38 * float(k), 0.0), _mortar if material == "stone" else _brick)
+
+	_box(root, Vector3(2.04, 0.1, 0.33), Vector3(0.0, 2.35, 0.0), _flag if material == "stone" else _mortar)
+	_solid(root, Vector3(2.0, 2.4, 0.3), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A floor 2 x 2 m, 0.12 m thick (like the plank floor): `kind` "log" (seven split logs side by side, flat faces up), "stone" (four big flagstones with wide joints) or "brick" (brick laid in rows).
+static func tier_floor(kind: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	match kind:
+		"log":
+			for k in 7:
+				_box(root, Vector3(0.28, 0.12, 2.0), Vector3(-0.84 + 0.28 * float(k), 0.06, 0.0), _log)
+				_box(root, Vector3(0.24, 0.02, 1.96), Vector3(-0.84 + 0.28 * float(k), 0.12, 0.0), _planks)
+		"stone":
+			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _mortar)
+
+			for ix in 2:
+				for iz in 2:
+					_box(root, Vector3(0.94, 0.04, 0.94), Vector3(-0.49 + 0.98 * float(ix), 0.12, -0.49 + 0.98 * float(iz)), _flag)
+		_:
+			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _brick)
+			_box(root, Vector3(2.0, 0.01, 0.03), Vector3(0.0, 0.125, 0.0), _mortar)
+
+	_solid(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0))
+	return root
+
+
+# A roof slab 2.4 m square, 2.5 m up on four corner posts like the plank roof, covered in `kind`: "log" (round logs side by side with bearers), "stone" (slate courses) or "brick" (clay tiles with a ridge row).
+static func tier_roof(kind: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	match kind:
+		"log":
+			for k in 8:
+				_log_at(root, 2.4, 0.3, Vector3(0.0, 2.5, -1.05 + 0.3 * float(k)), false)
+		"stone":
+			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _slate)
+			_box(root, Vector3(2.46, 0.05, 0.1), Vector3(0.0, 2.58, 0.0), _mortar)
+		_:
+			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _tile)
+			_box(root, Vector3(2.46, 0.07, 0.14), Vector3(0.0, 2.6, 0.0), _tile)
+
+	for x in [-1.1, 1.1]:
+		for z in [-1.1, 1.1]:
+			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+
+	_box(root, Vector3(2.4, 0.1, 0.12), Vector3(0.0, 2.4, 0.0), _frame)
+	_solid(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0))
+	return root
