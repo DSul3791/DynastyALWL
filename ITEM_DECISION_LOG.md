@@ -339,3 +339,9 @@ Unlocked the nine modelled building pieces (log, stone, brick wall/floor/roof): 
 
 ## Crab apples edible, wild apples (2026-10-31)
 Dave: crab apples must be edible. Server check: crab_apples already counted as food (vitals by_suffix apples = 120; VitalsRules.edible true), so the cause was the description wording ("Cooked down with honey they are good") reading as not edible; fixed: description now "Hard, sour little green apples. Edible raw, better cooked with honey." and by_id crab_apples = 60 kcal (small and sour). New item Wild apples (484, 80 kcal, 240 h, future until the flora session adds the forest eating-apple tree). test_apples_edible.gd added (crab apple 60 < wild apple 80 < early apple 110 kcal gain, each uses up one). Crab apples are GREEN (Dave): told Kathleen.
+
+## Nettles and the campfire rule (2026-10-31, Dave)
+| Question | Answer | Basis | Reversible |
+|---|---|---|---|
+| Nettles give only fibre | by_species nettle now plant_fibre 1-2 AND Nettles (new item 485) 2-4; flora nettle yields emptied so the natural-yield fallback does not double; Nettle tea (486) is a pot recipe; forager stew and egg-nettle fry use Nettles | Dave 31 Oct; limitation: by_species rows are not season-gated (needs code), the plant itself only appears in season | yes |
+| Campfire cooks only meat | cooking.json cookable_suffixes emptied; berry and egg cooks_into rows removed; pot recipes for stewed berries and boiled eggs; clay hearth recipes for roast forage from nuts, morels, bananas, fiddleheads, pears; roast roots and mushroom skewer moved to the hearth | Dave 31 Oct; tests updated (test_server_items cook block rewritten for meat); other plant dishes at campfire left for Dave | yes |

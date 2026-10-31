@@ -80,7 +80,7 @@
 		{
 			"id": "roast",
 			"trigger": "hungry",
-			"text": "Hold E at the fire to roast one raw food.",
+			"text": "Hold E at the fire to roast raw meat or fish.",
 			"goal": "berries"
 		},
 		{
@@ -133,7 +133,7 @@
 		{
 			"id": "berries",
 			"trigger": "hungry",
-			"text": "Pick berries and nuts with E. Cook them at the fire.",
+			"text": "Pick berries or fruit with E and eat them. Roast meat.",
 			"goal": "berries"
 		},
 		{
@@ -195,6 +195,16 @@
 			"id": "cave_in",
 			"trigger": "digging_under_ceiling",
 			"text": "Digging out a roof support can bring it down. Prop the ceiling."
+		},
+		{
+			"id": "cook_rule",
+			"trigger": "near_fire_with_food",
+			"text": "Roast raw meat on the campfire. Cook plants in a pot."
+		},
+		{
+			"id": "nettles",
+			"trigger": "near_nettle",
+			"text": "Nettles give fibre and leaves. Steep leaves in a pot for tea."
 		}
 	]
 }
