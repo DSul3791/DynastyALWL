@@ -4,7 +4,7 @@ Living list of how every item looks, kept by the art owner. Status: missing (no 
 
 Method for every item: search real-world references, block out, render from several angles and critique at least three rounds (art/CRITIQUES/<item>_<date>/round1..), check in the real game, only then mark done.
 
-Counts: decent 4, missing 38, placeholder 26, rough 465, total 533
+Counts: decent 4, missing 38, placeholder 15, rough 486, total 543
 
 Queue, by what a player meets first (the grey placeholder list comes from src/worldgen/tools/test_item_looks.gd, 56 items on 31 Oct): 1 weapons and shields (wooden club, stone mace and wicker shield done; javelin; bronze, iron and steel swords, maces, shields; plank shield), 2 armour (leather cap, leather jerkin, gambeson, bronze, iron and steel helms, mail shirt, plate cuirass), 3 seeds and crops (wheat, barley, carrot, potato, turnip, flax and their seeds), 4 hide clothes (hide tunic, trousers, gloves) and the quern, 5 animal parts (antler, tusk, claw, down, quill, hide glue, bone arrow, fibre arrow), 6 food (eggs, seal and shellfish meat, roast dishes, herb salve, splint), 7 stick, branch, rocks, flint, plant fibre, twine, thatch, stone axe, spear, knife, firewood, tinder, campfire kit, lean-to, bed (survival basics, in hand and dropped); then stations and tools; then the rest. The guide's LOOKS WRONG and MISSING rows are added at the top as they arrive.
 | # | id | name | look | source | status | reference | date | picture | note |
@@ -309,12 +309,12 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 302 | tin_ore | Tin ore | override | ART_OVERRIDES | rough |  |  |  |  |
 | 303 | iron_ore | Iron ore | override | ART_OVERRIDES | rough |  |  |  |  |
 | 304 | coal | Coal | override | ART_OVERRIDES | rough |  |  |  |  |
-| 305 | hide_tunic | Hide tunic | chunk | looks.json | placeholder |  |  |  |  |
-| 306 | hide_trousers | Hide trousers | chunk | looks.json | placeholder |  |  |  |  |
-| 307 | hide_gloves | Hide gloves | chunk | looks.json | placeholder |  |  |  |  |
+| 305 | hide_tunic | Hide tunic | override | ART_OVERRIDES | rough |  |  |  |  |
+| 306 | hide_trousers | Hide trousers | override | ART_OVERRIDES | rough |  |  |  |  |
+| 307 | hide_gloves | Hide gloves | override | ART_OVERRIDES | rough |  |  |  |  |
 | 308 | clay_jug | Clay jug | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 309 | herb_salve | Herb salve | chunk | looks.json | placeholder |  |  |  |  |
-| 310 | splint | Splint | chunk | looks.json | placeholder |  |  |  |  |
+| 309 | herb_salve | Herb salve | override | ART_OVERRIDES | rough |  |  |  |  |
+| 310 | splint | Splint | override | ART_OVERRIDES | rough |  |  |  |  |
 | 311 | candle | Candle | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 312 | wicker_shield | Wicker shield | shield | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/wicker_shield_round2.png | 2 rounds offline; not yet in the real game |
 | 313 | stone_mace | Stone mace | mace | ART_OVERRIDES | decent |  | 2026-10-30 | art/CRITIQUES/weapons_2026-10-31/stone_mace_round3.png | 3 rounds offline; not yet in the real game |
@@ -348,17 +348,17 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 341 | potato_seeds | Potato seeds | override | ART_OVERRIDES | rough |  |  |  |  |
 | 342 | turnip_seeds | Turnip seeds | override | ART_OVERRIDES | rough |  |  |  |  |
 | 343 | flax_seeds | Flax seeds | override | ART_OVERRIDES | rough |  |  |  |  |
-| 344 | quern | Quern | chunk | looks.json | placeholder |  |  |  |  |
-| 345 | compost | Compost | chunk | looks.json | placeholder |  |  |  |  |
+| 344 | quern | Quern | override | ART_OVERRIDES | rough |  |  |  |  |
+| 345 | compost | Compost | override | ART_OVERRIDES | rough |  |  |  |  |
 | 346 | antler | Antler | chunk | looks.json | placeholder |  |  |  |  |
 | 347 | tusk | Tusk | chunk | looks.json | placeholder |  |  |  |  |
 | 348 | claw | Claw | chunk | looks.json | placeholder |  |  |  |  |
 | 349 | down | Down | chunk | looks.json | placeholder |  |  |  |  |
 | 350 | quill | Quill | chunk | looks.json | placeholder |  |  |  |  |
-| 351 | hide_glue | Hide glue | chunk | looks.json | placeholder |  |  |  |  |
-| 352 | bone_arrow | Bone arrow | chunk | looks.json | placeholder |  |  |  |  |
-| 353 | stone_wedge | Stone wedge | chunk | looks.json | placeholder |  |  |  |  |
-| 354 | fibre_arrow | Fibre arrow | chunk | looks.json | placeholder |  |  |  |  |
+| 351 | hide_glue | Hide glue | override | ART_OVERRIDES | rough |  |  |  |  |
+| 352 | bone_arrow | Bone arrow | override | ART_OVERRIDES | rough |  |  |  |  |
+| 353 | stone_wedge | Stone wedge | override | ART_OVERRIDES | rough |  |  |  |  |
+| 354 | fibre_arrow | Fibre arrow | override | ART_OVERRIDES | rough |  |  |  |  |
 | 355 | seaweed | Seaweed | chunk | looks.json | placeholder |  |  |  |  |
 | 356 | shellfish | Shellfish | chunk | looks.json | placeholder |  |  |  |  |
 | 357 | crab_meat | Crab meat | chunk | looks.json | placeholder |  |  |  |  |
@@ -368,6 +368,16 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 361 | roast_shellfish | Steamed Shellfish | chunk | looks.json | placeholder |  |  |  |  |
 | 362 | boiled_egg | Boiled egg | chunk | looks.json | placeholder |  |  |  |  |
 | 363 | roast_seal | Seal Steak | chunk | looks.json | placeholder |  |  |  |  |
+| 364 | wool | Wool | override | ART_OVERRIDES | rough |  |  |  |  |
+| 365 | linen | Linen | override | ART_OVERRIDES | rough |  |  |  |  |
+| 366 | wool_tunic | Wool tunic | override | ART_OVERRIDES | rough |  |  |  |  |
+| 367 | wool_trousers | Wool trousers | override | ART_OVERRIDES | rough |  |  |  |  |
+| 368 | wool_cap | Wool cap | override | ART_OVERRIDES | rough |  |  |  |  |
+| 369 | wool_mittens | Wool mittens | override | ART_OVERRIDES | rough |  |  |  |  |
+| 370 | linen_shirt | Linen shirt | override | ART_OVERRIDES | rough |  |  |  |  |
+| 371 | fur_cloak | Fur cloak | override | ART_OVERRIDES | rough |  |  |  |  |
+| 372 | fur_hat | Fur hat | override | ART_OVERRIDES | rough |  |  |  |  |
+| 373 | fur_boots | Fur boots | override | ART_OVERRIDES | rough |  |  |  |  |
 | 1000 | acorns | Acorns | nut | looks.json | rough |  |  |  |  |
 | 1001 | aloe_gel | Aloe gel | bowl | looks.json | rough |  |  |  |  |
 | 1002 | amadou | Amadou | chunk | looks.json | rough |  |  |  |  |
