@@ -260,3 +260,7 @@ New plans (self-approved): 1 keep BUILD_ORDERS.md current after each code drop; 
 
 ## Guide part 2 (2026-10-31)
 F-16 groups + validator rule; F-19 nine products flagged future; F-20 fibre yield removed from flax/tall grass/nettle, rose hips orphan listed; F-24 re-count: 19 locked by design. Basis: server gather() natural-yield fallback (server_items.gd 1063).
+
+## Moderator round 5 (2026-10-31)
+Dishes: wild_garlic_bulbs to wild_garlic_leaves, dandelion_leaves to dandelion_flowers, seeds to seed_bundle (plants with a harvest row yield only that item). linseed, greens and honeyspindle nectar stay (reachable by the natural-yield fallback). The guide count of 40 blocked-not-future differs from my walk, which includes the fallback: only lumber by hand remains (hand saw is future). Rose hips still an orphan (to flora via moderator). New: FARMING_SPEC.md, CLOTHING_WARMTH.md (items 364-373, recipes 237-245), FAUNA_SPAWN_PLAN.md and data/animals/spawn_plan.json.
+Plans (self-approved): 1 shore-food dishes (seaweed soup, mussel stew); 2 refresh BUILD_ORDERS after the next merge; 3 art requests for new clothes and crops to Kathleen.
