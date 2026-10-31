@@ -1850,3 +1850,7 @@ Answered: 2026-10-31 19:55 UTC
 Answer: No | Comment: This picture doesn’t look like water
 Answered: 2026-10-31 19:55 UTC
 
+## pic-fh-spawn | Standing at the spawn, third person: does the character (hair, hands, feet, clothes) and the meadow look right for a new player's first minute?
+Answer: No | Comment: This looks good enough for us attempting to make our very first model, but it looks terrible. It’s gonna need many many many iterations because we wanted to look photo realistic and heroic.
+Answered: 2026-10-31 19:56 UTC
+
