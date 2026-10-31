@@ -3175,7 +3175,7 @@ static func _leafy_herb(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 # Grass family of goal 1b (Kathleen, 24 Oct). Reference: tall meadow grass 50-100 cm with tan seed heads; cotton grass 20-50 cm with white cotton tufts; marsh samphire 10-30 cm jointed
 # green succulent stems; ribwort plantain 10-40 cm low rosette with brown spikes on bare stalks. The painted-blade cards stay (cheap, they carry the blades); each species adds what makes it known.
 const GRASS_LOOKS := {
-	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 9, "head_color": Color(0.9, 0.78, 0.4), "reach": 1.35, "blade_h": 0.85, "blade_base": Color(0.12, 0.27, 0.12), "blade_tip": Color(0.8, 0.7, 0.36), "head_size": 1.8},
+	"tall_grass": {"cards": 3, "width": 1.4, "head": "seed", "heads": 5, "head_color": Color(0.9, 0.78, 0.4), "reach": 1.35, "blade_h": 0.85, "blade_base": Color(0.12, 0.27, 0.12), "blade_tip": Color(0.8, 0.7, 0.36), "head_size": 1.1},
 	"cotton_grass": {"cards": 2, "width": 0.9, "head": "cotton", "heads": 7, "head_color": Color(0.97, 0.97, 0.93), "reach": 0.95},
 	"samphire": {"cards": 0, "width": 1.0, "head": "succulent", "heads": 8, "head_color": Color(0.42, 0.6, 0.32), "reach": 1.0},
 	"plantain": {"cards": 3, "width": 1.6, "head": "spike", "heads": 5, "head_color": Color(0.32, 0.22, 0.12), "reach": 0.85},
