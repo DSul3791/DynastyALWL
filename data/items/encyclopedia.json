@@ -2118,7 +2118,7 @@
 		"lean_to_kit": {
 			"name": "Small shelter",
 			"kind": "placeable",
-			"description": "Sticks, leaves and twine for a small shelter. Gives cover from rain.",
+			"description": "Poles, boughs and twine lashed into a small shelter. Gives cover from rain.",
 			"how_to_get": [
 				"Craft: 8 Stick, 6 Leaves, 2 Twine"
 			],
@@ -2128,7 +2128,7 @@
 		"lean_to": {
 			"name": "Small shelter",
 			"kind": "structure",
-			"description": "A small shelter. Its roof keeps rain off.",
+			"description": "A small shelter of lashed poles with a leafy roof. Its roof keeps rain off.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false

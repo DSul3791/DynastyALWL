@@ -249,7 +249,7 @@
 		"lean_to_kit": {
 			"number": 20,
 			"name": "Small shelter",
-			"description": "Sticks, leaves and twine for a small shelter. Gives cover from rain.",
+			"description": "Poles, boughs and twine lashed into a small shelter. Gives cover from rain.",
 			"kind": "placeable",
 			"stack": 1,
 			"look_alikes": [],
@@ -258,7 +258,7 @@
 		"lean_to": {
 			"number": 21,
 			"name": "Small shelter",
-			"description": "A small shelter. Its roof keeps rain off.",
+			"description": "A small shelter of lashed poles with a leafy roof. Its roof keeps rain off.",
 			"kind": "structure",
 			"stack": 1,
 			"look_alikes": []
