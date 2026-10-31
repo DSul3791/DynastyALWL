@@ -280,15 +280,15 @@
 			"needs": [
 				[
 					"stick",
-					8
+					12
 				],
 				[
 					"leaves",
-					6
+					9
 				],
 				[
 					"twine",
-					2
+					3
 				]
 			],
 			"gives": [
@@ -6153,8 +6153,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench"
 		},
 		"log_wall_kit": {
