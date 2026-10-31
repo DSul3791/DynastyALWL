@@ -29,9 +29,10 @@ Each F-number from `PLAYTHROUGH_FINDINGS.md`, re-checked against the current dat
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN | Tyler + Sal |
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) | Kathleen |
 | F-35 | berries and nuts are in season near the start (a new world starts in summer, day >= 92) | **FIXED** | game_clock.gd START_SECONDS = day 100 (spring is days 0 to 91, summer from 92) | Dave / Sal |
+| F-36 | the first-hour playability bot reaches the end | **FIXED** | playability bot: all 11 steps done (06:56, DailyDev a00c2e04) | Tyler |
 | S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
 src/worldgen/tools/test_farming.gd | Sal (spec) + Tyler (code) |
 | S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) | Tyler |
 | S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] | Tyler |
 
-17 fixed, 9 still broken, 2 manual.
+18 fixed, 9 still broken, 2 manual.

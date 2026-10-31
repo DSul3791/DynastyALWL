@@ -379,12 +379,13 @@ Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
 | F-27 | kits are told apart by an emblem or shape, not only tint | **FIXED** | 31 kits, 18 distinct (shape, emblem) looks (parcel + emblem rows landed in 7e367796) |
 | F-35 | berries and nuts are in season near the start (a new world starts in summer, day >= 92) | **FIXED** | game_clock.gd START_SECONDS = day 100 (spring is days 0 to 91, summer from 92) |
+| F-36 | the first-hour playability bot reaches the end | **FIXED** | playability bot: all 11 steps done (06:56, DailyDev a00c2e04) |
 | S-farm | farming exists (crops.json read by code) | **FIXED** | crops.json is read by: src/stream/server_items.gd
 src/worldgen/tools/test_farming.gd |
 | S-place | every kit and blueprint places on the server | **FIXED** | refused beyond the placement rules: [] (blacksmithy: its 10 plain logs, F-16) |
 | S-craft | every recipe behaves as its known flag says | **STILL BROKEN** | mismatches: ['water_wheel', 'lumber_by_hand'] |
 
-17 fixed, 9 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
+18 fixed, 9 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
 
 ---

@@ -1,0 +1,246 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+
+server: terrain or tile files changed, old generated ground thrown away
+server: 0 ground edits loaded from digs.dat
+Terrain server listening on port 7990 with 11 worker threads; store C:\Users\david\AppData\Local\Temp\smoke_store_4gzydwjv; spawn (53316.0, 33.57495, 68476.0)
+server: weather summer, rain 0.00 snow 0.00 storm 0.00, 21 C, rivers x1.00 of the start flow
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 2 made, 0 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 241318179 connected
+Showroom: peer 241318179 filled it, 185 to place
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 11 made, 137 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 32 made, 457 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 241318179 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 32 made, 1726 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 785592139 connected
+Showroom: peer 785592139 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 32 made, 1798 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+  lateral inflow: 1409 springs, 57.46 m3/s at the x1 flow key, 8096 ms
+water (3, 4): running on the C++ core, 1534 springs
+water: loaded tile (3, 4) (1 active, 342 MB of water memory)
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 32 made, 3464 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 32 made, 4184 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 4849 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+  lateral inflow: 278 springs, 8.10 m3/s at the x1 flow key, 4050 ms
+water (4, 4): running on the C++ core, 307 springs
+water: loaded tile (4, 4) (2 active, 364 MB of water memory)
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 5551 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 6253 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 6973 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+  lateral inflow: 43 springs, 3.30 m3/s at the x1 flow key, 3992 ms
+water (3, 5): running on the C++ core, 50 springs
+water: loaded tile (3, 5) (3 active, 385 MB of water memory)
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 7675 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 8377 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 33 made, 9079 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 785592139 left after 0 blocks, 0.0 MB; flora 0.4 MB
+Client 679671804 connected
+Showroom: peer 679671804 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 34 made, 9763 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 37 made, 11281 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 43 made, 11960 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 43 made, 12662 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 43 made, 13382 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 679671804 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 43 made, 14066 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 285646045 connected
+Showroom: peer 285646045 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 44 made, 15344 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 16028 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 16730 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 17450 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 18152 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 18854 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Client 285646045 left after 0 blocks, 0.0 MB; flora 0.4 MB
+Client 1672891583 connected
+server: 0 urgent and 0 prefetch queued; generated 0, cache hits 0, edit hits 0; flora chunks 45 made, 19268 from memory; idle-built 0 columns; bad blocks 0, failed tile loads 0
+Showroom: peer 1672891583 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 865, cache hits 1, edit hits 0; flora chunks 46 made, 20853 from memory; idle-built 208 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 2676, cache hits 1, edit hits 0; flora chunks 46 made, 21555 from memory; idle-built 782 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 3992, cache hits 1, edit hits 0; flora chunks 46 made, 22203 from memory; idle-built 1195 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 4200, cache hits 1, edit hits 0; flora chunks 46 made, 22311 from memory; idle-built 1261 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+ERROR: database is locked
+   at: zylann::voxel::sqlite::Connection::load_block (modules\voxel\streams\sqlite\connection.cpp:567)
+   GDScript backtrace (most recent call first):
+       [0] ensure_block (res://src/stream/server_block_store.gd:398)
+       [1] _idle_prebuild_column (res://scenes/terrain_server/terrain_server.gd:2134)
+       [2] _idle_loop (res://scenes/terrain_server/terrain_server.gd:2086)
+ERROR: database is locked
+   at: zylann::voxel::sqlite::Connection::load_block (modules\voxel\streams\sqlite\connection.cpp:541)
+   GDScript backtrace (most recent call first):
+       [0] ensure_block (res://src/stream/server_block_store.gd:398)
+       [1] _idle_prebuild_column (res://scenes/terrain_server/terrain_server.gd:2134)
+       [2] _idle_loop (res://scenes/terrain_server/terrain_server.gd:2086)
+server: 0 urgent and 0 prefetch queued; generated 4985, cache hits 1, edit hits 0; flora chunks 46 made, 22743 from memory; idle-built 1509 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 23283 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1672891583 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 23823 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1511701509 connected
+Showroom: peer 1511701509 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 24382 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 25868 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 26570 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 27272 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 27992 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1511701509 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 28667 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 587847466 connected
+Showroom: peer 587847466 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 29965 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 30685 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 31396 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 587847466 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 31972 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1567352870 connected
+Showroom: peer 1567352870 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 33396 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 34125 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 34827 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 35529 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1567352870 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 36168 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 329175653 connected
+Showroom: peer 329175653 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 37556 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 38258 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 38969 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 39689 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 329175653 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 40319 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 2099896231 connected
+Showroom: peer 2099896231 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 41455 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 42301 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 43003 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 43705 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 44389 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 44659 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 2099896231 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 44839 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1731003517 connected
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 44839 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Showroom: peer 1731003517 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 46425 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 47109 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 47811 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 48513 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 49215 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 49935 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1731003517 left after 0 blocks, 0.0 MB; flora 0.4 MB
+Client 1115780898 connected
+Showroom: peer 1115780898 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 50468 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 51827 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 52547 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1115780898 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 53033 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1873900137 connected
+Showroom: peer 1873900137 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 53159 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 53267 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 55015 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 55609 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 56311 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 57013 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1873900137 left after 0 blocks, 0.0 MB; flora 0.4 MB
+Client 197005790 connected
+Showroom: peer 197005790 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 57139 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 58761 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 59481 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 60183 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 60885 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 61587 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 197005790 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 62127 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1690720220 connected
+Showroom: peer 1690720220 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 63551 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 64253 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 64955 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 65603 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 65675 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1690720220 left after 0 blocks, 0.0 MB; flora 0.4 MB
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 65945 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+Client 1563533745 connected
+Showroom: peer 1563533745 filled it, 0 to place
+server: 0 urgent and 0 prefetch queued; generated 5705, cache hits 1, edit hits 0; flora chunks 46 made, 67171 from memory; idle-built 1735 columns; bad blocks 0, failed tile loads 0
+server: 234 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 29 prefetch queued; generated 5844, cache hits 94, edit hits 0; flora chunks 46 made, 68152 from memory; idle-built 1737 columns; bad blocks 0, failed tile loads 0
+server: 473 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 6246, cache hits 99, edit hits 0; flora chunks 47 made, 68926 from memory; idle-built 1822 columns; bad blocks 0, failed tile loads 0
+server: 595 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 6246, cache hits 99, edit hits 0; flora chunks 47 made, 69628 from memory; idle-built 1822 columns; bad blocks 0, failed tile loads 0
+server: 595 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 6246, cache hits 99, edit hits 0; flora chunks 47 made, 70312 from memory; idle-built 1822 columns; bad blocks 0, failed tile loads 0
+server: 595 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 6246, cache hits 99, edit hits 0; flora chunks 47 made, 70816 from memory; idle-built 1822 columns; bad blocks 0, failed tile loads 0
+server: 595 blocks sent on the block line (0.1 MB)
+server: 0 urgent and 0 prefetch queued; generated 6246, cache hits 99, edit hits 0; flora chunks 47 made, 70942 from memory; idle-built 1822 columns; bad blocks 0, failed tile loads 0
+server: 595 blocks sent on the block line (0.1 MB)
+Client 1563533745 left after 0 blocks, 0.0 MB; flora 0.5 MB
