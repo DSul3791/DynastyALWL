@@ -3375,7 +3375,11 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if info.has("ore") and not ore_cfg.is_empty():
 		var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))
 
-		if str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
+		# needs_material (boulders.json ore): the pick materials that may take each ore; no entry = any pick (iron ore needs a bronze, iron or steel pick: the ladder).
+		var allowed_materials: Array = (ore_cfg.get("needs_material", {}) as Dictionary).get(str(info["ore"]), [])
+		var material_ok: bool = allowed_materials.is_empty() or allowed_materials.has(str(held.get("material", "")))
+
+		if material_ok and str(held.get("tool_class", "")) == str(ore_cfg.get("tool_class", "pick")) and fate(peer, "boulder_ore", float(ore_cfg.get("piece_share", 0.5))):
 			ore_item = table.number_of(str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), "")))
 
 	if ore_item > 0:
