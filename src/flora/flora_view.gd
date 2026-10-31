@@ -92,12 +92,15 @@ shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
+uniform vec3 tint = vec3(1.0);              // a felled trunk or stump (inventory_view) sets the species bark tint here; standing trees take it from the vertex colour
+uniform vec2 uv_scale = vec2(1.0);
+uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
 varying float base_h;
 varying float north_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	base_h = VERTEX.y;
+	base_h = VERTEX.y + foot_offset;
 	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
@@ -106,8 +109,8 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = texture(bark, UV);
-	vec3 c = t.rgb * COLOR.rgb * 1.3;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
+	vec4 t = texture(bark, UV * uv_scale);
+	vec3 c = t.rgb * COLOR.rgb * tint * 1.3;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
 	c *= vec3(1.06, 0.97, 0.88);                                     // warmer
 	c *= mix(0.62, 1.12, t.a);                                       // furrows darker, ridges lighter
 	vec2 patch = floor(UV * vec2(5.0, 12.0));
