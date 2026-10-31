@@ -987,6 +987,12 @@ static func prewarm(g: Dictionary, voxel: float = 0.03, fingers: bool = true) ->
 		_jobs[key] = start_build(g, voxel, fingers)
 
 
+# Waits for every prewarm job still running (call before the program quits: worker threads still building a body when the engine shuts down hold it up).
+static func wait_for_jobs() -> void:
+	for key in _jobs:
+		finish_build(_jobs[key])
+
+
 # A body type from a number: sliders drawn around the neutral body (a bell-shaped spread, so most people are ordinary and a few are extreme), a skin tone and a
 # hair colour from small palettes. The same seed always gives the same genome; used for NPC variety.
 static func genome_from_seed(seed_value: int) -> Dictionary:
