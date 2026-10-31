@@ -116,6 +116,7 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
+const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
@@ -422,6 +423,7 @@ var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
@@ -1036,6 +1038,9 @@ func _welcome_body(info: Dictionary) -> void:
 	grass = GrassViewScript.new()
 	grass.name = "Grass"
 	root.add_child(grass)
+	critters = AmbientCrittersScript.new()
+	critters.name = "Critters"
+	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
@@ -3540,6 +3545,9 @@ func _process(delta: float) -> void:
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
+
+	if critters != null and body != null and sound != null and sound.ambient != null:
+		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
