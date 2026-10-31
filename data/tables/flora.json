@@ -1479,6 +1479,7 @@
 			"display": "Mushrooms",
 			"kind": "plant",
 			"shape": "mushroom",
+			"patch": {"every_m": 40, "chance": 0.5, "count": [5, 12], "radius_m": [0.8, 1.8], "scale": [1, 1.3], "spacing_m": 0.3, "by_biome": true},
 			"height_m": [
 				0.1,
 				0.3
@@ -4843,6 +4844,7 @@
 			"kind": "plant",
 			"shape": "fern",
 			"model": "fern_rosette",
+			"patch": {"every_m": 28, "chance": 0.3, "count": [14, 20], "radius_m": [1.2, 2.5], "scale": [1, 1.4], "spacing_m": 0.35, "by_biome": true},
 			"height_m": [
 				0.03,
 				0.1
