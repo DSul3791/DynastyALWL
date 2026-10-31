@@ -28,6 +28,10 @@ func make(weather: Dictionary = {}):
 	a.wind = func(): return weather
 	a.setup()
 
+	for sp in ["boar", "songbirds", "frog"]:
+		a.cfg["species"][sp]["target_per_player"] = 0   # newer species have their own checks (test_animal_spawn_wiring)
+
+
 	for sp in ["rabbit", "deer", "moose", "fox", "horse"]:
 		a.cfg["species"][sp]["target_per_player"] = 0
 
