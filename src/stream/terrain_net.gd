@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 80
+const PROTOCOL_VERSION := 81
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -89,7 +89,7 @@ signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: Stri
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
-signal comfort_received(level: int, rested_level: int, rested_minutes: int)
+signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
@@ -524,8 +524,8 @@ func body(bpm: int, eta_s: int, phase: int) -> void:
 
 # Comfort level and the Rested buff (protocol 80, docs/COMFORT_DESIGN.md): at hello and whenever the level, the buff's level or its whole minutes left change. rested_level 0 = no buff.
 @rpc("authority", "call_remote", "reliable")
-func comfort(level: int, rested_level: int, rested_minutes: int) -> void:
-	comfort_received.emit(level, rested_level, rested_minutes)
+func comfort(level: int, rested_level: int, rested_minutes: int, tip: String) -> void:
+	comfort_received.emit(level, rested_level, rested_minutes, tip)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

@@ -71,9 +71,9 @@ void vertex() {
 void fragment() {
 	float facing = clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
 	float soft = smoothstep(0.0, 0.85, facing);
-	vec3 low = vec3(1.0, 0.4, 0.05);
-	vec3 high = vec3(1.0, 0.62, 0.12);
-	ALBEDO = mix(low, high, 1.0 - up) * (0.4 + 0.15 * flick);
+	vec3 low = vec3(1.0, 0.35, 0.04);
+	vec3 high = vec3(1.0, 0.55, 0.1);
+	ALBEDO = mix(low, high, 1.0 - up) * (0.3 + 0.12 * flick) * (1.0 - 0.5 * up);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.2 * flick);
 }
 """
@@ -959,22 +959,22 @@ static func lit_fixture(kind: String) -> Node3D:
 
 	match kind:
 		"wall_torch":
-			spots = [[Vector3(0.0, 2.27, 0.36), Vector3(0.9, 0.72, 0.9)]]
+			spots = [[Vector3(0.0, 2.27, 0.36), Vector3(0.9, 0.72, 0.9)], [Vector3(0.07, 2.25, 0.33), Vector3(0.5, 0.45, 0.5)]]
 			light_at = Vector3(0.0, 2.4, 0.5)
-			range_m = 5.0
-			energy = 1.3
+			range_m = 6.5
+			energy = 1.9
 		"chandelier":
 			for k in 6:
 				var a: float = TAU * float(k) / 6.0
 				spots.append([Vector3(cos(a) * 0.34, 2.3 - 0.36, sin(a) * 0.34), Vector3.ONE * 0.3])
 
 			light_at = Vector3(0.0, 1.95, 0.0)
-			range_m = 4.0
-			energy = 1.2
+			range_m = 5.5
+			energy = 1.8
 		"fireplace":
 			spots = [[Vector3(0.0, 0.3, 0.28), Vector3.ONE * 1.1], [Vector3(0.3, 0.3, 0.22), Vector3.ONE * 0.7]]
 			light_at = Vector3(0.0, 0.55, 0.35)
-			range_m = 6.0
+			range_m = 7.0
 			energy = 1.6
 			var coals: MeshInstance3D = _instance(_coals())
 			coals.scale = Vector3(0.3, 1.0, 0.2)
@@ -987,6 +987,33 @@ static func lit_fixture(kind: String) -> Node3D:
 		flame.scale = spot[1]
 		flame.material_override = _fixture_flame_material()
 		root.add_child(flame)
+
+	if kind == "fireplace":
+		# Light cannot pass the bricks: a spot cone out of the opening (toward +z, 110 degrees across, soft edge), shadows on so the jambs and breast shade the sides; a small dim glow inside only.
+		var cone: SpotLight3D = SpotLight3D.new()
+		cone.name = "Light"
+		cone.light_color = Color(1.0, 0.62, 0.3)
+		cone.spot_range = range_m
+		cone.spot_angle = 55.0
+		cone.spot_angle_attenuation = 0.6
+		cone.spot_attenuation = LIGHT_FALLOFF
+		cone.light_energy = energy
+		cone.set_meta("base_energy", energy)
+		cone.shadow_enabled = true
+		cone.position = Vector3(0.0, 0.5, 0.3)
+		cone.rotation = Vector3(0.0, PI, 0.0)   # a spot shines along -z; turn it to face +z
+		cone.visible = false
+		root.add_child(cone)
+		var glow: OmniLight3D = OmniLight3D.new()
+		glow.name = "Glow"
+		glow.light_color = Color(1.0, 0.5, 0.2)
+		glow.omni_range = 1.2
+		glow.light_energy = 0.35
+		glow.omni_attenuation = LIGHT_FALLOFF
+		glow.shadow_enabled = false
+		glow.position = Vector3(0.0, 0.45, 0.2)
+		cone.add_child(glow)   # follows the cone's visibility, so it goes with the nearest-lights limit
+		return root
 
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
