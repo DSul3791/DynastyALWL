@@ -216,12 +216,12 @@ def run_client(index, flags, frames, checks, godot, verbose):
     server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store, "--quit-after=600"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(40)
-        out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames, "--timeout=390"] + flags, 400)
+        out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames, "--timeout=690"] + flags, 700)
     finally:
         kill_tree(server)
 
     if timed_out:
-        return False, "timed out after 400 s (client killed; the other scenes still run)"
+        return False, "timed out after 700 s (client killed; the other scenes still run)"
     if verbose:
         print(out)
     if "SCRIPT ERROR" in out:

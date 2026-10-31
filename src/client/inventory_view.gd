@@ -4705,7 +4705,13 @@ func run_eat_test(client) -> void:
 
 	for id in tool_ids:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 1, Vector3.ZERO)
-		await get_tree().create_timer(0.6).timeout
+
+		for poll in 20:   # the give can be late (a heavy item such as the quern may also be refused by weight: then it never arrives and is reported)
+			await get_tree().create_timer(0.3).timeout
+
+			if inventory.numbers.has(table.number_of(id)):
+				break
+
 		var tool_slot: int = inventory.numbers.find(table.number_of(id))
 
 		if tool_slot >= 10:
@@ -4720,6 +4726,10 @@ func run_eat_test(client) -> void:
 
 		if client.held.held_id() != id or client.held._model == null:
 			print("Tools test: NOT held or no model: %s" % id)
+
+		# Put it down: 190 tools in the pack outweigh the carrying limit, and the last heavy ones (the quern) were then never given (31 Oct 2026).
+		net.inventory_action.rpc_id(1, Net.ACT_DROP, tool_slot, 0, 1, _player_position.call() + Vector3(0.0, 0.0, 2.0))
+		await get_tree().create_timer(0.2).timeout
 
 	print("Tools test: %d tools and weapons, held %d, with a model %d" % [tool_ids.size(), held_ok, modelled])
 
