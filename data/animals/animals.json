@@ -477,7 +477,7 @@
 		"say_rush": "The wolves are coming for you!",
 		"say_return": "The wolves are back."
 	},
-	"near_share": 0.25,
+	"near_share": 0.4,
 	"near_min_m": 60.0,
 	"near_max_m": 120.0
 }
