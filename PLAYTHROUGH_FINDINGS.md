@@ -349,6 +349,22 @@ First-hour hunting, fishing, snare and net routes pass in the existing tests (bo
 
 Other deltas on the merged daily branch: F-04 FIXED (CONTROLS.md corrected, 3e7a1cb5); S-craft now shows two mismatches: `lumber_by_hand` (expected, needs the hand saw) and **`water_wheel`, which has `known:false` but crafted on the server** in the probe (a hole in the known check or a recipe-number clash; Tyler, small, unreachable today because lumber and nails are).
 
+# Part 9: the night's run on the quiet PC (2026-10-31 06:30 to 07:30, daily a00c2e04)
+
+Pictures in `art/playthrough/world3/` and `art/playthrough/smoke/`; errors in `SMOKE_TEST.md`.
+
+| Picture | Rating (1 to 5) | What changed since part 6 |
+|---|---|---|
+| `smoke/walk3min.jpg` (spawn 53301, 68427, hour 12) | 4.5 | thick fresh grass in blades with flowers, bramble with ripe berries, the generated body standing in it, no shader error (the new season grass shader is fine) |
+| `world3/clearing_wide.jpg` | 4 | the lean-to roof now has leaf texture, the bed shows straw, the stone forge is a cream block with a flame; a dark flat shadow patch fills the foreground |
+| `world3/coast.jpg` (52600, 66592) | 4.5 | beach, teal sea with a horizon, island trees, clouds: the corrected world reads well |
+| `world3/under_beech.jpg` | 4 | in summer the beech crown is a dense green roof (the autumn clumps with sky gaps were the problem) |
+| `world3/campfire_lit.png` | failed | the `--shot-light` run took a blank grey frame (ground not loaded or the camera under the world); not kept |
+
+New small findings: an odd concentric-square textured cube lies at the lower left of `clearing_wide.jpg` (a placeholder or missing-texture look on a dropped item: Kathleen, check which item); the foreground is a very dark green flat patch (canopy shadow plus the ground shader, probably fine).
+
+Smoke test result in one line: the select page, creator, 3-minute windowed walk and 16 headless client self-tests all ran; one SCRIPT ERROR (`run_chest_test`, the chest never opened in the shared-server run, re-run alone pending); `database is locked` x2 in the server log; `Error loading voxel block` on every client start; no shader errors.
+
 <!-- SCOREBOARD START (written by art/playthrough/status_check.py) -->
 ## Scoreboard: FIXED / STILL BROKEN (2026-10-31)
 
