@@ -55,3 +55,8 @@ tools/look_rig.sh --cam first --at 54728,75530 --agl 12 --yaw 180 --pitch -18 --
 
 ## Skipped, not checked, risk (per the ponytail rule)
 Not checked: a lake at rest going to sleep (it was still awake after 60 s, which may be the 0.85 theta slowly ringing); the seam between two windows; rain; digging edits; any client drawing; determinism between server and client (floating point order is fixed in one process but not compared across machines). Skipped on purpose: mixed liquids in one field, particles. Risk: the cost finding above could force a native extension (a build step the repo does not have today) or a design where big lakes are static levels.
+
+## Queued runs after COMPUTER BACK (31 Oct 2026)
+
+Passed, 0 failures: test_water_field (incl. the `_rest` edge fix), test_water_flow_texture (first run, no typos), test_water_window, test_water_hub2. probe_water_cost alone: 101-116 ms per simulated second (was 92; same order, run-to-run noise; run beside another job it read 170-190). All 64 blocks stay awake in that probe because the held rivers keep flowing, so lake sleep is not what is measured there.
+NOT valid: the look_rig picture (`--water2`, first person at 54728,75530) came out as an empty grey view with the camera at y -37 and no "water2:" line in the server log, so it proves nothing; cause not yet found (the log also shows a missing imported texture in this worktree, `layer_1_litter`, so `godot --import` may need a re-run). Not run: test_worldgen, test_water_soak.
