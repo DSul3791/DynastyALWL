@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 364,
+	"next_number": 374,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -712,6 +712,7 @@
 		},
 		"willow_bark_tea": {
 			"number": 59,
+			"future": true,
 			"name": "Willow bark tea",
 			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
 			"kind": "food",
@@ -2059,6 +2060,7 @@
 		},
 		"acorn_mash": {
 			"number": 178,
+			"future": true,
 			"name": "Acorn mash",
 			"description": "Leached acorns boiled to a mash. Famine food.",
 			"kind": "food",
@@ -2707,6 +2709,7 @@
 		},
 		"nails": {
 			"number": 228,
+			"future": true,
 			"name": "Nails",
 			"description": "Iron nails, bought and used by the handful.",
 			"kind": "material",
@@ -2734,6 +2737,7 @@
 		},
 		"tar": {
 			"number": 231,
+			"future": true,
 			"name": "Tar",
 			"description": "Thick black tar, boiled down. Seals a flat roof and soaks logs against rot.",
 			"kind": "material",
@@ -2743,6 +2747,7 @@
 		},
 		"hinges": {
 			"number": 232,
+			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2896,6 +2901,7 @@
 		},
 		"hand_saw": {
 			"number": 245,
+			"future": true,
 			"name": "Hand saw",
 			"description": "A bow saw. Keep it on the hotbar to saw a log into 2 lumber by hand, slower than a mill.",
 			"kind": "tool",
@@ -3128,6 +3134,7 @@
 		},
 		"flatbread": {
 			"number": 273,
+			"future": true,
 			"name": "Flatbread",
 			"description": "A flat cake baked on the hot clay. Plain and filling.",
 			"kind": "food",
@@ -3221,6 +3228,7 @@
 		},
 		"processed_hide": {
 			"number": 282,
+			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
@@ -3875,6 +3883,7 @@
 		},
 		"leather_cap": {
 			"number": 324,
+			"future": true,
 			"name": "Leather cap",
 			"description": "A close leather cap. Better than bare hide.",
 			"kind": "clothing",
@@ -4303,6 +4312,122 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 14
+		},
+		"wool": {
+			"number": 364,
+			"name": "Wool",
+			"description": "Fleece from a wild sheep. Warm, and spun into thread.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 5
+		},
+		"linen": {
+			"number": 365,
+			"name": "Linen",
+			"description": "Cloth woven from flax. Light, and cool in summer.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"wool_tunic": {
+			"number": 366,
+			"name": "Wool tunic",
+			"description": "A woven wool shirt. Warm even when damp.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.3,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 40
+		},
+		"wool_trousers": {
+			"number": 367,
+			"name": "Wool trousers",
+			"description": "Heavy woven wool trousers.",
+			"kind": "clothing",
+			"slot": "legs",
+			"warmth": 0.22,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 32
+		},
+		"wool_cap": {
+			"number": 368,
+			"name": "Wool cap",
+			"description": "A snug knitted wool cap.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
+		},
+		"wool_mittens": {
+			"number": 369,
+			"name": "Wool mittens",
+			"description": "Thick wool mittens.",
+			"kind": "clothing",
+			"slot": "hands",
+			"warmth": 0.12,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 14
+		},
+		"linen_shirt": {
+			"number": 370,
+			"name": "Linen shirt",
+			"description": "A light linen shirt. Cool in summer heat.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.1,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 22
+		},
+		"fur_cloak": {
+			"number": 371,
+			"name": "Fur cloak",
+			"description": "A heavy cloak of fur pelts. The warmest body cover.",
+			"kind": "clothing",
+			"slot": "body",
+			"warmth": 0.42,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 70
+		},
+		"fur_hat": {
+			"number": 372,
+			"name": "Fur hat",
+			"description": "A fur hat with ear flaps.",
+			"kind": "clothing",
+			"slot": "head",
+			"warmth": 0.16,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 24
+		},
+		"fur_boots": {
+			"number": 373,
+			"name": "Fur boots",
+			"description": "Hide boots lined with fur.",
+			"kind": "clothing",
+			"slot": "feet",
+			"warmth": 0.2,
+			"stack": 1,
+			"future": true,
+			"look_alikes": [],
+			"value": 36
 		}
 	}
 }

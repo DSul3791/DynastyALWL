@@ -1,0 +1,778 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing. Spawn plan generated from fauna_proposal.json in the shape of data/animals/animals.json species rows (target_per_player, spawn_share, herd, habitat) plus three NEW keys the animal code does not read yet: `biomes` (biome name -> weight, 0 = never), `active` (day / dusk / night / season keys), `class` (land, bird, water, shore, ambient). To wire in: server_animals.gd top-up loop (line ~610) needs a biome lookup for the candidate spot and a time-of-day gate; see FAUNA_SPAWN_PLAN.md. Numbers are Sal's from rarity and size, not tuned by play.",
+	"species": {
+		"hare": {
+			"class": "land",
+			"target_per_player": 3,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"heath": 1.0,
+				"tundra": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "spawn row + model"
+		},
+		"red_squirrel": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"boreal_forest": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "small-critter spawn + model; caches nuts (behaviour)"
+		},
+		"beaver": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"biomes": {
+				"mixed_forest": 1.0,
+				"boreal_forest": 1.0,
+				"marsh": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "spawn at water edge, model; dam building is later behaviour",
+			"herd": [
+				2,
+				6
+			]
+		},
+		"otter": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"biomes": {
+				"marsh": 1.0,
+				"mixed_forest": 1.0,
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": true,
+				"night": false
+			},
+			"needs": "water-edge spawn + swim model",
+			"herd": [
+				1,
+				3
+			]
+		},
+		"badger": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"temperate_grassland": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "night spawn, sett (den) behaviour",
+			"herd": [
+				1,
+				4
+			]
+		},
+		"pine_marten": {
+			"class": "land",
+			"target_per_player": 3,
+			"spawn_share": 0.3,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "spawn + model + climbing behaviour"
+		},
+		"hedgehog": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "small-critter spawn + model; curls up (behaviour)"
+		},
+		"porcupine": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "spawn + model; quills hurt a melee attacker (behaviour)"
+		},
+		"lynx": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.3,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "spawn + model; ambush (behaviour)"
+		},
+		"bear": {
+			"class": "land",
+			"target_per_player": 1,
+			"spawn_share": 0.3,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 1.0,
+				"temperate_forest": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": true,
+				"night": false
+			},
+			"needs": "spawn + model; defend/charge reuses the moose pattern; hibernation (behaviour)"
+		},
+		"boar": {
+			"class": "land",
+			"target_per_player": 1,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"temperate_grassland": 1.0,
+				"marsh": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "spawn + model; charge reuses moose defend",
+			"herd": [
+				3,
+				8
+			]
+		},
+		"reindeer": {
+			"class": "land",
+			"target_per_player": 1,
+			"spawn_share": 0.8,
+			"biomes": {
+				"tundra": 1.0,
+				"boreal_forest": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; herd size above 6 is a code change",
+			"herd": [
+				10,
+				30
+			]
+		},
+		"mountain_goat": {
+			"class": "land",
+			"target_per_player": 1,
+			"spawn_share": 0.5,
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"bare_rock": 1.0,
+				"tundra": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn on steep slope (slope_max above 1.0 is a code change) + model",
+			"herd": [
+				2,
+				6
+			]
+		},
+		"wild_sheep": {
+			"class": "land",
+			"target_per_player": 2,
+			"spawn_share": 0.5,
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"heath": 1.0,
+				"bare_rock": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model",
+			"herd": [
+				4,
+				12
+			]
+		},
+		"bat": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"bare_rock": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "ambient flyer: model + night-only spawn"
+		},
+		"grouse": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"heath": 1.0,
+				"tundra": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; flush when startled (reuse duck flock takeoff)",
+			"herd": [
+				1,
+				6
+			]
+		},
+		"pheasant": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"temperate_forest": 1.0,
+				"heath": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model",
+			"herd": [
+				1,
+				5
+			]
+		},
+		"goose": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 0.8,
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_grassland": 1.0,
+				"tundra": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; flock code exists (duck)",
+			"herd": [
+				10,
+				30
+			]
+		},
+		"gull": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0,
+				"mangrove": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; steals dropped food (behaviour)",
+			"herd": [
+				5,
+				20
+			]
+		},
+		"raven": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 0.8,
+			"biomes": {
+				"boreal_forest": 1.0,
+				"mixed_forest": 1.0,
+				"bare_rock": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; gathers near carcasses (hint to hunters)",
+			"herd": [
+				1,
+				4
+			]
+		},
+		"owl": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 0.5,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"boreal_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "night ambient flyer + hoot sound"
+		},
+		"eagle": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 0.15,
+			"biomes": {
+				"alpine_meadow": 1.0,
+				"bare_rock": 1.0,
+				"boreal_forest": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "soaring ambient + model; dives on small prey (behaviour)"
+		},
+		"woodpecker": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "ambient + drum sound"
+		},
+		"songbirds": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0,
+				"temperate_grassland": 1.0,
+				"heath": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "ambient flock + dawn chorus sound",
+			"herd": [
+				2,
+				10
+			]
+		},
+		"frog": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"marsh": 1.0,
+				"mixed_forest": 1.0,
+				"temperate_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": true,
+				"night": true
+			},
+			"needs": "water-edge ambient + croak sound",
+			"herd": [
+				3,
+				20
+			]
+		},
+		"toad": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_forest": 1.0,
+				"temperate_grassland": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "ambient"
+		},
+		"newt": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.5,
+			"biomes": {
+				"marsh": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "ambient (small model)",
+			"herd": [
+				1,
+				5
+			]
+		},
+		"grass_snake": {
+			"class": "land",
+			"target_per_player": 3,
+			"spawn_share": 0.5,
+			"biomes": {
+				"marsh": 1.0,
+				"temperate_grassland": 1.0,
+				"heath": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; harmless"
+		},
+		"adder": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.3,
+			"biomes": {
+				"heath": 1.0,
+				"temperate_grassland": 1.0,
+				"bare_rock": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn + model; bite sickness (sickness.json has no venom entry)"
+		},
+		"lizard": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"heath": 1.0,
+				"bare_rock": 1.0,
+				"savanna": 1.0,
+				"dry_scrub": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "ambient"
+		},
+		"bee": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.8,
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"mixed_forest": 1.0,
+				"heath": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "wild hive node gives honeycomb and wax (new gather); stings"
+		},
+		"butterfly": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"temperate_grassland": 1.0,
+				"heath": 1.0,
+				"alpine_meadow": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "ambient flyer + model",
+			"herd": [
+				1,
+				5
+			]
+		},
+		"dragonfly": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"marsh": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "ambient flyer at water",
+			"herd": [
+				1,
+				3
+			]
+		},
+		"firefly": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 0.5,
+			"biomes": {
+				"mixed_forest": 1.0,
+				"marsh": 1.0,
+				"temperate_grassland": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "night light particles"
+		},
+		"beetle": {
+			"class": "ambient",
+			"target_per_player": 4,
+			"spawn_share": 1.0,
+			"biomes": {
+				"temperate_forest": 1.0,
+				"mixed_forest": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "ground ambient"
+		},
+		"salmon": {
+			"class": "water",
+			"target_per_player": 3,
+			"spawn_share": 0.5,
+			"biomes": {
+				"rivers (seasonal run)": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "salmon item + run season"
+		},
+		"eel": {
+			"class": "water",
+			"target_per_player": 3,
+			"spawn_share": 0.3,
+			"biomes": {
+				"rivers": 1.0,
+				"lakes": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "fish item"
+		},
+		"cod": {
+			"class": "water",
+			"target_per_player": 2,
+			"spawn_share": 0.8,
+			"biomes": {
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "sea-fishing code (ocean) + item"
+		},
+		"crab": {
+			"class": "shore",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0,
+				"mangrove": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "shore ambient; trap-able",
+			"herd": [
+				1,
+				5
+			]
+		},
+		"seal": {
+			"class": "land",
+			"target_per_player": 1,
+			"spawn_share": 0.5,
+			"biomes": {
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "spawn on beach + model; slow on land, dives (behaviour); loot seal_meat, hide, fat",
+			"herd": [
+				5,
+				30
+			]
+		},
+		"seabird": {
+			"class": "bird",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "nest nodes give eggs (new gather); flock reuse duck code",
+			"herd": [
+				10,
+				60
+			]
+		},
+		"mussel": {
+			"class": "shore",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "tide-line gather node gives shellfish (new code)"
+		},
+		"kelp": {
+			"class": "shore",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0
+			},
+			"active": {
+				"day": true,
+				"dusk": false,
+				"night": false
+			},
+			"needs": "tide-line gather node gives seaweed (new code)"
+		},
+		"shore_crab_node": {
+			"class": "shore",
+			"target_per_player": 3,
+			"spawn_share": 1.0,
+			"biomes": {
+				"beach": 1.0,
+				"mangrove": 1.0
+			},
+			"active": {
+				"day": false,
+				"dusk": false,
+				"night": true
+			},
+			"needs": "gather node gives crab_meat; or trap",
+			"herd": [
+				1,
+				5
+			]
+		}
+	}
+}
