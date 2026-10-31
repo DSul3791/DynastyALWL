@@ -12,11 +12,16 @@ const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
+const FONT_BASE := 22          # labels, values, text boxes
+const FONT_SECTION := 28       # section headers
+const FONT_BUTTON := 24        # the big bar buttons
+const FONT_TITLE := 30         # the page title and the Save and play button
 
 var logic: RefCounted = Logic.new()
 var _sliders: Dictionary = {}       # slider name -> HSlider
 var _values: Dictionary = {}        # slider name -> Label
 var _locks: Dictionary = {}         # name -> CheckBox
+var _sections: Dictionary = {}      # section title -> {head: Button, body: Control}; one is open at a time
 var _pickers: Dictionary = {}       # "skin" / "hair" -> ColorPickerButton
 var _code: LineEdit
 var _status: Label
@@ -59,31 +64,55 @@ func _process(delta: float) -> void:
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	theme = _make_theme()
 	var back: ColorRect = ColorRect.new()
 	back.color = Color(0.13, 0.14, 0.16)
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(back)
+	var margin: MarginContainer = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 16)
+
+	add_child(margin)
+	var page: VBoxContainer = VBoxContainer.new()
+	page.add_theme_constant_override("separation", 10)
+	margin.add_child(page)
+	_build_bar(page)
 	var split: HBoxContainer = HBoxContainer.new()
-	split.set_anchors_preset(Control.PRESET_FULL_RECT)
+	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.add_theme_constant_override("separation", 12)
-	add_child(split)
+	page.add_child(split)
 	var left: PanelContainer = PanelContainer.new()
-	left.custom_minimum_size = Vector2(470, 0)
+	left.custom_minimum_size = Vector2(660, 0)
 	split.add_child(left)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	left.add_child(scroll)
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pad: MarginContainer = MarginContainer.new()
+
+	for side in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 10)
+
+	left.add_child(pad)
+	pad.add_child(scroll)
 	var column: VBoxContainer = VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.add_theme_constant_override("separation", 4)
+	column.add_theme_constant_override("separation", 8)
 	scroll.add_child(column)
-	_build_top(column)
 
 	for section in Logic.SECTIONS:
-		_build_section(column, section)
+		var body: VBoxContainer = _add_accordion(column, section)
 
-	_build_colors(column)
-	_build_code(column)
+		if section == "Body":
+			_build_presets(body)
+
+		_build_sliders(body, section)
+
+	_build_colors(_add_accordion(column, "Colours"))
+	_build_code(_add_accordion(column, "Share code"))
+	_open_section("Body")
 	var holder: SubViewportContainer = SubViewportContainer.new()
 	holder.stretch = true
 	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -91,73 +120,109 @@ func _build_ui() -> void:
 	split.add_child(holder)
 	_preview = SubViewport.new()
 	_preview.own_world_3d = true
-	_preview.size = Vector2i(700, 720)
+	_preview.size = Vector2i(900, 800)
 	_preview.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	holder.add_child(_preview)
 	_build_preview_world()
 
 
-func _build_top(column: VBoxContainer) -> void:
-	var title: Label = Label.new()
-	title.text = "Character creator (prototype)"
-	title.add_theme_font_size_override("font_size", 22)
-	column.add_child(title)
+# One theme for the whole screen so every label, button and box is readable at 1920x1080 (labels 20 px, buttons and section titles bigger).
+func _make_theme() -> Theme:
+	var t: Theme = Theme.new()
+	t.default_font_size = FONT_BASE
+
+	for type_name in ["Label", "Button", "CheckBox", "LineEdit", "ColorPickerButton"]:
+		t.set_font_size("font_size", type_name, FONT_BASE)
+
+	t.set_constant("icon_max_width", "CheckBox", 24)
+
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var box: StyleBoxFlat = StyleBoxFlat.new()
+		box.bg_color = Color(0.3, 0.33, 0.4).lightened(0.12 if state == "hover" else 0.0).darkened(0.15 if state == "pressed" else (0.4 if state == "disabled" else 0.0))
+		box.set_corner_radius_all(6)
+		box.content_margin_left = 14.0
+		box.content_margin_right = 14.0
+		box.content_margin_top = 6.0
+		box.content_margin_bottom = 6.0
+		t.set_stylebox(state, "Button", box)
+
+	var grabber: StyleBoxFlat = StyleBoxFlat.new()
+	grabber.bg_color = Color(0.3, 0.32, 0.36)
+	grabber.set_corner_radius_all(6)
+	grabber.content_margin_top = 14.0
+	grabber.content_margin_bottom = 14.0
+	t.set_stylebox("slider", "HSlider", grabber)
+	return t
+
+
+func _big_button(text: String, size: int, tint: Color) -> Button:
+	var b: Button = Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(0, 64)
+	b.add_theme_font_size_override("font_size", size)
+
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var box: StyleBoxFlat = StyleBoxFlat.new()
+		box.bg_color = tint.lightened(0.12) if state == "hover" else (tint.darkened(0.15) if state == "pressed" else (tint.darkened(0.45) if state == "disabled" else tint))
+		box.set_corner_radius_all(8)
+		box.content_margin_left = 18.0
+		box.content_margin_right = 18.0
+		b.add_theme_stylebox_override(state, box)
+
+	return b
+
+
+# The bar across the top: everything a person needs to finish: randomise, save and play, play, undo, redo.
+func _build_bar(page: VBoxContainer) -> void:
+	var bar: PanelContainer = PanelContainer.new()
+	page.add_child(bar)
+	var box: VBoxContainer = VBoxContainer.new()
+	bar.add_child(box)
 	var row: HBoxContainer = HBoxContainer.new()
-	column.add_child(row)
-	var dice: Button = Button.new()
-	dice.text = "Dice: everything"
+	row.add_theme_constant_override("separation", 12)
+	box.add_child(row)
+	var title: Label = Label.new()
+	title.text = "Create your character"
+	title.add_theme_font_size_override("font_size", FONT_TITLE)
+	title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(title)
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	var dice: Button = _big_button("Randomise everything", FONT_BUTTON, Color(0.36, 0.3, 0.52))
 	dice.pressed.connect(func() -> void:
 		logic.dice_all()
 		_changed("Rolled everything (locked values kept)"))
 	row.add_child(dice)
-	_undo_button = Button.new()
-	_undo_button.text = "Undo"
+	_undo_button = _big_button("Undo", FONT_BUTTON, Color(0.3, 0.32, 0.38))
 	_undo_button.pressed.connect(func() -> void:
 		if logic.undo():
 			_changed("Undone"))
 	row.add_child(_undo_button)
-	_redo_button = Button.new()
-	_redo_button.text = "Redo"
+	_redo_button = _big_button("Redo", FONT_BUTTON, Color(0.3, 0.32, 0.38))
 	_redo_button.pressed.connect(func() -> void:
 		if logic.redo():
 			_changed("Redone"))
 	row.add_child(_redo_button)
-	_wild = CheckBox.new()
-	_wild.text = "Wild dice"
-	_wild.toggled.connect(func(on: bool) -> void: logic.wild = on)
-	row.add_child(_wild)
-	var presets: HBoxContainer = HBoxContainer.new()
-	column.add_child(presets)
-	var label: Label = Label.new()
-	label.text = "Body type:"
-	presets.add_child(label)
-
-	for preset in ["average", "broad", "lean", "stocky"]:
-		var b: Button = Button.new()
-		b.text = String(preset).capitalize()
-		b.pressed.connect(func() -> void:
-			logic.apply_preset(preset)
-			_changed("Body type: " + preset))
-		presets.add_child(b)
-
-	var play_row: HBoxContainer = HBoxContainer.new()
-	column.add_child(play_row)
-	var play: Button = Button.new()
-	play.text = "Save and play"
-	play.add_theme_font_size_override("font_size", 18)
+	var skip: Button = _big_button("Play without saving", FONT_BUTTON, Color(0.3, 0.32, 0.38))
+	skip.pressed.connect(_start_game)
+	row.add_child(skip)
+	var play: Button = _big_button("Save and play", FONT_TITLE, Color(0.2, 0.55, 0.28))
 	play.pressed.connect(func() -> void:
 		MyCharacter.save_code(logic.code())
 		_start_game())
-	play_row.add_child(play)
-	var skip: Button = Button.new()
-	skip.text = "Play without saving"
-	skip.pressed.connect(_start_game)
-	play_row.add_child(skip)
-
+	row.add_child(play)
+	var info: HBoxContainer = HBoxContainer.new()
+	box.add_child(info)
 	_status = Label.new()
-	_status.text = "Drag a slider, press a dice, lock what you like."
+	_status.text = "Press Randomise everything, or open a section and drag a slider. Lock what you like."
 	_status.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
-	column.add_child(_status)
+	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_child(_status)
+	_wild = CheckBox.new()
+	_wild.text = "Wild dice"
+	_wild.toggled.connect(func(on: bool) -> void: logic.wild = on)
+	info.add_child(_wild)
 
 
 func _start_game() -> void:
@@ -165,34 +230,68 @@ func _start_game() -> void:
 	get_tree().change_scene_to_file("res://scenes/launcher.tscn")
 
 
-func _build_section(column: VBoxContainer, section: String) -> void:
-	var head: HBoxContainer = HBoxContainer.new()
+# A section header button with its content below it; only one section is open at a time. Returns the content box.
+func _add_accordion(column: VBoxContainer, title: String) -> VBoxContainer:
+	var head: Button = _big_button("", FONT_SECTION, Color(0.24, 0.28, 0.36))
+	head.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	column.add_child(head)
+	var body: VBoxContainer = VBoxContainer.new()
+	body.add_theme_constant_override("separation", 10)
+	body.visible = false
+	column.add_child(body)
+	_sections[title] = {"head": head, "body": body}
+	head.text = "+  " + title
+	head.pressed.connect(func() -> void: _open_section("" if body.visible else title))
+	return body
+
+
+func _open_section(title: String) -> void:
+	for key in _sections:
+		var shown: bool = key == title
+		(_sections[key]["body"] as Control).visible = shown
+		(_sections[key]["head"] as Button).text = ("-  " if shown else "+  ") + String(key)
+
+
+func _build_presets(body: VBoxContainer) -> void:
+	var presets: HBoxContainer = HBoxContainer.new()
+	body.add_child(presets)
 	var label: Label = Label.new()
-	label.text = section
-	label.add_theme_font_size_override("font_size", 17)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(label)
+	label.text = "Body type:"
+	presets.add_child(label)
+
+	for preset in ["average", "broad", "lean", "stocky"]:
+		var b: Button = Button.new()
+		b.text = String(preset).capitalize()
+		b.custom_minimum_size = Vector2(0, 44)
+		b.pressed.connect(func() -> void:
+			logic.apply_preset(preset)
+			_changed("Body type: " + preset))
+		presets.add_child(b)
+
+
+func _build_sliders(body: VBoxContainer, section: String) -> void:
 	var dice: Button = Button.new()
-	dice.text = "Dice"
+	dice.text = "Dice: " + section
+	dice.custom_minimum_size = Vector2(0, 44)
 	dice.pressed.connect(func() -> void:
 		logic.dice_section(section)
 		_changed("Rolled " + section))
-	head.add_child(dice)
+	body.add_child(dice)
 
 	for key in Logic.SECTIONS[section]:
 		var row: HBoxContainer = HBoxContainer.new()
-		column.add_child(row)
+		body.add_child(row)
 		var name_label: Label = Label.new()
 		name_label.text = String(key).replace("_", " ").capitalize()
-		name_label.custom_minimum_size = Vector2(100, 0)
+		name_label.custom_minimum_size = Vector2(150, 0)
 		row.add_child(name_label)
 		var slider: HSlider = HSlider.new()
 		slider.min_value = -1.0
 		slider.max_value = 1.0
 		slider.step = 0.01
-		slider.custom_minimum_size = Vector2(210, 0)
+		slider.custom_minimum_size = Vector2(240, 36)
 		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		slider.drag_started.connect(func() -> void:
 			_dragging = true
 			logic.begin_edit())
@@ -201,7 +300,7 @@ func _build_section(column: VBoxContainer, section: String) -> void:
 		row.add_child(slider)
 		_sliders[key] = slider
 		var value: Label = Label.new()
-		value.custom_minimum_size = Vector2(44, 0)
+		value.custom_minimum_size = Vector2(64, 0)
 		row.add_child(value)
 		_values[key] = value
 		row.add_child(_lock_box(key))
@@ -215,22 +314,23 @@ func _lock_box(key: String) -> CheckBox:
 	return lock
 
 
-func _build_colors(column: VBoxContainer) -> void:
+func _build_colors(body: VBoxContainer) -> void:
 	for section in Logic.COLOR_SECTIONS:
 		for key in Logic.COLOR_SECTIONS[section]:
 			var row: HBoxContainer = HBoxContainer.new()
-			column.add_child(row)
+			body.add_child(row)
 			var label: Label = Label.new()
 			label.text = String(section) + " colour"
-			label.custom_minimum_size = Vector2(150, 0)
+			label.custom_minimum_size = Vector2(170, 0)
 			row.add_child(label)
 			var picker: ColorPickerButton = ColorPickerButton.new()
-			picker.custom_minimum_size = Vector2(90, 28)
+			picker.custom_minimum_size = Vector2(120, 44)
 			picker.color_changed.connect(func(c: Color) -> void: _color_picked(key, c))
 			row.add_child(picker)
 			_pickers[key] = picker
 			var dice: Button = Button.new()
 			dice.text = "Dice"
+			dice.custom_minimum_size = Vector2(0, 44)
 			dice.pressed.connect(func() -> void:
 				logic.dice_section(section)
 				_changed("Rolled " + section + " colour"))
@@ -238,19 +338,17 @@ func _build_colors(column: VBoxContainer) -> void:
 			row.add_child(_lock_box(key))
 
 
-func _build_code(column: VBoxContainer) -> void:
-	var label: Label = Label.new()
-	label.text = "Share code"
-	label.add_theme_font_size_override("font_size", 17)
-	column.add_child(label)
+func _build_code(body: VBoxContainer) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
-	column.add_child(row)
+	body.add_child(row)
 	_code = LineEdit.new()
 	_code.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_code.custom_minimum_size = Vector2(0, 44)
 	_code.placeholder_text = "paste a code and press Load"
 	row.add_child(_code)
 	var load_button: Button = Button.new()
 	load_button.text = "Load"
+	load_button.custom_minimum_size = Vector2(90, 44)
 	load_button.pressed.connect(func() -> void:
 		if logic.load_code(_code.text):
 			_changed("Code loaded")

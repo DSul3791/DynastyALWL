@@ -528,7 +528,7 @@ static func _surface_nets(field: PackedFloat32Array, nx: int, ny: int, nz: int, 
 					outward[axis] = 1.0 if f0 < 0.0 else -1.0
 					var n: Vector3 = (verts[ids[1]] - verts[ids[0]]).cross(verts[ids[2]] - verts[ids[0]]) + (verts[ids[2]] - verts[ids[0]]).cross(verts[ids[3]] - verts[ids[0]])
 
-					if n.dot(outward) < 0.0:
+					if n.dot(outward) > 0.0:       # Godot's front face is clockwise seen from outside, so the triangles are wound against the outward direction
 						ids.reverse()
 
 					tris.append_array(PackedInt32Array([ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]]))
@@ -542,7 +542,7 @@ static func _normals(verts: PackedVector3Array, tris: PackedInt32Array) -> Packe
 		var a: int = tris[i]
 		var b: int = tris[i + 1]
 		var c: int = tris[i + 2]
-		var n: Vector3 = (verts[b] - verts[a]).cross(verts[c] - verts[a])
+		var n: Vector3 = (verts[c] - verts[a]).cross(verts[b] - verts[a])       # clockwise winding: this points outward
 		normals[a] += n
 		normals[b] += n
 		normals[c] += n
