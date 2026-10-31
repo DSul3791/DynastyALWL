@@ -3896,10 +3896,13 @@ func run_quickkey_test(_client) -> void:
 	var roast: int = table.number_of("roast_forage")
 	await get_tree().create_timer(6.0).timeout
 
-	# A slow join (cold server) drops a give sent too early: ask again every 3 s until the stones arrive.
+	# A slow join (cold server) drops a give sent too early: ask again, but only every 30 s and then wait for the pack to catch up. (Asking every 3 s gave the stones
+	# again and again on a busy PC, where the pack arrives late: 63 stones instead of 6 and a failed check, 31 Oct.)
 	for attempt in range(30):
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+		if attempt % 10 == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+
 		await get_tree().create_timer(3.0).timeout
 
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
