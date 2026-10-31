@@ -2217,7 +2217,7 @@ func _apply_step(job: Dictionary) -> bool:
 	# A berry bush draws the models of the game's season (ripe berries, blossom, bare canes) and, once picked, the stripped ones (TreeBuilder.build's
 	# season and stripped flags, Kathleen). Until the worker has built a season's models the plain ones above are used.
 	if fruiting.has(str(_slugs.get(key[0], ""))):
-		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if key.size() > 5 and bool(key[5]) else 0]   # a proxy-tier key has no stripped flag (5 entries), {})
+		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if key.size() > 5 and bool(key[5]) else 0], {})   # a proxy-tier key has no stripped flag (5 entries)
 
 		if seasonal.has(key[0]):
 			var wanted_set: Array = seasonal[key[0]]
