@@ -82,6 +82,13 @@ func _init() -> void:
 	items.action(1, Net.ACT_SET_SPAWN, beds[0], 0, 0, Vector3.ZERO)
 	check(said.has("Spawn point set"), "E on the bed: Spawn point set (%s)" % str(said))
 	check(items.respawn_for(1).distance_to(bed) < 0.5, "a dead or dropped character comes back at the bed")
+	# The same through E on the bed (ACT_USE_STRUCT), as the client prompt sends it.
+	items._characters[items._peer_key[1]].erase("spawn_bed")
+	said.clear()
+	items.report_position(1, bed + Vector3(0.5, 0.2, 0.0))
+	items.action(1, Net.ACT_USE_STRUCT, beds[0], 0, 0, Vector3.ZERO)
+	check(said.has("Spawn point set") and items.respawn_for(1).distance_to(bed) < 0.5, "E on the bed (use set_spawn) sets the spawn point too")
+
 
 	# A second bed (in a second lean-to) replaces the first.
 	give("lean_to_kit", 1)

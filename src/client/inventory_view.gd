@@ -526,6 +526,9 @@ func _probe_structure() -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
+	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E sets it as the spawn point, hold E takes it down
+		return {"prompt": "Press E to set this bed as your spawn point (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
 

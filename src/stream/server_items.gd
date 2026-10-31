@@ -4865,6 +4865,10 @@ func _use_struct(peer: int, inv, id: int) -> void:
 
 		return
 
+	if str(def.get("use", "")) == "set_spawn":   # E on a bed: it becomes this character's spawn point (set_spawn_bed)
+		set_spawn_bed(peer, id)
+		return
+
 	if str(def.get("use", "")) == "unpile":
 		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
 		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
