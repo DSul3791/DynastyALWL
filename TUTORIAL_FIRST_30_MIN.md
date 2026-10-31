@@ -22,7 +22,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 ## Minute 3 to 8: sticks, stones, fibre
 
 4. Trigger: after the drink. Line: "Pick things up with E. Tap E takes the nearest loose thing; hold E keeps taking everything within reach. Dead branches (sticks) lie under the trees; stones lie along the water's edge and on slopes." Check: 8 sticks and 3 stones in the pack.
-5. Trigger: 8 sticks. Line: "Nettles grow here in patches. Press E on a nettle to pick it: you get plant fibre." (1 to 2 fibre a plant, no tool.) Check: 12 plant fibre.
+5. Trigger: 8 sticks. Line: "Nettles grow here in patches. Press E on a nettle to pick it: you get plant fibre and nettle leaves (for tea)." (1 to 2 fibre a plant, no tool; the leaves are a second drop, rule from Dave 2026-10-31, Sal changing the data.) Check: 12 plant fibre.
 6. Trigger: 12 plant fibre. Line: "Press I. Pick Twine and Craft: 3 plant fibre make 1 twine." (recipe 1, 2 s). Check: 4 twine.
 
 ## Minute 8 to 12: the first tool, the first tree
@@ -38,7 +38,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
 14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with E: sticks burn 15 game minutes each, firewood an hour, a log two hours. One game hour is 2.5 real minutes." Check: one fuel added.
-15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast one raw forage item at a time: nuts, berries, roots, mushrooms. Hazelnuts are ripe in autumn; raspberries in summer." Check: one item roasted.
+15. Trigger: hunger under 80 %. Line: "Hold E at the fire to roast raw meat, fish or shellfish. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
