@@ -1870,3 +1870,7 @@ Answered: 2026-10-31 19:57 UTC
 Answer: Yes | Comment: Yes, it looks functional, but it is ugly. Eventually you wanna be a grade a top-tier video game we need nice design and nice looking screens.
 Answered: 2026-10-31 19:58 UTC
 
+## pic-fh-creator | Does the character creator preview look right when you open it?
+Answer: Yes | Comment: Yes, it looks functional, but it is ugly. Eventually you wanna be a grade a top-tier video game we need nice design and nice looking screens.
+Answered: 2026-10-31 19:58 UTC
+
