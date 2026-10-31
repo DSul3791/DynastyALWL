@@ -152,3 +152,10 @@ Image: questions/img/meadow_flowers.png
 Note: Real game, noon, low viewpoint. Flora rates it 3 of 5: flower drifts (dandelion, St John's wort, yarrow, chamomile, wild carrot) now stand above the grass with bright yellow heads, but they are few and small at this distance and sit at the meadow edge, not in the open middle.
 - Yes
 - No
+
+## death-novice | Our design says death is final (remains, then you play on as your child or a new character; no respawn). Should new characters get a free respawn at their bed until they reach a set level?
+Note: Today the build respawns you at your spawn bed on death, which does not match the design (DESIGN_IDEAS.md section 6.1: "dies; the player restarts as a new character", heir inherits). Your idea fixes that: a short "novice grace" so new players can learn, then real dynasty death. Recommendation: respawn at the bed until level 5, then real death with remains and an heir, because a first-hour player has no heir yet and no reason to lose a whole life to a fall.
+- Respawn at the bed until level 5, then real death
+- Respawn at the bed until level 10, then real death
+- No respawn at all (design as written; no heir means a new character)
+- Respawn until the character has a child (an heir), then real death
