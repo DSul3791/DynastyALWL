@@ -1,0 +1,384 @@
+[
+ {
+  "final": {
+   "herd_sizes": [
+    4,
+    5
+   ],
+   "states": {
+    "deer:graze": 9,
+    "fox:graze": 1,
+    "rabbit:graze": 4,
+    "rabbit:hop": 2
+   },
+   "t_s": 600.0,
+   "total": 16,
+   "within_100": {},
+   "within_1000": {},
+   "within_300": {
+    "deer": 9,
+    "fox": 1,
+    "rabbit": 6
+   }
+  },
+  "seed": 7,
+  "snapshots": [
+   {
+    "herd_sizes": [
+     4,
+     5
+    ],
+    "states": {
+     "deer:graze": 9,
+     "fox:graze": 1,
+     "rabbit:graze": 6
+    },
+    "t_s": 120.0,
+    "total": 16,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 9,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     4,
+     5
+    ],
+    "states": {
+     "deer:graze": 9,
+     "fox:hop": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 240.0,
+    "total": 16,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 9,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     4,
+     5
+    ],
+    "states": {
+     "deer:graze": 9,
+     "fox:graze": 1,
+     "rabbit:graze": 6
+    },
+    "t_s": 360.0,
+    "total": 16,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 9,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     4,
+     5
+    ],
+    "states": {
+     "deer:graze": 9,
+     "fox:graze": 1,
+     "rabbit:graze": 6
+    },
+    "t_s": 480.0,
+    "total": 16,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 9,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     4,
+     5
+    ],
+    "states": {
+     "deer:graze": 9,
+     "fox:graze": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 600.0,
+    "total": 16,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 9,
+     "fox": 1,
+     "rabbit": 6
+    }
+   }
+  ]
+ },
+ {
+  "final": {
+   "herd_sizes": [
+    5
+   ],
+   "states": {
+    "deer:graze": 5,
+    "fox:hop": 1,
+    "rabbit:graze": 4,
+    "rabbit:hop": 2
+   },
+   "t_s": 600.0,
+   "total": 12,
+   "within_100": {},
+   "within_1000": {},
+   "within_300": {
+    "deer": 5,
+    "fox": 1,
+    "rabbit": 6
+   }
+  },
+  "seed": 11,
+  "snapshots": [
+   {
+    "herd_sizes": [
+     5
+    ],
+    "states": {
+     "deer:graze": 5,
+     "fox:hop": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 120.0,
+    "total": 12,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 5,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     5
+    ],
+    "states": {
+     "deer:graze": 5,
+     "fox:hop": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 240.0,
+    "total": 12,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 5,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     5
+    ],
+    "states": {
+     "deer:graze": 5,
+     "fox:graze": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 360.0,
+    "total": 12,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 5,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     5
+    ],
+    "states": {
+     "deer:graze": 5,
+     "fox:graze": 1,
+     "rabbit:graze": 5,
+     "rabbit:hop": 1
+    },
+    "t_s": 480.0,
+    "total": 12,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 5,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     5
+    ],
+    "states": {
+     "deer:graze": 5,
+     "fox:hop": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 600.0,
+    "total": 12,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 5,
+     "fox": 1,
+     "rabbit": 6
+    }
+   }
+  ]
+ },
+ {
+  "final": {
+   "herd_sizes": [
+    6
+   ],
+   "states": {
+    "deer:graze": 4,
+    "deer:hop": 2,
+    "fox:hop": 1,
+    "rabbit:graze": 6
+   },
+   "t_s": 600.0,
+   "total": 13,
+   "within_100": {},
+   "within_1000": {},
+   "within_300": {
+    "deer": 6,
+    "fox": 1,
+    "rabbit": 6
+   }
+  },
+  "seed": 23,
+  "snapshots": [
+   {
+    "herd_sizes": [
+     6
+    ],
+    "states": {
+     "deer:graze": 4,
+     "deer:hop": 2,
+     "fox:graze": 1,
+     "rabbit:graze": 3,
+     "rabbit:hop": 3
+    },
+    "t_s": 120.0,
+    "total": 13,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 6,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     6
+    ],
+    "states": {
+     "deer:graze": 4,
+     "deer:hop": 2,
+     "fox:graze": 1,
+     "rabbit:graze": 5,
+     "rabbit:hop": 1
+    },
+    "t_s": 240.0,
+    "total": 13,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 6,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     6
+    ],
+    "states": {
+     "deer:graze": 4,
+     "deer:hop": 2,
+     "fox:hop": 1,
+     "rabbit:graze": 2,
+     "rabbit:hop": 4
+    },
+    "t_s": 360.0,
+    "total": 13,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 6,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     6
+    ],
+    "states": {
+     "deer:graze": 4,
+     "deer:hop": 2,
+     "fox:hop": 1,
+     "rabbit:graze": 4,
+     "rabbit:hop": 2
+    },
+    "t_s": 480.0,
+    "total": 13,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 6,
+     "fox": 1,
+     "rabbit": 6
+    }
+   },
+   {
+    "herd_sizes": [
+     6
+    ],
+    "states": {
+     "deer:graze": 4,
+     "deer:hop": 2,
+     "fox:hop": 1,
+     "rabbit:graze": 6
+    },
+    "t_s": 600.0,
+    "total": 13,
+    "within_100": {},
+    "within_1000": {},
+    "within_300": {
+     "deer": 6,
+     "fox": 1,
+     "rabbit": 6
+    }
+   }
+  ]
+ }
+]

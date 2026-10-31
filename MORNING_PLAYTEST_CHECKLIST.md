@@ -55,6 +55,7 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 - [ ] **Farming**: a hoe tills a bed; seeds sow only in their season; rain keeps a bed wet; winter kills seedlings (server rules, test_farming). Crop and seed items now exist; I did not try it in the client.
 - [ ] **Recipes**: 208 of 227 recipes are learnable now (the 19 left are forge, steel and bronze things, plank chest, water wheel).
 - [ ] **Blacksmithy**: the blueprint places when 10 logs lie near you (probe).
+- Status at 08:15 on the daily head: 19 fixed, 8 still broken (water wheel craft now FIXED). Flint, ore and coal are **still orphans** on the head (Tyler's fix is not in yet); recipes 217 of 236 learnable.
 - Still not possible: **flint, copper, tin, iron and coal cannot be picked up** (no source yet); no stairs; the saw mill; hide scraper and leather.
 
 ## 2c. New since 07:12 (merged on the daily head, not yet checked by me in the client unless noted)
@@ -67,7 +68,7 @@ Controls: **E** gather (hold E to take several), **I** inventory and crafting, *
 - [ ] **Fruit trees**: only the plan, the items (19 fruits, 8 dishes, a calendar) and the fruit mesh and shader landed. **Fruit trees are still pending**: do not expect to pick apples, pears or cherries yet.
 - [ ] **Held looks**: stone mace, club, flanged maces, swords and the quern no longer show a rod and block in the hand.
 - [ ] **Beach**: wet sand shines and mirrors the sky; bigger stones.
-- Not landed yet, so do not look for them: **double F** and the **idle timeout** (Tyler).
+- **Double F** and the **Carried slot** have landed (Kathleen, test_f_press): try pressing F twice. Not landed yet: the **idle timeout** and the `--timeout` flag (Tyler).
 - Known still broken: the **chest** self-test fails (the chest screen may not open); lit-campfire picture not taken.
 - **Sound**: the occasional cave-in rumble and the rain-like hiss in clear weather are explained in SOUND_AUDIT.md (listen at the clearing and in a forest and tell me what you hear).
 

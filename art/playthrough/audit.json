@@ -1,8 +1,8 @@
 {
  "counts": {
-  "items": 533,
-  "recipes": 227,
-  "recipes_known_or_open": 208,
+  "items": 561,
+  "recipes": 236,
+  "recipes_known_or_open": 217,
   "structures": 38,
   "blueprints": 6
  },
@@ -460,7 +460,7 @@
    "wave_now": 2,
    "wave_potential": 2,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "grass_skirt",
@@ -891,7 +891,7 @@
    "wave_now": 2,
    "wave_potential": 2,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_baked_apples",
@@ -1354,7 +1354,7 @@
    "wave_now": 1,
    "wave_potential": 1,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "hinges",
@@ -1638,7 +1638,7 @@
    "wave_now": 2,
    "wave_potential": 2,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_honey_loaf",
@@ -2205,7 +2205,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "leather_jerkin",
@@ -2220,7 +2220,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "bronze_helm",
@@ -2251,7 +2251,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "iron_helm",
@@ -2505,7 +2505,7 @@
    "blocked_by": [
     "no source anywhere for processed_hide"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "heavy_leather",
@@ -2520,7 +2520,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "fine_leather",
@@ -2535,7 +2535,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "wool_tunic",
@@ -2836,7 +2836,7 @@
    "blocked_by": [
     "no source anywhere for seaweed,shellfish"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_mussel_stew",
@@ -2851,7 +2851,7 @@
    "blocked_by": [
     "no source anywhere for shellfish"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_crab_cakes",
@@ -2879,7 +2879,7 @@
    "wave_now": 1,
    "wave_potential": 1,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_herb_omelette",
@@ -2892,7 +2892,7 @@
    "wave_now": 1,
    "wave_potential": 1,
    "blocked_by": [],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_seal_stew",
@@ -2995,7 +2995,7 @@
    "blocked_by": [
     "no source anywhere for sea_salt"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_salted_fish",
@@ -3010,7 +3010,7 @@
    "blocked_by": [
     "no source anywhere for sea_salt"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "cook_dried_berries",
@@ -3135,7 +3135,7 @@
    "blocked_by": [
     "no source anywhere for leather"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "butter",
@@ -3164,6 +3164,141 @@
    "wave_potential": null,
    "blocked_by": [
     "no source anywhere for milk,sea_salt"
+   ],
+   "future": true
+  },
+  {
+   "id": "sea_salt",
+   "number": 281,
+   "category": "Fire and cooking",
+   "gives": "sea_salt",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for sea_water"
+   ],
+   "future": false
+  },
+  {
+   "id": "cook_dried_apples",
+   "number": 282,
+   "category": "Fire and cooking",
+   "gives": "dried_apples",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for apple_autumn"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_apple_sauce",
+   "number": 283,
+   "category": "Fire and cooking",
+   "gives": "apple_sauce",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for apple_cooking"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_apple_pie",
+   "number": 284,
+   "category": "Fire and cooking",
+   "gives": "apple_pie",
+   "station": "oven",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for apple_cooking,flour"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_plum_jam",
+   "number": 285,
+   "category": "Fire and cooking",
+   "gives": "plum_jam",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for plums"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_stewed_pears",
+   "number": 286,
+   "category": "Fire and cooking",
+   "gives": "stewed_pears",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for pear_autumn"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_preserved_damsons",
+   "number": 287,
+   "category": "Fire and cooking",
+   "gives": "preserved_damsons",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for damsons"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_dried_figs",
+   "number": 288,
+   "category": "Fire and cooking",
+   "gives": "dried_figs",
+   "station": "campfire",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for figs"
+   ],
+   "future": true
+  },
+  {
+   "id": "cook_quince_paste",
+   "number": 289,
+   "category": "Fire and cooking",
+   "gives": "quince_paste",
+   "station": "campfire_pot",
+   "station_level": 1,
+   "known": true,
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for quince"
    ],
    "future": true
   }
@@ -3846,7 +3981,7 @@
    ],
    "obtainable": "now",
    "look": "ok (bottle)",
-   "future": true
+   "future": false
   },
   {
    "id": "grass_skirt",
@@ -4586,7 +4721,7 @@
    ],
    "obtainable": "now",
    "look": "ok (mound)",
-   "future": true
+   "future": false
   },
   {
    "id": "baked_apples",
@@ -5061,7 +5196,7 @@
    ],
    "obtainable": "now",
    "look": "ok (pile)",
-   "future": true
+   "future": false
   },
   {
    "id": "hinges",
@@ -5440,7 +5575,7 @@
    ],
    "obtainable": "now",
    "look": "ok (loaf)",
-   "future": true
+   "future": false
   },
   {
    "id": "honey_loaf",
@@ -5531,7 +5666,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "fine_leather",
@@ -5542,7 +5677,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "heavy_leather",
@@ -5553,7 +5688,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "rivets",
@@ -5970,7 +6105,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "leather_jerkin",
@@ -5981,7 +6116,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "bronze_helm",
@@ -6003,7 +6138,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "iron_helm",
@@ -6294,7 +6429,7 @@
    "sources": [],
    "obtainable": "ORPHAN",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "shellfish",
@@ -6303,7 +6438,7 @@
    "sources": [],
    "obtainable": "ORPHAN",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "crab_meat",
@@ -6312,7 +6447,7 @@
    "sources": [],
    "obtainable": "ORPHAN",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "egg",
@@ -6323,7 +6458,7 @@
    ],
    "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "seal_meat",
@@ -6340,10 +6475,12 @@
    "id": "sea_salt",
    "number": 360,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "recipe:sea_salt"
+   ],
+   "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "roast_shellfish",
@@ -6354,7 +6491,7 @@
    ],
    "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "boiled_egg",
@@ -6365,7 +6502,7 @@
    ],
    "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "roast_seal",
@@ -6704,7 +6841,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "mussel_stew",
@@ -6715,7 +6852,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "crab_cakes",
@@ -6737,7 +6874,7 @@
    ],
    "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "herb_omelette",
@@ -6748,7 +6885,7 @@
    ],
    "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "seal_stew",
@@ -6825,7 +6962,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "salted_fish",
@@ -6836,7 +6973,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "dried_berries",
@@ -6924,7 +7061,7 @@
    ],
    "obtainable": "RECIPE BLOCKED",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "milk",
@@ -7066,6 +7203,274 @@
    "sources": [],
    "obtainable": "ORPHAN",
    "look": "override look",
+   "future": true
+  },
+  {
+   "id": "sea_water",
+   "number": 430,
+   "kind": "material",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "ok (bottle)",
+   "future": false
+  },
+  {
+   "id": "apple_early",
+   "number": 431,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_summer",
+   "number": 432,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_autumn",
+   "number": 433,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_keeping",
+   "number": 434,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_cooking",
+   "number": 435,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "pear_summer",
+   "number": 436,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "pear_autumn",
+   "number": 437,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "pear_winter",
+   "number": 438,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "sour_cherries",
+   "number": 439,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "plums",
+   "number": 440,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "damsons",
+   "number": 441,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "quince",
+   "number": 442,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "medlar",
+   "number": 443,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "figs",
+   "number": 444,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "olives",
+   "number": 445,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "pomegranates",
+   "number": 446,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "mangoes",
+   "number": 447,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "oranges",
+   "number": 448,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "lemons",
+   "number": 449,
+   "kind": "food",
+   "sources": [],
+   "obtainable": "ORPHAN",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "dried_apples",
+   "number": 450,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_dried_apples"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_sauce",
+   "number": 451,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_apple_sauce"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "apple_pie",
+   "number": 452,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_apple_pie"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "plum_jam",
+   "number": 453,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_plum_jam"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "stewed_pears",
+   "number": 454,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_stewed_pears"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "preserved_damsons",
+   "number": 455,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_preserved_damsons"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "dried_figs",
+   "number": 456,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_dried_figs"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
+   "future": true
+  },
+  {
+   "id": "quince_paste",
+   "number": 457,
+   "kind": "food",
+   "sources": [
+    "recipe:cook_quince_paste"
+   ],
+   "obtainable": "RECIPE BLOCKED",
+   "look": "PLACEHOLDER grey chunk",
    "future": true
   },
   {
