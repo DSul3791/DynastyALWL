@@ -156,6 +156,32 @@ func _init() -> void:
 	check(rules.fruit_max(drops["fruit_tree"]["wild_apple"], apple_row, 4242, 7.0) == g.fruit_max("wild_apple", 4242, 7.0), "the client's store formula equals the server's")
 	var state: Array = save_game.fruit_state("0,0")
 	check((state[0] as PackedInt32Array).has(777) and int((state[1] as PackedInt32Array)[(state[0] as PackedInt32Array).find(777)]) == save_game.fruit_taken("0,0,777") and save_game.fruit_taken("0,0,777") > 0, "the per-chunk fruit state carries the pieces taken (%d)" % save_game.fruit_taken("0,0,777"))
+	# The varieties (one flora row each): every fruit tree row has its item, a store, and a season that lets it be picked in its own season only.
+	var seasons: Array = ["spring", "summer", "autumn", "winter"]
+	var bad: Array = []
+
+	for species_name in drops["fruit_tree"]:
+		var row: Dictionary = {}
+
+		for candidate in flora_rows:
+			if candidate["name"] == species_name:
+				row = candidate
+
+		var harvest: Dictionary = (drops["harvest_yield"] as Dictionary).get(species_name, {})
+
+		if row.is_empty() or harvest.is_empty() or g.table.number_of(str(harvest.get("item", ""))) == 0 or g.fruit_max(species_name, 1, 6.0) < 10:
+			bad.append(species_name)
+			continue
+
+		var in_count: int = 0
+
+		for season_name in seasons:
+			in_count += 1 if rules.in_season(row, season_name) else 0
+
+		if in_count == 0 or in_count == 4:
+			bad.append("%s season %d of 4" % [species_name, in_count])
+
+	check(bad.is_empty() and drops["fruit_tree"].size() >= 19, "every fruit tree variety (%d) has a flora row, its item, a store and a limited season %s" % [drops["fruit_tree"].size(), str(bad)])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
 
