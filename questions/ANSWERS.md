@@ -1914,3 +1914,7 @@ Answered: 2026-10-31 20:03 UTC
 Answer: No | Comment: I can’t tell because there’s no character in the picture
 Answered: 2026-10-31 20:04 UTC
 
+## pic-grass-feet | Do the character's feet and lower legs now show above the grass in third person (left: before, right: after)?
+Answer: No | Comment: I can’t tell because there’s no character in the picture
+Answered: 2026-10-31 20:04 UTC
+
