@@ -88,16 +88,15 @@ for sp, row in drops["harvest_yield"].items():
     add(row["item"], "plant:" + sp)
 for sp, row in drops["berry_yield"].items():
     add(row["item"], "plant:" + sp)
-# The server (server_items.gd gather()) also gives one random in-season yield from the plant's flora.json yields for any plant WITHOUT a
-# harvest_yield or berry_yield row, if that yield exists as an item (natural yield). Taught here by Sal, 2026-10-31.
-for e in flora.values():
-    if e["kind"] in ("plant", "shrub") and e["name"] not in drops["harvest_yield"] and e["name"] not in drops["berry_yield"]:
-        for y in e.get("yields", []):
-            add(y, "plant:" + e["name"] + " (natural yield)")
-# wood_species.json ingredient_groups: a recipe asking for a group id (plain log) is filled by any member (code half pending, data half done)
-for gid, members in load("data/items/wood_species.json").get("ingredient_groups", {}).items():
-    if gid != "note" and any(m in items for m in members):
-        add(gid, "ingredient group " + gid)
+# server gather() (server_items.gd ~1063): a plant with a harvest or berry row gives only that row; every other non-tree plant also gives one random
+# in-season yield from its flora.json `yields` list, for any yield that exists as an item (tool by the suffix rule, handled in add()).
+harvest_rows = set(drops["harvest_yield"].keys()) | set(drops["berry_yield"].keys())
+for e_ in flora.values():
+    if e_["kind"] == "tree" or e_["name"] in harvest_rows or e_.get("retired"):
+        continue
+    for y_ in e_.get("yields", []):
+        add(y_, "plant:" + e_["name"] + " (natural yield)")
+# wood_species.json ingredient_groups (plain log filled by any log_*): the DATA half is done but the server does not match groups yet, so it is NOT counted as a source here (F-16 stays broken until probe_logs says otherwise).
 for i in ("stone", "stick"):
     add(i, "ground scatter")
 add("driftwood", "ground scatter (water bank)")

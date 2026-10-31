@@ -324,13 +324,13 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 | id | what | status | evidence (short) |
 |---|---|---|---|
-| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 173 of 192 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
+| F-01/F-24 | recipes can be learned | **STILL BROKEN** | 175 of 194 recipes known or open (blockers: plank_chest_kit, steel_pickaxe, water_wheel, bronze_ingot, smelt_s |
 | F-02 | flint can be picked up | **STILL BROKEN** | flint: ORPHAN |
 | F-03 | tinder alternatives exist | **FIXED** | birch_bark now, tinder now, tinder_fungus now |
 | F-04 | CONTROLS.md campfire cost matches recipe | **STILL BROKEN** | CONTROLS.md still says 10 stones and 20 sticks |
 | F-05 | wood is reachable without iron (lumber) | **STILL BROKEN** | lumber RECIPE BLOCKED; lumber_wedge makeable now: False |
 | F-06 | brick, oven and clay hearth reachable | **FIXED** | oven built wave 1, clay hearth 1 |
-| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [6, 17] |
+| F-07 | grown trees (cover) within 100 m of the spawn | **FIXED** | grown trees within 50 m / 100 m of the spawn: [5, 18] |
 | F-08 | arrows without feathers | **FIXED** | fibre_arrow makeable now: True |
 | F-09 | club, mace, javelin, wicker shield have real looks | **FIXED** | looks: ['override look', 'override look', 'override look', 'override look'] |
 | F-10 | axe held with a natural pose | **MANUAL** | needs the in-hand picture art/playthrough/08_hold_stone_axe.jpg re-shot |
@@ -341,9 +341,9 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 | F-15 | pickaxe craftable | **FIXED** | stone_pickaxe makeable now: True |
 | F-16 | a felled log works in the log recipes | **STILL BROKEN** | probe_logs: probe3: chopping block crafted from an oak log on the shoulder: 0 |
 | F-17 | override looks are drawn | **FIXED** | basic_look.entry() prefers the override over a placeholder row |
-| F-18 | everything craftable today has a real look | **STILL BROKEN** | 20 craftable items with a grey or missing look: hide_tunic, hide_trousers, hide_gloves, clay_jug, herb_salve,  |
-| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 27 recipes blocked and not flagged future |
-| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 96 orphan items not flagged future (first: log, aloe_gel, amadou, angelica_stems, banana_leaves, belladonna_be |
+| F-18 | everything craftable today has a real look | **STILL BROKEN** | 2 craftable items with a grey or missing look: clay_jug, candle |
+| F-19 | no blocked recipe without a future flag | **STILL BROKEN** | 16 recipes blocked and not flagged future |
+| F-20 | every non-future gathered item has a gather path | **STILL BROKEN** | 1 orphan items not flagged future (first: log) |
 | F-21 | saw mill reachable | **STILL BROKEN** | saw mill built wave: None |
 | F-22 | stairs and stone/brick/log pieces exist | **STILL BROKEN** | structures: 37, stairs: False |
 | F-23 | ore, coal and flint can be picked up | **STILL BROKEN** | iron_ore ORPHAN, coal ORPHAN, flint ORPHAN |
@@ -354,3 +354,47 @@ Still not photographed: a lit campfire (the rig cannot light one: it needs a `--
 
 11 fixed, 14 still broken, 2 manual. Full evidence and owners: `PLAYTHROUGH_STATUS.md`.
 <!-- SCOREBOARD END -->
+
+---
+
+# Part 5: audit corrected for the server's natural-yield rule (2026-10-31, after Sal's note)
+
+`gather()` in `server_items.gd` gives a plant's harvest or berry row only when it has one, and otherwise its drops rows plus one random in-season yield from its flora.json `yields` list for any yield that exists as an item. `audit_playthrough.py` now models that. Effect: recipes blocked and not flagged future **40 → 19**, orphans not flagged future **96 → 42**, placeholder-look items 83 → 62, craftable-today items with a grey or no look **20 → 2** (clay_jug, candle), after also merging the latest DailyDev (Kathleen's looks, Sal's data, the flora session's yields).
+
+What is left of F-19: **every one of the 19 is the log chain (F-16)** (chopping block, log workbench, rough plank, lumber and everything built from lumber, wedge lumber) plus two by design (hand saw, water wheel not learnable). I count plain `log` as having no source because a felled tree gives `log_<species>` on the shoulder and recipes ask for `log` (probe_logs_output.txt); Sal's walk counts `log` as a source, which is the only difference between our tables.
+
+What is left of F-20 (42 items, none gatherable and none flagged future): tree products with no tap or bark action (sap, gum, oil, mirrorbark/witness/wardpine bark and wood, hearthwood logs, everember wood and sap, palm wood and fronds, cherry/fine/hard/thorny wood, timber, softwood, hardwood, wood, poles, charcoal_wood, walnut husks, banana leaves), second yields hidden by a harvest row (comfrey roots, raspberry leaves, amadou, elderflowers, honey flowers, hawthorn blossom, witness leaves), and abstract names (`fibre`, `seeds`, `stuffing`, `burrs`, `thorny_canes`, `angelica_stems`, `cactus_pads`, `fiddleheads`). A decision for Sal and the flora session: tap and bark actions for trees, or retire the abstract items.
+
+---
+
+# Part 6: critical pass over the world pictures (2026-10-31)
+
+Rating: 1 to 5 for "looks real and alive" (5 = could be a screenshot of the finished game). Owners as in the brief.
+
+| Picture | Rating | Problems | Owner |
+|---|---|---|---|
+| `world/spawn_view.jpg` | 4 | rich autumn forest, bramble with berries, pond between the trunks; the NPC Edda stands inside a young fir at the lower left (clipping) | Sonny (NPC placement) |
+| `world/shelter_wide.jpg` | 3.5 | lean-to roof is flat green slabs (reads as painted boards, no thatch or turf texture); the thatch roof is four posts and a thin ridge; the bed is a plain frame with stacked planks; the stump-like chopping block is fine | Kathleen |
+| `world/shelter_close.jpg` | 3 | workbench is a bare table; the rough bed shows stacked planks, not a bed (no bedding or straw look); tool rack readable | Kathleen |
+| `world/once.jpg` | 3 | the **whole foreground is a dark rippled plane** (the camera stands at the spawn, 53316, 68476, which the server comment calls "pond A shore, in about 0.9 m of water"): it is water, not shading; the **stone forge is a torn grey block with ragged orange edges**; lean-to roof flat green; bed plain planks | Sonny (water), Kathleen (forge, roof, bed) |
+| `world/open_ground_rain.jpg` | 3.5 | rain streaks, dark light and the forge smoke work well; same dark rippled plane in the foreground | Sonny |
+| `world/under_beech_dry.jpg` | 2 | the crown is floating clumps of leaves with large sky gaps and bright blue-grey spikes where the branches meet; it does not read as a roof, though cover.gd treats it as a 2 m disc | Kathleen (trees), flora session |
+| `world/under_beech_rain.jpg` | 2 | same crown; rain is visible in the gaps and on the far trees, so the player cannot see why under here is dry | Kathleen, flora session |
+| `world/campfire.jpg` | 2 | only the green placement ring is drawn (no sticks, no fire); a moss-green boulder with a hard bright top; a fern frond as big as the boulder | Kathleen (fire), flora session (fern scale) |
+| `world/fell.jpg` | 1 | not a felling picture: the rig printed "fell: no tree loaded" and kept the spawn frame | Kathleen (rig) |
+| `sheets/items_*.jpg`, `structures_*.jpg` | 4 / 4.5 | structures look good; 62 items are still white blobs (F-18); the 31 kits are one box shape (F-27) | Kathleen |
+
+## Top ten problems (all pictures, all sheets)
+
+| # | Problem | Owner | Evidence |
+|---|---|---|---|
+| 1 | The player spawns in or at the edge of a pond: the foreground is a dark rippled plane with the pieces on grass behind it | Sonny (water); Tyler if the spawn point should move to the dry bench 12 m east, 53330, 68466 (the server comment gives it) | `once.jpg`, `open_ground_rain.jpg` |
+| 2 | The tree crown reads as floating clumps with sky gaps: standing under it does not look sheltered, and the game's rule says it is | Kathleen, flora session | `under_beech_dry.jpg` |
+| 3 | Branch spikes under the crown are bright blue-grey | Kathleen | `under_beech_dry.jpg` |
+| 4 | Stone forge looks like a torn grey block with ragged orange edges | Kathleen | `once.jpg` |
+| 5 | Lean-to roof is flat green slabs | Kathleen | `once.jpg`, `shelter_wide.jpg` |
+| 6 | Rough bed is plain stacked planks (no bedding, no straw) | Kathleen | `shelter_close.jpg` |
+| 7 | A laid campfire is not drawn at all (only the ghost ring) and cannot be lit by the rig | Kathleen | `campfire.jpg` |
+| 8 | Felled trunk, stump and lit-fire pictures cannot be made: the fell rig finds no tree after 60 s | Kathleen | `fell.jpg` |
+| 9 | 62 items are white blobs and the 31 kits are one box shape | Kathleen | `items_*.jpg` |
+| 10 | The NPC Edda clips into trees and stands in every spawn picture | Sonny | `spawn_view.jpg` |
