@@ -211,5 +211,31 @@ func _init() -> void:
 	_check(float(Rules.state(0.5, 0.0, Traits.of("mud"))["speed_mult"]) < float(Rules.state(0.5, 0.0, fresh)["speed_mult"]), "rules: mud slows a wader more than water")
 	_check(float(Rules.state(1.0, 0.0, Traits.of("lava"))["harm_per_s"]) > 0.0, "rules: lava harms")
 
+	# 8. rain: falls on every cell, runs downhill into the low ground, volume = rain x time x area
+	var hill: PackedFloat32Array = _flat(48, 16)
+
+	for j in range(16):
+		for i in range(48):
+			hill[j * 48 + i] = 8.0 - 0.15 * float(i) if i < 40 else 2.0 - 0.15 * 40.0 + 6.0 * 0.0
+
+	var r = Field.new(48, 16, 2.0, hill)
+	r.rain_mps = 0.0005
+	var area: float = 48.0 * 16.0 * 4.0
+	_run(r, 400.0)
+	var rained: float = 0.0005 * 400.0 * area
+	_check(absf(r.volume_m3() - rained) / rained < 0.02, "rain: 0.5 mm a second for 400 s puts %.0f of %.0f m3 on the field" % [r.volume_m3(), rained])
+	var low: float = 0.0
+
+	for j in range(16):
+		for i in range(40, 48):
+			low += r.depth[j * 48 + i]
+
+	var high: float = 0.0
+
+	for j in range(16):
+		for i in range(0, 8):
+			high += r.depth[j * 48 + i]
+
+	_check(low > 3.0 * high, "and runs off the slope into the low ground (%.1f vs %.1f m of depth summed)" % [low, high])
 	print("%d failures" % failures)
 	quit(1 if failures > 0 else 0)

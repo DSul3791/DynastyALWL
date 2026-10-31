@@ -18,6 +18,7 @@ const WAKE_STEPS := 24
 const SLEEP_CHANGE := 2.0e-6
 const SLEEP_Q := 2.0e-5
 const DRY := 1.0e-5
+const RAIN_DEPOSIT_M := 0.002
 
 var w: int
 var h: int
@@ -30,6 +31,7 @@ var traits
 var springs: Dictionary = {}    # cell index -> m^3/s
 var sinks: Dictionary = {}      # cell index -> m^3/s (most it takes out)
 var fixed: Dictionary = {}      # cell index -> water level held there
+var rain_mps: float = 0.0       # rain in metres of depth per second on every cell (0.0005 is a hard storm, about 1.8 m an hour); deposited in bulk every RAIN_DEPOSIT_M so dry ground does not wake every step
 var open_edges: bool = false    # edge cells lose their water to the outside (a river leaving the field)
 var time_s: float = 0.0
 var cells_stepped: int = 0      # cells visited by the last step() (the cost measure)
@@ -40,6 +42,7 @@ var _bh: int
 var _awake: PackedInt32Array
 var _keep: PackedFloat32Array
 var _hmax: float = 0.1
+var _rain_acc: float = 0.0
 var _g: float
 var _n2: float
 
@@ -201,6 +204,17 @@ func _flux(a: int, b: int, q: float, qa: float, qb: float, dt: float) -> float:
 
 
 func _substep(dt: float) -> void:
+	if rain_mps > 0.0:
+		_rain_acc += rain_mps * dt
+
+		if _rain_acc >= RAIN_DEPOSIT_M:
+			for k in range(w * h):
+				if not fixed.has(k):
+					depth[k] += _rain_acc
+
+			_rain_acc = 0.0
+			wake_all()
+
 	for k in springs:
 		depth[k] += float(springs[k]) * dt / (cell_m * cell_m)
 		_awake[((k / w) / BLOCK) * _bw + (k % w) / BLOCK] = WAKE_STEPS

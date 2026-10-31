@@ -53,6 +53,7 @@ const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHubScript := preload("res://src/water/water_hub.gd")
+const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): --water2 swaps it in for the old hub; the old one stays the default
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -720,7 +721,7 @@ func _start_water() -> void:
 	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
 	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
 	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
-	water_live = WaterHubScript.new()
+	water_live = WaterHub2Script.new() if OS.get_cmdline_user_args().has("--water2") else WaterHubScript.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
 
 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
