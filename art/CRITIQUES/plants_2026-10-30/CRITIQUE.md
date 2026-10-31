@@ -39,3 +39,14 @@ Picture: flora_b1_tallgrass_nettle_reeds_flax.jpg (`--flora tall_grass,nettle,re
 | Nettle | serrated oval leaves stacked on stems read as nettle; the stems are black wires standing above and between the leaves, so it looks like a plant on poles | 2 | green stems (darker than the leaves, not black), shorter, leaves in opposite pairs, a few pale flower tassels near the top |
 | Reeds | good clump: tall green blades, dark brown seed heads on stiff stalks; the yellow flag triangles in the middle look odd | 3 | drop or shrink the yellow triangles; heads a little smaller |
 | Wild flax | blue five-petal flowers on thin stems read as flax; small, grey-green mound base is a blotch | 2 | slimmer taller stems, a few more flowers, base of narrow leaves along the stem instead of the grey mound |
+
+### Flora batch 1, after my fixes (2026-10-31; real game on the corrected terrain, summer noon)
+
+Picture: flora_b1_after_nettle_tallgrass_flax_thatch.jpg. Done in src/flora/tree_builder.gd (the flora session agreed I make model fixes; it only changes placement): tall_grass and thatch_grass got a lower blade mass (blade_h 0.8, 0.85) under taller seed stems (reach 1.2, 1.1), a dark green base fading to straw tips, and bigger drooping seed heads; nettle stems are green-brown (no black wires) and the top leaf pair sits at the stem top; flax has 8 stems with 7 flower beads each and one basal clump instead of three. The flora budget test passes (0 over budget).
+
+| Plant | Rating | Now | Next to improve |
+|---|---|---|---|
+| Tall grass | 3 | clearly above the ground blades, tan drooping seed heads, darker base | the small yellow triangles (flags) beside the seed heads look like paper: find which card draws them (also on thatch grass and reeds) |
+| Thatch grass | 3 | fuller, taller, golden clump, reads "pick me" | same yellow triangles |
+| Nettle | 3 | stacked serrated leaf pairs on green-brown stems, no black wires | pale flower tassels at the top |
+| Wild flax | 3 | many blue flowers on slim stems; the grey-green base is smaller | narrow leaves along the stem instead of the grey clump |

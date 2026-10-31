@@ -690,8 +690,9 @@ func _fell_tick(now: int) -> void:
 			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))
 			var mid: Vector3 = tp + Vector3(dir.x, 0.0, dir.y) * float(extra.get("length", 10.0)) * 0.5
 			var side: Vector2 = Vector2(-dir.y, dir.x)
-			_fell_stand(Vector3(mid.x + side.x * 16.0, 0.0, mid.z + side.y * 16.0))
-			_fell_face(client.body.global_position, mid + Vector3(0.0, 1.0, 0.0), -4.0)
+			_fell_stand(Vector3(mid.x + side.x * 18.0, 0.0, mid.z + side.y * 18.0))
+			client.body.global_position.y += 4.0      # a few metres up, looking down at the trunk from the side, so grass and the stump do not hide it
+			_fell_face(client.body.global_position, mid + Vector3(0.0, 0.5, 0.0), -14.0)
 			_fell_t = now
 			_fell_step = 5
 
