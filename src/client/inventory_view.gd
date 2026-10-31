@@ -3025,9 +3025,10 @@ var comfort_level: int = 0
 var rested_level: int = 0
 var rested_minutes: int = 0
 var _comfort_label: Label
+var comfort_tip: String = ""
 
 
-func _on_comfort(level: int, rested_tier_level: int, minutes: int) -> void:
+func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String = "") -> void:
 	comfort_level = level
 	rested_level = rested_tier_level
 	rested_minutes = minutes
@@ -3044,10 +3045,12 @@ func _on_comfort(level: int, rested_tier_level: int, minutes: int) -> void:
 		_comfort_label.add_theme_font_size_override("font_size", 26)
 		_comfort_label.add_theme_constant_override("outline_size", 6)
 		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		_comfort_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_comfort_label.mouse_filter = Control.MOUSE_FILTER_STOP   # hover it (inventory open, cursor free) for the tooltip
 		_layer.add_child(_comfort_label)
 
 	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
+	_comfort_label.tooltip_text = tip
+	comfort_tip = tip
 	_comfort_label.visible = _comfort_label.text != ""
 	_comfort_label.modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
 
