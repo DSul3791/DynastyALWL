@@ -197,9 +197,11 @@
    "station": "",
    "station_level": 1,
    "known": true,
-   "wave_now": 1,
-   "wave_potential": 1,
-   "blocked_by": [],
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
    "future": false
   },
   {
@@ -214,6 +216,7 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
+    "no source anywhere for log",
     "station saw_mill level 1 not obtainable"
    ],
    "future": false
@@ -262,7 +265,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for steel_ingot"
+    "no source anywhere for steel_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -646,9 +650,11 @@
    "station": "workbench",
    "station_level": 1,
    "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
    "future": false
   },
   {
@@ -1215,9 +1221,10 @@
    "station_level": 1,
    "known": false,
    "wave_now": null,
-   "wave_potential": 1,
+   "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)"
+    "not known (no learn system)",
+    "no source anywhere for log"
    ],
    "future": false
   },
@@ -1362,9 +1369,11 @@
    "station": "workbench",
    "station_level": 1,
    "known": true,
-   "wave_now": 2,
-   "wave_potential": 2,
-   "blocked_by": [],
+   "wave_now": null,
+   "wave_potential": null,
+   "blocked_by": [
+    "no source anywhere for log"
+   ],
    "future": false
   },
   {
@@ -1562,7 +1571,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "no source anywhere for hand_saw"
+    "no source anywhere for log,hand_saw"
    ],
    "future": false
   },
@@ -1903,7 +1912,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for copper_ingot,tin_ingot"
+    "no source anywhere for copper_ingot,tin_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2029,7 +2039,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for iron_ingot,coal"
+    "no source anywhere for iron_ingot,coal",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2196,7 +2207,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for bronze_ingot"
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2212,7 +2224,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for bronze_ingot"
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2228,7 +2241,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for lumber,bronze_ingot"
+    "no source anywhere for lumber,bronze_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2244,7 +2258,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for iron_ingot,leather"
+    "no source anywhere for iron_ingot,leather",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2260,7 +2275,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for iron_ingot"
+    "no source anywhere for iron_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2276,7 +2292,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for lumber,iron_ingot"
+    "no source anywhere for lumber,iron_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2375,7 +2392,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for bronze_ingot"
+    "no source anywhere for bronze_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2407,7 +2425,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for iron_ingot"
+    "no source anywhere for iron_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2423,7 +2442,8 @@
    "wave_potential": null,
    "blocked_by": [
     "not known (no learn system)",
-    "no source anywhere for rivets,iron_ingot"
+    "no source anywhere for rivets,iron_ingot",
+    "station forge level 2 not obtainable"
    ],
    "future": true
   },
@@ -2602,10 +2622,8 @@
    "id": "log",
    "number": 4,
    "kind": "material",
-   "sources": [
-    "tree:log chain"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "ORPHAN",
    "look": "NO LOOK ENTRY",
    "future": false
   },
@@ -2723,8 +2741,10 @@
    "id": "roast_forage",
    "number": 15,
    "kind": "food",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
    "look": "ok (stew)",
    "future": false
   },
@@ -2819,7 +2839,7 @@
    "sources": [
     "recipe:chopping_block"
    ],
-   "obtainable": "now",
+   "obtainable": "structure",
    "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
    "future": false
   },
@@ -3166,8 +3186,10 @@
    "id": "rotten_food",
    "number": 55,
    "kind": "material",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "spoilage"
+   ],
+   "obtainable": "now",
    "look": "ok (pile)",
    "future": false
   },
@@ -3337,8 +3359,10 @@
    "id": "roast_meat",
    "number": 69,
    "kind": "food",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
    "look": "ok (joint)",
    "future": true
   },
@@ -3476,8 +3500,10 @@
    "id": "roast_fish",
    "number": 80,
    "kind": "food",
-   "sources": [],
-   "obtainable": "ORPHAN",
+   "sources": [
+    "cooking at a fire"
+   ],
+   "obtainable": "now",
    "look": "ok (fish)",
    "future": true
   },
@@ -3524,10 +3550,9 @@
    "number": 85,
    "kind": "placeable",
    "sources": [
-    "tree:log chain",
     "recipe:log_workbench_kit"
    ],
-   "obtainable": "now",
+   "obtainable": "RECIPE BLOCKED",
    "look": "ok (kit)",
    "future": false
   },
@@ -3535,10 +3560,8 @@
    "id": "log_workbench",
    "number": 86,
    "kind": "structure",
-   "sources": [
-    "tree:log chain"
-   ],
-   "obtainable": "now",
+   "sources": [],
+   "obtainable": "structure",
    "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
    "future": false
   },
@@ -3664,7 +3687,7 @@
    "number": 100,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3697,7 +3720,7 @@
    "number": 106,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3730,7 +3753,7 @@
    "number": 109,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3763,7 +3786,7 @@
    "number": 112,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3796,7 +3819,7 @@
    "number": 124,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3829,7 +3852,7 @@
    "number": 148,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -3862,7 +3885,7 @@
    "number": 172,
    "kind": "material",
    "sources": [
-    "tree:log chain"
+    "tree:log chain (shoulder, one at a time)"
    ],
    "obtainable": "now",
    "look": "NO LOOK ENTRY",
@@ -4204,7 +4227,7 @@
    "sources": [
     "recipe:timber_prop_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "RECIPE BLOCKED",
    "look": "ok (kit)",
    "future": false
   },
@@ -4350,7 +4373,7 @@
    "sources": [
     "recipe:rough_plank"
    ],
-   "obtainable": "now",
+   "obtainable": "RECIPE BLOCKED",
    "look": "ok (planks)",
    "future": false
   },
@@ -7386,9 +7409,11 @@
     0.7
    ],
    "cap": 4,
-   "built_wave_now": 1,
-   "built_wave_potential": 1,
-   "problems": []
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
   },
   {
    "id": "plank_chest",
@@ -7488,9 +7513,11 @@
     1.0
    ],
    "cap": 3,
-   "built_wave_now": 1,
-   "built_wave_potential": 1,
-   "problems": []
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
   },
   {
    "id": "saw_mill",
@@ -7542,8 +7569,8 @@
     0.72
    ],
    "cap": 2,
-   "built_wave_now": 1,
-   "built_wave_potential": 1,
+   "built_wave_now": 2,
+   "built_wave_potential": 2,
    "problems": []
   },
   {
@@ -7560,9 +7587,11 @@
     1.17
    ],
    "cap": 1,
-   "built_wave_now": 1,
-   "built_wave_potential": 1,
-   "problems": []
+   "built_wave_now": null,
+   "built_wave_potential": null,
+   "problems": [
+    "not obtainable even if all recipes known"
+   ]
   },
   {
    "id": "carcass",
@@ -7757,10 +7786,10 @@
    ],
    "cap": 60,
    "built_wave_now": null,
-   "built_wave_potential": 1,
+   "built_wave_potential": null,
    "problems": [
     "kit recipe timber_prop_kit not known",
-    "not obtainable today (known/open recipes only)"
+    "not obtainable even if all recipes known"
    ]
   },
   {
@@ -8027,10 +8056,6 @@
    1
   ],
   [
-   "forge",
-   2
-  ],
-  [
    "oven",
    3
   ],
@@ -8040,15 +8065,7 @@
   ],
   [
    "workbench",
-   2
-  ],
-  [
-   "workbench",
    3
-  ],
-  [
-   "workbench",
-   4
   ]
  ],
  "stations_now": [
@@ -8061,24 +8078,12 @@
    1
   ],
   [
-   "forge",
-   2
-  ],
-  [
    "workbench",
    1
   ],
   [
    "workbench",
-   2
-  ],
-  [
-   "workbench",
    3
-  ],
-  [
-   "workbench",
-   4
   ]
  ]
 }

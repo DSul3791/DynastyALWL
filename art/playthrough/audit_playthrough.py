@@ -112,11 +112,17 @@ for s_ in list(fishing.get("species", {}).keys()) + list(strings(load("data/item
 for s_ in strings(fishing.get("net", {})):
     add(s_, "fishing")
 # server literals (server_items.gd): a felled log is log_<species>, chopped logs give wooden_block, split blocks firewood
-for i in ("log", "wooden_block", "wooden_block_soft", "firewood", "firewood_soft", "bark", "seed_bundle"):
+for i in ("wooden_block", "wooden_block_soft", "firewood", "firewood_soft", "bark", "seed_bundle"):
     add(i, "tree:log chain")
-for i in list(items):
-    if i.startswith("log_"):
-        add(i, "tree:log chain")
+for e in flora.values():
+    if e["kind"] == "tree":
+        add("log_" + e["name"] if ("log_" + e["name"]) in items else "log", "tree:log chain (shoulder, one at a time)" if ("log_" + e["name"]) in items else "tree:log chain")
+# produced by server code: roasting at a fire (cooking.json gives / cooks_into), spoilage (rotten_food), roasted carcass meat
+cooking = load("data/items/cooking.json")
+add(cooking.get("gives", ""), "cooking at a fire")
+for v_ in cooking.get("cooks_into", {}).values():
+    add(v_, "cooking at a fire")
+add("rotten_food", "spoilage")
 # trade and npc data
 for fn in ("data/npcs/npcs.json",):
     try:

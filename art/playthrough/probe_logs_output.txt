@@ -1,0 +1,5 @@
+probe3: give 3 x log_oak -> 1 (shoulder: log_oak)
+probe3: pack has log_oak 0 plain log 0
+probe3: notice: You do not have what that needs
+probe3: chopping block crafted from an oak log on the shoulder: 0
+probe3: chopping block crafted from 2 plain logs: 1

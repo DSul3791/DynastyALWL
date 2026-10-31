@@ -4,19 +4,20 @@ Counts: {'items': 456, 'recipes': 173, 'recipes_known_or_open': 83, 'structures'
 
 Tools reachable now: ['axe', 'hammer', 'hoe', 'knife', 'net', 'rod', 'spade', 'torch']. Tools reachable if every recipe were known: ['axe', 'candle', 'hammer', 'hoe', 'knife', 'net', 'pick', 'quern', 'rod', 'shield', 'spade', 'torch'].
 
-Stations reachable now: [('campfire_pot', 1), ('forge', 1), ('forge', 2), ('workbench', 1), ('workbench', 2), ('workbench', 3), ('workbench', 4)]
+Stations reachable now: [('campfire_pot', 1), ('forge', 1), ('workbench', 1), ('workbench', 3)]
 
-Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('forge', 2), ('oven', 3), ('workbench', 1), ('workbench', 2), ('workbench', 3), ('workbench', 4)]
+Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('oven', 3), ('workbench', 1), ('workbench', 3)]
 
 
-## Recipes blocked (114 of 173)
+## Recipes blocked (117 of 173)
 
 | # | recipe | gives | category | station | wave if known | blocked by |
 |---|---|---|---|---|---|---|
-| 16 | lumber | lumber | Materials | saw_mill 1 | None | NO | not known (no learn system); station saw_mill level 1 not obtainable |
+| 15 | chopping_block | chopping_block | Workshops and stations |   | None | NO | no source anywhere for log |
+| 16 | lumber | lumber | Materials | saw_mill 1 | None | NO | not known (no learn system); no source anywhere for log; station saw_mill level 1 not obtainable |
 | 17 | plank_chest_kit | plank_chest_kit | Containers and furniture | workbench 2 | None | NO | not known (no learn system); no source anywhere for lumber |
 | 18 | iron_pickaxe | iron_pickaxe | Tools | forge 1 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
-| 19 | steel_pickaxe | steel_pickaxe | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for steel_ingot |
+| 19 | steel_pickaxe | steel_pickaxe | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for steel_ingot; station forge level 2 not obtainable |
 | 22 | bucket | bucket | Containers and furniture |   | None | NO | not known (no learn system); no source anywhere for lumber |
 | 23 | waterskin | waterskin | Containers and furniture |   | 1 | yes | not known (no learn system) |
 | 27 | iron_spade | iron_spade | Tools |   | None | yes | not known (no learn system); no source anywhere for iron_ingot |
@@ -26,6 +27,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 37 | grass_cloak | grass_cloak | Clothing |   | 1 | NO | not known (no learn system) |
 | 38 | fibre_sandals | fibre_sandals | Clothing |   | 1 | NO | not known (no learn system) |
 | 44 | sinew_cord | twine | Materials |   | 1 | NO | not known (no learn system) |
+| 49 | log_workbench_kit | log_workbench_kit | Workshops and stations | workbench 1 | None | NO | no source anywhere for log |
 | 52 | lumber_oak | lumber_oak | Materials | saw_mill 1 | None | yes | not known (no learn system); station saw_mill level 1 not obtainable |
 | 53 | beams_oak | beam_oak | Materials | saw_mill 1 | None | yes | not known (no learn system); station saw_mill level 1 not obtainable |
 | 56 | lumber_birch | lumber_birch | Materials | saw_mill 1 | None | yes | not known (no learn system); station saw_mill level 1 not obtainable |
@@ -56,7 +58,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 121 | roof_section_kit | roof_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
 | 123 | doorway_section_kit | doorway_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
 | 124 | window_section_kit | window_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 125 | timber_prop_kit | timber_prop_kit | Shelter and building |   | 1 | NO | not known (no learn system) |
+| 125 | timber_prop_kit | timber_prop_kit | Shelter and building |   | None | NO | not known (no learn system); no source anywhere for log |
 | 126 | timber_set_kit | timber_set_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
 | 127 | cut_stone_block | cut_stone_block | Materials | workbench 1 | 2 | NO | not known (no learn system) |
 | 128 | brick | brick | Materials | campfire 1 | 1 | NO | not known (no learn system) |
@@ -64,6 +66,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 130 | ladder_kit | ladder_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
 | 141 | iron_hoe | iron_hoe | Tools |   | None | yes | not known (no learn system); no source anywhere for iron_ingot |
 | 142 | steel_hoe | steel_hoe | Tools |   | None | yes | not known (no learn system); no source anywhere for steel_ingot |
+| 143 | rough_plank | rough_plank | Materials | workbench 1 | None | NO | no source anywhere for log |
 | 144 | fine_board | fine_board | Materials | woodworking_table 1 | None | NO | not known (no learn system); no source anywhere for lumber; station woodworking_table level 1 not obtainable |
 | 145 | nails | nails | Materials | forge 1 | None | NO | not known (no learn system); no source anywhere for iron_ingot |
 | 146 | cobblestone | cobblestone | Materials | workbench 1 | 2 | NO | not known (no learn system) |
@@ -74,7 +77,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 152 | saw_blade | saw_blade | Materials | forge 1 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
 | 153 | water_wheel | water_wheel | Workshops and stations | workbench 1 | None | NO | not known (no learn system); no source anywhere for lumber,nails |
 | 157 | hand_saw | hand_saw | Tools | workbench 1 | None | NO | not known (no learn system); no source anywhere for saw_blade |
-| 159 | lumber_by_hand | lumber | Materials |   | None | NO | no source anywhere for hand_saw |
+| 159 | lumber_by_hand | lumber | Materials |   | None | NO | no source anywhere for log,hand_saw |
 | 174 | cook_flatbread | flatbread | Fire and cooking | clay_hearth 1 | None | NO | no source anywhere for seeds |
 | 175 | cook_honey_loaf | honey_loaf | Fire and cooking | oven 1 | None | NO | no source anywhere for seeds,honeyspindle_nectar |
 | 176 | cook_roast_joint | roast_joint | Fire and cooking | oven 1 | None | NO | no source anywhere for wild_garlic_bulbs |
@@ -85,7 +88,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 182 | obsidian_knife | obsidian_knife | Tools | workbench 1 | None | yes | not known (no learn system); no source anywhere for obsidian |
 | 183 | steel_striker | steel_striker | Tools | forge 1 | None | yes | not known (no learn system); no source anywhere for steel_ingot |
 | 184 | rivets | rivets | Materials | forge 1 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
-| 185 | bronze_ingot | bronze_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for copper_ingot,tin_ingot |
+| 185 | bronze_ingot | bronze_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for copper_ingot,tin_ingot; station forge level 2 not obtainable |
 | 186 | stone_pickaxe | stone_pickaxe | Tools | workbench 1 | 2 | yes | not known (no learn system) |
 | 187 | sickle | sickle | Tools | workbench 1 | None | yes | not known (no learn system); no source anywhere for flint |
 | 188 | scythe | scythe | Tools | forge 1 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
@@ -93,7 +96,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 190 | smelt_copper | copper_ingot | Materials | forge 1 | None | yes | not known (no learn system); no source anywhere for copper_ore |
 | 191 | smelt_tin | tin_ingot | Materials | forge 1 | None | yes | not known (no learn system); no source anywhere for tin_ore |
 | 192 | smelt_iron | iron_ingot | Materials | forge 1 | None | yes | not known (no learn system); no source anywhere for iron_ore |
-| 193 | smelt_steel | steel_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,coal |
+| 193 | smelt_steel | steel_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,coal; station forge level 2 not obtainable |
 | 194 | hide_tunic | hide_tunic | Clothing |   | 1 | yes | not known (no learn system) |
 | 195 | hide_trousers | hide_trousers | Clothing |   | 1 | yes | not known (no learn system) |
 | 196 | hide_gloves | hide_gloves | Clothing |   | 1 | yes | not known (no learn system) |
@@ -104,21 +107,21 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 201 | wicker_shield | wicker_shield | Tools |   | 1 | yes | not known (no learn system) |
 | 202 | stone_mace | stone_mace | Tools |   | 1 | yes | not known (no learn system) |
 | 203 | plank_shield | plank_shield | Tools | workbench 1 | None | yes | not known (no learn system); no source anywhere for lumber |
-| 204 | bronze_sword | bronze_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
-| 205 | bronze_mace | bronze_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
-| 206 | bronze_shield | bronze_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,bronze_ingot |
-| 207 | iron_sword | iron_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,leather |
-| 208 | iron_mace | iron_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
-| 209 | iron_shield | iron_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,iron_ingot |
+| 204 | bronze_sword | bronze_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
+| 205 | bronze_mace | bronze_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
+| 206 | bronze_shield | bronze_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,bronze_ingot; station forge level 2 not obtainable |
+| 207 | iron_sword | iron_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,leather; station forge level 2 not obtainable |
+| 208 | iron_mace | iron_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable |
+| 209 | iron_shield | iron_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,iron_ingot; station forge level 2 not obtainable |
 | 210 | steel_sword | steel_sword | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather; station forge level 3 not obtainable |
 | 211 | steel_mace | steel_mace | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot; station forge level 3 not obtainable |
 | 212 | steel_shield | steel_shield | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for lumber,steel_ingot; station forge level 3 not obtainable |
 | 213 | leather_cap | leather_cap | Clothing |   | None | yes | not known (no learn system); no source anywhere for leather |
 | 214 | leather_jerkin | leather_jerkin | Clothing | workbench 1 | None | yes | not known (no learn system); no source anywhere for leather |
-| 215 | bronze_helm | bronze_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
+| 215 | bronze_helm | bronze_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
 | 216 | gambeson | gambeson | Clothing | workbench 1 | None | yes | not known (no learn system); no source anywhere for leather |
-| 217 | iron_helm | iron_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
-| 218 | mail_shirt | mail_shirt | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for rivets,iron_ingot |
+| 217 | iron_helm | iron_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable |
+| 218 | mail_shirt | mail_shirt | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for rivets,iron_ingot; station forge level 2 not obtainable |
 | 219 | steel_helm | steel_helm | Clothing | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable |
 | 220 | plate_cuirass | plate_cuirass | Clothing | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable |
 | 221 | quern | quern | Tools |   | 1 | yes | not known (no learn system) |
@@ -128,14 +131,11 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 225 | hide_glue | hide_glue | Materials | campfire_pot 1 | 2 | yes | not known (no learn system) |
 | 226 | bone_arrow | bone_arrow | Tools |   | 1 | yes | not known (no learn system) |
 
-## ORPHAN items: no recipe makes them and nothing gathers, drops, digs, fishes or trades them: 135 (F = marked future:true in items.json, by design for now)
+## ORPHAN items: no recipe makes them and nothing gathers, drops, digs, fishes or trades them: 132 (F = marked future:true in items.json, by design for now)
 
-- `roast_forage` (food) **NOT marked future** look: ok (stew)
+- `log` (material) **NOT marked future** look: NO LOOK ENTRY
 - `magic_tonic` (food) F look: ok (bottle)
-- `rotten_food` (material) **NOT marked future** look: ok (pile)
 - `medicine` (food) F look: ok (bottle)
-- `roast_meat` (food) F look: ok (joint)
-- `roast_fish` (food) F look: ok (fish)
 - `coin_copper` (coin) F look: ok (coin)
 - `coin_bronze` (coin) F look: ok (coin)
 - `coin_silver` (coin) F look: ok (coin)
@@ -266,15 +266,15 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 - `wolfsbane_roots` (material) **NOT marked future** look: ok (root)
 - `wood` (material) **NOT marked future** look: ok (beams)
 
-## Items whose only recipe is blocked even if every recipe were known (an ingredient is an orphan or a station cannot be built): 94
+## Items whose only recipe is blocked even if every recipe were known (an ingredient is an orphan or a station cannot be built): 97
 
-`lumber`*, `plank_chest_kit`*, `iron_ingot`, `steel_ingot`, `iron_pickaxe`, `steel_pickaxe`, `bucket`*, `iron_spade`, `steel_spade`, `willow_bark_tea`*, `vice_kit`*, `stone_forge_kit`*, `blacksmithy_kit`*, `large_forge_kit`*, `master_forge_kit`*, `lumber_oak`, `beam_oak`, `lumber_birch`, `beam_birch`, `lumber_scots_pine`, `beam_scots_pine`, `lumber_spruce`, `beam_spruce`, `lumber_tropical_hardwood`, `beam_tropical_hardwood`, `lumber_walnut`, `beam_walnut`, `lumber_maple`, `beam_maple`, `berry_compote`*, `nut_paste`*, `baked_apples`*, `garlic_meat`*, `chestnut_cakes`*, `fruit_leather`*, `hunters_stew`*, `forager_stew`*, `trail_bread`*, `hearty_pottage`*, `feast_roast`*, `wall_section_kit`*, `floor_section_kit`*, `roof_section_kit`*, `doorway_section_kit`*, `window_section_kit`*, `timber_set_kit`*, `ladder_kit`*, `iron_hoe`, `steel_hoe`, `fine_board`*, `nails`*, `tar`*, `hinges`*, `wooden_pin`*, `saw_blade`, `water_wheel`*, `saw_mill_kit`*, `woodworking_table_kit`*, `hand_saw`*, `clay_hearth_kit`*, `oven_kit`*, `flatbread`*, `honey_loaf`*, `roast_joint`*, `processed_hide`, `rivets`, `copper_ingot`, `tin_ingot`, `bronze_ingot`, `flour`, `hide_scraper`, `steel_striker`, `javelin`, `obsidian_knife`, `sickle`, `scythe`, `plank_shield`, `bronze_sword`, `bronze_mace`, `bronze_shield`, `iron_sword`, `iron_mace`, `iron_shield`, `steel_sword`, `steel_mace`, `steel_shield`, `leather_cap`, `leather_jerkin`, `bronze_helm`, `gambeson`, `iron_helm`, `mail_shirt`, `steel_helm`, `plate_cuirass`
+`lumber`*, `plank_chest_kit`*, `iron_ingot`, `steel_ingot`, `iron_pickaxe`, `steel_pickaxe`, `bucket`*, `iron_spade`, `steel_spade`, `willow_bark_tea`*, `vice_kit`*, `log_workbench_kit`*, `stone_forge_kit`*, `blacksmithy_kit`*, `large_forge_kit`*, `master_forge_kit`*, `lumber_oak`, `beam_oak`, `lumber_birch`, `beam_birch`, `lumber_scots_pine`, `beam_scots_pine`, `lumber_spruce`, `beam_spruce`, `lumber_tropical_hardwood`, `beam_tropical_hardwood`, `lumber_walnut`, `beam_walnut`, `lumber_maple`, `beam_maple`, `berry_compote`*, `nut_paste`*, `baked_apples`*, `garlic_meat`*, `chestnut_cakes`*, `fruit_leather`*, `hunters_stew`*, `forager_stew`*, `trail_bread`*, `hearty_pottage`*, `feast_roast`*, `wall_section_kit`*, `floor_section_kit`*, `roof_section_kit`*, `doorway_section_kit`*, `window_section_kit`*, `timber_prop_kit`*, `timber_set_kit`*, `ladder_kit`*, `iron_hoe`, `steel_hoe`, `rough_plank`*, `fine_board`*, `nails`*, `tar`*, `hinges`*, `wooden_pin`*, `saw_blade`, `water_wheel`*, `saw_mill_kit`*, `woodworking_table_kit`*, `hand_saw`*, `clay_hearth_kit`*, `oven_kit`*, `flatbread`*, `honey_loaf`*, `roast_joint`*, `processed_hide`, `rivets`, `copper_ingot`, `tin_ingot`, `bronze_ingot`, `flour`, `hide_scraper`, `steel_striker`, `javelin`, `obsidian_knife`, `sickle`, `scythe`, `plank_shield`, `bronze_sword`, `bronze_mace`, `bronze_shield`, `iron_sword`, `iron_mace`, `iron_shield`, `steel_sword`, `steel_mace`, `steel_shield`, `leather_cap`, `leather_jerkin`, `bronze_helm`, `gambeson`, `iron_helm`, `mail_shirt`, `steel_helm`, `plate_cuirass`
 
 (* = not marked future)
 
-## Items obtainable only if blocked recipes became known: 25
+## Items obtainable only if blocked recipes became known: 24
 
-`waterskin`, `grass_skirt`, `grass_cloak`, `fibre_sandals`, `timber_prop_kit`, `cut_stone_block`, `brick`, `mortar`, `cobblestone`, `stone_shingle`, `stone_pickaxe`, `wooden_club`, `hide_tunic`, `hide_trousers`, `hide_gloves`, `clay_jug`, `herb_salve`, `splint`, `candle`, `wicker_shield`, `stone_mace`, `quern`, `compost`, `hide_glue`, `bone_arrow`
+`waterskin`, `grass_skirt`, `grass_cloak`, `fibre_sandals`, `cut_stone_block`, `brick`, `mortar`, `cobblestone`, `stone_shingle`, `stone_pickaxe`, `wooden_club`, `hide_tunic`, `hide_trousers`, `hide_gloves`, `clay_jug`, `herb_salve`, `splint`, `candle`, `wicker_shield`, `stone_mace`, `quern`, `compost`, `hide_glue`, `bone_arrow`
 
 ## Item looks that are missing or placeholders: 114
 
@@ -401,17 +401,17 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 |---|---|---|---|---|---|---|
 | lean_to | 5 |   |  | [2.4, 2.1] | 1 / 1 |  |
 | chest | 6 |   |  | [0.8, 0.6] | 1 / 1 |  |
-| chopping_block | 7 |   |  | [0.7, 0.7] | 1 / 1 |  |
+| chopping_block | 7 |   |  | [0.7, 0.7] | None / None | not obtainable even if all recipes known |
 | plank_chest | 6 |   |  | [0.9, 0.6] | None / None | kit recipe plank_chest_kit not known; not obtainable even if all recipes known |
 | remains | 11 |   |  | [1.8, 0.7] | None / None |  |
 | workbench | 13 | workbench 1 |  | [1.5, 1.0] | 1 / 1 |  |
 | tool_rack | 14 |   | workbench | [1.0, 0.4] | 2 / 2 |  |
 | vice | 15 |   | workbench | [0.5, 0.5] | None / None | kit 'vice_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| log_workbench | 16 | workbench 2 |  | [2.0, 1.0] | 1 / 1 |  |
+| log_workbench | 16 | workbench 2 |  | [2.0, 1.0] | None / None | not obtainable even if all recipes known |
 | saw_mill | 34 | saw_mill 1 |  | [3.0, 2.0] | None / None | not obtainable even if all recipes known |
 | woodworking_table | 35 | woodworking_table 1 |  | [2.0, 1.0] | None / None | not obtainable even if all recipes known |
-| stone_forge | 17 | workbench 3 |  | [0.9, 0.72] | 1 / 1 |  |
-| blacksmithy | 18 | workbench 4 |  | [1.5, 1.17] | 1 / 1 |  |
+| stone_forge | 17 | workbench 3 |  | [0.9, 0.72] | 2 / 2 |  |
+| blacksmithy | 18 | workbench 4 |  | [1.5, 1.17] | None / None | not obtainable even if all recipes known |
 | carcass | 19 |   |  | [1.0, 0.6] | None / None |  |
 | large_forge | 20 | workbench 4 |  | [2.8, 2.0] | None / None | kit 'large_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
 | master_forge | 21 | workbench 4 |  | [3.9, 2.6] | None / None | kit 'master_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
@@ -422,7 +422,7 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | doorway_section | 26 |   |  | [2.0, 0.25] | None / None | not obtainable even if all recipes known |
 | window_section | 27 |   |  | [2.0, 0.25] | None / None | not obtainable even if all recipes known |
 | door_open | 28 |   |  | [2.0, 0.25] | None / None |  |
-| timber_prop | 29 |   |  | [0.4, 0.4] | None / 1 | kit recipe timber_prop_kit not known; not obtainable today (known/open recipes only) |
+| timber_prop | 29 |   |  | [0.4, 0.4] | None / None | kit recipe timber_prop_kit not known; not obtainable even if all recipes known |
 | timber_set | 30 |   |  | [2.0, 0.4] | None / None | not obtainable even if all recipes known |
 | ladder | 31 |   |  | [0.6, 0.15] | None / None | not obtainable even if all recipes known |
 | path_patch | 32 |   |  | [1.0, 1.0] | 1 / 1 |  |

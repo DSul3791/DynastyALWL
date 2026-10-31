@@ -27,7 +27,7 @@ rows = []; idx = 0
 for g in sorted(groups):
     ids = groups[g]
     for n in range(0, len(ids), per):
-        rows.append({"label": "R%02d %s" % (idx + 1, g), "start": [8.0 + 3.0 * (idx % 16), 24.0 * (idx // 16)], "step": [0, 1.5], "items": [[i, 1] for i in ids[n:n + per]]})
+        rows.append({"label": "R%02d %s" % (idx + 1, g), "start": [8.0 + 3.0 * (idx // 3), 40.0 * (idx % 3) - 50.0], "step": [0, 1.5], "items": [[i, 1] for i in ids[n:n + per]]})
         idx += 1
 json.dump({"note": "TEMPORARY playthrough showroom", "rows": rows}, open(os.path.join(ROOT, "data/items/showroom.json"), "w"), indent=1)
 print(len(rows), "rows,", sum(len(r["items"]) for r in rows), "items")
