@@ -628,6 +628,8 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"mid": mid_meshes,
 		"far": far_meshes,
 		"shape": shape,
+		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
+		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
 	}
@@ -1845,6 +1847,12 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
+			elif bool(info.get("log", false)):
+				# A long fallen log: a capsule along its length at its yaw (shape entry: species, radius, position, length, yaw).
+				var log_size: Vector2 = PlacerScript.log_collider(float(items["heights"][n]), float(info["crown_m"]))
+
+				if log_size.x > 0.0:
+					shapes.append([species_id, log_size.x, p + Vector3(0.0, log_size.x, 0.0), log_size.y, float(items["yaws"][n])])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
@@ -1934,7 +1942,12 @@ func _apply_step(job: Dictionary) -> bool:
 		for k in range(first, last):
 			var item: Array = shapes[k]
 			var shape: CollisionShape3D = CollisionShape3D.new()
-			shape.shape = _trunk_shape(float(item[1]))
+			if item.size() > 3:
+				shape.shape = _log_shape(float(item[1]), float(item[3]))
+				shape.basis = Basis(Vector3.UP, float(item[4])) * Basis(Vector3(0.0, 0.0, 1.0), PI * 0.5)
+			else:
+				shape.shape = _trunk_shape(float(item[1]))
+
 			shape.position = item[2]
 			body.add_child(shape)
 			shape_species.append(int(item[0]))
@@ -2083,6 +2096,20 @@ func _trunk_shape(radius: float) -> CylinderShape3D:
 		shape.radius = float(key) / 100.0
 		shape.height = 3.0
 		_trunk_shapes[key] = shape
+
+	return shape
+
+
+# One shared capsule per radius and length (to the centimetre) for fallen logs; it stands upright, the caller lays it along the log.
+func _log_shape(radius: float, length: float) -> CapsuleShape3D:
+	var key: int = int(round(radius * 100.0)) * 100000 + int(round(length * 10.0))
+	var shape: CapsuleShape3D = _trunk_shapes.get(-key)
+
+	if shape == null:
+		shape = CapsuleShape3D.new()
+		shape.radius = radius
+		shape.height = maxf(float(int(round(length * 10.0))) / 10.0, radius * 2.0)
+		_trunk_shapes[-key] = shape
 
 	return shape
 
