@@ -13,12 +13,6 @@
 
 
 
-## pic-leanto-roof | Does this lean-to look right (long, flat stick roof to the ground, no back wall, open front)?
-Image: questions/img/leanto_long_roof.png
-Note: Offline render. Roof about 35 degrees, ridge 1.5 m. Kathleen rates it 3.5 of 5. Pick Yes or No; the Comments box is optional.
-- Yes
-- No
-
 ## pic-leanto-bed | Does this in-game lean-to with a bed inside look right?
 Image: questions/img/leanto_bed_game.png
 Note: Real game (older, steeper roof version). Kathleen rates it 3.5 of 5.
@@ -91,7 +85,6 @@ Note: Render of the idle pose, front, three-quarter, side, back; not the real ga
 - Yes
 - No
 
-
 ## pic-orchard | Does the starter orchard look like a real apple orchard (rows of fruit trees with fruit in the crowns)?
 Image: questions/img/orchard_rows.png
 Note: Real game, noon, from the east at about (53395,68521), looking west. Flora rates it 3 of 5: the rows read as an orchard, but the fruit is flat red diamonds that look fake; thinning while picking is tested in code, not shown here.
@@ -127,7 +120,6 @@ Image: questions/img/fireplace_light_front.png
 Note: Real game at dusk, with Tyler's front-facing spot light (the side view is questions/img/fireplace_light_side.png: dark at the side, light only in front). Kathleen rates it 4.5 of 5: the cone and shadows are right and the brick inside glows warm.
 - Yes
 - No
-
 
 ## pic-grass-feet | Do the character's feet and lower legs now show above the grass in third person (left: before, right: after)?
 Image: questions/img/grass_feet_before_after.png
