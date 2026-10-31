@@ -71,6 +71,7 @@ const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const MachineProbeScript := preload("res://src/debug/machine_probe.gd")
@@ -491,6 +492,9 @@ func _ready() -> void:
 
 	net = $TerrainNet
 	display.load_saved()
+	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
+		_telemetry.event("EXIT: %s" % why)
+		_finish(0))
 	idle_timeout.name = "IdleTimeout"
 	add_child(idle_timeout)
 	idle_timeout.setup(OS.get_cmdline_user_args(), display.idle_minutes, DisplayServer.get_name() == "headless")
