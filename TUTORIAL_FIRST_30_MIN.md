@@ -42,8 +42,8 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## Minute 18 to 26: shelter and bed
 
-16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Make a Lean-to kit: 8 sticks, 6 leaves, 2 twine." (recipe 13, 8 s). Check: kit in the pack.
-17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.2 m by 1.9 m and 2.1 m high: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
+16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash poles, boughs and twine into a lean-to: 12 sticks, 9 leaves, 3 twine (the sticks are the long thin branches under the trees; about two felled trees give the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
+17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 2.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
 18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then craft a Rough bed: 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
 19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. [BROKEN on 2026-10-31: the server refuses a bed within 2.5 m of the lean-to centre, silently, so the nearest bed spot is outside the roof and is not covered. Waiting on Tyler: let a bed be placed inside a shelter.] Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 

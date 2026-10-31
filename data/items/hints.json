@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Craft a Small shelter: 8 sticks, 6 leaves, 2 twine.",
+			"text": "Lash poles into a lean-to: 12 sticks, 9 leaves, 3 twine.",
 			"goal": "shelter"
 		},
 		{
