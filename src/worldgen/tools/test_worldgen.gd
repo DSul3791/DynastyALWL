@@ -2196,7 +2196,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	_check(all_ok, "every section decompresses and passes its checksum")
 
 	var height_raw: PackedByteArray = TileFileScript.read_section(path, table, "height")["raw"]
-	var heights: PackedFloat32Array = TileFileScript.decode_height(height_raw)
+	var heights: PackedFloat32Array = TileFileScript.decode_height(height_raw, TileFileScript.height_step_of(header))
 	var worst: float = 0.0
 
 	for i in range(heights.size()):
@@ -2204,7 +2204,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 
 	_check(heights.size() == water.samples * water.samples and worst <= 0.0626, "heights read back within half a 0.125 m step (worst %.3f)" % worst)
 
-	var surface: PackedFloat32Array = TileFileScript.decode_water_surface(TileFileScript.read_section(path, table, "water_surface")["raw"])
+	var surface: PackedFloat32Array = TileFileScript.decode_water_surface(TileFileScript.read_section(path, table, "water_surface")["raw"], TileFileScript.height_step_of(header))
 	var surface_ok: bool = true
 
 	for i in range(surface.size()):
@@ -2257,7 +2257,7 @@ func _test_tile_file(settings, tile: Vector2i, water, climate, geology, sites) -
 	_check(flow_ok, "flow reads back within the logarithmic step (about 4 percent)")
 
 	var low: int = int(header["low_res_samples"])
-	var low_heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, table, "low_height")["raw"])
+	var low_heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, table, "low_height")["raw"], TileFileScript.height_step_of(header))
 	_check(low == 481 and low_heights.size() == 481 * 481, "low-resolution maps are 481 by 481")
 	_check(absf(low_heights[100 * 481 + 200] - heights[400 * water.samples + 800]) < 0.001, "low-resolution height is every fourth sample")
 

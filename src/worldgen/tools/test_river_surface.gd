@@ -33,7 +33,7 @@ func _init() -> void:
 	var path: String = world + "/tiles/tile_3_4.tile"
 	var header = TF.read_header(path)
 	var n: int = int(header["header"]["samples"])
-	var ground = TF.decode_height(TF.read_section(path, header["table"], "height")["raw"])
+	var ground = TF.decode_height(TF.read_section(path, header["table"], "height")["raw"], TF.height_step_of(header["header"]))
 	var cls = TF.read_section(path, header["table"], "water_class")["raw"]
 	var depth = WS.load_depth(world + "/water/tile_3_4.water", n)
 	var triples: int = 0
