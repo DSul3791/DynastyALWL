@@ -57,6 +57,7 @@ var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
 var _item_views: Array = []
+var place_it: bool = false
 var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
 var _fell_step: int = 0
 var _fell_t: int = 0
@@ -183,6 +184,8 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument == "--shot-place":
+			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
 		elif argument.begins_with("--shot-fell="):
 			fell_mode = argument.trim_prefix("--shot-fell=")
 			print("shot runner: fell mode ", fell_mode)
@@ -297,7 +300,7 @@ func _process(delta: float) -> void:
 			at = Vector3(item_at.x, bp.y - 1.0 if is_nan(ig) else ig, item_at.y)
 
 		_item_spot = at
-		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_PLACE if place_it else Net.ACT_DROP, 0, 0, 1 if place_it else give_count, at)
 
 	if fell_mode != "" and _fell_step < 99:
 		if now - client.connected_msec > 14000:

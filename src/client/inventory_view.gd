@@ -1718,7 +1718,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			continue
 
-		if state >= 3 and not _lit_state(state):
+		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
@@ -2346,6 +2346,11 @@ func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 
 
 # Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
+# World-item states 3 (a felled trunk) and 4 (its stump) are drawn by _make_felled; every other state is a fire, a structure, a boulder or a loose item.
+static func is_felled_state(state: int) -> bool:
+	return state == 3 or state == 4
+
+
 static func _lit_state(state: int) -> bool:
 	return state == 1 or state == 40 or state == 41
 
