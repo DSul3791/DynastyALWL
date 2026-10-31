@@ -13,12 +13,6 @@
 
 
 
-## pic-starter-meadow | Does the starter meadow at noon look real and alive (density, variety, ground cover)?
-Image: questions/img/starter_meadow_noon.png
-Note: Real game, noon, at the spawn looking east. Flora rates it 3 of 5: dense and lush, but one uniform yellow-green lawn with no flowers, same round crowns and evenly spaced tiny conifers.
-- Yes
-- No
-
 ## pic-meadow-flowers | Are these meadow flowers (dandelion shown; stems about 1 m, heads 18 cm across) tall and bold enough to show up in grass?
 Image: questions/img/meadow_dandelion.png
 Note: Render of the model alone, four views, not the real game. Kathleen rates it 3.5 of 5. Ten flower types (dandelion, chamomile, yarrow, wild carrot and others) got the same change. The flora session turns on the densities after the merge.
