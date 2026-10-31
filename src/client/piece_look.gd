@@ -561,11 +561,20 @@ static func rough_bed() -> Node3D:
 		for z in [-0.4, 0.4]:
 			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.08, z), _frame)
 
-	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat
-	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(-0.5, 0.34, 0.0), _thatch)       # raised straw at the foot and
-	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(0.55, 0.34, 0.0), _thatch)        # the head, a dent between them
-	_box(root, Vector3(0.3, 0.14, 0.5), Vector3(0.75, 0.4, 0.0), _thatch)          # the rolled pillow
-	_box(root, Vector3(0.5, 0.04, 0.3), Vector3(-0.3, 0.33, 0.28), _thatch)        # a corner of straw folded back
+	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat (under the heaped straw)
+	_dome(root, 0.5, Vector3(-0.45, 0.3, 0.0), Vector3(0.95, 0.38, 0.62), _thatch)       # heaped, lumpy straw at the foot and
+	_dome(root, 0.5, Vector3(0.4, 0.3, 0.0), Vector3(0.9, 0.42, 0.62), _thatch)           # the head, a dent between them
+	_dome(root, 0.3, Vector3(0.0, 0.29, 0.05), Vector3(1.1, 0.22, 0.9), _thatch)          # the lower straw in the dent
+	_dome(root, 0.25, Vector3(0.78, 0.4, 0.0), Vector3(0.7, 0.75, 1.5), _thatch)          # the rolled pillow
+	_dome(root, 0.2, Vector3(-0.3, 0.33, 0.28), Vector3(1.4, 0.4, 0.9), _thatch)          # a corner of straw folded back
+
+	# Loose straw strands lying over the mat every way and a few hanging over the edge, and two twine bands round the pillow: it reads as a bed of straw, not stacked boards (guide: rough bed).
+	for k in 16:
+		var sa: float = TAU * float(k) * 0.381966
+		_box_rot(root, Vector3(0.55 + 0.1 * float(k % 3), 0.012, 0.014), Vector3(-0.6 + 1.5 * fposmod(float(k) * 0.37, 1.0), 0.395 - 0.06 * float((k % 4) == 0), -0.3 + 0.6 * fposmod(float(k) * 0.61, 1.0)), Vector3(0.0, sa, 0.06 * float(k % 3 - 1)), _thatch)
+
+	for z in [-0.32, 0.32]:
+		_box(root, Vector3(0.016, 0.16, 0.03), Vector3(0.75, 0.4, z), _frame)       # twine bands round the pillow
 	_solid(root, Vector3(2.0, 0.35, 0.9), Vector3(0.0, 0.175, 0.0))
 	return root
 
