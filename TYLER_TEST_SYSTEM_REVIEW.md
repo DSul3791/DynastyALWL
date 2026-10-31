@@ -218,7 +218,10 @@ Verified after the changes: `selftest_gate_tools.sh` 16 pass, 0 fail; `tests_for
 
 ## 31 Oct night: the four known-red tests, merge watch, bot and world-alive tool
 
-### The four tests that are red on the daily branch (decision: "known until re-bake")
+### UPDATE 31 Oct 04:30: the four reds are green again
+In the second merge dry run (daily 72feac47 plus the working branches, result 111337b2) all four passed: test_drainage_fill 6.8 s, test_river_surface 2.7 s, test_drainage_flow 80.6 s, test_head_pond_fill 529 s (98 pass, 0 fail in 631 s). The natural-rivers commits (066a4e7d to 4a3e9e62) landed on the daily branch between the two runs. `tools/known_red.txt` is now empty. The decision table below still holds for the day the tiles are re-baked with natural rivers switched on (head_pond_fill and drainage_flow to archive, drainage_fill and river_surface to re-pin).
+
+### The four tests that were red on the daily branch (decision: "known until re-bake")
 They are listed in `tools/known_red.txt`; `tools/merge_day.sh` reports them as KNOWN, not NEW, so a red that is really new is not hidden among them. They are red because the committed tiles are the old bake and these tests read the baked tile 3,4 (GENERATOR_NOTES: "tests run before a re-bake test the OLD terrain"). Natural rivers stay off by default until the re-bake, so each test is judged against what the NEW system keeps:
 
 | test | what it checks | new system | decision | covered meanwhile by |
@@ -242,3 +245,23 @@ Rule for whoever re-bakes: after the bake, delete the line of each re-pinned tes
 | every recipe gives 0 (recipe_table.gd) | FAIL at the first craft step | FAIL |
 | every recipe needs the station saw_mill (recipe_table.gd) | FAIL, names the station | FAIL |
 Honest note: both tests catch the same faults; the bot adds a message that names the step and the reason, finds recipes by name instead of number, and a gather budget (60 sticks, 40 stones, 90 fibre, 20 leaves by hand for axe + fire + lean-to; today the plan asks 15 / 4 / 21 / 6). The data-file mutations I first tried (twine and axe costs in recipes.json) could not be applied: the file is multi-line JSON and mutation_check.sh takes one-line text only.
+
+### test_climate_small (31 Oct; fills the "climate classification" gap of the relevance table)
+0.7 s, fast lane (selected by tile_climate.gd). Checks: ids valid, sea is ocean, temperature falls with the lapse rate, lowlands green / summit cold / beach, terraces get colder going up, the biome rule alone (temperature and wetness sweep, steep rock, alpine meadow), determinism, and the script classification equals the native one the bake uses.
+Mutation checks (small test vs the big test_worldgen):
+| mutation (tile_climate.gd) | test_climate_small | test_worldgen |
+|---|---|---|
+| lapse rate divided by 3000 instead of 1000 | FAIL 0.7 s | PASS (356 s) - the big test does not notice a lapse rate that is 3x too weak |
+| temperature rises with height (sign flip) | FAIL | not run |
+| boreal threshold lowered by 6 C (warm_min - 6) | FAIL | not run |
+Limit: the bake classifies in native code (GenCore); a change in the script only shows in the bake when it is also made in the native code, so the test compares the two on a made-up ground. A change made in the native code alone is caught by the behaviour checks (lapse, terraces) but not by the script sweep.
+Finding for the world's look (not a test failure): on flat ground the alpine meadow starts at about 1,270 m on this island's climate (temperature under 8 C and above 900 m); the highest ground of the island is 1,476 m, so almost everything below the summit is forest. A visible tree line / alpine zone would need either a colder climate or a lower `alpine_min_height_m` and `warm_min_c` in tile_rules.json climate.biome. World-alive metrics agree: alpine meadow is 40 of about 4,500 sampled land chunks.
+
+### First world-alive numbers (31 Oct 02:00, tools/world_alive.sh --samples 6, nine tiles, daily 149921dc)
+| biome | trees/ha | shrubs/ha | berry/ha | tall grass/ha | ferns/ha |
+|---|---|---|---|---|---|
+| temperate_forest (3,140 chunks) | 125 | 5.4 | 33 | 1.0 | 238 |
+| mixed_forest (301) | 455 | 0.2 | 37 | 22 | 49 |
+| temperate_grassland (649) | 4 | 0.4 | 11 | 232 | 0 |
+| heath (303) | 35 | 53 | 72 | 31 | 35 |
+Out of range against TARGETS.md: shrubs in the three forest/heath biomes (5 against 60 or more per hectare: the understorey is nearly bare), temperate forest trees 125 against 150 or more, fresh water 0.6 percent of the land against 1.5 to 6, lakes 0.10 percent of cells against 0.2 or more. Water: ocean 82.6 percent of cells, rivers about 343 km (estimate). Animals (nominal stocking, not a count): deer 21 per km2, rabbit 25, moose 4, fox 4 in temperate forest.

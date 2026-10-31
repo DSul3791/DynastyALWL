@@ -1,6 +1,5 @@
-# Tests that are already red on the daily branch (DailyDev_20261029) because the committed tiles are the old bake. tools/merge_day.sh counts a failure of
-# these as KNOWN, not NEW. Remove a line when the test is green again. One test per line, then a reason. See TYLER_TEST_SYSTEM_REVIEW.md (31 Oct section).
-test_drainage_fill known until re-bake (old-bake tiles)
-test_river_surface known until re-bake (old-bake tiles)
-test_drainage_flow known until re-bake (old-bake tiles)
-test_head_pond_fill known until re-bake (old head-pond system)
+# Tests that are already red on the daily branch (DailyDev_20261029). tools/merge_day.sh counts a failure of these as KNOWN, not NEW. One test per line, then a reason.
+# 31 Oct 2026 04:30 Atlantic: the four that were red on 30 Oct (test_drainage_fill, test_river_surface, test_drainage_flow, test_head_pond_fill, all reading the old
+# bake of tile 3,4) PASSED in the merge dry run of daily 72feac47 + the working branches (merge result 111337b2; Natural rivers commits 066a4e7d..4a3e9e62 landed on the
+# daily branch in between). They are no longer known red. When the tiles are re-baked with natural rivers ON, expect them to move again: see the decisions table
+# in TYLER_TEST_SYSTEM_REVIEW.md (31 Oct section) and put a line here if one goes red for that reason.
