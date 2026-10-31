@@ -1866,3 +1866,7 @@ Answered: 2026-10-31 19:57 UTC
 Answer: No | Comment: In that picture, I can see many trees, but I only see a little bit of fruit on one tree
 Answered: 2026-10-31 19:57 UTC
 
+## pic-fh-creator | Does the character creator preview look right when you open it?
+Answer: Yes | Comment: Yes, it looks functional, but it is ugly. Eventually you wanna be a grade a top-tier video game we need nice design and nice looking screens.
+Answered: 2026-10-31 19:58 UTC
+
