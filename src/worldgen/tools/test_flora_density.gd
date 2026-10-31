@@ -86,6 +86,17 @@ func _init() -> void:
 	_check(GrassViewScript.CROWN_GRASS_TO > GrassViewScript.CROWN_GRASS_FROM and GrassViewScript.CROWN_GRASS_TO <= 0.3, "grass thins to almost nothing within a third of the crown radius (%.2f to %.2f)" % [GrassViewScript.CROWN_GRASS_FROM, GrassViewScript.CROWN_GRASS_TO])
 	_check(GrassViewScript.CROWN_LITTER_TO > GrassViewScript.CROWN_LITTER_FROM and GrassViewScript.LITTER_DEEP_LEAVES > 1.0, "leaf litter deepens under a crown (x%.1f leaves at full depth)" % GrassViewScript.LITTER_DEEP_LEAVES)
 
+	# Season data for the grass (data/look/seasons.json, read by GrassView.set_season): every season has a tint and a blade share, winter thinner and browner than summer.
+	var seasons: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/look/seasons.json"))
+	var grass_rows: Dictionary = (seasons["ground"]["grass"] as Dictionary) if typeof(seasons) == TYPE_DICTIONARY else {}
+	var rows_ok: bool = grass_rows.size() == 4
+
+	for name in ["spring", "summer", "autumn", "winter"]:
+		rows_ok = rows_ok and grass_rows.has(name) and (grass_rows[name]["tint_rgb"] as Array).size() == 3 and float(grass_rows[name]["blades"]) > 0.0 and float(grass_rows[name]["blades"]) <= 1.0
+
+	_check(rows_ok, "seasons.json has a grass tint and blade share for every season")
+	_check(rows_ok and float(grass_rows["winter"]["blades"]) < float(grass_rows["summer"]["blades"]) and float(grass_rows["winter"]["tint_rgb"][2]) < float(grass_rows["summer"]["tint_rgb"][2]), "winter grass is thinner and browner than summer grass")
+
 	if settings == null or not errors.is_empty():
 		quit(1)
 		return

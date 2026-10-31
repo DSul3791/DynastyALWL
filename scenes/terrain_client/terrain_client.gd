@@ -1986,6 +1986,7 @@ func _update_flora() -> void:
 		fall_growth.update(falls, p)
 
 	flora.set_season(game_clock.season())
+	grass.set_season(flora.season)   # the season the flora view shows (the game season, or the --flora-season preview)
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
