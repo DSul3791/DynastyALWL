@@ -309,6 +309,7 @@ func _init() -> void:
 			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
 
 		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+		obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
 		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
 
 		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:

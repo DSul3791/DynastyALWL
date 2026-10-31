@@ -4960,8 +4960,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_summer": {
 			"number": 432,
@@ -4970,8 +4969,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_autumn": {
 			"number": 433,
@@ -4980,8 +4978,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_keeping": {
 			"number": 434,
@@ -4990,8 +4987,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_cooking": {
 			"number": 435,
@@ -5000,8 +4996,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_summer": {
 			"number": 436,
@@ -5010,8 +5005,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_autumn": {
 			"number": 437,
@@ -5020,8 +5014,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"pear_winter": {
 			"number": 438,
@@ -5030,8 +5023,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"sour_cherries": {
 			"number": 439,
@@ -5040,8 +5032,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"plums": {
 			"number": 440,
@@ -5050,8 +5041,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"damsons": {
 			"number": 441,
@@ -5060,8 +5050,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"quince": {
 			"number": 442,
@@ -5070,8 +5059,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"medlar": {
 			"number": 443,
@@ -5080,8 +5068,7 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"figs": {
 			"number": 444,
@@ -5150,8 +5137,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_sauce": {
 			"number": 451,
@@ -5160,8 +5146,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 7,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"apple_pie": {
 			"number": 452,
@@ -5180,8 +5165,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"stewed_pears": {
 			"number": 454,
@@ -5190,8 +5174,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"preserved_damsons": {
 			"number": 455,
@@ -5200,8 +5183,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 10,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"dried_figs": {
 			"number": 456,
@@ -5220,8 +5202,7 @@
 			"kind": "food",
 			"stack": 10,
 			"value": 9,
-			"look_alikes": [],
-			"future": true
+			"look_alikes": []
 		},
 		"bronze_pickaxe": {
 			"number": 458,
