@@ -13,12 +13,6 @@
 
 
 
-## pic-water2-river | Does the new water run as a river down a valley (top-down, water brighter where it is faster)?
-Image: questions/img/water2_river_valley.png
-Note: Top-down render of the new Dynasty water sim, not the real game. Sonny rates it 2 of 5: it flows the whole valley, but the river is only one cell wide, so it says little about looks.
-- Yes
-- No
-
 ## pic-fh-spawn | Standing at the spawn, third person: does the character (hair, hands, feet, clothes) and the meadow look right for a new player's first minute?
 Image: questions/img/fh_spawn_third_person.png
 Note: Real game, daily head 31 Oct afternoon, rig picture (windowed client, real server), summer. Guide rates it 3.5 of 5: the meadow, trees and flowers look good; the character stands side-on looking up, hands hang open and are small, and the grass hides the feet.
