@@ -82,6 +82,10 @@ func _init() -> void:
 
 	_check(log_names.size() == 3 and str(log_names["fallen_log"]["model"]) == "fallen_log" and float(log_names["fallen_log"]["height_m"][1]) >= 4.0, "fallen_log, hollow_log and old_stump are flora rows and logs reach 4 m")
 
+	# Cover feels real: under a big crown the grass thins from the drip line and the litter deepens (grass_view.gd constants).
+	_check(GrassViewScript.CROWN_GRASS_TO > GrassViewScript.CROWN_GRASS_FROM and GrassViewScript.CROWN_GRASS_TO <= 0.3, "grass thins to almost nothing within a third of the crown radius (%.2f to %.2f)" % [GrassViewScript.CROWN_GRASS_FROM, GrassViewScript.CROWN_GRASS_TO])
+	_check(GrassViewScript.CROWN_LITTER_TO > GrassViewScript.CROWN_LITTER_FROM and GrassViewScript.LITTER_DEEP_LEAVES > 1.0, "leaf litter deepens under a crown (x%.1f leaves at full depth)" % GrassViewScript.LITTER_DEEP_LEAVES)
+
 	if settings == null or not errors.is_empty():
 		quit(1)
 		return
