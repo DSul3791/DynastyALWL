@@ -1,6 +1,5 @@
 rig defaults: --gy 31.0 (was 28.0 until 24 Oct; the spawn ground is 31.0 in the current world, pass --gy 28 to repeat an old picture)
 shot runner: saved art/playthrough/smoke/walk3min.png (2880x1620) at (53301.0, 31.7, 68427.0), ground 30.0
-ERROR: VoxelMemoryPool: 104 memory blocks are still used when unregistering the module. Recycling leak?
 ERROR: 3 resources still in use at exit (run with --verbose for details).
-7501058 art/playthrough/smoke/walk3min.png
-rig kept: /tmp/tmp.mWeC5ZmzYA
+7254668 art/playthrough/smoke/walk3min.png
+rig kept: /tmp/tmp.CZQQ5YvMxS
