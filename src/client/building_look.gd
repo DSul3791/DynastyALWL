@@ -73,7 +73,7 @@ void fragment() {
 	float soft = smoothstep(0.0, 0.85, facing);
 	vec3 low = vec3(1.0, 0.4, 0.05);
 	vec3 high = vec3(1.0, 0.62, 0.12);
-	ALBEDO = mix(low, high, 1.0 - up) * (0.55 + 0.2 * flick);
+	ALBEDO = mix(low, high, 1.0 - up) * (0.4 + 0.15 * flick);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.2 * flick);
 }
 """
