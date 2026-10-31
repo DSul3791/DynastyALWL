@@ -37,3 +37,28 @@ Names, habits and rough masses come from general knowledge of the species (their
 
 ## 7. Tests
 validate_items, dishes, server_items, first_hour, inventory, stations and save_compat pass. test_animals has one failure, a timing check ("150 animals stay under 3 ms", measured 91 ms on this machine under load); I changed no animal code or animals.json, so I believe it is the machine, but I have not re-run it on a quiet machine.
+
+
+## Carcass rows and model priority (added 2026-10-31)
+Every planned species with a body to work now has a row in data/items/carcass.json (35 species): the 24 from before plus horse, red squirrel, pine marten, hedgehog, raven, owl, woodpecker, songbirds, frog, grass snake and adder. Not given a row: bat, toad, newt, lizard, insects (nothing worth dressing), fish and shellfish (whole items from fishing or shore gathering, no carcass), crab (shore node). Every row has `blows` (knife blows to dress: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8) and uses tool_class knife; the server reads one global `blows` (4) today, so reading the per-species value is a small code change. Yields are scaled by body mass in the existing pattern (deer 80 kg: 8 to 12 meat; moose 350 kg: 14 to 20; horse 450 kg: 16 to 22), small animals give 1 meat, bone or feathers.
+
+**Models and spawn rows still needed, in priority order for the first hour** (Kathleen for the model, a code owner for the spawn row and behaviour; the first four also cover the player's first hunts):
+
+| # | Species | State | kg | blows | Loot (min-max) |
+|---|---|---|---|---|---|
+| 1 | rabbit | live | 2.0 | 2 | raw_meat 1-2, hide 1-1, bone 1-2 |
+| 2 | deer | live | 80.0 | 4 | raw_meat 8-12, hide 1-2, bone 4-7, sinew 3-5, animal_fat 1-3, antler 1-2 |
+| 3 | fox | live | 7.0 | 2 | raw_meat 2-3, hide 1-1, bone 2-3, sinew 1-2 |
+| 4 | boar | loot only: needs spawn row and model | 90.0 | 4 | raw_meat 8-14, hide 1-2, bone 4-7, sinew 2-4, animal_fat 2-4, tusk 2-2 |
+| 5 | grouse | loot only | 1.0 | 1 | raw_meat 1-1, feather 4-8, bone 1-1 |
+| 6 | duck | live, flocks | 1.2 | 1 | raw_meat 1-2, feather 3-6, bone 1-1, down 2-4 |
+| 7 | fish (trout, perch, carp, pike) | live as fish schools; models are fish models, no carcass | - | - | n/a |
+| 8 | frog | loot only (new) | 0.05 | 1 | raw_meat 1-1 |
+| 9 | seal | loot only | 80.0 | 4 | seal_meat 8-12, hide 1-2, bone 3-5, animal_fat 4-7 |
+| 10 | seabird | loot only | 1.5 | 1 | raw_meat 1-1, feather 4-8, egg 1-2, bone 1-1 |
+| 11 | wild_sheep | loot only; wool | 50.0 | 3 | raw_meat 6-9, hide 1-2, bone 3-5, sinew 2-3, animal_fat 1-3, wool 2-4 |
+| 12 | mountain_goat | loot only | 70.0 | 4 | raw_meat 7-10, hide 1-2, bone 4-6, sinew 2-4, animal_fat 1-2 |
+| 13 | wolf | live (wolves system) | 35.0 | 3 | raw_meat 3-5, hide 1-2, bone 3-5, sinew 2-3, claw 1-2 |
+| 14 | bear | loot only | 200.0 | 6 | raw_meat 12-18, hide 2-3, bone 6-9, sinew 3-5, animal_fat 5-9, claw 2-4 |
+
+Rabbit, deer, fox, wolf and duck are live today; their carcass looks are in data/animals/carcass.json (Kathleen). The rest fall back to the deer body shape until each gets a row there.
