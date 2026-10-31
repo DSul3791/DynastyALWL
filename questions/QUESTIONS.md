@@ -13,12 +13,6 @@
 
 
 
-## pic-lit-fixtures | Do the lit fireplace, wall torch and chandelier look right at dusk?
-Image: questions/img/lit_fixtures_game.png
-Note: Real game, before the front-only fireplace light fix. Kathleen rates it 4 of 5.
-- Yes
-- No
-
 ## pic-tall-grass | Does the tall grass clump at 10 m (circled) stand out enough from the meadow?
 Image: questions/img/tall_grass_v7_10m.png
 Note: Real game, noon, summer. Flora rates it 4.5 of 5. It is not yet readable at 25 m or more.
