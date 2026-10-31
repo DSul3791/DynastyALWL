@@ -143,8 +143,13 @@ static func rig(g: Dictionary) -> Dictionary:
 		var o: int = 5 if side < 0.0 else 9
 		pos[o] = Vector3(0.06 * side, shoulder_y, 0.0)
 		pos[o + 1] = Vector3(arm_x * side, shoulder_y, 0.0)
-		pos[o + 2] = pos[o + 1] + Vector3(0.0, -0.29 * arm, 0.0)
-		pos[o + 3] = pos[o + 2] + Vector3(0.0, -0.26 * arm, 0.0)
+		# Broad shoulders: the arms hang angled a little in toward the body (the upper arm up to 7 degrees, the forearm up to 11), so the hands do not hang far out from the
+		# ribs; the segment lengths stay 0.29 and 0.26 of the arm.
+		var in_k: float = clampf((sw - 1.0) / 0.45, 0.0, 1.0)
+		var a1: float = 0.12 * in_k
+		var a2: float = 0.2 * in_k
+		pos[o + 2] = pos[o + 1] + Vector3(-side * sin(a1), -cos(a1), 0.0) * 0.29 * arm
+		pos[o + 3] = pos[o + 2] + Vector3(-side * sin(a2), -cos(a2), 0.0) * 0.26 * arm
 		var l: int = 13 if side < 0.0 else 17
 		pos[l] = Vector3(hip_x * side, hips_y - 0.05 * h, 0.0)
 		pos[l + 1] = pos[l] + Vector3(0.0, -thigh, 0.0)
@@ -282,9 +287,12 @@ static func primitives(g: Dictionary, rg: Dictionary, fingers: bool = true) -> A
 		var o: int = 5 if side < 0.0 else 9
 		out.append(_cone(o, p[2] + Vector3(0.0, 0.17 * torso, 0.0), p[o + 1], 0.07 * mu, 0.053 * mu))       # the shoulder bar: thicker at the neck (trapezius), the deltoid at the joint
 		out.append(_cone(o + 1, p[o + 1], p[o + 2], 0.052 * mu * sqrt(b), 0.042 * mu))
-		out.append(_cone(o + 2, p[o + 2], p[o + 3], 0.042 * mu, 0.032))
+		# The forearm runs a little into the hand (1.2 cm) and keeps a real wrist (3.5 cm radius, not 3.2 whatever the muscle): the arm and the hand are separate meshes, so
+		# a bare butt joint showed as a pinched, ringed wrist.
+		var fore_dir: Vector3 = (p[o + 3] - p[o + 2]).normalized()
+		out.append(_cone(o + 2, p[o + 2], p[o + 3] + fore_dir * 0.012, 0.043 * mu, 0.036 * mu))
 		var f: int = 21 if side < 0.0 else 29
-		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.047 * hand_k, 0.0), Vector3(0.038 * hand_k, 0.046 * hand_k, 0.017 * hand_k)))
+		out.append(_ell(o + 3, p[o + 3] + Vector3(0.0, -0.046 * hand_k, 0.0), Vector3(0.036 * hand_k, 0.048 * hand_k, 0.02 * hand_k)))
 		if fingers:
 			out.append(_cone(f, p[f], p[f + 1], 0.0125 * hand_k, 0.0105 * hand_k))
 			out.append(_cone(f + 1, p[f + 1], p[f + 1] + Vector3(0.0, -0.025 * hand_k, -0.012 * hand_k), 0.0105 * hand_k, 0.008 * hand_k))
