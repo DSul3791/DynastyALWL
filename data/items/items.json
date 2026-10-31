@@ -332,6 +332,7 @@
 		},
 		"plank_chest_kit": {
 			"number": 28,
+			"future": true,
 			"name": "Plank chest",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"kind": "placeable",
@@ -2700,6 +2701,7 @@
 		},
 		"fine_board": {
 			"number": 227,
+			"future": true,
 			"name": "Fine board",
 			"description": "A smooth board planed from sawn lumber. For fine woodwork.",
 			"kind": "material",
@@ -2803,6 +2805,7 @@
 		},
 		"water_wheel": {
 			"number": 239,
+			"future": true,
 			"name": "Water wheel",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"kind": "material",

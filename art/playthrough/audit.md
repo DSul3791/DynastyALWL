@@ -4,25 +4,21 @@ Counts: {'items': 477, 'recipes': 192, 'recipes_known_or_open': 173, 'structures
 
 Tools reachable now: ['axe', 'candle', 'hammer', 'hoe', 'knife', 'net', 'pick', 'quern', 'rod', 'shield', 'spade', 'torch', 'wedge']. Tools reachable if every recipe were known: ['axe', 'candle', 'hammer', 'hoe', 'knife', 'net', 'pick', 'quern', 'rod', 'shield', 'spade', 'torch', 'wedge'].
 
-Stations reachable now: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('oven', 3), ('workbench', 1), ('workbench', 3)]
+Stations reachable now: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('forge', 2), ('oven', 3), ('workbench', 1), ('workbench', 2), ('workbench', 3), ('workbench', 4)]
 
-Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('oven', 3), ('workbench', 1), ('workbench', 3)]
+Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot', 1), ('clay_hearth', 2), ('forge', 1), ('forge', 2), ('oven', 3), ('workbench', 1), ('workbench', 2), ('workbench', 3), ('workbench', 4)]
 
 
-## Recipes blocked (91 of 192)
+## Recipes blocked (66 of 192)
 
 | # | recipe | gives | category | station | wave if known | blocked by |
 |---|---|---|---|---|---|---|
-| 15 | chopping_block | chopping_block | Workshops and stations |   | None | NO | no source anywhere for log |
-| 16 | lumber | lumber | Materials | saw_mill 1 | None | NO | no source anywhere for log; station saw_mill level 1 not obtainable |
-| 17 | plank_chest_kit | plank_chest_kit | Containers and furniture | workbench 2 | None | NO | not known (no learn system); no source anywhere for lumber |
+| 16 | lumber | lumber | Materials | saw_mill 1 | None | NO | station saw_mill level 1 not obtainable |
+| 17 | plank_chest_kit | plank_chest_kit | Containers and furniture | workbench 2 | 3 | yes | not known (no learn system) |
 | 18 | iron_pickaxe | iron_pickaxe | Tools | forge 1 | None | yes | no source anywhere for iron_ingot |
-| 19 | steel_pickaxe | steel_pickaxe | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for steel_ingot; station forge level 2 not obtainable |
-| 22 | bucket | bucket | Containers and furniture |   | None | NO | no source anywhere for lumber |
+| 19 | steel_pickaxe | steel_pickaxe | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for steel_ingot |
 | 27 | iron_spade | iron_spade | Tools |   | None | yes | no source anywhere for iron_ingot |
 | 28 | steel_spade | steel_spade | Tools |   | None | yes | no source anywhere for steel_ingot |
-| 35 | willow_bark_tea | willow_bark_tea | Food and drink |   | None | yes | no source anywhere for willow_bark |
-| 49 | log_workbench_kit | log_workbench_kit | Workshops and stations | workbench 1 | None | NO | no source anywhere for log |
 | 52 | lumber_oak | lumber_oak | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
 | 53 | beams_oak | beam_oak | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
 | 56 | lumber_birch | lumber_birch | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
@@ -37,77 +33,55 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | 85 | beams_walnut | beam_walnut | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
 | 100 | lumber_maple | lumber_maple | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
 | 101 | beams_maple | beam_maple | Materials | saw_mill 1 | None | yes | station saw_mill level 1 not obtainable |
-| 102 | cook_berry_compote | berry_compote | Fire and cooking | campfire_pot 1 | None | NO | no source anywhere for honeyspindle_nectar |
-| 103 | cook_nut_paste | nut_paste | Fire and cooking | campfire_pot 1 | None | NO | no source anywhere for honeyspindle_nectar |
-| 106 | cook_baked_apples | baked_apples | Fire and cooking | campfire 1 | None | NO | no source anywhere for honeyspindle_nectar |
-| 110 | cook_chestnut_cakes | chestnut_cakes | Fire and cooking | campfire 1 | None | NO | no source anywhere for honeyspindle_nectar,linseed |
-| 111 | cook_fruit_leather | fruit_leather | Fire and cooking | campfire 1 | None | NO | no source anywhere for honeyspindle_nectar |
-| 114 | cook_forager_stew | forager_stew | Fire and cooking | campfire_pot 1 | None | NO | no source anywhere for greens |
-| 116 | cook_trail_bread | trail_bread | Fire and cooking | campfire 1 | None | NO | no source anywhere for linseed |
-| 119 | wall_section_kit | wall_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 120 | floor_section_kit | floor_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 121 | roof_section_kit | roof_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 123 | doorway_section_kit | doorway_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 124 | window_section_kit | window_section_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 125 | timber_prop_kit | timber_prop_kit | Shelter and building |   | None | NO | no source anywhere for log |
-| 126 | timber_set_kit | timber_set_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
-| 130 | ladder_kit | ladder_kit | Shelter and building |   | None | NO | no source anywhere for lumber |
 | 141 | iron_hoe | iron_hoe | Tools |   | None | yes | no source anywhere for iron_ingot |
 | 142 | steel_hoe | steel_hoe | Tools |   | None | yes | no source anywhere for steel_ingot |
-| 143 | rough_plank | rough_plank | Materials | workbench 1 | None | NO | no source anywhere for log |
-| 144 | fine_board | fine_board | Materials | woodworking_table 1 | None | NO | no source anywhere for lumber; station woodworking_table level 1 not obtainable |
+| 144 | fine_board | fine_board | Materials | woodworking_table 1 | None | yes | station woodworking_table level 1 not obtainable |
 | 145 | nails | nails | Materials | forge 1 | None | yes | no source anywhere for iron_ingot |
-| 148 | tar | tar | Materials | campfire 1 | None | yes | no source anywhere for pine_tar |
 | 149 | hinges | hinges | Materials | forge 1 | None | yes | no source anywhere for iron_ingot |
-| 150 | wooden_pin | wooden_pin | Materials | workbench 1 | None | NO | no source anywhere for lumber |
 | 152 | saw_blade | saw_blade | Materials | forge 1 | None | yes | no source anywhere for iron_ingot |
-| 153 | water_wheel | water_wheel | Workshops and stations | workbench 1 | None | NO | not known (no learn system); no source anywhere for lumber,nails |
+| 153 | water_wheel | water_wheel | Workshops and stations | workbench 1 | None | yes | not known (no learn system); no source anywhere for nails |
 | 157 | hand_saw | hand_saw | Tools | workbench 1 | None | yes | no source anywhere for saw_blade |
-| 159 | lumber_by_hand | lumber | Materials |   | None | NO | no source anywhere for log,hand_saw |
-| 175 | cook_honey_loaf | honey_loaf | Fire and cooking | oven 1 | None | NO | no source anywhere for honeyspindle_nectar |
+| 159 | lumber_by_hand | lumber | Materials |   | None | NO | no source anywhere for hand_saw |
 | 179 | processed_hide | processed_hide | Materials |   | None | yes | no source anywhere for hide_scraper |
 | 180 | hide_scraper | hide_scraper | Tools | workbench 1 | None | yes | no source anywhere for flint |
 | 181 | javelin | javelin | Weapons | workbench 1 | None | yes | no source anywhere for flint |
 | 182 | obsidian_knife | obsidian_knife | Tools | workbench 1 | None | yes | no source anywhere for obsidian |
 | 183 | steel_striker | steel_striker | Tools | forge 1 | None | yes | no source anywhere for steel_ingot |
 | 184 | rivets | rivets | Materials | forge 1 | None | yes | no source anywhere for iron_ingot |
-| 185 | bronze_ingot | bronze_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for copper_ingot,tin_ingot; station forge level 2 not obtainable |
+| 185 | bronze_ingot | bronze_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for copper_ingot,tin_ingot |
 | 187 | sickle | sickle | Tools | workbench 1 | None | yes | no source anywhere for flint |
 | 188 | scythe | scythe | Tools | forge 1 | None | yes | no source anywhere for iron_ingot |
 | 190 | smelt_copper | copper_ingot | Materials | forge 1 | None | yes | no source anywhere for copper_ore |
 | 191 | smelt_tin | tin_ingot | Materials | forge 1 | None | yes | no source anywhere for tin_ore |
 | 192 | smelt_iron | iron_ingot | Materials | forge 1 | None | yes | no source anywhere for iron_ore |
-| 193 | smelt_steel | steel_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,coal; station forge level 2 not obtainable |
-| 203 | plank_shield | plank_shield | Tools | workbench 1 | None | yes | no source anywhere for lumber |
-| 204 | bronze_sword | bronze_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
-| 205 | bronze_mace | bronze_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
-| 206 | bronze_shield | bronze_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,bronze_ingot; station forge level 2 not obtainable |
-| 207 | iron_sword | iron_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,leather; station forge level 2 not obtainable |
-| 208 | iron_mace | iron_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable |
-| 209 | iron_shield | iron_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for lumber,iron_ingot; station forge level 2 not obtainable |
+| 193 | smelt_steel | steel_ingot | Materials | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,coal |
+| 204 | bronze_sword | bronze_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
+| 205 | bronze_mace | bronze_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
+| 206 | bronze_shield | bronze_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
+| 207 | iron_sword | iron_sword | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot,leather |
+| 208 | iron_mace | iron_mace | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
+| 209 | iron_shield | iron_shield | Tools | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
 | 210 | steel_sword | steel_sword | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather; station forge level 3 not obtainable |
 | 211 | steel_mace | steel_mace | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot; station forge level 3 not obtainable |
-| 212 | steel_shield | steel_shield | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for lumber,steel_ingot; station forge level 3 not obtainable |
+| 212 | steel_shield | steel_shield | Tools | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot; station forge level 3 not obtainable |
 | 213 | leather_cap | leather_cap | Clothing |   | None | yes | no source anywhere for leather |
 | 214 | leather_jerkin | leather_jerkin | Clothing | workbench 1 | None | yes | no source anywhere for leather |
-| 215 | bronze_helm | bronze_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot; station forge level 2 not obtainable |
+| 215 | bronze_helm | bronze_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for bronze_ingot |
 | 216 | gambeson | gambeson | Clothing | workbench 1 | None | yes | no source anywhere for leather |
-| 217 | iron_helm | iron_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot; station forge level 2 not obtainable |
-| 218 | mail_shirt | mail_shirt | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for rivets,iron_ingot; station forge level 2 not obtainable |
+| 217 | iron_helm | iron_helm | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for iron_ingot |
+| 218 | mail_shirt | mail_shirt | Clothing | forge 2 | None | yes | not known (no learn system); no source anywhere for rivets,iron_ingot |
 | 219 | steel_helm | steel_helm | Clothing | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable |
 | 220 | plate_cuirass | plate_cuirass | Clothing | forge 3 | None | yes | not known (no learn system); no source anywhere for steel_ingot,heavy_leather,rivets; station forge level 3 not obtainable |
 | 222 | flour_from_wheat | flour | Materials |   | None | yes | no source anywhere for wheat |
 | 223 | flour_from_barley | flour | Materials |   | None | yes | no source anywhere for barley |
-| 230 | lumber_wedge | lumber | Materials | workbench 1 | None | NO | no source anywhere for log |
 | 234 | leather | leather | Materials | campfire_pot 1 | None | yes | no source anywhere for processed_hide |
 | 235 | heavy_leather | heavy_leather | Materials | campfire_pot 1 | None | yes | no source anywhere for leather |
 | 236 | fine_leather | fine_leather | Materials | campfire_pot 1 | None | yes | no source anywhere for leather |
 | 241 | linen_shirt | linen_shirt | Clothing |   | None | yes | no source anywhere for linen |
 | 245 | linen | linen | Materials |   | None | yes | no source anywhere for flax |
 
-## ORPHAN items: no recipe makes them and nothing gathers, drops, digs, fishes or trades them: 127 (F = marked future:true in items.json, by design for now)
+## ORPHAN items: no recipe makes them and nothing gathers, drops, digs, fishes or trades them: 69 (F = marked future:true in items.json, by design for now)
 
-- `log` (material) **NOT marked future** look: NO LOOK ENTRY
 - `magic_tonic` (food) F look: ok (bottle)
 - `medicine` (food) F look: ok (bottle)
 - `coin_copper` (coin) F look: ok (coin)
@@ -139,113 +113,56 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 - `shellfish` (food) F look: PLACEHOLDER grey chunk
 - `crab_meat` (food) F look: PLACEHOLDER grey chunk
 - `sea_salt` (material) F look: PLACEHOLDER grey chunk
-- `aloe_gel` (material) **NOT marked future** look: ok (bowl)
-- `amadou` (material) **NOT marked future** look: ok (chunk)
-- `angelica_stems` (material) **NOT marked future** look: ok (bundle)
-- `banana_leaves` (material) **NOT marked future** look: ok (frond)
-- `belladonna_berries` (material) **NOT marked future** look: ok (round_berries)
-- `belladonna_leaves` (material) **NOT marked future** look: ok (frond)
-- `brinebells` (material) **NOT marked future** look: ok (flower)
-- `burrs` (material) **NOT marked future** look: ok (chunk)
-- `cactus_pads` (material) **NOT marked future** look: ok (chunk)
-- `charcoal_wood` (material) **NOT marked future** look: ok (chunk)
-- `cherry_wood` (material) **NOT marked future** look: ok (beams)
-- `cinderfoot_caps` (material) **NOT marked future** look: ok (cap)
-- `comfrey_roots` (material) **NOT marked future** look: ok (root)
-- `dandelion_leaves` (material) **NOT marked future** look: ok (frond)
-- `dandelion_roots` (material) **NOT marked future** look: ok (root)
-- `duskmallow_flowers` (material) **NOT marked future** look: ok (flower)
-- `duskmallow_roots` (material) **NOT marked future** look: ok (root)
-- `dye` (material) **NOT marked future** look: ok (bottle)
-- `echo_moss` (material) **NOT marked future** look: ok (pile)
-- `elderflowers` (material) **NOT marked future** look: ok (flower)
-- `emberroots` (material) **NOT marked future** look: ok (root)
-- `everember_needles` (material) **NOT marked future** look: ok (frond)
-- `everember_sap` (material) **NOT marked future** look: ok (bottle)
-- `everember_wood` (material) **NOT marked future** look: ok (beams)
-- `fibre` (material) **NOT marked future** look: ok (bundle)
-- `fiddleheads` (material) **NOT marked future** look: ok (frond)
-- `fine_wood` (material) **NOT marked future** look: ok (beams)
-- `fodder` (material) **NOT marked future** look: ok (bundle)
-- `food` (material) **NOT marked future** look: ok (bowl)
-- `frostglass_petals` (material) **NOT marked future** look: ok (flower)
-- `gloaming_star` (material) **NOT marked future** look: ok (flower)
-- `gloomthistle_down` (material) **NOT marked future** look: ok (pile)
-- `gloomthistle_heads` (material) **NOT marked future** look: ok (flower)
-- `greens` (material) **NOT marked future** look: ok (frond)
-- `gum` (material) **NOT marked future** look: ok (chunk)
-- `hagwillow_bark` (material) **NOT marked future** look: ok (bark)
-- `hagwillow_withies` (material) **NOT marked future** look: ok (bundle)
-- `hard_wood` (material) **NOT marked future** look: ok (beams)
-- `hardwood` (material) **NOT marked future** look: ok (beams)
-- `hawthorn_blossom` (material) **NOT marked future** look: ok (flower)
-- `hearthwood_logs` (material) **NOT marked future** look: ok (bundle)
-- `henbane_leaves` (material) **NOT marked future** look: ok (frond)
-- `henbane_seeds` (material) **NOT marked future** look: ok (grit)
-- `herbs` (material) **NOT marked future** look: ok (frond)
-- `honey_flowers` (material) **NOT marked future** look: ok (flower)
-- `honeyspindle_nectar` (material) **NOT marked future** look: ok (bottle)
-- `honeyspindle_pods` (material) **NOT marked future** look: ok (bundle)
-- `hushfern_fronds` (material) **NOT marked future** look: ok (frond)
-- `lantern_dew` (material) **NOT marked future** look: ok (bottle)
-- `linseed` (material) **NOT marked future** look: ok (grit)
-- `mirrorbark_bark` (material) **NOT marked future** look: ok (bark)
-- `mirrorbark_wood` (material) **NOT marked future** look: ok (beams)
-- `mirrorcap_caps` (material) **NOT marked future** look: ok (cap)
-- `oil` (material) **NOT marked future** look: ok (bottle)
-- `palm_fronds` (material) **NOT marked future** look: ok (frond)
-- `palm_wood` (material) **NOT marked future** look: ok (beams)
-- `pilgrims_cup_pitchers` (material) **NOT marked future** look: ok (bottle)
-- `pilgrims_cup_water` (material) **NOT marked future** look: ok (bottle)
-- `pine_tar` (material) **NOT marked future** look: ok (pile)
-- `poles` (material) **NOT marked future** look: ok (bundle)
-- `potash` (material) **NOT marked future** look: ok (pile)
-- `quenchbell_heads` (material) **NOT marked future** look: ok (flower)
-- `raspberry_leaves` (material) **NOT marked future** look: ok (frond)
-- `reed_stems` (material) **NOT marked future** look: ok (bundle)
-- `rimecap_caps` (material) **NOT marked future** look: ok (cap)
-- `riverbraid_stems` (material) **NOT marked future** look: ok (bundle)
-- `rose_hips` (material) **NOT marked future** look: ok (fruit)
-- `sap` (material) **NOT marked future** look: ok (bottle)
-- `seeds` (material) **NOT marked future** look: ok (grit)
-- `sevenyear_blossoms` (material) **NOT marked future** look: ok (flower)
-- `sevenyear_bulbs` (material) **NOT marked future** look: ok (root)
-- `softwood` (material) **NOT marked future** look: ok (beams)
-- `spines` (material) **NOT marked future** look: ok (bundle)
-- `stillwater_petals` (material) **NOT marked future** look: ok (flower)
-- `stillwater_seeds` (material) **NOT marked future** look: ok (grit)
-- `stormreed_stalks` (material) **NOT marked future** look: ok (bundle)
-- `stuffing` (material) **NOT marked future** look: ok (pile)
-- `sunsilver_leaves` (material) **NOT marked future** look: ok (frond)
-- `tanglewort_vines` (material) **NOT marked future** look: ok (bundle)
-- `thorny_canes` (material) **NOT marked future** look: ok (bundle)
-- `thorny_wood` (material) **NOT marked future** look: ok (beams)
-- `tidecrown_pearls` (material) **NOT marked future** look: ok (round_berries)
-- `tideglass_fronds` (material) **NOT marked future** look: ok (frond)
-- `timber` (material) **NOT marked future** look: ok (beams)
-- `walnut_husks` (material) **NOT marked future** look: ok (nut)
-- `wardpine_resin` (material) **NOT marked future** look: ok (chunk)
-- `wardpine_wood` (material) **NOT marked future** look: ok (beams)
-- `whisperfern_fronds` (material) **NOT marked future** look: ok (frond)
-- `wild_garlic_bulbs` (material) **NOT marked future** look: ok (root)
-- `willow_bark` (material) **NOT marked future** look: ok (bark)
-- `withies` (material) **NOT marked future** look: ok (bundle)
-- `witness_bark` (material) **NOT marked future** look: ok (bark)
-- `witness_leaves` (material) **NOT marked future** look: ok (frond)
-- `wolfsbane_roots` (material) **NOT marked future** look: ok (root)
-- `wood` (material) **NOT marked future** look: ok (beams)
+- `amadou` (material) F look: ok (chunk)
+- `angelica_stems` (material) F look: ok (bundle)
+- `banana_leaves` (material) F look: ok (frond)
+- `burrs` (material) F look: ok (chunk)
+- `cactus_pads` (material) F look: ok (chunk)
+- `charcoal_wood` (material) F look: ok (chunk)
+- `cherry_wood` (material) F look: ok (beams)
+- `comfrey_roots` (material) F look: ok (root)
+- `elderflowers` (material) F look: ok (flower)
+- `everember_needles` (material) F look: ok (frond)
+- `everember_sap` (material) F look: ok (bottle)
+- `everember_wood` (material) F look: ok (beams)
+- `fibre` (material) F look: ok (bundle)
+- `fine_wood` (material) F look: ok (beams)
+- `gum` (material) F look: ok (chunk)
+- `hard_wood` (material) F look: ok (beams)
+- `hardwood` (material) F look: ok (beams)
+- `hawthorn_blossom` (material) F look: ok (flower)
+- `hearthwood_logs` (material) F look: ok (bundle)
+- `mirrorbark_bark` (material) F look: ok (bark)
+- `mirrorbark_wood` (material) F look: ok (beams)
+- `oil` (material) F look: ok (bottle)
+- `palm_fronds` (material) F look: ok (frond)
+- `palm_wood` (material) F look: ok (beams)
+- `poles` (material) F look: ok (bundle)
+- `raspberry_leaves` (material) F look: ok (frond)
+- `sap` (material) F look: ok (bottle)
+- `seeds` (material) F look: ok (grit)
+- `softwood` (material) F look: ok (beams)
+- `thorny_canes` (material) F look: ok (bundle)
+- `thorny_wood` (material) F look: ok (beams)
+- `timber` (material) F look: ok (beams)
+- `walnut_husks` (material) F look: ok (nut)
+- `wardpine_resin` (material) F look: ok (chunk)
+- `wardpine_wood` (material) F look: ok (beams)
+- `witness_bark` (material) F look: ok (bark)
+- `witness_leaves` (material) F look: ok (frond)
+- `wood` (material) F look: ok (beams)
 
-## Items whose only recipe is blocked even if every recipe were known (an ingredient is an orphan or a station cannot be built): 96
+## Items whose only recipe is blocked even if every recipe were known (an ingredient is an orphan or a station cannot be built): 71
 
-`lumber`*, `plank_chest_kit`*, `iron_ingot`, `steel_ingot`, `iron_pickaxe`, `steel_pickaxe`, `bucket`*, `iron_spade`, `steel_spade`, `willow_bark_tea`, `vice_kit`*, `log_workbench_kit`*, `stone_forge_kit`*, `blacksmithy_kit`*, `large_forge_kit`*, `master_forge_kit`*, `lumber_oak`, `beam_oak`, `lumber_birch`, `beam_birch`, `lumber_scots_pine`, `beam_scots_pine`, `lumber_spruce`, `beam_spruce`, `lumber_tropical_hardwood`, `beam_tropical_hardwood`, `lumber_walnut`, `beam_walnut`, `lumber_maple`, `beam_maple`, `berry_compote`*, `nut_paste`*, `baked_apples`*, `chestnut_cakes`*, `fruit_leather`*, `forager_stew`*, `trail_bread`*, `wall_section_kit`*, `floor_section_kit`*, `roof_section_kit`*, `doorway_section_kit`*, `window_section_kit`*, `timber_prop_kit`*, `timber_set_kit`*, `ladder_kit`*, `iron_hoe`, `steel_hoe`, `rough_plank`*, `fine_board`*, `nails`, `tar`, `hinges`, `wooden_pin`*, `saw_blade`, `water_wheel`*, `saw_mill_kit`*, `woodworking_table_kit`*, `hand_saw`, `clay_hearth_kit`*, `oven_kit`*, `honey_loaf`*, `processed_hide`, `leather`, `fine_leather`, `heavy_leather`, `rivets`, `copper_ingot`, `tin_ingot`, `bronze_ingot`, `flour`, `hide_scraper`, `steel_striker`, `javelin`, `obsidian_knife`, `sickle`, `scythe`, `plank_shield`, `bronze_sword`, `bronze_mace`, `bronze_shield`, `iron_sword`, `iron_mace`, `iron_shield`, `steel_sword`, `steel_mace`, `steel_shield`, `leather_cap`, `leather_jerkin`, `bronze_helm`, `gambeson`, `iron_helm`, `mail_shirt`, `steel_helm`, `plate_cuirass`, `linen`, `linen_shirt`
+`iron_ingot`, `steel_ingot`, `iron_pickaxe`, `steel_pickaxe`, `iron_spade`, `steel_spade`, `vice_kit`*, `stone_forge_kit`*, `blacksmithy_kit`*, `large_forge_kit`*, `master_forge_kit`*, `lumber_oak`, `beam_oak`, `lumber_birch`, `beam_birch`, `lumber_scots_pine`, `beam_scots_pine`, `lumber_spruce`, `beam_spruce`, `lumber_tropical_hardwood`, `beam_tropical_hardwood`, `lumber_walnut`, `beam_walnut`, `lumber_maple`, `beam_maple`, `iron_hoe`, `steel_hoe`, `fine_board`, `nails`, `hinges`, `saw_blade`, `water_wheel`, `saw_mill_kit`*, `woodworking_table_kit`*, `hand_saw`, `clay_hearth_kit`*, `oven_kit`*, `processed_hide`, `leather`, `fine_leather`, `heavy_leather`, `rivets`, `copper_ingot`, `tin_ingot`, `bronze_ingot`, `flour`, `hide_scraper`, `steel_striker`, `javelin`, `obsidian_knife`, `sickle`, `scythe`, `bronze_sword`, `bronze_mace`, `bronze_shield`, `iron_sword`, `iron_mace`, `iron_shield`, `steel_sword`, `steel_mace`, `steel_shield`, `leather_cap`, `leather_jerkin`, `bronze_helm`, `gambeson`, `iron_helm`, `mail_shirt`, `steel_helm`, `plate_cuirass`, `linen`, `linen_shirt`
 
 (* = not marked future)
 
-## Items obtainable only if blocked recipes became known: 0
+## Items obtainable only if blocked recipes became known: 1
 
+`plank_chest_kit`
 
-
-## Item looks that are missing or placeholders: 83
+## Item looks that are missing or placeholders: 62
 
 | item | look status |
 |---|---|
@@ -295,24 +212,13 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | thatch_doorway | NO LOOK (structure or kit-less item: drawn by structure look) |
 | oven | NO LOOK (structure or kit-less item: drawn by structure look) |
 | snare_trap | NO LOOK (structure or kit-less item: drawn by structure look) |
-| hide_tunic | PLACEHOLDER grey chunk |
-| hide_trousers | PLACEHOLDER grey chunk |
-| hide_gloves | PLACEHOLDER grey chunk |
 | clay_jug | NO LOOK ENTRY |
-| herb_salve | PLACEHOLDER grey chunk |
-| splint | PLACEHOLDER grey chunk |
 | candle | NO LOOK ENTRY |
-| quern | PLACEHOLDER grey chunk |
-| compost | PLACEHOLDER grey chunk |
 | antler | PLACEHOLDER grey chunk |
 | tusk | PLACEHOLDER grey chunk |
 | claw | PLACEHOLDER grey chunk |
 | down | PLACEHOLDER grey chunk |
 | quill | PLACEHOLDER grey chunk |
-| hide_glue | PLACEHOLDER grey chunk |
-| bone_arrow | PLACEHOLDER grey chunk |
-| stone_wedge | PLACEHOLDER grey chunk |
-| fibre_arrow | PLACEHOLDER grey chunk |
 | seaweed | PLACEHOLDER grey chunk |
 | shellfish | PLACEHOLDER grey chunk |
 | crab_meat | PLACEHOLDER grey chunk |
@@ -322,16 +228,6 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 | roast_shellfish | PLACEHOLDER grey chunk |
 | boiled_egg | PLACEHOLDER grey chunk |
 | roast_seal | PLACEHOLDER grey chunk |
-| wool | PLACEHOLDER grey chunk |
-| linen | PLACEHOLDER grey chunk |
-| wool_tunic | PLACEHOLDER grey chunk |
-| wool_trousers | PLACEHOLDER grey chunk |
-| wool_cap | PLACEHOLDER grey chunk |
-| wool_mittens | PLACEHOLDER grey chunk |
-| linen_shirt | PLACEHOLDER grey chunk |
-| fur_cloak | PLACEHOLDER grey chunk |
-| fur_hat | PLACEHOLDER grey chunk |
-| fur_boots | PLACEHOLDER grey chunk |
 
 ## Structures
 
@@ -339,30 +235,30 @@ Stations reachable if every recipe were known: [('campfire', 1), ('campfire_pot'
 |---|---|---|---|---|---|---|
 | lean_to | 5 |   |  | [2.4, 2.1] | 1 / 1 |  |
 | chest | 6 |   |  | [0.8, 0.6] | 1 / 1 |  |
-| chopping_block | 7 |   |  | [0.7, 0.7] | None / None | not obtainable even if all recipes known |
-| plank_chest | 6 |   |  | [0.9, 0.6] | None / None | kit recipe plank_chest_kit not known; not obtainable even if all recipes known |
+| chopping_block | 7 |   |  | [0.7, 0.7] | 1 / 1 |  |
+| plank_chest | 6 |   |  | [0.9, 0.6] | None / 3 | kit recipe plank_chest_kit not known; not obtainable today (known/open recipes only) |
 | remains | 11 |   |  | [1.8, 0.7] | None / None |  |
 | workbench | 13 | workbench 1 |  | [1.5, 1.0] | 1 / 1 |  |
 | tool_rack | 14 |   | workbench | [1.0, 0.4] | 2 / 2 |  |
 | vice | 15 |   | workbench | [0.5, 0.5] | None / None | kit 'vice_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| log_workbench | 16 | workbench 2 |  | [2.0, 1.0] | None / None | not obtainable even if all recipes known |
+| log_workbench | 16 | workbench 2 |  | [2.0, 1.0] | 2 / 2 |  |
 | saw_mill | 34 | saw_mill 1 |  | [3.0, 2.0] | None / None | not obtainable even if all recipes known |
 | woodworking_table | 35 | woodworking_table 1 |  | [2.0, 1.0] | None / None | not obtainable even if all recipes known |
 | stone_forge | 17 | workbench 3 |  | [0.9, 0.72] | 2 / 2 |  |
-| blacksmithy | 18 | workbench 4 |  | [1.5, 1.17] | None / None | not obtainable even if all recipes known |
+| blacksmithy | 18 | workbench 4 |  | [1.5, 1.17] | 2 / 2 |  |
 | carcass | 19 |   |  | [1.0, 0.6] | None / None |  |
 | large_forge | 20 | workbench 4 |  | [2.8, 2.0] | None / None | kit 'large_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
 | master_forge | 21 | workbench 4 |  | [3.9, 2.6] | None / None | kit 'master_forge_kit' has no recipe and no blueprint; not obtainable even if all recipes known |
-| wall_section | 22 |   |  | [2.0, 0.25] | None / None | not obtainable even if all recipes known |
-| floor_section | 23 |   |  | [2.0, 2.0] | None / None | not obtainable even if all recipes known |
-| roof_section | 24 |   |  | [2.4, 2.4] | None / None | not obtainable even if all recipes known |
+| wall_section | 22 |   |  | [2.0, 0.25] | 3 / 3 |  |
+| floor_section | 23 |   |  | [2.0, 2.0] | 3 / 3 |  |
+| roof_section | 24 |   |  | [2.4, 2.4] | 3 / 3 |  |
 | foundation_section | 25 |   |  | [4.0, 4.0] | 1 / 1 |  |
-| doorway_section | 26 |   |  | [2.0, 0.25] | None / None | not obtainable even if all recipes known |
-| window_section | 27 |   |  | [2.0, 0.25] | None / None | not obtainable even if all recipes known |
-| door_open | 28 |   |  | [2.0, 0.25] | None / None |  |
-| timber_prop | 29 |   |  | [0.4, 0.4] | None / None | not obtainable even if all recipes known |
-| timber_set | 30 |   |  | [2.0, 0.4] | None / None | not obtainable even if all recipes known |
-| ladder | 31 |   |  | [0.6, 0.15] | None / None | not obtainable even if all recipes known |
+| doorway_section | 26 |   |  | [2.0, 0.25] | 3 / 3 |  |
+| window_section | 27 |   |  | [2.0, 0.25] | 3 / 3 |  |
+| door_open | 28 |   |  | [2.0, 0.25] | 3 / 3 |  |
+| timber_prop | 29 |   |  | [0.4, 0.4] | 1 / 1 |  |
+| timber_set | 30 |   |  | [2.0, 0.4] | 3 / 3 |  |
+| ladder | 31 |   |  | [0.6, 0.15] | 3 / 3 |  |
 | path_patch | 32 |   |  | [1.0, 1.0] | 1 / 1 |  |
 | rough_bed | 36 |   |  | [1.0, 2.0] | 1 / 1 |  |
 | thatch_wall | 37 |   |  | [2.0, 0.25] | 2 / 2 |  |

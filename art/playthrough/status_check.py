@@ -48,7 +48,9 @@ def obtainable(i):
 
 
 def blocked_count():
-    return sum(1 for r in recipes.values() if r["blocked_by"] and not r["future"])
+    # a blocked recipe does not count when another recipe already makes the same product today (lumber: wedge route vs sawmill/hand saw)
+    made_now = set(r["gives"] for r in recipes.values() if r["wave_now"] is not None)
+    return sum(1 for r in recipes.values() if r["blocked_by"] and not r["future"] and r["gives"] not in made_now)
 
 
 learn = sum(1 for r in recipes.values() if r["known"])

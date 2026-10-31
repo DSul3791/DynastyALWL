@@ -88,6 +88,16 @@ for sp, row in drops["harvest_yield"].items():
     add(row["item"], "plant:" + sp)
 for sp, row in drops["berry_yield"].items():
     add(row["item"], "plant:" + sp)
+# The server (server_items.gd gather()) also gives one random in-season yield from the plant's flora.json yields for any plant WITHOUT a
+# harvest_yield or berry_yield row, if that yield exists as an item (natural yield). Taught here by Sal, 2026-10-31.
+for e in flora.values():
+    if e["kind"] in ("plant", "shrub") and e["name"] not in drops["harvest_yield"] and e["name"] not in drops["berry_yield"]:
+        for y in e.get("yields", []):
+            add(y, "plant:" + e["name"] + " (natural yield)")
+# wood_species.json ingredient_groups: a recipe asking for a group id (plain log) is filled by any member (code half pending, data half done)
+for gid, members in load("data/items/wood_species.json").get("ingredient_groups", {}).items():
+    if gid != "note" and any(m in items for m in members):
+        add(gid, "ingredient group " + gid)
 for i in ("stone", "stick"):
     add(i, "ground scatter")
 add("driftwood", "ground scatter (water bank)")
