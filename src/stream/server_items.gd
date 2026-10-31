@@ -884,6 +884,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_fill(peer, inv, at)
 	elif kind == Net.ACT_GATHER_EDGE:
 		gather_edge(peer, inv)
+	elif kind == Net.ACT_SET_SPAWN:
+		set_spawn_bed(peer, a)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at)
 	elif kind == Net.ACT_SOW:
@@ -5529,8 +5531,59 @@ func _note_shelter(peer: int) -> void:
 		_dirty = true
 
 
-# Where this character comes back: just in front of their last shelter if it still stands, else the world spawn.
+# The spawn point a player chooses (Dave 31 Oct 2026): E on a placed bed offers "Set this bed as your spawn point" (ACT_SET_SPAWN). One per character, saved in
+# characters.json "spawn_bed" [x, y, z]; a new choice unsets the old; if that bed is taken down or destroyed the character comes back at the spawn pad.
+func set_spawn_bed(peer: int, bed_id: int) -> bool:
+	var it: Dictionary = _items.get(bed_id, {})
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if it.is_empty() or not it.has("struct") or str(it["struct"].get("kind", "")) != "rough_bed" or key == "" or not _characters.has(key) or not _peer_pos.has(peer):
+		return false
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
+		_say(peer, "Too far from the bed.")
+		return false
+
+	var p: Vector3 = it["pos"]
+	_characters[key]["spawn_bed"] = [p.x, p.y, p.z]
+	_dirty = true
+	_say(peer, "Spawn point set")
+	return true
+
+
+# The bed standing at the saved spawn spot, 0 when it is gone.
+func _spawn_bed_id(peer: int) -> int:
+	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("spawn_bed", [])
+
+	if saved.size() != 3:
+		return 0
+
+	var spot := Vector3(float(saved[0]), float(saved[1]), float(saved[2]))
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(it["struct"].get("kind", "")) == "rough_bed" and it["pos"].distance_to(spot) <= 0.5:
+			return id
+
+	return 0
+
+
+# Where this character comes back: at their spawn bed if they set one and it still stands (a bed that is gone is forgotten and the spawn pad is used), else just in front of
+# their last shelter if it still stands, else the world spawn.
 func respawn_for(peer: int) -> Vector3:
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if (row.get("spawn_bed", []) as Array).size() == 3:
+		var bed: int = _spawn_bed_id(peer)
+
+		if bed != 0:
+			return _items[bed]["pos"] + Vector3(0.0, 0.3, 0.0)
+
+		row.erase("spawn_bed")
+		_dirty = true
+		return respawn_point
+
 	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("shelter", [])
 
 	if saved.size() != 3:
@@ -9056,6 +9109,7 @@ func _load_characters() -> void:
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
+			"spawn_bed": parsed["players"][key].get("spawn_bed", []) if typeof(parsed["players"][key].get("spawn_bed", [])) == TYPE_ARRAY and (parsed["players"][key].get("spawn_bed", []) as Array).size() == 3 else [],
 			"goals_done": parsed["players"][key].get("goals_done", {}) if typeof(parsed["players"][key].get("goals_done", {})) == TYPE_DICTIONARY else {},   # starter goals finished
 			"goal_counts": parsed["players"][key].get("goal_counts", {}) if typeof(parsed["players"][key].get("goal_counts", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
