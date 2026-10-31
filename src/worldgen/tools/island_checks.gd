@@ -1554,7 +1554,7 @@ func _spawn_check(settings, world_dir: String, directory: String, tile_limits: D
 		_row(title, "cannot read height or water", "-", "FAIL")
 		return
 
-	var heights: PackedFloat32Array = TileFileScript.decode_height(height_section["raw"])
+	var heights: PackedFloat32Array = TileFileScript.decode_height(height_section["raw"], TileFileScript.height_step_of(header["header"]))
 	var water: PackedByteArray = water_section["raw"]
 	var n: int = int(header["header"]["samples"])
 	var spacing: float = float(header["header"]["map_spacing_m"])
@@ -1693,7 +1693,7 @@ func _stitch(tiles: Array, directory: String, fine: bool = false) -> Dictionary:
 			result["heights"].fill(NAN)
 
 		var raw: PackedByteArray = water_section["raw"]
-		var low_heights: PackedFloat32Array = TileFileScript.decode_height(height_section["raw"])
+		var low_heights: PackedFloat32Array = TileFileScript.decode_height(height_section["raw"], TileFileScript.height_step_of(header["header"]))
 		var base_x: int = (tile.x - min_x) * step
 		var base_z: int = (tile.y - min_z) * step
 		var width: int = result["width"]
