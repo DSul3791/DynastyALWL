@@ -17,6 +17,9 @@ START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ))
 # threads keep Godot from exiting for 5 minutes or more on a fresh data folder (31 Oct 2026).
 XARGS=$(grep -E "^$NAME " "$(dirname "$0")/test_args.txt" 2>/dev/null | head -1 | cut -d' ' -f2- | tr -d '')
 [ -n "$XARGS" ] && XARGS="-- $XARGS"
+# Wait for a free Godot slot (at most 3 heavy jobs at once on the whole PC, tools/godot_slot.sh; GODOT_SLOTS=0 switches it off). The time waiting is not counted.
+. "$(dirname "$0")/godot_slot.sh"; slot_acquire; trap slot_release EXIT
+START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ));; esac
 timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://src/worldgen/tools/$NAME.gd" $XARGS > "$OUT/$NAME.out" 2>&1 &
 GP=$!; DEAD=""
 while kill -0 $GP 2>/dev/null; do

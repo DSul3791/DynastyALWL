@@ -107,6 +107,52 @@ func remove(number: int, count: int) -> bool:
 	return true
 
 
+# Ingredient counting (guide finding F-16, Tyler 31 Oct 2026): an ingredient that names a group (plain `log`, `wooden_block`, `firewood`: item_table.gd
+# load_groups) is filled by the id itself or any member (log_oak ...). Recipes, the craft queue, the planner, blueprint costs and the client recipe list use
+# these three; count_of / has / remove stay literal (one item number), so nothing else changes meaning.
+func fills_of(number: int) -> PackedInt32Array:
+	if table != null and table.has_method("group_members"):
+		var members: PackedInt32Array = table.group_members(number)
+
+		if not members.is_empty():
+			return members
+
+	return PackedInt32Array([number])
+
+
+func count_fill(number: int) -> int:
+	var fills: PackedInt32Array = fills_of(number)
+	var total: int = 0
+
+	for i in SLOTS:
+		if numbers[i] != 0 and fills.has(numbers[i]):
+			total += counts[i]
+
+	return total
+
+
+func has_fill(number: int, count: int) -> bool:
+	return count_fill(number) >= count
+
+
+# Takes `count` for an ingredient: the id itself first, then the group members in the order of the group. False and no change if the pack holds too few.
+func remove_fill(number: int, count: int) -> bool:
+	if count <= 0 or not has_fill(number, count):
+		return false
+
+	var left: int = count
+
+	for fill in fills_of(number):
+		if left > 0:
+			var taken: int = mini(left, count_of(fill))
+
+			if taken > 0:
+				remove(fill, taken)
+				left -= taken
+
+	return true
+
+
 # Remove from one slot; returns {number, count} actually taken.
 func take_from_slot(slot: int, count: int) -> Dictionary:
 	if slot < 0 or slot >= SLOTS or numbers[slot] == 0 or count <= 0:
