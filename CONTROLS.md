@@ -20,7 +20,7 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Ctrl | Go down (flying) |
 | G | Switch between walking and flying |
 | P | Auto pickup on or off (toggle, default off, remembered). "Auto pickup ON/OFF" shows slightly above the middle of the screen for 1.5 s. When on, loose items within reach and in view are picked up, one at a time, 4 a second (the server still refuses what is too heavy or needs a tool); what you just dropped is left alone for 15 s. Off while swimming, placing a blueprint, asleep, dead or with a screen open |
-| F | Open the chest or remains beside you (your pack left, its contents right; T moves the selected stack across) |
+| F | Open the chest, station or remains beside you (your pack left, its contents right; T moves the selected stack across). Carrying a log with nothing to open: F twice within 0.6 s puts the log down (the first F says so); Q does too |
 | / (key with ? on it) | Inspection mode on or off (toggle). A brain icon shows near the top. Shows the name and key note of what the crosshair points at, in the middle of the screen: Oak, Beach sand, Coal, Hemlock (Toxic). What you see depends on what your character knows: it may say Unknown or Might be (a wrong guess). Flying (admin) always shows the truth |
 | + / - (also numpad) | Raise or lower how much every spring pours, by about 10 % per press (tuning tool, x0.5 to x40; every pond starts at x10 = 100 m3/s; above x10 rivers and ponds turn muddy brown). Shows "Water flow rate: x10.00 = 100.0 m3/s per spring (1,585,000 gal/min)" for 3 seconds. The water then runs by real physics for two simulated hours ("running...") and redraws as it moves |
 | C | Crouch (toggle): lower eye, slower; kept while moving |
