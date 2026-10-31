@@ -378,6 +378,8 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	var lights_parsed: Variant = _read_json_version("lights.json", 1)
+	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_rebuild_supports()
@@ -1088,6 +1090,7 @@ func save() -> void:
 	_save_characters()
 	_save_craft_queues()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops})
+	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "layout": FloraLayout.VERSION})
 
 
@@ -8000,6 +8003,35 @@ func _light_fixture(peer: int, inv, it: Dictionary, def: Dictionary) -> void:
 	it["struct"]["fuel_left"] = left + burn
 	_dirty = true
 	_say(peer, "It burns.")
+
+
+# The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left] and put back on the structures at those spots after a load.
+func _light_rows_save() -> Array:
+	var rows: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and bool(it["struct"].get("lit", false)):
+			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
+
+	return rows
+
+
+func _apply_lit_rows(rows: Array) -> void:
+	for row in rows:
+		if typeof(row) != TYPE_ARRAY or (row as Array).size() < 4:
+			continue
+
+		var spot := Vector3(float(row[0]), float(row[1]), float(row[2]))
+
+		for id in _items:
+			var it: Dictionary = _items[id]
+
+			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(_structures.get(str(it["struct"].get("kind", "")), {}).get("use", "")) == "light":
+				it["struct"]["lit"] = true
+				it["struct"]["fuel_left"] = float(row[3])
+				break
 
 
 func _lights_tick(spent: float) -> void:
