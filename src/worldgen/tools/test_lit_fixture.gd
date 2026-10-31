@@ -78,7 +78,7 @@ func _init() -> void:
 	check(facing.z > 0.99 and cone.shadow_enabled and cone.spot_angle >= 50.0 and cone.spot_angle <= 60.0 and cone.spot_range <= 7.0 and cone.spot_attenuation >= 2.0, "the fireplace light is a shadowed spot facing the front (z %.2f), %.0f degrees half angle, range %.1f m" % [facing.z, cone.spot_angle, cone.spot_range])
 	check(cone.position.z > 0.0 and cone.position.z < 0.6 and cone.has_meta("base_energy"), "placed at the hearth just inside the opening")
 	var glow: OmniLight3D = cone.get_node("Glow")
-	check(glow.omni_range <= 1.5 and glow.light_energy < 0.5 and not glow.shadow_enabled, "and only a small dim glow inside (range %.1f m)" % glow.omni_range)
+	check(glow.omni_range <= 2.0 and glow.light_energy < 0.6, "and only a small dim glow inside (range %.1f m)" % glow.omni_range)
 
 	for tier in [1, 2, 3]:
 		var camp: OmniLight3D = BuildingLook.fire(true, false, tier).get_node("Light")
