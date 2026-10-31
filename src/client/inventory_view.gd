@@ -744,7 +744,7 @@ func _auto_pickup_tick(now: int) -> void:
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
 
-	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, hash(inventory.counts), in_view)
 
 	if id != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -3406,7 +3406,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
-	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
+	auto_pickup.note_refused(_player_position.call(), hash(inventory.counts))
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -4750,15 +4750,40 @@ func run_chest_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	var here: Vector3 = _player_position.call()
-	var spot: Vector3 = Vector3(here.x + 2.0, float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0))), here.z)
-	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, spot)
-	await get_tree().create_timer(2.0).timeout
 	var id: int = 0
 
-	for k in _world:
-		if _world[k]["state"] == 6:
-			id = k
+	# Place the chest and wait for it; a slow cloud world may not have the ground or the chest yet, so try again up to four times (the 04:18 rig run never saw the chest and then read a null chest_inv).
+	for attempt in 4:
+		var here: Vector3 = _player_position.call()
+		var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
+
+		if is_nan(ground):
+			await get_tree().create_timer(2.0).timeout
+			continue
+
+		if inventory.numbers.find(table.number_of("chest_kit")) < 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+			await get_tree().create_timer(1.0).timeout
+
+		net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
+
+		for wait in 40:
+			for k in _world:
+				if _world[k]["state"] == 6:
+					id = k
+
+			if id != 0:
+				break
+
+			await get_tree().create_timer(0.1).timeout
+
+		if id != 0:
+			break
+
+	if id == 0:
+		print("Chest test: no chest was placed (no ground or the place was refused)")
+		_finish_early(client)
+		return
 
 	_ask_open(id)
 
@@ -4767,6 +4792,11 @@ func run_chest_test(client) -> void:
 			break
 
 		await get_tree().create_timer(0.1).timeout
+
+	if chest_inv == null:
+		print("Chest test: the chest did not open (no contents arrived)")
+		_finish_early(client)
+		return
 
 	var stone: int = table.number_of("stone")
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
