@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 290,
+	"next_number": 294,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -373,8 +373,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -3417,8 +3416,7 @@
 			"needs": [["lumber", 20], ["nails", 80]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
-			"known": false,
-			"locked": true,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3745,8 +3743,7 @@
 		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"steel_striker": {"number": 183, "name": "Steel striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
-		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": false,
- "locked": true, "station": "forge", "station_level": 2},
+		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
 		"stone_pickaxe": {
 			"number": 186,
 			"name": "Stone pickaxe",
@@ -6044,6 +6041,98 @@
 			"craft_s": 14.0,
 			"station": "campfire_pot",
 			"known": true
+		},
+		"bronze_pickaxe": {
+			"number": 290,
+			"name": "Bronze pickaxe",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"bronze_pickaxe",
+				1
+			],
+			"craft_s": 25.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_axe": {
+			"number": 291,
+			"name": "Bronze axe",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"bronze_axe",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_hammer": {
+			"number": 292,
+			"name": "Bronze hammer",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_hammer",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_knife": {
+			"number": 293,
+			"name": "Bronze knife",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_knife",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "forge"
 		}
 	}
 }

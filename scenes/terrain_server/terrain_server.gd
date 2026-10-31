@@ -14,12 +14,14 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: processor count - 1)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
 #
 # Clients start at the starter spawn point of tile (3,4).
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -131,6 +133,8 @@ var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
 var _peers: Dictionary = {}            # peer -> {"blocks": n, "bytes": n}
 var _quit_at_msec: int = -1
+var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
+var _watch_next_msec: int = 0
 var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
@@ -193,6 +197,15 @@ func _ready() -> void:
 			_quit_when_empty = true
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
+
+	# Testing only (self_timeout.gd): --timeout=N (or --timeout N) quits after N seconds the same clean way as --quit-after; --watch-parent=PID quits when that process is gone.
+	var self_flags: Dictionary = SelfTimeoutScript.parse(OS.get_cmdline_user_args())
+
+	if float(self_flags["seconds"]) > 0.0:
+		var due: int = Time.get_ticks_msec() + int(float(self_flags["seconds"]) * 1000.0)
+		_quit_at_msec = due if _quit_at_msec < 0 else mini(_quit_at_msec, due)
+
+	_watch_parent_pid = int(self_flags["parent"])
 
 	var errors: Array = []
 	settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
@@ -1148,6 +1161,11 @@ func _send_stripped(peer: int, chunk: Vector2i) -> void:
 	if not ids.is_empty():
 		net.flora_stripped.rpc_id(peer, chunk, ids)
 
+	var fruit: Array = items.fruit_state("%d,%d" % [home.x, home.y])
+
+	if not (fruit[0] as PackedInt32Array).is_empty():
+		net.flora_fruit.rpc_id(peer, chunk, fruit[0], fruit[1])
+
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# Gathering (E): a plant or shrub is picked: it gives what drops.json and its season allow and then rests.
@@ -1176,7 +1194,9 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
-	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
+	var fruit_tree: bool = not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and (items._drops.get("fruit_tree", {}) as Dictionary).has(str(species["name"]))
+
+	if at < 0 or species.is_empty() or (int(species["kind"]) == PlacerScript.KIND_TREE and not fruit_tree):
 		return
 
 	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
@@ -1186,7 +1206,13 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
-	if gave and items.plant_stays:
+	if gave and fruit_tree:
+		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
+		net.flora_fruit.rpc(chunk, PackedInt32Array([id]), PackedInt32Array([items.fruit_taken(key)]))
+
+		if items.fruit_left(str(species["name"]), key, id, float(all["heights"][at])) <= 0:
+			net.flora_stripped.rpc(chunk, PackedInt32Array([id]))
+	elif gave and items.plant_stays:
 		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
 	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
@@ -1898,6 +1924,14 @@ func _process(delta: float) -> void:
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
 			_run_note("closing", _link_port - 1)
+
+	if _watch_parent_pid > 0 and now >= _watch_next_msec and _quit_at_msec < 0:
+		_watch_next_msec = now + 3000
+
+		if not OS.is_process_running(_watch_parent_pid):
+			print("server: the parent process %d is gone, closing" % _watch_parent_pid)
+			_events.event("QUIT: the parent process %d is gone" % _watch_parent_pid)
+			_quit_at_msec = now
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1

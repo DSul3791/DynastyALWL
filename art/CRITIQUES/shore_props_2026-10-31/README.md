@@ -1,0 +1,5 @@
+# Tide-line gather props (moderator 2026-10-31), Kathleen
+src/client/shore_props.gd draws a small prop where ShoreRules.node_at says a gather node is today (same cell, day, hour, season as the server): kelp (seaweed tangle), mussels (dark blue shells + pebble), crabs (a live crab among pebbles, new basic_look shape crab_live), nest (dry-grass ring with three eggs, new shape nest). Beach and sea-near checks like the prompt; a cell this client already gathered shows nothing; cells within 26 m, refreshed every 1.5 s or 3 m of walking. Hooked in terrain_client.gd `_shore_prompt` (shore_props.update).
+Pictures: round1 (props buried and too bright), round2, round3 (lifted by scale; crab legs read), tools/shore_props_view.gd.
+Ratings: mussels 3, crab 3 (legs and claws read, claws are orange blobs), kelp 2-3 and nest 2-3 (seen only at the edge of the contact sheet), pebbles 2 (grey clouds). Not seen in the real game.
+Next: a proper pebble (reuse the grass_view pebble mesh), kelp longer and flatter, check in the game that `_shore_prompt` runs every frame near the beach so props appear before the player is at the spot.

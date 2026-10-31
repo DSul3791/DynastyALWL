@@ -106,6 +106,21 @@ import re as _re
 _m = _re.search(r"rough planks from the one log on the shoulder.*?: (\d+)", _probe_logs)
 if _m and int(_m.group(1)) > 0:
     add("log", "ingredient group: shoulder log and nearby logs (probe_logs)")
+# Tyler's gather systems (Sal taught the audit, 2026-10-31): ore and coal from outcrop boulders need a pick, flint comes from boulders and banks, tide-line nodes give
+# shore foods, and the shore fills a container with sea water (data/items/boulders.json, shore_nodes.json).
+_boulders = load("data/items/boulders.json")
+for _ore_item in _boulders.get("ore", {}).get("items", {}).values():
+    if _ore_item in items:
+        sources[_ore_item].add("boulder outcrop (pick)")
+        gated[_ore_item] = "pick"
+if _boulders.get("flint", {}).get("item") in items:
+    sources[_boulders["flint"]["item"]].add("boulder or river bank")
+_shore = load("data/items/shore_nodes.json")
+for _node in _shore.get("nodes", []):
+    if _node.get("item") in items:
+        sources[_node["item"]].add("tide-line node")
+if _shore.get("sea_water_item") in items:
+    sources[_shore["sea_water_item"]].add("shore, with a container")
 for i in ("stone", "stick"):
     add(i, "ground scatter")
 add("driftwood", "ground scatter (water bank)")

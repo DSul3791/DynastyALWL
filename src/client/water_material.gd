@@ -190,7 +190,7 @@ void fragment() {
 	vec2 swell = running && rough > 0.001 ? mix(ripple_slope(local / 5.0 - velocity * phase0 * cycle / 5.0), ripple_slope(local / 5.0 + 7.0 - velocity * phase1 * cycle / 5.0), blend) : vec2(0.0);
 	float drift = mod(TIME, 2000.0);
 	vec2 still = ripple_slope(local / 5.0 + vec2(drift * 0.03, drift * 0.02));
-	vec2 bump = (run * (0.12 + 0.5 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
+	vec2 bump = (run * (0.22 + 0.7 * sqrt(steep)) * (1.0 + 0.8 * rough) + swell * 0.5 * rough) * step(0.001, steep) + still * 0.04;
 	// Ripples fade with distance (far away they only sparkle in single pixels).
 	float distance_m = length(VERTEX);
 	bump *= 1.0 / (1.0 + distance_m / 35.0);
