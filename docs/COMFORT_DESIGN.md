@@ -12,7 +12,7 @@ You are sheltered when ANY of these holds at your feet (the cover the game alrea
 1. you stand under a built roof: a lean-to, or any roof piece (Cover roofs, `Cover.at` returns 1.0 for a box or disc roof you are inside, y between its floor and top);
 2. you stand under a **grown tree crown**: `Cover.at` through the tree index, only trees at 80 percent of their species height count (`SHELTER_MIN_SCALE` 0.8, disc radius `SHELTER_RADIUS` crown_m);
 3. you are inside the lean-to (it is a roof, so rule 1).
-So a camp can have its lean-to or only a big tree; the comfort items need not be inside the lean-to. The lean-to is shelter only: today 2.1 m high, 2.2 x 1.9 m, rain and sun cover. Comfort comes from what you place around it. If you are NOT sheltered, the furniture adds nothing (message "You are not sheltered: nothing here comforts you.").
+So a camp can have its lean-to or only a big tree; the comfort items need not be inside the lean-to. The lean-to is shelter only: 2.6 x 3.4 m and 1.5 m high (Tyler, 31 Oct), rain and sun cover. Comfort comes from what you place around it. If you are NOT sheltered, the furniture adds nothing (message "You are not sheltered: nothing here comforts you.").
 
 ## 3. What counts (data/items/comfort.json `kinds`)
 | Class | Kinds and points | Status |
@@ -82,3 +82,5 @@ Code needed:
 5. Lit logic (before we unlock torch, chandelier, fireplace): a `lit` flag per placed light fuelled with a stick (torch), candles (chandelier) or firewood (fireplace); only lit lights count. Fire states for the campfire and clay hearth already exist.
 6. Wall pieces (wall_torch, antler_mount) need a wall to hang on (or accept floor placement for now); the chandelier hangs from a roof.
 7. test_comfort.gd as listed in section 7.
+
+Update 31 Oct (moderator decision): no sheep or goats are spawned, so wool has no source in play. Wool rug is `future` and its recipe locked again (test_learn checks it). Feather bed now takes 2 Fibre cloth instead of 4 wool and the canopy bed 4 Fibre cloth instead of 4 linen (flax has no gatherable item yet). Fibre cloth (item 517) is 8 plant fibre woven by hand in 30 s. Feathers come from duck, songbird, grouse and seabird carcasses.

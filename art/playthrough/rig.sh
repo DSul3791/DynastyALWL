@@ -104,7 +104,12 @@ WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN=
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK${MORE:+;$MORE}"
 CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN $XARGS ${EXPECT:+"--shot-expect=$EXPECT"})
 if [ -n "$WIN" ]; then
+  # A fresh APPDATA per run means an EMPTY shader cache, so every shader is compiled on the main thread at the join: the 15 s "HUNG" crash report of every rig run (31 Oct 2026, Guide).
+  # The rig keeps a warm shader cache between runs (RIG_WARM, default beside the rig's temp folders) and copies it in before and back after the run; Dave's own cache is never touched.
+  WARM="${RIG_WARM:-${TMPDIR:-/tmp}/dynasty_rig_warm}"; mkdir -p "$WARM/shader_cache" "$WARM/vulkan" "$UD"
+  cp -a "$WARM/shader_cache" "$WARM/vulkan" "$UD/" 2>/dev/null
   APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=900 > "$RIG/client.log" 2>&1
+  cp -a "$UD/shader_cache" "$UD/vulkan" "$WARM/" 2>/dev/null
 else
   # NVIDIA Vulkan file when nvidia-smi works (found by looking), else Mesa lavapipe; own HOME so Dave's settings are never touched.
   ICD=""; REND=software

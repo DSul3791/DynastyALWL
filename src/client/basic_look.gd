@@ -71,16 +71,16 @@ const ART_OVERRIDES := {
 	"quince_paste": {"shape": "dish", "color": "#b05a28", "size": 1.0, "bits": ["pot"]},
 	"crab_apples": {"shape": "fruit", "color": "#7c9a34", "size": 0.55},
 	"stewed_berries": {"shape": "dish", "color": "#6a2a48", "size": 1.0, "bits": ["soup", "#8a3a5a", "#4a1a3a"]},
-	"log_seat_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["dome"]},
-	"stool_kit": {"shape": "parcel", "color": "#7a5a30", "size": 0.8, "bits": ["bench"]},
-	"bench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["bench"]},
+	"log_seat_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["seat"]},
+	"stool_kit": {"shape": "parcel", "color": "#7a5a30", "size": 0.8, "bits": ["stool"]},
+	"bench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["plankbench"]},
 	"chair_kit": {"shape": "parcel", "color": "#7a5a30", "size": 1.0, "bits": ["bench"]},
-	"table_kit": {"shape": "parcel", "color": "#9a7a44", "size": 1.0, "bits": ["bench"]},
+	"table_kit": {"shape": "parcel", "color": "#9a7a44", "size": 1.0, "bits": ["trestle"]},
 	"hide_rug_kit": {"shape": "parcel", "color": "#5a3a22", "size": 1.0, "bits": ["roll"]},
 	"wool_rug_kit": {"shape": "parcel", "color": "#a08a64", "size": 1.0, "bits": ["roll"]},
 	"straw_bed_kit": {"shape": "parcel", "color": "#c8a84a", "size": 1.0, "bits": ["bed"]},
-	"feather_bed_kit": {"shape": "parcel", "color": "#e6e0d0", "size": 1.0, "bits": ["bed"]},
-	"canopy_bed_kit": {"shape": "parcel", "color": "#9a3a30", "size": 1.0, "bits": ["bed"]},
+	"feather_bed_kit": {"shape": "parcel", "color": "#e6e0d0", "size": 1.0, "bits": ["featherbed"]},
+	"canopy_bed_kit": {"shape": "parcel", "color": "#9a3a30", "size": 1.0, "bits": ["canopybed"]},
 	"wall_torch_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["prop"]},
 	"chandelier_kit": {"shape": "parcel", "color": "#7a5a30", "size": 1.0, "bits": ["pot"]},
 	"fireplace_kit": {"shape": "parcel", "color": "#a8482c", "size": 1.0, "bits": ["planks"]},
@@ -116,10 +116,10 @@ const ART_OVERRIDES := {
 	"brick_roof_kit": {"shape": "parcel", "color": "#b85a2c", "size": 1.0, "bits": ["planks"]},
 	"stairs_wood_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["ladder"]},
 	"log_cabin_set_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.3, "bits": ["chest"]},
-	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["roll"]},
+	"lean_to_kit": {"shape": "parcel", "color": "#5a8a38", "size": 1.0, "bits": ["leanto"]},
 	"chest_kit": {"shape": "parcel", "color": "#a8884a", "size": 1.0, "bits": ["chest"]},
-	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["chest"]},
-	"workbench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["bench"]},
+	"plank_chest_kit": {"shape": "parcel", "color": "#a07a45", "size": 1.0, "bits": ["plankchest"]},
+	"workbench_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["workbench"]},
 	"tool_rack_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["bench", "rack"]},
 	"vice_kit": {"shape": "parcel", "color": "#7a5a35", "size": 1.0, "bits": ["bench", "vice"]},
 	"stone_forge_kit": {"shape": "parcel", "color": "#7d7a74", "size": 0.8, "bits": ["dome"]},
@@ -134,7 +134,7 @@ const ART_OVERRIDES := {
 	"window_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "window"]},
 	"saw_mill_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["sawmill"]},
 	"woodworking_table_kit": {"shape": "parcel", "color": "#7a5430", "size": 1.0, "bits": ["bench", "table"]},
-	"rough_bed_kit": {"shape": "parcel", "color": "#c9bb7a", "size": 1.0, "bits": ["bed"]},
+	"rough_bed_kit": {"shape": "parcel", "color": "#c9bb7a", "size": 1.0, "bits": ["bedframe"]},
 	"thatch_wall_kit": {"shape": "parcel", "color": "#b8a46a", "size": 1.0, "bits": ["roll"]},
 	"campfire_pot_kit": {"shape": "parcel", "color": "#4a3a2a", "size": 1.0, "bits": ["pot"]},
 	"clay_hearth_kit": {"shape": "parcel", "color": "#9a6a4a", "size": 1.0, "bits": ["dome"]},
@@ -237,6 +237,8 @@ const ART_OVERRIDES := {
 	"fur_boots": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["boots"]},
 	"wool": {"shape": "crumble", "color": "#d8ccae", "size": 1.0},
 	"linen": {"shape": "cloth", "color": "#e6dcc2", "size": 1.0},
+	"chopping_block": {"shape": "parcel", "color": "#6a4a2a", "size": 1.2, "bits": ["chopblock"]},
+	"fibre_cloth": {"shape": "cloth", "color": "#b79f64", "size": 1.1},      # plant fibre woven flat: a folded coarse straw-brown cloth, darker and more open than the pale linen
 	"wheat": {"shape": "sheaf", "color": "#c9983a", "size": 1.0, "bits": ["wheat"]},
 	"barley": {"shape": "sheaf", "color": "#c9a850", "size": 1.0, "bits": ["barley"]},
 	"flax": {"shape": "sheaf", "color": "#b8a46a", "size": 1.0, "bits": ["flax"]},
@@ -856,6 +858,113 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(-0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.02, 0.15, 0.19), Vector3(0.08, 0.0, 0.0), dark)
 					_box(parts, Vector3(0.03, 0.04, 0.02), Vector3(0.0, 0.01, 0.1), Color(0.6, 0.55, 0.3))
+				"leanto":
+					# The lean-to kit: a ridge pole on two forks with a row of sticks leaning on it, a few leaf cards laid on them, bound with cord (Kathleen 2026-10-31: the ten most-seen kits each look different).
+					for x in [-0.15, 0.15]:
+						_cyl(parts, 0.008, 0.2, Vector3(x, 0.0, 0.07), Vector3(0.0, 0.0, 0.0), Color(0.4, 0.28, 0.14))
+
+					_cyl(parts, 0.009, 0.34, Vector3(0.0, 0.1, 0.07), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.18))
+
+					for k in 8:
+						_cyl(parts, 0.007, 0.26, Vector3(-0.14 + 0.04 * float(k), 0.0, -0.03), Vector3(0.78, 0.0, 0.0), _tone(Color(0.46, 0.33, 0.17), k, 0.14))
+
+					for k in 3:
+						_box_rot(parts, Vector3(0.1, 0.004, 0.12), Vector3(-0.1 + 0.1 * float(k), 0.0, -0.045), Vector3(0.78, 0.0, 0.0), _tone(Color(0.3, 0.45, 0.16), k, 0.15))
+
+					_cyl(parts, 0.012, 0.012, Vector3(0.0, 0.1, 0.07), Vector3(0.0, 0.0, PI * 0.5), cord)
+				"seat":
+					# A log seat kit: a short upright log with a pale sawn top and growth rings.
+					_cyl(parts, 0.1, 0.16, Vector3(0.0, -0.01, 0.0), Vector3.ZERO, Color(0.36, 0.25, 0.14))
+					_cyl(parts, 0.095, 0.006, Vector3(0.0, 0.072, 0.0), Vector3.ZERO, Color(0.74, 0.58, 0.38))
+					_cyl(parts, 0.055, 0.007, Vector3(0.0, 0.074, 0.0), Vector3.ZERO, Color(0.6, 0.45, 0.28))
+					_cyl(parts, 0.02, 0.008, Vector3(0.0, 0.076, 0.0), Vector3.ZERO, Color(0.4, 0.28, 0.16))
+				"stool":
+					# A three-legged stool kit: a round seat, three splayed legs.
+					_cyl(parts, 0.1, 0.03, Vector3(0.0, 0.05, 0.0), Vector3.ZERO, Color(0.74, 0.58, 0.38))
+
+					for k in 3:
+						var sa: float = TAU * float(k) / 3.0 + 0.5
+						_cyl(parts, 0.012, 0.13, Vector3(cos(sa) * 0.065, -0.025, sin(sa) * 0.065), Vector3(sin(sa) * 0.22, 0.0, -cos(sa) * 0.22), Color(0.46, 0.33, 0.17))
+				"plankbench":
+					# A bench kit: a long thick plank seat on two slab ends.
+					_box(parts, Vector3(0.38, 0.03, 0.12), Vector3(0.0, 0.03, 0.0), color)
+
+					for x in [-0.14, 0.14]:
+						_box(parts, Vector3(0.025, 0.1, 0.11), Vector3(x, -0.03, 0.0), color.darkened(0.25))
+
+					_box(parts, Vector3(0.3, 0.02, 0.02), Vector3(0.0, -0.035, 0.0), color.darkened(0.1))
+				"trestle":
+					# A table kit: a broad plank top lying on a side, two trestle ends and a stretcher stacked beside it.
+					_box(parts, Vector3(0.36, 0.025, 0.22), Vector3(0.0, 0.0, 0.0), color)
+					_box(parts, Vector3(0.36, 0.006, 0.012), Vector3(0.0, 0.015, 0.0), color.darkened(0.25))
+					_box(parts, Vector3(0.36, 0.006, 0.012), Vector3(0.0, 0.015, 0.06), color.darkened(0.25))
+					_box(parts, Vector3(0.36, 0.006, 0.012), Vector3(0.0, 0.015, -0.06), color.darkened(0.25))
+
+					for x in [-0.1, 0.1]:
+						_box_rot(parts, Vector3(0.02, 0.2, 0.16), Vector3(x, -0.07, 0.0), Vector3(0.0, 0.0, 1.35), color.darkened(0.3))
+				"workbench":
+					# A workbench kit: a thick top with a row of dog holes, a front vice, two trestle legs, a mallet on top.
+					_box(parts, Vector3(0.38, 0.05, 0.16), Vector3(0.0, 0.02, 0.0), color)
+
+					for k in 5:
+						_cyl(parts, 0.007, 0.052, Vector3(-0.12 + 0.06 * float(k), 0.02, -0.04), Vector3.ZERO, Color(0.12, 0.09, 0.06))
+
+					for x in [-0.14, 0.14]:
+						_box(parts, Vector3(0.03, 0.1, 0.14), Vector3(x, -0.055, 0.0), color.darkened(0.25))
+
+					_box(parts, Vector3(0.05, 0.04, 0.03), Vector3(0.16, 0.04, 0.09), color.darkened(0.35))
+					_cyl(parts, 0.006, 0.07, Vector3(0.16, 0.04, 0.125), Vector3(PI * 0.5, 0.0, 0.0), Color(0.15, 0.15, 0.16))
+					_cyl(parts, 0.011, 0.07, Vector3(-0.1, 0.07, 0.03), Vector3(0.0, 0.0, PI * 0.5), Color(0.36, 0.25, 0.13))
+					_cyl(parts, 0.005, 0.1, Vector3(-0.02, 0.07, 0.03), Vector3(0.0, 0.0, PI * 0.5), Color(0.5, 0.36, 0.2))
+				"bedframe":
+					# A rough bed kit: a few crooked sticks forming a frame, with a loose heap of hay across it.
+					for z in [-0.07, 0.07]:
+						_cyl(parts, 0.009, 0.36, Vector3(0.0, -0.02, z), Vector3(0.0, 0.0, PI * 0.5 + 0.04 * z * 10.0), Color(0.4, 0.28, 0.14))
+
+					for x in [-0.15, 0.15]:
+						_cyl(parts, 0.008, 0.18, Vector3(x, -0.01, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.46, 0.33, 0.17))
+
+					_sph(parts, 0.1, Vector3(1.7, 0.45, 0.9), Vector3(0.0, 0.03, 0.0), Color(0.62, 0.52, 0.26))
+					_sph(parts, 0.06, Vector3(1.5, 0.6, 1.0), Vector3(0.07, 0.06, 0.01), Color(0.46, 0.44, 0.22))
+
+					for k in 5:
+						_cyl(parts, 0.004, 0.14, Vector3(-0.1 + 0.05 * float(k), 0.04, 0.09 - 0.17 * float(k % 2)), Vector3(0.7 * (1.0 if k % 2 == 0 else -1.0), 0.0, PI * 0.5 + 0.2), Color(0.66, 0.56, 0.3))
+				"featherbed":
+					# A feather bed kit: a plump white mattress with a pillow and a stitched edge.
+					_box(parts, Vector3(0.32, 0.06, 0.2), Vector3(0.0, -0.02, 0.0), Color(0.9, 0.87, 0.78))
+					_sph(parts, 0.1, Vector3(1.5, 0.45, 0.9), Vector3(0.0, 0.03, 0.0), Color(0.96, 0.94, 0.88))
+					_sph(parts, 0.055, Vector3(1.0, 0.55, 0.8), Vector3(-0.11, 0.06, 0.0), Color(1.0, 0.99, 0.95))
+					_box(parts, Vector3(0.32, 0.008, 0.012), Vector3(0.0, 0.01, 0.1), Color(0.55, 0.45, 0.3))
+				"canopybed":
+					# A canopy bed kit: four posts, a red cloth lying over a frame, tassels.
+					for x in [-0.14, 0.14]:
+						for z in [-0.08, 0.08]:
+							_cyl(parts, 0.01, 0.22, Vector3(x, 0.0, z), Vector3.ZERO, Color(0.34, 0.22, 0.12))
+
+					_box(parts, Vector3(0.32, 0.008, 0.2), Vector3(0.0, 0.11, 0.0), Color(0.66, 0.16, 0.14))
+					_box(parts, Vector3(0.3, 0.05, 0.18), Vector3(0.0, -0.09, 0.0), Color(0.9, 0.86, 0.74))
+
+					for x in [-0.14, 0.14]:
+						_sph(parts, 0.015, Vector3.ONE, Vector3(x, 0.1, 0.1), Color(0.85, 0.7, 0.2), true)
+				"plankchest":
+					# A plank chest kit: a boxy chest with a flat lid, two iron straps, a hasp and corner plates.
+					_box(parts, Vector3(0.3, 0.14, 0.2), Vector3(0.0, -0.02, 0.0), color)
+					_box(parts, Vector3(0.31, 0.03, 0.21), Vector3(0.0, 0.065, 0.0), color.lightened(0.1))
+
+					for x in [-0.09, 0.09]:
+						_box(parts, Vector3(0.02, 0.18, 0.215), Vector3(x, 0.0, 0.0), Color(0.18, 0.18, 0.2))
+
+					_box(parts, Vector3(0.04, 0.05, 0.015), Vector3(0.0, 0.03, 0.108), Color(0.55, 0.5, 0.3))
+				"chopblock":
+					# A chopping block: a broad squat log with a pale top scarred by axe cuts, bark sides and a few split chips lying beside it.
+					_cyl(parts, 0.13, 0.15, Vector3(0.0, -0.01, 0.0), Vector3.ZERO, Color(0.34, 0.23, 0.13))
+					_cyl(parts, 0.125, 0.008, Vector3(0.0, 0.068, 0.0), Vector3.ZERO, Color(0.66, 0.5, 0.32))
+					_box_rot(parts, Vector3(0.2, 0.004, 0.012), Vector3(0.0, 0.074, 0.0), Vector3(0.0, 0.5, 0.0), Color(0.3, 0.2, 0.1))
+					_box_rot(parts, Vector3(0.14, 0.004, 0.012), Vector3(0.02, 0.074, 0.03), Vector3(0.0, -0.4, 0.0), Color(0.3, 0.2, 0.1))
+					_box_rot(parts, Vector3(0.1, 0.004, 0.012), Vector3(-0.03, 0.074, -0.04), Vector3(0.0, 1.2, 0.0), Color(0.3, 0.2, 0.1))
+
+					for k in 3:
+						_box_rot(parts, Vector3(0.06, 0.012, 0.025), Vector3(0.17 + 0.03 * float(k), -0.07, 0.04 * float(k) - 0.04), Vector3(0.2, 0.9 * float(k), 0.3), Color(0.6, 0.45, 0.27))
 				"dome":
 					_sph(parts, 0.15, Vector3(1.0, 0.75, 0.95), Vector3(0.0, -0.01, 0.0), color)
 					_sph(parts, 0.04, Vector3(1.0, 1.4, 1.0), Vector3(0.0, 0.1, 0.06), color.darkened(0.15))

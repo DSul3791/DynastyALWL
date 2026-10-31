@@ -1,0 +1,3 @@
+# Crown variety (2026-10-31)
+oak_variants.png: eight oak variants (0 to 7) side by side: different colour (yellower, bluer), elliptical and leaning crowns instead of a ball, and dying trees with a bare wedge and dead boughs (about 1 in 8) or mostly dead (1 in 20). TreeBuilder._crown_variety, for broadleaf trees 3 m and taller and the shrub models hazel, blackthorn, cane shrub, bramble and wild rose. Only removes leaf triangles and adds a few thin boughs; flora budget 0 over.
+Rating 3.5 (offline, plain white leaves: colour spread is hard to see here). Next: look in the game; the leaf texture tint (flora_view foliage shader) is the other half of colour variety.
