@@ -2870,6 +2870,7 @@
 		{
 			"id": 49,
 			"name": "dandelion",
+			"patch": {"every_m": 32, "chance": 0.7, "count": [10, 14], "radius_m": [1.5, 3.0], "scale": [0.9, 1.3], "spacing_m": 0.5, "by_biome": true},
 			"display": "Dandelion",
 			"kind": "plant",
 			"shape": "shrub",
@@ -2888,11 +2889,13 @@
 			"per_hectare": {
 				"temperate_grassland": 80,
 				"alpine_meadow": 20,
-				"beach": 4
+				"beach": 4,
+				"temperate_forest": 30,
+				"mixed_forest": 15
 			},
 			"moisture": [
 				50,
-				240
+				255
 			],
 			"max_slope_deg": 40,
 			"altitude_m": [
@@ -2927,6 +2930,7 @@
 		{
 			"id": 50,
 			"name": "wild_carrot",
+			"patch": {"every_m": 60, "chance": 0.7, "count": [5, 9], "radius_m": [1.0, 2.0], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"display": "Wild carrot",
 			"kind": "plant",
 			"shape": "shrub",
@@ -2944,11 +2948,13 @@
 			],
 			"per_hectare": {
 				"temperate_grassland": 15,
-				"beach": 3
+				"beach": 3,
+				"temperate_forest": 6,
+				"mixed_forest": 3
 			},
 			"moisture": [
 				50,
-				200
+				255
 			],
 			"max_slope_deg": 30,
 			"altitude_m": [
@@ -3332,6 +3338,7 @@
 		{
 			"id": 57,
 			"name": "yarrow",
+			"patch": {"every_m": 36, "chance": 0.7, "count": [8, 12], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.5, "by_biome": true},
 			"display": "Yarrow",
 			"kind": "plant",
 			"shape": "shrub",
@@ -3352,11 +3359,13 @@
 				"heath": 10,
 				"alpine_meadow": 15,
 				"temperate_forest": 6,
-				"mixed_forest": 4
+				"mixed_forest": 4,
+				"temperate_forest": 24,
+				"mixed_forest": 12
 			},
 			"moisture": [
 				40,
-				220
+				255
 			],
 			"max_slope_deg": 40,
 			"altitude_m": [
@@ -3452,6 +3461,7 @@
 		{
 			"id": 59,
 			"name": "chamomile",
+			"patch": {"every_m": 40, "chance": 0.7, "count": [8, 12], "radius_m": [1.5, 2.5], "scale": [0.9, 1.3], "spacing_m": 0.5, "by_biome": true},
 			"display": "Chamomile",
 			"kind": "plant",
 			"shape": "shrub",
@@ -3470,11 +3480,13 @@
 			],
 			"per_hectare": {
 				"temperate_grassland": 40,
-				"beach": 3
+				"beach": 3,
+				"temperate_forest": 16,
+				"mixed_forest": 8
 			},
 			"moisture": [
 				40,
-				200
+				255
 			],
 			"max_slope_deg": 30,
 			"altitude_m": [
@@ -3574,6 +3586,7 @@
 		{
 			"id": 61,
 			"name": "st_johns_wort",
+			"patch": {"every_m": 40, "chance": 0.7, "count": [6, 10], "radius_m": [1.2, 2.2], "scale": [0.9, 1.3], "spacing_m": 0.6, "by_biome": true},
 			"display": "St John's wort",
 			"kind": "plant",
 			"shape": "shrub",
@@ -3592,11 +3605,13 @@
 			"per_hectare": {
 				"temperate_grassland": 35,
 				"temperate_forest": 8,
-				"heath": 4
+				"heath": 4,
+				"temperate_forest": 14,
+				"mixed_forest": 7
 			},
 			"moisture": [
 				40,
-				200
+				255
 			],
 			"max_slope_deg": 35,
 			"altitude_m": [

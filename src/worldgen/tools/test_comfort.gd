@@ -106,6 +106,10 @@ func _init() -> void:
 	items.rest_completed(1)
 	check(higher >= 15 and items.rested_seconds_left(1) > 44.0 * 60.0 and float(items.rested_tier(1)["regen_mult"]) == 1.35, "a rest at a higher level (%d) refreshes it to 45 minutes with the better tier" % higher)
 
+	# Action speed (Rested tier at 15+: x1.05) paces crafting and trunk work.
+	check(absf(items._pace_factor(1, "craft") - items.skill_factor(1, "craft") * 1.05) < 0.0001, "the very-well-rested tier speeds the work pace by 5 percent")
+	check(float(items.rested_tier(1).get("cold_stress_mult", 1.0)) == 0.92, "and carries the cold stress multiplier 0.92 that warmth_target applies")
+
 	# Lights: E with the fuel lights a wall torch; it counts while it burns and goes out when the fuel is used up.
 	var lamp: int = add_struct("wall_torch", Vector3(-5.0, 10.0, -2.0))
 	items.report_position(1, Vector3(-4.0, 10.0, -2.0))

@@ -1,0 +1,18 @@
+# Tests to run when the computer is back (Tyler, 31 Oct 2026)
+
+Written while Dave had the PC. Nothing below has been run yet. Run them one at a time, `GODOT_SLOTS` default, from the worktree `claude/tyler-gates-fee5f7`.
+
+1. Parse and the comfort test (action-speed and cold hooks, added unrun to `server_items.gd` and `test_comfort.gd`):
+   `godot --headless --path . --check-only --script res://src/stream/server_items.gd`
+   `godot --headless --path . --script res://src/worldgen/tools/test_comfort.gd`
+2. Diff-selected lane for those files:
+   `python3 tools/tests_for_diff.py --paths src/stream/server_items.gd src/worldgen/tools/test_comfort.gd > /tmp/plan.json && bash tools/run_tests.sh --plan /tmp/plan.json`
+3. The wider lane for the PROTOCOL 81 change (cut short by load last time): `python3 tools/tests_for_diff.py --paths src/stream/terrain_net.gd scenes/terrain_server/terrain_server.gd src/client/inventory_view.gd > /tmp/plan.json && bash tools/run_tests.sh --plan /tmp/plan.json`
+4. Join freeze (item 1 of Guide's list), twice on a quiet PC so the first fills the warm shader cache:
+   `bash art/playthrough/rig.sh --give campfire_kit:1 --drop --client-arg --shot-place --client-arg --shot-light --wait 60 --settle 40 --keep --out /tmp/rigout --name camp_a`, then the same with `--name camp_b`. Look in `crash_reports/` for new files, in the client log for `STALL`/`WATCHDOG`, and in the picture for a lit fire. Expect: no new crash report on run b, "shot runner: lighting fire" in the log.
+5. Client scenes: `python3 tools/items_check.py --godot "C:/GodotInstaller/godot.windows.editor.x86_64.exe" --only chest,gather,eat,leanto`
+6. Creator preview lighting: look at `scenes/creator_proto` once in the editor (ambient 0.55, sun 1.3).
+7. Mutation checks for the newest features (comfort, goals, lights, dev-place, hints, novice grace): `tools/mutation_check.sh` single-line from-text cases.
+8. Bot budget (sticks 60 to 70): `godot --headless --path . --script res://src/worldgen/tools/test_playability_bot.gd`; expect "all 11 steps done" inside the budget.
+9. Lean-to 1.5 m, by reading (nothing to run): server cover box top = pos.y + structures.json `height` (1.5), floor pos.y - 0.5, half 1.3 x 1.7; client box in `inventory_view.gd` (state 5) uses the same numbers. Nothing else assumes 2.1: the other 2.1 left is the state 24 piece's own cover box. A player standing on the roof ridge (y over 1.5) is no longer "covered", which is right. After the run: `test_placement_rules test_lean_to_bed test_leanto_collider test_structure_looks test_comfort`.
+10. Hint triggers `has_plant_food_at_fire` and `campfire_pot_placed` (written unrun in `server_items.gd`, checks added to `test_goals.gd` before its summary line): `godot --headless --path . --check-only --script res://src/stream/server_items.gd` then `godot --headless --path . --script res://src/worldgen/tools/test_goals.gd`. Then Sal's hints.json rows use `"trigger": "has_plant_food_at_fire"` and `"trigger": "campfire_pot_placed"`. The ingredient set is read from recipes.json (stations campfire_pot and clay_hearth); the test uses blueberries + honeyspindle_nectar (berry compote). If `blueberries` or the nectar is not an item id, the test shows it with a number_of error: change the ids to one real campfire_pot recipe's needs.

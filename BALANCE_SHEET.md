@@ -10,7 +10,7 @@ Time and quantity budget for the first tools, compared with other survival games
 | First fire | 6 sticks, 3 stones (laid fire), 1 plant fibre (or bark, tinder) to light | 3 s | "campfire" recipe |
 | Shelter (lean-to) | 32 sticks, 8 leaves, 4 twine (12 fibre) | 8 s | |
 | Rough bed | 10 thatch (or 8 straw or bedding), 4 sticks, 2 twine | 10 s | |
-| Workbench | 20 sticks, 6 twine (18 fibre), 4 stones | 60 s | no station needed (cost raised 31 Oct) |
+| Workbench | 16 sticks, 6 twine (18 fibre), 4 stones | 60 s | no station needed (cost raised 31 Oct) |
 | Stone knife / spear | 2 stone + stick; wooden spear + 2 twine | 3 s / 4 s | |
 | Bow | 2 sticks, 3 twine at the workbench | 8 s | arrows need feathers or the weaker fibre arrow |
 | First forge (Basic Forge, hammer blueprint) | 24 stone (was 36), 10 clay, 2 hide | not data-driven here | needs a workbench of level 2 nearby |

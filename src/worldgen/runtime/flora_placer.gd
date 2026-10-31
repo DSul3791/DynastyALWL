@@ -542,6 +542,10 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				if shade == 2 or (shade == 1 and not item["tolerant"] and rng_pick(x + 3.0, z + 9.0, f[1]) >= 0.4):
 					continue
 
+				# Young conifers come in nurseries and under their parents, never one by one in the middle of a meadow (Dave 2026-10-31).
+				if item["kind"] == KIND_TREE and item["shape"] == "conifer" and not _nursery_at(x, z) and not _parent_near(canopies, x, z):
+					continue
+
 			if not _make_room(occupied, x, z, spacing_radius(item, height), f[8], f[1], item["kind"]):
 				continue
 
@@ -582,6 +586,10 @@ const LEDGE_MAX_SLOPE := 0.30   # a ledge: the surface within 1.5 m is flatter t
 const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
 const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
 const MONTANE_PATCH_SHARE := 0.7   # (was 0.4) a thicker evergreen belt on the hill ground
+const NURSERY_EVERY_M := 60.0   # young-conifer nurseries: one grid square in NURSERY_CHANCE holds one
+const NURSERY_CHANCE := 0.25
+const NURSERY_RADIUS_M := [6.0, 12.0]
+const PARENT_REACH_M := 3.0     # a young conifer outside a nursery needs a grown crown this close
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
@@ -876,6 +884,43 @@ func _shade_at(canopies: Dictionary, x: float, z: float) -> int:
 					shade = maxi(shade, c[3])
 
 	return shade
+
+
+# A young-conifer nursery: a patch on a world grid (NURSERY_EVERY_M squares, one in NURSERY_CHANCE of them, a jittered centre, a radius of NURSERY_RADIUS_M), the same whatever chunk asks.
+func _nursery_at(x: float, z: float) -> bool:
+	var gi: int = int(floor(x / NURSERY_EVERY_M))
+	var gj: int = int(floor(z / NURSERY_EVERY_M))
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var h: int = _mix(_stand_seed, gi + di, gj + dj, 977)
+
+			if float(h % 10007) / 10007.0 >= NURSERY_CHANCE:
+				continue
+
+			var centre: Vector2 = Vector2((float(gi + di) + float((h >> 8) % 1000) / 1000.0) * NURSERY_EVERY_M, (float(gj + dj) + float((h >> 18) % 1000) / 1000.0) * NURSERY_EVERY_M)
+			var radius: float = NURSERY_RADIUS_M[0] + (NURSERY_RADIUS_M[1] - NURSERY_RADIUS_M[0]) * float((h >> 28) % 100) / 100.0
+
+			if Vector2(x - centre.x, z - centre.y).length_squared() < radius * radius:
+				return true
+
+	return false
+
+
+# Is a grown tree's crown within PARENT_REACH_M of the spot (so a young conifer stands under or beside a parent)?
+func _parent_near(canopies: Dictionary, x: float, z: float) -> bool:
+	var ci: int = int(floor(x / OCCUPANCY_CELL))
+	var cj: int = int(floor(z / OCCUPANCY_CELL))
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			for c in canopies.get(Vector2i(ci + di, cj + dj), []):
+				var reach: float = c[2] + PARENT_REACH_M
+
+				if Vector2(x - c[0], z - c[1]).length_squared() < reach * reach:
+					return true
+
+	return false
 
 
 # The groves of a grove species that can reach the chunk at `origin`: [center, radius] pairs.

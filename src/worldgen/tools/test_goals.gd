@@ -208,5 +208,23 @@ func _init() -> void:
 	check(float(camp._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0)) >= 110.0, "walking 120 m with a torch at night adds up (%.0f m)" % float(camp._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0)))
 	camp._goals_check(1)
 	check(camp._goal_state_of(1)["goals_done"].has("night_walk"), "and completes the night walk goal")
+	# Sal's tutorial steps 23 and 24: the plant-food-at-the-fire hint and the placed-pot hint.
+	var pot_state: Dictionary = camp._goal_state_of(1)
+	camp.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "no plant food hint without a fire or ingredients")
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("blueberries"), 0, 2, Vector3.ZERO)
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("honeyspindle_nectar"), 0, 1, Vector3.ZERO)
+	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "ingredients but no lit fire: no hint")
+	var pot_fire: int = camp._next_id
+	camp._items[pot_fire] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 1000.0}}
+	camp._next_id += 1
+	check(camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "berries and nectar beside a lit fire: the hint triggers")
+	check(not camp._hint_trigger_true(1, pot_state, "campfire_pot_placed"), "no pot placed yet")
+	camp._goal_event(1, "placed", "campfire_pot")
+	check(camp._hint_trigger_true(1, pot_state, "campfire_pot_placed"), "placing a campfire pot triggers its hint")
+	var pot_id: int = camp._next_id
+	camp._items[pot_id] = {"number": 0, "count": 1, "pos": Vector3(2.0, 10.0, 0.5), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
+	camp._next_id += 1
+	check(not camp._hint_trigger_true(1, pot_state, "has_plant_food_at_fire"), "once a pot stands at the fire the plant food hint stops")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
