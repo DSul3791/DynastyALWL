@@ -217,7 +217,7 @@
 				"Deadly nightshade"
 			],
 			"familiarity": 95,
-			"description": "Small blue berries from low bushes. Sweet, and they stain the fingers."
+			"description": "Small blue berries from low bushes. Ripe in summer."
 		},
 		"brinebells": {
 			"number": 1016,
@@ -285,7 +285,7 @@
 				"Yarrow"
 			],
 			"familiarity": 25,
-			"description": "Small white daisies with yellow centres. A calming tea."
+			"description": "Small white daisies. Make a calming tea."
 		},
 		"chanterelles": {
 			"number": 1021,
@@ -410,7 +410,7 @@
 				"Mugwort"
 			],
 			"familiarity": 25,
-			"description": "Rough hairy leaves of comfrey. Bruised and bound on sprains as a poultice."
+			"description": "Rough hairy leaves. Bruise and bind on sprains."
 		},
 		"comfrey_roots": {
 			"number": 1030,
@@ -1112,7 +1112,7 @@
 				"Sea buckthorn"
 			],
 			"familiarity": 70,
-			"description": "Thin dry twigs and shavings that catch quickly. The start of any fire."
+			"description": "Thin dry twigs. The start of any fire."
 		},
 		"lantern_dew": {
 			"number": 1081,
@@ -1443,7 +1443,7 @@
 				"Wild flax"
 			],
 			"familiarity": 55,
-			"description": "Broad ribbed leaves of the common plantain. Chewed and applied to stings and cuts."
+			"description": "Broad ribbed leaves. Chew and bind on stings and cuts."
 		},
 		"poles": {
 			"number": 1106,
@@ -1533,7 +1533,7 @@
 				"Tanglewort"
 			],
 			"familiarity": 96,
-			"description": "Soft red berries that crumble when picked. Sweet when fully ripe."
+			"description": "Soft red berries that crumble when picked. Ripe in summer."
 		},
 		"raspberry_leaves": {
 			"number": 1113,
@@ -1860,7 +1860,7 @@
 				"Echo moss"
 			],
 			"familiarity": 40,
-			"description": "Soft spongy moss that stops bleeding when packed on a wound."
+			"description": "Spongy moss that stops bleeding when packed on a wound."
 		},
 		"stillwater_petals": {
 			"number": 1136,
@@ -2015,7 +2015,7 @@
 				"Duskmallow"
 			],
 			"familiarity": 100,
-			"description": "Dried grass, reed or bark in bundles. Roofs and walls are made of it."
+			"description": "Bundled dry grass and reed. Roofs, walls and beds are made of it."
 		},
 		"thorny_canes": {
 			"number": 1147,
@@ -2120,7 +2120,7 @@
 				"Wild flax"
 			],
 			"familiarity": 100,
-			"description": "Fine dry stuff that takes a spark."
+			"description": "Fine dry stuff that takes a spark. Two thatch make two."
 		},
 		"tinder_fungus": {
 			"number": 1154,
@@ -2273,7 +2273,7 @@
 				"Marrowroot"
 			],
 			"familiarity": 65,
-			"description": "Thin pale roots of wild carrot, tough but sweet. Cooked or chewed raw."
+			"description": "Thin pale roots, tough but sweet. Cook them or chew them raw."
 		},
 		"wild_garlic_bulbs": {
 			"number": 1165,
@@ -2322,7 +2322,7 @@
 				"Hag willow"
 			],
 			"familiarity": 92,
-			"description": "Grey-brown bark of willow, bitter. Steeped it eases pain and fever."
+			"description": "Bitter grey bark. Steeped, it eases pain and fever."
 		},
 		"wispbloom_heads": {
 			"number": 1169,

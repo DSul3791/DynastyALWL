@@ -301,3 +301,6 @@ See CRAFT_PACING.md section Pace pass 2: workbench 20 sticks/6 twine/4 stones/60
 
 ## Look wishlist, economy guard, Dave checklist (2026-10-31)
 data/items/look_wishlist.md (43 items, prioritised, colour and shape hints); test_economy_guard.gd added; dish values corrected to batch caps (see ECONOMY_PLAN.md); DAVE_MORNING_ITEMS.md. Moderator decision: wait for Dave play-through before raising stick/twine quantities.
+
+## Voice descriptions, seasons, dialogue (2026-10-31)
+data/items/descriptions_voice.json (105 items; 82 written back to items/gathered descriptions, including truth fixes: stone hammer now places blueprints, lumber has the wedge route, iron ingot is no longer a placeholder); data/items/seasons.json (calendar with months, forage, crops, fish, game, 12 season hints); data/npcs/dialogue_lines.json (36 lines for 6 NPCs tied to goals or seasons, 3 rumours). Encyclopedia descriptions refreshed.
