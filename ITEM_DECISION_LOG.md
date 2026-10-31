@@ -298,3 +298,6 @@ crops.json sow_season fixed for a summer start (see CODE_MISMATCHES.md); flint, 
 
 ## Pace pass 2 and crop times (2026-10-31)
 See CRAFT_PACING.md section Pace pass 2: workbench 20 sticks/6 twine/4 stones/60 s; smelting slower and iron needs coal; ore scarcer; crop grow_days 4 to 30; radish and lettuce added (426-429). Guide asked for a stopwatch run (queued).
+
+## Look wishlist, economy guard, Dave checklist (2026-10-31)
+data/items/look_wishlist.md (43 items, prioritised, colour and shape hints); test_economy_guard.gd added; dish values corrected to batch caps (see ECONOMY_PLAN.md); DAVE_MORNING_ITEMS.md. Moderator decision: wait for Dave play-through before raising stick/twine quantities.
