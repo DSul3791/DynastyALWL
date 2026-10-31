@@ -7,3 +7,7 @@
 **`Condition "!_is_active()" is true` in ENetMultiplayerPeer::get_peer** once, at client start: the client asked for the peer before the connection was up. Owner: Tyler (net), LOW.
 
 **Creator preview opens on the body's back**: sent to Sonny.
+
+### Felling pictures (art/playthrough/world3/fell*.jpg, stump_*.jpg), 07:40
+The felling rig now works: tree falls (creak sound plays), lands, stump can be chopped 6 times (+16 stick, +4 firewood, +8 kindling), stump goes away.
+Finding: the falling and resting trunk, the lying log and the stump are all one flat near-black colour with no bark texture (a standing tree has bark). Looks like a missing material on the felled-trunk, log and stump meshes. Rating 2.5/5. Owner: Kathleen (looks) / flora session.
