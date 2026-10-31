@@ -667,6 +667,9 @@ func _init() -> void:
 
 	used[String(cooking.get("tinder", ""))] = true
 
+	for id in cooking.get("tinder_also", []):
+		used[String(id)] = true
+
 	for id in items_file.get("items", {}):
 		for row in items_file["items"][id].get("repair", []):
 			used[String(row[0])] = true

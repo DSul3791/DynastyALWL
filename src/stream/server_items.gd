@@ -8,6 +8,7 @@ extends RefCounted
 #
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
+const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const LuckScript := preload("res://src/shared/luck.gd")
@@ -3314,10 +3315,18 @@ func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> vo
 func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
+	var pitch: float = 0.0
+
+	if ground_height.is_valid():   # fall away from the player, resting ON the ground and never inside a slope (fell_pose.gd)
+		var pose: Dictionary = FellPose.choose(spot, away, float(info["height"]), maxf(float(info["trunk"]), 0.1), ground_height)
+		yaw = float(pose["yaw"])
+		pitch = float(pose["pitch"])
+
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var base: Dictionary = {"species": str(info["name"]), "yaw": yaw, "length": float(info["height"]), "radius": maxf(float(info["trunk"]), 0.1), "felled_at": now_s}
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
+	trunk["pitch"] = pitch
 	trunk["chunk"] = [chunk.x, chunk.y]
 	var stump: Dictionary = base.duplicate()
 	stump["state"] = 4
@@ -3539,6 +3548,10 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 		_chop_loose_log(peer, inv, id)
 		return
 
+	if not it.is_empty() and it.has("tree") and int(it["tree"]["state"]) == 4:
+		_chop_stump(peer, inv, id)
+		return
+
 	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 3 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
 		return
 
@@ -3546,7 +3559,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	var cfg: Dictionary = _drops.get("trunk", {})
 	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
 	var from_base: Vector3 = _peer_pos[peer] - it["pos"]
-	var t: float = clampf(from_base.dot(along), 0.0, float(tree["length"]))
+	var t: float = clampf(from_base.dot(along), 0.0, float(tree["length"]) * cos(float(tree.get("pitch", 0.0))))
 	var nearest: Vector3 = it["pos"] + along * t
 
 	if Vector2(_peer_pos[peer].x - nearest.x, _peer_pos[peer].z - nearest.z).length() > PROCESS_REACH_M + float(tree["radius"]):
@@ -3613,6 +3626,52 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 				give(peer, table.number_of(str(roots[0])), roll_amount(peer, rng, int(roots[1]), int(roots[2])))
 
 			_items.erase(id)
+
+	_dirty = true
+
+
+# One axe blow on a stump (drops.json "stump"): a few blows (more for a thick one) chop it up for kindling and firewood, then it is gone and its record
+# is freed. The blow count is saved with the stump, so a half-chopped stump stays half-chopped across a restart; the pace and skill rules are the trunk's.
+func _chop_stump(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("tree") or int(it["tree"]["state"]) != 4 or not _peer_pos.has(peer) or not _has_tool(inv, "axe"):
+		return
+
+	var tree: Dictionary = it["tree"]
+	var cfg: Dictionary = _drops.get("stump", {})
+
+	if Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z).length() > PROCESS_REACH_M + float(tree["radius"]):
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if float(now - int(_last_process.get(peer, -100000))) < float(PROCESS_COOLDOWN_MS) / skill_factor(peer, "work_trunk"):
+		return
+
+	_last_process[peer] = now
+	_wear_tool(peer, inv, "axe", "trunk")
+	practice(peer, "work_trunk")
+	var needed: int = clampi(int(ceil(float(cfg.get("blows_base", 3)) + float(tree["radius"]) * float(cfg.get("blows_per_radius_m", 15)))), 3, int(cfg.get("blows_max", 14)))
+	var blows: int = int(tree.get("blows", 0)) + 1
+	tree["blows"] = blows
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ (blows * 7919)
+	var species: String = str(tree.get("species", ""))
+
+	if blows < needed:
+		if roll_chance(peer, rng, float(cfg.get("chip_chance", 0.5))):
+			for row in cfg.get("chip", []):
+				give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+		if send_notice.is_valid():
+			send_notice.call(peer, "Chopping the stump: %d of %d" % [blows, needed])
+	else:
+		for row in cfg.get("final", []):
+			var drop_id: String = _wood_item("firewood", species) if str(row[0]) == "firewood" else str(row[0])
+			give(peer, table.number_of(drop_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+		_items.erase(id)
 
 	_dirty = true
 
@@ -3954,8 +4013,15 @@ func _light(peer: int, inv, id: int) -> void:
 
 	var tinder: String = str(_cooking.get("tinder", "plant_fibre"))
 
+	# Dave 2026-10-30: plant fibre is the main tinder, but birch bark, tinder and tinder fungus (cooking.json "tinder_also") light a fire too, so a forest start is not stuck.
 	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs %s to light" % table.name_of(table.number_of(tinder)).to_lower())
+		for other in _cooking.get("tinder_also", []):
+			if table.number_of(str(other)) > 0 and inv.has(table.number_of(str(other)), 1):
+				tinder = str(other)
+				break
+
+	if not inv.has(table.number_of(tinder), 1):
+		_say(peer, "Needs plant fibre, birch bark or tinder to light")
 		return
 
 	inv.remove(table.number_of(tinder), 1)

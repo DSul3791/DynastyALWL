@@ -672,10 +672,10 @@ func _start_water() -> void:
 	if water_data.placeholder:
 		return
 
-	# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
-	# paths show; --settled-water starts from the baked water file instead. The hub runs the starter
-	# tile and the neighbours its rivers cross into (water/tile_X_Z.water per tile).
-	var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
+	# The rivers and lakes start FULL, from the baked settled water of each tile (water/tile_X_Z.water), so a player never waits for the springs: changed 30 Oct 2026 after the
+	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
+	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
+	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
 	water_live = WaterHubScript.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
 

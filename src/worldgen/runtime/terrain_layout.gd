@@ -25,7 +25,7 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
 const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
 const MATERIAL_ROCK := 32
-const TERRAIN_VERSION := 43
+const TERRAIN_VERSION := 44         # 44 (30 Oct 2026): tiles baked with 0.1 m height steps are read at that step (before, the land was 1,000 m too high); older generated ground is thrown away
 
 const ROCK_SEDIMENT := 1
 

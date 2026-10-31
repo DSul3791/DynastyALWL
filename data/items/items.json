@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 346,
+	"next_number": 353,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -4128,6 +4128,79 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 2
+		},
+		"antler": {
+			"number": 346,
+			"name": "Antler",
+			"description": "A shed or taken antler. Hard, and can be worked like bone.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"tusk": {
+			"number": 347,
+			"name": "Tusk",
+			"description": "A boar's curved tusk. Ivory-hard.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 8
+		},
+		"claw": {
+			"number": 348,
+			"name": "Claw",
+			"description": "A large predator's claw. A trophy or a charm.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"down": {
+			"number": 349,
+			"name": "Down",
+			"description": "Soft insulating feathers from a water bird. Warm for its weight.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 3
+		},
+		"quill": {
+			"number": 350,
+			"name": "Quill",
+			"description": "A stiff spine from a porcupine. Sharp, and can be used as a pin or a point.",
+			"kind": "material",
+			"stack": 40,
+			"future": true,
+			"look_alikes": [],
+			"value": 2
+		},
+		"hide_glue": {
+			"number": 351,
+			"name": "Hide glue",
+			"description": "Hide boiled down to a sticky glue. Holds wood, bone and feathers.",
+			"kind": "material",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 6
+		},
+		"bone_arrow": {
+			"number": 352,
+			"name": "Bone arrow",
+			"description": "An arrow tipped with a sharpened bone point.",
+			"kind": "material",
+			"ammo_class": "arrow",
+			"damage": 8.5,
+			"tip": "bone",
+			"stack": 20,
+			"future": true,
+			"look_alikes": [],
+			"value": 4
 		}
 	}
 }

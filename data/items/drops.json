@@ -197,6 +197,15 @@
 			"sticks_max_boost": 4
 		}
 	},
+	"stump": {
+		"note": "Chopping a stump with the axe (Dave): blows needed = blows_base + radius x blows_per_radius_m, at most blows_max; some blows chip off a little, the last gives the final rows and the stump is gone. firewood is the wood of the trees own species.",
+		"blows_base": 3,
+		"blows_per_radius_m": 15,
+		"blows_max": 14,
+		"chip_chance": 0.5,
+		"chip": [["stick", 1, 2]],
+		"final": [["firewood", 2, 4], ["kindling", 2, 4], ["stick", 1, 3]]
+	},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",
 		"branch_blows": 3,
