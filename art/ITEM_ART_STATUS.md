@@ -16,7 +16,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 5 | twine | Twine | coil | looks.json | rough |  |  |  |  |
 | 6 | stone_axe | Stone axe | axe | looks.json | rough |  |  |  |  |
 | 7 | spear | Stone spear | shaft | looks.json | rough |  |  |  |  |
-| 8 | campfire_kit | Campfire | kit | looks.json | rough |  |  |  |  |
+| 8 | campfire_kit | Campfire | override | ART_OVERRIDES | rough |  |  |  |  |
 | 9 | seed_bundle | Seeds | sack | looks.json | rough |  |  |  |  |
 | 10 | wooden_spear | Wooden spear | shaft | looks.json | rough |  |  |  |  |
 | 11 | stone_knife | Stone knife | knife | looks.json | rough |  |  |  |  |
@@ -28,15 +28,15 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 17 | bandage | Herb bandage | coil | looks.json | rough |  |  |  |  |
 | 18 | tree_roots | Roots | bundle | looks.json | rough |  |  |  |  |
 | 19 | wooden_spade | Wooden spade | spade | looks.json | rough |  |  |  |  |
-| 20 | lean_to_kit | Small shelter | kit | looks.json | rough |  |  |  |  |
+| 20 | lean_to_kit | Small shelter | override | ART_OVERRIDES | rough |  |  |  |  |
 | 21 | lean_to | Small shelter | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 22 | chest_kit | Woven chest | kit | looks.json | rough |  |  |  |  |
+| 22 | chest_kit | Woven chest | override | ART_OVERRIDES | rough |  |  |  |  |
 | 23 | chest | Woven chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 24 | chopping_block_kit | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 25 | chopping_block | Chopping block | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 26 | firewood | Firewood | bundle | looks.json | rough |  |  |  |  |
 | 27 | lumber | Lumber | planks | looks.json | rough |  |  |  |  |
-| 28 | plank_chest_kit | Plank chest | kit | looks.json | rough |  |  |  |  |
+| 28 | plank_chest_kit | Plank chest | override | ART_OVERRIDES | rough |  |  |  |  |
 | 29 | plank_chest | Plank chest | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 30 | driftwood | Driftwood | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
 | 31 | iron_ingot | Iron ingot | ingot | looks.json | rough |  |  |  |  |
@@ -81,7 +81,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 70 | sinew | Sinew | bundle | looks.json | rough |  |  |  |  |
 | 71 | animal_fat | Animal fat | chunk | looks.json | rough |  |  |  |  |
 | 72 | feather | Feather | feather | looks.json | rough |  |  |  |  |
-| 73 | workbench_kit | Camp bench | kit | looks.json | rough |  |  |  |  |
+| 73 | workbench_kit | Camp bench | override | ART_OVERRIDES | rough |  |  |  |  |
 | 74 | workbench | Camp bench | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 75 | fishing_rod | Fishing rod | rod | looks.json | rough |  |  |  |  |
 | 76 | trout | Trout | fish | looks.json | rough |  |  |  |  |
@@ -89,20 +89,20 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 78 | carp | Carp | fish | looks.json | rough |  |  |  |  |
 | 79 | pike | Pike | fish | looks.json | rough |  |  |  |  |
 | 80 | roast_fish | Roast Fish | fish | looks.json | rough |  |  |  |  |
-| 81 | tool_rack_kit | Tool rack | kit | looks.json | rough |  |  |  |  |
+| 81 | tool_rack_kit | Tool rack | override | ART_OVERRIDES | rough |  |  |  |  |
 | 82 | tool_rack | Tool rack | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 83 | vice_kit | Wooden vice | kit | looks.json | rough |  |  |  |  |
+| 83 | vice_kit | Wooden vice | override | ART_OVERRIDES | rough |  |  |  |  |
 | 84 | vice | Wooden vice | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 85 | log_workbench_kit | Log workbench | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
+| 85 | log_workbench_kit | Log workbench | override | ART_OVERRIDES | rough |  |  |  |  |
 | 86 | log_workbench | Log workbench | glb / felled | natural_pickups glb, inventory_view | rough |  |  |  |  |
-| 87 | stone_forge_kit | Basic Forge | kit | looks.json | rough |  |  |  |  |
+| 87 | stone_forge_kit | Basic Forge | override | ART_OVERRIDES | rough |  |  |  |  |
 | 88 | stone_forge | Basic Forge | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 89 | blacksmithy_kit | Medium Forge | kit | looks.json | rough |  |  |  |  |
+| 89 | blacksmithy_kit | Medium Forge | override | ART_OVERRIDES | rough |  |  |  |  |
 | 90 | blacksmithy | Medium Forge | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 91 | carcass | Carcass | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 92 | large_forge_kit | Large Forge | kit | looks.json | rough |  |  |  |  |
+| 92 | large_forge_kit | Large Forge | override | ART_OVERRIDES | rough |  |  |  |  |
 | 93 | large_forge | Large Forge | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 94 | master_forge_kit | Master Forge | kit | looks.json | rough |  |  |  |  |
+| 94 | master_forge_kit | Master Forge | override | ART_OVERRIDES | rough |  |  |  |  |
 | 95 | master_forge | Master Forge | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 96 | coin_copper | Copper coin | coin | looks.json | rough |  |  |  |  |
 | 97 | coin_bronze | Bronze coin | coin | looks.json | rough |  |  |  |  |
@@ -200,26 +200,26 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 189 | trail_bread | Trail bread | loaf | looks.json | rough |  |  |  |  |
 | 190 | hearty_pottage | Hearty pottage | stew | looks.json | rough |  |  |  |  |
 | 191 | feast_roast | Roast Beast | joint | looks.json | rough |  |  |  |  |
-| 192 | wall_section_kit | Wall section | kit | looks.json | rough |  |  |  |  |
+| 192 | wall_section_kit | Wall section | override | ART_OVERRIDES | rough |  |  |  |  |
 | 193 | wall_section | Wall section | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 194 | floor_section_kit | Floor section | kit | looks.json | rough |  |  |  |  |
+| 194 | floor_section_kit | Floor section | override | ART_OVERRIDES | rough |  |  |  |  |
 | 195 | floor_section | Floor section | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 196 | roof_section_kit | Roof section | kit | looks.json | rough |  |  |  |  |
+| 196 | roof_section_kit | Roof section | override | ART_OVERRIDES | rough |  |  |  |  |
 | 197 | roof_section | Roof section | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 198 | foundation_section_kit | Foundation | kit | looks.json | rough |  |  |  |  |
+| 198 | foundation_section_kit | Foundation | override | ART_OVERRIDES | rough |  |  |  |  |
 | 199 | foundation_section | Foundation | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 200 | doorway_section_kit | Doorway | kit | looks.json | rough |  |  |  |  |
+| 200 | doorway_section_kit | Doorway | override | ART_OVERRIDES | rough |  |  |  |  |
 | 201 | doorway_section | Doorway | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 202 | window_section_kit | Window wall | kit | looks.json | rough |  |  |  |  |
+| 202 | window_section_kit | Window wall | override | ART_OVERRIDES | rough |  |  |  |  |
 | 203 | window_section | Window wall | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 204 | timber_prop_kit | Timber prop | kit | looks.json | rough |  |  |  |  |
+| 204 | timber_prop_kit | Timber prop | override | ART_OVERRIDES | rough |  |  |  |  |
 | 205 | timber_prop | Timber prop | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 206 | timber_set_kit | Timber set | kit | looks.json | rough |  |  |  |  |
+| 206 | timber_set_kit | Timber set | override | ART_OVERRIDES | rough |  |  |  |  |
 | 207 | timber_set | Timber set | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 208 | cut_stone_block | Stone block | block | looks.json | rough |  |  |  |  |
 | 209 | brick | Brick | brick | looks.json | rough |  |  |  |  |
 | 210 | mortar | Mortar | pile | looks.json | rough |  |  |  |  |
-| 211 | ladder_kit | Ladder | kit | looks.json | rough |  |  |  |  |
+| 211 | ladder_kit | Ladder | override | ART_OVERRIDES | rough |  |  |  |  |
 | 212 | ladder | Ladder | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 213 | wooden_spade_medium | Medium wooden spade | spade | looks.json | rough |  |  |  |  |
 | 214 | wooden_spade_large | Large wooden spade | spade | looks.json | rough |  |  |  |  |
@@ -248,31 +248,31 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 237 | wooden_block_soft | Softwood block | block | looks.json | rough |  |  |  |  |
 | 238 | saw_blade | Saw blades | bar | looks.json | rough |  |  |  |  |
 | 239 | water_wheel | Water wheel | coil | looks.json | rough |  |  |  |  |
-| 240 | saw_mill_kit | Sawmill | kit | looks.json | rough |  |  |  |  |
+| 240 | saw_mill_kit | Sawmill | override | ART_OVERRIDES | rough |  |  |  |  |
 | 241 | saw_mill | Sawmill | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 242 | woodworking_table_kit | Woodworking table | kit | looks.json | rough |  |  |  |  |
+| 242 | woodworking_table_kit | Woodworking table | override | ART_OVERRIDES | rough |  |  |  |  |
 | 243 | woodworking_table | Woodworking table | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 244 | stone_hammer | Stone hammer | hammer | looks.json | rough |  |  |  |  |
 | 245 | hand_saw | Hand saw | saw | looks.json | rough |  |  |  |  |
 | 246 | stone_adze | Stone adze | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 247 | wooden_hammer | Wooden hammer | hammer | looks.json | rough |  |  |  |  |
-| 250 | rough_bed_kit | Rough bed | kit | looks.json | rough |  |  |  |  |
+| 250 | rough_bed_kit | Rough bed | override | ART_OVERRIDES | rough |  |  |  |  |
 | 251 | rough_bed | Rough bed | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 252 | thatch_wall_kit | Thatch wall | kit | looks.json | rough |  |  |  |  |
+| 252 | thatch_wall_kit | Thatch wall | override | ART_OVERRIDES | rough |  |  |  |  |
 | 253 | thatch_wall | Thatch wall | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 254 | campfire_pot_kit | Campfire pot | kit | looks.json | rough |  |  |  |  |
+| 254 | campfire_pot_kit | Campfire pot | override | ART_OVERRIDES | rough |  |  |  |  |
 | 255 | campfire_pot | Campfire pot | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 256 | clay_hearth_kit | Clay hearth | kit | looks.json | rough |  |  |  |  |
+| 256 | clay_hearth_kit | Clay hearth | override | ART_OVERRIDES | rough |  |  |  |  |
 | 257 | clay_hearth | Clay hearth | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 260 | shore_net | Shore net | cloth | looks.json | rough |  |  |  |  |
-| 261 | thatch_floor_kit | Thatch floor | kit | looks.json | rough |  |  |  |  |
+| 261 | thatch_floor_kit | Thatch floor | override | ART_OVERRIDES | rough |  |  |  |  |
 | 262 | thatch_floor | Thatch floor | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 263 | thatch_roof_kit | Thatch roof | kit | looks.json | rough |  |  |  |  |
+| 263 | thatch_roof_kit | Thatch roof | override | ART_OVERRIDES | rough |  |  |  |  |
 | 264 | thatch_roof | Thatch roof | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 265 | thatch_doorway_kit | Thatch doorway | kit | looks.json | rough |  |  |  |  |
+| 265 | thatch_doorway_kit | Thatch doorway | override | ART_OVERRIDES | rough |  |  |  |  |
 | 266 | thatch_doorway | Thatch doorway | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 267 | oven | Basic Oven | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
-| 268 | oven_kit | Basic Oven | kit | looks.json | rough |  |  |  |  |
+| 268 | oven_kit | Basic Oven | override | ART_OVERRIDES | rough |  |  |  |  |
 | 269 | wooden_bow | Wooden bow | bow | looks.json | rough |  |  |  |  |
 | 270 | wooden_arrow | Wooden arrow | arrow | looks.json | rough |  |  |  |  |
 | 271 | stone_arrow | Stone arrow | arrow | looks.json | rough |  |  |  |  |
@@ -280,7 +280,7 @@ Queue, by what a player meets first (the grey placeholder list comes from src/wo
 | 273 | flatbread | Flatbread | loaf | looks.json | rough |  |  |  |  |
 | 274 | honey_loaf | Honey loaf | loaf | looks.json | rough |  |  |  |  |
 | 275 | roast_joint | Rosemary joint | chunk | looks.json | rough |  |  |  |  |
-| 276 | snare | Snare | kit | looks.json | rough |  |  |  |  |
+| 276 | snare | Snare | override | ART_OVERRIDES | rough |  |  |  |  |
 | 277 | snare_trap | Snare | - | none (placed pieces and stations have their own looks in building_look.gd / piece_look.gd) | missing |  |  |  |  |
 | 278 | kindling_duplicate | Kindling | chunk | looks.json | placeholder |  |  |  |  |
 | 279 | flint | Flint | override | ART_OVERRIDES | rough |  |  |  |  |

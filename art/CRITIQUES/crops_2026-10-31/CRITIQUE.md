@@ -12,3 +12,7 @@ References: harvested wheat sheaves (golden stalks tied a third of the way up, p
 | Wheat, barley, carrot, potato, turnip, flax seeds | wheat_seeds_round1.png | a heap of grains beside a cloth pouch, tinted per crop | 2 | only wheat_seeds looked at: grain size and a pouch label colour per crop |
 
 None of these has been seen in the real game. Honest status: none is at 4 yet; the method asks three rounds and a 4, so wheat, barley, carrot, potato are the next to get a third round, and flax, turnip and the seeds a second.
+
+## Round 3 (cereals), 2026-10-31
+
+New idea per the moderator: a different silhouette each round. Round 3 bends the upper stalk down under the weight of the ear (wheat a little, barley a lot, flax straight), adds narrow green-brown leaf blades at the foot and keeps the awns on barley. Pictures: wheat_round3.png, barley_round3.png, sheet_round3_cereals.png. Reads as a bundle of stalks with nodding ears; the ears are small against the stalks and bunch at the tip. Rating stays 3: rounds 4 and 5 (a looser, fanned head end; ears with grain rows) are still to do, and the real-game check.
