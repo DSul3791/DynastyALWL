@@ -324,3 +324,6 @@ Merged the flora branch (0b606a24) to see the fruit trees: 13 fruit items and 6 
 
 ## Building pieces (2026-10-31)
 F-22 data: wooden stairs, log, stone and brick wall/floor/roof pieces (kits 462-482, 10 structure rows with states 49-58 reusing existing looks until models exist, log cabin set kit); recipes are locked (known false, locked true) so no player can craft a piece the client cannot draw. HINTS_AND_CAMP_EVENTS_SPEC.md for Tyler.
+
+## First-hour food, hints, handover (2026-10-31)
+FIRST_HOUR_FOOD.md (hunger clock 1650-2550 kcal per real hour; stomach lasts 55-70 min; apples realistic; berries 90 kcal each look 20x too generous: question for Dave, not changed); fruit descriptions say game days; 10 more hints (36 total); docs/ITEMS_HANDOVER.md.

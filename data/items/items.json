@@ -4956,7 +4956,7 @@
 		"apple_early": {
 			"number": 431,
 			"name": "Early summer apple",
-			"description": "A small tart apple that ripens in July. Eat it soon: it keeps only days.",
+			"description": "A small tart apple of July. Eat it soon: it keeps only 3 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
@@ -4965,7 +4965,7 @@
 		"apple_summer": {
 			"number": 432,
 			"name": "Summer apple",
-			"description": "A sweet juicy apple of August. Keeps about a week.",
+			"description": "A sweet juicy apple of August. Keeps about 7 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
@@ -4974,7 +4974,7 @@
 		"apple_autumn": {
 			"number": 433,
 			"name": "Autumn apple",
-			"description": "A crisp all-round apple of September and October. Keeps a few weeks.",
+			"description": "A crisp all-round apple of September and October. Keeps about 20 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
@@ -5001,7 +5001,7 @@
 		"pear_summer": {
 			"number": 436,
 			"name": "Summer pear",
-			"description": "A small sweet pear of August. It goes soft in days.",
+			"description": "A small sweet pear of August. It goes soft in 4 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
@@ -5028,7 +5028,7 @@
 		"sour_cherries": {
 			"number": 439,
 			"name": "Sour cherries",
-			"description": "Dark tart cherries of July. Good cooked, sharp raw.",
+			"description": "Dark tart cherries of July. Good cooked, sharp raw. They spoil in 2 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
@@ -5037,7 +5037,7 @@
 		"plums": {
 			"number": 440,
 			"name": "Plums",
-			"description": "Soft purple plums of August and September. They spoil fast.",
+			"description": "Soft purple plums of August and September. They spoil in 4 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
