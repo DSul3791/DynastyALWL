@@ -88,6 +88,7 @@
 		"splint": 0.4,
 		"candle": 0.05,
 		"log_seat_kit": 15.0,
+		"stool_kit": 8.0,
 		"bench_kit": 12.0,
 		"chair_kit": 9.0,
 		"table_kit": 25.0,

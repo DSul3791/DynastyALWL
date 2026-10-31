@@ -111,7 +111,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "8 sticks, 6 leaves, 2 twine make a Small shelter. Place it with the open side towards you.",
+			"hint": "Lash 12 sticks, 9 leaves and 3 twine into a lean-to. Place it with the open side towards you.",
 			"after": [
 				"fire"
 			],

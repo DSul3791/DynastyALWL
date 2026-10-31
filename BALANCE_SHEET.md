@@ -8,7 +8,7 @@ Time and quantity budget for the first tools, compared with other survival games
 | Twine | 3 plant fibre | 2 s | recipe 1 |
 | First axe | 1 stone, 1 stick, 2 twine = 6 fibre | 4 s plus 4 s twine | cut from 5 twine (15 fibre) this round |
 | First fire | 6 sticks, 3 stones (laid fire), 1 plant fibre (or bark, tinder) to light | 3 s | "campfire" recipe |
-| Shelter (lean-to) | 8 sticks, 6 leaves, 2 twine (6 fibre) | 8 s | |
+| Shelter (lean-to) | 12 sticks, 9 leaves, 3 twine (9 fibre) | 8 s | |
 | Rough bed | 10 thatch (or 8 straw or bedding), 4 sticks, 2 twine | 10 s | |
 | Workbench | 20 sticks, 6 twine (18 fibre), 4 stones | 60 s | no station needed (cost raised 31 Oct) |
 | Stone knife / spear | 2 stone + stick; wooden spear + 2 twine | 3 s / 4 s | |
@@ -22,7 +22,7 @@ Time and quantity budget for the first tools, compared with other survival games
 | First axe | 1 stone, 1 stick, 6 fibre | Flint axe: 4 wood, 6 flint (one source also lists a stone axe 5 wood, 4 stone or 2 stone, so sources disagree) | stick, rock, rope | flint axe head knapped, plus a stick (one guide: 1 stick + 2 flint) | **fair**; ours is the cheapest in wood, and how long it takes depends on how dense the fibre plants are |
 | Workbench | 12 sticks, 3 twine | 10 wood | not applicable | crafting grid in the inventory, no bench early (as reported) | **fair** (gathering time not measured) |
 | Campfire | 6 sticks, 3 stones | 2 wood, 5 stone (a source lists "firepit" separately) | not covered | not searched | **fair** |
-| Shelter | 8 sticks, 6 leaves, 2 twine | workbench needs a roof and walls (about 70 percent enclosed, as reported) | lean-to: sources disagree (one lists 53 logs, for Sons of the Forest) | not searched | **ours is far cheaper**: appropriate for a first-day shelter |
+| Shelter | 12 sticks, 9 leaves, 3 twine | workbench needs a roof and walls (about 70 percent enclosed, as reported) | lean-to: sources disagree (one lists 53 logs, for Sons of the Forest) | not searched | **ours is far cheaper**: appropriate for a first-day shelter |
 | Bow | 2 sticks, 3 twine | not searched | stick, cloth, rope | not searched | **fair** |
 | First forge | 36 stone, 10 clay, 2 hide | not searched | not applicable | copper smelting needs dry grass, clay, logs, coal and native copper plus a crucible (wiki copper guide, as reported) | **a lot of stone**: 36 stone is about 72 stone-axe boulder blows at 3 blows per stone, as a stone-age task that is tolerable, as a first-day task it is not; consider 24 stone |
 | Copper/bronze timing | not buildable yet | not searched | not covered | a third-party guide puts first copper tools at days 6 to 7, a rough plan not a benchmark | we are **too slow by design today** (no ore source at all) |
