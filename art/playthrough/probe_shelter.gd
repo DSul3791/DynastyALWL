@@ -190,10 +190,17 @@ func _init() -> void:
 	var row: Dictionary = items._characters.get(items._peer_key.get(peer, ""), {})
 	say("14 shelter noted for respawn", row.get("shelter", []).size() == 3, "character row shelter %s" % str(row.get("shelter", [])))
 	items.action(peer, Net.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
+	# bed as spawn point (ACT_SET_SPAWN, Dave 31 Oct): E on the bed
+	last_notice = ""
+	items.report_position(peer, Vector3(bp.x + 1.0, bp.y, bp.z))
+	items.action(peer, Net.ACT_SET_SPAWN, bed_id, 0, 0, Vector3.ZERO)
+	say("14b set the bed as spawn point", row.get("spawn_bed", []).size() == 3 or items._characters.get(items._peer_key.get(peer, ""), {}).get("spawn_bed", []).size() == 3, "notice '%s'; saved %s" % [last_notice, str(items._characters.get(items._peer_key.get(peer, ""), {}).get("spawn_bed", []))])
 	items.report_position(peer, Vector3(spawn.x + 40.0, h(spawn.x + 40.0, spawn.y), spawn.y))
 	items.kill(peer, "probe")
 	var back: Vector3 = items._peer_pos[peer]
 	var dist: float = Vector2(back.x - lp.x, back.z - lp.z).length()
-	say("15 death respawns at the lean-to, not the world spawn", dist < 5.0, "respawn %s, %.1f m from the lean-to centre, %.1f m from the world spawn" % [back, dist, Vector2(back.x - spawn.x, back.z - spawn.y).length()])
-	say("16 respawn point is clear of the lean-to and bed", CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover) == 0.0, "cover at respawn %s" % CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover))
+	var bdist: float = Vector2(back.x - bp.x, back.z - bp.z).length()
+	say("15 death respawns at the lean-to / bed, not the world spawn", dist < 5.0, "respawn %s, %.1f m from the lean-to centre, %.1f m from the world spawn" % [back, dist, Vector2(back.x - spawn.x, back.z - spawn.y).length()])
+	print("probe7: respawn is %.1f m from the bed; roof cover at the respawn %s" % [bdist, CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover)])
+	say("16 with the bed set as spawn, you come back ON the bed, under the roof", bdist < 1.0 and CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover) > 0.0, "cover at respawn %s" % CoverScript.at(back + Vector3(0.0, 0.3, 0.0), cover))
 	quit()
