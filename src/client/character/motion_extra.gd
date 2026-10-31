@@ -8,7 +8,13 @@ extends RefCounted
 
 const Proto := preload("res://src/client/character/motion_proto.gd")
 
-const NAMES := ["jump", "fall", "land", "crouch_walk", "walk_back", "strafe_left", "strafe_right"]
+const NAMES := ["jump", "fall", "land", "crouch_walk", "walk_back", "strafe_left", "strafe_right", "chop", "pick_overhead"]
+# Tool work (plan 23, 31 Oct 2026): the axe is a wide, side-on, two-handed chop; the pick axe an overhead arc. The impact times are the ones the first-person swing and the hit
+# use (held_item.gd HIT_AT = CHOP_IMPACT_S / CHOP_LENGTH), and the blow is sent at that moment, so the damage tick lands on the impact frame of the animation.
+const CHOP_LENGTH := 0.95
+const CHOP_IMPACT_S := 0.5
+const PICK_LENGTH := 1.0
+const PICK_IMPACT_S := 0.52
 const JUMP_LENGTH := 0.55
 const LAND_LENGTH := 0.4
 
@@ -106,7 +112,57 @@ static func _strafe(p: float, side: float) -> Dictionary:
 	}
 
 
-# The seven clips as an AnimationLibrary for a skeleton. They use the same bone names as the converted library, so a body can add them to its own.
+# A value at time t from keys [[time, value], ...], eased in and out between neighbouring keys (the slow wind-up and recovery, the fast stroke).
+static func track(t: float, keys: Array) -> float:
+	if t <= float(keys[0][0]):
+		return float(keys[0][1])
+
+	for i in range(1, keys.size()):
+		if t <= float(keys[i][0]):
+			var a: float = float(keys[i - 1][0])
+			var b: float = float(keys[i][0])
+			return lerpf(float(keys[i - 1][1]), float(keys[i][1]), smoothstep(0.0, 1.0, (t - a) / maxf(b - a, 0.0001)))
+
+	return float(keys[keys.size() - 1][1])
+
+
+# Chopping wood with an axe, right-handed, two hands on the haft, side-on to the tree: stand with the feet apart (left foot forward), wind up with the axe back over the RIGHT shoulder
+# (the torso turns right, the arms go up and out), hold a beat, then a wide diagonal stroke across the body from the upper right to the lower left with the hips and torso turning into it
+# (the body weight drops onto the front foot), the impact at CHOP_IMPACT_S, a follow-through past the target, a slow recovery and a short pause in the ready pose.
+# Left = -X, so a positive Y turn is to the left; positive Z on an arm moves it toward the body's right. First guesses, tuned by eye on pictures (art/character_proto/chop).
+static func _chop(t: float) -> Dictionary:
+	var spine_y: float = track(t, [[0.0, 0.0], [0.30, -0.6], [0.37, -0.6], [0.50, 0.5], [0.60, 0.65], [0.80, 0.12], [0.95, 0.0]])
+	var lean: float = track(t, [[0.0, 0.0], [0.30, -0.15], [0.37, -0.18], [0.50, 0.32], [0.60, 0.42], [0.80, 0.12], [0.95, 0.0]])
+	var bob: float = track(t, [[0.0, -0.05], [0.30, -0.03], [0.37, -0.03], [0.50, -0.12], [0.60, -0.11], [0.80, -0.07], [0.95, -0.05]])
+	return {
+		"RightUpperArm": Vector3(track(t, [[0.0, 0.9], [0.30, 2.5], [0.37, 2.6], [0.50, 0.75], [0.60, 0.55], [0.80, 0.9], [0.95, 0.9]]), 0.0, track(t, [[0.0, 0.25], [0.30, 0.95], [0.37, 1.0], [0.50, -0.3], [0.60, -0.45], [0.80, 0.1], [0.95, 0.25]])),
+		"RightLowerArm": Vector3(track(t, [[0.0, 1.3], [0.30, 1.75], [0.37, 1.75], [0.50, 0.3], [0.60, 0.35], [0.80, 1.2], [0.95, 1.3]]), 0.0, 0.0),
+		"LeftUpperArm": Vector3(track(t, [[0.0, 0.9], [0.30, 2.2], [0.37, 2.25], [0.50, 0.7], [0.60, 0.5], [0.80, 0.9], [0.95, 0.9]]), 0.0, track(t, [[0.0, -0.1], [0.30, 0.3], [0.37, 0.35], [0.50, -0.2], [0.60, -0.3], [0.80, -0.1], [0.95, -0.1]])),
+		"LeftLowerArm": Vector3(track(t, [[0.0, 1.3], [0.30, 1.6], [0.37, 1.6], [0.50, 0.4], [0.60, 0.45], [0.80, 1.2], [0.95, 1.3]]), 0.0, 0.0),
+		"LeftHand": Vector3(track(t, [[0.0, 0.0], [0.30, 0.3], [0.50, 0.7], [0.95, 0.0]]), 0.0, 0.0), "RightHand": Vector3(track(t, [[0.0, 0.0], [0.30, 0.5], [0.50, 0.9], [0.95, 0.0]]), 0.0, 0.0),
+		"Spine": Vector3(lean * 0.6, spine_y * 0.6, 0.0), "Chest": Vector3(lean * 0.4, spine_y * 0.5, 0.0), "Hips": Vector3(0.0, spine_y * 0.25, 0.0),
+		"Head": Vector3(track(t, [[0.0, 0.0], [0.30, 0.1], [0.50, -0.15], [0.95, 0.0]]), -spine_y * 0.3, 0.0),
+		"LeftUpperLeg": Vector3(track(t, [[0.0, 0.15], [0.37, 0.15], [0.50, 0.4], [0.80, 0.25], [0.95, 0.15]]), 0.0, -0.12), "RightUpperLeg": Vector3(track(t, [[0.0, -0.1], [0.50, 0.0], [0.95, -0.1]]), 0.0, 0.12),
+		"LeftLowerLeg": Vector3(track(t, [[0.0, -0.3], [0.37, -0.3], [0.50, -0.7], [0.80, -0.45], [0.95, -0.3]]), 0.0, 0.0), "RightLowerLeg": Vector3(track(t, [[0.0, -0.3], [0.50, -0.55], [0.95, -0.3]]), 0.0, 0.0),
+		"LeftFoot": Vector3(0.1, 0.0, 0.0), "RightFoot": Vector3(0.1, 0.0, 0.0),
+		"hips_bob": bob,
+	}
+
+
+# Pick axe: an overhead arc. Both hands high over the head, the torso leaning back, then straight down in front with the body dropping into it, impact at PICK_IMPACT_S.
+static func _pick_overhead(t: float) -> Dictionary:
+	var lean: float = track(t, [[0.0, 0.0], [0.38, -0.3], [0.45, -0.3], [0.52, 0.6], [0.66, 0.65], [0.88, 0.15], [1.0, 0.0]])
+	return {
+		"RightUpperArm": Vector3(track(t, [[0.0, 0.9], [0.38, 3.0], [0.45, 3.05], [0.52, 1.0], [0.66, 0.8], [0.88, 0.9], [1.0, 0.9]]), 0.0, 0.1), "LeftUpperArm": Vector3(track(t, [[0.0, 0.9], [0.38, 3.0], [0.45, 3.05], [0.52, 1.0], [0.66, 0.8], [0.88, 0.9], [1.0, 0.9]]), 0.0, -0.1),
+		"RightLowerArm": Vector3(track(t, [[0.0, 1.3], [0.38, 0.5], [0.45, 0.5], [0.52, 0.3], [0.66, 0.4], [0.88, 1.2], [1.0, 1.3]]), 0.0, 0.0), "LeftLowerArm": Vector3(track(t, [[0.0, 1.3], [0.38, 0.5], [0.45, 0.5], [0.52, 0.3], [0.66, 0.4], [0.88, 1.2], [1.0, 1.3]]), 0.0, 0.0),
+		"Spine": Vector3(lean * 0.6, 0.0, 0.0), "Chest": Vector3(lean * 0.4, 0.0, 0.0), "Head": Vector3(track(t, [[0.0, 0.0], [0.45, 0.2], [0.52, -0.25], [1.0, 0.0]]), 0.0, 0.0),
+		"LeftUpperLeg": Vector3(track(t, [[0.0, 0.3], [0.45, 0.25], [0.52, 0.55], [0.88, 0.4], [1.0, 0.3]]), 0.0, -0.1), "RightUpperLeg": Vector3(track(t, [[0.0, 0.3], [0.45, 0.25], [0.52, 0.55], [0.88, 0.4], [1.0, 0.3]]), 0.0, 0.1),
+		"LeftLowerLeg": Vector3(track(t, [[0.0, -0.5], [0.52, -0.9], [1.0, -0.5]]), 0.0, 0.0), "RightLowerLeg": Vector3(track(t, [[0.0, -0.5], [0.52, -0.9], [1.0, -0.5]]), 0.0, 0.0),
+		"hips_bob": track(t, [[0.0, -0.05], [0.45, -0.03], [0.52, -0.16], [0.66, -0.14], [0.88, -0.07], [1.0, -0.05]]),
+	}
+
+
+# The nine clips as an AnimationLibrary for a skeleton. They use the same bone names as the converted library, so a body can add them to its own.
 static func library(skeleton: Skeleton3D) -> AnimationLibrary:
 	var lib: AnimationLibrary = AnimationLibrary.new()
 	lib.add_animation("jump", Proto._clip(skeleton, JUMP_LENGTH, 14, false, func(t: float) -> Dictionary: return _jump(t), false, true))
@@ -116,4 +172,6 @@ static func library(skeleton: Skeleton3D) -> AnimationLibrary:
 	lib.add_animation("walk_back", Proto._clip(skeleton, 1.2, 16, true, func(t: float) -> Dictionary: return _walk_back(t / 1.2), false, true))
 	lib.add_animation("strafe_left", Proto._clip(skeleton, 0.9, 16, true, func(t: float) -> Dictionary: return _strafe(t / 0.9, -1.0), false, true))
 	lib.add_animation("strafe_right", Proto._clip(skeleton, 0.9, 16, true, func(t: float) -> Dictionary: return _strafe(t / 0.9, 1.0), false, true))
+	lib.add_animation("chop", Proto._clip(skeleton, CHOP_LENGTH, 38, false, func(t: float) -> Dictionary: return _chop(t), false, true, true))
+	lib.add_animation("pick_overhead", Proto._clip(skeleton, PICK_LENGTH, 40, false, func(t: float) -> Dictionary: return _pick_overhead(t), false, true, true))
 	return lib
