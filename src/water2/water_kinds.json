@@ -1,0 +1,8 @@
+{
+	"_note": "Settable water traits (Sonny, 31 Oct 2026, dynasty-water stage a). One kind per field. color is the body tint, clarity_m how deep you can see, turbulence and wave_speed are look only (never feed the sim), density in kg per litre, viscosity is extra linear drag in 1/s, roughness is Manning n, flow_rate multiplies gravity in the flow law (how eagerly it runs), film_m is the depth under which it will not flow (a thin water wets, honey leaves a film), harm_per_s is damage for lava or acid.",
+	"fresh": {"color": [0.12, 0.38, 0.42], "clarity_m": 6.0, "density": 1.0, "viscosity": 0.05, "roughness": 0.03, "flow_rate": 1.0, "film_m": 0.004, "turbulence": 0.3, "wave_speed": 1.0, "harm_per_s": 0.0},
+	"sea": {"color": [0.05, 0.32, 0.45], "clarity_m": 10.0, "density": 1.03, "viscosity": 0.05, "roughness": 0.025, "flow_rate": 1.0, "film_m": 0.004, "turbulence": 0.6, "wave_speed": 1.2, "harm_per_s": 0.0},
+	"swamp": {"color": [0.16, 0.2, 0.1], "clarity_m": 0.6, "density": 1.02, "viscosity": 0.4, "roughness": 0.08, "flow_rate": 0.6, "film_m": 0.02, "turbulence": 0.08, "wave_speed": 0.5, "harm_per_s": 0.0},
+	"mud": {"color": [0.3, 0.2, 0.12], "clarity_m": 0.1, "density": 1.4, "viscosity": 2.5, "roughness": 0.12, "flow_rate": 0.3, "film_m": 0.06, "turbulence": 0.02, "wave_speed": 0.3, "harm_per_s": 0.0},
+	"lava": {"color": [1.0, 0.35, 0.05], "clarity_m": 0.0, "density": 2.6, "viscosity": 4.0, "roughness": 0.15, "flow_rate": 0.25, "film_m": 0.1, "turbulence": 0.04, "wave_speed": 0.2, "harm_per_s": 40.0}
+}
