@@ -9,9 +9,9 @@
 	"release": ["test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_tile_lakes"],
 	"slow_triggers": ["src/worldgen/**", "src/water/**", "data/water/**", "data/water_settle.json", "data/water_flow.json", "addons/**", "worlds/**"],
 	"slow_mode": "closure",
-	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/test_args.txt", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
+	"tooling_globs": ["tools/test_lanes.json", "tools/run_tests.sh", "tools/run_one_test.sh", "tools/test_args.txt", "tools/godot_slot.sh", "tools/tests_for_diff.py", "tools/selftest_gate_tools.sh"],
 	"slow_exclude": ["src/worldgen/tools/**"],
-	"offline_globs": ["tools/erosion_precarve/**", "tools/**/*.py"],
+	"offline_globs": ["tools/erosion_precarve/**", "tools/**/*.py", "tools/merge_day.sh", "tools/merge_watch.sh", "tools/merge_watch_loop.sh", "tools/rebake_check.sh", "tools/world_alive.sh", "tools/world_alive.gd", "TARGETS.md", "MERGE_WATCH.md", "WORLD_ALIVE_LOG.md", "TYLER_*.md"],
 	"always": ["test_inventory", "test_server_items", "test_items_persistence", "test_save_compat", "test_structure_look", "test_placement_rules", "test_new_player", "test_skills", "test_first_hour", "test_playability_bot", "test_block_roundtrip"],
 	"item_group": {
 		"checks": ["validate_items"],
@@ -43,6 +43,11 @@
 	],
 	"extra_inputs": [
 		{
+			"why": "Tyler: the playability bot reads CONTROLS.md and the recipes",
+			"paths": ["CONTROLS.md"],
+			"tests": ["test_playability_bot"]
+		},
+		{
 			"why": "Sonny: baked tiles, water and plan inputs",
 			"paths": ["worlds/base_world/tiles/**", "worlds/base_world/water/**", "worlds/base_world/plan/*.json", "data/water_settle.json", "addons/**"],
 			"tests": ["test_worldgen", "test_head_pond_fill", "test_water_soak", "test_drainage_flow", "test_drainage_natural", "test_tile_lakes", "test_river_ore", "test_river_surface", "test_tile_height_format", "test_spawn_dry", "test_gen_core"],
@@ -53,7 +58,7 @@
 	"bake_regex": "^(src/worldgen/(tile|plan|sketch|tables|matrix|settings)/|src/worldgen/runtime/(terrain_layout|terrain_generator|flora_placer|tile_terrain_data)\\.gd|worlds/base_world/)|(world_elevation|river_network)\\.gd$",
 	"docs_globs": ["docs/**", "tech/**", "design/**", "proposed_removals/**", "art/**/*.md", "*.md", "**/*.md", "*.txt", "**/*.txt"],
 	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "art/", ".github/"],
-	"known_files": ["project.godot", "export_presets.cfg", ".gitignore", ".gitattributes", "icon.svg", "icon.svg.import"],
+	"known_files": ["CONTROLS.md", "project.godot", "export_presets.cfg", ".gitignore", ".gitattributes", "icon.svg", "icon.svg.import"],
 	"picture_paths": ["data/items/looks.json", "data/items/clothing.json", "data/look/**", "src/client/*_look.gd", "src/client/avatar*", "src/client/inventory_view.gd", "src/client/held_item.gd", "src/debug/item_cam.gd", "assets/models/**"],
 	"timeout_s": {"fast": 300, "timing": 300, "slow": 1500}
 }

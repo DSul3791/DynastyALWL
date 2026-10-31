@@ -97,7 +97,11 @@ func can_make(number: int, inventory) -> bool:
 	if r.is_empty():
 		return false
 
-	for need in r["needs"] + r["keeps"]:
+	for need in r["needs"]:
+		if not inventory.has_fill(need[0], need[1]):   # a group id (log) is filled by any member (item_table.gd load_groups)
+			return false
+
+	for need in r["keeps"]:
 		if not inventory.has(need[0], need[1]):
 			return false
 
@@ -118,7 +122,7 @@ func craft(number: int, inventory) -> bool:
 	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate()]
 
 	for need in r["needs"]:
-		inventory.remove(need[0], need[1])
+		inventory.remove_fill(need[0], need[1])
 
 	if inventory.add(r["gives"][0], r["gives"][1]) > 0:
 		inventory.numbers = backup[0]

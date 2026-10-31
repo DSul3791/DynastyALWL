@@ -93,13 +93,13 @@ func _init() -> void:
 
 	# Craft the tools and the fire kit by hand.
 	queue(6, 1)
-	pass_time(6.0, 0.2)
+	pass_time(10.0, 0.2)
 	check(count("stone_knife") == 1, "a stone knife is made by hand")
 	queue(5, 1)
-	pass_time(6.0, 0.2)
+	pass_time(8.0, 0.2)
 	check(count("wooden_spear") == 1, "a wooden spear is made by hand")
 	queue(4, 1)
-	pass_time(6.0, 0.2)
+	pass_time(10.0, 0.2)   # craft times raised by the pacing pass
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
 	# The player puts the knife and the spear on the hotbar (new items no longer land there by themselves).
