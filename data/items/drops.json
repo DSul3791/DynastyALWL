@@ -245,6 +245,10 @@
 			"birch": [
 				["birch_bark", 2, 4]
 			],
+			"willow": [
+				["willow_bark", 1, 3],
+				["withies", 2, 4]
+			],
 			"oak": [
 				[
 					"acorns",
@@ -306,7 +310,8 @@
 					"resin",
 					1,
 					2
-				]
+				],
+				["pine_tar", 1, 2]
 			],
 			"spruce": [
 				[
