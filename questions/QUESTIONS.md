@@ -13,12 +13,6 @@
 
 
 
-## pic-kits | Are these building kits now easy to tell apart from each other (lean-to, three beds, log seat, stool, bench, table, workbench, two chests, campfire, chopping block)?
-Image: questions/img/kits_r1.png
-Note: Render of the item models from above, not the real game. Kathleen rates it 3 of 5: ten kits that shared looks now have their own shape; the stool and bench look plain from above.
-- Yes
-- No
-
 ## pic-hands | Are the character's hands (now about 20 percent bigger) in proportion?
 Image: questions/img/body_idle_hands.png
 Note: Render of the idle pose, front, three-quarter, side, back; not the real game. Kathleen rates it 3.5 of 5. The side-on stance in the game is not the idle pose (it faces front here); it is the body yaw against the camera, noted for Sonny.
