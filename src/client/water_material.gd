@@ -312,6 +312,7 @@ void fragment() {
 		ALBEDO = mix(mix(water, sky, fresnel * 0.8 * mirror_k * (1.0 - 0.7 * face)), foam_tint, foam * 0.85);
 		ALPHA = max(max(body_alpha, fresnel * 0.8 * mirror_k), foam * 0.9) * sheet_alpha;
 	}
+	EMISSION += foam_tint * foam * 0.45 * daylight;   // foam is lit by the whole sky, not only the sun, so it stays white against pale sand and a pale sea
 	ROUGHNESS = 0.08 + 0.3 * foam;
 	SPECULAR = 0.6;
 
