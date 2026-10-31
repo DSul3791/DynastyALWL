@@ -3141,7 +3141,20 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	if int(it["count"]) > 1 and fate(peer, "boulder_extra", float(_boulder_cfg.get("luck_extra", 0.05))):
 		out = 2
 
-	inv.add(stone, out)
+	# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule is one piece, never a double.
+	var flint_cfg: Dictionary = _boulder_cfg.get("flint", {})
+	var flint_n: int = table.number_of(str(flint_cfg.get("item", "flint"))) if not flint_cfg.is_empty() else 0
+	var flint_p: float = float(flint_cfg.get("chance", 0.0))
+
+	if flint_n > 0 and water_near.is_valid() and bool(water_near.call(it["pos"], float(flint_cfg.get("water_reach_m", 6.0)))):
+		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
+
+	if flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
+		inv.add(flint_n, 1)
+		out = 1
+	else:
+		inv.add(stone, out)
+
 	practice(peer, "mine_rock")   # breaking a boulder is Mining too
 	it["count"] = int(it["count"]) - out
 	_boulder_left[it["scatter"]] = int(it["count"])
@@ -3193,7 +3206,12 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, rng: R
 			continue
 
 		var driftwood: bool = rng.randf() < float(bank.get("driftwood", 0.12))   # luck-exempt: seeded world layout
-		_items[_next_id] = {"number": table.number_of("driftwood" if driftwood else "stone"), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
+		var bank_number: String = "driftwood" if driftwood else "stone"
+
+		if not driftwood and float(bank.get("flint", 0.0)) > 0.0 and float(hash(key) % 1000) < 1000.0 * float(bank.get("flint", 0.0)):
+			bank_number = "flint"   # F-02: a share of the bank stones are flint (from the key, so the layout's random stream is not touched)
+
+		_items[_next_id] = {"number": table.number_of(bank_number), "count": 1, "pos": spot, "left": 1.0e9, "scatter": key}
 		_next_id += 1
 
 

@@ -24,6 +24,13 @@
 	"bank_reach_m": 3.0,
 	"bank_chance": 0.4,
 	"luck_extra": 0.05,
+	"flint": {
+		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",
+		"item": "flint",
+		"chance": 0.04,
+		"near_water_chance": 0.08,
+		"water_reach_m": 6.0
+	},
 	"draw_cap_by_quality": [
 		24,
 		48,
