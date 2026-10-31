@@ -1934,3 +1934,7 @@ Answered: 2026-10-31 20:05 UTC
 Answer: Yes | Comment: Yes, we are gonna make it work right now, but we’re gonna make it look better later so for now as long as it fills in all the gaps and flows down over hill size and acts like proper water then it’s good
 Answered: 2026-10-31 20:07 UTC
 
+## pic-water2-kinds | Do the liquids look and move differently enough (water, swamp, lava after 60 seconds on the same slope)?
+Answer: Yes | Comment: This is about movement then probably yes, but lava should be orange and red like fire for the colour sake
+Answered: 2026-10-31 20:07 UTC
+
