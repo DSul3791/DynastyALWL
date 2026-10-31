@@ -8,6 +8,7 @@ extends RefCounted
 #
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
+const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
@@ -7405,47 +7406,7 @@ func _sea_near(pos: Vector3, reach: float) -> bool:
 
 # The node of a cell on a game day: {} when none, else the row of shore_nodes.json "nodes" (deterministic from the cell and the day).
 func shore_node_at(pos: Vector3, day: int, hour: float, season: String) -> Dictionary:
-	var cfg: Dictionary = _shore_data()
-	var cell_m: float = float(cfg.get("cell_m", 8.0))
-	var cell: Vector2i = Vector2i(int(floor(pos.x / cell_m)), int(floor(pos.z / cell_m)))
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = hash(Vector3i(cell.x, cell.y, day)) ^ 0x51ed270b
-
-	if rng.randf() >= float(cfg.get("node_chance", 0.5)):   # luck-exempt: seeded world layout
-		return {}
-
-	var usable: Array = []
-	var total: float = 0.0
-
-	for node in cfg.get("nodes", []):
-		var hours: Array = node.get("only_hours", [])
-
-		if hours.size() == 2:
-			var inside: bool = (hour >= float(hours[0]) and hour < float(hours[1])) if float(hours[0]) < float(hours[1]) else (hour >= float(hours[0]) or hour < float(hours[1]))
-
-			if not inside:
-				continue
-
-		var seasons: Array = node.get("only_seasons", [])
-
-		if not seasons.is_empty() and not seasons.has(season):
-			continue
-
-		usable.append(node)
-		total += float(node.get("weight", 1))
-
-	if usable.is_empty():
-		return {}
-
-	var pick: float = rng.randf() * total   # luck-exempt: seeded world layout
-
-	for node in usable:
-		pick -= float(node.get("weight", 1))
-
-		if pick <= 0.0:
-			return node
-
-	return usable[usable.size() - 1]
+	return ShoreRules.node_at(_shore_data(), pos, day, hour, season)
 
 
 func gather_edge(peer: int, inv) -> bool:
