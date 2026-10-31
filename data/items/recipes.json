@@ -46,7 +46,7 @@
 				"stone_axe",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"wooden_spear": {
@@ -69,7 +69,7 @@
 				"wooden_spear",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 6.0,
 			"known": true
 		},
 		"spear": {
@@ -96,7 +96,7 @@
 				"spear",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"stone_knife": {
@@ -117,7 +117,7 @@
 				"stone_knife",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"torch": {
@@ -159,7 +159,7 @@
 				"campfire_kit",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"poultice_plantain": {
@@ -270,7 +270,7 @@
 				"wooden_spade",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lean_to_kit": {
@@ -295,7 +295,7 @@
 				"lean_to_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"chest_kit": {
@@ -316,7 +316,7 @@
 				"chest_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true
 		},
 		"chopping_block": {
@@ -333,7 +333,7 @@
 				"chopping_block",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lumber": {
@@ -967,7 +967,7 @@
 				"rough_bed_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"campfire_pot_kit": {
@@ -1113,7 +1113,7 @@
 				"workbench_kit",
 				1
 			],
-			"craft_s": 12.0,
+			"craft_s": 40.0,
 			"known": true
 		},
 		"shore_net": {
@@ -1176,7 +1176,7 @@
 				"tool_rack_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3462,7 +3462,7 @@
 				"stone_hammer",
 				1
 			],
-			"craft_s": 6.0,
+			"craft_s": 15.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3552,7 +3552,7 @@
 				["twine", 3]
 			],
 			"gives": ["wooden_bow", 1],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3718,7 +3718,7 @@
 				"stone_pickaxe",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 25.0,
 			"known": true,
 			"station": "workbench"
 		},

@@ -191,7 +191,7 @@ func _init() -> void:
 	items._vitals_cfg["eat_pace_ms"] = 0
 	queue(13, 1)
 	queue(14, 1)
-	pass_time(40.0, 0.3)
+	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
 	check(count("lean_to_kit") == 1 and count("chest_kit") == 1, "the lean-to and the woven chest are made")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(0.0, 10.0, 4.0))

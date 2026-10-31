@@ -196,8 +196,8 @@
 				2,
 				3
 			],
-			"stones_max_boost": 4,
-			"sticks_max_boost": 4
+			"stones_max_boost": 2,
+			"sticks_max_boost": 2
 		}
 	},
 	"stump": {
