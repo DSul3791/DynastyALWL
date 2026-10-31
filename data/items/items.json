@@ -358,8 +358,7 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 30,
-			"future": true
+			"value": 30
 		},
 		"steel_ingot": {
 			"number": 32,
@@ -2721,7 +2720,6 @@
 		},
 		"nails": {
 			"number": 228,
-			"future": true,
 			"name": "Nails",
 			"description": "Iron nails, bought and used by the handful.",
 			"kind": "material",
@@ -2759,7 +2757,6 @@
 		},
 		"hinges": {
 			"number": 232,
-			"future": true,
 			"name": "Hinges",
 			"description": "A pair of iron hinges for a door.",
 			"kind": "material",
@@ -2810,8 +2807,7 @@
 			"kind": "material",
 			"stack": 10,
 			"look_alikes": [],
-			"value": 60,
-			"future": true
+			"value": 60
 		},
 		"water_wheel": {
 			"number": 239,
@@ -3215,7 +3211,6 @@
 			"description": "A hard grey stone that throws sparks when struck. Common near rivers.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3241,7 +3236,6 @@
 		},
 		"processed_hide": {
 			"number": 282,
-			"future": true,
 			"name": "Processed hide",
 			"description": "A hide scraped clean of flesh and hair, ready for the tannery.",
 			"kind": "material",
@@ -3285,7 +3279,6 @@
 			"description": "Small iron pins that hold layers of leather or metal together.",
 			"kind": "material",
 			"stack": 40,
-			"future": true,
 			"look_alikes": [],
 			"value": 2
 		},
@@ -3295,7 +3288,6 @@
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3305,7 +3297,6 @@
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 15
 		},
@@ -3534,7 +3525,6 @@
 			"description": "A heavy lump streaked green and red. Smelts to copper.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3544,7 +3534,6 @@
 			"description": "A dark, very heavy lump. Smelts to tin.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 6
 		},
@@ -3554,7 +3543,6 @@
 			"description": "A rusty brown lump, heavy for its size. Smelts to iron.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 5
 		},
@@ -3564,7 +3552,6 @@
 			"description": "A black lump that burns hot. Needed to turn iron into steel.",
 			"kind": "material",
 			"stack": 20,
-			"future": true,
 			"look_alikes": [],
 			"value": 4
 		},

@@ -292,3 +292,6 @@ carcass.json now has 35 species (added horse, red squirrel, pine marten, hedgeho
 
 ## Fishing, wild foods, camp goals (2026-10-31)
 Fish items salmon..cod (419-424) wired into schools (river eel, sea cod, seasons), vitals, spoilage, cooking; validate_items reads fish_schools as a source. FISHING_DATA.md. data/items/wild_foods.json (92 edible plants, 20 with look-alike warnings, 11 poisonous). data/items/camp_goals.json (10 camp and winter goals, 4 need code). Looks queued in look_placeholders.json.
+
+## Audit against Tyler systems, first week, animal sign (2026-10-31)
+crops.json sow_season fixed for a summer start (see CODE_MISMATCHES.md); flint, ores, coal, ingots, nails, hinges, rivets, saw blade, processed hide unflagged; validate_items reads boulders.json as a source. FIRST_WEEK_WALK.md (paper walk, rates unmeasured), data/animals/animal_sign.json (20 species, 41 sign hints). Plans (self-approved): 1 timed play-through numbers into FIRST_WEEK_WALK; 2 halve grow_days after Dave answers; 3 unflag iron tools when held models exist.
