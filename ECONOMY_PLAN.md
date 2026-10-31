@@ -33,3 +33,6 @@ Wool 5, linen 6, wool tunic 40, fur cloak 70, seal meat 5, seal steak 14, egg 3,
 1. Should shops buy cooked dishes at all? (yes, but cap the dish price rule above)
 2. Should a trader's purse also limit buying stew? (yes, already by purse cap)
 3. Should coin rewards for quests follow 1.5 to 2 times the goods (COINS.md)? (yes, unchanged)
+
+## Correction (2026-10-31)
+My first dish price cap compared the value of ONE dish to the inputs, but most recipes give 2 or 3 dishes, so a batch still sold for up to 8 times its inputs. Fixed: the cap is now on the batch (2.5 x inputs + craft_s/4), per-dish values dropped (hearty pottage 38 -> 12 each, hunter stew 33 -> 16, trail bread 33 -> 11, feast roast 75 -> 34, and 18 more dishes). A regression guard, test_economy_guard.gd (step "economy" in tools/items_check.py), now fails any recipe worth more than 2.5x inputs for food or 8x for other goods, or less than 0.4x for anything.

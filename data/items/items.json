@@ -2046,7 +2046,7 @@
 			"description": "Ground hazelnuts and honey. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 11,
+			"value": 10,
 			"look_alikes": []
 		},
 		"roast_roots": {
@@ -2083,7 +2083,7 @@
 			"description": "Mushrooms and wild garlic grilled on a stick.",
 			"kind": "food",
 			"stack": 10,
-			"value": 21,
+			"value": 11,
 			"look_alikes": []
 		},
 		"herb_fish": {
@@ -2110,7 +2110,7 @@
 			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 9,
 			"look_alikes": []
 		},
 		"fruit_leather": {
@@ -2119,7 +2119,7 @@
 			"description": "Dried fruit pressed flat. Keeps for a long journey.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 7,
 			"look_alikes": []
 		},
 		"smoked_fish": {
@@ -2137,7 +2137,7 @@
 			"description": "A thick meat and root stew. Warms you through.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 16,
 			"look_alikes": []
 		},
 		"forager_stew": {
@@ -2146,7 +2146,7 @@
 			"description": "Greens, roots and mushrooms in one pot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 23,
+			"value": 11,
 			"look_alikes": []
 		},
 		"fish_stew": {
@@ -2155,7 +2155,7 @@
 			"description": "Perch, cress and root in a thin broth.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": []
 		},
 		"trail_bread": {
@@ -2164,7 +2164,7 @@
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 11,
 			"look_alikes": []
 		},
 		"hearty_pottage": {
@@ -2173,7 +2173,7 @@
 			"description": "A rich pot of seeds, roots, herbs and fat. Fills and warms.",
 			"kind": "food",
 			"stack": 10,
-			"value": 38,
+			"value": 12,
 			"look_alikes": []
 		},
 		"feast_roast": {
@@ -2182,7 +2182,7 @@
 			"description": "Spiced, fat-basted roast. The best meal a campfire makes.",
 			"kind": "food",
 			"stack": 10,
-			"value": 75,
+			"value": 34,
 			"look_alikes": []
 		},
 		"wall_section_kit": {
@@ -3157,7 +3157,7 @@
 			"description": "A sweet loaf baked in the oven. Keeps well.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 14,
 			"look_alikes": []
 		},
 		"roast_joint": {
@@ -4555,7 +4555,7 @@
 			"description": "Oats simmered thick with crushed nuts.",
 			"kind": "food",
 			"stack": 10,
-			"value": 22,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4565,7 +4565,7 @@
 			"description": "A thin warm broth of barley and carrot.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4585,7 +4585,7 @@
 			"description": "A thick green soup of peas and onion.",
 			"kind": "food",
 			"stack": 10,
-			"value": 18,
+			"value": 15,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4615,7 +4615,7 @@
 			"description": "Cabbage, meat and onion stewed together.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4645,7 +4645,7 @@
 			"description": "A salty soup of seaweed and shellfish.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 12,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4655,7 +4655,7 @@
 			"description": "Shellfish stewed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 19,
+			"value": 17,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4675,7 +4675,7 @@
 			"description": "Eggs fried with young nettle greens.",
 			"kind": "food",
 			"stack": 10,
-			"value": 24,
+			"value": 16,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4695,7 +4695,7 @@
 			"description": "Dark seal meat stewed with turnip.",
 			"kind": "food",
 			"stack": 10,
-			"value": 28,
+			"value": 14,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4705,7 +4705,7 @@
 			"description": "Meat and fat baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 33,
+			"value": 20,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4715,7 +4715,7 @@
 			"description": "Fish and onion baked in a flour crust.",
 			"kind": "food",
 			"stack": 10,
-			"value": 31,
+			"value": 19,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4734,7 +4734,7 @@
 			"description": "Flat bread rubbed with wild garlic.",
 			"kind": "food",
 			"stack": 10,
-			"value": 13,
+			"value": 11,
 			"look_alikes": [],
 			"future": true
 		},
@@ -4802,7 +4802,7 @@
 			"description": "Banana and flour fried golden.",
 			"kind": "food",
 			"stack": 10,
-			"value": 14,
+			"value": 9,
 			"look_alikes": [],
 			"future": true
 		},
