@@ -164,7 +164,8 @@ def select(paths, lanes, force_all=False, full=False):
     why = {}
     result = {"class": "docs", "fast": [], "timing": [], "slow": [], "pictures": [], "checks": [], "pin": False, "why": why}
     tooling = [p for p in paths if matches(p, lanes.get("tooling_globs", []))]
-    live = [p for p in paths if p not in tooling and not matches(p, lanes["docs_globs"] + lanes.get("offline_globs", []))]
+    watched = [g for rule in lanes["extra_inputs"] for g in rule["paths"]]   # a doc a test reads (CONTROLS.md) is not "docs only"
+    live = [p for p in paths if p not in tooling and (matches(p, watched) or not matches(p, lanes["docs_globs"] + lanes.get("offline_globs", [])))]
     if tooling:
         # Gate tooling (lane lists, runner, selector) is checked by the lane check and the selftest, not by game tests.
         result["checks"] += ["lanes", "selftest"]
