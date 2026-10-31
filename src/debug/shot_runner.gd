@@ -124,6 +124,9 @@ var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
 var clip_name: String = ""       # --shot-clip=NAME: the body plays this clip (look rig, third person)
+var lapse_frames: int = 0         # --shot-lapse=N,S: before the main picture, N pictures of the same camera S seconds apart (<name>_lapse_NN.png), to see water move
+var lapse_gap_s: float = 1.0
+var _lapse_state: int = 0
 var chop_strip: bool = false     # --shot-chop: after the main picture, swing the held axe once and save a picture at each phase of the swing (<name>_chop_NN.png; first person)
 var _chop_state: int = 0         # 0 not started, 1 running, 2 done
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
@@ -154,6 +157,10 @@ func setup(owner_client, args: Array) -> void:
 			clip_name = argument.trim_prefix("--shot-clip=")
 		elif argument == "--shot-chop":
 			chop_strip = true
+		elif argument.begins_with("--shot-lapse="):
+			var lapse_parts: PackedStringArray = argument.trim_prefix("--shot-lapse=").split(",")
+			lapse_frames = int(lapse_parts[0])
+			lapse_gap_s = float(lapse_parts[1]) if lapse_parts.size() > 1 else 1.0
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
@@ -549,6 +556,13 @@ func _process(delta: float) -> void:
 
 	if _view_i < views.size():
 		_run_view(now)
+		return
+
+	if lapse_frames > 0 and _lapse_state != 2:
+		if _lapse_state == 0:
+			_lapse_state = 1
+			_run_lapse()
+
 		return
 
 	if chop_strip and _chop_state != 2 and client.held != null:
@@ -1605,6 +1619,17 @@ func _next(now: int) -> void:
 
 
 # --shot-chop: one swing of the held axe, a picture at each phase (the times are seconds into the swing; the impact is HIT_AT x SWING_S).
+func _run_lapse() -> void:
+	for index in range(lapse_frames):
+		await RenderingServer.frame_post_draw
+		var path: String = "%s/%s_lapse_%02d.png" % [dir, shots[_index]["name"], index]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("shot runner: lapse %d saved at t %.2f s" % [index, Time.get_ticks_msec() / 1000.0])
+		await get_tree().create_timer(lapse_gap_s).timeout
+
+	_lapse_state = 2
+
+
 func _run_chop_strip() -> void:
 	var held = client.held
 
