@@ -13,12 +13,6 @@
 
 
 
-## pic-apples | Do these apples look like round apples (stem, highlight) instead of red diamonds?
-Image: questions/img/apples_round.png
-Note: Close-up render of five apples, four views, not the real game. Kathleen rates it 3 of 5: round with a stem and a highlight, still a little faceted.
-- Yes
-- No
-
 ## pic-crown-variety | Do these eight oaks look different enough from each other (shape, colour, dying and bare ones)?
 Image: questions/img/oak_variants.png
 Note: Render of eight variants side by side with plain white leaves (the game's leaf texture and tint will change the colour), not the real game. Kathleen rates it 3.5 of 5. Shrubs hazel, blackthorn, bramble, rose get the same shape and colour variety.
