@@ -1099,6 +1099,9 @@ func _fill_here() -> void:
 
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
 
+	if _sound != null:
+		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
+
 
 var raise_mode: bool = false              # the spade raises ground (Dave 2026-10-22); false digs
 
