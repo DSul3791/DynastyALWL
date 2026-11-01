@@ -11,19 +11,24 @@ const LEGACY_PATH := "user://my_character.code"       # the single saved code of
 const SETTINGS_PATH := "user://input_settings.cfg"
 
 
-# Dave's own body (assets/character/Humanoid/Dynasty_Base_Male.glb, src/client/character/dynasty_body.gd): off unless `--dynasty-body` is given or the Gameplay settings switch is on.
+# Dave's own body (assets/character/Humanoid/Dynasty_Base_Male.glb, src/client/character/dynasty_body.gd) is the player's body since 1 Nov 2026. `--oldbody` on the client, or the
+# "Old body" switch in Esc > Settings > Gameplay (the next Play), brings back the body worn before it (the generated body; `--old-body` as below still gives the ragdoll).
 static func dynasty_body_on(path: String = SETTINGS_PATH) -> bool:
-	if OS.get_cmdline_user_args().has("--dynasty-body"):
+	return not old_body(path)
+
+
+static func old_body(path: String = SETTINGS_PATH) -> bool:
+	if OS.get_cmdline_user_args().has("--oldbody"):
 		return true
 
 	var file: ConfigFile = ConfigFile.new()
-	return file.load(path) == OK and bool(file.get_value("character", "dynasty_body", false))
+	return file.load(path) == OK and bool(file.get_value("character", "old_body", false))
 
 
-static func set_dynasty_body(on: bool, path: String = SETTINGS_PATH) -> void:
+static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
 	var file: ConfigFile = ConfigFile.new()
 	file.load(path)
-	file.set_value("character", "dynasty_body", on)
+	file.set_value("character", "old_body", on)
 	file.save(path)
 
 
