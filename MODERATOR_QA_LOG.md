@@ -51,3 +51,6 @@ DINO: builds the playthrough and walkthrough guides and tests them. He reports h
 
 ## 2026-11-01 New agent: Jason (aka Champ): Audio Engineer, Sound Guy (Dave)
 Jason owns all sound: sound effects, ambience, music if any, footsteps, tool and place sounds, creature sounds, door sounds, weather and water sounds, fire sounds, volume balance, sound mapping tables and the sound tests (test_slot_sounds, test_sound_log). Sound used to be done by Kathleen on earlier branches (kathleen-sound-1/2, creature-sounds, door-sounds, wolf-howl); it is now Jason's. Rules for WHEN a sound plays stay with the system owner (Steve) and what plays for an item stays in item data (Sal); Jason owns the sounds, the mapping and how they sound.
+
+## 2026-11-01 New agent: Jamie: Documentation (Dave)
+Jamie reviews all documents from time to time: do they make sense, are they useful, do they conflict with others, do they duplicate others, are they accurate, are they bloated. He keeps the project efficient and well documented; he values accurate, concise, succinct documents. He archives, never deletes (docs/archive/YYYY-MM/), tells the owner before changing a document an owner maintains, and reports conflicts between documents to the moderator. He does not decide game design; Dave and the moderator do.
