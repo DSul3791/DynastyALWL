@@ -223,3 +223,10 @@ Note: Lots: sticks and leaves 15, fibre 12, nettles 10, bark 8, soil/clay/sand/g
 Note: I assumed 4 hours of play and made-up pick rates (12 a minute for sticks, 4 for digging); nobody has timed them. Table: docs/ECONOMY_FIRST_DAY.md. At 8 hours everything doubles. Hob's purse (300 cap, 100 an hour) also caps one trader.
 Note: Recommendation: Yes, because every item then pays about 0.8 copper a minute, so what a player gathers does not change the day's income; if you think 4 hours is too short, tell me the hours and I rescale the lots.
 [check]
+
+## softwood-boards | Softwood boards: spruce and pine saw faster and give 7 lumber a log (hardwood 6)?
+Note: Your note: softwood is better for boards than firewood. Before, every wood sawed the same: 6 lumber a log in 6 s, 2 beams in 8 s. Softwood logs already weigh less (32 against 45 kg) and softwood lumber is worth less (8 against 12 copper).
+Note: Now: spruce and pine lumber 7 per log in 5 s, beams 2 per log in 6 s. Hardwood unchanged.
+Note: Bigger question: hardwood is classed 'fine boards' and softwood 'plank boards'. Should fine boards be worth more (floors, furniture) and plank boards the cheap building board? Today both are called lumber.
+Note: Recommendation: Yes, because softwood saws easily and straight, so a bit more, faster lumber fits your note; keep the fine-board question for later when furniture needs it.
+[check]
