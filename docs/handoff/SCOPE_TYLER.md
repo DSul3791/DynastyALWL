@@ -1,5 +1,7 @@
 # Scope: Tyler: Q&A Testing, 1 Nov 2026
 
+> **ROLE ADDITION (Dave, 1 Nov 2026, interim): the character SYSTEM is yours:** character store and records, select screen code, learned recipes and goals per character, idle timeout, smoke tests of the first minutes. Previously Sonny's; the character LOOK goes to Kathleen.
+
 Read `HANDOFF_TYLER.md` next to this one: it holds the in-flight state, risks and how to run things.
 
 ## 1. The job, in plain words

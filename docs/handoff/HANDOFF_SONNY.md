@@ -1,5 +1,7 @@
 # Handoff: Sonny (character and Dynasty water), 1 Nov 2026
 
+> **ROLE CHANGE (Dave, 1 Nov 2026): Sonny is the terrain and water agent only.** Unfinished character items below (side-on stance, creator preview opening on the back, character pictures) go to Kathleen (look) and Tyler (system). Do the water first.
+
 ## My role
 Two jobs. (1) Character stance and body work earlier in the project (branch `sonny-character`, proposal commit 8cdfa792, creator pictures per section db105d36). The earlier character details are in that branch's history and docs; I did not re-audit them for this note. (2) Since 31 Oct: owner of the NEW water system, "Dynasty water", on branch `dynasty-water` (worktree `C:\GodotProjects\DynastyALWL\.claude\worktrees\dynasty-water`). Code only in `src/water2/`, plus two tiny edits outside it. The old water (`src/water/`) is untouched. Moderator is "More Dynasty"; Dave decides.
 

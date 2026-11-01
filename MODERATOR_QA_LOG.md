@@ -20,3 +20,6 @@ When your assigned work is finished, make up three more tasks or action plans th
 
 ## 2026-11-01 Stump rule (Dave)
 Chopping a stump that is still in the ground just chops it up: the stump disappears and the player gets firewood and kindling. It does NOT fall over or leave a log on the ground. This keeps the art simple (no felled-stump or chopped-pieces models needed for a stump). Owners: Tyler (action and result), Sal (drops: firewood and kindling counts in data), Kathleen (drop the stump-chop models she no longer needs). Reversible; counts are Sal's call.
+
+## 2026-11-01 Role change: Sonny is the terrain and water agent (Dave)
+Sonny's sole job is terrain and water (the foundation everyone plays on), as in Dave's original project. His character work moves out. Interim split (Dave may change it): character LOOK (body, face, hair, worn clothes as seen, hands, stance and animations, creator preview and select/loading pictures) goes to Kathleen; character SYSTEM (character store and records, select screen code, learned recipes and goals per character, idle timeout, smoke tests of the first minutes) goes to Tyler. Docs updated: SCOPE_SONNY, HANDOFF_SONNY, SCOPE_KATHLEEN, SCOPE_TYLER.

@@ -1,5 +1,7 @@
 # Scope: Kathleen (art and looks), 2026-11-01
 
+> **ROLE ADDITION (Dave, 1 Nov 2026, interim): the character LOOK is yours:** body, face, hair, worn clothes and armour as seen, hands, the side-on stance and animations, the creator preview (it opens on the back) and select/loading pictures. Previously Sonny's; the character system (records, select code) goes to Tyler.
+
 Read with `HANDOFF_KATHLEEN.md` (state, tests, risks, how to post pictures).
 
 ## 1. The job, in plain words
