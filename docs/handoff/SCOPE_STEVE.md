@@ -1,5 +1,7 @@
 # Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-through of code and handoffs)
 
+> **CORRECTION (Dave, 1 Nov 2026): sound hooks are Jason's, not yours.** You keep the rules. If Jason needs an event exposed (signal or event) so he can place a sound, expose it when he asks. You do not audit or wire sounds.
+
 Steve took over the sub-systems from Tyler on 1 Nov 2026 (Dave). Sources read: SCOPE/HANDOFF of Tyler, Sonny, Sal, the moderator; `MODERATOR_QA_LOG.md` (1 Nov entries), `DESIGN_IDEAS.md` 6.1, `PONYTAIL_RULES.md`, `MORNING_PLAYTEST_CHECKLIST.md`, `PLAYTHROUGH_STEP_STATUS.md`, `docs/COMFORT_DESIGN.md` (top), and the code named below. Nothing here was executed; "state" is from reading plus the claims of the handoffs, marked as such.
 
 ## 1. The job, where it starts and stops
@@ -73,3 +75,6 @@ No Godot was run (hold in force). All "works" claims are from handoffs. I did no
 
 ## 8. Sources (added after the teammates answered, 1 Nov 2026)
 Open items per system came from: Tyler (tests, open items per system), Sal (data numbers, open design calls), Sonny (character parts and commits), Dino (playthrough findings), Kathleen (light parameters she will edit), moderator (Dave's order). Details by system are in `HANDOFF_STEVE.md`. Corrections to section 2: the stump code already reads `final_by_radius` (`_stump_final_rows`, line 3969); the chest self-test error at `inventory_view.gd:4562` is open and needs an owner; Sal's design calls for Dave: heavy kits, campfire-only-meat and 4 kcal berries unplayed, placed sounds by ear, lean-to pace unmeasured.
+
+## 9. Finding #8 from FINDINGS_REPORT.md (silent placement refusals), added 1 Nov 2026
+Moderator relayed Dino's #8 (MEDIUM, mine). Reading `_place` (server_items.gd 2512..2612) on head `d3aa3c2a`: the refusals for reach ("Too far to place that."), wet ground ("The ground is too wet here."), water, steep, fire gap ("Too close to another fire."), blocked ("Something is in the way.") and per-chunk fires ("Too many fires here.") all send a message now. So Dino's evidence (probe_place_output.txt) predates Tyler's change and is probably stale. Plan item, first placement task after RESTART: run `test_placement_notices` and `probe_place`, and list the remaining bare `return`s in `_place` (about 6 early exits near the top and around 2575..2580) to see if any is reachable by a real player; give each reachable one a message. Done when every reachable refusal says why and the test pins each message. Join freeze (#12): Tyler confirms it in a real join; I own any rule behind it. Not run.

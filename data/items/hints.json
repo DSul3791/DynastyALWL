@@ -202,6 +202,16 @@
 			"text": "Roast raw meat on the campfire. Cook plants in a pot."
 		},
 		{
+			"id": "plant_food_pot",
+			"trigger": "has_plant_food_at_fire",
+			"text": "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine."
+		},
+		{
+			"id": "pot_first_dish",
+			"trigger": "campfire_pot_placed",
+			"text": "Put 3 berries and water in the pot for Stewed berries. Baked food needs a clay hearth: 10 bricks."
+		},
+		{
 			"id": "nettles",
 			"trigger": "near_nettle",
 			"text": "Nettles give fibre and leaves. Steep leaves in a pot for tea."
