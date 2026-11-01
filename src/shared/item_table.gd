@@ -4,6 +4,8 @@ extends RefCounted
 # Shared by server and client. Numbers are stable save ids; names are for code.
 
 const PATH := "res://data/items/items.json"
+# The most one slot holds (the u16 count on the wire and in the pack bytes). Weight, not a stack size, limits what a body carries (Dave 24 Oct).
+const COUNT_MAX := 65535
 const GATHERED_PATH := "res://data/items/gathered.json"   # one plain material per flora yield (tools/gen_gathered_items.py)
 const GROUPS_PATH := "res://data/items/wood_species.json"   # "ingredient_groups": a plain id (log) that any listed item (log_oak ...) fills (guide finding F-16)
 
@@ -86,8 +88,15 @@ func id_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("id", ""))
 
 
+# 1 for an item marked "unstackable" in items.json (tools, kits, structures, containers, clothing, shoulder logs), else COUNT_MAX. The old "stack"
+# number stays in the file for one version and is ignored (rollback rule: never go back to a cap without Dave).
 func stack_of(number: int) -> int:
-	return int(_by_number.get(number, {}).get("stack", 1))
+	var row: Dictionary = _by_number.get(number, {})
+
+	if row.is_empty() or bool(row.get("unstackable", false)):
+		return 1
+
+	return COUNT_MAX
 
 
 func name_of(number: int) -> String:
