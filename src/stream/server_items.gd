@@ -945,6 +945,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		if not admin_ok.is_valid() or admin_ok.call(peer):
 			_showroom_seed(peer, a == 1, at)
 
+	elif kind == Net.ACT_ADMIN_ENERGY:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			vitals_of(peer)["energy"] = clampf(float(count), 0.0, 100.0)
+
 	elif kind == Net.ACT_NEW_PLAYER:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			_become_new_player(peer)
@@ -3961,6 +3965,15 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 	_dirty = true
 
 
+# The rows the last blow gives: the first final_by_radius entry whose max_radius_m reaches the stump's radius (the last has no limit), else the plain "final" rows (Sal and Dave, 1 Nov 2026).
+func _stump_final_rows(cfg: Dictionary, radius: float) -> Array:
+	for entry in cfg.get("final_by_radius", []):
+		if radius <= float(entry.get("max_radius_m", 1.0e9)):
+			return entry.get("rows", [])
+
+	return cfg.get("final", [])
+
+
 # One axe blow on a stump (drops.json "stump"): a few blows (more for a thick one) chop it up for kindling and firewood, then it is gone and its record
 # is freed. The blow count is saved with the stump, so a half-chopped stump stays half-chopped across a restart; the pace and skill rules are the trunk's.
 func _chop_stump(peer: int, inv, id: int) -> void:
@@ -3998,7 +4011,7 @@ func _chop_stump(peer: int, inv, id: int) -> void:
 		if send_notice.is_valid():
 			send_notice.call(peer, "Chopping the stump: %d of %d" % [blows, needed])
 	else:
-		for row in cfg.get("final", []):
+		for row in _stump_final_rows(cfg, float(tree["radius"])):
 			var drop_id: String = _wood_item("firewood", species) if str(row[0]) == "firewood" else str(row[0])
 			give(peer, table.number_of(drop_id), roll_amount(peer, rng, int(row[1]), int(row[2])))
 

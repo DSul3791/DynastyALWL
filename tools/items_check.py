@@ -130,6 +130,9 @@ CLIENTS = [
         ("Shift+D drops one", r"Shift\+D dropped " + NUM, 1, 1),
         ("E eats one", r"E ate " + NUM, 1, 1),
     ]),
+    ("sleep", ["--sleep"], 5000, [
+        ("a tired character lies down and sleeps", r"SLEEP TEST (PASS)", None, None),
+    ]),
     ("eat", ["--eat"], 7000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
         ("roast eaten", r"roasts eaten " + NUM, 1, 1),
