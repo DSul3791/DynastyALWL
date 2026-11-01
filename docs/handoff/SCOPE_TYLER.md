@@ -44,3 +44,13 @@ I make the game's rules work on the server and prove they work: comfort and the 
 - A new player can play the first hour (the playability bot's 11 steps and Guide's step list pass) with fire, shelter, bed and Rested working and tooltips correct.
 - Mutation checks catch deliberate breakage of comfort, goals, lights, hints and novice grace.
 - Dave has made the real-death decision and it is built, or he has said it is out of scope.
+
+## 7. Character system tasks (added 1 Nov 2026, proposed order; nothing started, waiting for RESTART)
+Files that are now mine: `src/stream/server_items.gd` (character records, `_characters`, learned recipes, goals), `scenes/character_select/character_select.gd`, `src/client/idle_timeout.gd`, the character parts of `scenes/terrain_client/terrain_client.gd` and `src/client/game_menu.gd`. The creator look (`scenes/creator_proto`) is Kathleen's.
+1. Read-through (no Godot): list where a character is created, saved, loaded, deleted and what each record holds (vitals, learned recipes, goals, spawn bed, buffs); write the map into `docs/CHARACTER_SYSTEM.md`.
+2. Re-run after RESTART: the 7 killed tests, the diff lane, a rig join (carry-over from the handoff).
+3. Save-compat test for character records (an old file loads, a new field has a default, a corrupt file does not lose the others).
+4. Learned recipes and goals per character: a test that two characters on one account do not share them; a delete-character test.
+5. Idle timeout: a test of the rule (what counts as idle, the warning, the kick) and a check that it never fires during a rig or while a menu is open.
+6. Select-screen smoke test (headless): the list shows, create, select, delete.
+7. "First minutes" smoke test: join, first move, first pickup, first hint, with the slow-step log line checked to stay quiet.
