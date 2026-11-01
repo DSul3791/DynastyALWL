@@ -171,5 +171,64 @@ func _init() -> void:
 	f._items[bare_id]["fire"]["state"] = 41
 	check(is_equal_approx(f.fire_protect_m(at), float(tiers["log"]["protect_m"])), "20 m from the large fire")
 
+
+	# Several logs go on one fire, one after another (Dave: the second log was refused), even beside a pot or with sticks in the pack.
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_PLACE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	f.report_position(1, Vector3(5.0, 10.0, 0.0))
+	var log_fire: int = _fire_id(f)
+	var log_n: int = f.table.number_of("log")
+	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 4, Vector3.ZERO)
+	var inv_l = f.inventory_of(1)
+
+	for slot in range(inv_l.SLOTS):
+		if inv_l.numbers[slot] != 0 and inv_l.numbers[slot] != log_n:
+			inv_l.numbers[slot] = 0
+			inv_l.counts[slot] = 0
+
+	var logs_before: int = f.inventory_of(1).count_of(log_n)
+	said.clear()
+
+	for n in range(4):
+		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+
+	var logs_in: int = logs_before - f.inventory_of(1).count_of(log_n)
+	check(logs_in >= 3, "logs go onto a fire one after another (%d of 4 taken, said %s)" % [logs_in, str(said)])
+	f._items[log_fire]["fire"]["state"] = 9
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_LIGHT, log_fire, 0, 0, Vector3.ZERO)
+	check(int(f._items[log_fire]["fire"]["state"]) == ItemsScript.FIRE_STATE_BONFIRE or logs_in < 3, "three logs light as the large fire (state %d)" % int(f._items[log_fire]["fire"]["state"]))
+
+
+	# A lit fire with a pot over it takes logs too (it just stays at the medium stage), and refusing says why.
+	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 5, Vector3.ZERO)
+	f._items[log_fire]["fire"]["state"] = 40
+	f._items[log_fire]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	f._items[log_fire]["fire"]["pot"] = true
+	var lit_before: int = f.inventory_of(1).count_of(log_n)
+
+	for n in range(5):
+		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+
+	check(lit_before - f.inventory_of(1).count_of(log_n) == 5, "five logs go onto a lit fire with a pot (%d)" % (lit_before - f.inventory_of(1).count_of(log_n)))
+
+	# A fire stacked to its cap refuses more and says so (the wood stays in the pack); with no wood the player is told.
+	f._items[log_fire]["fire"]["wood"] = {"log": 6.0 * float(cook["fuel"]["log"]) / rate, "firewood": 0.0, "weak": 0.0}
+	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 1, Vector3.ZERO)
+	var full_before: int = f.inventory_of(1).count_of(log_n)
+	said.clear()
+	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	check(f.inventory_of(1).count_of(log_n) == full_before and not said.is_empty(), "a full fire keeps the log and says why (%s)" % str(said))
+	var inv_e = f.inventory_of(1)
+
+	for slot in range(inv_e.SLOTS):
+		inv_e.numbers[slot] = 0
+		inv_e.counts[slot] = 0
+
+	f._items[log_fire]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	said.clear()
+	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	check(not said.is_empty(), "no wood in the pack: the player is told")
+
 	print("test_fire_fuel_tiers: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

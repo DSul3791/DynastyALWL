@@ -4399,6 +4399,12 @@ func _fuel(peer: int, inv, id: int) -> void:
 	if fire.is_empty():
 		return
 
+	_fire_sum(fire)
+
+	if float(fire["burn_left"]) >= float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0:
+		_say(peer, "The fire is stacked as full as it will hold.")
+		return
+
 	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
@@ -4412,6 +4418,8 @@ func _fuel(peer: int, inv, id: int) -> void:
 				_items[id]["left"] = FIRE_LAID_S
 
 			return
+
+	_say(peer, "You have no wood, sticks or logs to put on the fire.")
 
 
 # Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
