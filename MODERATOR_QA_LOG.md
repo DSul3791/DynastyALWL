@@ -17,3 +17,6 @@
 
 ## 2026-11-01 Standing instruction for all six agents (Dave)
 When your assigned work is finished, make up three more tasks or action plans that belong to your own job (Sal: items, Kathleen: art, Flora: plants and density, Tyler: systems/tests, Guide: playthrough, Sonny: character and water), write them down, do them, then make up three more. Keep going until you honestly cannot find anything more that would improve the game. Do not go idle and wait for the moderator. Never merge to main; computer rules and the 3-job Godot cap still apply; dynasty-water stays separate.
+
+## 2026-11-01 Stump rule (Dave)
+Chopping a stump that is still in the ground just chops it up: the stump disappears and the player gets firewood and kindling. It does NOT fall over or leave a log on the ground. This keeps the art simple (no felled-stump or chopped-pieces models needed for a stump). Owners: Tyler (action and result), Sal (drops: firewood and kindling counts in data), Kathleen (drop the stump-chop models she no longer needs). Reversible; counts are Sal's call.
