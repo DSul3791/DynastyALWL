@@ -85,12 +85,21 @@ static func speed_factor(carried: float, body_kg: float, cfg: Dictionary) -> flo
 	return lerpf(1.0, float(cfg.get("min_speed", 0.35)), t)
 
 
-# How many of `count` more of an item fit before the hard cap.
+# No item weighs less than this when counting how many fit, so a weight of zero (or a typo) can never make a stack free to carry.
+const MIN_EACH_KG := 0.0005
+# Float sums drift by a few millionths of a kilo; a pick-up is only allowed if the total stays within the cap plus this.
+const SLACK_KG := 0.000001
+
+
+# How many of `count` more of an item fit before the hard cap. Never more than fit: the floor of the division is checked
+# against the real sum, so rounding in the division cannot push the pack past the limit.
 static func fit_count(item_id: String, count: int, carried: float, body_kg: float, cfg: Dictionary) -> int:
-	var each: float = weight_of(item_id, cfg)
+	var each: float = maxf(weight_of(item_id, cfg), MIN_EACH_KG)
+	var cap: float = cap_kg(body_kg, cfg)
+	var room: float = cap - carried
+	var fits: int = clampi(int(floorf(room / each + SLACK_KG)), 0, count)
 
-	if each <= 0.0:
-		return count
+	while fits > 0 and carried + float(fits) * each > cap + SLACK_KG:
+		fits -= 1
 
-	var room: float = cap_kg(body_kg, cfg) - carried
-	return clampi(int(floorf(room / each)), 0, count)
+	return fits
