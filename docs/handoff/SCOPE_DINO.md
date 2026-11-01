@@ -39,7 +39,7 @@ Read `HANDOFF_DINO.md` in the same folder first for how to run things. This file
 5. **Docs that match the data:** a wrong number in the tutorial costs Dave play-test time.
 
 ## 5. Dependencies
-- **I depend on:** the moderator (permission to run, the "COMPUTER BACK" signal, merging the daily); Tyler (placement rules, tests, bot, join freeze, chest test); Sal (item/recipe data, tutorial text for the pot/hearth); Kathleen (looks, `shot_runner.gd`, rig); Sonny (creator preview, water, sound, character); the flora session (flora_view error, nettle/plant looks); Dave (answers on QA cards, play-test notes).
+- **I depend on:** the moderator (permission to run, the "COMPUTER BACK" signal, merging the daily); Steve (placement rules), Tyler (tests, bot, join freeze, chest test); Sal (item/recipe data, tutorial text for the pot/hearth); Kathleen (looks, `shot_runner.gd`, rig); Kathleen and Kathreen (creator preview, character look), Sonny (water), Steve (character system), Jason (sound); MikeW (flora_view error, plant density) and Kathreen (plant looks); Dave (answers on QA cards, play-test notes).
 - **Who depends on me:** Dave (the one-page checklist and the status table); the moderator (the honest step-by-step state and pass/fail reports); owners (they get bug reports with evidence and the probe that shows it).
 
 ## 6. How to tell the job is finished

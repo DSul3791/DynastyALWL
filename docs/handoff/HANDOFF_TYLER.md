@@ -1,7 +1,7 @@
 # Handoff: Tyler: Q&A Testing, 1 Nov 2026
 
 ## My role
-Server-side game systems and their tests for DynastyALWL (Godot 4.7): comfort and the Rested buff, lit fixtures and fire light, placement, hints and goals, death rules, the test and rig tooling. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
+Q&A testing and tooling for DynastyALWL (Godot 4.7) since 1 Nov: the test suite, rigs and probes, regressions, the join freeze and stability, merge gates. The systems listed under "Done" (comfort, lit fixtures, placement, hints and goals, death rules) were built by me before the role change and are Steve's now. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
 
 ## Done and merged (daily 27dfe828 contains all of it)
 - Lit-state saving (`lights.json`), drawn lit fixtures (flames and warm lights), fire-light shape (short range, falloff, flicker; fireplace is a front-only shadowed spot). Pictures: `art/CRITIQUES/fire_light_2026-10-31/`.

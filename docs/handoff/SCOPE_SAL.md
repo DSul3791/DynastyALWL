@@ -34,7 +34,7 @@ I own the **data** that describes things in the game: what items exist, how they
 4. Measure the first hour with a person and a stopwatch, then tune sticks, fibre and craft times (`FIRST_WEEK_WALK.md`, `CRAFT_PACING.md`).
 5. Farming data: faster early crops and grow times so the first harvest is inside a week (`FIRST_WEEK_WALK.md`).
 6. Re-run the structures, logs and spawn probes after each daily and fix data causes.
-7. Follow-ups already flagged: fibre cloth look (Kathleen), the stump key (Tyler), the placed sounds by ear (Dave), historic docs with old numbers.
+7. Follow-ups already flagged: fibre cloth look (Kathleen), the stump key (Steve), the placed sounds by ear (Dave), historic docs with old numbers.
 8. Wool and linen: when sheep, goats or flax cloth exist, write their recipes and unlock the wool rug.
 
 ## 4. Priorities, ranked
@@ -48,7 +48,7 @@ I own the **data** that describes things in the game: what items exist, how they
 - **I depend on Tyler** for any new data key to be read by the server (stump `final_by_radius`, server `gap_exempt` check), for hint triggers, and for fixes found by tests.
 - **I depend on Kathleen** for looks (fibre cloth, any new kit or item) and models for new furniture.
 - **I depend on Dave** for design calls (heavy kits, berry calories, cooking rules, sounds by ear) and on the moderator to merge `sal-items` into the daily.
-- **Depending on me:** Tyler reads my data keys; Kathleen needs the item list and `look_placeholders.json`; the guide (playthrough) and Dave's play-tests use my recipes, hints and goals; the moderator needs my "APPROVED TO MERGE" note with tests.
+- **Depending on me:** Steve and Tyler read my data keys; Kathleen and Kathreen need the item list and `look_placeholders.json`; Dino (playthrough) and Dave's play-tests use my recipes, hints and goals; the moderator needs my "APPROVED TO MERGE" note with tests.
 
 ## 6. How to tell the job is finished
 - All eight checks pass (`validate_items`, `dishes`, `economy`, `server_items`, `first_hour`, `inventory`, `stations`, `save_compat`) plus `test_goals`, `test_learn` and `test_lumber_route`.
