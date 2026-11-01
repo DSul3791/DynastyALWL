@@ -94,6 +94,7 @@ const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
+const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -2931,6 +2932,12 @@ func _dress_avatar() -> void:
 func _make_avatar() -> Node3D:
 	# --generated-body (off by default, untested in the running game): the generated body of src/client/character/ instead of the old ragdoll.
 	var avatar: Node3D = GeneratedBodyScript.new(MyCharacter.genome()) if MyCharacter.generated_body_on() else RagdollScript.new()
+
+	# Dave's own body (1 Nov 2026), behind `--dynasty-body` or Esc > Settings > Gameplay > "Dynasty body (next Play)"; the other bodies stay as they were.
+	if MyCharacter.dynasty_body_on():
+		avatar.free()
+		avatar = DynastyBodyScript.new()
+
 	avatar.visible = false
 	return avatar
 
