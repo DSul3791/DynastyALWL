@@ -1,0 +1,11 @@
+server started, waiting 60 s
+arrival: ran in 54 s, 99 lines
+gather: ran in 105 s, 120 lines
+plantpick: ran in 77 s, 115 lines
+chop: ran in 10 s, 10 lines
+fire: ran in 51 s, 96 lines
+cook: ran in 50 s, 94 lines
+leanto: ran in 68 s, 179 lines
+spear: ran in 60 s, 101 lines
+placed: ran in 45 s, 175 lines
+walk: ran in 118 s, 101 lines
