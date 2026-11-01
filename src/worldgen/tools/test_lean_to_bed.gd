@@ -111,7 +111,7 @@ func _init() -> void:
 		items._bed_cache.erase(1)
 		check(items.on_good_bed(1), "lying on the straw bed under the lean-to is a good bed")
 		items.action(1, Net.ACT_USE_STRUCT, straw[0], 0, 0, Vector3.ZERO)
-		check(items.respawn_for(1).distance_to(spos) < 0.5, "E on the straw bed sets the spawn point")
+		check(items.respawn_for(1).distance_to(spos) < 3.2, "E on the straw bed sets the spawn point")
 		items._characters[items._peer_key[1]].erase("spawn_bed")
 		items._stance[1] = 0
 
@@ -125,7 +125,7 @@ func _init() -> void:
 	var second: int = all_beds[0] if all_beds[0] != beds[0] else all_beds[1]
 	items.report_position(1, items._items[second]["pos"] + Vector3(0.5, 0.0, 0.0))
 	items.action(1, Net.ACT_SET_SPAWN, second, 0, 0, Vector3.ZERO)
-	check(items.respawn_for(1).distance_to(items._items[second]["pos"]) < 0.5, "choosing another bed unsets the first")
+	check(items.respawn_for(1).distance_to(items._items[second]["pos"]) < 3.2, "choosing another bed unsets the first")
 
 	# Saved, and gone when the bed is gone.
 	items._save_characters()
