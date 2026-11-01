@@ -1,6 +1,6 @@
 # Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026)
 
-The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired. Today it is Dave plus one Claude session on Dave's PC. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
+Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating; roles are in `docs/START_HERE.md` and `MODERATOR_QA_LOG.md`. (The October team of the same names, with a Technical Director, was a different arrangement.) Work lands on the daily branch (`DailyDev_20261029`) through the moderator; `main` waits for Dave's go. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
 
 ## Dave
 - Dave decides design. He tests at his own pace; Claude never waits on him: park the job and take the next one.

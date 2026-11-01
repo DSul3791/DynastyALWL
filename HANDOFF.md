@@ -1,4 +1,7 @@
-# NOW (29 Oct 2026)
+# NOW
+**Since 1 Nov 2026 the current state is in `docs/START_HERE.md` and `docs/handoff/`. The "NOW (29 Oct)" state below (build 826 on `main`, one session) is old; the Commands, Setup and Gotchas sections stay valid.**
+
+## State of 29 Oct 2026
 HEAD = build 826 on `main` plus the October clean-up PRs. Dave plays and tests on his PC; Claude ships through pull requests (`tools/ship.sh`). Read `RULES.md` first. The 25 Oct block that was here (queues, holds, MERGE-793 notes) is in `docs/archive/2026-10/HANDOFF_FULL_2026-10-29.md`.
 Open: play-test of `main` after the clean-up; possible bug: `grass_view._rebuild_trails()` is never called, so worn trails are not drawn; remaining clean-up items are listed in NerdRunner/BLOAT_AUDIT_2026-10-29.md (outside the repo, in C:/GodotProjects).
 
