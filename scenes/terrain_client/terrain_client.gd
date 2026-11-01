@@ -2912,7 +2912,8 @@ func _update_view(delta: float) -> void:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
 		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
-	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
+	if _avatar.animation_player != null:
+		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 
@@ -2934,7 +2935,7 @@ func _update_view(delta: float) -> void:
 
 		var work: String = held.work_clip() if held != null else ""
 
-		if work != "" and _avatar.animation_player.has_animation(work):
+		if work != "" and _avatar.animation_player != null and _avatar.animation_player.has_animation(work):
 			clip = work
 
 			if held.swing_serial != _work_serial:
@@ -2948,11 +2949,12 @@ func _update_view(delta: float) -> void:
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
 
-		_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
+		if _avatar.animation_player != null:
+			_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
 
-		if work != "" and clip == work:
-			# The blow's impact frame is the sound and the hit (held_item.gd _strike): the clip runs the swing's length, whatever the tool or its speed.
-			_avatar.animation_player.speed_scale = _avatar.animation_player.get_animation(work).length / maxf(held.work_seconds(), 0.05)
+			if work != "" and clip == work and _avatar.animation_player.has_animation(work):
+				# The blow's impact frame is the sound and the hit (held_item.gd _strike): the clip runs the swing's length, whatever the tool or its speed.
+				_avatar.animation_player.speed_scale = _avatar.animation_player.get_animation(work).length / maxf(held.work_seconds(), 0.05)
 
 		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
@@ -3007,13 +3009,7 @@ func _dress_avatar() -> void:
 func _make_avatar() -> Node3D:
 	# Dave's own body (1 Nov 2026) is the default; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" brings back the body worn before it (the generated body of
 	# src/client/character/, or the old ragdoll with `--old-body`).
-	var avatar: Node3D
-
-	if MyCharacter.dynasty_body_on():
-		avatar = DynastyBodyScript.new()
-	else:
-		avatar = GeneratedBodyScript.new(MyCharacter.genome()) if MyCharacter.generated_body_on() else RagdollScript.new()
-
+	var avatar: Node3D = MyCharacter.make_avatar()     # Dave's body, or the previous one when his glb is not imported (my_character.gd)
 	avatar.visible = false
 	return avatar
 

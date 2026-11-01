@@ -7,6 +7,7 @@ extends "res://src/client/ragdoll_body.gd"
 # and the jab, throw and use keyframes behave as before; only the drawn arm is Dave's. The elbow bends at the cut (a hidden overlap keeps it closed); the wrist and the hand are one piece, so the
 # fingers do not move. Default with the Dynasty body; `--oldbody` (or the Old body setting) keeps the old tube arms (held_item.gd).
 
+const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const PARTS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"
 const UPPER_LEN := 0.29            # the rig's bone lengths (ragdoll_body.gd BONES): shoulder to elbow, elbow to wrist
 const FORE_LEN := 0.26
@@ -48,10 +49,10 @@ func _init() -> void:
 
 # Finds the two arms among the five meshes (the two tall, thin parts on either side of the middle) and cuts each into three pieces with the elbow and wrist on the rig's bone lengths.
 func _load_pieces() -> void:
-	var packed: PackedScene = load(PARTS_GLB) as PackedScene
+	var packed: PackedScene = load(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
 
 	if packed == null:
-		push_error("dynasty_arms: %s is not imported (run godot --import once)" % PARTS_GLB)
+		print("dynasty arms: %s is not imported: keeping the old arms this run (run godot --import once)" % PARTS_GLB)
 		return
 
 	var inst: Node = packed.instantiate()
