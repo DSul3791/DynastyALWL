@@ -107,6 +107,8 @@ func _init() -> void:
 	trade.deal(1, "hob", 1, slot_s, 1)
 	var first: int = items.coins_of(1) - purse0
 	check(first == 0 and items.count_for(1, "stone") == 60, "a single stone pays nothing and is kept (a fifth of a copper, sold in lots of 5)")
+	trade.deal(1, "hob", 1, slot_s, 4)
+	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 60, "four stones are less than a lot: no copper, all kept")
 	trade.deal(1, "hob", 1, slot_s, 7)
 	first = items.coins_of(1) - purse0
 	check(first == 1 and items.count_for(1, "stone") == 55, "seven stones: one lot of 5 pays 1 copper, the two odd stones are kept (%d)" % first)
