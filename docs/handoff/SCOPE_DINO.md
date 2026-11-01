@@ -1,4 +1,4 @@
-# Scope: Dino (formerly Guide, first-hour playthrough), 1 Nov 2026
+# Scope: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough), 1 Nov 2026
 
 Read `HANDOFF_DINO.md` in the same folder first for how to run things. This file says what the job is.
 
