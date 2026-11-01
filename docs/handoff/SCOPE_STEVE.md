@@ -70,3 +70,6 @@ Everything up to RESTART is paper work. After RESTART: only through `tools/godot
 
 ## 7. Skipped or not verified
 No Godot was run (hold in force). All "works" claims are from handoffs. I did not read `terrain_client.gd` character parts, `game_menu.gd`, or the bodies of items 5 to 7, 17 to 20. Line numbers are from the head `d3aa3c2a`. Tyler's uncommitted edits (energy setter, stump change, handoff) are described in his handoff; check they are on the daily before relying on them.
+
+## 8. Sources (added after the teammates answered, 1 Nov 2026)
+Open items per system came from: Tyler (tests, open items per system), Sal (data numbers, open design calls), Sonny (character parts and commits), Dino (playthrough findings), Kathleen (light parameters she will edit), moderator (Dave's order). Details by system are in `HANDOFF_STEVE.md`. Corrections to section 2: the stump code already reads `final_by_radius` (`_stump_final_rows`, line 3969); the chest self-test error at `inventory_view.gd:4562` is open and needs an owner; Sal's design calls for Dave: heavy kits, campfire-only-meat and 4 kcal berries unplayed, placed sounds by ear, lean-to pace unmeasured.
