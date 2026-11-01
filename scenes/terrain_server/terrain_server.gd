@@ -600,6 +600,7 @@ func _ready() -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_water_requested(peer_id, chunks)
 		_slow_rpc("water_requested", t0))
+	net.forget_requested.connect(func(peer, key): items.forget_key(peer, identity.store_key(identity.authenticate(peer, key))))
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key):
 		var t0: int = Time.get_ticks_usec()

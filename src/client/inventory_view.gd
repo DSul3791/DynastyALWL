@@ -2,6 +2,8 @@ extends Node
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
+const CharacterKeys := preload("res://src/client/character/character_keys.gd")
+const CharacterStore := preload("res://src/client/character/character_store.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
@@ -261,6 +263,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_layer.add_child(_thought_label)
 	net.hello.rpc_id(1, _player_key())
 
+	for forgotten in CharacterKeys.take_forgotten():
+		net.forget_character.rpc_id(1, str(forgotten))
+
+
 
 # Public for the Esc > Advanced "Show my player key" button (admin.json lists these keys).
 func player_key() -> String:
@@ -268,6 +274,10 @@ func player_key() -> String:
 
 
 func _player_key() -> String:
+	return CharacterKeys.key_for(str(CharacterStore.active().get("id", "")), _machine_key())
+
+
+func _machine_key() -> String:
 	if FileAccess.file_exists(KEY_FILE):
 		var saved: String = FileAccess.get_file_as_string(KEY_FILE).strip_edges()
 

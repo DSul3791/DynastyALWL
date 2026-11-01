@@ -72,6 +72,9 @@ func _init() -> void:
 	ground[0] = 0.5
 	place("campfire_kit", Vector3(2.0, 0.5, 0.0))
 	check(said.has("The ground is too wet here."), "wet low ground: told so (%s)" % str(said))
+	ground[0] = NAN
+	place("campfire_kit", Vector3(2.0, 10.0, 0.0))
+	check(said.has("The ground there is not ready yet. Try again in a moment.") and rows("campfire_kit") == 0, "ground not streamed in: told so (%s)" % str(said))
 	ground[0] = 10.0
 	place("campfire_kit", Vector3(2.0, 14.0, 0.0))
 	check(said.has("You cannot place that there."), "a point 4 m off its ground: told so (%s)" % str(said))
@@ -79,6 +82,14 @@ func _init() -> void:
 	check(rows("campfire_kit") == 1 and said.is_empty(), "a good spot places the fire with no complaint")
 	place("campfire_kit", Vector3(2.5, 10.0, 0.5))
 	check(said.has("Too close to another fire."), "a second fire beside it: told so (%s)" % str(said))
+	var gap_was: float = items._fire_gap_m
+	var cap_was: int = items._fires_per_chunk
+	items._fire_gap_m = 0.1
+	items._fires_per_chunk = 1
+	place("campfire_kit", Vector3(2.0, 10.0, 2.0))
+	check(said.has("Too many fires here.") and rows("campfire_kit") == 1, "a second fire in a full chunk: told so (%s)" % str(said))
+	items._fire_gap_m = gap_was
+	items._fires_per_chunk = cap_was
 	give("chest_kit", 1)
 	place("chest_kit", Vector3(3.0, 10.0, 1.0))
 	check(said.has("Something is in the way."), "a chest within the gap of a fire: told so (%s)" % str(said))
