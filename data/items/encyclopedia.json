@@ -2120,7 +2120,7 @@
 			"kind": "placeable",
 			"description": "Sticks, boughs and twine for a ridge-pole shelter. Leaned sticks roof it.",
 			"how_to_get": [
-				"Craft: 8 Stick, 6 Leaves, 2 Twine"
+				"Craft: 32 Stick, 8 Leaves, 4 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2232,7 +2232,7 @@
 			"kind": "material",
 			"description": "A bar of smelted iron. Hard, for tools and nails.",
 			"how_to_get": [
-				"Craft at a forge: 3 Iron ore"
+				"Craft at a forge: 4 Iron ore, 1 Coal"
 			],
 			"used_for": [
 				"Used in Hinges",
@@ -2752,7 +2752,7 @@
 			"kind": "placeable",
 			"description": "Lashed sticks and a flat top. A work table for better tools.",
 			"how_to_get": [
-				"Craft: 12 Stick, 3 Twine"
+				"Craft: 16 Stick, 6 Twine, 4 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4266,7 +4266,7 @@
 			"kind": "material",
 			"description": "Smelted copper. Soft, but good for early tools.",
 			"how_to_get": [
-				"Craft at a forge: 2 Copper ore"
+				"Craft at a forge: 3 Copper ore"
 			],
 			"used_for": [
 				"Used in Bronze ingot"
@@ -4279,7 +4279,7 @@
 			"kind": "material",
 			"description": "Smelted tin. Mixed with copper it makes bronze.",
 			"how_to_get": [
-				"Craft at a forge: 2 Tin ore"
+				"Craft at a forge: 3 Tin ore"
 			],
 			"used_for": [
 				"Used in Bronze ingot"
