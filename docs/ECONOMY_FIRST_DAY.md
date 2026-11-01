@@ -39,3 +39,6 @@ Almost every item lands at 180 to 200 copper in 4 hours, the shopping list. Ston
 
 ## What is not covered
 Crafted goods (twine, kits, tools) sell at their value x 0.55 with demand fall-off; a full crafting-for-sale check is in `ECONOMY_PLAN.md`. Other traders and player-to-player trade are out of scope.
+
+## Lumber route (recheck 1 Nov 2026, after all-trees-logs and softwood boards)
+Every felled tree now gives logs, and spruce/pine saw to 7 lumber in 5 s. Lumber is worth 8, so Hob pays about 4 each: roughly 30 copper per spruce log, more than any gathered item per minute. Hob's purse (300 cap, +100 per game day = one real hour) still limits income, so this fills the purse fastest rather than breaking the economy. No change made; if Dave wants it slower, lower lumber `value` (8) or set a `sell_lot` on it. Eight items_check steps pass on the daily at ab8d5b9b.
