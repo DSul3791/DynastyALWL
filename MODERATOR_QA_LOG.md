@@ -23,3 +23,6 @@ Chopping a stump that is still in the ground just chops it up: the stump disappe
 
 ## 2026-11-01 Role change: Sonny is the terrain and water agent (Dave)
 Sonny's sole job is terrain and water (the foundation everyone plays on), as in Dave's original project. His character work moves out. Interim split (Dave may change it): character LOOK (body, face, hair, worn clothes as seen, hands, stance and animations, creator preview and select/loading pictures) goes to Kathleen; character SYSTEM (character store and records, select screen code, learned recipes and goals per character, idle timeout, smoke tests of the first minutes) goes to Tyler. Docs updated: SCOPE_SONNY, HANDOFF_SONNY, SCOPE_KATHLEEN, SCOPE_TYLER.
+
+## 2026-11-01 Fire and flame looks go to Kathleen (Dave: "fire and flame is artistic")
+How fire, flames, embers, glow and light cones LOOK (flame models, flicker, colour, light range and shape, the front-only fireplace cone, lit torch and chandelier looks, smoke) is Kathleen's. Tyler keeps the RULES (lit or unlit, fuel burned, warmth, saved lit state, who can light it). Where code and look meet (the light node's parameters), Kathleen edits the look values and Tyler reviews. Existing work stays: Tyler's fire-light commits ed07d89f, ceeb057e, e5172fe9, eb9f4a39, a6a6f4d9, 02e7d317.

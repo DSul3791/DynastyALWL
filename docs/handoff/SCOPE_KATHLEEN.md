@@ -1,5 +1,7 @@
 # Scope: Kathleen (art and looks), 2026-11-01
 
+> **ROLE ADDITION (Dave, 1 Nov 2026): fire and flame looks are yours:** flames, embers, glow, flicker, colour, light range and shape (the front-only fireplace cone), lit torch and chandelier looks, smoke. Tyler keeps the rules (lit/unlit, fuel, warmth, saved state) and reviews code changes. Start from Tyler's fire-light commits ed07d89f, ceeb057e, e5172fe9, eb9f4a39, a6a6f4d9, 02e7d317 and the pictures in art/CRITIQUES/fire_light_2026-10-31 and lit_2026-10-31. The Guide found a lit campfire with no visible flames in his picture (QA card pic-fh-campfire-lit): check that first.
+
 > **ROLE ADDITION (Dave, 1 Nov 2026, interim): the character LOOK is yours:** body, face, hair, worn clothes and armour as seen, hands, the side-on stance and animations, the creator preview (it opens on the back) and select/loading pictures. Previously Sonny's; the character system (records, select code) goes to Tyler.
 
 Read with `HANDOFF_KATHLEEN.md` (state, tests, risks, how to post pictures).
