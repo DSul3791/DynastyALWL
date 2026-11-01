@@ -41,3 +41,10 @@ Every row: owner, exact next step, why it is not done. Verification rows wait fo
 - `crash_reports/` is tracked after daily merges: do not commit changes to it.
 - No branch of mine is merged into the daily by me; the moderator merges.
 - A scratch branch `scratch-mat` points at the same commit as `kathleen-ports`; it can be deleted (the sandbox refused my own branch delete).
+
+## Phase 2 results (1 Nov, after the Godot release; pictures in `art/CRITIQUES/closing_2026-11-01/`)
+- Tests on kathleen-ports (before the apple and cloth edit): test_net_look, test_item_looks, test_look_table (59 looks), test_structure_looks, test_trunk_cutting: 0 failures; test_flora_budget 0 over budget (re-run after the 12-segment apple: still 0); test_tool_looks and test_leanto_collider ran with no failure line (leak warnings only).
+- Row 1 (campfire): NOT a bug. Rig shot with grass hidden (`--nograss --hour 20`, `game/campfire_nograss.png`) shows a lit fire with flames and warm ground light. The guide's picture was grass over the fire. Open part: flames are small and pale cream (row 11, look pass). QA card pic-campfire-lit-real.
+- Rows 4, 5, 8 (apples, fibre cloth, axe cube): edited and photographed offline; QA cards pic-apples-smooth, pic-fibre-cloth-weave, pic-axe-no-cube, plus pic-shore-net-look. The axe is still not seen HELD in game: `axe_hold.png` (first-person) shows no tool; next step is `--cam right --dist 1.6` held shot.
+- Row 2 (lying trunk): two more rig runs (`fell.png`, `fell2.png`) failed: the first stayed on the loading screen, the second shows the forest and no lying trunk (the trunk is not in frame). Next step: run with `--wait 240`, then read the shot runner log for the fell camera line; likely needs `--at` set to the felled tree. Owner Kathleen.
+- Rows 3, 7, 13, 15 (orchard, lean-to bed, skins, real-game pass) not started: no time left in this batch; they stay as written.
