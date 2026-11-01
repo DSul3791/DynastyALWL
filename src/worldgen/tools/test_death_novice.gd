@@ -41,7 +41,10 @@ func make(dir: String):
 
 func _init() -> void:
 	var items = make("user://test_death_novice")
-	check(str(items._death_cfg["novice_grace"]["mode"]) == "always", "the shipped default is 'always' (everyone respawns, as before)")
+	var shipped: Dictionary = items._death_cfg["novice_grace"]
+	check(str(shipped["mode"]) == "level" and int(shipped["level"]) == 10, "the shipped rule is Dave's answer to death-novice (31 Oct): respawn at the bed until level 10")
+	check(items.novice_grace(1), "so a new character is a novice")
+	items._death_cfg["novice_grace"] = {"mode": "always", "level": 5, "metric": "best_skill"}
 	check(items.novice_grace(1) and items.kill(1, "drowning") and finals.is_empty() and died.size() == 1, "'always': a death respawns and no final death is sent")
 	check(items.character_level(1) == 1, "a new character's level is 1 (best skill value)")
 
