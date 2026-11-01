@@ -1,0 +1,43 @@
+# Kathleen (art and looks): backlog at handoff, written 1 Nov 2026
+
+Every row: owner, exact next step, why it is not done. Verification rows wait for PHASE 2 (Godot). Rig and test commands are in `HANDOFF_KATHLEEN.md`. Dave's answers are on the qa branch (`questions/ANSWERS.md`).
+
+## Ported in PHASE 1 (branch `kathleen-ports`, from the daily 9ca75719)
+- `kathleen-dirt-pile` -> 2032936c (soil/clay piles half a dirt clump, packed tight).
+- `kathleen-r1-looks` -> 004c1088 (straw thatch material; the bed hunk was dropped, the daily's rough bed is newer).
+- `sal-net-look` -> c1225907 + e33517fb (hand net: pole, hoop, twine bag, cork floats; `looks.json` shore_net shape `hand_net`; `item_sounds.gd` maps `hand_net` to cloth, one word, Jason may keep or change; `test_net_look.gd`). The duplicate plan copy under docs/mirror was not taken.
+- `kathleen-materials` skins -> 981a4e36 (`PieceLook.skin(part, material)`, masonry and organic materials: log, daub, stone block, brick; thatch keeps the straw material). Nothing calls `skin()` or `wall(mat)` yet: the structure rows carry no material field, so the skins are inert until Tyler/Sal wire one (row below). Place sounds of that branch are NOT ported (Jason).
+- `kathleen-spades`: nothing left to port. The daily already has the D-grip spade, the block and brick shapes and the cut_stone_block, brick, mortar and spade tier rows.
+- `kathleen-stone-look`: dropped. The daily fixed the white stones another way (vertex colours on, brightness 0.9, glow 0.02); the branch would undo that.
+- Held stone axe (f404559f): the chipped-corner grey cube removed (Dave 1 Nov: "weird gray cube at the end", wants a smooth blade across). Not yet seen in game.
+- Archived judged rounds: `art/CRITIQUES/_archive/leanto_2026-10-31`, `_archive/meadow_flowers_2026-10-31` (both answered Yes). Rounds with a No, or still feeding open work, stay.
+
+## Old branches that can go after the moderator merges `kathleen-ports`
+`claude/kathleen-dirt-pile`, `claude/kathleen-stone-look` (dropped), `claude/kathleen-r1-looks`, `claude/sal-net-look`, `claude/kathleen-materials`, `claude/kathleen-spades`. Plus the earlier delete list (basic-looks, looks-v2, looks-v5, clothing, held-pose, tool-pass, goal2-b, showroom-test, mike-evidence-*, mike-rig-v4). Still held: `kathleen-body-details` (Kathreen), `kathleen-photoreal-batch1`, `mike-pbr-ground` (ground PBR decision, below). `kathleen-materials`/`-spades` sound files (`place_brick/stone/thatch`, `soil_load`, `stone_load`, `make_placed.py`, `placed_sounds.gd`): Jason decides port or drop BEFORE the two branches are deleted.
+
+## Backlog, in order
+| # | Item | Owner | Exact next step | Why not done |
+|---|------|-------|-----------------|--------------|
+| 1 | Lit campfire with no visible flames (Dino #1, card pic-fh-campfire-lit) | Kathleen | PHASE 2: rig shot of a lit campfire from 3 m at about 1.5 m height, from a clear spot (not in tall grass): `bash tools/godot_slot.sh art/playthrough/rig.sh --dev-place ...` with the fire lit (state 1). Look for a shader error in the client log (`FLAME_SHADER`, building_look.gd:25). Code review found nothing wrong: `inventory_view.gd:1843` builds `BuildingLook.fire(lit=true)`, which adds coals, flames and an OmniLight. The guide's picture (`art/playthrough/world3/fh_campfire_lit.jpg`) shows a green placement ghost and the stone ring buried in tall grass at ground level, so it may be the ghost, not a lit fire. If flames really are missing: compare with Tyler's pictures in `art/CRITIQUES/fire_light_2026-10-31`. | Needs Godot. |
+| 2 | Lying trunk after the final bark fix | Kathleen | `--shot-fell=flat` rig shot on a quiet PC (command in HANDOFF), then one QA card | Needs Godot; last run only reached the loading screen. |
+| 3 | Orchard and crown close-ups in game (Dave: pic-orchard-real "only one tree and one apple, can't tell") | Kathleen | Shoot a wide view of at least five trees and several visible apples from 15 m north at 53376,68506 yaw 180; separate card each | Needs Godot. Dave also wants crowns more photorealistic (pic-crown-variety comment): start from the 8 oaks, raise leaf and trunk quality. |
+| 4 | Apples (pic-apples: No, "not spheres, not apple shaped, make them smooth") | Kathleen | Rebuild `_round_fruit` in tree_builder.gd as a smooth lathe profile (apple outline: dimple at the stem, slight taper to the base), 12+ segments, bright vertex gradient; check the flora budget test; coordinate with Kathreen before touching tree_builder.gd; offline fruit_close view, then a card | The card was answered after my last apple pass; needs a real model change and a picture. |
+| 5 | Fibre cloth (pic-fibre-cloth: No, "coloured squares, need texture and lines") | Kathleen | basic_look.gd "cloth" shape and the fibre cloth row: add woven lines (a thin dark grid or striped texture on the top box), then item_sheet view and a card | Needs a picture to check. |
+| 6 | Kits (pic-kits: No, "show 3D tilted, not 2D; some should be built from blueprints like the lean-to: make a hammer first, put the blueprint down, fill with material") | Kathleen (look); Steve/Tyler (blueprint flow) | Re-shoot the kit sheet tilted about 30 degrees; blueprint-and-fill is a rules design question: written for Steve in `docs/handoff/` by the moderator if not already | Look part needs a picture; the blueprint rule is not mine. |
+| 7 | Lean-to with bed (pic-leanto-bed: No, no comment) | Kathleen | Real-game shot from outside and inside under the roof (with Dino's lying-under-the-roof check); ask Dave what is wrong if the picture looks right | Needs Godot; no reason was given. |
+| 8 | Held stone axe check | Kathleen | After item 1, shot with `--item stone_axe --cam hand`; confirm no cube, smooth blade; update pic-hold-stone-axe card | Needs Godot. |
+| 9 | Cut logs (`log_look.gd`) bark sides, pale ring face; stump side ridges (optional) | Kathleen | Reuse `_felled_bark` in `inventory_view.gd`; shot of a cut log | Not started. |
+| 10 | Firewood and kindling looks (`data/items/looks.json` firewood, firewood_soft, kindling; world drop in inventory_view.gd ~2533) | Kathleen | Split-stick bundle with pale cut faces; thin-stick handful for kindling; item_sheet view, then game | Not started. |
+| 11 | Fire look pass: flame tips pale cream, embers, glow, smoke, torch flicker, chandelier, fireplace | Kathleen (look); Steve reviews every light-parameter diff; Jason owns fire sound | Colour/size in building_look.gd (`FLAME_SHADER`, `FIXTURE_FLAME_SHADER`, `FIRE_LIGHT`), held_item.gd torch flicker; send Steve each diff before pushing; tell Jason if flame sizes change | Waits for item 1 to know the base is right. |
+| 12 | Wire building materials: structure rows get a `material` (log, daub, stone, brick, thatch) so `PieceLook.skin()` is used | Tyler (rows, `inventory_view.gd` wall/floor/roof calls) with Sal (materials) | Add the field, pass it to `PieceLook.wall(mat)` / `floor_piece` / `roof`; test_structure_looks | Skins exist (981a4e36) but no row asks for them; needs a design call on which tiers use which skin. |
+| 13 | Check the skins by picture: `PieceLook.wall("log")`, `wall("daub")`, `wall("stone")`, `wall("brick")`, `roof("thatch")` | Kathleen | `tools/shot_node.gd` with piece_view, one picture per skin, rate, one card | Needs Godot. |
+| 14 | Ground PBR (`kathleen-photoreal-batch1`, `mike-pbr-ground`) | Kathleen with Kathreen | Look at the daily ground at 10 m; if it reads flat, port the PBR texture set; else drop both branches | Needs a picture. |
+| 15 | Real-game pass: ten kits, hands, fibre cloth, white (yarrow/chamomile) and pink (valerian) drifts (flowers are Kathreen's lane) | Kathleen / Kathreen | One shot each; a card each | Needs Godot. |
+| 16 | Thatch seen from behind reads as paper triangles | Kathleen | Add a second offset layer to the thatch roof in piece_look.gd | Cosmetic, deferred. |
+| 17 | Log cabin set piece, woven cloth texture, furniture rows in structures.json | Kathleen (look), Tyler/Sal (rows) | Wait for rows | Rare set pieces, last in priority. |
+| 18 | Run the headless tests after the ports and bark edits: test_item_looks, test_look_table, test_structure_looks, test_tool_looks, test_net_look, test_flora_budget, test_fruit_share, test_season_fruit, test_trunk_cutting, test_leanto_collider | Kathleen | Phase 2, one batch via `tools/godot_slot.sh` | Needs Godot. The ports in PHASE 1 are unrun: |
+
+## Cautions
+- `crash_reports/` is tracked after daily merges: do not commit changes to it.
+- No branch of mine is merged into the daily by me; the moderator merges.
+- A scratch branch `scratch-mat` points at the same commit as `kathleen-ports`; it can be deleted (the sandbox refused my own branch delete).
