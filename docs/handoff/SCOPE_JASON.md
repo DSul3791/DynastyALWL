@@ -9,10 +9,11 @@ Everything the player HEARS: sound effects, footsteps, tool, place and door soun
 
 | Question | Owner |
 |---|---|
-| WHEN a sound plays (the event, the trigger, the rule) | the system owner: Steve (sub-systems: fire lit/unlit, sleep, death, placement), MikeW (animal behaviour: when a call happens), Sonny (water mechanics: depth, flow, where water is), Tyler (shared server rules, combat hooks) |
+| The sound HOOKS (CORRECTION from Dave, 1 Nov): which game events make a sound, putting the sound call at each event, auditing every event that has none (steps, tools, placing, eating and drinking, sleeping, fire, doors, water, creatures, weather, UI), and the sound tests | me. I place the call. |
+| The RULE and the event itself (what happens, when) | the system owner: Steve (sub-systems), MikeW (animals), Sonny (water), Tyler (shared server rules). If an event is not exposed in their code yet, I message them to expose it; I place the sound call |
 | WHAT an item plays (the sound key on an item or structure row) | Sal (item data); I supply the list of slot names that exist and tell Sal when one is missing |
 | The sound itself, its file or generator, its licence, the mapping table slot to clips, loudness, the mix, filters, how it sounds | me |
-| Code that plays sound (`src/client/*_sounds.gd`, `sound_stage.gd`) | shared: I edit the numbers, tables and mixing; Steve reviews any change that adds a trigger or changes when something plays |
+| Code that plays sound (`src/client/*_sounds.gd`, `sound_stage.gd`, the call lines in `terrain_client.gd`, `held_item.gd`, `harvest.gd`) | me; the system owner reviews a call line placed inside their code |
 | How things LOOK (including the fire flicker) | Kathleen / Kathreen. Fire LOOK is theirs; fire SOUND is mine |
 
 I never merge into the daily and never touch main.
@@ -51,14 +52,14 @@ Counts are slots from `SOUND_PACK.md`. State: G = generated placeholder (code-ma
 | Insects | `insect_bed.gd` | summer insect bed | G | placeholder |
 | Music | none | no music in the game | none | undecided: Dave's call, see section 8 |
 
-"Unverified wiring": `grep` of `src/` and `scenes/` for `sound.<module>` calls outside the module itself found 0 hits for hit, harvest, tree, wind_structures, insect and npc under that spelling. They may be reached by another variable name; I will confirm with `--sound-log` after RESTART rather than guess.
+Wiring (corrected): my first grep missed the real variable names. `sound.hits` (held_item.gd:934-943, terrain_client.gd), `sound.harvestfx` (harvest.gd:145), `sound.trees.watch` (terrain_client.gd:3161), `sound.itemfx.eat/fuel_pressed/reject/hotbar`, `sound.stance`, `sound.creatures.call_at` (animal alert and threat) are all called. Still to confirm in a running client: wind_structures, insect bed, NPC voice. The hook audit is in `docs/SOUND_MAP.md`.
 
 **Licences and sources (what is recorded in `assets/audio/CREDITS.csv`, 24 rows).** All third-party audio there is Pixabay (Pixabay Content License: usable inside the game, not shippable as separate files or a sound pack; "verify before release"). Dave's own recordings (fox, moose, deer) are "own-recording". Generated sounds are our own code. Gaps in the record: Dave's supplied sets (footsteps, frogs, tree frogs, fish, crow, wings, brook) have a page URL of TODO because Dave did not give one, and the brook's file name says "freesound_community" although the row says Pixabay; the voice files (above); `recorded/` folders not listed in CREDITS patterns: none found, but I will cross-check every file in `recorded/` against the CSV patterns with a script (task 2).
 
 ## 4. Plan, in order
 1. **Wait for RESTART.** No Godot until then. Meanwhile, with no engine: finish the text-side cross-checks (items 2 and 3).
 2. **Licence audit.** Script `assets/audio/check_credits.py`: every file under `recorded/`, `inner_voice/`, `npc_voice/` matches a CREDITS.csv pattern; list unmatched. Fill the rows I can prove from the repo; leave TODO for anything I cannot (never invent a source). Ask Dave (QA text card) for the Pixabay page URLs and for how the voice files were made.
-3. **Sound map table.** One generated page `docs/SOUND_MAP.md`: event → module → slot → clips → bus → level, built from `data/sound/*.json` and `SOUND_PACK.md`, so Sal and Steve can see which slot an item or structure can use.
+3. **Sound map and hook audit.** `docs/SOUND_MAP.md` (first hook audit written 1 Nov; event, where in code, sound or none). Next: fill every `none?` row by reading the owner's code, ask the owner to expose events that are missing, then place the calls. Generated sound map to follow: event → module → slot → clips → bus → level, built from `data/sound/*.json` and `SOUND_PACK.md`, so Sal and Steve can see which slot an item or structure can use.
 4. **Sound review tool for Dave** (section 6): one QA card per sound group, with a short description and a playable clip.
 5. **Verification without ears.** After RESTART run the client with `--sound-log=180` at spawn in clear weather, in a forest, at the brook, in rain, in a cave, at a fire, and read the lines: confirm or kill the `SOUND_AUDIT.md` suspicion (tree-wind hiss), check wiring of the six modules with 0 callers, list anything playing above -20 dB.
 6. **Mix pass by numbers.** Loudness per bus from `LOUDNESS.md`; a test that reads every ogg and fails when a clip's peak is outside its bus window (steps -25 to -13 dB by gait, creatures near -14 dB peak per Dave).
@@ -99,4 +100,5 @@ Proposal (needs the moderator): one card per sound GROUP, not per file (about 15
 - May I extend `qa.html` with an audio player (moderator).
 
 ## 10. Not checked / skipped
+The hook audit rows marked `none?` come from a name grep only; some may be covered under another name.
 Nothing was run or heard. Not read line by line: the 40 sound modules (headers and bus names only), `LOUDNESS.md`, the full `README.md`, `steve-sound-*` branches. The wiring claims in section 3 come from greps, not from a running game. `docs/PONYTAIL_RULES.md` applies: no new system, reuse `slot_sounds.gd`, `swap_recording.py` and the manifest scripts; one small test per logic piece.
