@@ -73,6 +73,9 @@ func update(delta: float, e_down: bool) -> void:
 	if _sweep_left <= 0.0:
 		_sweep_left = SWEEP_EVERY_S
 
+		if _items.cursor_blocks_sweep():
+			return   # the cursor is on something with its own E action (a bench, door, fire...): held E does that, not a sweep of what lies around
+
 		if _items.hold_use():
 			return
 
@@ -164,14 +167,16 @@ func _hint() -> String:
 		if branch.is_empty():
 			return ""
 
-		_items.plant_aimed = _items.aimed_at(branch["pos"] + Vector3(0.0, 0.2, 0.0))
+		_items.plant_point = branch["pos"] + Vector3(0.0, 0.2, 0.0)
+		_items.plant_aimed = _items.aimed_at(_items.plant_point)
 		return "Press E to gather"
 
 	# Dave 2026-10-21: only "Press E to gather", no name and no "hold E". A missing tool is told after the press (message and cue).
 	# Dave 2026-10-22: the text shows only while looking straight at it within the prompt reach (plant_aimed); E still works without it.
 	for c in found:
 		if c["ok"] or not _is_nothing(c):
-			_items.plant_aimed = _items.aimed_at(c["pos"] + Vector3(0.0, 0.6, 0.0))
+			_items.plant_point = c["pos"] + Vector3(0.0, 0.6, 0.0)
+			_items.plant_aimed = _items.aimed_at(_items.plant_point)
 			return _prompt_for(c)
 
 	return ""

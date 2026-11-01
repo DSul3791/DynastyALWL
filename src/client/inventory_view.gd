@@ -136,6 +136,7 @@ var rep_points: PackedInt32Array = PackedInt32Array()
 var _coins_cfg: Dictionary = {}
 var _rep_cfg: Dictionary = {}
 var _carry_bar: ProgressBar              # carried weight against what you can carry: green, yellow from 70 percent, red from 80
+var plant_point: Vector3 = Vector3.ZERO   # where the plant to gather stands (harvest.gd), for the cursor choice
 var plant_aimed: bool = true             # the plant to gather is straight ahead, within the prompt reach (harvest.gd)
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
@@ -381,14 +382,51 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 	_interactables.sort_custom(func(x, y): return int(x["priority"]) < int(y["priority"]))
 
 
+# E does what the cursor is on (Dave 1 Nov 2026). A probe may return a "point" (the world spot it acts on). Of the probes that found something, the one
+# whose point is aimed at (aimed_at) and best centred wins, whatever its priority; E then does that one action and nothing else nearby (a chopping block
+# in the cursor does not also gather the wood lying around it). Only when the cursor is on nothing with an E action does the priority order decide, which
+# is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
+	var first: Dictionary = {}
+	var best: Dictionary = {}
+	var best_cos: float = -2.0
+
 	for entry in _interactables:
 		var found: Dictionary = entry["probe"].call()
 
-		if not found.is_empty():
-			return found
+		if found.is_empty():
+			continue
 
-	return {}
+		if first.is_empty():
+			first = found
+
+		if not found.has("point") or not view_direction.is_valid() or not aimed_at(found["point"]):
+			continue
+
+		var cos: float = aim_cos_of(found["point"])
+
+		if cos > best_cos + 0.0001:
+			best_cos = cos
+			best = found
+
+	if not best.is_empty():
+		best["aimed"] = true
+		return best
+
+	return first
+
+
+# The cosine between the view direction and the line from the eyes to a point.
+func aim_cos_of(point: Vector3) -> float:
+	var to: Vector3 = point - (_player_position.call() + Vector3(0.0, 1.6, 0.0))
+	var forward: Vector3 = view_direction.call() if view_direction.is_valid() else Vector3.ZERO
+	return 1.0 if forward.length() < 0.01 or to.length() < 0.01 else to.normalized().dot(forward.normalized())
+
+
+# True while the cursor is on something with an E action that is not the plain gather (held E must then not sweep up what lies around).
+func cursor_blocks_sweep() -> bool:
+	var found: Dictionary = current_interaction()
+	return bool(found.get("aimed", false)) and str(found.get("kind", "")) != "pickup" and str(found.get("kind", "")) != "plant"
 
 
 func _register_builtin_interactables() -> void:
@@ -425,7 +463,7 @@ func _probe_pickup() -> Dictionary:
 		return {}
 
 	var id: int = near[0]
-	return {"prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
+	return {"kind": "pickup", "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
@@ -491,7 +529,7 @@ func _probe_fire() -> Dictionary:
 		return {}
 
 	var state: int = _world[id]["state"]
-	var found: Dictionary = {"prompt": _fire_prompt(state), "tap": func():
+	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"], "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		else:
@@ -509,8 +547,16 @@ func _probe_fire() -> Dictionary:
 
 
 func _probe_structure() -> Dictionary:
-	var id: int = _nearest_struct()
+	var found: Dictionary = _probe_structure_for(_nearest_struct())
 
+	if not found.is_empty():
+		found["kind"] = "structure"
+		found["point"] = _world[_nearest_struct()]["pos"]
+
+	return found
+
+
+func _probe_structure_for(id: int) -> Dictionary:
 	if id == 0:
 		return {}
 
@@ -526,7 +572,7 @@ func _probe_structure() -> Dictionary:
 		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
-		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
+		return {"prompt": "Press E to split firewood", "tap": func(): _use_block(id)}
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -659,6 +705,12 @@ func _open_station() -> void:
 		toggle()
 
 
+# E on the chopping block the cursor is on: split a log there, nothing else (the wood lying around stays where it is).
+func _use_block(id: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+	_block_next_msec = Time.get_ticks_msec() + 600
+
+
 # True when something lay within reach and the server was asked for it.
 func pick_up_nearest() -> bool:
 	var id: int = _nearest()[0]
@@ -775,32 +827,51 @@ func hold_use() -> bool:
 	return true
 
 
-# The id of the nearest placed structure (lean-to, chest) within 3 m, 0 when none.
+# The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
 func _nearest_struct() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
+			ids.append(id)
+
+	return _aimed_or_nearest(ids, here)
+
+
+# Of some world ids: the best centred one when the cursor is on any of them, otherwise the nearest; 0 for none.
+func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
+	var best: int = 0
+	var best_d: float = 1.0e9
+	var best_cos: float = -2.0
+
+	for id in ids:
+		var d: float = here.distance_to(_world[id]["pos"])
+
+		if view_direction.is_valid() and aimed_at(_world[id]["pos"]):
+			var cos: float = aim_cos_of(_world[id]["pos"])
+
+			if cos > best_cos:
+				best_cos = cos
+				best = id
+
+		elif best_cos < -1.0 and d < best_d:
+			best_d = d
 			best = id
 
 	return best
 
 
-# The id of the nearest fire (lit or out) within 3 m, 0 when none.
+# The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none.
 func _nearest_fire() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in [1, 8, 9] and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
-			best = id
+		if _world[id]["state"] in [1, 8, 9, 40, 41] and here.distance_to(_world[id]["pos"]) <= 3.0:
+			ids.append(id)
 
-	return best
+	return _aimed_or_nearest(ids, here)
 
 
 func cook_nearest() -> void:
