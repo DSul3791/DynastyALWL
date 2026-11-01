@@ -448,6 +448,20 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	_sync_craft_queue(peer)
 
 
+# Delete-character (protocol 82): the client forgets a character it deleted, so its record is not left behind. The key is the secret, so whoever holds it may forget it; the
+# caller must already be in the game (hello) and may not forget a key that anyone is playing right now, their own included. Remains the character left stay in the world.
+func forget_key(peer: int, key: String) -> bool:
+	if not _peer_key.has(peer) or not _valid_key(key) or _peer_key.values().has(key) or not _characters.has(key):
+		return false
+
+	_inventories.erase(key)
+	_characters.erase(key)
+	_vitals.erase(key)
+	_craft_queues.erase(key)
+	_dirty = true
+	return true
+
+
 # --- Where a character resumes (protocol 69, DECISIONS collapse-offline) ---
 const RESUME_GRACE_S := 120          # a reconnect within this long of a dropped connection resumes in place
 const SAVE_SPOT_EVERY_MSEC := 30000  # the last known spot is written to the character at most this often while playing

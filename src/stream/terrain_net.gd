@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 81
+const PROTOCOL_VERSION := 82
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -96,6 +96,7 @@ signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
+signal forget_requested(peer_id: int, player_key: String)
 signal logout_requested(peer_id: int)
 signal tunnel_setting_requested(peer_id: int, on: bool, cave_in_s: int)
 signal tunnel_settings_received(on: bool, cave_in_s: int)
@@ -366,6 +367,13 @@ func start_at(position: Vector3) -> void:
 func hello(player_key: String) -> void:
 	if multiplayer.is_server() and player_key.length() <= 64:
 		hello_requested.emit(multiplayer.get_remote_sender_id(), player_key)
+
+
+# Protocol 82: the client deleted a character; the server drops that character's record (inventory, vitals, learned recipes, goals). After hello only.
+@rpc("any_peer", "call_remote", "reliable")
+func forget_character(player_key: String) -> void:
+	if multiplayer.is_server() and player_key.length() <= 64:
+		forget_requested.emit(multiplayer.get_remote_sender_id(), player_key)
 
 
 @rpc("any_peer", "call_remote", "reliable")

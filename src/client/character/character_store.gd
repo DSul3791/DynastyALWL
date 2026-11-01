@@ -5,6 +5,7 @@ extends RefCounted
 # wears. Nothing here touches accounts or the server. Saving the same text form later on a server is the intended next step.
 
 const Record := preload("res://src/client/character/character_record.gd")
+const Keys := preload("res://src/client/character/character_keys.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 
 static var dir: String = "user://characters"       # tests point this somewhere else
@@ -120,6 +121,7 @@ static func delete(id: String) -> bool:
 		return false
 
 	DirAccess.remove_absolute(path)
+	Keys.forget(id)
 
 	if active_id() == id:
 		_clear_active()
