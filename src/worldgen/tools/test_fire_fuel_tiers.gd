@@ -309,5 +309,35 @@ func _init() -> void:
 	f.give(1, oak, 1)
 	check(f.lay_down_shoulder(1) and f.shoulder_of(1) == "" and inv_s.count_of(oak) == 0, "laying the carried log down takes it out of the pack")
 
+	# Softwood firewood (conifers): goes in like firewood, one piece of the same class, burns 10 real minutes against 20; mixed with hardwood it counts toward the 3 pieces.
+	check(is_equal_approx(float(cook["fuel"]["firewood_soft"]) / rate, 600.0) and str(cook["fuel_class"]["firewood_soft"]) == "firewood", "soft firewood: 10 real minutes, class firewood")
+	var soft: int = f.table.number_of("firewood_soft")
+	var inv_f = f.inventory_of(1)
+
+	for slot in range(inv_f.SLOTS):
+		inv_f.numbers[slot] = 0
+		inv_f.counts[slot] = 0
+
+	f._items[log_fire]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	f._items[log_fire]["fire"]["pieces"] = {}
+	f._items[log_fire]["fire"]["pot"] = false
+	f._items[log_fire]["fire"]["state"] = 9
+	f.action(1, Net.ACT_ADMIN_GIVE, soft, 0, 2, Vector3.ZERO)
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("firewood"), 0, 1, Vector3.ZERO)
+	said.clear()
+
+	for n in range(3):
+		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+
+	check(inv_f.count_of(soft) == 0 and inv_f.count_of(f.table.number_of("firewood")) == 0, "soft and hard firewood both go in (%s)" % str(said))
+	var mixed: Dictionary = f._items[log_fire]["fire"]
+	check(absf(float(mixed["wood"]["firewood"]) - (2.0 * 600.0 + 1200.0)) < 0.01, "burning time: two soft (10 min) and one hard (20 min) = 40 min (%.0f s)" % float(mixed["wood"]["firewood"]))
+	check(f._fire_best_state(mixed) == 1, "two soft and one hard firewood make the medium fire")
+	mixed["burn_left"] = float(mixed["wood"]["firewood"])
+	var view2 = ViewScript.new()
+	view2.table = f.table
+	check(view2._fire_label({"state": 9, "burn": float(mixed["burn_left"])}, f.table.number_of("campfire_kit")) == "Campfire 00:40:00 Burn time", "the label adds the right time for each kind")
+	view2.free()
+
 	print("test_fire_fuel_tiers: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
