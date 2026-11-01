@@ -107,3 +107,27 @@ Note: Recommendation A: no, build it after real death and children. Today a char
 - Later, after real death and children (recommended)
 - Before real death
 - Never, keep death immediate
+
+## pic-flora-yarrow | In the real game: does the white yarrow drift (bottom left, with varied tree crowns) look like white flowers in the shade, not blue-grey metal?
+Image: questions/img/flora_yarrow_crowns.jpg
+Note: Real game rig shot at noon, (53302,68423) facing north. Placement is right (a dense drift at the forest edge). The heads read blue-grey, faceted and slightly metallic and the stems are pale, so Flora rates it 3 of 5. The look is Kathleen's (warmer head colour, smoother normals, matte stems). The crowns look varied: 4 of 5.
+- Yes
+- No
+
+## pic-flora-chamomile | In the real game: is the chamomile and wildflower meadow (yellow drift, red roses behind a bush) a good spread of colour?
+Image: questions/img/flora_chamomile_roses.jpg
+Note: Real game rig shot at noon, (53326,68446) facing north. The yellow drift and red roses show; white chamomile is not clearly visible from here. Flora rates it 3.5 of 5.
+- Yes
+- No
+
+## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
+Image: questions/img/flora_orchard_rows.jpg
+Note: Real game rig shot at noon from the south edge of the orchard, (53376,68535). The rows read, but it is dark under the crowns and no fruit is visible from this height. Flora rates it 3 of 5; fruit visibility is a look question for Kathleen.
+- Yes
+- No
+
+## pic-flora-blueberry-size | Is the small bush on the right (about 30 cm tall, blue berries, ten metres away) a believable blueberry plant size?
+Image: questions/img/flora_blueberry_size.jpg
+Note: Real game rig shot at noon, (53331,68359) facing north, from 1 m above the ground. This is a real blueberry placed by the game (data says 0.25 to 0.5 m). The shrub in the old picture 02b that was about 3 m wide and labelled Blueberry is not a blueberry by the data (raspberry is 1.5 to 2.5 m), so the label in that rig row is the likely mistake. Flora rates this 3.5 of 5.
+- Yes
+- No
