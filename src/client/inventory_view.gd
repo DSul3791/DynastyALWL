@@ -304,6 +304,10 @@ func toggle() -> void:
 
 	open = not open
 
+	if not open and _recipe_search != null:
+		_recipe_search.release_focus()   # the keys go back to the game
+		_recipe_search.text = ""         # the filter lasts until the menu is closed
+
 	if open:
 		_build_panel()
 		_refresh()
@@ -313,6 +317,16 @@ func toggle() -> void:
 
 	if _panel != null:
 		_panel.visible = open
+
+
+# Esc in the search box (while it has focus and holds text) empties it instead of closing the menu. True when it did.
+func search_escape() -> bool:
+	if _recipe_search == null or not open or not _recipe_search.has_focus() or _recipe_search.text == "":
+		return false
+
+	_recipe_search.clear()
+	_refresh()
+	return true
 
 
 func close() -> void:
@@ -3690,11 +3704,13 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name; a tab shows one category.
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
+# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
+const SEARCH_HINT_ALL := "Search all recipes: name or ingredient (try hide)"
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
 	_recipe_search = LineEdit.new()
-	_recipe_search.placeholder_text = "Search what you can make"
+	_recipe_search.placeholder_text = SEARCH_HINT_ALL
 	_recipe_search.clear_button_enabled = true
 	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_style(_recipe_search, BODY_PX)
@@ -3719,7 +3735,7 @@ func _build_recipe_filter() -> Control:
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "")
+	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "", table)
 
 
 func _matches(text: String, filter: String) -> bool:
@@ -3847,6 +3863,9 @@ func _refresh() -> void:
 
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
+	if _recipe_search != null:
+		_recipe_search.placeholder_text = SEARCH_HINT_ALL if _recipe_category == "" else "Search in %s: name or ingredient" % _recipe_category
 
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)

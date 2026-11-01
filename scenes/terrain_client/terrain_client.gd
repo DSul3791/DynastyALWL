@@ -3005,6 +3005,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if items != null and items.search_escape():
+			return
+
 		if items != null and items.screen_open():
 			items.close()
 			return
