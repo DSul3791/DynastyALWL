@@ -147,3 +147,60 @@ Dave: "review the unfinished work and assign it to whomever it should go to. The
 | `claude/steve-sqlite-warm` | 1 | Server block store: open the sqlite files once on the main thread before workers |
 | `claude/steve-thread-safety` | 2 | Thread safety: guarded sim_levels snapshot, take_pair, locked cache swap, two he |
 | `claude/steve-warning-699` | 1 | Move the confusable_local_declaration ignore back onto the admin_ok line. CHANGE |
+
+# Verdicts received (owner answers; delete after the answer unless marked keep)
+
+## MikeW (6 of 6, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `claude/flora-wet-test` | PORT (keep until ported) | `test_flora_wet.gd` not in daily; MikeW cherry-picks onto a fresh branch, runs after RESTART |
+| `claude/kathleen-patches-now` | DROP | superseded by `patch` rules (35 rows); porting would double-place |
+| `claude/project-thread-yttwff` | DROP | 4-line note; plan archived in daily |
+| `claude/sal-no-rose-berries` | KEEP until Sal answers | commit 1 already done; commit 2 (rose gives petals instead of hips) not in daily: Sal's call |
+| `claude/steve-cave-air` | DROP | plan archived as `Steve_cave_air.md` |
+| `claude/steve-flora-mutex` | ALREADY DONE | `_plateau_mutex` in daily `flora_placer.gd` |
+
+## Jason (13 of 13, 1 Nov)
+All 13 sound branches are already in the daily or to be dropped; none needs a port (git cherry and per-file diffs; not every hunk read). Full table in Jason's message; branches safe to delete.
+
+## Steve (9 of 9, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `sal-auto-pickup`, `sal-fire-tiers` | already done | code in daily; plan docs copied to `docs/archive/2026-11/old_branch_plans/` before deletion |
+| `sal-hoe`, `sal-raise`, `sal-shovel-sizes`, `steve-go-spawn` | already done | patch-equivalent in daily (git cherry; not opened one by one) |
+| `steve-ground-debug`, `steve-ladder` | already done | files in daily |
+| `steve-bed-respawn` | PORT part, drop part | claim-by-lying superseded by E-on-bed `spawn_bed`; Steve redoes the landing search and repeat-death fallthrough on a fresh branch with `test_bed_respawn.gd`; keep branch until ported |
+Open question for Dave (from Sal's fire-tiers doc): 3 pieces per fire tier; code already has 3 tiers, unchecked against the rule.
+
+## Tyler (19 of 19, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `Qwen3.8_9B_ReviewRefactor` | drop | 17 files of unreviewed Qwen 9B edits; not trusted; audit-doc text only if Jamie wants it |
+| `claude/box-results`, `david3-gate`, `david3-rig`, `david3-shot-gpu`, `docker-test-box` | drop | Linux box and docker tooling; Windows gate is `run_tests.sh` + `tests_for_diff.py` |
+| `kathleen-biome-fix`, `kathleen-crowd-fix`, `kathleen-tree-belts`, `steve-shot-landing`, `steve-sqlite-warm`, `steve-thread-safety` | already done | patch-equal in daily |
+| `claude/kathleen-shovel` | PORT to Jason (keep until ported) | placeholder `soil_load`/`stone_load` sounds + `make_placed.py` not in daily (the spade look commit is) |
+| `claude/steve-rig-item` | PORT (Tyler, keep) | `look_rig --showroom-per N`, exact showroom row match, ground default 31.25 |
+| `claude/steve-shot-lock` | PORT (Tyler, keep) | mouse look ignored during a `--shots` run |
+| `claude/mike-rig-v4` | Kathleen decides | rig part superseded; held-tool pose edits in `basic_look.gd`/`held_item.gd` are hers |
+| `claude/mike-goalpad`, `mike-rig-v5`, `steve-warning-699` | drop | docs/logs only, experimental, one warning line |
+
+## Sal (19 of 19, 1 Nov)
+Already done / drop: `project-thread-5x1cni`, `sal-building-items`, `sal-corner-snaps`, `sal-hearth-oven`, `sal-roast-names` (done); `sal-building-tiers`, `sal-ceiling-names`, `sal-hand-crafts`, `sal-item-cut`, `sal-plan-updates`, `sal-plans-r1`, `sal-thatch-floor-hand`, `sal-thatch-sources`, `sal-tool-tiers`, `sal-weight-audit` (drop). Backlog for Steve (code owner), Sal recoverable commits: `sal-bridge-note` (bridge blueprints 5/10/20 m, 5e466b02), `sal-building-tiers-p1` (plank tier, thatch window, `test_tier_numbers`, 5d42ec40), `sal-no-stack-caps` plan and `sal-no-stack-caps-build` (39a03c5c; weight is the only limit, items still have stack caps). Keep those four until Steve decides. Sal asked to record these three backlog items in `SCOPE_SAL.md`.
+
+## Sonny (30 of 30, 1 Nov; daily TERRAIN_VERSION 44)
+Already done (delete): `sonny-farmland-tune`, `sonny-held`, `steve-erosion-threads`, `steve-ground-quiet`, `steve-river-settle`, `steve-settle-memory`, `tyler-bake28`. Drop (old bakes of versions 33 to 43, superseded): `david3-bake-*` (4), `mike-bake-*` (7), `mike-evidence-kathleen-13df38ae`, `mike-raw-heights`, `mike-seam-test`. PORT (keep until ported): `water-soak` (test fix, now), `steve-river-seams` (`settle_block.sh`, now), `erosion-fill-cap` (doc only), then ONE bake-changing branch with ONE bake proposal for Dave: `lake-lip`, `pond-notch`, `steve-spring-feed`, `land-types`, `land-types2`, `land-types2-springfeed` (the superset; needs a bake and Dave's go, after water).
+
+## Kathleen (20 of 20, 1 Nov)
+Already done: `kathleen-basic-looks`, `kathleen-looks-v2`, `kathleen-looks-v5`, `kathleen-clothing`, `kathleen-held-pose`, `kathleen-tool-pass`. Drop: `kathleen-goal2-b`, `kathleen-showroom-test`, `mike-evidence-bowl`, `mike-evidence-goal2b`, `mike-evidence-hands10`. PORT (keep until ported): `kathleen-body-details` (Kathreen: nose, brow, chin, ears, thumbs), `kathleen-dirt-pile`, `kathleen-r1-looks` (straw thatch), `kathleen-stone-look` (Kathleen, small). Check: `sal-net-look`, `kathleen-materials` and `kathleen-spades` (place sounds go to Jason; looks already in daily). Ground PBR (`kathleen-photoreal-batch1`, `mike-pbr-ground`): moderator decision: ground LOOK is the art team's (Dave: looks are artistic); Kathleen/Kathreen port only if the ground reads flat in game; licences in `CREDITS_PBR.csv`.
+
+## Late decisions (1 Nov)
+- `claude/sal-no-rose-berries`: **drop, hips stay** (Sal: hips are seed pods, real autumn forage, not berries; porting would make `rose_hips` unobtainable and fail `validate_items`). Reversible: port `1174dd91` and flag `rose_hips` future.
+- `claude/mike-rig-v4` (Kathleen): held pose edits already done; one small optional port (pickaxe head as a four-segment curve), only if the pickaxe looks stiff in game. Keep until then.
+- `claude/kathleen-shovel` (Jason): **port** the `soil_load`/`stone_load` placeholder sounds (shovel raise mode exists; the daily has no such sounds). Keep until ported.
+- `claude/kathleen-body-details` (Kathreen): port candidate (step 4b of `SCOPE_KATHREEN.md`).
+
+# Delete lists (E:\Software\godotDev\DynastyALWL_ProjectBackups\worktree_leftovers_2026-11-01\)
+`merged_branches_to_delete.txt` (265, merged into the daily) and `old_branches_to_delete.txt` (88, owner-approved drop or already done). Keep: the PORT/backlog branches (29) until ported, `qa-poke`, `main`, the daily, `qa`, the active agent branches.
+
+## Kathleen, final (1 Nov)
+`claude/mike-rig-v4`: **drop** (pickaxe curve is cosmetic; decided). `claude/sal-net-look`: **PORT** (`hand_net` shape and `_net()` in `basic_look.gd`, plus its `held_item.gd` change; Dave 25 Oct: must not look like a hammer); keep until ported. `kathleen-materials` and `kathleen-spades`: keep until she checks by picture that the daub and stone-block skins exist (0 name matches in the daily; may be renamed); `.uid` files are noise. Delete list now 89 (`old_branches_to_delete.txt` includes `mike-rig-v4`).

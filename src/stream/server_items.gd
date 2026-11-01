@@ -50,6 +50,7 @@ const EYE_HEIGHT := 1.5
 const HIT_REACH_M := 3.5                 # from the trunk's edge
 const HIT_COOLDOWN_MS := 400
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
+const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const ROT_GAME_S := 168.0 * 86400.0      # a trunk or stump rots away after a real week (168 game days)
 const TREE_SAVE_VERSION := 1
@@ -1004,19 +1005,27 @@ func tick(delta: float) -> void:
 		_craft_tick(spent)
 		_slow_mark("rot-fires-vitals-craft", t0)
 		_crops_tick()
+		_slow_mark("crops", t0)
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
+		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
+		_slow_mark("comfort", t0)
 		_goals_tick()
+		_slow_mark("goals", t0)
 		_learn_clock += spent
 
 		if _learn_clock >= LEARN_TICK_S:
 			_learn_clock = 0.0
 			_learn_tick()
 
+		_slow_mark("learn", t0)
 		_fish_tick()
+		_slow_mark("fish", t0)
 		_remains_tick(spent)
+		_slow_mark("remains", t0)
 		_spoil_tick(spent)
+		_slow_mark("spoil", t0)
 		_traps.tick(spent)
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
@@ -3182,6 +3191,7 @@ func _scatter_around_players() -> void:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var cell_m: float = float(cfg.get("cell_m", 32.0))
 	var budget: int = SCATTER_CELLS_PER_TICK
+	var started: int = Time.get_ticks_usec()   # a tick lays out cells for at most SCATTER_TICK_MAX_MS: a join took 0.7 to 6.9 s here in one go (Tyler, 1 Nov 2026)
 
 	for peer in _peer_pos:
 		var here: Vector3 = _peer_pos[peer]
@@ -3191,6 +3201,9 @@ func _scatter_around_players() -> void:
 		for dz in range(-reach, reach + 1):
 			for dx in range(-reach, reach + 1):
 				var cell: Vector2i = home + Vector2i(dx, dz)
+
+				if budget > 0 and float(Time.get_ticks_usec() - started) / 1000.0 > SCATTER_TICK_MAX_MS:
+					budget = 0
 
 				if budget > 0 and not _cells_done.has(cell) and Vector2(dx, dz).length() * cell_m <= SCATTER_RADIUS_M:
 					# A tile that is not in memory yet takes over a second to read: ask for it on a worker thread and lay this cell out next time.
@@ -3218,6 +3231,7 @@ func _scatter_around_players() -> void:
 		if far:
 			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
 			_items.erase(id)
+
 
 
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:

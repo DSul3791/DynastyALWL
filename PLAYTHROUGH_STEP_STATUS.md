@@ -2,7 +2,7 @@
 
 Written with no Godot run (Dave has the computer): from the daily head code and data (13b84fa3 merged), the tutorial text, and the probe and smoke results from earlier today. WORKS = a probe, test or bot has driven it on the real server code and nothing found; CLIENT = the client side (hands, prompts, pictures) was not driven by me; OPEN = something known is wrong. "Re-run" names what to run when the computer is back (list at the end).
 
-## UPDATE 1 Nov 2026 (daily 27dfe828; probes and smoke run on d05e86b3 after COMPUTER BACK)
+## UPDATE 1 Nov 2026 (probes and smoke ran on d05e86b3 after COMPUTER BACK; recipes, structures, drops and hints re-read from data on daily 9ca75719, no Godot)
 Verified by running (headless server probes, headless real-client self-tests; **no step was walked by hand in a windowed client**):
 - 17, 19 WORKS: probe_shelter 16/16 PASS with the lean-to roof 2.6 x 3.4 m, 1.5 m high (lie, good bed 1.0, sleep, E sets spawn, respawn on the bed).
 - 12 WORKS: probe_place 13 PLACED; only the steep-slope refusal speaks; the silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) are NOT re-tested.
@@ -13,6 +13,8 @@ Verified by running (headless server probes, headless real-client self-tests; **
 - 13/14 (lit fire) STILL UNPROVEN VISUALLY: rig picture shows no flames or glow (QA card pic-fh-campfire-lit). Server state 40 (lit) is fine.
 - 20 bench (now 16 sticks, 6 twine, 4 stones, 60 s): no automated check at all.
 - Self-tests arrival, gather, plantpick, chop, fire, leanto, spear, placed, walk run without script errors but print no PASS/FAIL line, so they prove "no crash" only.
+- New in data since d05e86b3: hints plant_food_pot and pot_first_dish (step 15 now has an in-game hint for the pot, still no tutorial step); stump chop destroys the stump and gives firewood, kindling, sticks by stump size (drops.json; test_stump_chop.gd exists, not run by me).
+- Recipe numbers re-checked in data: campfire 6 sticks + 3 stones 8 s; lean-to 32 sticks, 8 leaves, 4 twine 25 s; rough bed 8 bedding (or 8 straw) + 4 sticks + 2 twine 10 s, or 10 thatch + 4 sticks + 2 twine 25 s; Camp bench 16 sticks, 6 twine, 4 stones 60 s; wooden spear 1 stick 6 s (stone kept); stone spear = wooden spear + 2 twine 10 s; stone knife 2 stones + 1 stick 8 s; stone axe 10 s; twine 3 fibre 2 s. Checklist step 14 had the spear recipe wrong: fixed.
 - Still open: chest self-test (Tyler, inventory_view.gd:4562), flora_view.gd:2270 cast error (flora session), creator preview back view, no pot/hearth tutorial step.
 
 | # | step | status | evidence and what is not covered |

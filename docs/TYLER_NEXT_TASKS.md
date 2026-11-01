@@ -9,3 +9,8 @@ Round 1 (systems, placement, tests; the moderator's list was finished first: che
 Status is kept below as each is done.
 
 - [ ] 1  - [ ] 2  - [ ] 3
+
+## Carried over from the files archived on 1 Nov 2026 (TYLER_NEXT_PLANS.md, TYLER_QUEUED_TESTS.md)
+The full list of what is open is `docs/handoff/SCOPE_TYLER.md` sections 3 and 8 (read that first). Items from the archived files not repeated there:
+- The Python erosion-model check from the climate plan was never done (the gate Python had no numeric libraries then); do it if numpy is available, else leave out.
+- From the queued-tests list: creator-preview lighting look (editor), `tools/mutation_check.sh` for the newest features, lean-to review by reading (done), bot budget 70 (see scope section 8 #10).

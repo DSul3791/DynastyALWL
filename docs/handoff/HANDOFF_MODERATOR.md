@@ -7,27 +7,30 @@ Sessions (each has `docs/handoff/SCOPE_<NAME>.md`, most also `HANDOFF_<NAME>.md`
 ## Rules Dave set (do not re-litigate)
 - NEVER merge to main until Dave has play-tested and says go. After his go: backup, merge the daily into main, final tests, start a fresh daily branch (e.g. `DailyDev_20261101`).
 - Decide and document reversible choices in `MODERATOR_QA_LOG.md`; never let agents wait on Dave; Dave answers on the QA page (branch `qa`, worktree `C:/GodotProjects/DynastyALWL_qa`, cards in `questions/QUESTIONS.md`, one item per card, Yes/No, optional notes).
-- Standing instruction (paused for the handoff): when an agent finishes, it invents three more tasks for its own job and does them, repeating until it honestly has none.
+- Standing instruction (applies to ALL agents, including those started later; paused during the handoff hold): when an agent finishes, it invents three more tasks for its own job, writes them down, does them, and repeats until it honestly has none. Never go idle waiting for the moderator.
 - Ponytail rules (`docs/PONYTAIL_RULES.md`) for the water build. Max 3 heavy Godot jobs (`tools/godot_slot.sh`). Do not kill Godot processes (one may be Dave's editor).
 - The new water becomes the DEFAULT; the old water stays only behind a flag (`--water-old` plus a settings switch). Dave's words: if it does not work we remove the old one later.
 - Death rule: `data/items/death.json` `novice_grace` is `always` until Dave answers QA card `death-novice` (recommended: respawn until level 5).
 
-## State at handoff
-- Daily head pushed: `f50d17f0` (+ local unpushed merge of `origin/dynasty-water`, commit `26a51f65`, clean merge, NOT tested after the merge, NOT pushed). Check `git log origin/DailyDev_20261029..HEAD`.
-- Full test run on `27dfe828`: 159 of 159 pass (132 on the standard exe, 27 on the voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`; `test_water_soak` needs 900 s, takes 338 s). The world tests fail to compile on the standard exe: wrong build, not a bug.
-- NEVER run the whole suite from the standard exe and call the 27 failures real.
-- Never played in a real client by anyone but the agents' rigs: the join freeze fix (Tyler: server placed nine flora chunks on its main thread), the whole checklist, the lit fire, the creator preview are unconfirmed.
-- Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md` (14 steps), long version `_FULL.md`; step table `PLAYTHROUGH_STEP_STATUS.md`; status script `art/playthrough/run_status.sh` (24 fixed, 3 broken: F-01/F-24 recipes learnable, F-19 14 recipes blocked without future flag, S-craft flag mismatches; 2 need pictures F-10 held axe, F-13 blueberry).
+## State at handoff (1 Nov 2026, end of day)
+- Daily `DailyDev_20261029` is fully merged with every agent's latest work and pushed (head after Jamie's last merge; `git log -1 origin/DailyDev_20261029`). All 104 data JSON files parse.
+- Last full test run: 159 of 159 pass on `27dfe828` (132 on the standard exe; 27 world tests on the voxel build `C:\GodotInstaller\godot.windows.editor.x86_64.exe`; `test_water_soak` needs about 340 s). NOT re-run after the day's later merges (Dave needed the computer, then a Godot hold). Running them is the first job after RESTART; Tyler runs the full pass now (moved from the moderator).
+- Never played in a real client by anyone but the agents' rigs: the join freeze fix, the checklist, the lit fire, the creator preview are unconfirmed.
+- The new water is merged as CODE (`src/water2/`) but the old water is still the DEFAULT: the default flip is only a parked patch `docs/handoff/water_default_flip.patch` (six tests passed with it applied; `test_water_soak` did not finish). Sonny applies it first after RESTART.
+- Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md` (14 steps), long version `_FULL.md`; step table `PLAYTHROUGH_STEP_STATUS.md`; findings `docs/handoff/FINDINGS_REPORT.md` (Dino, 14 rows, each handed to an owner).
+- Hold: every agent is on a no-Godot hold until the moderator sends RESTART (Dave was restarting his computer and killing stale Godot processes).
+- Branches: remote cleaned from 398 to 43. Deleted: 265 merged plus 89 owner-approved drops (Dave ran the delete commands; the agents' permission rules blocked them). Kept: the PORT/backlog branches listed in `docs/OLD_BRANCH_REVIEW.md` (owners port, then delete), active agent branches, `main`, the daily, `qa`, `qa-poke`. Open: `claude/flora-density` and `sonny-character` (recent, ask MikeW and Sonny). 6 leftover worktrees removed (safety copies in `E:\Software\godotDev\DynastyALWL_ProjectBackups\worktree_leftovers_2026-11-01\`; full branch bundle `all_branches_before_cleanup_2026-11-01.bundle`, 8.6 GB, deletable).
 
 ## Second art agent (started 1 Nov)
 A second art agent, "Kathreen: Art assistant" (session local_5dc173d8-f090-4d75-9439-07b664414c73, branch kathree-art), started 1 Nov 2026 at Dave's word; her scope document is docs/handoff/SCOPE_KATHREEN.md. See MODERATOR_QA_LOG.md 2026-11-01.
 
 ## Known open items
-1. Merge Sonny's water-default push (water2 default, `--water-old` flag, settings switch, lake sleep/cap, river drain) into the daily, then run the full test pass. Sonny will report the commit.
-2. Merge each agent's final handoff push into the daily (branches above; Kathleen's pushed branch is `origin/kathleen-art`, not her worktree branch).
-3. Chest self-test error `inventory_view.gd:4562` (Tyler); SLEEP self-test starts at full energy (test gap); creator preview picture (no rig flag found).
-4. Pictures: lit campfire (Dino saw no flames; Tyler says it is drawn, hidden by grass), lying trunk after the bark fix, held axe, orchard and crown close-ups, white yarrow/chamomile, pale flower stems.
-5. Dave's own: play-test the daily, answer `death-novice` and the pending picture cards, then say go for main.
+1. RESTART, then in this order: Sonny applies the water-default patch and runs his water tests (`test_water_soak` 900 s); Tyler runs the full test pass and re-runs the 7 tests killed by the Godot kills (`test_warmth`, `test_edible_offer`, `test_flora_density`, `test_ingredient_groups`, `test_look_table`, `test_river_ore`, `test_stairs_climb`); Dino runs the creator picture, rig walks and clean-server sleep test; then pictures (Kathleen: campfire flames first, lying trunk, orchard; Kathreen: water look, yarrow, blueberry, creator).
+2. Ports from the old-branch review (owners keep their branches until ported): see `docs/OLD_BRANCH_REVIEW.md`. Bake-changing set (`lake-lip`, `pond-notch`, `steve-spring-feed`, land types) needs ONE bake proposal and Dave's go, after the water.
+3. Chest self-test error `inventory_view.gd:4562` (Tyler); creator preview facing front and plain colours (Kathreen); Steve's first jobs: per-character key plus delete-character (existing saves share one key per computer), real-death question list for Dave, placement refusal messages, bed respawn landing search (`steve-bed-respawn`).
+4. Questions for Dave: `death-novice` (QA card), the heavy stone wall kit (a 75 kg player carries about 52 kg; kit needs about 314 kg), 3 pieces per fire tier, pending picture cards, whether to keep `claude/flora-density` and `sonny-character`.
+5. Dave's own: play-test the daily, answer the cards, then say go for main (backup, merge, final tests, new daily branch).
+6. Doc housekeeping: `RULES.md` (October build-number flow, marked out of date) and `HANDOFF.md` (29 Oct state) still contradict the daily-branch flow; Jamie's fuller review after RESTART.
 
 ## How to run things
 ```
@@ -37,4 +40,4 @@ GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh -
 Merging tips: a Godot-generated untracked file (`.uid`, `crash_reports/telemetry_client.log`) can block a merge; delete just those and retry.
 
 ## Not checked by me
-Anything in a real client; the merged water in any run; the creator; Dave's computer state (several Godot processes were open at handoff).
+Anything in a real client; the merged water in any run; the creator; Dave's computer state (it was being restarted at handoff).

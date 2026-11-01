@@ -319,7 +319,6 @@ func height_at(x: float, z: float) -> float:
 	)
 
 
-# Index of the nearest map sample.
 # 1 where the sample or any of its eight neighbours is lake, pond or river water (built once).
 func near_water() -> PackedByteArray:
 	# Built once, under a lock: several server worker threads ask at the same time.
@@ -330,21 +329,23 @@ func near_water() -> PackedByteArray:
 		_near_mutex.unlock()
 		return ready
 
+	# Only lake, pond and river samples (class 2 and 3) mark their neighbours, found with the native PackedByteArray.find instead of a loop over all 3.7 million samples:
+	# the nine reads per sample took 3.7 s a tile, the two row/column passes still seconds (Sonny, 1 Nov 2026).
 	var built: PackedByteArray = PackedByteArray()
 	built.resize(samples * samples)
 
-	for j in samples:
-		for i in samples:
-			var hit: int = 0
+	for kind in [2, 3]:
+		var at: int = water_class.find(kind, 0)
 
-			for dj in range(maxi(j - 1, 0), mini(j + 2, samples)):
-				for di in range(maxi(i - 1, 0), mini(i + 2, samples)):
-					var kind: int = water_class[dj * samples + di]
+		while at != -1:
+			var column: int = at % samples
+			var row: int = at / samples
 
-					if kind == 2 or kind == 3:
-						hit = 1
+			for dj in range(maxi(row - 1, 0), mini(row + 2, samples)):
+				for di in range(maxi(column - 1, 0), mini(column + 2, samples)):
+					built[dj * samples + di] = 1
 
-			built[j * samples + i] = hit
+			at = water_class.find(kind, at + 1)
 
 	_near_water = built
 	_near_mutex.unlock()

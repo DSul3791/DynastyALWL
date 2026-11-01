@@ -1,34 +1,6 @@
-# NOW
-**Since 1 Nov 2026 the current state is in `docs/START_HERE.md` and `docs/handoff/`. The "NOW (29 Oct)" state below (build 826 on `main`, one session) is old; the Commands, Setup and Gotchas sections stay valid.**
-
-## State of 29 Oct 2026
-HEAD = build 826 on `main` plus the October clean-up PRs. Dave plays and tests on his PC; Claude ships through pull requests (`tools/ship.sh`). Read `RULES.md` first. The 25 Oct block that was here (queues, holds, MERGE-793 notes) is in `docs/archive/2026-10/HANDOFF_FULL_2026-10-29.md`.
-Open: play-test of `main` after the clean-up; possible bug: `grass_view._rebuild_trails()` is never called, so worn trails are not drawn; remaining clean-up items are listed in NerdRunner/BLOAT_AUDIT_2026-10-29.md (outside the repo, in C:/GodotProjects).
-
-# Project handoff (rewritten 2026-10-22 by the Technical Director; short on purpose)
-
-Read this first. About 10 KB. All older detail is kept, unchanged, in `docs/archive/HANDOFF_FULL_2026-10-22.md` (index at the bottom of this file). Rules and decisions live in the project files `tech/` folder (`/mnt/project-files/tech/`): **BEST_PRACTICES.md (read first, daily), PROCESS.md, DECISIONS.md, JOBS.md, BUILD_LOG.md, TEST_QUEUE.md**.
-
-## What this is
-A multiplayer medieval survival and town-building game ("Dynasty, a life well lived"): Godot 4.7.2 (custom build with Voxel Tools 1.7 compiled in), GDScript plus a C++ water core, built for weak hardware (minimum 1050-class GPU, 8 GB RAM, SATA SSD, 30 fps). Owner: David Sullivan (Dave; voice user, wants SHORT reports). Repo `DSul3791/DynastyALWL`. Base branch is `main`. It is protected: changes reach it only through a pull request (builds through `tools/ship.sh`, which opens and merges one with `tools/pr_merge.sh`). Work on a `claude/<topic>` branch off `main`; never push to `main` directly.
-
-## Current state (2026-10-29)
-- Development is active. `main` is the base for all code (protected, pull requests only); Dave's questions live on branch `qa`. Build 826 plus the October clean-up (PRs 4 to 9: switch to `main`, bloat removals, plan images untracked, docs archived, one `RULES.md`). Latest build and protocol: `src/shared/build.gd` and the tail of `docs/mirror/tech/BUILD_LOG.md`.
-- Decisions and recent state: tail of `docs/mirror/tech/DECISIONS.md`. Open plans: `tech/ACTION_PLANS/`.
-- Runtime-only changes need no re-bake; server-side builds need the game closed fully so the server restarts.
-- Old per-day state, parked notes and the 23 to 25 Oct bake schedule: `docs/archive/2026-10/HANDOFF_FULL_2026-10-29.md`.
-
-## Working rules (one file: RULES.md; BEST_PRACTICES.md is the reference library)
-- Read `RULES.md` first: it replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS (archived 29 Oct 2026). The lines below are a short copy.
-- Before anything NEW, find its entry in `tech/BEST_PRACTICES.md`; none = ask the Technical Director and take another job meanwhile.
-- Zero new GDScript warnings; typed code; no `@warning_ignore` without a reason.
-- Server and client talk only through `src/stream/terrain_net.gd`; shared code in `src/shared`.
-- Every input change updates `CONTROLS.md` and passes `python3 tools/check_controls.py`.
-- Questions for Dave: pickable answers only, in `questions/QUESTIONS.md` on branch `qa` (format `questions/README.md` there), answers in `questions/ANSWERS.md` on `qa`. Post with `tools/qa_post.py`; read with `git fetch origin qa && git show origin/qa:questions/ANSWERS.md`. Never merge `qa` and `main` into each other. Test asks go to `tech/TEST_QUEUE.md`. Never wait for Dave: park the job and take the next.
-- Before shipping: `git pull --rebase origin main`, conflict-marker grep empty, headless load of touched files, controls check, build number = max(origin BUILD, last BUILD_LOG line) + 1 with the BUILD_LOG line in the same commit. Never commit crash reports, editor logs, temp DLLs or .tile files.
-- Confidence rule: technical details decide yourself; thinly discussed design = one short question with your recommended answer.
-- Dave's style: SUCCINCT. Test reports "Test done: X pass, Y fail", one line per failure; simple fix = steps, big fix = say so; end posts with "Still waiting on:".
-- Performance routine after client/server/streaming/flora/water changes (details in the archive, section "Performance routine").
+# Project handoff: commands, setup, gotchas
+HEAD = see the daily branch `DailyDev_20261029` (tools/ship.sh rewrites this line; it is the October way into main).
+**Current state, roles and rules: `docs/START_HERE.md`, `docs/handoff/` and `RULES.md`.** This file keeps only what does not change: where things are, commands, setup, gotchas. The 29 Oct state, the October working-rules copy and the 22 Oct "What this is" text are in `docs/archive/2026-11/HANDOFF_2026-10-29_state_and_rules_copy.md` and `docs/archive/2026-10/HANDOFF_FULL_2026-10-29.md`.
 
 ## Where things are
 
@@ -49,7 +21,7 @@ A multiplayer medieval survival and town-building game ("Dynasty, a life well li
 
 ## Commands
 
-Use the Linux engine build described under Setup below (`godot` here means that binary).
+`godot` means `tools/godot` (the voxel build); see `docs/START_HERE.md` for the two Godot builds.
 
 On Dave's PC (threads running locally via Remote Control, project folder `C:\GodotProjects\DynastyALWL`), `godot` means the editor executable `C:\GodotInstaller\godot.windows.editor.x86_64.exe`. Use it for headless runs and tests, e.g. `& "C:\GodotInstaller\godot.windows.editor.x86_64.exe" --headless --path . --script res://src/worldgen/tools/test_worldgen.gd`. Proven there (2026-10-22): `--script` runs work (validate_items.gd takes about 2 s, 0 errors); the voxel classes and water_core load headless; a bare `--headless --path .` (no `--script`) starts the game launcher and a terrain server, so never use it. The `.sh` tools run through Git bash (`C:\Program Files\Git\bin\bash.exe`) with a `godot` shim on PATH: `printf '#!/bin/sh\nexec "C:/GodotInstaller/godot.windows.editor.x86_64.exe" "$@"\n' > /tmp/gbin/godot; chmod +x /tmp/gbin/godot; PATH=/tmp/gbin:$PATH bash tools/check_warnings.sh` (about 20 s). `gh` is installed and logged in as DSul3791, so PRs can be opened from the PC. Never commit `crash_reports/`, tiles or the `~libwatercore` temp dll.
 
@@ -71,9 +43,9 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 
 
 ## Setup a new session needs
-- Cloud engine: unpack `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz` with `xz -dc file > godot && chmod +x godot`.
+- (Cloud sessions only, October; local PC sessions skip these two lines.) Cloud engine: unpack `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz` with `xz -dc file > godot && chmod +x godot`.
 - Dave's PC: editor `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, project `C:\GodotProjects\DynastyALWL`; headless via `--script` only (a bare launch starts the game server). Ffmpeg is missing there (sound tools only).
-- Baked tiles: `/mnt/project-files/tiles/base_world/` into `worlds/base_world/tiles/`. Git ignores tiles except `tile_3_4.tile`.
+- Baked tiles (cloud copy): `/mnt/project-files/tiles/base_world/` into `worlds/base_world/tiles/`. Git ignores tiles except `tile_3_4.tile`.
 - Python 3 for the check tools. No GitHub CLI in the cloud: use the GitHub tools.
 
 ## Gotchas (short)
