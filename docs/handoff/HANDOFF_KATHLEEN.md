@@ -26,7 +26,7 @@ Research, block out, render several angles, give an honest 1 to 5 rating (5 = cl
 - Flame tips still pale cream (Tyler's code). Thatch seen from behind reads as paper triangles (idea: second offset layer).
 - Rig quirks: ground south of z about 68430 may be unloaded; rig shots take 4 to 10 minutes and need a quiet PC; `crash_reports/` is tracked after merges, do not commit changes to it (`git checkout -- crash_reports`). If a merge refuses because untracked `crash_reports/telemetry_client.log` would be overwritten, move the folder away first.
 
-## Tests (run from the repo root, headless, standard Godot 4.7 editor exe `C:/GodotInstaller/godot.windows.editor.x86_64.exe`; not the voxel build)
+## Tests (run from the repo root, headless, the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (the standard exe is `Godot_v4.7.2-stable_win64_console.exe`))
 `godot --headless --path . --script res://src/worldgen/tools/<name>.gd` for: test_leanto_collider, test_item_looks, test_look_table, test_structure_looks, test_tool_looks, test_flora_budget (0 over budget; 27 at ceiling), test_fruit_share, test_season_fruit, test_trunk_cutting. All passed on 2026-10-31 after the daily merge. Heavy Godot jobs (rig, renders) through `tools/godot_slot.sh`, at most 3 at once. Offline photography: `tools/shot_node.gd` with view scripts (piece_view, leanto_scene, flora_model_view --variants=N, item_sheet, lit_view, fruit_close, trunk_view).
 
 ## Read first
