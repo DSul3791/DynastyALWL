@@ -95,6 +95,21 @@ func camera_basis(position: Vector3, focus: Vector3) -> Basis:
 	return Basis.looking_at(to.normalized(), Vector3.UP)
 
 
+# What the normal view looked like when the photo camera went on, so leaving puts every bit of it back (the first version left the drawn camera
+# turned to the last photo angle, which tilted the head and stopped the player looking down).
+static func snapshot(body: Node3D, eye: Node3D, drawn: Camera3D, pitch: float) -> Dictionary:
+	return {"yaw": body.rotation.y, "pitch": pitch, "eye_rotation": eye.rotation, "drawn_transform": drawn.transform, "fov": drawn.fov}
+
+
+# Back to the normal view: the body's heading, the eye's pitch and roll, the drawn camera hooked to the eye again with its old transform and field of view.
+static func restore(saved: Dictionary, body: Node3D, eye: Node3D, drawn: Camera3D) -> void:
+	body.rotation.y = float(saved["yaw"])
+	eye.rotation = saved["eye_rotation"]
+	drawn.top_level = false
+	drawn.transform = saved["drawn_transform"]
+	drawn.fov = float(saved["fov"])
+
+
 # Movement keys (x: right, z: back, as the normal walk) turned by the camera's heading, not by the body.
 func move_direction(input: Vector3) -> Vector3:
 	return Basis(Vector3.UP, yaw) * input

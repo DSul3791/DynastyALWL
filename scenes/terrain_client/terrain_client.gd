@@ -2886,6 +2886,7 @@ func _update_view(delta: float) -> void:
 		_view_now = 3.0   # the whole body is drawn, the first-person arms are hidden
 	else:
 		view_cam.top_level = false
+		view_cam.rotation = Vector3.ZERO   # the drawn camera only ever sits on the eye, looking the way the eye looks
 		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
 
 	_avatar.visible = _view_now > 0.5
@@ -2929,6 +2930,26 @@ func _update_view(delta: float) -> void:
 		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
 		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
+
+
+var _photo_saved: Dictionary = {}
+
+
+# K: into the photo view (the normal view is remembered) or back out (all of it restored: heading, pitch, roll, drawn camera and field of view).
+func _toggle_photo() -> void:
+	if not photo.active:
+		_photo_saved = PhotoCameraScript.snapshot(body, camera, view_cam, pitch)
+		photo.toggle(body.rotation.y)
+		return
+
+	photo.toggle(body.rotation.y)
+
+	if not _photo_saved.is_empty():
+		PhotoCameraScript.restore(_photo_saved, body, camera, view_cam)
+		pitch = float(_photo_saved["pitch"])
+
+		if _horizon != null:
+			_horizon.pitch_rad = pitch
 
 
 # The photo camera (K): drawn from where photo_camera.gd puts it, kept out of the ground and walls. Only the drawn camera moves.
@@ -3063,7 +3084,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			_last_w_msec = now
 		elif event.keycode == KEY_K:
-			photo.toggle(body.rotation.y)
+			_toggle_photo()
 		elif event.keycode == KEY_P and items != null:
 			items.toggle_auto_pickup()
 		elif event.keycode == KEY_SLASH:
