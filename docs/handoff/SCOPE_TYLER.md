@@ -39,3 +39,11 @@ I own the test suite and the full test passes, the rigs and probes, regressions,
 
 ## 7. Handed to Steve (1 Nov 2026, message sent)
 Character system (no code by me yet; suggested plan: map the records into `docs/CHARACTER_SYSTEM.md`, save-compat test, per-character recipes and goals, idle-timeout test, select-screen and first-minutes smoke tests), comfort/Rested mutation checks, a server test for `ACT_ADMIN_ENERGY`, real death (client flow and heirs; needs Dave), client side of the stump rule. Each system's tests stay mine to run; the rules are his to change.
+
+## 8. Dino's findings assigned to me (FINDINGS_REPORT.md, via the moderator; do these first after RESTART, #12 and #4 first)
+- **#12 join freeze:** confirm with a real windowed join (rig joins x3 on a quiet PC; high priority if it returns).
+- **#4 chest self-test:** `Invalid access 'numbers' on Nil` at `inventory_view.gd:4562` in the shared-server run (log `smoke/logs/client_chest_shared_server.log`). It passed for me on a fresh server (`items_check --only chest`); find the shared-server path where `inventory` is nil (the retry/null guards in `run_chest_test` may not cover it) and fix.
+- **#6 sleep self-test:** now starts tired through `ACT_ADMIN_ENERGY` (`7834e327`); verify it passes in the shared-server run too (it passed alone).
+- **#7 shared-server self-tests leave pieces at the spawn,** so later bed/snare tests fail "not set down": run each self-test on a clean server, or clear the spawn between them.
+- **#10 bot budget:** steps 11-20 need about 62 sticks and `GATHER_BUDGET` is 60, so the bot stops before the bench (`test_playability_bot.gd`); raise to 70 (Sal's proposal) once he agrees, and check the 11 steps still pass.
+- **#11 camp bench and drink** have no automated check: add one (server-level test, then a client scene entry in `items_check.py`).
