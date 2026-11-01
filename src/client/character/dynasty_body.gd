@@ -27,13 +27,14 @@ const CLIP_MAP := {
 	"crouch_walk_right": ["Cautious_Crouch_Walk_Right", 0.0, -1.0, true, 0.93],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
-	"swing": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.4],
-	"swing_fp": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.5],
-	# Heavy_Hammer_Swing is 1.83 s with TWO blows (arm speed peaks at 0.73 s and 1.53 s; the first blow lands at about 0.78 s, read from the glb's rotation keys 1 Nov 2026).
-	# Only the first blow is kept so one swing is one hit: it ends at 1.48 s and is retimed to the game's 0.95 s chop, which puts the blow at 0.50 s, the moment held_item.gd
-	# HIT_AT sends the sound and the hit. The pick (1.0 s, hit at 0.52 s) uses 1.5 s at 0.667.
-	"chop": ["Heavy_Hammer_Swing", 0.0, 1.48, false, 0.642],
-	"pick_overhead": ["Heavy_Hammer_Swing", 0.0, 1.5, false, 0.667],
+	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
+	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
+	# of 0.95 s (0.52 of 1.0 for the pick, held_item.gd HIT_AT), so the rise is squeezed before the impact (taken at 1.68 s, the hands nearly at their lowest) and the short follow-through is
+	# stretched after it. The last element is [impact in the source, new length, new impact time].
+	"swing": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.7, 0.37]],
+	"swing_fp": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
+	"chop": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
+	"pick_overhead": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 1.0, 0.52]],
 	"jab": ["Right_Jab_from_Guard", 0.0, -1.0, false, 0.4],
 	"throw": ["Charged_Spell_Cast", 0.0, -1.0, false, 0.4],
 	"use": ["Push_Forward_and_Stop", 0.0, -1.0, false, 0.5],
@@ -131,7 +132,7 @@ func _build_animations() -> void:
 
 		for game_name in CLIP_MAP:
 			var row: Array = CLIP_MAP[game_name]
-			_library.add_animation(game_name, _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4])))
+			_library.add_animation(game_name, _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else []))
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
@@ -142,10 +143,20 @@ func _build_animations() -> void:
 
 # A copy of `src` between `from` and `to` seconds, its time multiplied by `retime`, looping or not. The hips travel on the ground is replaced by its deviation from a straight line, so
 # a clip with root motion stays on the spot and a loop stays a loop.
-static func _clip(src: Animation, from: float, to: float, loop: bool, retime: float) -> Animation:
+static func _clip(src: Animation, from: float, to: float, loop: bool, retime: float, shape: Array = []) -> Animation:
 	var end: float = src.length if to < 0.0 else minf(to, src.length)
 	var out: Animation = Animation.new()
 	out.length = maxf((end - from) * retime, 0.05)
+
+	# `shape` = [impact in the source, new length, new impact time]: the time before the impact and the time after it are scaled separately.
+	var impact: float = float(shape[0]) if shape.size() == 3 else -1.0
+	var first_scale: float = 1.0
+	var second_scale: float = 1.0
+
+	if impact > 0.0:
+		first_scale = float(shape[2]) / (impact - from)
+		second_scale = (float(shape[1]) - float(shape[2])) / maxf(end - impact, 0.01)
+		out.length = float(shape[1])
 	out.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
 
 	for t in range(src.get_track_count()):
@@ -157,6 +168,9 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 		var track: int = out.add_track(type)
 		out.track_set_path(track, src.track_get_path(t))
 		var times: Array = [from]
+
+		if impact > 0.0:
+			times.append(impact)
 
 		for k in range(src.track_get_key_count(t)):
 			var kt: float = src.track_get_key_time(t, k)
@@ -175,6 +189,9 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 
 		for kt in times:
 			var when: float = (float(kt) - from) * retime
+
+			if impact > 0.0:
+				when = (float(kt) - from) * first_scale if float(kt) <= impact else float(shape[2]) + (float(kt) - impact) * second_scale
 
 			if type == Animation.TYPE_POSITION_3D:
 				var p: Vector3 = src.position_track_interpolate(t, float(kt))
