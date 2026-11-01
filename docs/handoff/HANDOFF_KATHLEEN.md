@@ -40,3 +40,8 @@ Not seen in the real game: long-roof lean-to with bed, the ten kits, larger hand
 
 ## Next tasks I would have done
 Cut-log bark look; stump bark ridges; darker stone axe head; real-game pass for lean-to, kits, hands, fibre cloth (one card each); then fix the worst three pictures in `art/playthrough` rated 1 to 3.
+
+## Update 2026-11-01: stump rule from Dave
+Chopping a stump still in the ground just chops it up: it disappears and gives firewood and kindling, no fallen log. Models therefore now UNNEEDED: felled-stump and chopped-pieces models (the stump_chop / stump_gone pictures of `--shot-fell`, any "chopped stump" look). `_make_felled(false, ...)` (the standing stump) is still used. The felled-trunk look only matters for trees that really fall. Do not spend more shots on stump chopping.
+Firewood and kindling looks exist but are plain: `data/items/looks.json` firewood (bundle #8a5e36), firewood_soft (bundle #9a7a4a), kindling (bundle #a8845a, size 0.6); the world drop of firewood is a split stick in inventory_view.gd (~line 2533). They have not been checked in game or improved; this is item 6 of SCOPE_KATHLEEN.md.
+Stopped on Dave's order: the lying-trunk shot (`--shot-fell=flat`) was killed mid-run; no tests were running. To re-run after RESTART: the fell shot, then the tests listed above.
