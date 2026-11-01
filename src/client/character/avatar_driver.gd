@@ -103,6 +103,58 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)
 
 
+# The state hooks of the Dynasty body (docs/DYNASTY_BODY.md): swimming, drinking, picking up, sitting down, standing up and waking, each a clip the game asks for
+# when its state says so. `ctx` is {swimming, asleep, stance (what choose_clip sees), drink_stamp, pick_stamp (msec of the latest drink and pick-up; 0 = never)}.
+# Returns the clip to play instead of the usual one, "" for none. A body without these clips (the generated body, the old ragdoll) always gets "". The one-shots
+# play for the clip's own length; swimming holds for as long as it lasts. State between frames lives in meta on the avatar.
+const HOOK_CLIPS := ["swim", "swim_idle", "drink", "pick_up", "sit_down", "stand_up", "wake_up"]
+
+
+static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> String:
+	if avatar == null:
+		return ""
+
+	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
+
+	if player == null or not HOOK_CLIPS.all(func(name): return player.has_animation(name)):
+		return ""
+
+	var left: float = maxf(float(avatar.get_meta("hook_t", 0.0)) - delta, 0.0)
+	var held: String = str(avatar.get_meta("hook_clip", ""))
+	var stance: int = int(ctx.get("stance", StanceScript.STAND))
+	var seen: Dictionary = avatar.get_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0)), "pick": int(ctx.get("pick_stamp", 0))})
+	var start: String = ""
+
+	# The latest event wins; each is noticed once, when its state changes.
+	if bool(seen["asleep"]) and not bool(ctx.get("asleep", false)):
+		start = "wake_up"
+	elif int(seen["stance"]) == StanceScript.STAND and stance == StanceScript.SIT:
+		start = "sit_down"
+	elif int(seen["stance"]) == StanceScript.SIT and stance == StanceScript.STAND:
+		start = "stand_up"
+
+	if int(ctx.get("drink_stamp", 0)) != int(seen["drink"]) and int(ctx.get("drink_stamp", 0)) > 0:
+		start = "drink"
+	elif int(ctx.get("pick_stamp", 0)) != int(seen["pick"]) and int(ctx.get("pick_stamp", 0)) > 0 and start == "":
+		start = "pick_up"
+
+	avatar.set_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0)), "pick": int(ctx.get("pick_stamp", 0))})
+
+	if bool(ctx.get("swimming", false)):
+		avatar.set_meta("hook_t", 0.0)
+		avatar.set_meta("hook_clip", "")
+		return "swim" if pace > WALK_MIN_PACE * 0.5 else "swim_idle"
+
+	# A one-shot only starts standing or sitting still enough to show it: walking on, the pick-up and the drink are skipped (a sweep would never let the body walk).
+	if start != "" and (start != "pick_up" or pace < JOG_FROM):
+		held = start
+		left = player.get_animation(start).length
+
+	avatar.set_meta("hook_t", left)
+	avatar.set_meta("hook_clip", held if left > 0.0 else "")
+	return held if left > 0.0 else ""
+
+
 # Which crouched walking clip for a velocity in the body's own frame (x right, y the world z, so forward is -y): back, sideways or forward.
 static func crouch_walk_clip(velocity_local: Vector2) -> String:
 	var pace: float = velocity_local.length()

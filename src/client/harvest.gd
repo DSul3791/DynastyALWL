@@ -144,6 +144,7 @@ func tap() -> void:
 
 
 func _pick(c: Dictionary) -> void:
+	_items.pick_stamp = Time.get_ticks_msec()
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
 	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])
 	if int(c.get("left", -1)) < 0:   # a fruit tree stays and is picked again and again: the count the server sends is what hides it

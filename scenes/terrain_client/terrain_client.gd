@@ -2910,6 +2910,11 @@ func _update_view(delta: float) -> void:
 
 		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
 		# swing and its impact frame is the moment held_item.gd sends the blow.
+		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0, "pick_stamp": items.pick_stamp if items != null else 0}, pace, delta)
+
+		if hook != "" and debug_clip == "":
+			clip = hook
+
 		var work: String = held.work_clip() if held != null else ""
 
 		if work != "" and _avatar.animation_player.has_animation(work):
