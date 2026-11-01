@@ -1,5 +1,7 @@
 # Scope: Sal, the items agent (written 1 Nov 2026)
 
+> **CLARIFIED (Dave, 1 Nov 2026): you are responsible for ALL items in the game: what they are, how they are made, and how they work** (use, eat, wear, place; numbers and text). Kathleen and Kathreen handle how they look. When an item needs a new code rule, you write the data and the spec and hand the code to the system owner (Steve for sub-systems).
+
 Read `HANDOFF_SAL.md` first for the open risks and how to test. This file says what the job is, what has been done, and what is left.
 
 ## 1. What the job is, and where it starts and stops

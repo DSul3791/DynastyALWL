@@ -1,5 +1,7 @@
 # Scope: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough), 1 Nov 2026
 
+> **CLARIFIED (Dave, 1 Nov 2026): your job is to BUILD the playthrough and walkthrough guides and TEST them.** You report your findings to the moderator, who hands each problem to whoever should fix it. You do not fix, and you do not route problems to owners yourself.
+
 Read `HANDOFF_DINO.md` in the same folder first for how to run things. This file says what the job is.
 
 ## 1. The job, and where it starts and stops
