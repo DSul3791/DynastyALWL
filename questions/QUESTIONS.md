@@ -86,3 +86,24 @@ Note: What changes: lakes must have a lip of at least 4 m (coastal flats no long
 Note: Time: not measured on this machine; I will first bake ONE tile (3,4) and time it, then do the rest. Risk: the shape of lakes, rivers and the spawn area changes, so anything placed by hand near water may sit wrong; a bad bake is the main risk. Roll back: the old tiles stay in git (no tile is committed without your go), restore them and set TERRAIN_VERSION back to 44. Branch: terrain-bake-set (merge of claude/land-types2-springfeed plus lake-lip on the daily), unbaked and unrun.
 - Yes
 - No
+
+## death-before-heirs | You said: respawn at the bed until level 10, then real death. Children and heirs are not built yet. What should happen to a level 10 character who dies, until they are?
+Note: Today a death leaves your remains with all your gear and then puts you back at the spawn point (nothing is lost for good). Real death needs a screen that says you died and sends you to the creator for a new character; that screen is not built.
+Note: Option A (recommended): keep respawning at level 10 and above, but leave the remains as today; switch to real death in the same release that adds children and the death screen. Nobody loses a character before there is anyone to inherit.
+Note: Option B: real death now. The character is gone, the player makes a new one, the old gear waits in the remains for 7 days. Needs the death screen first (a few days of work).
+- Keep respawning until heirs and the death screen exist (recommended)
+- Real death at level 10 now, build the death screen first
+
+## death-new-start | After a real death with no child, where and how does the new character start?
+Note: Design says the gear stays on the remains (owner only for the first real day, anyone after) and a wizard can fetch it for a fee.
+Note: Recommendation A: the new character starts at the world spawn with an empty pack, like a new player; their old remains are marked on the map.
+- At the world spawn, empty pack (recommended)
+- At the world spawn with a small starter kit (stick, stone, twine)
+- At the dead character's last bed, empty pack
+
+## death-downed-state | Should we build the "downed" state (knocked out, can be revived or carried, bleeds out after a timer) before real death?
+Note: Design 6.1 decided it (ARK style). It is large: a new body pose, a revive action, a timer that keeps running while offline, and carrying another player.
+Note: Recommendation A: no, build it after real death and children. Today a character at zero health dies at once.
+- Later, after real death and children (recommended)
+- Before real death
+- Never, keep death immediate
