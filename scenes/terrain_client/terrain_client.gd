@@ -2930,13 +2930,14 @@ func _dress_avatar() -> void:
 
 
 func _make_avatar() -> Node3D:
-	# --generated-body (off by default, untested in the running game): the generated body of src/client/character/ instead of the old ragdoll.
-	var avatar: Node3D = GeneratedBodyScript.new(MyCharacter.genome()) if MyCharacter.generated_body_on() else RagdollScript.new()
+	# Dave's own body (1 Nov 2026) is the default; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" brings back the body worn before it (the generated body of
+	# src/client/character/, or the old ragdoll with `--old-body`).
+	var avatar: Node3D
 
-	# Dave's own body (1 Nov 2026), behind `--dynasty-body` or Esc > Settings > Gameplay > "Dynasty body (next Play)"; the other bodies stay as they were.
 	if MyCharacter.dynasty_body_on():
-		avatar.free()
 		avatar = DynastyBodyScript.new()
+	else:
+		avatar = GeneratedBodyScript.new(MyCharacter.genome()) if MyCharacter.generated_body_on() else RagdollScript.new()
 
 	avatar.visible = false
 	return avatar

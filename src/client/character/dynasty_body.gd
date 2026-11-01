@@ -4,7 +4,7 @@ extends Node3D
 # held_item.gd and avatar_driver.gd use on the avatar: skeleton, body_mesh, animation_player, hand_mount_r, hand_mount_l, head_mount, play, current, is_one_shot_playing, dress,
 # set_shoulder_log. The glb is a skinned Mixamo rig (24 bones, 55 thousand triangles, one baked material, two 4096 px textures) with 84 clips; the game's clip names are mapped onto
 # Dave's clips (CLIP_MAP below) and every clip stays available under its own name too.
-# Off by default: `--dynasty-body` on the client, or Esc > Settings > Gameplay > "Dynasty body (next Play)" (my_character.gd `dynasty_body_on`). The old bodies are untouched.
+# The player's body by default since 1 Nov 2026; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" (my_character.gd `dynasty_body_on`) brings back the previous one. NPCs and the first-person arms keep their own bodies.
 # Known gaps (docs/DYNASTY_BODY.md): worn clothing is not hung (the worn pieces are written for other bones), the skin and clothes colours are baked into the texture, the log on the
 # shoulder does not raise the arm, the crouch and lie clips are the nearest of Dave's, the first-person arms stay the ragdoll arms.
 

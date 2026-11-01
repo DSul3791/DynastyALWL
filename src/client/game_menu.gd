@@ -28,7 +28,7 @@ var _voice_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
-var _dynasty_body_switch
+var _old_body_switch
 var _old_water_switch
 var _admin_mode_switch
 var _cave_button: Button
@@ -299,10 +299,10 @@ func _build_gameplay() -> void:
 		WaterChoice.set_old_water(on)
 		note.text = "Water: the %s water runs the next time you press Play (saved)." % ("old" if on else "new"))
 	_old_water_switch.set_on(WaterChoice.old_water())
-	_dynasty_body_switch = _switch_row(gameplay, "Dynasty body (next Play)", func(on: bool):
-		MyCharacter.set_dynasty_body(on)
-		note.text = "Body: Dave's Dynasty body %s the next time you press Play (saved)." % ("is worn" if on else "is off"))
-	_dynasty_body_switch.set_on(MyCharacter.dynasty_body_on())
+	_old_body_switch = _switch_row(gameplay, "Old body (next Play)", func(on: bool):
+		MyCharacter.set_old_body(on)
+		note.text = "Body: the %s body is worn the next time you press Play (saved)." % ("old" if on else "Dynasty"))
+	_old_body_switch.set_on(MyCharacter.old_body())
 	_tunnel_switch = _switch_row(gameplay, "Tunnel collapse (admin)", func(on: bool):
 		_c.net.tunnel_setting.rpc_id(1, on, _c.tunnel_cave_in_s))
 	_cave_button = _button(gameplay, "Cave-in time", func():
