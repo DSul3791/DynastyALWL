@@ -286,7 +286,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
 	var value: int = int(entry.get("value", 0))
-	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is half a copper; sold in lots of 2, one price per lot, a single stone pays nothing
+	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
 
 	if lot > 1:
 		count -= count % lot
