@@ -6,7 +6,7 @@ extends Node3D
 # Dave's clips (CLIP_MAP below) and every clip stays available under its own name too.
 # The player's body by default since 1 Nov 2026; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" (my_character.gd `dynasty_body_on`) brings back the previous one. NPCs and the first-person arms keep their own bodies.
 # Known gaps (docs/DYNASTY_BODY.md): worn clothing is not hung (the worn pieces are written for other bones), the skin and clothes colours are baked into the texture, the log on the
-# shoulder does not raise the arm, the crouch and lie clips are the nearest of Dave's, the first-person arms stay the ragdoll arms.
+# shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
 const P := "mixamorig_"
@@ -19,8 +19,12 @@ const CLIP_MAP := {
 	"walk": ["Walking", 0.0, -1.0, true, 0.82],         # 1.15 m/s in place, 1.4 wanted
 	"jog": ["Running", 0.0, -1.0, true, 1.22],           # 3.9 m/s in place, 3.2 wanted
 	"run": ["RunFast", 0.0, -1.0, true, 1.22],           # 7.3 m/s in place, 6.0 wanted
-	"crouch": ["Sneaky_Walk", 0.0, 0.04, true, 1.0],      # a held frame of the sneak: the nearest of Dave's clips to a still crouch
-	"crouch_walk": ["Sneaky_Walk", 0.0, -1.0, true, 1.0],
+	"crouch": ["CrouchLookAroundBow", 0.0, -1.0, true, 1.0],     # Dave's own crouch (hips 0.46 m), a slow look around
+	# Crouched movement: the stride is retimed to the game's crouch pace of 0.9 m/s (avatar_driver.gd speed_scale); in place speeds 1.22, 0.87, 0.99 and 0.84 m/s.
+	"crouch_walk": ["Cautious_Crouch_Walk_Forward", 0.0, -1.0, true, 1.36],
+	"crouch_walk_back": ["Cautious_Crouch_Walk_Backward", 0.0, -1.0, true, 0.97],
+	"crouch_walk_left": ["Cautious_Crouch_Walk_Left", 0.0, -1.0, true, 1.1],
+	"crouch_walk_right": ["Cautious_Crouch_Walk_Right", 0.0, -1.0, true, 0.93],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	"swing": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.4],

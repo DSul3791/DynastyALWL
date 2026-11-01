@@ -17,8 +17,8 @@ The player's body by default since 1 Nov 2026 (Dave). To go back to the body wor
 | walk, carry_walk | Walking | the arm does not rise to steady a shoulder log |
 | jog | Running | |
 | run | RunFast | |
-| crouch | Sneaky_Walk, one held frame | GAP: hips only 10 cm lower than standing; Dave has no still deep crouch |
-| crouch_walk | Sneaky_Walk | not picked by the driver yet |
+| crouch | CrouchLookAroundBow (98-clip export) | hips 0.46 m, loops, feet on the ground |
+| crouch_walk, _back, _left, _right | Cautious_Crouch_Walk_Forward, _Backward, _Left, _Right | retimed to the game's 0.9 m/s crouch pace; `avatar_driver.gd clip_for` picks one by velocity for a body that has them (the Dynasty body only) |
 | sit | Chair_Sit_Idle_M | hips 0.51 m, right |
 | lie | Sleep_Normally | head toward +Z, hips 0.18 m, right |
 | swing, swing_fp, chop, pick_overhead | Heavy_Hammer_Swing | two-handed overhead; impact frame not tuned to held_item's HIT_AT (0.5 s of 0.95 s) |
@@ -48,3 +48,6 @@ Lower-detail variants of the character for low settings and distant NPCs (fewer 
 
 ## Code owner for hooks (Steve)
 Swim, drink, pick up, sit down, stand up and wake up need the avatar driver to ask for the clip when the game state says so (`avatar_driver.gd choose_clip`); nothing in this branch changes gameplay code.
+
+## New clips of the 98-clip export (1 Nov, later)
+14 added: Cautious_Crouch_Walk x4 and CrouchLookAroundBow (wired); Crouch_Pull_and_Throw (a crouched throw, NOT wired: the game's throw is standing; Dave to say), Crouch_Walk_with_Torch and _Left/_Right_with_Torch (candidates for a held torch while crouched), Crawl_Backward, Crawl_and_Look_Back (a prone crawl), Squat_Stance, Idle_5, Idle_10 (idle variants). None fits jab, use or the log carry; those gaps stand. Stats: `art/CRITIQUES/dynasty_base_male_2026-11-01/clip_stats_98.md`.

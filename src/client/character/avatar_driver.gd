@@ -68,6 +68,11 @@ static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: f
 static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_floor: bool, pace: float, current: String, carrying: bool, delta: float) -> String:
 	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
 
+	# The Dynasty body (dynasty_body.gd) has crouched walking clips but not the jump set: crouched and moving it walks bent, in the direction of the velocity.
+	if player != null and not player.has_animation("jump") and player.has_animation("crouch_walk_back") and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
+		var crouch_local: Vector3 = basis.inverse() * velocity
+		return crouch_walk_clip(Vector2(crouch_local.x, crouch_local.z))
+
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
 
@@ -98,6 +103,20 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)
 
 
+# Which crouched walking clip for a velocity in the body's own frame (x right, y the world z, so forward is -y): back, sideways or forward.
+static func crouch_walk_clip(velocity_local: Vector2) -> String:
+	var pace: float = velocity_local.length()
+	var forward: float = -velocity_local.y
+
+	if forward < -0.5 * pace:
+		return "crouch_walk_back"
+
+	if absf(velocity_local.x) > 0.8 * pace:
+		return "crouch_walk_right" if velocity_local.x > 0.0 else "crouch_walk_left"
+
+	return "crouch_walk"
+
+
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 static func speed_scale(clip: String, pace: float) -> float:
 	if clip == "panic_run":
@@ -109,7 +128,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 	if clip == "strafe_left" or clip == "strafe_right":
 		return clampf(pace / 1.3, 0.5, 1.6)
 
-	if clip == "crouch_walk":
+	if clip.begins_with("crouch_walk"):
 		return clampf(pace / 0.9, 0.5, 1.6)
 
 	if clip == "carry_walk":
