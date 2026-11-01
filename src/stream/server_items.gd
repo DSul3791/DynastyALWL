@@ -2568,6 +2568,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground):
+		_say(peer, "The ground there is not ready yet. Try again in a moment.")   # the terrain under the ghost has not streamed in
 		return
 
 	if ground < 1.0:
