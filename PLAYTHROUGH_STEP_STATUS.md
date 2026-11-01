@@ -1,3 +1,21 @@
+# UPDATE 1 Nov evening (daily 224e78bd): headless first-hour reruns after the Dynasty body, E rules, fire tiers, carry weights, logs everywhere
+Run in my worktree with the slots shared with Tyler's test pass, so frames were slow. Logs: art/playthrough/smoke/logs, outputs: art/playthrough/refresh1nov/.
+
+| Step | Result on 224e78bd |
+|---|---|
+| Arrival (join, ground) | OK: ground ready after 22 s, no retries |
+| Gather (sticks, stones) | ran, no error of its own |
+| Plant pick | PASS: tried 8, gone 8 |
+| Chop | 10 blows, felled states [3, 4] seen: OK |
+| Cook | COOK TEST PASS |
+| Spear / campfire kit | ran: kit slot 1, fires in view, states [3, 4, 40, 9] |
+| Walk | joined, but ground took 94 s after the welcome (loads 10952, 0 failed); the other runs took 22-30 s. Probably the shared machine, not confirmed |
+| Fire, lean-to, sleep | queued behind these when this was written, see below if present |
+
+New errors on this daily (all in FINDINGS_REPORT rows 22-23):
+- `terrain_client.gd:2915` `_avatar.animation_player.active` on Nil: 45,600 times in every client log. Cause is the Dynasty body not loading in my worktree: its .glb has no import cache here (`Cannot open file res://.godot/imported/Dynasty_Base_Male...scn`), then `dynasty_body.gd:78` instantiate on null. The missing import is probably my worktree (never opened in the editor), so check on a project that has been imported. But the line has no null guard, so a body that fails to load makes the log flood and the avatar vanish.
+- Not re-run: lying picture, felled-trunk bark picture, creator view (rig pictures need the windowed slot).
+
 # PLAYTHROUGH_STEP_STATUS: the 22 first-hour steps, which work end to end (paper review, 31 Oct afternoon)
 
 Written with no Godot run (Dave has the computer): from the daily head code and data (13b84fa3 merged), the tutorial text, and the probe and smoke results from earlier today. WORKS = a probe, test or bot has driven it on the real server code and nothing found; CLIENT = the client side (hands, prompts, pictures) was not driven by me; OPEN = something known is wrong. "Re-run" names what to run when the computer is back (list at the end).

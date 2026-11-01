@@ -30,3 +30,10 @@ Format: what | evidence | suggested owner | severity. Paths are relative to the 
 | 21 | Sleep self-test now PASSES on a clean server | phase2/client_sleep_clean.log | resolved (row 6) | info |
 
 Not yet done (superseded by the Phase 2 table in PLAYTHROUGH_STEP_STATUS.md): creator picture, windowed rig walk of checklist steps 1-14, sleep test on a clean server with low energy.
+
+## Added 1 Nov evening (daily 224e78bd)
+| # | What | Evidence | Suggested owner | Severity |
+|---|---|---|---|---|
+| 22 | `terrain_client.gd:2915` `_avatar.animation_player.active = ...` has no null guard. When the Dynasty body fails to load (Dynasty_Base_Male.glb not imported, `dynasty_body.gd:78` instantiate on null) it errors every frame: 45,600 lines per client run | SMOKE_TEST.md, art/playthrough/smoke/logs/client_*.log | Sonny (character) | HIGH if a fresh clone can hit it; LOW if only a never-imported worktree does. Dave's checkout should be checked |
+| 23 | Walk run: ground took 94 s after the welcome (other runs 22-30 s), 0 failed loads | client_walk.log JOIN line | Tyler (join) | MED, unconfirmed: machine was shared |
+| 24 | The playthrough guides were out of date on fire burn times (game minutes vs real 2 min / 20 min / 3 h), lean-to numbers, stump chop, axe time, bed recipe, F-16 logs | updated in this branch | n/a (done) | done |
