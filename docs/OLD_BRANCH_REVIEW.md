@@ -192,3 +192,12 @@ Already done (delete): `sonny-farmland-tune`, `sonny-held`, `steve-erosion-threa
 
 ## Kathleen (20 of 20, 1 Nov)
 Already done: `kathleen-basic-looks`, `kathleen-looks-v2`, `kathleen-looks-v5`, `kathleen-clothing`, `kathleen-held-pose`, `kathleen-tool-pass`. Drop: `kathleen-goal2-b`, `kathleen-showroom-test`, `mike-evidence-bowl`, `mike-evidence-goal2b`, `mike-evidence-hands10`. PORT (keep until ported): `kathleen-body-details` (Kathreen: nose, brow, chin, ears, thumbs), `kathleen-dirt-pile`, `kathleen-r1-looks` (straw thatch), `kathleen-stone-look` (Kathleen, small). Check: `sal-net-look`, `kathleen-materials` and `kathleen-spades` (place sounds go to Jason; looks already in daily). Ground PBR (`kathleen-photoreal-batch1`, `mike-pbr-ground`): moderator decision: ground LOOK is the art team's (Dave: looks are artistic); Kathleen/Kathreen port only if the ground reads flat in game; licences in `CREDITS_PBR.csv`.
+
+## Late decisions (1 Nov)
+- `claude/sal-no-rose-berries`: **drop, hips stay** (Sal: hips are seed pods, real autumn forage, not berries; porting would make `rose_hips` unobtainable and fail `validate_items`). Reversible: port `1174dd91` and flag `rose_hips` future.
+- `claude/mike-rig-v4` (Kathleen): held pose edits already done; one small optional port (pickaxe head as a four-segment curve), only if the pickaxe looks stiff in game. Keep until then.
+- `claude/kathleen-shovel` (Jason): **port** the `soil_load`/`stone_load` placeholder sounds (shovel raise mode exists; the daily has no such sounds). Keep until ported.
+- `claude/kathleen-body-details` (Kathreen): port candidate (step 4b of `SCOPE_KATHREEN.md`).
+
+# Delete lists (E:\Software\godotDev\DynastyALWL_ProjectBackups\worktree_leftovers_2026-11-01\)
+`merged_branches_to_delete.txt` (265, merged into the daily) and `old_branches_to_delete.txt` (88, owner-approved drop or already done). Keep: the PORT/backlog branches (29) until ported, `qa-poke`, `main`, the daily, `qa`, the active agent branches.
