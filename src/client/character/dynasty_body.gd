@@ -55,6 +55,8 @@ const CLIP_MAP := {
 }
 
 static var _scene: PackedScene
+static var _checked: int = -1                  # -1 not tried yet, 0 the glb cannot be used, 1 it can
+static var force_unavailable: bool = false     # tests: pretend the glb is not imported
 static var _library: AnimationLibrary          # the game's names and Dave's own names, built once and shared
 
 var arms_only: bool = false
@@ -69,8 +71,39 @@ var _log: MeshInstance3D
 var _model: Node3D
 
 
+# True when Dave's glb is imported and holds a skeleton, a mesh and an AnimationPlayer. Checked once per run; when it is not (a fresh checkout before `godot --import`) one line says so and the
+# game keeps the body it wore before (my_character.gd make_avatar), so the player is never bodiless.
+static func available() -> bool:
+	if force_unavailable:
+		return false
+
+	if _checked < 0:
+		_checked = 0
+
+		if ResourceLoader.exists(GLB):
+			var packed: PackedScene = load(GLB) as PackedScene
+
+			if packed != null:
+				var probe: Node = packed.instantiate()
+				var ok: bool = not probe.find_children("*", "Skeleton3D", true, false).is_empty() and not probe.find_children("*", "MeshInstance3D", true, false).is_empty() and not probe.find_children("*", "AnimationPlayer", true, false).is_empty()
+				probe.free()
+
+				if ok:
+					_scene = packed
+					_checked = 1
+
+		if _checked == 0:
+			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: using the previous body this run (run godot --import once)" % GLB)
+
+	return _checked == 1
+
+
 func _init() -> void:
 	name = "DynastyBody"
+
+	if not available():
+		_make_empty()
+		return
 
 	if _scene == null:
 		_scene = load(GLB) as PackedScene
@@ -213,6 +246,23 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 				out.scale_track_insert_key(track, when, src.scale_track_interpolate(t, float(kt)))
 
 	return out
+
+
+# A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
+func _make_empty() -> void:
+	skeleton = Skeleton3D.new()
+	add_child(skeleton)
+	body_mesh = MeshInstance3D.new()
+	add_child(body_mesh)
+	animation_player = AnimationPlayer.new()
+	add_child(animation_player)
+	animation_player.add_animation_library("", AnimationLibrary.new())
+	hand_mount_r = Marker3D.new()
+	hand_mount_l = Marker3D.new()
+	head_mount = Marker3D.new()
+	add_child(hand_mount_r)
+	add_child(hand_mount_l)
+	add_child(head_mount)
 
 
 func play(animation: String, speed: float = 1.0, blend: float = 0.15) -> void:

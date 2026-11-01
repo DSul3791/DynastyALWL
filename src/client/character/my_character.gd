@@ -5,6 +5,9 @@ extends RefCounted
 
 const Store := preload("res://src/client/character/character_store.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
+const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
+const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const LEGACY_PATH := "user://my_character.code"       # the single saved code of the first creator; still worn when no character has been made yet
 
 
@@ -30,6 +33,15 @@ static func set_old_body(on: bool, path: String = SETTINGS_PATH) -> void:
 	file.load(path)
 	file.set_value("character", "old_body", on)
 	file.save(path)
+
+
+# The body the player wears this run: Dave's Dynasty body when it is wanted and usable, else the generated body, else the old ragdoll (`--old-body`). A Dynasty glb that is not imported
+# (a fresh checkout before `godot --import`) falls back to the generated body, so there is always a body with an AnimationPlayer.
+static func make_avatar() -> Node3D:
+	if dynasty_body_on() and DynastyBodyScript.available():
+		return DynastyBodyScript.new()
+
+	return GeneratedBodyScript.new(genome()) if generated_body_on() else RagdollScript.new()
 
 
 static func generated_body_on() -> bool:
