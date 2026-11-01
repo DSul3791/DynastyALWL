@@ -295,32 +295,23 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	var st2: Dictionary = _refresh(npc_id)
 	var till: int = int(floor(float(st2["purse"])))
 
-	# Sold by the lot (items.json "sell_by_lot", Dave 1 Nov: a stone is worth half a copper): the units' prices add up as fractions, the lot pays whole coppers rounded
-	# down, and a trailing unit that would only pay a fraction stays in the pack. One unit worth less than a copper is refused with a message.
-	if bool(entry.get("sell_by_lot", false)):
-		var sum_f: float = 0.0
-		var prices_f: Array = []
+	# Sold by the lot (items.json "sell_lot": N, default 1; Dave 1 Nov: about 5 stones make 1 copper): only whole lots are bought, each lot pays like one item of that value
+	# (demand falls per unit sold), the odd units stay in the pack and the message says so.
+	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)
+	var asked: int = count
 
-		for k in count:
-			var unit_f: float = float(value) * float(m["get"]) * maxf(base_demand - drop * float(k), floor_d) * life
+	if lot > 1:
+		if count < lot:
+			return "%s sells in lots of %d." % [items.table.name_of(number2), lot]
 
-			if int(floor(sum_f + unit_f + 0.0001)) > till:
+		for j in int(count / lot):
+			var each_lot: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(j * lot), floor_d), life)
+
+			if each_lot <= 0 or total + each_lot > till:
 				break
 
-			sum_f += unit_f
-			prices_f.append(unit_f)
-
-		var whole: int = int(floor(sum_f + 0.0001))
-
-		while not prices_f.is_empty() and sum_f - float(whole) > 0.0001 and float(prices_f[prices_f.size() - 1]) <= sum_f - float(whole) + 0.0001:
-			sum_f -= float(prices_f.pop_back())
-			whole = int(floor(sum_f + 0.0001))
-
-		if whole <= 0 or prices_f.is_empty():
-			return "He cannot pay for that just now." if till < 1 else "%s sell in pairs, one is not worth a copper." % items.table.name_of(number2)
-
-		total = whole
-		paid_for = prices_f.size()
+			total += each_lot
+			paid_for += lot
 	else:
 		# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
 		for k in count:
@@ -356,7 +347,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._gain_quiet = false
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
-	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(total)]
+	var lot_note: String = " %s sells in lots of %d." % [items.table.name_of(number2), lot] if lot > 1 and asked % lot != 0 else ""
+	return "Sold %d %s for %s.%s" % [count, items.table.name_of(number2).to_lower(), items._coin_words(total), lot_note]
 
 
 # kind 3, "Would you like to buy my extra stuff?" (Dave 2026-10-22): one click sells every pack stack of the kinds coins.json

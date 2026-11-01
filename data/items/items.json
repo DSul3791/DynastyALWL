@@ -12,7 +12,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_by_lot": true,
+			"sell_lot": 5,
 			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
