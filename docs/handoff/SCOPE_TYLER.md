@@ -1,4 +1,4 @@
-# Scope: Tyler (systems, comfort, placement, tests), 1 Nov 2026
+# Scope: Tyler: Q&A Testing, 1 Nov 2026
 
 Read `HANDOFF_TYLER.md` next to this one: it holds the in-flight state, risks and how to run things.
 

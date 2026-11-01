@@ -1,4 +1,4 @@
-# Handoff: Tyler (systems, comfort, placement, tests), 1 Nov 2026
+# Handoff: Tyler: Q&A Testing, 1 Nov 2026
 
 ## My role
 Server-side game systems and their tests for DynastyALWL (Godot 4.7): comfort and the Rested buff, lit fixtures and fire light, placement, hints and goals, death rules, the test and rig tooling. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
