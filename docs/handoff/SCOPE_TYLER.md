@@ -1,5 +1,7 @@
 # Scope: Tyler: Q&A Testing, 1 Nov 2026
 
+> **ROLE CHANGE (Dave, 1 Nov 2026): Steve: Systems now owns the sub-systems** (character system, comfort and Rested, food and drink, warmth, sleep and energy, lit fire/fixture rules, kit and structure placement rules, death and respawn rules, goal and hint triggers, stump and trunk work). **You are Q&A testing and tooling:** the test suite and full test passes, rigs and probes, regressions, the join freeze and stability, merge gates. Hand each system's open items to Steve with a short note.
+
 > **UPDATE (Dave, 1 Nov 2026): animal placement and behaviour are MikeW's.** You keep only the shared server rules animals plug into (damage and death handling, carcass, protocol).
 
 > **ROLE REMOVAL (Dave, 1 Nov 2026): fire and flame LOOKS are Kathleen's.** You keep the rules (lit/unlit, fuel, warmth, saved lit state, who can light). Light node parameters and flame models are hers; review her code edits.
