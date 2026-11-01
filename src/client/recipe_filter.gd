@@ -11,7 +11,7 @@ static func shown(recipe: Dictionary, category: String, typed: String, table = n
 	if category != "" and str(recipe.get("category", "")) != category:
 		return false
 
-	var words: PackedStringArray = typed.strip_edges().to_lower().split(" ", false)
+	var words: PackedStringArray = typed.replace("\t", " ").replace("\n", " ").replace("\r", " ").strip_edges().to_lower().split(" ", false)   # pasted text may carry tabs and new lines
 
 	if words.is_empty():
 		return true
