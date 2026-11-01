@@ -1,6 +1,6 @@
 # Document map (Jamie, 1 Nov 2026)
 
-Every markdown file in git outside `docs/archive/`, `.claude/` and `addons/`: **324 files** (120 of them the frozen `docs/mirror/`). Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change).
+Every markdown file in git outside `docs/archive/`, `.claude/` and `addons/`: **about 328 files** (120 of them the frozen `docs/mirror/`). Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change).
 
 Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the named file, then archive the rest), **ARCHIVE** (to `docs/archive/YYYY-MM/`, with git mv), **review** (overlap seen, owner to decide).
 
@@ -158,6 +158,8 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 Jason's three, all keep: `SOUND_AUDIT.md` (findings record), `docs/SOUND_MAP.md` (hook audit and sound map), `docs/handoff/SCOPE_JASON.md` (plan). `docs/START_HERE.md`, `docs/DOC_MAP.md` and `docs/handoff/SCOPE_JAMIE.md` were added after the table was built; `docs/handoff/` now holds 21 files.
 
 Added at handoff (1 Nov, all keep): `docs/CLOSING_PLAN.md` (moderator: what each agent finishes; "done" defined), `docs/OLD_BRANCH_REVIEW.md` (moderator: unmerged branches and verdicts), `docs/ECONOMY_FIRST_DAY.md` (Sal: cheap goods and sell lots), `docs/TERRAIN_WATER_BACKLOG.md` (Sonny), `docs/KATHLEEN_NEXT_TASKS.md` (Kathleen), `docs/handoff/HANDOFF_JASON.md` and `JASON_NEXT_TASKS.md` (Jason), `docs/handoff/HANDOFF_KATHREEN.md` (Kathreen), `docs/handoff/SAL_SPECS_FOR_STEVE.md` (Sal to Steve), `docs/handoff/PHASE2_RUNBOOK.md` (Dino: commands and the 14-step walk, run only after RESTART). `art/CRITIQUES/` rounds Dave judged are now in `art/CRITIQUES/_archive/` (Kathleen), 43 folders remain.
+
+Added 1 Nov evening (keep): `docs/CARRY_WEIGHTS.md` (Sal: why picking overloaded Dave, new item weights in `data/items/weights.json`; capacity left unchanged), `docs/DYNASTY_BODY.md` (Kathleen: Dave's body glb, how it is wired, clip table, what is left; flag `--oldbody`), `art/CRITIQUES/dynasty_base_male_2026-11-01/` (body clip stats). `CONTROLS.md` gained K (photo camera) and `/` (inspection mode). `HANDOFF_MODERATOR.md` and `SCOPE_MODERATOR.md` were updated by the moderator.
 
 ## Backlogs: where each agent's open work is written (final pass, 1 Nov; plan: `docs/CLOSING_PLAN.md`)
 Done = merged in the daily, or written in the owner's backlog with owner, next step and why not done.

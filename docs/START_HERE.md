@@ -43,7 +43,7 @@ GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh -
 Tests live in `src/worldgen/tools/` and `src/water2/`. Latest full-run result: `docs/TYLER_NEXT_TASKS.md` (Tyler's final report); the Phase 2 order is `docs/handoff/PHASE2_RUNBOOK.md`.
 
 ## Run the game
-From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new Dynasty water (`src/water2`) is the default since 1 Nov; `--water-old` (or Esc > Settings > Gameplay > Old water) runs the old one (checked in `terrain_server.gd` and `launcher.gd`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
+From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new Dynasty water (`src/water2`) is the default since 1 Nov; `--water-old` (the exact spelling in code; or Esc > Settings > Gameplay > Old water) runs the old one. The new body (Dave's `Dynasty_Base_Male.glb`) is the default too; `--oldbody` (or Esc > Settings > Gameplay > Old body) brings back the generated one (`docs/DYNASTY_BODY.md`). In game: K = photo camera, `/` = inspection mode (`CONTROLS.md`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
 
 ## Where everything is (for a new thread of Dave's)
 | I want | Go to |
@@ -55,11 +55,11 @@ From the project folder with the voxel build: `godot --path . -- --role=play` (p
 | unmerged old branches and what to do with each | `docs/OLD_BRANCH_REVIEW.md` |
 | the findings from playing it | `docs/handoff/FINDINGS_REPORT.md`, `PLAYTHROUGH_STEP_STATUS.md` |
 | design, principles, rejected ideas | `DESIGN_IDEAS.md`, `DESIGN_PRINCIPLES.md`, `DESIGN_REJECTED.md` |
-| items, recipes, economy | `docs/ITEMS_HANDOVER.md`, `docs/ECONOMY_FIRST_DAY.md` (stones sell 5 for 1 copper through `sell_lot`), `data/items/` |
+| items, recipes, economy, carry weights | `docs/ITEMS_HANDOVER.md`, `docs/CARRY_WEIGHTS.md`, `docs/ECONOMY_FIRST_DAY.md` (stones sell 5 for 1 copper through `sell_lot`), `data/items/` |
 | death rule | `data/items/death.json` (respawn at the bed until character level 10, then real death) |
 | water, terrain | `docs/TERRAIN_WATER_BACKLOG.md`, `docs/DYNASTY_WATER_HISTORY.md` |
 | sound | `docs/SOUND_MAP.md`, `docs/handoff/JASON_NEXT_TASKS.md` |
-| looks | `docs/KATHLEEN_NEXT_TASKS.md`, `docs/handoff/HANDOFF_KATHREEN.md`, `art/CRITIQUES/` |
+| looks, the player body | `docs/DYNASTY_BODY.md`, `docs/KATHLEEN_NEXT_TASKS.md`, `docs/handoff/HANDOFF_KATHREEN.md`, `art/CRITIQUES/` |
 | controls, wire format, world files | `CONTROLS.md`, `PROTOCOL.md`, `WORLD_FORMAT_SPEC.md` |
 | code and data | `src/`, `data/` (JSON tables), `tools/` (scripts); Dave's questions on branch `qa` (`questions/`) |
 | old material | `docs/archive/YYYY-MM/` (nothing is deleted), `docs/mirror/` (frozen 22 Oct copy that tools cite) |
