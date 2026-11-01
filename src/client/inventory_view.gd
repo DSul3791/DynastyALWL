@@ -4563,6 +4563,8 @@ func run_sleep_test(client) -> void:
 		print("SLEEP TEST FAILED: the bed was not set down")
 		return
 
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_ENERGY, 0, 0, 60, Vector3.ZERO)   # a rested character cannot sleep: start tired
+	await get_tree().create_timer(1.5).timeout
 	var energy_before: int = energy
 	request_stance(3)
 	await get_tree().create_timer(1.5).timeout
