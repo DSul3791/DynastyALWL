@@ -157,12 +157,28 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 
 Jason's three, all keep: `SOUND_AUDIT.md` (findings record), `docs/SOUND_MAP.md` (hook audit and sound map), `docs/handoff/SCOPE_JASON.md` (plan). `docs/START_HERE.md`, `docs/DOC_MAP.md` and `docs/handoff/SCOPE_JAMIE.md` were added after the table was built; `docs/handoff/` now holds 21 files.
 
+## Backlogs: where each agent's open work is written (checked 1 Nov, after `docs/CLOSING_PLAN.md`)
+Done = merged in the daily, or written in the owner's backlog with owner, next step and why not done. Missing = the owner must create it (Jamie told the moderator).
+| Agent | Backlog | State |
+|---|---|---|
+| Sonny | `docs/handoff/HANDOFF_SONNY.md` "Not finished" and "Next tasks"; `docs/DYNASTY_WATER_TASKS.md` | exists |
+| Kathleen | `docs/handoff/HANDOFF_KATHLEEN.md` "In flight" and "Next tasks"; `art/ART_TASKS.md` | exists |
+| Kathreen | `docs/handoff/SCOPE_KATHREEN.md` section 3 | **no HANDOFF_KATHREEN.md yet** |
+| Sal | `docs/handoff/HANDOFF_SAL.md` "Next tasks"; `docs/ITEMS_HANDOVER.md` "Needs code" | exists |
+| MikeW | `docs/FLORA_NEXT_TASKS.md`; `docs/handoff/HANDOFF_MIKEW.md` | exists |
+| Steve | `docs/handoff/HANDOFF_STEVE.md` "Exact next steps"; `docs/handoff/SCOPE_STEVE.md` | exists (no separate STEVE_NEXT_TASKS) |
+| Tyler | `docs/TYLER_NEXT_TASKS.md`; `docs/handoff/HANDOFF_TYLER.md` | exists (final version is on his branch until the daily gets it) |
+| Dino | `GUIDE_TASKS.md`; `docs/handoff/HANDOFF_DINO.md` | exists |
+| Jason | `docs/handoff/SCOPE_JASON.md` section 4; `docs/SOUND_MAP.md` | **no HANDOFF_JASON.md and no JASON_NEXT_TASKS.md** (the closing plan names the second) |
+| Jamie | `docs/handoff/SCOPE_JAMIE.md` | exists |
+| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items" | stale, moderator is fixing |
+
 ## Conflicts and gaps found so far (fixes are separate commits)
 1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Was wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md` (fixed).
 2. Rosters: `HANDOFF_MODERATOR.md`, `SCOPE_MODERATOR.md`, `BIG_PICTURE.md`, `RULES.md` ("the team is retired, one session") described an old team (moderator documents, BIG_PICTURE, RULES fixed; `SCOPE_SONNY.md`/`HANDOFF_SONNY.md` still two-lane, asked Sonny).
 3. (Settled 1 Nov by Steve and Sal: Steve owns the rules code of all eight; see Verdict column.) Eight Sal code specs said "for Tyler" (`FARMING_SPEC`, `HINTS_AND_CAMP_EVENTS_SPEC`, `LEARN_SYSTEM_SPEC`, `LOG_SPECIES_SPEC`, `QUALITY_GRADES_SPEC`, `WATER_GATHER_SPEC`, `CODE_MISMATCHES`, `FLINT_ORE_SPEC`); neither `SCOPE_STEVE.md` nor `SCOPE_TYLER.md` names them, so their code had no named owner; Steve is adding them to SCOPE_STEVE.md Sources.
 4. Sound moved to Jason; `SOUND_AUDIT.md` recommends Kathleen/Sonny for sound fixes: Jason's now (asked nobody yet).
-5. Standing-instruction task lists live in seven files (`GUIDE_TASKS`, `TYLER_NEXT_PLANS`, `TYLER_QUEUED_TESTS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine; Tyler's three merge into one.
+5. Standing-instruction task lists live in five files (`GUIDE_TASKS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine (Tyler's three were merged into one; the other two archived).
 
 ## Archiving rule for tools
 `tools/merge_check.py` fails a merge when a `.md` file under `art/`, `assets/`, `design/`, `docs/`, `items/`, `src/`, `scenes/`, `worlds/` or `data/` disappears from its old path unless it is in `proposed_removals/` (it skips `docs/archive/` as a *deleted-from* path only, not as a destination). Root files and `tech/` pass. So archiving a file from `docs/`, `art/` or `design/` needs a `proposed_removals/` pointer or a rule change by Tyler (tools owner): not done yet.
