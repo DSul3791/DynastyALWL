@@ -209,3 +209,10 @@ Image: questions/img/kathreen-body-details.png
 Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5: reads as a person, the face is still crude.
 - Yes
 - No
+
+## sell-lots-value1 | Cheap goods sell at a full copper each: give them lots like stones (5 for 1 copper)?
+Note: Stones now sell 5 for 1 copper. Everything else worth 1 copper still sells at 1 copper each, so 40 sticks pay 40 copper and 40 stones pay 8.
+Note: Groups: sticks, leaves, bark, plant fibre, feathers, nettles, nails, wooden pins, soft firewood; soil, clay, sand, gravel; all seeds. Each group is one line of data (sell_lot), nothing else changes.
+Note: Proposed lots: sticks, leaves, bark, fibre, nettles, feathers 5; soil, clay, sand, gravel 10; seeds 5; nails and wooden pins 10; soft firewood 5.
+Note: Recommendation: Yes, with those lots, because these are free-to-gather bulk goods and a full copper each lets a player sell stacks of 40 for easy coin; heavier digging goods get bigger lots because a pile of dirt is worth less than a stick.
+[check]
