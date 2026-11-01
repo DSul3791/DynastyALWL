@@ -2502,6 +2502,7 @@ var _ground_line_msec: int = 0
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
 const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
+K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
 I: crafting and inventory   R with a hammer in hand: blueprints   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
@@ -2806,6 +2807,8 @@ const VIEW_HEIGHT := 0.12              # camera rise per metre of distance
 const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the camera stops
 
 var view_cam: Camera3D
+const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
+var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
 var third_person: bool = false
 var debug_clip: String = ""                              # shot runner only (--shot-clip=NAME): play this clip whatever the body does
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
@@ -2878,7 +2881,13 @@ func _update_view(delta: float) -> void:
 	if absf(_view_now - want) < 0.01:
 		_view_now = want
 
-	view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+	if photo.active:
+		_place_photo_camera(delta)
+		_view_now = 3.0   # the whole body is drawn, the first-person arms are hidden
+	else:
+		view_cam.top_level = false
+		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+
 	_avatar.visible = _view_now > 0.5
 
 	if held != null:
@@ -2920,6 +2929,24 @@ func _update_view(delta: float) -> void:
 		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
 		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
+
+
+# The photo camera (K): drawn from where photo_camera.gd puts it, kept out of the ground and walls. Only the drawn camera moves.
+func _place_photo_camera(delta: float) -> void:
+	photo.raise(float(Input.is_key_pressed(KEY_PAGEUP)) - float(Input.is_key_pressed(KEY_PAGEDOWN)), delta)
+	photo.step(delta)
+	var focus: Vector3 = photo.focus_point(body.global_position)
+	var want: Vector3 = photo.camera_position(focus)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(focus, want)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		want = (hit["position"] as Vector3).move_toward(focus, VIEW_CLEAR_M)
+
+	want = photo.clamp_to_ground(want, _ground_below(want))
+	view_cam.top_level = true
+	view_cam.global_transform = Transform3D(photo.camera_basis(want, focus), want)
 
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
@@ -3002,7 +3029,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		return
 
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
+		photo.orbit(event.relative.x, event.relative.y)   # the camera swings round the character; the character does not turn
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		photo.zoom(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
@@ -3027,6 +3058,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_K:
+			photo.toggle(body.rotation.y)
 		elif event.keycode == KEY_P and items != null:
 			items.toggle_auto_pickup()
 		elif event.keycode == KEY_SLASH:
@@ -3237,7 +3270,10 @@ func _move_player(delta: float) -> void:
 	if items != null and items.screen_open():
 		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
 
-	var direction: Vector3 = body.global_transform.basis * input
+	var direction: Vector3 = photo.move_direction(input) if photo.active else body.global_transform.basis * input
+
+	if photo.active and input != Vector3.ZERO:   # in the photo view the character walks facing where it goes (the mouse never turns it)
+		body.rotation.y = lerp_angle(body.rotation.y, photo.facing_for(direction, body.rotation.y), clampf(delta * 10.0, 0.0, 1.0))
 
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
