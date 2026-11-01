@@ -2985,7 +2985,7 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 		if d < best and int(_world[id]["number"]) > 0:
 			best = d
 			var number: int = int(_world[id]["number"])
-			label = "Your remains" if int(_world[id]["state"]) >= 11 else _item_label(number)
+			label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _item_label(number)
 
 	return label
 
