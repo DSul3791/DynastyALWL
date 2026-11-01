@@ -295,42 +295,15 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	var st2: Dictionary = _refresh(npc_id)
 	var till: int = int(floor(float(st2["purse"])))
 
-	# Sold by the lot (items.json "sell_by_lot", Dave 1 Nov: a stone is worth half a copper): the units' prices add up as fractions, the lot pays whole coppers rounded
-	# down, and a trailing unit that would only pay a fraction stays in the pack. One unit worth less than a copper is refused with a message.
-	if bool(entry.get("sell_by_lot", false)):
-		var sum_f: float = 0.0
-		var prices_f: Array = []
+	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
+	for k in count:
+		var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
 
-		for k in count:
-			var unit_f: float = float(value) * float(m["get"]) * maxf(base_demand - drop * float(k), floor_d) * life
+		if each_k <= 0 or total + each_k > till:
+			break
 
-			if int(floor(sum_f + unit_f + 0.0001)) > till:
-				break
-
-			sum_f += unit_f
-			prices_f.append(unit_f)
-
-		var whole: int = int(floor(sum_f + 0.0001))
-
-		while not prices_f.is_empty() and sum_f - float(whole) > 0.0001 and float(prices_f[prices_f.size() - 1]) <= sum_f - float(whole) + 0.0001:
-			sum_f -= float(prices_f.pop_back())
-			whole = int(floor(sum_f + 0.0001))
-
-		if whole <= 0 or prices_f.is_empty():
-			return "He cannot pay for that just now." if till < 1 else "%s sell in pairs, one is not worth a copper." % items.table.name_of(number2)
-
-		total = whole
-		paid_for = prices_f.size()
-	else:
-		# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
-		for k in count:
-			var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
-
-			if each_k <= 0 or total + each_k > till:
-				break
-
-			total += each_k
-			paid_for += 1
+		total += each_k
+		paid_for += 1
 
 	if paid_for <= 0:
 		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
