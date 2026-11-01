@@ -576,34 +576,57 @@ func _ready() -> void:
 	if _link_port == 0:
 		print("Terrain server: no block line (port %d is taken); blocks go over the game connection" % (port + 1))
 
-	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_connected.connect(func(peer_id: int) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_peer_connected(peer_id)
+		_slow_rpc("peer_connected", t0))
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
-	net.blocks_requested.connect(_on_blocks_requested)
+	net.blocks_requested.connect(func(peer_id, keys, urgent) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_blocks_requested(peer_id, keys, urgent)
+		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
-	net.flora_requested.connect(_on_flora_requested)
+	net.flora_requested.connect(func(peer_id, chunks) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_flora_requested(peer_id, chunks)
+		_slow_rpc("flora_requested", t0))
 	net.cut_flora_requested.connect(_on_cut_flora_requested)
-	net.position_reported.connect(_on_position_reported)
+	net.position_reported.connect(func(peer_id, position, velocity) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_position_reported(peer_id, position, velocity)
+		_slow_rpc("position_reported", t0))
 	net.water_rate_requested.connect(_on_water_rate_requested)
-	net.water_requested.connect(_on_water_requested)
+	net.water_requested.connect(func(peer_id, chunks) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_water_requested(peer_id, chunks)
+		_slow_rpc("water_requested", t0))
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key):
+		var t0: int = Time.get_ticks_usec()
 		var account: String = identity.authenticate(peer, key)
 
 		if account == "":
 			return
 
+		_slow_rpc("hello: authenticate", t0)
 		items.peer_connected_hello(peer, identity.store_key(account))
+		_slow_rpc("hello: peer_connected_hello", t0)
 		net.npc_roster.rpc_id(peer, npcs.roster())
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
-			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
+			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2])))
+
+		_slow_rpc("hello: done", t0))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
 	net.tunnel_setting_requested.connect(_on_tunnel_setting)
 	net.admin_place_requested.connect(_on_admin_place)
 	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
-	net.surface_requested.connect(_on_surface_requested)
+	net.surface_requested.connect(func(peer_id, x, z) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_surface_requested(peer_id, x, z)
+		_slow_rpc("surface_requested", t0))
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
@@ -676,6 +699,15 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
+
+
+# Join diagnosis (Sonny, 1 Nov 2026): an RPC handler that ran over 100 ms on the main thread says so in the telemetry file (crash_reports/telemetry_server_<port>.log), with the
+# time since the handler began; "between frames (rpc handlers, engine)" in the stall lines is where the 17 s after a connect went.
+func _slow_rpc(name: String, started_usec: int) -> void:
+	var ms: int = (Time.get_ticks_usec() - started_usec) / 1000
+
+	if ms >= 100:
+		_events.event("SLOW RPC %s: %d ms" % [name, ms])
 
 
 func _on_peer_connected(peer_id: int) -> void:
