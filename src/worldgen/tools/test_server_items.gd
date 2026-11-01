@@ -1028,18 +1028,25 @@ func _init() -> void:
 	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "" and oak_logs >= 1, "the trunk is worked into oak logs that fall to the ground (none picked up by chopping) and used up (%d logs)" % oak_logs)
 	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
 
-	# A trunk of a wood that is not a key wood (Dave 24 Oct) gives only small wood, never a log.
+	# A trunk of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
 	apple["tree"]["species"] = "wild_apple"
 	var apple_id: int = trunk_id + 100000
 	var shoulder_before: String = w.shoulder_of(1)
 	w._items[apple_id] = apple
 	var apple_guard: int = 0
 	while w._items.has(apple_id) and apple_guard < 100:
+		w.report_position(1, w.cut_line_point(apple_id))
 		w._last_process.clear()
 		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, Vector3.ZERO)
 		apple_guard += 1
 
-	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before, "an apple trunk is used up and gives no log")
+	var plain_logs: int = 0
+
+	for k in w._items:
+		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log"):
+			plain_logs += 1
+
+	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before and plain_logs >= 1, "an apple trunk is used up and drops plain logs on the ground (%d)" % plain_logs)
 	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 

@@ -3673,7 +3673,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
 	trunk["pitch"] = pitch
-	trunk["keywood"] = (_wood_species.get("key_woods", []) as Array).has(str(info["name"]))   # only these trees are cut into logs: the client marks the next cut line on them
+	trunk["keywood"] = true   # every full-size tree is cut into logs (Dave 1 Nov): the client marks the next cut line on them. Only key woods have their own log item; the rest drop the plain Log
 	trunk["chunk"] = [chunk.x, chunk.y]
 	var stump: Dictionary = base.duplicate()
 	stump["state"] = 4
@@ -3935,10 +3935,7 @@ func _process_trunk(peer: int, inv, id: int) -> void:
 
 	if not tree.has("logs_left"):
 		tree["logs_left"] = clampi(int(float(tree["length"]) / float(cfg.get("log_length_m", 2.44))), 0, int(cfg.get("max_logs", 20)))   # whole 8 ft (2.44 m) lengths only
-
-		if not (_wood_species.get("key_woods", []) as Array).has(str(tree.get("species", ""))):
-			tree["logs_left"] = 0   # only the key woods make logs and lumber (Dave 24 Oct); every other tree gives firewood, kindling and sticks
-		tree["blows"] = 0
+		tree["blows"] = 0   # every tree makes logs (Dave 1 Nov); a species without its own log item drops the plain Log (_cut_log_off)
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(id) ^ (int(tree["blows"]) * 7919)
@@ -4081,7 +4078,7 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = table.number_of("log_" + str(tree.get("species", "")))
 
-	if log_n <= 0:
+	if log_n <= 0 or bool(table.entry("log_" + str(tree.get("species", ""))).get("retired", false)):   # a retired species log (alder, willow...) is the plain Log
 		log_n = table.number_of("log")
 
 	if not drop_in_world(log_n, 1, at):
