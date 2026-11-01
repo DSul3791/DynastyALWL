@@ -359,6 +359,11 @@ func _is_placeable() -> bool:
 	return str(_inv.table.entry(held_id()).get("kind", "")) == "placeable"
 
 
+# True while a torch is the held item (the Dynasty body then crouch-walks with it, avatar_driver.gd).
+func holding_torch() -> bool:
+	return holding and _is_torch()
+
+
 func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 

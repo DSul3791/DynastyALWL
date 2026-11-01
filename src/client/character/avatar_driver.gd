@@ -71,7 +71,13 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	# The Dynasty body (dynasty_body.gd) has crouched walking clips but not the jump set: crouched and moving it walks bent, in the direction of the velocity.
 	if player != null and not player.has_animation("jump") and player.has_animation("crouch_walk_back") and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
 		var crouch_local: Vector3 = basis.inverse() * velocity
-		return crouch_walk_clip(Vector2(crouch_local.x, crouch_local.z))
+		var crouch_clip: String = crouch_walk_clip(Vector2(crouch_local.x, crouch_local.z))
+
+		# A torch in the hand (the client sets the meta `torch_in_hand` each frame) uses Dave's crouched torch walks; backwards has none.
+		if bool(avatar.get_meta("torch_in_hand", false)) and crouch_clip != "crouch_walk_back" and player.has_animation(crouch_clip + "_torch"):
+			return crouch_clip + "_torch"
+
+		return crouch_clip
 
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
@@ -180,7 +186,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 	if clip == "strafe_left" or clip == "strafe_right":
 		return clampf(pace / 1.3, 0.5, 1.6)
 
-	if clip.begins_with("crouch_walk"):
+	if clip.begins_with("crouch_walk"):   # includes the _torch variants
 		return clampf(pace / 0.9, 0.5, 1.6)
 
 	if clip == "carry_walk":
