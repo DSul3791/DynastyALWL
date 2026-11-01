@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 82
+const PROTOCOL_VERSION := 83
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -91,6 +91,7 @@ signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
 signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
+signal final_death_received(cause: String)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
@@ -432,6 +433,13 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 @rpc("authority", "call_remote", "reliable")
 func died(cause: String, spawn: Vector3) -> void:
 	died_received.emit(cause, spawn)
+
+
+# A death with no return (protocol 83, data/items/death.json real_death): the server does not bring the character back; the client shows the death screen. Also sent at hello
+# to a character that is already dead.
+@rpc("authority", "call_remote", "reliable")
+func final_death(cause: String) -> void:
+	final_death_received.emit(cause)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row

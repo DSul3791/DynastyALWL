@@ -47,6 +47,8 @@ const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const ShowroomScript := preload("res://src/client/showroom.gd")
 const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
+const DeathScreenScript := preload("res://src/client/death_screen.gd")
+const CharacterStoreScript := preload("res://src/client/character/character_store.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
@@ -763,6 +765,7 @@ func _ready() -> void:
 			link_bars.pulse())
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
+	net.final_death_received.connect(_on_final_death)
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
@@ -1781,6 +1784,20 @@ func go_to_spawn() -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+var death_screen                      # the real-death screen (src/client/death_screen.gd), made when the server sends final_death
+
+
+func _on_final_death(cause: String) -> void:
+	if death_screen == null:
+		death_screen = DeathScreenScript.new()
+		add_child(death_screen)
+
+	if body != null:
+		body.velocity = Vector3.ZERO
+
+	death_screen.show_for(cause, str(CharacterStoreScript.active().get("name", "")))
 
 
 func _on_died(cause: String, spawn_point: Vector3) -> void:
@@ -3288,7 +3305,7 @@ func _room_to_rise(target: int) -> bool:
 
 
 func _move_player(delta: float) -> void:
-	if menu_open or (cavein_death != null and cavein_death.active):
+	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
 		return
 

@@ -438,6 +438,9 @@ func peer_connected_hello(peer: int, key: String) -> void:
 			_dirty = true
 			send_full.call(peer, _inventories[key].to_bytes())
 
+	if bool(_characters[key].get("dead", false)) and send_final_death.is_valid():
+		send_final_death.call(peer, "")   # already dead: the death screen again
+
 	if bool(_characters[key].get("new_player", false)):
 		_admin_mode_off[peer] = true   # a character that started over as a new player logs in with Admin mode off
 
@@ -7151,6 +7154,11 @@ func kill(peer: int, cause: String) -> bool:
 		if send_final_death.is_valid():
 			send_final_death.call(peer, cause)
 
+			if bool(_death_cfg.get("real_death", false)):   # the character does not come back (Dave's cards pending: off by default)
+				_characters[key]["dead"] = true
+				_dirty = true
+				return true
+
 	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
 	_motion.erase(peer)
@@ -10106,6 +10114,9 @@ func _load_characters() -> void:
 			"hints_seen": parsed["players"][key].get("hints_seen", {}) if typeof(parsed["players"][key].get("hints_seen", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
+
+		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
+			_characters[str(key)]["dead"] = true
 
 		if int(parsed["players"][key].get("skills_v", 1)) < 2:
 			migrate_old_skills(str(key), parsed["players"][key])
