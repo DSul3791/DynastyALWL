@@ -4,7 +4,7 @@ Scope: `SCOPE_JASON.md`. Backlog with owner, next step and reason: `JASON_NEXT_T
 
 ## State
 - All ten old Kathleen sound branches and the Steve sound branches are in the daily (checked with `git cherry`); the place sounds (stone, brick, thatch) and the shovel scoop (soil, stone) were ported from `kathleen-materials` and `kathleen-spades` (commits `583e1312`, `9f9db474`). `_fill_here()` in `held_item.gd` now plays the scoop.
-- `test_slot_sounds` passes on the voxel build `godot.windows.editor.x86_64.exe` (a fresh worktree needs one `--import` first). `test_sound_log`: first run failed only for missing imports; rerun after the import is in `JASON_NEXT_TASKS.md` row 1 if not reported otherwise.
+- `test_slot_sounds`, `test_sound_log`, `test_inner_voice_profile`, `test_inner_voice_settings` all PASS on the voxel build `godot.windows.editor.x86_64.exe` at `d4f0c350` (1 Nov; a fresh worktree needs one `--import` first, or the sound-log test fails on missing imports).
 - Nothing has been heard by anyone: every sound claim in these documents is read from code.
 
 ## Remaining hooks (full table in JASON_NEXT_TASKS.md)
