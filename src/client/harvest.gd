@@ -73,8 +73,8 @@ func update(delta: float, e_down: bool) -> void:
 	if _sweep_left <= 0.0:
 		_sweep_left = SWEEP_EVERY_S
 
-		if _items.cursor_blocks_sweep():
-			return   # the cursor is on something with its own E action (a bench, door, fire...): held E does that, not a sweep of what lies around
+		if _items.hold_e_step():
+			return   # the cursor is on something: held E does that one thing (or nothing), never a sweep of what lies around
 
 		if _items.hold_use():
 			return

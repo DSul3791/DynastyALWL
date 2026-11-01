@@ -396,6 +396,11 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
+# True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
+func tool_busy() -> bool:
+	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0
+
+
 # One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
 func _start_swing() -> void:
 	_swing_t = 0.0

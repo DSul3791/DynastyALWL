@@ -437,10 +437,42 @@ func aim_cos_of(point: Vector3) -> float:
 	return 1.0 if forward.length() < 0.01 or to.length() < 0.01 else to.normalized().dot(forward.normalized())
 
 
-# True while the cursor is on something with an E action that is not the plain gather (held E must then not sweep up what lies around).
-func cursor_blocks_sweep() -> bool:
+# The E prompt line for an interaction (Dave 1 Nov 2026): shown only while inspection mode is on. With it off the screen carries no "Press E to..." text;
+# E works the same. Messages that say why something failed (needs plant fibre, too heavy) are notices, not prompts, and show either way.
+func prompt_text(interaction: Dictionary) -> String:
+	if not (is_inspecting.is_valid() and bool(is_inspecting.call())) or bool(interaction.get("quiet", false)):
+		return ""
+
+	return str(interaction.get("prompt", ""))
+
+
+# What the cursor is on: the kind of the E action it is aimed at ("pickup", "plant", "block", "fire", "structure", "npc"...), "" when it is on nothing.
+func cursor_kind() -> String:
 	var found: Dictionary = current_interaction()
-	return bool(found.get("aimed", false)) and str(found.get("kind", "")) != "pickup" and str(found.get("kind", "")) != "plant"
+	return str(found.get("kind", "")) if bool(found.get("aimed", false)) else ""
+
+
+# Dave's three cases for E in every path, tap, hold and auto-pickup (1 Nov 2026):
+#  1. the cursor is on a pickable item: that item and only that one;
+#  2. the cursor is on something else with an E action (block, fire, bench, chest, door, tree, plant): that action and nothing else is picked up;
+#  3. the cursor is on nothing specific: the nearby pick-up and gather may run.
+# Held E calls this each step. True when the cursor is on something (the caller must not sweep the ground); the held action itself repeats here, at the server's pace.
+func hold_e_step() -> bool:
+	var found: Dictionary = current_interaction()
+
+	if not bool(found.get("aimed", false)):
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if str(found.get("kind", "")) in ["pickup", "plant", "block"] and now >= _hold_next_msec:
+		_hold_next_msec = now + 600
+		found["tap"].call()
+
+	return true
+
+
+var _hold_next_msec: int = 0
 
 
 func _register_builtin_interactables() -> void:
@@ -477,7 +509,7 @@ func _probe_pickup() -> Dictionary:
 		return {}
 
 	var id: int = near[0]
-	return {"kind": "pickup", "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
+	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
@@ -543,7 +575,7 @@ func _probe_fire() -> Dictionary:
 		return {}
 
 	var state: int = _world[id]["state"]
-	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"], "prompt": _fire_prompt(state), "tap": func():
+	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		else:
@@ -564,8 +596,8 @@ func _probe_structure() -> Dictionary:
 	var found: Dictionary = _probe_structure_for(_nearest_struct())
 
 	if not found.is_empty():
-		found["kind"] = "structure"
-		found["point"] = _world[_nearest_struct()]["pos"]
+		found["kind"] = "block" if int(_world[_nearest_struct()]["state"]) == 7 else "structure"
+		found["point"] = _world[_nearest_struct()]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
 
 	return found
 
@@ -791,7 +823,7 @@ func _process_body(_delta: float) -> void:
 	if now < _notice_until_msec:
 		return
 	var interaction: Dictionary = current_interaction()
-	_prompt.text = "" if bool(interaction.get("quiet", false)) else str(interaction.get("prompt", ""))
+	_prompt.text = prompt_text(interaction)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = "Hold Z to sleep"
@@ -818,6 +850,9 @@ func _auto_pickup_tick(now: int) -> void:
 
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
+
+	if cursor_kind() != "":
+		return   # the cursor is on something specific: auto pickup stays out of it (case 3 only)
 
 	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, hash(inventory.counts), in_view)
 

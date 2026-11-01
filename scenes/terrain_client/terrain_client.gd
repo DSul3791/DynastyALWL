@@ -1254,7 +1254,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
-	items.auto_pickup_blocked = func(): return swimming or (held != null and held.placing())
+	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)

@@ -183,7 +183,9 @@ func _build_main() -> void:
 func _build_controls() -> void:
 	var controls: VBoxContainer = _page("controls")
 	var text: Label = Label.new()
-	text.text = _c.HELP_TEXT
+	text.text = _c.HELP_TEXT + "
+
+This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 	text.add_theme_font_size_override("font_size", 26)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(1500.0, 0.0)
