@@ -38,7 +38,7 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - No chasing ghosts: fix only with a log, a repro or a screenshot.
 
 ## Where things live
-`HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (open plans), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
+`HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (four plans still cited by code and data or not fully built; the other 42 finished October plans are in `docs/archive/2026-11/tech_ACTION_PLANS/`), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
 
 ## Heavy Godot jobs share the PC (Tyler, 31 Oct 2026)
 At most 3 test or rig jobs run at once on this PC, across all sessions: `tools/run_tests.sh` / `tools/run_one_test.sh` take a slot from `tools/godot_slot.sh` on their own. For anything else that starts Godot for a while (picture rigs, servers and clients, probes), wrap it: `tools/godot_slot.sh godot --path . ...`. `GODOT_SLOTS=0` switches the guard off, `GODOT_SLOTS=N` changes the number. It never kills anything; a slot whose job is gone is taken over.
