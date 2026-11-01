@@ -1411,9 +1411,9 @@
 			],
 			"gives": [
 				"lumber_scots_pine",
-				6
+				7
 			],
-			"craft_s": 6.0,
+			"craft_s": 5.0,
 			"known": true,
 			"station": "saw_mill"
 		},
@@ -1431,7 +1431,7 @@
 				"beam_scots_pine",
 				2
 			],
-			"craft_s": 8.0,
+			"craft_s": 6.0,
 			"known": true,
 			"station": "saw_mill"
 		},
@@ -1447,9 +1447,9 @@
 			],
 			"gives": [
 				"lumber_spruce",
-				6
+				7
 			],
-			"craft_s": 6.0,
+			"craft_s": 5.0,
 			"known": true,
 			"station": "saw_mill"
 		},
@@ -1467,7 +1467,7 @@
 				"beam_spruce",
 				2
 			],
-			"craft_s": 8.0,
+			"craft_s": 6.0,
 			"known": true,
 			"station": "saw_mill"
 		},
