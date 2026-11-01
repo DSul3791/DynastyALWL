@@ -1,9 +1,9 @@
 {
  "counts": {
-  "items": 604,
-  "recipes": 279,
-  "recipes_known_or_open": 247,
-  "structures": 48,
+  "items": 621,
+  "recipes": 281,
+  "recipes_known_or_open": 249,
+  "structures": 63,
   "blueprints": 6
  },
  "recipes": [
@@ -3227,13 +3227,11 @@
    "gives": "stairs_wood_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
-   "future": true
+   "blocked_by": [],
+   "future": false
   },
   {
    "id": "log_wall_kit",
@@ -3562,7 +3560,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "bench_kit",
@@ -3577,7 +3575,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "chair_kit",
@@ -3592,7 +3590,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "table_kit",
@@ -3607,7 +3605,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "hide_rug_kit",
@@ -3622,7 +3620,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "wool_rug_kit",
@@ -3652,7 +3650,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "feather_bed_kit",
@@ -3667,7 +3665,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "canopy_bed_kit",
@@ -3678,12 +3676,11 @@
    "station_level": 2,
    "known": false,
    "wave_now": null,
-   "wave_potential": null,
+   "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)",
-    "no source anywhere for linen"
+    "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "wall_torch_kit",
@@ -3698,7 +3695,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "chandelier_kit",
@@ -3713,7 +3710,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "fireplace_kit",
@@ -3728,7 +3725,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "flower_pot_kit",
@@ -3743,7 +3740,7 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
   },
   {
    "id": "antler_mount_kit",
@@ -3758,7 +3755,35 @@
    "blocked_by": [
     "not known (no learn system)"
    ],
-   "future": true
+   "future": false
+  },
+  {
+   "id": "stool_kit",
+   "number": 333,
+   "category": "Containers and furniture",
+   "gives": "stool_kit",
+   "station": "",
+   "station_level": 1,
+   "known": false,
+   "wave_now": null,
+   "wave_potential": 1,
+   "blocked_by": [
+    "not known (no learn system)"
+   ],
+   "future": false
+  },
+  {
+   "id": "fibre_cloth",
+   "number": 334,
+   "category": "Materials",
+   "gives": "fibre_cloth",
+   "station": "",
+   "station_level": 1,
+   "known": true,
+   "wave_now": 1,
+   "wave_potential": 1,
+   "blocked_by": [],
+   "future": false
   }
  ],
  "items": [
@@ -4034,7 +4059,7 @@
     "recipe:chopping_block"
    ],
    "obtainable": "now",
-   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "look": "override look",
    "future": false
   },
   {
@@ -8041,9 +8066,9 @@
    "sources": [
     "recipe:stairs_wood_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
-   "future": true
+   "future": false
   },
   {
    "id": "stairs_wood",
@@ -8052,7 +8077,7 @@
    "sources": [],
    "obtainable": "structure",
    "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
-   "future": true
+   "future": false
   },
   {
    "id": "log_wall_kit",
@@ -8275,7 +8300,7 @@
     "plant:nettle"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": false
   },
   {
@@ -8286,7 +8311,7 @@
     "recipe:nettle_tea"
    ],
    "obtainable": "now",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": false
   },
   {
@@ -8297,8 +8322,8 @@
     "recipe:log_seat_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "bench_kit",
@@ -8308,8 +8333,8 @@
     "recipe:bench_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "chair_kit",
@@ -8319,8 +8344,8 @@
     "recipe:chair_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "table_kit",
@@ -8330,8 +8355,8 @@
     "recipe:table_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "hide_rug_kit",
@@ -8341,8 +8366,8 @@
     "recipe:hide_rug_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "wool_rug_kit",
@@ -8352,7 +8377,7 @@
     "recipe:wool_rug_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
    "future": true
   },
   {
@@ -8363,8 +8388,8 @@
     "recipe:straw_bed_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "feather_bed_kit",
@@ -8374,8 +8399,8 @@
     "recipe:feather_bed_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "canopy_bed_kit",
@@ -8384,9 +8409,9 @@
    "sources": [
     "recipe:canopy_bed_kit"
    ],
-   "obtainable": "RECIPE BLOCKED",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "obtainable": "potential",
+   "look": "override look",
+   "future": false
   },
   {
    "id": "wall_torch_kit",
@@ -8396,8 +8421,8 @@
     "recipe:wall_torch_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "chandelier_kit",
@@ -8407,8 +8432,8 @@
     "recipe:chandelier_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "fireplace_kit",
@@ -8418,8 +8443,8 @@
     "recipe:fireplace_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "flower_pot_kit",
@@ -8429,8 +8454,8 @@
     "recipe:flower_pot_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
-   "future": true
+   "look": "override look",
+   "future": false
   },
   {
    "id": "antler_mount_kit",
@@ -8440,8 +8465,169 @@
     "recipe:antler_mount_kit"
    ],
    "obtainable": "potential",
-   "look": "PLACEHOLDER grey chunk",
+   "look": "override look",
+   "future": false
+  },
+  {
+   "id": "stool_kit",
+   "number": 501,
+   "kind": "placeable",
+   "sources": [
+    "recipe:stool_kit"
+   ],
+   "obtainable": "potential",
+   "look": "override look",
+   "future": false
+  },
+  {
+   "id": "log_seat",
+   "number": 502,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "stool",
+   "number": 503,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "bench",
+   "number": 504,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "chair",
+   "number": 505,
+   "kind": "structure",
+   "sources": [
+    "npc"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "table",
+   "number": 506,
+   "kind": "structure",
+   "sources": [
+    "npc"
+   ],
+   "obtainable": "now",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "hide_rug",
+   "number": 507,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "wool_rug",
+   "number": 508,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
    "future": true
+  },
+  {
+   "id": "straw_bed",
+   "number": 509,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "feather_bed",
+   "number": 510,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "canopy_bed",
+   "number": 511,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "wall_torch",
+   "number": 512,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "chandelier",
+   "number": 513,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "fireplace",
+   "number": 514,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "flower_pot",
+   "number": 515,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "antler_mount",
+   "number": 516,
+   "kind": "structure",
+   "sources": [],
+   "obtainable": "structure",
+   "look": "NO LOOK (structure or kit-less item: drawn by structure look)",
+   "future": false
+  },
+  {
+   "id": "fibre_cloth",
+   "number": 517,
+   "kind": "material",
+   "sources": [
+    "recipe:fibre_cloth"
+   ],
+   "obtainable": "now",
+   "look": "override look",
+   "future": false
   },
   {
    "id": "acorns",
@@ -10331,8 +10517,8 @@
    "also": {},
    "addon_of": "",
    "footprint": [
-    2.4,
-    2.1
+    2.6,
+    3.4
    ],
    "cap": 6,
    "built_wave_now": 1,
@@ -10951,12 +11137,9 @@
     2.4
    ],
    "cap": 100,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe stairs_wood_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "log_wall",
@@ -11117,6 +11300,291 @@
    "built_wave_now": 1,
    "built_wave_potential": 1,
    "problems": []
+  },
+  {
+   "id": "log_seat",
+   "state": 59,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.5,
+    0.5
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "kit recipe log_seat_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "stool",
+   "state": 60,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.45,
+    0.45
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "kit recipe stool_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "bench",
+   "state": 61,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    0.4
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe bench_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "chair",
+   "state": 62,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.6,
+    0.6
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe chair_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "table",
+   "state": 63,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.4,
+    0.7
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe table_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "hide_rug",
+   "state": 64,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.7,
+    1.1
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "kit recipe hide_rug_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "wool_rug",
+   "state": 65,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    1.6,
+    1.0
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "kit recipe wool_rug_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "straw_bed",
+   "state": 66,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    1.0
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe straw_bed_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "feather_bed",
+   "state": 67,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    1.0
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe feather_bed_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "canopy_bed",
+   "state": 68,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.2,
+    1.4
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 3,
+   "problems": [
+    "kit recipe canopy_bed_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "wall_torch",
+   "state": 69,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.2,
+    0.2
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe wall_torch_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "chandelier",
+   "state": 70,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.9,
+    0.9
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe chandelier_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "fireplace",
+   "state": 71,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    2.0,
+    1.0
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 3,
+   "problems": [
+    "kit recipe fireplace_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "flower_pot",
+   "state": 72,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.3,
+    0.3
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 1,
+   "problems": [
+    "kit recipe flower_pot_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
+  },
+  {
+   "id": "antler_mount",
+   "state": 73,
+   "station": "",
+   "station_level": null,
+   "also": {},
+   "addon_of": "",
+   "footprint": [
+    0.44,
+    0.1
+   ],
+   "cap": 12,
+   "built_wave_now": null,
+   "built_wave_potential": 2,
+   "problems": [
+    "kit recipe antler_mount_kit not known",
+    "not obtainable today (known/open recipes only)"
+   ]
   }
  ],
  "tools_now": [

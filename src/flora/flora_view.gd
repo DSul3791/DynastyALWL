@@ -94,6 +94,7 @@ uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
 uniform vec3 tint = vec3(1.0);              // a felled trunk or stump (inventory_view) sets the species bark tint here; standing trees take it from the vertex colour
 uniform vec2 uv_scale = vec2(1.0);
+uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
 uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
 varying float base_h;
 varying float north_face;
@@ -110,7 +111,7 @@ void vertex() {
 
 void fragment() {
 	vec4 t = texture(bark, UV * uv_scale);
-	vec3 c = t.rgb * COLOR.rgb * tint * 1.3;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
+	vec3 c = t.rgb * COLOR.rgb * tint * 1.3 * lift;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
 	c *= vec3(1.06, 0.97, 0.88);                                     // warmer
 	c *= mix(0.62, 1.12, t.a);                                       // furrows darker, ridges lighter
 	vec2 patch = floor(UV * vec2(5.0, 12.0));
@@ -2266,8 +2267,14 @@ func _decimate_task(wanted: Array) -> void:
 
 		for surface in range(mesh.get_surface_count()):
 			var arrays: Array = mesh.surface_get_arrays(surface)
+			var index: Variant = arrays[Mesh.ARRAY_INDEX]
+
+			if not index is PackedInt32Array:      # a surface without indices cannot be simplified: keep the full model
+				triangles = -1
+				break
+
 			@warning_ignore("integer_division")
-			triangles += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			triangles += (index as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
 			materials.append(mesh.surface_get_material(surface))
 

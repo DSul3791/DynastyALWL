@@ -951,10 +951,18 @@ func _felled_bark(species: String, radius: float, span: float) -> Material:
 		texture = "bark_smooth"
 
 	mat.set_shader_parameter("bark", load("res://assets/trees/%s.png" % texture))
-	var tint: Color = builder_script.get_script_constant_map().get("BARK_TINT_" + species.to_upper(), Color(0.46, 0.40, 0.34))
+	var tints: Dictionary = builder_script.get_script_constant_map()
+	var tint: Color = tints.get("BARK_TINT_" + species.to_upper(), Color(0.46, 0.40, 0.34))
+
+	if not tints.has("BARK_TINT_" + species.to_upper()):   # the species name has no tint constant of its own: softwoods take the brown softwood tint, as the standing conifers do (real game: a felled spruce read cool grey)
+		for word in ["pine", "spruce", "larch", "cedar", "hemlock", "cypress", "juniper", "yew", "conifer"]:
+			if species.contains(word):
+				tint = tints.get("BARK_TINT_SOFT", tint)
+				break
 	mat.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
 	mat.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(span / 1.6, 1.0)))
 	mat.set_shader_parameter("foot_offset", span * 0.5)
+	mat.set_shader_parameter("lift", Vector3(3.0, 2.0, 1.3))   # brighter and warmer: standing trunks carry baked warm shading (tree_builder _crown_shading), a plain felled one read cool grey
 	return mat
 
 

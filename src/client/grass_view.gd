@@ -194,7 +194,7 @@ void vertex() {
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
-	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, player_clear.z, length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
+	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);

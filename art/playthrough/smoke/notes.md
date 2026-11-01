@@ -15,3 +15,19 @@ Finding: the falling and resting trunk, the lying log and the stump are all one 
 ### Rerun 08:00 to 08:10 on the daily head (merge 2be59394)
 Select, creator and the 3-minute windowed walk completed (walk3min2.jpg: third person at the spawn clearing, brown hair, green top, brown trousers; feet and hands hidden in the grass; head tilted up at the sky; rating 4). 16 headless self-tests ran, none timed out. Still failing: the chest self-test (inventory_view.gd:4584, chest_inv Nil, "screen open false"). The "crash report" line in rig_client.log is the 04:18 to 07:49 freeze text copied from an older rig folder, not from this run (no new file in crash_reports/). Fire self-test: lit, grows to a bonfire, fire loops play; cook self-test: 1 lit fire, loops present.
 Not photographed this run: lit campfire and log cutting close-ups (the picture rig does not support them without Kathleen's --shot-light; the headless self-tests only prove the server and sound side).
+
+### Rerun on the daily head (13b84fa3 merged, 31 Oct afternoon)
+- 16 client self-tests ran; none crashed. Chest self-test still fails (`inventory_view.gd:4772`, chest_inv Nil): Tyler.
+- `rig_client.log` "Crash report written" at +18 s of every rig run is the 15 s main-thread-silent watchdog (crash_report.gd), not a process crash: the same run took its picture. Meaning: at join the client freezes about 15 s (fps 1) while the voxel engine starts; a new player stares at a frozen window for that long. Tyler/Sonny.
+- Dummy-renderer mesh errors (headless clients, "Parameter m is null", DummyMesh leaks) are noise from headless runs, 9 distinct; one `Couldn't create an ENet host` on port 7990 was a port already in use by another session's server.
+- Pictures: smoke/walk3min.png (third person at the clearing), world3/shelter_row_wide.png; cards on the QA branch (pic-fh-*).
+
+## Rerun on daily d05e86b3 (31 Oct evening, after COMPUTER BACK)
+- No freeze, no "Crash report written" in any log. Server log clean.
+- Self-tests: cook PASS. SLEEP and SNARE both print "was not set down" (placement 0.9 m ahead of the spawn returned no row; the placement refusal is silent). Likely cause, not verified: all clients share one server, and the earlier tests (fire, lean-to, placed) leave pieces at the same spawn, so the 2.5 m structure gap or the per-chunk cap refuses the bed and snare. Probe 6 and 7 place the same bed fine on a fresh server.
+- Chest test still errors at inventory_view.gd:4562 (Nil inventory, Tyler).
+- New HIGH: flora_view.gd:2270 `_decimate_task` invalid cast to PackedInt32Array (client_eat.log, once).
+
+## Fresh-server reruns and pictures (31 Oct night)
+- SNARE alone on a clean server: placed (row found). SLEEP alone: bed placed, lying OK, but ACT_SLEEP refused at energy 100 (test must lower energy first). So the earlier "not set down" was shared-server leftovers. Logs: smoke/logs/fresh/.
+- Rig: lit campfire picture shows no flames or glow (stones in grass plus a green glow); felled trunk looks dark and smooth, bark fix not visible. Both posted as QA cards. Creator preview not taken.

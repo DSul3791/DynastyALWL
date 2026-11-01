@@ -1,136 +1,668 @@
 Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
 
 probe: workbench placed, station_near workbench = true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Make a Wooden spear, then bind it with 2 twine.
+probe: notice: Make a fishing rod and try the pond.
 probe: twine | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Drag the axe to the hotbar, then press its number key.
 probe: stone_axe | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: wooden_spear | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Craft a Stone knife, then work the animal you killed.
 probe: spear | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stone_knife | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: torch | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold the fire kit and click ground. Under trees it survives rain.
 probe: campfire | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: poultice_plantain | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: poultice_comfrey | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: bandage_plantain | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: bandage_staunchmoss | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: wooden_spade | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Click to place it, open side towards you.
 probe: lean_to_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: chest_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: chopping_block | known=true | station= | crafted=true
-probe: plank_chest_kit | known=false | station=workbench | crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: You work out how to make bench
+probe: notice: You work out how to make table
+probe: plank_chest_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH plank_chest_kit known/open=true crafted=false
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: wooden_bowl | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: clay_pot | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: bucket | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: waterskin | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: twine_bark | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rope | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_spade | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: iron_spade | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: steel_spade | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: backpack | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: energy_bar | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: herbal_tea | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stomach_tea | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: chamomile_tea | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: willow_bark_tea | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: grass_skirt | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: grass_cloak | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fibre_sandals | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_cloak | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: hide_boots | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: hide_hood | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_mittens | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_leggings | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: sinew_cord | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rough_bed_kit | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: campfire_pot_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_floor_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_wall_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_roof_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_doorway_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: workbench_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: shore_net | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fishing_rod | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: tool_rack_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: log_workbench_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: wall_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: floor_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: roof_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: foundation_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: doorway_section_kit | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: window_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: timber_prop_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: timber_set_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: cut_stone_block | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: mortar | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: ladder_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_hoe | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stone_hoe | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: iron_hoe | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: steel_hoe | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: rough_plank | known=true | station=workbench | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: cobblestone | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_shingle | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_pin | known=true | station=workbench | crafted=true
-probe: water_wheel | known=false | station=workbench | crafted=false
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: water_wheel | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rock_pile | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_hammer | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: stone_hammer | known=true | station=workbench | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hand_saw | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Lumber by hand was cancelled: a tool is missing
 probe: lumber_by_hand | known=true | station= | crafted=false
 probe: MISMATCH lumber_by_hand known/open=true crafted=false
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: wooden_bow | known=true | station=workbench | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: wooden_arrow | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stone_arrow | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: quiver | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: snare | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: kindling | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: processed_hide | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_scraper | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: javelin | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: obsidian_knife | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_pickaxe | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: sickle | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_club | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_tunic | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_trousers | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: hide_gloves | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: clay_jug | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: herb_salve | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: splint | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: candle | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wicker_shield | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_mace | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: plank_shield | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: leather_cap | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: leather_jerkin | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: gambeson | known=true | station=workbench | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: quern | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: flour_from_wheat | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: flour_from_barley | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: compost | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: bone_arrow | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stone_wedge | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fibre_arrow | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: tinder | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: lumber_wedge | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rough_bed_bedding | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_hammer_soft | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: rough_bed_straw | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_tunic | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_trousers | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_cap | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_mittens | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: linen_shirt | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_cloak | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_hat | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_boots | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: linen | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: fibre_cloth | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: flour_from_oats | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: flour_from_rye | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: tallow_candle | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: leather_strap | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: butter | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: stairs_wood_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: log_wall_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: log_floor_kit | known=true | station=workbench | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: log_roof_kit | known=true | station=workbench | crafted=true
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: stone_wall_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH stone_wall_kit known/open=true crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: stone_floor_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH stone_floor_kit known/open=true crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: stone_roof_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH stone_roof_kit known/open=true crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: brick_wall_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH brick_wall_kit known/open=true crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: brick_floor_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH brick_floor_kit known/open=true crafted=false
+probe: notice: That needs a camp bench nearby
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: brick_roof_kit | known=true | station=workbench | crafted=false
+probe: MISMATCH brick_roof_kit known/open=true crafted=false
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: log_cabin_set_kit | known=false | station=workbench | crafted=false
+probe: notice: You work out how to make log seat
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: log_seat_kit | known=false | station= | crafted=true
+probe: MISMATCH log_seat_kit known/open=false crafted=true
+probe: notice: You work out how to make stool
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: stool_kit | known=false | station= | crafted=true
+probe: MISMATCH stool_kit known/open=false crafted=true
+probe: notice: You work out how to make bench
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: bench_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH bench_kit known/open=false crafted=true
+probe: notice: You work out how to make chair
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: chair_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH chair_kit known/open=false crafted=true
+probe: notice: You work out how to make table
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: table_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH table_kit known/open=false crafted=true
+probe: notice: You work out how to make hide rug
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: hide_rug_kit | known=false | station= | crafted=true
+probe: MISMATCH hide_rug_kit known/open=false crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: wool_rug_kit | known=false | station= | crafted=false
+probe: notice: You work out how to make straw bed
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: straw_bed_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH straw_bed_kit known/open=false crafted=true
+probe: notice: You work out how to make feather bed
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: feather_bed_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH feather_bed_kit known/open=false crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: You work out how to make feather bed
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: canopy_bed_kit | known=false | station=workbench | crafted=false
+probe: notice: You work out how to make wall torch
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: wall_torch_kit | known=false | station= | crafted=true
+probe: MISMATCH wall_torch_kit known/open=false crafted=true
+probe: notice: You work out how to make candle chandelier
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: chandelier_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH chandelier_kit known/open=false crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: fireplace_kit | known=false | station=workbench | crafted=false
+probe: notice: You work out how to make flower pot
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: flower_pot_kit | known=false | station= | crafted=true
+probe: MISMATCH flower_pot_kit known/open=false crafted=true
+probe: notice: You work out how to make antler mount
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: antler_mount_kit | known=false | station=workbench | crafted=true
+probe: MISMATCH antler_mount_kit known/open=false crafted=true
 probe: fire lit with plant_fibre = true
 probe: fire lit with birch_bark = true
 probe: fire lit with tinder = true
@@ -139,8 +671,8 @@ probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with amadou = false
 probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with twine = false
-probe: recipes where 'known' matched what the server did: 127, mismatches: 1
-WARNING: 150 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+probe: recipes where 'known' matched what the server did: 135, mismatches: 20
+WARNING: 177 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: ObjectDB::cleanup (core\object\object.cpp:2536)
 ERROR: 6 resources still in use at exit (run with --verbose for details).
    at: ResourceCache::clear (core\io\resource.cpp:822)

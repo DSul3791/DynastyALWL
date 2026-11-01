@@ -1046,18 +1046,36 @@ func _poll_water() -> void:
 
 # Cover.at for a fire: makes sure the flora chunk of the spot (and the neighbours whose crowns
 # reach into it) is in the server's cover index, then asks it.
+# A chunk not made yet is made on a worker thread (placing nine chunks on the main thread froze the server 4 to 8 s when the first player joined, Tyler 31 Oct 2026):
+# until it is made its crowns are not in the index, so the answer is "open" there for a few seconds.
 func _cover_at(point: Vector3) -> float:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
-			flora.chunk_bytes(home + Vector2i(dx, dz), false)
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not flora.chunk_made(chunk) and not _cover_warming.has(chunk):
+				_cover_warming[chunk] = true
+				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
 
 	if flora.roofed(point):
 		return 2.0   # under a built roof: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
+
+
+var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
+
+
+func _warm_cover_chunk(chunk: Vector2i) -> void:
+	flora.chunk_bytes(chunk, false)
+	_cover_warm_done.call_deferred(chunk)
+
+
+func _cover_warm_done(chunk: Vector2i) -> void:
+	_cover_warming.erase(chunk)
 
 
 # A standing tree for the axe: {name, position, height, trunk}, or {} when there is none (cut already,

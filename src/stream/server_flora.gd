@@ -153,6 +153,15 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	return bytes
 
 
+# Whether a chunk's flora is already made (so a question about its cover does not have to place it).
+func chunk_made(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_mutex.lock()
+	var yes: bool = _memory.has(Vector3i(home.x, home.y, 1)) or _memory.has(Vector3i(home.x, home.y, 0))
+	_mutex.unlock()
+	return yes
+
+
 # Puts a chunk's tree crowns in the cover index (called with the mutex held).
 func _fill_cover(home: Vector2i, items: Dictionary) -> void:
 	CoverScript.add_chunk(cover, home, items, func(species_id: int) -> Array:
