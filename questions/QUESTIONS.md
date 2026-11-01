@@ -43,3 +43,9 @@ Image: questions/img/felled_bark_after.png
 Note: Real game rig shot, same spot as the guide picture. The cause was missing warm shading; fixed with a brightness lift on the bark shader. Kathleen rates it 3.5 of 5: brown and textured; the stump side still looks smooth and the log is a plain block.
 - Yes
 - No
+
+## pic-hold-stone-axe | In the real game: does the held stone axe look like an axe (wooden haft, stone head, bound at the neck)?
+Image: questions/img/hold_stone_axe_nov1.png
+Note: Real game rig shot from the right, 1.6 m. Kathleen rates the axe 3 of 5: the haft and bound neck read, but the head is pale grey-white like plastic and blocky, and the rig body holds it straight out sideways (stance is not an art number).
+- Yes
+- No
