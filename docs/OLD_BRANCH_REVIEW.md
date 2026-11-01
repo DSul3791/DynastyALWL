@@ -171,3 +171,15 @@ All 13 sound branches are already in the daily or to be dropped; none needs a po
 | `steve-ground-debug`, `steve-ladder` | already done | files in daily |
 | `steve-bed-respawn` | PORT part, drop part | claim-by-lying superseded by E-on-bed `spawn_bed`; Steve redoes the landing search and repeat-death fallthrough on a fresh branch with `test_bed_respawn.gd`; keep branch until ported |
 Open question for Dave (from Sal's fire-tiers doc): 3 pieces per fire tier; code already has 3 tiers, unchecked against the rule.
+
+## Tyler (19 of 19, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `Qwen3.8_9B_ReviewRefactor` | drop | 17 files of unreviewed Qwen 9B edits; not trusted; audit-doc text only if Jamie wants it |
+| `claude/box-results`, `david3-gate`, `david3-rig`, `david3-shot-gpu`, `docker-test-box` | drop | Linux box and docker tooling; Windows gate is `run_tests.sh` + `tests_for_diff.py` |
+| `kathleen-biome-fix`, `kathleen-crowd-fix`, `kathleen-tree-belts`, `steve-shot-landing`, `steve-sqlite-warm`, `steve-thread-safety` | already done | patch-equal in daily |
+| `claude/kathleen-shovel` | PORT to Jason (keep until ported) | placeholder `soil_load`/`stone_load` sounds + `make_placed.py` not in daily (the spade look commit is) |
+| `claude/steve-rig-item` | PORT (Tyler, keep) | `look_rig --showroom-per N`, exact showroom row match, ground default 31.25 |
+| `claude/steve-shot-lock` | PORT (Tyler, keep) | mouse look ignored during a `--shots` run |
+| `claude/mike-rig-v4` | Kathleen decides | rig part superseded; held-tool pose edits in `basic_look.gd`/`held_item.gd` are hers |
+| `claude/mike-goalpad`, `mike-rig-v5`, `steve-warning-699` | drop | docs/logs only, experimental, one warning line |
