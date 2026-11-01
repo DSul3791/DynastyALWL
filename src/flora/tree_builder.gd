@@ -2321,10 +2321,10 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 				_round_fruit(fruit, at + off, 0.07 if orchard else 0.055, apple, rng)
 
 
-# A round fruit (Dave 1 Nov: "not apple shaped, make them smooth"): an apple profile turned on a lathe, 8 segments and 6 ring bands (96 triangles), widest above the middle, a dimple at the
+# A round fruit (Dave 1 Nov: "not apple shaped, make them smooth"): an apple profile turned on a lathe, 12 segments and 6 ring bands (144 triangles), widest above the middle, a dimple at the
 # stem and a flatter base, smooth normals from the profile, shaded darker underneath with one pale highlight patch on the shoulder, and a thin stem.
 const FRUIT_PROFILE := [[0.0, 0.5], [0.4, 0.62], [0.85, 0.52], [1.0, 0.12], [0.92, -0.3], [0.55, -0.6], [0.0, -0.5]]   # [radius share, height share] top to bottom
-const FRUIT_SEGS := 8
+const FRUIT_SEGS := 12
 
 
 static func _round_fruit(acc: Acc, p: Vector3, r: float, c: Color, rng: RandomNumberGenerator) -> void:
