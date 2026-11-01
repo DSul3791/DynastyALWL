@@ -1646,7 +1646,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), _tone(dark, 1, 0.12))                 # the poll block the wedge sits on
 			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), _tone(color, 4, 0.08))                      # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
 			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
-			_box_rot(parts, Vector3(0.03, 0.03, 0.035), Vector3(0.285, 0.0, 0.12), Vector3(0.0, 0.5, 0.0), dark)  # a chipped corner
+			# (the chipped-corner cube is gone: Dave 1 Nov, the grey cube at the end must not be there, the edge is one smooth blade across)
 			for k in range(5):                                                                                       # leather thong lashing, five turns each side of the head
 				_cyl(parts, 0.034, 0.012, Vector3(0.155 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.034, 0.012, Vector3(0.262 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
