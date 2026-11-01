@@ -1,6 +1,6 @@
 # Gate cards gates-a to gates-f: Tyler's review (30 Oct 2026)
 
-The report the cards cite, `design/GATE_AUDIT.md`, **exists**. In the repo it is `docs/mirror/design/GATE_AUDIT.md` (commits 36d44719, b65fb307, 7e5910ac, f24b07c0), with `GATE_FIX_PLAN.md` (dceab26b) and `GATE_BEFORE_AFTER.md` beside it. `design/` is a mirror of the project-files folder, so a search for that exact path misses it.
+The report the cards cite, `docs/mirror/design/GATE_AUDIT.md`, **exists**. In the repo it is `docs/mirror/design/GATE_AUDIT.md` (commits 36d44719, b65fb307, 7e5910ac, f24b07c0), with `GATE_FIX_PLAN.md` (dceab26b) and `GATE_BEFORE_AFTER.md` beside it. `design/` is a mirror of the project-files folder, so a search for that exact path misses it.
 
 The cards are the 25 Oct audit's recommendations R1 to R9. Dave approved the plan the same day and most of it was built. The cards were never removed from the QA page.
 

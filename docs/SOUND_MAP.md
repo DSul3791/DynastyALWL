@@ -17,6 +17,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Rejected action (too far etc.) | `itemfx.reject` | Steve | wired |
 | Fuel on fire, light fire, cook, fire out, rain on fire | `fire.set_fires/fuel/cook/hold_manual/sync_world` | Steve (rules), Kathleen (look) | wired; light and out one-shots to verify |
 | Held torch/lantern | `flame_sounds.gd` (4 call lines) | Steve | wired |
+| Shovel raises ground (fill) | `held_item.gd` `_fill_here` -> `placed.shovel_load` (added 1 Nov, untested; always the soil scoop) | Steve | wired, to hear |
 | Place chest, lean-to, doors, gates, hatches, locks, container put/take | `placed.place/use/container/chest/lock/knock/pick_up`, `watch_world`, `watch_open` | Steve (placement), Sal (keys) | wired; structure sound keys by ear: open Sal call |
 | Tool wear: break, repair | `placed.tool_break/tool_repair` | Steve | wired |
 | Cave-in quake | `placed.quake` | Tyler/Steve (tunnel watch) | wired; see `SOUND_AUDIT.md` |
@@ -42,3 +43,9 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Level up, goal done, hint | none? | Steve | to verify |
 
 Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Sonny, Sal) to expose any missing event, place the calls, add a test line per call.
+
+## Phase 1 update (1 Nov 2026, read-only, nothing run)
+- Ported from `claude/kathleen-materials` and `claude/kathleen-spades`: `place_stone`, `place_brick`, `place_thatch`, `soil_load`, `stone_load` (clips, generators in `make_placed.py`, levels in `placed_sounds.gd` NAMES, `place()` accepts the kinds stone, brick, thatch, `shovel_load()`). Commits `583e1312`, `9f9db474` on `claude/jason-audio-8366e4`; the `piece_look.gd` part of the first commit was dropped (already in the daily).
+- New wiring: `_fill_here()` in `src/client/held_item.gd` calls `placed.shovel_load(false, hit position)` (see the `shortcut:` comment there).
+- Still silent until Sal sets the `sound` key on the rows: stone, brick and thatch pieces in `data/items/structures.json` still use `timber`/`thump`, so the new place sounds exist but nothing asks for them.
+- Code locations for the `none?` rows (where the call goes, for the backlog): sleep/wake `inventory_view.gd:1393, 4571, 4575` (`ACT_SLEEP` sent; the server owns the state); fishing cast and bite `held_item.gd:590, 621` (`ACT_FISH` sent); hurt from a fall `landing_sounds.gd:27` signal `hurt` is connected in `terrain_client.gd:1277` (only falls hurt the client; damage from animals has no client event I could find). The rest are listed in `docs/handoff/JASON_NEXT_TASKS.md`.

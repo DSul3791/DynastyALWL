@@ -10,7 +10,7 @@ Sessions (each has `docs/handoff/SCOPE_<NAME>.md`, most also `HANDOFF_<NAME>.md`
 - Standing instruction (applies to ALL agents, including those started later; paused during the handoff hold): when an agent finishes, it invents three more tasks for its own job, writes them down, does them, and repeats until it honestly has none. Never go idle waiting for the moderator.
 - Ponytail rules (`docs/PONYTAIL_RULES.md`) for the water build. Max 3 heavy Godot jobs (`tools/godot_slot.sh`). Do not kill Godot processes (one may be Dave's editor).
 - The new water becomes the DEFAULT; the old water stays only behind a flag (`--water-old` plus a settings switch). Dave's words: if it does not work we remove the old one later.
-- Death rule: `data/items/death.json` `novice_grace` is `always` until Dave answers QA card `death-novice` (recommended: respawn until level 5).
+- Death rule: Dave ANSWERED `death-novice` on 31 Oct: respawn at the bed until level 10, then real death (dynasty). Steve sets `data/items/death.json` `novice_grace` to level 10 (commit 3f51ccd6 on his branch, unrun); the client flow for a real final death is not built yet. New death cards for Dave (QA branch): death-before-heirs, death-new-start, death-downed-state.
 
 ## State at handoff (1 Nov 2026, end of day)
 - Daily `DailyDev_20261029` is fully merged with every agent's latest work and pushed (head after Jamie's last merge; `git log -1 origin/DailyDev_20261029`). All 104 data JSON files parse.
@@ -28,7 +28,7 @@ A second art agent, "Kathreen: Art assistant" (session local_5dc173d8-f090-4d75-
 1. RESTART, then in this order: Sonny applies the water-default patch and runs his water tests (`test_water_soak` 900 s); Tyler runs the full test pass and re-runs the 7 tests killed by the Godot kills (`test_warmth`, `test_edible_offer`, `test_flora_density`, `test_ingredient_groups`, `test_look_table`, `test_river_ore`, `test_stairs_climb`); Dino runs the creator picture, rig walks and clean-server sleep test; then pictures (Kathleen: campfire flames first, lying trunk, orchard; Kathreen: water look, yarrow, blueberry, creator).
 2. Ports from the old-branch review (owners keep their branches until ported): see `docs/OLD_BRANCH_REVIEW.md`. Bake-changing set (`lake-lip`, `pond-notch`, `steve-spring-feed`, land types) needs ONE bake proposal and Dave's go, after the water.
 3. Chest self-test error `inventory_view.gd:4562` (Tyler); creator preview facing front and plain colours (Kathreen); Steve's first jobs: per-character key plus delete-character (existing saves share one key per computer), real-death question list for Dave, placement refusal messages, bed respawn landing search (`steve-bed-respawn`).
-4. Questions for Dave: `death-novice` (QA card), the heavy stone wall kit (a 75 kg player carries about 52 kg; kit needs about 314 kg), 3 pieces per fire tier, pending picture cards, whether to keep `claude/flora-density` and `sonny-character`.
+4. Questions for Dave: the new death cards (`death-before-heirs`, `death-new-start`, `death-downed-state`), the heavy stone wall kit (a 75 kg player carries about 52 kg; kit needs about 314 kg), 3 pieces per fire tier, pending picture cards, whether to keep `claude/flora-density` and `sonny-character`.
 5. Dave's own: play-test the daily, answer the cards, then say go for main (backup, merge, final tests, new daily branch).
 6. Doc housekeeping: `RULES.md` (October build-number flow, marked out of date) and `HANDOFF.md` (29 Oct state) still contradict the daily-branch flow; Jamie's fuller review after RESTART.
 

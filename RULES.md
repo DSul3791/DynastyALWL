@@ -16,9 +16,8 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until Dave has play-tested and says go.
 - Flow since 1 Nov 2026: each agent works on its own branch (`claude/<topic>` or its named branch) and pushes it; the moderator merges the pushes into the daily branch (`DailyDev_YYYYMMDD`); the full test pass runs; Dave play-tests. On Dave's go: backup, merge the daily into `main`, tests, new daily branch. Agents never merge to the daily or `main` themselves.
 - `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
-- OUT OF DATE (October, Technical Director era; kept until the moderator confirms): the build-number and `BUILD_LOG` rule below and the `ID_CLAIMS.md` rule under Code. The HUD number lives in `src/shared/build.gd`.
-- Build number = max(origin BUILD, last BUILD_LOG line) + 1; the BUILD_LOG line goes in the same commit. Each change is labelled RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
-- Before shipping: `git pull --rebase origin main`, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check.
+- Before handing a branch to the moderator: `git fetch` and merge the daily into your branch, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check. Label each change RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
+- Build number: the HUD number lives in `src/shared/build.gd` and is raised only by `tools/ship.sh` at the last step into `main` (it also appends `docs/mirror/tech/BUILD_LOG.md`). Agents on branches do not touch it.
 - Bakes: never bake or commit tiles in the cloud. A `TERRAIN_VERSION` change ships only with a bake.
 
 ## Code
@@ -27,7 +26,7 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - Any input change updates `CONTROLS.md` and passes `python3 tools/check_controls.py`.
 - Big changes need Dave's approval first: how the code is split, the network protocol, save formats, the block store, `TERRAIN_VERSION`, shared constants two areas touch, new dependencies or native code, per-frame cost not behind the quality setting.
 - After client, server, streaming, flora or water changes, run the performance routine and say what it costs at the Low tier.
-- Claim item numbers and action ids in `docs/mirror/tech/ID_CLAIMS.md` before using them.
+- Item numbers: Sal owns `data/items/items.json` (`next_number`); action ids: Steve owns `src/stream/terrain_net.gd`. `tools/merge_check.py` fails duplicates. (The October `ID_CLAIMS.md` list is history.)
 
 ## Testing
 - Test first yourself (headless tests, look rig `tools/look_rig.sh`, the spawn showroom); only human-judgment checks go to Dave.
@@ -38,7 +37,7 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - No chasing ghosts: fix only with a log, a repro or a screenshot.
 
 ## Where things live
-`HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (four plans still cited by code and data or not fully built; the other 41 finished October plans are in `docs/archive/2026-11/tech_ACTION_PLANS/`), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
+`HANDOFF.md` (commands, setup, gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (four plans still cited by code and data or not fully built; the other 41 finished October plans are in `docs/archive/2026-11/tech_ACTION_PLANS/`), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
 
 ## Heavy Godot jobs share the PC (Tyler, 31 Oct 2026)
 At most 3 test or rig jobs run at once on this PC, across all sessions: `tools/run_tests.sh` / `tools/run_one_test.sh` take a slot from `tools/godot_slot.sh` on their own. For anything else that starts Godot for a while (picture rigs, servers and clients, probes), wrap it: `tools/godot_slot.sh godot --path . ...`. `GODOT_SLOTS=0` switches the guard off, `GODOT_SLOTS=N` changes the number. It never kills anything; a slot whose job is gone is taken over.

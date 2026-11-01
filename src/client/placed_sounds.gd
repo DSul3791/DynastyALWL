@@ -29,7 +29,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/placed/"
 
 const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
-	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0,
+	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0, "soil_load": -12.0, "stone_load": -9.0, "place_stone": -6.0, "place_brick": -8.0, "place_thatch": -10.0,
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
 const StructureLook := preload("res://src/shared/structure_look.gd")   # which states make a placed sound, and which kind, is data (structures.json "sound")
@@ -57,7 +57,7 @@ func setup(stage) -> void:
 
 
 func place(kind: String, at: Vector3) -> bool:
-	return _once("place_" + (kind if kind in ["leanto", "chest", "timber", "foundation"] else "thump"), at)
+	return _once("place_" + (kind if kind in ["leanto", "chest", "timber", "foundation", "stone", "brick", "thatch"] else "thump"), at)
 
 
 func pick_up(at: Vector3) -> bool:
@@ -118,6 +118,11 @@ func container(put: bool, at: Vector3) -> bool:
 
 func tool_break(at: Vector3) -> bool:
 	return _once("tool_break", at)
+
+
+# Loading the shovel for raise mode: soil or stone dragged onto it.
+func shovel_load(stone: bool, at: Vector3) -> bool:
+	return _once("stone_load" if stone else "soil_load", at)
 
 
 func tool_warn(at: Vector3) -> bool:
