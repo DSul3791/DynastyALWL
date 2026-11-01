@@ -90,6 +90,21 @@ func _cut(source: ArrayMesh) -> Array:
 	var box: AABB = source.get_aabb()
 	var top: float = box.end.y
 	var length: float = box.size.y
+
+	# Dave's arms hang a little out from the body (about 14 degrees); the rig's bones hang straight down, so the arm is first swung about the shoulder until the line from the shoulder to the
+	# wrist is vertical. Then the pieces' joints sit under each other and the elbow bends about the right point.
+	var top_c: Vector3 = _centre_at(verts, top, length * 0.02)
+	var wrist_c: Vector3 = _centre_at(verts, top - WRIST_AT * length, length * 0.02)
+	var swing: Basis = Basis(Quaternion((wrist_c - top_c).normalized(), Vector3.DOWN))
+	var bottom: float = 9.0
+	top = -9.0
+
+	for i in range(verts.size()):
+		verts[i] = top_c + swing * (verts[i] - top_c)
+		top = maxf(top, verts[i].y)
+		bottom = minf(bottom, verts[i].y)
+
+	length = top - bottom
 	var scale: float = UPPER_LEN / (ELBOW_AT * length)
 	var elbow_y: float = top - ELBOW_AT * length
 	var wrist_y: float = top - WRIST_AT * length
@@ -123,62 +138,38 @@ func _cut(source: ArrayMesh) -> Array:
 			if cy <= hi and cy >= lo:
 				kept.append(t)
 
-		var out: Array = []
-		out.resize(Mesh.ARRAY_MAX)
-
-		for key in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_TEX_UV, Mesh.ARRAY_TANGENT]:
-			var data: Variant = arrays[key]
-
-			if data == null:
-				continue
-
-			var stride: int = int(data.size() / verts.size())
-			var picked: Variant = data.duplicate()
-			picked.resize(kept.size() * 3 * stride)
-
-			for i in range(kept.size()):
-				for c in range(3):
-					var src: int = indices[kept[i] * 3 + c]
-
-					for s in range(stride):
-						picked[(i * 3 + c) * stride + s] = data[src * stride + s]
-
-			out[key] = picked
-
-		var v_out: PackedVector3Array = out[Mesh.ARRAY_VERTEX]
-		var pivot: Vector3 = joint[k]
+		# The file has positions and UVs only (the importer adds no normals): smooth normals and tangents are made here so the lighting and the normal map work.
+		var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
 		var turn: Basis = Basis(Vector3.UP, PI)
+		var pivot: Vector3 = joint[k]
+		var tool: SurfaceTool = SurfaceTool.new()
+		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-		for i in range(v_out.size()):
-			v_out[i] = turn * ((v_out[i] - pivot) * scale)
+		for t in kept:
+			for c in range(3):
+				var src: int = indices[t * 3 + c]
+				tool.set_uv(uvs[src])
+				tool.add_vertex(turn * ((verts[src] - pivot) * scale))
 
-		out[Mesh.ARRAY_VERTEX] = v_out
+		if kept.size() > 0:
+			tool.index()
+			tool.generate_normals()
+			tool.generate_tangents()
+			tool.set_material(_material)
 
-		if out[Mesh.ARRAY_NORMAL] != null:
-			var n_out: PackedVector3Array = out[Mesh.ARRAY_NORMAL]
-
-			for i in range(n_out.size()):
-				n_out[i] = turn * n_out[i]
-
-			out[Mesh.ARRAY_NORMAL] = n_out
-
-		if out[Mesh.ARRAY_TANGENT] != null:
-			var t_out: PackedFloat32Array = out[Mesh.ARRAY_TANGENT]
-
-			for i in range(t_out.size() / 4):
-				var tangent: Vector3 = turn * Vector3(t_out[i * 4], t_out[i * 4 + 1], t_out[i * 4 + 2])
-				t_out[i * 4] = tangent.x
-				t_out[i * 4 + 1] = tangent.y
-				t_out[i * 4 + 2] = tangent.z
-
-			out[Mesh.ARRAY_TANGENT] = t_out
-
-		var mesh: ArrayMesh = ArrayMesh.new()
-
-		if v_out.size() > 0:
-			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out)
-			mesh.surface_set_material(0, _material)
-
-		pieces.append(mesh)
+		pieces.append(tool.commit())
 
 	return pieces
+
+
+# The middle of the vertices within `band` of height `y`.
+func _centre_at(verts: PackedVector3Array, y: float, band: float) -> Vector3:
+	var sum: Vector3 = Vector3.ZERO
+	var n: int = 0
+
+	for p in verts:
+		if absf(p.y - y) < band:
+			sum += p
+			n += 1
+
+	return sum / float(maxi(n, 1))
