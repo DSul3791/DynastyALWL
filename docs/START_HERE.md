@@ -16,7 +16,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 | Steve | sub-system rules and code (character system, comfort, food, warmth, sleep, fire rules, placement, death, hints) |
 | Tyler | Q&A testing and tooling (test suite, rigs, stability, merge gates) |
 | Dino | playthrough and walkthrough guides; reports to the moderator |
-| Jason (Champ) | all sound |
+| Jason (Champ) | all sound, including the hooks (which events make a sound); system owners expose events on request |
 | Jamie | documentation (this page, `DOC_MAP.md`) |
 
 ## Rules

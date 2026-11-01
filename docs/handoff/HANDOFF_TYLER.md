@@ -1,7 +1,7 @@
 # Handoff: Tyler: Q&A Testing, 1 Nov 2026
 
 ## My role
-Server-side game systems and their tests for DynastyALWL (Godot 4.7): comfort and the Rested buff, lit fixtures and fire light, placement, hints and goals, death rules, the test and rig tooling. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
+Q&A testing and tooling for DynastyALWL (Godot 4.7) since 1 Nov: the test suite, rigs and probes, regressions, the join freeze and stability, merge gates. The systems listed under "Done" (comfort, lit fixtures, placement, hints and goals, death rules) were built by me before the role change and are Steve's now. Branch `claude/tyler-gates-fee5f7`; the moderator ("More Dynasty") merges it into `DailyDev_20261029`. I never merge to the daily or main myself and never force-push.
 
 ## Done and merged (daily 27dfe828 contains all of it)
 - Lit-state saving (`lights.json`), drawn lit fixtures (flames and warm lights), fire-light shape (short range, falloff, flicker; fireplace is a front-only shadowed spot). Pictures: `art/CRITIQUES/fire_light_2026-10-31/`.
@@ -26,7 +26,7 @@ Uncommitted edits at the time of writing, all small and complete: `ACT_ADMIN_ENE
 - Do not commit `crash_reports/` (the rig writes there; one telemetry file is tracked and shows as modified: `git checkout crash_reports/telemetry_client.log`).
 
 ## Tests and how
-- Godot: standard `godot` shim (`tools/godot`) for headless scripts; WORLD tests and the client scenes need the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (pass it to `items_check.py --godot`).
+- Godot: the `godot` shim (`tools/godot`, defaults to the voxel build; set `GODOT_EXE` to the standard exe `Godot_v4.7.2-stable_win64_console.exe` for data tests) for headless scripts; WORLD tests and the client scenes need the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (pass it to `items_check.py --godot`).
 - Heavy jobs: at most 3 at once, through `tools/godot_slot.sh`. Never start Godot while Dave says the PC is his.
 - Per change: `python3 tools/tests_for_diff.py --paths <files> > /tmp/plan.json && bash tools/run_tests.sh --plan /tmp/plan.json`. Client scenes: `python3 tools/items_check.py --godot "C:/GodotInstaller/godot.windows.editor.x86_64.exe" --only chest,gather,eat,leanto,sleep`.
 - Rig (real windowed client): `bash art/playthrough/rig.sh ...` (see `art/playthrough/RIG_PLACE.md` for `SERVER_ARGS="--dev-place=name@x,z,yaw,lit"`; kit placement via `--give campfire_kit:1 --drop --client-arg --shot-place --client-arg --shot-light`).

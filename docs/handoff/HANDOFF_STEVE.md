@@ -24,8 +24,8 @@ Docs only so far: `SCOPE_STEVE.md` (`7808d2e3`) and this file. No code changed, 
 - Join: first-tick scatter about 0.75 s (`_scatter_around_players`); the 15 s freeze was not seen on `d05e86b3` but no person confirmed it; provisional open tree cover for a few seconds can make a bed under a canopy read uncovered [Tyler, Dino]. Tyler keeps this; I only watch for it in my smoke test.
 - Chest self-test: `inventory_view.gd:4562` Invalid access 'numbers' on Nil, still failing at Sonny's last smoke rerun (`5b29b37e`) [Dino, Sonny]. Tyler's list says the chest was his; with systems moved it is a candidate for me, ask Tyler who takes it.
 - Sleep and snare self-tests fail in a full shared-server run because earlier tests leave pieces at spawn (2.5 m `gap_m`); on a clean server the bed places. Sleep at full energy is refused by design (nap only with high exertion) [Dino, Tyler].
-- `flora_view.gd:2270` cast error is the flora session's [Dino].
-- Lit fire shows no flames in the Guide's picture (QA card `pic-fh-campfire-lit`); server state 40 is right. Look is Kathleen's, first task after RESTART [Dino, Kathleen].
+- `flora_view.gd:2270` cast error is MikeW's [Dino].
+- Lit fire shows no flames in Dino's picture (QA card `pic-fh-campfire-lit`); server state 40 is right. Look is Kathleen's, first task after RESTART [Dino, Kathleen].
 - Goal list has no protocol message or client list, notices only [me]. No pot or hearth tutorial step was open on 31 Oct; steps 23 and 24 now exist [Sal].
 - Drinking at water, the pot, hearth, bench have never been driven in a real client [Dino].
 - Berries 4 kcal and campfire-only-meat unplayed; lean-to 32 sticks pace unmeasured; steps 11 to 20 need 58 sticks of the bot's 60 [Sal].
