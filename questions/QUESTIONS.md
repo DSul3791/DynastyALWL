@@ -49,3 +49,9 @@ Note: 1. Place a campfire kit and put in exactly 3 sticks (or kindling or driftw
 Note: 2. Look at the flame and stand 2 m away, then 4 m away.
 Note: Expect: a small flame, light about 6 m, a little warmth only within 2.5 m (heat +8 C), gone when the sticks burn out. Fewer than 3 pieces still counts as tier 1.
 [test]
+
+## fire-tier-2-campfire | Fire tier 2: with 3 pieces of firewood, is the fire a proper campfire?
+Note: 1. Place a campfire kit and put in exactly 3 firewood, then light it with plant fibre.
+Note: 2. Look at the flame, then stand 3 m away on a cold night.
+Note: Expect: a bigger flame than tier 1, light about 12 m, warmth out to 4 m (heat +20 C). It stays this size until the firewood is gone, then drops to tier 1 if sticks remain.
+[test]
