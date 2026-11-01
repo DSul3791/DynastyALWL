@@ -8,6 +8,25 @@ const Generator := preload("res://src/client/character/body_generator.gd")
 const LEGACY_PATH := "user://my_character.code"       # the single saved code of the first creator; still worn when no character has been made yet
 
 
+const SETTINGS_PATH := "user://input_settings.cfg"
+
+
+# Dave's own body (assets/character/Humanoid/Dynasty_Base_Male.glb, src/client/character/dynasty_body.gd): off unless `--dynasty-body` is given or the Gameplay settings switch is on.
+static func dynasty_body_on(path: String = SETTINGS_PATH) -> bool:
+	if OS.get_cmdline_user_args().has("--dynasty-body"):
+		return true
+
+	var file: ConfigFile = ConfigFile.new()
+	return file.load(path) == OK and bool(file.get_value("character", "dynasty_body", false))
+
+
+static func set_dynasty_body(on: bool, path: String = SETTINGS_PATH) -> void:
+	var file: ConfigFile = ConfigFile.new()
+	file.load(path)
+	file.set_value("character", "dynasty_body", on)
+	file.save(path)
+
+
 static func generated_body_on() -> bool:
 	return not OS.get_cmdline_user_args().has("--old-body")
 
