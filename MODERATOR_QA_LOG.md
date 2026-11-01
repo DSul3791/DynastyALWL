@@ -57,3 +57,6 @@ Jamie reviews all documents from time to time: do they make sense, are they usef
 
 ## 2026-11-01 Sound hooks are Jason's, not the system owners' (Dave)
 Corrects my earlier edge ("when a sound plays is the system owner's"). Jason (Champ) owns the sound hooks too: finding which game events should make a sound, wiring the sound call at those events, auditing for events with no sound, and the sound tests. System owners (Steve and others) keep the rules; if an event does not exist in their code yet, Jason asks them to expose it (a signal or event) and they do, but Jason places the sound call. Sal's item sound keys stay item data that Jason maps.
+
+## 2026-11-01 Stones sell in multiples: 2 stones = 1 copper (Dave)
+A stone is worth half a copper, so stones are sold in multiples: 2 stones pay 1 copper (and 40 stones pay about 20, less as demand falls). A single stone does not pay a copper. Context: the final full pass failed only `test_trade` ("selling forty stones at once pays less than a copper each", got 40 for 40; the test also expects one stone to pay at least a copper). That test passed in the earlier 160/160 pass, so check whether the stack-caps or economy merge changed stone pricing. Owners: Sal (price data: stone value 0.5 copper / sale lot of 2), Steve (trade code: lots, rounding down, demand), test_trade updated to the new rule.
