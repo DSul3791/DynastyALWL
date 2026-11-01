@@ -10,7 +10,7 @@
 		"wooden_block": ["wooden_block", "wooden_block_soft"],
 		"firewood": ["firewood", "firewood_soft"]
 	},
-	"key_woods": ["oak", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
+	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
 	"retired_to": {"log_": "log", "lumber_": "lumber", "beam_": "lumber"},
 	"default": {
 		"class": "hardwood",

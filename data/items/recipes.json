@@ -1342,10 +1342,8 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"locked": true,
-			"station": "saw_mill",
-			"retired": true
+			"known": true,
+			"station": "saw_mill"
 		},
 		"beams_beech": {
 			"number": 55,
@@ -1362,10 +1360,8 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"locked": true,
-			"station": "saw_mill",
-			"retired": true
+			"known": true,
+			"station": "saw_mill"
 		},
 		"lumber_birch": {
 			"number": 56,

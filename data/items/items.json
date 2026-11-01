@@ -1236,8 +1236,7 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 48,
-			"future": true,
-			"retired": true
+			"future": true
 		},
 		"lumber_beech": {
 			"number": 104,
@@ -1248,8 +1247,7 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 12,
-			"future": true,
-			"retired": true
+			"future": true
 		},
 		"beam_beech": {
 			"number": 105,
@@ -1260,8 +1258,7 @@
 			"species": "beech",
 			"look_alikes": [],
 			"value": 36,
-			"future": true,
-			"retired": true
+			"future": true
 		},
 		"log_birch": {
 			"number": 106,
