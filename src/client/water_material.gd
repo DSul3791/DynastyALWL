@@ -141,7 +141,9 @@ vec2 sea_slope(vec2 p, float time, float dist) {
 		float k = 6.2831853 / dirs[i].z;
 		float speed = sqrt(9.81 * k) * 0.6;
 		float phase = dot(d, p) * k - time * speed;
-		slope += d * k * dirs[i].w * cos(phase) / (1.0 + dist / (dirs[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
+		// Kathreen 1 Nov: sea pictures showed a regular lattice (four pure sine waves). A slow cross-crest modulation breaks the grid; UNTESTED, check by picture and revert if worse.
+		float crest = 0.65 + 0.35 * sin(dot(vec2(-d.y, d.x), p) * k * 0.21 + float(i) * 1.7);
+		slope += d * k * dirs[i].w * crest * cos(phase) / (1.0 + dist / (dirs[i].z * 25.0));      // a wave fades out at 25 of its own lengths, so far water has only the long swell (no moire)
 	}
 	return slope;
 }
