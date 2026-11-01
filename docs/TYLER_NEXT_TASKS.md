@@ -25,3 +25,6 @@ The full list of what is open is `docs/handoff/SCOPE_TYLER.md` sections 3 and 8 
 ## Phase 2 results (1 Nov 2026, Tyler)
 - PASS: `test_camp_bench_drink`, `test_stump_chop`, `test_comfort`; `items_check --only chest,sleep,gather,eat,leanto` all PASS (the chest/sleep nil fix holds on fresh servers); `items_check --only snare` PASS (new opt-in entry: it sets `traps.json` test_chance to 1.0 for the run and puts it back to 0.0); `look_rig.sh --showroom Spades --showroom-per 5` saves pictures (the ported option works).
 - Still open, owner me: the `items_check.py` client entry for camp bench and drink (Dino #11 client half; the server test passes); final full pass on the merged daily (starts when the moderator says so).
+
+## Final full pass (1 Nov 2026, daily a4443f1d, voxel build, Tyler)
+164 tests: 163 pass, 1 fail at first (`test_trade`, real: slots no longer cap stacks, so 40 stones sell in one go and still pay 1 copper each; test now checks the buyer tires; fixed, passes). `items_check` chest/sleep/gather/eat/leanto/snare all PASS. 3 rig joins: no crash report, no `SLOW RPC`/`items tick slow`, no STALL/WATCHDOG (the join stall is gone with the merged fixes). Not run: client scene entry for bench/drink (open, owner Tyler), mutation checks, creator-preview lighting look.
