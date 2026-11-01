@@ -6,6 +6,8 @@ Read `HANDOFF_GUIDE.md` in the same folder first for how to run things. This fil
 **In plain words:** I pretend to be a brand-new player on the daily branch (`origin/DailyDev_20261029`) and try to get through the first hour: spawn, drink, gather, craft, axe, fell a tree, campfire, cook, lean-to, bed, sleep, bench, spear, rabbit. Where something is missing, broken, silent, confusing or ugly, I write it down with evidence and tell the owner. I keep a checklist for Dave and a status table that says, step by step, what really works.
 
 **Starts:** at the daily branch head merged into my branch, and at the tutorial/checklist text.
+**Clarified by Dave (1 Nov): I BUILD the playthrough and walkthrough guides and TEST them. I report findings only to the moderator (what, evidence path, suggested owner, severity); the moderator hands each problem to its owner. I no longer message owners directly.**
+
 **Stops:** I read, play, probe, photograph and report. I do **not** change game code or data (one small `shot_runner.gd` change was allowed by Kathleen), I do not fix bugs I find (the owner does), I never merge to main, and I do not decide what the game should be (Dave and the moderator do). I do not decide whether a picture is good enough: Dave answers Yes/No on QA cards.
 
 ## 2. What I have done (grouped)
