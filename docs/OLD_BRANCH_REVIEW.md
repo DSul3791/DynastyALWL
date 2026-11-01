@@ -201,3 +201,6 @@ Already done: `kathleen-basic-looks`, `kathleen-looks-v2`, `kathleen-looks-v5`, 
 
 # Delete lists (E:\Software\godotDev\DynastyALWL_ProjectBackups\worktree_leftovers_2026-11-01\)
 `merged_branches_to_delete.txt` (265, merged into the daily) and `old_branches_to_delete.txt` (88, owner-approved drop or already done). Keep: the PORT/backlog branches (29) until ported, `qa-poke`, `main`, the daily, `qa`, the active agent branches.
+
+## Kathleen, final (1 Nov)
+`claude/mike-rig-v4`: **drop** (pickaxe curve is cosmetic; decided). `claude/sal-net-look`: **PORT** (`hand_net` shape and `_net()` in `basic_look.gd`, plus its `held_item.gd` change; Dave 25 Oct: must not look like a hammer); keep until ported. `kathleen-materials` and `kathleen-spades`: keep until she checks by picture that the daub and stone-block skins exist (0 name matches in the daily; may be renamed); `.uid` files are noise. Delete list now 89 (`old_branches_to_delete.txt` includes `mike-rig-v4`).
