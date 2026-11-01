@@ -10078,10 +10078,14 @@ func migrate_old_skills(key: String, row: Dictionary, dry_run: bool = false) -> 
 func _load_characters() -> void:
 	var parsed: Variant = _read_json_version("characters.json", 1)
 
-	if parsed == null:
+	if typeof(parsed) != TYPE_DICTIONARY or typeof((parsed as Dictionary).get("players", {})) != TYPE_DICTIONARY:
 		return
 
 	for key in parsed.get("players", {}):
+		if typeof(parsed["players"][key]) != TYPE_DICTIONARY:
+			push_warning("characters.json: the record of %s is not a record, skipped (the others are kept)" % str(key))
+			continue
+
 		_characters[str(key)] = {
 			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
 			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
