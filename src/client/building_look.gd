@@ -664,12 +664,13 @@ static func _fire_base(loaded: bool, tier: int = 2) -> ArrayMesh:
 const FLAME_TONGUES := {
 	1: [[Vector3(0.0, 0.05, 0.0), 0.34, 0.1, 0.0], [Vector3(0.06, 0.05, 0.04), 0.24, 0.07, 0.4]],
 	2: [[Vector3(0.0, 0.07, 0.0), 0.72, 0.17, 0.0], [Vector3(0.1, 0.07, 0.07), 0.5, 0.12, 0.4], [Vector3(-0.09, 0.07, -0.05), 0.42, 0.11, 2.2]],
-	3: [[Vector3(0.0, 0.1, 0.0), 1.15, 0.26, 0.0], [Vector3(0.18, 0.1, 0.1), 0.85, 0.19, 0.4], [Vector3(-0.16, 0.1, -0.08), 0.8, 0.18, 2.2],
-		[Vector3(0.05, 0.1, -0.2), 0.62, 0.15, 3.6], [Vector3(-0.2, 0.1, 0.14), 0.55, 0.13, 5.0]],
+	3: [[Vector3(0.0, 0.1, 0.0), 1.4, 0.34, 0.0], [Vector3(0.2, 0.1, 0.12), 1.0, 0.24, 0.4], [Vector3(-0.18, 0.1, -0.1), 0.95, 0.22, 2.2],
+		[Vector3(0.06, 0.1, -0.22), 0.75, 0.18, 3.6], [Vector3(-0.22, 0.1, 0.16), 0.66, 0.16, 5.0]],
 }
-# Light range and energy by tier (the survival fire is dim, the bonfire carries furthest).
+# Light range and energy by tier (Dave 1 Nov): each step up is twice the radius and twice the brightness; flames about twice as tall; the bonfire's light is warmer.
 # Short range with a real falloff (omni_attenuation 2 = inverse-square style), centred on the flame; the nearest-lights pass flickers it a few percent around meta base_energy (Dave 31 Oct).
-const FIRE_LIGHT := {1: [3.5, 1.0], 2: [5.5, 1.6], 3: [8.0, 1.8]}
+const FIRE_LIGHT := {1: [3.5, 1.0], 2: [7.0, 2.0], 3: [14.0, 4.0]}
+const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
 # The stone ring and ash patch scale with the fire: a small ring for a few sticks, a wide one for logs.
 const FIRE_RING_SCALE := {1: 0.6, 2: 1.0, 3: 1.3}
@@ -736,7 +737,7 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		root.add_child(_instance(_flames(tier)))
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
-		light.light_color = Color(1.0, 0.62, 0.3)
+		light.light_color = FIRE_LIGHT_COLOR[tier]
 		light.omni_range = float(FIRE_LIGHT[tier][0])
 		light.light_energy = float(FIRE_LIGHT[tier][1])
 		light.omni_attenuation = LIGHT_FALLOFF
