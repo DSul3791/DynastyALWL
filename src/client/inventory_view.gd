@@ -4546,6 +4546,11 @@ func run_cook_test(client) -> void:
 func run_sleep_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 
+	if not await _wait_inventory_ready():
+		print("SLEEP TEST FAILED: the pack never arrived")
+		return
+
+
 	if not await _smoke_give("rough_bed_kit", 1):
 		print("SLEEP TEST FAILED: the pack did not get the rough bed")
 		return
@@ -4584,6 +4589,11 @@ func run_sleep_test(client) -> void:
 # otherwise this only waits for a rabbit to walk by). Prints SNARE TEST lines.
 func run_snare_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
+
+	if not await _wait_inventory_ready():
+		print("SNARE TEST FAILED: the pack never arrived")
+		return
+
 
 	if not await _smoke_give("snare", 1):
 		print("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
@@ -4755,8 +4765,25 @@ func run_eat_test(client) -> void:
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
+# Self-tests on a shared server start before the pack has arrived: wait for it (up to 30 s) so none reads `inventory.numbers` on Nil (Dino's finding, chest test).
+func _wait_inventory_ready() -> bool:
+	for wait in 100:
+		if inventory != null:
+			return true
+
+		await get_tree().create_timer(0.3).timeout
+
+	return inventory != null
+
+
 func run_chest_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
+
+	if not await _wait_inventory_ready():
+		print("Chest test: the pack never arrived")
+		_finish_early(client)
+		return
+
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
@@ -4812,9 +4839,15 @@ func run_chest_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	print("Chest test: chest row %d, screen open %s, stones in chest %d, in pack %d" % [id, str(chest_mode), chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+
+	if chest_inv == null:
+		print("Chest test: the chest closed before the take")
+		_finish_early(client)
+		return
+
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, chest_inv.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 
 	# Quick key T moves the hovered pack stack into the open chest.
 	var stone_slot: int = inventory.numbers.find(stone)
@@ -4824,7 +4857,7 @@ func run_chest_test(client) -> void:
 	press.pressed = true
 	quick_key(press)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 	_finish_early(client)
 
 

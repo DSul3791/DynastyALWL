@@ -67,6 +67,8 @@ UNITS = [
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 
+OPT_IN = {"snare"}   # client steps that run only with --only NAME
+
 # name, client flags, frames, checks
 CLIENTS = [
     ("chest", ["--chest"], 3500, [
@@ -132,6 +134,10 @@ CLIENTS = [
     ]),
     ("sleep", ["--sleep"], 5000, [
         ("a tired character lies down and sleeps", r"SLEEP TEST (PASS)", None, None),
+    ]),
+    # Needs data/animals/traps.json "test_chance" above 0 (a rabbit is imagined beside the snare), otherwise it waits 200 s and fails: set it for the run, put it back to 0 after.
+    ("snare", ["--snare"], 20000, [
+        ("a snare is set down and a carcass lies by it", r"SNARE TEST (PASS)", None, None),
     ]),
     ("eat", ["--eat"], 7000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
@@ -274,7 +280,20 @@ def main():
     for index, (name, flags, frames, checks) in enumerate(CLIENTS):
         if only and name not in only:
             continue
-        ok, note = run_client(index, flags, frames, checks, godot, verbose)
+        if name in OPT_IN and not (only and name in only):
+            continue   # runs only when asked for by name (snare needs traps.json test_chance above 0)
+        traps_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "animals", "traps.json")
+        traps_text = None
+
+        if name == "snare":   # an imagined rabbit for this run only, the file is put back after
+            traps_text = open(traps_path, newline="").read()
+            open(traps_path, "w", newline="").write(traps_text.replace('"test_chance": 0.0,', '"test_chance": 1.0,', 1))
+
+        try:
+            ok, note = run_client(index, flags, frames, checks, godot, verbose)
+        finally:
+            if traps_text is not None:
+                open(traps_path, "w", newline="").write(traps_text)
         print("%-16s %s  %s" % (name, "PASS" if ok else "FAIL", note))
         failed += 0 if ok else 1
     return 1 if failed else 0
