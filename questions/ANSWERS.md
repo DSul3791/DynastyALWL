@@ -1938,3 +1938,7 @@ Answered: 2026-10-31 20:07 UTC
 Answer: Yes | Comment: This is about movement then probably yes, but lava should be orange and red like fire for the colour sake
 Answered: 2026-10-31 20:07 UTC
 
+## pic-orchard-real | In the real game: do the orchard trees look varied (yellower, bluer, different shapes) and is the red apple on the left visible enough?
+Answer: No | Comment: This picture only shows one tree and one apple so I can’t tell
+Answered: 2026-11-01 00:30 UTC
+
