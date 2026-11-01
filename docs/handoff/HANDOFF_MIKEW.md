@@ -1,4 +1,4 @@
-# Flora session hand-off (2026-11-01)
+# Handoff: MikeW (formerly Flora, plants and density), 1 Nov 2026
 
 ## Role
 I own plants and the feel of a living world: tree, shrub, berry, herb, flower and tall-grass density and placement, how they look at range, fruit harvest, and the grass shader. Branch `claude/flora-density-v2`, merged into the daily (DailyDev_20261029, head 27dfe828 when I stopped). I never merge to main. Kathleen owns flora art (models, colours, `src/flora/tree_builder.gd`); I own placement and data.
@@ -31,7 +31,7 @@ Task list file started: docs/FLORA_NEXT_TASKS.md (round 1 only).
 `tools/run_tests.sh --fast test_flora_density test_player_clear test_flora_close test_flora_budget test_server_items test_spawn_dry test_first_hour` (all 7 passed at 4458a7c0; test_flora_density takes 130-155 s). Needs `godot` on PATH: I used a copy of the standard godot.windows.editor.x86_64.exe (C:\GodotInstaller) at /tmp/gbin/godot.exe; no voxel build needed. Pictures: `tools/look_rig.sh` through `tools/godot_slot.sh` (max 3 jobs); one shot takes about 160 s, so use a timeout over 400 s and `--settle 40 --wait 80`. Rig quirks: `--cam first` ignores `--at`; the `--flora` row puts the camera in the grass (use `--nograss`) and its labels float far away: shoot real plants at coordinates from `flora_near.gd` instead.
 
 ## Read first
-docs/FLORA_HANDOVER.md, docs/handoff/SCOPE_FLORA.md, src/worldgen/runtime/flora_placer.gd, data/tables/flora.json, src/client/grass_view.gd, src/flora/flora_view.gd, questions/QUESTIONS.md on the qa branch.
+docs/FLORA_HANDOVER.md, docs/handoff/SCOPE_MIKEW.md, src/worldgen/runtime/flora_placer.gd, data/tables/flora.json, src/client/grass_view.gd, src/flora/flora_view.gd, questions/QUESTIONS.md on the qa branch.
 
 ## Decisions not to re-litigate
 Pictures for Dave go on the QA page (one item per card, Yes/No, rating note), not in chat. Never merge to main. No heavy Godot while Dave says the computer is his. Pale glassy flower art is Kathleen's. The PLUME_FLOWERS grass-thinning idea gave bald patches and was reverted.

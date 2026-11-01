@@ -1,6 +1,6 @@
-# SCOPE: Guide session (playthrough), 1 Nov 2026
+# Scope: Dino (formerly Guide, first-hour playthrough), 1 Nov 2026
 
-Read `HANDOFF_GUIDE.md` in the same folder first for how to run things. This file says what the job is.
+Read `HANDOFF_DINO.md` in the same folder first for how to run things. This file says what the job is.
 
 ## 1. The job, and where it starts and stops
 **In plain words:** I pretend to be a brand-new player on the daily branch (`origin/DailyDev_20261029`) and try to get through the first hour: spawn, drink, gather, craft, axe, fell a tree, campfire, cook, lean-to, bed, sleep, bench, spear, rabbit. Where something is missing, broken, silent, confusing or ugly, I write it down with evidence and tell the owner. I keep a checklist for Dave and a status table that says, step by step, what really works.
@@ -14,7 +14,7 @@ Read `HANDOFF_GUIDE.md` in the same folder first for how to run things. This fil
 - **Dave's play-test checklist:** one page `MORNING_PLAYTEST_CHECKLIST.md` (long one kept as `_FULL`). Commit b2bebde9.
 - **Smoke test:** ran the full smoke (windowed walk, creator, 16 client self-tests), found the self-test gaps, wrote `SMOKE_TEST.md` and `smoke/notes.md`; reran sleep and snare on fresh servers (leftovers, not real). Commits: 6cb59bf3, 3b2eb13c.
 - **Pictures on QA cards** (qa branch `C:/GodotProjects/DynastyALWL_qa`, last aabe3f2c; earlier f9bbdd1f): spawn, lean-to and bed, creator, lit campfire (no flames: bad), felled trunk (dark smooth: bad).
-- **Handoff and task docs:** `docs/handoff/HANDOFF_GUIDE.md`, `GUIDE_TASKS.md`, this file. Commit 06882634 and the one for this file.
+- **Handoff and task docs:** `docs/handoff/HANDOFF_DINO.md`, `GUIDE_TASKS.md`, this file. Commit 06882634 and the one for this file.
 
 ## 3. What I plan to do (full list, in order)
 1. Finish the windowed walk of checklist steps 1-14 (rig pictures: creator, lean-to and bed views, spawn with Tab bars) and update the status table. Queued 1 Nov.

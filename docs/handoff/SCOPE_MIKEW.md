@@ -1,4 +1,4 @@
-# Flora job scope (2026-11-01)
+# Scope: MikeW (formerly Flora, plants and density), 1 Nov 2026
 
 ## 1. The job
 Make the world look alive and be fair to forage in: where trees, shrubs, berries, fibre plants, herbs, flowers and tall grass stand (density, clumping, seasons, harvest stores), how grass and plants draw at range, and what that costs. It starts at the placer and data (`flora_placer.gd`, `flora.json`, drops and fruit stores), the layout version, and the flora and grass views and shader. It stops at the art itself (Kathleen: models, colours, `tree_builder.gd`), animals, and item rules.
