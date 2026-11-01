@@ -985,6 +985,7 @@ var admin_ok: Callable                  # set by the server: true when the peer 
 
 
 func tick(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
 	_fly(delta)
 	_showroom_retry(delta)
 	_slow_in += delta
@@ -997,6 +998,7 @@ func tick(delta: float) -> void:
 		_fires(spent)
 		_vitals_tick(spent)
 		_craft_tick(spent)
+		_slow_mark("rot-fires-vitals-craft", t0)
 		_crops_tick()
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
@@ -1012,6 +1014,7 @@ func tick(delta: float) -> void:
 		_remains_tick(spent)
 		_spoil_tick(spent)
 		_traps.tick(spent)
+		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
 		for id in _items.keys():
 			if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8:
@@ -1028,7 +1031,9 @@ func tick(delta: float) -> void:
 	if _sync_in <= 0.0:
 		_sync_in = SYNC_EVERY_S
 		_scatter_around_players()
+		_slow_mark("scatter", t0)
 		_sync_world_items()
+		_slow_mark("sync-world-items", t0)
 
 	_save_in -= delta
 
@@ -1040,6 +1045,14 @@ func tick(delta: float) -> void:
 		save()
 		_async_writes = false
 		_start_writer()
+
+
+# Testing aid (Tyler, 31 Oct 2026): a step of the items tick that runs over 250 ms since the tick began says so in the log, so a join stall names its part.
+func _slow_mark(part: String, since_usec: int) -> void:
+	var ms: float = float(Time.get_ticks_usec() - since_usec) / 1000.0
+
+	if ms > 250.0:
+		print("items tick slow: %s reached after %.0f ms" % [part, ms])
 
 
 func save() -> void:

@@ -33,6 +33,7 @@ var settle_s: float = 25.0
 
 var _index: int = -1
 var _placed: bool = false
+var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
 var _land_failed: bool = false
 var force_land_fail: bool = false  # --shot-force-land-fail: the wanted height is 50 m off what the body is given, so the landing check must report FAILED (a test of the check)
@@ -306,7 +307,16 @@ func _process(delta: float) -> void:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 
-	if drop_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:      # only once the player stands on the real ground (a drop before that fell from the spawn height)
+	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
+		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):
+		# tell it the real spot (the report goes out every 200 ms) and place a second later (Tyler 31 Oct 2026: the rig's kit placement did nothing for this reason).
+		client._anchor = client.body.global_position
+		client._anchor_set = true
+
+		if _anchor_told_msec == 0:
+			_anchor_told_msec = now
+
+	if drop_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000 and (not place_it or (_anchor_told_msec > 0 and now - _anchor_told_msec > 1000)):      # only once the player stands on the real ground (a drop before that fell from the spawn height)
 		_dropped = true
 		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
