@@ -60,3 +60,6 @@ Corrects my earlier edge ("when a sound plays is the system owner's"). Jason (Ch
 
 ## 2026-11-01 Stones sell in multiples: 2 stones = 1 copper (Dave)
 A stone is worth half a copper, so stones are sold in multiples: 2 stones pay 1 copper (and 40 stones pay about 20, less as demand falls). A single stone does not pay a copper. Context: the final full pass failed only `test_trade` ("selling forty stones at once pays less than a copper each", got 40 for 40; the test also expects one stone to pay at least a copper). That test passed in the earlier 160/160 pass, so check whether the stack-caps or economy merge changed stone pricing. Owners: Sal (price data: stone value 0.5 copper / sale lot of 2), Steve (trade code: lots, rounding down, demand), test_trade updated to the new rule.
+
+## 2026-11-01 Correction: 5 stones = 1 copper (Dave: "really it should be something like 5 stones for 1 copper")
+Replaces the 2-for-1 rule above. A stone is worth a fifth of a copper; stones sell in multiples of 5 (5 stones = 1 copper; 40 stones about 8, less as demand falls). "Something like": Sal may tune the exact lot (4 to 6) from the economy numbers and tells the moderator the number he picked; Dave can change it later on one data line. Same owners: Sal data, Steve trade code, test_trade updated.
