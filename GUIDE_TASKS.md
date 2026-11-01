@@ -1,4 +1,4 @@
-# Guide session: self-made task rounds (standing instruction from Dave, via the moderator, 1 Nov 2026)
+# Dino (formerly Guide) session: self-made task rounds (standing instruction from Dave, via the moderator, 1 Nov 2026)
 
 Rules I keep: read, play, photograph and report only (no game code or data edits); never merge to main; at most 3 heavy Godot jobs through `tools/godot_slot.sh`; short notes to the moderator as I go.
 

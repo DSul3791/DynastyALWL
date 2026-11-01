@@ -4,19 +4,7 @@ Date 2026-10-31. Written by the playthrough session. The numbers come from `PLAY
 
 ## Where the build orders stand
 
-From `PLAYTHROUGH_BUDGET.md` (hands-on minutes for an experienced player who knows what to do; a first-time player takes several times as long):
-
-| Milestone | Raw cost | Hands-on |
-|---|---|---|
-| First stone axe | 1 stone, 1 stick, 6 plant fibre | 0.4 min |
-| Fire laid and lit | 6 sticks, 3 stones, 1 fibre | 0.6 min |
-| Lean-to | 8 sticks, 6 leaves, 6 fibre | 0.6 min |
-| Rough bed (bedding route) | 8 bedding (2 ferns), 4 sticks, 6 fibre | 0.5 min |
-| Workbench | 12 sticks, 9 fibre | 0.9 min |
-| Order of play above, plus spear and knife | 34 fibre in all | about 4 min |
-| Thatch house (floor, 4 walls, roof, doorway) | 144 fibre, 285 thatch, 84 sticks | about 12 min |
-| Stone forge | 36 stone, 10 clay, 2 hide, bench level 2 | about 8 min |
-| Wooden room (when F-16 lands): 4 walls, floor, roof, doorway | 28 lumber = 14 logs | about 15 min (estimate) |
+The milestone table (raw cost and hands-on minutes for each step, from first stone axe to stone forge) lives only in `PLAYTHROUGH_BUDGET.md`, which is generated from the recipe data; it was copied here on 31 Oct and removed on 1 Nov so the two cannot disagree. The numbers below are the supply side.
 
 Supply: within 100 m of the spawn the flora placer puts 142 nettles, 214 tall grass, 33 reeds and 577 ferns, against a whole early order of 34 fibre (about 23 nettles); the thatch house needs about 71 tall grass plants. The fast part of the game has the supply; the slow part is not the gathering but the missing items (F-16, F-02, F-23) and the learn system.
 

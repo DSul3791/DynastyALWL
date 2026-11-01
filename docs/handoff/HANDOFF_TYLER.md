@@ -6,7 +6,7 @@ Q&A testing and tooling for DynastyALWL (Godot 4.7) since 1 Nov: the test suite,
 ## Done and merged (daily 27dfe828 contains all of it)
 - Lit-state saving (`lights.json`), drawn lit fixtures (flames and warm lights), fire-light shape (short range, falloff, flicker; fireplace is a front-only shadowed spot). Pictures: `art/CRITIQUES/fire_light_2026-10-31/`.
 - Comfort tooltip (PROTOCOL 81), lean-to 2.6 x 3.4, height 1.5.
-- The Guide's first-hour fixes; novice-grace death rule (`data/items/death.json`, default `always` = old behaviour, test `test_death_novice`).
+- The Guide's first-hour fixes; novice-grace death rule (`data/items/death.json`, now `level` 10 per Dave (was `always`), test `test_death_novice`).
 - Rested action speed (`_pace_factor`) and cold-stress hook; hint triggers `has_plant_food_at_fire` and `campfire_pot_placed` (Sal's hints.json rows use them).
 - `e18630d7`: join freeze fixed. `_cover_at` in `terrain_server.gd` made nine flora chunks on the server main thread (4 to 8 s stall at join). Missing chunks are now made on a worker thread (`flora.chunk_made`); until made, tree cover there reads as open. Rig kit placement fixed (the shot runner now tells the server where the player really is). A log line `items tick slow: <part> reached after N ms` is left in.
 - Lit campfire check: it IS drawn (flame, stones, glow, 5 m cleared circle). Low ground cameras show grass in front of it; the green glow seen was the placement ghost.

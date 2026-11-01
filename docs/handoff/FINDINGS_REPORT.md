@@ -1,4 +1,4 @@
-# Guide findings for the moderator (1 Nov 2026, daily d05e86b3 / 27dfe828)
+# Dino (formerly Guide) findings for the moderator (1 Nov 2026, daily d05e86b3 / 27dfe828)
 Format: what | evidence | suggested owner | severity. Paths are relative to the Guide worktree (branch claude/dazzling-elbakyan-e46f22).
 
 | # | what | evidence | owner | severity |

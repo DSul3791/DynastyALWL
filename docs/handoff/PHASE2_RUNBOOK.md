@@ -1,4 +1,4 @@
-# Phase 2 runbook (Guide): exact commands and the 14-step walk (run only after the moderator says RESTART)
+# Phase 2 runbook (Dino, formerly Guide): exact commands and the 14-step walk (run only after the moderator says RESTART)
 Godot exe: `G=C:/GodotInstaller/godot.windows.editor.x86_64.exe` (voxel build). Run from the worktree root. Every heavy job goes through `tools/godot_slot.sh` (max 3), in the background, one at a time for windowed jobs. Pictures go in `art/playthrough/phase2/`; one QA card per picture afterwards.
 
 ## Commands, in order
