@@ -2,6 +2,25 @@
 
 Written with no Godot run (Dave has the computer): from the daily head code and data (13b84fa3 merged), the tutorial text, and the probe and smoke results from earlier today. WORKS = a probe, test or bot has driven it on the real server code and nothing found; CLIENT = the client side (hands, prompts, pictures) was not driven by me; OPEN = something known is wrong. "Re-run" names what to run when the computer is back (list at the end).
 
+## PHASE 2 RESULTS, 1 Nov 2026 (daily 9ca75719, real windowed rig client and headless client on real servers; pictures in art/playthrough/phase2/)
+| step | result | evidence |
+|---|---|---|
+| 1 join | WORKS: no freeze or crash report in the Phase 2 runs; welcome to ground ready about 2-5 s in client logs. A person has still not timed it | art/playthrough/smoke/logs/client_*.log |
+| 2 Tab bars | NOT SHOWN: the admin rig picture shows the F3 debug text, not the Tab vitals bars (rig does not press Tab) | phase2/spawn_tab.png |
+| 3 drink | NOT TESTED (no rig or self-test action) | |
+| 4-5 sticks, stones, nettle | WORKS to "no crash" (gather, plantpick self-tests ran) | smoke/logs/client_gather.log |
+| 6-7 twine, axe | WORKS in data and bot | recipes.json |
+| 8 fell | WORKS: chop self-test felled a tree in 9 blows (felled states [3,4]). One earlier run quit after 10 s with no error (flaky, not repeated) | smoke/logs/client_chop.log |
+| 8 felled-trunk look | the rig fell picture is useless: camera upside down over water, 54 KB blank "before" frames; bark fix still NOT confirmed | phase2/fell_resting.png |
+| 9-10 fire place and light | WORKS: 13 PLACED, lit state 40; fire draws small flames and a glow, but grass hides it (picture with grass off shows it) | phase2/campfire_lit_nograss.png |
+| 11 cook | WORKS: cook self-test PASS earlier, probe_cook meat only | probe_cook_output.txt |
+| 12-13 lean-to, bed | WORKS on the server: probe_shelter 18 PASS, 0 FAIL on 9ca75719 (1.5 m roof, lie, sleep, spawn, respawn on bed). Real client picture shows the lean-to and bed as models; the bed was not placed inside the lean-to by the rig (it sets a row) | art/playthrough/probe_shelter_output.txt, phase2/leanto_bed_wide.png |
+| 13 sleep in client | WORKS: clean-server sleep self-test PASS (lying 3, asleep true, energy 60 to 61, woke) | phase2/client_sleep_clean.log |
+| 13 lying picture | NOT OBTAINED: --shot-stance=lie did not frame a lying body (picture shows grass and an unrelated shape). Needs a rig change (Kathleen) or a manual look | phase2/lying_wide.png |
+| 14 bench, spears, knife | data checked; no client check | |
+Placement probe on 9ca75719: 13 PLACED, one REFUSED (steep slope, with message "The ground is too steep there."). The other refusals were not probed.
+Creator: preview still shows the back of the body with patchy colours (phase2/4_undo_twice.png).
+
 ## UPDATE 1 Nov 2026 (probes and smoke ran on d05e86b3 after COMPUTER BACK; recipes, structures, drops and hints re-read from data on daily 9ca75719, no Godot)
 Verified by running (headless server probes, headless real-client self-tests; **no step was walked by hand in a windowed client**):
 - 17, 19 WORKS: probe_shelter 16/16 PASS with the lean-to roof 2.6 x 3.4 m, 1.5 m high (lie, good bed 1.0, sleep, E sets spawn, respawn on the bed).

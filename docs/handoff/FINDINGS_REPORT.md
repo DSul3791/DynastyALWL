@@ -18,4 +18,15 @@ Format: what | evidence | suggested owner | severity. Paths are relative to the 
 | 13 | Stale Godot processes from 31 Oct (10 headless, sal-items and ic_old worktrees) and all 3 slots held, which blocks windowed jobs | process list 1 Nov 05:27 | moderator | process |
 | 14 | Lying under the 1.5 m lean-to roof, spawn on bed, sleep: server OK (16/16), never lain in via a real client | probe_shelter_output.txt | Guide (retest) | info |
 
-Not yet done (held until RESTART): creator picture, windowed rig walk of checklist steps 1-14, sleep test on a clean server with low energy.
+## Phase 2 additions (1 Nov, daily 9ca75719)
+| # | what | evidence | owner | severity |
+|---|---|---|---|---|
+| 15 | Grass hides a lit campfire: with grass off the fire shows flames and glow (small) | art/playthrough/phase2/campfire_lit_nograss.png, QA pic-p2-fire-nograss | Kathleen / MikeW (grass clearing around a placed fire) | high (row 1 is explained) |
+| 16 | Creator preview still shows the back and patchy colours | phase2/4_undo_twice.png, QA pic-p2-creator | Sonny | medium |
+| 17 | Rig fell picture is unusable (camera upside down over water, blank before frames), so bark fix is unconfirmed | phase2/fell_resting.png | Kathleen (shot_runner --shot-fell) | medium |
+| 18 | --shot-stance=lie did not frame a lying body, so lying under the roof has no picture | phase2/lying_wide.png | Kathleen (rig) | low |
+| 19 | Chop self-test once exited 10 s after join with no error (second run fine) | smoke/logs/client_chop.log first run | Tyler | low |
+| 20 | Spawn rig "Tab bars" picture shows the F3 debug text, not the vitals bars | phase2/spawn_tab.png | Kathleen (rig) | low |
+| 21 | Sleep self-test now PASSES on a clean server | phase2/client_sleep_clean.log | resolved (row 6) | info |
+
+Not yet done (superseded by the Phase 2 table in PLAYTHROUGH_STEP_STATUS.md): creator picture, windowed rig walk of checklist steps 1-14, sleep test on a clean server with low energy.
