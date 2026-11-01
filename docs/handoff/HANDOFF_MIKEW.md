@@ -1,4 +1,4 @@
-# Handoff: MikeW (formerly Flora, plants and density), 1 Nov 2026
+# Handoff: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 2026
 
 ## Role
 I own plants and the feel of a living world: tree, shrub, berry, herb, flower and tall-grass density and placement, how they look at range, fruit harvest, and the grass shader. Branch `claude/flora-density-v2`, merged into the daily (DailyDev_20261029, head 27dfe828 when I stopped). I never merge to main. Kathleen owns flora art (models, colours, `src/flora/tree_builder.gd`); I own placement and data.
