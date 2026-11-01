@@ -21,7 +21,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `ART_DIRECTION.md` | Kathleen | Art direction | 10-30 | keep |
 | `AUDIT_ITEMS.md` | Sal | Item data audit (Sal, 2026-10-31) | 10-31 | keep |
 | `BALANCE_SHEET.md` | Sal | Early-game balance sheet (Sal, 2026-10-31) | 10-31 | keep |
-| `BIG_PICTURE.md` | moderator | Big picture (read this first, every thread; about 2 KB; kept current by the Te | 10-22 | FIX: roles and "paused" are from 22 Oct; point to START_HERE |
+| `BIG_PICTURE.md` | moderator | Big picture (read this first, every thread; about 2 KB; kept current by the Te | 10-22 | keep (fixed 9c01369a; points to START_HERE) |
 | `BUILD_ORDERS.md` | Sal | Build orders by tier (Sal, 2026-10-31) | 10-31 | keep |
 | `CHARACTER_DESIGN_VISION.md` | Kathreen | Character design vision (Sonny; research and plan, 30 Oct 2026; for Dave to re | 10-31 | keep |
 | `CLOTHING_WARMTH.md` | Sal | Clothing and warmth tiers (Sal, 2026-10-31) | 10-31 | keep |
@@ -52,7 +52,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `GENERATOR_V2_PLAN.md` | Sonny | New Generator Plan | 10-16 | keep |
 | `GENERATOR_VISION.md` | Sonny | Generator vision (Dave, 29 Oct 2026; Claude's review and additions) | 10-29 | keep |
 | `GUIDE_TASKS.md` | Dino | Guide session: self-made task rounds (standing instruction from Dave, via the  | 11-01 | keep; rename to Dino when he next edits |
-| `HANDOFF.md` | moderator | NOW (29 Oct 2026) | 10-29 | FIX: state is 29 Oct (build 826); keep commands/setup, drop state and the copy of RULES |
+| `HANDOFF.md` | moderator | NOW (29 Oct 2026) | 10-29 | keep (banner added 9c01369a; state section is 29 Oct, to trim) |
 | `HINTS_AND_CAMP_EVENTS_SPEC.md` | Sal | Hints on screen and the camp-goal events: code spec for Tyler (Sal, 2026-10-31 | 10-31 | keep; code owner not named: "for Tyler", now Steve (asked moderator) |
 | `ITEMS_DESIGN.md` | Sal | Items and inventory: design note (2026-10-20, Items and crafting thread) | 10-24 | keep |
 | `ITEM_ART_REQUESTS.md` | Sal | Item art requests for Kathleen (from Sal, items) | 10-30 | keep |
@@ -69,7 +69,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `MEDICINE_CHAIN.md` | Sal | Medicine, poisons and cures (Sal, 2026-10-31) | 10-31 | keep |
 | `MERGE_WATCH.md` | Tyler | Merge watch | 10-31 | keep |
 | `MODERATOR_QA_LOG.md` | moderator | Night of 30-31 Oct 2026 (Dave asleep; moderator in charge) | 11-01 | keep (source of roles; first heading missing) |
-| `MORNING_PLAYTEST_CHECKLIST.md` | Dino | Dave's play-test: one page (daily branch 3494d612, 31 Oct) | 10-31 | FIX: names head 3494d612; keep as Dave's page |
+| `MORNING_PLAYTEST_CHECKLIST.md` | Dino | Dave's play-test: one page (daily branch 3494d612, 31 Oct) | 10-31 | keep (head hash removed 9c01369a) |
 | `MORNING_PLAYTEST_CHECKLIST_FULL.md` | Dino | Morning playtest checklist | 10-31 | MERGE into the short checklist (status column) or ARCHIVE after Dave plays |
 | `PHASE7_PLAN.md` | Sonny | Phase 7: natural rivers on, more lakes, one planned re-bake (Sonny, 31 Oct 202 | 10-31 | keep |
 | `PLAYTHROUGH_BUDGET.md` | Dino | PLAYTHROUGH_BUDGET: how long each milestone takes a new player | 10-31 | review: overlaps FIRST_WEEK_WALK, CRAFT_PACING |
@@ -84,7 +84,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `PROTOCOL.md` | Tyler | Protocol (PROTOCOL_VERSION 56, src/stream/terrain_net.gd) | 10-31 | keep (protocol version 56: verify against code before relying) |
 | `QUALITY_GRADES_SPEC.md` | Sal | Quality grades: data and rules spec for Tyler (Sal, 2026-10-31) | 10-31 | keep; code owner not named: "for Tyler", now Steve (asked moderator) |
 | `README.md` | moderator | Baked Voxel Game — Modular Island Generator | 10-14 | keep (marked old generator) |
-| `RULES.md` | moderator | Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026 | 10-31 | FIX: says the team is retired and one session works; ship.sh flow vs daily branch |
+| `RULES.md` | moderator | Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026 | 10-31 | keep (team sentence fixed 9c01369a; ship.sh flow still to check) |
 | `SEASONALITY_WINTER.md` | Sal | Seasonality and the winter survival chain (Sal, 2026-10-31) | 10-31 | keep |
 | `SMOKE_TEST.md` | Dino | SMOKE_TEST: the daily branch head, run through the real server and client | 10-31 | keep |
 | `SOUND_AUDIT.md` | Jason | SOUND_AUDIT: cave-in rumble and rain-like sound in clear weather | 10-31 | keep; owner is Jason now (Dino wrote it) |
@@ -111,7 +111,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `assets/audio/CREDITS.md` | Jason | Sound credits | 10-20 | keep |
 | `assets/audio/LOUDNESS.md` | Jason | Loudness table (make with `python3 assets/audio/loudness_report.py --md`) | 10-20 | keep |
 | `assets/audio/README.md` | Jason | Sounds | 10-21 | keep; Jason owns sound now (was Kathleen) |
-| `assets/audio/SOUND_DROP_IN.md` | Jason | Where Dave's animal recordings go (Kathleen, 2026-10-23) | 10-23 | FIX: names Kathleen; Jason now |
+| `assets/audio/SOUND_DROP_IN.md` | Jason | Where Dave's animal recordings go (Kathleen, 2026-10-23) | 10-23 | keep (Kathleen is the 23 Oct author; Jason owns) |
 | `assets/audio/SOUND_PACK.md` | Jason | Sound pack manifest | 10-21 | keep |
 | `assets/audio/inner_voice/README.md` | Jason | (no heading) | 10-21 | keep |
 | `assets/character/README.md` | Kathreen | Ragdoll character | 10-21 | keep |
@@ -135,9 +135,9 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/WATER_HANDOVER.md` | Sonny | Water handover for Dave (Sonny, 31 Oct 2026) | 10-31 | review: overlaps DYNASTY_WATER_STATUS/HISTORY |
 | `docs/handoff/FINDINGS_REPORT.md` | Dino | Guide findings for the moderator (1 Nov 2026, daily d05e86b3 / 27dfe828) | 11-01 | keep |
 | `docs/handoff/HANDOFF_DINO.md` | Dino | Handoff: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough) | 11-01 | keep |
-| `docs/handoff/HANDOFF_KATHLEEN.md` | Kathleen | Handoff: Kathleen (art and looks), written 2026-11-01 | 11-01 | FIX: calls the voxel exe "standard" |
-| `docs/handoff/HANDOFF_MIKEW.md` | MikeW | Handoff: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov  | 11-01 | FIX: calls the voxel exe "standard" |
-| `docs/handoff/HANDOFF_MODERATOR.md` | moderator | Handoff: moderator (written 1 Nov 2026, for Dave's new thread) | 11-01 | FIX: six agents, Flora/Guide/Tyler-systems; add Steve, Kathreen, Dino, Jason, Jamie |
+| `docs/handoff/HANDOFF_KATHLEEN.md` | Kathleen | Handoff: Kathleen (art and looks), written 2026-11-01 | 11-01 | keep (exe fix done 7936bc74) |
+| `docs/handoff/HANDOFF_MIKEW.md` | MikeW | Handoff: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov  | 11-01 | keep (exe fix done 7936bc74) |
+| `docs/handoff/HANDOFF_MODERATOR.md` | moderator | Handoff: moderator (written 1 Nov 2026, for Dave's new thread) | 11-01 | keep (roster fixed 75a414e1) |
 | `docs/handoff/HANDOFF_SAL.md` | Sal | Handoff: Sal (items agent), written 1 Nov 2026 | 11-01 | keep |
 | `docs/handoff/HANDOFF_SONNY.md` | Sonny | Handoff: Sonny (character and Dynasty water), 1 Nov 2026 | 11-01 | FIX: body still describes the character lane |
 | `docs/handoff/HANDOFF_STEVE.md` | Steve | Handoff: Steve: Systems (written 1 Nov 2026, paper only, no Godot run) | 11-01 | keep |
@@ -147,7 +147,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `docs/handoff/SCOPE_KATHLEEN.md` | Kathleen | Scope: Kathleen (art and looks), 2026-11-01 | 11-01 | FIX: no mention of the Kathreen split |
 | `docs/handoff/SCOPE_KATHREEN.md` | Kathreen | Scope: Kathreen (art assistant: character, animal and plant looks), 1 Nov 2026 | 11-01 | keep |
 | `docs/handoff/SCOPE_MIKEW.md` | MikeW | Scope: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 20 | 11-01 | keep |
-| `docs/handoff/SCOPE_MODERATOR.md` | moderator | Scope: moderator (1 Nov 2026) | 11-01 | FIX: same stale roster |
+| `docs/handoff/SCOPE_MODERATOR.md` | moderator | Scope: moderator (1 Nov 2026) | 11-01 | keep (roster fixed 75a414e1) |
 | `docs/handoff/SCOPE_SAL.md` | Sal | Scope: Sal, the items agent (written 1 Nov 2026) | 11-01 | keep |
 | `docs/handoff/SCOPE_SONNY.md` | Sonny | Scope: Sonny (character and Dynasty water), 1 Nov 2026 | 11-01 | FIX: body still describes the character lane |
 | `docs/handoff/SCOPE_STEVE.md` | Steve | Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-thro | 11-01 | keep |
@@ -159,9 +159,11 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `tools/erosion_precarve/README.md` | Tyler | Erosion pre-carve: action plan for Tyler (one plan, one branch) | 10-24 | keep |
 | `worlds/base_world/regions/README.md` | Sonny | Baked regions | 10-11 | keep |
 
+`docs/START_HERE.md`, `docs/DOC_MAP.md`, `docs/SOUND_MAP.md` (Jason, 1 Nov: sound events and clips; keep) and `docs/handoff/SCOPE_JAMIE.md`, `SCOPE_JASON.md` were added after the table was built; `docs/handoff/` now holds 21 files.
+
 ## Conflicts and gaps found so far (fixes are separate commits)
-1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md`.
-2. Rosters: `HANDOFF_MODERATOR.md`, `SCOPE_MODERATOR.md`, `BIG_PICTURE.md`, `RULES.md` ("the team is retired, one session") describe an old team.
+1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Was wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md` (fixed).
+2. Rosters: `HANDOFF_MODERATOR.md`, `SCOPE_MODERATOR.md`, `BIG_PICTURE.md`, `RULES.md` ("the team is retired, one session") described an old team (moderator documents, BIG_PICTURE, RULES fixed; `SCOPE_SONNY.md`/`HANDOFF_SONNY.md` still two-lane, asked Sonny).
 3. Eight Sal code specs say "for Tyler" (`FARMING_SPEC`, `HINTS_AND_CAMP_EVENTS_SPEC`, `LEARN_SYSTEM_SPEC`, `LOG_SPECIES_SPEC`, `QUALITY_GRADES_SPEC`, `WATER_GATHER_SPEC`, `CODE_MISMATCHES`, `FLINT_ORE_SPEC`); neither `SCOPE_STEVE.md` nor `SCOPE_TYLER.md` names them, so their code has no named owner. Needs the moderator.
-4. Sound moved to Jason; `assets/audio/*` and `SOUND_AUDIT.md` still name Kathleen or the guide.
+4. Sound moved to Jason; `SOUND_AUDIT.md` recommends Kathleen/Sonny for sound fixes: Jason's now (asked nobody yet).
 5. Standing-instruction task lists live in seven files (`GUIDE_TASKS`, `TYLER_NEXT_PLANS`, `TYLER_QUEUED_TESTS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine; Tyler's three merge into one.
