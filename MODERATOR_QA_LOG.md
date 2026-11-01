@@ -66,3 +66,6 @@ Replaces the 2-for-1 rule above. A stone is worth a fifth of a copper; stones se
 
 ## 2026-11-01 Economy principle: cheap gathered goods stay cheap (Dave)
 Dave: "cheap easy stuff to get needs to be really inexpensive so players don't become stupid rich on the first day just picking up stuff and selling it. They should be able to spend all day gathering and selling to make enough money to buy some basic food, drink, clothing, maybe some basic metal tools." Target: one full day of gathering and selling funds basic food, drink, clothing and perhaps a basic metal tool, and no more. Applies to the value-1 gathered items (stick, plant_fibre, bark, leaves, soil, clay, sand, gravel, feather, nails, wooden_pin, firewood_soft, nettles, seeds) and stones (lot 5). Owner: Sal (lots/prices from a gather-rate x price model, shown to Dave as a table). Steve: the lot mechanism already exists (`sell_lot`). Answers Sal's QA card on cheap items.
+
+## 2026-11-01 Felled trees must always give logs (moderator, for Dave)
+Dave felled a beech and got no logs: only 7 species were "key woods" (his 24 Oct rule). A felled tree with no logs is a dead end in play, so every felled full-size tree yields logs. Sal generalises key_woods; Dave may overrule.
