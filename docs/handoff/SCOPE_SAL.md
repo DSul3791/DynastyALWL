@@ -74,6 +74,8 @@ Everything below is written down with an owner, the exact next step and why. Spe
 | Fibre cloth look (grey) | Kathleen | Draw it, remove its row from `look_placeholders.json` | Art |
 | Placed sounds judged by ear | Jason, Dave | Jason's sound review cards | Needs listening |
 | Wool and linen, wool rug | Sal (later) | When sheep, goats or flax exist write the recipes, unlock the wool rug | No source exists |
-| Text-versus-recipe checker; prices for 34 unpriced kits; carry-weight audit script | Sal (later) | Plan items 1 to 3 in section 3 | Not started; no Godot needed, next after handoff |
+| Text-versus-recipe checker | Sal | DONE 1 Nov: `tools/text_vs_recipe.py` (encyclopedia how_to_get lines vs recipes); fixed lean-to, camp bench, iron/copper/tin ingot lines. Extend to hints, goals, descriptions | Heuristic covers encyclopedia only |
+| Prices for unpriced kits | Sal | DONE (stale row): all 58 `_kit` items already have a `value`; the 59 without are placed structures, which are not traded | None |
+| Carry-weight audit script | Sal (later) | `tools/economy_first_day.py` and `docs/CARRY_WEIGHTS.md` cover the weights; a script for every recipe is not written | Not started |
 | Rose hips | Sal, decided | Keep. To reverse: port `1174dd91`, set `rose_hips` future, run `validate_items` | Dave's call, no action |
 | Branch `claude/sal-no-rose-berries` | Moderator | Delete, as hips stay | Decision made |
