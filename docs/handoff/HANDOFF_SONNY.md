@@ -36,3 +36,7 @@ Everything under "Not finished". The default flip has never been executed. No in
 
 ## Next tasks I would have done
 (a) apply and verify the flip; (b) drain fix and measure; (c) real-game before/after pictures on the QA page; (d) protocol flow channel plus shader patch; (e) windows following players with shared seams; (f) a one-hour held-river soak test; (g) wire `water_rules.gd` into the existing swim code.
+
+## Late results (1 Nov, after the handoff)
+- `probe_pick_spot.gd` ran: 101 sampled wet cells above sea level, deepest 9.3 m of lake. Its printed world x/z are WRONG (it built the tile data by hand, so `td.x0`/`z0` are 0: real world x = 54272 + (origin.x + i) * 8, z = 74752 + (origin.y + j) * 8, origin 1024,1664). Fix by reading the tile origin before use.
+- `probe_drain.gd` partial (60 s and 180 s): 98.6 percent of baked wet cells still drawn (2595 of 2633), but 113 cells are under half their baked depth (worst loss 2.2 m) and the volume reads 140 percent of the start (held rivers add more than they lose), 64 of 64 blocks awake. So the "12 percent vanish" is not seen in this probe; the 10 and 30 minute rows had not printed when I stopped.
