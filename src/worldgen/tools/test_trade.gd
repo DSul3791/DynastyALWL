@@ -109,8 +109,9 @@ func _init() -> void:
 	check(first == 0 and items.count_for(1, "stone") == 60, "a single stone pays nothing and is kept (a fifth of a copper, sold in lots of 5)")
 	trade.deal(1, "hob", 1, slot_s, 4)
 	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 60, "four stones are less than a lot: no copper, all kept")
-	trade.deal(1, "hob", 1, slot_s, 7)
+	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 7)
 	first = items.coins_of(1) - purse0
+	check(seven_msg.contains("2 left") and seven_msg.contains("5 at a time"), "the sold message says two stones were left and the lot size (%s)" % seven_msg)
 	check(first == 1 and items.count_for(1, "stone") == 55, "seven stones: one lot of 5 pays 1 copper, the two odd stones are kept (%d)" % first)
 	var purse1: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, slot_s, 40)
