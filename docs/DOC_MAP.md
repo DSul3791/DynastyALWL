@@ -8,7 +8,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | Group | Files | Owner | Updated | Verdict |
 |---|---|---|---|---|
 | `docs/mirror/` (tech 66, items 35, design 17, CONTROLS, README) | 120 | nobody (Technical Director retired) | last copy 22 Oct | keep frozen: cited by `tools/merge_check.py` (skip prefix), `tools/ship.sh` and `next_build.sh` (write `docs/mirror/tech/BUILD_LOG.md`), `balance_sheet.py` (writes `docs/mirror/items/BALANCE.md`), `tool_tiers.py` (reads `docs/mirror/design/TOOL_TIERS.md`), `nightly_backup.py` (cites BACKUP_PLAN.md); its CONTROLS.md is older than the root one. Archive only after those references move |
-| `tech/ACTION_PLANS/` | 4 left (42 archived to `docs/archive/2026-11/tech_ACTION_PLANS/`) | previous Steve/Sal | 24-25 Oct | kept: `Steve_ground_quiet` (cited in `ground_watchdog.gd`), `Steve_hide_traps` (`data/animals/traps.json`), `Steve_bow_shoot` (`data/items/bow.json`), `Sal_hammer_blueprints` (bridge not built). `tools/selftest_gate_tools.sh` uses the folder name only as a fake path |
+| `tech/ACTION_PLANS/` | 4 left (41 archived to `docs/archive/2026-11/tech_ACTION_PLANS/`) | previous Steve/Sal | 24-25 Oct | kept: `Steve_ground_quiet` (cited in `ground_watchdog.gd`), `Steve_hide_traps` (`data/animals/traps.json`), `Steve_bow_shoot` (`data/items/bow.json`), `Sal_hammer_blueprints` (bridge not built). `tools/selftest_gate_tools.sh` uses the folder name only as a fake path |
 | `art/CRITIQUES/` | 45 | Kathleen | 30-31 Oct | keep; Kathleen archives rounds Dave has judged |
 
 ## Documents (individually)
@@ -163,3 +163,6 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 3. (Settled 1 Nov by Steve and Sal: Steve owns the rules code of all eight; see Verdict column.) Eight Sal code specs said "for Tyler" (`FARMING_SPEC`, `HINTS_AND_CAMP_EVENTS_SPEC`, `LEARN_SYSTEM_SPEC`, `LOG_SPECIES_SPEC`, `QUALITY_GRADES_SPEC`, `WATER_GATHER_SPEC`, `CODE_MISMATCHES`, `FLINT_ORE_SPEC`); neither `SCOPE_STEVE.md` nor `SCOPE_TYLER.md` names them, so their code had no named owner; Steve is adding them to SCOPE_STEVE.md Sources.
 4. Sound moved to Jason; `SOUND_AUDIT.md` recommends Kathleen/Sonny for sound fixes: Jason's now (asked nobody yet).
 5. Standing-instruction task lists live in seven files (`GUIDE_TASKS`, `TYLER_NEXT_PLANS`, `TYLER_QUEUED_TESTS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine; Tyler's three merge into one.
+
+## Archiving rule for tools
+`tools/merge_check.py` fails a merge when a `.md` file under `art/`, `assets/`, `design/`, `docs/`, `items/`, `src/`, `scenes/`, `worlds/` or `data/` disappears from its old path unless it is in `proposed_removals/` (it skips `docs/archive/` as a *deleted-from* path only, not as a destination). Root files and `tech/` pass. So archiving a file from `docs/`, `art/` or `design/` needs a `proposed_removals/` pointer or a rule change by Tyler (tools owner): not done yet.
