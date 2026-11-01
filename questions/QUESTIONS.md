@@ -149,3 +149,33 @@ Image: questions/img/p2_leanto_bed.jpg
 Note: Real client, third person, lean-to left, rough bed right (the rig sets them in a row, the bed is not inside the lean-to here). Guide rates it 3.5 of 5: lean-to reads as a thatch frame; the bed is a yellow mattress on a frame.
 - Yes
 - No
+
+## pic-campfire-lit-real | In the real game: is this lit campfire (stone ring, logs, flames, warm light on the ground at dusk) visible and right? (Grass hidden to see it; the guide's earlier picture had tall grass over it)
+Image: questions/img/campfire-lit-real.png
+Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing: flames and glow draw. The flames are small and pale cream; Kathleen rates it 3 of 5 and will make them bigger and more orange if you say No.
+- Yes
+- No
+
+## pic-apples-smooth | Do these apples (four views) now look like smooth round apples with a stem and a highlight?
+Image: questions/img/apples-smooth.png
+Note: Rebuilt as a lathe with 12 sides and a dimple at the stem (they were low-poly diamonds). Offline picture, not the game. Kathleen rates it 3.5 of 5.
+- Yes
+- No
+
+## pic-fibre-cloth-weave | Does the fibre cloth (left, brown) now show woven lines (linen on the right for comparison)?
+Image: questions/img/fibre-cloth-weave.png
+Note: Thin dark threads along the cloth and pale threads across it, on the folded top. Offline picture. Kathleen rates it 3.5 of 5.
+- Yes
+- No
+
+## pic-shore-net-look | Does the shore net now look like a hand net (pole, hoop, string bag, floats) and not a hammer?
+Image: questions/img/shore-net-look.png
+Note: Four views, offline picture. Kathleen rates it 3.5 of 5 (thin, but clearly a net).
+- Yes
+- No
+
+## pic-axe-no-cube | Is the stone axe now a smooth blade with no grey cube at the end (four views)?
+Image: questions/img/axe-no-cube.png
+Note: The grey cube (poll block and chipped corner) is removed. Offline picture on a sheet, not the held view. Kathleen rates it 3.5 of 5.
+- Yes
+- No
