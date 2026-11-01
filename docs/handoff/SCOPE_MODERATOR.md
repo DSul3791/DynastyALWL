@@ -4,19 +4,16 @@
 I speak for Dave to ten Claude sessions (Sonny, Kathleen, Kathreen, Sal, MikeW, Steve, Tyler, Dino, Jason, Jamie; roles in `docs/START_HERE.md`) building *Dynasty: a life well lived*. I start and steer them, decide reversible choices, log decisions in `MODERATOR_QA_LOG.md`, merge their pushes into the integration branch `DailyDev_20261029`, run the full test pass, and keep Dave's questions on the QA page (branch `qa`). I start where an agent hands me a pushed commit and stop at main: I never merge to main until Dave has play-tested and says go.
 
 ## 2. Done so far
-- Ran the agents across world look, items, comfort and shelter, the first-hour guide and the new water; merged every push into the daily (all current, pushed).
-- Full test run on `27dfe828`: 159 of 159 (standard exe plus voxel build for world tests). Not re-run since.
-- Wrote `docs/PONYTAIL_RULES.md`, QA cards and picture rules, and logged every decision in `MODERATOR_QA_LOG.md` (stump rule, role changes: Sonny terrain and water only; looks to Kathleen and Kathreen; animals and plant/animal behaviour to MikeW; sub-systems to Steve; sound and sound hooks to Jason; Tyler Q&A testing; Dino guides; Jamie documentation).
-- Started Kathreen (second art agent), Steve (systems), Jason/Champ (audio), Jamie (documentation); collected 11 handoff and scope document pairs.
-- Cleaned git: 354 old and merged remote branches deleted (398 to 43), 6 leftover worktrees removed, old-branch work assigned and reviewed (`docs/OLD_BRANCH_REVIEW.md`).
+- Ran ten agents across world look, items, systems, sound, water, documentation and the first-hour guide; merged every verified push into the daily (pushed).
+- Test passes: full pass on the final code (164 tests, 163 pass, the one fail superseded), delta pass after the stone and economy changes, rig joins clean.
+- Logged every decision in `MODERATOR_QA_LOG.md` (roles, stump rule, stones 5 for 1 copper, cheap goods stay cheap, sound hooks, fire and water looks) and wrote `docs/PONYTAIL_RULES.md`, `docs/CLOSING_PLAN.md`, `docs/OLD_BRANCH_REVIEW.md`.
+- Started Kathreen, Steve, Jason and Jamie; collected a handoff and scope pair from every agent.
+- Cleaned git: about 350 old and merged remote branches deleted (398 to about 50), 6 leftover worktrees removed, old unfinished work assigned, reviewed and ported or dropped.
 
 ## 3. Planned, in order
-1. RESTART all agents (after Dave's computer is back); Sonny's water default flip and tests first.
-2. Tyler's full test pass on the merged daily; fix what fails; push.
-3. Hand Dino's findings to owners (done once; repeat per Dino report); collect pictures and QA cards.
-4. Merge the ports from the old-branch review as owners finish; delete their branches; one bake proposal for Dave.
-5. Hand Dave a clean daily for his play-test; relay feedback via QA cards.
-6. After Dave's go: backup, merge into main, final tests, new daily branch.
+1. Dave fetches the daily, plays, answers the QA cards, runs the delete command, says go.
+2. After the go: backup, merge the daily into main, final tests, new daily branch (e.g. `DailyDev_20261102`).
+3. Then the backlogs: terrain bake set (one bake with Dave's go), water look, remaining pictures, bridges and plank tier, real death build, sound hooks, fauna tuning, the market idea in `DESIGN_IDEAS.md`.
 
 ## 4. Priorities
 1. Dave can play the daily with the new water as the default.
@@ -26,7 +23,7 @@ I speak for Dave to ten Claude sessions (Sonny, Kathleen, Kathreen, Sal, MikeW, 
 5. No agent idle without a job (after the handoff: start the successor sessions with these documents).
 
 ## 5. Dependencies
-I depend on each agent's pushes and on free Godot slots (stale Godot processes from 31 Oct were still holding them). Agents depend on me for merges, decisions and Dave's answers. Dave depends on me for one plain status.
+I depend on each agent's pushes and on free Godot slots (max 3 heavy jobs via `tools/godot_slot.sh`; never leave detached test lanes). Agents depend on me for merges, decisions and Dave's answers. Dave depends on me for one plain status.
 
 ## 6. Finished when
 Dave has played the daily, said go, main contains it, tests pass on main, and a fresh daily branch is open with the handoff documents as the first thing the next team reads.
