@@ -30,6 +30,12 @@ const DARK_MARGIN_H := 0.5
 const NEAR_WATER := 0.4                   # water zone weight from which a pond or the sea edge is near
 const SEA_EDGE_M := 8.0
 const SURF_MIN_WIND := 0.45               # Dave 24 Oct: surf only near the sea AND when it is windy (the world wind, 0.15 calm to 1 storm)
+# Dave 1 Nov play-test: standing in the forest he heard only the surf. Surf was a weather_bed, so it beat the forest bed (narrower tags) and had no distance
+# falloff. It is now its own layer (shore_bed, plays beside the forest bed) and its level follows the water weight (1 within 8 m of the sea, 0 at 36 m) and
+# the forest weight (quiet under trees).
+const SURF_FADE_WATER := [0.4, 0.9]       # water weight at which the surf is silent and at which it is full
+const SURF_FOREST_CUT := 0.9              # forest weight 1 takes this share of the surf level away
+const SURF_MAX_DB := -6.0                 # the surf's top level on the beach, under the forest bed and the steps
 const MAX_SHOTS := 2                      # one-shots playing at once
 const SHOT_LENGTH_S := 4.0                # a one-shot counts as playing this long in the 60-second simulation
 const WET_REFRESH_S := 2.0                # nearest_wet_point is looked up again after this long or after WET_REFRESH_M of walking
@@ -226,6 +232,12 @@ static func matches(tags: Dictionary, ctx: Dictionary) -> bool:
 	return true
 
 
+# 0..1 share of the surf heard: rises with the water weight (SURF_FADE_WATER), falls with the forest weight. Smooth, so walking inland fades it out.
+static func surf_scale(water: float, forest: float) -> float:
+	var near: float = smoothstep(float(SURF_FADE_WATER[0]), float(SURF_FADE_WATER[1]), water)
+	return near * (1.0 - SURF_FOREST_CUT * clampf(forest, 0.0, 1.0))
+
+
 # How narrow a slot's tags are (a slot that names a biome, water or height beats a general one for the same layer).
 static func specificity(tags: Dictionary) -> int:
 	var score: int = 0
@@ -381,7 +393,7 @@ static func simulate(slots: Dictionary, ctx: Dictionary, seconds: float, day: in
 
 		counter += 1
 
-	var beds: int = (1 if choose_bed(slots, "weather_bed", ctx) != "" else 0) + (1 if choose_bed(slots, "time_bed", ctx) != "" else 0) + mini(2, matching(slots, "positional", ctx).size())
+	var beds: int = (1 if choose_bed(slots, "weather_bed", ctx) != "" else 0) + (1 if choose_bed(slots, "time_bed", ctx) != "" else 0) + (1 if choose_bed(slots, "shore_bed", ctx) != "" else 0) + mini(2, matching(slots, "positional", ctx).size())
 	return {"counts": counts, "order": order, "shots_busiest": busiest, "beds": beds, "voices_busiest": busiest + beds, "repeats": repeats}
 
 
@@ -418,7 +430,7 @@ func update(delta: float, body: Node3D) -> void:
 		_check_left = CHECK_SEC
 		_ctx = context(body)
 
-		for layer in ["weather_bed", "time_bed"]:
+		for layer in ["weather_bed", "time_bed", "shore_bed"]:
 			_set_bed(layer, choose_bed(_slots, layer, _ctx))
 
 		_set_positional(body)
@@ -550,7 +562,13 @@ func _advance_all(delta: float) -> void:
 				gone["player"].queue_free()
 
 		for entry in entries:
-			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0))
+			var extra: float = 0.0
+
+			if layer == "shore_bed":
+				var w: Dictionary = _stage.ambient.weights
+				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(w.get("water", 0.0)), float(w.get("forest", 0.0))), 0.0001))
+
+			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0)) + extra
 
 	var dead: Array = []
 
