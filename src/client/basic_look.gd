@@ -1601,6 +1601,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_cyl(parts, 0.027, 0.011, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, light)
 			_box(parts, Vector3(0.016, 0.003, 0.004), Vector3(0.0, -0.043, 0.0), dark)
 			_box(parts, Vector3(0.004, 0.003, 0.016), Vector3(0.0, -0.043, 0.0), dark)
+		"hand_net":
+			_net(parts, color)
 		"cloth":
 			# Folded cloth: a stack of three folds with a different tone each, a visible pale selvedge edge and a dark border stripe.
 			_box(parts, Vector3(0.26, 0.04, 0.2), Vector3(0.0, -0.04, 0.0), color)
@@ -1608,6 +1610,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.2, 0.025, 0.14), Vector3(-0.01, 0.022, 0.005), color.lightened(0.08))
 			_box(parts, Vector3(0.26, 0.006, 0.02), Vector3(0.0, -0.02, 0.09), dark)
 			_box(parts, Vector3(0.018, 0.034, 0.2), Vector3(0.121, -0.04, 0.0), light.lightened(0.15))
+			for k in range(6):   # the weave (Dave 1 Nov: "need texture and lines"): thin dark warp threads along the cloth and paler weft threads across it, standing a hair proud of the top fold
+				_box(parts, Vector3(0.2, 0.004, 0.006), Vector3(-0.01, 0.0365, -0.055 + 0.022 * float(k)), dark)
+			for k in range(8):
+				_box(parts, Vector3(0.006, 0.0045, 0.14), Vector3(-0.095 + 0.025 * float(k), 0.0368, 0.005), light.lightened(0.1))
 		"shaft":
 			# A spear (Dave: it must be pointy): an ash shaft with a slight taper and a leather grip wrap. The wooden spear has a whittled, fire-hardened point of the same wood (darker tip);
 			# the iron-headed spear (bits "metal") has a socket cone bound to the shaft and a flat leaf blade with a midrib, ending in a sharp point. Mesh axes: shaft along x, point at +x.
@@ -1641,10 +1647,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in range(10):                                                                                      # weathered grain along the haft
 				_cyl(parts, 0.021, 0.05, Vector3(-0.25 + 0.05 * float(k) + 0.025, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, k, 0.06))
 			_cyl(parts, 0.027, 0.1, Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(haft_wood, 2, 0.1))   # the haft swells where the head sits
-			_box(parts, Vector3(0.09, 0.065, 0.065), Vector3(0.22, 0.0, 0.0), _tone(dark, 1, 0.12))                 # the poll block the wedge sits on
 			_wedge(parts, 0.065, 0.15, 0.115, Vector3(0.22, 0.0, 0.05), _tone(color, 4, 0.08))                      # the wedge: base 6.5 cm, 15 cm out, 11.5 cm of edge
 			_wedge(parts, 0.026, 0.055, 0.15, Vector3(0.225, 0.0, 0.1), light)                                     # the ground edge, flared wider than the body
-			_box_rot(parts, Vector3(0.03, 0.03, 0.035), Vector3(0.285, 0.0, 0.12), Vector3(0.0, 0.5, 0.0), dark)  # a chipped corner
+			# (the chipped-corner cube is gone: Dave 1 Nov, the grey cube at the end must not be there, the edge is one smooth blade across)
 			for k in range(5):                                                                                       # leather thong lashing, five turns each side of the head
 				_cyl(parts, 0.034, 0.012, Vector3(0.155 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 0 else thong.darkened(0.25))
 				_cyl(parts, 0.034, 0.012, Vector3(0.262 + 0.014 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), thong if k % 2 == 1 else thong.darkened(0.25))
@@ -2202,6 +2207,46 @@ static func _tone(color: Color, k: int, spread: float) -> Color:
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
 static func _warm_stone(color: Color) -> Color:
 	return color.darkened(0.33).lerp(Color(0.46, 0.38, 0.29), 0.42)
+# A shore net (Dave 25 Oct: it must not look like a hammer): a pole along +X with an oval hoop at the head, a bag of twine strings and rings hanging
+# beyond the hoop, and cork floats round the rim. The hoop is square on to the pole, like a butterfly net.
+static func _net(parts: Array, color: Color) -> void:
+	var rim: float = 0.15
+	var hoop_x: float = 0.42
+	var apex: Vector3 = Vector3(hoop_x + 0.3, 0.0, 0.0)
+	_cyl(parts, 0.016, 0.9, Vector3(-0.03, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.3, 0.17))
+	_net_ring(parts, rim, 0.011, hoop_x, Color(0.36, 0.25, 0.14))
+
+	for k in 8:
+		var turn: float = float(k) * TAU / 8.0
+		var from: Vector3 = Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim)
+		var line: Vector3 = apex - from
+		var long: float = line.length()
+		var basis: Basis = Basis(Quaternion(Vector3.RIGHT, line / long))
+		parts.append([_net_box(Vector3(long, 0.006, 0.006)), Transform3D(basis, from + line * 0.5), color])
+
+	_net_ring(parts, rim * 0.62, 0.005, hoop_x + 0.12, color)
+	_net_ring(parts, rim * 0.3, 0.005, hoop_x + 0.22, color)
+
+	for k in 4:
+		var turn: float = float(k) * TAU / 4.0 + PI * 0.25
+		_sph(parts, 0.024, Vector3.ONE, Vector3(hoop_x, cos(turn) * rim, sin(turn) * rim), Color(0.8, 0.66, 0.4), true)
+
+
+static func _net_box(dims: Vector3) -> BoxMesh:
+	var box: BoxMesh = BoxMesh.new()
+	box.size = dims
+	return box
+
+
+static func _net_ring(parts: Array, ring: float, tube: float, at_x: float, color: Color) -> void:
+	var torus: TorusMesh = TorusMesh.new()
+	torus.inner_radius = ring - tube
+	torus.outer_radius = ring + tube
+	torus.rings = 12
+	torus.ring_segments = 4
+	parts.append([torus, Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(at_x, 0.0, 0.0)), color])
+
+
 
 
 static func _box(parts: Array, dims: Vector3, at: Vector3, color: Color) -> void:

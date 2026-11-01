@@ -2321,42 +2321,46 @@ static func _wild_apple(bark: Acc, smooth: Acc, leaves: Acc, twigs: Acc, rng: Ra
 				_round_fruit(fruit, at + off, 0.07 if orchard else 0.055, apple, rng)
 
 
-# A round fruit of 14 vertices and 26 triangles: a dimpled top, two rings, a rounder-than-octahedron belly shaded darker underneath, one pale highlight vertex on the shoulder and a thin dark stem. The vertex alpha (the rank used to thin fruit) is the colour's alpha.
+# A round fruit (Dave 1 Nov: "not apple shaped, make them smooth"): an apple profile turned on a lathe, 12 segments and 6 ring bands (144 triangles), widest above the middle, a dimple at the
+# stem and a flatter base, smooth normals from the profile, shaded darker underneath with one pale highlight patch on the shoulder, and a thin stem.
+const FRUIT_PROFILE := [[0.0, 0.5], [0.4, 0.62], [0.85, 0.52], [1.0, 0.12], [0.92, -0.3], [0.55, -0.6], [0.0, -0.5]]   # [radius share, height share] top to bottom
+const FRUIT_SEGS := 12
+
+
 static func _round_fruit(acc: Acc, p: Vector3, r: float, c: Color, rng: RandomNumberGenerator) -> void:
 	var turn: float = rng.randf() * TAU
 	var base: int = acc.v.size()
-	var top: Color = Color(c.r * 0.9, c.g * 0.9, c.b * 0.9, c.a)
-	acc.vert(p + Vector3(0.0, r * 0.62, 0.0), Vector3.UP, Vector2(0.5, 0.5), top)
-	var light: int = rng.randi_range(0, 5)
+	var light: int = rng.randi_range(0, FRUIT_SEGS - 1)
+	var rings: int = FRUIT_PROFILE.size()
 
-	for k in range(6):
-		var a: float = turn + TAU * float(k) / 6.0
-		var d: Vector3 = Vector3(cos(a), 0.0, sin(a))
-		var shoulder: Color = Color(c.r * 1.1, c.g * 1.1, c.b * 1.1, c.a)
+	for i in range(rings):
+		var rx: float = float(FRUIT_PROFILE[i][0])
+		var ry: float = float(FRUIT_PROFILE[i][1])
+		var shade: float = 1.0 - 0.4 * clampf((0.3 - ry) / 0.9, 0.0, 1.0)
 
-		if k == light:
-			shoulder = Color(c.r + (1.0 - c.r) * 0.55, c.g + (1.0 - c.g) * 0.5, c.b + (1.0 - c.b) * 0.45, c.a)      # the highlight
+		for k in range(FRUIT_SEGS):
+			var a: float = turn + TAU * float(k) / float(FRUIT_SEGS)
+			var d: Vector3 = Vector3(cos(a), 0.0, sin(a))
+			var col: Color = Color(c.r * shade, c.g * shade, c.b * shade, c.a)
 
-		acc.vert(p + d * r * 0.86 + Vector3(0.0, r * 0.38, 0.0), (d + Vector3.UP * 0.6).normalized(), Vector2(0.5 + d.x * 0.4, 0.5 + d.z * 0.4), shoulder)
+			if i == 2 and k == light:
+				col = Color(c.r + (1.0 - c.r) * 0.55, c.g + (1.0 - c.g) * 0.5, c.b + (1.0 - c.b) * 0.45, c.a)      # the highlight
 
-	for k in range(6):
-		var a: float = turn + TAU * float(k) / 6.0 + 0.5
-		var d: Vector3 = Vector3(cos(a), 0.0, sin(a))
-		acc.vert(p + d * r * 0.95 - Vector3(0.0, r * 0.25, 0.0), d, Vector2(0.5 + d.x * 0.5, 0.5 + d.z * 0.5), Color(c.r * 0.8, c.g * 0.8, c.b * 0.8, c.a))
+			var normal: Vector3 = (d * rx + Vector3.UP * ry * 0.7).normalized() if rx > 0.0 else (Vector3.UP if ry > 0.0 else Vector3.DOWN)
+			acc.vert(p + d * rx * r + Vector3(0.0, ry * r, 0.0), normal, Vector2(0.5 + d.x * rx * 0.5, 0.5 + d.z * rx * 0.5), col)
 
-	acc.vert(p - Vector3(0.0, r * 0.62, 0.0), Vector3.DOWN, Vector2(0.5, 0.5), Color(c.r * 0.6, c.g * 0.6, c.b * 0.6, c.a))
-
-	for k in range(6):
-		var k2: int = (k + 1) % 6
-		acc.tri(base, base + 1 + k2, base + 1 + k)      # top fan
-		acc.tri(base + 1 + k, base + 1 + k2, base + 7 + k)      # shoulder ring to belly ring
-		acc.tri(base + 1 + k2, base + 7 + k2, base + 7 + k)
-		acc.tri(base + 13, base + 7 + k, base + 7 + k2)      # underside
+	for i in range(rings - 1):
+		for k in range(FRUIT_SEGS):
+			var k2: int = (k + 1) % FRUIT_SEGS
+			var a0: int = base + i * FRUIT_SEGS
+			var b0: int = base + (i + 1) * FRUIT_SEGS
+			acc.tri(a0 + k, a0 + k2, b0 + k)
+			acc.tri(a0 + k2, b0 + k2, b0 + k)
 
 	var stem: Color = Color(0.3, 0.2, 0.1, c.a)
-	var s0: int = acc.vert(p + Vector3(0.0, r * 0.5, 0.0), Vector3.RIGHT, Vector2(0, 1), stem)
-	var s1: int = acc.vert(p + Vector3(0.0, r * 1.05, 0.0), Vector3.RIGHT, Vector2(0, 0), stem)
-	var s2: int = acc.vert(p + Vector3(r * 0.1, r * 0.5, 0.0), Vector3.RIGHT, Vector2(1, 1), stem)
+	var s0: int = acc.vert(p + Vector3(0.0, r * 0.45, 0.0), Vector3.RIGHT, Vector2(0, 1), stem)
+	var s1: int = acc.vert(p + Vector3(r * 0.05, r * 1.05, 0.0), Vector3.RIGHT, Vector2(0, 0), stem)
+	var s2: int = acc.vert(p + Vector3(r * 0.1, r * 0.45, 0.0), Vector3.RIGHT, Vector2(1, 1), stem)
 	acc.tri(s0, s1, s2)
 	acc.tri(s0, s2, s1)
 
