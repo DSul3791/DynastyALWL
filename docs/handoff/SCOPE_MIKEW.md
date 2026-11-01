@@ -1,5 +1,7 @@
 # Scope: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 2026
 
+> **ROLE ADDITION (Dave, 1 Nov 2026): animals are yours.** Fauna as a system: which animals live where, how many, density, placement and spread, herds, spawn rules and seasons (start at data/animals/ and the animal placer code). Kathleen keeps how animals look; Sal keeps what they drop and the animal text; Tyler keeps combat and behaviour rules in server code. Plants first, as already planned; then write a fauna measurement like your flora density one (animals within 100 m, 500 m of the spawn) and propose fixes.
+
 ## 1. The job
 Make the world look alive and be fair to forage in: where trees, shrubs, berries, fibre plants, herbs, flowers and tall grass stand (density, clumping, seasons, harvest stores), how grass and plants draw at range, and what that costs. It starts at the placer and data (`flora_placer.gd`, `flora.json`, drops and fruit stores), the layout version, and the flora and grass views and shader. It stops at the art itself (Kathleen: models, colours, `tree_builder.gd`), animals, and item rules.
 

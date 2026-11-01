@@ -26,3 +26,6 @@ Sonny's sole job is terrain and water (the foundation everyone plays on), as in 
 
 ## 2026-11-01 Fire and flame looks go to Kathleen (Dave: "fire and flame is artistic")
 How fire, flames, embers, glow and light cones LOOK (flame models, flicker, colour, light range and shape, the front-only fireplace cone, lit torch and chandelier looks, smoke) is Kathleen's. Tyler keeps the RULES (lit or unlit, fuel burned, warmth, saved lit state, who can light it). Where code and look meet (the light node's parameters), Kathleen edits the look values and Tyler reviews. Existing work stays: Tyler's fire-light commits ed07d89f, ceeb057e, e5172fe9, eb9f4a39, a6a6f4d9, 02e7d317.
+
+## 2026-11-01 Animals go to MikeW: Flora and Fauna (Dave)
+Animals as a system (which animals live where, how many, their placement, density and spread, herds and spawn rules, seasons) belong to MikeW (Flora and Fauna Density and Placement). Kathleen keeps how animals LOOK (models, fur, textures); Sal keeps what they DROP and the animal data text; Tyler keeps combat/behaviour rules in server code unless MikeW's placement needs a rule he must add. Start: data/animals/, animal placer code, animal_sign.json.
