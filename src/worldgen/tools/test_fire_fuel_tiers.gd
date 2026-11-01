@@ -339,5 +339,6 @@ func _init() -> void:
 	check(view2._fire_label({"state": 9, "burn": float(mixed["burn_left"])}, f.table.number_of("campfire_kit")) == "Campfire 00:40:00 Burn time", "the label adds the right time for each kind")
 	view2.free()
 
+	f._finish_writer()   # the background save thread must be done before quit, or the engine crashes at exit
 	print("test_fire_fuel_tiers: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
