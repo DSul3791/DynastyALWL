@@ -29,3 +29,6 @@ How fire, flames, embers, glow and light cones LOOK (flame models, flicker, colo
 
 ## 2026-11-01 Animals go to MikeW: Flora and Fauna (Dave)
 Animals as a system (which animals live where, how many, their placement, density and spread, herds and spawn rules, seasons) belong to MikeW (Flora and Fauna Density and Placement). Kathleen keeps how animals LOOK (models, fur, textures); Sal keeps what they DROP and the animal data text; Tyler keeps combat/behaviour rules in server code unless MikeW's placement needs a rule he must add. Start: data/animals/, animal placer code, animal_sign.json.
+
+## 2026-11-01 Rule: anything about LOOKS is Kathleen's (Dave: "unless it's looks, then it's artistic")
+Whoever owns the thing owns its rules, numbers and placement; how it LOOKS (models, textures, colours, shaders that decide appearance, lighting looks, animation looks) is Kathleen's. Applied so far: character look, fire and flame look, animal look, flora look (plant shapes, flower and stem colours, grass appearance and shader look). MikeW keeps density, placement, seasons and draw cost; Tyler keeps rules; Sal keeps data and text; Sonny keeps terrain and water mechanics. Open question for Dave: the water's LOOK (colour, shader appearance) — Sonny or Kathleen?

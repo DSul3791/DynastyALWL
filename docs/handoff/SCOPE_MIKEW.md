@@ -1,5 +1,7 @@
 # Scope: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 2026
 
+> **RULE (Dave, 1 Nov 2026): anything about LOOKS is Kathleen's.** You keep density, placement, seasons and draw cost for plants and animals. How a plant or animal looks (shapes, flower and stem colours, grass appearance and shader look, fur, models) is Kathleen's. Report look problems to her with a picture, as with the yarrow stems.
+
 > **ROLE ADDITION (Dave, 1 Nov 2026): animals are yours.** Fauna as a system: which animals live where, how many, density, placement and spread, herds, spawn rules and seasons (start at data/animals/ and the animal placer code). Kathleen keeps how animals look; Sal keeps what they drop and the animal text; Tyler keeps combat and behaviour rules in server code. Plants first, as already planned; then write a fauna measurement like your flora density one (animals within 100 m, 500 m of the spawn) and propose fixes.
 
 ## 1. The job
