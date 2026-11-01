@@ -1942,3 +1942,7 @@ Answered: 2026-10-31 20:07 UTC
 Answer: No | Comment: This picture only shows one tree and one apple so I can’t tell
 Answered: 2026-11-01 00:30 UTC
 
+## pic-hold-stone-axe | In the real game: does the held stone axe look like an axe (wooden haft, stone head, bound at the neck)?
+Answer: Yes | Comment: Except there’s a weird gray cube at the end of it that doesn’t look right that should not be there. It should be a smooth blade all the way across.
+Answered: 2026-11-01 09:23 UTC
+
