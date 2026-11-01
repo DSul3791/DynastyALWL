@@ -159,3 +159,15 @@ Dave: "review the unfinished work and assign it to whomever it should go to. The
 | `claude/sal-no-rose-berries` | KEEP until Sal answers | commit 1 already done; commit 2 (rose gives petals instead of hips) not in daily: Sal's call |
 | `claude/steve-cave-air` | DROP | plan archived as `Steve_cave_air.md` |
 | `claude/steve-flora-mutex` | ALREADY DONE | `_plateau_mutex` in daily `flora_placer.gd` |
+
+## Jason (13 of 13, 1 Nov)
+All 13 sound branches are already in the daily or to be dropped; none needs a port (git cherry and per-file diffs; not every hunk read). Full table in Jason's message; branches safe to delete.
+
+## Steve (9 of 9, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `sal-auto-pickup`, `sal-fire-tiers` | already done | code in daily; plan docs copied to `docs/archive/2026-11/old_branch_plans/` before deletion |
+| `sal-hoe`, `sal-raise`, `sal-shovel-sizes`, `steve-go-spawn` | already done | patch-equivalent in daily (git cherry; not opened one by one) |
+| `steve-ground-debug`, `steve-ladder` | already done | files in daily |
+| `steve-bed-respawn` | PORT part, drop part | claim-by-lying superseded by E-on-bed `spawn_bed`; Steve redoes the landing search and repeat-death fallthrough on a fresh branch with `test_bed_respawn.gd`; keep branch until ported |
+Open question for Dave (from Sal's fire-tiers doc): 3 pieces per fire tier; code already has 3 tiers, unchecked against the rule.
