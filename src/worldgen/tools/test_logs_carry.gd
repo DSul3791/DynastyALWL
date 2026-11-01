@@ -96,7 +96,7 @@ func _init() -> void:
 
 	# The real carry: a log given to the player goes on the shoulder, not into the pack.
 	items.give(1, oak, 1)
-	check(items.shoulder_of(1) == "log_oak" and count("log_oak") == 0, "a log given to the player rides on the shoulder, not in the pack")
+	check(items.shoulder_of(1) == "log_oak" and count("log_oak") == 1, "a log given to the player is one pack item, shown on the shoulder")
 
 	# 1. Chopping block (2 logs): one on the shoulder, one on the ground.
 	items.drop_in_world(birch, 1, Vector3(1.0, 10.0, 0.0))
@@ -109,7 +109,7 @@ func _init() -> void:
 	reset()
 	items.give(1, oak, 1)
 	craft("chopping_block", 1)
-	check(count("chopping_block") == 0 and items.shoulder_of(1) == "log_oak" and count("log_oak") == 0, "one log is not enough for a chopping block: the shoulder log stays on the shoulder")
+	check(count("chopping_block") == 0 and items.shoulder_of(1) == "log_oak" and count("log_oak") == 1, "one log is not enough for a chopping block: the carried log stays")
 
 	# 3. A log 6 m away is not used.
 	reset()
@@ -147,7 +147,7 @@ func _init() -> void:
 	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("wooden_hammer"))
 	items.inventory_of(1).numbers[0] = items.inventory_of(1).numbers[hammer_slot] if hammer_slot > 0 else items.inventory_of(1).numbers[0]
 	var ok: bool = items._can_blueprint(1, items.inventory_of(1), row)
-	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")
+	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")
 	print("logs carry: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

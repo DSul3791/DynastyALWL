@@ -230,5 +230,27 @@ func _init() -> void:
 	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
 	check(not said.is_empty(), "no wood in the pack: the player is told")
 
+	# The large log carried on the shoulder is a normal pack item: it goes on the fire through the same fuel rule (logs first), its weight counts once, it can be laid down.
+	var oak: int = f.table.number_of("log_oak")
+	var inv_s = f.inventory_of(1)
+
+	for slot in range(inv_s.SLOTS):
+		inv_s.numbers[slot] = 0
+		inv_s.counts[slot] = 0
+
+	f._items[log_fire]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	f._items[log_fire]["fire"]["state"] = 40
+	f._items[log_fire]["fire"]["pot"] = false
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 3, Vector3.ZERO)
+	f.give(1, oak, 1)
+	check(f.shoulder_of(1) == "log_oak" and inv_s.count_of(oak) == 1, "a large log is a pack item shown on the shoulder")
+	var cfg_c: Dictionary = load("res://src/shared/carry_rules.gd").load_config()
+	check(absf(f.carried_kg_of(1) - (float(cfg_c["by_id"]["log_oak"]) + 3.0 * float(cfg_c["by_id"]["stick"]))) < 0.001, "its weight is counted once (%.2f kg)" % f.carried_kg_of(1))
+	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	check(inv_s.count_of(oak) == 0 and f.shoulder_of(1) == "" and inv_s.count_of(f.table.number_of("stick")) == 3, "E with sticks and a large log in the pack burns the log first")
+	check(float(f._items[log_fire]["fire"]["wood"]["log"]) > 0.99 * float(cook["fuel"]["log_oak"]) / rate, "the large log burns as a log")
+	f.give(1, oak, 1)
+	check(f.lay_down_shoulder(1) and f.shoulder_of(1) == "" and inv_s.count_of(oak) == 0, "laying the carried log down takes it out of the pack")
+
 	print("test_fire_fuel_tiers: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

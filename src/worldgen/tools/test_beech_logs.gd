@@ -99,7 +99,7 @@ func _init() -> void:
 		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 
 	check(loose_logs(w, log_n).size() == 1, "the cut drops one log on the ground, not into the pack (loose logs: %d)" % loose_logs(w, log_n).size())
-	check(w.shoulder_of(1) == "log_beech" and w.inventory_of(1).count_of(log_n) == 0, "the shoulder is unchanged and the pack has no log")
+	check(w.shoulder_of(1) == "log_beech" and w.inventory_of(1).count_of(log_n) == 1, "the carried log (a pack item) is unchanged and the cut log did not join it")
 	check(absf(float(tree["length"]) - (length0 - 2.44)) < 0.01, "the trunk is one log shorter (%.2f from %.2f)" % [float(tree["length"]), length0])
 
 	# Save and load mid-way keeps the shortened trunk.
@@ -125,7 +125,7 @@ func _init() -> void:
 	check(not w._items.has(trunk_id), "the last cut removes the trunk")
 	var logs: int = loose_logs(w, log_n).size()
 	check(logs == int(18.0 / 2.44), "every log of the tree lies on the ground: %d of %d" % [logs, int(18.0 / 2.44)])
-	check(w.inventory_of(1).count_of(log_n) == 0, "no log went into the pack")
+	check(w.inventory_of(1).count_of(log_n) == 1, "no cut log went into the pack (only the carried one)")
 	var stumps: int = 0
 
 	for k in w._items:
