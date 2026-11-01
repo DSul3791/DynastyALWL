@@ -144,7 +144,7 @@ func _check_ambience() -> void:
 	var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Ambience.SLOTS_PATH))
 	var slots: Dictionary = parsed["slots"]
 	check(slots.size() >= 17, "the JSON lists the batch 2 slots (%d)" % slots.size())
-	var known_layers: Array = ["weather_bed", "time_bed", "positional", "oneshot"]
+	var known_layers: Array = ["weather_bed", "time_bed", "shore_bed", "positional", "oneshot"]
 	var known_near: Array = ["any", "pond", "sea_edge", "lava"]
 	var known_altitude: Array = ["any", "below_800m", "below_1500m", "above_300m", "sea_level"]
 	var known_time: Array = ["day", "night", "day_and_night", "dusk_and_night"]
@@ -172,9 +172,17 @@ func _check_ambience() -> void:
 	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_night", "a winter night gets the general night bed")
 	check(Ambience.choose_bed(slots, "time_bed", summer_forest) == "", "no time bed by day")
 	var beach: Dictionary = {"season": "summer", "time": "day", "biomes": ["beach"], "water": 0.8, "height": 2.0}
-	check(Ambience.choose_bed(slots, "weather_bed", beach) == "bed_surf", "a beach at sea level gets the surf bed")
+	check(Ambience.choose_bed(slots, "shore_bed", beach) == "bed_surf", "a beach at sea level gets the surf bed")
 	beach["height"] = 30.0
-	check(Ambience.choose_bed(slots, "weather_bed", beach) != "bed_surf", "and not the same water 30 m up")
+	check(Ambience.choose_bed(slots, "shore_bed", beach) != "bed_surf", "and not the same water 30 m up")
+	# Dave 1 Nov: a forest next to the sea kept only the surf. Surf no longer replaces the forest bed, and fades out inland and under trees.
+	var wooded_shore: Dictionary = {"season": "summer", "time": "day", "biomes": ["temperate_forest", "woodland", "beach"], "water": 0.6, "height": 2.0, "wind": 0.8}
+	check(Ambience.choose_bed(slots, "weather_bed", wooded_shore) == "bed_forest_day", "trees near the sea still get the forest bed (surf is its own layer)")
+	check(Ambience.surf_scale(1.0, 0.0) > 0.99, "on the beach the surf is full")
+	check(Ambience.surf_scale(0.4, 0.0) < 0.01 and Ambience.surf_scale(0.0, 0.0) == 0.0, "36 m or more from the sea the surf is silent")
+	check(Ambience.surf_scale(0.6, 1.0) < 0.05 and Ambience.surf_scale(1.0, 1.0) < 0.15, "deep forest keeps the surf under 15 percent even at the shore")
+	check(Ambience.surf_scale(0.7, 0.0) > Ambience.surf_scale(0.5, 0.0), "and it rises toward the water")
+	check(Ambience.surf_scale(1.0, 0.0) > Ambience.surf_scale(1.0, 0.5) and Ambience.surf_scale(1.0, 0.5) > Ambience.surf_scale(1.0, 1.0), "and falls as the trees thicken")
 	var canyon: Dictionary = {"season": "summer", "time": "day", "biomes": ["canyon"], "water": 0.0, "height": 120.0}
 	check(Ambience.choose_bed(slots, "weather_bed", canyon) == "bed_canyon_wind" and Ambience.matching(slots, "oneshot", canyon).has("canyon_echo"), "a forced canyon gets its wind and its echo")
 	var day_birds: Array = Ambience.matching(slots, "oneshot", summer_forest)
@@ -194,7 +202,7 @@ func _check_ambience() -> void:
 	for slot in slots:
 		layers_seen[slots[slot]["layer"]] = true
 
-	check(layers_seen.size() == 4, "all four layers are used by the batch")
+	check(layers_seen.size() == 5, "all five layers are used by the batch")
 
 	# Doubling guard: the four old AmbientLife calls make no voices once the slots take them over; the others still run. 60 simulated seconds per place.
 	for call_name in Ambience.REPLACES:
