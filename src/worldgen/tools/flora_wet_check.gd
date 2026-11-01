@@ -1,9 +1,10 @@
 extends SceneTree
+# NOTE (moderator, 1 Nov): renamed from test_flora_wet.gd. It is a diagnostic, not a gate: it takes about 35 minutes and reports (2088 of 5.1M instances on wet cells on tile 3,4, mostly bank plants) so it must not be in the test_* fast lane. Run by hand when changing flora placement near water.
 
 # No flora on water: runs the runtime flora placer over every chunk that holds or touches water on a tile (settled water
 # file and painted lakes and rivers), and counts the instances that stand on a wet cell (any species but reeds and the other
 # water species) or, for trees and shrubs, one cell beside it. Must be 0.
-#   godot --headless --path . --script res://src/worldgen/tools/test_flora_wet.gd [-- --tile=3,4 | --all]
+#   godot --headless --path . --script res://src/worldgen/tools/flora_wet_check.gd [-- --tile=3,4 | --all]
 # Needs the baked tiles and their water files (worlds/base_world/tiles, worlds/base_world/water).
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -54,7 +55,7 @@ func _init() -> void:
 	for entry in tiles:
 		_tile(generator, placer, settings, Vector2i(int(entry[0]), int(entry[1])))
 
-	print("test_flora_wet: %d failures" % failures)
+	print("flora_wet_check: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
 
