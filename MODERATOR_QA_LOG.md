@@ -35,3 +35,6 @@ Whoever owns the thing owns its rules, numbers and placement; how it LOOKS (mode
 
 ## 2026-11-01 Animal placement AND behaviour go to MikeW (Dave)
 Replaces the earlier split where Tyler kept animal behaviour: MikeW (Flora and Fauna) owns animal placement and animal behaviour (wandering, fleeing, hunting, herding, resting, spawn and despawn, how they react to the player). Tyler keeps only the shared server rules animals plug into (damage and death handling, carcass, protocol). Kathleen keeps how animals look; Sal keeps drops and text.
+
+## 2026-11-01 Second art agent: Kathreen (Dave)
+If Kathleen's list is too long, a second art agent is started and named Kathreen. Not started yet; the moderator proposes the split (suggested: Kathleen keeps items, structures, fire and flame; Kathreen takes character look and animals and plants look) and starts her only when Kathleen's ranked list shows it is needed or Dave says so. Kathreen reads docs/handoff/SCOPE_KATHLEEN.md and HANDOFF_KATHLEEN.md first.
