@@ -26,7 +26,15 @@
 5. Run: `python tools/items_check.py --only validate_items,dishes,economy,server_items,first_hour,inventory,stations,save_compat` (the economy test fails any craft worth far more or less than its ingredients). Fix what it names.
 
 ## What is not finished
-- Code owed by Tyler: ore tier check (CODE_MISMATCHES.md), hints on screen and camp events (HINTS_AND_CAMP_EVENTS_SPEC.md), learn-by-seeing already done, shop enabling, quality grades (QUALITY_GRADES_SPEC.md), crop planting UI.
+- Code owed (rules code is Steve's now; see "Needs code" below and the *_SPEC files): ore tier check (CODE_MISMATCHES.md), hints on screen and camp events (HINTS_AND_CAMP_EVENTS_SPEC.md), learn-by-seeing already done, shop enabling, quality grades (QUALITY_GRADES_SPEC.md), crop planting UI.
 - Art owed by Kathleen: the list in look_wishlist.md (about 90 items, building pieces, fruit, fish, clothes).
 - Questions waiting for Dave: berry calories (FIRST_HOUR_FOOD.md), whether to slow the first hour further (CRAFT_PACING.md, FIRST_WEEK_WALK.md), the crop list, shop names (TOWN_NPC_SPEC.md).
-- The log of every decision: ITEM_DECISION_LOG.md. The morning checklist: DAVE_MORNING_ITEMS.md.
+- The log of every decision: ITEM_DECISION_LOG.md. The morning checklist: docs/archive/2026-11/DAVE_MORNING_ITEMS.md (archived).
+
+## Needs code (from the archived `docs/archive/2026-11/ITEM_CODE_HANDOFF.md`, 30 Oct; checked 1 Nov by Jamie against data and Steve's and Sal's answers; owner of the code: Steve, tests Tyler)
+Full detail of each item (files, steps, tests) is in the archived page.
+1. **One Lumber and one Beam with a species tag** (Dave approved 25 Oct). Data side exists (`wood_species.json` has `key_woods`, `retired_to`); slot species tag, stack merge rule, save conversion and tooltip not verified.
+2. **Clay Oven and Iron Stove** (oven levels 4 and 5): no such items in `items.json`; open.
+3. **Vice migration**: `structures.json` still has vice rows; open.
+4. **Quality grades** (Poor to Excellent): not built (`QUALITY_GRADES_SPEC.md`, Steve confirms).
+Dropped as done: ingots and smelting recipes exist (`recipes.json` has 44 ingot lines; smelting levels not re-checked); the `kathleen-art` merge.

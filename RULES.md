@@ -1,6 +1,6 @@
 # Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026)
 
-The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired. Today it is Dave plus one Claude session on Dave's PC. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
+Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating; roles are in `docs/START_HERE.md` and `MODERATOR_QA_LOG.md`. (The October team of the same names, with a Technical Director, was a different arrangement.) Work lands on the daily branch (`DailyDev_20261029`) through the moderator; `main` waits for Dave's go. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
 
 ## Dave
 - Dave decides design. He tests at his own pace; Claude never waits on him: park the job and take the next one.
@@ -13,9 +13,10 @@ The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired
 - Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
 
 ## Git
-- `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push.
-- Work on a branch (`claude/<topic>`), ship with `tools/ship.sh` (pushes `ship/build-N` and merges the PR with `tools/pr_merge.sh`). The branch is never deleted by the tools.
-- Commit, push and merge only with Dave's go-ahead.
+- `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until Dave has play-tested and says go.
+- Flow since 1 Nov 2026: each agent works on its own branch (`claude/<topic>` or its named branch) and pushes it; the moderator merges the pushes into the daily branch (`DailyDev_YYYYMMDD`); the full test pass runs; Dave play-tests. On Dave's go: backup, merge the daily into `main`, tests, new daily branch. Agents never merge to the daily or `main` themselves.
+- `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
+- OUT OF DATE (October, Technical Director era; kept until the moderator confirms): the build-number and `BUILD_LOG` rule below and the `ID_CLAIMS.md` rule under Code. The HUD number lives in `src/shared/build.gd`.
 - Build number = max(origin BUILD, last BUILD_LOG line) + 1; the BUILD_LOG line goes in the same commit. Each change is labelled RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
 - Before shipping: `git pull --rebase origin main`, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check.
 - Bakes: never bake or commit tiles in the cloud. A `TERRAIN_VERSION` change ships only with a bake.
@@ -37,7 +38,7 @@ The old multi-thread team (Tyler, Steve, Sonny, Sal, Kathleen, MikeW) is retired
 - No chasing ghosts: fix only with a log, a repro or a screenshot.
 
 ## Where things live
-`HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (open plans), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
+`HANDOFF.md` (state and gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (four plans still cited by code and data or not fully built; the other 41 finished October plans are in `docs/archive/2026-11/tech_ACTION_PLANS/`), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
 
 ## Heavy Godot jobs share the PC (Tyler, 31 Oct 2026)
 At most 3 test or rig jobs run at once on this PC, across all sessions: `tools/run_tests.sh` / `tools/run_one_test.sh` take a slot from `tools/godot_slot.sh` on their own. For anything else that starts Godot for a while (picture rigs, servers and clients, probes), wrap it: `tools/godot_slot.sh godot --path . ...`. `GODOT_SLOTS=0` switches the guard off, `GODOT_SLOTS=N` changes the number. It never kills anything; a slot whose job is gone is taken over.

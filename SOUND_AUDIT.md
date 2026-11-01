@@ -1,5 +1,7 @@
 # SOUND_AUDIT: cave-in rumble and rain-like sound in clear weather
 
+> **Owner since 1 Nov 2026: Jason (all sound; see `docs/SOUND_MAP.md`).** The proposals below name Tyler, Sonny and Kathleen: sound generation, the tree-wind gating and the sound levels are Jason's now; rule changes in the tunnel watch (server notice, restart memory) are Steve's. Not a duplicate of SOUND_MAP.md (that is the hook list; this is the two findings).
+
 Written by the guide session, 2026-10-31. I cannot hear anything, so this is read from the code, Dave's saved world and the client's own "sounds heard" lines (three smoke-test clients at spawn, day 100, clear weather, headless). I did **not** log a timed 3-minute list; the three samples below are all I have, and the proposals are untested.
 
 ## 1. The cave-in rumble while not digging

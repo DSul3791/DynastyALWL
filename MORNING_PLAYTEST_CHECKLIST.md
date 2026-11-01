@@ -1,9 +1,9 @@
-# Dave's play-test: one page (daily branch 3494d612, 31 Oct)
+# Dave's play-test: one page (31 Oct; pull the current head of the daily branch)
 
 The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`. Tick as you go; anything wrong goes on a QA page card (the Comments box), or in chat.
 
 ## Before you start
-1. **Pull** the daily branch `DailyDev_20261029` (head `3494d612`) and open the project in Godot.
+1. **Pull** the daily branch `DailyDev_20261029` (use its current head; `3494d612` was the head on 31 Oct) and open the project in Godot.
 2. **Start:** open `scenes/launcher.tscn` and press **F6**. The game starts its own server and joins it (port 24600; if that port is busy it joins the server already running).
 3. First screen is **character select**. No character yet: you land in the **creator**: type a name, press **Save and play**.
 
