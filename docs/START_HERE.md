@@ -40,10 +40,26 @@ GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_
 python3 tools/tests_for_diff.py origin/main HEAD --full > /tmp/plan.json
 GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json   # whole suite
 ```
-Tests live in `src/worldgen/tools/` and `src/water2/`. Last full run (27dfe828): 159 of 159 green.
+Tests live in `src/worldgen/tools/` and `src/water2/`. Latest full-run result: `docs/TYLER_NEXT_TASKS.md` (Tyler's final report); the Phase 2 order is `docs/handoff/PHASE2_RUNBOOK.md`.
 
 ## Run the game
-From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new water becomes the default with Sonny's push (`--water-old` switches back; not yet on this branch, checked by grep). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
+From the project folder with the voxel build: `godot --path . -- --role=play` (play is the default role in `scenes/launcher.gd`; starts a server and joins it; pressing Play in the editor does the same). Water: the new Dynasty water (`src/water2`) is the default since 1 Nov; `--water-old` (or Esc > Settings > Gameplay > Old water) runs the old one (checked in `terrain_server.gd` and `launcher.gd`). Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md`.
 
-## Where things are
-`docs/handoff/` (roles, state, next steps per agent), `docs/DOC_MAP.md` (every document, owner, verdict), `data/` (JSON tables), `src/` (code), `tools/` (scripts), `questions/` on branch `qa`.
+## Where everything is (for a new thread of Dave's)
+| I want | Go to |
+|---|---|
+| every document, its owner and verdict | `docs/DOC_MAP.md` |
+| who does what now, and each agent's state and next steps | `docs/handoff/SCOPE_<NAME>.md`, `HANDOFF_<NAME>.md`; backlogs table in `DOC_MAP.md` |
+| what was decided and why (roles, rulings) | `MODERATOR_QA_LOG.md` |
+| what was left to finish at handoff, and the Phase 2 order | `docs/CLOSING_PLAN.md`, `docs/handoff/PHASE2_RUNBOOK.md` |
+| unmerged old branches and what to do with each | `docs/OLD_BRANCH_REVIEW.md` |
+| the findings from playing it | `docs/handoff/FINDINGS_REPORT.md`, `PLAYTHROUGH_STEP_STATUS.md` |
+| design, principles, rejected ideas | `DESIGN_IDEAS.md`, `DESIGN_PRINCIPLES.md`, `DESIGN_REJECTED.md` |
+| items, recipes, economy | `docs/ITEMS_HANDOVER.md`, `docs/ECONOMY_FIRST_DAY.md` (stones sell 5 for 1 copper through `sell_lot`), `data/items/` |
+| death rule | `data/items/death.json` (respawn at the bed until character level 10, then real death) |
+| water, terrain | `docs/TERRAIN_WATER_BACKLOG.md`, `docs/DYNASTY_WATER_HISTORY.md` |
+| sound | `docs/SOUND_MAP.md`, `docs/handoff/JASON_NEXT_TASKS.md` |
+| looks | `docs/KATHLEEN_NEXT_TASKS.md`, `docs/handoff/HANDOFF_KATHREEN.md`, `art/CRITIQUES/` |
+| controls, wire format, world files | `CONTROLS.md`, `PROTOCOL.md`, `WORLD_FORMAT_SPEC.md` |
+| code and data | `src/`, `data/` (JSON tables), `tools/` (scripts); Dave's questions on branch `qa` (`questions/`) |
+| old material | `docs/archive/YYYY-MM/` (nothing is deleted), `docs/mirror/` (frozen 22 Oct copy that tools cite) |

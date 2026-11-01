@@ -1,6 +1,6 @@
 # Document map (Jamie, 1 Nov 2026)
 
-Every markdown file in git outside `docs/archive/` (226 files), `.claude/` and `addons/`: **353 files**. Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change). Verdicts come from headers, dates and cross-checks, not from reading every file; "keep" means no problem seen yet. I change nothing in an owner's document without telling the owner first. Start page for newcomers: `docs/START_HERE.md`.
+Every markdown file in git outside `docs/archive/`, `.claude/` and `addons/`: **324 files** (120 of them the frozen `docs/mirror/`). Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change).
 
 Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the named file, then archive the rest), **ARCHIVE** (to `docs/archive/YYYY-MM/`, with git mv), **review** (overlap seen, owner to decide).
 
@@ -9,7 +9,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 |---|---|---|---|---|
 | `docs/mirror/` (tech 66, items 35, design 17, CONTROLS, README) | 120 | nobody (Technical Director retired) | last copy 22 Oct | keep frozen: cited by `tools/merge_check.py` (skip prefix), `tools/ship.sh` and `next_build.sh` (write `docs/mirror/tech/BUILD_LOG.md`), `balance_sheet.py` (writes `docs/mirror/items/BALANCE.md`), `tool_tiers.py` (reads `docs/mirror/design/TOOL_TIERS.md`), `nightly_backup.py` (cites BACKUP_PLAN.md); its CONTROLS.md is older than the root one. Archive only after those references move |
 | `tech/ACTION_PLANS/` | 4 left (41 archived to `docs/archive/2026-11/tech_ACTION_PLANS/`) | previous Steve/Sal | 24-25 Oct | kept: `Steve_ground_quiet` (cited in `ground_watchdog.gd`), `Steve_hide_traps` (`data/animals/traps.json`), `Steve_bow_shoot` (`data/items/bow.json`), `Sal_hammer_blueprints` (bridge not built). `tools/selftest_gate_tools.sh` uses the folder name only as a fake path |
-| `art/CRITIQUES/` | 45 | Kathleen | 30-31 Oct | keep; Kathleen archives rounds Dave has judged |
+| `art/CRITIQUES/` | 43 rounds + `_archive/` | Kathleen | 30-31 Oct | keep; Kathleen archives rounds Dave has judged |
 
 ## Documents (individually)
 | Path | Owner | Purpose | Updated | Verdict |
@@ -157,21 +157,23 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 
 Jason's three, all keep: `SOUND_AUDIT.md` (findings record), `docs/SOUND_MAP.md` (hook audit and sound map), `docs/handoff/SCOPE_JASON.md` (plan). `docs/START_HERE.md`, `docs/DOC_MAP.md` and `docs/handoff/SCOPE_JAMIE.md` were added after the table was built; `docs/handoff/` now holds 21 files.
 
-## Backlogs: where each agent's open work is written (checked 1 Nov, after `docs/CLOSING_PLAN.md`)
-Done = merged in the daily, or written in the owner's backlog with owner, next step and why not done. Missing = the owner must create it (Jamie told the moderator).
+Added at handoff (1 Nov, all keep): `docs/CLOSING_PLAN.md` (moderator: what each agent finishes; "done" defined), `docs/OLD_BRANCH_REVIEW.md` (moderator: unmerged branches and verdicts), `docs/ECONOMY_FIRST_DAY.md` (Sal: cheap goods and sell lots), `docs/TERRAIN_WATER_BACKLOG.md` (Sonny), `docs/KATHLEEN_NEXT_TASKS.md` (Kathleen), `docs/handoff/HANDOFF_JASON.md` and `JASON_NEXT_TASKS.md` (Jason), `docs/handoff/HANDOFF_KATHREEN.md` (Kathreen), `docs/handoff/SAL_SPECS_FOR_STEVE.md` (Sal to Steve), `docs/handoff/PHASE2_RUNBOOK.md` (Dino: commands and the 14-step walk, run only after RESTART). `art/CRITIQUES/` rounds Dave judged are now in `art/CRITIQUES/_archive/` (Kathleen), 43 folders remain.
+
+## Backlogs: where each agent's open work is written (final pass, 1 Nov; plan: `docs/CLOSING_PLAN.md`)
+Done = merged in the daily, or written in the owner's backlog with owner, next step and why not done.
 | Agent | Backlog | State |
 |---|---|---|
-| Sonny | `docs/handoff/HANDOFF_SONNY.md` "Not finished" and "Next tasks"; `docs/DYNASTY_WATER_TASKS.md` | exists |
-| Kathleen | `docs/handoff/HANDOFF_KATHLEEN.md` "In flight" and "Next tasks"; `art/ART_TASKS.md` | exists |
-| Kathreen | `docs/handoff/SCOPE_KATHREEN.md` section 3 | **no HANDOFF_KATHREEN.md yet** |
-| Sal | `docs/handoff/HANDOFF_SAL.md` "Next tasks"; `docs/ITEMS_HANDOVER.md` "Needs code" | exists |
+| Sonny | `docs/TERRAIN_WATER_BACKLOG.md`; `docs/handoff/HANDOFF_SONNY.md`; `docs/DYNASTY_WATER_TASKS.md` | exists |
+| Kathleen | `docs/KATHLEEN_NEXT_TASKS.md`; `docs/handoff/HANDOFF_KATHLEEN.md`; `art/ART_TASKS.md` | exists |
+| Kathreen | `docs/handoff/HANDOFF_KATHREEN.md`; `docs/handoff/SCOPE_KATHREEN.md` | exists |
+| Sal | `docs/handoff/HANDOFF_SAL.md` "Next tasks"; `docs/ITEMS_HANDOVER.md` "Needs code"; `docs/handoff/SAL_SPECS_FOR_STEVE.md` (specs handed to Steve) | exists |
 | MikeW | `docs/FLORA_NEXT_TASKS.md`; `docs/handoff/HANDOFF_MIKEW.md` | exists |
 | Steve | `docs/handoff/HANDOFF_STEVE.md` "Exact next steps"; `docs/handoff/SCOPE_STEVE.md` | exists (no separate STEVE_NEXT_TASKS) |
-| Tyler | `docs/TYLER_NEXT_TASKS.md`; `docs/handoff/HANDOFF_TYLER.md` | exists (final version is on his branch until the daily gets it) |
-| Dino | `GUIDE_TASKS.md`; `docs/handoff/HANDOFF_DINO.md` | exists |
-| Jason | `docs/handoff/SCOPE_JASON.md` section 4; `docs/SOUND_MAP.md` | **no HANDOFF_JASON.md and no JASON_NEXT_TASKS.md** (the closing plan names the second) |
+| Tyler | `docs/TYLER_NEXT_TASKS.md`; `docs/handoff/HANDOFF_TYLER.md` | exists |
+| Dino | `GUIDE_TASKS.md`; `docs/handoff/HANDOFF_DINO.md`; `docs/handoff/PHASE2_RUNBOOK.md` | exists |
+| Jason | `docs/handoff/JASON_NEXT_TASKS.md`; `docs/handoff/HANDOFF_JASON.md`; `docs/SOUND_MAP.md` | exists |
 | Jamie | `docs/handoff/SCOPE_JAMIE.md` | exists |
-| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items" | stale, moderator is fixing |
+| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items"; `docs/handoff/PHASE2_RUNBOOK.md` for the Phase 2 order | list of stale lines sent by Jamie |
 
 ## Which pacing / playthrough document answers what (overlap review, 1 Nov)
 Read, not merged: each is owned (Sal or Dino) and two are generated, so the fix is one home per question, not a merge.
@@ -187,7 +189,7 @@ Real duplication left for the owners: `PLAYTHROUGH_PLANS.md` "Where the build or
 1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Was wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md` (fixed).
 2. Rosters: `HANDOFF_MODERATOR.md`, `SCOPE_MODERATOR.md`, `BIG_PICTURE.md`, `RULES.md` ("the team is retired, one session") described an old team (moderator documents, BIG_PICTURE, RULES fixed; `SCOPE_SONNY.md`/`HANDOFF_SONNY.md` still two-lane, asked Sonny).
 3. (Settled 1 Nov by Steve and Sal: Steve owns the rules code of all eight; see Verdict column.) Eight Sal code specs said "for Tyler" (`FARMING_SPEC`, `HINTS_AND_CAMP_EVENTS_SPEC`, `LEARN_SYSTEM_SPEC`, `LOG_SPECIES_SPEC`, `QUALITY_GRADES_SPEC`, `WATER_GATHER_SPEC`, `CODE_MISMATCHES`, `FLINT_ORE_SPEC`); neither `SCOPE_STEVE.md` nor `SCOPE_TYLER.md` names them, so their code had no named owner; Steve is adding them to SCOPE_STEVE.md Sources.
-4. Sound moved to Jason; `SOUND_AUDIT.md` recommends Kathleen/Sonny for sound fixes: Jason's now (asked nobody yet).
+4. (Settled) Sound moved to Jason; `SOUND_AUDIT.md` carries his owner banner.
 5. Standing-instruction task lists live in five files (`GUIDE_TASKS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine (Tyler's three were merged into one; the other two archived).
 
 ## Archiving rule for tools
