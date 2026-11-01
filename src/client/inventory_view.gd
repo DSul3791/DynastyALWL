@@ -129,7 +129,6 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
-var _shoulder_put: Button                     # chest window: puts the shoulder log in (ACT_CHEST_PUT slot -1)
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -594,12 +593,12 @@ func _hold_e_check() -> void:
 # What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
 func _fire_prompt(state: int) -> String:
 	if state == 8:
-		return "Press E to add firewood"
+		return "Press E to add wood"
 
 	if state == 9:
-		return "Press E to light"
+		return "Press E to light (hold E to add wood)"
 
-	return "Press E to add wood"
+	return "Press E to add wood (hold E to cook)"
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
@@ -1208,7 +1207,7 @@ func carried_kg() -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
-	return CarryRules.carried_kg(inventory, table, _carry_cfg) + (CarryRules.weight_of(shoulder_id, _carry_cfg) if shoulder_id != "" else 0.0)
+	return CarryRules.carried_kg(inventory, table, _carry_cfg)   # the large log is a pack item: its weight is already in
 
 
 # Q or D with nothing selected: lay the log on your shoulder down in front of you.
@@ -1731,13 +1730,6 @@ func _build_chest_panel() -> void:
 			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
 	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	chest_outer.add_child(transfer)
-	_shoulder_put = Button.new()
-	_shoulder_put.text = "Put the log from your shoulder in"
-	_shoulder_put.tooltip_text = "The large log on your shoulder goes into the container (take it out again the same way, one log at a time)"
-	_style(_shoulder_put, BODY_PX)
-	_shoulder_put.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO))
-	_shoulder_put.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	chest_outer.add_child(_shoulder_put)
 	_layer.add_child(_chest_panel)
 
 
@@ -1758,9 +1750,6 @@ func _on_chest_slot(chest_side: bool, slot: int) -> void:
 func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
-
-	if _shoulder_put != null:
-		_shoulder_put.visible = shoulder_id != ""
 
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
 
@@ -2155,7 +2144,7 @@ func _can_craft(number: int) -> bool:
 
 # The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
 func nearby_logs() -> int:
-	var total: int = 1 if shoulder_id != "" else 0
+	var total: int = 0   # the carried log is a pack item and counted with the pack
 	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
 	var members: PackedInt32Array = table.group_members(table.number_of("log"))
 
@@ -3014,7 +3003,8 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 		return "%s, no fuel" % _item_label(number)
 
 	var total: int = int(ceil(left))
-	return "%s %02d:%02d:%02d Burn time" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60]
+	var size: String = ", %s fire" % ["small", "medium", "large"][_fire_tier(state) - 1] if _lit_state(state) else ""
+	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60, size]
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:

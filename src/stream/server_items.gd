@@ -430,6 +430,14 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_dirty = true
 
+	if str(_characters[key].get("shoulder", "")) != "":   # before 1 Nov 2026 the large log was kept apart from the pack: it moves into the pack (kept aside while the pack is full)
+		var legacy: int = table.number_of(str(_characters[key]["shoulder"]))
+
+		if legacy <= 0 or _inventories[key].add(legacy, 1) == 0:
+			_characters[key].erase("shoulder")
+			_dirty = true
+			send_full.call(peer, _inventories[key].to_bytes())
+
 	if bool(_characters[key].get("new_player", false)):
 		_admin_mode_off[peer] = true   # a character that started over as a new player logs in with Admin mode off
 
@@ -679,32 +687,61 @@ func give(peer: int, number: int, count: int) -> int:
 	return count - left
 
 
-# --- The large log on the shoulder (Dave 2026-10-21): one at a time, not a bag item, its weight counts in the load ---
+# --- The large log on the shoulder (Dave 2026-10-21; 1 Nov 2026: it is a normal pack item, the shoulder is only how it is shown) ---
+# A large log (items.json "carry": "shoulder") sits in the pack like any item: one slot, its weight counted once in the load, the same fuel / chest / craft rules as
+# any log. Only one may be picked up at a time (the next one lies where it was), and the client draws the carry pose while the pack holds one.
 
 func is_shoulder_item(number: int) -> bool:
 	return number > 0 and str(table.entry(table.id_of(number)).get("carry", "")) == "shoulder"
 
 
-# The item id of the log on this player's shoulder, "" when there is none (saved in the character row).
+# The pack slot holding the large log, -1 when there is none.
+func _shoulder_slot(peer: int) -> int:
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return -1
+
+	for slot in range(inv.SLOTS):
+		if inv.numbers[slot] != 0 and is_shoulder_item(inv.numbers[slot]):
+			return slot
+
+	return -1
+
+
+# The item id of the large log in this player's pack (the one shown on the shoulder), "" when there is none.
 func shoulder_of(peer: int) -> String:
-	return str(_characters.get(_peer_key.get(peer, ""), {}).get("shoulder", ""))
+	var slot: int = _shoulder_slot(peer)
+	return table.id_of(inventory_of(peer).numbers[slot]) if slot >= 0 else ""
 
 
-func _shoulder_kg(peer: int) -> float:
-	var id: String = shoulder_of(peer)
-	return CarryRules.weight_of(id, _carry_cfg) if id != "" and not _carry_cfg.is_empty() else 0.0
+# Its weight is already in the pack's total, so the shoulder adds nothing on top.
+func _shoulder_kg(_peer: int) -> float:
+	return 0.0
 
 
 func sync_shoulder(peer: int) -> void:
 	if send_carry.is_valid() and _characters.has(_peer_key.get(peer, "")):
-		send_carry.call(peer, shoulder_of(peer))
+		var id: String = shoulder_of(peer)
+		_shoulder_sent[peer] = id
+		send_carry.call(peer, id)
 
 
-# Puts one large log on the shoulder; with a log already there the new one lies at the player's feet. Returns how many were taken.
+# The client is told again whenever the pack gains or loses the large log.
+func _sync_shoulder_if_changed(peer: int) -> void:
+	if _shoulder_sent.get(peer, null) != shoulder_of(peer):
+		sync_shoulder(peer)
+
+
+var _shoulder_sent: Dictionary = {}
+
+
+# Puts one large log in the pack (it shows on the shoulder); with a log already carried the new one lies at the player's feet. Returns how many were taken.
 func _give_shoulder(peer: int, number: int, count: int) -> int:
 	var key: String = str(_peer_key.get(peer, ""))
+	var inv = inventory_of(peer)
 
-	if not _characters.has(key):
+	if not _characters.has(key) or inv == null:
 		return 0
 
 	var here: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
@@ -714,31 +751,38 @@ func _give_shoulder(peer: int, number: int, count: int) -> int:
 		drop_in_world(number, count, here)
 		return 0
 
-	_characters[key]["shoulder"] = table.id_of(number)
-	sync_shoulder(peer)
+	var before: Array = _snapshot(inv)
+	var took: int = 1 if _fit(peer, inv, number, 1) > 0 and inv.add(number, 1) == 0 else 0
+	_send_changes(peer, inv, before)
 	_dirty = true
 
-	if count > 1:
-		drop_in_world(number, count - 1, here)
+	if took == 0:
+		_say(peer, "Too heavy to carry any more")
 
-	return 1
+	if count > took:
+		drop_in_world(number, count - took, here)
+
+	return took
 
 
-# D or the lay-down key with a log on the shoulder: it lies on the ground in front of the player.
+# D or the lay-down key with a log carried: it lies on the ground in front of the player.
 func lay_down_shoulder(peer: int, at: Vector3 = Vector3.ZERO) -> bool:
-	var id: String = shoulder_of(peer)
+	var slot: int = _shoulder_slot(peer)
 
-	if id == "" or not _peer_pos.has(peer):
+	if slot < 0 or not _peer_pos.has(peer):
 		return false
 
+	var inv = inventory_of(peer)
 	var here: Vector3 = _peer_pos[peer]
 	var spot: Vector3 = at if at != Vector3.ZERO and at.distance_to(here) <= DROP_REACH_M else here
+	var number: int = inv.numbers[slot]
 
-	if not drop_in_world(table.number_of(id), 1, spot):
+	if not drop_in_world(number, 1, spot):
 		return false
 
-	_characters[str(_peer_key[peer])]["shoulder"] = ""
-	sync_shoulder(peer)
+	var before: Array = _snapshot(inv)
+	inv.take_from_slot(slot, 1)
+	_send_changes(peer, inv, before)
 	_dirty = true
 	return true
 
@@ -1122,6 +1166,8 @@ func save() -> void:
 			var wood: Dictionary = _fire_wood(it["fire"])
 			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
 			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
+			var pc: Dictionary = it["fire"].get("pieces", {})
+			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
 
 		items.append(row)
 
@@ -2934,6 +2980,8 @@ func _send_changes(peer: int, inv, before: Array) -> void:
 	if not out.is_empty():
 		send_slots.call(peer, out)
 
+	_sync_shoulder_if_changed(peer)
+
 
 # Every item that is more numerous in the pack than before (all gains pass _send_changes): a pickup, harvest, craft output, reward.
 func _report_gains(peer: int, inv, before: Array) -> void:
@@ -3076,6 +3124,15 @@ func _load_world_items() -> void:
 
 			if row.size() > 10 and typeof(row[10]) == TYPE_ARRAY and (row[10] as Array).size() == 3:   # before fire tiers the one counter is split by the fire's size
 				entry["fire"]["wood"] = {"log": float(row[10][0]), "firewood": float(row[10][1]), "weak": float(row[10][2])}
+
+			if row.size() > 11 and typeof(row[11]) == TYPE_ARRAY and (row[11] as Array).size() == 3:
+				var pieces: Dictionary = {}
+
+				for k in range(3):
+					if int(row[11][k]) >= 0:
+						pieces[["log", "firewood", "weak"][k]] = int(row[11][k])
+
+				entry["fire"]["pieces"] = pieces
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -4255,10 +4312,13 @@ func _fire_wood(fire: Dictionary) -> Dictionary:
 	return fire["wood"]
 
 
-func _fire_class_pieces(cls: String, seconds: float) -> int:
+# How many pieces of a wood class the fire holds: the pieces laid on it (fire["pieces"], one each however long it burns, so a soft firewood counts like a hard one),
+# never more than the burning time left allows at the shortest piece of that class (piece_game_s).
+func _fire_class_pieces(cls: String, seconds: float, laid: int = -1) -> int:
 	var row: Dictionary = (_cooking.get("fire_tiers", {}) as Dictionary).get(cls, {})
-	var piece_s: float = float((_cooking.get("piece_game_s", {"log": 259200.0, "firewood": 28800.0, "weak": 2880.0}) as Dictionary).get(cls, 2880.0)) / GAME_RATE
-	return int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
+	var piece_s: float = float((_cooking.get("piece_game_s", {"log": 259200.0, "firewood": 14400.0, "weak": 1440.0}) as Dictionary).get(cls, 1440.0)) / GAME_RATE
+	var by_time: int = int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
+	return by_time if laid < 0 else mini(by_time, laid)
 
 
 # The lit state the wood now in the fire supports: the biggest class with at least min_pieces, else the survival fire.
@@ -4267,10 +4327,12 @@ func _fire_best_state(fire: Dictionary) -> int:
 	var need: int = int(_cooking.get("min_pieces", 3))
 
 	for cls in ["log", "firewood"]:
-		if cls == "log" and bool(fire.get("pot", false)):
-			continue   # a campfire pot hangs over this fire: it never grows past the firewood stage
+		var laid: int = int((fire.get("pieces", {}) as Dictionary).get(cls, -1))
 
-		if _fire_class_pieces(cls, float(wood[cls])) >= need:
+		if _fire_class_pieces(cls, float(wood[cls]), laid) >= need:
+			if cls == "log" and bool(fire.get("pot", false)):
+				return int(_cooking["fire_tiers"]["firewood"]["state"])   # a campfire pot hangs over this fire: it never grows past the firewood stage
+
 			return int(_cooking["fire_tiers"][cls]["state"])
 
 	return FIRE_STATE_SURVIVAL
@@ -4353,6 +4415,10 @@ func _fire_sum(fire: Dictionary) -> void:
 	fire["burn_left"] = float(wood["log"]) + float(wood["firewood"]) + float(wood["weak"])
 
 
+func _fire_wood_class(wood_id: String) -> String:
+	return str((_cooking.get("fuel_class", {}) as Dictionary).get(wood_id, "weak"))
+
+
 # One piece of wood onto the fire: its seconds go to its class (never past the stored-fuel cap) and a lit fire may step up a tier.
 func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	var wood: Dictionary = _fire_wood(fire)
@@ -4361,6 +4427,9 @@ func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	_fire_sum(fire)
 	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - float(fire["burn_left"])
 	wood[cls] = float(wood[cls]) + clampf(seconds, 0.0, maxf(room, 0.0))
+	var pieces: Dictionary = fire.get("pieces", {})
+	pieces[cls] = int(pieces.get(cls, 0)) + 1
+	fire["pieces"] = pieces
 	_fire_sum(fire)
 	fire["fed"] = int(fire.get("fed", 0)) + 1
 
@@ -4384,6 +4453,9 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 		wood[cls] = float(wood[cls]) - used
 		left -= used
 
+		if float(wood[cls]) <= 0.0 and fire.has("pieces"):
+			(fire["pieces"] as Dictionary).erase(cls)
+
 	_fire_sum(fire)
 	var state: int = int(fire["state"])
 
@@ -4399,10 +4471,22 @@ func _fuel(peer: int, inv, id: int) -> void:
 	if fire.is_empty():
 		return
 
+	_fire_sum(fire)
+
+	if float(fire["burn_left"]) >= float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0:
+		_say(peer, "The fire is stacked as full as it will hold.")
+		return
+
+	var refused_log: bool = false
+
 	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
 		if inv.has(number, 1):
+			if bool(fire.get("pot", false)) and _fire_wood_class(wood) == "log":
+				refused_log = true   # a pot hangs over this fire: no logs, the fire would be too big for it
+				continue
+
 			inv.remove(number, 1)
 			_fire_add(fire, wood)
 
@@ -4412,6 +4496,11 @@ func _fuel(peer: int, inv, id: int) -> void:
 				_items[id]["left"] = FIRE_LAID_S
 
 			return
+
+	if refused_log:
+		_say(peer, "Take the pot down before you put logs on. The fire would be too big for it.")
+	else:
+		_say(peer, "You have no wood, sticks or logs to put on the fire.")
 
 
 # Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
@@ -4735,6 +4824,13 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		if is_nan(spot.y):
 			return
+
+		for fid in _items:
+			var fit: Dictionary = _items[fid]
+
+			if fit.has("fire") and (fit["pos"] as Vector3).distance_to(spot) <= POT_ON_FIRE_M and float(_fire_wood(fit["fire"])["log"]) > 0.0:
+				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
+				return
 
 	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
 		return
@@ -5097,7 +5193,7 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 		for wood in _cooking.get("fuel_order", ["stick", "log"]):
 			var number: int = table.number_of(wood)
 
-			if box.has(number, 1):
+			if box.has(number, 1) and not (bool(fire.get("pot", false)) and _fire_wood_class(wood) == "log"):
 				box.remove(number, 1)
 				_fire_add(fire, wood)
 
@@ -5188,6 +5284,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		rec_struct["coins"] = 0
 		_dirty = true
 
+	if kind == Net.ACT_CHEST_PUT and a == -1:   # slot -1 was the log on the shoulder: it is now the pack slot that holds it
+		a = _shoulder_slot(peer)
+
 	var fire_refuses: bool = kind == Net.ACT_CHEST_PUT and _items.get(id, {}).has("fire") and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and not _fire_takes(table.id_of(inv.numbers[a]))
 
 	if fire_refuses:
@@ -5195,20 +5294,6 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 		_reject(peer, 3)
 	elif kind == Net.ACT_CHEST_PUT and bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("take_only", false)):
 		_reject(peer, 3)
-	elif kind == Net.ACT_CHEST_PUT and a == -1 and shoulder_of(peer) != "":   # slot -1 is the log on the shoulder (as in ACT_DROP)
-		var log_number: int = table.number_of(shoulder_of(peer))
-		var log_max_kg: float = float(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
-
-		if log_max_kg > 0.0 and not _carry_cfg.is_empty() and CarryRules.carried_kg(chest, table, _carry_cfg) + CarryRules.weight_of(shoulder_of(peer), _carry_cfg) > log_max_kg:
-			_say(peer, "It is too heavy for the chest")
-			_reject(peer, 2)
-		elif chest.add(log_number, 1, 0) == 0:
-			_characters[str(_peer_key[peer])]["shoulder"] = ""
-			sync_shoulder(peer)
-			_dirty = true
-		else:
-			_say(peer, "The chest is full.")
-			_reject(peer, 2)
 	elif kind == Net.ACT_CHEST_PUT and a >= 0 and a < inv.SLOTS and inv.numbers[a] != 0 and count > 0:
 		var number: int = inv.numbers[a]
 		var held_wear: int = inv.wear[a]
@@ -7030,10 +7115,7 @@ func kill(peer: int, cause: String) -> bool:
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
 	send_full.call(peer, inv.to_bytes())
 
-	if shoulder_of(peer) != "" and _characters.has(key):   # the log on the shoulder falls where they fell
-		drop_in_world(table.number_of(shoulder_of(peer)), 1, spot)
-		_characters[key]["shoulder"] = ""
-		sync_shoulder(peer)
+	sync_shoulder(peer)   # the log in the pack went with the remains
 
 	# Dave 2026-10-21: the purse stays on the body, so the whole purse lies with the remains and is found like the other things.
 	if _characters.has(key):
@@ -9040,7 +9122,7 @@ func _ground_logs_near(peer: int) -> Array:
 
 # How many logs the shoulder and the ground near the player offer.
 func logs_near_count(peer: int) -> int:
-	var total: int = 1 if shoulder_of(peer) != "" else 0
+	var total: int = 0   # the carried log is a pack item and counted with the pack
 
 	for row in _ground_logs_near(peer):
 		total += int(row[1])
@@ -9060,14 +9142,6 @@ func _pull_nearby_logs(peer: int, inv, want: int) -> int:
 
 	var moved: int = 0
 	var key: String = str(_peer_key.get(peer, ""))
-
-	if shoulder_of(peer) != "" and moved < want:
-		var number: int = table.number_of(shoulder_of(peer))
-
-		if inv.add(number, 1) == 0:
-			_characters[key]["shoulder"] = ""
-			sync_shoulder(peer)
-			moved += 1
 
 	for row in _ground_logs_near(peer):
 		if moved >= want:
