@@ -216,3 +216,10 @@ Note: Groups: sticks, leaves, bark, plant fibre, feathers, nettles, nails, woode
 Note: Proposed lots: sticks, leaves, bark, fibre, nettles, feathers 5; soil, clay, sand, gravel 10; seeds 5; nails and wooden pins 10; soft firewood 5.
 Note: Recommendation: Yes, with those lots, because these are free-to-gather bulk goods and a full copper each lets a player sell stacks of 40 for easy coin; heavier digging goods get bigger lots because a pile of dirt is worth less than a stick.
 [check]
+
+## first-day-lots | Sell lots for cheap goods: is about 195 copper for a 4 hour day of gathering right?
+Note: Target (your rule): one day of gathering buys 3 meals (24), a waterskin (20), clothing (33) and an iron spade (117), about 195 copper, no more.
+Note: Lots: sticks and leaves 15, fibre 12, nettles 10, bark 8, soil/clay/sand/gravel 5, seeds 4, soft firewood 5, pins 5, nails 10, feathers 2, stone 5 (stone lands at 288 in 4 h; 6 would give 240).
+Note: I assumed 4 hours of play and made-up pick rates (12 a minute for sticks, 4 for digging); nobody has timed them. Table: docs/ECONOMY_FIRST_DAY.md. At 8 hours everything doubles. Hob's purse (300 cap, 100 an hour) also caps one trader.
+Note: Recommendation: Yes, because every item then pays about 0.8 copper a minute, so what a player gathers does not change the day's income; if you think 4 hours is too short, tell me the hours and I rescale the lots.
+[check]
