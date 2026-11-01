@@ -26,12 +26,6 @@ Note: Demo scene in Godot (not the running game) using the game's own water shad
 - Yes
 - No
 
-## pic-orchard-real | In the real game: do the orchard trees look varied (yellower, bluer, different shapes) and is the red apple on the left visible enough?
-Image: questions/img/orchard_real_final.png
-Note: Real game rig shot, eye height, about 15 m into the orchard. Crown variety and round apples are in. Kathleen rates it 3 of 5: variety shows, fruit is still sparse from the ground.
-- Yes
-- No
-
 ## pic-fh-campfire-lit | In the real game: can you see a lit campfire (flames or glow) after you place the kit and light it with plant fibre?
 Image: questions/img/fh_campfire_lit.jpg
 Note: Real game rig shot (guide session), 60 s after placing and lighting. I see only stones half hidden in grass and a green placement-style glow; no flames. Guide rates it 1.5 of 5: either the fire is not drawn when lit, or the grass hides it. Not confirmed which.
