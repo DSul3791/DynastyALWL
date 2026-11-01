@@ -147,3 +147,15 @@ Dave: "review the unfinished work and assign it to whomever it should go to. The
 | `claude/steve-sqlite-warm` | 1 | Server block store: open the sqlite files once on the main thread before workers |
 | `claude/steve-thread-safety` | 2 | Thread safety: guarded sim_levels snapshot, take_pair, locked cache swap, two he |
 | `claude/steve-warning-699` | 1 | Move the confusable_local_declaration ignore back onto the admin_ok line. CHANGE |
+
+# Verdicts received (owner answers; delete after the answer unless marked keep)
+
+## MikeW (6 of 6, 1 Nov)
+| branch | verdict | note |
+|---|---|---|
+| `claude/flora-wet-test` | PORT (keep until ported) | `test_flora_wet.gd` not in daily; MikeW cherry-picks onto a fresh branch, runs after RESTART |
+| `claude/kathleen-patches-now` | DROP | superseded by `patch` rules (35 rows); porting would double-place |
+| `claude/project-thread-yttwff` | DROP | 4-line note; plan archived in daily |
+| `claude/sal-no-rose-berries` | KEEP until Sal answers | commit 1 already done; commit 2 (rose gives petals instead of hips) not in daily: Sal's call |
+| `claude/steve-cave-air` | DROP | plan archived as `Steve_cave_air.md` |
+| `claude/steve-flora-mutex` | ALREADY DONE | `_plateau_mutex` in daily `flora_placer.gd` |
