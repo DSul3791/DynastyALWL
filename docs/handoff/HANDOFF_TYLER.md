@@ -26,7 +26,7 @@ Uncommitted edits at the time of writing, all small and complete: `ACT_ADMIN_ENE
 - Do not commit `crash_reports/` (the rig writes there; one telemetry file is tracked and shows as modified: `git checkout crash_reports/telemetry_client.log`).
 
 ## Tests and how
-- Godot: standard `godot` shim (`tools/godot`) for headless scripts; WORLD tests and the client scenes need the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (pass it to `items_check.py --godot`).
+- Godot: the `godot` shim (`tools/godot`, defaults to the voxel build; set `GODOT_EXE` to the standard exe `Godot_v4.7.2-stable_win64_console.exe` for data tests) for headless scripts; WORLD tests and the client scenes need the voxel build `C:/GodotInstaller/godot.windows.editor.x86_64.exe` (pass it to `items_check.py --godot`).
 - Heavy jobs: at most 3 at once, through `tools/godot_slot.sh`. Never start Godot while Dave says the PC is his.
 - Per change: `python3 tools/tests_for_diff.py --paths <files> > /tmp/plan.json && bash tools/run_tests.sh --plan /tmp/plan.json`. Client scenes: `python3 tools/items_check.py --godot "C:/GodotInstaller/godot.windows.editor.x86_64.exe" --only chest,gather,eat,leanto,sleep`.
 - Rig (real windowed client): `bash art/playthrough/rig.sh ...` (see `art/playthrough/RIG_PLACE.md` for `SERVER_ARGS="--dev-place=name@x,z,yaw,lit"`; kit placement via `--give campfire_kit:1 --drop --client-arg --shot-place --client-arg --shot-light`).

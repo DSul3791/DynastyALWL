@@ -34,7 +34,7 @@ Item ids are `firewood` (turned into the tree's own species wood by the code) an
 
 ## How to test
 Run from the repo root (my worktree is `.claude/worktrees/sal-items-c65419`). Cap of 3 heavy Godot jobs, always through `tools/godot_slot.sh`.
-- The eight checks (standard exe through `tools/godot.cmd`):
+- The eight checks (through `tools/godot.cmd`, which runs the VOXEL build; data checks also pass on the standard exe):
   `python tools/items_check.py --godot "$PWD/tools/godot.cmd" --only validate_items,dishes,economy,server_items,first_hour,inventory,stations,save_compat`
 - Single test: `bash tools/godot_slot.sh bash tools/run_one_test.sh test_goals 600 <out dir>` with `GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe`.
 - Craft probe and status: `art/playthrough/run_status.sh` (about 6 minutes) uses the voxel build `godot.windows.editor.x86_64.exe`.
