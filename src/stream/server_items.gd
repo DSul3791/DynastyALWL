@@ -5666,20 +5666,84 @@ func _spawn_bed_id(peer: int) -> int:
 	return 0
 
 
+var _bed_deaths: Dictionary = {}    # player key -> msecs of the recent deaths that came back at their bed (bed.json respawn)
+
+
+# A bed that keeps killing its sleeper (the danger is still there): after max_in_window deaths inside window_s the next one comes back elsewhere. Counts the death when it says yes.
+func _bed_death_allowed(key: String) -> bool:
+	var cfg: Dictionary = _bed_cfg.get("respawn", {})
+	var now: int = Time.get_ticks_msec()
+	var window_ms: int = int(float(cfg.get("window_s", 600.0)) * 1000.0)
+	var recent: Array = (_bed_deaths.get(key, []) as Array).filter(func(t): return now - int(t) < window_ms)
+	_bed_deaths[key] = recent
+
+	if recent.size() >= int(cfg.get("max_in_window", 2)):
+		return false
+
+	recent.append(now)
+	return true
+
+
+# A free place beside the bed: a ring from landing_m out to search_m, nearest first, on ground within 2 m of the bed's height and not inside a structure; none free = the bed's own spot
+# plus 0.3 m (the old behaviour), never the void.
+func _bed_landing(bed: Vector3) -> Vector3:
+	var cfg: Dictionary = _bed_cfg.get("respawn", {})
+	var r: float = float(cfg.get("landing_m", 1.2))
+	var max_r: float = float(cfg.get("search_m", 3.0))
+
+	while r <= max_r + 0.001:
+		for k in 8:
+			var a: float = TAU * float(k) / 8.0
+			var spot: Vector3 = bed + Vector3(cos(a) * r, 0.0, sin(a) * r)
+			var ground: float = float(ground_height.call(spot.x, spot.z)) if ground_height.is_valid() else bed.y
+
+			if not is_nan(ground) and absf(ground - bed.y) < 2.0 and not _blocked_spot(spot, bed):
+				return Vector3(spot.x, ground + 0.1, spot.z)
+
+		r += 0.5
+
+	return bed + Vector3(0.0, 0.3, 0.0)
+
+
+func _blocked_spot(spot: Vector3, bed: Vector3) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or absf(it["pos"].y - spot.y) > 3.0:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {})
+
+		if bool(def.get("walkover", false)):
+			continue
+
+		var reach: float = maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5
+
+		if Vector2(it["pos"].x - bed.x, it["pos"].z - bed.z).length() < reach:
+			continue   # the shelter the bed stands in (a lean-to): landing under its roof is the point
+
+		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() < reach + 0.35:
+			return true
+
+	return false
+
+
 # Where this character comes back: at their spawn bed if they set one and it still stands (a bed that is gone is forgotten and the spawn pad is used), else just in front of
 # their last shelter if it still stands, else the world spawn.
-func respawn_for(peer: int) -> Vector3:
+func respawn_for(peer: int, dying: bool = false) -> Vector3:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 
 	if (row.get("spawn_bed", []) as Array).size() == 3:
 		var bed: int = _spawn_bed_id(peer)
 
-		if bed != 0:
-			return _items[bed]["pos"] + Vector3(0.0, 0.3, 0.0)
+		if bed == 0:
+			row.erase("spawn_bed")
+			_dirty = true
+			return respawn_point
 
-		row.erase("spawn_bed")
-		_dirty = true
-		return respawn_point
+		if not dying or _bed_death_allowed(str(_peer_key.get(peer, ""))):
+			return _bed_landing(_items[bed]["pos"])
+		# else: the third death in the window falls through to the shelter rule or the world spawn below (the bed stays set)
 
 	var saved: Array = _characters.get(_peer_key.get(peer, ""), {}).get("shelter", [])
 
@@ -6993,7 +7057,7 @@ func kill(peer: int, cause: String) -> bool:
 		if send_final_death.is_valid():
 			send_final_death.call(peer, cause)
 
-	var back: Vector3 = respawn_for(peer)
+	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
 	_motion.erase(peer)
 	_sync_breath(peer, -1)
