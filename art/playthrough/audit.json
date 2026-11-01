@@ -2,7 +2,7 @@
  "counts": {
   "items": 621,
   "recipes": 281,
-  "recipes_known_or_open": 249,
+  "recipes_known_or_open": 263,
   "structures": 63,
   "blueprints": 6
  },
@@ -252,7 +252,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -1829,7 +1829,7 @@
    "wave_now": null,
    "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -1974,7 +1974,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -1989,7 +1989,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2004,7 +2004,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2019,7 +2019,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2034,7 +2034,7 @@
    "wave_now": null,
    "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2049,7 +2049,7 @@
    "wave_now": null,
    "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2064,7 +2064,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
+    "locked (its chain does not exist yet)",
     "station forge level 3 not obtainable"
    ],
    "future": true
@@ -2080,7 +2080,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
+    "locked (its chain does not exist yet)",
     "station forge level 3 not obtainable"
    ],
    "future": true
@@ -2096,7 +2096,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
+    "locked (its chain does not exist yet)",
     "station forge level 3 not obtainable"
    ],
    "future": true
@@ -2138,7 +2138,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2166,7 +2166,7 @@
    "wave_now": null,
    "wave_potential": 3,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2181,7 +2181,7 @@
    "wave_now": null,
    "wave_potential": 4,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -2196,7 +2196,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
+    "locked (its chain does not exist yet)",
     "station forge level 3 not obtainable"
    ],
    "future": true
@@ -2212,7 +2212,7 @@
    "wave_now": null,
    "wave_potential": null,
    "blocked_by": [
-    "not known (no learn system)",
+    "locked (its chain does not exist yet)",
     "station forge level 3 not obtainable"
    ],
    "future": true
@@ -3361,7 +3361,7 @@
    "wave_now": null,
    "wave_potential": 2,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -3554,12 +3554,10 @@
    "gives": "log_seat_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3569,12 +3567,10 @@
    "gives": "bench_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3584,12 +3580,10 @@
    "gives": "chair_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3599,12 +3593,10 @@
    "gives": "table_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3614,12 +3606,10 @@
    "gives": "hide_rug_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3633,7 +3623,7 @@
    "wave_now": null,
    "wave_potential": 1,
    "blocked_by": [
-    "not known (no learn system)"
+    "locked (its chain does not exist yet)"
    ],
    "future": true
   },
@@ -3644,12 +3634,10 @@
    "gives": "straw_bed_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3659,12 +3647,10 @@
    "gives": "feather_bed_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3674,12 +3660,10 @@
    "gives": "canopy_bed_kit",
    "station": "workbench",
    "station_level": 2,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 3,
    "wave_potential": 3,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3689,12 +3673,10 @@
    "gives": "wall_torch_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3704,12 +3686,10 @@
    "gives": "chandelier_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3719,12 +3699,10 @@
    "gives": "fireplace_kit",
    "station": "workbench",
    "station_level": 2,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 3,
    "wave_potential": 3,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3734,12 +3712,10 @@
    "gives": "flower_pot_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3749,12 +3725,10 @@
    "gives": "antler_mount_kit",
    "station": "workbench",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 2,
    "wave_potential": 2,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -3764,12 +3738,10 @@
    "gives": "stool_kit",
    "station": "",
    "station_level": 1,
-   "known": false,
-   "wave_now": null,
+   "known": true,
+   "wave_now": 1,
    "wave_potential": 1,
-   "blocked_by": [
-    "not known (no learn system)"
-   ],
+   "blocked_by": [],
    "future": false
   },
   {
@@ -8321,7 +8293,7 @@
    "sources": [
     "recipe:log_seat_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8332,7 +8304,7 @@
    "sources": [
     "recipe:bench_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8343,7 +8315,7 @@
    "sources": [
     "recipe:chair_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8354,7 +8326,7 @@
    "sources": [
     "recipe:table_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8365,7 +8337,7 @@
    "sources": [
     "recipe:hide_rug_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8387,7 +8359,7 @@
    "sources": [
     "recipe:straw_bed_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8398,7 +8370,7 @@
    "sources": [
     "recipe:feather_bed_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8409,7 +8381,7 @@
    "sources": [
     "recipe:canopy_bed_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8420,7 +8392,7 @@
    "sources": [
     "recipe:wall_torch_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8431,7 +8403,7 @@
    "sources": [
     "recipe:chandelier_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8442,7 +8414,7 @@
    "sources": [
     "recipe:fireplace_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8453,7 +8425,7 @@
    "sources": [
     "recipe:flower_pot_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8464,7 +8436,7 @@
    "sources": [
     "recipe:antler_mount_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -8475,7 +8447,7 @@
    "sources": [
     "recipe:stool_kit"
    ],
-   "obtainable": "potential",
+   "obtainable": "now",
    "look": "override look",
    "future": false
   },
@@ -11313,12 +11285,9 @@
     0.5
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "kit recipe log_seat_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "stool",
@@ -11332,12 +11301,9 @@
     0.45
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "kit recipe stool_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "bench",
@@ -11351,12 +11317,9 @@
     0.4
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe bench_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "chair",
@@ -11370,12 +11333,9 @@
     0.6
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe chair_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "table",
@@ -11389,12 +11349,9 @@
     0.7
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe table_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "hide_rug",
@@ -11408,12 +11365,9 @@
     1.1
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "kit recipe hide_rug_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "wool_rug",
@@ -11446,12 +11400,9 @@
     1.0
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe straw_bed_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "feather_bed",
@@ -11465,12 +11416,9 @@
     1.0
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe feather_bed_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "canopy_bed",
@@ -11484,12 +11432,9 @@
     1.4
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 3,
    "built_wave_potential": 3,
-   "problems": [
-    "kit recipe canopy_bed_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "wall_torch",
@@ -11503,12 +11448,9 @@
     0.2
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe wall_torch_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "chandelier",
@@ -11522,12 +11464,9 @@
     0.9
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe chandelier_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "fireplace",
@@ -11541,12 +11480,9 @@
     1.0
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 3,
    "built_wave_potential": 3,
-   "problems": [
-    "kit recipe fireplace_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "flower_pot",
@@ -11560,12 +11496,9 @@
     0.3
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 1,
    "built_wave_potential": 1,
-   "problems": [
-    "kit recipe flower_pot_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   },
   {
    "id": "antler_mount",
@@ -11579,12 +11512,9 @@
     0.1
    ],
    "cap": 12,
-   "built_wave_now": null,
+   "built_wave_now": 2,
    "built_wave_potential": 2,
-   "problems": [
-    "kit recipe antler_mount_kit not known",
-    "not obtainable today (known/open recipes only)"
-   ]
+   "problems": []
   }
  ],
  "tools_now": [

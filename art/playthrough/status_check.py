@@ -53,8 +53,9 @@ def blocked_count():
     return sum(1 for r in recipes.values() if r["blocked_by"] and not r["future"] and r["gives"] not in made_now)
 
 
-learn = sum(1 for r in recipes.values() if r["known"])
-row("F-01/F-24", "recipes can be learned", learn >= len(recipes) - 5, "%d of %d recipes known or open (blockers: %s)" % (learn, len(recipes), ", ".join(r for r, v in recipes.items() if not v["known"])[:120]), "Sal (data), Tyler (code half)")
+# Learn system (31 Oct): known false and not locked = learned from the ingredients; a locked recipe is by design not learnable, and its product is flagged future
+learn = sum(1 for r in recipes.values() if r["known"] or r["future"])
+row("F-01/F-24", "recipes can be learned", learn >= len(recipes) - 5, "%d of %d recipes learnable or locked with a future product (blockers: %s)" % (learn, len(recipes), ", ".join(r for r, v in recipes.items() if not v["known"] and not v["future"])[:120] or "none"), "Sal (data), Tyler (code half)")
 row("F-02", "flint can be picked up", obtainable("flint") in ("now", "potential") and "ORPHAN" != obtainable("flint"), "flint: %s" % obtainable("flint"), "Tyler")
 row("F-03", "tinder alternatives exist", all(obtainable(i) == "now" for i in ("birch_bark", "tinder", "tinder_fungus")), "birch_bark %s, tinder %s, tinder_fungus %s" % (obtainable("birch_bark"), obtainable("tinder"), obtainable("tinder_fungus")), "Sal")
 row("F-04", "CONTROLS.md campfire cost matches recipe", "10 stones and 20 sticks" not in controls, "CONTROLS.md still says 10 stones and 20 sticks" if "10 stones and 20 sticks" in controls else "text no longer present", "Tyler")

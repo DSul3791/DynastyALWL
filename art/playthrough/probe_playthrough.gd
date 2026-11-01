@@ -18,7 +18,7 @@ func fresh(name: String) -> int:
 	next_peer += 1
 	items.peer_connected_hello(p, "probe%08d" % p)
 	items.report_position(p, Vector3(0.0, 10.0, 0.0))
-	items.vitals_of(p)["weight"] = 400.0
+	items.vitals_of(p)["weight"] = 900.0   # carry is 0.7 x body kg (weights.json): the stone wall kit alone is 12 x 25 kg of cut stone
 	return p
 
 
@@ -66,6 +66,10 @@ func _init() -> void:
 	items.give(builder, n("workbench_kit"), 1)
 	items.action(builder, Net.ACT_PLACE, items.inventory_of(builder).numbers.find(n("workbench_kit")), 0, 0, Vector3(1.0, 10.0, 0.0))
 	print("probe: workbench placed, station_near workbench = ", items.station_near(builder, "workbench"))
+	# A tool rack beside the bench raises it to level 2 (structures.json addon_of), for the recipes that need a level 2 bench.
+	items.give(builder, n("tool_rack_kit"), 1)
+	items.action(builder, Net.ACT_PLACE, items.inventory_of(builder).numbers.find(n("tool_rack_kit")), 0, 0, Vector3(-1.5, 10.0, 0.0))
+	print("probe: tool rack placed, station_near workbench level 2 = ", items.station_near(builder, "workbench", 2))
 	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"].keys()
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"]
 
@@ -75,7 +79,7 @@ func _init() -> void:
 		if bool(r.get("retired", false)):
 			continue
 
-		var known: bool = bool(r.get("known", false)) or open_ids.has(id)
+		var known: bool = bool(r.get("known", false)) or open_ids.has(id) or not bool(r.get("locked", false))   # learn system: an unlocked recipe is learned once the pack holds its ingredients
 		var st: String = str(r.get("station", ""))
 
 		if st != "" and st != "workbench":
