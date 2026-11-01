@@ -1797,6 +1797,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_snap_loose(id)
 
 			if _world[id]["state"] == state:
+				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
+					_world[id]["burn"] = float(row[5]["burn"])
+					_world[id]["burn_at"] = Time.get_ticks_msec()
+
 				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
 
 				if not shorter:
@@ -1859,6 +1863,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+
+		if state != 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):   # a fire: the burn time left (the label counts it down while it burns)
+			_world[id]["burn"] = float(row[5]["burn"])
+			_world[id]["burn_at"] = Time.get_ticks_msec()
+
 		_refresh_pile(id)
 		_snap_loose(id)
 
@@ -2985,9 +2994,27 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 		if d < best and int(_world[id]["number"]) > 0:
 			best = d
 			var number: int = int(_world[id]["number"])
-			label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _item_label(number)
+			label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _fire_label(_world[id], number)
 
 	return label
+
+
+# "Campfire 00:04:00 Burn time": the fuel left in the fire (a lit one counts down, a laid one shows what its wood would burn).
+func _fire_label(entry: Dictionary, number: int) -> String:
+	if not entry.has("burn"):
+		return _item_label(number)
+
+	var state: int = int(entry["state"])
+	var left: float = float(entry["burn"])
+
+	if _lit_state(state):
+		left -= float(Time.get_ticks_msec() - int(entry.get("burn_at", Time.get_ticks_msec()))) / 1000.0
+
+	if state == 8 or left <= 0.0:
+		return "%s, no fuel" % _item_label(number)
+
+	var total: int = int(ceil(left))
+	return "%s %02d:%02d:%02d Burn time" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60]
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:

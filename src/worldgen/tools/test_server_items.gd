@@ -579,6 +579,7 @@ func _init() -> void:
 
 	# Fire tiers (Dave 24 Oct): the biggest wood burns first, 3 pieces of a class set the tier and hold it until that wood is gone.
 	var rate: float = ItemsScript.GAME_RATE
+	var log_s: float = float(f._cooking["fuel"]["log"]) / rate
 	var tf: Dictionary = {"state": 9, "burn_left": 0.0}
 
 	for n in range(3):
@@ -587,9 +588,9 @@ func _init() -> void:
 	f._fire_add(tf, "stick")
 	tf["state"] = f._fire_best_state(tf)
 	check(tf["state"] == ItemsScript.FIRE_STATE_BONFIRE, "three logs make a bonfire")
-	f._fire_burn(tf, 7200.0 / rate + 1.0)
+	f._fire_burn(tf, log_s + 1.0)
 	check(tf["state"] == ItemsScript.FIRE_STATE_BONFIRE, "a bonfire keeps its size with two logs left")
-	f._fire_burn(tf, 2.0 * 7200.0 / rate)
+	f._fire_burn(tf, 2.0 * log_s)
 	check(tf["state"] == ItemsScript.FIRE_STATE_SURVIVAL and float(tf["burn_left"]) > 0.0, "with the logs gone it drops to the survival fire on its sticks")
 	var tg: Dictionary = {"state": 9, "burn_left": 0.0}
 	f._fire_add(tg, "log")
@@ -600,7 +601,7 @@ func _init() -> void:
 
 	check(f._fire_best_state(tg) == 1, "two logs and three firewood make a campfire")
 	f._fire_add(tg, "firewood_soft")
-	f._fire_burn(tg, 7200.0 / rate * 2.0)
+	f._fire_burn(tg, log_s * 2.0)
 	check(float(tg["wood"]["log"]) <= 0.001 and float(tg["wood"]["firewood"]) > 0.0, "logs burn before firewood")
 	var tfw: Dictionary = {"state": 9, "burn_left": 0.0}
 	f._fire_add(tfw, "firewood")

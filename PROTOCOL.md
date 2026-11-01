@@ -73,6 +73,9 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 
 ## World-item row states (world_items)
 
+A fire row (state 1, 8, 9, 40, 41) carries extra {"burn": seconds of fuel left}, sent again whenever wood is laid on it or its state changes (no version bump: older clients ignore the key, a newer client on an older server shows the plain name). The client counts a lit fire down itself.
+
+
 0 item, 1 lit fire, 2 out fire (retired in 19, old saves map to 8 or 9), 3 felled trunk, 4 stump, 5 lean-to, 6 chest, 7 chopping block, 8 empty laid fire (ashes), 9 loaded unlit fire. 10 boulder (27), 13 camp bench (41); see the notes by version for any later state.
 
 ## Save formats

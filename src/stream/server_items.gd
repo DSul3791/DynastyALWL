@@ -89,7 +89,7 @@ const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
 const SKILLS_PATH := "res://data/items/skills.json"
-const FIRE_BURN_S := 100.0               # real seconds a fresh campfire burns (20 sticks, cooking.json start_burn_game_s)
+const FIRE_BURN_S := 480.0               # real seconds a fresh campfire burns (4 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
 const POT_ATTACH_M := 2.0                # a campfire pot snaps onto a small fire this close to where it is put
 const POT_ON_FIRE_M := 0.3               # a pot and a fire this close are one: the pot hangs over that fire (nothing is stored; position is the link)
@@ -2897,11 +2897,14 @@ func _sync_world_items() -> void:
 				if it.has("struct") and bool(it["struct"].get("lit", false)):
 					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
 
+				if it.has("fire"):
+					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
+
 				if it.has("tree"):
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else {}))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else {})))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -4257,7 +4260,7 @@ func _fire_wood(fire: Dictionary) -> Dictionary:
 
 func _fire_class_pieces(cls: String, seconds: float) -> int:
 	var row: Dictionary = (_cooking.get("fire_tiers", {}) as Dictionary).get(cls, {})
-	var piece_s: float = float({"log": 7200.0, "firewood": 3600.0, "weak": 900.0}.get(cls, 900.0)) / GAME_RATE
+	var piece_s: float = float((_cooking.get("piece_game_s", {"log": 259200.0, "firewood": 28800.0, "weak": 2880.0}) as Dictionary).get(cls, 2880.0)) / GAME_RATE
 	return int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
 
 
@@ -4362,6 +4365,7 @@ func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - float(fire["burn_left"])
 	wood[cls] = float(wood[cls]) + clampf(seconds, 0.0, maxf(room, 0.0))
 	_fire_sum(fire)
+	fire["fed"] = int(fire.get("fed", 0)) + 1
 
 	if fire_is_lit(int(fire["state"])):
 		var best: int = _fire_best_state(fire)
@@ -6698,6 +6702,15 @@ func _lit_fires() -> Array:
 		found.append(row[0])
 
 	return found
+
+
+# How far wolves keep from the lit fire at this spot: its tier's protect_m (cooking.json fire_tiers; 10 m when unknown).
+func fire_protect_m(at: Vector3) -> float:
+	for row in _lit_rows():
+		if (row[0] as Vector3).is_equal_approx(at):
+			return float(((_cooking.get("fire_tiers", {}) as Dictionary).get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("protect_m", 10.0))
+
+	return 10.0
 
 
 var _lit_valid: bool = false

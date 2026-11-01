@@ -23,6 +23,7 @@ var player_info: Callable         # () -> Array of {peer, pos, stance, hp 0..1, 
 var fires: Callable               # () -> Array of Vector3, burning fires
 var hurt_player: Callable         # (peer, damage, lethal, cause) -> "hurt" | "maimed" | "dead"
 var notice: Callable              # (peer, text)
+var fire_radius: Callable         # (fire position) -> metres wolves keep from that fire (its tier's protect_m); invalid = animals.json fire_light_m
 var is_day: Callable              # () -> bool, play only by day (invalid = always)
 var events: Array = []            # sounds for the client/Mandy: {kind "growl"|"howl", pos}, newest last, capped
 
@@ -120,10 +121,8 @@ func tick(delta: float) -> void:
 
 # Whether a ground point is inside a fire's light or a torch carrier's (wolves will not enter).
 func lit(x: float, z: float, infos: Array) -> bool:
-	var fire_m: float = float(cfgw().get("fire_light_m", 10.0))
-
 	for f in _fire_cache:
-		if Vector2(f.x - x, f.z - z).length() < fire_m:
+		if Vector2(f.x - x, f.z - z).length() < _fire_m(f):
 			return true
 
 	var torch_m: float = float(cfgw().get("torch_light_m", 9.0))
@@ -133,6 +132,11 @@ func lit(x: float, z: float, infos: Array) -> bool:
 			return true
 
 	return false
+
+
+# How far wolves keep from one fire: its tier's protection (a bigger fire holds them further off).
+func _fire_m(f: Vector3) -> float:
+	return float(fire_radius.call(f)) if fire_radius.is_valid() else float(cfgw().get("fire_light_m", 10.0))
 
 
 # The nearest burning fire within r of a point, or Vector3.INF.
@@ -393,13 +397,22 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		return
 
 	var p: Vector3 = info["pos"]
-	var fire: Vector3 = fire_near(p, float(w.get("fire_light_m", 10.0)) + 3.0)
+	var fire: Vector3 = Vector3.INF
+	var fire_d: float = 1.0e9
+
+	for f in _fire_cache:
+		var d: float = Vector2(f.x - p.x, f.z - p.z).length()
+
+		if d < _fire_m(f) + 3.0 and d < fire_d:
+			fire_d = d
+			fire = f
+
 	var stalk_m: float = float(w.get("stalk_m", 25.0))
 
 	if fire != Vector3.INF:
 		# Circle just outside the firelight, visible at its edge: each wolf on its own bearing, drifting round the fire.
 		pack["angle"] += dt * float(w.get("circle_rad_s", 0.12))
-		var ring: float = float(w.get("fire_light_m", 10.0)) + float(w.get("circle_gap_m", 1.5))
+		var ring: float = _fire_m(fire) + float(w.get("circle_gap_m", 1.5))
 
 		for k in members.size():
 			var ang: float = pack["angle"] + TAU * float(k) / float(members.size())

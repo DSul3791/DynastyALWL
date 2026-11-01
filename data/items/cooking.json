@@ -79,14 +79,14 @@
 		"hearty_pottage": 30,
 		"feast_roast": 30
 	},
-	"fuel_note": "Burn times in GAME seconds (clock is 24:1; a game hour is 2.5 real minutes), Dave 24 Oct: a stick, driftwood piece or bundle of kindling is a small fire's wood (stick 15 game minutes, driftwood 15, kindling 7.5), firewood 1 game hour (soft firewood 30 minutes), a log 2 game hours. A fire placed from a kit is laid with 4 sticks and lit by hand with plant fibre.",
+	"fuel_note": "Dave 1 Nov 2026 (replaces the 24 Oct times): a stick burns 2 REAL minutes, a bolt of firewood 20 real minutes, a log 3 real hours (game seconds = real x 24; soft firewood half a firewood, kindling half a stick). Stored fuel is capped at max_burn_game_s (18 real hours). Older note: burn times in GAME seconds (clock is 24:1; a game hour is 2.5 real minutes), Dave 24 Oct: a stick, driftwood piece or bundle of kindling is a small fire's wood (stick 15 game minutes, driftwood 15, kindling 7.5), firewood 1 game hour (soft firewood 30 minutes), a log 2 game hours. A fire placed from a kit is laid with 4 sticks and lit by hand with plant fibre.",
 	"fuel": {
-		"stick": 900.0,
-		"kindling": 450.0,
-		"log": 7200.0,
-		"firewood": 3600.0,
-		"firewood_soft": 1800.0,
-		"driftwood": 900.0
+		"stick": 2880.0,
+		"kindling": 1440.0,
+		"log": 259200.0,
+		"firewood": 28800.0,
+		"firewood_soft": 14400.0,
+		"driftwood": 2880.0
 	},
 	"fuel_class": {
 		"stick": "weak",
@@ -96,15 +96,16 @@
 		"firewood_soft": "firewood",
 		"log": "log"
 	},
-	"fire_tiers_note": "Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
+	"fire_tiers_note": "Dave 1 Nov 2026: medium (3+ firewood) is twice the small fire in light radius, brightness, warmth and protection from wolves; large (3+ logs) is twice the medium again (light_m 6/12/24, light_energy 0.8/1.6/3.2, heat_c 10/20/40 within heat_radius_m, protect_m 5/10/20 = how far wolves keep from it). The heat reach is not doubled. Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
 	"fire_tiers": {
 		"weak": {
 			"tier": 1,
 			"state": 40,
 			"light_m": 6.0,
-			"light_energy": 0.7,
-			"heat_c": 8.0,
-			"heat_radius_m": 2.5
+			"light_energy": 0.8,
+			"heat_c": 10.0,
+			"heat_radius_m": 2.5,
+			"protect_m": 5.0
 		},
 		"firewood": {
 			"tier": 2,
@@ -112,20 +113,23 @@
 			"light_m": 12.0,
 			"light_energy": 1.6,
 			"heat_c": 20.0,
-			"heat_radius_m": 4.0
+			"heat_radius_m": 4.0,
+			"protect_m": 10.0
 		},
 		"log": {
 			"tier": 3,
 			"state": 41,
-			"light_m": 14.0,
-			"light_energy": 1.8,
-			"heat_c": 25.0,
-			"heat_radius_m": 5.0
+			"light_m": 24.0,
+			"light_energy": 3.2,
+			"heat_c": 40.0,
+			"heat_radius_m": 5.0,
+			"protect_m": 20.0
 		}
 	},
+	"piece_game_s": {"log": 259200.0, "firewood": 28800.0, "weak": 2880.0},
 	"min_pieces": 3,
-	"start_burn_game_s": 3600.0,
-	"max_burn_game_s": 86400.0,
+	"start_burn_game_s": 11520.0,
+	"max_burn_game_s": 1555200.0,
 	"fuel_order": [
 		"firewood",
 		"firewood_soft",
