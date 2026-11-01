@@ -804,29 +804,30 @@ static func thatch_wall() -> Node3D:
 
 
 # A tripod pot (cooking station tier 1, Dave 24 Oct): three sticks lashed at the top over the fire, a round blackened pot hanging on a chain, a ring of stones under it.
+# Sized for the firewood fire (Dave 1 Nov): its flames are 0.8 m tall, so the pot's base hangs at 0.8 m and the tips lick it; over the stick fire it simply hangs high.
 static func tripod_pot() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	var top: Vector3 = Vector3(0.0, 1.3, 0.0)
+	var top: Vector3 = Vector3(0.0, 1.75, 0.0)
 
 	for k in 3:
 		var a: float = TAU * float(k) / 3.0 + 0.3
-		_rod(root, Vector3(cos(a) * 0.6, 0.0, sin(a) * 0.6), top + Vector3(cos(a) * 0.04, 0.0, sin(a) * 0.04), 0.06, _log)
+		_rod(root, Vector3(cos(a) * 0.85, 0.0, sin(a) * 0.85), top + Vector3(cos(a) * 0.04, 0.0, sin(a) * 0.04), 0.06, _log)
 
-	_box(root, Vector3(0.12, 0.08, 0.12), Vector3(0.0, 1.3, 0.0), _frame)           # the lashing
-	_rod(root, Vector3(0.0, 1.26, 0.0), Vector3(0.0, 0.95, 0.0), 0.02, _pot)          # chain
+	_box(root, Vector3(0.12, 0.08, 0.12), Vector3(0.0, 1.75, 0.0), _frame)           # the lashing
+	_rod(root, Vector3(0.0, 1.71, 0.0), Vector3(0.0, 1.2, 0.0), 0.02, _pot)          # chain
 
 	var pot: MeshInstance3D = MeshInstance3D.new()
 	var bowl: SphereMesh = SphereMesh.new()
-	bowl.radius = 0.2
-	bowl.height = 0.34
+	bowl.radius = 0.24
+	bowl.height = 0.4
 	bowl.radial_segments = 10
 	bowl.rings = 5
 	pot.mesh = bowl
 	pot.material_override = _pot
-	pot.position = Vector3(0.0, 0.78, 0.0)
+	pot.position = Vector3(0.0, 1.0, 0.0)
 	root.add_child(pot)
-	_box(root, Vector3(0.34, 0.04, 0.34), Vector3(0.0, 0.93, 0.0), _pot)             # the rim
+	_box(root, Vector3(0.4, 0.04, 0.4), Vector3(0.0, 1.19, 0.0), _pot)             # the rim
 
 	for k in 7:
 		var a: float = TAU * float(k) / 7.0
