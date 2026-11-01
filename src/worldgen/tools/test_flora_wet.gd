@@ -106,6 +106,8 @@ func _tile(generator, placer, settings, tile: Vector2i) -> void:
 
 	var total: int = 0
 	var on_water: int = 0
+	var on_cells: int = 0       # standing on a wet cell: a failure
+	var beside_only: int = 0    # a tree or shrub within one cell of water: reported only (shores are meant to have trees)
 	var shown: int = 0
 
 	for chunk in wet_chunks:
@@ -129,13 +131,20 @@ func _tile(generator, placer, settings, tile: Vector2i) -> void:
 			var on_cell: bool = _wet(data, sim, data.nearest(p.x, p.z))
 			var beside: bool = species["kind"] != PlacerScript.KIND_PLANT and _wet_near(data, sim, p.x, p.z)
 
+			if on_cell:
+				on_cells += 1
+
+			if beside and not on_cell:
+				beside_only += 1
+
 			if on_cell or beside:
 				on_water += 1
 
-				if shown < 8:
+				if shown < 8 and (on_cell or shown >= 4):
 					shown += 1
 					print("  flora %d (%s) at %.0f,%.0f (height %.1f) %s" % [items["ids"][n], str(species.get("name", "?")), p.x, p.z, p.y, "on a wet cell" if on_cell else "beside water"])
 
 	print("tile %s: settled water file %s, %d wet chunks, %d flora instances there, %d on or beside water" % [str(tile), "yes" if not sim.is_empty() else "NO", wet_chunks.size(), total, on_water])
 	_check(not sim.is_empty(), "tile %s has its settled water loaded when flora is placed" % str(tile))
-	_check(on_water == 0, "tile %s: no flora on or beside a wet cell (%d)" % [str(tile), on_water])
+	print("tile %s: %d on a wet cell, %d trees or shrubs beside water only" % [str(tile), on_cells, beside_only])
+	_check(on_cells == 0, "tile %s: no flora on a wet cell (%d)" % [str(tile), on_cells])
