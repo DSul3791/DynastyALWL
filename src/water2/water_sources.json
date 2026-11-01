@@ -1,0 +1,4 @@
+{
+	"_note": "Springs and sinks placed from data (Sonny, 31 Oct 2026, dynasty-water stage e). Per tile 'X_Z': springs and sinks at world x, z in m3 per second. A point outside the simulated window is ignored. Empty by default: the starter tile's rivers are held by the baked border levels.",
+	"3_4": {"springs": [], "sinks": []}
+}
