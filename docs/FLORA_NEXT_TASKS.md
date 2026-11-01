@@ -8,6 +8,13 @@ Owner of every row: MikeW (Flora and Fauna Density, Placement and Behaviour) unl
 - Fauna measurement tool written: `src/worldgen/tools/fauna_near.gd` (biome mix within 100 m and 500 m of a spot, per-species mean weight, share and expected held count at day, dusk, night). NOT RUN yet.
 - Dino #5 (`_decimate_task` cast): the log is older than fix 4458a7c0. Re-run pending.
 
+## Phase 2 results (Godot, 2026-11-01)
+- fauna_near.gd RAN at (53301,68427): 92-95 percent temperate forest, 4-8 percent ocean within 500 m. Expected held (rough ceiling): rabbit 1.7 day / 3.4 dusk, deer 1.9 / 4.8, songbirds 3.8 day, boar 1.5 only at dusk and night, frogs 3.8 dusk and night, duck 0.5 at every hour. Duck has no biome row, so it gets full weight in forest (confirms gap 1). Output: E:/Software/godotDev/DynastyALWL_Evidence/alive_check/fauna_near_spawn.txt.
+- client_eat self-test RAN (headless client, throwaway server, `--eat`): passes, no script errors, no `_decimate_task` cast error. The old error was seen once, so this is "not reproduced", not proof.
+- F-13 blueberry: a real blueberry shot at (53331,68359) shows a small bush about 30 cm tall with blue berries, matching data (0.25-0.5 m). The 3 m golden shrub in the old 02b picture is not a blueberry by data (raspberry is 1.5-2.5 m); the rig row label is the likely mistake. Closed unless Dave says the size looks wrong.
+- Pictures shot (alive_check/final3): yarrow with crowns 3/5 (crowns 4/5), chamomile spot 3.5/5, orchard rows 3/5 (dark, no fruit visible), blueberry 3.5/5. QA cards posted on the qa branch (eb5b58bb): pic-flora-yarrow, pic-flora-chamomile, pic-flora-orchard-rows, pic-flora-blueberry-size.
+- Dave's earlier QA answers: apples "not spheres" (No) and crowns "Yes but still low quality, want photorealistic": both are Kathleen's look work.
+
 ## Fauna behaviour audit (read-only: data/animals/animals.json, server_animals.gd)
 Config today: 13 live species; active radius 200 m, despawn 300 m, spawn 150-250 m out of sight, never within 60 m; 40 percent of spawns are "near" (60-120 m); per-player cap 30, server cap 150; wolves are placed by cells (cell 2000 m, excluded 1500 m round the spawn), not by the top-up loop. Biome weights and day/dusk/night chances are in the rows and the loop reads them (`biome_weight`, line ~731). Sal's spawn_plan.json (about 17 more species, hare, red squirrel...) is not wired and has no models.
 Gaps found by reading (all unmeasured):
