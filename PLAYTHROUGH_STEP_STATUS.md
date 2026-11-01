@@ -2,6 +2,19 @@
 
 Written with no Godot run (Dave has the computer): from the daily head code and data (13b84fa3 merged), the tutorial text, and the probe and smoke results from earlier today. WORKS = a probe, test or bot has driven it on the real server code and nothing found; CLIENT = the client side (hands, prompts, pictures) was not driven by me; OPEN = something known is wrong. "Re-run" names what to run when the computer is back (list at the end).
 
+## UPDATE 1 Nov 2026 (daily 27dfe828; probes and smoke run on d05e86b3 after COMPUTER BACK)
+Verified by running (headless server probes, headless real-client self-tests; **no step was walked by hand in a windowed client**):
+- 17, 19 WORKS: probe_shelter 16/16 PASS with the lean-to roof 2.6 x 3.4 m, 1.5 m high (lie, good bed 1.0, sleep, E sets spawn, respawn on the bed).
+- 12 WORKS: probe_place 13 PLACED; only the steep-slope refusal speaks; the silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) are NOT re-tested.
+- 15 WORKS: probe_cook, campfire cooks meat, fish, shellfish, seal; refuses plants with a notice.
+- 1: no join freeze and no crash report in the d05e86b3 smoke run (earlier runs froze ~15 s): needs Dave's eyes to confirm.
+- 19 sleep self-test: on a clean server the bed places and the player lies, but the test fails because energy is 100 (sleep refused at full energy). Test gap, not a game bug. Snare places on a clean server.
+- 10 (felled trunk) STILL LOOKS WRONG: rig picture shows dark smooth trunk; bark fix not visible (QA card pic-fh-felled-trunk).
+- 13/14 (lit fire) STILL UNPROVEN VISUALLY: rig picture shows no flames or glow (QA card pic-fh-campfire-lit). Server state 40 (lit) is fine.
+- 20 bench (now 16 sticks, 6 twine, 4 stones, 60 s): no automated check at all.
+- Self-tests arrival, gather, plantpick, chop, fire, leanto, spear, placed, walk run without script errors but print no PASS/FAIL line, so they prove "no crash" only.
+- Still open: chest self-test (Tyler, inventory_view.gd:4562), flora_view.gd:2270 cast error (flora session), creator preview back view, no pot/hearth tutorial step.
+
 | # | step | status | evidence and what is not covered |
 |---|---|---|---|
 | 1 | spawn, walk, run | WORKS, OPEN | smoke walk picture and arrival test fine; **about 15 s main-thread freeze at join** (watchdog, fps 1) | 
