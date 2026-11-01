@@ -131,3 +131,21 @@ Image: questions/img/flora_blueberry_size.jpg
 Note: Real game rig shot at noon, (53331,68359) facing north, from 1 m above the ground. This is a real blueberry placed by the game (data says 0.25 to 0.5 m). The shrub in the old picture 02b that was about 3 m wide and labelled Blueberry is not a blueberry by the data (raspberry is 1.5 to 2.5 m), so the label in that rig row is the likely mistake. Flora rates this 3.5 of 5.
 - Yes
 - No
+
+## pic-p2-creator | Does the character creator preview show the FRONT of the body with sensible colours?
+Image: questions/img/p2_creator.jpg
+Note: Phase 2 real window (guide session), creator after "undo twice". The preview still stands with its back to us (ponytail seen from behind) and the body is patchy green, tan and pink. Guide rates it 2 of 5.
+- Yes
+- No
+
+## pic-p2-fire-nograss | With the grass hidden, is the lit campfire clearly visible (flames and glow)?
+Image: questions/img/p2_fire_nograss.jpg
+Note: Same lit fire as the earlier card but with grass switched off. A small flame and warm glow show among the logs and stones, so the fire is drawn; the grass hid it before. Guide rates it 3 of 5 (flame small). Question for Dave: should grass be cleared around a placed fire?
+- Yes
+- No
+
+## pic-p2-leanto-bed | Do the lean-to and the rough bed look like something you would shelter and sleep in?
+Image: questions/img/p2_leanto_bed.jpg
+Note: Real client, third person, lean-to left, rough bed right (the rig sets them in a row, the bed is not inside the lean-to here). Guide rates it 3.5 of 5: lean-to reads as a thatch frame; the bed is a yellow mattress on a frame.
+- Yes
+- No
