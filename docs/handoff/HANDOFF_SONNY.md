@@ -40,3 +40,9 @@ Everything under "Not finished". The default flip has never been executed. No in
 ## Late results (1 Nov, after the handoff)
 - `probe_pick_spot.gd` ran: 101 sampled wet cells above sea level, deepest 9.3 m of lake. Its printed world x/z are WRONG (it built the tile data by hand, so `td.x0`/`z0` are 0: real world x = 54272 + (origin.x + i) * 8, z = 74752 + (origin.y + j) * 8, origin 1024,1664). Fix by reading the tile origin before use.
 - `probe_drain.gd` partial (60 s and 180 s): 98.6 percent of baked wet cells still drawn (2595 of 2633), but 113 cells are under half their baked depth (worst loss 2.2 m) and the volume reads 140 percent of the start (held rivers add more than they lose), 64 of 64 blocks awake. So the "12 percent vanish" is not seen in this probe; the 10 and 30 minute rows had not printed when I stopped.
+
+## Also read
+`docs/DYNASTY_WATER_HISTORY.md` (why and how, problems, numbers) and `docs/handoff/SCOPE_SONNY.md` (scope, priorities, finish line). Update to the drain item above: the 10 and 30 minute rows later came back the same, 98.6 percent drawn, so no drain fix is needed.
+
+## Run state when stopped (1 Nov, Dave's stop order)
+With the flip patch applied: `test_water_field`, `test_water_flow_texture`, `test_water_window`, `test_water_hub2`, `test_spawn_dry`, `test_first_hour` all PASSED (0 failures). `test_water_soak` was killed at the stop order, not finished: re-run it. The patch is still NOT committed (launcher and menu changes never started in a real game); apply it with `git apply docs/handoff/water_default_flip.patch`, then check the menu and launcher start, run `test_water_soak`, then commit.
