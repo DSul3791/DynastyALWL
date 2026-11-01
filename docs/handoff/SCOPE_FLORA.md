@@ -1,28 +1,38 @@
-# Scope: Flora (plants and density), 1 Nov 2026
-Written by the moderator on Flora's behalf from her reports; Flora may correct it.
+# Flora job scope (2026-11-01)
 
 ## 1. The job
-Make the world look real and alive with plants: how many trees, bushes, fruit, herbs, flowers and grass sit where, how thick they are near the spawn, how they are drawn at range, and that they cost little to draw. Starts at plant data (`data/tables/flora.json`), placement rules and the flora view (`src/flora/`); stops at how a plant's art looks (Kathleen), what a plant gives when gathered (Sal) and server action rules (Tyler).
+Make the world look alive and be fair to forage in: where trees, shrubs, berries, fibre plants, herbs, flowers and tall grass stand (density, clumping, seasons, harvest stores), how grass and plants draw at range, and what that costs. It starts at the placer and data (`flora_placer.gd`, `flora.json`, drops and fruit stores), the layout version, and the flora and grass views and shader. It stops at the art itself (Kathleen: models, colours, `tree_builder.gd`), animals, and item rules.
 
 ## 2. Done so far
-Density near the spawn (grown trees within 50 m / 100 m: 8 / 44), tall grass clumps and the player-clear radius, conifer nurseries (layout v22), meadow flowers enabled and verified, crown variety hooked up with Kathleen, the `_decimate_task` crash fix (`4458a7c0`), the grass shader guard (`fb90e7c5`), seven flora tests green. Commit list: `git log --author` on `claude/flora-density-v2`, plus `docs/FLORA_HANDOVER.md`.
+- Density measurement and fixes, patch, thicket, orchard and shore rules, seasons and fruit store: see docs/FLORA_HANDOVER.md.
+- Tall grass clumps and 25/40 m visibility: 8543fc35 (tool), layout v20.
+- Grass clear radius at the player's feet: grass_view.gd, with guard fb90e7c5.
+- Conifer nurseries instead of evenly spaced saplings: 69d43800 (v21).
+- Meadow flowers with Kathleen's tall bright art: f0336365, 68c7901e (v22).
+- Mid-model decimate crash guard: 4458a7c0.
+- QA cards on the qa branch (last 26aaf274); pictures under E:/Software/godotDev/DynastyALWL_Evidence/alive_check.
 
-## 3. Planned, in order
-1. Pictures: blueberry (F-13), chamomile, orchard, crown close-ups, with QA cards for yarrow, blueberry, orchard, crowns.
-2. Get Kathleen's fix for the glassy flower stems and faceted heads, then re-shoot yarrow.
-3. Far tall grass at 40 m (weak): stronger clump or lower-detail fill at range.
-4. Confirm the decimate fix on the `client_eat` path; find which model has no index array.
-5. Look for more life: seasonal changes, bush and herb variety near the first-hour route, density in every biome the player can reach in the first hour.
+## 3. Planned (in order)
+1. Pictures: blueberry (F-13), chamomile, orchard, crowns; QA cards.
+2. Resolve F-13: find the 3 m golden shrub labelled Blueberry; fix data or label.
+3. Flower art follow-up with Kathleen (pale glassy stems, blue-grey heads in shade).
+4. Check orchard picking and thinning in the real game.
+5. Month-level fruit calendar.
+6. Make the 40 m tall-grass clump readable in shade.
+7. Flowers in the open meadow middle, not only at the edge.
+8. Elder thickets to 90 percent in clumps of 4 or more.
+9. Meadow draw calls: far-tree merging, then lower TREE_DENSITY if a weak PC needs it.
+10. Models and rows for the future fruit trees (fig, olive, pomegranate, mango, orange, lemon).
 
 ## 4. Priorities
-1. The first hour near the spawn looks full and alive (grass, trees, herbs, berries).
-2. No crashes or stalls from flora (join freeze was flora chunks on the main thread, fixed by Tyler).
-3. Pictures with honest ratings for Dave on the QA page.
-4. Far-distance look (40 m grass).
-5. Cost: stay under the flora budget (`test_flora_budget`).
+1. F-13 blueberry size: a visible, reported bug.
+2. Pictures and QA cards: Dave judges by the QA page.
+3. Flower look (with Kathleen): flowers are the most visible aliveness cue.
+4. Real-game fruit picking: an untested path players will hit.
+5. Draw-call cost: protects weaker PCs.
 
 ## 5. Dependencies
-On Kathleen for plant art; on Sal for gather results and fibre plants; on Tyler for server placement and tests; on the moderator for merges and Dave's answers. Others depend on her for density numbers (Guide's playthrough, Tyler's first hour).
+I depend on Kathleen (flora art), Tyler (test gates, godot_slot, world_alive), the moderator (merges, QA page) and Sal (fruit items, seasons data). Kathleen, Sal and Tyler depend on me for placement, flora.json rows and layout version bumps.
 
 ## 6. Finished when
-The first hour has plenty of every plant a new player needs within sight, Dave rates the pictures good, the seven flora tests stay green on the voxel build, and the far grass and flower art problems are closed.
+All 7 flora tests pass on the daily; every open picture is on the QA page with Dave's Yes; F-13 is closed; fruit picking is verified in the real game; no frame-cost warning in the meadow on the target PC.
