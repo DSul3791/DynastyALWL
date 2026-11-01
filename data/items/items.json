@@ -3319,6 +3319,7 @@
 			"description": "A loop of twine on a bent stick. Set it on a worn animal path.",
 			"kind": "placeable",
 			"stack": 5,
+			"unstackable": true,
 			"durability": 20,
 			"repair": [
 				[
@@ -3534,6 +3535,7 @@
 			"weapon_class": "javelin",
 			"tier": 2,
 			"stack": 5,
+			"unstackable": true,
 			"future": true,
 			"damage": 4.0,
 			"throw_damage": 9.0,
@@ -3779,6 +3781,7 @@
 			"tool_class": "candle",
 			"tier": 1,
 			"stack": 10,
+			"unstackable": true,
 			"light_m": 4.0,
 			"look_alikes": [],
 			"value": 3
