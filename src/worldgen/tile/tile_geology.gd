@@ -1280,7 +1280,6 @@ func _ensure_river_ore(tile: Vector2i, heights: PackedFloat32Array, water_class:
 	if resources.is_empty():
 		return
 
-	var reach_m: float = float(ore_rules.get("river_ore_within_m", 1000.0))
 	var min_cells: int = int(ore_rules.get("river_ore_min_river_cells", 400))
 	var rivers: PackedVector2Array = PackedVector2Array()
 	var starts: Array = []
@@ -1312,7 +1311,16 @@ func _ensure_river_ore(tile: Vector2i, heights: PackedFloat32Array, water_class:
 	var local: int = 9500
 
 	for resource in resources:
-		if _nearest_body_m(str(resource), rivers) <= reach_m:
+		# Dave 25 Oct: river tin and copper on every tile with a river (spawn tile 3,4 had lodes but no placer): only a placer of
+		# the resource already on the tile (natural, shed from an outcropping body) skips the guarantee.
+		var has_placer: bool = false
+
+		for existing in ore_bodies:
+			if str(existing["resource"]) == str(resource) and str(existing["shape"]) == "placer":
+				has_placer = true
+				break
+
+		if has_placer:
 			continue
 
 		var points: Array = []
