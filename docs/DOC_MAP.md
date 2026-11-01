@@ -155,7 +155,7 @@ Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the name
 | `tools/erosion_precarve/README.md` | Tyler | Erosion pre-carve: action plan for Tyler (one plan, one branch) | 10-24 | keep |
 | `worlds/base_world/regions/README.md` | Sonny | Baked regions | 10-11 | keep |
 
-`docs/START_HERE.md`, `docs/DOC_MAP.md`, `docs/SOUND_MAP.md` (Jason, 1 Nov: sound events and clips; keep) and `docs/handoff/SCOPE_JAMIE.md`, `SCOPE_JASON.md` were added after the table was built; `docs/handoff/` now holds 21 files.
+Jason's three, all keep: `SOUND_AUDIT.md` (findings record), `docs/SOUND_MAP.md` (hook audit and sound map), `docs/handoff/SCOPE_JASON.md` (plan). `docs/START_HERE.md`, `docs/DOC_MAP.md` and `docs/handoff/SCOPE_JAMIE.md` were added after the table was built; `docs/handoff/` now holds 21 files.
 
 ## Conflicts and gaps found so far (fixes are separate commits)
 1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Was wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md` (fixed).
