@@ -1,5 +1,7 @@
 # Scope: Sonny (character and Dynasty water), 1 Nov 2026
 
+> **RULE (Dave, 1 Nov 2026): water MECHANICS are yours; water LOOKS go to the art team** (Kathreen first): colour, transparency, shader appearance, foam, flow-texture look, reflections, shore look. You supply depth and flow in a stable form (textures, levels); they own how it looks; review each other's edits.
+
 > **ROLE CHANGE (Dave, 1 Nov 2026): Sonny is the terrain and water agent only.** Everything in this document about the character (store, records, creator, select screen, goals and recipes per character, idle timeout, character and loading pictures, first-minutes smoke tests) is no longer Sonny's. Interim owners: character LOOK = Kathleen, character SYSTEM = Tyler (see MODERATOR_QA_LOG.md). Sonny's job: the terrain (baked tiles, ground, shore, slopes) and the water, the foundation everyone plays on.
 
 Read with `HANDOFF_SONNY.md` (exact next steps, tests) and `docs/DYNASTY_WATER_HISTORY.md` (why and how the water was built).

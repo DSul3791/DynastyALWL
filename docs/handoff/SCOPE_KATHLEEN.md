@@ -1,5 +1,7 @@
 # Scope: Kathleen (art and looks), 2026-11-01
 
+> **ADDITION (Dave, 1 Nov 2026): water LOOKS are the art team's** (colour, transparency, shader appearance, foam, flow-texture look, reflections, shore look). Kathreen takes it first; Sonny keeps the mechanics and supplies depth and flow data.
+
 > **RULE (Dave, 1 Nov 2026): anything about LOOKS is yours.** That includes how plants (flower and stem colours, grass appearance and shader look) and animals look, as well as characters and fire. MikeW keeps density, placement, seasons and draw cost.
 
 > **ROLE ADDITION (Dave, 1 Nov 2026): fire and flame looks are yours:** flames, embers, glow, flicker, colour, light range and shape (the front-only fireplace cone), lit torch and chandelier looks, smoke. Tyler keeps the rules (lit/unlit, fuel, warmth, saved state) and reviews code changes. Start from Tyler's fire-light commits ed07d89f, ceeb057e, e5172fe9, eb9f4a39, a6a6f4d9, 02e7d317 and the pictures in art/CRITIQUES/fire_light_2026-10-31 and lit_2026-10-31. The Guide found a lit campfire with no visible flames in his picture (QA card pic-fh-campfire-lit): check that first.

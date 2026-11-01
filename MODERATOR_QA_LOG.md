@@ -38,3 +38,6 @@ Replaces the earlier split where Tyler kept animal behaviour: MikeW (Flora and F
 
 ## 2026-11-01 Second art agent: Kathreen (Dave)
 If Kathleen's list is too long, a second art agent is started and named Kathreen. Started 1 Nov 2026 as session local_5dc173d8-f090-4d75-9439-07b664414c73 (branch kathree-art). The moderator proposed the split (suggested: Kathleen keeps items, structures, fire and flame; Kathreen takes character look and animals and plants look) and starts her only when Kathleen's ranked list shows it is needed or Dave says so. Kathreen reads docs/handoff/SCOPE_KATHLEEN.md and HANDOFF_KATHLEEN.md first.
+
+## 2026-11-01 Water: mechanics Sonny, looks the art team (Dave)
+Water MECHANICS (simulation, flow, depth, springs, sinks, lakes, rivers, sea, swim and wade rules, cost) are Sonny's. Water LOOKS (colour, transparency, shader appearance, foam, flow texture look, reflections, shore look) go to the art team: Kathreen first (Kathleen if Kathreen is busy). Where code and look meet (the water shader reading depth and flow), Sonny supplies the data in a stable form (depth and flow textures) and the art team owns the appearance; each reviews the other's edits. Open for Sonny: his shader-reads-depth-and-flow task (stage c2) is split along this line.
