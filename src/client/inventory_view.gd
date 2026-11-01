@@ -3003,7 +3003,8 @@ func _fire_label(entry: Dictionary, number: int) -> String:
 		return "%s, no fuel" % _item_label(number)
 
 	var total: int = int(ceil(left))
-	return "%s %02d:%02d:%02d Burn time" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60]
+	var size: String = ", %s fire" % ["small", "medium", "large"][_fire_tier(state) - 1] if _lit_state(state) else ""
+	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60, size]
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:

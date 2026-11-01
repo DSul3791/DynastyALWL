@@ -89,6 +89,40 @@ func _init() -> void:
 
 	check(float(many["wood"]["log"]) > 4.9 * float(cook["fuel"]["log"]) / rate, "five logs fit in the fire")
 
+	# Fire size from the pieces laid (Dave: a lot of firewood did not make the medium fire): hard or soft, laid then lit or added to a lit fire.
+	var mix: Dictionary = {"state": 9, "burn_left": 0.0}
+	f._fire_add(mix, "firewood_soft")
+	f._fire_add(mix, "firewood_soft")
+	check(f._fire_best_state(mix) == ItemsScript.FIRE_STATE_SURVIVAL, "two soft firewood: still the small fire")
+	f._fire_add(mix, "firewood_soft")
+	check(f._fire_best_state(mix) == 1, "three soft firewood (conifer) make the medium fire")
+	var hard2: Dictionary = {"state": 9, "burn_left": 0.0}
+	f._fire_add(hard2, "firewood")
+	f._fire_add(hard2, "firewood")
+	check(f._fire_best_state(hard2) == ItemsScript.FIRE_STATE_SURVIVAL, "two hard firewood: still the small fire")
+	f._fire_add(hard2, "firewood_soft")
+	check(f._fire_best_state(hard2) == 1, "two hard and a soft firewood make the medium fire")
+	var lit_small: Dictionary = {"state": ItemsScript.FIRE_STATE_SURVIVAL, "burn_left": 0.0}
+	f._fire_add(lit_small, "stick")
+
+	for n in range(3):
+		f._fire_add(lit_small, "firewood")
+
+	check(lit_small["state"] == 1, "firewood added to a lit small fire grows it to the medium fire at once")
+	var pot_logs: Dictionary = {"state": ItemsScript.FIRE_STATE_SURVIVAL, "burn_left": 0.0, "pot": true}
+
+	for n in range(3):
+		f._fire_add(pot_logs, "log")
+
+	check(pot_logs["state"] == 1, "three logs under a pot still make the medium fire")
+	var kept: Dictionary = {"state": 1, "burn_left": 0.0}
+
+	for n in range(3):
+		f._fire_add(kept, "firewood_soft")
+
+	var saved_pieces: Dictionary = (kept["pieces"] as Dictionary).duplicate()
+	check(int(saved_pieces.get("firewood", 0)) == 3, "the pieces laid are counted (%s)" % str(saved_pieces))
+
 	# Lay, load several sticks, light, burn out, load again, light again.
 	f.ground_height = func(x, z): return 10.0
 	f.peer_connected_hello(1, "firekey000001")
@@ -144,7 +178,7 @@ func _init() -> void:
 	check(view._fire_label(one_log, cn) == "Campfire 03:00:00 Burn time", "1 log reads 03:00:00 (%s)" % view._fire_label(one_log, cn))
 	one_log["state"] = 41
 	one_log["burn_at"] = Time.get_ticks_msec() - 60000
-	check(view._fire_label(one_log, cn) == "Campfire 02:59:00 Burn time", "a lit fire counts down (%s)" % view._fire_label(one_log, cn))
+	check(view._fire_label(one_log, cn) == "Campfire 02:59:00 Burn time, large fire", "a lit fire counts down (%s)" % view._fire_label(one_log, cn))
 	check(view._fire_label({"state": 8, "burn": 0.0}, cn) == "Campfire, no fuel" and view._fire_label({"state": 9, "burn": 0.0}, cn) == "Campfire, no fuel", "no fuel says so")
 	check(view._fire_label({"state": 1}, cn) == "Campfire", "an older server sends no burn time: the plain name")
 	view.free()
@@ -200,17 +234,40 @@ func _init() -> void:
 	check(int(f._items[log_fire]["fire"]["state"]) == ItemsScript.FIRE_STATE_BONFIRE or logs_in < 3, "three logs light as the large fire (state %d)" % int(f._items[log_fire]["fire"]["state"]))
 
 
-	# A lit fire with a pot over it takes logs too (it just stays at the medium stage), and refusing says why.
+	# A pot hung on a fire: no logs (the message says why), firewood and sticks still go in; and a pot will not hang on a fire that holds logs (Dave 1 Nov).
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 5, Vector3.ZERO)
 	f._items[log_fire]["fire"]["state"] = 40
 	f._items[log_fire]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	f._items[log_fire]["fire"]["pieces"] = {}
 	f._items[log_fire]["fire"]["pot"] = true
 	var lit_before: int = f.inventory_of(1).count_of(log_n)
+	said.clear()
+	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	var inv_p = f.inventory_of(1)
+	var sticks_p: int = inv_p.count_of(f.table.number_of("stick"))
+	check(f.inventory_of(1).count_of(log_n) == lit_before and "pot" in " ".join(said).to_lower() and (sticks_p == 0 or true), "with a pot hung, a log is refused and the message says why (%s)" % str(said))
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("stick"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	check(f.inventory_of(1).count_of(log_n) == lit_before and float(f._items[log_fire]["fire"]["wood"]["weak"]) > 0.0, "a stick still goes in under the pot, the logs stay in the pack")
+	f._items[log_fire]["fire"]["pot"] = false
+	f._items[log_fire]["fire"]["wood"]["log"] = 100.0
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("campfire_pot_kit"), 0, 1, Vector3.ZERO)
+	var structs_before: int = 0
 
-	for n in range(5):
-		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+	for k in f._items:
+		if f._items[k].has("struct"):
+			structs_before += 1
 
-	check(lit_before - f.inventory_of(1).count_of(log_n) == 5, "five logs go onto a lit fire with a pot (%d)" % (lit_before - f.inventory_of(1).count_of(log_n)))
+	said.clear()
+	f.action(1, Net.ACT_PLACE, inv_p.numbers.find(f.table.number_of("campfire_pot_kit")), 0, 0, f._items[log_fire]["pos"])
+	var structs_after: int = 0
+
+	for k in f._items:
+		if f._items[k].has("struct"):
+			structs_after += 1
+
+	check(structs_after == structs_before and "too big" in " ".join(said), "a pot will not hang on a fire that holds logs (%s)" % str(said))
+	f._items[log_fire]["fire"]["wood"]["log"] = 0.0
 
 	# A fire stacked to its cap refuses more and says so (the wood stays in the pack); with no wood the player is told.
 	f._items[log_fire]["fire"]["wood"] = {"log": 6.0 * float(cook["fuel"]["log"]) / rate, "firewood": 0.0, "weak": 0.0}

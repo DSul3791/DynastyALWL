@@ -1166,6 +1166,8 @@ func save() -> void:
 			var wood: Dictionary = _fire_wood(it["fire"])
 			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
 			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
+			var pc: Dictionary = it["fire"].get("pieces", {})
+			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
 
 		items.append(row)
 
@@ -3123,6 +3125,15 @@ func _load_world_items() -> void:
 			if row.size() > 10 and typeof(row[10]) == TYPE_ARRAY and (row[10] as Array).size() == 3:   # before fire tiers the one counter is split by the fire's size
 				entry["fire"]["wood"] = {"log": float(row[10][0]), "firewood": float(row[10][1]), "weak": float(row[10][2])}
 
+			if row.size() > 11 and typeof(row[11]) == TYPE_ARRAY and (row[11] as Array).size() == 3:
+				var pieces: Dictionary = {}
+
+				for k in range(3):
+					if int(row[11][k]) >= 0:
+						pieces[["log", "firewood", "weak"][k]] = int(row[11][k])
+
+				entry["fire"]["pieces"] = pieces
+
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
 				_next_uid = maxi(_next_uid, int(row[9]) + 1)
@@ -4301,10 +4312,13 @@ func _fire_wood(fire: Dictionary) -> Dictionary:
 	return fire["wood"]
 
 
-func _fire_class_pieces(cls: String, seconds: float) -> int:
+# How many pieces of a wood class the fire holds: the pieces laid on it (fire["pieces"], one each however long it burns, so a soft firewood counts like a hard one),
+# never more than the burning time left allows at the shortest piece of that class (piece_game_s).
+func _fire_class_pieces(cls: String, seconds: float, laid: int = -1) -> int:
 	var row: Dictionary = (_cooking.get("fire_tiers", {}) as Dictionary).get(cls, {})
-	var piece_s: float = float((_cooking.get("piece_game_s", {"log": 259200.0, "firewood": 28800.0, "weak": 2880.0}) as Dictionary).get(cls, 2880.0)) / GAME_RATE
-	return int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
+	var piece_s: float = float((_cooking.get("piece_game_s", {"log": 259200.0, "firewood": 14400.0, "weak": 1440.0}) as Dictionary).get(cls, 1440.0)) / GAME_RATE
+	var by_time: int = int(ceil(seconds / piece_s - 0.0001)) if seconds > 0.0 and not row.is_empty() else 0
+	return by_time if laid < 0 else mini(by_time, laid)
 
 
 # The lit state the wood now in the fire supports: the biggest class with at least min_pieces, else the survival fire.
@@ -4313,10 +4327,12 @@ func _fire_best_state(fire: Dictionary) -> int:
 	var need: int = int(_cooking.get("min_pieces", 3))
 
 	for cls in ["log", "firewood"]:
-		if cls == "log" and bool(fire.get("pot", false)):
-			continue   # a campfire pot hangs over this fire: it never grows past the firewood stage
+		var laid: int = int((fire.get("pieces", {}) as Dictionary).get(cls, -1))
 
-		if _fire_class_pieces(cls, float(wood[cls])) >= need:
+		if _fire_class_pieces(cls, float(wood[cls]), laid) >= need:
+			if cls == "log" and bool(fire.get("pot", false)):
+				return int(_cooking["fire_tiers"]["firewood"]["state"])   # a campfire pot hangs over this fire: it never grows past the firewood stage
+
 			return int(_cooking["fire_tiers"][cls]["state"])
 
 	return FIRE_STATE_SURVIVAL
@@ -4399,6 +4415,10 @@ func _fire_sum(fire: Dictionary) -> void:
 	fire["burn_left"] = float(wood["log"]) + float(wood["firewood"]) + float(wood["weak"])
 
 
+func _fire_wood_class(wood_id: String) -> String:
+	return str((_cooking.get("fuel_class", {}) as Dictionary).get(wood_id, "weak"))
+
+
 # One piece of wood onto the fire: its seconds go to its class (never past the stored-fuel cap) and a lit fire may step up a tier.
 func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	var wood: Dictionary = _fire_wood(fire)
@@ -4407,6 +4427,9 @@ func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	_fire_sum(fire)
 	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - float(fire["burn_left"])
 	wood[cls] = float(wood[cls]) + clampf(seconds, 0.0, maxf(room, 0.0))
+	var pieces: Dictionary = fire.get("pieces", {})
+	pieces[cls] = int(pieces.get(cls, 0)) + 1
+	fire["pieces"] = pieces
 	_fire_sum(fire)
 	fire["fed"] = int(fire.get("fed", 0)) + 1
 
@@ -4430,6 +4453,9 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 		wood[cls] = float(wood[cls]) - used
 		left -= used
 
+		if float(wood[cls]) <= 0.0 and fire.has("pieces"):
+			(fire["pieces"] as Dictionary).erase(cls)
+
 	_fire_sum(fire)
 	var state: int = int(fire["state"])
 
@@ -4451,10 +4477,16 @@ func _fuel(peer: int, inv, id: int) -> void:
 		_say(peer, "The fire is stacked as full as it will hold.")
 		return
 
+	var refused_log: bool = false
+
 	for wood in _cooking.get("fuel_order", ["stick", "log"]):
 		var number: int = table.number_of(wood)
 
 		if inv.has(number, 1):
+			if bool(fire.get("pot", false)) and _fire_wood_class(wood) == "log":
+				refused_log = true   # a pot hangs over this fire: no logs, the fire would be too big for it
+				continue
+
 			inv.remove(number, 1)
 			_fire_add(fire, wood)
 
@@ -4465,7 +4497,10 @@ func _fuel(peer: int, inv, id: int) -> void:
 
 			return
 
-	_say(peer, "You have no wood, sticks or logs to put on the fire.")
+	if refused_log:
+		_say(peer, "Take the pot down before you put logs on. The fire would be too big for it.")
+	else:
+		_say(peer, "You have no wood, sticks or logs to put on the fire.")
 
 
 # Lighting a loaded fire (Dave 2026-10-20): bare hands, one tinder item from the pack (cooking.json
@@ -4789,6 +4824,13 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 		if is_nan(spot.y):
 			return
+
+		for fid in _items:
+			var fit: Dictionary = _items[fid]
+
+			if fit.has("fire") and (fit["pos"] as Vector3).distance_to(spot) <= POT_ON_FIRE_M and float(_fire_wood(fit["fire"])["log"]) > 0.0:
+				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
+				return
 
 	if _traps.is_kind(str(def["kind"])) and not _traps.allow_place(peer, spot):
 		return
@@ -5151,7 +5193,7 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 		for wood in _cooking.get("fuel_order", ["stick", "log"]):
 			var number: int = table.number_of(wood)
 
-			if box.has(number, 1):
+			if box.has(number, 1) and not (bool(fire.get("pot", false)) and _fire_wood_class(wood) == "log"):
 				box.remove(number, 1)
 				_fire_add(fire, wood)
 
