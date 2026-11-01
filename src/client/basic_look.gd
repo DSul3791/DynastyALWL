@@ -1610,6 +1610,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box(parts, Vector3(0.2, 0.025, 0.14), Vector3(-0.01, 0.022, 0.005), color.lightened(0.08))
 			_box(parts, Vector3(0.26, 0.006, 0.02), Vector3(0.0, -0.02, 0.09), dark)
 			_box(parts, Vector3(0.018, 0.034, 0.2), Vector3(0.121, -0.04, 0.0), light.lightened(0.15))
+			for k in range(6):   # the weave (Dave 1 Nov: "need texture and lines"): thin dark warp threads along the cloth and paler weft threads across it, standing a hair proud of the top fold
+				_box(parts, Vector3(0.2, 0.004, 0.006), Vector3(-0.01, 0.0365, -0.055 + 0.022 * float(k)), dark)
+			for k in range(8):
+				_box(parts, Vector3(0.006, 0.0045, 0.14), Vector3(-0.095 + 0.025 * float(k), 0.0368, 0.005), light.lightened(0.1))
 		"shaft":
 			# A spear (Dave: it must be pointy): an ash shaft with a slight taper and a leather grip wrap. The wooden spear has a whittled, fire-hardened point of the same wood (darker tip);
 			# the iron-headed spear (bits "metal") has a socket cone bound to the shaft and a flat leaf blade with a midrib, ending in a sharp point. Mesh axes: shaft along x, point at +x.
