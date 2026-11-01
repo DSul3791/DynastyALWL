@@ -1,9 +1,9 @@
-# Handoff: Sonny (character and Dynasty water), 1 Nov 2026
+# Handoff: Sonny (terrain and Dynasty water), 1 Nov 2026
 
-> **ROLE CHANGE (Dave, 1 Nov 2026): Sonny is the terrain and water agent only.** Unfinished character items below (side-on stance, creator preview opening on the back, character pictures) go to Kathleen (look) and Tyler (system). Do the water first.
+> **ROLE CHANGE (Dave, 1 Nov 2026): Sonny is the terrain and water agent only.** The unfinished character items (side-on stance, creator preview opening on the back, character pictures) are Kathleen's (look); the character system is Steve's. Edited by Jamie with Sonny's OK.
 
 ## My role
-Two jobs. (1) Character stance and body work earlier in the project (branch `sonny-character`, proposal commit 8cdfa792, creator pictures per section db105d36). The earlier character details are in that branch's history and docs; I did not re-audit them for this note. (2) Since 31 Oct: owner of the NEW water system, "Dynasty water", on branch `dynasty-water` (worktree `C:\GodotProjects\DynastyALWL\.claude\worktrees\dynasty-water`). Code only in `src/water2/`, plus two tiny edits outside it. The old water (`src/water/`) is untouched. Moderator is "More Dynasty"; Dave decides.
+Since 31 Oct: owner of the NEW water system, "Dynasty water", on branch `dynasty-water` (worktree `C:\GodotProjects\DynastyALWL\.claude\worktrees\dynasty-water`). Code only in `src/water2/`, plus two tiny edits outside it. The old water (`src/water/`) is untouched. Moderator is "More Dynasty"; Dave decides. Earlier character work (branch `sonny-character`, creator pictures db105d36) is handed over; its details are in that branch's history and were not re-audited.
 
 ## Done and pushed on `dynasty-water`
 - Core sim `src/water2/water_field.gd`: local inertial shallow water (Bates, Horritt, Fewtrell 2010) on the 8 m grid, per-face flow, Manning friction, 16x16 sleeping blocks, springs, sinks, held levels (sea), rain, channel mask, `hold_steady()` for rivers.

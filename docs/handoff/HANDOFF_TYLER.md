@@ -33,7 +33,7 @@ Uncommitted edits at the time of writing, all small and complete: `ACT_ADMIN_ENE
 - Still unrun: mutation checks for the newest features (`tools/mutation_check.sh`), and the creator-preview lighting look (`scenes/creator_proto`, ambient 0.55, sun 1.3; needs the editor).
 
 ## Read first
-`docs/COMFORT_DESIGN.md`, `TYLER_QUEUED_TESTS.md`, `TYLER_TEST_SYSTEM_REVIEW.md`, `TUTORIAL_FIRST_30_MIN.md`, `art/playthrough/RIG_PLACE.md`, `PROTOCOL.md` (last row 81; ACT_ADMIN_ENERGY 56 is an action number, no wire change), `src/stream/server_items.gd` (tick near line 987, `comfort_tip`, `_hint_trigger_true`), `src/client/building_look.gd` (`lit_fixture`).
+`docs/COMFORT_DESIGN.md`, `docs/archive/2026-11/TYLER_QUEUED_TESTS.md`, `TYLER_TEST_SYSTEM_REVIEW.md`, `TUTORIAL_FIRST_30_MIN.md`, `art/playthrough/RIG_PLACE.md`, `PROTOCOL.md` (last row 81; ACT_ADMIN_ENERGY 56 is an action number, no wire change), `src/stream/server_items.gd` (tick near line 987, `comfort_tip`, `_hint_trigger_true`), `src/client/building_look.gd` (`lit_fixture`).
 
 ## Decisions from Dave not to re-litigate
 Novice grace stays data-driven with default `always`. Fire light is short range and the fireplace lights only its front. Lean-to is 2.6 x 3.4, height 1.5. Archive, never delete. Never stop and wait on Dave; decide with best practice and record it. Keep tests light and fast.
