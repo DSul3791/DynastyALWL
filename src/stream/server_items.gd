@@ -1005,19 +1005,27 @@ func tick(delta: float) -> void:
 		_craft_tick(spent)
 		_slow_mark("rot-fires-vitals-craft", t0)
 		_crops_tick()
+		_slow_mark("crops", t0)
 		_lights_tick(spent)
 		_dev_pending_tick(spent)
+		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
+		_slow_mark("comfort", t0)
 		_goals_tick()
+		_slow_mark("goals", t0)
 		_learn_clock += spent
 
 		if _learn_clock >= LEARN_TICK_S:
 			_learn_clock = 0.0
 			_learn_tick()
 
+		_slow_mark("learn", t0)
 		_fish_tick()
+		_slow_mark("fish", t0)
 		_remains_tick(spent)
+		_slow_mark("remains", t0)
 		_spoil_tick(spent)
+		_slow_mark("spoil", t0)
 		_traps.tick(spent)
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 

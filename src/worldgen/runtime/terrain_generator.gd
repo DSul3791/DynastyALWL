@@ -168,6 +168,7 @@ func get_tile(coord: Vector2i):
 	if data != null:
 		return data
 
+	var load_start: int = Time.get_ticks_usec()
 	data = DataScript.new()
 	var path: String = "%s/tile_%d_%d.tile" % [tiles_dir, coord.x, coord.y]
 
@@ -204,8 +205,12 @@ func get_tile(coord: Vector2i):
 
 	# Built here, on the loading worker, before the tile is published: the first near_water() call used to build it under a lock on whichever thread asked first, and when that was
 	# the server main thread (the ground scatter's soil read) the join stalled 6 to 8 s (Tyler, 1 Nov 2026).
+	var near_start: int = Time.get_ticks_usec()
+
 	if not data.placeholder:
 		data.near_water()
+
+	print("terrain: tile %s loaded in %d ms (file %d ms, near_water %d ms)" % [str(coord), (Time.get_ticks_usec() - load_start) / 1000, (near_start - load_start) / 1000, (Time.get_ticks_usec() - near_start) / 1000])
 
 	_mutex.lock()
 
