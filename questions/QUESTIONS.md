@@ -61,3 +61,10 @@ Note: 1. Place a campfire kit and put in exactly 3 logs, then light it with plan
 Note: 2. Look at the flame, then stand 5 m away on a cold night.
 Note: Expect: the biggest flame, light about 14 m, warmth out to 5 m (heat +25 C). Note whether the flame is visibly bigger than tier 2 and whether it shows at all (open campfire-flames bug).
 [test]
+
+## heavy-kits-carry | Heavy build kits: craft them from stock lying near the workbench, so you never carry 314 kg?
+Note: A player carries about 52 kg. Stone wall kit needs 12 cut stone blocks (25 kg each) + 4 mortar = 314 kg. Fireplace kit about 79 kg, brick wall about 57 kg, brick floor about 54 kg. So the stone wall and fireplace kits cannot be made today.
+Note: Option A (recommended): the workbench uses ingredients lying within 3 m, so you stack blocks beside it. Needs code (Steve), fixes all four.
+Note: Option B: data only, lighter blocks and smaller kits. Brick wall and floor can be cut to about 43 kg, but stone stays above 52 kg.
+Note: Recommendation: Yes, option A, because it fixes all four kits and matches how a builder stacks stone beside the work; option B stays as the fallback for the two brick kits.
+[check]
