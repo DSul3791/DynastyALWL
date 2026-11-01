@@ -4,5 +4,5 @@
 	"sea": {"color": [0.05, 0.32, 0.45], "clarity_m": 10.0, "density": 1.03, "viscosity": 0.05, "roughness": 0.025, "flow_rate": 1.0, "film_m": 0.004, "turbulence": 0.6, "wave_speed": 1.2, "harm_per_s": 0.0},
 	"swamp": {"color": [0.16, 0.2, 0.1], "clarity_m": 0.6, "density": 1.02, "viscosity": 0.4, "roughness": 0.08, "flow_rate": 0.6, "film_m": 0.02, "turbulence": 0.08, "wave_speed": 0.5, "harm_per_s": 0.0},
 	"mud": {"color": [0.3, 0.2, 0.12], "clarity_m": 0.1, "density": 1.4, "viscosity": 2.5, "roughness": 0.12, "flow_rate": 0.3, "film_m": 0.06, "turbulence": 0.02, "wave_speed": 0.3, "harm_per_s": 0.0},
-	"lava": {"color": [1.0, 0.35, 0.05], "clarity_m": 0.0, "density": 2.6, "viscosity": 4.0, "roughness": 0.15, "flow_rate": 0.25, "film_m": 0.1, "turbulence": 0.04, "wave_speed": 0.2, "harm_per_s": 40.0}
+	"lava": {"color": [1.0, 0.35, 0.05], "clarity_m": 0.0, "density": 2.6, "viscosity": 4.0, "roughness": 0.15, "flow_rate": 0.25, "film_m": 0.1, "turbulence": 0.04, "wave_speed": 0.2, "harm_per_s": 40.0, "emission": 1.0}
 }
