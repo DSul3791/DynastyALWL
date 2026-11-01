@@ -55,3 +55,9 @@ Note: 1. Place a campfire kit and put in exactly 3 firewood, then light it with 
 Note: 2. Look at the flame, then stand 3 m away on a cold night.
 Note: Expect: a bigger flame than tier 1, light about 12 m, warmth out to 4 m (heat +20 C). It stays this size until the firewood is gone, then drops to tier 1 if sticks remain.
 [test]
+
+## fire-tier-3-bonfire | Fire tier 3: with 3 logs, is the fire a bonfire?
+Note: 1. Place a campfire kit and put in exactly 3 logs, then light it with plant fibre.
+Note: 2. Look at the flame, then stand 5 m away on a cold night.
+Note: Expect: the biggest flame, light about 14 m, warmth out to 5 m (heat +25 C). Note whether the flame is visibly bigger than tier 2 and whether it shows at all (open campfire-flames bug).
+[test]
