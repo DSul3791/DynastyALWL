@@ -1,5 +1,7 @@
 # Scope: Jason "Champ" (audio engineer, all sound), 1 Nov 2026
 
+> **CORRECTION (Dave, 1 Nov 2026): the sound HOOKS are yours:** which events make a sound, wiring the sound call at those events, auditing events that have none. System owners keep the rules; if an event is not exposed in their code, ask them to expose it (signal or event) and you place the sound call. Replaces the earlier edge that gave 'when a sound plays' to the system owners.
+
 Written with no Godot running (hold in force). Everything below is read from the repo at `966f1247` (daily `DailyDev_20261029`), not heard. I have heard nothing; where a claim needs ears or a running client it says so.
 
 ## 1. The job, in plain words, and its edges

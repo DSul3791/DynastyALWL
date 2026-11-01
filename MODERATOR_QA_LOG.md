@@ -54,3 +54,6 @@ Jason owns all sound: sound effects, ambience, music if any, footsteps, tool and
 
 ## 2026-11-01 New agent: Jamie: Documentation (Dave)
 Jamie reviews all documents from time to time: do they make sense, are they useful, do they conflict with others, do they duplicate others, are they accurate, are they bloated. He keeps the project efficient and well documented; he values accurate, concise, succinct documents. He archives, never deletes (docs/archive/YYYY-MM/), tells the owner before changing a document an owner maintains, and reports conflicts between documents to the moderator. He does not decide game design; Dave and the moderator do.
+
+## 2026-11-01 Sound hooks are Jason's, not the system owners' (Dave)
+Corrects my earlier edge ("when a sound plays is the system owner's"). Jason (Champ) owns the sound hooks too: finding which game events should make a sound, wiring the sound call at those events, auditing for events with no sound, and the sound tests. System owners (Steve and others) keep the rules; if an event does not exist in their code yet, Jason asks them to expose it (a signal or event) and they do, but Jason places the sound call. Sal's item sound keys stay item data that Jason maps.

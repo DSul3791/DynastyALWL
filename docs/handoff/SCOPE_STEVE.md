@@ -1,5 +1,7 @@
 # Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-through of code and handoffs)
 
+> **CORRECTION (Dave, 1 Nov 2026): sound hooks are Jason's, not yours.** You keep the rules. If Jason needs an event exposed (signal or event) so he can place a sound, expose it when he asks. You do not audit or wire sounds.
+
 Steve took over the sub-systems from Tyler on 1 Nov 2026 (Dave). Sources read: SCOPE/HANDOFF of Tyler, Sonny, Sal, the moderator; `MODERATOR_QA_LOG.md` (1 Nov entries), `DESIGN_IDEAS.md` 6.1, `PONYTAIL_RULES.md`, `MORNING_PLAYTEST_CHECKLIST.md`, `PLAYTHROUGH_STEP_STATUS.md`, `docs/COMFORT_DESIGN.md` (top), and the code named below. Nothing here was executed; "state" is from reading plus the claims of the handoffs, marked as such.
 
 ## 1. The job, where it starts and stops
