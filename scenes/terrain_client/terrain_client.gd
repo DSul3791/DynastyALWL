@@ -2942,6 +2942,7 @@ func _update_view(delta: float) -> void:
 				_avatar.animation_player.play(work, 0.05)
 				_avatar.animation_player.seek(0.0, true)
 
+		_avatar.set_meta("torch_in_hand", held != null and held.holding_torch())
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():

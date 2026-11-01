@@ -25,6 +25,10 @@ const CLIP_MAP := {
 	"crouch_walk_back": ["Cautious_Crouch_Walk_Backward", 0.0, -1.0, true, 0.97],
 	"crouch_walk_left": ["Cautious_Crouch_Walk_Left", 0.0, -1.0, true, 1.1],
 	"crouch_walk_right": ["Cautious_Crouch_Walk_Right", 0.0, -1.0, true, 0.93],
+	# The same with a torch in the hand (Dave's own clips): in place speeds 1.07, 1.03 and 1.11 m/s, retimed to 0.9; there is no backward torch clip, so backwards stays the plain one.
+	"crouch_walk_torch": ["Crouch_Walk_with_Torch", 0.0, -1.0, true, 1.19],
+	"crouch_walk_left_torch": ["Crouch_Walk_Left_with_Torch", 0.0, -1.0, true, 1.14],
+	"crouch_walk_right_torch": ["Crouch_Walk_Right_with_Torch", 0.0, -1.0, true, 1.23],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
