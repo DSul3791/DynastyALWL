@@ -13,9 +13,10 @@ Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating
 - Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
 
 ## Git
-- `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push.
-- Work on a branch (`claude/<topic>`), ship with `tools/ship.sh` (pushes `ship/build-N` and merges the PR with `tools/pr_merge.sh`). The branch is never deleted by the tools.
-- Commit, push and merge only with Dave's go-ahead.
+- `main` is the base for all code. It is protected: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until Dave has play-tested and says go.
+- Flow since 1 Nov 2026: each agent works on its own branch (`claude/<topic>` or its named branch) and pushes it; the moderator merges the pushes into the daily branch (`DailyDev_YYYYMMDD`); the full test pass runs; Dave play-tests. On Dave's go: backup, merge the daily into `main`, tests, new daily branch. Agents never merge to the daily or `main` themselves.
+- `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
+- OUT OF DATE (October, Technical Director era; kept until the moderator confirms): the build-number and `BUILD_LOG` rule below and the `ID_CLAIMS.md` rule under Code. The HUD number lives in `src/shared/build.gd`.
 - Build number = max(origin BUILD, last BUILD_LOG line) + 1; the BUILD_LOG line goes in the same commit. Each change is labelled RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
 - Before shipping: `git pull --rebase origin main`, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check.
 - Bakes: never bake or commit tiles in the cloud. A `TERRAIN_VERSION` change ships only with a bake.
