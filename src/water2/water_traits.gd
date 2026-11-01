@@ -1,7 +1,7 @@
 extends RefCounted
 
 # The settable traits of one liquid (Sonny, 31 Oct 2026, dynasty-water stage a). Values come from water_kinds.json; any field may be overridden after `of`.
-# Sim traits (change how it flows): density, viscosity, roughness, flow_rate, film_m. Look traits (never feed the sim): color, clarity_m, turbulence, wave_speed.
+# Sim traits (change how it flows): density, viscosity, roughness, flow_rate, film_m. Look traits (never feed the sim): color, clarity_m, turbulence, wave_speed, emission.
 # Rule trait: harm_per_s (damage to a body in it).
 
 const KINDS_PATH := "res://src/water2/water_kinds.json"
@@ -16,6 +16,7 @@ var flow_rate: float = 1.0
 var film_m: float = 0.004
 var turbulence: float = 0.3
 var wave_speed: float = 1.0
+var emission: float = 0.0   # look only (Kathreen 1 Nov): 1 = glows (lava), read by the shader once it has the uniform
 var harm_per_s: float = 0.0
 
 
@@ -29,5 +30,7 @@ static func of(kind_name: String):
 
 	for key in ["clarity_m", "density", "viscosity", "roughness", "flow_rate", "film_m", "turbulence", "wave_speed", "harm_per_s"]:
 		t.set(key, float(row[key]))
+
+	t.emission = float(row.get("emission", 0.0))
 
 	return t
