@@ -424,6 +424,11 @@ func _tool_class() -> String:
 
 
 # The clip the third-person body plays for the swing in progress ("" when none): `chop` for an axe, `pick_overhead` for a pick axe. Restart it when swing_serial changes.
+# The seconds one swing lasts (the sound and the hit come at hit share of it); the third-person clip is played at clip length / this so it follows the swing's speed.
+func work_seconds() -> float:
+	return _swing_length()
+
+
 func work_clip() -> String:
 	if _swing_t < 0.0 or not holding:
 		return ""

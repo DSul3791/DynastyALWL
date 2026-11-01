@@ -2926,6 +2926,10 @@ func _update_view(delta: float) -> void:
 
 		_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
 
+		if work != "" and clip == work:
+			# The blow's impact frame is the sound and the hit (held_item.gd _strike): the clip runs the swing's length, whatever the tool or its speed.
+			_avatar.animation_player.speed_scale = _avatar.animation_player.get_animation(work).length / maxf(held.work_seconds(), 0.05)
+
 		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
 		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
