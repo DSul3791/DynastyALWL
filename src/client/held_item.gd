@@ -13,6 +13,8 @@ const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
@@ -173,14 +175,17 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
-	_arms = RagdollScript.new(true)
+	# Dave's own arms (dynasty_arms.gd) go with his body; `--oldbody` or the "Old body" setting brings back the old tube arms.
+	_arms = DynastyArmsScript.new() if MyCharacter.dynasty_body_on() else RagdollScript.new(true)
 	_arms.name = "Arms"
 	_arms.position = ARMS_POS
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
 	camera.add_child(_arms)
 	_arms.play("idle")
-	_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
-	_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
+
+	if not _arms.has_meta("own_hands"):    # Dave's hands have fingers of their own
+		_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
+		_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
 
 	# Debug (Kathleen 2026-10-25: the first-person arms cast shadows but do not show): --arms-debug draws them in plain magenta, unlit and
 	# on top of everything, so a picture tells whether the mesh is drawn at all (then it is a colour or occlusion fault) or not (then culling).
