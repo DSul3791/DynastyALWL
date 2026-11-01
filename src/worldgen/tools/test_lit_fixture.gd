@@ -82,7 +82,7 @@ func _init() -> void:
 
 	for tier in [1, 2, 3]:
 		var camp: OmniLight3D = BuildingLook.fire(true, false, tier).get_node("Light")
-		check(camp.omni_range <= 8.0 and camp.omni_attenuation >= 2.0 and camp.has_meta("base_energy"), "campfire tier %d light: range %.1f m, falloff %.1f" % [tier, camp.omni_range, camp.omni_attenuation])
+		check(camp.omni_range <= 3.5 * pow(2.0, tier - 1) + 0.1 and camp.omni_attenuation >= 2.0 and camp.has_meta("base_energy"), "campfire tier %d light: range %.1f m, falloff %.1f" % [tier, camp.omni_range, camp.omni_attenuation])
 
 	print("lit fixture: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -171,5 +171,6 @@ func _init() -> void:
 	f._items[bare_id]["fire"]["state"] = 41
 	check(is_equal_approx(f.fire_protect_m(at), float(tiers["log"]["protect_m"])), "20 m from the large fire")
 
+	f._finish_writer()   # the background save thread must be done before quit, or the engine crashes at exit
 	print("test_fire_fuel_tiers: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
