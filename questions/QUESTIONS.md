@@ -74,3 +74,9 @@ Note: 1. Start a new character and time yourself with a stopwatch.
 Note: 2. Collect the sticks, leaves and twine for a lean-to and place it.
 Note: 3. Write down the minutes it took and whether it felt too slow, about right, or too quick. The pace numbers are estimates only.
 [test]
+
+## berries-stew-cook | Food: do berries (4 kcal) stew in a pot, and does the campfire refuse plants?
+Note: 1. Pick 3 berries and hold water. Put a berry in the campfire: it should not cook (campfire cooks only meat and fish).
+Note: 2. Place a clay pot on the campfire (6 clay, then 3 sticks and 3 twine), put in 3 berries and water.
+Note: 3. Note whether you get Stewed berries and whether the hint about the pot appeared once.
+[test]
