@@ -119,7 +119,7 @@ func _tile(generator, placer, settings, tile: Vector2i) -> void:
 
 		for n in range(positions.size()):
 			var p: Vector3 = positions[n]
-			var species: Dictionary = placer.species_by_id(int(items["ids"][n]))
+			var species: Dictionary = placer.species_of(int(items["ids"][n]))
 			total += 1
 
 			# Reeds and the other species that list water classes may stand in or at the water; the rest may not.
