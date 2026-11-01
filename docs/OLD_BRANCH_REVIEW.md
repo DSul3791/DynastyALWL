@@ -183,3 +183,9 @@ Open question for Dave (from Sal's fire-tiers doc): 3 pieces per fire tier; code
 | `claude/steve-shot-lock` | PORT (Tyler, keep) | mouse look ignored during a `--shots` run |
 | `claude/mike-rig-v4` | Kathleen decides | rig part superseded; held-tool pose edits in `basic_look.gd`/`held_item.gd` are hers |
 | `claude/mike-goalpad`, `mike-rig-v5`, `steve-warning-699` | drop | docs/logs only, experimental, one warning line |
+
+## Sal (19 of 19, 1 Nov)
+Already done / drop: `project-thread-5x1cni`, `sal-building-items`, `sal-corner-snaps`, `sal-hearth-oven`, `sal-roast-names` (done); `sal-building-tiers`, `sal-ceiling-names`, `sal-hand-crafts`, `sal-item-cut`, `sal-plan-updates`, `sal-plans-r1`, `sal-thatch-floor-hand`, `sal-thatch-sources`, `sal-tool-tiers`, `sal-weight-audit` (drop). Backlog for Steve (code owner), Sal recoverable commits: `sal-bridge-note` (bridge blueprints 5/10/20 m, 5e466b02), `sal-building-tiers-p1` (plank tier, thatch window, `test_tier_numbers`, 5d42ec40), `sal-no-stack-caps` plan and `sal-no-stack-caps-build` (39a03c5c; weight is the only limit, items still have stack caps). Keep those four until Steve decides. Sal asked to record these three backlog items in `SCOPE_SAL.md`.
+
+## Sonny (30 of 30, 1 Nov; daily TERRAIN_VERSION 44)
+Already done (delete): `sonny-farmland-tune`, `sonny-held`, `steve-erosion-threads`, `steve-ground-quiet`, `steve-river-settle`, `steve-settle-memory`, `tyler-bake28`. Drop (old bakes of versions 33 to 43, superseded): `david3-bake-*` (4), `mike-bake-*` (7), `mike-evidence-kathleen-13df38ae`, `mike-raw-heights`, `mike-seam-test`. PORT (keep until ported): `water-soak` (test fix, now), `steve-river-seams` (`settle_block.sh`, now), `erosion-fill-cap` (doc only), then ONE bake-changing branch with ONE bake proposal for Dave: `lake-lip`, `pond-notch`, `steve-spring-feed`, `land-types`, `land-types2`, `land-types2-springfeed` (the superset; needs a bake and Dave's go, after water).
