@@ -20,7 +20,7 @@ Sessions (each has `docs/handoff/HANDOFF_<NAME>.md` and `SCOPE_<NAME>.md`; Flora
 - Dave's play-test page: `MORNING_PLAYTEST_CHECKLIST.md` (14 steps), long version `_FULL.md`; step table `PLAYTHROUGH_STEP_STATUS.md`; status script `art/playthrough/run_status.sh` (24 fixed, 3 broken: F-01/F-24 recipes learnable, F-19 14 recipes blocked without future flag, S-craft flag mismatches; 2 need pictures F-10 held axe, F-13 blueberry).
 
 ## Possible new agent
-A second art agent named Kathreen (Dave) if Kathleen is overloaded; not started. See MODERATOR_QA_LOG.md 2026-11-01.
+A second art agent named Kathreenn (Dave) if Kathleen is overloaded; not started. See MODERATOR_QA_LOG.md 2026-11-01.
 
 ## Known open items
 1. Merge Sonny's water-default push (water2 default, `--water-old` flag, settings switch, lake sleep/cap, river drain) into the daily, then run the full test pass. Sonny will report the commit.
