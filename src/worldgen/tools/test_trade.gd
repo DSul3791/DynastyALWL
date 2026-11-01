@@ -106,10 +106,14 @@ func _init() -> void:
 	var purse0: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, slot_s, 1)
 	var first: int = items.coins_of(1) - purse0
+	check(first == 0 and items.count_for(1, "stone") == 60, "a single stone pays nothing and is kept (half a copper, sold in lots of 2)")
+	trade.deal(1, "hob", 1, slot_s, 3)
+	first = items.coins_of(1) - purse0
+	check(first == 1 and items.count_for(1, "stone") == 58, "three stones: one lot of 2 pays 1 copper, the odd stone is kept (%d)" % first)
 	var purse1: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, slot_s, 40)
 	var rest: int = items.coins_of(1) - purse1
-	check(first >= 1 and rest < 40, "selling forty stones at once pays less than a copper each in the end (%d for 40)" % rest)
+	check(first >= 1 and rest > 0 and rest <= 20, "selling forty stones at once pays 20 copper at most, half a copper each (%d for 40)" % rest)
 	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
 	clock[0] += 600.0
 	check(trade.demand("hob", "stone") > 0.9, "ten minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
