@@ -68,3 +68,9 @@ Note: Option A (recommended): the workbench uses ingredients lying within 3 m, s
 Note: Option B: data only, lighter blocks and smaller kits. Brick wall and floor can be cut to about 43 kg, but stone stays above 52 kg.
 Note: Recommendation: Yes, option A, because it fixes all four kits and matches how a builder stacks stone beside the work; option B stays as the fallback for the two brick kits.
 [check]
+
+## leanto-pace | Lean-to pace: does 32 sticks, 8 leaves, 4 twine feel right for the first hour?
+Note: 1. Start a new character and time yourself with a stopwatch.
+Note: 2. Collect the sticks, leaves and twine for a lean-to and place it.
+Note: 3. Write down the minutes it took and whether it felt too slow, about right, or too quick. The pace numbers are estimates only.
+[test]
