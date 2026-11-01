@@ -20,3 +20,10 @@ Branch `claude/kathree-art-20c939`. Scope: `SCOPE_KATHREEN.md`. Nothing here has
 
 ## Skipped or not verified
 No code run, no parse check (GDScript edits are small, but a typo would only show in Godot: run `godot --headless --check-only` or the look tests first in Phase 2). No pictures seen. Thumb geometry is arithmetic. Water, creator, animals, ground untouched.
+
+## Update after Phase 2 (1 Nov, pictures taken, QA cards pushed on qa 738e8ccf)
+- Parse/look tests pass (test_flora_budget 0 over, test_look_table 0 failures); ragdoll_body.gd compiles and runs in the real game (body_right.png). NOTE: a fresh worktree needs `godot --headless --path . --import` once, else rigs fail with "AppConfig not declared".
+- Yarrow 3.5, chamomile 3 (grey-blue speckle on white petals: fix = flat/smooth material for daisy and umbel heads in flora_view.gd, tell Kathleen; only if Dave says No), blueberry 3 (small bush behind grass), creator 3 (scene faces front; the "back" pictures came from tools/proto_creator_view.gd forcing 20 degrees: change to 180, one line, not done), body details 3. Cards: pic-yarrow-real, pic-chamomile-real, pic-blueberry-real, pic-creator-front, pic-body-details.
+- Water look: sea baseline 3.5 (regular lattice), river shot missed (retake from the bank, e.g. 53302,68436 facing N lower, after the test pass). Prepared and UNTESTED: sea_slope crest modulation in water_material.gd (a5c239ae); retake sea.png at 54728,75530 and keep only if better. Sonny asked for flow channel and kind data (owner Sonny, next step his reply). Lava/swamp emission: Kathreen after Sonny.
+- Not done: ground PBR picture with Kathleen (needs Godot, wait for test pass); animal looks review (read-only part not started); character stance pass; grass/shrub pass. Owner Kathreen, next step: one ground shot at 10/30 m, then animals from data/animals/animals.json.
+- Not verified: thumbs (too small to see at 1.6 m), face at 1.6 m is crude.
