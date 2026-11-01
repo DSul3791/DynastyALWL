@@ -32,3 +32,6 @@ Animals as a system (which animals live where, how many, their placement, densit
 
 ## 2026-11-01 Rule: anything about LOOKS is Kathleen's (Dave: "unless it's looks, then it's artistic")
 Whoever owns the thing owns its rules, numbers and placement; how it LOOKS (models, textures, colours, shaders that decide appearance, lighting looks, animation looks) is Kathleen's. Applied so far: character look, fire and flame look, animal look, flora look (plant shapes, flower and stem colours, grass appearance and shader look). MikeW keeps density, placement, seasons and draw cost; Tyler keeps rules; Sal keeps data and text; Sonny keeps terrain and water mechanics. Open question for Dave: the water's LOOK (colour, shader appearance) — Sonny or Kathleen?
+
+## 2026-11-01 Animal placement AND behaviour go to MikeW (Dave)
+Replaces the earlier split where Tyler kept animal behaviour: MikeW (Flora and Fauna) owns animal placement and animal behaviour (wandering, fleeing, hunting, herding, resting, spawn and despawn, how they react to the player). Tyler keeps only the shared server rules animals plug into (damage and death handling, carcass, protocol). Kathleen keeps how animals look; Sal keeps drops and text.

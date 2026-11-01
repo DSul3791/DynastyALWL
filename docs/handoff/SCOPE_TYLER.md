@@ -1,5 +1,7 @@
 # Scope: Tyler: Q&A Testing, 1 Nov 2026
 
+> **UPDATE (Dave, 1 Nov 2026): animal placement and behaviour are MikeW's.** You keep only the shared server rules animals plug into (damage and death handling, carcass, protocol).
+
 > **ROLE REMOVAL (Dave, 1 Nov 2026): fire and flame LOOKS are Kathleen's.** You keep the rules (lit/unlit, fuel, warmth, saved lit state, who can light). Light node parameters and flame models are hers; review her code edits.
 
 > **ROLE ADDITION (Dave, 1 Nov 2026, interim): the character SYSTEM is yours:** character store and records, select screen code, learned recipes and goals per character, idle timeout, smoke tests of the first minutes. Previously Sonny's; the character LOOK goes to Kathleen.
