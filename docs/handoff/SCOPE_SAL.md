@@ -57,3 +57,23 @@ I own the **data** that describes things in the game: what items exist, how they
 - Numbers in all player-facing text match the recipes (the checker in plan item 2 finds nothing).
 - A person has played the first hour and first week with a stopwatch, and the pace numbers in `CRAFT_PACING.md` are measured, not estimated.
 - Remaining `future` items are only those whose source (animal, crop, building) does not exist yet.
+
+## 7. Backlog at handoff (1 Nov 2026, CLOSING_PLAN)
+Everything below is written down with an owner, the exact next step and why. Specs for code are in `docs/handoff/SAL_SPECS_FOR_STEVE.md`.
+
+| Item | Owner | Next step | Why not done |
+|---|---|---|---|
+| Phase 2 checks: eight `items_check` steps, `test_goals`, `test_learn`, `test_lumber_route` on the merged daily | Sal | Run once the moderator sends PHASE 2 (see HANDOFF_SAL "How to test") | Godot held while Dave play-tests |
+| Fire tiers 1 to 3 judged by eye | Dave | Answer QA cards `fire-tier-1-survival`, `-2-campfire`, `-3-bonfire` | Needs a person in the game |
+| Heavy kits (stone wall, brick wall, brick floor, fireplace) | Dave then Steve | Answer card `heavy-kits-carry`; then Steve spec 2 | Design call, then code |
+| Lean-to pace; berries and pot | Dave | Cards `leanto-pace`, `berries-stew-cook` | Needs a stopwatch run by a person |
+| Stump `final_by_radius` | Steve | Spec 1 | Server code |
+| `gap_exempt` check | Steve | Spec 3 | Server code |
+| Bridges, plank tier and thatch window, no stack caps | Steve | Spec 4 | Code or design call |
+| `sow_season`, `needs_material`, quality grades | Steve | Spec 5 | Code or design call |
+| Fibre cloth look (grey) | Kathleen | Draw it, remove its row from `look_placeholders.json` | Art |
+| Placed sounds judged by ear | Jason, Dave | Jason's sound review cards | Needs listening |
+| Wool and linen, wool rug | Sal (later) | When sheep, goats or flax exist write the recipes, unlock the wool rug | No source exists |
+| Text-versus-recipe checker; prices for 34 unpriced kits; carry-weight audit script | Sal (later) | Plan items 1 to 3 in section 3 | Not started; no Godot needed, next after handoff |
+| Rose hips | Sal, decided | Keep. To reverse: port `1174dd91`, set `rose_hips` future, run `validate_items` | Dave's call, no action |
+| Branch `claude/sal-no-rose-berries` | Moderator | Delete, as hips stay | Decision made |
