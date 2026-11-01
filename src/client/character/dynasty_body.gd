@@ -29,8 +29,11 @@ const CLIP_MAP := {
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	"swing": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.4],
 	"swing_fp": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.5],
-	"chop": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.52],
-	"pick_overhead": ["Heavy_Hammer_Swing", 0.0, -1.0, false, 0.55],
+	# Heavy_Hammer_Swing is 1.83 s with TWO blows (arm speed peaks at 0.73 s and 1.53 s; the first blow lands at about 0.78 s, read from the glb's rotation keys 1 Nov 2026).
+	# Only the first blow is kept so one swing is one hit: it ends at 1.48 s and is retimed to the game's 0.95 s chop, which puts the blow at 0.50 s, the moment held_item.gd
+	# HIT_AT sends the sound and the hit. The pick (1.0 s, hit at 0.52 s) uses 1.5 s at 0.667.
+	"chop": ["Heavy_Hammer_Swing", 0.0, 1.48, false, 0.642],
+	"pick_overhead": ["Heavy_Hammer_Swing", 0.0, 1.5, false, 0.667],
 	"jab": ["Right_Jab_from_Guard", 0.0, -1.0, false, 0.4],
 	"throw": ["Charged_Spell_Cast", 0.0, -1.0, false, 0.4],
 	"use": ["Push_Forward_and_Stop", 0.0, -1.0, false, 0.5],
