@@ -2899,14 +2899,14 @@ static func _ground_berry(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 # made of beads and flat petals in explicit colours (the foliage tint only reaches the leaves).
 const WILD_STEM := Color(0.38, 0.5, 0.22)
 const WILDFLOWER_LOOKS := {
-	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 1.0, 1.0), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
+	"chamomile": {"head": "daisy", "stems": 7, "tall": 1.0, "head_min": 0.14, "petal": Color(1.0, 0.98, 0.9), "stem": Color(0.3, 0.42, 0.18), "centre": Color(0.55, 0.3, 0.0), "size": 0.045, "petals": 10},
 	"feverfew": {"head": "daisy", "stems": 7, "tall": 0.95, "head_min": 0.12, "petal": Color(1.0, 1.0, 0.97), "centre": Color(0.7, 0.45, 0.0), "size": 0.04, "petals": 9},
 	"arnica": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.16, "petal": Color(1.0, 0.68, 0.0), "centre": Color(0.9, 0.45, 0.0), "size": 0.08, "petals": 12},
 	"dandelion": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.17, "petal": Color(1.0, 0.8, 0.0), "centre": Color(1.0, 0.6, 0.0), "size": 0.05, "petals": 14},
 	"st_johns_wort": {"head": "daisy", "stems": 6, "tall": 1.1, "head_min": 0.17, "petal": Color(1.0, 0.82, 0.0), "centre": Color(0.95, 0.55, 0.0), "size": 0.045, "petals": 5},
 	"wild_carrot": {"head": "umbel", "stems": 4, "tall": 1.2, "head_min": 0.22, "petal": Color(1.0, 1.0, 0.97), "size": 0.18, "rays": 9},
 	"angelica": {"head": "umbel", "stems": 3, "petal": Color(0.88, 0.95, 0.78), "size": 0.2, "rays": 11},
-	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.2, "petal": Color(1.0, 1.0, 1.0), "size": 0.14, "rays": 8},
+	"yarrow": {"head": "umbel", "stems": 5, "tall": 1.0, "head_min": 0.2, "petal": Color(1.0, 0.96, 0.84), "stem": Color(0.3, 0.42, 0.18), "size": 0.14, "rays": 8},
 	"meadowsweet": {"head": "umbel", "stems": 4, "tall": 1.15, "head_min": 0.2, "petal": Color(1.0, 0.92, 0.62), "size": 0.15, "rays": 9},
 	"valerian": {"head": "umbel", "stems": 4, "tall": 1.1, "head_min": 0.2, "petal": Color(0.92, 0.3, 0.58), "size": 0.14, "rays": 9},
 	"wild_garlic": {"head": "umbel", "stems": 5, "tall": 0.9, "head_min": 0.16, "petal": Color(1.0, 1.0, 1.0), "size": 0.15, "rays": 8},
@@ -2963,6 +2963,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 	var size: float = float(look["size"]) * h * 1.2 if head == "umbel" else float(look["size"]) * maxf(h, crown * 1.6) * 2.6
 	size = maxf(size, float(look.get("head_min", 0.0)))      # meadow flowers (moderator 2026-10-31): bigger heads and taller stems so a drift reads from 10 m
 	var petal: Color = look["petal"]
+	var stem_col: Color = look.get("stem", WILD_STEM)   # yarrow and chamomile: darker stem so it is not pale and glassy (Kathreen, by reading; check by picture)
 	var az: float = rng.randf() * TAU
 
 	# Basal leaves: a few low clumps round the foot.
@@ -2978,8 +2979,8 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 		var base: Vector3 = out * crown * 0.05
 		var mid: Vector3 = base.lerp(tip, 0.5) + out * crown * 0.08
 		var stem_r: float = maxf(h * 0.012, 0.0045 if look.has("tall") else 0.003)
-		_branch(bark, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), WILD_STEM, 3)
-		_branch(bark, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), WILD_STEM, 3)
+		_branch(bark, base, mid, stem_r, maxf(h * 0.009, stem_r * 0.75), stem_col, 3)
+		_branch(bark, mid, tip, maxf(h * 0.009, stem_r * 0.75), maxf(h * 0.006, stem_r * 0.55), stem_col, 3)
 
 		if not far and k % 2 == 0:
 			_clump(leaves, rng, base.lerp(mid, 0.6) + out * crown * 0.1, Vector3(0.0, -h, 0.0), maxf(crown * 0.35, h * 0.18), 0.95, 2)
@@ -2996,7 +2997,7 @@ static func _wildflower(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 					var a: float = TAU * float(r) / float(look["rays"]) + rng.randf() * 0.4
 					var ring: float = size * (0.9 if r > 0 else 0.0)
 					var ray: Vector3 = tip + Vector3(cos(a) * ring, size * 0.25 * (1.0 - ring / (size * 1.0 + 0.001)), sin(a) * ring)
-					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), WILD_STEM, 3)
+					_branch(bark, tip, ray, maxf(h * 0.003, 0.001), maxf(h * 0.002, 0.001), stem_col, 3)
 					_cluster(bark, rng, ray, size * 0.4, petal, true, 3)
 			_:
 				var beads: int = 3 if far else int(look["beads"])

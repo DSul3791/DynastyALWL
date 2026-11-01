@@ -50,3 +50,6 @@ Every character state, animal in `animals.json`, water kind (fresh, sea, swamp, 
 
 ## 8. Not verified
 Everything above is from documents; no code run, no picture seen, no Godot started (hold in force). The split with Kathleen is unconfirmed until she replies. Whether `c41e2d21` really fixed the creator view is unknown.
+
+## 9. Phase 1 decisions (1 Nov)
+Body details: PORTED (thumbs moved out for the enlarged hand). Ground PBR: NOT ported until a real-game picture with Kathleen shows the ground flat. Yarrow and chamomile: warmer heads and darker stems done by reading. Backlog with owner, next step and reason: `HANDOFF_KATHREEN.md`.
