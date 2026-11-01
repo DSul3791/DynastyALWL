@@ -106,14 +106,14 @@ func _init() -> void:
 	var purse0: int = items.coins_of(1)
 	var one_msg: String = trade.deal(1, "hob", 1, slot_s, 1)
 	var first: int = items.coins_of(1) - purse0
-	check(first == 0 and items.inventory_of(1).count_of(stone) == 60 and one_msg.contains("lots of 5"), "one stone is refused: 'sells in lots of 5' (%s)" % one_msg)
-	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 7)
-	check(items.coins_of(1) - purse0 >= 1 and items.inventory_of(1).count_of(stone) == 55 and seven_msg.contains("lots of 5"), "seven stones sell as one lot of five, two stay and the message says why (%s)" % seven_msg)
+	check(first == 0 and items.inventory_of(1).count_of(stone) == 60 and one_msg.contains("pairs"), "one stone is not worth a copper: refused, 'sell in pairs' (%s)" % one_msg)
+	trade.deal(1, "hob", 1, slot_s, 3)
+	check(items.coins_of(1) - purse0 == 1 and items.inventory_of(1).count_of(stone) == 58, "three stones pay one copper and the odd stone stays")
 	purse0 = items.coins_of(1)
 	var purse1: int = items.coins_of(1)
-	trade.deal(1, "hob", 1, slot_s, 30)
+	trade.deal(1, "hob", 1, slot_s, 40)
 	var rest: int = items.coins_of(1) - purse1
-	check(rest >= 1 and rest <= 6, "selling thirty stones at once pays at most a copper a lot of five (%d for 30)" % rest)
+	check(rest >= 1 and rest <= 20, "selling forty stones at once pays at most half a copper each (%d for 40)" % rest)
 	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
 	clock[0] += 600.0
 	check(trade.demand("hob", "stone") > 0.9, "ten minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
