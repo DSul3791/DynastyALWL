@@ -202,6 +202,11 @@ func get_tile(coord: Vector2i):
 	else:
 		data.make_placeholder(coord, tile_size_m, _placeholder_depth)
 
+	# Built here, on the loading worker, before the tile is published: the first near_water() call used to build it under a lock on whichever thread asked first, and when that was
+	# the server main thread (the ground scatter's soil read) the join stalled 6 to 8 s (Tyler, 1 Nov 2026).
+	if not data.placeholder:
+		data.near_water()
+
 	_mutex.lock()
 
 	# Another thread may have loaded it meanwhile; keep the first.

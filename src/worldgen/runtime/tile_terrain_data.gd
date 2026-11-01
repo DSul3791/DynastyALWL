@@ -319,7 +319,10 @@ func height_at(x: float, z: float) -> float:
 	)
 
 
-# Index of the nearest map sample.
+static func wet_flag(kind: int) -> int:
+	return 1 if kind == 2 or kind == 3 else 0
+
+
 # 1 where the sample or any of its eight neighbours is lake, pond or river water (built once).
 func near_water() -> PackedByteArray:
 	# Built once, under a lock: several server worker threads ask at the same time.
@@ -330,21 +333,40 @@ func near_water() -> PackedByteArray:
 		_near_mutex.unlock()
 		return ready
 
+	# Two passes (a 3 wide row maximum, then a 3 tall column maximum) instead of nine reads per sample: 3.7 million samples took seven seconds the old way.
+	var wet: PackedByteArray = PackedByteArray()
+	wet.resize(samples * samples)
 	var built: PackedByteArray = PackedByteArray()
 	built.resize(samples * samples)
 
 	for j in samples:
+		var row: int = j * samples
+
 		for i in samples:
-			var hit: int = 0
+			var kind: int = water_class[row + i]
+			var hit: int = 1 if kind == 2 or kind == 3 else 0
 
-			for dj in range(maxi(j - 1, 0), mini(j + 2, samples)):
-				for di in range(maxi(i - 1, 0), mini(i + 2, samples)):
-					var kind: int = water_class[dj * samples + di]
+			if hit == 0 and i > 0:
+				hit = wet_flag(water_class[row + i - 1])
 
-					if kind == 2 or kind == 3:
-						hit = 1
+			if hit == 0 and i + 1 < samples:
+				hit = wet_flag(water_class[row + i + 1])
 
-			built[j * samples + i] = hit
+			wet[row + i] = hit
+
+	for j in samples:
+		var row: int = j * samples
+
+		for i in samples:
+			var hit: int = wet[row + i]
+
+			if hit == 0 and j > 0:
+				hit = wet[row - samples + i]
+
+			if hit == 0 and j + 1 < samples:
+				hit = wet[row + samples + i]
+
+			built[row + i] = hit
 
 	_near_water = built
 	_near_mutex.unlock()
