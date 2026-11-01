@@ -1,6 +1,7 @@
 Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
 
 probe: workbench placed, station_near workbench = true
+probe: tool rack placed, station_near workbench level 2 = true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Make a Wooden spear, then bind it with 2 twine.
@@ -29,42 +30,58 @@ probe: notice: Walk with W A S D. Hold Shift to run.
 probe: bandage_plantain | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: bandage_staunchmoss | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_spade | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Click to place it, open side towards you.
 probe: lean_to_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: chest_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: chopping_block | known=true | station= | crafted=true
-probe: notice: That needs a camp bench nearby
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: You work out how to make bench
-probe: notice: You work out how to make table
-probe: plank_chest_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH plank_chest_kit known/open=true crafted=false
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: plank_chest_kit | known=true | station=workbench | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_bowl | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: clay_pot | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: bucket | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: waterskin | known=true | station= | crafted=true
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: waterskin | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: twine_bark | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rope | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -73,20 +90,14 @@ probe: stone_spade | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: iron_spade | known=true | station= | crafted=true
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: steel_spade | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: backpack | known=true | station= | crafted=true
@@ -95,16 +106,22 @@ probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: energy_bar | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: herbal_tea | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
-probe: stomach_tea | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
-probe: chamomile_tea | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: willow_bark_tea | known=true | station= | crafted=true
+probe: stomach_tea | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: chamomile_tea | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: willow_bark_tea | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: grass_skirt | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -115,16 +132,18 @@ probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fibre_sandals | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_cloak | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: hide_boots | known=true | station= | crafted=true
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: hide_boots | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_hood | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -135,19 +154,19 @@ probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_leggings | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: sinew_cord | known=true | station= | crafted=true
 probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: sinew_cord | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rough_bed_kit | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: campfire_pot_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
@@ -157,15 +176,9 @@ probe: thatch_floor_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_wall_kit | known=true | station=workbench | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
@@ -173,12 +186,8 @@ probe: thatch_roof_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: thatch_doorway_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -190,68 +199,74 @@ probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: shore_net | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fishing_rod | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: tool_rack_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: log_workbench_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wall_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: floor_section_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: floor_section_kit | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: roof_section_kit | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: foundation_section_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: doorway_section_kit | known=true | station= | crafted=true
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: doorway_section_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: window_section_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: timber_prop_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: timber_set_kit | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: cut_stone_block | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: mortar | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: ladder_kit | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_hoe | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_hoe | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: iron_hoe | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: steel_hoe | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: rough_plank | known=true | station=workbench | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: cobblestone | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
@@ -259,10 +274,10 @@ probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_shingle | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_pin | known=true | station=workbench | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -274,73 +289,73 @@ probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rock_pile | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: wooden_hammer | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: wooden_hammer | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: stone_hammer | known=true | station=workbench | crafted=true
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hand_saw | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Lumber by hand was cancelled: a tool is missing
 probe: lumber_by_hand | known=true | station= | crafted=false
 probe: MISMATCH lumber_by_hand known/open=true crafted=false
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: wooden_bow | known=true | station=workbench | crafted=true
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_arrow | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: stone_arrow | known=true | station= | crafted=true
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: quiver | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: stone_arrow | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: quiver | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: snare | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: kindling | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: processed_hide | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_scraper | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: javelin | known=true | station=workbench | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: obsidian_knife | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_pickaxe | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: sickle | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wooden_club | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_tunic | known=true | station= | crafted=true
@@ -350,57 +365,55 @@ probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_trousers | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: hide_gloves | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: clay_jug | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: clay_jug | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: herb_salve | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: splint | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Walk with W A S D. Hold Shift to run.
 probe: candle | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wicker_shield | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stone_mace | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: plank_shield | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: leather_cap | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: leather_jerkin | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: gambeson | known=true | station=workbench | crafted=true
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: quern | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
@@ -420,13 +433,11 @@ probe: notice: Walk with W A S D. Hold Shift to run.
 probe: stone_wedge | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fibre_arrow | known=true | station= | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: tinder | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: lumber_wedge | known=true | station=workbench | crafted=true
@@ -435,234 +446,468 @@ probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: rough_bed_bedding | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: wooden_hammer_soft | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: rough_bed_straw | known=true | station= | crafted=true
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: wooden_hammer_soft | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
-probe: rough_bed_straw | known=true | station= | crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 303 ms
+items tick slow: scatter reached after 307 ms
+items tick slow: sync-world-items reached after 347 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_tunic | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_trousers | known=true | station= | crafted=true
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
+probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 252 ms
 probe: wool_cap | known=true | station= | crafted=true
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: wool_mittens | known=true | station= | crafted=true
+items tick slow: sync-world-items reached after 1195 ms
+items tick slow: rot-fires-vitals-craft reached after 533 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 607 ms
+items tick slow: scatter reached after 611 ms
+items tick slow: sync-world-items reached after 664 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 395 ms
+items tick slow: scatter reached after 419 ms
+items tick slow: sync-world-items reached after 461 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 272 ms
+probe: wool_mittens | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 267 ms
+items tick slow: scatter reached after 9824 ms
+items tick slow: sync-world-items reached after 9864 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: sync-world-items reached after 4015 ms
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 1426 ms
+items tick slow: scatter reached after 1435 ms
+items tick slow: sync-world-items reached after 1513 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 412 ms
+items tick slow: scatter reached after 418 ms
+items tick slow: sync-world-items reached after 484 ms
+items tick slow: sync-world-items reached after 318 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: linen_shirt | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 567 ms
+items tick slow: scatter reached after 572 ms
+items tick slow: sync-world-items reached after 673 ms
+items tick slow: sync-world-items reached after 250 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_cloak | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_hat | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 1666 ms
+items tick slow: scatter reached after 1670 ms
+items tick slow: sync-world-items reached after 1917 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 486 ms
+items tick slow: scatter reached after 498 ms
+items tick slow: sync-world-items reached after 562 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fur_boots | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 368 ms
+items tick slow: scatter reached after 376 ms
+items tick slow: sync-world-items reached after 425 ms
+items tick slow: sync-world-items reached after 260 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 443 ms
+items tick slow: scatter reached after 450 ms
+items tick slow: sync-world-items reached after 501 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: linen | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 353 ms
+items tick slow: scatter reached after 359 ms
+items tick slow: sync-world-items reached after 398 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 542 ms
+items tick slow: scatter reached after 546 ms
+items tick slow: sync-world-items reached after 593 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 274 ms
+items tick slow: scatter reached after 277 ms
+items tick slow: sync-world-items reached after 326 ms
+items tick slow: sync-world-items reached after 302 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: learn-fish-remains-spoil-traps reached after 672 ms
+items tick slow: scatter reached after 675 ms
+items tick slow: sync-world-items reached after 719 ms
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: fibre_cloth | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 277 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 455 ms
+items tick slow: scatter reached after 461 ms
+items tick slow: sync-world-items reached after 524 ms
 probe: flour_from_oats | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 418 ms
+items tick slow: scatter reached after 421 ms
+items tick slow: sync-world-items reached after 470 ms
 probe: flour_from_rye | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 366 ms
+items tick slow: scatter reached after 372 ms
+items tick slow: sync-world-items reached after 420 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: tallow_candle | known=true | station= | crafted=true
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: tallow_candle | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 387 ms
+items tick slow: scatter reached after 396 ms
+items tick slow: sync-world-items reached after 471 ms
+items tick slow: sync-world-items reached after 301 ms
 probe: leather_strap | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 271 ms
+items tick slow: sync-world-items reached after 267 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 368 ms
+items tick slow: scatter reached after 376 ms
+items tick slow: sync-world-items reached after 421 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 314 ms
+items tick slow: scatter reached after 328 ms
+items tick slow: sync-world-items reached after 374 ms
 probe: butter | known=true | station= | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 461 ms
+items tick slow: scatter reached after 468 ms
+items tick slow: sync-world-items reached after 518 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 269 ms
+items tick slow: scatter reached after 273 ms
+items tick slow: sync-world-items reached after 319 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: stairs_wood_kit | known=true | station=workbench | crafted=true
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 282 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 260 ms
+items tick slow: sync-world-items reached after 263 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 418 ms
+items tick slow: scatter reached after 422 ms
+items tick slow: sync-world-items reached after 482 ms
+items tick slow: sync-world-items reached after 335 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: learn-fish-remains-spoil-traps reached after 470 ms
+items tick slow: scatter reached after 492 ms
+items tick slow: sync-world-items reached after 591 ms
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 311 ms
+items tick slow: sync-world-items reached after 292 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 347 ms
+items tick slow: scatter reached after 351 ms
+items tick slow: sync-world-items reached after 400 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 278 ms
+items tick slow: scatter reached after 281 ms
+items tick slow: sync-world-items reached after 343 ms
 probe: log_wall_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: learn-fish-remains-spoil-traps reached after 313 ms
+items tick slow: scatter reached after 321 ms
+items tick slow: sync-world-items reached after 368 ms
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 260 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 370 ms
+items tick slow: scatter reached after 374 ms
+items tick slow: sync-world-items reached after 424 ms
+items tick slow: sync-world-items reached after 263 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 277 ms
+items tick slow: scatter reached after 250 ms
+items tick slow: sync-world-items reached after 294 ms
 probe: log_floor_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 269 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 264 ms
+items tick slow: scatter reached after 267 ms
+items tick slow: sync-world-items reached after 305 ms
+items tick slow: sync-world-items reached after 284 ms
+items tick slow: scatter reached after 251 ms
+items tick slow: sync-world-items reached after 296 ms
 probe: log_roof_kit | known=true | station=workbench | crafted=true
-probe: notice: That needs a camp bench nearby
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 255 ms
+items tick slow: scatter reached after 258 ms
+items tick slow: sync-world-items reached after 300 ms
+items tick slow: sync-world-items reached after 271 ms
+items tick slow: sync-world-items reached after 290 ms
+items tick slow: sync-world-items reached after 250 ms
+items tick slow: sync-world-items reached after 279 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: stone_wall_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH stone_wall_kit known/open=true crafted=false
-probe: notice: That needs a camp bench nearby
+items tick slow: sync-world-items reached after 262 ms
+items tick slow: sync-world-items reached after 270 ms
+probe: stone_wall_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 272 ms
+items tick slow: sync-world-items reached after 265 ms
+items tick slow: sync-world-items reached after 265 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: stone_floor_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH stone_floor_kit known/open=true crafted=false
-probe: notice: That needs a camp bench nearby
+items tick slow: sync-world-items reached after 273 ms
+probe: stone_floor_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 371 ms
+items tick slow: scatter reached after 374 ms
+items tick slow: sync-world-items reached after 409 ms
+items tick slow: sync-world-items reached after 274 ms
+items tick slow: sync-world-items reached after 267 ms
+items tick slow: sync-world-items reached after 282 ms
+items tick slow: sync-world-items reached after 256 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: stone_roof_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH stone_roof_kit known/open=true crafted=false
-probe: notice: That needs a camp bench nearby
+items tick slow: sync-world-items reached after 256 ms
+items tick slow: sync-world-items reached after 274 ms
+probe: stone_roof_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 275 ms
+items tick slow: sync-world-items reached after 264 ms
+items tick slow: sync-world-items reached after 282 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: brick_wall_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH brick_wall_kit known/open=true crafted=false
-probe: notice: That needs a camp bench nearby
+items tick slow: learn-fish-remains-spoil-traps reached after 255 ms
+items tick slow: scatter reached after 258 ms
+items tick slow: sync-world-items reached after 296 ms
+items tick slow: sync-world-items reached after 263 ms
+probe: brick_wall_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 264 ms
+items tick slow: sync-world-items reached after 285 ms
+items tick slow: sync-world-items reached after 263 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: brick_floor_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH brick_floor_kit known/open=true crafted=false
-probe: notice: That needs a camp bench nearby
+items tick slow: sync-world-items reached after 271 ms
+probe: brick_floor_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 262 ms
+items tick slow: sync-world-items reached after 282 ms
+items tick slow: sync-world-items reached after 295 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 271 ms
+items tick slow: scatter reached after 274 ms
+items tick slow: sync-world-items reached after 311 ms
+items tick slow: sync-world-items reached after 270 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: brick_roof_kit | known=true | station=workbench | crafted=false
-probe: MISMATCH brick_roof_kit known/open=true crafted=false
+items tick slow: sync-world-items reached after 279 ms
+probe: brick_roof_kit | known=true | station=workbench | crafted=true
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 263 ms
 probe: log_cabin_set_kit | known=false | station=workbench | crafted=false
 probe: notice: You work out how to make log seat
 probe: notice: Walk with W A S D. Hold Shift to run.
 probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: log_seat_kit | known=false | station= | crafted=true
-probe: MISMATCH log_seat_kit known/open=false crafted=true
-probe: notice: You work out how to make stool
+items tick slow: sync-world-items reached after 271 ms
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: log_seat_kit | known=true | station= | crafted=true
+probe: notice: You work out how to make stool
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: stool_kit | known=false | station= | crafted=true
-probe: MISMATCH stool_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 272 ms
+probe: stool_kit | known=true | station= | crafted=true
 probe: notice: You work out how to make bench
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: bench_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH bench_kit known/open=false crafted=true
+items tick slow: scatter reached after 253 ms
+items tick slow: sync-world-items reached after 301 ms
+items tick slow: sync-world-items reached after 285 ms
+items tick slow: sync-world-items reached after 287 ms
+probe: bench_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make chair
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 270 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: chair_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH chair_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 294 ms
+items tick slow: sync-world-items reached after 270 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+probe: chair_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make table
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 291 ms
+items tick slow: scatter reached after 252 ms
+items tick slow: sync-world-items reached after 297 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: table_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH table_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 286 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 290 ms
+items tick slow: sync-world-items reached after 259 ms
+probe: table_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make hide rug
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: hide_rug_kit | known=false | station= | crafted=true
-probe: MISMATCH hide_rug_kit known/open=false crafted=true
-probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 276 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: sync-world-items reached after 267 ms
+probe: hide_rug_kit | known=true | station= | crafted=true
+probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 251 ms
+items tick slow: scatter reached after 257 ms
+items tick slow: sync-world-items reached after 306 ms
+items tick slow: sync-world-items reached after 293 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: learn-fish-remains-spoil-traps reached after 254 ms
+items tick slow: scatter reached after 257 ms
+items tick slow: sync-world-items reached after 304 ms
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
 probe: wool_rug_kit | known=false | station= | crafted=false
 probe: notice: You work out how to make straw bed
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: straw_bed_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH straw_bed_kit known/open=false crafted=true
+items tick slow: learn-fish-remains-spoil-traps reached after 268 ms
+items tick slow: scatter reached after 271 ms
+items tick slow: sync-world-items reached after 316 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 264 ms
+items tick slow: scatter reached after 267 ms
+items tick slow: sync-world-items reached after 308 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 258 ms
+items tick slow: scatter reached after 263 ms
+items tick slow: sync-world-items reached after 308 ms
+probe: straw_bed_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make feather bed
-probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 266 ms
+items tick slow: scatter reached after 270 ms
+items tick slow: sync-world-items reached after 317 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 257 ms
+items tick slow: scatter reached after 261 ms
+items tick slow: sync-world-items reached after 304 ms
+items tick slow: scatter reached after 252 ms
+items tick slow: sync-world-items reached after 299 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: feather_bed_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH feather_bed_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 276 ms
+items tick slow: sync-world-items reached after 283 ms
+probe: feather_bed_kit | known=true | station=workbench | crafted=true
+probe: notice: You work out how to make canopy bed
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: You work out how to make feather bed
+items tick slow: learn-fish-remains-spoil-traps reached after 255 ms
+items tick slow: scatter reached after 258 ms
+items tick slow: sync-world-items reached after 301 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: canopy_bed_kit | known=false | station=workbench | crafted=false
+items tick slow: sync-world-items reached after 283 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 267 ms
+items tick slow: scatter reached after 271 ms
+items tick slow: sync-world-items reached after 320 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 307 ms
+items tick slow: scatter reached after 311 ms
+items tick slow: sync-world-items reached after 351 ms
+probe: notice: Hold E at the fire to roast raw meat or fish.
+probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 254 ms
+items tick slow: scatter reached after 259 ms
+items tick slow: sync-world-items reached after 294 ms
+items tick slow: sync-world-items reached after 278 ms
+items tick slow: sync-world-items reached after 289 ms
+probe: canopy_bed_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make wall torch
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: notice: Hold E at the fire to roast raw meat or fish.
-probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: wall_torch_kit | known=false | station= | crafted=true
-probe: MISMATCH wall_torch_kit known/open=false crafted=true
+items tick slow: learn-fish-remains-spoil-traps reached after 270 ms
+items tick slow: scatter reached after 273 ms
+items tick slow: sync-world-items reached after 321 ms
+probe: wall_torch_kit | known=true | station= | crafted=true
 probe: notice: You work out how to make candle chandelier
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: learn-fish-remains-spoil-traps reached after 259 ms
+items tick slow: scatter reached after 263 ms
+items tick slow: sync-world-items reached after 309 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
+items tick slow: learn-fish-remains-spoil-traps reached after 292 ms
+items tick slow: scatter reached after 295 ms
+items tick slow: sync-world-items reached after 346 ms
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: chandelier_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH chandelier_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 286 ms
+items tick slow: sync-world-items reached after 288 ms
+probe: chandelier_kit | known=true | station=workbench | crafted=true
+probe: notice: You work out how to make fireplace
 probe: notice: Walk with W A S D. Hold Shift to run.
+items tick slow: sync-world-items reached after 288 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 250 ms
+items tick slow: scatter reached after 253 ms
+items tick slow: sync-world-items reached after 293 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 258 ms
+items tick slow: scatter reached after 262 ms
+items tick slow: sync-world-items reached after 311 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 358 ms
+items tick slow: scatter reached after 363 ms
+items tick slow: sync-world-items reached after 419 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 549 ms
+items tick slow: scatter reached after 557 ms
+items tick slow: sync-world-items reached after 646 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
+items tick slow: learn-fish-remains-spoil-traps reached after 265 ms
+items tick slow: scatter reached after 269 ms
+items tick slow: sync-world-items reached after 311 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 268 ms
+items tick slow: scatter reached after 273 ms
+items tick slow: sync-world-items reached after 316 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 254 ms
+items tick slow: scatter reached after 257 ms
+items tick slow: sync-world-items reached after 302 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 256 ms
+items tick slow: scatter reached after 259 ms
+items tick slow: sync-world-items reached after 295 ms
 probe: notice: Hold E at the fire to roast raw meat or fish.
 probe: notice: Pick berries or fruit with E and eat them. Roast meat.
-probe: fireplace_kit | known=false | station=workbench | crafted=false
+items tick slow: sync-world-items reached after 293 ms
+probe: fireplace_kit | known=true | station=workbench | crafted=true
 probe: notice: You work out how to make flower pot
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: flower_pot_kit | known=false | station= | crafted=true
-probe: MISMATCH flower_pot_kit known/open=false crafted=true
+items tick slow: sync-world-items reached after 296 ms
+probe: flower_pot_kit | known=true | station= | crafted=true
 probe: notice: You work out how to make antler mount
 probe: notice: Walk with W A S D. Hold Shift to run.
-probe: antler_mount_kit | known=false | station=workbench | crafted=true
-probe: MISMATCH antler_mount_kit known/open=false crafted=true
+items tick slow: learn-fish-remains-spoil-traps reached after 324 ms
+items tick slow: scatter reached after 328 ms
+items tick slow: sync-world-items reached after 373 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 268 ms
+items tick slow: scatter reached after 271 ms
+items tick slow: sync-world-items reached after 319 ms
+items tick slow: learn-fish-remains-spoil-traps reached after 254 ms
+items tick slow: scatter reached after 258 ms
+items tick slow: sync-world-items reached after 302 ms
+probe: antler_mount_kit | known=true | station=workbench | crafted=true
 probe: fire lit with plant_fibre = true
 probe: fire lit with birch_bark = true
 probe: fire lit with tinder = true
@@ -671,7 +916,7 @@ probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with amadou = false
 probe: notice: Needs plant fibre, birch bark or tinder to light
 probe: fire lit with twine = false
-probe: recipes where 'known' matched what the server did: 135, mismatches: 20
+probe: recipes where 'known' matched what the server did: 154, mismatches: 1
 WARNING: 177 ObjectDB instances were leaked at exit (run with `--verbose` for details).
    at: ObjectDB::cleanup (core\object\object.cpp:2536)
 ERROR: 6 resources still in use at exit (run with --verbose for details).

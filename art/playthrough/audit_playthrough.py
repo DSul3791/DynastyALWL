@@ -178,6 +178,11 @@ def provided(sname, spec):
     return out
 
 
+def learnable(k, v):
+    # Learn system (Tyler 31 Oct): a recipe with known false and no locked flag is learned once the pack holds its ingredients (at its station); locked ones are not
+    return bool(v.get("known") or k in open_ids or not v.get("locked"))
+
+
 def run_closure(only_known):
     have = set(i for i in sources if not gated.get(i))
     tools = set()                    # tool classes available
@@ -218,7 +223,7 @@ def run_closure(only_known):
         for k, v in recipes.items():
             if k in made:
                 continue
-            if only_known and not (v.get("known") or k in open_ids):
+            if only_known and not learnable(k, v):
                 continue
             need = [i for i, _ in v["needs"]] + [i for i, _ in v.get("keeps", [])]
             if not all(i in have for i in need):
@@ -252,16 +257,16 @@ have_pot, tools_pot, made_pot, built_pot = run_closure(False)
 
 # ---------------------------------------------------------------- reports
 rep = {}
-rep["counts"] = {"items": len(live_items), "recipes": len(recipes), "recipes_known_or_open": sum(1 for k, v in recipes.items() if v.get("known") or k in open_ids),
+rep["counts"] = {"items": len(live_items), "recipes": len(recipes), "recipes_known_or_open": sum(1 for k, v in recipes.items() if learnable(k, v)),
                  "structures": len(structures), "blueprints": len(blueprints)}
 
 stations_pot = set(p for s in built_pot for p in provided(s, structures[s]))
 recipe_rows = []
 for k, v in sorted(recipes.items(), key=lambda x: x[1]["number"]):
     why = []
-    known = bool(v.get("known") or k in open_ids)
+    known = learnable(k, v)
     if not known:
-        why.append("not known (no learn system)")
+        why.append("locked (its chain does not exist yet)")
     miss_now = [i for i, _ in v["needs"] + v.get("keeps", []) if i not in have_pot]
     if miss_now:
         why.append("no source anywhere for " + ",".join(miss_now))
@@ -313,7 +318,7 @@ for k, v in structures.items():
         problems.append("kit '%s' has no recipe and no blueprint" % v["kit"])
     if v.get("kit") and v["kit"] in giver:
         gk = giver[v["kit"]][0]
-        if not (recipes[gk].get("known") or gk in open_ids):
+        if not learnable(gk, recipes[gk]):
             problems.append("kit recipe %s not known" % gk)
     if k not in built_pot and k not in ("campfire", "remains", "carcass", "door_open"):
         problems.append("not obtainable even if all recipes known")
