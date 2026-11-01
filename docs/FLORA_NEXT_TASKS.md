@@ -44,3 +44,8 @@ Gaps found by reading (all unmeasured):
 | 13 | models and rows for fig, olive, pomegranate, mango, orange, lemon | Kathleen (models), MikeW (rows) | models first; rows are in flora.json with `future: true` | placed only once a model exists |
 | 14 | animal gaps 1, 2, 4, 5 above | MikeW | after row 1 results | density and behaviour are mine |
 | 15 | wire Sal's spawn_plan species | MikeW with Kathleen and Sal | one species at a time once a model and row exist | new species |
+
+## Meadow thatch per pick (MikeW, 2026-11-01, branch claude/flora-grass-thatch)
+- A tall-grass pick gave thatch 4 (fixed row) plus the plant's own yield roll (thatch or straw, 1-3, times the foraging factor): about 5 thatch a pick. Meadows hold about 42,300 tall-grass plants a km2 (423 a hectare, in clumps of 25-40), so one clump held 150-200 thatch and a wall (50 thatch) took 10 picks.
+- Changed the fixed row to thatch 2: about 3 a pick, a wall about 17 picks. test_flora_density passes (meadow density unchanged). Not play-tested; the numbers are Dave's to tune in data/items/drops.json "tall_grass".
+- Left alone: thatch_grass 10 a plant (rare, one plant per 100 m cell), reeds 8, heather 4.
