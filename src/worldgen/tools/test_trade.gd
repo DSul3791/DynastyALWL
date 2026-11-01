@@ -70,7 +70,7 @@ func _init() -> void:
 	items.add_coins(1, 5)
 	var kept_axe: int = items.table.number_of("stone_axe")
 	items.action(1, Net.ACT_ADMIN_GIVE, kept_axe, 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 5, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 15, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("steel_ingot"), 0, 1, Vector3.ZERO)
 	var sticks_before: int = items.inventory_of(1).count_of(items.table.number_of("stick"))
 	var coins_before: int = items.coins_of(1)
