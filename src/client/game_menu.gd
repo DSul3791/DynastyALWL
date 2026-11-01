@@ -6,6 +6,7 @@ extends RefCounted
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
+const WaterChoice := preload("res://src/water2/water_choice.gd")
 
 const SHOW_ADMIN := true
 const PANEL := Color(0.075, 0.08, 0.09, 1.0)
@@ -26,6 +27,7 @@ var _voice_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
+var _old_water_switch
 var _admin_mode_switch
 var _cave_button: Button
 var _sound_list: VBoxContainer
@@ -291,6 +293,10 @@ func _build_gameplay() -> void:
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))
+	_old_water_switch = _switch_row(gameplay, "Old water (next Play)", func(on: bool):
+		WaterChoice.set_old_water(on)
+		note.text = "Water: the %s water runs the next time you press Play (saved)." % ("old" if on else "new"))
+	_old_water_switch.set_on(WaterChoice.old_water())
 	_tunnel_switch = _switch_row(gameplay, "Tunnel collapse (admin)", func(on: bool):
 		_c.net.tunnel_setting.rpc_id(1, on, _c.tunnel_cave_in_s))
 	_cave_button = _button(gameplay, "Cave-in time", func():
