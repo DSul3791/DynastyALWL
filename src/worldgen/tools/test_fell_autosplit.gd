@@ -83,7 +83,9 @@ func _init() -> void:
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	w._sync_in = 0.7
 	fell_one(w, standing, 7)
+	check(w._sync_in <= 0.0, "bug 6: a felled tree's trunk is sent on the next tick, not up to a second after the standing tree goes")
 	var small: Array = felled(w, 3)
 	check(small.size() == 1, "the small beech is a trunk")
 	var tree: Dictionary = w._items[small[0]]["tree"]
