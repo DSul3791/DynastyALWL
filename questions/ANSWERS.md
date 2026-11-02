@@ -1950,3 +1950,7 @@ Answered: 2026-11-01 09:23 UTC
 Answer: Yes
 Answered: 2026-11-02 15:57 UTC
 
+## fire-tier-1-survival | Fire tier 1: with 3 sticks, is the fire a small survival fire?
+Answer: Yes
+Answered: 2026-11-02 15:57 UTC
+
