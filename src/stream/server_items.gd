@@ -940,6 +940,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_CHEST_CLOSE:
+		_load_fire_from_box(int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
@@ -5272,6 +5273,55 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 			_dirty = true
 			_push_box(id, box)
 			return
+
+
+# Closing a fire's store (Dave 2 Nov 2026): the wood in it goes onto the fire, so the burn time and the tier are worked out from what is really there. Each
+# piece is added like a tap of E would (its seconds go to its class and a lit fire may step up); a piece the fire cannot hold (the stored-fuel cap) or may not
+# take (a log while a pot hangs on it) stays in the store. Food stays too.
+func _load_fire_from_box(id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire"):
+		return
+
+	var fire: Dictionary = it["fire"]
+	var box = _chests.get(int(fire.get("uid", 0)))
+
+	if box == null:
+		return
+
+	var cap_s: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0
+	var moved: bool = false
+
+	for slot in range(box.SLOTS):
+		var number: int = box.numbers[slot]
+
+		if number == 0:
+			continue
+
+		var wood_id: String = table.id_of(number)
+
+		if not (_cooking.get("fuel", {}) as Dictionary).has(wood_id):
+			continue
+
+		while box.counts[slot] > 0:
+			_fire_sum(fire)
+
+			if float(fire["burn_left"]) >= cap_s or (bool(fire.get("pot", false)) and _fire_wood_class(wood_id) == "log"):
+				break
+
+			box.take_from_slot(slot, 1)
+			_fire_add(fire, wood_id)
+			moved = true
+
+	if not moved:
+		return
+
+	if int(fire["state"]) == 8:
+		fire["state"] = 9
+		it["left"] = FIRE_LAID_S
+
+	_dirty = true
 
 
 # Sends fresh contents to whoever has this container open and still stands beside it.
