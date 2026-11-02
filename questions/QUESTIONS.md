@@ -75,12 +75,6 @@ Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2.
 Note: Look for: a steady hiss like rain in the forest that stops in the meadow. If you hear it, open F3 and write the loudest sound line in the Notes box.
 [test]
 
-## tut-fell-line | After a tree falls it now breaks into logs, sticks and leaves by itself. Which tutorial line should the player see?
-Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov the trunk breaks up about 2 s after landing.
-- "Your tree has broken up. Press E to take the sticks and leaves, and a log on your shoulder."
-- "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
-- No line, the player will see it
-
 ## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
 Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
 Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
