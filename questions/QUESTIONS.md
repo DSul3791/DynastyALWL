@@ -51,12 +51,6 @@ Note: Real game rig shot at noon, (53331,68359) facing north, from 1 m above the
 - Yes
 - No
 
-## pic-p2-creator | Does the character creator preview show the FRONT of the body with sensible colours?
-Image: questions/img/p2_creator.jpg
-Note: Phase 2 real window (guide session), creator after "undo twice". The preview still stands with its back to us (ponytail seen from behind) and the body is patchy green, tan and pink. Guide rates it 2 of 5.
-- Yes
-- No
-
 ## pic-p2-fire-nograss | With the grass hidden, is the lit campfire clearly visible (flames and glow)?
 Image: questions/img/p2_fire_nograss.jpg
 Note: Same lit fire as the earlier card but with grass switched off. A small flame and warm glow show among the logs and stones, so the fire is drawn; the grass hid it before. Guide rates it 3 of 5 (flame small). Question for Dave: should grass be cleared around a placed fire?
