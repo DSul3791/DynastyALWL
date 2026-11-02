@@ -119,6 +119,7 @@ var _draw_t: float = -1.0                 # a bow being drawn: seconds since the
 var _flights: Array = []                  # local visuals of spears this player threw: {node, vel, age}
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
+var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush or shrub the swing line passes through, or []; set by the client scene
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
 var swing_serial: int = 0                  # +1 at every swing start: the third-person body restarts its chop clip on a change
@@ -628,6 +629,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 		return false
 
+	# A dug-up bush (<species>_bush): left click plants it on the ground under the crosshair (Dave 2 Nov 2026).
+	if holding and held_id().ends_with("_bush"):
+		if button == MOUSE_BUTTON_LEFT and pressed:
+			_plant_here()
+
+		return button == MOUSE_BUTTON_LEFT
+
 	if not _is_spear():
 		aiming = false
 		return false
@@ -953,6 +961,7 @@ func _strike() -> void:
 	var stump_id: int = _inv.stump_near(hit["position"]) if trunk_id == 0 else 0
 	var boulder_id: int = _inv.boulder_near(hit["position"])
 	var log_id: int = _inv.loose_log_near(hit["position"])
+	var shrub: Array = shrub_near.call(from, hit["position"]) if shrub_near.is_valid() and tree.is_empty() else []   # an axe chops a bush up, a pickaxe digs it up whole (Dave 2 Nov 2026)
 
 	if log_id != 0:
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
@@ -969,6 +978,9 @@ func _strike() -> void:
 	elif not tree.is_empty():
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+	elif not shrub.is_empty():
+		_sound.hits.hit("axe", "wood", hit["position"], 0.7)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
 	else:
 		_sound.hits.hit_ground("pick", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
@@ -976,6 +988,19 @@ func _strike() -> void:
 
 # A spade swing at the ground under the crosshair: the server checks the spade and the reach, cuts the hole and tells
 # everyone (the hole, the sound and the vanishing grass happen when it answers; DIGGING_DESIGN.md).
+func _plant_here() -> void:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
+		_inv._on_notice("Aim at the ground within reach to plant it")
+		return
+
+	_arm_play("use", 0.6)
+	_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, held_slot, 0, 0, hit["position"])
+
+
 func _dig_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)

@@ -25,6 +25,7 @@ var _vsync_switch
 var _clear_day_switch
 var _fullscreen_switch
 var _voice_switch
+var _damage_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
@@ -150,6 +151,7 @@ func refresh() -> void:
 		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
+		_damage_switch.set_on(_c.display.damage_numbers)
 		_hints_switch.set_on(_c.items == null or _c.items.inner_settings.hints)
 		_dialogue_switch.set_on(_c.items == null or _c.items.inner_settings.dialogue)
 		_clear_day_switch.set_on(_c.weather_look.clear_day)
@@ -294,6 +296,9 @@ func _build_gameplay() -> void:
 		_refresh_idle_button()
 		note.text = "Idle timeout: the game closes after %d minutes without the mouse or a key (saved)." % _c.display.idle_minutes)
 	_refresh_idle_button()
+	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
+		_c.display.damage_numbers = on
+		_c._save_display())
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))

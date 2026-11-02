@@ -153,5 +153,6 @@ func _init() -> void:
 	items._asleep[1] = {"rested": 0.0, "t": 0.0}
 	check(is_equal_approx(items._drain_mult(1), 1.0), "asleep_ground_mult 1.0 turns the ground row off")
 
+	items._finish_writer()   # the background save thread must finish before quit, or the script is freed under it (Opcode 20 _write_file error)
 	print("bed tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

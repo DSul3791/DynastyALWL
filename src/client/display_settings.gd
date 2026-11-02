@@ -31,6 +31,7 @@ var sort_index: int = 0                  # inventory sort: unsorted (order picke
 var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
 var hud_text: bool = true                # F4: the text overlay (build, position, debug lines) shown or hidden
 var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (60 to 120, idle_timeout.gd)
+var damage_numbers: bool = true         # Esc > Settings > Gameplay, Damage numbers: floating text where a hit lands (Dave 2 Nov 2026, on by default)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (4% of the daylight left under rock) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
@@ -48,6 +49,7 @@ func load_saved() -> void:
 	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
 	hud_text = bool(file.get_value("display", "hud_text", true))
 	cave_dark = bool(file.get_value("display", "cave_dark", true))
+	damage_numbers = bool(file.get_value("display", "damage_numbers", true))
 	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 60)), 60, 120)
 	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
 	var saved_sort: int = int(file.get_value("display", "sort", 0))
@@ -68,6 +70,7 @@ func save() -> void:
 	file.set_value("display", "hud_text", hud_text)
 	file.set_value("display", "idle_minutes", clampi(idle_minutes, 60, 120))
 	file.set_value("display", "cave_dark", cave_dark)
+	file.set_value("display", "damage_numbers", damage_numbers)
 	file.set_value("display", "sort", sort_index)
 	file.set_value("display", "sort_version", 2)
 	file.save(path)
@@ -81,6 +84,7 @@ func reset() -> void:
 	quality = -1
 	text_index = 1
 	cave_dark = true
+	damage_numbers = true
 	idle_minutes = 60
 
 

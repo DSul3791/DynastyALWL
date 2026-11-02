@@ -596,6 +596,7 @@
 		"pick": 1.8,
 		"hammer": 1.5,
 		"spade": 0.8,
-		"knife": 0.2
+		"knife": 0.2,
+		"_bush": 4.0
 	}
 }

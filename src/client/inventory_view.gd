@@ -2883,7 +2883,75 @@ func _prewarm_loose_meshes() -> void:
 		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
 
+	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
+	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
+	for name in _trunk_drop_ids():
+		if table.number_of(name) > 0:
+			_mesh_for(table.number_of(name))
+
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	_prewarm_felled()
+
+
+# Bug 6 (Dave, 2 Nov 2026 16:51: "a big pause when you first cut it ... sometimes it doesn't even appear for five seconds and then poof a tree
+# appears and falls over"): the first felled trunk of a session built the bark shader and the cut-face materials, and the GPU compiled them right
+# then. One trunk and one stump are made here, out of sight under the world, so that compile happens during loading; they go after 5 s.
+var _felled_warm: Array = []
+
+
+func _prewarm_felled() -> void:
+	if _root == null:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var extra: Dictionary = {"species": "oak", "radius": 0.3, "length": 8.0, "yaw": 0.0, "pitch": 0.0, "landed": true, "keywood": true}
+
+	for trunk in [true, false]:
+		var node: Node3D = _make_felled(trunk, extra)
+		node.position = Vector3(0.0, -10000.0, 0.0)
+		_root.add_child(node)
+		_felled_warm.append(node)
+
+	if is_inside_tree():
+		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
+
+	print("client prewarm: felled trunk and stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+
+
+func _drop_felled_warm() -> void:
+	for node in _felled_warm:
+		if is_instance_valid(node):
+			node.queue_free()
+
+	_felled_warm.clear()
+
+
+# The item ids a felled trunk can drop besides its logs (data/items/drops.json "trunk").
+func _trunk_drop_ids() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var trunk: Dictionary = (parsed as Dictionary).get("trunk", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	var ids: Array = ["bark", "thatch", "seed_bundle", "kindling", "leaves"]
+
+	for key in ["branch", "small"]:
+		for row in trunk.get(key, []):
+			ids.append(str(row[0]))
+
+	var roots: Array = trunk.get("roots", [])
+
+	if not roots.is_empty():
+		ids.append(str(roots[0]))
+
+	for species in trunk.get("by_species", {}):
+		for row in trunk["by_species"][species]:
+			ids.append(str(row[0]))
+
+	var out: Array = []
+
+	for id in ids:
+		if not out.has(id):
+			out.append(id)
+
+	return out
 
 
 # Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).
