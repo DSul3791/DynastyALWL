@@ -7,6 +7,7 @@ extends Node
 # Hold right click to aim a throw; then left click throws. Letting go of right click returns to
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
+const FeelKicks := preload("res://src/client/feel_kicks.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
@@ -121,6 +122,7 @@ var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
+signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
 var swing_serial: int = 0                  # +1 at every swing start: the third-person body restarts its chop clip on a change
 var _pause_t: float = 0.0
 var _swing_hit: bool = false
@@ -948,11 +950,13 @@ func _strike() -> void:
 	if hit.is_empty() or _sound == null:
 		return
 
+	struck.emit(1.0, 1.2 if _tool_class() == "pick" else 1.0)
 	var tree: Array = _tree_near.call(hit["position"]) if _tree_near.is_valid() else []
 	var trunk_id: int = _inv.felled_trunk_near(hit["position"])
 	var stump_id: int = _inv.stump_near(hit["position"]) if trunk_id == 0 else 0
 	var boulder_id: int = _inv.boulder_near(hit["position"])
 	var log_id: int = _inv.loose_log_near(hit["position"])
+	FeelKicks.chips(_root, hit["position"], hit["normal"], log_id != 0 or trunk_id != 0 or stump_id != 0 or not tree.is_empty())
 
 	if log_id != 0:
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)

@@ -53,6 +53,7 @@ const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
+const FeelKicksScript := preload("res://src/client/feel_kicks.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
 const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre apart
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
@@ -245,6 +246,7 @@ var test_dump: bool = false           # --dump-test: 14 s after the welcome dump
 var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
+var feel = FeelKicksScript.new()                 # landing dip and tool-blow jolt on the eye (feel_kicks.gd)
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
 var ladder = LadderClimbScript.new()          # holding on to a placed ladder (ladder_climb.gd)
@@ -1313,6 +1315,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.name = "Held"
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.water_depth_at = func(x: float, z: float) -> float:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
@@ -3463,9 +3466,14 @@ func _move_player(delta: float) -> void:
 		if not swimming and not waiting_for_ground and body.is_on_floor():
 			_step_up(Vector3(velocity.x, 0.0, velocity.z) * delta)
 
+		var fall_speed: float = -body.velocity.y
+		var was_on_floor: bool = body.is_on_floor()
 		var tm: int = Probe.start()
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
+
+		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
+			feel.land(fall_speed)
 
 		rescue.step()
 
@@ -3668,6 +3676,9 @@ func _update_bob(delta: float) -> void:
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	var kick: Dictionary = feel.step(delta)
+	camera.position.y += float(kick["y"])
+	camera.rotation.z += deg_to_rad(float(kick["roll"]))
 	var shake: Dictionary = quake_view.step(delta)
 	camera.position += shake["offset"]
 	camera.rotation.z += deg_to_rad(float(shake["roll"]))
