@@ -2026,3 +2026,7 @@ Answered: 2026-11-02 21:31 UTC
 Answer: Yes: Yes, the water looks fantastic except where there’s gaps that don’t seem to make any sense
 Answered: 2026-11-02 21:32 UTC
 
+## sonny-spring-pools | OK to commit the rebaked starter tiles with pond beds (PR #71) and springs in ponds (PR #92)?
+Answer: Yes | Comment: Yes, rebake anytime
+Answered: 2026-11-02 21:32 UTC
+
