@@ -29,6 +29,12 @@ const CLIP_MAP := {
 	"crouch_walk_torch": ["Crouch_Walk_with_Torch", 0.0, -1.0, true, 1.19],
 	"crouch_walk_left_torch": ["Crouch_Walk_Left_with_Torch", 0.0, -1.0, true, 1.14],
 	"crouch_walk_right_torch": ["Crouch_Walk_Right_with_Torch", 0.0, -1.0, true, 1.23],
+	# Jumping (bug 10, 2 Nov 2026): Dave's only jump is Jump_Run (2.03 s; hips 0.0-0.3 s the take-off squat, 0.3-0.5 s the spring, 0.5-0.8 s in the air, then a run). Cut into the game's three air clips:
+	# jump = the spring and the top (played once when the body is rising), fall = the air pose held as a short loop, land = the squat and recovery (played after a fall of 0.4 s or more).
+	# Cut points read from the hips height in the glb; not yet seen in the game, rate by picture.
+	"jump": ["Jump_Run", 0.3, 0.7, false, 1.0],
+	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
+	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
 	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
