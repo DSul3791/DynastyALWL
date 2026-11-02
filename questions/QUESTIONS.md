@@ -57,12 +57,6 @@ Note: Real client, third person, lean-to left, rough bed right (the rig sets the
 - Yes
 - No
 
-## pic-campfire-lit-real | In the real game: is this lit campfire (stone ring, logs, flames, warm light on the ground at dusk) visible and right? (Grass hidden to see it; the guide's earlier picture had tall grass over it)
-Image: questions/img/campfire-lit-real.png
-Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing: flames and glow draw. The flames are small and pale cream; Kathleen rates it 3 of 5 and will make them bigger and more orange if you say No.
-- Yes
-- No
-
 ## pic-yarrow-real | Do the white yarrow flowers look like real yarrow in the game?
 Image: questions/img/kathreen-yarrow-real.png
 Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearly white flowers, still a bit cool and faceted. Recommendation: Yes if the drift reads as flowers to you; No if the white looks grey or fake.
