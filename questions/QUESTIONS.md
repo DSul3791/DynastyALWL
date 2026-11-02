@@ -14,12 +14,6 @@
 
 
 
-## pic-fh-felled-trunk | In the real game: does a felled tree trunk look like bark (brown, rough), not a smooth black pipe?
-Image: questions/img/fh_felled_trunk.jpg
-Note: Real game rig shot (guide session), the trunk standing next to its stump after felling with a stone axe. The trunk reads dark grey-black and smooth, with a squared block beside it. Guide rates it 2 of 5; the bark fix 993aafab does not show here.
-- Yes
-- No
-
 ## pic-felled-bark-after | In the real game: do the stump and the cut log now look like brown bark (before: dark grey smooth, card pic-fh-felled-trunk)?
 Image: questions/img/felled_bark_after.png
 Note: Real game rig shot, same spot as the guide picture. The cause was missing warm shading; fixed with a brightness lift on the bark shader. Kathleen rates it 3.5 of 5: brown and textured; the stump side still looks smooth and the log is a plain block.
@@ -45,21 +39,9 @@ Note: Real game rig shot at noon from the south edge of the orchard, (53376,6853
 - Yes
 - No
 
-## pic-flora-blueberry-size | Is the small bush on the right (about 30 cm tall, blue berries, ten metres away) a believable blueberry plant size?
-Image: questions/img/flora_blueberry_size.jpg
-Note: Real game rig shot at noon, (53331,68359) facing north, from 1 m above the ground. This is a real blueberry placed by the game (data says 0.25 to 0.5 m). The shrub in the old picture 02b that was about 3 m wide and labelled Blueberry is not a blueberry by the data (raspberry is 1.5 to 2.5 m), so the label in that rig row is the likely mistake. Flora rates this 3.5 of 5.
-- Yes
-- No
-
 ## pic-p2-leanto-bed | Do the lean-to and the rough bed look like something you would shelter and sleep in?
 Image: questions/img/p2_leanto_bed.jpg
 Note: Real client, third person, lean-to left, rough bed right (the rig sets them in a row, the bed is not inside the lean-to here). Guide rates it 3.5 of 5: lean-to reads as a thatch frame; the bed is a yellow mattress on a frame.
-- Yes
-- No
-
-## pic-yarrow-real | Do the white yarrow flowers look like real yarrow in the game?
-Image: questions/img/kathreen-yarrow-real.png
-Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearly white flowers, still a bit cool and faceted. Recommendation: Yes if the drift reads as flowers to you; No if the white looks grey or fake.
 - Yes
 - No
 
