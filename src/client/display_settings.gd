@@ -30,7 +30,7 @@ const SORT_NAMES := ["Unsorted", "Name", "Weight (ascending)", "Weight (descendi
 var sort_index: int = 0                  # inventory sort: unsorted (order picked up), name, weight, value
 var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
 var hud_text: bool = true                # F4: the text overlay (build, position, debug lines) shown or hidden
-var idle_minutes: int = 20               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (5 to 120, idle_timeout.gd)
+var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (60 to 120, idle_timeout.gd)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (4% of the daylight left under rock) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
@@ -48,7 +48,7 @@ func load_saved() -> void:
 	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
 	hud_text = bool(file.get_value("display", "hud_text", true))
 	cave_dark = bool(file.get_value("display", "cave_dark", true))
-	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 20)), 5, 120)
+	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 60)), 60, 120)
 	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
 	var saved_sort: int = int(file.get_value("display", "sort", 0))
 	var sort_version: int = int(file.get_value("display", "sort_version", 1))
@@ -66,7 +66,7 @@ func save() -> void:
 	file.set_value("display", "quality", quality)
 	file.set_value("display", "text", text_index)
 	file.set_value("display", "hud_text", hud_text)
-	file.set_value("display", "idle_minutes", clampi(idle_minutes, 5, 120))
+	file.set_value("display", "idle_minutes", clampi(idle_minutes, 60, 120))
 	file.set_value("display", "cave_dark", cave_dark)
 	file.set_value("display", "sort", sort_index)
 	file.set_value("display", "sort_version", 2)
@@ -81,7 +81,7 @@ func reset() -> void:
 	quality = -1
 	text_index = 1
 	cave_dark = true
-	idle_minutes = 20
+	idle_minutes = 60
 
 
 # True when the game runs inside the editor's Game tab: the editor owns that window, so a script
