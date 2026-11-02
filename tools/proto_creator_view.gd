@@ -39,7 +39,7 @@ func _run() -> void:
 	root.add_child(screen)
 	await _frames(6)
 	screen.turntable = false
-	screen._body.rotation_degrees.y = 20.0
+	screen._body.rotation_degrees.y = 180.0
 	await _shot("1_start")
 	# Lock the height, roll everything, look at the result.
 	screen.logic.set_lock("height", true)
