@@ -350,7 +350,8 @@ func _make_fish() -> Node3D:
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, 0.0, 0.14)
 	rig.add_child(tail)
-	_box(tail, Vector3(0.006, 0.07, 0.05), Vector3(0.0, 0.0, 0.03), back.darkened(0.1), Vector3(0.0, 0.0, 0.0))   # the fan tail
+	for lobe in [-1.0, 1.0]:   # a forked tail: two lobes spread up and down (Kathreen 2 Nov: it was a plain box)
+		_box(tail, Vector3(0.006, 0.04, 0.05), Vector3(0.0, lobe * 0.016, 0.03), back.darkened(0.1), Vector3(lobe * -0.45, 0.0, 0.0))
 	_box(rig, Vector3(0.006, 0.03, 0.06), Vector3(0.0, 0.05, 0.01), back.darkened(0.1), Vector3(0.3, 0.0, 0.0))   # the dorsal fin
 
 	for side in [-1.0, 1.0]:
@@ -358,10 +359,14 @@ func _make_fish() -> Node3D:
 
 	for k in 9:   # dark spots along the back and a few red ones on the flank
 		var sp: float = -0.1 + 0.025 * float(k)
-		_ball(rig, 0.005, Vector3.ONE, Vector3(0.012 * float(k % 3 - 1), 0.043, sp), Color(0.12, 0.1, 0.06))
+		_ball(rig, 0.0035, Vector3(1.2, 0.35, 1.2), Vector3(0.012 * float(k % 3 - 1), 0.044, sp), Color(0.12, 0.1, 0.06))   # small flat spots on the skin, not studs
 
 		if k % 3 == 0:
-			_ball(rig, 0.005, Vector3.ONE, Vector3(0.042, 0.0, sp), Color(0.75, 0.15, 0.1))
+			for side in [-1.0, 1.0]:
+				_ball(rig, 0.0035, Vector3(0.35, 1.2, 1.2), Vector3(side * 0.043, 0.0, sp), Color(0.75, 0.15, 0.1))
+
+	for side in [-1.0, 1.0]:   # the gill line behind the head
+		_box(rig, Vector3(0.002, 0.03, 0.004), Vector3(side * 0.044, 0.0, -0.12), back.darkened(0.3), Vector3(0.0, side * 0.3, 0.0))
 
 	return root
 
