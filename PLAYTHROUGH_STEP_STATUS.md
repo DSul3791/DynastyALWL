@@ -1,3 +1,17 @@
+# UPDATE 2 Nov evening (PC run on main 4e8f662d, scripted; outputs on the PC in DynastyALWL_w9/out/)
+| Check | Result |
+|---|---|
+| test_first_hour | PASS, 0 failures |
+| test_playability_bot | PASS, all 11 steps (bench included now that the stick budget is 70) |
+| test_fire_store, test_fire_fuel_tiers, test_fell_autosplit, test_stump_chop | all PASS (new fire store with F, tiers, auto-split drops, stump chop) |
+| probe_place | 13 kits placed; the 13 "(silent:" lines are on successful placements, not refusals; the one probed refusal speaks ("The ground is too steep there.") |
+| probe_shelter | 15 PASS, 1 FAIL: check 16 wanted the respawn within 1.0 m of the bed; the game lands you 1.2 m beside it by design (bed.json respawn landing_m), under roof cover 1.0. Probe corrected (this commit), plus a writer flush before quit for the exit error |
+| probe_cook | meat and fish cook; plants refused with the pot/hearth notice. "morel" was a probe typo (the item is "morels"): fixed |
+| run_status | 25 fixed, 2 still broken: F-20 (orphan gathered items, Sal/flora) and S-place (a kit or blueprint refused beyond the rules, Tyler); F-01/F-24, F-19, S-craft now FIXED. 46 of 274 recipes blocked, 100 orphan items, 72 placeholder looks |
+| smoke clients (gather, chop, fire, leanto, cook, spear, plantpick, sleep) | all ran; sleep ran. Two HIGH lines come from older logs, not this run: inventory_view.gd:4562 Nil 'numbers' (chest, Tyler) and flora_view.gd:2270 cast (MikeW) |
+| windowed pictures | being taken on the PC |
+Step table below: steps 4-13 and 15-19 hold on the server; 20 (bench) now has a bot check. Still not walked by a person in a window: 2 (Tab bars), 3 (drink), the fire store by hand, lying in the bed.
+
 # UPDATE 1 Nov evening (daily 224e78bd): headless first-hour reruns after the Dynasty body, E rules, fire tiers, carry weights, logs everywhere
 Run in my worktree with the slots shared with Tyler's test pass, so frames were slow. Logs: art/playthrough/smoke/logs, outputs: art/playthrough/refresh1nov/.
 
