@@ -69,12 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## pic-body-details | Does the character in the game now have a nose, brow and thumb that read at a normal distance?
-Image: questions/img/kathreen-body-details.png
-Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5: reads as a person, the face is still crude.
-- Yes
-- No
-
 ## jason-pixabay-urls | Sounds: which Pixabay pages did your footsteps, frogs, tree frogs, fish splash, crows, angry crow, wing flaps and brook come from?
 Note: Blocked: 8 rows in assets/audio/CREDITS.csv say "page URL TODO". The licence is known (Pixabay); only the page links are missing, and we need them before release.
 Note: 1. Paste any links you still have, one per line, with the sound name. 2. If you don't have them, type "don't know" and I'll list these as needing a replacement before release.
