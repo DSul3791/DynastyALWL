@@ -150,6 +150,8 @@ func _init() -> void:
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
 	check(Rules.over_water(cfg, "floor_section_kit", Vector3(301.0, 10.0, 0.0), 0.0, pond) and not Rules.over_water(cfg, "floor_section_kit", Vector3(298.0, 10.0, 0.0), 0.0, pond), "a floor with no wet corner is fine, one wet corner blocks it")
+	var puddle := func(_x, _z): return 0.06
+	check(Rules.over_water(cfg, "campfire_kit", Vector3(0.0, 10.0, 0.0), 0.0, puddle) and not Rules.over_water(cfg, "floor_section_kit", Vector3(0.0, 10.0, 0.0), 0.0, puddle), "a fire is blocked by 6 cm of water, a floor is not")
 	check(Rules.over_water(cfg, "campfire_kit", Vector3(300.5, 10.0, 0.0), 0.0, pond) and Rules.reason_text("water") != "", "a campfire ring in water is blocked, with a reason in words")
 	items.water_depth_at = func(pos: Vector3) -> float: return 1.0 if pos.x > 300.0 else 0.0
 	items.report_position(1, Vector3(302.0, 10.0, 200.0))

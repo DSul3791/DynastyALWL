@@ -11,6 +11,7 @@ const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes o
 const POT_ATTACH_M := 2.0
 const STRUCTURE_STATES := [5, 6, 7]
 const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
+const FIRE_WATER_BLOCK_M := 0.05     # a fire cannot go on any visible water (Dave 2 Nov 2026)
 
 
 static func load_config() -> Dictionary:
@@ -246,6 +247,7 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, depth: Callable) -> bool:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var offsets: Array = [Vector2.ZERO]
+	var block_m: float = FIRE_WATER_BLOCK_M if kit_id == "campfire_kit" else WATER_BLOCK_M
 
 	if def.is_empty():
 		for corner in [Vector2(0.8, 0.0), Vector2(-0.8, 0.0), Vector2(0.0, 0.8), Vector2(0.0, -0.8)]:
@@ -260,7 +262,7 @@ static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: floa
 	for offset in offsets:
 		var wet: float = float(depth.call(spot.x + offset.x, spot.z + offset.y))
 
-		if not is_nan(wet) and wet >= WATER_BLOCK_M:
+		if not is_nan(wet) and wet >= block_m:
 			return true
 
 	return false
