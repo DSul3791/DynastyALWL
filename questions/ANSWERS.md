@@ -2178,3 +2178,7 @@ Answered: 2026-11-02 21:56 UTC
 Answer: Yes
 Answered: 2026-11-02 22:05 UTC
 
+## sal-shore-net-throw | Does the shore net throw out and come back with fish by school size?
+Answer: Yes: But you have to pull it back in with a rope that you made out of twine and it takes a bunch of rope and some rock rocks to make a fishing net
+Answered: 2026-11-02 22:06 UTC
+
