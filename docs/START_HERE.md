@@ -20,7 +20,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 | Jamie | documentation (this page, `DOC_MAP.md`) |
 
 ## Rules
-- NEVER merge to `main` until Dave has play-tested and says go. The integration branch is the daily, `DailyDev_20261029`; the moderator merges into it.
+- NEVER merge to `main` until Dave has play-tested and says go. As of the end of 1 Nov, main holds everything (PR #11) and there is no daily branch: the next session creates one from `origin/main` (steps in the top section of `docs/handoff/HANDOFF_MODERATOR.md`); the moderator merges agents' branches into it, and Dave merges it into main through a pull request with "Create a merge commit". Never delete the `qa` branch.
 - Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
 - Nothing is deleted: unused code goes to `proposed_removals/`, documents to `docs/archive/YYYY-MM/` (`git mv`).
 - Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (branch `qa`, `questions/QUESTIONS.md`): pickable answers, one item per card. Never wait for Dave: take the next job.
