@@ -1169,7 +1169,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 # own water runs down the drops, so water over a drop is shown only by the water surface. The
 # fall finder still feeds the list below (sound, mist, spray, wet rock); only the ribbon
 # meshes, their splash and foam strips are not drawn. Set true to bring them back.
-const DRAW_FALL_RIBBONS := true
+const DRAW_FALL_RIBBONS := false   # Dave 2 Nov 2026: the fall ribbon panels are the old look; the liquid sheet draws the falling water itself
 
 
 # The chunk's fall columns (water_falls.gd): kept while the same mesh is still the right one.
