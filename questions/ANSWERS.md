@@ -2150,3 +2150,7 @@ Answered: 2026-11-02 21:47 UTC
 Answer: I don’t think they did I think you generated them
 Answered: 2026-11-02 21:47 UTC
 
+## jason-new-animal-calls | Sounds: boar, grouse, seal and seabird have no calls yet. Where should they come from?
+Answer: MikeW finds Pixabay clips, Jason cuts them
+Answered: 2026-11-02 21:47 UTC
+
