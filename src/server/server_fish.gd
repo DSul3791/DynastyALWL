@@ -181,6 +181,7 @@ func factor_at(x: float, z: float, day: int, season: String, now_s: float, stock
 	var best: float = float(f.get("far", 0.15))
 	var species: String = ""
 	var best_d: float = INF
+	var best_r: float = 0.0
 	var at: Vector2 = Vector2(x, z)
 
 	for dz in [-1, 0, 1]:
@@ -203,6 +204,7 @@ func factor_at(x: float, z: float, day: int, season: String, now_s: float, stock
 				if got > best or (got == best and got > float(f.get("far", 0.15)) and d < best_d):
 					best = got
 					best_d = d
+					best_r = radius
 					species = str(s["species"]) if got > float(f.get("far", 0.15)) else species
 
-	return {"factor": best, "species": species, "active": true}
+	return {"factor": best, "species": species, "active": true, "radius": best_r}

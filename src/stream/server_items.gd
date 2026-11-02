@@ -8446,7 +8446,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
-# The shore net (ACT_NET, fishing.json "net"): the player holds the button at the water's edge; after hold_s the server rolls the haul.
+# The shore net (ACT_NET, fishing.json "net"; Dave 2 Nov 2026): the player throws it onto the water (up to reach_m away), it sinks for hold_s,
+# then is pulled back in by its twine and the server rolls the haul from the school it landed on.
 func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
 	var cfg: Dictionary = _fishing_data().get("net", {})
 	var state: Dictionary = _fishing.get(peer, {})
@@ -8492,11 +8493,12 @@ func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
 			_say(peer, str(cfg.get("say_deep", "")))
 			return
 
-	_fishing[peer] = {"phase": "net", "at": now + int(float(cfg.get("hold_s", 20.0)) * 1000.0), "spot": pos, "cell": _fish_cell(pos), "slot": slot}
+	_fishing[peer] = {"phase": "net", "at": now + int(float(cfg.get("hold_s", 6.0)) * 1000.0), "spot": pos, "landed": at, "cell": _fish_cell(at), "slot": slot}
 	_say(peer, str(cfg.get("say_start", "")))
 
 
-# The haul: up to catch[1] tries (a random 1 to 3 wanted), each limited by the cell's stock and the fishing chance (dawn and dusk best).
+# The haul: a random number of fish wanted, set by the school the net landed on (catch_by_school: a bigger school, more fish; none: 0 or 1),
+# each limited by the cell's stock and the fishing chance (dawn and dusk best).
 func _net_haul(peer: int, state: Dictionary) -> void:
 	var cfg: Dictionary = _fishing_data().get("net", {})
 	_fishing.erase(peer)
@@ -8509,8 +8511,18 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	var cell: Vector2i = state["cell"]
 	var cell_key: String = "%d,%d" % [cell.x, cell.y]
-	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
-	var hit: Dictionary = school_hit(state["spot"], float(cfg.get("reach_m", 5.0)))
+	var hit: Dictionary = school_hit(state.get("landed", state["spot"]), float(cfg.get("net_radius_m", 1.5)))
+	var want: int = _fate_rng.randi_range(0, 1)   # luck-exempt: how many the net holds (no school under it: one stray fish at most)
+	var by: Dictionary = cfg.get("catch_by_school", {})
+
+	if float(hit.get("factor", 0.0)) >= float(by.get("school_factor_min", 0.5)):   # in a school (factor 1) or near one (0.5, fish_schools.json factor)
+		var most: float = float(hit.get("radius", by.get("default_radius_m", 5.0))) * float(by.get("fish_per_radius_m", 0.75))
+
+		if float(hit.get("factor", 1.0)) < 1.0:   # the net landed near the school, not in it
+			most *= float(by.get("near_mult", 0.5))
+
+		want = _fate_rng.randi_range(1, maxi(1, int(round(most))))   # luck-exempt: how many the net holds
+
 	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
 
