@@ -2162,3 +2162,7 @@ Answered: 2026-11-02 21:48 UTC
 Answer: "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 Answered: 2026-11-02 21:48 UTC
 
+## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
+Answer: Leave as is | Comment: I would think of the daytime there are certain animals that come out more but then things like wolves probably come out more at night and I would expect walls to be lurking around my campfire at night, but they can’t come within a certain safety margin of the campfire so the size of your campfire depends on how big your safety margin is so let’s say a radius of three times whatever the fire light is animals cannot come in that circle, but they might circle around the outside of it and then eventually takeoff
+Answered: 2026-11-02 21:49 UTC
+
