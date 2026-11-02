@@ -2058,3 +2058,7 @@ Answered: 2026-11-02 21:36 UTC
 Answer: Yes
 Answered: 2026-11-02 21:36 UTC
 
+## pic-water2-in-game | Does the water look right in the real game with the new Dynasty water switched on (--water2, sea inlet on the starter tile)?
+Answer: Yes | Comment: Yes, the water that is working looks fabulous but he’s weird patches on the light slopes and there’s no water coming down the waterfalls at all
+Answered: 2026-11-02 21:37 UTC
+
