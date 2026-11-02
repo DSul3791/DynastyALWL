@@ -338,6 +338,7 @@ var cleared: Array = []               # Vector3 spots of placed items: shrubs an
 var clear_m: float = 5.0
 var trunks: Array = []               # felled trunks: [ax, az, bx, bz, radius a, radius b]; no small plants under or beside them (set_trunks)
 var trunk_margin_m: float = 0.3
+var _filter_queue: Dictionary = {}   # chunks whose plants must be refiltered against new cleared spots or trunks (worked off in apply_built)
 var _last_position: Vector3 = Vector3.ZERO
 var _ground_msec: int = 0
 var falls_drawn: int = 0
@@ -1679,20 +1680,75 @@ func _redraw(chunk: Vector2i) -> void:
 
 
 func set_cleared(spots: Array, radius: float) -> void:
+	# Dave 2 Nov 2026 (log: "client slow: grass and plant clearing" 1.0-1.4 s, 12 times): every change refiltered every chunk, twice. Now
+	# only the chunks a NEW spot or segment reaches are queued, and the queue is worked off a few ms a frame (apply_built). A spot taken away
+	# needs nothing: plants already dropped stay dropped until their chunk is rebuilt, as before.
+	var all: bool = absf(radius - clear_m) > 0.001 and not cleared.is_empty()
+	var old: Dictionary = {}
+
+	for spot in cleared:
+		old[spot] = true
+
 	cleared = spots
 	clear_m = radius
 
-	for chunk in _chunks.keys():
-		_filter_cleared(chunk, true)
+	if all:
+		_queue_all_filters()
+		return
+
+	for spot in spots:
+		if not old.has(spot):
+			_queue_filter_box(spot.x - radius, spot.z - radius, spot.x + radius, spot.z + radius)
 
 
 # Felled trunks (Dave 2026-10-21): small plants growing out of a lying log are not drawn (the grass is pressed flat in grass_view).
 func set_trunks(list: Array, margin: float) -> void:
+	var all: bool = absf(margin - trunk_margin_m) > 0.001 and not trunks.is_empty()
+	var old: Dictionary = {}
+
+	for t in trunks:
+		old[t] = true
+
 	trunks = list
 	trunk_margin_m = margin
 
+	if all:
+		_queue_all_filters()
+		return
+
+	for t in list:
+		if not old.has(t):
+			var reach: float = maxf(float(t[4]), float(t[5])) + margin + 0.2
+			_queue_filter_box(minf(t[0], t[2]) - reach, minf(t[1], t[3]) - reach, maxf(t[0], t[2]) + reach, maxf(t[1], t[3]) + reach)
+
+
+func _queue_filter_box(x0: float, z0: float, x1: float, z1: float) -> void:
+	for cz in range(int(floor(z0 / chunk_m)), int(floor(z1 / chunk_m)) + 1):
+		for cx in range(int(floor(x0 / chunk_m)), int(floor(x1 / chunk_m)) + 1):
+			var chunk: Vector2i = Vector2i(cx, cz)
+
+			if _chunks.has(chunk):
+				_filter_queue[chunk] = true
+
+
+func _queue_all_filters() -> void:
 	for chunk in _chunks.keys():
+		_filter_queue[chunk] = true
+
+
+# Works the queued chunk filters for about budget_usec (at least one).
+func _run_filter_queue(budget_usec: int) -> void:
+	if _filter_queue.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+
+	for chunk in _filter_queue.keys():
+		_filter_queue.erase(chunk)
 		_filter_cleared(chunk, true)
+
+		if Time.get_ticks_usec() - started >= budget_usec:
+			break
 
 
 func _under_trunk(p: Vector3, near: Array) -> bool:
@@ -2016,6 +2072,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 		_setup_step()
 
 	_take_seasonal()
+	_run_filter_queue(2000)
 
 	var still: Array = []
 
