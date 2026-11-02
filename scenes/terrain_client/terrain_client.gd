@@ -210,8 +210,6 @@ var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
-var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
-var _liquid_hole_told: Rect2 = Rect2()
 var _ground_quality: int = -1       # quality the ground texture array was built for
 var _z_down_msec: int = -1             # when Z went down while lying (hold to sleep), -1 when not held
 var _z_slept: bool = false             # the hold already asked for sleep
@@ -2031,6 +2029,8 @@ func _update_weather() -> void:
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
+var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
+var _liquid_hole_told: Rect2 = Rect2()
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
