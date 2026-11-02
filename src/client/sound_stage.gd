@@ -839,6 +839,23 @@ func ambient_dump(body: CharacterBody3D, limit: int = 14) -> String:
 	return "\n".join(lines)
 
 
+# The Debug details sound block (heard list, ambient mix dump, bus meters), rebuilt at most every DEBUG_TEXT_SEC: each part walks all the players under the stage
+# and the world_sounds group, which cost milliseconds when it ran on every frame with Debug details on (audio lag review, Dave 2 Nov 2026).
+const DEBUG_TEXT_SEC := 0.5
+var _debug_text_cache: String = ""
+var _debug_text_msec: int = -100000
+
+
+func debug_sound_text(body: CharacterBody3D) -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _debug_text_msec >= int(DEBUG_TEXT_SEC * 1000.0):
+		_debug_text_msec = now
+		_debug_text_cache = heard_text(body) + "\n" + ambient_dump(body, 8) + "\n" + meters_text()
+
+	return _debug_text_cache
+
+
 func wind_text() -> String:
 	return "wind %.2f (world %.2f, exposure %+.2f: -1 valley, +1 ridge)" % [wind_strength, weather.world_wind, exposure]
 
