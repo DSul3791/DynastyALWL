@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **218 slots: 18 recorded, 190 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **218 slots: 23 recorded, 185 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -85,8 +85,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `wind_hollow` | generated | 1 | wind_structures.gd: a low moan of wind across a cave mouth or big opening, half-enclosed only | Wind moaning across a cave mouth, low, seamless loop, 20 s |
 | 2 | `wind_storm` | generated | 1 | weather_sounds.gd: gale howl in storms and blizzards | A howling gale loop, seamless |
 | 2 | `wind_whistle` | generated | 1 | wind_structures.gd: wind whistling through a gap (under a lean-to roof, a door ajar), level by wind and enclosure | Wind whistling through a gap or a window crack, thin wandering tone, seamless loop, 20 s |
-| 2 | `wolf_howl` | generated | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |
-| 3 | `bear_growl` | generated | 2 | creature_sounds.gd: a bear's growl (idle, alert) | 2 to 3 low bear growls, 1 to 2 s |
+| 2 | `wolf_howl` | recorded | 2 | creature_sounds.gd: a wolf's howl (idle), far away at night | 2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack |
+| 3 | `bear_growl` | recorded | 2 | creature_sounds.gd: a bear's growl (idle, alert) | 2 to 3 low bear growls, 1 to 2 s |
 | 3 | `bed_forest` | empty | 0 | ambient_life.gd (optional bed): a quiet forest background that fades in with forest cover | A quiet forest background loop, 30 s or more, no clear single calls |
 | 3 | `bed_highland` | empty | 0 | ambient_life.gd (optional bed): highland wind and space | A thin high-altitude background loop |
 | 3 | `bed_meadow` | empty | 0 | ambient_life.gd (optional bed): a meadow background | A meadow background loop (insects, distant birds), seamless |
@@ -102,7 +102,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `craft_stack` | generated | 2 | item_sounds.gd: crafting work sound (laying sticks and stones: campfire), plays for the length of the craft | 2 to 3 recordings of stacking sticks and stones, 4 s |
 | 3 | `craft_twine` | generated | 2 | item_sounds.gd: crafting work sound (twisting fibre into cord), plays for the length of the craft | 2 to 3 recordings of twisting plant fibre or rope, 4 s |
 | 3 | `craft_wrap` | generated | 2 | item_sounds.gd: crafting work sound (wrapping a bandage), plays for the length of the craft | 2 to 3 recordings of wrapping a cloth or leaf bandage, 4 s |
-| 3 | `deer_grunt` | generated | 2 | creature_sounds.gd: a deer's low grunt (idle) | 2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s |
+| 3 | `deer_grunt` | recorded | 2 | creature_sounds.gd: a deer's low grunt (idle) | 2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s |
 | 3 | `deer_snort` | generated | 2 | creature_sounds.gd: a deer's alarm snort (alert, threat) | 2 to 3 deer alarm snorts, 0.3 s |
 | 3 | `dig_clay` | generated | 3 | dig_sounds.gd: digging clay, mud and peat | 3 wet sticky digs |
 | 3 | `dig_gravel` | generated | 3 | dig_sounds.gd: digging gravel | 3 gravel shovelling sounds |
@@ -115,8 +115,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `eat_crunch` | generated | 3 | item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots) | 2 to 3 recordings of biting and chewing something crisp, 1 s |
 | 3 | `eat_soft` | generated | 3 | item_sounds.gd eat(): soft chewing (berries, greens) | 2 to 3 recordings of chewing something soft, 1 s |
 | 3 | `flame_lantern` | generated | 1 | flame_sounds.gd: a lantern in the hand (quiet loop) | a lantern flame behind glass, 10 s loop |
-| 3 | `fox_bark` | generated | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
-| 3 | `fox_scream` | generated | 2 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |
+| 3 | `fox_bark` | recorded | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
+| 3 | `fox_scream` | recorded | 1 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |
 | 3 | `gate_close` | generated | 2 | placed_sounds.use('gate', false, at): a gate swings shut and latches | 2 or 3 gate closings: thud then latch drop |
 | 3 | `gate_open` | generated | 2 | placed_sounds.use('gate', true, at): a heavy gate swings open | 2 or 3 gate openings: latch lift then a long creak |
 | 3 | `gear_cloth` | generated | 3 | gear_sounds.gd: clothes rustling on a step | 3 soft cloth rustles, 0.2 s, from walking in a tunic or cloak |
