@@ -59,6 +59,8 @@ func _init() -> void:
 	a._fire_add(lit, "stick")
 	lit["state"] = a._fire_best_state(lit)
 	a._fire_burn(lit, 1.5 * float(cook["fuel"]["log"]) / rate)   # part-way: one and a half logs gone
+	lit["burnt"] = {"log": 100.0, "weak": 5.0}   # burned since the store was last counted (a store fire); a restart must not give it back
+	lit["counted"] = {"log": 3, "firewood": 1, "weak": 1}
 	a._items[900] = {"number": number, "count": 1, "pos": Vector3(5.0, 10.0, 5.0), "left": 1.0e9, "fire": lit}
 
 	var out: Dictionary = {"state": 8, "burn_left": 0.0, "covered": false, "recheck": 0.0}
@@ -94,6 +96,9 @@ func _init() -> void:
 
 	check(mid.get("pieces", {}) == before_pieces, "same laid pieces: %s vs %s" % [str(mid.get("pieces", {})), str(before_pieces)])
 	check(not cold.is_empty() and float(cold.get("burn_left", 1.0)) <= 0.0, "the out fire stays out")
+	check(mid.get("burnt", {}) == {"log": 100.0, "weak": 5.0}, "the burned time since the last count survives a restart: %s" % str(mid.get("burnt", {})))
+	check(mid.get("counted", {}) == {"log": 3, "firewood": 1, "weak": 1}, "so does what that count knew: %s" % str(mid.get("counted", {})))
+	check(not cold.has("counted"), "a fire never counted loads with no count (%s)" % str(cold.get("counted", "none")))
 
 	# It carries on from there: one more log burns off the loaded fire the same as it would have.
 	var step: float = float(cook["fuel"]["log"]) / rate
