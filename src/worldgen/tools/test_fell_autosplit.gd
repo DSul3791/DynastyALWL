@@ -111,6 +111,28 @@ func _init() -> void:
 	check(logs.size() == int(6.0 / 2.44), "log count equals what cutting gives: %d" % logs.size())
 	check(felled(w, 4).size() == 1, "the stump stays")
 
+	# Hand-cutting also gives sticks and leaves (branch blows), and the root ball at the end: the split gives them too, on the ground (the first-hour guide and the lean-to need them).
+	var sticks: int = 0
+	var leaves: int = 0
+	var roots: int = 0
+
+	for k in w._items:
+		var row: Dictionary = w._items[k]
+
+		if row.has("tree") or row.has("struct"):
+			continue
+
+		sticks += int(row["count"]) if int(row["number"]) == w.table.number_of("stick") else 0
+		leaves += int(row["count"]) if int(row["number"]) == w.table.number_of("leaves") else 0
+		roots += int(row["count"]) if int(row["number"]) == w.table.number_of("tree_roots") else 0
+
+	var branch: Array = w._drops.get("trunk", {}).get("branch", [])
+	var blows: int = int(w._drops.get("trunk", {}).get("branch_blows", 3))
+	check(sticks >= blows * int(branch[0][1]) and sticks <= blows * int(branch[0][2]), "sticks of the branch blows lie beside the trunk: %d" % sticks)
+	check(leaves >= blows * int(branch[1][1]) and leaves <= blows * int(branch[1][2]), "leaves of the branch blows lie beside the trunk: %d" % leaves)
+	check(roots >= 1, "the root ball lies there too")
+	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == 0, "none of it went into the pack")
+
 	for k in logs:
 		var off: Vector3 = w._items[k]["pos"] - base
 		var cross: float = absf(off.x * along.z - off.z * along.x)

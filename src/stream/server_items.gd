@@ -4208,7 +4208,9 @@ func split_trunk(id: int) -> bool:
 		if Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length() <= DROP_CROWD_M + length:
 			near += 1
 
-	if near + count > MAX_DROPPED_NEAR:
+	var extras: Array = _trunk_extras(id, tree, count, cfg)   # what hand-cutting gives besides the logs (sticks, leaves, bark, seeds, roots)
+
+	if near + count + extras.size() > MAX_DROPPED_NEAR:
 		_dirty = true
 		return false
 
@@ -4217,8 +4219,58 @@ func split_trunk(id: int) -> bool:
 	for spot in spots:
 		drop_in_world(log_n, 1, spot)
 
+	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
+
+	for extra in extras:
+		drop_in_world(int(extra[0]), int(extra[1]), heap)
+
 	_dirty = true
 	return true
+
+
+# What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
+# then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
+func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary) -> Array:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ 7919
+	var species: String = str(tree.get("species", ""))
+	var totals: Dictionary = {}
+
+	for blow in range(int(cfg.get("branch_blows", 3))):
+		for row in cfg.get("branch", []):
+			var n: int = table.number_of(str(row[0]))
+			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(species, {})
+	var own: Array = cfg.get("by_species", {}).get(species, [])
+
+	for k in range(logs):
+		if not thatch_bark.is_empty():
+			if rng.randf() < float(thatch_bark.get("chance", 0.3)):   # luck-exempt: world drop, no player
+				var span: Array = thatch_bark.get("count", [2, 4])
+				var t: int = table.number_of("thatch")
+				totals[t] = int(totals.get(t, 0)) + rng.randi_range(int(span[0]), int(span[1]))   # luck-exempt: world drop, no player
+		elif rng.randf() < float(cfg.get("bark_chance", 0.3)):   # luck-exempt: world drop, no player
+			var b: int = table.number_of("bark")
+			totals[b] = int(totals.get(b, 0)) + 1
+
+		if rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
+			var sn: int = table.number_of("seed_bundle") if own.is_empty() else table.number_of(str(own[0][0]))
+			totals[sn] = int(totals.get(sn, 0)) + (1 if own.is_empty() else rng.randi_range(int(own[0][1]), int(own[0][2])))   # luck-exempt: world drop, no player
+
+	var roots: Array = cfg.get("roots", [])
+
+	if not roots.is_empty():
+		var r: int = table.number_of(str(roots[0]))
+		totals[r] = int(totals.get(r, 0)) + rng.randi_range(int(roots[1]), int(roots[2]))   # luck-exempt: world drop, no player
+
+	var rows: Array = []
+
+	for n in totals:
+		if int(n) > 0 and int(totals[n]) > 0:
+			rows.append([int(n), int(totals[n])])
+
+	return rows
 
 
 # One log cut off the far end of a felled trunk (Dave: a log must land on the ground, never in the pack or on the shoulder; the trunk gets shorter with a fresh cut face). The log is an ordinary
