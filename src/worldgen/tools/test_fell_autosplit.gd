@@ -165,5 +165,54 @@ func _init() -> void:
 
 	check(not w.split_trunk(hand[0]) and felled(w, 3).size() == 1, "no room: the trunk stays to cut by hand")
 
+	# A sapling-sized tree (1.5 m, no whole log) breaks up into firewood, kindling and sticks instead of staying a trunk.
+	for n in range(70):
+		w._items.erase(900000 + n)
+
+	standing[10] = true
+	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(200.0, 10.0, 0.0), "height": 1.5, "trunk": 0.1} if standing.has(id) else {}
+	w.report_position(1, Vector3(198.0, 10.0, 0.0))
+	fell_one(w, standing, 10)
+	var tiny: Array = felled(w, 3)
+	var tiny_id: int = 0
+
+	for k in tiny:
+		if absf(w._items[k]["pos"].x - 200.0) < 1.0:
+			tiny_id = k
+
+	check(tiny_id != 0, "the tiny tree is a trunk")
+	w._split_due[tiny_id] = 0
+	w._auto_split()
+	check(not w._items.has(tiny_id), "the tiny trunk broke up")
+	var kindling: int = 0
+
+	for k in w._items:
+		var row: Dictionary = w._items[k]
+
+		if not row.has("tree") and not row.has("struct") and absf(row["pos"].x - 200.0) < 3.0 and int(row["number"]) == w.table.number_of("kindling"):
+			kindling += int(row["count"])
+
+	check(kindling >= 1, "kindling lies where it fell")
+
+	# No room: it is tried again later, and after three tries stays a trunk for the axe.
+	standing[11] = true
+	w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(300.0, 10.0, 0.0), "height": 20.0, "trunk": 0.5} if standing.has(id) else {}
+	w.report_position(1, Vector3(298.0, 10.0, 0.0))
+	fell_one(w, standing, 11)
+	var late: int = 0
+
+	for k in felled(w, 3):
+		if absf(w._items[k]["pos"].x - 300.0) < 1.0:
+			late = k
+
+	for n in range(70):
+		w._items[910000 + n] = {"number": w.table.number_of("stick"), "count": 1, "pos": Vector3(300.0, 10.0, 0.0), "left": 1000.0}
+
+	for round in range(3):
+		w._split_due[late] = 0
+		w._auto_split()
+
+	check(w._items.has(late) and not bool(w._items[late]["tree"].get("auto_split", false)), "after three tries without room it stays a trunk for the axe")
+
 	print("fell auto-split tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

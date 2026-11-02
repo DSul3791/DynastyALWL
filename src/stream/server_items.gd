@@ -4238,7 +4238,16 @@ func _auto_split() -> void:
 
 	for id in ready:
 		_split_due.erase(id)
-		split_trunk(int(id))
+
+		if not split_trunk(int(id)) and _items.has(id) and _items[id].has("tree") and bool(_items[id]["tree"].get("auto_split", false)):
+			var tries: int = int(_items[id]["tree"].get("split_tries", 0)) + 1   # no room yet (a crowded spot): look again in half a minute, three times, then it stays a trunk to cut by hand
+			_items[id]["tree"]["split_tries"] = tries
+
+			if tries < 3:
+				_split_due[id] = now + 30000
+			else:
+				_items[id]["tree"].erase("auto_split")
+				_dirty = true
 
 
 # Breaks the felled trunk `id` into logs now; true when it did. See _auto_split.
@@ -4249,14 +4258,14 @@ func split_trunk(id: int) -> bool:
 		return false
 
 	var tree: Dictionary = it["tree"]
-	tree.erase("auto_split")
 	var cfg: Dictionary = _drops.get("trunk", {})
 	var log_len: float = float(cfg.get("log_length_m", 2.44))
 	var length: float = float(tree["length"])
 	var count: int = clampi(int(length / log_len), 0, int(cfg.get("max_logs", 20)))
 
-	if count <= 0:
-		return false
+	if count <= 0:   # too short for one whole log (a sapling-sized tree): it breaks up into what hand-cutting gives, firewood, kindling and sticks (and the branches)
+		tree.erase("auto_split")
+		return _split_small(id, it, cfg)
 
 	var yaw: float = float(tree["yaw"])
 	var pitch: float = float(tree.get("pitch", 0.0))
@@ -4288,6 +4297,7 @@ func split_trunk(id: int) -> bool:
 		_dirty = true
 		return false
 
+	tree.erase("auto_split")
 	_items.erase(id)
 
 	for spot in spots:
@@ -4297,6 +4307,42 @@ func split_trunk(id: int) -> bool:
 
 	for extra in extras:
 		drop_in_world(int(extra[0]), int(extra[1]), heap)
+
+	_dirty = true
+	return true
+
+
+# A trunk too short for a whole log breaks up into what hand-cutting gives it: the branch blows' sticks and leaves, then the small rows (firewood, kindling, sticks) of every small blow.
+func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
+	var tree: Dictionary = it["tree"]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ 7919
+	var species: String = str(tree.get("species", ""))
+	var totals: Dictionary = {}
+
+	for blow in range(int(cfg.get("branch_blows", 3))):
+		for row in cfg.get("branch", []):
+			var n: int = table.number_of(str(row[0]))
+			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	for blow in range(int(cfg.get("small_blows", 3))):
+		for row in cfg.get("small", []):
+			var small_id: String = _wood_item("firewood", species) if str(row[0]) == "firewood" else str(row[0])
+			var m: int = table.number_of(small_id)
+			totals[m] = int(totals.get(m, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	var rows: Array = []
+
+	for n in totals:
+		if int(n) > 0 and int(totals[n]) > 0:
+			rows.append([int(n), int(totals[n])])
+
+	var yaw: float = float(tree["yaw"])
+	var heap: Vector3 = it["pos"] + Vector3(sin(yaw), 0.0, cos(yaw)) * (float(tree["length"]) * 0.5) + Vector3(0.0, float(tree["radius"]), 0.0)
+	_items.erase(id)
+
+	for row in rows:
+		drop_in_world(int(row[0]), int(row[1]), heap)
 
 	_dirty = true
 	return true
