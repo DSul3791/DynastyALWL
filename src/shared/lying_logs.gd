@@ -23,3 +23,9 @@ static func trunk_segment(at: Vector3, extra: Dictionary) -> Array:
 static func loose_segment(at: Vector3, axis: Vector3, length: float, r_a: float, r_b: float) -> Array:
 	var half: Vector2 = Vector2(axis.x, axis.z) * (length * 0.5)
 	return [snappedf(at.x + half.x, 0.01), snappedf(at.z + half.y, 0.01), snappedf(at.x - half.x, 0.01), snappedf(at.z - half.y, 0.01), maxf(r_a, MIN_LOOSE_R), maxf(r_b, MIN_LOOSE_R)]
+
+
+# A stump or a boulder: a round footprint, pressed the same way (a segment of no length).
+static func round_segment(at: Vector3, radius: float) -> Array:
+	var r: float = maxf(radius, MIN_LOOSE_R)
+	return [snappedf(at.x, 0.01), snappedf(at.z, 0.01), snappedf(at.x, 0.01), snappedf(at.z, 0.01), r, r]

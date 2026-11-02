@@ -69,5 +69,8 @@ func _init() -> void:
 	check(is_equal_approx(loose[1], 3.75) and is_equal_approx(loose[3], 6.25), "a loose log spans its length centred on its spot")
 	grass.trunks = [loose]
 	check(grass._flat_at(5.0, 5.0) and grass._flat_at(5.2, 6.0) and not grass._flat_at(5.0, 7.0), "grass under a loose log is flat, past its end is not")
+	var stump: Array = Lying.round_segment(Vector3(20, 0, 20), 0.3)
+	grass.trunks = [stump]
+	check(grass._flat_at(20.0, 20.0) and grass._flat_at(20.4, 20.0) and not grass._flat_at(21.0, 20.0), "grass on and beside a stump is flat, a metre out is not")
 	print("test_placed_clearing: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
