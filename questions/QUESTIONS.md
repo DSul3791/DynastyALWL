@@ -342,3 +342,9 @@ Note: Option A: add wild plants to the world, one per crop, each giving seeds (w
 Note: Recommendation: B for the first week, because it needs no new plant art and Hob or Edda can sell seed; add wild plants later.
 [A] Wild plants for each crop
 [B] Seeds from food or trader first
+
+## sonny-cloud-godot | Add Godot 4.7 to the cloud setup script so agents can run tests without your PC?
+Note: Blocked: I tried to download Godot 4.7 here to run shader and water tests myself, and the safety check refused to run an outside download. With Godot in the setup script, every agent could run tools/run_tests.sh in the cloud and your PC would only be needed for screenshots.
+Note: Where: Project settings, then Cloud environment, then the gear, then Setup script. One line: download and unzip Godot_v4.7-stable_linux.x86_64.zip from the godotengine GitHub releases.
+Note: Recommendation: Yes, add it to the setup script
+[check]
