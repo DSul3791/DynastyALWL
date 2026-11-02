@@ -290,3 +290,13 @@ Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov 
 - "Your tree has broken up. Press E to take the sticks and leaves, and a log on your shoulder."
 - "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 - No line, the player will see it
+
+## felled-tree-size-and-split | Does a felled tree keep its size and break into logs?
+Note: The team's headless tests all pass; only the look in the game needs you.
+Note: 1. Start the game and walk to a small tree and a big tree near the starter town.
+Note: 2. With the stone axe in hand, chop the small tree until it falls.
+Note: 3. Watch it fall: it should lie on the ground at the same thickness and height it had standing.
+Note: 4. About 2 seconds after it lands it should turn into logs along where it fell, with a heap of sticks and leaves beside it.
+Note: 5. Do the same with the big tree, and note any stall or freeze when it breaks up.
+Note: Recommendation: Yes, because the size now uses the same scaling as the standing tree and the tests pass.
+[test]
