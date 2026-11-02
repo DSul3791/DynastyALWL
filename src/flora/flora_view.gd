@@ -385,6 +385,7 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 		add_child(sheet)
 		entry["liquid"] = sheet
 		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), float(water.get("spacing", 8.0)))
 	sheet.visible = not water_hidden
