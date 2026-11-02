@@ -21,6 +21,7 @@ uniform float fade_cells = 1.0;                            // 0: no fade at the 
 uniform float point_grid = 0.0;                            // 1: texels sit on the sheet's corners and edges (a chunk's grid points), 0: on cell centres (the live window)
 uniform vec4 hole = vec4(0.0);                             // world x, z, size x, size z of the live window: a chunk sheet steps aside there
 uniform float hole_inset = 8.0;
+uniform float cell_m = 8.0;                                // metres between texels
 uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
 uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
@@ -125,6 +126,26 @@ void fragment() {
 	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
 	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
 	foam = max(foam, lap * 0.7);
+	// Falls: where the surface itself drops steeply (only between wet texels; a shore texel's level is the bank), the water turns white, in long
+	// streaks that pour down the face, faster than the river above.
+	vec2 px = vec2(1.0) / cells;
+	vec4 ex0 = texture(liquid, tex_uv - vec2(px.x, 0.0));
+	vec4 ex1 = texture(liquid, tex_uv + vec2(px.x, 0.0));
+	vec4 ez0 = texture(liquid, tex_uv - vec2(0.0, px.y));
+	vec4 ez1 = texture(liquid, tex_uv + vec2(0.0, px.y));
+	vec2 grad = vec2(
+		min(ex0.a, ex1.a) > 0.004 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
+		min(ez0.a, ez1.a) > 0.004 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
+	float drop = length(grad);
+	float fall = smoothstep(0.2, 0.7, drop);
+
+	if (fall > 0.01) {
+		vec2 down = -grad / max(drop, 0.0001);
+		vec2 across = vec2(-down.y, down.x);
+		float pour = noise(vec2(dot(world, across) * 2.2, dot(world, down) * 0.25 - TIME * 3.0));
+		float pour2 = noise(vec2(dot(world, across) * 5.0 + 3.1, dot(world, down) * 0.5 - TIME * 4.2));
+		foam = max(foam, fall * clamp(0.45 + 0.7 * pour * pour2 + 0.25 * pour, 0.0, 1.0));
+	}
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
@@ -230,6 +251,7 @@ func show_points(im: Image, corner: Vector2, spacing: float) -> void:
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", 0.0)
 	_material.set_shader_parameter("point_grid", 1.0)
+	_material.set_shader_parameter("cell_m", spacing)
 	visible = true
 
 
@@ -265,6 +287,7 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
+	_material.set_shader_parameter("cell_m", cell_m)
 	visible = true
 
 
