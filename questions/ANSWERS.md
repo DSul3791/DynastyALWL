@@ -2182,3 +2182,7 @@ Answered: 2026-11-02 22:05 UTC
 Answer: Yes: But you have to pull it back in with a rope that you made out of twine and it takes a bunch of rope and some rock rocks to make a fishing net
 Answered: 2026-11-02 22:06 UTC
 
+## death-new-start | After a real death with no child, where and how does the new character start?
+Answer: At the world spawn, empty pack (recommended) | Comment: This has been spoken of in-depth in the documents. Go read the documents.
+Answered: 2026-11-02 22:06 UTC
+
