@@ -2006,3 +2006,7 @@ Answered: 2026-11-02 21:28 UTC
 Answer: Yes: Firewood looks OK. It could be a little bigger thinking about 60% bigger and the kindling was perfect.
 Answered: 2026-11-02 21:30 UTC
 
+## kathleen-trunk-orchard-shots | Should the PC thread take the lying-trunk and orchard pictures for me?
+Answer: No: I don’t know this is a technical question that you could answer better than me
+Answered: 2026-11-02 21:30 UTC
+
