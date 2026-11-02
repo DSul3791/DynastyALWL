@@ -39,13 +39,6 @@ Note: Recommendation A: the new character starts at the world spawn with an empt
 - At the world spawn with a small starter kit (stick, stone, twine)
 - At the dead character's last bed, empty pack
 
-## death-downed-state | Should we build the "downed" state (knocked out, can be revived or carried, bleeds out after a timer) before real death?
-Note: Design 6.1 decided it (ARK style). It is large: a new body pose, a revive action, a timer that keeps running while offline, and carrying another player.
-Note: Recommendation A: no, build it after real death and children. Today a character at zero health dies at once.
-- Later, after real death and children (recommended)
-- Before real death
-- Never, keep death immediate
-
 ## pic-flora-yarrow | In the real game: does the white yarrow drift (bottom left, with varied tree crowns) look like white flowers in the shade, not blue-grey metal?
 Image: questions/img/flora_yarrow_crowns.jpg
 Note: Real game rig shot at noon, (53302,68423) facing north. Placement is right (a dense drift at the forest edge). The heads read blue-grey, faceted and slightly metallic and the stems are pale, so Flora rates it 3 of 5. The look is Kathleen's (warmer head colour, smoother normals, matte stems). The crowns look varied: 4 of 5.
