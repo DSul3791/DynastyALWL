@@ -362,3 +362,12 @@ Note: Nine crafted materials are used by no recipe, so making them is wasted eff
 Note: Example: hinges go into the plank chest and doorways, wooden pins into tables and chairs, leather straps into the backpack.
 Note: Recommendation: Yes, add them as small extra ingredients (data only, about an hour); soap and compost wait for a game rule.
 [check]
+
+## kathleen-firewood-pile-grows | Does the firewood pile beside the chopping block grow with each split?
+Note: Fix is in pull request 68; untested in game because my cloud box has no Godot.
+Note: 1. In GitHub Desktop, switch to branch claude/kathleen-firewood-pile-20261102.
+Note: 2. Run the game, place a chopping block, carry 8 wooden blocks and an axe.
+Note: 3. Split one block at a time and watch the pile beside the block.
+Note: 4. Say Yes if it gets bigger with every split; No plus the count where it stopped growing.
+Note: Recommendation: Yes, merge it if the pile grows, because you asked to see the pile get bigger.
+[test]
