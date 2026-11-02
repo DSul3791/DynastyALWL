@@ -116,6 +116,19 @@ func _init() -> void:
 	check(not bed_row.is_empty() and is_equal_approx(float(bed_row["struct"]["yaw"]), float(lean["struct"]["yaw"])), "the bed lies along the lean-to (yaw %s against %s)" % [str(bed_row["struct"].get("yaw")), str(lean["struct"]["yaw"])])
 	var def: Dictionary = items._structures.get("lean_to", {})
 	check(float(def.get("half_x", 0.0)) >= 1.3 and float(def.get("half_z", 0.0)) >= 1.2, "the lean-to is big enough for a bed: covered box %.1f x %.1f m half-sizes" % [float(def.get("half_x", 0.0)), float(def.get("half_z", 0.0))])
+	# Water, steep ground and a pot with no fire: every refusal gives a reason (Dino #8, Steve 2 Nov 2026).
+	give("chest_kit", 3)
+	items.water_depth_at = func(_p): return 2.0
+	place("chest_kit", Vector3(20.0, 10.0, 10.0))
+	check(said.has("You cannot build in water."), "a chest over 2 m of water: told so (%s)" % str(said))
+	items.water_depth_at = Callable()
+	items.ground_height = func(x, _z): return 10.0 + (float(x) - 20.0) * 4.0
+	place("chest_kit", Vector3(20.0, 10.0, 10.0))
+	check(said.has("The ground is too steep there."), "a chest on a 4 m per metre slope: told so (%s)" % str(said))
+	items.ground_height = func(_x, _z): return ground[0]
+	give("campfire_pot_kit", 1)
+	place("campfire_pot_kit", Vector3(-20.0, 10.0, -10.0))
+	check(said.has("The campfire pot hangs over a small fire. Lay a fire first."), "a pot with no fire near: told so (%s)" % str(said))
 	print("placement notices: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

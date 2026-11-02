@@ -32,3 +32,12 @@ Each row: owner of the next step, the exact next step, why. Nothing here has bee
 | 21 | Pickup sounds | Jason | Hook the pick-up action (`pick_up` clip, auto pickup) to an `itemfx` cue; test | Not started |
 | 22 | Crouch footsteps | Jason | Add a crouch gait level in `step_levels.json` / `surface_gait_db` and a check in the step test | Not started |
 | 23 | Swim and drink hooks for the Dynasty body | Jason (Steve added the hooks) | Read Steve's swim/drink hooks in `terrain_client.gd`, place `swim`/`drink_gulp` calls, test with `--sound-log` | Not started |
+
+## Update 2 Nov 2026 (branch `claude/jason-20261102-audio`, no Godot, nothing heard)
+
+| # | Done | Result |
+|---|---|---|
+| 12 | Checked | The gust gating, uneven swells (`flutter_db`) and BASE_DB -30 are already in `tree_wind.gd`; only the generator's band (`make_treewind.py`) is unchanged and needs ears. Still needs the `--sound-log=180` run |
+| 13 | Done | `assets/audio/check_credits.py` (new). Voice files now have rows (Kokoro, Apache-2.0, as stated in `data/npcs/voices.json` and `inner_voice_sets.json`); fox row pattern fixed; licences `own-made` and `Apache-2.0` allowed. Left: 8 rows with page URL TODO (Dave's Pixabay pages), and the Kokoro voice-pack terms to confirm |
+| 15 | Done | `loudness_report.py --check` fails on a clip at or over 0 dBFS and creature peaks over -6 dB. Today it lists 20: gravel/stone step left (+0.2), fire_rain, town_hammering, treewind_dry (+3.9), eight rain beds (up to +2.3, decoded overshoot), and creature snorts/growls/roars (bear_roar -0.1, rabbit_thump -1.9, wolf_growl -2.5, horse_snort -2.6). Fixing needs a listen: Dave's rule is creatures near -14 peak |
+| 24 | Done | `validate_pack.py` credit errors 12 -> 0 (creature rows now match their files, Dave's own recordings use licence `own`); manifest regenerated (23 recorded). Left: 500 UNREFERENCED errors (generated folders such as wet/, weather/ not in the manifest's slot list): a separate cleanup, mostly `make_manifest.py` coverage |
