@@ -567,6 +567,7 @@ func peer_left(peer: int) -> void:
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
 	_last_average.erase(peer)
+	_roads.erase(peer)
 	_grade_points.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
@@ -1107,6 +1108,7 @@ func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_fly(delta)
 	_showroom_retry(delta)
+	_road_tick(delta)
 	_slow_in += delta
 
 	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
@@ -2378,8 +2380,133 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 		pair = [Vector3(at.x, h, at.z), null]
 	elif pair[0] != null:
 		pair[1] = Vector3(at.x, h, at.z)
+		_road_start(peer, pair[0], pair[1])
 
 	_grade_points[peer] = pair
+
+
+# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B is levelled to the straight ramp between the two
+# heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
+# never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
+const ROAD_MAX_M := 40.0
+const ROAD_STATION_M := 0.7
+const ROAD_STEP_S := 0.5
+const ROAD_EDITS := 3
+const ROAD_WEAR_EVERY := 4
+const ROAD_HALF_WIDTH_M := 1.0
+const ROAD_DEPTH_M := 0.5
+var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+
+
+func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
+	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+
+	if length < 1.0:
+		_say(peer, "Points A and B are too close together.")
+		return
+
+	if length > ROAD_MAX_M:
+		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
+		return
+
+	_roads[peer] = {"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+	_say(peer, "Road marked: the ground is being levelled and trodden from A to B.")
+
+
+func _road_tick(delta: float) -> void:
+	if _roads.is_empty():
+		return
+
+	for peer in _roads.keys():
+		var job: Dictionary = _roads[peer]
+		job["wait"] = float(job["wait"]) - delta
+
+		if float(job["wait"]) > 0.0:
+			continue
+
+		job["wait"] = ROAD_STEP_S
+		var inv = inventory_of(peer)
+
+		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
+			_roads.erase(peer)
+			continue
+
+		var i: int = int(job["i"])
+
+		if i >= int(job["n"]):
+			_roads.erase(peer)
+			continue
+
+		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))
+		job["i"] = i + 1
+
+
+func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
+	var t: float = float(i) / float(maxi(n - 1, 1))
+	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z).normalized()
+	var side: Vector2 = Vector2(-along.y, along.x)
+	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
+	var target: float = lerpf(a.y, b.y, t)
+	var edits: int = 0
+
+	if dig_ground.is_valid() and fill_ground.is_valid():
+		for offset in [0.0, ROAD_HALF_WIDTH_M, -ROAD_HALF_WIDTH_M]:
+			if edits >= ROAD_EDITS:
+				break
+
+			var spot: Vector2 = centre + side * float(offset)
+			var h: float = float(ground_height.call(spot.x, spot.y))
+
+			if is_nan(h) or absf(h - target) < PATH_AVERAGE_MIN_M:
+				continue
+
+			var depth: float = minf(absf(h - target), ROAD_DEPTH_M)
+
+			if h > target:
+				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+			else:
+				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+
+			edits += 1
+
+	var ground: float = float(ground_height.call(centre.x, centre.y))
+
+	if is_nan(ground):
+		return
+
+	var pos: Vector3 = Vector3(centre.x, ground + 0.02, centre.y)
+
+	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
+		var blocked: bool = false
+		var of_kind: int = 0
+
+		for id in _items:
+			var other: Dictionary = _items[id]
+
+			if not other.has("struct"):
+				continue
+
+			if str(other["struct"]["kind"]) == "path_patch":
+				if Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < PATH_SPACING_M:
+					blocked = true
+					break
+
+				if _chunk_of(other["pos"]) == _chunk_of(pos):
+					of_kind += 1
+			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
+				blocked = true
+				break
+
+		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
+			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+			_next_id += 1
+			_dirty = true
+
+	if i % ROAD_WEAR_EVERY == 0:
+		_wear_tool(peer, inv, "hoe", "dig")
+
+	if i == n - 1:
+		_say(peer, "The road is finished.")
 
 
 func _hoe_grade(peer: int, inv, at: Vector3) -> void:

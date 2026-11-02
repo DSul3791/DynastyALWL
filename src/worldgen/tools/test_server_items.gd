@@ -868,6 +868,18 @@ func _init() -> void:
 	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 0, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 1, 0, 0, Vector3(8.0, 10.0, 0.0))
+	var road_patches: int = patches_of.call()
+	digs.clear()
+	fills.clear()
+
+	for step in 30:
+		m._road_tick(0.6)
+
+	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
+	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(m._roads.is_empty(), "the road job ends when the line is done")
+	digs.clear()
+	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(7.0, 10.0, 0.0))
