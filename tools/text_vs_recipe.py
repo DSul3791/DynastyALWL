@@ -54,5 +54,30 @@ for f in TEXT:
                         if int(m.group(1)) not in ns:
                             bad += 1
                             print("%s %s: '%s' says %s %s but recipe '%s' needs %s" % (f, path, s[:70], m.group(1), ing, rname, sorted(ns)))
+# Hints and goals: no single item to check against, so "<N> <ingredient>" must
+# match the count in at least one recipe that uses that ingredient.
+any_need = {}
+for r in recipes:
+    for ing, n in r["needs"]:
+        any_need.setdefault(name.get(ing, ing).lower(), set()).add(n)
+bp = D / "blueprints.json"
+if bp.exists():
+    for b in (lambda x: x.values() if isinstance(x, dict) else x)(json.load(open(bp, encoding="utf8")).get("blueprints", [])):
+        for ing, n in b.get("cost", []):
+            any_need.setdefault(name.get(ing, ing).lower(), set()).add(n)
+for f in ["hints.json", "starter_goals.json", "camp_goals.json"]:
+    p = D / f
+    if not p.exists():
+        continue
+    for path, s in strings(json.load(open(p, encoding="utf8"))):
+        if path.endswith("/id") or path.startswith("/_about"):
+            continue
+        low = s.lower()
+        for ing, ns in any_need.items():
+            for form in plural_forms(ing):
+                for m in re.finditer(r"\b(\d+)\s+" + re.escape(form) + r"\b", low):
+                    if int(m.group(1)) not in ns:
+                        bad += 1
+                        print("%s %s: '%s' says %s %s but no recipe needs that (has %s)" % (f, path, s[:70], m.group(1), ing, sorted(ns)))
 print("%d mismatch(es)" % bad)
 sys.exit(1 if bad else 0)
