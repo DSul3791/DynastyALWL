@@ -32,3 +32,11 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **What the screenshot shows (observation, not a diagnosis):** standing in a meadow with the stone axe selected. Both arms enter from the bottom of the screen with fingers visible. The right hand grips the axe handle partway up, with the head pointing up and slightly away. The left hand is open and reaches across in front of the right, not holding anything. The arms look thin and long against the view and lean toward the middle, and the hands look rotated relative to the forearms.
 - **Context:** Kathleen's note says the arms are a rigid mesh cut by height into upper arm, forearm and hand on the old arm rig; the wrist and fingers do not move; the hand mounts and tool placement are the old ones; and arm size against the camera, hand scale and tool alignment in the hand were "not checked". No in-game first-person picture existed before this screenshot.
 - **Status:** open, unassigned, not worked on.
+
+## 5. Can't cut a beech tree down
+
+- **Found:** 2026-11-01, Dave, playing the daily. The debug overlay in his screenshot reads "build 826 (5254215)", which is commit `52542154`, the daily's head at that time, so this build has every change merged today. Screenshot: `C:\Users\david\AppData\Local\Temp\claude\C--GodotProjects-DynastyALWL\48aa3172-4466-48c8-8bd4-2a4eae45a208\images\14.webp` (not committed).
+- **Symptom (Dave):** I can't cut this tree down. It says it's a beech.
+- **What the screenshot shows (observation, not a diagnosis):** first person at x 53287, z 68492, stone axe in hand, close in front of a tall grey-brown trunk. Several felled logs lie on the ground around it, in tall grass.
+- **Context, not a diagnosis:** earlier today Dave could fell a beech and cut it with the axe, but got no logs; Sal's fixes `df56ffaf` (beech is a key wood) and `aae3a272` (every felled tree gives logs) are in this build. Whether this tree is a different case (size, tool tier, hardness of the beech needing a better axe than the stone axe, a stuck tree state, or the E-key change `18e7dcd4`) is not known. Nothing has been run in a windowed client.
+- **Status:** open, unassigned, not worked on.
