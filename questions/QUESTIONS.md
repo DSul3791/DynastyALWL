@@ -86,12 +86,3 @@ Note: Neither the cloud nor the PC thread can download from Pixabay, so this nee
 Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "black grouse", "ptarmigan"; seal "seal bark", "grey seal"; seabird "seagull", "herring gull", "gull colony".
 Note: Drop them in the project folder at sound/incoming/<animal>/ (boar, grouse, seal, seabird), with a short urls.txt listing each clip's Pixabay page link. Jason then cuts and levels them.
 [test]
-
-## sal-shore-net-throw | Does the shore net throw out and come back with fish by school size?
-Note: Branch sal-20261102-net (PR 148).
-Note: 1. Hold the shore net and face a lake or river edge.
-Note: 2. Click once: the net should go out about 6 m and come back after 6 seconds.
-Note: 3. Try a few throws in different spots: more fish where a school is, 0 or 1 where there is none.
-Note: 4. Say Yes, or No and what felt wrong (distance, wait, number of fish).
-Note: Recommendation: Yes, because it now matches your description: throw, pull back, catch by school size.
-[test]
