@@ -81,3 +81,13 @@ Moderator relayed Dino's #8 (MEDIUM, mine). Reading `_place` (server_items.gd 25
 
 ## 10. Sal's code specs (answer to Jamie, 1 Nov 2026)
 Eight root specs written by Sal "for Tyler" are now mine on the rules-code side (Sal keeps the data): LEARN_SYSTEM_SPEC (built, `test_learn`), HINTS_AND_CAMP_EVENTS_SPEC (hints and starter goals built; camp events partly; client goal list not built), FARMING_SPEC (partly built: till, sow, water_bed, compost_bed, harvest, crops tick), FLINT_ORE_SPEC (flint built; ore and coal unchecked), WATER_GATHER_SPEC (server gather rule mine; client E at the sea edge Kathleen/Sonny; water mechanics Sonny), LOG_SPECIES_SPEC (state unknown), QUALITY_GRADES_SPEC (nothing built per its header), CODE_MISMATCHES (an audit from 31 Oct, history). Build state is from a grep and the spec headers, nothing run. After RESTART I check each spec's steps against the code and list what is missing.
+
+## 11. What is left (Steve, 1 Nov 2026, 20:10)
+Done and on the daily or pushed: carry weight, fire tiers and fixes, E-key priority, photo camera, craft search (plus tab/new-line fix), Dynasty body hooks, real-death flow (off: `death.json real_death` false), corrupt-record load, fire mid-burn save test, two-players-at-one-fire test.
+Not done:
+- Mutation checks: only novice grace was tried (28 min, no result, stopped, worktree removed). Comfort, goals, lights, dev-place, hints not run. Hand all six to Tyler's `tools/mutation_check.sh` run.
+- Real death extras wait on Dave's cards: heirs/children, new-character start options, map marker, wizard retrieval, downed state. Death-before-heirs recommendation: keep respawning.
+- Goal list to the client: Dave's call after play-testing.
+- Heavy kits (build from stock near the site): waits on the `heavy-kits-carry` card.
+- Protocol 83 (real death) may need renumbering at merge.
+- Nothing above was checked in a windowed client.
