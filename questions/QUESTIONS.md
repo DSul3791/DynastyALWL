@@ -327,3 +327,10 @@ Note: 3. Look at the ground from 2 m and from 30 m. Wet sand should still shine.
 Note: 4. Say Yes if it looks real and does not flicker far away; No plus what looks wrong.
 Note: Recommendation: Yes, merge it if it looks right, because the ground is what you see most.
 [test]
+
+## sonny-water2-look | Look test: rivers flow the way the sim runs (water shader reads the flow texture)
+Note: PR 65. Rivers inside the simulated water window now take their flow and white water from the live sim.
+Note: 1. Pull branch sonny-20261102-water2-shader-patch and start the game
+Note: 2. Walk to a river near spawn and watch it for 30 seconds
+Note: 3. Yes if it flows downstream with white water on fast shallow parts and the sea looks as before; No and a note if anything looks wrong
+[test]
