@@ -21,3 +21,14 @@ Each row: owner of the next step, the exact next step, why. Nothing here has bee
 | 15 | Loudness test and mix table | Jason | Test reading every ogg peak vs its bus window | No guard against a too-loud clip |
 | 16 | Diff `kathleen-creature-sounds`, `-water-soft` leftovers | Jason | Per-hunk diff vs daily, then drop branches | Cherry says applied; hunks unread |
 | 17 | Music | Dave | Card: music yes/no | Undecided |
+
+## Added 1 Nov 2026 evening (left over from the play-test fixes)
+
+| # | Task | Owner | Exact next step | Why |
+|---|---|---|---|---|
+| 18 | Clip-length checks in `test_dynasty_body` (chop 0.95 s, pick 1.0 s) | Jason | My own two runs never got a Godot slot (first timed out at 300 s with no output, second never started); Kathleen's run of the test passed with 0 failures. Re-run once on a free slot to confirm the two new lines | Never seen to run by me |
+| 19 | Chop impact frame | Kathleen | **Superseded:** my blow-1 estimate of 0.78 s (arm rotation speed in the glb) is replaced by Kathleen's corrected swing window (`e90c46d1`): the real downstroke is at 1.68 s of the clip. Check that `CLIP_MAP` chop/pick in `dynasty_body.gd` still put the blow at `HIT_AT` (0.5 s of 0.95 s; pick 0.52 s of 1.0 s) with her window | Estimate was not from the hand position |
+| 20 | Sound hooks for the three fire tiers | Jason | Find the client event for each tier (fire state in `fire_sounds.gd`/`flame`), wire a call, add a `test_slot_sounds` or `--sound-log` check | Not started |
+| 21 | Pickup sounds | Jason | Hook the pick-up action (`pick_up` clip, auto pickup) to an `itemfx` cue; test | Not started |
+| 22 | Crouch footsteps | Jason | Add a crouch gait level in `step_levels.json` / `surface_gait_db` and a check in the step test | Not started |
+| 23 | Swim and drink hooks for the Dynasty body | Jason (Steve added the hooks) | Read Steve's swim/drink hooks in `terrain_client.gd`, place `swim`/`drink_gulp` calls, test with `--sound-log` | Not started |
