@@ -72,6 +72,8 @@ Also craftable at once with no station: **stone knife** (#6: 2 stone + 1 stick),
 
 Walk up to a standing tree (trunk within about 2 m), hold the axe, **click repeatedly** (about one blow every 0.5 s). The number of blows is `clamp(4 + trunk_thickness_m x 30, 4, 40)`: a 0.2 m trunk takes about 10, an oak (0.6 m) about 22. Practice makes it faster (Fell tree skill). When the last blow lands the tree falls and rests on the ground as a **trunk**, leaving a **stump**. **[in progress: the fall pose and the stump chopping were just finished, see commit a641581d.]**
 
+**2 Nov (bug 11 fix, main 58c94cd, not yet seen in a client): a felled tree now breaks into its whole 2.44 m logs by itself about 2 s after it lands (same count cutting would give); the code adds no sticks, leaves, bark, seeds or root ball in that break.** Only a trunk you have already hit with the axe, one with no whole log in it, or one with no room for all its logs stays a trunk. The list below is what hand-cutting still gives.
+
 Work the trunk with the axe (one blow each, press the use key at it):
 1. Blows 1-3: **branches come off**: 1-3 sticks and 1-3 leaves per blow.
 2. Then **logs**: 3 blows per log, each log 2.44 m, up to 20 logs; 30% of blows also peel bark (birch, spruce, pine give thatch bark instead), 15% give seeds or the tree's nut.

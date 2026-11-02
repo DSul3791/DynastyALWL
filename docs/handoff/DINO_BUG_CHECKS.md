@@ -33,3 +33,8 @@ So "about 10 hits" is a 0.5 m radius trunk (1 m across), not a sapling, and 20+ 
 - Bug 3 and 2: add a line to the wood chain in the tutorial ("pick the block up again with hold E").
 - Bug 8 and 9: PLAYTHROUGH_GUIDE step 4 under "Feed it" is already right (3+ firewood medium, 3+ logs large); only confirm after Steve's fix.
 - Bug 10: nothing in the text; add "jump (space)" to the walk step only after the animation exists.
+
+## Bug 11 follow-up: what the auto-split changes for the first hour (main 58c94cd, read from the code)
+A felled tree now breaks into its logs by itself about 2 s after landing (`_auto_split`, `split_trunk` in server_items.gd). The break gives the logs only. The hand-cutting extras are never given by it: branch drops (sticks 2-5, leaves 3-5 per drops.json trunk.branch), bark (55 percent chance), seeds and the root ball.
+Player effect: the first tree no longer gives the sticks and leaves that step 8-10 of the tutorial count on (lean-to needs 32 sticks and 8 leaves, bark makes twine). Unless Dave wants it so, the sticks, leaves and bark should be dropped by the auto-split too, or step 10's check ("6 leaves and 10 sticks in the pack") fails. Suggested owner: Steve (code), decision Dave. Severity: medium for the first hour, since sticks come only from the ground and shrubs otherwise.
+Check in a windowed client: fell one tree, wait 3 s, count what lies there. Expect logs; note whether any sticks or leaves appear.
