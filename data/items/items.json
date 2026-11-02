@@ -6075,7 +6075,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 8
 		},
 		"bramble_bush": {
 			"number": 519,
@@ -6084,7 +6084,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"juniper_bush": {
 			"number": 520,
@@ -6093,7 +6093,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"gorse_bush": {
 			"number": 521,
@@ -6102,7 +6102,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"dwarf_birch_bush": {
 			"number": 522,
@@ -6111,7 +6111,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"saltbush_bush": {
 			"number": 523,
@@ -6120,7 +6120,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"cactus_bush": {
 			"number": 524,
@@ -6129,7 +6129,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"raspberry_bush": {
 			"number": 525,
@@ -6138,7 +6138,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"elder_bush": {
 			"number": 526,
@@ -6147,7 +6147,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 10
 		},
 		"wild_rose_bush": {
 			"number": 527,
@@ -6156,7 +6156,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"blackthorn_bush": {
 			"number": 528,
@@ -6165,7 +6165,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"hawthorn_bush": {
 			"number": 529,
@@ -6174,7 +6174,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 10
 		},
 		"sea_buckthorn_bush": {
 			"number": 530,
@@ -6183,7 +6183,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 8
 		},
 		"rosemary_bush": {
 			"number": 531,
@@ -6192,7 +6192,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"wild_banana_bush": {
 			"number": 532,
@@ -6201,7 +6201,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 10
 		},
 		"prickly_pear_bush": {
 			"number": 533,
@@ -6210,7 +6210,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"drakethorn_bush": {
 			"number": 534,
@@ -6219,7 +6219,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"sunberry_bush": {
 			"number": 535,
@@ -6228,7 +6228,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"hagwillow_bush": {
 			"number": 536,
@@ -6237,7 +6237,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"honeyspindle_bush": {
 			"number": 537,
@@ -6246,7 +6246,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 4
 		},
 		"sleetberry_bush": {
 			"number": 538,
@@ -6255,7 +6255,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		},
 		"sunsilver_vine_bush": {
 			"number": 539,
@@ -6264,7 +6264,7 @@
 			"kind": "material",
 			"stack": 5,
 			"look_alikes": [],
-			"value": 3
+			"value": 6
 		}
 	}
 }
