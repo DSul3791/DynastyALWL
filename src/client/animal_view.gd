@@ -414,10 +414,14 @@ func _make_seal() -> Node3D:
 	for side in [-1.0, 1.0]:
 		_ball(rig, 0.03, Vector3.ONE, Vector3(side * 0.1, 0.36, -0.6), Color(0.04, 0.04, 0.04))      # a big dark eye
 		_ball(rig, 0.1, Vector3(0.25, 0.5, 1.2), Vector3(side * 0.24, 0.1, -0.2), coat.darkened(0.15), Vector3(0.0, 0.0, side * -0.4))   # a front flipper set low
-		_ball(rig, 0.1, Vector3(1.4, 0.2, 1.2), Vector3(side * 0.08, 0.06, 0.82), coat.darkened(0.2))   # a hind flipper
+		_ball(rig, 0.1, Vector3(1.4, 0.35, 1.3), Vector3(side * 0.08, 0.09, 0.74), coat.darkened(0.2), Vector3(0.25, 0.0, 0.0))   # a hind flipper, joined to the rear and tipped up a little
 
-	for k in 7:   # dark blotches over the back and flanks
-		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(0.14 * float(k % 3 - 1), 0.34 - 0.02 * float(k % 2), -0.3 + 0.17 * float(k)), Color(0.28, 0.28, 0.27))
+	for k in 7:   # dark blotches pressed into the skin of the back and flanks: each sits on the body (or the rear) surface, so none hovers above it (pr64 sheet, 2 Nov 2026)
+		var bx: float = 0.1 * float(k % 3 - 1)
+		var bz: float = -0.3 + 0.13 * float(k)
+		var body_top: float = 0.2 + 0.196 * sqrt(maxf(0.0, 1.0 - pow(bz / 0.728, 2.0) - pow(bx / 0.224, 2.0)))                    # the thick body: radius 0.28 scaled (0.8, 0.7, 2.6) at y 0.2
+		var rear_top: float = 0.15 + 0.11 * sqrt(maxf(0.0, 1.0 - pow((bz - 0.45) / 0.3, 2.0) - pow(bx / 0.14, 2.0)))               # the rear: radius 0.2 scaled (0.7, 0.55, 1.5) at y 0.15, z 0.45
+		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(bx, maxf(body_top, rear_top) - 0.01, bz), Color(0.28, 0.28, 0.27))
 
 	return root
 
