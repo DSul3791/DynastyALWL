@@ -1376,6 +1376,22 @@ func _init() -> void:
 			heaps += 1
 
 	check(loose_of.call(firewood_n) == 4 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+	# Bug 3: the heap keeps growing past the 40 stack as one pile, and a pile lives the pile lifetime.
+	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 25, Vector3.ZERO)
+
+	for n in range(25):
+		cb._last_use.clear()
+		cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+
+	var big_heaps: int = 0
+	var heap_left: float = 0.0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
+			big_heaps += 1
+			heap_left = float(cb._items[k]["left"])
+
+	check(loose_of.call(firewood_n) > 40 and big_heaps == 1 and heap_left >= ItemsScript.PILE_LIFETIME_S - 1.0, "the heap beside the block grows past 40 as one pile and lives as a pile (%d pieces, %d heaps, %.0f s)" % [loose_of.call(firewood_n), big_heaps, heap_left])
 
 	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
