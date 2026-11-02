@@ -1,4 +1,4 @@
-# Start here (Jamie, 1 Nov 2026)
+# Start here (Jamie, updated 2 Nov 2026)
 
 One page for a new agent or a new thread of Dave's. Everything else is found through `docs/DOC_MAP.md`.
 
@@ -8,7 +8,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 ## Who does what (Dave's decisions, source: `MODERATOR_QA_LOG.md`; detail: `docs/handoff/SCOPE_<NAME>.md` and `HANDOFF_<NAME>.md`)
 | Agent | Owns |
 |---|---|
-| Moderator | speaks for Dave, merges into the daily branch, decides reversible choices, QA page |
+| Moderator | speaks for Dave, merges agents' daily branches into main only on Dave's go, decides reversible choices, QA page |
 | Sonny | terrain and water mechanics |
 | Kathleen, Kathreen | everything about LOOKS (items, characters, animals, plants, fire, water look) |
 | Sal | all items: what they are, recipes, what they do, numbers and text |
@@ -20,7 +20,8 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 | Jamie | documentation (this page, `DOC_MAP.md`) |
 
 ## Rules
-- NEVER merge to `main` until Dave has play-tested and says go. As of the end of 1 Nov, main holds everything (PR #11) and there is no daily branch: the next session creates one from `origin/main` (steps in the top section of `docs/handoff/HANDOFF_MODERATOR.md`); the moderator merges agents' branches into it, and Dave merges it into main through a pull request with "Create a merge commit". Never delete the `qa` branch.
+- NEVER merge to `main` until Dave has play-tested and says go. There is NO daily branch (Dave, 2 Nov 2026): it overcomplicated everything. Each agent works on its own NEW branch each day, named `claude/<agent>-YYYYMMDD`, cut from `origin/main`. The moderator merges agents' branches into main only on Dave's go. Never delete the `qa` branch.
+- Daily rhythm (Dave, 2 Nov 2026): (1) start with an efficiency audit of yesterday's work and decide what to improve in workflow; (2) the moderator hands each agent its first 3 tasks; (3) each agent makes its new branch and carries on; (4) when the 3 are done or blocked, the agent finds 3 more in its own purview and continues, until told otherwise.
 - Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
 - Nothing is deleted: unused code goes to `proposed_removals/`, documents to `docs/archive/YYYY-MM/` (`git mv`).
 - Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (branch `qa`, `questions/QUESTIONS.md`): pickable answers, one item per card. Never wait for Dave: take the next job.
