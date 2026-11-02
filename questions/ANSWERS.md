@@ -1966,3 +1966,7 @@ Answered: 2026-11-02 16:47 UTC
 Answer: No: We don’t build kits for stuff like this we use the hammer to make blueprints on the spot
 Answered: 2026-11-02 16:47 UTC
 
+## heavy-kits-carry | Heavy build kits: craft them from stock lying near the workbench, so you never carry 314 kg?
+Answer: No: We don’t build kits for stuff like this we use the hammer to make blueprints on the spot
+Answered: 2026-11-02 16:48 UTC
+
