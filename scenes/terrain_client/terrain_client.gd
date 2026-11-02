@@ -3642,13 +3642,7 @@ func _water_here() -> Dictionary:
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
 	var ground: float = float(hit["position"].y) if not hit.is_empty() else NAN
 
-	if is_nan(surface):
-		if is_nan(ground) or ground >= 0.0:
-			return {}
-
-		surface = 0.0
-
-	return {"surface": surface, "ground": ground}
+	return SwimScript.water_at(here.y, surface, ground)
 
 
 # The swimmer's velocity: strokes at the swim pace (never more than the walking pace the player's

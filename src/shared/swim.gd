@@ -61,6 +61,34 @@ static func breath_drain(speed: float, rest_speed: float, rest_mult: float, hard
 	return 1.0
 
 
+# The water a body at height `y` has under it, sea included: {surface, ground} or {} when dry.
+# `surface` is the grid's inland level (NAN where there is none), `ground` the seabed or bed below (NAN when
+# no collider was found). Ground below sea level (0 m) is under the sea whatever the grid says: a river-mouth
+# or sim level at or under 0 m, or a missing grid cell, must not turn the sea into dry land (Dave 2 Nov 2026:
+# walking the ocean floor with footstep sounds instead of swimming). With no ground found below sea level the
+# body is over open deep sea, so the bed is taken as far down.
+const DEEP_SEA_BED_M := -1000.0
+
+
+static func water_at(y: float, surface: float, ground: float) -> Dictionary:
+	if is_nan(ground):
+		if is_nan(surface):
+			if y >= 0.0:
+				return {}
+
+			ground = DEEP_SEA_BED_M
+		elif surface < 0.0 and y < 0.0:
+			surface = 0.0
+			ground = DEEP_SEA_BED_M
+	elif ground < 0.0 and (is_nan(surface) or surface < 0.0):
+		surface = 0.0
+
+	if is_nan(surface):
+		return {}
+
+	return {"surface": surface, "ground": ground}
+
+
 # Where the capsule's centre sits floating at the surface.
 static func float_centre(surface: float) -> float:
 	return surface + HEAD_ABOVE_M - BODY_HEIGHT_M * 0.5

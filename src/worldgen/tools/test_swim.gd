@@ -23,6 +23,16 @@ func _init() -> void:
 	_check(not Swim.swimming(100.9, 100.0, 96.0), "standing on ice at the surface of deep water is not swimming")
 	_check(not Swim.swimming(98.0, NAN, 96.0), "no water, no swimming")
 
+	# The sea (Dave 2 Nov 2026): ground under 0 m is under the sea whatever the grid level says.
+	var sea: Dictionary = Swim.water_at(-2.0, NAN, -5.0)
+	_check(not sea.is_empty() and is_equal_approx(float(sea["surface"]), 0.0), "sea bed at -5 m with no grid water: the surface is the sea at 0")
+	_check(Swim.swimming(-2.0, float(sea["surface"]), float(sea["ground"])), "deep sea with the feet under: swimming")
+	var odd: Dictionary = Swim.water_at(-2.0, -3.0, -5.0)
+	_check(is_equal_approx(float(odd["surface"]), 0.0), "a grid level under 0 m over a sea bed is lifted to the sea")
+	_check(not Swim.water_at(-2.0, NAN, NAN).is_empty(), "below 0 m with no collider found: open deep sea")
+	_check(Swim.water_at(50.0, NAN, 49.0).is_empty(), "dry land has no water")
+	_check(is_equal_approx(float(Swim.water_at(98.0, 100.0, 96.0)["surface"]), 100.0), "an inland lake keeps its own level")
+
 	# Breath: the eyes under water deeper than a ford, and the drain pace against swimming speed.
 	_check(Swim.head_under(98.0, 100.0, 96.0), "diving 2 m down in 4 m of water: the head is under")
 	_check(not Swim.head_under(Swim.float_centre(100.0), 100.0, 96.0), "floating at the surface: the head is above the water")
