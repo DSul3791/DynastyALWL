@@ -358,3 +358,9 @@ Note: 3. Check: no pause when it comes apart.
 Note: 4. If it still pauses, copy any 'server slow:' lines from the server window into Notes.
 Note: Recommendation: Fixes #97, #98 and #104 are on main.
 [test]
+
+## steve-skinny-tree-size | Felling: does a skinny tree leave a slim stump and slim logs?
+Note: 1. Fell a thin young tree (a beech under about 14 m).
+Note: 2. Check: the stump and the logs are about as thick as the standing trunk was.
+Note: Recommendation: Fixes #87 and #89 are on main.
+[test]
