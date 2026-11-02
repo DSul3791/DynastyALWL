@@ -100,6 +100,26 @@ func _init() -> void:
 	check(float(fire["burn_left"]) > two_logs + log_s - 60.0 and float(fire["burn_left"]) < two_logs + log_s, "closing counts the third log, less what has burned (%.0f s, two logs %.0f s)" % [float(fire["burn_left"]), two_logs])
 	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three logs: the large fire (state %d)" % int(fire["state"]))
 
+	# Dave 2 Nov 2026 (QA): three logs lift the fire a tier and it stays there until those logs are gone. One log burned out of three: the
+	# store holds two, and closing it must not drop the bonfire. With the logs gone and three firewood it falls back to the medium fire.
+	var stay_box = f._chests[int(fire["uid"])]
+
+	for stay_slot in range(stay_box.SLOTS):
+		if stay_box.numbers[stay_slot] != 0:
+			stay_box.take_from_slot(stay_slot, stay_box.counts[stay_slot])
+
+	fire.erase("burnt")
+	stay_box.add(f.table.number_of("log_beech"), 2)
+	fire["state"] = ItemsScript.FIRE_STATE_BONFIRE
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "two logs left of three: still the large fire after the store is closed (state %d)" % int(fire["state"]))
+	stay_box.take_from_slot(stay_box.numbers.find(f.table.number_of("log_beech")), 2)
+	stay_box.add(f.table.number_of("firewood"), 3)
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(int(fire["state"]) == 1, "the logs gone, three firewood: back to the medium fire (state %d)" % int(fire["state"]))
+
 	# Dave 2 Nov 2026, again on the newer build: the third log still vanished. A fire whose burn time had run ahead of its store (an older fire, or one
 	# fed outside the store) had burned log time with no counted log left to take, and that debt took the next log put in. It must stay.
 	for debt_slot in range(keep_box.SLOTS):
