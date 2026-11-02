@@ -413,11 +413,14 @@ func _make_seal() -> Node3D:
 
 	for side in [-1.0, 1.0]:
 		_ball(rig, 0.03, Vector3.ONE, Vector3(side * 0.1, 0.36, -0.6), Color(0.04, 0.04, 0.04))      # a big dark eye
-		_ball(rig, 0.1, Vector3(0.25, 0.5, 1.2), Vector3(side * 0.24, 0.1, -0.2), coat.darkened(0.15), Vector3(0.0, 0.0, side * -0.4))   # a front flipper set low
+		_ball(rig, 0.13, Vector3(0.25, 0.5, 1.5), Vector3(side * 0.25, 0.1, -0.2), coat.darkened(0.15), Vector3(0.0, 0.0, side * -0.4))   # a front flipper set low (bigger, Kathreen 2 Nov)
 		_ball(rig, 0.1, Vector3(1.4, 0.2, 1.2), Vector3(side * 0.08, 0.06, 0.82), coat.darkened(0.2))   # a hind flipper
 
-	for k in 7:   # dark blotches over the back and flanks
-		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(0.14 * float(k % 3 - 1), 0.34 - 0.02 * float(k % 2), -0.3 + 0.17 * float(k)), Color(0.28, 0.28, 0.27))
+	for k in 7:   # dark blotches over the back and flanks, sitting on the body's surface (Kathreen 2 Nov: they hovered above the back toward the tail)
+		var bx: float = 0.12 * float(k % 3 - 1)
+		var bz: float = -0.3 + 0.13 * float(k)
+		var under: float = maxf(1.0 - pow(bx / 0.224, 2.0) - pow(bz / 0.728, 2.0), 0.0)     # the body ball: radius 0.28 scaled (0.8, 0.7, 2.6) at y 0.2
+		_ball(rig, 0.045, Vector3(1.4, 0.3, 1.1), Vector3(bx, 0.2 + 0.196 * sqrt(under) - 0.005, bz), Color(0.28, 0.28, 0.27))
 
 	return root
 
@@ -472,13 +475,13 @@ func _make_wolf() -> Node3D:
 	var coat: Color = Color(0.36, 0.35, 0.33)
 	var dark: Color = Color(0.24, 0.23, 0.22)
 	var pale: Color = Color(0.72, 0.69, 0.63)
-	_ball(rig, 0.2, Vector3(0.95, 1.05, 1.5), Vector3(0.0, 0.62, -0.18), coat)      # chest and shoulders, deep
-	_ball(rig, 0.17, Vector3(0.9, 0.95, 1.5), Vector3(0.0, 0.6, 0.28), coat)        # hips
-	_ball(rig, 0.15, Vector3(0.85, 0.7, 1.7), Vector3(0.0, 0.5, 0.05), pale)        # belly
-	_ball(rig, 0.17, Vector3(0.9, 0.8, 1.0), Vector3(0.0, 0.74, -0.36), dark)       # mane over the shoulders
+	_ball(rig, 0.23, Vector3(0.95, 1.05, 1.5), Vector3(0.0, 0.56, -0.18), coat)      # chest and shoulders, deep
+	_ball(rig, 0.17, Vector3(0.9, 0.95, 1.5), Vector3(0.0, 0.54, 0.28), coat)        # hips
+	_ball(rig, 0.15, Vector3(0.85, 0.7, 1.7), Vector3(0.0, 0.44, 0.05), pale)        # belly
+	_ball(rig, 0.17, Vector3(0.9, 0.8, 1.0), Vector3(0.0, 0.68, -0.36), dark)       # mane over the shoulders
 	var neck: Node3D = Node3D.new()
 	neck.name = "Head"
-	neck.position = Vector3(0.0, 0.66, -0.42)
+	neck.position = Vector3(0.0, 0.6, -0.42)
 	rig.add_child(neck)
 	_ball(neck, 0.15, Vector3(0.9, 0.9, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck (thicker, Kathreen 2 Nov: it read as a thin stalk)
 	_ball(neck, 0.135, Vector3(0.95, 0.9, 1.0), Vector3(0.0, 0.06, -0.3), coat)      # head (bigger: it was a small ball on a long body)
@@ -486,12 +489,12 @@ func _make_wolf() -> Node3D:
 	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.58), Color(0.08, 0.07, 0.07))   # nose
 
 	for side in [-1.0, 1.0]:
-		_box(neck, Vector3(0.05, 0.1, 0.035), Vector3(side * 0.06, 0.2, -0.28), dark, Vector3(-0.15, 0.0, side * 0.15))   # ears
+		_box(neck, Vector3(0.06, 0.13, 0.03), Vector3(side * 0.065, 0.22, -0.28), dark, Vector3(-0.15, 0.0, side * 0.15))   # ears
 		_ball(neck, 0.018, Vector3.ONE, Vector3(side * 0.055, 0.09, -0.4), Color(0.9, 0.7, 0.2))                        # eyes
 
 	var tail: Node3D = Node3D.new()
 	tail.name = "Tail"
-	tail.position = Vector3(0.0, 0.66, 0.42)
+	tail.position = Vector3(0.0, 0.6, 0.42)
 	rig.add_child(tail)
 	_ball(tail, 0.1, Vector3(0.85, 0.85, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
 	_ball(tail, 0.05, Vector3(0.8, 0.8, 1.6), Vector3(0.0, -0.2, 0.36), dark, Vector3(0.7, 0.0, 0.0))
@@ -499,11 +502,11 @@ func _make_wolf() -> Node3D:
 	for leg in [["Leg_FL", -1.0, -0.26], ["Leg_FR", 1.0, -0.26], ["Leg_HL", -1.0, 0.3], ["Leg_HR", 1.0, 0.3]]:
 		var pivot: Node3D = Node3D.new()
 		pivot.name = leg[0]
-		pivot.position = Vector3(float(leg[1]) * 0.1, 0.5, float(leg[2]))
+		pivot.position = Vector3(float(leg[1]) * 0.1, 0.44, float(leg[2]))   # round 2 (Kathreen 2 Nov): legs 6 cm shorter and the body 6 cm lower, they read as stilts
 		rig.add_child(pivot)
-		_box(pivot, Vector3(0.115, 0.28, 0.13), Vector3(0.0, -0.13, 0.0), coat)       # upper leg (thicker: they read as stilts)
-		_box(pivot, Vector3(0.08, 0.26, 0.09), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
-		_box(pivot, Vector3(0.1, 0.04, 0.14), Vector3(0.0, -0.49, -0.02), dark)   # paw
+		_box(pivot, Vector3(0.115, 0.26, 0.13), Vector3(0.0, -0.12, 0.0), coat)       # upper leg (thicker: they read as stilts)
+		_box(pivot, Vector3(0.08, 0.22, 0.09), Vector3(0.0, -0.32, 0.0), dark)      # lower leg
+		_box(pivot, Vector3(0.1, 0.04, 0.14), Vector3(0.0, -0.43, -0.02), dark)   # paw
 
 	return root
 
