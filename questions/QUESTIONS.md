@@ -252,12 +252,6 @@ Note: Recommendation: A, because it is the cheapest thing that fits a day's wage
 [B] Sell a lean-to kit instead
 [C] Sell neither
 
-## steve-skinny-tree-size | Felling: does a skinny tree leave a slim stump and slim logs?
-Note: 1. Fell a thin young tree (a beech under about 14 m).
-Note: 2. Check: the stump and the logs are about as thick as the standing trunk was.
-Note: Recommendation: Fixes #87 and #89 are on main.
-[test]
-
 ## tyler-bug6-first-fell | Bug 6: on a fresh start, fell the first tree; does it fall straight away with no pause and no missing tree?
 Note: Fix merged in #98 (main e69a1ad): the felled trunk's bark is prepared while the game loads, and the trunk is sent with the cut.
 Note: Start the game fresh, fell the first tree you find, then a second one. If anything pauses, say on which blow or at the landing.
