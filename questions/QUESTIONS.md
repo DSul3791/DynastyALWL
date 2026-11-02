@@ -263,3 +263,10 @@ Note: 2. Hold the stone axe, stand still, look level and then 35 degrees down.
 Note: 3. Swing at a tree twice.
 Note: 4. Yes if the hands hold the axe and no huge upper arms fill the top corners; No and a note or screenshot if not.
 [test]
+
+## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
+Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
+Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
+- More by day, wolves off
+- Leave as is
+- More by day, wolves on
