@@ -45,6 +45,7 @@ func _init() -> void:
 	var bad_belt: int = 0
 	var belt_palms: int = 0
 	var checked: int = 0
+	var edge_cache: Dictionary = {}
 
 	for dz in range(-3, 4):
 		for dx in range(-3, 4):
@@ -58,7 +59,7 @@ func _init() -> void:
 			for n in range(made["ids"].size()):
 				var sp: Dictionary = placer.species_of(made["ids"][n])
 				var p: Vector3 = made["positions"][n]
-				var edge: float = placer._edge_probe(data, p.x, p.z, PlacerScript.BELT_M)
+				var edge: float = placer._edge_m(data, p.x, p.z, edge_cache)
 				checked += 1
 
 				if edge < 0.0 and str(sp["shape"]) == "grass" and edge < -PlacerScript.BEACH_GRASS_M:

@@ -723,7 +723,8 @@ func _edge_m(data, x: float, z: float, cache: Dictionary) -> float:
 	if cache.has(key):
 		return cache[key]
 
-	var value: float = _edge_probe(data, x, z, BELT_M)
+	# Probed from the cell centre, so every spot in a cell gets the same answer whichever is asked first (stable, and the test can ask the same way).
+	var value: float = _edge_probe(data, (float(key.x) + 0.5) * 4.0, (float(key.y) + 0.5) * 4.0, BELT_M)
 	cache[key] = value
 	return value
 
