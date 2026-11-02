@@ -2106,3 +2106,7 @@ Answered: 2026-11-02 21:41 UTC
 Answer: Yes | Comment: They are getting better they should be a little more round and a little darker red or they could be the red yellow of some apples or they could be the green of some apples or they could be yellow like some apples we should have all kinds of varieties of apples
 Answered: 2026-11-02 21:42 UTC
 
+## pic-fibre-cloth-weave | Does the fibre cloth (left, brown) now show woven lines (linen on the right for comparison)?
+Answer: Yes | Comment: Yes, I can see some weave
+Answered: 2026-11-02 21:43 UTC
+
