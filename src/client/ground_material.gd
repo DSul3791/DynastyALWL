@@ -33,6 +33,7 @@ uniform vec4 fall_zone[3];              // nearest waterfalls: base x, z, spray 
 uniform vec2 fall_height[3];            // their base and top height; the walls are damp up to the top
 uniform sampler2D canopy : filter_linear, hint_default_black;   // where trees shelter the ground (canopy_map.gd)
 uniform vec3 canopy_box = vec3(0.0, 0.0, 128.0);                // its corner x, z and width in metres
+uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
 varying vec4 material_indices;
@@ -262,6 +263,23 @@ void fragment() {
 	// Mud is wet: a little sheen.
 	ROUGHNESS = mix(mix(0.92, 0.55, mud), 0.38, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
+
+	// Caustics while the player is under water: the ripples overhead focus the sun into a moving net of bright lines on the bed,
+	// strongest in shallow water facing up, gone with depth, with distance and at night (the sun's own light carries them).
+	if (caustics.y > 0.01) {
+		float under_m = caustics.x - world_pos.y;
+		float sun_up = clamp(sun_toward.y * 2.5, 0.0, 1.0);
+		float reach = smoothstep(0.05, 0.4, under_m) * (1.0 - smoothstep(caustics.z * 0.3, caustics.z, under_m))
+			* smoothstep(0.2, 0.8, world_normal.y) * (1.0 - smoothstep(12.0, 35.0, length(VERTEX))) * sun_up;
+		if (reach > 0.01) {
+			float t = TIME * 0.35;
+			vec3 q = vec3(world_pos.xz / 1.3, t);
+			float c1 = 1.0 - abs(vnoise(q) * 2.0 - 1.0);
+			float c2 = 1.0 - abs(vnoise(q * vec3(1.7, 1.7, 1.3) + vec3(3.1, 7.7, 0.0)) * 2.0 - 1.0);
+			float net = pow(c1 * c2, 6.0) + 0.35 * pow(c1, 10.0);
+			EMISSION = vec3(0.75, 0.95, 0.9) * net * reach * 0.9 * caustics.y;
+		}
+	}
 }
 """
 
