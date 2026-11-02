@@ -42,6 +42,7 @@ func setup(client, items, net) -> void:
 	_drops = drops if typeof(drops) == TYPE_DICTIONARY else {}
 
 	if _client.flora != null:
+		_client.flora.fruit_cfg = _drops.get("fruit_tree", {})      # the trees whose drawn fruit follows the store
 		_client.flora.set_fruiting((_drops.get("berry_yield", {}) as Dictionary).keys())      # the bushes drawn per season and bare once picked
 
 
@@ -71,6 +72,9 @@ func update(delta: float, e_down: bool) -> void:
 
 	if _sweep_left <= 0.0:
 		_sweep_left = SWEEP_EVERY_S
+
+		if _items.hold_e_step():
+			return   # the cursor is on something: held E does that one thing (or nothing), never a sweep of what lies around
 
 		if _items.hold_use():
 			return
@@ -140,16 +144,19 @@ func tap() -> void:
 
 
 func _pick(c: Dictionary) -> void:
+	_items.pick_stamp = Time.get_ticks_msec()
 	_net.cut_flora.rpc_id(1, c["chunk"], c["id"])
 	_client.sound.harvestfx.pick(_flora_by_id.get(int(c["id"]) >> 16, {}), c["pos"])
-	_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes the plant
+	if int(c.get("left", -1)) < 0:   # a fruit tree stays and is picked again and again: the count the server sends is what hides it
+		_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes the plant
 	_items.clear_prompt()
 	_hint_left = 0.0
 
 
 # "Nothing to pick" (out of season, no yield) is not worth a prompt: only say why when a tool is missing.
 func _is_nothing(c: Dictionary) -> bool:
-	return str(c["reason"]).begins_with("nothing to pick")
+	var why: String = str(c["reason"])   # Dave 2026-10-31: nothing to pick, out of season or picked bare means no prompt at all
+	return why.begins_with("nothing to pick") or why == "not in season" or why == "nothing left to pick this season"
 
 
 func _hint() -> String:
@@ -161,14 +168,16 @@ func _hint() -> String:
 		if branch.is_empty():
 			return ""
 
-		_items.plant_aimed = _items.aimed_at(branch["pos"] + Vector3(0.0, 0.2, 0.0))
+		_items.plant_point = branch["pos"] + Vector3(0.0, 0.2, 0.0)
+		_items.plant_aimed = _items.aimed_at(_items.plant_point)
 		return "Press E to gather"
 
 	# Dave 2026-10-21: only "Press E to gather", no name and no "hold E". A missing tool is told after the press (message and cue).
 	# Dave 2026-10-22: the text shows only while looking straight at it within the prompt reach (plant_aimed); E still works without it.
 	for c in found:
 		if c["ok"] or not _is_nothing(c):
-			_items.plant_aimed = _items.aimed_at(c["pos"] + Vector3(0.0, 0.6, 0.0))
+			_items.plant_point = c["pos"] + Vector3(0.0, 0.6, 0.0)
+			_items.plant_aimed = _items.aimed_at(_items.plant_point)
 			return _prompt_for(c)
 
 	return ""
@@ -203,6 +212,9 @@ func _prompt_for(c: Dictionary) -> String:
 		return "Press E to gather"
 
 	if c["ok"]:
+		if int(c.get("left", -1)) > 0:
+			return "Press E to pick %s (%d left)" % [_items.table.name_of(_items.table.number_of(str(c.get("item", "")))).to_lower(), int(c["left"])]
+
 		return "Press E to pick"
 
 	return "Not in season" if str(c["reason"]) == "not in season" else "Nothing left to pick this season"
@@ -243,10 +255,10 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 			var species: Dictionary = _client.flora._species.get(id >> 16, {})
 			var kind: int = int(species.get("kind", 0))
 
-			if kind == 0:
-				continue
-
 			var row: Dictionary = _flora_by_id.get(id >> 16, {})
+
+			if kind == 0 and not (_drops.get("fruit_tree", {}) as Dictionary).has(str(row.get("name", ""))):
+				continue   # only fruit trees (drops.json "fruit_tree") can be picked from the tree
 
 			if row.is_empty():
 				continue
@@ -261,12 +273,21 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 
 			verdict = GatherRules.check(row, "shrub" if kind == 1 else "plant", _drops, season, has_tool, exists)
 			var berry: bool = not GatherRules.harvest_row(_drops, str(row.get("name", ""))).is_empty()
+			var left: int = -1
+
+			if kind == 0:
+				# A fruit tree: what is left is the species store (the shared formula) less what the server says was taken; nothing left means no prompt.
+				var cfg: Dictionary = (_drops.get("fruit_tree", {}) as Dictionary).get(str(row.get("name", "")), {})
+				left = GatherRules.fruit_max(cfg, row, id, float(held["heights"][n])) - int((_client.flora.fruit_taken.get(chunk, {}) as Dictionary).get(id, 0))
+
+				if left <= 0 or not GatherRules.in_season(row, season):
+					continue
 
 			# A berry bush already picked this season stays standing, bare: it says so instead of offering a pick.
 			if berry and verdict["ok"] and _client.flora.is_stripped(chunk, id):
 				verdict = {"ok": false, "reason": "nothing left to pick this season"}
 
-			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"], "berry": berry})
+			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"], "berry": berry, "left": left, "item": str(GatherRules.harvest_row(_drops, str(row.get("name", ""))).get("item", ""))})
 
 	out.sort_custom(func(a, b): return a["d"] < b["d"])
 	return out

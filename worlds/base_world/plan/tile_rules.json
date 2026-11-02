@@ -6,6 +6,27 @@
 		"note": "Each tile is built on a frame that reaches this many 8 m samples beyond its edge on every side, then cropped. Edge samples then see the same neighbors as the next tile's. Must be a multiple of the climate coarse step (4) and at least as far as the longest distance the climate looks at (600 m = 75 samples).",
 		"margin_samples": 400
 	},
+	"summit": {
+		"note": "A real peak on every summit of the world map (WorldElevation.summits): adds spire_share of the summit height as a tent that reaches radius_factor x that far, sharp for power above 1; capped at max_m. See GENERATOR_NOTES.md.",
+		"spire_share": 0.16,
+		"radius_factor": 3.2,
+		"power": 1.7,
+		"max_m": 3950
+	},
+	"rolling": {
+		"note": "Swells and knolls for low dry land (tile_rolling.gd), added after the water is carved and faded out near any water, so rivers and ponds keep their shape. octaves: wavelength and amplitude in meters. Strength rises from low_from_m to low_to_m of height (beaches stay calm), fades out between fade_from_m and fade_to_m (high ground uses the normal detail), and is zero within near_water_m of water and full beyond far_water_m. Times the island texture factor. See GENERATOR_NOTES.md.",
+		"octaves": [
+			{"wavelength_m": 300, "amplitude_m": 2.2},
+			{"wavelength_m": 100, "amplitude_m": 1.5},
+			{"wavelength_m": 40, "amplitude_m": 0.65}
+		],
+		"low_from_m": 3,
+		"low_to_m": 10,
+		"fade_from_m": 80,
+		"fade_to_m": 200,
+		"near_water_m": 40,
+		"far_water_m": 160
+	},
 	"detail": {
 		"note": "Noise octaves added on land. amplitude_m is the full strength; it fades in with height so beaches and the coastal plain stay smooth and the sea floor stays calm.",
 		"octaves": [
@@ -145,7 +166,27 @@
 			"depth_m_per_sqrt_q": 1.0,
 			"min_depth_m": 1.5,
 			"max_depth_m": 8.0,
-			"seed": 17
+			"seed": 17,
+			"natural": {
+				"enabled": false,
+				"note": "Natural rivers (GENERATOR_NOTES.md): the rivers are the drainage's own lines, bent on flat ground and carved from the flow; no ponds or craters. Width = width_base_m + width_per_sqrt_km2_m x sqrt(km2 drained), depth = depth_base_m + depth_per_km2_pow04_m x km2^0.4; the sideways swing is up to amp_widths x width (x noise_gain, capped) where the fall is under slope_flat, in knot_widths x width wavelengths, never up a bank more than valley_limit_m.",
+				"width_base_m": 16.0,
+				"width_per_sqrt_km2_m": 10.0,
+				"depth_base_m": 2.5,
+				"depth_per_km2_pow04_m": 1.5,
+				"surface_share": 0.75,
+				"bank_slope": 0.25,
+				"blend_m": 24.0,
+				"smooth_cells": 7,
+				"profile_cells": 25,
+				"slope_flat": 0.12,
+				"steep_share": 0.35,
+				"amp_widths": 3.5,
+				"noise_gain": 1.8,
+				"knot_widths": 5.0,
+				"taper_cells": 8,
+				"valley_limit_m": 8.0
+			}
 		},
 		"note": "Hydrology on the 8 m height map. Rain falls evenly; each cell passes its water downhill. Rivers start where the catchment passes river_start_km2. Pits are filled unless they are big enough to be lakes.",
 		"river_start_km2": 0.35,

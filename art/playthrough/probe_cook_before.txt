@@ -1,0 +1,12 @@
+probe8: fire state 40 (lit when not 9)
+probe8: raspberries: COOKED -> stewed_berries | notice ''
+probe8: hazelnuts: COOKED -> roast_forage | notice ''
+probe8: morel is not an item
+probe8: wild_garlic_bulbs: COOKED -> roast_forage | notice ''
+probe8: fiddleheads: COOKED -> roast_forage | notice ''
+probe8: raw_meat: COOKED -> roast_meat | notice ''
+probe8: carp: COOKED -> roast_fish | notice ''
+probe8: shellfish: COOKED -> roast_shellfish | notice ''
+probe8: crab_meat: COOKED -> roast_shellfish | notice ''
+probe8: seal_meat: COOKED -> roast_seal | notice ''
+probe8: nettle item 'nettles' exists: false, 'nettle' exists: false

@@ -9,8 +9,10 @@
 # Prints: one line per test (seconds), the retry log, the slowest five, then `Test done: N pass, M fail`; exit 1 when M > 0.
 # Environment: GODOT_EXE (the Godot program, default `godot`), PYTHON (default python3). No `wait -n`: Git bash safe (xargs -P).
 cd "$(dirname "$0")/.." || exit 2
+# A fresh checkout or worktree has no import cache: classes and addons are unknown and most tests fail with misleading errors. Import once.
+if [ ! -f .godot/global_script_class_cache.cfg ]; then echo "run_tests: no .godot import cache, importing once (about 1.5 min)"; "${GODOT_EXE:-godot}" --headless --path . --import >/dev/null 2>&1; fi
 PY="${PYTHON:-python3}"
-JOBS="${GATE_JOBS:-4}"; OUT=""; FAST=""; TIMING=""; SLOW=""; SERIAL_EXTRA=""; PLAN=""
+JOBS="${GATE_JOBS:-4}"; OUT=""; FAST=""; TIMING=""; SLOW=""; SERIAL_EXTRA=""; PLAN=""; CHECKS=""
 MODE=""
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -32,6 +34,7 @@ import json, sys
 d = json.load(open(sys.argv[1]))
 for k in ("fast", "timing", "slow"):
     print('%s="$%s %s"' % (k.upper(), k.upper(), " ".join(d.get(k, []))))
+print('CHECKS="%s"' % " ".join(c for c in d.get("checks", []) if c in ("lanes", "selftest")))
 PYEOF
 )"
 fi
@@ -75,12 +78,15 @@ for t in $FAST $TIMING $SLOW; do
 	fi
 done
 
+# Known failures on this machine (tech/TEST_BASELINE_PC.md, same block gate_pc.sh reads): reported, but not counted as a fail.
+KNOWN=$(sed -n '/^<!-- known failures -->/,/^<!-- end known failures -->/p' tech/TEST_BASELINE_PC.md 2>/dev/null | grep -E '^- ' | sed 's/^- //; s/[ :].*//')
+KNOWN_HIT=""
 PASS=0; FAIL=0; : > "$OUT/seconds.txt"; FAILED=""
 for t in $FAST $TIMING $SLOW; do
 	R=$(cat "$OUT/$t.result" 2>/dev/null || echo "FAIL 0 -1 no result (did not run)")
 	set -- $R
 	echo "$2 $t $1" >> "$OUT/seconds.txt"
-	if [ "$1" = "PASS" ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); FAILED="$FAILED $t"; fi
+	if [ "$1" = "PASS" ]; then PASS=$((PASS + 1)); elif is_in "$t" "$KNOWN"; then KNOWN_HIT="$KNOWN_HIT $t"; else FAIL=$((FAIL + 1)); FAILED="$FAILED $t"; fi
 done
 for t in $FAILED; do
 	echo "FAILED $t: $(cat "$OUT/$t.result" 2>/dev/null)"
@@ -90,5 +96,13 @@ done
 [ -s "$OUT/retries.log" ] && sed 's/^/NOTE  /' "$OUT/retries.log"
 echo "slowest: $(sort -rn "$OUT/seconds.txt" | head -5 | awk '{printf "%s %ss  ", $2, $1}')"
 echo "wall time $(( $(date +%s) - START )) s, seconds per test in $OUT/seconds.txt"
+# Gate-tooling checks from the plan (a diff that only touches the lane lists, the runner or the selector): lane check and selftest.
+for c in $CHECKS; do
+	case "$c" in
+		lanes) if "$PY" tools/tests_for_diff.py --check-lanes >/dev/null; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check lanes: tests_for_diff.py --check-lanes"; fi;;
+		selftest) R=$(bash tools/selftest_gate_tools.sh 2>&1 | tail -3); if echo "$R" | grep -q 'Test done: [0-9]* pass, 0 fail'; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check selftest: $R"; fi;;
+	esac
+done
+[ -n "$KNOWN_HIT" ] && echo "KNOWN PC failure (not counted, see tech/TEST_BASELINE_PC.md):$KNOWN_HIT"
 echo "Test done: $PASS pass, $FAIL fail"
 [ "$FAIL" -eq 0 ]

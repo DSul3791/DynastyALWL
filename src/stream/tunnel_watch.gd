@@ -20,7 +20,8 @@ const CELL_M := 2.0
 const DRIP_RANGE_M := 4.0                    # water this close above a ceiling seeps through it (Dave 2026-10-23)
 const MAX_LEAKS_SENT := 24
 const QUAKE_EVERY_MSEC := 500
-const QUAKE_RANGE_M := 40.0
+const QUAKE_RANGE_M := 40.0                 # dripping ceilings are heard this far
+const QUAKE_NEAR_M := 6.0                   # the creak, shake and throes reach a player only inside or within this many metres of the tunnel (Dave 31 Oct 2026: not on the surface 40 m away through rock)
 const MIN_WARNING_MSEC := 90000             # the shaking never leaves less than this before a fall
 const MAX_FILLS_PER_COLLAPSE := 60
 const FILL_RADIUS_M := 1.5
@@ -293,7 +294,7 @@ func _strength(at: Vector3) -> float:
 
 # peers: peer id -> position. Returns {"quake": [[peer, stage, strength_pm, point]], "collapse": [{"fills": [[centre, radius]], "victims": [peer], "cells": n}]}.
 func tick(now_msec: int, peers: Dictionary) -> Dictionary:
-	var out: Dictionary = {"quake": [], "collapse": [], "leak": []}
+	var out: Dictionary = {"quake": [], "collapse": [], "leak": [], "warn": []}
 
 	if not enabled:
 		return out
@@ -323,8 +324,14 @@ func tick(now_msec: int, peers: Dictionary) -> Dictionary:
 			failed.append(key)
 		elif stage >= 2 and send_quake:
 			for peer in peers:
-				if (peers[peer] as Vector3).distance_to(cell["pos"]) <= QUAKE_RANGE_M:
+				if (peers[peer] as Vector3).distance_to(cell["pos"]) <= QUAKE_NEAR_M:
 					var best: Array = loudest.get(peer, [0, 0.0, Vector3.ZERO])
+					var seen: Dictionary = cell.get("warned", {})
+
+					if not seen.has(peer):   # one plain warning per player and cell when the creaking starts
+						seen[peer] = true
+						cell["warned"] = seen
+						out["warn"].append(peer)
 
 					if stage > int(best[0]) or (stage == int(best[0]) and strength_of(f) > float(best[1])):
 						loudest[peer] = [stage, strength_of(f), cell["pos"]]

@@ -12,6 +12,10 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
+const PLAYER_CLEAR_M := 1.8              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
+const PLAYER_KEEP := 0.12
+const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
+const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
@@ -50,6 +54,9 @@ const LAYERS := [
 	# Shore (ART_DIRECTION.md section 26): pebbles on the banks and on the shallow bed seen through clear
 	# water, and reeds where still water meets the land. Drawn within shore_m of the player.
 	{"name": "pebbles", "texture": "", "width": 1.0, "height": 0.0, "per_point": 4, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true},
+	# Beach scenery (Kathleen, 2026-10-31; look only like the pebbles): scallop and cockle shells on the dry strand and a tangle of seaweed wrack at the tide line.
+	{"name": "shells", "texture": "", "width": 1.0, "height": 0.0, "per_point": 0.5, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true, "shell": true},
+	{"name": "wrack", "texture": "", "width": 1.0, "height": 0.0, "per_point": 0.35, "reach": 1.0, "quads": 0, "wind": 0.0, "backlight": 0.0, "shore": true, "pebble": true, "wrack": true},
 	{"name": "reeds", "texture": "grass_tall", "width": 0.5, "height": 1.5, "per_point": 0.8, "reach": 1.0, "quads": 3, "wind": 1.0, "backlight": 0.35, "shore": true, "reed": true},
 	# Boulders (section 31): granite lumps on slopes, mossy on top and on their north side, clustered
 	# at the base of slopes and along banks. Drawn within shore_m with the shore layers.
@@ -140,9 +147,12 @@ uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black; 
 uniform float trail_draw = 0.25;
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
+uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
+uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
 uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
 uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
+uniform vec4 player_clear = vec4(0.0);  // the local player: x, z, clear radius, share of height kept inside it (radius 0 = off): the feet stay in view in third person
 varying vec3 blade_color;
 varying float tip;
 
@@ -184,8 +194,10 @@ void vertex() {
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
+	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
+	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
 }
 
@@ -197,13 +209,15 @@ void fragment() {
 	// Light every card as if it faced up, front or back, so the ground's lighting carries over.
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	// The painted card already shades root to tip; a little more here, and light that shows through the blades.
-	ALBEDO = t.rgb * blade_color * mix(0.85, 1.05, tip);
+	ALBEDO = t.rgb * blade_color * season_tint * mix(0.85, 1.05, tip);
 	BACKLIGHT = ALBEDO * backlight;
 	ROUGHNESS = 1.0;
 }
 """
 
 var radius_m: float = 30.0
+var _season_table: Dictionary = {}
+var _season: String = ""                  # the season the blades were last tinted for (set_season)
 var _near_end: float = 14.0               # band limits in metres (set_radius): near, middle, far, very far
 var _mid_end: float = 26.0
 var _far_end: float = 40.0                # the very far band starts here and runs to radius_m
@@ -311,7 +325,7 @@ func setup(terrain: Node3D, flora, tables) -> void:
 			continue
 
 		if layer.get("branch", false) or layer.get("pebble", false):
-			_meshes.append(_make_branch() if layer.get("branch", false) else _make_pebble())
+			_meshes.append(_make_branch() if layer.get("branch", false) else (_make_shell() if layer.get("shell", false) else (_make_wrack() if layer.get("wrack", false) else _make_pebble())))
 			var wood: ShaderMaterial = ShaderMaterial.new()
 			wood.shader = branch_shader
 			_materials.append(wood)
@@ -440,6 +454,36 @@ func stamp(from_position: Vector3) -> void:
 
 # The wind sways the grass with the same gusts the sound stage plays
 # (strength about 0 calm to 1.6 for a strong gust high up).
+# The per-season grass numbers of data/look/seasons.json, read once.
+func _season_grass() -> Dictionary:
+	if _season_table.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SEASONS_FILE))
+
+		if typeof(parsed) == TYPE_DICTIONARY:
+			_season_table = (parsed.get("ground", {}) as Dictionary).get("grass", {})
+
+	return _season_table
+
+
+# The game season for the blades (data/look/seasons.json ground.grass): a colour tint and the share of blades kept. Cheap: two shader parameters.
+func set_season(season_name: String) -> void:
+	if season_name == _season or season_name == "":
+		return
+
+	var table: Dictionary = (_season_grass().get(season_name, {}) as Dictionary)
+
+	if table.is_empty():
+		return
+
+	_season = season_name
+	var rgb: Array = table["tint_rgb"]
+
+	for n in range(_materials.size()):
+		if not _is_solid(n) and str(LAYERS[n]["texture"]).begins_with("grass"):
+			_materials[n].set_shader_parameter("season_tint", Vector3(float(rgb[0]), float(rgb[1]), float(rgb[2])))
+			_materials[n].set_shader_parameter("season_blades", float(table["blades"]))
+
+
 func set_wind(strength: float) -> void:
 	for n in range(GRASS_LAYERS):
 		_materials[n].set_shader_parameter("wind_strength", 0.12 * float(LAYERS[n]["wind"]) * clampf(0.6 + 0.5 * strength, 0.6, 1.4))
@@ -657,6 +701,84 @@ static func _make_pebble() -> ArrayMesh:
 		vertices.append_array([a + Vector3(0.0, 0.2, 0.0), b + Vector3(0.0, 0.2, 0.0), c + Vector3(0.0, 0.2, 0.0)])
 		normals.append_array([n, n, n])
 		indices.append_array([first, first + 2, first + 1])   # Godot draws clockwise faces as the front
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+# A scallop-like shell: a fan of eight ribs raised above flat grooves, a small hinge at the back; 1 m across before the per-card scale.
+static func _make_shell() -> ArrayMesh:
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var ribs: int = 8
+	var hinge: Vector3 = Vector3(0.0, 0.06, 0.45)
+
+	for k in range(ribs):
+		var a0: float = -1.1 + 2.2 * float(k) / float(ribs)
+		var a1: float = -1.1 + 2.2 * float(k + 1) / float(ribs)
+		var am: float = 0.5 * (a0 + a1)
+		var p0: Vector3 = Vector3(sin(a0) * 0.9, 0.04, 0.45 - cos(a0) * 0.9)
+		var p1: Vector3 = Vector3(sin(a1) * 0.9, 0.04, 0.45 - cos(a1) * 0.9)
+		var pm: Vector3 = Vector3(sin(am) * 0.95, 0.1, 0.45 - cos(am) * 0.95)
+		var n0: Vector3 = ((pm - hinge).cross(p0 - hinge)).normalized()
+		var n1: Vector3 = ((p1 - hinge).cross(pm - hinge)).normalized()
+
+		for tri in [[hinge, pm, p0, n0], [hinge, p1, pm, n1]]:
+			var first: int = vertices.size()
+			var nn: Vector3 = tri[3]
+			nn = nn if nn.y > 0.0 else -nn
+			vertices.append_array([tri[0], tri[1], tri[2]])
+			normals.append_array([nn, nn, nn])
+			indices.append_array([first, first + 1, first + 2] if ((tri[1] - tri[0]).cross(tri[2] - tri[0])).y < 0.0 else [first, first + 2, first + 1])
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+# A wad of seaweed wrack: five long wavy ribbons lying roughly alike and crossing, a thick middle and thin ends, seen from either side, 1 m across before the per-card scale.
+static func _make_wrack() -> ArrayMesh:
+	var vertices: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var steps: int = 4
+
+	for r in range(5):
+		var dir: float = 0.6 * (float(r) - 2.0) + 0.3 * sin(float(r) * 2.3)
+		var along: Vector3 = Vector3(cos(dir), 0.0, sin(dir))
+		var across: Vector3 = Vector3(-along.z, 0.0, along.x)
+		var reach: float = 0.9 + 0.15 * float(r % 3)
+		var shift: Vector3 = across * (0.09 * (float(r) - 2.0))
+
+		for st in range(steps):
+			var d0: float = reach * (float(st) / float(steps) - 0.5)
+			var d1: float = reach * (float(st + 1) / float(steps) - 0.5)
+			var w0: float = 0.12 * (1.0 - absf(float(st) / float(steps) - 0.5) * 1.2)
+			var w1: float = 0.12 * (1.0 - absf(float(st + 1) / float(steps) - 0.5) * 1.2)
+			var bend0: float = 0.1 * sin(float(st) * 1.4 + float(r) * 1.7)
+			var bend1: float = 0.1 * sin(float(st + 1) * 1.4 + float(r) * 1.7)
+			var y0: float = 0.03 + 0.02 * float(st % 2)
+			var y1: float = 0.03 + 0.02 * float((st + 1) % 2)
+			var a: Vector3 = shift + along * d0 + across * (bend0 - w0) + Vector3(0.0, y0, 0.0)
+			var b: Vector3 = shift + along * d0 + across * (bend0 + w0) + Vector3(0.0, y0, 0.0)
+			var c: Vector3 = shift + along * d1 + across * (bend1 + w1) + Vector3(0.0, y1, 0.0)
+			var e: Vector3 = shift + along * d1 + across * (bend1 - w1) + Vector3(0.0, y1, 0.0)
+			var first: int = vertices.size()
+			vertices.append_array([a, b, c, e])
+			normals.append_array([Vector3.UP, Vector3.UP, Vector3.UP, Vector3.UP])
+			indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3, first, first + 2, first + 1, first, first + 3, first + 2])
 
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
@@ -973,6 +1095,15 @@ func _push_trunks(center: Vector3) -> void:
 			_materials[n].set_shader_parameter("trunk_squash", trunk_squash)
 
 
+# The local player's spot goes to the grass shader (blades are lowered per blade there, no cell is rebuilt, no extra draw).
+func _push_player(at: Vector3) -> void:
+	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M, PLAYER_KEEP)
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("player_clear", v)
+
+
 # Is (x, z) under or within the margin of a lying trunk?
 func _flat_at(x: float, z: float) -> bool:
 	for t in trunks:
@@ -1050,6 +1181,7 @@ func update(from_position: Vector3) -> void:
 	_center = from_position
 	var now: int = Time.get_ticks_msec()
 	_trample.flush()
+	_push_player(from_position)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500
@@ -1343,6 +1475,10 @@ func _build(cell: Vector2i) -> int:
 			thick *= 1.0 - 0.95 * smoothstep(0.4, 0.9, _closure(x, point.y, z))
 			thick *= 1.0 - 0.96 * smoothstep(CROWN_GRASS_FROM, CROWN_GRASS_TO, under)
 
+			# The ground grass thins round a plumed tall-grass patch (Dave 2026-10-31: the patches must stand out): a third of it within about 2 m of a plant.
+			if _flora.near_plume(x, z):
+				thick *= PLUME_THIN
+
 			if thick < 0.04:
 				continue
 
@@ -1496,6 +1632,11 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 			continue
 
 		var reed: bool = LAYERS[layer].get("reed", false)
+		var shell: bool = LAYERS[layer].get("shell", false)
+		var wrack: bool = LAYERS[layer].get("wrack", false)
+
+		if (shell or wrack) and (depth >= 0.0 or edge > (0.7 if shell else 0.3)):
+			continue   # beach scenery lies on the dry strand only; wrack at the very edge
 
 		if reed and not (still and depth < 0.4 and (depth >= 0.0 or edge < 0.6)):
 			continue
@@ -1509,7 +1650,7 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 			var yaw: float = rng.randf() * TAU
 			var c: float = cos(yaw)
 			var s: float = sin(yaw)
-			var size: float = rng.randf_range(0.5, 1.3) if reed else rng.randf_range(0.07, 0.22)
+			var size: float = rng.randf_range(0.5, 1.3) if reed else (rng.randf_range(0.04, 0.09) if shell else (rng.randf_range(0.2, 0.45) if wrack else rng.randf_range(0.07, 0.22)))
 			var tall: float = size * rng.randf_range(0.8, 1.2) if reed else size * rng.randf_range(0.5, 1.0)
 			var shade: float = rng.randf_range(0.8, 1.1)
 			var buffer: PackedFloat32Array = buffers[layer]
@@ -1532,6 +1673,16 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 				buffer[o + 12] = 0.62 * shade
 				buffer[o + 13] = 0.68 * shade
 				buffer[o + 14] = 0.36 * shade
+			elif shell:
+				# Shells: cream, pink-white, blue-grey and a few rusty ones.
+				var hue: float = rng.randf()
+				buffer[o + 12] = (0.85 if hue < 0.5 else (0.78 if hue < 0.8 else 0.6)) * shade
+				buffer[o + 13] = (0.8 if hue < 0.5 else (0.7 if hue < 0.8 else 0.62)) * shade
+				buffer[o + 14] = (0.68 if hue < 0.5 else (0.68 if hue < 0.8 else 0.64)) * shade
+			elif wrack:
+				buffer[o + 12] = 0.24 * shade
+				buffer[o + 13] = 0.22 * shade
+				buffer[o + 14] = 0.1 * shade
 			else:
 				# Rounded river stones: pale grey, warm grey and brown, darker where wet.
 				var wet: float = 0.8 if depth >= 0.0 else 1.0

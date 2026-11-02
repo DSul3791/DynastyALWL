@@ -1,0 +1,4 @@
+average: 1522 vertices, 3024 triangles, grid cells 16028, ms rig+primitives 0.6 field 42.5 surface 53.1 weights 59.8 total 156.0
+broad: 2040 vertices, 4060 triangles, grid cells 22184, ms rig+primitives 0.8 field 58.4 surface 73.1 weights 88.1 total 220.4
+lean: 1476 vertices, 2932 triangles, grid cells 16216, ms rig+primitives 0.6 field 46.3 surface 53.1 weights 60.1 total 160.1
+stocky: 1878 vertices, 3736 triangles, grid cells 20512, ms rig+primitives 0.6 field 51.4 surface 72.8 weights 78.3 total 203.1

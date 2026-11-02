@@ -21,7 +21,7 @@ func _init() -> void:
 	var items: Dictionary = {
 		"ids": PackedInt32Array([(3 << 16) | 1, (3 << 16) | 2, (4 << 16) | 3, (9 << 16) | 4]),
 		"positions": PackedVector3Array([Vector3(100.0, 50.0, 100.0), Vector3(130.0, 50.0, 100.0), Vector3(200.0, 50.0, 200.0), Vector3(300.0, 50.0, 300.0)]),
-		"heights": PackedFloat32Array([20.0, 10.0, 2.0, 5.0]),
+		"heights": PackedFloat32Array([20.0, 17.0, 2.0, 5.0]),
 		"yaws": PackedFloat32Array([0.0, 0.0, 0.0, 0.0]),
 	}
 	Cover.add_chunk(index, Vector2i(0, 0), items, info)
@@ -31,8 +31,12 @@ func _init() -> void:
 	check(Cover.at(Vector3(109.5, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(110.5, 52.0, 100.0), index) == 0.0, "the sheltered radius is the full crown_m (10 m for a 10 m crown)")
 	check(Cover.at(Vector3(111.0, 52.0, 100.0), index) == 0.0, "outside the radius is open")
 	check(Cover.at(Vector3(100.0, 80.0, 100.0), index) == 0.0, "above the treetop is open")
-	# The small tree (height 10 of 20): radius 5 * 0.5 = 2.5 m.
-	check(Cover.at(Vector3(134.5, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(135.5, 52.0, 100.0), index) == 0.0, "crown grows with the tree's size")
+	# The smaller grown tree (height 17 of 20, scale 0.85): radius 10 * 0.85 = 8.5 m.
+	check(Cover.at(Vector3(138.4, 52.0, 100.0), index) == 1.0 and Cover.at(Vector3(138.6, 52.0, 100.0), index) == 0.0, "crown grows with the tree's size")
+	# A young tree (height 10 of 20, scale 0.5) gives no shelter at all (Dave 2026-10-30).
+	var young: Dictionary = {"ids": PackedInt32Array([(3 << 16) | 8]), "positions": PackedVector3Array([Vector3(400.0, 50.0, 400.0)]), "heights": PackedFloat32Array([10.0]), "yaws": PackedFloat32Array([0.0])}
+	Cover.add_chunk(index, Vector2i(2, 2), young, info)
+	check(Cover.at(Vector3(400.0, 52.0, 400.0), index) == 0.0, "a young tree gives no shelter")
 	check(Cover.at(Vector3(200.0, 52.0, 200.0), index) == 0.0, "shrubs give no cover")
 	check(Cover.at(Vector3(100.0, 52.0, 100.0), null) == 0.0, "no index means open")
 

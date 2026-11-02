@@ -1,5 +1,7 @@
 extends Node
 
+const WaterChoice := preload("res://src/water2/water_choice.gd")
+
 const RUN_NOTE := "user://server_run.json"
 
 
@@ -24,7 +26,12 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
-			_host_and_play()
+			# The character select page is the first page (until there are accounts); it sends a player with no characters to the creator, and
+			# both come back here with creator_done set once a character is chosen.
+			if not Engine.has_meta("creator_done"):
+				get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+			else:
+				_host_and_play()
 
 		"terrain_client":
 			get_tree().change_scene_to_file(
@@ -57,6 +64,10 @@ func _host_and_play() -> void:
 		"--",
 		"--quit-when-empty",
 	])
+
+	if WaterChoice.old_water():
+		arguments.append("--water-old")   # Esc > Settings > Gameplay > Old water (Dynasty water is the default)
+
 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
 
 	if pid < 0:

@@ -1,0 +1,9 @@
+# Tree shading (Dave: trees look evenly lit), 2026-10-31, Kathleen
+Cause: the leaf shader already used outward crown normals, but the sky ambient and 40% backlight lit the shade side as brightly, and nothing darkened the crown's inside or underside. Bark was a pale flat grey.
+Fix (no extra triangles, same style): baked AO in the leaf vertex colours in tree_builder.gd `_crown_shading` (outer top bright, centre and underside dark); bark warmed and darkened, darker at the foot and under the crown; leaf backlight 0.4 to 0.3 (flora_view.gd). Applies to near and far models alike.
+Pictures (real game, same spot, noon): before_noon.png, after_noon.png (round 1: gain 1.2). Round 2 (gain 1.4, bark a little darker and warmer) is rendering at 08:00, 12:00, 18:00.
+Round 1 rating 3: crowns now have a dark core and darker undersides; the sun side is only slightly lighter, trunks still read pale grey. Next: stronger sun-side lift, bark darker, check birch and beech limbs.
+
+Round 2 (gain 1.4, darker warmer bark), 08:00: round2_morning.png. Crowns show a lit sun side (upper right), a dark core and dark undersides: rating 3-4. Trunks still read pale grey-white and flat (bark rating 2): the bark texture is bright; next, darken the bark shader's texture multiply (flora_view.gd BARK_SHADER `* 1.8`) for hardwood trunks. 18:00 shot pending.
+
+Round 3 (bark material, flora_view.gd BARK_SHADER: texture gain 1.8 to 1.3, warmer, furrows darker, per-patch tone variation, foot shaded), noon: round3_bark_noon.png vs before_noon.png. Trunks are now warm brown with plates of different tone and a dark foot instead of pale grey concrete: bark rating 3-4 (from 2). Next: a species-specific tint check (oak darker, beech grey-brown, birch white with black marks) at 08:00 and 18:00 (shots queued), roughness variation only by tone (no normal map).

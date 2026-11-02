@@ -24,7 +24,7 @@ Builds on the current code (`world_definition.gd`, `region_mapper.gd`).
 | Wrap | Both axes, period 322,560 m | Permanent |
 | North | The -Z direction | Permanent |
 | Voxel size | 1 m | Permanent (existing) |
-| Vertical range | -4,000 m to +2,048 m, sea level 0 | Permanent (existing) |
+| Vertical range | -4,000 m to +4,000 m, sea level 0 (top raised from +2,048 m on 29 Oct 2026, before the first world was kept; saved height 16 bits in 0.125 m steps) | Permanent |
 | Equator line | z = 7,680 m (the middle of row 0) | Permanent |
 
 The world is symmetric about the equator line: rows -10 and 10 are the same distance from it and meet across the wrap seam, which is the pole.

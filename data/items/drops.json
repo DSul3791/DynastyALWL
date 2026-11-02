@@ -1,10 +1,42 @@
 {
 	"berry_yield_note": "Berries per plant (Tyler card berries-per-plant, 2026-10-23; Dave may change): one E on a ripe plant gives all of item x count and leaves the plant bare until the next season. Keyed by flora name (data/tables/flora.json). The server gather() berry branch reads this (Steve).",
+	"fruit_tree_note": "Fruit trees with a real fruit store (Dave 2026-10-31, docs/FRUIT_TREES_PLAN.md): a tree of a listed species holds `max` pieces (a range; each tree gets a stable amount from its id, scaled by its height against the species reference), a press takes up to `per_pick` of them, limited by what the weight limit lets the player carry, and the store refills when the fruiting season comes round again (season stamp); an empty tree is shown bare and offers nothing. The item is the species harvest_yield item; out of season nothing can be picked.",
+	"fruit_tree": {
+		"wild_apple": {"max": [40, 120], "per_pick": 5},
+		"wild_apple_sweet": {"max": [20, 60], "per_pick": 5},
+		"fig": {"max": [30, 80], "per_pick": 5},
+		"olive": {"max": [60, 160], "per_pick": 5},
+		"pomegranate": {"max": [20, 50], "per_pick": 4},
+		"mango": {"max": [30, 90], "per_pick": 4},
+		"orange": {"max": [40, 100], "per_pick": 5},
+		"lemon": {"max": [40, 100], "per_pick": 5},
+		"date_palm": {"max": [60, 150], "per_pick": 5},
+		"coconut_palm": {"max": [20, 40], "per_pick": 3},
+		"apple_early": {"max": [30, 80], "per_pick": 5},
+		"apple_summer": {"max": [40, 100], "per_pick": 5},
+		"apple_autumn": {"max": [50, 130], "per_pick": 5},
+		"apple_keeping": {"max": [50, 120], "per_pick": 5},
+		"apple_cooking": {"max": [40, 110], "per_pick": 5},
+		"pear_summer": {"max": [30, 90], "per_pick": 5},
+		"pear_autumn": {"max": [30, 100], "per_pick": 5},
+		"pear_winter": {"max": [30, 90], "per_pick": 5},
+		"sour_cherry": {"max": [30, 70], "per_pick": 5},
+		"plum": {"max": [40, 100], "per_pick": 5},
+		"damson": {"max": [40, 100], "per_pick": 5},
+		"quince": {"max": [20, 50], "per_pick": 4},
+		"medlar": {"max": [30, 70], "per_pick": 5},
+		"wild_pear": {"max": [30, 100], "per_pick": 5},
+		"wild_cherry": {"max": [30, 80], "per_pick": 5},
+		"walnut": {"max": [30, 60], "per_pick": 4},
+		"sweet_chestnut": {"max": [40, 100], "per_pick": 5},
+		"rowan": {"max": [40, 120], "per_pick": 5}
+	},
 	"harvest_yield_note": "Harvest per plant beyond berries (Tyler card harvest-counts, 2026-10-23; Dave may change): one E on a ripe plant gives all of item x count and leaves it bare until its next season. Same shape as berry_yield; keyed by flora name. Root herbs: uprooting IS the harvest (count 2). At most 3 slots per harvest.",
 	"harvest_yield": {
 		"thatch_grass": {"item": "thatch", "count": 10},
+		"oak": {"item": "tannin_bark", "count": 3},
+		"tinder_fungus": {"item": "tinder_fungus", "count": 3},
 		"wild_thyme": {"item": "thyme", "count": 12},
-		"wild_rose": {"item": "rose_petals", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
 		"sorrel": {"item": "sorrel_leaves", "count": 12},
 		"wild_marjoram": {"item": "marjoram", "count": 12},
@@ -12,7 +44,6 @@
 		"plantain": {"item": "plantain_leaves", "count": 12},
 		"comfrey": {"item": "comfrey_leaves", "count": 12},
 		"truthsage": {"item": "truthsage_leaves", "count": 12},
-		"wild_garlic": {"item": "wild_garlic_leaves", "count": 12},
 		"watercress": {"item": "watercress", "count": 12},
 		"rosemary": {"item": "rosemary", "count": 12},
 		"st_johns_wort": {"item": "st_johns_wort", "count": 12},
@@ -25,7 +56,6 @@
 		"chamomile": {"item": "chamomile_flowers", "count": 20},
 		"arnica": {"item": "arnica_flowers", "count": 20},
 		"meadowsweet": {"item": "meadowsweet_flowers", "count": 20},
-		"dandelion": {"item": "dandelion_flowers", "count": 20},
 		"valerian": {"item": "valerian_roots", "count": 2},
 		"burdock": {"item": "burdock_roots", "count": 2},
 		"angelica": {"item": "angelica_roots", "count": 2},
@@ -38,6 +68,26 @@
 		"puffball": {"item": "puffball", "count": 1},
 		"fly_agaric": {"item": "fly_agaric_caps", "count": 3},
 		"wild_apple": {"item": "crab_apples", "count": 120},
+		"wild_apple_sweet": {"item": "wild_apples", "count": 40},
+		"fig": {"item": "figs", "count": 40},
+		"olive": {"item": "olives", "count": 40},
+		"pomegranate": {"item": "pomegranates", "count": 40},
+		"mango": {"item": "mangoes", "count": 40},
+		"orange": {"item": "oranges", "count": 40},
+		"lemon": {"item": "lemons", "count": 40},
+		"apple_early": {"item": "apple_early", "count": 40},
+		"apple_summer": {"item": "apple_summer", "count": 40},
+		"apple_autumn": {"item": "apple_autumn", "count": 40},
+		"apple_keeping": {"item": "apple_keeping", "count": 40},
+		"apple_cooking": {"item": "apple_cooking", "count": 40},
+		"pear_summer": {"item": "pear_summer", "count": 40},
+		"pear_autumn": {"item": "pear_autumn", "count": 40},
+		"pear_winter": {"item": "pear_winter", "count": 40},
+		"sour_cherry": {"item": "sour_cherries", "count": 40},
+		"plum": {"item": "plums", "count": 40},
+		"damson": {"item": "damsons", "count": 40},
+		"quince": {"item": "quince", "count": 40},
+		"medlar": {"item": "medlar", "count": 40},
 		"wild_pear": {"item": "wild_pears", "count": 100},
 		"wild_cherry": {"item": "cherries", "count": 200},
 		"walnut": {"item": "walnuts", "count": 80},
@@ -74,6 +124,12 @@
 		"juniper": {"item": "juniper_berries", "count": 100}
 	},
 	"note": "What gathering gives. by_species wins over by_kind; each entry is [item id, min, max]. A plant or shrub with no entry here cannot be gathered yet (food and herb items come with the gatherer, cook and potion work). Trees are felled, not gathered (tree-fall comes later).",
+	"seed_drops": {
+		"note": "Wild seeds (FARMING_SPEC.md step 1; Tyler 31 Oct 2026): gathering one of these plants in the listed seasons also gives seeds, [item, min, max] each, so a player starts farming from forage. Rolled like the other yields. Potato and turnip seeds come from a dug root, not here.",
+		"tall_grass": {"seasons": ["summer", "autumn"], "rows": [["wheat_seeds", 1, 2], ["barley_seeds", 1, 2]]},
+		"wild_carrot": {"seasons": ["summer", "autumn"], "rows": [["carrot_seeds", 1, 3]]},
+		"flax": {"seasons": ["summer", "autumn"], "rows": [["flax_seeds", 1, 3]]}
+	},
 	"by_species": {
 		"wild_rose": [],
 		"flax": [
@@ -89,15 +145,20 @@
 				1,
 				3
 			],
-			["thatch", 4, 4]
+			["thatch", 2, 2],
+			["straw", 1, 3]
 		],
 		"heather": [["thatch", 4, 4]],
+		"fallen_log": [["stick", 3, 6], ["firewood", 1, 2]],
+		"hollow_log": [["stick", 2, 4], ["firewood", 1, 3]],
+		"old_stump": [["stick", 1, 3], ["firewood", 1, 1]],
 		"nettle": [
 			[
 				"plant_fibre",
 				1,
 				2
-			]
+			],
+			["nettles", 2, 4]
 		],
 		"reeds": [
 			[
@@ -180,7 +241,8 @@
 			"tries": 60,
 			"chance": 0.5,
 			"max": 6,
-			"driftwood": 0.12
+			"driftwood": 0.12,
+			"flint": 0.06
 		},
 		"spawn_boost": {
 			"note": "Campfire friction fix (coordinator 2026-10-21, Radar): within radius_m of the respawn point every cell gets extra loose things so a new player finds a campfire kit's worth (20 sticks, 10 stones) in a few minutes of walking. Elsewhere the scatter stays sparse. Server-side layout only, no bake. stones_add and sticks_add are [min, max] added to the cell's roll (stones capped at stones_max_boost, sticks at sticks_max_boost).",
@@ -193,40 +255,78 @@
 				2,
 				3
 			],
-			"stones_max_boost": 4,
-			"sticks_max_boost": 4
+			"stones_max_boost": 2,
+			"sticks_max_boost": 2
 		}
+	},
+	"stump": {
+		"note": "Chopping a stump with the axe (Dave): blows needed = blows_base + radius x blows_per_radius_m, at most blows_max; some blows chip off a little, the last gives the final rows and the stump is gone. firewood is the wood of the trees own species.",
+		"blows_base": 2,
+		"blows_per_radius_m": 6,
+		"blows_min": 2,
+		"blows_max": 7,
+		"chip_chance": 0.5,
+		"chip": [["stick", 1, 2]],
+		"final": [["firewood", 2, 4], ["kindling", 2, 4], ["stick", 1, 3]],
+		"final_by_radius_note": "Dave 1 Nov: chopping a stump that is still in the ground destroys it and gives firewood and kindling, no fallen log. Counts by stump size (Sal). The first row whose max_radius_m is at or above the stump radius gives its rows; the last row has no limit. If the code does not read this key yet it falls back to final above (the middle size). firewood is the wood of the trees own species; kindling and stick are the plain items.",
+		"final_by_radius": [
+			{"max_radius_m": 0.2, "rows": [["firewood", 1, 2], ["kindling", 2, 3], ["stick", 1, 2]]},
+			{"max_radius_m": 0.4, "rows": [["firewood", 2, 4], ["kindling", 2, 4], ["stick", 1, 3]]},
+			{"rows": [["firewood", 3, 5], ["kindling", 3, 5], ["stick", 2, 3]]}
+		]
+	},
+	"felling": {
+		"note": "Axe timing (balance, 31 Oct, for Dave to tune). The swing now takes swing_s_now seconds, it was swing_s_before, so every blow count was scaled by about swing_s_before / swing_s_now (0.55) to keep the real time per tree. Felling a standing tree: blows = round(tree_base + trunk_radius_m x tree_per_trunk_m) between tree_min and tree_max, divided by the fell skill. Cutting logs off a trunk: trunk.blows_per_log is a fraction (1.6: a log every 1 or 2 blows, 8 ft in about 1.7 s); trunk.branch_blows and small_blows and the stump numbers are scaled the same way. tools/ test_felling_time.gd checks the time per tree stays within 10 percent of the old one (old_* values).",
+		"swing_s_before": 0.55,
+		"swing_s_now": 1.05,
+		"tree_base": 2.0,
+		"tree_per_trunk_m": 16.5,
+		"tree_min": 3,
+		"tree_max": 22,
+		"old_tree_base": 4.0,
+		"old_tree_per_trunk_m": 30.0,
+		"old_tree_min": 4,
+		"old_tree_max": 40,
+		"old_blows_per_log": 3,
+		"old_branch_blows": 3
 	},
 	"trunk": {
 		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",
-		"branch_blows": 3,
+		"branch_blows": 2,
 		"branch": [
 			[
 				"stick",
-				1,
-				3
+				2,
+				5
 			],
 			[
 				"leaves",
-				1,
-				3
+				3,
+				5
 			]
 		],
-		"bark_chance": 0.3,
+		"bark_chance": 0.55,
 		"thatch_bark_note": "Birch and the softwoods give thatch-worthy bark instead of plain bark (Dave 24 Oct): per blow chance and a count range, keyed by tree species.",
 		"thatch_bark": {"birch": {"chance": 0.5, "count": [3, 5]}, "spruce": {"chance": 0.3, "count": [2, 4]}, "balsam_fir": {"chance": 0.3, "count": [2, 4]}, "scots_pine": {"chance": 0.3, "count": [2, 4]}},
-		"seed_chance": 0.15,
-		"blows_per_log": 3,
+		"seed_chance": 0.28,
+		"blows_per_log": 1.6,
 		"log_length_m": 2.44,
 		"max_logs": 20,
-		"small_blows": 3,
-		"small": [["firewood", 1, 2], ["kindling", 2, 4], ["stick", 2, 4]],
+		"small_blows": 2,
+		"small": [["firewood", 2, 3], ["kindling", 3, 6], ["stick", 3, 6]],
 		"roots": [
 			"tree_roots",
 			1,
 			3
 		],
 		"by_species": {
+			"birch": [
+				["birch_bark", 2, 4]
+			],
+			"willow": [
+				["willow_bark", 1, 3],
+				["withies", 2, 4]
+			],
 			"oak": [
 				[
 					"acorns",
@@ -288,7 +388,8 @@
 					"resin",
 					1,
 					2
-				]
+				],
+				["pine_tar", 1, 2]
 			],
 			"spruce": [
 				[

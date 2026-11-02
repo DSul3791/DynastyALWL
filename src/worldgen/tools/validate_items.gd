@@ -12,7 +12,7 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "log", "bark", "leaves", "seed_bundle", "firewood", "driftwood"]
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water"]
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
@@ -124,6 +124,19 @@ func _init() -> void:
 		if int(file.get("next_number", 0)) <= highest:
 			fail("%s: next_number %s is not above the highest number %d" % [pair[1], file.get("next_number"), highest])
 
+	# Every structure has its own world-item state (the client finds the structure of a row by its state): two with the same state made the plank chest (6) shadow the
+	# woven chest, so the chest could not be placed (31 Oct 2026, the chest client self-test).
+	var states_seen: Dictionary = {}
+
+	for sid in _read("structures.json").get("structures", {}):
+		var srow: Variant = _read("structures.json")["structures"][sid]
+
+		if typeof(srow) == TYPE_DICTIONARY and srow.has("state"):
+			if states_seen.has(int(srow["state"])):
+				fail("structures.json: state %d is used by '%s' and '%s'" % [int(srow["state"]), states_seen[int(srow["state"])], sid])
+
+			states_seen[int(srow["state"])] = sid
+
 	var species: Dictionary = {}
 
 	for entry in _read("../tables/flora.json").get("entries", []):
@@ -141,8 +154,22 @@ func _init() -> void:
 
 	var weights: Dictionary = _read("weights.json")
 
+	for gid in gathered_file.get("items", {}):   # gathered materials stack without limit, so every one needs a real weight
+		var gweighed: bool = weights.get("by_id", {}).has(gid)
+
+		for gsuffix in weights.get("by_suffix", {}):
+			gweighed = gweighed or String(gid).ends_with(String(gsuffix))
+
+		if not gweighed:
+			fail("weights.json: stackable gathered item '%s' has no weight (by_id or by_suffix); stacks have no cap now, weight is the limit" % gid)
+
+
 	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
 	var wood_file: Dictionary = _read("wood_species.json")
+
+	for gid in wood_file.get("ingredient_groups", {}):   # a group (plain "log") is obtainable when a member is (F-16: no server fallback gives the plain item)
+		if String(gid) != "note":
+			obtainable[String(gid)] = true
 
 	for cls in wood_file.get("class_items", {}):
 		for step in ["firewood", "block"]:
@@ -240,6 +267,13 @@ func _init() -> void:
 			if not weighed:
 				fail("weights.json: '%s' has no weight (by_id or by_suffix); the default is not a real weight" % id)
 
+		# No stack caps (Dave 24 Oct): weight is the only limit, so a stackable item must have a real weight and tools, kits, structures, containers, clothing, gear and weapons must not stack.
+		if int(item.get("stack", 1)) == 1 and not bool(item.get("unstackable", false)) and not bool(item.get("retired", false)):
+			fail("items.json: '%s' has stack 1 but is not marked \"unstackable\": true" % id)
+
+		if ["tool", "weapon", "placeable", "structure", "container", "clothing", "gear"].has(String(item.get("kind", ""))) and not bool(item.get("unstackable", false)):
+			fail("items.json: '%s' is a %s and must be \"unstackable\": true" % [id, item.get("kind", "")])
+
 		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
 			fail("items.json: '%s' has durability but no repair materials" % id)
 
@@ -292,6 +326,7 @@ func _init() -> void:
 			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
 
 		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+		obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
 		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
 
 		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
@@ -400,6 +435,36 @@ func _init() -> void:
 		for row in fishing["species"][water]:
 			want_item.call(String(row[0]), "fishing.json %s" % water)
 			obtainable[String(row[0])] = true
+
+	# Fish schools (fish_schools.json species_by_kind): river, lake, pond and sea fish that exist as items are caught from a school (Sal, 2026-10-31).
+	var schools: Dictionary = _read("fish_schools.json")
+
+	for kind in schools.get("species_by_kind", {}):
+		for row in schools["species_by_kind"][kind]:
+			if all.has(String(row[0])):
+				obtainable[String(row[0])] = true
+
+	# Boulders (boulders.json): ore and coal from outcrop boulders and flint nodules are picked up with a pick or an axe (guide F-02, F-23).
+	var boulders: Dictionary = _read("boulders.json")
+
+	for ore_name in boulders.get("ore", {}).get("items", {}):
+		var ore_item: String = String(boulders["ore"]["items"][ore_name])
+
+		if all.has(ore_item):
+			obtainable[ore_item] = true
+
+	if all.has(String(boulders.get("flint", {}).get("item", ""))):
+		obtainable[String(boulders["flint"]["item"])] = true
+
+	# Tide-line nodes (shore_nodes.json): seaweed, shellfish, crab meat and eggs are gathered at the shore; sea water fills a container (Tyler, WATER_GATHER_SPEC.md).
+	var shore: Dictionary = _read("shore_nodes.json")
+
+	for node in shore.get("nodes", []):
+		if all.has(String(node.get("item", ""))):
+			obtainable[String(node["item"])] = true
+
+	if all.has(String(shore.get("sea_water_item", ""))):
+		obtainable[String(shore["sea_water_item"])] = true
 
 	# Hunting: every part a carcass can give is obtainable (by hunting and working the carcass).
 	for species_id in _read("carcass.json").get("species", {}):
@@ -531,13 +596,18 @@ func _init() -> void:
 
 	# Core materials marked "future": true (iron and steel ingots until smelting exists) count as sources for the recipe check.
 	for id in items_file.get("items", {}):
-		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) == "material":
+		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) in ["material", "food"]:   # future foods (shore foods, crops) count too, so dishes built from them are checked
 			obtainable[String(id)] = true
 
 	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
 	for kind in _read("structures.json").get("structures", {}):
 		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
 			obtainable["wooden_block"] = true
+
+	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
+	for raw_id in cooking.get("cooks_into", {}):
+		if obtainable.has(String(raw_id)):
+			obtainable[String(cooking["cooks_into"][raw_id])] = true
 
 	var changed: bool = true
 
@@ -639,6 +709,41 @@ func _init() -> void:
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
 
+	# Ingredient groups (wood_species.json ingredient_groups, guide F-16): an id like plain "log" is filled by any member (log_oak ...). Each group needs
+	# members that exist, and no recipe or blueprint may ask for an id nothing yields: not gathered, not made, not a group, not marked future.
+	var groups: Dictionary = wood_file.get("ingredient_groups", {})
+
+	for gid in groups:
+		if String(gid) == "note":
+			continue
+
+		var members: Array = groups[gid]
+
+		if members.is_empty():
+			fail("wood_species.json ingredient_groups.%s has no members" % gid)
+
+		for member in members:
+			if not all.has(String(member)):
+				fail("wood_species.json ingredient_groups.%s: unknown item '%s'" % [gid, member])
+
+	var sourceless: Dictionary = {}
+
+	for rid in recipes:
+		if bool(recipes[rid].get("retired", false)):
+			continue
+
+		for list in ["needs", "keeps"]:
+			for row in recipes[rid].get(list, []):
+				var need_id: String = String(row[0])
+
+				if groups.has(need_id) or obtainable.has(need_id) or craftable.has(need_id) or bool(all.get(need_id, {}).get("future", false)):
+					continue
+
+				sourceless[need_id] = rid
+
+	for need_id in sourceless:
+		fail("recipe '%s' needs '%s', which nothing yields (not gathered, not made, not a group, not marked future)" % [sourceless[need_id], need_id])
+
 	# A player can never be asked to craft with something the game calls "Unknown" (Dave 24 Oct): an ingredient of a kit or twine recipe known from the start,
 	# must be fully familiar.
 	var gathered_items: Dictionary = gathered_file.get("items", {})
@@ -666,6 +771,9 @@ func _init() -> void:
 		used[String(id)] = true
 
 	used[String(cooking.get("tinder", ""))] = true
+
+	for id in cooking.get("tinder_also", []):
+		used[String(id)] = true
 
 	for id in items_file.get("items", {}):
 		for row in items_file["items"][id].get("repair", []):

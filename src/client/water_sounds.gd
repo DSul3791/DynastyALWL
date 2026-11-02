@@ -76,8 +76,8 @@ const FALL_FLOW_REF := 1.0              # flow (m3/s) at which the level is unch
 const FALL_FLOW_SILENT := 0.05          # under this flow a fall makes no sound at all
 
 const KINDS := {
-	"brook": {"file": "water_brook", "db": -22.0, "reach": 45.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
-	"river": {"file": "water_river", "db": -22.0, "reach": 50.0},
+	"brook": {"file": "water_brook", "db": -25.0, "reach": 30.0},   # Dave 2026-10-20: -10 sounded like loud constant wind; his recording (EQ'd, -24 dB RMS) now sits near the other ambience
+	"river": {"file": "water_river", "db": -25.0, "reach": 35.0},
 	"pond": {"file": "water_pond", "db": -17.0, "reach": 35.0},
 	"fall": {"file": "water_fall", "db": -22.0, "reach": 110.0},
 }

@@ -15,6 +15,7 @@ const SketchScript := preload("res://src/worldgen/sketch/world_sketch.gd")
 const ElevationScript := preload("res://src/worldgen/sketch/world_elevation.gd")
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const ErosionDeltaScript := preload("res://src/worldgen/tile/erosion_delta.gd")
+const TileRollingScript := preload("res://src/worldgen/tile/tile_rolling.gd")
 const TileScreeScript := preload("res://src/worldgen/tile/tile_scree.gd")
 const TileWaterScript := preload("res://src/worldgen/tile/tile_water.gd")
 const TileClimateScript := preload("res://src/worldgen/tile/tile_climate.gd")
@@ -270,6 +271,14 @@ func bake(tile: Vector2i, raw_only: bool = false) -> Dictionary:
 	var river_guides: Array = river_network.guides_in(frame_rect, 4.0)
 	water.build(frame_height, starter, river_guides, river_network.ponds_in(frame_rect, float(tile_rules["water"].get("head_pond_search_m", 2000.0)) + 700.0))
 	timings["water"] = Time.get_ticks_msec() - clock
+
+	# Rolling swells and knolls on dry low land, added after the water so the rivers and ponds keep their shape.
+	clock = Time.get_ticks_msec()
+
+	if tile_rules.has("rolling"):
+		TileRollingScript.apply(water.heights, water.water_class, n, frame_height.spacing_m, origin_sx, origin_sz, settings, tile_rules["rolling"], elevation)
+
+	timings["rolling"] = Time.get_ticks_msec() - clock
 
 	clock = Time.get_ticks_msec()
 	var climate = TileClimateScript.new()

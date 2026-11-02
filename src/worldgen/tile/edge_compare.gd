@@ -225,9 +225,9 @@ static func _load_edge(path: String, direction: String, is_first: bool) -> Dicti
 
 		match name:
 			"height":
-				full = TileFileScript.decode_height(raw)
+				full = TileFileScript.decode_height(raw, TileFileScript.height_step_of(head["header"]))
 			"water_surface":
-				full = TileFileScript.decode_water_surface(raw)
+				full = TileFileScript.decode_water_surface(raw, TileFileScript.height_step_of(head["header"]))
 			"layer_offset":
 				full = TileFileScript.decode_layer_offset(raw)
 			_:

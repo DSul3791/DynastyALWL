@@ -1,0 +1,59 @@
+{
+	"_about": "Tide-line nodes (WATER_GATHER_SPEC.md part 2; Tyler 31 Oct 2026). ACT_GATHER_EDGE on a beach cell next to the sea: the cell (cell_m square) holds a node with chance node_chance, chosen from the cell and the game day (so the same every time that day); the kind is picked by weight. A node is used up until the next game day. only_hours = [from, to) game hours the node is there; only_seasons = the seasons. Sea water: a bucket, clay jug or waterskin in the pack and the sea within reach gives one sea_water.",
+	"cell_m": 8.0,
+	"node_chance": 0.5,
+	"reach_m": 4.0,
+	"beach_max_height_m": 4.0,
+	"containers": [
+		"bucket",
+		"clay_jug",
+		"waterskin"
+	],
+	"sea_water_item": "sea_water",
+	"nodes": [
+		{
+			"kind": "kelp",
+			"item": "seaweed",
+			"count": [
+				2,
+				5
+			],
+			"weight": 3
+		},
+		{
+			"kind": "mussels",
+			"item": "shellfish",
+			"count": [
+				3,
+				8
+			],
+			"weight": 3
+		},
+		{
+			"kind": "crabs",
+			"item": "crab_meat",
+			"count": [
+				1,
+				2
+			],
+			"weight": 2,
+			"only_hours": [
+				18,
+				6
+			]
+		},
+		{
+			"kind": "nest",
+			"item": "egg",
+			"count": [
+				1,
+				3
+			],
+			"weight": 1,
+			"only_seasons": [
+				"spring",
+				"summer"
+			]
+		}
+	]
+}

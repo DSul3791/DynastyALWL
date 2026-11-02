@@ -38,6 +38,7 @@ extends Node
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -46,6 +47,8 @@ const NpcViewScript := preload("res://src/client/npc_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const ShowroomScript := preload("res://src/client/showroom.gd")
 const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
+const DeathScreenScript := preload("res://src/client/death_screen.gd")
+const CharacterStoreScript := preload("res://src/client/character/character_store.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
@@ -62,6 +65,7 @@ const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
+const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -69,6 +73,8 @@ const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
+const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const JitterTestScript := preload("res://src/debug/jitter_test.gd")
 const MachineProbeScript := preload("res://src/debug/machine_probe.gd")
@@ -88,6 +94,9 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
+const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
+const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
@@ -103,6 +112,7 @@ const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
+const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const HotbarStripScript := preload("res://src/client/hotbar_strip.gd")
 const PickupFeedScript := preload("res://src/client/pickup_feed.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
@@ -113,6 +123,7 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
+const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
@@ -188,6 +199,7 @@ var _quality_buttons: Array = []         # Esc > Settings, one per tier; the act
 var _last_sound_seen: Dictionary = {}
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
+var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
 var flying: bool = false
 var underwater: bool = false
 var _ground_quality: int = -1       # quality the ground texture array was built for
@@ -195,6 +207,7 @@ var _z_down_msec: int = -1             # when Z went down while lying (hold to s
 var _z_slept: bool = false             # the hold already asked for sleep
 const SLEEP_HOLD_S := 3.0              # data/items/sleep.json hold_s
 var _was_lying: bool = false
+var shot_lock: bool = false              # true while the shot runner takes pictures: mouse look is ignored so the pose it sets stays
 var stance = StanceScript.new()       # standing, crouching (C), sitting (X), lying (Z); client.stance.stance and its `changed` signal
 var _shape: CollisionShape3D          # the player's collision capsule (resized by stance)
 var jogging: bool = false             # double-tapped W; ends when W is released
@@ -406,6 +419,7 @@ var dig_applied: int = 0
 var test_dig_check: bool = false      # --dig-check: read the ground where --dig cut a hole in an earlier run (the hole must still be there)
 var flora                             # FloraView
 var ocean_ice                         # OceanIce (floes over a frozen sea)
+var shore_props                       # ShoreProps (the tide-line gather spots drawn on the beach)
 var swimming: bool = false            # in deep water, feet under the surface (src/shared/swim.gd)
 var _climb_until_msec: int = 0        # pulling out of the water onto a bank or floe until then
 var _under_ice_next_msec: int = 0
@@ -418,6 +432,7 @@ var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the
 var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items into the first ten slots
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
 var _commit: String = GitStamp.short_commit()   # which checkout is running
@@ -432,6 +447,7 @@ var _bake_status: String = ""
 var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
+var idle_timeout = IdleTimeoutScript.new()   # the game closes after the idle minutes of Esc > Settings > Gameplay without input (idle_timeout.gd)
 var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
@@ -482,6 +498,15 @@ func _ready() -> void:
 
 	net = $TerrainNet
 	display.load_saved()
+	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
+		_telemetry.event("EXIT: %s" % why)
+		_finish(0))
+	idle_timeout.name = "IdleTimeout"
+	add_child(idle_timeout)
+	idle_timeout.setup(OS.get_cmdline_user_args(), display.idle_minutes, DisplayServer.get_name() == "headless")
+	idle_timeout.timed_out.connect(func():
+		_telemetry.event("EXIT: idle timeout after %d minutes without input" % idle_timeout.minutes)
+		_finish(0))
 
 	if display.quality >= 0:
 		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
@@ -494,6 +519,8 @@ func _ready() -> void:
 			shot_runner.name = "ShotRunner"
 			add_child(shot_runner)
 			shot_runner.setup(self, OS.get_cmdline_user_args())
+			shot_lock = true   # a picture run: the mouse must not turn the player between the pose and the shot (tech/CAMERA_TURN_RECIPE.md)
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			break
 	var host: String = "127.0.0.1"
 	var port: int = 24600
@@ -717,6 +744,7 @@ func _ready() -> void:
 	net.flora_received.connect(_on_flora)
 	net.flora_cut_received.connect(_on_flora_cut)
 	net.flora_stripped_received.connect(_on_flora_stripped)
+	net.flora_fruit_received.connect(_on_flora_fruit)
 	net.zone_received.connect(func(biome_id: int) -> void: sound.ambience.set_zone(biome_id))
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
@@ -737,6 +765,7 @@ func _ready() -> void:
 			link_bars.pulse())
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
+	net.final_death_received.connect(_on_final_death)
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
@@ -1019,6 +1048,9 @@ func _welcome_body(info: Dictionary) -> void:
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	shore_props = ShoreProps.new()
+	shore_props.name = "ShoreProps"
+	root.add_child(shore_props)
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
@@ -1032,6 +1064,9 @@ func _welcome_body(info: Dictionary) -> void:
 	grass = GrassViewScript.new()
 	grass.name = "Grass"
 	root.add_child(grass)
+	critters = AmbientCrittersScript.new()
+	critters.name = "Critters"
+	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
@@ -1052,6 +1087,9 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
+		if sound_log_arg.begins_with("--sound-log="):
+			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
 	stance.changed.connect(func(new_stance: int):
 		sound.stance.set_stance(["stand", "crouch", "sit", "lie"][clampi(new_stance, 0, 3)])
 		sound.slots.play("bed_lie" if new_stance == 3 else ("bed_rise" if _was_lying else ""), body.global_position)
@@ -1219,7 +1257,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.knowledge = knowledge
 	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
-	items.auto_pickup_blocked = func(): return swimming or (held != null and held.placing())
+	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
@@ -1260,10 +1298,15 @@ func _welcome_body(info: Dictionary) -> void:
 			return {"prompt": "Press E to fill", "tap": items.drink}
 
 		return {"prompt": "Press E to drink", "tap": items.drink} if items.thirst < 100 and _water_ahead() else {})
+	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a bucket, clay jug or waterskin in the pack E fills it with sea water; otherwise on a tide-line node
+	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
+	items.register_interactable("gather_edge", 34, func():
+		var text: String = _shore_prompt()
+		return {"prompt": text, "tap": _shore_tap} if text != "" else {})
 	items.register_interactable("drink_held", 36, func():
 		return {"prompt": "Press E to drink", "tap": func(): items.eat_slot(items.held_container_slot())} if items.thirst < 100 and items.held_container_has_water() else {})
 	items.register_interactable("plant", 40, func():
-		return {} if items.plant_hint == "" else {"prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
+		return {} if items.plant_hint == "" else {"kind": "plant", "point": items.plant_point, "prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
@@ -1596,6 +1639,75 @@ func _sync_cleared() -> void:
 
 
 # Water within a stride of the feet or a step or two ahead (where you look, flat): what the E-to-drink prompt needs.
+var _shore_cfg: Dictionary = {}
+var _shore_used: Dictionary = {}          # "cx,cz" -> game day this client gathered that tide-line node
+var _shore_text: String = ""
+var _shore_msec: int = -1000
+
+
+# What E does at the sea's edge now, "" when nothing: the sea within 4 m (the ground under it below sea level at the player or 4 m around), a container in the pack, or a node in this cell.
+# Worked out at most four times a second (five ground rays).
+func _shore_prompt() -> String:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _shore_msec < 250:
+		return _shore_text
+
+	_shore_msec = now
+	_shore_text = ""
+
+	if _shore_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/shore_nodes.json"))
+		_shore_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"none": true}
+
+	if body == null or items == null or items.inventory == null or _shore_cfg.has("none"):
+		return ""
+
+	var here: Vector3 = body.global_position
+	var reach: float = float(_shore_cfg.get("reach_m", 4.0))
+	var container: String = ""
+
+	for id in _shore_cfg.get("containers", []):
+		var number: int = items.table.number_of(str(id))
+
+		if number > 0 and items.inventory.numbers.has(number):
+			container = str(id)
+			break
+
+	if shore_props != null:
+		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
+
+	var ground: float = _ground_below(here)
+
+	if is_nan(ground) or ground > float(_shore_cfg.get("beach_max_height_m", 4.0)) + 1.0:
+		return ""
+
+	var sea: bool = false
+
+	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var g: float = _ground_below(here + Vector3(offset.x, 0.0, offset.y))
+
+		if not is_nan(g) and g < 0.0:
+			sea = true
+			break
+
+	var day: int = int(floor(game_clock.seconds / 86400.0))
+	_shore_text = ShoreRules.prompt(_shore_cfg, here, sea, container, ground, day, game_clock.hour(), game_clock.season(), _shore_used)
+	return _shore_text
+
+
+func _shore_tap() -> void:
+	var here: Vector3 = body.global_position
+	net.inventory_action.rpc_id(1, NetScript.ACT_GATHER_EDGE, 0, 0, 0, here)
+
+	# A tide-line gather uses the cell up for today (a container fill does not).
+	if not _shore_text.begins_with("Press E to fill"):
+		_shore_used[ShoreRules.cell_key(_shore_cfg, here)] = int(floor(game_clock.seconds / 86400.0))
+
+	_shore_msec = -1000
+
+
+
 func _water_ahead() -> bool:
 	var forward: Vector3 = -camera.global_transform.basis.z
 	forward.y = 0.0
@@ -1672,6 +1784,20 @@ func go_to_spawn() -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+var death_screen                      # the real-death screen (src/client/death_screen.gd), made when the server sends final_death
+
+
+func _on_final_death(cause: String) -> void:
+	if death_screen == null:
+		death_screen = DeathScreenScript.new()
+		add_child(death_screen)
+
+	if body != null:
+		body.velocity = Vector3.ZERO
+
+	death_screen.show_for(cause, str(CharacterStoreScript.active().get("name", "")))
 
 
 func _on_died(cause: String, spawn_point: Vector3) -> void:
@@ -1934,6 +2060,10 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 		_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
+func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	flora.set_fruit_taken(chunk, ids, taken)
+
+
 func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
 	if flora == null:
 		return
@@ -1977,6 +2107,7 @@ func _update_flora() -> void:
 		fall_growth.update(falls, p)
 
 	flora.set_season(game_clock.season())
+	grass.set_season(flora.season)   # the season the flora view shows (the game season, or the --flora-season preview)
 
 	for chunk in flora.update(p):
 		_flora_asked.erase(chunk)
@@ -2188,7 +2319,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	_viewer = viewer
 
 	if DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 
 
 # Applies the current quality preset to ground view distance, flora distances
@@ -2291,6 +2422,12 @@ func _report_display(prefix: String = "") -> void:
 	_menu_note.text = text
 
 
+# The idle timeout minutes were changed in the menu (idle_timeout.gd): 5 to 120, never below.
+func set_idle_minutes(value: int) -> void:
+	display.idle_minutes = IdleTimeoutScript.clamp_minutes(value)
+	idle_timeout.set_minutes(display.idle_minutes)
+
+
 # Saves the window, VSync and quality choices (display_settings.gd).
 func _save_display() -> void:
 	display.quality = quality
@@ -2348,7 +2485,7 @@ func _set_menu(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_show_menu_page("main")
 	elif DisplayServer.get_name() != "headless":
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 
 
 # "Clear saved ground": this client drops its own saved copy and reloads the
@@ -2382,6 +2519,7 @@ var _ground_line_msec: int = 0
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
 const HELP_TEXT := """Move: W A S D   Jog: double-tap W   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
+K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
 I: crafting and inventory   R with a hammer in hand: blueprints   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
 /: inspection mode   + and -: spring flow (tuning)
@@ -2670,7 +2808,7 @@ func _make_environment(root: Node3D) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(12000.0, 12000.0)
 	sea.mesh = plane
-	sea.material_override = WaterMaterial.make()   # the same look as the rivers
+	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
 
 
@@ -2686,8 +2824,12 @@ const VIEW_HEIGHT := 0.12              # camera rise per metre of distance
 const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the camera stops
 
 var view_cam: Camera3D
+const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
+var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
 var third_person: bool = false
+var debug_clip: String = ""                              # shot runner only (--shot-clip=NAME): play this clip whatever the body does
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
+var shot_stance: int = -1                                # shot runner only (--shot-stance): draw the third-person body in this stance (0 stand, 1 crouch, 2 sit, 3 lie) even while the runner flies
 var _view_m: float = 3.0
 var _view_now: float = 0.0             # the distance drawn now (eases out and in, and shortens when blocked)
 var _avatar                                               # the ragdoll body (src/client/ragdoll_body.gd), feet on the ground under the capsule
@@ -2756,90 +2898,118 @@ func _update_view(delta: float) -> void:
 	if absf(_view_now - want) < 0.01:
 		_view_now = want
 
-	view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+	if photo.active:
+		_place_photo_camera(delta)
+		_view_now = 3.0   # the whole body is drawn, the first-person arms are hidden
+	else:
+		view_cam.top_level = false
+		view_cam.rotation = Vector3.ZERO   # the drawn camera only ever sits on the eye, looking the way the eye looks
+		view_cam.position = Vector3(0.0, VIEW_HEIGHT, 1.0) * _view_now
+
 	_avatar.visible = _view_now > 0.5
 
 	if held != null:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
 		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
-	_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
+	if _avatar.animation_player != null:
+		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
 	_avatar.position.y = -float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 
 	if _avatar.visible:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
-		var clip: String = ["idle", "crouch", "sit", "lie"][stance.stance]
-
-		if stance.stance == StanceScript.STAND and pace > 0.6:
-			# Walk, jog or run by the real speed, with a margin so the clip does not flicker at a limit; the playback speed keeps the
-			# stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
-			var current_clip: String = _avatar.current()
-			var jog_from: float = 2.2 if current_clip != "jog" and current_clip != "run" else 1.8
-			var run_from: float = 5.0 if current_clip != "run" else 4.4
-			clip = "run" if pace > run_from else ("jog" if pace > jog_from else "walk")
-
-		# A large log on the shoulder (Dave 2026-10-21): the carry clips replace idle and the gaits while standing.
+		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
+		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
-		if carrying:
-			clip = "carry_walk" if pace > 0.6 else "carry_idle"
+		if debug_clip != "":
+			clip = debug_clip
 
+		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
+		# swing and its impact frame is the moment held_item.gd sends the blow.
+		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0, "pick_stamp": items.pick_stamp if items != null else 0}, pace, delta)
+
+		if hook != "" and debug_clip == "":
+			clip = hook
+
+		var work: String = held.work_clip() if held != null else ""
+
+		if work != "" and _avatar.animation_player != null and _avatar.animation_player.has_animation(work):
+			clip = work
+
+			if held.swing_serial != _work_serial:
+				_work_serial = held.swing_serial
+				_avatar.animation_player.play(work, 0.05)
+				_avatar.animation_player.seek(0.0, true)
+
+		_avatar.set_meta("torch_in_hand", held != null and held.holding_torch())
 		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
 
-		_avatar.animation_player.speed_scale = clampf(pace / 1.1, 0.6, 1.5) if clip == "carry_walk" else clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 2.0) if clip == "run" else 1.0))
+		if _avatar.animation_player != null:
+			_avatar.animation_player.speed_scale = AvatarDriver.speed_scale(clip, pace)
 
-		# Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table).
-		var tilt: float = 0.0
+			if work != "" and clip == work and _avatar.animation_player.has_animation(work):
+				# The blow's impact frame is the sound and the hit (held_item.gd _strike): the clip runs the swing's length, whatever the tool or its speed.
+				_avatar.animation_player.speed_scale = _avatar.animation_player.get_animation(work).length / maxf(held.work_seconds(), 0.05)
 
-		if body.is_on_floor() and pace > 0.6 and clip != "idle":
-			var n: Vector3 = body.global_transform.basis.inverse() * body.get_floor_normal()
-			var angle: float = atan2(n.z, maxf(n.y, 0.1))
-			tilt = clampf(angle, -0.1, 0.44) if angle > 0.0 else clampf(angle * 0.4, -0.1, 0.0)
+		var tilt: float = AvatarDriver.slope_tilt(body.is_on_floor(), body.global_transform.basis.inverse() * body.get_floor_normal(), pace, clip)
 
 		_avatar.rotation.x = lerpf(_avatar.rotation.x, -tilt, minf(1.0, 6.0 * get_process_delta_time()))
+
+
+var _photo_saved: Dictionary = {}
+
+
+# K: into the photo view (the normal view is remembered) or back out (all of it restored: heading, pitch, roll, drawn camera and field of view).
+func _toggle_photo() -> void:
+	if not photo.active:
+		_photo_saved = PhotoCameraScript.snapshot(body, camera, view_cam, pitch)
+		photo.toggle(body.rotation.y)
+		return
+
+	photo.toggle(body.rotation.y)
+
+	if not _photo_saved.is_empty():
+		PhotoCameraScript.restore(_photo_saved, body, camera, view_cam)
+		pitch = float(_photo_saved["pitch"])
+
+		if _horizon != null:
+			_horizon.pitch_rad = pitch
+
+
+# The photo camera (K): drawn from where photo_camera.gd puts it, kept out of the ground and walls. Only the drawn camera moves.
+func _place_photo_camera(delta: float) -> void:
+	photo.raise(float(Input.is_key_pressed(KEY_PAGEUP)) - float(Input.is_key_pressed(KEY_PAGEDOWN)), delta)
+	photo.step(delta)
+	var focus: Vector3 = photo.focus_point(body.global_position)
+	var want: Vector3 = photo.camera_position(focus)
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(focus, want)
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+
+	if not hit.is_empty():
+		want = (hit["position"] as Vector3).move_toward(focus, VIEW_CLEAR_M)
+
+	want = photo.clamp_to_ground(want, _ground_below(want))
+	view_cam.top_level = true
+	view_cam.global_transform = Transform3D(photo.camera_basis(want, focus), want)
 
 
 # The plain ragdoll character (owner, 2026-10-21): body, head, arms, legs and hands, no features.
 # Stage-one clothing on the body (art/MODEL_PLAN.md): the worn body, legs and feet items colour the coat, trousers and shoes of the ragdoll
 # with their basic-look colour (data/items/looks.json); head, hands and back items have no look on the body yet.
 func _dress_avatar() -> void:
-	if _avatar == null or items == null:
-		return
-
-	var coat: Color = Color(0.4, 0.34, 0.28)
-	var trousers: Color = Color(0.25, 0.22, 0.2)
-	var shoes: Color = Color(0.14, 0.11, 0.09)
-
-	for number in items.worn:
-		if int(number) == 0:
-			continue
-
-		var id: String = items.table.id_of(int(number))
-		var slot: String = str(items.table.entry(id).get("slot", ""))
-		var def: Dictionary = BasicLookScript.entry(id)
-
-		if def.is_empty():
-			continue
-
-		var tint: Color = Color.html(str(def.get("color", "#808080")))
-
-		if slot == "body":
-			coat = tint
-		elif slot == "legs":
-			trousers = tint
-		elif slot == "feet":
-			shoes = tint
-
-	_avatar.dress(Color(0.78, 0.62, 0.5), coat, trousers, shoes)
-	WornSync.apply(_avatar, WornSync.ids_of(items.worn, items.table), false)   # Kathleen's worn pieces on the bones (the own avatar shows in third person only, so no first-person clipping)
+	AvatarDriver.dress(_avatar, items)
 
 
 func _make_avatar() -> Node3D:
-	var avatar: Node3D = RagdollScript.new()
+	# Dave's own body (1 Nov 2026) is the default; `--oldbody` or Esc > Settings > Gameplay > "Old body (next Play)" brings back the body worn before it (the generated body of
+	# src/client/character/, or the old ragdoll with `--old-body`).
+	var avatar: Node3D = MyCharacter.make_avatar()     # Dave's body, or the previous one when his glb is not imported (my_character.gd)
 	avatar.visible = false
 	return avatar
 
@@ -2880,6 +3050,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		if items != null and items.search_escape():
+			return
+
 		if items != null and items.screen_open():
 			items.close()
 			return
@@ -2904,7 +3077,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		return
 
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
+		photo.orbit(event.relative.x, event.relative.y)   # the camera swings round the character; the character does not turn
+	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		photo.zoom(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
 		body.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		pitch = clampf(pitch - event.relative.y * MOUSE_SENSITIVITY, -1.5, 1.5)
 		camera.rotation.x = pitch
@@ -2918,7 +3095,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and held != null and held.mouse_button(event.button_index, event.pressed):
 		pass
 	elif event is InputEventMouseButton and event.pressed:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if shot_lock else Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventKey and not event.pressed and event.keycode == KEY_E and items != null:
 		items.release_e()
 	elif event is InputEventKey and event.pressed and not event.echo:
@@ -2929,6 +3106,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				jogging = true
 
 			_last_w_msec = now
+		elif event.keycode == KEY_K:
+			_toggle_photo()
 		elif event.keycode == KEY_P and items != null:
 			items.toggle_auto_pickup()
 		elif event.keycode == KEY_SLASH:
@@ -2993,7 +3172,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				held.toggle_blueprints()   # a hammer in hand: its blueprint list
 		elif event.keycode == KEY_F:
 			if items != null and not flying:
-				items.open_container()   # Dave 2026-10-22: F opens the chest beside you (fly is G)
+				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
 		elif event.keycode == KEY_G:
 			flying = not flying
 			body.velocity = Vector3.ZERO
@@ -3127,7 +3306,7 @@ func _room_to_rise(target: int) -> bool:
 
 
 func _move_player(delta: float) -> void:
-	if menu_open or (cavein_death != null and cavein_death.active):
+	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
 		return
 
@@ -3139,7 +3318,10 @@ func _move_player(delta: float) -> void:
 	if items != null and items.screen_open():
 		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
 
-	var direction: Vector3 = body.global_transform.basis * input
+	var direction: Vector3 = photo.move_direction(input) if photo.active else body.global_transform.basis * input
+
+	if photo.active and input != Vector3.ZERO:   # in the photo view the character walks facing where it goes (the mouse never turns it)
+		body.rotation.y = lerp_angle(body.rotation.y, photo.facing_for(direction, body.rotation.y), clampf(delta * 10.0, 0.0, 1.0))
 
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
@@ -3564,6 +3746,9 @@ func _process(delta: float) -> void:
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
+
+	if critters != null and body != null and sound != null and sound.ambient != null:
+		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""

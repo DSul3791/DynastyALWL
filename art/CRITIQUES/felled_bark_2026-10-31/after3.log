@@ -1,0 +1,7 @@
+rig defaults: --gy 31.0 (was 28.0 until 24 Oct; the spawn ground is 31.0 in the current world, pass --gy 28 to repeat an old picture)
+shot runner: saved fell picture fell_before
+shot runner: saved fell picture fell_falling
+shot runner: saved fell picture fell_resting
+shot runner: saved fell picture stump_chop
+shot runner: saved fell picture stump_gone
+5368400 art/CRITIQUES/felled_bark_2026-10-31/after3/fell.png

@@ -48,13 +48,14 @@ extends RefCounted
 # Thread safe: chunk_items only reads.
 
 const KIND_TREE := 0
-const TREE_DENSITY := 2.0   # trees twice as many as the table's per-hectare figures
+const TREE_DENSITY := 4.6   # trees 2.6 times the table's per-hectare figures (was 2.0, raised in steps to reach the target; crowns cap the rest; Tyler's world_alive target 150 trees per hectare in temperate forest, 2026-10-31)
 const KIND_SHRUB := 1
 const KIND_PLANT := 2
 const KINDS := ["tree", "shrub", "plant"]
 const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 
 var generator
 var chunk_m: float = 256.0
@@ -70,6 +71,7 @@ var _patches: FastNoiseLite
 var _grove_seed: int = 0
 var _stand_seed: int = 0
 var _patch_seed: int = 0
+var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: the spawn point and every NPC marker (starter clearing)
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
@@ -88,6 +90,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_grove_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_groves")
 	_stand_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_stands")
 	_patch_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_patches")
+	_clearings = _starter_clearings()
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
 	_soil_growth.resize(256)
@@ -110,7 +113,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		_by_biome[n] = []
 
 	for entry in tables.get_entries("flora"):
-		if entry.get("retired", false):
+		if entry.get("retired", false) or entry.get("future", false):   # a future row has no model yet: never placed
 			continue
 
 		var per_biome: PackedFloat32Array = PackedFloat32Array()
@@ -168,6 +171,18 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"montane": bool(entry.get("montane", false)),
 		}
 
+		# Shore species (reeds, riverbraid, alder...): in the listed biomes (all when none are listed) they only stand within within_m of inland water.
+		if entry.has("shore"):
+			var shore_rule: Dictionary = entry["shore"]
+			var shore_mask: PackedByteArray = PackedByteArray()
+			shore_mask.resize(256)
+
+			for name in shore_rule.get("biomes", []):
+				if biome_ids.has(name):
+					shore_mask[biome_ids[name]] = 1
+
+			item["shore"] = {"within_m": float(shore_rule.get("within_m", 14.0)), "all_biomes": not shore_rule.has("biomes"), "mask": shore_mask}
+
 		if entry.has("stand"):
 			var stand: Dictionary = entry["stand"]
 			item["stand"] = {
@@ -219,6 +234,11 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				"scale_max": scales.y,
 				"spacing_m": maxf(float(patch.get("spacing_m", 0.8)), PLANT_MIN_GAP),
 				"fill": float(patch.get("fill", 1.0)),
+				# by_biome: a plant of the patch is kept with the biome's per_hectare share of the species' best biome (tall grass: dense in meadows, sparser in woods).
+				"by_biome": bool(patch.get("by_biome", false)),
+				# A second ring of shorter plants round the clump (tall grass: 25 to 40 stems in about 2 m and 8 shorter ones round them).
+				"ring_count": clampi(int(patch.get("ring_count", 0)), 0, 12),
+				"ring_scale": float(patch.get("ring_scale", 0.7)),
 			}
 
 		if entry.has("young_height_m"):
@@ -242,6 +262,35 @@ func species_of(id: int) -> Dictionary:
 
 func species_by_id(species_id: int) -> Dictionary:
 	return _by_id.get(species_id, {})
+
+
+# The starter clearing (a new player must not wake up inside a thicket, NPC markers must not stand in a flora collider; Sonny's test_spawn_dry):
+# no tree or shrub within CLEAR_SPAWN_M of the spawn point or CLEAR_MARKER_M of any NPC marker, thinning out over the next CLEAR_SOFT_M so the wood
+# comes back gradually. The spawn is src/shared/spawn_point.gd, the markers data/npcs/markers.json (the same files the server reads). Plants stay.
+func _starter_clearings() -> Array:
+	var list: Array = [[SpawnPointScript.OVERRIDE, CLEAR_SPAWN_M, CLEAR_SOFT_M]]
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json")) if FileAccess.file_exists("res://data/npcs/markers.json") else null
+
+	if typeof(parsed) == TYPE_DICTIONARY:
+		for marker in (parsed as Dictionary).get("markers", []):
+			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
+
+	return list
+
+
+# True when a tree or shrub at this spot is kept out by a starter clearing: inside the core always, in the soft edge with a stable chance that
+# grows with the distance from the core.
+func _cleared_at(x: float, z: float, species_id: int) -> bool:
+	for c in _clearings:
+		var d: float = Vector2(x, z).distance_to(c[0]) - float(c[1])
+
+		if d >= float(c[2]):
+			continue
+
+		if d < 0.0 or rng_pick(x, z, species_id + 211) >= d / float(c[2]):
+			return true
+
+	return false
 
 
 # The chunk holding a world position (wrapped).
@@ -362,6 +411,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				if is_nan(y):
 					continue
 
+				if item.has("shore") and not _shore_ok(item, data, k, x, z):
+					continue
+
 				# Evergreens hold the ridges and dry heights; hardwoods take the valleys
 				# and fields and crowd the evergreens out (80/20 either way).
 				var slope: float = _slope_at(data, x, z)
@@ -459,17 +511,27 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if item["montane"]:
 				_montane_cells(item, data, chunk, origin, species_id, rng, found, stand_used)
 
+	_orchard_items(origin, data, found)
+
 	# Landmark trees first, then grown trees, young trees, shrubs and plants;
 	# within a tier by species and cell, so the result never changes.
 	found.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and (a[1] < b[1] or (a[1] == b[1] and a[2] < b[2]))))
 	var occupied: Dictionary = {}       # occupancy cell -> Array of [x, z, spacing radius, stand spacing, species]
 	var canopies: Dictionary = {}       # occupancy cell -> Array of [x, z, canopy radius, dense]
 
+	var clearings_here: bool = false
+
+	for c in _clearings:
+		clearings_here = clearings_here or (Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(c[0]) < chunk_m * 0.75 + float(c[1]) + float(c[2]))
+
 	for f in found:
 		var item: Dictionary = _by_id[f[1]]
 		var x: float = f[3]
 		var z: float = f[5]
 		var height: float = f[6]
+
+		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
+			continue
 
 		if item["kind"] != KIND_PLANT:
 			# Young trees need light: none under a dense crown; under a light one
@@ -478,6 +540,10 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				var shade: int = _shade_at(canopies, x, z)
 
 				if shade == 2 or (shade == 1 and not item["tolerant"] and rng_pick(x + 3.0, z + 9.0, f[1]) >= 0.4):
+					continue
+
+				# Young conifers come in nurseries and under their parents, never one by one in the middle of a meadow (Dave 2026-10-31).
+				if item["kind"] == KIND_TREE and item["shape"] == "conifer" and not _nursery_at(x, z) and not _parent_near(canopies, x, z):
 					continue
 
 			if not _make_room(occupied, x, z, spacing_radius(item, height), f[8], f[1], item["kind"]):
@@ -520,9 +586,23 @@ const LEDGE_MAX_SLOPE := 0.30   # a ledge: the surface within 1.5 m is flatter t
 const LEDGE_CHANCE := 0.3       # share of ledge spots that grow something
 const MONTANE_PATCH_M := 30.0   # size of the squares that are or are not a low evergreen patch
 const MONTANE_PATCH_SHARE := 0.7   # (was 0.4) a thicker evergreen belt on the hill ground
+const NURSERY_EVERY_M := 60.0   # young-conifer nurseries: one grid square in NURSERY_CHANCE holds one
+const NURSERY_CHANCE := 0.25
+const NURSERY_RADIUS_M := [6.0, 12.0]
+const PARENT_REACH_M := 3.0     # a young conifer outside a nursery needs a grown crown this close
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
-const PATCH_MAX_PLANTS := 20   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
+const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
+const SHRUB_BLOCK_HEIGHT_M := 0.9   # a shrub this tall or taller stops the player (step-up limit 0.5 m plus margin); lower ones are stepped over
+const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
+const CLUMP_MIN_COLLIDER := 4       # four or more tall shrubs of one patch share one collider
+const CLUMP_COLLIDER_MAX_M := 3.0   # its radius never above this
+const SHRUB_COLLIDER_MIN_M := 0.22
+const SHRUB_COLLIDER_MAX_M := 0.5
+const ORCHARD_MAX_SLOPE := 0.2     # the starter orchard stands on ground gentler than this (rise over run)
+const CLEAR_SPAWN_M := 10.0         # no tree or shrub this close to the spawn point
+const CLEAR_MARKER_M := 6.0         # ... or this close to an NPC marker
+const CLEAR_SOFT_M := 5.0           # and the wood thins back in over this much more
 const SHRUB_TRUNK_GAP := 1.0   # a shrub tucks in under a tree, but not against its trunk
 
 
@@ -596,6 +676,93 @@ func _montane_cells(item: Dictionary, data, chunk: Vector2i, origin: Vector2, sp
 
 					var height: float = lerpf(0.9, 3.2, size)
 					found.append([_tier(item, height), species_id, STAND_BASE + index, x, y, z, height, yaw, spacing])
+
+
+# A shore species (flora.json "shore": within_m, optional biomes) stands only within within_m of inland water in its listed biomes
+# (water cells of the tile or the settled water); elsewhere it is not restricted. Probed on three rings of eight directions.
+func _shore_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
+	var shore: Dictionary = item["shore"]
+
+	if not shore["all_biomes"] and shore["mask"][data.biome[k]] == 0:
+		return true
+
+	var reach: float = shore["within_m"]
+	var sim: PackedFloat32Array = data.sim_snapshot()
+
+	for step in range(1, 4):
+		var r: float = reach * float(step) / 3.0
+
+		for a in range(8):
+			var ang: float = TAU * float(a) / 8.0
+			var j: int = data.nearest(x + cos(ang) * r, z + sin(ang) * r)
+
+			if (data.water_class[j] > 1 and not is_nan(data.water_surface[j])) or (not sim.is_empty() and not is_nan(sim[j])):
+				return true
+
+	return false
+
+
+# The starter orchard (Dave 2026-10-31: fruit to pick near the spawn): ORCHARD_COLS x ORCHARD_ROWS fruit trees in rows ORCHARD_OFFSET metres from the spawn point (the shared
+# spawn_point.gd), early and summer varieties on the near rows so something is in season at the start of the world. Planted on dry gentle ground (orchard_ground_ok), item numbers
+# ORCHARD_BASE + n (the species id is part of the item id, and no wild stand or patch of these species exists), stable from the table and the spawn point alone; they claim their ground
+# first (the landmark tier), so the wild wood makes room for the rows.
+const ORCHARD_OFFSET := Vector2(60.0, 45.0)
+const ORCHARD_COLS := 4
+const ORCHARD_ROWS := 3
+const ORCHARD_BASE := 65500
+const ORCHARD_TREES := [
+	"apple_early", "apple_summer", "apple_early", "apple_summer",
+	"pear_summer", "sour_cherry", "pear_summer", "sour_cherry",
+	"apple_autumn", "apple_cooking", "apple_keeping", "plum",
+]
+
+
+# World positions of the orchard's trees: [index, species name, x, z].
+static func orchard_places() -> Array:
+	var places: Array = []
+	var centre: Vector2 = SpawnPointScript.OVERRIDE + ORCHARD_OFFSET
+
+	for row in range(ORCHARD_ROWS):
+		for col in range(ORCHARD_COLS):
+			var n: int = row * ORCHARD_COLS + col
+			places.append([n, ORCHARD_TREES[n], centre.x + (float(col) - 0.5 * float(ORCHARD_COLS - 1)) * 7.0, centre.y + (float(row) - 0.5 * float(ORCHARD_ROWS - 1)) * 8.0])
+
+	return places
+
+
+# Adds the orchard trees that stand in this chunk to `found`.
+func _orchard_items(origin: Vector2, data, found: Array) -> void:
+	for place in orchard_places():
+		var x: float = place[2]
+		var z: float = place[3]
+
+		if x < origin.x or z < origin.y or x >= origin.x + chunk_m or z >= origin.y + chunk_m:
+			continue
+
+		var item: Dictionary = {}
+
+		for sp in species:
+			if sp["name"] == place[1]:
+				item = sp
+
+		if item.is_empty():
+			continue
+
+		var k: int = data.nearest(x, z)
+
+		if not orchard_ground_ok(item, data, k, x, z):
+			continue
+
+		var height: float = lerpf(float(item["height_min"]), float(item["height_max"]), 0.45 + 0.4 * rng_pick(x, z, int(item["id"])))
+		found.append([TIER_FIRST, int(item["id"]), ORCHARD_BASE + int(place[0]), x, generator.surface_height(x, z), z, height, rng_pick(x + 3.0, z + 5.0, int(item["id"])) * TAU, 0.0])
+
+
+# Ground for the starter orchard: dry and gentle ground away from water. Moisture and altitude are not asked (an orchard is planted where it is dry and flat, the wild rules do not apply).
+func orchard_ground_ok(item: Dictionary, data, k: int, x: float, z: float) -> bool:
+	if int(data.water_class[k]) > 1 or _near_water(data, x, z) or _slope_at(data, x, z) > ORCHARD_MAX_SLOPE:
+		return false
+
+	return not is_nan(generator.surface_height(x, z)) and generator.surface_height(x, z) > SEA_LEVEL_M + WET_FOOT_M * 4.0
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
@@ -681,6 +848,29 @@ static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int
 	return maxf(minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL), MIN_TREE_GAP)
 
 
+# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker. Shrubs: none while the
+# plant is lower than SHRUB_BLOCK_HEIGHT_M (the player's step-up limit of 0.5 m, data/movement.json, plus a margin: it is walked over
+# or through), else a thin cylinder on the stem base, never the leaf spread (no invisible wall at the leaf edge). Plants: none.
+static func collider_radius(kind: int, trunk_m: float, size_scale: float, height: float) -> float:
+	if kind == KIND_TREE:
+		return trunk_m * size_scale if trunk_m >= 0.1 else 0.0
+
+	if kind == KIND_SHRUB and height >= SHRUB_BLOCK_HEIGHT_M:
+		return clampf(0.16 + 0.07 * height, SHRUB_COLLIDER_MIN_M, SHRUB_COLLIDER_MAX_M)
+
+	return 0.0
+
+
+# A fallen log or hollow log's collider: (radius, length) of a capsule lying along the model's x axis (the model is centred on the item), or
+# Vector2.ZERO for none. Only logs of LOG_COLLIDER_MIN_M and more block; shorter ones are walk-through. The radius is the one the model is
+# built with (tree_builder _fallen_log), so a log whose top (twice the radius) is under the player's 0.5 m step-up is stepped onto.
+static func log_collider(length: float, crown: float) -> Vector2:
+	if length < LOG_COLLIDER_MIN_M:
+		return Vector2.ZERO
+
+	return Vector2(clampf(maxf(crown * 0.12, length * 0.075), 0.14, 0.45), length)
+
+
 # 2 under a dense crown, 1 under a light one, 0 in the open.
 func _shade_at(canopies: Dictionary, x: float, z: float) -> int:
 	var ci: int = int(floor(x / OCCUPANCY_CELL))
@@ -694,6 +884,43 @@ func _shade_at(canopies: Dictionary, x: float, z: float) -> int:
 					shade = maxi(shade, c[3])
 
 	return shade
+
+
+# A young-conifer nursery: a patch on a world grid (NURSERY_EVERY_M squares, one in NURSERY_CHANCE of them, a jittered centre, a radius of NURSERY_RADIUS_M), the same whatever chunk asks.
+func _nursery_at(x: float, z: float) -> bool:
+	var gi: int = int(floor(x / NURSERY_EVERY_M))
+	var gj: int = int(floor(z / NURSERY_EVERY_M))
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			var h: int = _mix(_stand_seed, gi + di, gj + dj, 977)
+
+			if float(h % 10007) / 10007.0 >= NURSERY_CHANCE:
+				continue
+
+			var centre: Vector2 = Vector2((float(gi + di) + float((h >> 8) % 1000) / 1000.0) * NURSERY_EVERY_M, (float(gj + dj) + float((h >> 18) % 1000) / 1000.0) * NURSERY_EVERY_M)
+			var radius: float = NURSERY_RADIUS_M[0] + (NURSERY_RADIUS_M[1] - NURSERY_RADIUS_M[0]) * float((h >> 28) % 100) / 100.0
+
+			if Vector2(x - centre.x, z - centre.y).length_squared() < radius * radius:
+				return true
+
+	return false
+
+
+# Is a grown tree's crown within PARENT_REACH_M of the spot (so a young conifer stands under or beside a parent)?
+func _parent_near(canopies: Dictionary, x: float, z: float) -> bool:
+	var ci: int = int(floor(x / OCCUPANCY_CELL))
+	var cj: int = int(floor(z / OCCUPANCY_CELL))
+
+	for dj in range(-1, 2):
+		for di in range(-1, 2):
+			for c in canopies.get(Vector2i(ci + di, cj + dj), []):
+				var reach: float = c[2] + PARENT_REACH_M
+
+				if Vector2(x - c[0], z - c[1]).length_squared() < reach * reach:
+					return true
+
+	return false
 
 
 # The groves of a grove species that can reach the chunk at `origin`: [center, radius] pairs.
@@ -771,12 +998,21 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 			if center.x + radius < origin.x or center.x - radius > origin.x + chunk_m or center.y + radius < origin.y or center.y - radius > origin.y + chunk_m:
 				continue
 
-			var plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
+			# by_biome decides for the whole patch (at its centre), not plant by plant, so a thicket is never thinned into single bushes.
+			if patch["by_biome"]:
+				var centre_k: int = data.nearest(center.x, center.y)
+
+				if float((h >> 4) % 1000) / 1000.0 >= per_biome[data.biome[centre_k]] / float(item["peak"]):
+					continue
+
+			var main_plants: int = int(round(lerpf(float(patch["count_min"]), float(patch["count_max"]), fn)))
+			var plants: int = main_plants + int(patch["ring_count"])
 
 			for n in range(plants):
 				rng.seed = _mix(_patch_seed, gi * 31 + n, gj, species_id + 977)
 				var angle: float = rng.randf() * TAU
-				var distance: float = sqrt(rng.randf()) * radius
+				var ring: bool = n >= main_plants
+				var distance: float = sqrt(rng.randf()) * radius if not ring else radius * (1.25 + 0.6 * rng.randf())
 				var size: float = rng.randf()
 				var yaw: float = rng.randf() * TAU
 				var keep: float = rng.randf()
@@ -799,7 +1035,7 @@ func _place_patches(item: Dictionary, data, _chunk: Vector2i, origin: Vector2, s
 				if is_nan(y):
 					continue
 
-				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale
+				var height: float = lerpf(item["height_min"], item["height_max"], size) * scale * (float(patch["ring_scale"]) if ring else 1.0)
 				found.append([_tier(item, height), species_id, STAND_BASE + slot * PATCH_MAX_PLANTS + n, x, y, z, height, yaw, float(patch["spacing_m"]) * scale])
 
 

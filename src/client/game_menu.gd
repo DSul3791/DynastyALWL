@@ -6,6 +6,8 @@ extends RefCounted
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
+const WaterChoice := preload("res://src/water2/water_choice.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const SHOW_ADMIN := true
 const PANEL := Color(0.075, 0.08, 0.09, 1.0)
@@ -26,6 +28,8 @@ var _voice_switch
 var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
+var _old_body_switch
+var _old_water_switch
 var _admin_mode_switch
 var _cave_button: Button
 var _sound_list: VBoxContainer
@@ -179,12 +183,23 @@ func _build_main() -> void:
 func _build_controls() -> void:
 	var controls: VBoxContainer = _page("controls")
 	var text: Label = Label.new()
-	text.text = _c.HELP_TEXT
+	text.text = _c.HELP_TEXT + "
+
+This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 	text.add_theme_font_size_override("font_size", 26)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(1500.0, 0.0)
 	controls.add_child(text)
 	_button(controls, "Back", func(): show_page("main"))
+
+
+const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
+var _idle_button: Button
+
+
+func _refresh_idle_button() -> void:
+	if _idle_button != null:
+		_idle_button.text = "Idle timeout: %d min (change)   closes after a 60 s warning" % _c.display.idle_minutes
 
 
 func _build_settings() -> void:
@@ -272,9 +287,24 @@ func _build_sound() -> void:
 
 func _build_gameplay() -> void:
 	var gameplay: VBoxContainer = _page("gameplay")
+	_idle_button = _button(gameplay, "", func():
+		_c.display.idle_minutes = IdleTimeoutScript.next_step(_c.display.idle_minutes)
+		_c.set_idle_minutes(_c.display.idle_minutes)
+		_c._save_display()
+		_refresh_idle_button()
+		note.text = "Idle timeout: the game closes after %d minutes without the mouse or a key (saved)." % _c.display.idle_minutes)
+	_refresh_idle_button()
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))
+	_old_water_switch = _switch_row(gameplay, "Old water (next Play)", func(on: bool):
+		WaterChoice.set_old_water(on)
+		note.text = "Water: the %s water runs the next time you press Play (saved)." % ("old" if on else "new"))
+	_old_water_switch.set_on(WaterChoice.old_water())
+	_old_body_switch = _switch_row(gameplay, "Old body (next Play)", func(on: bool):
+		MyCharacter.set_old_body(on)
+		note.text = "Body: the %s body is worn the next time you press Play (saved)." % ("old" if on else "Dynasty"))
+	_old_body_switch.set_on(MyCharacter.old_body())
 	_tunnel_switch = _switch_row(gameplay, "Tunnel collapse (admin)", func(on: bool):
 		_c.net.tunnel_setting.rpc_id(1, on, _c.tunnel_cave_in_s))
 	_cave_button = _button(gameplay, "Cave-in time", func():

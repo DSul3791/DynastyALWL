@@ -1,0 +1,3 @@
+# Bronze tools, clay jug, candle (guide F-18), 2026-10-31, Kathleen
+Bronze pickaxe, axe, hammer, knife: the stone tool shapes with a bronze head (bits "bronze"): the head keeps its own warm gold-brown instead of the stone grey; sheet: round1.png (bronze next to the stone pick and axe). Clay jug (new shape jug: belly, neck, flared lip, loop handle, foot) and candle (new shape candle: tapering cream column, drips, wick, flame with bits "lit"; held upright via HELD_LOOK_TURN). The chopping block already has its model (BuildingLook.block_mesh).
+Ratings: bronze pick 3, axe 3, hammer 3 (head lumpy), knife 2-3 (tiny), jug 3 (top view only), candle 2-3. Gold reads a little bright on the sheet. Not seen in the real game or in hand.

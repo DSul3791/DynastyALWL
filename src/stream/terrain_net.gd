@@ -21,6 +21,7 @@ extends Node
 #   server -> client  flora_cut        a flora item was removed
 #   server -> client  vent             the nearest volcanic vent within 1500 m (x, y, z), or INF when none: the volcano rumble bed sits there
 #   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
+#   server -> client  flora_fruit      fruit trees of a chunk: pieces taken from each this season (the prompt shows what is left)
 #   server -> client  flora_stripped   plants of a chunk that are bare this season (berries picked): sent with a flora chunk and when one is picked
 #   client -> server  hello             the player's key, once after the welcome (inventory belongs to the key)
 #   client -> server  inventory_action  move, drop, pick up or (admin) give: the server checks everything
@@ -31,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 79
+const PROTOCOL_VERSION := 83
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -46,6 +47,7 @@ signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal flora_cut_received(chunk: Vector2i, id: int)
 signal flora_stripped_received(chunk: Vector2i, ids: PackedInt32Array)
+signal flora_fruit_received(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array)
 signal zone_received(biome_id: int)
 signal vent_received(at: Vector3)
 signal water_rate_requested(peer_id: int, direction: int)
@@ -87,12 +89,15 @@ signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: Stri
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
+signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
+signal final_death_received(cause: String)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
 signal strain_received(strain_pm: int, state: int, fade_pm: int, stance: int)
 signal hello_requested(peer_id: int, player_key: String)
+signal forget_requested(peer_id: int, player_key: String)
 signal logout_requested(peer_id: int)
 signal tunnel_setting_requested(peer_id: int, on: bool, cave_in_s: int)
 signal tunnel_settings_received(on: bool, cave_in_s: int)
@@ -135,6 +140,12 @@ const ACT_UNWEAR := 29    # a = body slot index (data/items/clothing.json slots)
 const ACT_REPAIR := 13    # a = slot of a worn or broken tool: spend its repair materials, win back half its durability
 const ACT_FUEL := 11      # a = fire world id: burn one stick (or a log) in the fire
 const ACT_COOK := 12      # a = fire world id: roast one raw forage item at the fire
+const ACT_GATHER_EDGE := 54  # at = the player's spot: take sea water into a container, or the tide-line node of the cell (data/items/shore_nodes.json)
+const ACT_SET_SPAWN := 55   # a = a placed bed's world id: the bed becomes this character's spawn point (Dave 31 Oct 2026); the old one is unset
+const ACT_TILL := 50       # at = the ground point: one hoe stroke tills a metre into a tilled bed (FARMING_SPEC.md step 2)
+const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
+const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
+const ACT_WATER_BED := 53  # a = the bed's world id: pours one `water` from the pack on it (step 4)
 const ACT_HOE_PATH := 36     # at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)
 const ACT_HOE_SMOOTH := 37   # at = the ground point under the crosshair: one hoe stroke moves ground from the high spots to the low spots within 1.5 m
 const ACT_HOE_GRADE_POINT := 42   # a = 0 sets point A, 1 sets point B (the hoe grade line), at = the ground point: the server remembers the point for this player
@@ -142,6 +153,7 @@ const ACT_HOE_GRADE := 43    # at = the ground point under the crosshair: one ho
 const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (clamped by the server), at = aim direction: one arrow from the first arrow item in the pack (data/items/bow.json; protocol 79, taken at merge)
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
+const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
 const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
@@ -218,6 +230,12 @@ func flora_cut(chunk: Vector2i, id: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
 	flora_stripped_received.emit(chunk, ids)
+
+
+# Fruit trees: how many pieces were taken from each of these trees this season (sent with a flora chunk and after every pick).
+@rpc("authority", "call_remote", "reliable")
+func flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	flora_fruit_received.emit(chunk, ids, taken)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -352,6 +370,13 @@ func hello(player_key: String) -> void:
 		hello_requested.emit(multiplayer.get_remote_sender_id(), player_key)
 
 
+# Protocol 82: the client deleted a character; the server drops that character's record (inventory, vitals, learned recipes, goals). After hello only.
+@rpc("any_peer", "call_remote", "reliable")
+func forget_character(player_key: String) -> void:
+	if multiplayer.is_server() and player_key.length() <= 64:
+		forget_requested.emit(multiplayer.get_remote_sender_id(), player_key)
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func inventory_action(kind: int, a: int, b: int, count: int, at: Vector3) -> void:
 	if multiplayer.is_server():
@@ -408,6 +433,13 @@ func vitals(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, f
 @rpc("authority", "call_remote", "reliable")
 func died(cause: String, spawn: Vector3) -> void:
 	died_received.emit(cause, spawn)
+
+
+# A death with no return (protocol 83, data/items/death.json real_death): the server does not bring the character back; the client shows the death screen. Also sent at hello
+# to a character that is already dead.
+@rpc("authority", "call_remote", "reliable")
+func final_death(cause: String) -> void:
+	final_death_received.emit(cause)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
@@ -505,6 +537,12 @@ func limp(percent: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func body(bpm: int, eta_s: int, phase: int) -> void:
 	body_received.emit(bpm, eta_s, phase)
+
+
+# Comfort level and the Rested buff (protocol 80, docs/COMFORT_DESIGN.md): at hello and whenever the level, the buff's level or its whole minutes left change. rested_level 0 = no buff.
+@rpc("authority", "call_remote", "reliable")
+func comfort(level: int, rested_level: int, rested_minutes: int, tip: String) -> void:
+	comfort_received.emit(level, rested_level, rested_minutes, tip)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.

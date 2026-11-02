@@ -170,8 +170,12 @@ func _init() -> void:
 	check(pot_id(fourth) < 0, "a bonfire is too big for a pot")
 	fourth._items[ids_with(fourth, "fire")[0]]["fire"]["state"] = 1
 	place(fourth, "campfire_pot_kit", Vector3(404.5, 10.0, 400.2))
+	check(pot_id(fourth) < 0, "a pot will not hang on a fire that still holds logs")
+	fourth._fire_wood(fourth._items[ids_with(fourth, "fire")[0]]["fire"])["log"] = 0.0
+	place(fourth, "campfire_pot_kit", Vector3(404.5, 10.0, 400.2))
 	check(pot_id(fourth) >= 0, "a campfire (firewood stage) takes a pot")
 	fourth._items[ids_with(fourth, "fire")[0]]["fire"]["state"] = 41
+	fourth._fire_wood(fourth._items[ids_with(fourth, "fire")[0]]["fire"])["log"] = 5.0   # an old save: logs already in the fire under a pot
 	fourth._refresh_pots()
 	check(int(fourth._items[ids_with(fourth, "fire")[0]]["fire"]["state"]) == 1, "a pot put on a bigger fire steps it down to firewood")
 

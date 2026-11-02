@@ -4,6 +4,7 @@ extends RefCounted
 # 2.5 m with four short posts. Each piece is solid (a StaticBody3D box) so you walk round a wall and stand on a floor. Pieces turn in
 # quarter circles and sit on a 1 m grid (placement_rules.gd snap), so neighbours meet edge to edge.
 
+const RockLook := preload("res://src/client/rock_look.gd")
 const WOOD := Color(0.5, 0.36, 0.21)
 const WOOD_DARK := Color(0.3, 0.2, 0.11)
 const TEX := 128                 # texture side in pixels: small and cheap at every quality setting
@@ -20,6 +21,10 @@ static var _thatch: StandardMaterial3D
 static var _clay: StandardMaterial3D
 static var _pot: StandardMaterial3D
 static var _meshes: Dictionary = {}      # shared log meshes by variant key, built once
+static var _blocks: StandardMaterial3D        # cut stone blocks, 40 by 20 cm with clay mortar
+static var _bricks: StandardMaterial3D        # fired brick, 22 by 7 cm with pale mortar
+static var _logs: StandardMaterial3D          # whole logs stacked, bark on
+static var _daub: StandardMaterial3D          # clay plaster over woven sticks
 
 
 # Boards from a little noise, drawn once: `boards` boards across, dark seams between them, long grain along y, a per-board tint, a few knots.
@@ -92,12 +97,123 @@ static func _blocks_material(base: Color, blocks: int, seed_value: int, mottle: 
 	return m
 
 
+# Courses of cut units with mortar joints, drawn once. `unit_w` by `row_h` pixels per unit (joints included), staggered by half a unit each row.
+static func _masonry_material(base: Color, mortar: Color, unit_w: int, row_h: int, seed_value: int, mottle: float, scale: float) -> StandardMaterial3D:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = seed_value
+	noise.frequency = 0.12
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
+	var tint: Dictionary = {}
+
+	for y in TEX:
+		var row: int = floori(float(y) / float(row_h))
+		var offset: int = (row % 2) * floori(float(unit_w) * 0.5)
+
+		for x in TEX:
+			var col: int = floori(float(x + offset) / float(unit_w))
+			var key: int = row * 64 + col
+
+			if not tint.has(key):
+				tint[key] = rng.randf_range(1.0 - mottle, 1.0 + mottle * 0.6)
+
+			var shade: float = float(tint[key]) * (0.92 + 0.16 * (noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5))
+			var colour: Color = Color(base.r * shade, base.g * shade, base.b * shade)
+
+			if (y % row_h) <= 1 or ((x + offset) % unit_w) <= 1:
+				colour = mortar
+
+			image.set_pixel(x, y, colour)
+
+	image.generate_mipmaps()
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(scale, scale, scale)
+	return m
+
+
+# Straw, logs or plaster by `style`: thatch = long strands in bound rows, logs = horizontal rounds shaded like cylinders, daub = mottled plaster with sticks.
+static func _organic_material(style: String, base: Color, seed_value: int, scale: float) -> StandardMaterial3D:
+	var noise: FastNoiseLite = FastNoiseLite.new()
+	noise.seed = seed_value
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
+	var log_h: int = 21
+
+	for y in TEX:
+		for x in TEX:
+			var shade: float = 1.0
+
+			match style:
+				"thatch":
+					noise.frequency = 0.9
+					shade = 0.7 + 0.5 * (noise.get_noise_2d(float(x) * 1.6, float(y) * 0.12) * 0.5 + 0.5)
+
+					if y % 16 <= 1:
+						shade *= 0.55                    # the binding at each row
+				"logs":
+					noise.frequency = 0.4
+					var across: float = float(y % log_h) / float(log_h)
+					shade = (0.55 + 0.5 * sin(across * PI)) * (0.85 + 0.3 * (noise.get_noise_2d(float(x) * 0.25, float(y) * 2.0) * 0.5 + 0.5))
+
+					if y % log_h <= 1:
+						shade *= 0.4                     # the gap between two logs
+				_:
+					noise.frequency = 0.07
+					shade = 0.85 + 0.3 * (noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5) + rng.randf_range(-0.04, 0.04)
+
+			image.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
+
+	image.generate_mipmaps()
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(scale, scale, scale)
+	return m
+
+
 static func _textured(base: Color, boards: int, seed_value: int, knots: bool) -> StandardMaterial3D:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
 	m.albedo_texture = _board_texture(base, boards, seed_value, knots)
 	m.roughness = 1.0
 	m.uv1_triplanar = true                       # object space: the boards turn with the piece, one tile per 2 m
 	m.uv1_scale = Vector3(0.5, 0.5, 0.5)
+	return m
+
+
+# Straw (Mike's picture 24 Oct: the thatch read as golden planks): fine uneven strands running across the piece, each its own shade, a few dark gaps and bright ends.
+static func _straw(base: Color, seed_value: int) -> StandardMaterial3D:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var image: Image = Image.create(TEX, TEX, true, Image.FORMAT_RGB8)
+	var strand: PackedFloat32Array = PackedFloat32Array()
+
+	for y in TEX:
+		strand.append(rng.randf_range(0.7, 1.25))
+
+	for y in TEX:
+		for x in TEX:
+			var shade: float = strand[y] * (0.9 + 0.2 * sin(float(x) * 0.35 + float(y) * 1.7)) + rng.randf_range(-0.08, 0.08)
+
+			if rng.randf() < 0.012:
+				shade *= 0.45         # a dark gap between bundles
+
+			if rng.randf() < 0.01:
+				shade *= 1.3          # a bright straw end
+
+			image.set_pixel(x, y, Color(clampf(base.r * shade, 0.0, 1.0), clampf(base.g * shade, 0.0, 1.0), clampf(base.b * shade, 0.0, 1.0)))
+
+	image.generate_mipmaps()
+	var m: StandardMaterial3D = StandardMaterial3D.new()
+	m.albedo_texture = ImageTexture.create_from_image(image)
+	m.roughness = 1.0
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(1.2, 1.2, 1.2)
 	return m
 
 
@@ -116,9 +232,41 @@ static func _materials() -> void:
 	_steel.metallic = 0.7
 	_steel.roughness = 0.45
 	_log = _textured(Color(0.42, 0.29, 0.17), 1, 71, false)              # bark-brown round logs
-	_thatch = _textured(Color(0.72, 0.6, 0.3), 14, 83, false)            # straw bundles: many thin horizontal courses, golden
+	_thatch = _straw(Color(0.74, 0.6, 0.3), 83)                           # straw: many fine strands, uneven, with dark gaps between bundles
 	_clay = _blocks_material(Color(0.58, 0.36, 0.24), 1, 91, 0.3)        # fired clay: warm, mottled, no seams
 	_pot = _blocks_material(Color(0.1, 0.09, 0.085), 1, 97, 0.2)         # blackened clay or iron pot
+	_blocks = _masonry_material(Color(0.52, 0.5, 0.46), Color(0.45, 0.38, 0.28), 26, 13, 61, 0.14, 0.5)     # tile 2 m: 40 by 20 cm blocks
+	_bricks = _masonry_material(Color(0.62, 0.3, 0.2), Color(0.72, 0.7, 0.66), 28, 10, 67, 0.12, 1.0)       # tile 1 m: 22 by 7 cm bricks
+	_logs = _organic_material("logs", Color(0.4, 0.28, 0.16), 73, 0.5)       # 30 cm rounds
+	_daub = _organic_material("daub", Color(0.74, 0.64, 0.48), 79, 0.5)
+
+
+# The surfaces a piece can be built in (BUILDING_PLAN.md): wood (the default), log, daub, stone (cut blocks), brick, thatch (a roof only).
+# `part` is "wall", "floor", "roof" or "frame"; a material that does not suit a part falls back to wood.
+static func skin(part: String, material: String) -> StandardMaterial3D:
+	_materials()
+
+	match [part, material]:
+		["wall", "log"]:
+			return _logs
+		["wall", "daub"], ["wall", "thatch"]:
+			return _daub
+		["wall", "stone"]:
+			return _blocks
+		["wall", "brick"]:
+			return _bricks
+		["floor", "stone"]:
+			return _blocks
+		["floor", "brick"]:
+			return _bricks
+		["roof", "thatch"]:
+			return _thatch
+		["frame", "stone"], ["frame", "brick"]:
+			return _blocks
+		["frame", "log"]:
+			return _logs
+
+	return {"wall": _planks, "floor": _planks, "roof": _roof, "frame": _frame}.get(part, _planks)
 
 
 static func _box(parent: Node3D, size: Vector3, at: Vector3, material: StandardMaterial3D) -> void:
@@ -143,24 +291,24 @@ static func _solid(parent: Node3D, size: Vector3, at: Vector3) -> void:
 
 
 # 2 m wide along X, 0.2 m thick, 2.4 m high, with a frame post at each end and a rail across the top.
-static func wall() -> Node3D:
+static func wall(mat: String = "wood") -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(2.0, 2.4, 0.14), Vector3(0.0, 1.2, 0.0), _planks)
+	_box(root, Vector3(2.0, 2.4, 0.14), Vector3(0.0, 1.2, 0.0), skin("wall", mat))
 
 	for x in [-0.95, 0.95]:
-		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), _frame)
+		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), skin("frame", mat))
 
-	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), _frame)
+	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), skin("frame", mat))
 	_solid(root, Vector3(2.0, 2.4, 0.2), Vector3(0.0, 1.2, 0.0))
 	return root
 
 
 # 2 by 2 m, 0.12 m thick, its top 0.12 m above the ground (a step you walk up).
-static func floor_piece() -> Node3D:
+static func floor_piece(mat: String = "wood") -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _planks)
+	_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), skin("floor", mat))
 
 	for x in [-0.66, 0.0, 0.66]:
 		_box(root, Vector3(0.02, 0.125, 2.0), Vector3(x, 0.06, 0.0), _frame)
@@ -170,10 +318,10 @@ static func floor_piece() -> Node3D:
 
 
 # A 2.4 m square slab 2.5 m up on four posts.
-static func roof() -> Node3D:
+static func roof(mat: String = "wood") -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _roof)
+	_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), skin("roof", mat))
 
 	for x in [-1.16, 1.16]:
 		_box(root, Vector3(0.08, 0.2, 2.4), Vector3(x, 2.5, 0.0), _frame)       # edge timbers
@@ -199,42 +347,42 @@ static func foundation() -> Node3D:
 
 
 # A wall with an opening: `jamb` is the width of wall left on each side of the gap, the gap runs from `low` to `high` metres up (a doorway from 0, a window from 0.9).
-static func _wall_with_gap(low: float, high: float, jamb: float) -> Node3D:
+static func _wall_with_gap(low: float, high: float, jamb: float, mat: String = "wood") -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	var half: float = 1.0
 	var side_x: float = half - jamb * 0.5
 
 	for x in [-side_x, side_x]:
-		_box(root, Vector3(jamb, 2.4, 0.14), Vector3(x, 1.2, 0.0), _planks)
+		_box(root, Vector3(jamb, 2.4, 0.14), Vector3(x, 1.2, 0.0), skin("wall", mat))
 		_solid(root, Vector3(jamb, 2.4, 0.2), Vector3(x, 1.2, 0.0))
 
 	var gap_w: float = 2.0 * (half - jamb)
-	_box(root, Vector3(gap_w, 2.4 - high, 0.14), Vector3(0.0, (high + 2.4) * 0.5, 0.0), _planks)
+	_box(root, Vector3(gap_w, 2.4 - high, 0.14), Vector3(0.0, (high + 2.4) * 0.5, 0.0), skin("wall", mat))
 	_solid(root, Vector3(gap_w, 2.4 - high, 0.2), Vector3(0.0, (high + 2.4) * 0.5, 0.0))
 
 	if low > 0.0:
-		_box(root, Vector3(gap_w, low, 0.14), Vector3(0.0, low * 0.5, 0.0), _planks)
+		_box(root, Vector3(gap_w, low, 0.14), Vector3(0.0, low * 0.5, 0.0), skin("wall", mat))
 		_solid(root, Vector3(gap_w, low, 0.2), Vector3(0.0, low * 0.5, 0.0))
-		_box(root, Vector3(gap_w + 0.1, 0.06, 0.24), Vector3(0.0, low + 0.03, 0.0), _frame)   # the sill
+		_box(root, Vector3(gap_w + 0.1, 0.06, 0.24), Vector3(0.0, low + 0.03, 0.0), skin("frame", mat))   # the sill
 
 	for x in [-0.95, 0.95]:
-		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), _frame)
+		_box(root, Vector3(0.1, 2.4, 0.2), Vector3(x, 1.2, 0.0), skin("frame", mat))
 
-	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), _frame)
+	_box(root, Vector3(2.0, 0.1, 0.2), Vector3(0.0, 2.35, 0.0), skin("frame", mat))
 	return root
 
 
 # A doorway: a gap one metre wide and two high, with a plank door in it. Shut it fills the gap (solid); open it stands swung back against the jamb.
-static func doorway(open: bool = false) -> Node3D:
-	var root: Node3D = _wall_with_gap(0.0, 2.0, 0.5)
+static func doorway(open: bool = false, mat: String = "wood") -> Node3D:
+	var root: Node3D = _wall_with_gap(0.0, 2.0, 0.5, mat)
 	root.add_child(door(1.0, 1, "bar", false, open))
 	return root
 
 
 # A window wall: an opening one metre wide from 0.9 to 1.7 m up.
-static func window_wall() -> Node3D:
-	return _wall_with_gap(0.9, 1.7, 0.5)
+static func window_wall(mat: String = "wood") -> Node3D:
+	return _wall_with_gap(0.9, 1.7, 0.5, mat)
 
 
 # A timber prop: a squared log on end, 2.4 m, with a flat cap plate; solid.
@@ -279,17 +427,33 @@ static func path() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(1.0, 0.03, 1.0), Vector3(0.0, 0.0, 0.0), _earth)
+	_box(root, Vector3(0.7, 0.012, 1.0), Vector3(0.0, 0.02, 0.0), _earth)   # the trodden middle, a little higher and paler than the verge
+
+	for k in 7:   # small stones pressed into the edges
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		_stone_at(root, Vector3(side * (0.46 + 0.02 * float(k % 3)), 0.03, -0.42 + 0.14 * float(k)), float(k) * 0.9)
+
 	return root
 
 
-# A rock pile: a mound of grey stones about 1.2 m across (Kathleen draws the real one).
+# A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
+# foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	var rows: Array = [[Vector3(0.0, 0.14, 0.0), 0.5], [Vector3(0.35, 0.12, 0.2), 0.34], [Vector3(-0.3, 0.12, 0.25), 0.36], [Vector3(0.1, 0.12, -0.35), 0.38], [Vector3(-0.1, 0.34, 0.0), 0.3]]
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 33
+	var rocks: Array = [[Vector3(0.0, 0.1, 0.0), 3.6], [Vector3(0.38, 0.08, 0.2), 2.8], [Vector3(-0.34, 0.08, 0.25), 3.0], [Vector3(0.12, 0.08, -0.38), 3.1], [Vector3(-0.3, 0.07, -0.25), 2.6],
+		[Vector3(0.45, 0.07, -0.2), 2.4], [Vector3(-0.1, 0.24, 0.12), 2.6], [Vector3(0.2, 0.22, -0.1), 2.4], [Vector3(-0.2, 0.22, -0.12), 2.2], [Vector3(0.0, 0.36, 0.0), 2.2], [Vector3(0.28, 0.18, 0.3), 1.8], [Vector3(-0.42, 0.06, 0.0), 2.0]]
 
-	for row in rows:
-		_box(root, Vector3.ONE * float(row[1]), row[0], _stone)
+	for rock in rocks:
+		var node: MeshInstance3D = MeshInstance3D.new()
+		node.mesh = RockLook.mesh()
+		node.position = rock[0]
+		node.rotation = Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.0, TAU), rng.randf_range(-0.3, 0.3))
+		var k: float = float(rock[1])
+		node.scale = Vector3(k, k * rng.randf_range(0.9, 1.3), k * rng.randf_range(0.85, 1.1))
+		root.add_child(node)
 
 	_solid(root, Vector3(1.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
 	return root
@@ -528,28 +692,88 @@ static func _rod(parent: Node3D, a: Vector3, b: Vector3, thick: float, material:
 	parent.add_child(mesh)
 
 
-# A rough bed (Dave 24 Oct), 2 m by 0.9 m: a frame of four split logs on short feet, a thick mat of straw bundles with a dent where a body lies,
-# and a rolled-up straw pillow at the head. Walk-over height 0.35 m. About 20 triangles-boxes, one material each.
+# A crooked pole between two points (a four-sided stick with caps: cheap), for the rough bed's frame of sticks and branches.
+static func _pole(parent: Node3D, a: Vector3, b: Vector3, radius: float, material: StandardMaterial3D, sides: int = 4) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: CylinderMesh = CylinderMesh.new()
+	shape.top_radius = radius * 0.8
+	shape.bottom_radius = radius
+	shape.height = a.distance_to(b)
+	shape.radial_segments = sides
+	shape.rings = 1
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = (a + b) * 0.5
+	var up: Vector3 = (b - a).normalized()
+	var axis: Vector3 = Vector3.UP.cross(up)
+
+	if axis.length() > 0.0001:
+		mesh.basis = Basis(axis.normalized(), Vector3.UP.angle_to(up))
+
+	parent.add_child(mesh)
+
+
+# A rough bed (Dave 24 Oct; reworked 2026-10-31: "sticks and branches, bedding very rough like a manger"), about 2.0 by 0.9 m, walk-over height 0.45 m: a low frame of crooked sticks and forked branches
+# (irregular lengths, thin sticks lashed across, nothing machined), and a loose uneven heap of straw, dry grass and fern fronds overflowing the frame like hay in a manger, stalks sticking out over the edges
+# and a few loose bits on the ground, in dull yellow-brown and green-brown. No cloth, no blanket, no neat mattress (those are for the straw and feather beds).
 static func rough_bed() -> Node3D:
-	_materials()
+	_tier_materials()
 	var root: Node3D = Node3D.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 77
+	var bark: StandardMaterial3D = _tone_mat(Color(0.34, 0.24, 0.15))
+	var bark_pale: StandardMaterial3D = _tone_mat(Color(0.46, 0.34, 0.2))
+	var twine: StandardMaterial3D = _tone_mat(Color(0.7, 0.62, 0.38))
+	var hay: Array = [_thatch, _tone_mat(Color(0.42, 0.4, 0.2)), _thatch, _tone_mat(Color(0.36, 0.38, 0.2))]      # two lumps with the striped straw texture (stalks show), two flat green-brown (fern and leaves)
 
-	for z in [-0.4, 0.4]:
-		_box(root, Vector3(2.0, 0.12, 0.1), Vector3(0.0, 0.2, z), _log)
+	for sx in [-1.0, 1.0]:   # forked branches for legs: a stem with a short side fork, a little out of true
+		for sz in [-1.0, 1.0]:
+			var foot: Vector3 = Vector3(sx * (0.85 + rng.randf_range(-0.04, 0.04)), 0.0, sz * (0.38 + rng.randf_range(-0.03, 0.03)))
+			var top: Vector3 = foot + Vector3(rng.randf_range(-0.04, 0.04), 0.3 + rng.randf_range(-0.02, 0.03), rng.randf_range(-0.04, 0.04))
+			_pole(root, foot, top, 0.032, bark)
+			_pole(root, foot.lerp(top, 0.55), top + Vector3(sx * 0.1, 0.07, 0.0), 0.02, bark_pale)
 
-	for x in [-0.95, 0.95]:
-		_box(root, Vector3(0.1, 0.12, 0.9), Vector3(x, 0.2, 0.0), _log)
+	for sz in [-1.0, 1.0]:   # two long crooked rails, each two sticks meeting in a bend, of different length
+		var z0: float = sz * 0.4 + rng.randf_range(-0.03, 0.03)
+		var bend: Vector3 = Vector3(rng.randf_range(-0.3, 0.3), 0.3 + rng.randf_range(-0.03, 0.05), z0 + rng.randf_range(-0.04, 0.04))
+		_pole(root, Vector3(-1.05 + rng.randf_range(0.0, 0.1), 0.29, z0), bend, 0.034, bark)
+		_pole(root, bend, Vector3(1.0 + rng.randf_range(-0.1, 0.05), 0.3, z0 + rng.randf_range(-0.03, 0.03)), 0.03, bark_pale)
 
-	for x in [-0.9, 0.9]:
-		for z in [-0.4, 0.4]:
-			_box(root, Vector3(0.12, 0.16, 0.12), Vector3(x, 0.08, z), _frame)
+	for sx in [-1.0, 1.0]:   # the end rails across, sticking out a little past the long rails
+		_pole(root, Vector3(sx * 0.9, 0.3, -0.5 + rng.randf_range(0.0, 0.06)), Vector3(sx * 0.9 + rng.randf_range(-0.04, 0.04), 0.3, 0.5 - rng.randf_range(0.0, 0.06)), 0.03, bark)
 
-	_box(root, Vector3(1.8, 0.1, 0.7), Vector3(0.0, 0.25, 0.0), _thatch)          # the lower mat
-	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(-0.5, 0.34, 0.0), _thatch)       # raised straw at the foot and
-	_box(root, Vector3(0.7, 0.08, 0.66), Vector3(0.55, 0.34, 0.0), _thatch)        # the head, a dent between them
-	_box(root, Vector3(0.3, 0.14, 0.5), Vector3(0.75, 0.4, 0.0), _thatch)          # the rolled pillow
-	_box(root, Vector3(0.5, 0.04, 0.3), Vector3(-0.3, 0.33, 0.28), _thatch)        # a corner of straw folded back
-	_solid(root, Vector3(2.0, 0.35, 0.9), Vector3(0.0, 0.175, 0.0))
+	for k in 6:   # thin sticks laid across the frame as the base, lashed
+		var x: float = -0.8 + 0.32 * float(k) + rng.randf_range(-0.04, 0.04)
+		_pole(root, Vector3(x, 0.34, -0.46 - rng.randf_range(0.0, 0.07)), Vector3(x + rng.randf_range(-0.05, 0.05), 0.34, 0.46 + rng.randf_range(0.0, 0.07)), 0.014, bark_pale)
+
+	for sx in [-0.9, 0.9]:   # twine wraps at the corners
+		for sz in [-0.4, 0.4]:
+			_cyl(root, 0.045, 0.025, Vector3(sx, 0.3, sz), twine, 5)
+
+	# The bedding: a loose heap in dull yellow-brown and green-brown, lumpy, higher at the head, spilling over both long rails.
+	_dome(root, 0.58, Vector3(0.0, 0.3, 0.0), Vector3(1.75, 0.55, 0.85), hay[0], 8, 3)
+	_dome(root, 0.34, Vector3(-0.2, 0.33, 0.0), Vector3(1.3, 0.55, 0.9), hay[1], 6, 3)
+
+	for k in 5:
+		var p: Vector3 = Vector3(rng.randf_range(-0.8, 0.8), 0.38 + rng.randf_range(0.0, 0.12), rng.randf_range(-0.38, 0.38))
+		_dome(root, rng.randf_range(0.2, 0.3), p, Vector3(rng.randf_range(1.0, 1.6), rng.randf_range(0.5, 0.9), rng.randf_range(0.8, 1.2)), hay[k % 4], 6, 3)
+
+	_dome(root, 0.3, Vector3(0.7, 0.4, 0.0), Vector3(0.8, 0.8, 1.6), hay[2], 7, 3)         # a bigger pile at the head end
+
+	for k in 4:   # a few fern fronds laid on top: long thin leaves in green-brown
+		_box_rot(root, Vector3(0.45, 0.01, 0.1), Vector3(-0.6 + 0.4 * float(k), 0.5, rng.randf_range(-0.2, 0.2)), Vector3(0.0, rng.randf() * TAU, 0.15), hay[1 + (k % 2) * 2])
+
+	for k in 12:   # stalks sticking out over the edges (and a few over the ends)
+		var side: float = 1.0 if k % 2 == 0 else -1.0
+		var x: float = -0.9 + 1.8 * fposmod(float(k) * 0.37, 1.0)
+		var length: float = rng.randf_range(0.35, 0.7)
+		_box_rot(root, Vector3(0.012, 0.012, length), Vector3(x, 0.38 - rng.randf_range(0.0, 0.1), side * (0.5 + length * 0.3)), Vector3(side * 0.35, rng.randf_range(-0.4, 0.4), 0.0), hay[k % 4])
+
+	for k in 8:   # loose bits on the ground round the bed
+		var ang: float = TAU * float(k) / 8.0 + 0.3
+		_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.01, 0.014), Vector3(cos(ang) * (1.0 + rng.randf_range(0.0, 0.2)), 0.008, sin(ang) * (0.62 + rng.randf_range(0.0, 0.2))), Vector3(0.0, rng.randf() * TAU, 0.0), hay[k % 4])
+
+	_solid(root, Vector3(2.0, 0.45, 0.9), Vector3(0.0, 0.225, 0.0))
 	return root
 
 
@@ -580,29 +804,30 @@ static func thatch_wall() -> Node3D:
 
 
 # A tripod pot (cooking station tier 1, Dave 24 Oct): three sticks lashed at the top over the fire, a round blackened pot hanging on a chain, a ring of stones under it.
+# Sized for the firewood fire (Dave 1 Nov): its flames are 0.8 m tall, so the pot's base hangs at 0.8 m and the tips lick it; over the stick fire it simply hangs high.
 static func tripod_pot() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
-	var top: Vector3 = Vector3(0.0, 1.3, 0.0)
+	var top: Vector3 = Vector3(0.0, 1.75, 0.0)
 
 	for k in 3:
 		var a: float = TAU * float(k) / 3.0 + 0.3
-		_rod(root, Vector3(cos(a) * 0.6, 0.0, sin(a) * 0.6), top + Vector3(cos(a) * 0.04, 0.0, sin(a) * 0.04), 0.06, _log)
+		_rod(root, Vector3(cos(a) * 0.85, 0.0, sin(a) * 0.85), top + Vector3(cos(a) * 0.04, 0.0, sin(a) * 0.04), 0.06, _log)
 
-	_box(root, Vector3(0.12, 0.08, 0.12), Vector3(0.0, 1.3, 0.0), _frame)           # the lashing
-	_rod(root, Vector3(0.0, 1.26, 0.0), Vector3(0.0, 0.95, 0.0), 0.02, _pot)          # chain
+	_box(root, Vector3(0.12, 0.08, 0.12), Vector3(0.0, 1.75, 0.0), _frame)           # the lashing
+	_rod(root, Vector3(0.0, 1.71, 0.0), Vector3(0.0, 1.2, 0.0), 0.02, _pot)          # chain
 
 	var pot: MeshInstance3D = MeshInstance3D.new()
 	var bowl: SphereMesh = SphereMesh.new()
-	bowl.radius = 0.2
-	bowl.height = 0.34
+	bowl.radius = 0.24
+	bowl.height = 0.4
 	bowl.radial_segments = 10
 	bowl.rings = 5
 	pot.mesh = bowl
 	pot.material_override = _pot
-	pot.position = Vector3(0.0, 0.78, 0.0)
+	pot.position = Vector3(0.0, 1.0, 0.0)
 	root.add_child(pot)
-	_box(root, Vector3(0.34, 0.04, 0.34), Vector3(0.0, 0.93, 0.0), _pot)             # the rim
+	_box(root, Vector3(0.4, 0.04, 0.4), Vector3(0.0, 1.19, 0.0), _pot)             # the rim
 
 	for k in 7:
 		var a: float = TAU * float(k) / 7.0
@@ -628,14 +853,14 @@ static func _cyl(parent: Node3D, radius: float, height: float, at: Vector3, mate
 
 
 # A clay dome: the upper half of a sphere squashed to `scale`, resting on y = at.y.
-static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, material: StandardMaterial3D) -> void:
+static func _dome(parent: Node3D, radius: float, at: Vector3, scale: Vector3, material: StandardMaterial3D, segments: int = 16, rings: int = 6) -> void:
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	var shape: SphereMesh = SphereMesh.new()
 	shape.radius = radius
 	shape.height = radius
 	shape.is_hemisphere = true
-	shape.radial_segments = 16
-	shape.rings = 6
+	shape.radial_segments = segments
+	shape.rings = rings
 	mesh.mesh = shape
 	mesh.material_override = material
 	mesh.position = at
@@ -767,7 +992,15 @@ static func snare_trap() -> Node3D:
 	var root: Node3D = Node3D.new()
 	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.55, 0.0), 0.02, _log)             # the bent stick
 	_rod(root, Vector3(-0.2, 0.55, 0.0), Vector3(0.2, 0.35, 0.0), 0.012, _frame)           # the arm over the path
-	_box(root, Vector3(0.22, 0.012, 0.22), Vector3(0.2, 0.1, 0.0), _thatch)                # the loop on the ground
+	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.06, 0.0), 0.05, _log)              # the peg driven into the ground
+	var ring: int = 10
+
+	for k in ring:   # the wire loop hanging in the path: ten short rods round a circle 22 cm across
+		var a0: float = TAU * float(k) / float(ring)
+		var a1: float = TAU * float(k + 1) / float(ring)
+		_rod(root, Vector3(0.2 + cos(a0) * 0.11, 0.3 + sin(a0) * 0.11, 0.0), Vector3(0.2 + cos(a1) * 0.11, 0.3 + sin(a1) * 0.11, 0.0), 0.008, _steel)
+
+	_rod(root, Vector3(0.2, 0.19, 0.0), Vector3(0.2, 0.0, 0.0), 0.012, _frame)             # the stake it is tied to
 	return root
 
 
@@ -802,4 +1035,482 @@ static func oven() -> Node3D:
 	_cyl(root, 0.13, 0.4, Vector3(0.35, 1.1, -0.25), _stone, 10)                           # the flue
 	_cyl(root, 0.09, 0.02, Vector3(0.35, 1.31, -0.25), _tar, 10)
 	_solid(root, Vector3(1.8, 1.1, 1.4), Vector3(0.0, 0.55, 0.0))
+	return root
+
+
+# --- Building tiers (Sal's F-22 pieces: stairs, log, stone and brick walls, floors and roofs; Kathleen, 2026-10-31) ---
+# Same footprints and heights as the wood pieces (wall 2 x 2.4 m, floor 2 x 2 m, roof slab 2.4 m square 2.5 m up) so they snap and stack the same way.
+static var _brick: StandardMaterial3D
+static var _slate: StandardMaterial3D
+static var _tile: StandardMaterial3D
+static var _flag: StandardMaterial3D
+static var _mortar: StandardMaterial3D
+
+
+static func _tier_materials() -> void:
+	_materials()
+
+	if _brick != null:
+		return
+
+	_brick = _blocks_material(Color(0.62, 0.3, 0.2), 12, 101, 0.28)      # fired brick: red-brown, twelve courses a tile, dark mortar joints
+	_slate = _blocks_material(Color(0.3, 0.32, 0.35), 6, 103, 0.3)       # slate: blue-grey overlapping courses
+	_tile = _blocks_material(Color(0.7, 0.36, 0.2), 8, 107, 0.25)        # clay roof tiles: orange-red courses
+	_flag = _blocks_material(Color(0.52, 0.5, 0.46), 2, 109, 0.3)        # flagstones: big slabs, wide joints
+	_mortar = _blocks_material(Color(0.62, 0.6, 0.55), 1, 113, 0.2)
+
+
+# A straight flight of stairs 1 m wide and 2.4 m long (z) rising 2.4 m: ten treads of 0.24 m, two side stringers and a handrail on one side. Mesh runs from z = +1.2 (the foot,
+# on the ground) to z = -1.2 (the top). Collision is the stepped blocks themselves. Walking up it needs the climb code (structures.json note).
+static func stairs() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for i in 10:
+		var top: float = 0.24 * float(i + 1)
+		_box(root, Vector3(0.9, 0.06, 0.26), Vector3(0.0, top - 0.03, 1.2 - 0.24 * float(i) - 0.12), _planks)      # the tread
+		_box(root, Vector3(0.9, 0.2, 0.03), Vector3(0.0, top - 0.16, 1.2 - 0.24 * float(i) - 0.005), _frame)      # the riser
+		_solid(root, Vector3(0.9, 0.24, 0.24), Vector3(0.0, top - 0.12, 1.2 - 0.24 * float(i) - 0.12))
+
+	for x in [-0.47, 0.47]:
+		var stringer: MeshInstance3D = MeshInstance3D.new()
+		var plank: BoxMesh = BoxMesh.new()
+		plank.size = Vector3(0.06, 0.2, 3.4)
+		stringer.mesh = plank
+		stringer.material_override = _frame
+		stringer.position = Vector3(x, 1.2, 0.0)
+		stringer.rotation = Vector3(atan2(2.4, 2.4), 0.0, 0.0)
+		root.add_child(stringer)
+
+	return root
+
+
+# A wall of one material (stone, brick) 2 m wide, 0.25 m thick, 2.4 m high with a coping slab on top and a corner block course at each end, so it reads as masonry and not a textured plank wall.
+static func masonry_wall(material: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var body: StandardMaterial3D = _stone if material == "stone" else _brick
+	_box(root, Vector3(2.0, 2.3, 0.25), Vector3(0.0, 1.15, 0.0), body)
+
+	for k in 6:   # corner blocks at each end, alternating long and short courses
+		var long: bool = k % 2 == 0
+		for x in [-1.0, 1.0]:
+			_box(root, Vector3(0.3 if long else 0.2, 0.36, 0.29), Vector3(x * (0.85 if long else 0.9), 0.2 + 0.38 * float(k), 0.0), _mortar if material == "stone" else _brick)
+
+	_box(root, Vector3(2.04, 0.1, 0.33), Vector3(0.0, 2.35, 0.0), _flag if material == "stone" else _mortar)
+	_solid(root, Vector3(2.0, 2.4, 0.3), Vector3(0.0, 1.2, 0.0))
+	return root
+
+
+# A floor 2 x 2 m, 0.12 m thick (like the plank floor): `kind` "log" (seven split logs side by side, flat faces up), "stone" (four big flagstones with wide joints) or "brick" (brick laid in rows).
+static func tier_floor(kind: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	match kind:
+		"log":
+			for k in 7:
+				_box(root, Vector3(0.28, 0.12, 2.0), Vector3(-0.84 + 0.28 * float(k), 0.06, 0.0), _log)
+				_box(root, Vector3(0.24, 0.02, 1.96), Vector3(-0.84 + 0.28 * float(k), 0.12, 0.0), _planks)
+		"stone":
+			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _mortar)
+
+			for ix in 2:
+				for iz in 2:
+					_box(root, Vector3(0.94, 0.04, 0.94), Vector3(-0.49 + 0.98 * float(ix), 0.12, -0.49 + 0.98 * float(iz)), _flag)
+		_:
+			_box(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0), _brick)
+			_box(root, Vector3(2.0, 0.01, 0.03), Vector3(0.0, 0.125, 0.0), _mortar)
+
+	_solid(root, Vector3(2.0, 0.12, 2.0), Vector3(0.0, 0.06, 0.0))
+	return root
+
+
+# A roof slab 2.4 m square, 2.5 m up on four corner posts like the plank roof, covered in `kind`: "log" (round logs side by side with bearers), "stone" (slate courses) or "brick" (clay tiles with a ridge row).
+static func tier_roof(kind: String = "stone") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	match kind:
+		"log":
+			for k in 8:
+				_log_at(root, 2.4, 0.3, Vector3(0.0, 2.5, -1.05 + 0.3 * float(k)), true)
+		"stone":
+			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _slate)
+			_box(root, Vector3(2.46, 0.05, 0.1), Vector3(0.0, 2.58, 0.0), _mortar)
+		_:
+			_box(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0), _tile)
+			_box(root, Vector3(2.46, 0.07, 0.14), Vector3(0.0, 2.6, 0.0), _tile)
+
+	for x in [-1.1, 1.1]:
+		for z in [-1.1, 1.1]:
+			_box(root, Vector3(0.12, 2.5, 0.12), Vector3(x, 1.25, z), _frame)
+
+	_box(root, Vector3(2.4, 0.1, 0.12), Vector3(0.0, 2.4, 0.0), _frame)
+	_solid(root, Vector3(2.4, 0.12, 2.4), Vector3(0.0, 2.5, 0.0))
+	return root
+
+
+# --- Comfort furniture (Dave's comfort feature; Kathleen, 2026-10-31). References: Viking Age stools, benches and chairs (https://www.vikingage.org/wiki/wiki/Stools,_Benches_%26_Chairs), the Sala Hytta low table
+# (https://sites.google.com/site/svenskildbiter/home/how-to-reproductions/viking-table), the Oseberg chair and Lejre chair amulet (https://sites.google.com/site/thasthimindunna/home/recreations/chair),
+# the Trondheim 11th-century stool (https://sagy.vikingove.cz/en/stool-from-trondheim-norway-11th-century/). Cheap: boxes and a few rounded parts, shared textures.
+# A chair: four splayed square legs, a plank seat, a low back of two uprights, two rails and a carved-looking top board; 0.5 m wide, 0.5 m deep, 0.45 m seat, 0.95 m high. Faces -z (the back is at +z).
+static func chair() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.2, 0.2]:
+		for z in [-0.2, 0.2]:
+			var leg: MeshInstance3D = MeshInstance3D.new()
+			var shape: BoxMesh = BoxMesh.new()
+			shape.size = Vector3(0.06, 0.45, 0.06)
+			leg.mesh = shape
+			leg.material_override = _frame
+			leg.position = Vector3(x * 1.08, 0.225, z * 1.08)
+			leg.rotation = Vector3(-z * 0.25, 0.0, x * 0.25)      # splayed outward
+			root.add_child(leg)
+
+	_box(root, Vector3(0.5, 0.05, 0.5), Vector3(0.0, 0.46, 0.0), _planks)                    # the seat
+	_box(root, Vector3(0.44, 0.03, 0.04), Vector3(0.0, 0.22, -0.2), _frame)                  # stretcher rails between the legs
+	_box(root, Vector3(0.44, 0.03, 0.04), Vector3(0.0, 0.22, 0.2), _frame)
+
+	for x in [-0.21, 0.21]:
+		_box(root, Vector3(0.05, 0.5, 0.05), Vector3(x, 0.74, 0.22), _frame)                  # the back uprights
+
+	_box(root, Vector3(0.42, 0.1, 0.03), Vector3(0.0, 0.62, 0.22), _planks)                  # a back rail
+	_box(root, Vector3(0.5, 0.14, 0.04), Vector3(0.0, 0.94, 0.22), _planks)                  # the top board
+	_solid(root, Vector3(0.5, 0.95, 0.5), Vector3(0.0, 0.475, 0.0))
+	return root
+
+
+# A low table after the Sala Hytta find: a 1.4 by 0.7 m plank top 0.72 m up on two trestle ends (slab legs with a foot and a through-pin) joined by a stretcher.
+static func table() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(1.4, 0.05, 0.7), Vector3(0.0, 0.7, 0.0), _planks)
+
+	for k in 2:   # two dark gaps between the three boards of the top
+		_box(root, Vector3(1.4, 0.052, 0.01), Vector3(0.0, 0.7, -0.115 + 0.23 * float(k)), _frame)
+
+	for x in [-0.55, 0.55]:
+		_box(root, Vector3(0.06, 0.66, 0.5), Vector3(x, 0.34, 0.0), _frame)                   # the slab end
+		_box(root, Vector3(0.1, 0.06, 0.64), Vector3(x, 0.03, 0.0), _frame)                   # its foot
+
+	_box(root, Vector3(1.1, 0.05, 0.05), Vector3(0.0, 0.36, 0.0), _planks)                   # the stretcher through both ends
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(-0.58, 0.36, 0.0), _frame)                 # the wedge pins
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(0.58, 0.36, 0.0), _frame)
+	_solid(root, Vector3(1.4, 0.72, 0.7), Vector3(0.0, 0.36, 0.0))
+	return root
+
+
+# A flat colour material (cached by colour) for small decorative parts.
+static var _flat_mats: Dictionary = {}
+
+
+static func _tone_mat(c: Color) -> StandardMaterial3D:
+	var key: String = c.to_html()
+
+	if not _flat_mats.has(key):
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = c
+		m.roughness = 1.0
+		_flat_mats[key] = m
+
+	return _flat_mats[key]
+
+
+# A rag rug 1.6 by 1.0 m (rounded ends of shorter strips): woven stripes in four tones across the width and a fringe at each short end; 1.5 cm high, no collision.
+static func rug() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var tones: Array = [Color(0.42, 0.2, 0.15), Color(0.62, 0.52, 0.36), Color(0.26, 0.31, 0.38), Color(0.5, 0.44, 0.32)]   # undyed wool and madder red, woad blue: muted
+	var widths: Array = [0.14, 0.08, 0.2, 0.08, 0.14, 0.08, 0.2, 0.08]
+	var z: float = -0.5
+
+	for k in widths.size():
+		var w: float = float(widths[k])
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = tones[k % 4]
+		m.roughness = 1.0
+		var length: float = 1.6 - (0.12 if k == 0 or k == widths.size() - 1 else 0.0)
+		_box(root, Vector3(length, 0.015, w - 0.006), Vector3(0.0, 0.0075, z + w * 0.5), m)
+
+		for j in 5:   # weft flecks: short slightly lighter strips across the stripe, so it is woven rags and not paint
+			_box(root, Vector3(0.09, 0.0165, w - 0.012), Vector3(-0.7 + 0.35 * float(j) + 0.06 * float((k + j) % 3), 0.0083, z + w * 0.5), _tone_mat(tones[k % 4].lightened(0.12)))
+		z += w
+
+	var fringe: StandardMaterial3D = StandardMaterial3D.new()
+	fringe.albedo_color = Color(0.85, 0.78, 0.6)
+	fringe.roughness = 1.0
+
+	for end in [-1.0, 1.0]:
+		for k in 14:
+			_box(root, Vector3(0.07, 0.006, 0.012), Vector3(end * 0.835, 0.004, -0.46 + 0.07 * float(k)), fringe)
+
+	return root
+
+
+# --- Seats (Dave's comfort feature: the first comfort items players make; Kathleen, 2026-10-31). All seat height 0.45 m (the sit stance). ---
+# A log seat: an upright log 0.5 m wide and 0.45 m high with a flat sawn top (pale wood, darker heart, a few growth rings), bark on the sides, a splayed foot, and a notch where the saw started.
+static func log_seat() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.26, 0.45, Vector3(0.0, 0.225, 0.0), _log, 10, 0.24)
+	var top: StandardMaterial3D = _tone_mat(Color(0.7, 0.55, 0.36))
+	var ring: StandardMaterial3D = _tone_mat(Color(0.56, 0.42, 0.26))
+	var heart: StandardMaterial3D = _tone_mat(Color(0.4, 0.27, 0.15))
+	_cyl(root, 0.235, 0.008, Vector3(0.0, 0.452, 0.0), top, 10)
+	_cyl(root, 0.15, 0.01, Vector3(0.0, 0.453, 0.0), ring, 10)
+	_cyl(root, 0.085, 0.012, Vector3(0.0, 0.454, 0.0), top, 10)
+	_cyl(root, 0.03, 0.014, Vector3(0.0, 0.455, 0.0), heart, 8)
+
+	for k in 4:   # root flare at the foot
+		var a: float = TAU * float(k) / 4.0 + 0.4
+		_box_rot(root, Vector3(0.14, 0.1, 0.07), Vector3(cos(a) * 0.25, 0.04, sin(a) * 0.25), Vector3(0.0, -a, 0.0), _log)
+
+	_box(root, Vector3(0.02, 0.02, 0.14), Vector3(0.16, 0.45, 0.0), heart)                    # the saw's start notch
+	_solid(root, Vector3(0.5, 0.45, 0.5), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# A three-legged stool (after the Lund and Trondheim stools): a round plank seat 0.36 m across, three splayed round legs pegged through it, a pale top.
+static func stool() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.19, 0.05, Vector3(0.0, 0.425, 0.0), _planks, 12)
+
+	for k in 3:
+		var a: float = TAU * float(k) / 3.0 + 0.5
+		var leg: MeshInstance3D = _cyl(root, 0.03, 0.46, Vector3(cos(a) * 0.12, 0.22, sin(a) * 0.12), _frame, 6, 0.024)
+		leg.rotation = Vector3(-sin(a) * 0.22, 0.0, cos(a) * 0.22)
+		_cyl(root, 0.018, 0.012, Vector3(cos(a) * 0.14, 0.452, sin(a) * 0.14), _tone_mat(Color(0.28, 0.18, 0.1)), 6)   # the wedge peg in the top
+
+	_solid(root, Vector3(0.4, 0.45, 0.4), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# A plank bench 2.0 m long and 0.34 m deep for two or three people: a thick seat plank on two slab ends, a stretcher with wedge pins, the front edge rounded off by a darker line.
+static func bench() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(2.0, 0.06, 0.34), Vector3(0.0, 0.42, 0.0), _planks)
+	_box(root, Vector3(2.0, 0.062, 0.02), Vector3(0.0, 0.42, 0.17), _frame)                  # the dark front edge line
+
+	for x in [-0.8, 0.8]:
+		_box(root, Vector3(0.07, 0.4, 0.3), Vector3(x, 0.2, 0.0), _frame)                    # the slab end
+		_box(root, Vector3(0.1, 0.05, 0.36), Vector3(x, 0.025, 0.0), _frame)                 # its foot
+
+	_box(root, Vector3(1.7, 0.05, 0.05), Vector3(0.0, 0.2, 0.0), _planks)                     # the stretcher through both ends
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(-0.86, 0.2, 0.0), _frame)                   # the wedge pins
+	_box(root, Vector3(0.04, 0.04, 0.08), Vector3(0.86, 0.2, 0.0), _frame)
+	_solid(root, Vector3(2.0, 0.45, 0.34), Vector3(0.0, 0.225, 0.0))
+	return root
+
+
+# --- Comfort furniture, second batch (docs/COMFORT_DESIGN.md: hide rug, wall torch, straw, feather and canopy beds, chandelier, fireplace, flower pot, antler mount; Kathleen, 2026-10-31) ---
+static func _torus_at(parent: Node3D, ring: float, tube: float, at: Vector3, material: StandardMaterial3D) -> void:
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	var shape: TorusMesh = TorusMesh.new()
+	shape.inner_radius = ring - tube
+	shape.outer_radius = ring + tube
+	shape.rings = 12
+	shape.ring_segments = 5
+	mesh.mesh = shape
+	mesh.material_override = material
+	mesh.position = at
+	parent.add_child(mesh)
+
+
+# A hide rug 1.7 by 1.1 m: the flattened shape of a whole hide with four leg stubs and a ragged edge, brown on top with a darker fur rim, 3 cm thick, no collision.
+static func hide_rug() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var fur: StandardMaterial3D = _tone_mat(Color(0.36, 0.24, 0.15))
+	var pale: StandardMaterial3D = _tone_mat(Color(0.5, 0.36, 0.22))
+	var rim: StandardMaterial3D = _tone_mat(Color(0.26, 0.17, 0.1))
+	_dome(root, 0.8, Vector3(0.0, 0.0, 0.0), Vector3(1.0, 0.04, 0.6), rim, 14, 2)
+	_dome(root, 0.74, Vector3(0.0, 0.004, 0.0), Vector3(1.0, 0.042, 0.56), fur, 14, 2)
+	_dome(root, 0.4, Vector3(-0.05, 0.012, 0.0), Vector3(1.0, 0.03, 0.5), pale, 12, 2)      # the paler belly-side patch of the pelt
+
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_dome(root, 0.2, Vector3(sx * 0.66, 0.0, sz * 0.44), Vector3(1.0, 0.08, 0.55), rim, 8, 2)      # a leg stub at each corner
+
+	_dome(root, 0.16, Vector3(0.9, 0.0, 0.0), Vector3(1.0, 0.08, 0.5), rim, 8, 2)                  # the neck end
+	return root
+
+
+# A wall torch: a wooden backplate and an arm standing out from the wall (the wall is at z = 0, the torch leans out toward +z), a bound stick with an oiled-rag head. `lit` adds a flame (the light itself is code).
+static func wall_torch(lit: bool = false) -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_box(root, Vector3(0.14, 0.34, 0.04), Vector3(0.0, 1.7, 0.02), _frame)
+	_box_rot(root, Vector3(0.06, 0.05, 0.3), Vector3(0.0, 1.62, 0.17), Vector3(0.0, 0.0, 0.0), _frame)                  # the arm
+	_box(root, Vector3(0.1, 0.03, 0.03), Vector3(0.0, 1.66, 0.28), _frame)                                             # the front hoop
+	var stick: MeshInstance3D = _cyl(root, 0.028, 0.55, Vector3(0.0, 1.88, 0.27), _planks, 6, 0.022)
+	stick.rotation = Vector3(0.2, 0.0, 0.0)
+	var head: MeshInstance3D = _cyl(root, 0.05, 0.15, Vector3(0.0, 2.19, 0.33), _tone_mat(Color(0.18, 0.13, 0.09)), 7, 0.06)
+	head.rotation = Vector3(0.2, 0.0, 0.0)
+	_box(root, Vector3(0.07, 0.015, 0.07), Vector3(0.0, 2.1, 0.31), _tone_mat(Color(0.5, 0.4, 0.25)))                    # the binding
+
+	if lit:
+		var flame: MeshInstance3D = _cyl(root, 0.0, 0.3, Vector3(0.0, 2.38, 0.35), _tone_mat(Color(1.0, 0.65, 0.15)), 6, 0.06)
+		flame.rotation = Vector3(0.2, 0.0, 0.0)
+		flame.scale = Vector3(1.0, 1.0, 1.0)
+
+	return root
+
+
+# One bed builder for the comfort beds (Dave's comfort feature): `kind` "straw" (a log frame, a thick straw tick, a folded wool blanket, a rolled pillow), "feather" (a plank frame, a white
+# linen cover over a plump feather tick, two pillows, a blue wool blanket) or "canopy" (the feather bed with four turned posts, a top frame and a curtain on each long side). 1.0 x 2.0 m like the rough bed
+# (long axis along x), top of the mattress 0.5 to 0.62 m up.
+static func comfort_bed(kind: String = "straw") -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var feather: bool = kind != "straw"
+	var frame: StandardMaterial3D = _planks if feather else _log
+	var straw: StandardMaterial3D = _thatch
+	var linen: StandardMaterial3D = _tone_mat(Color(0.86, 0.82, 0.7))
+	var wool: StandardMaterial3D = _tone_mat(Color(0.28, 0.34, 0.5) if feather else Color(0.55, 0.4, 0.25))
+	var pillow: StandardMaterial3D = _tone_mat(Color(0.9, 0.87, 0.78) if feather else Color(0.62, 0.52, 0.34))
+
+	for z in [-0.42, 0.42]:
+		_box(root, Vector3(2.0, 0.14, 0.1), Vector3(0.0, 0.26, z), frame)
+
+	for x in [-0.95, 0.95]:
+		_box(root, Vector3(0.1, 0.14, 0.94), Vector3(x, 0.26, 0.0), frame)
+
+	for x in [-0.9, 0.9]:
+		for z in [-0.4, 0.4]:
+			_box(root, Vector3(0.12, 0.2, 0.12), Vector3(x, 0.1, z), _frame)
+
+	if feather:
+		_dome(root, 0.95, Vector3(0.0, 0.3, 0.0), Vector3(1.0, 0.2, 0.46), linen, 14, 4)                                # the plump feather tick under its cover
+		_box(root, Vector3(0.7, 0.05, 0.84), Vector3(0.35, 0.5, 0.0), wool)                                          # the blanket over the lower two thirds
+		_box(root, Vector3(0.7, 0.03, 0.86), Vector3(0.35, 0.53, 0.0), _tone_mat(Color(0.35, 0.4, 0.55)))
+		_dome(root, 0.3, Vector3(-0.72, 0.5, -0.2), Vector3(1.0, 0.45, 0.8), pillow, 10, 4)
+		_dome(root, 0.3, Vector3(-0.72, 0.5, 0.2), Vector3(1.0, 0.45, 0.8), pillow, 10, 4)
+	else:
+		_box(root, Vector3(1.8, 0.07, 0.8), Vector3(0.0, 0.34, 0.0), straw)
+		_dome(root, 0.95, Vector3(0.0, 0.36, 0.0), Vector3(1.0, 0.2, 0.42), straw, 14, 4)                              # the heaped straw tick
+		_box(root, Vector3(0.5, 0.05, 0.7), Vector3(0.45, 0.52, 0.0), wool)                                          # a folded blanket
+		_dome(root, 0.25, Vector3(-0.75, 0.5, 0.0), Vector3(1.0, 0.45, 1.2), pillow, 10, 4)
+
+	if kind == "canopy":
+		for x in [-0.95, 0.95]:
+			for z in [-0.45, 0.45]:
+				_cyl(root, 0.04, 2.0, Vector3(x, 1.0, z), _frame, 8)
+				_dome(root, 0.06, Vector3(x, 2.0, z), Vector3(1.0, 1.0, 1.0), _frame, 8, 3)
+
+		for z in [-0.45, 0.45]:
+			_box(root, Vector3(2.0, 0.06, 0.06), Vector3(0.0, 2.0, z), _frame)
+
+		for x in [-0.95, 0.95]:
+			_box(root, Vector3(0.06, 0.06, 0.96), Vector3(x, 2.0, 0.0), _frame)
+
+		_box(root, Vector3(2.0, 0.04, 0.96), Vector3(0.0, 2.04, 0.0), _tone_mat(Color(0.5, 0.2, 0.18)))                     # the canopy cloth
+		var curtain: StandardMaterial3D = _tone_mat(Color(0.55, 0.22, 0.2))
+
+		for k in 6:   # curtain folds: tall thin boxes along the back long side (the near long side is left open)
+			_box(root, Vector3(0.3, 1.5, 0.03 + 0.012 * float(k % 2)), Vector3(-0.8 + 0.32 * float(k), 1.25, -0.47), curtain)
+
+		for x in [-0.95, 0.95]:
+			for k in 2:
+				_box(root, Vector3(0.03, 1.5, 0.22), Vector3(x + (-0.01 if x > 0.0 else 0.01), 1.25, -0.3 + 0.55 * float(k) + (0.1 if k == 1 else 0.0)), curtain)
+
+	_solid(root, Vector3(2.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
+	return root
+
+
+# A candle chandelier hung from the ceiling (origin at the hook, 0 m; the ring hangs 0.5 m below): a wooden hoop with six candles, three ropes to a ring at the top and a hanging cross of two boards under it.
+static func chandelier() -> Node3D:
+	_tier_materials()
+	var outer: Node3D = Node3D.new()
+	var root: Node3D = Node3D.new()
+	root.position = Vector3(0.0, 2.3, 0.0)
+	outer.add_child(root)
+	var wax: StandardMaterial3D = _tone_mat(Color(0.88, 0.82, 0.62))
+	_torus_at(root, 0.34, 0.03, Vector3(0.0, -0.55, 0.0), _frame)
+	_box(root, Vector3(0.68, 0.04, 0.05), Vector3(0.0, -0.55, 0.0), _frame)
+	_box(root, Vector3(0.05, 0.04, 0.68), Vector3(0.0, -0.55, 0.0), _frame)
+
+	for k in 6:
+		var a: float = TAU * float(k) / 6.0
+		_cyl(root, 0.022, 0.16, Vector3(cos(a) * 0.34, -0.45, sin(a) * 0.34), wax, 6)
+		_box(root, Vector3(0.012, 0.03, 0.012), Vector3(cos(a) * 0.34, -0.36, sin(a) * 0.34), _tone_mat(Color(0.1, 0.07, 0.05)))      # the wick
+		_box(root, Vector3(0.04, 0.012, 0.04), Vector3(cos(a) * 0.34, -0.53, sin(a) * 0.34), _tone_mat(Color(0.3, 0.2, 0.12)))      # the drip dish
+
+	for k in 3:
+		var a: float = TAU * float(k) / 3.0
+		_rod(root, Vector3(cos(a) * 0.34, -0.55, sin(a) * 0.34), Vector3(0.0, 0.0, 0.0), 0.015, _tone_mat(Color(0.5, 0.4, 0.25)))
+
+	_box(root, Vector3(0.08, 0.05, 0.08), Vector3(0.0, 0.0, 0.0), _frame)
+	return outer
+
+
+# A brick fireplace with a chimney (a wall piece 1.8 m wide, 0.6 m deep, 2.4 m to the top of the breast, a chimney stack above to 3.0 m; the back at z = 0 against the wall, opening toward +z):
+# a stone hearth slab in front, two jambs, a lintel beam and a brick breast, a sooty back, two firedogs with a log laid on them (unlit; the fire itself is code).
+static func fireplace() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var soot: StandardMaterial3D = _tone_mat(Color(0.12, 0.1, 0.09))
+	_box(root, Vector3(2.0, 0.1, 1.0), Vector3(0.0, 0.05, 0.5), _flag)                                  # the hearth slab, projecting into the room
+	_box(root, Vector3(0.4, 1.7, 0.6), Vector3(-0.7, 0.85, 0.3), _brick)                                # the jambs
+	_box(root, Vector3(0.4, 1.7, 0.6), Vector3(0.7, 0.85, 0.3), _brick)
+	_box(root, Vector3(1.8, 0.2, 0.62), Vector3(0.0, 1.8, 0.3), _frame)                                 # the lintel beam
+	_box(root, Vector3(1.8, 0.7, 0.55), Vector3(0.0, 2.25, 0.28), _brick)                               # the breast
+	_box(root, Vector3(1.0, 1.7, 0.05), Vector3(0.0, 0.85, 0.03), soot)                                 # the sooty back
+	_box(root, Vector3(1.0, 0.04, 0.5), Vector3(0.0, 0.12, 0.28), _tone_mat(Color(0.2, 0.17, 0.15)))   # the ash bed
+
+	for k in 2:   # the chimney stack above the breast, narrowing
+		_box(root, Vector3(1.0 - 0.2 * float(k), 0.5, 0.45 - 0.08 * float(k)), Vector3(0.0, 2.85 + 0.5 * float(k) - 0.25, 0.25), _brick)
+
+	for x in [-0.3, 0.3]:   # the firedogs
+		_box(root, Vector3(0.06, 0.28, 0.06), Vector3(x, 0.24, 0.15), _tone_mat(Color(0.12, 0.12, 0.13)))
+		_box(root, Vector3(0.06, 0.06, 0.4), Vector3(x, 0.14, 0.32), _tone_mat(Color(0.12, 0.12, 0.13)))
+
+	_log_at(root, 0.7, 0.14, Vector3(0.0, 0.36, 0.2), true)
+	_solid(root, Vector3(2.0, 2.4, 0.7), Vector3(0.0, 1.2, 0.3))
+	return root
+
+
+# A flower pot: a clay pot 0.22 m across with a soil top and a small plant in it: a few stems with leaves and five blossoms (yellow, white and pink). 0.55 m tall, no collision.
+static func flower_pot() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.12, 0.22, Vector3(0.0, 0.11, 0.0), _clay, 10, 0.16)
+	_torus_at(root, 0.16, 0.02, Vector3(0.0, 0.22, 0.0), _clay)
+	_cyl(root, 0.15, 0.02, Vector3(0.0, 0.2, 0.0), _tone_mat(Color(0.2, 0.14, 0.1)), 10)
+	var leaf: StandardMaterial3D = _tone_mat(Color(0.3, 0.5, 0.2))
+	var petals: Array = [Color(0.95, 0.85, 0.25), Color(0.95, 0.95, 0.9), Color(0.9, 0.45, 0.6), Color(0.95, 0.85, 0.25), Color(0.95, 0.95, 0.9)]
+
+	for k in 5:
+		var a: float = TAU * float(k) / 5.0 + 0.3
+		var top: Vector3 = Vector3(cos(a) * 0.07, 0.42 + 0.05 * float(k % 3), sin(a) * 0.07)
+		_rod(root, Vector3(cos(a) * 0.02, 0.21, sin(a) * 0.02), top, 0.008, leaf)
+		_dome(root, 0.04, top, Vector3(1.0, 0.7, 1.0), _tone_mat(petals[k]), 8, 3)
+		_box_rot(root, Vector3(0.08, 0.008, 0.035), Vector3(cos(a) * 0.05, 0.3, sin(a) * 0.05), Vector3(0.0, -a, 0.4), leaf)
+
+	return root
+
+
+# An antler mount on the wall (the wall at z = 0): a wooden shield plaque 0.4 by 0.34 m, a skull cap, and a pair of branched antlers sweeping up and out, four tines each.
+static func antler_mount() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+	var horn: StandardMaterial3D = _tone_mat(Color(0.68, 0.6, 0.45))
+	_box(root, Vector3(0.4, 0.34, 0.04), Vector3(0.0, 1.9, 0.02), _planks)
+	_box(root, Vector3(0.44, 0.04, 0.05), Vector3(0.0, 2.08, 0.022), _frame)
+	_dome(root, 0.1, Vector3(0.0, 1.88, 0.04), Vector3(1.0, 1.0, 0.8), _tone_mat(Color(0.82, 0.78, 0.68)), 8, 3)      # the skull cap
+
+	for side in [-1.0, 1.0]:
+		var base: Vector3 = Vector3(side * 0.07, 1.98, 0.08)
+		var tip: Vector3 = Vector3(side * 0.55, 2.42, 0.2)
+		_rod(root, base, base + Vector3(side * 0.2, 0.2, 0.1), 0.022, horn)
+		_rod(root, base + Vector3(side * 0.2, 0.2, 0.1), tip, 0.016, horn)
+
+		for k in 4:
+			var from: Vector3 = base.lerp(tip, 0.25 + 0.2 * float(k))
+			_rod(root, from, from + Vector3(side * 0.03, 0.15 - 0.02 * float(k), 0.03), 0.01, horn)
+
 	return root

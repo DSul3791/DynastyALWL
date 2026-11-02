@@ -2,6 +2,8 @@ extends Node
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
+const CharacterKeys := preload("res://src/client/character/character_keys.gd")
+const CharacterStore := preload("res://src/client/character/character_store.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
@@ -60,11 +62,12 @@ const BOULDER_STATE := 10                 # the world-item row state of a boulde
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
-var _boulder_rock: StandardMaterial3D
+var _boulder_rock: ShaderMaterial
 var _chest_buttons: Array = []
 var _pack_buttons: Array = []
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
+var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var hunger: int = 100                  # stomach, percent
 var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
@@ -127,7 +130,6 @@ var _vitals_back: Control
 var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
-var _shoulder_put: Button                     # chest window: puts the shoulder log in (ACT_CHEST_PUT slot -1)
 var shoulder_id: String = ""                  # the large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this
 var purse_copper: int = 0                      # the purse, in copper (protocol 61)
 var rep_names: PackedStringArray = PackedStringArray()   # NPCs this player has a reputation with, and the points
@@ -135,6 +137,7 @@ var rep_points: PackedInt32Array = PackedInt32Array()
 var _coins_cfg: Dictionary = {}
 var _rep_cfg: Dictionary = {}
 var _carry_bar: ProgressBar              # carried weight against what you can carry: green, yellow from 70 percent, red from 80
+var plant_point: Vector3 = Vector3.ZERO   # where the plant to gather stands (harvest.gd), for the cursor choice
 var plant_aimed: bool = true             # the plant to gather is straight ahead, within the prompt reach (harvest.gd)
 var plant_hint: String = ""            # set by the harvest prompt (harvest.gd)
 var _crafting: int = 0                # recipe at the head of the server's queue (0 none); the work sounds follow it
@@ -171,6 +174,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.vitals_received.connect(_on_vitals)
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
+	net.comfort_received.connect(_on_comfort)
 	net.sick_received.connect(_on_sick)
 	net.body_received.connect(func(bpm, eta, phase): body_bpm = bpm; sleep_eta_s = eta; body_phase = phase)
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
@@ -260,6 +264,10 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_layer.add_child(_thought_label)
 	net.hello.rpc_id(1, _player_key())
 
+	for forgotten in CharacterKeys.take_forgotten():
+		net.forget_character.rpc_id(1, str(forgotten))
+
+
 
 # Public for the Esc > Advanced "Show my player key" button (admin.json lists these keys).
 func player_key() -> String:
@@ -267,6 +275,10 @@ func player_key() -> String:
 
 
 func _player_key() -> String:
+	return CharacterKeys.key_for(str(CharacterStore.active().get("id", "")), _machine_key())
+
+
+func _machine_key() -> String:
 	if FileAccess.file_exists(KEY_FILE):
 		var saved: String = FileAccess.get_file_as_string(KEY_FILE).strip_edges()
 
@@ -293,6 +305,10 @@ func toggle() -> void:
 
 	open = not open
 
+	if not open and _recipe_search != null:
+		_recipe_search.release_focus()   # the keys go back to the game
+		_recipe_search.text = ""         # the filter lasts until the menu is closed
+
 	if open:
 		_build_panel()
 		_refresh()
@@ -302,6 +318,16 @@ func toggle() -> void:
 
 	if _panel != null:
 		_panel.visible = open
+
+
+# Esc in the search box (while it has focus and holds text) empties it instead of closing the menu. True when it did.
+func search_escape() -> bool:
+	if _recipe_search == null or not open or not _recipe_search.has_focus() or _recipe_search.text == "":
+		return false
+
+	_recipe_search.clear()
+	_refresh()
+	return true
 
 
 func close() -> void:
@@ -371,14 +397,83 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 	_interactables.sort_custom(func(x, y): return int(x["priority"]) < int(y["priority"]))
 
 
+# E does what the cursor is on (Dave 1 Nov 2026). A probe may return a "point" (the world spot it acts on). Of the probes that found something, the one
+# whose point is aimed at (aimed_at) and best centred wins, whatever its priority; E then does that one action and nothing else nearby (a chopping block
+# in the cursor does not also gather the wood lying around it). Only when the cursor is on nothing with an E action does the priority order decide, which
+# is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
+	var first: Dictionary = {}
+	var best: Dictionary = {}
+	var best_cos: float = -2.0
+
 	for entry in _interactables:
 		var found: Dictionary = entry["probe"].call()
 
-		if not found.is_empty():
-			return found
+		if found.is_empty():
+			continue
 
-	return {}
+		if first.is_empty():
+			first = found
+
+		if not found.has("point") or not view_direction.is_valid() or not aimed_at(found["point"]):
+			continue
+
+		var cos: float = aim_cos_of(found["point"])
+
+		if cos > best_cos + 0.0001:
+			best_cos = cos
+			best = found
+
+	if not best.is_empty():
+		best["aimed"] = true
+		return best
+
+	return first
+
+
+# The cosine between the view direction and the line from the eyes to a point.
+func aim_cos_of(point: Vector3) -> float:
+	var to: Vector3 = point - (_player_position.call() + Vector3(0.0, 1.6, 0.0))
+	var forward: Vector3 = view_direction.call() if view_direction.is_valid() else Vector3.ZERO
+	return 1.0 if forward.length() < 0.01 or to.length() < 0.01 else to.normalized().dot(forward.normalized())
+
+
+# The E prompt line for an interaction (Dave 1 Nov 2026): shown only while inspection mode is on. With it off the screen carries no "Press E to..." text;
+# E works the same. Messages that say why something failed (needs plant fibre, too heavy) are notices, not prompts, and show either way.
+func prompt_text(interaction: Dictionary) -> String:
+	if not (is_inspecting.is_valid() and bool(is_inspecting.call())) or bool(interaction.get("quiet", false)):
+		return ""
+
+	return str(interaction.get("prompt", ""))
+
+
+# What the cursor is on: the kind of the E action it is aimed at ("pickup", "plant", "block", "fire", "structure", "npc"...), "" when it is on nothing.
+func cursor_kind() -> String:
+	var found: Dictionary = current_interaction()
+	return str(found.get("kind", "")) if bool(found.get("aimed", false)) else ""
+
+
+# Dave's three cases for E in every path, tap, hold and auto-pickup (1 Nov 2026):
+#  1. the cursor is on a pickable item: that item and only that one;
+#  2. the cursor is on something else with an E action (block, fire, bench, chest, door, tree, plant): that action and nothing else is picked up;
+#  3. the cursor is on nothing specific: the nearby pick-up and gather may run.
+# Held E calls this each step. True when the cursor is on something (the caller must not sweep the ground); the held action itself repeats here, at the server's pace.
+func hold_e_step() -> bool:
+	var found: Dictionary = current_interaction()
+
+	if not bool(found.get("aimed", false)):
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if str(found.get("kind", "")) in ["pickup", "plant", "block"] and now >= _hold_next_msec:
+		_hold_next_msec = now + 600
+		found["tap"].call()
+
+	return true
+
+
+var _hold_next_msec: int = 0
 
 
 func _register_builtin_interactables() -> void:
@@ -415,8 +510,9 @@ func _probe_pickup() -> Dictionary:
 		return {}
 
 	var id: int = near[0]
-	return {"prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
+	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
+		pick_stamp = Time.get_ticks_msec()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
 
@@ -460,6 +556,7 @@ func sweep_target(radius: float) -> Array:
 
 func sweep_pick(id: int) -> void:
 	_sweep_asked[id] = Time.get_ticks_msec()
+	pick_stamp = _sweep_asked[id]
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
@@ -481,7 +578,7 @@ func _probe_fire() -> Dictionary:
 		return {}
 
 	var state: int = _world[id]["state"]
-	var found: Dictionary = {"prompt": _fire_prompt(state), "tap": func():
+	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		else:
@@ -499,8 +596,16 @@ func _probe_fire() -> Dictionary:
 
 
 func _probe_structure() -> Dictionary:
-	var id: int = _nearest_struct()
+	var found: Dictionary = _probe_structure_for(_nearest_struct())
 
+	if not found.is_empty():
+		found["kind"] = "block" if int(_world[_nearest_struct()]["state"]) == 7 else "structure"
+		found["point"] = _world[_nearest_struct()]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+
+	return found
+
+
+func _probe_structure_for(id: int) -> Dictionary:
 	if id == 0:
 		return {}
 
@@ -516,7 +621,7 @@ func _probe_structure() -> Dictionary:
 		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
-		return {"prompt": "Press E to split firewood", "tap": pick_up_nearest}
+		return {"prompt": "Press E to split firewood", "tap": func(): _use_block(id)}
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -525,6 +630,9 @@ func _probe_structure() -> Dictionary:
 		return {"prompt": "Press E to open the door" if state == 26 else "Press E to close the door", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	var station_def: Dictionary = _structure_by_state(state)
+
+	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E sets it as the spawn point, hold E takes it down
+		return {"prompt": "Press E to set this bed as your spawn point (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if str(station_def.get("station", "")) != "":
 		return {"prompt": "Press F to use the %s" % table.name_of(_world[id]["number"]).to_lower(), "tap": _open_station, "hold": take_down}
@@ -580,17 +688,18 @@ func _hold_e_check() -> void:
 # What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
 func _fire_prompt(state: int) -> String:
 	if state == 8:
-		return "Press E to add firewood"
+		return "Press E to add wood"
 
 	if state == 9:
-		return "Press E to light"
+		return "Press E to light (hold E to add wood)"
 
-	return "Press E to add wood"
+	return "Press E to add wood (hold E to cook)"
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
 # True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
-func open_container() -> bool:
+# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens.
+func _container_near() -> int:
 	var here: Vector3 = _player_position.call()
 	var best: int = 0
 	var best_d: float = 3.0
@@ -602,6 +711,31 @@ func open_container() -> bool:
 		if (is_station or state == 6 or state == 11 or state == 12 or _lit_state(state) or state == 8 or state == 9) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
+
+	return best
+
+
+var _last_f_ms: int = -100000
+var _carried_slot: Label      # the read-only "Carried" slot: the log on the shoulder, when there is one
+
+const FPress := preload("res://src/client/f_press.gd")
+
+
+# The F key: opens the chest, station, fire or remains beside you; with a log on the shoulder and nothing to open, F twice within 0.6 s puts the log down (the first F says so).
+func press_f(now_ms: int) -> void:
+	match FPress.decide(shoulder_id != "", _container_near() != 0, now_ms, _last_f_ms):
+		"drop":
+			_last_f_ms = -100000
+			lay_down_shoulder()
+		"hint":
+			_last_f_ms = now_ms
+			_on_notice("F again to put the log down")
+		_:
+			open_container()
+
+
+func open_container() -> bool:
+	var best: int = _container_near()
 
 	if best == 0:
 		return false
@@ -618,6 +752,12 @@ func open_container() -> bool:
 func _open_station() -> void:
 	if not open:
 		toggle()
+
+
+# E on the chopping block the cursor is on: split a log there, nothing else (the wood lying around stays where it is).
+func _use_block(id: int) -> void:
+	net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
+	_block_next_msec = Time.get_ticks_msec() + 600
 
 
 # True when something lay within reach and the server was asked for it.
@@ -639,6 +779,7 @@ func pick_up_nearest() -> bool:
 		_block_next_msec = Time.get_ticks_msec() + 600
 		return true
 
+	pick_stamp = Time.get_ticks_msec()
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	return true
 
@@ -686,7 +827,7 @@ func _process_body(_delta: float) -> void:
 	if now < _notice_until_msec:
 		return
 	var interaction: Dictionary = current_interaction()
-	_prompt.text = "" if bool(interaction.get("quiet", false)) else str(interaction.get("prompt", ""))
+	_prompt.text = prompt_text(interaction)
 
 	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
 		_prompt.text = "Hold Z to sleep"
@@ -714,7 +855,10 @@ func _auto_pickup_tick(now: int) -> void:
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
 
-	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, inventory.counts.hash(), in_view)
+	if cursor_kind() != "":
+		return   # the cursor is on something specific: auto pickup stays out of it (case 3 only)
+
+	var id: int = auto_pickup.next_pick(_world, _player_position.call(), Interact.reach_m(), now, hash(inventory.counts), in_view)
 
 	if id != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -736,32 +880,51 @@ func hold_use() -> bool:
 	return true
 
 
-# The id of the nearest placed structure (lean-to, chest) within 3 m, 0 when none.
+# The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
 func _nearest_struct() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
+			ids.append(id)
+
+	return _aimed_or_nearest(ids, here)
+
+
+# Of some world ids: the best centred one when the cursor is on any of them, otherwise the nearest; 0 for none.
+func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
+	var best: int = 0
+	var best_d: float = 1.0e9
+	var best_cos: float = -2.0
+
+	for id in ids:
+		var d: float = here.distance_to(_world[id]["pos"])
+
+		if view_direction.is_valid() and aimed_at(_world[id]["pos"]):
+			var cos: float = aim_cos_of(_world[id]["pos"])
+
+			if cos > best_cos:
+				best_cos = cos
+				best = id
+
+		elif best_cos < -1.0 and d < best_d:
+			best_d = d
 			best = id
 
 	return best
 
 
-# The id of the nearest fire (lit or out) within 3 m, 0 when none.
+# The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none.
 func _nearest_fire() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in [1, 8, 9] and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
-			best = id
+		if _world[id]["state"] in [1, 8, 9, 40, 41] and here.distance_to(_world[id]["pos"]) <= 3.0:
+			ids.append(id)
 
-	return best
+	return _aimed_or_nearest(ids, here)
 
 
 func cook_nearest() -> void:
@@ -832,6 +995,20 @@ func loose_log_near(point: Vector3) -> int:
 	return 0
 
 
+# The id of a stump within reach of a point (the axe struck near it), 0 when none: the axe chops it up (server_items.gd _chop_stump).
+func stump_near(point: Vector3) -> int:
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry["state"]) == 4 and is_instance_valid(entry["node"]):
+			var radius: float = float(entry.get("extra", {}).get("radius", 0.3))
+
+			if Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length() < radius + 0.9 and absf(point.y - entry["pos"].y) < 1.6:
+				return id
+
+	return 0
+
+
 func felled_trunk_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]
@@ -841,7 +1018,7 @@ func felled_trunk_near(point: Vector3) -> int:
 			var yaw: float = float(extra.get("yaw", 0.0))
 			var length: float = float(extra.get("length", 8.0))
 			var along: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw))
-			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length)
+			var t: float = clampf((point - entry["pos"]).dot(along), 0.0, length * cos(float(extra.get("pitch", 0.0))))
 			var nearest: Vector3 = entry["pos"] + along * t
 
 			if Vector2(point.x - nearest.x, point.z - nearest.z).length() < 1.5 + float(extra.get("radius", 0.3)):
@@ -891,23 +1068,129 @@ func _update_trunk_colliders() -> void:
 
 
 # A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
+# The bark of a felled trunk or stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
+func _felled_bark(species: String, radius: float, span: float) -> Material:
+	var flora_script: GDScript = load("res://src/flora/flora_view.gd")
+	var builder_script: GDScript = load("res://src/flora/tree_builder.gd")
+	var shader: Shader = Shader.new()
+	shader.code = flora_script.BARK_SHADER
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = shader
+	var texture: String = "bark"
+
+	if species.contains("birch"):
+		texture = "bark_birch"
+	elif species.contains("beech") or species.contains("fir"):
+		texture = "bark_smooth"
+
+	mat.set_shader_parameter("bark", load("res://assets/trees/%s.png" % texture))
+	var tints: Dictionary = builder_script.get_script_constant_map()
+	var tint: Color = tints.get("BARK_TINT_" + species.to_upper(), Color(0.46, 0.40, 0.34))
+
+	if not tints.has("BARK_TINT_" + species.to_upper()):   # the species name has no tint constant of its own: softwoods take the brown softwood tint, as the standing conifers do (real game: a felled spruce read cool grey)
+		for word in ["pine", "spruce", "larch", "cedar", "hemlock", "cypress", "juniper", "yew", "conifer"]:
+			if species.contains(word):
+				tint = tints.get("BARK_TINT_SOFT", tint)
+				break
+	mat.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
+	mat.set_shader_parameter("uv_scale", Vector2(maxf(radius * 4.0, 1.0), maxf(span / 1.6, 1.0)))
+	mat.set_shader_parameter("foot_offset", span * 0.5)
+	mat.set_shader_parameter("lift", Vector3(3.0, 2.0, 1.3))   # brighter and warmer: standing trunks carry baked warm shading (tree_builder _crown_shading), a plain felled one read cool grey
+	return mat
+
+
 func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var radius: float = float(extra.get("radius", 0.3))
 	var length: float = float(extra.get("length", 8.0))
-	var bark: StandardMaterial3D = StandardMaterial3D.new()
-	bark.albedo_color = Color(0.32, 0.23, 0.15)
+	var bark: Material = _felled_bark(str(extra.get("species", "")), radius, length if trunk else maxf(radius * 1.2, 0.5))
 	var mesh_node: MeshInstance3D = MeshInstance3D.new()
 	var cyl: CylinderMesh = CylinderMesh.new()
-	cyl.top_radius = radius * (0.55 if trunk else 0.95)
+	var orig_length: float = maxf(float(extra.get("orig_length", length)), length)
+	cyl.top_radius = radius * ((1.0 - 0.45 * length / orig_length) if trunk else 0.95)   # a shortened trunk is thicker at its fresh cut end
 	cyl.bottom_radius = radius
 	cyl.height = length if trunk else maxf(radius * 1.2, 0.5)
 	cyl.material = bark
 	mesh_node.mesh = cyl
 	root.add_child(mesh_node)
+	# Looks (Kathleen, stage-1 pass): a pale cut face with a darker ring on the stump top and at both ends of the trunk, a few snapped branch stubs
+	# along the trunk and root swell round the stump foot, so a felled tree is not a bare drum.
+	var cut: StandardMaterial3D = StandardMaterial3D.new()
+	cut.albedo_color = Color(0.72, 0.58, 0.38)
+	var ring: StandardMaterial3D = StandardMaterial3D.new()
+	ring.albedo_color = Color(0.5, 0.36, 0.2)
+
+	for end in ([-1.0, 1.0] if trunk else [1.0]):
+		var face: MeshInstance3D = MeshInstance3D.new()
+		var disc: CylinderMesh = CylinderMesh.new()
+		var r_end: float = cyl.top_radius if end > 0.0 else cyl.bottom_radius
+		disc.top_radius = r_end * 0.93
+		disc.bottom_radius = r_end * 0.93
+		disc.height = 0.012
+		disc.material = cut
+		face.mesh = disc
+		face.position = Vector3(0.0, end * cyl.height * 0.5 + end * 0.004, 0.0)
+		mesh_node.add_child(face)
+		var core: MeshInstance3D = MeshInstance3D.new()
+		var inner: CylinderMesh = CylinderMesh.new()
+		inner.top_radius = r_end * 0.55
+		inner.bottom_radius = r_end * 0.55
+		inner.height = 0.016
+		inner.material = ring
+		core.mesh = inner
+		core.position = face.position + Vector3(0.0, end * 0.001, 0.0)
+		mesh_node.add_child(core)
+
+	if trunk and bool(extra.get("keywood", false)) and length > 2.44 * 1.2:   # the next cut line: a pale band round the trunk one log length from the far end
+		var cut_at: float = (length - 2.44) / length
+		var band: MeshInstance3D = MeshInstance3D.new()
+		var band_cyl: CylinderMesh = CylinderMesh.new()
+		var band_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, cut_at) * 1.04
+		band_cyl.top_radius = band_r
+		band_cyl.bottom_radius = band_r
+		band_cyl.height = 0.07
+		var band_mat: StandardMaterial3D = StandardMaterial3D.new()
+		band_mat.albedo_color = Color(0.92, 0.82, 0.55)
+		band_mat.emission_enabled = true
+		band_mat.emission = Color(0.35, 0.3, 0.15)
+		band_cyl.material = band_mat
+		band.mesh = band_cyl
+		band.position = Vector3(0.0, length * 0.5 - 2.44, 0.0)
+		mesh_node.add_child(band)
+
+	var stub_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	stub_rng.seed = int(radius * 1000.0) + int(length)
+
+	if trunk:
+		for k in range(4):
+			var stub: MeshInstance3D = MeshInstance3D.new()
+			var twig: CylinderMesh = CylinderMesh.new()
+			twig.top_radius = radius * 0.06
+			twig.bottom_radius = radius * 0.12
+			twig.height = radius * 1.1
+			twig.material = bark
+			stub.mesh = twig
+			var along: float = stub_rng.randf_range(-0.35, 0.4) * cyl.height
+			var ang: float = stub_rng.randf() * TAU
+			var local_r: float = lerpf(cyl.bottom_radius, cyl.top_radius, along / cyl.height + 0.5)
+			stub.position = Vector3(cos(ang) * local_r, along, sin(ang) * local_r)
+			stub.rotation = Vector3(sin(ang) * 1.2, 0.0, -cos(ang) * 1.2)
+			mesh_node.add_child(stub)
 
 	if not trunk:
 		mesh_node.position = Vector3(0.0, cyl.height * 0.5, 0.0)
+
+		for k in range(5):
+			var swell: MeshInstance3D = MeshInstance3D.new()
+			var fin: BoxMesh = BoxMesh.new()
+			fin.size = Vector3(radius * 0.9, radius * 0.35, radius * 0.22)
+			fin.material = bark
+			swell.mesh = fin
+			var a2: float = TAU * float(k) / 5.0 + stub_rng.randf() * 0.5
+			swell.position = Vector3(cos(a2) * radius * 0.95, radius * 0.1, sin(a2) * radius * 0.95)
+			swell.rotation = Vector3(0.0, -a2, 0.0)
+			root.add_child(swell)
+
 		return root
 
 	# Hinge at the stump: pivot turns from upright to lying, over about 1.5 s.
@@ -918,11 +1201,18 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	pivot.add_child(mesh_node)
 	mesh_node.position = Vector3(0.0, length * 0.5, 0.0)
 	var lie: float = deg_to_rad(90.0)
+	var pitch: float = float(extra.get("pitch", 0.0))   # the server's resting pitch (fell_pose.gd): rises with a slope, follows a falling one
+	var has_pose: bool = extra.has("pitch")
+	var rest: float = lie - pitch if has_pose else lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5))   # an older record keeps the level lie with the taper dip
 	pivot.position.y = radius   # the axis rides one butt radius up, so the log rests ON the ground instead of sunk in it (collision is at this height)
 	pivot.rotation.x = 0.0
-	var tween: Tween = pivot.create_tween()
-	# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
-	tween.tween_property(pivot, "rotation:x", lie + asin(clampf(radius * 0.45 / maxf(length, 0.5), 0.0, 0.5)), 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	if bool(extra.get("landed", false)):
+		pivot.rotation.x = rest      # already lying (a log was cut off it): no fall again
+	else:
+		var tween: Tween = pivot.create_tween()
+		# The trunk tapers to 55 percent at the top: dip the far end by the lost radius so it lies on the ground along its whole length.
+		tween.tween_property(pivot, "rotation:x", rest, 1.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
 	var body: StaticBody3D = StaticBody3D.new()
 	body.collision_layer = 0
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -930,8 +1220,8 @@ func _make_felled(trunk: bool, extra: Dictionary) -> Node3D:
 	capsule.radius = radius * 0.8
 	capsule.height = length
 	shape.shape = capsule
-	shape.rotation.x = lie
-	shape.position = Vector3(0.0, radius, length * 0.5)
+	shape.rotation.x = rest
+	shape.position = Vector3(0.0, radius + sin(pitch) * length * 0.5, cos(pitch) * length * 0.5)
 	body.add_child(shape)
 	root.add_child(body)
 	_collide.append([root, body])
@@ -949,15 +1239,15 @@ func _update_fire_lights() -> void:
 	lit.sort_custom(func(a, b): return a[0] < b[0])
 
 	for n in lit.size():
-		var light: OmniLight3D = lit[n][1]
+		var light: Light3D = lit[n][1]
 		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
-		light.light_energy = 1.6 + 0.35 * sin(float(Time.get_ticks_msec()) * 0.013 + float(n))
+		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
 
 # Is a fire light that is switched on within `radius` of the point?
 func fire_light_near(point: Vector3, radius: float) -> bool:
 	for id in _world:
-		var light: OmniLight3D = _world[id]["light"]
+		var light: Light3D = _world[id]["light"]
 
 		if light != null and light.visible and point.distance_to(_world[id]["pos"]) <= radius:
 			return true
@@ -1041,7 +1331,7 @@ func carried_kg() -> float:
 	if _carry_cfg.is_empty():
 		return 0.0
 
-	return CarryRules.carried_kg(inventory, table, _carry_cfg) + (CarryRules.weight_of(shoulder_id, _carry_cfg) if shoulder_id != "" else 0.0)
+	return CarryRules.carried_kg(inventory, table, _carry_cfg)   # the large log is a pack item: its weight is already in
 
 
 # Q or D with nothing selected: lay the log on your shoulder down in front of you.
@@ -1183,7 +1473,14 @@ func _refresh_purse() -> void:
 		fill_coin_line(_purse_label, ["Purse: ", purse_copper])
 
 
+func _refresh_carried() -> void:
+	if _carried_slot != null:
+		_carried_slot.visible = shoulder_id != ""
+		_carried_slot.text = ("Carried: %s   (F twice or Q puts it down)" % table.name_of(table.number_of(shoulder_id))) if shoulder_id != "" else ""
+
+
 func _refresh_weight() -> void:
+	_refresh_carried()
 	_weight_label.text = _load_text() + "\nBody weight %.1f kg   (food %d%%, health %d)" % [weight_kg, hunger, health]
 
 	if _carry_bar != null and not _carry_cfg.is_empty():
@@ -1337,6 +1634,11 @@ func edible_slot(slot: int) -> bool:
 	return slot >= 0 and slot < inventory.SLOTS and inventory.numbers[slot] != 0 and VitalsRules.edible(table.id_of(inventory.numbers[slot]), _vitals_cfg)
 
 
+# Is this item number food, a drink or medicine by the vitals rules the server uses too (data/items/vitals.json)?
+func is_edible_item(number: int) -> bool:
+	return number > 0 and VitalsRules.edible(table.id_of(number), _vitals_cfg)
+
+
 func equippable_slot(slot: int) -> bool:
 	if slot < 0 or slot >= inventory.SLOTS or inventory.numbers[slot] == 0:
 		return false
@@ -1359,8 +1661,10 @@ func equip_with_move(slot: int) -> void:
 				break
 
 		if target < 0:
-			_on_notice("Your hotbar is full. Clear a slot first.")
-			return
+			# A full hotbar: the tool swaps places with what the hand holds (or the last slot), so using a tool from deep in a full pack always works (moderator, 31 Oct 2026).
+			var in_hand: int = int(held_slot_now.call()) if held_slot_now.is_valid() else -1
+			target = in_hand if in_hand >= 0 and in_hand < 10 else 9
+			_on_notice("Hotbar full: swapped with slot %d." % (target + 1))
 
 		move_slot(slot, target)
 
@@ -1550,13 +1854,6 @@ func _build_chest_panel() -> void:
 			_on_chest_slot(bool(_chest_last[0]), int(_chest_last[1])))
 	transfer.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	chest_outer.add_child(transfer)
-	_shoulder_put = Button.new()
-	_shoulder_put.text = "Put the log from your shoulder in"
-	_shoulder_put.tooltip_text = "The large log on your shoulder goes into the container (take it out again the same way, one log at a time)"
-	_style(_shoulder_put, BODY_PX)
-	_shoulder_put.pressed.connect(func(): net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO))
-	_shoulder_put.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	chest_outer.add_child(_shoulder_put)
 	_layer.add_child(_chest_panel)
 
 
@@ -1578,9 +1875,6 @@ func _refresh_chest() -> void:
 	if not chest_mode or _chest_panel == null:
 		return
 
-	if _shoulder_put != null:
-		_shoulder_put.visible = shoulder_id != ""
-
 	var capacity: int = int(table.entry(table.id_of(int(_world.get(chest_id, {}).get("number", 0)))).get("slots", inventory.SLOTS))
 
 	for i in inventory.SLOTS:
@@ -1590,7 +1884,7 @@ func _refresh_chest() -> void:
 			var button: Button = pair[0][i]
 			var source = pair[1]
 			var number: int = source.numbers[i]
-			button.text = "" if number == 0 else "%s\nx%d" % [table.name_of(number), source.counts[i]]
+			button.text = "" if number == 0 else "%s\nx%s" % [table.name_of(number), _count_text(source.counts[i])]
 			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
@@ -1616,9 +1910,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_snap_loose(id)
 
 			if _world[id]["state"] == state:
-				continue
+				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
+					_world[id]["burn"] = float(row[5]["burn"])
+					_world[id]["burn_at"] = Time.get_ticks_msec()
 
-			_forget(id)
+				var shorter: bool = is_felled_state(state) and row.size() > 5 and absf(float((row[5] as Dictionary).get("length", 0.0)) - float((_world[id].get("extra", {}) as Dictionary).get("length", 0.0))) > 0.01
+
+				if not shorter:
+					continue
+
+			_forget(id)   # a changed state, or a felled trunk with a log cut off: draw it again
 
 		var node: Node3D
 		var light: OmniLight3D = null
@@ -1632,18 +1933,25 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			var roof_key: int = -1
 
 			if state == 5 and cover_index != null:
-				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.1, 0.95, yaw, row[3].y - 0.5, row[3].y + 2.1))
+				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.3, 1.7, yaw, row[3].y - 0.5, row[3].y + 1.5))
 			elif state == 24 and cover_index != null:
 				roof_key = cover_index.add_roof(CoverScript.box_roof(Vector2(row[3].x, row[3].z), 1.2, 1.2, yaw, row[3].y - 0.5, row[3].y + 2.6))
 
-			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": null, "roof": roof_key, "yaw": rad_to_deg(yaw)}
+			var fixture_light: Light3D = null
+
+			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
+				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
+				node.add_child(fixture)
+				fixture_light = fixture.get_node_or_null("Light")
+
+			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw)}
 
 			if StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
 
 			continue
 
-		if state >= 3 and not _lit_state(state):
+		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			node = _make_felled(state == 3, extra)
 			node.position = row[3]
@@ -1668,6 +1976,11 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+
+		if state != 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):   # a fire: the burn time left (the label counts it down while it burns)
+			_world[id]["burn"] = float(row[5]["burn"])
+			_world[id]["burn_at"] = Time.get_ticks_msec()
+
 		_refresh_pile(id)
 		_snap_loose(id)
 
@@ -1779,9 +2092,17 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
-		_boulder_rock = StandardMaterial3D.new()
-		_boulder_rock.albedo_color = Color(0.46, 0.46, 0.44)
-		_boulder_rock.roughness = 1.0
+		# Granite with moss (Kathleen, white-sphere fix): the plain mid-grey material drew server boulders near white in full sun, big smooth pale eggs. The scenery
+		# boulder shader of grass_view.gd (stone mottle, moss on the tops and north side) is used instead, with its per-instance custom data turned into
+		# uniforms and its distance fade switched off (a boulder the server sends must not melt away at 18 m).
+		var shader: Shader = Shader.new()
+		shader.code = String(load("res://src/client/grass_view.gd").BOULDER_SHADER).replace("stone = INSTANCE_CUSTOM.rgb;", "stone = stone_color;").replace("mossy = INSTANCE_CUSTOM.a;", "mossy = mossiness;").replace("uniform vec3 moss_color", "uniform vec3 stone_color = vec3(0.30, 0.29, 0.27);
+uniform float mossiness = 0.65;
+uniform vec3 moss_color")
+		_boulder_rock = ShaderMaterial.new()
+		_boulder_rock.shader = shader
+		_boulder_rock.set_shader_parameter("fade_start", 100000.0)
+		_boulder_rock.set_shader_parameter("fade_end", 100001.0)
 
 	var body: StaticBody3D = StaticBody3D.new()
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -1926,51 +2247,11 @@ func _make_block() -> Node3D:
 # A camp bench (placeholder look until Art draws it): a flat top on four legs, waist high, about 1.5 by 1 m.
 # Add-ons (placeholder looks): a tool rack is two posts and a crossbar with pegs; a vice is a block with two jaws.
 func _make_rack() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.4, 0.29, 0.18)
-
-	for x in [-0.45, 0.45]:
-		var post: MeshInstance3D = MeshInstance3D.new()
-		var bar: BoxMesh = BoxMesh.new()
-		bar.size = Vector3(0.08, 1.5, 0.08)
-		post.mesh = bar
-		post.material_override = wood
-		post.position = Vector3(x, 0.75, 0.0)
-		root.add_child(post)
-
-	var cross: MeshInstance3D = MeshInstance3D.new()
-	var beam: BoxMesh = BoxMesh.new()
-	beam.size = Vector3(1.0, 0.08, 0.08)
-	cross.mesh = beam
-	cross.material_override = wood
-	cross.position = Vector3(0.0, 1.35, 0.0)
-	root.add_child(cross)
-	return root
+	return BuildingLook.tool_rack()
 
 
 func _make_vice() -> Node3D:
-	var root: Node3D = Node3D.new()
-	var wood: StandardMaterial3D = StandardMaterial3D.new()
-	wood.albedo_color = Color(0.36, 0.26, 0.16)
-	var block: MeshInstance3D = MeshInstance3D.new()
-	var base: BoxMesh = BoxMesh.new()
-	base.size = Vector3(0.45, 0.8, 0.4)
-	block.mesh = base
-	block.material_override = wood
-	block.position = Vector3(0.0, 0.4, 0.0)
-	root.add_child(block)
-
-	for x in [-0.12, 0.12]:
-		var jaw: MeshInstance3D = MeshInstance3D.new()
-		var plate: BoxMesh = BoxMesh.new()
-		plate.size = Vector3(0.06, 0.25, 0.3)
-		jaw.mesh = plate
-		jaw.material_override = wood
-		jaw.position = Vector3(x, 0.92, 0.0)
-		root.add_child(jaw)
-
-	return root
+	return BuildingLook.vice()
 
 
 # Admin mode (Dave 2026-10-23, on by default): the whole list is craftable free for an admin; the server decides, this only stops the list greying.
@@ -1982,7 +2263,47 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or recipes.can_make(number, inventory) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or recipes.can_make(number, inventory) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+
+
+# The log on the shoulder plus log items lying within 3 m of the player (the server uses them for a craft that needs logs: server_items.gd _pull_nearby_logs).
+func nearby_logs() -> int:
+	var total: int = 0   # the carried log is a pack item and counted with the pack
+	var here: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.ZERO
+	var members: PackedInt32Array = table.group_members(table.number_of("log"))
+
+	for id in _world:
+		var entry: Dictionary = _world[id]
+
+		if int(entry.get("state", -1)) == 0 and members.has(int(entry.get("number", 0))) and here.distance_to(entry["pos"]) <= 3.0:
+			total += int(entry.get("count", 1))
+
+	return total
+
+
+# Is the recipe covered once the nearby logs are counted with the pack (everything else in the pack, the station near)?
+func _logs_cover(number: int) -> bool:
+	var r: Dictionary = recipes.recipe(number)
+	var log_n: int = table.number_of("log")
+
+	if r.is_empty() or log_n <= 0 or not _station_ok(r):
+		return false
+
+	var uses_log: bool = false
+
+	for need in r["needs"]:
+		if int(need[0]) == log_n:
+			uses_log = true
+			if inventory.count_fill(log_n) + nearby_logs() < int(need[1]):
+				return false
+		elif not inventory.has_fill(int(need[0]), int(need[1])):
+			return false
+
+	for keep in r["keeps"]:
+		if not inventory.has(int(keep[0]), int(keep[1])):
+			return false
+
+	return uses_log
 
 
 var _plan_cache: Dictionary = {}   # recipe number -> its auto-make plan, cleared on every refresh
@@ -1997,7 +2318,7 @@ func _parts_plan(number: int) -> Dictionary:
 
 	if not recipes.can_make(number, inventory):
 		var ctx: Dictionary = {
-			"have": func(item: int) -> int: return inventory.count_of(item),
+			"have": func(item: int) -> int: return inventory.count_fill(item),
 			"station_ok": func(r: Dictionary) -> bool: return _station_ok(r),
 			"free": false,
 		}
@@ -2252,25 +2573,7 @@ func _make_carcass(species: String) -> Node3D:
 
 
 func _make_remains(age: float) -> Node3D:
-	var root: Node3D = Node3D.new()
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0
-	material.albedo_color = Color(0.22, 0.17, 0.14).lerp(Color(0.8, 0.77, 0.68), clampf(age, 0.0, 1.0))
-	var body: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = Vector3(1.7, 0.16, 0.5)
-	body.mesh = box
-	body.material_override = material
-	body.position = Vector3(0.0, 0.08, 0.0)
-	root.add_child(body)
-	var pack: MeshInstance3D = MeshInstance3D.new()
-	var pack_box: BoxMesh = BoxMesh.new()
-	pack_box.size = Vector3(0.4, 0.28, 0.5)
-	pack.mesh = pack_box
-	pack.material_override = material
-	pack.position = Vector3(0.1, 0.3, 0.0)
-	root.add_child(pack)
-	return root
+	return BuildingLook.remains(age)
 
 
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
@@ -2321,6 +2624,11 @@ func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 
 
 # Lit fire states (cooking.json fire_tiers): 1 campfire, 40 survival fire, 41 bonfire.
+# World-item states 3 (a felled trunk) and 4 (its stump) are drawn by _make_felled; every other state is a fire, a structure, a boulder or a loose item.
+static func is_felled_state(state: int) -> bool:
+	return state == 3 or state == 4
+
+
 static func _lit_state(state: int) -> bool:
 	return state == 1 or state == 40 or state == 41
 
@@ -2344,6 +2652,10 @@ func _mesh_for(number: int) -> Mesh:
 		if basic != null:
 			_meshes[number] = basic
 			return basic
+
+		if id == "log" or id.begins_with("log_"):
+			_meshes[number] = _log_mesh(id)      # a lying log: the standing trees' bark shader and a pale cut face at each end (guide 2026-10-31: logs were plain flat cylinders)
+			return _meshes[number]
 
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.roughness = 1.0
@@ -2380,6 +2692,68 @@ func _mesh_for(number: int) -> Mesh:
 		_meshes[number] = mesh
 
 	return _meshes[number]
+
+
+# A cut log lying along X: bark on the sides (species texture and tint, as the felled trunk), pale cut faces with a darker heart at both ends. 2.5 m for a species log, 1 m for the plain log.
+func _log_mesh(id: String) -> ArrayMesh:
+	var plain: bool = id == "log"
+	var length: float = 1.0 if plain else 2.5
+	var r0: float = 0.13 if plain else 0.28
+	var r1: float = 0.11 if plain else 0.22
+	var cyl: CylinderMesh = CylinderMesh.new()
+	cyl.top_radius = r1
+	cyl.bottom_radius = r0
+	cyl.height = length
+	cyl.radial_segments = 10
+	cyl.rings = 1
+	cyl.cap_top = false
+	cyl.cap_bottom = false
+	var turn: Transform3D = Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3.ZERO)   # the cylinder's axis y becomes x
+	var mesh: ArrayMesh = ArrayMesh.new()
+	var side: Array = cyl.get_mesh_arrays()
+	var verts: PackedVector3Array = side[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = side[Mesh.ARRAY_NORMAL]
+
+	for k in range(verts.size()):
+		verts[k] = turn * verts[k]
+		normals[k] = turn.basis * normals[k]
+
+	side[Mesh.ARRAY_VERTEX] = verts
+	side[Mesh.ARRAY_NORMAL] = normals
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, side)
+	mesh.surface_set_material(0, _felled_bark("" if plain else id.substr(4), r0, length))
+	var cut: StandardMaterial3D = StandardMaterial3D.new()
+	cut.albedo_color = Color(0.72, 0.58, 0.38)
+	cut.roughness = 1.0
+	var heart: StandardMaterial3D = StandardMaterial3D.new()
+	heart.albedo_color = Color(0.5, 0.36, 0.2)
+	heart.roughness = 1.0
+
+	for end in [-1.0, 1.0]:
+		var r_end: float = r1 if end > 0.0 else r0
+
+		for layer in range(2):
+			var disc: CylinderMesh = CylinderMesh.new()
+			disc.top_radius = r_end * (0.97 if layer == 0 else 0.5)
+			disc.bottom_radius = disc.top_radius
+			disc.height = 0.006
+			disc.radial_segments = 10
+			disc.rings = 1
+			var arrays: Array = disc.get_mesh_arrays()
+			var dv: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var dn: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var place: Transform3D = Transform3D(Basis.from_euler(Vector3(0.0, 0.0, PI * 0.5)), Vector3(end * (length * 0.5 + 0.002 + 0.001 * float(layer)), 0.0, 0.0))
+
+			for k in range(dv.size()):
+				dv[k] = place * dv[k]
+				dn[k] = place.basis * dn[k]
+
+			arrays[Mesh.ARRAY_VERTEX] = dv
+			arrays[Mesh.ARRAY_NORMAL] = dn
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, cut if layer == 0 else heart)
+
+	return mesh
 
 
 # A thin tapered, slightly bent branch lying along X (six sides, four segments), r0 at the base, r1 at the tip.
@@ -2466,8 +2840,8 @@ const STICK_SIZE_SHARE := 0.75   # Dave 2026-10-21: sticks about 75 percent of t
 const STICK_SCALE := Vector2(2.0, 2.7) * PICKUP_SIZE_MULT * STICK_SIZE_SHARE
 const STICK_TINT := Color(0.42, 0.29, 0.17)   # bark brown, multiplied into the mesh colours
 const STONE_LIFT_M := 0.05 * PICKUP_SIZE_MULT
-const PICKUP_BRIGHT := 1.3
-const PICKUP_GLOW := Color(0.13, 0.11, 0.08)
+const PICKUP_BRIGHT := 0.9   # was 1.3 while the vertex colours were not used (flat white); with them on, 1.3 drew chalk-white stones in full sun
+const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
@@ -2490,7 +2864,11 @@ func _pickup_group(group: String) -> Array:
 
 						if base is StandardMaterial3D:
 							var lit: StandardMaterial3D = base.duplicate()
-							lit.albedo_color = STICK_TINT if group == "stick" else Color(PICKUP_BRIGHT, PICKUP_BRIGHT, PICKUP_BRIGHT)
+							# The glb material does not use the mesh's vertex colours on its own, so every stone drew as flat white (with the glow below): the "white sphere" in the rig
+							# pictures. Vertex colours are switched on (Kathleen, 2026-10-30), which is what the tint and the brightness here were meant to multiply into.
+							lit.vertex_color_use_as_albedo = true
+							var bright: float = 1.05 if group == "stick" else (1.0 if group == "driftwood" else PICKUP_BRIGHT)   # the mesh colours are already stone grey, bark brown and bleached wood
+							lit.albedo_color = Color(bright, bright, bright)
 							lit.emission_enabled = true
 							lit.emission = PICKUP_GLOW
 							mesh.surface_set_material(surface, lit)
@@ -2729,9 +3107,28 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 		if d < best and int(_world[id]["number"]) > 0:
 			best = d
 			var number: int = int(_world[id]["number"])
-			label = "Your remains" if int(_world[id]["state"]) >= 11 else _item_label(number)
+			label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _fire_label(_world[id], number)
 
 	return label
+
+
+# "Campfire 00:04:00 Burn time": the fuel left in the fire (a lit one counts down, a laid one shows what its wood would burn).
+func _fire_label(entry: Dictionary, number: int) -> String:
+	if not entry.has("burn"):
+		return _item_label(number)
+
+	var state: int = int(entry["state"])
+	var left: float = float(entry["burn"])
+
+	if _lit_state(state):
+		left -= float(Time.get_ticks_msec() - int(entry.get("burn_at", Time.get_ticks_msec()))) / 1000.0
+
+	if state == 8 or left <= 0.0:
+		return "%s, no fuel" % _item_label(number)
+
+	var total: int = int(ceil(left))
+	var size: String = ", %s fire" % ["small", "medium", "large"][_fire_tier(state) - 1] if _lit_state(state) else ""
+	return "%s %02d:%02d:%02d Burn time%s" % [_item_label(number), total / 3600, (total / 60) % 60, total % 60, size]
 
 
 func _on_worn(numbers: PackedInt32Array) -> void:
@@ -2780,6 +3177,54 @@ func _on_sick(hours: int) -> void:
 
 	if _character != null:
 		_character.refresh()
+
+
+# The comfort line (protocol 80): "Comfort 7" and, while the buff runs, "Rested 38 min", small at the top right; hidden at comfort 0 with no buff.
+var comfort_level: int = 0
+var rested_level: int = 0
+var rested_minutes: int = 0
+var _comfort_label: Label
+var comfort_tip: String = ""
+
+
+func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String = "") -> void:
+	comfort_level = level
+	rested_level = rested_tier_level
+	rested_minutes = minutes
+
+	if _comfort_label == null:
+		_comfort_label = Label.new()
+		_comfort_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		_comfort_label.anchor_left = 1.0
+		_comfort_label.anchor_right = 1.0
+		_comfort_label.offset_left = -420.0
+		_comfort_label.offset_right = -20.0
+		_comfort_label.offset_top = 18.0
+		_comfort_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_comfort_label.add_theme_font_size_override("font_size", 26)
+		_comfort_label.add_theme_constant_override("outline_size", 6)
+		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+		_comfort_label.mouse_filter = Control.MOUSE_FILTER_STOP   # hover it (inventory open, cursor free) for the tooltip
+		_layer.add_child(_comfort_label)
+
+	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
+	_comfort_label.tooltip_text = tip
+	comfort_tip = tip
+	_comfort_label.visible = _comfort_label.text != ""
+	_comfort_label.modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
+
+
+# The words of the comfort line: "" when there is nothing to say.
+static func comfort_text(level: int, rested_tier_level: int, minutes: int) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	if level > 0:
+		parts.append("Comfort %d" % level)
+
+	if rested_tier_level > 0 and minutes > 0:
+		parts.append("Rested %d min" % minutes)
+
+	return "   ".join(parts)
 
 
 func _on_warmth(percent: int) -> void:
@@ -2932,6 +3377,10 @@ func _build_panel() -> void:
 	carry_empty.bg_color = Color(0.0, 0.0, 0.0, 0.5)
 	_carry_bar.add_theme_stylebox_override("background", carry_empty)
 	right.add_child(_carry_bar)
+	_carried_slot = Label.new()
+	_style(_carried_slot, BODY_PX - 6)
+	_carried_slot.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+	right.add_child(_carried_slot)
 	_sort_menu = OptionButton.new()
 	_style(_sort_menu, BODY_PX - 6)
 
@@ -3116,7 +3565,7 @@ func _start_craft(number: int, count: int = 1) -> void:
 
 
 func _on_reject(reason: int) -> void:
-	auto_pickup.note_refused(_player_position.call(), inventory.counts.hash())
+	auto_pickup.note_refused(_player_position.call(), hash(inventory.counts))
 	_sweep_blocked = _sweep_blocked or reason == 2   # a full pack ends a held-E sweep until E is let go
 	refuse_cue(["far", "no_tool", "full_pack", "other"][clampi(reason, 0, 3)])
 
@@ -3209,6 +3658,11 @@ func _item_label(number: int) -> String:
 	return item_name
 
 
+# A slot count: whole up to 9,999, then thousands with one decimal (12.3k).
+func _count_text(n: int) -> String:
+	return str(n) if n < 10000 else "%.1fk" % (float(n) / 1000.0)
+
+
 func _freshness_word(f: float) -> String:
 	return "fresh" if f > 0.6 else ("going off" if f > 0.25 else "nearly rotten")
 
@@ -3220,7 +3674,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0) -> String:
 	var entry: Dictionary = table.entry(table.id_of(number))
 	var item_name: String = _item_label(number)
 
-	var text: String = "%s x%d\n%s, stacks to %d" % [item_name, count, str(entry.get("kind", "item")), table.stack_of(number)]
+	var text: String = "%s x%d\n%s, %s" % [item_name, count, str(entry.get("kind", "item")), "does not stack" if table.stack_of(number) <= 1 else "stacks without limit (weight is your limit)"]
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
@@ -3289,11 +3743,13 @@ func _drop_selected(whole: bool) -> void:
 	_selected = -1
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name; a tab shows one category.
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
+# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
+const SEARCH_HINT_ALL := "Search all recipes: name or ingredient (try hide)"
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
 	_recipe_search = LineEdit.new()
-	_recipe_search.placeholder_text = "Search what you can make"
+	_recipe_search.placeholder_text = SEARCH_HINT_ALL
 	_recipe_search.clear_button_enabled = true
 	_recipe_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_style(_recipe_search, BODY_PX)
@@ -3318,7 +3774,7 @@ func _build_recipe_filter() -> Control:
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "")
+	return RecipeFilter.shown(r, _recipe_category, _recipe_search.text if _recipe_search != null else "", table)
 
 
 func _matches(text: String, filter: String) -> bool:
@@ -3408,7 +3864,7 @@ func _refresh() -> void:
 	for i in inventory.SLOTS:
 		var button: Button = _buttons[i]
 		var number: int = inventory.numbers[i]
-		button.text = "" if number == 0 else "%s\nx%d" % [_item_label(number), inventory.counts[i]]
+		button.text = "" if number == 0 else "%s\nx%s" % [_item_label(number), _count_text(inventory.counts[i])]
 		var bar: ColorRect = button.get_node("Condition")
 		var is_worn: bool = number != 0 and int(table.entry(table.id_of(number)).get("durability", 0)) > 0 and inventory.wear[i] > 0
 		var perishable: bool = number != 0 and table.shelf_units(number) > 0
@@ -3446,6 +3902,9 @@ func _refresh() -> void:
 
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+
+	if _recipe_search != null:
+		_recipe_search.placeholder_text = SEARCH_HINT_ALL if _recipe_category == "" else "Search in %s: name or ingredient" % _recipe_category
 
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
@@ -3558,7 +4017,7 @@ func _refresh_detail() -> void:
 
 	for need in r["needs"] + r["keeps"]:
 		var kept: bool = r["keeps"].has(need)
-		var have: int = inventory.count_of(need[0])
+		var have: int = inventory.count_of(need[0]) if kept else inventory.count_fill(need[0]) + (nearby_logs() if int(need[0]) == table.number_of("log") else 0)
 		var line: Label = Label.new()
 		line.text = "%s   %d / %d%s" % [_item_label(need[0]), have, need[1], "  (kept)" if kept else ""]
 		line.modulate = Color(0.6, 1.0, 0.6) if have >= need[1] else Color(1.0, 0.55, 0.5)
@@ -3654,9 +4113,15 @@ func run_strain_test(client) -> void:
 
 	var start_strain: float = strain
 	var start_pos: Vector3 = client.body.global_position
-	await get_tree().create_timer(25.0).timeout
+	var peak_strain: float = strain
+
+	for sample in 50:   # the highest strain seen during the run, not only the last value: it does not depend on how fast the frames came on a busy PC
+		await get_tree().create_timer(0.5).timeout
+		peak_strain = maxf(peak_strain, strain)
+
 	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
 	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
+	print("Strain test: peak strain %.2f" % peak_strain)
 
 	# The server's walk from normal to over-exerted to blackout is proven in test_server_items; here the client's side of it:
 	# over-exerted is a 10 percent slow-down with no speed cap and running still allowed, fainted locks movement.
@@ -3671,11 +4136,20 @@ func run_strain_test(client) -> void:
 	print("Strain test: %s" % " | ".join(factors))
 
 
+func _pack_items() -> int:
+	var total: int = 0
+
+	for slot in range(inventory.SLOTS):
+		total += inventory.counts[slot] if inventory.numbers[slot] != 0 else 0
+
+	return total
+
+
 func run_gather_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
 	var real_view: Callable = view_direction
 	view_direction = Callable()   # the prompt checks below stand wherever the test camera happens to look
-	var best: Array = []
+	var shrubs: Array = []
 	var here: Vector3 = _player_position.call()
 
 	for chunk in client.flora._chunks:
@@ -3684,25 +4158,32 @@ func run_gather_test(client) -> void:
 		for n in range(held["ids"].size()):
 			var sid: int = held["ids"][n] >> 16
 
-			if client.flora._species.get(sid, {}).get("kind", 0) == 1:
-				var d: float = held["positions"][n].distance_to(here)
+			if client.flora._species.get(sid, {}).get("kind", 0) in [1, 2]:   # shrubs and plants: whatever is in season at the test clock gives something
+				shrubs.append([held["positions"][n].distance_to(here), held["positions"][n]])
 
-				if best.is_empty() or d < best[0]:
-					best = [d, held["positions"][n]]
-
-	if best.is_empty():
+	if shrubs.is_empty():
 		print("Gather test: no shrub loaded")
 		return
 
-	client.body.global_position = best[1] + Vector3(0.5, 1.0, 0.0)
-	client.body.velocity = Vector3.ZERO
-	await get_tree().create_timer(3.0).timeout
+	shrubs.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var sticks: int = table.number_of("stick")
 	var before: int = inventory.count_of(sticks)
-	await get_tree().create_timer(0.6).timeout
-	print("Gather test: prompt \"%s\"" % plant_hint)
-	client.harvest.tap()
-	await get_tree().create_timer(2.0).timeout
+	var items_before: int = _pack_items()
+
+	# A shrub out of season gives nothing (the server refuses it quietly): try the nearest few until one gives sticks, so the check does not depend on the season of the test clock.
+	for candidate in range(mini(shrubs.size(), 14)):
+		client.body.global_position = shrubs[candidate][1] + Vector3(0.5, 1.0, 0.0)
+		client.body.velocity = Vector3.ZERO
+		await get_tree().create_timer(3.0).timeout
+		await get_tree().create_timer(0.6).timeout
+		print("Gather test: prompt \"%s\"" % plant_hint)
+		client.harvest.tap()
+		await get_tree().create_timer(2.0).timeout
+
+		if _pack_items() > items_before:
+			break
+
+	print("Gather test: pack items %d -> %d" % [items_before, _pack_items()])
 	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
 	var after_tap: int = inventory.count_of(sticks)
 	client.harvest.update(0.0, true)
@@ -3800,10 +4281,13 @@ func run_quickkey_test(_client) -> void:
 	var roast: int = table.number_of("roast_forage")
 	await get_tree().create_timer(6.0).timeout
 
-	# A slow join (cold server) drops a give sent too early: ask again every 3 s until the stones arrive.
+	# A slow join (cold server) drops a give sent too early: ask again, but only every 30 s and then wait for the pack to catch up. (Asking every 3 s gave the stones
+	# again and again on a busy PC, where the pack arrives late: 63 stones instead of 6 and a failed check, 31 Oct.)
 	for attempt in range(30):
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
-		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+		if attempt % 10 == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, stone, 0, 6, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, roast, 0, 2, Vector3.ZERO)
+
 		await get_tree().create_timer(3.0).timeout
 
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
@@ -3821,18 +4305,24 @@ func run_quickkey_test(_client) -> void:
 		event.pressed = true
 		return quick_key(event)
 
+	# Deltas, not absolute counts: the pack may hold more than was given (late syncs, stones picked up by themselves at the spawn).
+	var stacks_before: int = _stone_stacks(stone)
 	var handled: bool = press.call(KEY_S)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), 1, _stone_stacks(stone)])
+	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), stacks_before, _stone_stacks(stone)])
+	print("Quick key test: S added stacks %d" % (_stone_stacks(stone) - stacks_before))
 	_hover = inventory.numbers.find(stone)
+	var stones_now: int = inventory.count_of(stone)
 	press.call(KEY_D, true)
 	await get_tree().create_timer(1.0).timeout
 	print("Quick key test: Shift+D dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
+	print("Quick key test: Shift+D dropped %d" % (stones_now - inventory.count_of(stone)))
 	_hover = inventory.numbers.find(roast)
 	var roasts: int = inventory.count_of(roast)
 	press.call(KEY_E)
 	await get_tree().create_timer(1.0).timeout
 	print("Quick key test: E ate, roasts %d -> %d" % [roasts, inventory.count_of(roast)])
+	print("Quick key test: E ate %d" % (roasts - inventory.count_of(roast)))
 	print("Quick key test: T outside a container handled %s, nothing moved" % str(press.call(KEY_T)))
 
 
@@ -4007,7 +4497,16 @@ func run_plant_test(client) -> void:
 func run_leanto_test(_client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for the kit
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("lean_to_kit")):
+			break
+
+		if wait == 16 and inventory.count_of(table.number_of("lean_to_kit")) == 0:   # still nothing after 8 s: the give was lost, send it once more
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
+
 	var here: Vector3 = _player_position.call()
 	var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
 	var spot: Vector3 = Vector3(here.x + 2.0, ground, here.z)
@@ -4208,6 +4707,11 @@ func run_cook_test(client) -> void:
 func run_sleep_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 
+	if not await _wait_inventory_ready():
+		print("SLEEP TEST FAILED: the pack never arrived")
+		return
+
+
 	if not await _smoke_give("rough_bed_kit", 1):
 		print("SLEEP TEST FAILED: the pack did not get the rough bed")
 		return
@@ -4225,6 +4729,8 @@ func run_sleep_test(client) -> void:
 		print("SLEEP TEST FAILED: the bed was not set down")
 		return
 
+	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_ENERGY, 0, 0, 60, Vector3.ZERO)   # a rested character cannot sleep: start tired
+	await get_tree().create_timer(1.5).timeout
 	var energy_before: int = energy
 	request_stance(3)
 	await get_tree().create_timer(1.5).timeout
@@ -4244,6 +4750,11 @@ func run_sleep_test(client) -> void:
 # otherwise this only waits for a rabbit to walk by). Prints SNARE TEST lines.
 func run_snare_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
+
+	if not await _wait_inventory_ready():
+		print("SNARE TEST FAILED: the pack never arrived")
+		return
+
 
 	if not await _smoke_give("snare", 1):
 		print("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
@@ -4282,11 +4793,23 @@ func run_eat_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
-	await get_tree().create_timer(1.0).timeout
+
+	for wait in 30:   # a cold join gets its pack late: poll up to 15 s for both, and ask once more after 8 s if nothing came
+		await get_tree().create_timer(0.5).timeout
+
+		if inventory.numbers.has(table.number_of("roast_forage")) and inventory.numbers.has(table.number_of("poultice")):
+			break
+
+		if wait == 16 and inventory.count_of(table.number_of("roast_forage")) == 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
+
 	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
+	var roasts_before: int = inventory.count_of(table.number_of("roast_forage"))
 	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])
+	print("Eat test: roasts eaten %d" % (roasts_before - inventory.count_of(table.number_of("roast_forage"))))   # a delta: the pack may hold more than was given
 	eat_slot(inventory.numbers.find(table.number_of("poultice")))
 	await get_tree().create_timer(1.0).timeout
 	print("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
@@ -4373,7 +4896,13 @@ func run_eat_test(client) -> void:
 
 	for id in tool_ids:
 		net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of(id), 0, 1, Vector3.ZERO)
-		await get_tree().create_timer(0.6).timeout
+
+		for poll in 20:   # the give can be late (a heavy item such as the quern may also be refused by weight: then it never arrives and is reported)
+			await get_tree().create_timer(0.3).timeout
+
+			if inventory.numbers.has(table.number_of(id)):
+				break
+
 		var tool_slot: int = inventory.numbers.find(table.number_of(id))
 
 		if tool_slot >= 10:
@@ -4389,24 +4918,70 @@ func run_eat_test(client) -> void:
 		if client.held.held_id() != id or client.held._model == null:
 			print("Tools test: NOT held or no model: %s" % id)
 
+		# Put it down: 190 tools in the pack outweigh the carrying limit, and the last heavy ones (the quern) were then never given (31 Oct 2026).
+		net.inventory_action.rpc_id(1, Net.ACT_DROP, tool_slot, 0, 1, _player_position.call() + Vector3(0.0, 0.0, 2.0))
+		await get_tree().create_timer(0.2).timeout
+
 	print("Tools test: %d tools and weapons, held %d, with a model %d" % [tool_ids.size(), held_ok, modelled])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
+# Self-tests on a shared server start before the pack has arrived: wait for it (up to 30 s) so none reads `inventory.numbers` on Nil (Dino's finding, chest test).
+func _wait_inventory_ready() -> bool:
+	for wait in 100:
+		if inventory != null:
+			return true
+
+		await get_tree().create_timer(0.3).timeout
+
+	return inventory != null
+
+
 func run_chest_test(client) -> void:
 	await get_tree().create_timer(14.0).timeout
+
+	if not await _wait_inventory_ready():
+		print("Chest test: the pack never arrived")
+		_finish_early(client)
+		return
+
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	var here: Vector3 = _player_position.call()
-	var spot: Vector3 = Vector3(here.x + 2.0, float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0))), here.z)
-	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, spot)
-	await get_tree().create_timer(2.0).timeout
 	var id: int = 0
 
-	for k in _world:
-		if _world[k]["state"] == 6:
-			id = k
+	# Place the chest and wait for it; a slow cloud world may not have the ground or the chest yet, so try again up to four times (the 04:18 rig run never saw the chest and then read a null chest_inv).
+	for attempt in 4:
+		var here: Vector3 = _player_position.call()
+		var ground: float = float(_ground_below.call(here + Vector3(2.0, 0.0, 0.0)))
+
+		if is_nan(ground):
+			await get_tree().create_timer(2.0).timeout
+			continue
+
+		if inventory.numbers.find(table.number_of("chest_kit")) < 0:
+			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+			await get_tree().create_timer(1.0).timeout
+
+		net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("chest_kit")), 0, 0, Vector3(here.x + 2.0 + float(attempt), ground, here.z))
+
+		for wait in 40:
+			for k in _world:
+				if _world[k]["state"] == 6:
+					id = k
+
+			if id != 0:
+				break
+
+			await get_tree().create_timer(0.1).timeout
+
+		if id != 0:
+			break
+
+	if id == 0:
+		print("Chest test: no chest was placed (no ground or the place was refused)")
+		_finish_early(client)
+		return
 
 	_ask_open(id)
 
@@ -4416,13 +4991,24 @@ func run_chest_test(client) -> void:
 
 		await get_tree().create_timer(0.1).timeout
 
+	if chest_inv == null:
+		print("Chest test: the chest did not open (no contents arrived)")
+		_finish_early(client)
+		return
+
 	var stone: int = table.number_of("stone")
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	print("Chest test: chest row %d, screen open %s, stones in chest %d, in pack %d" % [id, str(chest_mode), chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+
+	if chest_inv == null:
+		print("Chest test: the chest closed before the take")
+		_finish_early(client)
+		return
+
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, chest_inv.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 
 	# Quick key T moves the hovered pack stack into the open chest.
 	var stone_slot: int = inventory.numbers.find(stone)
@@ -4432,7 +5018,7 @@ func run_chest_test(client) -> void:
 	press.pressed = true
 	quick_key(press)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone), inventory.count_of(stone)])
+	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 	_finish_early(client)
 
 

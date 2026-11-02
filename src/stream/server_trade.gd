@@ -286,6 +286,15 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
 	var value: int = int(entry.get("value", 0))
+	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
+
+	var left_over: int = count % lot if lot > 1 else 0
+
+	if lot > 1:
+		count -= count % lot
+
+		if count <= 0:
+			return "He buys %s %d at a time." % [items.table.name_of(number2).to_lower() + "s", lot]
 	var total: int = 0
 	var paid_for: int = 0
 	var base_demand: float = demand(npc_id, item_id)
@@ -302,8 +311,12 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		if each_k <= 0 or total + each_k > till:
 			break
 
-		total += each_k
+		if (k + 1) % lot == 0:   # the lot's copper is paid with its last unit
+			total += each_k
+
 		paid_for += 1
+
+	paid_for -= paid_for % lot
 
 	if paid_for <= 0:
 		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
@@ -329,7 +342,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._gain_quiet = false
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
-	return "Sold %d %s for %s." % [count, items.table.name_of(number2).to_lower(), items._coin_words(total)]
+	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.name_of(number2).to_lower(), lot] if left_over > 0 else ""
+	return "Sold %d %s for %s.%s" % [count, items.table.name_of(number2).to_lower(), items._coin_words(total), lot_note]
 
 
 # kind 3, "Would you like to buy my extra stuff?" (Dave 2026-10-22): one click sells every pack stack of the kinds coins.json

@@ -9,10 +9,10 @@
 	"factor": {"inside": 1.0, "near": 0.5, "far": 0.03, "near_radii": 2.0},
 	"species_by_kind": {
 		"brook": [["trout", 1.0]],
-		"river": [["trout", 0.6], ["salmon", 0.4]],
+		"river": [["trout", 0.5], ["salmon", 0.3], ["eel", 0.2]],
 		"lake": [["perch", 0.4], ["pike", 0.3], ["carp", 0.3]],
 		"pond": [["carp", 0.6], ["perch", 0.4]],
-		"sea_shallow": [["herring", 0.4], ["mackerel", 0.3], ["smelt", 0.3]]
+		"sea_shallow": [["herring", 0.3], ["mackerel", 0.25], ["smelt", 0.2], ["cod", 0.25]]
 	},
-	"only_in": {"salmon": ["autumn"], "mackerel": ["summer"]}
+	"only_in": {"salmon": ["autumn"], "mackerel": ["summer"], "herring": ["spring", "autumn", "winter"], "smelt": ["spring", "winter"], "eel": ["summer", "autumn"]}
 }

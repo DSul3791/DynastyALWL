@@ -29,6 +29,8 @@ func make(dir: String):
 	items.send_warmth = func(_p, pct): sent.append(pct)
 	items.weather_now = func(): return weather
 	items.setup(ItemTableScript.load_default(), dir)
+	items._hints_loaded = true   # the hints talk through the same notice line this test watches
+	items._hints = []
 	return items
 
 

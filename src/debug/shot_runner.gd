@@ -16,6 +16,7 @@ extends Node
 #   --shot-item=ITEM    a picture set of one item lying on the ground (id or name): give, drop, hide the player, HUD, grass and flora, then four views (front, side, top,
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
+#   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
@@ -32,6 +33,7 @@ var settle_s: float = 25.0
 
 var _index: int = -1
 var _placed: bool = false
+var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
 var _land_failed: bool = false
 var force_land_fail: bool = false  # --shot-force-land-fail: the wanted height is 50 m off what the body is given, so the landing check must report FAILED (a test of the check)
@@ -56,8 +58,21 @@ var _item_box: AABB = AABB()
 var _item_node: Node3D = null
 var _item_tries: int = 0
 var _item_views: Array = []
+var drop_settle_ms: int = 3000
+var place_it: bool = false
+var light_it: bool = false
+var _lit_sent: bool = false
+var fell_mode: String = ""       # --shot-fell=flat|steep: fells the flattest (or steepest) loaded tree, then chops its stump; pictures fell_before, fell_falling, fell_resting, stump_chop, stump_gone
+var _fell_step: int = 0
+var _fell_t: int = 0
+var _fell_tree: Array = []
+var _fell_trunk: int = 0
+var _fell_stump: int = 0
+var _fell_up: Vector2 = Vector2.ZERO
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
+var _stance_msec: int = 0
+var stance_index: int = -1      # --shot-stance=stand|crouch|sit|lie: holds that stance for the whole run (third-person body poses; the stance script is client.stance)
 var _given: bool = false
 var drop_it: bool = false      # --shot-drop: then drop all of it onto the ground 2.2 m ahead (a real drop)
 var _dropped: bool = false
@@ -95,6 +110,7 @@ var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
 var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
 var showroom_look_down: float = 999.0    # --shot-showroom-look=DEG: its pitch (e.g. -35); default aims at the row from the height and distance
+var showroom_per: int = 0                 # --shot-showroom-per=N: one picture per N items of a row, framed to those items (0 = the whole row in one picture)
 var showroom_spread: bool = false        # --shot-showroom-spread: name tags staggered in three heights, so neighbours do not overlap
 var _showroom_t: int = 0
 var _showroom_rows_chosen: Array = []
@@ -109,6 +125,12 @@ var _subject: Vector3 = Vector3.ZERO # what the views look at: the middle of the
 var _subject_set: bool = false
 var flora_lift_m: float = 0.12     # --shot-flora: the row stands this far above the raycast ground (the drawn smooth ground can lie a little higher and hide a 0.2 m flower)
 var summer: bool = false      # --shot-summer: the plant row in its species green (the game draws every hardwood in autumn colours)
+var clip_name: String = ""       # --shot-clip=NAME: the body plays this clip (look rig, third person)
+var lapse_frames: int = 0         # --shot-lapse=N,S: before the main picture, N pictures of the same camera S seconds apart (<name>_lapse_NN.png), to see water move
+var lapse_gap_s: float = 1.0
+var _lapse_state: int = 0
+var chop_strip: bool = false     # --shot-chop: after the main picture, swing the held axe once and save a picture at each phase of the swing (<name>_chop_NN.png; first person)
+var _chop_state: int = 0         # 0 not started, 1 running, 2 done
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
 var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
 
@@ -133,6 +155,14 @@ func setup(owner_client, args: Array) -> void:
 			dir = argument.trim_prefix("--shot-dir=")
 		elif argument == "--shot-cost":
 			costs = true
+		elif argument.begins_with("--shot-clip="):
+			clip_name = argument.trim_prefix("--shot-clip=")
+		elif argument == "--shot-chop":
+			chop_strip = true
+		elif argument.begins_with("--shot-lapse="):
+			var lapse_parts: PackedStringArray = argument.trim_prefix("--shot-lapse=").split(",")
+			lapse_frames = int(lapse_parts[0])
+			lapse_gap_s = float(lapse_parts[1]) if lapse_parts.size() > 1 else 1.0
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
@@ -153,6 +183,8 @@ func setup(owner_client, args: Array) -> void:
 			showroom_cam_height = float(argument.trim_prefix("--shot-showroom-height="))
 		elif argument.begins_with("--shot-showroom-look="):
 			showroom_look_down = float(argument.trim_prefix("--shot-showroom-look="))
+		elif argument.begins_with("--shot-showroom-per="):
+			showroom_per = int(argument.trim_prefix("--shot-showroom-per="))
 		elif argument == "--shot-showroom-spread":
 			showroom_spread = true
 		elif argument.begins_with("--shot-showroom="):
@@ -170,6 +202,17 @@ func setup(owner_client, args: Array) -> void:
 			flora_names = argument.trim_prefix("--shot-flora=").split(",", false)
 		elif argument == "--shot-summer":
 			summer = true
+		elif argument.begins_with("--shot-drop-settle="):
+			drop_settle_ms = int(argument.trim_prefix("--shot-drop-settle="))      # how long after a drop or place the picture waits (a slow first world build streams the item late)
+		elif argument == "--shot-light":
+			light_it = true      # with --shot-place: 6 s after the fire is placed, give plant fibre and light it, so a lit fire can be photographed
+		elif argument == "--shot-place":
+			place_it = true      # with --shot-give=ITEM --shot-drop: place the item (a campfire kit becomes a fire) at the drop spot instead of dropping it
+		elif argument.begins_with("--shot-fell="):
+			fell_mode = argument.trim_prefix("--shot-fell=")
+			print("shot runner: fell mode ", fell_mode)
+		elif argument.begins_with("--shot-stance="):
+			stance_index = ["stand", "crouch", "sit", "lie"].find(argument.trim_prefix("--shot-stance="))
 		elif argument.begins_with("--shot-give="):
 			give_item = argument.trim_prefix("--shot-give=")
 
@@ -224,6 +267,9 @@ func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
 
+	if stance_index >= 0 and client.shot_stance != stance_index:
+		client.shot_stance = stance_index   # the runner flies the body, which stands it up, so the avatar clip is forced instead
+
 	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
 	if client._spawn_test != "":
 		return
@@ -260,11 +306,20 @@ func _process(delta: float) -> void:
 		_given = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
 
-	if give_item != "" and _given and not _selected and now - client.connected_msec > 10000 and client.held != null:
+	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null:
 		_selected = true
 		client.held.select(0)      # slot 0 = key 1: hold what was given
 
-	if drop_it and _given and not _dropped and _placed and now - _moved_msec > 3000:      # only once the player stands on the real ground (a drop before that fell from the spawn height)
+	if drop_it and place_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000:
+		# The server refuses a kit placed farther than its reach from where IT thinks the player is, and a shot that moves the body reports nothing (the flying anchor stays at the spawn):
+		# tell it the real spot (the report goes out every 200 ms) and place a second later (Tyler 31 Oct 2026: the rig's kit placement did nothing for this reason).
+		client._anchor = client.body.global_position
+		client._anchor_set = true
+
+		if _anchor_told_msec == 0:
+			_anchor_told_msec = now
+
+	if drop_it and _given and not _dropped and _placed and not client.waiting_for_ground and now - _moved_msec > 3000 and (not place_it or (_anchor_told_msec > 0 and now - _anchor_told_msec > 1000)):      # only once the player stands on the real ground (a drop before that fell from the spawn height)
 		_dropped = true
 		_drop_msec = now
 		var bp: Vector3 = client.body.global_position
@@ -276,7 +331,28 @@ func _process(delta: float) -> void:
 			at = Vector3(item_at.x, bp.y - 1.0 if is_nan(ig) else ig, item_at.y)
 
 		_item_spot = at
-		client.items.net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, give_count, at)
+		var kit_slot: int = maxi(client.items.inventory.numbers.find(client.items.table.number_of(give_item)), 0) if place_it else 0   # ACT_PLACE takes the slot holding the kit (a new item goes to the first free slot, not always slot 0)
+		print("shot runner: place/drop slot %d at %s" % [kit_slot, str(at)])
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_PLACE if place_it else Net.ACT_DROP, kit_slot, 0, 1 if place_it else give_count, at)
+
+	if light_it and _dropped and not _lit_sent and now - _drop_msec > 6000:
+		var fire_id: int = 0
+
+		for wid in client.items._world:
+			if int(client.items._world[wid]["state"]) == 9:
+				fire_id = wid
+
+		if fire_id != 0:
+			_lit_sent = true
+			client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of("plant_fibre"), 0, 3, Vector3.ZERO)
+			get_tree().create_timer(2.0).timeout.connect(func(): client.items.net.inventory_action.rpc_id(1, Net.ACT_LIGHT, fire_id, 0, 0, Vector3.ZERO))
+			print("shot runner: lighting fire ", fire_id)
+
+	if fell_mode != "" and _fell_step < 99:
+		if now - client.connected_msec > 14000:
+			_fell_tick(now)
+
+		return
 
 	# Dig rig: a heavy pack (so the yield spills onto the ground, as in play), then the dig-and-step loop.
 	if dig_steps > 0 and heavy and not _dig_ballast and now - client.connected_msec > 9000:
@@ -342,6 +418,7 @@ func _process(delta: float) -> void:
 			print("shot runner: FAILED %s never landed (y %.1f, wanted %.1f)" % [shots[_index]["name"], at.y, _want_y])
 		else:
 			print("shot runner: landed %s at y %.1f (wanted %.1f) after %.1f s" % [shots[_index]["name"], at.y, _want_y, float(now - _placed_msec) * 0.001])
+			print("shot runner: flags give=%s drop=%s place=%s light=%s ground_test=%s" % [give_item, drop_it, place_it, light_it, ground_test])
 
 		return
 
@@ -441,7 +518,7 @@ func _process(delta: float) -> void:
 			return
 
 	# A drop or a seeded pile: a short step back, then look down at the spot (TEST_RECIPE.md), settle, then the picture.
-	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > 3000)):
+	if ground_test and dig_steps == 0 and not _finish_done and now - client.connected_msec > 13000 and (not drop_it or (_dropped and now - _drop_msec > drop_settle_ms)):
 		_finish_done = true
 		var behind: Vector3 = client.body.global_transform.basis.z
 		var bx: float = client.body.global_position.x + behind.x * back_m
@@ -453,11 +530,14 @@ func _process(delta: float) -> void:
 		_moved_msec = now
 		return
 
+	if ground_test and drop_it and dig_steps == 0 and not _finish_done:
+		return      # a drop or a placement is still to happen (13 s after joining, then the settle time): never take the picture before it (the lit fire frame was blank)
+
 	if item_mode:
 		client.flora.visible = false
 
 		if not _item_built:
-			if _dropped and now - _drop_msec > 3000:
+			if _dropped and now - _drop_msec > drop_settle_ms:
 				_build_item_views(now)
 
 			return
@@ -493,6 +573,20 @@ func _process(delta: float) -> void:
 		_run_view(now)
 		return
 
+	if lapse_frames > 0 and _lapse_state != 2:
+		if _lapse_state == 0:
+			_lapse_state = 1
+			_run_lapse()
+
+		return
+
+	if chop_strip and _chop_state != 2 and client.held != null:
+		if _chop_state == 0:
+			_chop_state = 1
+			_run_chop_strip()
+
+		return
+
 	_print_state()
 
 	if not flora_names.is_empty():
@@ -517,6 +611,13 @@ func _process(delta: float) -> void:
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
 	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+
+	# Ground guard (warning only): the voxel ground reading is flaky while a spot is still loading (31.0, then 15.0, then 63.0 at one spot in a test), so the camera is never moved
+	# for it; but a camera far below the reading, or a reading below the sea floor of a land spot, means the picture is probably from under the world: say so.
+	var guard_ground: float = _ground(p.x, p.z)
+
+	if is_nan(guard_ground) or p.y < guard_ground - 3.0 or guard_ground <= -30.0:
+		print("shot runner: WARNING ground not loaded at (%.1f, %.1f): ground reading %.1f, camera y %.1f; the picture may be from under the world, raise --shot-settle (75 s worked)" % [p.x, p.z, guard_ground, p.y])
 	var falls: Array = client.flora.fall_list()
 	falls.sort_custom(func(a, b): return (a["base"] as Vector3).distance_to(p) < (b["base"] as Vector3).distance_to(p))
 
@@ -529,6 +630,172 @@ func _process(delta: float) -> void:
 
 # One line of facts so pass or fail is not by eye only: where the player is, what the pack holds, and every loose world item within 6 m
 # with its height above the ground under it (a gap over 0.15 m is floating).
+
+# The tree-fall rig (--shot-fell=flat|steep): picks a loaded tree on the flattest or steepest ground, stands on its downhill side, fells it with real axe blows
+# (so the server's resting pose is what shows), photographs before, falling and resting (from the side), then chops the stump with pictures.
+func _fell_snap(name: String) -> void:
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("%s/%s.png" % [dir, name])
+	print("shot runner: saved fell picture %s" % name)
+
+
+func _fell_face(from: Vector3, target: Vector3, pitch_deg: float) -> void:
+	var v: Vector3 = target - from
+	client.body.rotation.y = atan2(-v.x, -v.z)
+	client.pitch = deg_to_rad(pitch_deg)
+	client.camera.rotation.x = client.pitch
+	client.body.velocity = Vector3.ZERO
+
+
+func _fell_stand(at: Vector3) -> void:
+	var g: float = _ground(at.x, at.z)
+	client.body.global_position = Vector3(at.x, (client.body.global_position.y if is_nan(g) else g) + 0.1, at.z)
+	client.body.velocity = Vector3.ZERO
+
+
+func _fell_tick(now: int) -> void:
+	var items = client.items
+	var here: Vector3 = client.body.global_position
+
+	if client.held != null:
+		client.held.set_first_person(false)   # no arms or axe in the pictures
+
+	if _fell_step == 0:
+		items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+		var best_score: float = INF
+
+		for chunk in client.flora._chunks:
+			var held: Dictionary = client.flora._chunks[chunk]["items"]
+
+			for n in range(held["ids"].size()):
+				if int(client.flora._species.get(held["ids"][n] >> 16, {}).get("kind", 2)) != 0:
+					continue
+
+				var pos: Vector3 = held["positions"][n]
+
+				if pos.distance_to(here) > 220.0 or float(held["heights"][n]) < 8.0:
+					continue
+
+				var up: Vector2 = Vector2.ZERO
+				var rise: float = 0.0
+
+				for k in 8:
+					var a: float = TAU * float(k) / 8.0
+					var d: Vector2 = Vector2(cos(a), sin(a))
+					var g1: float = _ground(pos.x + d.x * 8.0, pos.z + d.y * 8.0)
+					var g0: float = _ground(pos.x - d.x * 8.0, pos.z - d.y * 8.0)
+
+					if not is_nan(g1) and not is_nan(g0) and (g1 - g0) / 16.0 > rise:
+						rise = (g1 - g0) / 16.0
+						up = d
+
+				var score: float = rise if fell_mode == "flat" else -rise
+
+				if up != Vector2.ZERO and score < best_score:
+					best_score = score
+					_fell_tree = [chunk, held["ids"][n], pos, float(held["heights"][n])]
+					_fell_up = up
+
+		if _fell_tree.is_empty():
+			if now - client.connected_msec < 420000:
+				return   # the flora is still loading (it follows the ground, minutes on a fresh world): look again next frame
+
+			print("shot runner: fell: no tree loaded")
+			_fell_step = 99
+			return
+
+		print("shot runner: fell tree %s at %s height %.1f, slope %.2f toward %s" % [str(_fell_tree[1]), str(_fell_tree[2]), _fell_tree[3], absf(best_score), str(_fell_up)])
+		var tp: Vector3 = _fell_tree[2]
+		var stand: Vector2 = Vector2(tp.x, tp.z) - _fell_up * 3.0
+		_fell_stand(Vector3(stand.x, 0.0, stand.y))
+		_fell_face(client.body.global_position, tp + Vector3(0.0, 4.0, 0.0), 22.0)
+		_fell_t = now
+		_fell_step = 1
+		return
+
+	if _fell_step == 1:
+		if now - _fell_t > 4000:
+			_fell_snap("fell_before")
+			_fell_t = now
+			_fell_step = 2
+
+		return
+
+	if _fell_step == 2:
+		if now - _fell_t < 1500:
+			return
+
+		for id in items._world:
+			if int(items._world[id]["state"]) == 3:
+				_fell_trunk = id
+
+			if int(items._world[id]["state"]) == 4:
+				_fell_stump = id
+
+		if _fell_trunk != 0:
+			_fell_t = now
+			_fell_step = 3
+			return
+
+		var tree: Array = _fell_tree
+		items.net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+		_fell_t = now - 800
+		return
+
+	if _fell_step == 3:
+		if now - _fell_t > 500:
+			_fell_snap("fell_falling")
+			_fell_t = now
+			_fell_step = 4
+
+		return
+
+	if _fell_step == 4:
+		if now - _fell_t > 3500:
+			var extra: Dictionary = items._world[_fell_trunk].get("extra", {})
+			print("shot runner: fell trunk yaw %.3f pitch %.3f length %.1f radius %.2f" % [float(extra.get("yaw", 0.0)), float(extra.get("pitch", 0.0)), float(extra.get("length", 0.0)), float(extra.get("radius", 0.0))])
+			var tp: Vector3 = _fell_tree[2]
+			var dir: Vector2 = Vector2(sin(float(extra.get("yaw", 0.0))), cos(float(extra.get("yaw", 0.0))))
+			var mid: Vector3 = tp + Vector3(dir.x, 0.0, dir.y) * float(extra.get("length", 10.0)) * 0.5
+			var side: Vector2 = Vector2(-dir.y, dir.x)
+			_fell_stand(Vector3(mid.x + side.x * 18.0, 0.0, mid.z + side.y * 18.0))
+			client.body.global_position.y += 4.0      # a few metres up, looking down at the trunk from the side, so grass and the stump do not hide it
+			_fell_face(client.body.global_position, mid + Vector3(0.0, 0.5, 0.0), -14.0)
+			_fell_t = now
+			_fell_step = 5
+
+		return
+
+	if _fell_step == 5:
+		if now - _fell_t > 3500:
+			_fell_snap("fell_resting")
+			var tp2: Vector3 = _fell_tree[2]
+			_fell_stand(Vector3(tp2.x + 1.6, 0.0, tp2.z))
+			_fell_face(client.body.global_position, tp2 + Vector3(0.0, 0.3, 0.0), -35.0)
+			_fell_t = now
+			_fell_step = 6
+
+		return
+
+	if _fell_step == 6:
+		if now - _fell_t < 2500:
+			return
+
+		if not items._world.has(_fell_stump):
+			_fell_snap("stump_gone")
+			_fell_step = 99
+			return
+
+		var blows: int = int(items._world[_fell_stump].get("blows", 0)) + 1
+		items.net.inventory_action.rpc_id(1, Net.ACT_PROCESS, _fell_stump, 0, 0, Vector3.ZERO)
+		_fell_t = now - 1900
+		items._world[_fell_stump]["blows"] = blows
+
+		if blows == 3:
+			_fell_snap("stump_chop")
+
+		return
+
 func _print_state() -> void:
 	if client.items == null:
 		return
@@ -759,6 +1026,28 @@ func _build_piece_views() -> void:
 # --showroom: turn Admin mode on so the server lays the showroom rows out as real world items, then one view per chosen row from the west side
 # (the rows run north to south, start/step in metres east and south of the spawn point), looking east. _tag_showroom then puts a name tag over each
 # item and prints one "shot runner: showroom row" line per row: how many of its items were found where they belong (world_item_name_near).
+# A --showroom word picks rows in this order: a row whose whole label is that word ("Spades"), else rows with that word as one of their words
+# ("K1" is in "Kathleen K1 flowers" but not "Kathleen K10 wood and fibre"), else a part of a label (spades finds "Big spades"). Any case.
+func _showroom_label_matches(label: String, want: String, rows: Array) -> bool:
+	var word: String = want.to_lower()
+	var low: String = label.to_lower()
+	var whole: bool = false
+	var by_word: bool = false
+
+	for row in rows:
+		var other: String = str(row.get("label", "")).to_lower()
+		whole = whole or other == word
+		by_word = by_word or other.replace(":", " ").split(" ", false).has(word)
+
+	if whole:
+		return low == word
+
+	if by_word:
+		return low.replace(":", " ").split(" ", false).has(word)
+
+	return low.contains(word)
+
+
 func _show_showroom(now: int) -> void:
 	if client.showroom == null:
 		return    # the client has not read the world's spawn yet: try again next frame
@@ -773,7 +1062,7 @@ func _show_showroom(now: int) -> void:
 		var take: bool = showroom_rows.has("all")
 
 		for want in showroom_rows:
-			if label.to_lower().contains(want.to_lower()):
+			if _showroom_label_matches(label, want, rows):
 				take = true
 
 		if take:
@@ -797,13 +1086,25 @@ func _show_showroom(now: int) -> void:
 		var start: Array = row.get("start", [0, 0])
 		var step: Array = row.get("step", [0, 1.5])
 		var items: Array = row.get("items", [])
-		var length: float = Vector2(float(step[0]), float(step[1])).length() * float(maxi(items.size() - 1, 1))
-		var mid_x: float = origin.x + float(start[0]) + float(step[0]) * float(items.size() - 1) * 0.5
-		var mid_z: float = origin.z + float(start[1]) + float(step[1]) * float(items.size() - 1) * 0.5
-		var dist: float = 3.0 + length * 0.9
-		var above: float = showroom_cam_height if showroom_cam_height > 0.0 else 1.6 + length * 0.25
-		var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
-		views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+		var per: int = showroom_per if showroom_per > 0 else maxi(items.size(), 1)
+		var parts: int = int(ceil(float(items.size()) / float(per)))
+
+		# One picture for the whole row, or (--showroom-per N) one per N items framed to those items: close enough to see a small item.
+		for part in range(maxi(parts, 1)):
+			var first: int = part * per
+			var count: int = mini(per, items.size() - first)
+			var length: float = Vector2(float(step[0]), float(step[1])).length() * float(maxi(count - 1, 1))
+			var mid_x: float = origin.x + float(start[0]) + float(step[0]) * (float(first) + float(count - 1) * 0.5)
+			var mid_z: float = origin.z + float(start[1]) + float(step[1]) * (float(first) + float(count - 1) * 0.5)
+			var dist: float = (2.0 + length * 0.6) if showroom_per > 0 else 3.0 + length * 0.9
+			var above: float = showroom_cam_height if showroom_cam_height > 0.0 else ((1.2 + length * 0.2) if showroom_per > 0 else 1.6 + length * 0.25)
+			var view_name: String = str(row.get("label", "row")).to_lower().replace(" ", "_").replace(":", "")
+
+			if parts > 1:
+				view_name += "_part%d" % (part + 1)
+
+			views.append({"name": view_name, "dist": dist, "pitch": showroom_look_down if showroom_look_down <= 90.0 else -rad_to_deg(atan2(above, dist)) + 3.0, "above": above, "cam_x": mid_x - dist, "cam_z": mid_z, "yaw": -90.0})
+
 		_showroom_rows_chosen.append(row)
 
 	_showroom_t = now
@@ -823,6 +1124,10 @@ func _tag_overlaps() -> String:
 			continue
 
 		var at: Vector2 = cam.unproject_position(world)
+
+		if not get_viewport().get_visible_rect().has_point(at):
+			continue
+
 		var size: Vector2 = Vector2(float(label.text.length()) * float(label.font_size) * 0.45, float(label.font_size))
 		boxes.append(Rect2(at - size * 0.5, size))
 
@@ -1171,6 +1476,7 @@ func _print_flora_row() -> void:
 # A walking body from the side: the drawn camera 2.8 m to the body's left, level with its chest.
 func _side_view(walk: float) -> void:
 	client.debug_pace = walk
+	client.debug_clip = clip_name
 
 	if walk < 0.0 or client._avatar == null or client.view_cam == null:
 		return
@@ -1363,3 +1669,43 @@ func _next(now: int) -> void:
 
 	if client.hotbar_strip != null and client.hotbar_strip.has_method("hide"):
 		client.hotbar_strip.hide()
+
+
+# --shot-chop: one swing of the held axe, a picture at each phase (the times are seconds into the swing; the impact is HIT_AT x SWING_S).
+func _run_lapse() -> void:
+	for index in range(lapse_frames):
+		await RenderingServer.frame_post_draw
+		var path: String = "%s/%s_lapse_%02d.png" % [dir, shots[_index]["name"], index]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("shot runner: lapse %d saved at t %.2f s" % [index, Time.get_ticks_msec() / 1000.0])
+		await get_tree().create_timer(lapse_gap_s).timeout
+
+	_lapse_state = 2
+
+
+func _run_chop_strip() -> void:
+	var held = client.held
+
+	if not held.holding:
+		held.select(0)
+
+	var waited: int = 0
+
+	while not (held.holding and held._arms != null and held._arms.visible) and waited < 300:
+		waited += 1
+		await get_tree().process_frame
+
+	print("shot runner: chop strip: holding %s arms visible %s after %d frames" % [str(held.holding), str(held._arms != null and held._arms.visible), waited])
+	held._start_swing()
+	var times: Array = [0.05, 0.2, 0.3, 0.4, 0.46, 0.5, 0.56, 0.68, 0.85]
+
+	for index in range(times.size()):
+		while held._swing_t >= 0.0 and held._swing_t < float(times[index]):
+			await get_tree().process_frame
+
+		await RenderingServer.frame_post_draw
+		var path: String = "%s/%s_chop_%02d.png" % [dir, shots[_index]["name"], index]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("shot runner: chop phase %d at %.2f s (swing t %.2f) saved" % [index, float(times[index]), held._swing_t])
+
+	_chop_state = 2

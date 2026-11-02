@@ -1,0 +1,8 @@
+server started, waiting 60 s
+arrival: ran in 28 s, 13166 lines
+gather: ran in 92 s, 60221 lines
+plantpick: ran in 52 s, 30213 lines
+chop: ran in 64 s, 40179 lines
+cook: ran in 51 s, 30176 lines
+spear: ran in 50 s, 30232 lines
+walk: ran in 115 s, 25183 lines

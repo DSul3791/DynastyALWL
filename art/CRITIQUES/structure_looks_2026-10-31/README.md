@@ -1,0 +1,4 @@
+# Structure look regression check (moderator 2026-10-31), Kathleen
+Cause of the regression: my regex that set the tier pieces' looks in structures.json matched the early line `"log_wall": {"planned": true}` and then ran to the next row's "look" (the lean-to's), so the lean-to was pointed at "log_wall" and log_wall itself kept "wall". The moderator restored the lean-to; log_wall now names its own look `log_wall`.
+Check added: src/worldgen/tools/test_structure_looks.gd: GOLDEN list of the 38 structures that existed before the tier pieces with the look each drew (taken from structures.json before commit 9344a0e9), TIERS (the ten tier pieces with their new looks), and the new looks are in the look table; check_look_names.py (every structure look drawable) passes with 45 looks.
+Direct scenes (tools/piece_view.gd): leanto.png (leaf shingle roof, rail wall, litter), chest.png, rough_bed.png: all draw their own models. Rating unchanged.

@@ -1,0 +1,2 @@
+# Extra command line arguments for one test, read by tools/run_one_test.sh: <test name> <arguments>
+test_npc_view --old-body

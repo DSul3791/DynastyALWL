@@ -12,6 +12,9 @@ const BuildingLook := preload("res://src/client/building_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
+const ArmsView := preload("res://src/client/character/arms_view.gd")
+const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
+const MyCharacter := preload("res://src/client/character/my_character.gd")
 
 const HOTBAR_FILE := "user://hotbar.txt"      # the chosen hotbar slot is remembered between sessions
 const REST := Vector3(0.38, -0.32, -0.55)       # model offset from the camera
@@ -49,7 +52,7 @@ const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the w
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
 const HELD_LOOK_SCALE := 1.4
 const HELD_SPEAR_SCALE := 1.6
-const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.2, "hoe": 1.0, "saw": 1.0, "bow": 1.8, "arrow": 2.2, "quern": 1.3}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -58,13 +61,24 @@ const HELD_LOOK_TURN := {
 	"hoe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"knife": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"saw": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"scraper": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # like the knife: the blade end forward, the edge down
+	"sickle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # like the hoe: the blade curls round at the end of the handle
+	"scythe": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"hand_net": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
 	"bow": Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0)),   # the bow stands upright in the hand (limbs up and down, belly forward, string toward the archer)
 	"arrow": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"quiver": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"mace": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # handle to head along +x like the axe: haft forward, stone head on top (items_check: stone_mace had no held model)
+	"flanged_mace": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"club": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"candle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # a candle is held upright, flame up
+	"sword": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
+	"quern": Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)),   # the grinding stones are carried flat in the hand as they lie
 }
 const JAB_REACH := 0.7
 const JAB_S := 0.28
@@ -107,6 +121,8 @@ var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
+var swing_serial: int = 0                  # +1 at every swing start: the third-person body restarts its chop clip on a change
+var _pause_t: float = 0.0
 var _swing_hit: bool = false
 var _cover_at: Callable                   # (point) -> true when under a tree's crown
 var _blueprint: Node3D
@@ -120,9 +136,13 @@ var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
-const SWING_S := 0.55
+const MotionExtra := preload("res://src/client/character/motion_extra.gd")
+const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
+const PICK_SWING_S := MotionExtra.PICK_LENGTH
+const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
 const HIT_STOP_S := 0.045
-const HIT_AT := 0.636                      # share of the swing where the tool reaches the target (the swing_fp clip's impact key, 0.35 s of 0.55); the thump and the server's hit are this same tick
+const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
+const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
 const REACH_M := 3.0
 
 
@@ -155,14 +175,17 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(_label)
-	_arms = RagdollScript.new(true)
+	# Dave's own arms (dynasty_arms.gd) go with his body; `--oldbody` or the "Old body" setting brings back the old tube arms.
+	_arms = DynastyArmsScript.new() if MyCharacter.dynasty_body_on() else RagdollScript.new(true)
 	_arms.name = "Arms"
 	_arms.position = ARMS_POS
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
 	camera.add_child(_arms)
 	_arms.play("idle")
-	_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
-	_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
+
+	if not _arms.has_meta("own_hands"):    # Dave's hands have fingers of their own
+		_make_fist(_arms.hand_mount_r, Vector3(0.0, 0.0, -0.02))     # a closed hand, so the handle goes into a fist
+		_make_fist(_arms.hand_mount_l, Vector3(0.0, 0.0, -0.04))
 
 	# Debug (Kathleen 2026-10-25: the first-person arms cast shadows but do not show): --arms-debug draws them in plain magenta, unlit and
 	# on top of everything, so a picture tells whether the mesh is drawn at all (then it is a colour or occlusion fault) or not (then culling).
@@ -177,24 +200,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 # A small skin-coloured, slightly flattened ball at a hand mount: with a tool it is the fist round the handle, without one it
 # gives the bare hand a shape.
 func _make_fist(mount: Node3D, at: Vector3) -> void:
-	if mount == null:
-		return
-
-	var fist: MeshInstance3D = MeshInstance3D.new()
-	fist.name = "Fist"
-	var ball: SphereMesh = SphereMesh.new()
-	ball.radius = 0.05
-	ball.height = 0.1
-	ball.radial_segments = 10
-	ball.rings = 5
-	var skin: StandardMaterial3D = StandardMaterial3D.new()
-	skin.albedo_color = FIST_COLOR
-	skin.roughness = 0.9
-	ball.material = skin
-	fist.mesh = ball
-	fist.scale = Vector3(1.0, 0.9, 1.25)
-	fist.position = at
-	mount.add_child(fist)
+	ArmsView.make_fist(mount, at, FIST_COLOR)
 
 
 # First person shows the arms; third person (the body is drawn instead) hides them and stops their animation.
@@ -353,6 +359,11 @@ func _is_placeable() -> bool:
 	return str(_inv.table.entry(held_id()).get("kind", "")) == "placeable"
 
 
+# True while a torch is the held item (the Dynasty body then crouch-walks with it, avatar_driver.gd).
+func holding_torch() -> bool:
+	return holding and _is_torch()
+
+
 func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
@@ -374,7 +385,9 @@ func is_holdable(number: int) -> bool:
 		return false
 
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
-	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.edible_slot(held_slot)
+	# Food of ANY item kind can be held and eaten: the check is on THIS item (it used the currently held slot, so crab apples, a "material", could not be taken in hand
+	# unless something edible was already held: Dave, 31 Oct 2026).
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number)
 
 
 # Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
@@ -393,11 +406,44 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
+# True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
+func tool_busy() -> bool:
+	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0
+
+
 # One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
 func _start_swing() -> void:
 	_swing_t = 0.0
 	_swing_hit = false
-	_arm_play("swing_fp", SWING_S)
+	_pause_t = 0.0
+	swing_serial += 1
+	_arm_play("swing_fp", _swing_length())
+
+
+# This tool's swing: the axe's wide chop, the pick axe's overhead arc (a hammer keeps its own short rhythm elsewhere).
+func _swing_length() -> float:
+	return PICK_SWING_S if _tool_class() == "pick" else SWING_S
+
+
+func _hit_share() -> float:
+	return PICK_HIT_AT if _tool_class() == "pick" else HIT_AT
+
+
+func _tool_class() -> String:
+	return str(_inv.table.entry(held_id()).get("tool_class", ""))
+
+
+# The clip the third-person body plays for the swing in progress ("" when none): `chop` for an axe, `pick_overhead` for a pick axe. Restart it when swing_serial changes.
+# The seconds one swing lasts (the sound and the hit come at hit share of it); the third-person clip is played at clip length / this so it follows the swing's speed.
+func work_seconds() -> float:
+	return _swing_length()
+
+
+func work_clip() -> String:
+	if _swing_t < 0.0 or not holding:
+		return ""
+
+	return "pick_overhead" if _tool_class() == "pick" else "chop"
 
 
 
@@ -681,7 +727,7 @@ func _process_body(delta: float) -> void:
 	if _swing_t >= 0.0 and _stop_t <= 0.0:
 		_swing_t += delta
 
-		if not _swing_hit and _swing_t >= SWING_S * HIT_AT:
+		if not _swing_hit and _swing_t >= _swing_length() * _hit_share():
 			_swing_hit = true
 			_strike()
 			_stop_t = HIT_STOP_S
@@ -689,12 +735,16 @@ func _process_body(delta: float) -> void:
 			if _arms != null and _arms.visible:
 				_arms.animation_player.speed_scale = 0.0
 
-		if _swing_t >= SWING_S:
+		if _swing_t >= _swing_length():
 			_swing_t = -1.0
+			_pause_t = SWING_PAUSE_S
 
-			# Dave 2026-10-21: holding the button keeps chopping, one swing after another (no gap, no clicking).
-			if holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-				_start_swing()
+	if _swing_t < 0.0 and _pause_t > 0.0:
+		_pause_t -= delta
+
+		# Dave 2026-10-21: holding the button keeps chopping, one swing after another (a short pause between, 31 Oct 2026).
+		if _pause_t <= 0.0 and holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			_start_swing()
 
 	if _model != null and _is_torch():
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
@@ -711,7 +761,7 @@ func _process_body(delta: float) -> void:
 	elif _model != null and _is_knife():
 		_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
 	elif _model != null and _is_axe():
-		var u: float = clampf(_swing_t / SWING_S, 0.0, 1.0) if _swing_t >= 0.0 else 0.0
+		var u: float = clampf(_swing_t / _swing_length(), 0.0, 1.0) if _swing_t >= 0.0 else 0.0
 		var arc: float = sin(u * PI)
 		_model.position = _model.position.lerp(REST + Vector3(-0.1 * arc, -0.15 * arc, -0.2 * arc), clampf(delta * 20.0, 0.0, 1.0))
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(70.0) * (1.0 - 2.0 * u) if _swing_t >= 0.0 else deg_to_rad(20.0), clampf(delta * 20.0, 0.0, 1.0))
@@ -782,14 +832,8 @@ func _place_arms(delta: float) -> void:
 		return
 
 	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _arms.is_one_shot_playing()
-	_arm_up = lerpf(_arm_up, 1.0 if working else 0.0, 1.0 - exp(-ARMS_FOLLOW_K * delta))
-	var eye: Transform3D = _camera.global_transform
-	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
-	var body_pose: Transform3D = Transform3D(yaw * Basis(Vector3.RIGHT, deg_to_rad(REST_PITCH_DEG)), eye.origin + Vector3(0.0, -REST_DOWN_M, 0.0) + yaw * Vector3(0.0, 0.0, REST_BACK_M))
-	var side: Transform3D = eye.affine_inverse() * body_pose
-	var up_pos: Vector3 = ARMS_POS
-	var up_basis: Basis = Basis(Vector3.RIGHT, deg_to_rad(ARMS_PITCH_DEG))
-	_arms.transform = Transform3D(Basis(side.basis.get_rotation_quaternion().slerp(up_basis.get_rotation_quaternion(), _arm_up)).scaled(Vector3.ONE * ARMS_SCALE), side.origin.lerp(up_pos, _arm_up))
+	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
+	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
@@ -903,6 +947,7 @@ func _strike() -> void:
 
 	var tree: Array = _tree_near.call(hit["position"]) if _tree_near.is_valid() else []
 	var trunk_id: int = _inv.felled_trunk_near(hit["position"])
+	var stump_id: int = _inv.stump_near(hit["position"]) if trunk_id == 0 else 0
 	var boulder_id: int = _inv.boulder_near(hit["position"])
 	var log_id: int = _inv.loose_log_near(hit["position"])
 
@@ -915,6 +960,9 @@ func _strike() -> void:
 	elif trunk_id != 0:
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+	elif stump_id != 0:
+		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
 	elif not tree.is_empty():
 		_sound.hits.hit("axe", "wood", hit["position"], 1.0)
 		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
@@ -973,6 +1021,44 @@ var _grade_has_b: bool = false
 var _stakes: Array = []
 
 
+# A survey stake (Kathleen, stage-1 pass): a 1 m wooden post with a sharpened foot and a small red-orange flag at the top, so a grade line reads as marked
+# ground and not as a white pole. Origin in the middle of its height, like the old post.
+func _make_stake() -> Node3D:
+	var stake: Node3D = Node3D.new()
+	var wood: StandardMaterial3D = StandardMaterial3D.new()
+	wood.albedo_color = Color(0.55, 0.4, 0.22)
+	wood.roughness = 1.0
+	var shaft: MeshInstance3D = MeshInstance3D.new()
+	var post: CylinderMesh = CylinderMesh.new()
+	post.top_radius = 0.025
+	post.bottom_radius = 0.028
+	post.height = 0.8
+	post.material = wood
+	shaft.mesh = post
+	shaft.position = Vector3(0.0, 0.1, 0.0)
+	stake.add_child(shaft)
+	var tip: MeshInstance3D = MeshInstance3D.new()
+	var cone: CylinderMesh = CylinderMesh.new()
+	cone.top_radius = 0.028
+	cone.bottom_radius = 0.002
+	cone.height = 0.2
+	cone.material = wood
+	tip.mesh = cone
+	tip.position = Vector3(0.0, -0.4, 0.0)
+	stake.add_child(tip)
+	var flag: MeshInstance3D = MeshInstance3D.new()
+	var cloth: BoxMesh = BoxMesh.new()
+	cloth.size = Vector3(0.2, 0.12, 0.008)
+	var red: StandardMaterial3D = StandardMaterial3D.new()
+	red.albedo_color = Color(0.92, 0.28, 0.1)
+	red.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cloth.material = red
+	flag.mesh = cloth
+	flag.position = Vector3(0.11, 0.42, 0.0)
+	stake.add_child(flag)
+	return stake
+
+
 func _grade_point_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
@@ -1003,12 +1089,7 @@ func _grade_point_here() -> void:
 		_grade_a = hit["position"]
 
 	for point in ([_grade_a, hit["position"]] if setting_b else [hit["position"]]):
-		var stake: MeshInstance3D = MeshInstance3D.new()
-		var post: CylinderMesh = CylinderMesh.new()
-		post.top_radius = 0.03
-		post.bottom_radius = 0.03
-		post.height = 1.0
-		stake.mesh = post
+		var stake: Node3D = _make_stake()
 		_root.add_child(stake)
 		stake.global_position = point + Vector3(0.0, 0.5, 0.0)
 		_stakes.append(stake)
@@ -1038,6 +1119,9 @@ func _fill_here() -> void:
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
+
+	if _sound != null:
+		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
 
 
 var raise_mode: bool = false              # the spade raises ground (Dave 2026-10-22); false digs

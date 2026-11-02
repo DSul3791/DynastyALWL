@@ -1,0 +1,212 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 2060 SUPER
+
+Terrain client: connecting to 127.0.0.1:7821
+Terrain client: welcome after 3247 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
+Terrain client: 2026-10-31T04:18:01 [+7.8 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
+Terrain client: block line open
+Terrain client: the block line closed; blocks come over the game connection
+Crash report written: res://crash_reports/2026-10-31_04-18-17_build826.txt
+Terrain client: 2026-10-31T04:18:31 [+37.9 s] JOIN: waiting for ground 37 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T04:18:37 [+44.0 s] JOIN: waiting for ground 44 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T04:18:43 [+49.8 s] JOIN: waiting for ground 49 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T04:18:48 [+55.0 s] JOIN: waiting for ground 54 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T04:18:54 [+60.3 s] JOIN: waiting for ground 60 s after the welcome: loads 1, received 0 (total 0), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+Terrain client: 2026-10-31T04:19:07 [+74.2 s] JOIN: waiting for ground 74 s after the welcome: loads 2, received 0 (total 0), failed total 1, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T04:19:12 [+79.2 s] JOIN: waiting for ground 79 s after the welcome: loads 2, received 0 (total 0), failed total 1, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: ground under (53302, 68482) is at 30.7 m
+Terrain client: 2026-10-31T04:19:16 [+83.0 s] JOIN: column answer 83.0 s after the welcome: ground 30.7 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53316, 68476) is at 31.6 m
+Terrain client: 2026-10-31T04:19:16 [+83.0 s] JOIN: column answer 83.0 s after the welcome: ground 31.6 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53340, 68493) is at 31.1 m
+Terrain client: 2026-10-31T04:19:18 [+84.5 s] JOIN: column answer 84.5 s after the welcome: ground 31.1 m, player 34.1 m, viewer y 34.1
+Crash report written: res://crash_reports/2026-10-31_04-19-33_build826.txt
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+Terrain client: ground under (53268, 68460) is at 31.1 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 31.1 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53390, 68447) is at 31.0 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 31.0 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53318, 68470) is at 31.4 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 31.4 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53310, 68490) is at 31.2 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 31.2 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53288, 68466) is at 30.9 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 30.9 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53278, 68508) is at 30.6 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 30.6 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53315, 68556) is at 29.1 m
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: column answer 220.1 s after the welcome: ground 29.1 m, player 34.1 m, viewer y 34.1
+Terrain client: 2026-10-31T04:21:33 [+220.1 s] JOIN: waiting for ground 220 s after the welcome: loads 6, received 28 (total 28), failed total 5, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: server left
+ERROR: Condition "!_is_active()" is true. Returning: nullptr
+   at: ENetMultiplayerPeer::get_peer (modules\enet\enet_multiplayer_peer.cpp:460)
+   GDScript backtrace (most recent call first):
+       [0] _on_server_lost (res://scenes/terrain_client/terrain_client.gd:839)
+Crash report written: res://crash_reports/2026-10-31_04-21-33_build826.txt
+Terrain client: connection lost notice shown: the server stopped answering or closed the connection (server link: 0 bars, rtt 2609 ms, loss 8.0%, silent 115 ms, LOST)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+Crash report written: res://crash_reports/2026-10-31_04-21-49_build826.txt
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)
+ERROR: Error loading voxel block
+   at: zylann::voxel::LoadBlockDataTask::run (modules\voxel\streams\load_block_data_task.cpp:80)

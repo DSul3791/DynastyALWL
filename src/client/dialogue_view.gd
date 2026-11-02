@@ -73,7 +73,7 @@ func _probe() -> Dictionary:
 		return {}
 
 	var id: String = str(near["id"])
-	return {"prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
+	return {"kind": "npc", "point": near["pos"], "prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
 
 
 func _build(layer: CanvasLayer) -> void:

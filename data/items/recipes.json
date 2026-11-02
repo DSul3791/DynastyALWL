@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs.",
-	"next_number": 178,
+	"next_number": 335,
 	"hand_saw_balance": {
 		"note": "Wood chain numbers (Dave): log on the ground + axe = 4 wooden blocks; sawmill 1 log = 4 lumber in 6 s. A hand saw sits between: half the yield, four times the time. recipes.lumber_by_hand must match this row (validate_items checks it); change the balance by editing this row and that recipe together.",
 		"sawmill": {"lumber_per_log": 4, "craft_s": 6.0},
@@ -39,14 +39,14 @@
 				],
 				[
 					"twine",
-					5
+					2
 				]
 			],
 			"gives": [
 				"stone_axe",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"wooden_spear": {
@@ -69,7 +69,7 @@
 				"wooden_spear",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 6.0,
 			"known": true
 		},
 		"spear": {
@@ -83,7 +83,7 @@
 				],
 				[
 					"twine",
-					5
+					2
 				]
 			],
 			"keeps": [
@@ -96,7 +96,7 @@
 				"spear",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 10.0,
 			"known": true
 		},
 		"stone_knife": {
@@ -117,7 +117,7 @@
 				"stone_knife",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"torch": {
@@ -159,7 +159,7 @@
 				"campfire_kit",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"poultice_plantain": {
@@ -270,7 +270,7 @@
 				"wooden_spade",
 				1
 			],
-			"craft_s": 4.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lean_to_kit": {
@@ -280,22 +280,22 @@
 			"needs": [
 				[
 					"stick",
-					8
+					32
 				],
 				[
 					"leaves",
-					6
+					8
 				],
 				[
 					"twine",
-					2
+					4
 				]
 			],
 			"gives": [
 				"lean_to_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"chest_kit": {
@@ -316,7 +316,7 @@
 				"chest_kit",
 				1
 			],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true
 		},
 		"chopping_block": {
@@ -333,7 +333,7 @@
 				"chopping_block",
 				1
 			],
-			"craft_s": 3.0,
+			"craft_s": 8.0,
 			"known": true
 		},
 		"lumber": {
@@ -351,7 +351,7 @@
 				4
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"plank_chest_kit": {
@@ -373,7 +373,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 2
 		},
@@ -396,7 +396,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"steel_pickaxe": {
@@ -419,6 +419,7 @@
 			],
 			"craft_s": 12.0,
 			"known": false,
+			"locked": true,
 			"station": "forge",
 			"station_level": 2
 		},
@@ -475,7 +476,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"waterskin": {
 			"number": 23,
@@ -496,7 +497,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"twine_bark": {
 			"number": 24,
@@ -577,7 +578,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"steel_spade": {
 			"number": 28,
@@ -598,7 +599,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"sewing_needle": {
 			"number": 29,
@@ -615,7 +616,9 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"backpack": {
 			"number": 30,
@@ -778,7 +781,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"grass_cloak": {
 			"number": 37,
@@ -799,7 +802,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false
+			"known": true
 		},
 		"fibre_sandals": {
 			"number": 38,
@@ -820,7 +823,7 @@
 				1
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"hide_cloak": {
 			"number": 39,
@@ -942,7 +945,7 @@
 				2
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"rough_bed_kit": {
 			"number": 162,
@@ -966,7 +969,7 @@
 				"rough_bed_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 25.0,
 			"known": true
 		},
 		"campfire_pot_kit": {
@@ -980,7 +983,7 @@
 				],
 				[
 					"twine",
-					5
+					3
 				],
 				[
 					"clay_pot",
@@ -1001,7 +1004,7 @@
 			"needs": [
 				[
 					"twine",
-					6
+					4
 				],
 				[
 					"thatch",
@@ -1014,7 +1017,7 @@
 			],
 			"craft_s": 10.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_wall_kit": {
 			"number": 167,
@@ -1023,7 +1026,7 @@
 			"needs": [
 				[
 					"twine",
-					20
+					8
 				],
 				[
 					"thatch",
@@ -1040,7 +1043,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_roof_kit": {
 			"number": 168,
@@ -1049,7 +1052,7 @@
 			"needs": [
 				[
 					"twine",
-					10
+					6
 				],
 				[
 					"thatch",
@@ -1066,7 +1069,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"thatch_doorway_kit": {
 			"number": 169,
@@ -1075,7 +1078,7 @@
 			"needs": [
 				[
 					"twine",
-					12
+					6
 				],
 				[
 					"thatch",
@@ -1092,7 +1095,7 @@
 			],
 			"craft_s": 20.0,
 			"station": "workbench",
-			"known": false
+			"known": true
 		},
 		"workbench_kit": {
 			"number": 45,
@@ -1101,18 +1104,22 @@
 			"needs": [
 				[
 					"stick",
-					12
+					16
 				],
 				[
 					"twine",
-					3
+					6
+				],
+				[
+					"stone",
+					4
 				]
 			],
 			"gives": [
 				"workbench_kit",
 				1
 			],
-			"craft_s": 12.0,
+			"craft_s": 60.0,
 			"known": true
 		},
 		"shore_net": {
@@ -1122,7 +1129,7 @@
 			"needs": [
 				[
 					"twine",
-					20
+					8
 				],
 				[
 					"stone",
@@ -1134,7 +1141,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"fishing_rod": {
 			"number": 46,
@@ -1175,7 +1182,7 @@
 				"tool_rack_kit",
 				1
 			],
-			"craft_s": 10.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -1199,7 +1206,8 @@
 			],
 			"craft_s": 12.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"log_workbench_kit": {
 			"number": 49,
@@ -1234,7 +1242,7 @@
 			"needs": [
 				[
 					"stone",
-					36
+					24
 				],
 				[
 					"clay",
@@ -1298,7 +1306,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_oak": {
@@ -1316,7 +1324,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_beech": {
@@ -1334,9 +1342,8 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
-			"station": "saw_mill",
-			"retired": true
+			"known": true,
+			"station": "saw_mill"
 		},
 		"beams_beech": {
 			"number": 55,
@@ -1353,9 +1360,8 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
-			"station": "saw_mill",
-			"retired": true
+			"known": true,
+			"station": "saw_mill"
 		},
 		"lumber_birch": {
 			"number": 56,
@@ -1372,7 +1378,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_birch": {
@@ -1390,7 +1396,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_scots_pine": {
@@ -1405,10 +1411,10 @@
 			],
 			"gives": [
 				"lumber_scots_pine",
-				6
+				7
 			],
-			"craft_s": 6.0,
-			"known": false,
+			"craft_s": 5.0,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_scots_pine": {
@@ -1425,8 +1431,8 @@
 				"beam_scots_pine",
 				2
 			],
-			"craft_s": 8.0,
-			"known": false,
+			"craft_s": 6.0,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_spruce": {
@@ -1441,10 +1447,10 @@
 			],
 			"gives": [
 				"lumber_spruce",
-				6
+				7
 			],
-			"craft_s": 6.0,
-			"known": false,
+			"craft_s": 5.0,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_spruce": {
@@ -1461,8 +1467,8 @@
 				"beam_spruce",
 				2
 			],
-			"craft_s": 8.0,
-			"known": false,
+			"craft_s": 6.0,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_alder": {
@@ -1481,6 +1487,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1500,6 +1507,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1519,6 +1527,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1538,6 +1547,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1557,6 +1567,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1576,6 +1587,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1594,7 +1606,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_tropical_hardwood": {
@@ -1612,7 +1624,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_acacia": {
@@ -1631,6 +1643,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1650,6 +1663,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1669,6 +1683,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1688,6 +1703,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1707,6 +1723,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1726,6 +1743,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1745,6 +1763,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1764,6 +1783,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1783,6 +1803,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1802,6 +1823,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1821,6 +1843,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1840,6 +1863,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1859,6 +1883,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1878,6 +1903,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1896,7 +1922,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_walnut": {
@@ -1914,7 +1940,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"lumber_date_palm": {
@@ -1933,6 +1959,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1952,6 +1979,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1971,6 +1999,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -1990,6 +2019,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2009,6 +2039,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2028,6 +2059,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2047,6 +2079,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2066,6 +2099,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2085,6 +2119,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2104,6 +2139,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2123,6 +2159,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2142,6 +2179,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2161,6 +2199,7 @@
 			],
 			"craft_s": 6.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2180,6 +2219,7 @@
 			],
 			"craft_s": 8.0,
 			"known": false,
+			"locked": true,
 			"station": "saw_mill",
 			"retired": true
 		},
@@ -2198,7 +2238,7 @@
 				6
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"beams_maple": {
@@ -2216,7 +2256,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "saw_mill"
 		},
 		"cook_berry_compote": {
@@ -2282,7 +2322,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_acorn_mash": {
@@ -2326,7 +2366,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_mushroom_skewer": {
@@ -2352,7 +2392,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_herb_fish": {
@@ -2391,7 +2431,7 @@
 					1
 				],
 				[
-					"wild_garlic_bulbs",
+					"wild_garlic_leaves",
 					1
 				],
 				[
@@ -2430,7 +2470,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_fruit_leather": {
@@ -2456,7 +2496,7 @@
 				3
 			],
 			"craft_s": 10.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_smoked_fish": {
@@ -2499,11 +2539,7 @@
 					1
 				],
 				[
-					"wild_garlic_bulbs",
-					1
-				],
-				[
-					"porcini",
+					"wild_garlic_leaves",
 					1
 				]
 			],
@@ -2521,7 +2557,7 @@
 			"category": "Fire and cooking",
 			"needs": [
 				[
-					"greens",
+					"nettles",
 					2
 				],
 				[
@@ -2530,10 +2566,6 @@
 				],
 				[
 					"chanterelles",
-					1
-				],
-				[
-					"sorrel_leaves",
 					1
 				]
 			],
@@ -2561,10 +2593,6 @@
 				[
 					"wild_carrot_roots",
 					1
-				],
-				[
-					"sage",
-					1
 				]
 			],
 			"gives": [
@@ -2589,10 +2617,6 @@
 					2
 				],
 				[
-					"dates",
-					1
-				],
-				[
 					"animal_fat",
 					1
 				]
@@ -2602,7 +2626,7 @@
 				3
 			],
 			"craft_s": 12.0,
-			"station": "campfire",
+			"station": "clay_hearth",
 			"known": true
 		},
 		"cook_hearty_pottage": {
@@ -2611,7 +2635,7 @@
 			"category": "Fire and cooking",
 			"needs": [
 				[
-					"seeds",
+					"seed_bundle",
 					2
 				],
 				[
@@ -2619,7 +2643,7 @@
 					1
 				],
 				[
-					"dandelion_leaves",
+					"dandelion_flowers",
 					1
 				],
 				[
@@ -2649,7 +2673,7 @@
 					2
 				],
 				[
-					"wild_garlic_bulbs",
+					"wild_garlic_leaves",
 					1
 				],
 				[
@@ -2822,7 +2846,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false
+			"known": true
 		},
 		"timber_set_kit": {
 			"number": 126,
@@ -2864,7 +2888,7 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -2883,7 +2907,7 @@
 				3
 			],
 			"craft_s": 14.0,
-			"known": false,
+			"known": true,
 			"station": "campfire"
 		},
 		"mortar": {
@@ -2905,7 +2929,7 @@
 				2
 			],
 			"craft_s": 8.0,
-			"known": false
+			"known": true
 		},
 		"ladder_kit": {
 			"number": 130,
@@ -2949,7 +2973,8 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": true
+			"known": true,
+			"retired": true
 		},
 		"wooden_spade_large": {
 			"number": 132,
@@ -2977,7 +3002,8 @@
 			],
 			"craft_s": 9.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_spade_medium": {
 			"number": 133,
@@ -3003,7 +3029,8 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"stone_spade_large": {
 			"number": 134,
@@ -3029,7 +3056,8 @@
 			],
 			"craft_s": 14.0,
 			"known": true,
-			"station": "workbench"
+			"station": "workbench",
+			"retired": true
 		},
 		"iron_spade_medium": {
 			"number": 135,
@@ -3050,7 +3078,9 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"iron_spade_large": {
 			"number": 136,
@@ -3071,7 +3101,9 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": false
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"steel_spade_medium": {
 			"number": 137,
@@ -3092,7 +3124,9 @@
 				1
 			],
 			"craft_s": 16.0,
-			"known": false
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"steel_spade_large": {
 			"number": 138,
@@ -3113,7 +3147,9 @@
 				1
 			],
 			"craft_s": 24.0,
-			"known": false
+			"known": false,
+			"locked": true,
+			"retired": true
 		},
 		"wooden_hoe": {
 			"number": 139,
@@ -3187,7 +3223,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false
+			"known": true
 		},
 		"steel_hoe": {
 			"number": 142,
@@ -3208,7 +3244,7 @@
 				1
 			],
 			"craft_s": 14.0,
-			"known": false
+			"known": true
 		},
 		"rough_plank": {
 			"number": 143,
@@ -3244,7 +3280,7 @@
 				1
 			],
 			"craft_s": 4.0,
-			"known": false,
+			"known": true,
 			"station": "woodworking_table",
 			"station_level": 1
 		},
@@ -3263,7 +3299,7 @@
 				100
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"cobblestone": {
@@ -3281,7 +3317,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3300,7 +3336,7 @@
 				1
 			],
 			"craft_s": 6.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3319,7 +3355,7 @@
 				1
 			],
 			"craft_s": 12.0,
-			"known": false,
+			"known": true,
 			"station": "campfire"
 		},
 		"hinges": {
@@ -3337,7 +3373,7 @@
 				4
 			],
 			"craft_s": 8.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"wooden_pin": {
@@ -3366,7 +3402,7 @@
 			"needs": [["iron_ingot", 2]],
 			"gives": ["saw_blade", 1],
 			"craft_s": 20.0,
-			"known": false,
+			"known": true,
 			"station": "forge"
 		},
 		"water_wheel": {
@@ -3376,7 +3412,7 @@
 			"needs": [["lumber", 20], ["nails", 80]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
-			"known": false,
+			"known": true,
 			"station": "workbench",
 			"station_level": 1
 		},
@@ -3388,6 +3424,7 @@
 			"gives": ["saw_mill_kit", 1],
 			"craft_s": 60.0,
 			"known": false,
+			"locked": true,
 			"station": "workbench",
 			"station_level": 1,
 			"retired": true
@@ -3400,6 +3437,7 @@
 			"gives": ["woodworking_table_kit", 1],
 			"craft_s": 30.0,
 			"known": false,
+			"locked": true,
 			"station": "workbench",
 			"station_level": 1,
 			"retired": true
@@ -3468,7 +3506,7 @@
 				"stone_hammer",
 				1
 			],
-			"craft_s": 6.0,
+			"craft_s": 15.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3495,7 +3533,7 @@
 				1
 			],
 			"craft_s": 10.0,
-			"known": false,
+			"known": true,
 			"station": "workbench"
 		},
 		"stone_adze": {
@@ -3558,7 +3596,7 @@
 				["twine", 3]
 			],
 			"gives": ["wooden_bow", 1],
-			"craft_s": 8.0,
+			"craft_s": 20.0,
 			"known": true,
 			"station": "workbench"
 		},
@@ -3605,7 +3643,7 @@
 			"category": "Fire and cooking",
 			"needs": [
 				[
-					"seeds",
+					"seed_bundle",
 					3
 				],
 				[
@@ -3627,7 +3665,7 @@
 			"category": "Fire and cooking",
 			"needs": [
 				[
-					"seeds",
+					"seed_bundle",
 					3
 				],
 				[
@@ -3661,7 +3699,7 @@
 					1
 				],
 				[
-					"wild_garlic_bulbs",
+					"wild_garlic_leaves",
 					1
 				]
 			],
@@ -3693,6 +3731,3294 @@
 			],
 			"craft_s": 6.0,
 			"known": true
+		},
+		"kindling": {"number": 178, "name": "Kindling", "category": "Fire and cooking", "needs": [["stick", 1]], "gives": ["kindling", 3], "craft_s": 2.0, "known": true},
+		"processed_hide": {"number": 179, "name": "Processed hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 8.0, "known": true},
+		"hide_scraper": {"number": 180, "name": "Hide scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"obsidian_knife": {"number": 182, "name": "Obsidian knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"steel_striker": {"number": 183, "name": "Steel striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "forge"},
+		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "forge"},
+		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 1], ["tin_ingot", 1]], "gives": ["bronze_ingot", 2], "craft_s": 10.0, "known": true, "station": "forge"},
+		"stone_pickaxe": {
+			"number": 186,
+			"name": "Stone pickaxe",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"stone",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"stone_pickaxe",
+				1
+			],
+			"craft_s": 25.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"sickle": {
+			"number": 187,
+			"name": "Sickle",
+			"category": "Tools",
+			"needs": [
+				[
+					"flint",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"sickle",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"scythe": {
+			"number": 188,
+			"name": "Scythe",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"scythe",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "forge"
+		},
+		"wooden_club": {
+			"number": 189,
+			"name": "Wooden club",
+			"category": "Weapons",
+			"needs": [
+				[
+					"stick",
+					3
+				]
+			],
+			"gives": [
+				"wooden_club",
+				1
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"smelt_copper": {
+			"number": 190,
+			"name": "Copper ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"copper_ore",
+					3
+				]
+			],
+			"gives": [
+				"copper_ingot",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "forge"
+		},
+		"smelt_tin": {
+			"number": 191,
+			"name": "Tin ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"tin_ore",
+					3
+				]
+			],
+			"gives": [
+				"tin_ingot",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "forge"
+		},
+		"smelt_iron": {
+			"number": 192,
+			"name": "Iron ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"iron_ore",
+					4
+				],
+				[
+					"coal",
+					1
+				]
+			],
+			"gives": [
+				"iron_ingot",
+				1
+			],
+			"craft_s": 45.0,
+			"known": true,
+			"station": "forge"
+		},
+		"smelt_steel": {
+			"number": 193,
+			"name": "Steel ingot",
+			"category": "Materials",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"coal",
+					1
+				]
+			],
+			"gives": [
+				"steel_ingot",
+				1
+			],
+			"craft_s": 14.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"hide_tunic": {
+			"number": 194,
+			"name": "Hide tunic",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_tunic",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"hide_trousers": {
+			"number": 195,
+			"name": "Hide trousers",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_trousers",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"hide_gloves": {
+			"number": 196,
+			"name": "Hide gloves",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"hide_gloves",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true
+		},
+		"clay_jug": {
+			"number": 197,
+			"name": "Clay jug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"clay",
+					4
+				]
+			],
+			"gives": [
+				"clay_jug",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true
+		},
+		"herb_salve": {
+			"number": 198,
+			"name": "Herb salve",
+			"category": "Medicine",
+			"needs": [
+				[
+					"comfrey_leaves",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"herb_salve",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"splint": {
+			"number": 199,
+			"name": "Splint",
+			"category": "Medicine",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"splint",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"candle": {
+			"number": 200,
+			"name": "Candle",
+			"category": "Tools",
+			"needs": [
+				[
+					"animal_fat",
+					1
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"candle",
+				2
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"wicker_shield": {
+			"number": 201,
+			"name": "Wicker shield",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					3
+				],
+				[
+					"plant_fibre",
+					2
+				]
+			],
+			"gives": [
+				"wicker_shield",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true
+		},
+		"stone_mace": {
+			"number": 202,
+			"name": "Stone mace",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"stone_mace",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true
+		},
+		"plank_shield": {
+			"number": 203,
+			"name": "Plank shield",
+			"category": "Tools",
+			"needs": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"hide",
+					1
+				]
+			],
+			"gives": [
+				"plank_shield",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"bronze_sword": {
+			"number": 204,
+			"name": "Bronze sword",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_sword",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"bronze_mace": {
+			"number": 205,
+			"name": "Bronze mace",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_mace",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"bronze_shield": {
+			"number": 206,
+			"name": "Bronze-rimmed shield",
+			"category": "Tools",
+			"needs": [
+				[
+					"lumber",
+					2
+				],
+				[
+					"bronze_ingot",
+					1
+				]
+			],
+			"gives": [
+				"bronze_shield",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"iron_sword": {
+			"number": 207,
+			"name": "Iron sword",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"leather",
+					1
+				]
+			],
+			"gives": [
+				"iron_sword",
+				1
+			],
+			"craft_s": 18.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"iron_mace": {
+			"number": 208,
+			"name": "Iron mace",
+			"category": "Tools",
+			"needs": [
+				[
+					"iron_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"iron_mace",
+				1
+			],
+			"craft_s": 18.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"iron_shield": {
+			"number": 209,
+			"name": "Iron-banded shield",
+			"category": "Tools",
+			"needs": [
+				[
+					"lumber",
+					2
+				],
+				[
+					"iron_ingot",
+					2
+				]
+			],
+			"gives": [
+				"iron_shield",
+				1
+			],
+			"craft_s": 18.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"steel_sword": {
+			"number": 210,
+			"name": "Steel sword",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"heavy_leather",
+					1
+				]
+			],
+			"gives": [
+				"steel_sword",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 3
+		},
+		"steel_mace": {
+			"number": 211,
+			"name": "Steel mace",
+			"category": "Tools",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"steel_mace",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 3
+		},
+		"steel_shield": {
+			"number": 212,
+			"name": "Steel kite shield",
+			"category": "Tools",
+			"needs": [
+				[
+					"lumber",
+					1
+				],
+				[
+					"steel_ingot",
+					2
+				]
+			],
+			"gives": [
+				"steel_shield",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 3
+		},
+		"leather_cap": {
+			"number": 213,
+			"name": "Leather cap",
+			"category": "Clothing",
+			"needs": [
+				[
+					"leather",
+					2
+				]
+			],
+			"gives": [
+				"leather_cap",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"leather_jerkin": {
+			"number": 214,
+			"name": "Leather jerkin",
+			"category": "Clothing",
+			"needs": [
+				[
+					"leather",
+					3
+				]
+			],
+			"gives": [
+				"leather_jerkin",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"bronze_helm": {
+			"number": 215,
+			"name": "Bronze helm",
+			"category": "Clothing",
+			"needs": [
+				[
+					"bronze_ingot",
+					3
+				]
+			],
+			"gives": [
+				"bronze_helm",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"gambeson": {
+			"number": 216,
+			"name": "Gambeson",
+			"category": "Clothing",
+			"needs": [
+				[
+					"twine",
+					3
+				],
+				[
+					"leather",
+					1
+				]
+			],
+			"gives": [
+				"gambeson",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"iron_helm": {
+			"number": 217,
+			"name": "Iron helm",
+			"category": "Clothing",
+			"needs": [
+				[
+					"iron_ingot",
+					3
+				]
+			],
+			"gives": [
+				"iron_helm",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"mail_shirt": {
+			"number": 218,
+			"name": "Mail shirt",
+			"category": "Clothing",
+			"needs": [
+				[
+					"rivets",
+					2
+				],
+				[
+					"iron_ingot",
+					2
+				]
+			],
+			"gives": [
+				"mail_shirt",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 2
+		},
+		"steel_helm": {
+			"number": 219,
+			"name": "Steel helm",
+			"category": "Clothing",
+			"needs": [
+				[
+					"steel_ingot",
+					2
+				],
+				[
+					"heavy_leather",
+					1
+				],
+				[
+					"rivets",
+					1
+				]
+			],
+			"gives": [
+				"steel_helm",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 3
+		},
+		"plate_cuirass": {
+			"number": 220,
+			"name": "Plate cuirass",
+			"category": "Clothing",
+			"needs": [
+				[
+					"steel_ingot",
+					3
+				],
+				[
+					"heavy_leather",
+					1
+				],
+				[
+					"rivets",
+					2
+				]
+			],
+			"gives": [
+				"plate_cuirass",
+				1
+			],
+			"craft_s": 16.0,
+			"known": false,
+			"locked": true,
+			"station": "forge",
+			"station_level": 3
+		},
+		"quern": {
+			"number": 221,
+			"name": "Quern",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"quern",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"flour_from_wheat": {
+			"number": 222,
+			"name": "Flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"wheat",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"flour_from_barley": {
+			"number": 223,
+			"name": "Barley flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"barley",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"compost": {
+			"number": 224,
+			"name": "Compost",
+			"category": "Materials",
+			"needs": [
+				[
+					"plant_fibre",
+					3
+				]
+			],
+			"gives": [
+				"compost",
+				1
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"hide_glue": {
+			"number": 225,
+			"name": "Hide glue",
+			"category": "Materials",
+			"needs": [
+				[
+					"hide",
+					1
+				]
+			],
+			"gives": [
+				"hide_glue",
+				2
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"bone_arrow": {
+			"number": 226,
+			"name": "Bone arrow",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"feather",
+					2
+				],
+				[
+					"bone",
+					2
+				]
+			],
+			"gives": [
+				"bone_arrow",
+				4
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"stone_wedge": {
+			"number": 227,
+			"name": "Stone wedge",
+			"category": "Tools",
+			"needs": [
+				[
+					"stone",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"stone_wedge",
+				1
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"fibre_arrow": {
+			"number": 228,
+			"name": "Fibre arrow",
+			"category": "Tools",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"fibre_arrow",
+				4
+			],
+			"craft_s": 4.0,
+			"known": true
+		},
+		"tinder": {
+			"number": 229,
+			"name": "Tinder",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"thatch",
+					2
+				]
+			],
+			"gives": [
+				"tinder",
+				2
+			],
+			"craft_s": 3.0,
+			"known": true
+		},
+		"lumber_wedge": {
+			"number": 230,
+			"name": "Rough planks",
+			"category": "Materials",
+			"needs": [
+				[
+					"log",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_wedge",
+					1
+				]
+			],
+			"gives": [
+				"lumber",
+				2
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"rough_bed_bedding": {
+			"number": 231,
+			"name": "Rough bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"bedding",
+					8
+				],
+				[
+					"stick",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"rough_bed_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"wooden_hammer_soft": {
+			"number": 232,
+			"name": "Wooden hammer",
+			"category": "Tools",
+			"needs": [
+				[
+					"wooden_block_soft",
+					1
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wooden_hammer",
+				1
+			],
+			"craft_s": 5.0,
+			"known": true
+		},
+		"rough_bed_straw": {
+			"number": 233,
+			"name": "Rough bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"straw",
+					8
+				],
+				[
+					"stick",
+					4
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"rough_bed_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"leather": {
+			"number": 234,
+			"name": "Leather",
+			"category": "Materials",
+			"needs": [
+				[
+					"processed_hide",
+					1
+				],
+				[
+					"tannin_bark",
+					2
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"leather",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"heavy_leather": {
+			"number": 235,
+			"name": "Heavy leather",
+			"category": "Materials",
+			"needs": [
+				[
+					"leather",
+					2
+				],
+				[
+					"tannin_bark",
+					2
+				]
+			],
+			"gives": [
+				"heavy_leather",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"fine_leather": {
+			"number": 236,
+			"name": "Fine leather",
+			"category": "Materials",
+			"needs": [
+				[
+					"leather",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"fine_leather",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"wool_tunic": {
+			"number": 237,
+			"name": "Wool tunic",
+			"category": "Clothing",
+			"needs": [
+				[
+					"wool",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wool_tunic",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"wool_trousers": {
+			"number": 238,
+			"name": "Wool trousers",
+			"category": "Clothing",
+			"needs": [
+				[
+					"wool",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wool_trousers",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"wool_cap": {
+			"number": 239,
+			"name": "Wool cap",
+			"category": "Clothing",
+			"needs": [
+				[
+					"wool",
+					2
+				]
+			],
+			"gives": [
+				"wool_cap",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"wool_mittens": {
+			"number": 240,
+			"name": "Wool mittens",
+			"category": "Clothing",
+			"needs": [
+				[
+					"wool",
+					2
+				]
+			],
+			"gives": [
+				"wool_mittens",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"linen_shirt": {
+			"number": 241,
+			"name": "Linen shirt",
+			"category": "Clothing",
+			"needs": [
+				[
+					"linen",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"linen_shirt",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"fur_cloak": {
+			"number": 242,
+			"name": "Fur cloak",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"sinew",
+					2
+				]
+			],
+			"gives": [
+				"fur_cloak",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"fur_hat": {
+			"number": 243,
+			"name": "Fur hat",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					1
+				],
+				[
+					"sinew",
+					1
+				]
+			],
+			"gives": [
+				"fur_hat",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"fur_boots": {
+			"number": 244,
+			"name": "Fur boots",
+			"category": "Clothing",
+			"needs": [
+				[
+					"hide",
+					2
+				],
+				[
+					"sinew",
+					1
+				]
+			],
+			"gives": [
+				"fur_boots",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true
+		},
+		"linen": {
+			"number": 245,
+			"name": "Linen",
+			"category": "Materials",
+			"needs": [
+				[
+					"flax",
+					4
+				]
+			],
+			"gives": [
+				"linen",
+				2
+			],
+			"craft_s": 20.0,
+			"known": true
+		},
+		"fibre_cloth": {
+			"number": 334,
+			"name": "Fibre cloth",
+			"category": "Materials",
+			"needs": [
+				["plant_fibre", 8]
+			],
+			"gives": ["fibre_cloth", 1],
+			"craft_s": 30.0,
+			"known": true
+		},
+		"flour_from_oats": {
+			"number": 246,
+			"name": "Oat flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"oats",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"flour_from_rye": {
+			"number": 247,
+			"name": "Rye flour",
+			"category": "Materials",
+			"needs": [
+				[
+					"rye",
+					3
+				]
+			],
+			"keeps": [
+				[
+					"quern",
+					1
+				]
+			],
+			"gives": [
+				"flour",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true
+		},
+		"cook_oat_porridge": {
+			"number": 248,
+			"name": "Oat porridge",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"oats",
+					2
+				],
+				[
+					"water",
+					1
+				],
+				[
+					"hazelnuts",
+					1
+				]
+			],
+			"gives": [
+				"oat_porridge",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_barley_broth": {
+			"number": 249,
+			"name": "Barley broth",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"barley",
+					2
+				],
+				[
+					"wild_carrot_roots",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"barley_broth",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_rye_flatbread": {
+			"number": 250,
+			"name": "Rye flatbread",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"flour",
+					2
+				],
+				[
+					"water",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"rye_flatbread",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_pea_soup": {
+			"number": 251,
+			"name": "Pea soup",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"peas",
+					2
+				],
+				[
+					"onion",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"pea_soup",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_turnip_mash": {
+			"number": 252,
+			"name": "Turnip mash",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"turnip",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"turnip_mash",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_baked_potato": {
+			"number": 253,
+			"name": "Baked potato",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"potato",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"baked_potato",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_cabbage_stew": {
+			"number": 254,
+			"name": "Cabbage stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"cabbage",
+					1
+				],
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"cabbage_stew",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_beet_roast": {
+			"number": 255,
+			"name": "Beet roast",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"beet",
+					2
+				],
+				[
+					"thyme",
+					1
+				]
+			],
+			"gives": [
+				"beet_roast",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_onion_roast": {
+			"number": 256,
+			"name": "Onion roast",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"onion",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"onion_roast",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_seaweed_soup": {
+			"number": 257,
+			"name": "Seaweed soup",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seaweed",
+					2
+				],
+				[
+					"shellfish",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"seaweed_soup",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_mussel_stew": {
+			"number": 258,
+			"name": "Mussel stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"shellfish",
+					3
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"mussel_stew",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_crab_cakes": {
+			"number": 259,
+			"name": "Crab cakes",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"crab_meat",
+					2
+				],
+				[
+					"flour",
+					1
+				]
+			],
+			"gives": [
+				"crab_cakes",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_egg_nettle_fry": {
+			"number": 260,
+			"name": "Egg and nettle fry",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					2
+				],
+				[
+					"nettles",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"egg_nettle_fry",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_herb_omelette": {
+			"number": 261,
+			"name": "Herb omelette",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					3
+				],
+				[
+					"thyme",
+					1
+				]
+			],
+			"gives": [
+				"herb_omelette",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_seal_stew": {
+			"number": 262,
+			"name": "Seal stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"seal_meat",
+					1
+				],
+				[
+					"turnip",
+					1
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"seal_stew",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_venison_pie": {
+			"number": 263,
+			"name": "Venison pie",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raw_meat",
+					1
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"venison_pie",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_fish_pie": {
+			"number": 264,
+			"name": "Fish pie",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"fish_pie",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_juniper_trout": {
+			"number": 265,
+			"name": "Juniper trout",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"juniper_berries",
+					1
+				]
+			],
+			"gives": [
+				"juniper_trout",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire",
+			"known": true
+		},
+		"cook_garlic_bread": {
+			"number": 266,
+			"name": "Garlic bread",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"flour",
+					2
+				],
+				[
+					"wild_garlic_leaves",
+					1
+				]
+			],
+			"gives": [
+				"garlic_bread",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_oat_cakes": {
+			"number": 267,
+			"name": "Oat cakes",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"oats",
+					2
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"oat_cakes",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_jerky": {
+			"number": 268,
+			"name": "Jerky",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raw_meat",
+					2
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"jerky",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire",
+			"known": true
+		},
+		"sea_salt": {
+			"number": 281,
+			"name": "Sea salt",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"sea_water",
+					2
+				]
+			],
+			"gives": [
+				"sea_salt",
+				1
+			],
+			"craft_s": 20.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_salted_fish": {
+			"number": 269,
+			"name": "Salted fish",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"trout",
+					1
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"salted_fish",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_dried_berries": {
+			"number": 270,
+			"name": "Dried berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blueberries",
+					3
+				]
+			],
+			"gives": [
+				"dried_berries",
+				1
+			],
+			"craft_s": 10.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_sauerkraut": {
+			"number": 271,
+			"name": "Sauerkraut",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"cabbage",
+					2
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"sauerkraut",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_hazelnut_butter": {
+			"number": 272,
+			"name": "Hazelnut butter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"hazelnuts",
+					3
+				]
+			],
+			"gives": [
+				"hazelnut_butter",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_banana_fritter": {
+			"number": 273,
+			"name": "Banana fritter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"bananas",
+					2
+				],
+				[
+					"flour",
+					1
+				]
+			],
+			"gives": [
+				"banana_fritter",
+				2
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_cactus_fry": {
+			"number": 274,
+			"name": "Cactus fry",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"prickly_pears",
+					1
+				],
+				[
+					"onion",
+					1
+				]
+			],
+			"gives": [
+				"cactus_fry",
+				1
+			],
+			"craft_s": 8.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"tallow": {
+			"number": 275,
+			"name": "Tallow",
+			"category": "Materials",
+			"needs": [
+				[
+					"animal_fat",
+					2
+				]
+			],
+			"gives": [
+				"tallow",
+				1
+			],
+			"craft_s": 14.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"soap": {
+			"number": 276,
+			"name": "Soap",
+			"category": "Materials",
+			"needs": [
+				[
+					"tallow",
+					2
+				],
+				[
+					"potash",
+					1
+				]
+			],
+			"gives": [
+				"soap",
+				1
+			],
+			"craft_s": 16.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"tallow_candle": {
+			"number": 277,
+			"name": "Tallow candle",
+			"category": "Tools",
+			"needs": [
+				[
+					"tallow",
+					1
+				],
+				[
+					"plant_fibre",
+					1
+				]
+			],
+			"gives": [
+				"candle",
+				3
+			],
+			"craft_s": 8.0,
+			"known": true
+		},
+		"leather_strap": {
+			"number": 278,
+			"name": "Leather strap",
+			"category": "Materials",
+			"needs": [
+				[
+					"leather",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_knife",
+					1
+				]
+			],
+			"gives": [
+				"leather_strap",
+				2
+			],
+			"craft_s": 6.0,
+			"known": true
+		},
+		"butter": {
+			"number": 279,
+			"name": "Butter",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"milk",
+					3
+				]
+			],
+			"gives": [
+				"butter",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true
+		},
+		"cheese": {
+			"number": 280,
+			"name": "Cheese",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"milk",
+					4
+				],
+				[
+					"sea_salt",
+					1
+				]
+			],
+			"gives": [
+				"cheese",
+				1
+			],
+			"craft_s": 30.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"cook_dried_apples": {
+			"number": 282,
+			"name": "Dried apples",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"apple_autumn",
+					3
+				]
+			],
+			"gives": [
+				"dried_apples",
+				3
+			],
+			"craft_s": 10.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_apple_sauce": {
+			"number": 283,
+			"name": "Apple sauce",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"apple_cooking",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"apple_sauce",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_apple_pie": {
+			"number": 284,
+			"name": "Apple pie",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"apple_cooking",
+					2
+				],
+				[
+					"flour",
+					1
+				],
+				[
+					"animal_fat",
+					1
+				]
+			],
+			"gives": [
+				"apple_pie",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "oven",
+			"known": true
+		},
+		"cook_plum_jam": {
+			"number": 285,
+			"name": "Plum jam",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"plums",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"plum_jam",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_stewed_pears": {
+			"number": 286,
+			"name": "Stewed pears",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"pear_autumn",
+					2
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"stewed_pears",
+				2
+			],
+			"craft_s": 10.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_preserved_damsons": {
+			"number": 287,
+			"name": "Preserved damsons",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"damsons",
+					3
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"preserved_damsons",
+				2
+			],
+			"craft_s": 12.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"cook_dried_figs": {
+			"number": 288,
+			"name": "Dried figs",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"figs",
+					3
+				]
+			],
+			"gives": [
+				"dried_figs",
+				3
+			],
+			"craft_s": 10.0,
+			"station": "clay_hearth",
+			"known": true
+		},
+		"cook_quince_paste": {
+			"number": 289,
+			"name": "Quince paste",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"quince",
+					2
+				],
+				[
+					"honeyspindle_nectar",
+					1
+				]
+			],
+			"gives": [
+				"quince_paste",
+				2
+			],
+			"craft_s": 14.0,
+			"station": "campfire_pot",
+			"known": true
+		},
+		"bronze_pickaxe": {
+			"number": 290,
+			"name": "Bronze pickaxe",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					3
+				],
+				[
+					"stick",
+					2
+				]
+			],
+			"gives": [
+				"bronze_pickaxe",
+				1
+			],
+			"craft_s": 25.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_axe": {
+			"number": 291,
+			"name": "Bronze axe",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"bronze_axe",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_hammer": {
+			"number": 292,
+			"name": "Bronze hammer",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					2
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_hammer",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "forge"
+		},
+		"bronze_knife": {
+			"number": 293,
+			"name": "Bronze knife",
+			"category": "Tools",
+			"needs": [
+				[
+					"bronze_ingot",
+					1
+				],
+				[
+					"stick",
+					1
+				]
+			],
+			"gives": [
+				"bronze_knife",
+				1
+			],
+			"craft_s": 12.0,
+			"known": true,
+			"station": "forge"
+		},
+		"stairs_wood_kit": {
+			"number": 294,
+			"name": "Wooden stairs",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"lumber",
+					8
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"stairs_wood_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"log_wall_kit": {
+			"number": 295,
+			"name": "Log wall",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"log",
+					6
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"log_wall_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"log_floor_kit": {
+			"number": 296,
+			"name": "Log floor",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"log",
+					8
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"log_floor_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"log_roof_kit": {
+			"number": 297,
+			"name": "Log roof",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"log",
+					4
+				],
+				[
+					"thatch",
+					20
+				],
+				[
+					"twine",
+					3
+				]
+			],
+			"gives": [
+				"log_roof_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "workbench"
+		},
+		"stone_wall_kit": {
+			"number": 298,
+			"name": "Stone wall",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"cut_stone_block",
+					12
+				],
+				[
+					"mortar",
+					4
+				]
+			],
+			"gives": [
+				"stone_wall_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"stone_floor_kit": {
+			"number": 299,
+			"name": "Stone floor",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"cobblestone",
+					16
+				],
+				[
+					"sand",
+					4
+				]
+			],
+			"gives": [
+				"stone_floor_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"stone_roof_kit": {
+			"number": 300,
+			"name": "Stone roof",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"stone_shingle",
+					20
+				],
+				[
+					"lumber",
+					6
+				]
+			],
+			"gives": [
+				"stone_roof_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"brick_wall_kit": {
+			"number": 301,
+			"name": "Brick wall",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"brick",
+					16
+				],
+				[
+					"mortar",
+					4
+				]
+			],
+			"gives": [
+				"brick_wall_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"brick_floor_kit": {
+			"number": 302,
+			"name": "Brick floor",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"brick",
+					20
+				],
+				[
+					"sand",
+					4
+				]
+			],
+			"gives": [
+				"brick_floor_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"brick_roof_kit": {
+			"number": 303,
+			"name": "Brick roof",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"brick",
+					16
+				],
+				[
+					"lumber",
+					6
+				]
+			],
+			"gives": [
+				"brick_roof_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": true,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"log_cabin_set_kit": {
+			"number": 304,
+			"name": "Log cabin set",
+			"category": "Shelter and building",
+			"needs": [
+				[
+					"log_wall_kit",
+					4
+				],
+				[
+					"log_floor_kit",
+					1
+				],
+				[
+					"log_roof_kit",
+					1
+				]
+			],
+			"gives": [
+				"log_cabin_set_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"locked": true,
+			"station": "workbench"
+		},
+		"nettle_tea": {
+			"number": 305,
+			"name": "Nettle tea",
+			"category": "Food and drink",
+			"needs": [
+				[
+					"nettles",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"nettle_tea",
+				1
+			],
+			"craft_s": 6.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_raspberries": {
+			"number": 306,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"raspberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_blueberries": {
+			"number": 307,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blueberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_blackberries": {
+			"number": 308,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"blackberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"stew_strawberries": {
+			"number": 309,
+			"name": "Stewed berries",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"strawberries",
+					3
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"stewed_berries",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"boil_eggs": {
+			"number": 310,
+			"name": "Boiled egg",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"egg",
+					2
+				],
+				[
+					"water",
+					1
+				]
+			],
+			"gives": [
+				"boiled_egg",
+				2
+			],
+			"craft_s": 8.0,
+			"known": true,
+			"station": "campfire_pot"
+		},
+		"roast_hazelnuts": {
+			"number": 311,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"hazelnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_chestnuts": {
+			"number": 312,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"chestnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_walnuts": {
+			"number": 313,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"walnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_beechnuts": {
+			"number": 314,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"beechnuts",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_morels": {
+			"number": 315,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"morels",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_bananas": {
+			"number": 316,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"bananas",
+					2
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_fiddleheads": {
+			"number": 317,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"fiddleheads",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"roast_wild_pears": {
+			"number": 318,
+			"name": "Campfire Stew",
+			"category": "Fire and cooking",
+			"needs": [
+				[
+					"wild_pears",
+					3
+				]
+			],
+			"gives": [
+				"roast_forage",
+				2
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "clay_hearth"
+		},
+		"log_seat_kit": {
+			"number": 319,
+			"name": "Log seat",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"log",
+					1
+				]
+			],
+			"keeps": [
+				[
+					"stone_axe",
+					1
+				]
+			],
+			"gives": [
+				"log_seat_kit",
+				1
+			],
+			"craft_s": 12.0,
+			"known": false
+		},
+		"stool_kit": {
+			"number": 333,
+			"name": "Stool",
+			"category": "Containers and furniture",
+			"needs": [
+				["stick", 6],
+				["twine", 1]
+			],
+			"gives": ["stool_kit", 1],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"bench_kit": {
+			"number": 320,
+			"name": "Bench",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					3
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"bench_kit",
+				1
+			],
+			"craft_s": 25.0,
+			"known": false,
+			"station": "workbench"
+		},
+		"chair_kit": {
+			"number": 321,
+			"name": "Chair",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					4
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"hide",
+					1
+				]
+			],
+			"gives": [
+				"chair_kit",
+				1
+			],
+			"craft_s": 35.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"table_kit": {
+			"number": 322,
+			"name": "Table",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					6
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"table_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"hide_rug_kit": {
+			"number": 323,
+			"name": "Hide rug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"hide",
+					3
+				],
+				[
+					"sinew",
+					1
+				]
+			],
+			"gives": [
+				"hide_rug_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false
+		},
+		"wool_rug_kit": {
+			"number": 324,
+			"name": "Wool rug",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"wool",
+					4
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"wool_rug_kit",
+				1
+			],
+			"craft_s": 25.0,
+			"known": false,
+			"locked": true
+		},
+		"straw_bed_kit": {
+			"number": 325,
+			"name": "Straw bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"straw",
+					12
+				],
+				[
+					"stick",
+					6
+				],
+				[
+					"twine",
+					2
+				]
+			],
+			"gives": [
+				"straw_bed_kit",
+				1
+			],
+			"craft_s": 30.0,
+			"known": false,
+			"station": "workbench"
+		},
+		"feather_bed_kit": {
+			"number": 326,
+			"name": "Feather bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"rough_bed_kit",
+					1
+				],
+				[
+					"feather",
+					30
+				],
+				["fibre_cloth", 2]
+			],
+			"gives": [
+				"feather_bed_kit",
+				1
+			],
+			"craft_s": 50.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"canopy_bed_kit": {
+			"number": 327,
+			"name": "Canopy bed",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"feather_bed_kit",
+					1
+				],
+				[
+					"lumber",
+					8
+				],
+				["fibre_cloth", 4]
+			],
+			"gives": [
+				"canopy_bed_kit",
+				1
+			],
+			"craft_s": 60.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"wall_torch_kit": {
+			"number": 328,
+			"name": "Wall torch",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"stick",
+					2
+				],
+				[
+					"tallow",
+					1
+				]
+			],
+			"gives": [
+				"wall_torch_kit",
+				1
+			],
+			"craft_s": 10.0,
+			"known": false
+		},
+		"chandelier_kit": {
+			"number": 329,
+			"name": "Candle chandelier",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"lumber",
+					2
+				],
+				[
+					"twine",
+					2
+				],
+				[
+					"candle",
+					6
+				]
+			],
+			"gives": [
+				"chandelier_kit",
+				1
+			],
+			"craft_s": 40.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 1
+		},
+		"fireplace_kit": {
+			"number": 330,
+			"name": "Fireplace",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"brick",
+					24
+				],
+				[
+					"mortar",
+					4
+				],
+				[
+					"clay",
+					6
+				]
+			],
+			"gives": [
+				"fireplace_kit",
+				1
+			],
+			"craft_s": 90.0,
+			"known": false,
+			"station": "workbench",
+			"station_level": 2
+		},
+		"flower_pot_kit": {
+			"number": 331,
+			"name": "Flower pot",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"clay",
+					2
+				],
+				[
+					"soil",
+					1
+				]
+			],
+			"gives": [
+				"flower_pot_kit",
+				1
+			],
+			"craft_s": 15.0,
+			"known": false
+		},
+		"antler_mount_kit": {
+			"number": 332,
+			"name": "Antler mount",
+			"category": "Containers and furniture",
+			"needs": [
+				[
+					"antler",
+					2
+				],
+				[
+					"lumber",
+					1
+				],
+				[
+					"twine",
+					1
+				]
+			],
+			"gives": [
+				"antler_mount_kit",
+				1
+			],
+			"craft_s": 20.0,
+			"known": false,
+			"station": "workbench"
 		}
 	}
 }

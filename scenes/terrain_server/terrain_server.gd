@@ -14,12 +14,14 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: processor count - 1)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
 #
 # Clients start at the starter spawn point of tile (3,4).
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
+const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -29,6 +31,7 @@ const GATHER_MIN_MSEC := 100              # a peer's gather requests are handled
 const GATHER_REACH_M := 12.0              # a gather request for a chunk further than this from the player is ignored
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
@@ -50,6 +53,7 @@ const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHubScript := preload("res://src/water/water_hub.gd")
+const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the default since 1 Nov 2026; --water-old runs the old hub (src/water) instead
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -130,6 +134,8 @@ var _done: Array = []                  # [peer, key, bytes]
 var _done_mutex: Mutex = Mutex.new()
 var _peers: Dictionary = {}            # peer -> {"blocks": n, "bytes": n}
 var _quit_at_msec: int = -1
+var _watch_parent_pid: int = 0                # --watch-parent=PID (testing): quit when that process is gone
+var _watch_next_msec: int = 0
 var _quit_when_empty: bool = false
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
@@ -192,6 +198,15 @@ func _ready() -> void:
 			_quit_when_empty = true
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
+
+	# Testing only (self_timeout.gd): --timeout=N (or --timeout N) quits after N seconds the same clean way as --quit-after; --watch-parent=PID quits when that process is gone.
+	var self_flags: Dictionary = SelfTimeoutScript.parse(OS.get_cmdline_user_args())
+
+	if float(self_flags["seconds"]) > 0.0:
+		var due: int = Time.get_ticks_msec() + int(float(self_flags["seconds"]) * 1000.0)
+		_quit_at_msec = due if _quit_at_msec < 0 else mini(_quit_at_msec, due)
+
+	_watch_parent_pid = int(self_flags["parent"])
 
 	var errors: Array = []
 	settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
@@ -263,6 +278,10 @@ func _ready() -> void:
 	items.roof_add = func(roof): return flora.add_roof(roof)
 	items.roof_remove = func(key): flora.remove_roof(key)
 	items.register_roofs()
+
+	for dev_arg in OS.get_cmdline_user_args():   # testing only (rigs and screenshots): --dev-place=name@x,z,yaw[,lit], repeatable; normal play never passes it
+		if dev_arg.begins_with("--dev-place="):
+			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed
@@ -276,6 +295,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
+	items.send_comfort = func(peer, level, rested_level, rested_minutes, tip): net.comfort.rpc_id(peer, level, rested_level, rested_minutes, tip)
 	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
 	@warning_ignore("confusable_local_declaration")
@@ -294,8 +314,22 @@ func _ready() -> void:
 	items.weather_now = func(): return weather
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
+	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
+	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
+		var ore_tile = generator.get_tile(generator.tile_of(pos.x, pos.z))
+
+		if ore_tile.placeholder:
+			return ""
+
+		var flat: Vector2 = Vector2(pos.x, pos.z)
+
+		for ore in ore_tile.ores:
+			if (ore["rect"] as Rect2).grow(reach).has_point(flat):
+				return str(ore.get("resource", ""))
+
+		return ""
 	items.water_near = func(pos, reach):
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -432,6 +466,15 @@ func _ready() -> void:
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
 	animals.canopy = func(point): return flora.covered(point)
+	animals.hour_now = func(): return game_clock.hour()
+	var biome_names: Dictionary = {}
+
+	for biome_entry in tables.get_entries("biomes"):
+		biome_names[int(biome_entry["id"])] = str(biome_entry["name"])
+
+	animals.biome_at = func(x, z):
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+		return "" if tile_data.placeholder else str(biome_names.get(int(tile_data.biome[tile_data.nearest(x, z)]), ""))
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
@@ -439,6 +482,7 @@ func _ready() -> void:
 	animals.trails = trails
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
+	animals.wolves.fire_radius = func(at): return items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
 	@warning_ignore("confusable_local_declaration")
@@ -499,6 +543,7 @@ func _ready() -> void:
 			dialogue.router.mode = arg.substr(9)   # auto, static, ai or down (pretend the AI is dead: NPCs are unwell)
 
 	spawn = _spawn_point(world_dir)
+	animals.starter = Vector2(spawn.x, spawn.z)   # big game keeps out of its exclusion circle around the real spawn point (read once, from the starter tile)
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()
@@ -533,34 +578,58 @@ func _ready() -> void:
 	if _link_port == 0:
 		print("Terrain server: no block line (port %d is taken); blocks go over the game connection" % (port + 1))
 
-	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_connected.connect(func(peer_id: int) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_peer_connected(peer_id)
+		_slow_rpc("peer_connected", t0))
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
-	net.blocks_requested.connect(_on_blocks_requested)
+	net.blocks_requested.connect(func(peer_id, keys, urgent) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_blocks_requested(peer_id, keys, urgent)
+		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
-	net.flora_requested.connect(_on_flora_requested)
+	net.flora_requested.connect(func(peer_id, chunks) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_flora_requested(peer_id, chunks)
+		_slow_rpc("flora_requested", t0))
 	net.cut_flora_requested.connect(_on_cut_flora_requested)
-	net.position_reported.connect(_on_position_reported)
+	net.position_reported.connect(func(peer_id, position, velocity) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_position_reported(peer_id, position, velocity)
+		_slow_rpc("position_reported", t0))
 	net.water_rate_requested.connect(_on_water_rate_requested)
-	net.water_requested.connect(_on_water_requested)
+	net.water_requested.connect(func(peer_id, chunks) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_water_requested(peer_id, chunks)
+		_slow_rpc("water_requested", t0))
+	net.forget_requested.connect(func(peer, key): items.forget_key(peer, identity.store_key(identity.authenticate(peer, key))))
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key):
+		var t0: int = Time.get_ticks_usec()
 		var account: String = identity.authenticate(peer, key)
 
 		if account == "":
 			return
 
+		_slow_rpc("hello: authenticate", t0)
 		items.peer_connected_hello(peer, identity.store_key(account))
+		_slow_rpc("hello: peer_connected_hello", t0)
 		net.npc_roster.rpc_id(peer, npcs.roster())
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
-			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
+			net.start_at.rpc_id(peer, Vector3(float(resume[0]), float(resume[1]), float(resume[2])))
+
+		_slow_rpc("hello: done", t0))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
 	net.tunnel_setting_requested.connect(_on_tunnel_setting)
 	net.admin_place_requested.connect(_on_admin_place)
 	@warning_ignore("confusable_local_declaration")
 	net.npc_talk_requested.connect(func(peer, npc_id, choice): dialogue.talk(peer, npc_id, choice))
-	net.surface_requested.connect(_on_surface_requested)
+	net.surface_requested.connect(func(peer_id, x, z) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_surface_requested(peer_id, x, z)
+		_slow_rpc("surface_requested", t0))
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
@@ -592,7 +661,9 @@ func _ready() -> void:
 # Before that he used x 53318, z 68473 as a temporary spawn. That is the pond A shore in about 0.9 m
 # of water (you land just above it, the 6 s landing protection applies, deep or shallow water is a safe landing). The dry
 # alternative, 12 m east on the 28.8 m shore bench, is Vector2(53330.0, 68466.0).
-const SPAWN_OVERRIDE := Vector2(53316.0, 68476.0)
+# Checked 31 Oct 2026 (tools/spawn_probe.gd, test_spawn_dry): in the current world this spot is dry, ground 31.6 m, the nearest settled water 113 m away and 7 m lower; the 0.9 m of
+# water noted above was the old x10 flow. The guide's dark rippled plane here came from the build before the tile height fix (31 Oct), not from a pond.
+const SPAWN_OVERRIDE := SpawnPointScript.OVERRIDE   # the one source (src/shared/spawn_point.gd), shared with the flora placer's starter clearing
 
 
 func _spawn_point(world_dir: String) -> Vector3:
@@ -631,6 +702,15 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
+
+
+# Join diagnosis (Sonny, 1 Nov 2026): an RPC handler that ran over 100 ms on the main thread says so in the telemetry file (crash_reports/telemetry_server_<port>.log), with the
+# time since the handler began; "between frames (rpc handlers, engine)" in the stall lines is where the 17 s after a connect went.
+func _slow_rpc(name: String, started_usec: int) -> void:
+	var ms: int = (Time.get_ticks_usec() - started_usec) / 1000
+
+	if ms >= 100:
+		_events.event("SLOW RPC %s: %d ms" % [name, ms])
 
 
 func _on_peer_connected(peer_id: int) -> void:
@@ -672,11 +752,11 @@ func _start_water() -> void:
 	if water_data.placeholder:
 		return
 
-	# Owner (2026-10-18): the world starts dry and the springs fill it, so the real water
-	# paths show; --settled-water starts from the baked water file instead. The hub runs the starter
-	# tile and the neighbours its rivers cross into (water/tile_X_Z.water per tile).
-	var dry_start: bool = not OS.get_cmdline_user_args().has("--settled-water")
-	water_live = WaterHubScript.new()
+	# The rivers and lakes start FULL, from the baked settled water of each tile (water/tile_X_Z.water), so a player never waits for the springs: changed 30 Oct 2026 after the
+	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
+	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
+	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
+	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
 
 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
@@ -1001,18 +1081,36 @@ func _poll_water() -> void:
 
 # Cover.at for a fire: makes sure the flora chunk of the spot (and the neighbours whose crowns
 # reach into it) is in the server's cover index, then asks it.
+# A chunk not made yet is made on a worker thread (placing nine chunks on the main thread froze the server 4 to 8 s when the first player joined, Tyler 31 Oct 2026):
+# until it is made its crowns are not in the index, so the answer is "open" there for a few seconds.
 func _cover_at(point: Vector3) -> float:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
 
 	for dz in [-1, 0, 1]:
 		for dx in [-1, 0, 1]:
-			flora.chunk_bytes(home + Vector2i(dx, dz), false)
+			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
+
+			if not flora.chunk_made(chunk) and not _cover_warming.has(chunk):
+				_cover_warming[chunk] = true
+				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
 
 	if flora.roofed(point):
 		return 2.0   # under a built roof: also shelter from the wind
 
 	return 1.0 if flora.covered(point) else 0.0
+
+
+var _cover_warming: Dictionary = {}   # chunk -> true while a worker thread makes it for the cover index
+
+
+func _warm_cover_chunk(chunk: Vector2i) -> void:
+	flora.chunk_bytes(chunk, false)
+	_cover_warm_done.call_deferred(chunk)
+
+
+func _cover_warm_done(chunk: Vector2i) -> void:
+	_cover_warming.erase(chunk)
 
 
 # A standing tree for the axe: {name, position, height, trunk}, or {} when there is none (cut already,
@@ -1122,6 +1220,11 @@ func _send_stripped(peer: int, chunk: Vector2i) -> void:
 	if not ids.is_empty():
 		net.flora_stripped.rpc_id(peer, chunk, ids)
 
+	var fruit: Array = items.fruit_state("%d,%d" % [home.x, home.y])
+
+	if not (fruit[0] as PackedInt32Array).is_empty():
+		net.flora_fruit.rpc_id(peer, chunk, fruit[0], fruit[1])
+
 
 func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# Gathering (E): a plant or shrub is picked: it gives what drops.json and its season allow and then rests.
@@ -1150,7 +1253,9 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var at: int = all["ids"].find(id)
 	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
 
-	if at < 0 or species.is_empty() or int(species["kind"]) == PlacerScript.KIND_TREE:
+	var fruit_tree: bool = not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and (items._drops.get("fruit_tree", {}) as Dictionary).has(str(species["name"]))
+
+	if at < 0 or species.is_empty() or (int(species["kind"]) == PlacerScript.KIND_TREE and not fruit_tree):
 		return
 
 	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
@@ -1160,7 +1265,13 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
-	if gave and items.plant_stays:
+	if gave and fruit_tree:
+		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
+		net.flora_fruit.rpc(chunk, PackedInt32Array([id]), PackedInt32Array([items.fruit_taken(key)]))
+
+		if items.fruit_left(str(species["name"]), key, id, float(all["heights"][at])) <= 0:
+			net.flora_stripped.rpc(chunk, PackedInt32Array([id]))
+	elif gave and items.plant_stays:
 		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
 	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
@@ -1448,6 +1559,9 @@ func _tunnel_tick() -> void:
 
 	for quake in result["quake"]:
 		net.quake.rpc_id(quake[0], quake[1], quake[2], quake[3])
+
+	for warned in result["warn"]:
+		net.notice.rpc_id(int(warned), "The tunnel ceiling is creaking: brace it or leave.")
 
 	for leak in result["leak"]:
 		net.leak.rpc_id(leak[0], leak[1], leak[2])
@@ -1872,6 +1986,14 @@ func _process(delta: float) -> void:
 			_events.event("QUIT: no players left for %d s" % int(_quit_grace_msec / 1000.0))
 			_quit_at_msec = now
 			_run_note("closing", _link_port - 1)
+
+	if _watch_parent_pid > 0 and now >= _watch_next_msec and _quit_at_msec < 0:
+		_watch_next_msec = now + 3000
+
+		if not OS.is_process_running(_watch_parent_pid):
+			print("server: the parent process %d is gone, closing" % _watch_parent_pid)
+			_events.event("QUIT: the parent process %d is gone" % _watch_parent_pid)
+			_quit_at_msec = now
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1

@@ -12,7 +12,7 @@
 		"tiles_z": 21,
 		"voxel_size_m": 1.0,
 		"world_bottom_m": -4000,
-		"world_top_m": 2048,
+		"world_top_m": 4000,
 		"sea_level_m": 0
 	},
 

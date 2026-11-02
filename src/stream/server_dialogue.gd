@@ -92,6 +92,7 @@ func talk(peer: int, npc_id: String, choice: int) -> void:
 
 	if choice < 0:
 		line = provider.open(npc_id, ctx)
+		items.note_talked(peer, npc_id)   # camp goals: a conversation with this NPC began (talked)
 	else:
 		var session: Dictionary = _sessions.get(peer, {})
 

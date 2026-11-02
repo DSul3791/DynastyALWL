@@ -47,3 +47,4 @@ worlds/*/setup_cache/
 # Plan images: written by the bake tools, read by nothing (audit 2026-10-29)
 worlds/base_world/plan/*.png
 worlds/base_world/plan/*.png.import
+crash_reports/telemetry_client.log

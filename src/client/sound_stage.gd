@@ -446,7 +446,58 @@ var _slow_acc: float = 0.0
 var _slow_skip: bool = false
 
 
+# --sound-log=N (verification without ears, Dave 31 Oct 2026): for N seconds, once a second, one line per sound that is playing: its name (the stream file), its distance from the
+# listener in metres (3D players), its volume in dB and the bus. Printed as "SOUND LOG t=12 name=... dist=... db=... bus=..." and written to the telemetry when it is running.
+var sound_log_until_msec: int = 0
+var _sound_log_start_msec: int = 0
+var _sound_log_next_msec: int = 0
+
+
+func enable_sound_log(seconds: float) -> void:
+	_sound_log_start_msec = Time.get_ticks_msec()
+	sound_log_until_msec = _sound_log_start_msec + int(seconds * 1000.0)
+	_sound_log_next_msec = 0
+
+
+func sound_log_lines(listener: Vector3, t_seconds: int) -> Array:
+	var lines: Array = []
+	collect_players(self, listener, t_seconds, lines)
+	return lines
+
+
+static var assume_playing: bool = false   # tests: a headless run has no audio driver, so players never report playing
+
+
+static func collect_players(node: Node, listener: Vector3, t_seconds: int, lines: Array) -> void:
+	for child in node.get_children():
+		if child is AudioStreamPlayer3D or child is AudioStreamPlayer:
+			if (child.playing or assume_playing) and not child.stream_paused and child.stream != null and child.volume_db > -70.0:
+				var file: String = String(child.stream.resource_path).get_file()
+				var dist: float = listener.distance_to(child.global_position) if child is AudioStreamPlayer3D else 0.0
+				lines.append("SOUND LOG t=%d name=%s dist=%.1f db=%.1f bus=%s node=%s" % [t_seconds, file if file != "" else str(child.stream.get_class()), dist, child.volume_db, str(child.bus), str(child.get_path()).get_slice("/", 3) if str(child.get_path()).count("/") >= 3 else str(child.name)])
+
+		collect_players(child, listener, t_seconds, lines)
+
+
+func _sound_log_tick(body: CharacterBody3D) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if sound_log_until_msec <= 0 or now < _sound_log_next_msec:
+		return
+
+	_sound_log_next_msec = now + 1000
+
+	if now > sound_log_until_msec:
+		sound_log_until_msec = 0
+		print("SOUND LOG finished")
+		return
+
+	for line in sound_log_lines(body.global_position, int(float(now - _sound_log_start_msec) / 1000.0)):
+		print(line)
+
+
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
+	_sound_log_tick(body)
 	_count_left -= delta
 
 	if _count_left <= 0.0:
@@ -1085,14 +1136,25 @@ func _build_warm_list() -> void:
 		_warm.append([breath, sound_name])
 
 
+# Loads the sounds in the warm list one entry at a time, never more than one entry per WARM_GAP_SEC, so ~80 files (each about 30 ms, and several variants per entry)
+# are spread over seconds instead of landing on consecutive frames (31 Oct 2026: on a loaded PC consecutive loads starved the main thread and tripped the 15 s
+# hung-watchdog). An entry that took longer than WARM_SLOW_MS makes the next wait four times as long.
+const WARM_GAP_SEC := 0.15
+const WARM_SLOW_MS := 40
+var _warm_gap: float = 0.0
+
+
 func _warm_one(delta: float) -> void:
 	_warm_wait += delta
+	_warm_gap -= delta
 
-	if _warm_wait < WARM_START_SEC or _warm.is_empty():
+	if _warm_wait < WARM_START_SEC or _warm.is_empty() or _warm_gap > 0.0:
 		return
 
 	var entry: Array = _warm.pop_front()
+	var begun: int = Time.get_ticks_msec()
 	entry[0]._variants(entry[1])
+	_warm_gap = WARM_GAP_SEC * (4.0 if Time.get_ticks_msec() - begun > WARM_SLOW_MS else 1.0)
 
 
 func _load_settings() -> void:

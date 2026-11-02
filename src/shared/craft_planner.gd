@@ -124,7 +124,7 @@ static func _makers(recipes, item: int, ctx: Dictionary) -> Array:
 	for number in recipes.numbers():
 		var r: Dictionary = recipes.recipe(number)
 
-		if int(r["gives"][0]) == item and (bool(r["known"]) or bool(ctx["free"])):
+		if int(r["gives"][0]) == item and (bool(r["known"]) or bool(ctx["free"]) or (ctx.has("known") and bool((ctx["known"] as Callable).call(r)))):
 			out.append(number)
 
 	return out

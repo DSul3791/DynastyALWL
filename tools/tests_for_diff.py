@@ -2,7 +2,8 @@
 """Which tests does a diff need? (gate fix, 25 Oct 2026; Steve.)
    python3 tools/tests_for_diff.py <base> <head>         one JSON line (see below), exit 0
    python3 tools/tests_for_diff.py --paths a b c          the same for a list of changed paths
-   python3 tools/tests_for_diff.py <base> <head> --all    every fast test (the nightly / unknown-change answer)
+   python3 tools/tests_for_diff.py <base> <head> --all    every fast test (the unknown-change answer)
+   python3 tools/tests_for_diff.py <base> <head> --full   every test, slow lane included (nightly, before main; also works with --paths)
    python3 tools/tests_for_diff.py --print-lanes          the lanes with the serial list worked out (JSON)
    python3 tools/tests_for_diff.py --check-lanes          names in tools/test_lanes.json that are not tests (exit 1)
    python3 tools/tests_for_diff.py --explain TEST         the files and directory prefixes the scan found for one test
@@ -157,18 +158,27 @@ def changed_paths(base, head):
     return [p for p in out.stdout.splitlines() if p]
 
 
-def select(paths, lanes, force_all=False):
+def select(paths, lanes, force_all=False, full=False):
     tests = all_tests()
     fast_all, timing_all, slow_all = lane_sets(lanes, tests)
     why = {}
     result = {"class": "docs", "fast": [], "timing": [], "slow": [], "pictures": [], "checks": [], "pin": False, "why": why}
-    live = [p for p in paths if not matches(p, lanes["docs_globs"])]
+    tooling = [p for p in paths if matches(p, lanes.get("tooling_globs", []))]
+    watched = [g for rule in lanes["extra_inputs"] for g in rule["paths"]]   # a doc a test reads (CONTROLS.md) is not "docs only"
+    live = [p for p in paths if p not in tooling and (matches(p, watched) or not matches(p, lanes["docs_globs"] + lanes.get("offline_globs", [])))]
+    if tooling:
+        # Gate tooling (lane lists, runner, selector) is checked by the lane check and the selftest, not by game tests.
+        result["checks"] += ["lanes", "selftest"]
+        why["tooling"] = "gate tooling changed: lane check and selftest: " + tooling[0]
 
     if not paths:
         why["diff"] = "empty diff: no tests"
         return result
     if not live and not force_all:
-        why["diff"] = "docs only: no tests"
+        if tooling:
+            result["class"] = "tools"
+        else:
+            why["diff"] = "docs only: no tests"
         return result
 
     bake_re = re.compile(lanes["bake_regex"])
@@ -180,6 +190,7 @@ def select(paths, lanes, force_all=False):
         result["class"] = "code"
 
     chosen = set()
+    keep = set()   # release tests kept in the plan: baked data or the test itself changed
 
     def add(names, reason):
         for n in names:
@@ -229,15 +240,22 @@ def select(paths, lanes, force_all=False):
         hit = next((p for p in live if matches(p, rule["paths"])), None)
         if hit:
             add(rule["tests"], rule["why"] + ": " + hit)
+            if rule in lanes["extra_inputs"]:
+                keep.update(rule["tests"])
             for c in rule.get("checks", []):
                 if c not in result["checks"]:
                     result["checks"].append(c)
             if rule.get("pin"):
                 result["pin"] = True
 
-    slow_hit = next((p for p in live if matches(p, lanes["slow_triggers"])), None)
-    if slow_hit or result["class"] == "bake":
-        add(slow_all, "slow lane: " + (slow_hit or "bake class"))
+    slow_hit = next((p for p in live if matches(p, lanes["slow_triggers"]) and not matches(p, lanes.get("slow_exclude", []))), None)
+    # slow_mode "closure" (default): per commit only the slow tests that load a changed file (chosen above) or baked data (extra_inputs);
+    # the whole slow lane runs with --full (nightly, before main). slow_mode "always": every slow trigger starts all of it.
+    if full or lanes.get("slow_mode", "closure") == "always":
+        if slow_hit or result["class"] == "bake" or full:
+            add(slow_all, "slow lane: " + (slow_hit or ("bake class" if result["class"] == "bake" else "--full")))
+        if full:
+            add(["@all_fast"], "--full")
     if result["class"] == "bake":
         result["pin"] = True
 
@@ -245,6 +263,15 @@ def select(paths, lanes, force_all=False):
         m = re.match(re.escape(TEST_DIR) + r"/(test_\w+)\.gd$", p)
         if m and m.group(1) in tests:
             add([m.group(1)], "the test itself changed")
+            keep.add(m.group(1))
+
+    # Release tests (big tests on the real baked tiles, minutes each; small fast tests cover their code): picked only when baked data or the test
+    # itself changed, or with --full. tools/release_check.sh runs them all by hand before a release.
+    if not full:
+        for t in lanes.get("release", []):
+            if t in chosen and t not in keep:
+                chosen.discard(t)
+                why.pop(t, None)
 
     result["pictures"] = [p for p in live if matches(p, lanes["picture_paths"])]
     result["fast"] = [t for t in fast_all if t in chosen]
@@ -265,7 +292,7 @@ def main(argv):
         return 0
     if "--check-lanes" in argv:
         tests = set(all_tests())
-        names = set(lanes["timing"] + lanes["retry"] + lanes["slow"] + lanes["always"] + lanes.get("serial_extra", []))
+        names = set(lanes["timing"] + lanes["retry"] + lanes["slow"] + lanes.get("release", []) + lanes["always"] + lanes.get("serial_extra", []))
         for rule in lanes["path_rules"] + lanes["extra_inputs"]:
             names |= {n for n in rule["tests"] if n != "@all_fast"}
         missing = sorted(n for n in names if n not in tests)
@@ -278,8 +305,9 @@ def main(argv):
         files, prefixes = Scan().closure(f"{TEST_DIR}/{t}.gd")
         print(json.dumps({"files": sorted(files), "prefixes": sorted(prefixes)}, indent=1))
         return 0
-    force_all = "--all" in argv
-    argv = [a for a in argv if a != "--all"]
+    full = "--full" in argv
+    force_all = "--all" in argv or full
+    argv = [a for a in argv if a not in ("--all", "--full")]
     if argv and argv[0] == "--paths":
         paths = argv[1:]
     elif len(argv) >= 2:
@@ -287,7 +315,7 @@ def main(argv):
     else:
         print(__doc__)
         return 2
-    print(json.dumps(select(paths, lanes, force_all), separators=(",", ":")))
+    print(json.dumps(select(paths, lanes, force_all, full), separators=(",", ":")))
     return 0
 
 

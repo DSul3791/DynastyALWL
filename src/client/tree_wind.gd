@@ -27,7 +27,10 @@ const SCAN_SEC := 4.0
 const RADIUS_M := 45.0
 const ITEMS_PER_FRAME := 300
 const DENSE := 22.0                     # nearness-weighted trees of one kind that count as a full stand
-const BASE_DB := -24.0                  # a full stand in a full wind
+const BASE_DB := -30.0                  # a full stand in a full wind (was -24: the steady band noise read as rain, SOUND_AUDIT.md 31 Oct 2026)
+const GUST_FROM := 0.30                 # below this wind strength the trees are silent: a light breeze does not hiss
+const GUST_FULL := 1.0                  # at this wind strength the gust factor is 1
+const FLUTTER_DB := 5.0                 # swell and flutter: two slow waves (about 8 s and 3 s) move the level this many dB up and down, more in a strong wind
 const CANOPY_DB := 3.0
 const FADE_DB_PER_SEC := 12.0
 const LOOPS := ["pine", "leaves", "dry", "bare"]
@@ -110,8 +113,8 @@ func update(delta: float, body: CharacterBody3D) -> void:
 
 	for sound_name in LOOPS:
 		var player: AudioStreamPlayer3D = _players[sound_name]
-		var amount: float = float(want[sound_name]) * wind
-		var target: float = BASE_DB + 20.0 * log(maxf(amount, 0.001)) / log(10.0) + CANOPY_DB * under if amount > 0.01 else -80.0
+		var amount: float = float(want[sound_name]) * gust_factor(wind)
+		var target: float = BASE_DB + 20.0 * log(maxf(amount, 0.001)) / log(10.0) + CANOPY_DB * under + flutter_db(float(Time.get_ticks_msec()) / 1000.0, wind, sound_name) if amount > 0.01 else -80.0
 
 		if int(_stage.tier) == 0 and sound_name != best:
 			target = -80.0                                       # Low: only the loudest
@@ -137,6 +140,19 @@ func update(delta: float, body: CharacterBody3D) -> void:
 
 func voices_playing() -> int:
 	return loops_playing
+
+
+# Trees speak in gusts, not in every breeze: 0 below GUST_FROM, rising smoothly to 1 at GUST_FULL (and a little past it in a gale).
+static func gust_factor(wind: float) -> float:
+	var x: float = clampf((wind - GUST_FROM) / (GUST_FULL - GUST_FROM), 0.0, 1.0)
+	return x * x * (3.0 - 2.0 * x) * (1.0 + 0.5 * clampf(wind - GUST_FULL, 0.0, 0.5))
+
+
+# The slow swell and flutter of the level in dB at a time: two sine waves with a different period per loop, the stronger the wind the deeper.
+static func flutter_db(seconds: float, wind: float, loop_name: String) -> float:
+	var phase: float = float(hash(loop_name) % 628) / 100.0
+	var wave: float = 0.65 * sin(seconds * TAU / 8.0 + phase) + 0.35 * sin(seconds * TAU / 3.0 + phase * 1.7)
+	return FLUTTER_DB * wave * clampf(0.4 + 0.6 * wind, 0.0, 1.0)
 
 
 # Queues the player's flora chunk and its neighbours that reach within RADIUS_M.

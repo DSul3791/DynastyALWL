@@ -1,6 +1,6 @@
 {
 	"note": "Bow shooting (plan 4b, tech/ACTION_PLANS/Steve_bow_shoot.md): ACT_SHOOT a = bow slot, b = draw time in ms (the client measures; the server clamps it and checks the pace), at = aim direction. A draw under draw_min_ms is a weak shot at weak_power; from draw_min_ms to draw_max_ms the power rises from min_power to 1. speed = speed_max x power (m/s), the arrow falls under gravity 9.8 and stops at range_m of flight, the ground, or the first animal on its path (hit_radius_m round its chest). damage = the arrow's damage x power x (1 + (bow skill - 1) x skill_share). Shot noise alarms animals within noise_m. A landed arrow is a world item again unless it breaks: break_chance by tip, x hit_break_mult when it hit an animal, lost water_loss of the time in water; luck applies (fate). The first ammo id in `ammo` found in the pack is shot. Quivers are not read yet: arrows are taken from the pack.",
-	"ammo": ["stone_arrow", "wooden_arrow"],
+	"ammo": ["stone_arrow", "wooden_arrow", "bone_arrow"],
 	"draw_min_ms": 300,
 	"draw_max_ms": 1200,
 	"weak_power": 0.25,

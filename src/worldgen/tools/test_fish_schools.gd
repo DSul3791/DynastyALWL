@@ -1,5 +1,7 @@
 extends SceneTree
 
+const TimingScale := preload("res://src/worldgen/tools/timing_scale.gd")
+
 # Fish schools (src/server/server_fish.gd) on the made-up map of test_fish_water.gd: deterministic, always on suitable water, stock conserved, salmon in autumn only, factor by distance.
 #   godot --headless --path . --script res://src/worldgen/tools/test_fish_schools.gd      Prints "Test done: N pass, N fail".
 
@@ -176,6 +178,7 @@ func _init() -> void:
 			fish.factor_at(1100.0 + float(k) * 3.0, 100.0, 7, "summer", 0.0, stock_fn, memo)
 
 	var per_cast_ms: float = float(Time.get_ticks_usec() - t0) / 200.0 / 1000.0
-	check(per_cast_ms < 1.0, "a cast's 17 lookups cost %.3f ms (limit 1)" % per_cast_ms)
+	var load_scale: float = TimingScale.scale()   # 1.0 on an idle PC; larger when the machine is busy (timing_scale.gd)
+	check(per_cast_ms < 1.0 * load_scale, "a cast's 17 lookups cost %.3f ms (limit %.2f, load factor %.2f)" % [per_cast_ms, 1.0 * load_scale, load_scale])
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

@@ -104,10 +104,10 @@ func _init() -> void:
 	check(heaps == 24 and count("stone") == 24 and count("stick") == 36 and count("plant_fibre") == 48, "gathering by hand fills the pack (%d stones, %d sticks, %d fibre)" % [count("stone"), count("stick"), count("plant_fibre")])
 	note("gathering")
 
-	# 2. Twist five twine from fibre by hand, then craft a stone axe (a stone, a stick and 5 twine).
-	queue(1, 5)
+	# 2. Twist two twine from fibre by hand, then craft a stone axe (a stone, a stick and 2 twine).
+	queue(1, 2)
 	pass_time(20.0, 0.2)
-	check(count("twine") == 5, "five twine are twisted by hand from fibre")
+	check(count("twine") == 2, "two twine are twisted by hand from fibre")
 	queue(2, 1)
 	pass_time(10.0, 0.2)
 	check(count("stone_axe") == 1, "the stone axe is made by hand")
@@ -133,21 +133,30 @@ func _init() -> void:
 	var guard: int = 0
 
 	while items._items.has(trunk_id) and guard < 200:
+		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 2:
+			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+
 		items._last_process.clear()
 		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
 		guard += 1
 
 	pass_time(120.0, 0.8)
 	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
-	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves)" % [logs, count("leaves")])
+
+	for k in items._items:   # the logs now fall to the ground beside the trunk (Dave): count the loose ones too
+		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
+			logs += 1
+
+	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves, %d sticks)" % [logs, count("leaves"), count("stick")])
+	print("first hour: after felling %d leaves, %d sticks, %d bark" % [count("leaves"), count("stick"), count("bark")])
 	items.lay_down_shoulder(1)   # the big log is put down before the next job
 	note("felling and working the tree")
 
-	# 4. A campfire: craft the kit, place it, it starts lit.
+	# 4. A campfire: craft the kit (6 sticks, 3 stones), place it (laid, not lit), light it with tinder from the pack.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	queue(4, 1)
 	pass_time(10.0, 0.2)
-	check(count("campfire_kit") == 1, "the campfire kit is made (20 sticks, 10 stones)")
+	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 3 stones)")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("campfire_kit")), 0, 0, Vector3(2.0, 10.0, 0.0))
 	var lit: int = 0
 
@@ -158,7 +167,7 @@ func _init() -> void:
 	for k in items._items:
 		lit += 1 if items._items[k].has("fire") and items.fire_is_lit(int(items._items[k]["fire"]["state"])) else 0
 
-	check(lit == 1, "the campfire is placed and burning")
+	check(lit == 1, "the campfire is placed laid and then lit with tinder")
 	note("making a campfire")
 
 	# 5. Drink at the water's edge: no water, no drink; at the edge the thirst bar fills.
@@ -177,13 +186,15 @@ func _init() -> void:
 	note("drinking")
 
 	# 6. A lean-to and a chest: twine from fibre, then the kits, then both placed.
-	queue(1, 6)
-	pass_time(30.0, 0.3)
-	check(count("twine") == 6, "fibre is twisted into twine")
+	queue(1, 8)
+	pass_time(34.0, 0.3)
+	check(count("twine") == 8, "fibre is twisted into twine (lean-to 4 + chest 4)")
 	items._vitals_cfg["eat_pace_ms"] = 0
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 8, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to needs 8 (31 Oct)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)   # the 36 gathered sticks do not cover the lean-to (32) and the chest (10); the real player sweeps more (31 Oct)
 	queue(13, 1)
 	queue(14, 1)
-	pass_time(40.0, 0.3)
+	pass_time(70.0, 0.3)   # lean-to 25 s + chest 20 s since the craft pacing pass
 	check(count("lean_to_kit") == 1 and count("chest_kit") == 1, "the lean-to and the woven chest are made")
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("lean_to_kit")), 0, 0, Vector3(-3.0, 10.0, 0.0))
 	items.action(1, Net.ACT_PLACE, items.inventory_of(1).numbers.find(items.table.number_of("chest_kit")), 0, 0, Vector3(0.0, 10.0, 4.0))

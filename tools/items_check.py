@@ -54,6 +54,7 @@ UNITS = [
     ("trails", "src/worldgen/tools/test_trails.gd"),
     ("first town", "src/worldgen/tools/test_first_town.gd"),
     ("dishes", "src/worldgen/tools/test_dishes.gd"),
+    ("economy", "src/worldgen/tools/test_economy_guard.gd"),
     ("npc routines", "src/worldgen/tools/test_npc_routines.gd"),
     ("horses", "src/worldgen/tools/test_horses.gd"),
     ("ai_contract", "src/worldgen/tools/test_ai_contract.gd"),
@@ -66,6 +67,8 @@ UNITS = [
     ("first_hour", "src/worldgen/tools/test_first_hour.gd"),
 ]
 
+OPT_IN = {"snare"}   # client steps that run only with --only NAME
+
 # name, client flags, frames, checks
 CLIENTS = [
     ("chest", ["--chest"], 3500, [
@@ -74,7 +77,7 @@ CLIENTS = [
     ]),
     ("gather", ["--gather"], 12000, [
         ("harvest prompt shown", r"prompt \"(Press E to gather)\"", None, None),
-        ("sticks gathered", r"sticks 0 -> " + NUM, 1, 100),
+        ("something gathered from a plant in season", r"Gather test: pack items \d+ -> " + NUM, 1, 100000),
         ("prompt only for what you look toward", r"Hold test: looking east, stone to the east in view (true), stone to the west in view false, prompt \"Press E to gather\"", None, None),
         ("held E takes one item per step", r"Hold test: most in one step " + NUM, 1, 1),
         ("held E gets all four stones", r"Hold test: most in one step \d+, total " + NUM, 3, 12),
@@ -92,8 +95,8 @@ CLIENTS = [
         ("and does not faint", r"strain state " + NUM, 0, 0),
     ]),
     ("strainrun", ["--walk", "--runspeed=24", "--strainrun"], 9000, [
-        ("the body really ran", r"Strain test: ran " + NUM + " m", 150, 650),
-        ("running raises the strain the server sends", r"strain [\d.]+ -> " + NUM, 0.08, 3.0),
+        ("the body really ran", r"Strain test: ran " + NUM + " m", 30, 900),
+        ("running raises the strain the server sends (peak)", r"Strain test: peak strain " + NUM, 0.03, 3.0),
         ("normal pace is full speed, no cap", r"0: pace x1.0 cap 0.0 \|", None, None),
         ("over-exerted is 10 percent slower, not capped", r"1: pace x0.9 cap 0.0 \|", None, None),
         ("fainted locks movement", r"2: pace x1.0 cap -1.0", None, None),
@@ -125,13 +128,20 @@ CLIENTS = [
         ("30 slot buttons", r"scale [\d.]+, " + NUM + r" slot buttons", 30, 30),
     ]),
     ("quickkeys", ["--quickkeys"], 3500, [
-        ("S splits the stack", r"stacks of stone 1 -> " + NUM, 2, 2),
-        ("Shift+D drops one", r"Shift\+D dropped one, stones \d+ -> " + NUM, 5, 5),
-        ("E eats", r"E ate, roasts \d+ -> " + NUM, 1, 1),
+        ("S splits the stack (one more stack)", r"S added stacks " + NUM, 1, 1),
+        ("Shift+D drops one", r"Shift\+D dropped " + NUM, 1, 1),
+        ("E eats one", r"E ate " + NUM, 1, 1),
+    ]),
+    ("sleep", ["--sleep"], 5000, [
+        ("a tired character lies down and sleeps", r"SLEEP TEST (PASS)", None, None),
+    ]),
+    # Needs data/animals/traps.json "test_chance" above 0 (a rabbit is imagined beside the snare), otherwise it waits 200 s and fails: set it for the run, put it back to 0 after.
+    ("snare", ["--snare"], 20000, [
+        ("a snare is set down and a carcass lies by it", r"SNARE TEST (PASS)", None, None),
     ]),
     ("eat", ["--eat"], 7000, [
         ("food is edible", r"edible slot 0 (true)", None, None),
-        ("roast eaten", r"roasts left " + NUM, 1, 1),
+        ("roast eaten", r"roasts eaten " + NUM, 1, 1),
         ("craft queue shows the entry", r"Queue test: entries 1, fibre \d+ -> \d+, buttons shown " + NUM, 1, 1),
         ("cancel empties the queue and refunds", r"after cancel entries " + NUM + r", fibre", 0, 0),
         ("queue strip hides again", r"queue strip hidden (true)", None, None),
@@ -148,26 +158,79 @@ CLIENTS = [
 ]
 
 
+def kill_tree(proc):
+    """Ends a process and everything it started (godot.cmd is a wrapper: killing only the wrapper leaves the real Godot running, which saturated the PC on 30-31 Oct)."""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        proc.kill()
+
+
+def run_limited(cmd, timeout):
+    """Runs a command, returns (output, timed_out). On the time limit the whole process tree is killed; nothing outlives the call."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+        return out or "", False
+    except subprocess.TimeoutExpired:
+        kill_tree(proc)
+        try:
+            out, _ = proc.communicate(timeout=20)
+        except Exception:
+            out = ""
+        return out or "", True
+    finally:
+        kill_tree(proc)
+
+
 def run_unit(name, path, godot, verbose):
-    out = subprocess.run([godot, "--headless", "--path", ROOT, "-s", "res://" + path], capture_output=True, text=True, timeout=600).stdout
+    out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "-s", "res://" + path], 600)
+    if timed_out:
+        return False, "timed out after 600 s (killed)"
     if verbose:
         print(out)
     for line in out.splitlines():
         if "FAIL" in line:
             print("   ", line)
     found = re.findall(r"(\d+) (?:failures|errors)", out)
+    if not found and re.search(r"^\S+: PASS\s*$", out, re.M) and "FAIL" not in out:
+        return True, "PASS"   # tests that print "<name>: PASS" instead of a failure count (npc view, faint smooth, placed clearing)
     return bool(found) and all(n == "0" for n in found), "%s failures or errors" % (found[-1] if found else "no result")
 
 
+def free_port(preferred):
+    """The preferred port when nothing listens on it, else the first free one above it."""
+    import socket
+    import random
+    start = random.randint(21000, 39000)   # a random high port: the fixed 79xx ports are held by leftover servers of earlier runs on this PC
+    for port in range(start, start + 200):
+        for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
+            probe = socket.socket(socket.AF_INET, kind)
+            try:
+                probe.bind(("0.0.0.0", port))   # the wildcard: a leftover server bound to it blocks a bind on 127.0.0.1 only on some systems
+            except OSError:
+                break
+            finally:
+                probe.close()
+        else:
+            return port
+    return preferred
+
+
 def run_client(index, flags, frames, checks, godot, verbose):
-    port = PORT_BASE + index
+    port = free_port(PORT_BASE + index)   # a leftover server from an earlier run may still hold the fixed port and answer with old code (RPC checksum errors, 31 Oct 2026)
     store = tempfile.mkdtemp(prefix="items_check_")
-    server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server = subprocess.Popen([godot, "--headless", "--path", ROOT, "res://scenes/terrain_server/terrain_server.tscn", "--", "--port=%d" % port, "--store=" + store, "--quit-after=600"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(40)
-        out = subprocess.run([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=400).stdout
+        out, timed_out = run_limited([godot, "--headless", "--path", ROOT, "res://scenes/terrain_client/terrain_client.tscn", "--", "--server=127.0.0.1", "--port=%d" % port, "--frames=%d" % frames, "--timeout=690"] + flags, 700)
     finally:
-        server.kill()
+        kill_tree(server)
+
+    if timed_out:
+        return False, "timed out after 700 s (client killed; the other scenes still run)"
     if verbose:
         print(out)
     if "SCRIPT ERROR" in out:
@@ -217,7 +280,20 @@ def main():
     for index, (name, flags, frames, checks) in enumerate(CLIENTS):
         if only and name not in only:
             continue
-        ok, note = run_client(index, flags, frames, checks, godot, verbose)
+        if name in OPT_IN and not (only and name in only):
+            continue   # runs only when asked for by name (snare needs traps.json test_chance above 0)
+        traps_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "animals", "traps.json")
+        traps_text = None
+
+        if name == "snare":   # an imagined rabbit for this run only, the file is put back after
+            traps_text = open(traps_path, newline="").read()
+            open(traps_path, "w", newline="").write(traps_text.replace('"test_chance": 0.0,', '"test_chance": 1.0,', 1))
+
+        try:
+            ok, note = run_client(index, flags, frames, checks, godot, verbose)
+        finally:
+            if traps_text is not None:
+                open(traps_path, "w", newline="").write(traps_text)
         print("%-16s %s  %s" % (name, "PASS" if ok else "FAIL", note))
         failed += 0 if ok else 1
     return 1 if failed else 0

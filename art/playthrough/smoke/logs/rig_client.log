@@ -1,0 +1,55 @@
+Godot Engine v4.7.2.stable.custom_build.ed1daf0bf (2026-08-17 01:18:38 UTC) - https://godotengine.org
+D3D12 12_0 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 2060 SUPER
+
+Terrain client: connecting to 127.0.0.1:7820
+Terrain client: welcome after 80 ms; world Modular Island World; spawn (53316.0, 33.57495, 68476.0); cache user://terrain_cache/Modular Island World/v44_da3040a756 (10240 MB)
+Terrain client: 2026-10-31T20:02:16 [+0.6 s] JOIN: at the welcome: player y 34.1, viewer y 34.1
+Terrain client: block line open
+Terrain client: 2026-10-31T20:02:17 [+2.0 s] JOIN: waiting for ground 2 s after the welcome: loads 3, received 2 (total 2), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T20:02:22 [+7.0 s] JOIN: waiting for ground 7 s after the welcome: loads 48, received 119 (total 119), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T20:02:27 [+12.0 s] JOIN: waiting for ground 12 s after the welcome: loads 48, received 119 (total 119), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T20:02:32 [+17.0 s] JOIN: waiting for ground 17 s after the welcome: loads 1160, received 2299 (total 2299), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: ground under (53316, 68476) is at 31.6 m
+Terrain client: 2026-10-31T20:02:33 [+17.7 s] JOIN: column answer 17.7 s after the welcome: ground 31.6 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53316, 68491) is at 31.4 m
+Terrain client: 2026-10-31T20:02:36 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 31.4 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53311, 68506) is at 30.8 m
+Terrain client: 2026-10-31T20:02:36 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 30.8 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53336, 68522) is at 30.9 m
+Terrain client: 2026-10-31T20:02:36 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 30.9 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53340, 68400) is at 28.9 m
+Terrain client: 2026-10-31T20:02:36 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 28.9 m, player 34.1 m, viewer y 34.1
+Terrain client: ground under (53318, 68470) is at 31.4 m
+Terrain client: 2026-10-31T20:02:36 [+20.7 s] JOIN: column answer 20.7 s after the welcome: ground 31.4 m, player 34.1 m, viewer y 34.1
+Terrain client: 2026-10-31T20:02:37 [+22.1 s] JOIN: waiting for ground 22 s after the welcome: loads 2620, received 4557 (total 4557), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 34.1, viewer y 34.1
+Terrain client: 2026-10-31T20:02:42 [+27.1 s] JOIN: waiting for ground 27 s after the welcome: loads 3569, received 6006 (total 6006), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 34.1
+Terrain client: ground under (53376, 68506) is at 31.4 m
+Terrain client: 2026-10-31T20:02:43 [+28.1 s] JOIN: column answer 28.1 s after the welcome: ground 31.4 m, player 400.0 m, viewer y 34.1
+Terrain client: stopped flying at (53376.0, 400.0, 68506.0), loading the ground here
+Terrain client: ground detail levels 1
+Terrain client: 2026-10-31T20:02:47 [+32.1 s] JOIN: waiting for ground 32 s after the welcome: loads 3714, received 7073 (total 7073), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:02:52 [+37.1 s] JOIN: waiting for ground 37 s after the welcome: loads 4002, received 8985 (total 8985), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: ground detail levels 7
+Terrain client: 2026-10-31T20:02:57 [+42.1 s] JOIN: waiting for ground 42 s after the welcome: loads 4443, received 10970 (total 10970), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:02 [+47.1 s] JOIN: waiting for ground 47 s after the welcome: loads 4966, received 12572 (total 12572), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:07 [+52.1 s] JOIN: waiting for ground 52 s after the welcome: loads 6164, received 14405 (total 14405), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:12 [+57.1 s] JOIN: waiting for ground 57 s after the welcome: loads 7422, received 15766 (total 15766), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:17 [+62.1 s] JOIN: waiting for ground 62 s after the welcome: loads 9752, received 17054 (total 17054), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:22 [+67.1 s] JOIN: waiting for ground 67 s after the welcome: loads 12562, received 18377 (total 18377), failed total 0, pending 1, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:27 [+72.1 s] JOIN: waiting for ground 72 s after the welcome: loads 15967, received 19872 (total 19872), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:32 [+77.1 s] JOIN: waiting for ground 77 s after the welcome: loads 18631, received 19998 (total 19998), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:37 [+82.1 s] JOIN: waiting for ground 82 s after the welcome: loads 18631, received 19998 (total 19998), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:42 [+87.1 s] JOIN: waiting for ground 87 s after the welcome: loads 18631, received 19998 (total 19998), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:47 [+92.1 s] JOIN: waiting for ground 92 s after the welcome: loads 18631, received 19998 (total 19998), failed total 0, pending 0, test drops 0, retries 0 (stall 0), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:48 [+93.0 s] JOIN: ground retry, try 1 of 6: loads 18631, received 19998, timeouts 0, bad 0, zeroed 0, pending 0, player (53376.0, 400.0, 68506.0)
+Terrain client: 2026-10-31T20:03:52 [+97.1 s] JOIN: waiting for ground 97 s after the welcome: loads 5833, received 1691 (total 21689), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:03:57 [+102.1 s] JOIN: waiting for ground 102 s after the welcome: loads 8565, received 4474 (total 24472), failed total 0, pending 1, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:04:02 [+107.1 s] JOIN: waiting for ground 107 s after the welcome: loads 10024, received 5047 (total 25045), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:04:07 [+112.1 s] JOIN: waiting for ground 112 s after the welcome: loads 10024, received 5047 (total 25045), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.4
+Terrain client: 2026-10-31T20:04:12 [+117.1 s] JOIN: waiting for ground 117 s after the welcome: loads 10024, received 5047 (total 25045), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: false, player y 400.0, viewer y 33.4
+shot runner: landed orchard_final2 at y 32.6 (wanted 32.6) after 0.0 s
+shot runner: flags give= drop=false place=false light=false ground_test=false
+Terrain client: 2026-10-31T20:04:17 [+122.1 s] JOIN: waiting for ground 122 s after the welcome: loads 10024, received 5047 (total 25045), failed total 0, pending 0, test drops 0, retries 1 (stall 1), ray down hits: true, player y 32.6, viewer y 33.4
+Terrain client: 2026-10-31T20:04:18 [+123.0 s] JOIN: ground retry, try 2 of 6: loads 10024, received 25045, timeouts 0, bad 0, zeroed 0, pending 0, player (53376.0, 32.6, 68506.0)
+Terrain client: stopped flying at (53376.0, 33.0, 68506.0), loading the ground here
+Terrain client: 2026-10-31T20:04:22 [+127.1 s] JOIN: waiting for ground 127 s after the welcome: loads 10024, received 0 (total 25045), failed total 0, pending 0, test drops 0, retries 2 (stall 2), ray down hits: true, player y 32.6, viewer y 32.6

@@ -361,6 +361,9 @@ func _process_body(delta: float) -> void:
 		if _client.sea != null:
 			WaterMaterial.apply_day(_client.sea.material_override as ShaderMaterial, day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
 
+			if _client._sun != null:
+				(_client.sea.material_override as ShaderMaterial).set_shader_parameter("sun_toward", _client._sun.global_transform.basis.z.normalized())
+
 		if sky_material != null:
 			sky_material.set_shader_parameter("sky_top_color", day.sky_top)
 			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)

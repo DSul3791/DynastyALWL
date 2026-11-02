@@ -1,0 +1,178 @@
+{
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Camp-life and winter quests, same shape as data/items/starter_goals.json (see its _about for check kinds) with two additions: `needs_code` (true when a check kind or item chain does not exist yet: sea salt, new events worn_warmth, talked, moved_lit_night) and `after` may name goals from starter_goals.json. They teach the winter chain: render fat, smoke fish, dry berries, salt meat, keep a store, dress for the cold. The drying rack is not a structure yet (campfire does the drying in the recipes); jerky and salted fish need sea salt (WATER_GATHER_SPEC.md).",
+	"goals": [
+		{
+			"id": "torch_night",
+			"title": "Light the night",
+			"hint": "Craft a Basic torch from a stick and 2 fibre, and carry it after dark.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"made_item": "torch",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 4
+			},
+			"needs_code": false
+		},
+		{
+			"id": "candle",
+			"title": "Work by candlelight",
+			"hint": "Render fat into tallow, then make candles to light your shelter.",
+			"after": [
+				"shelter"
+			],
+			"check": {
+				"made_item": "candle",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 8
+			},
+			"needs_code": false
+		},
+		{
+			"id": "smoke_fish",
+			"title": "Smoke a fish",
+			"hint": "Catch a fish and smoke it with samphire and juniper berries at the campfire.",
+			"after": [
+				"fish",
+				"fire"
+			],
+			"check": {
+				"made_item": "smoked_fish",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 12
+			},
+			"needs_code": false
+		},
+		{
+			"id": "dry_berries",
+			"title": "Dry berries for winter",
+			"hint": "Dry blueberries by the fire so they keep.",
+			"after": [
+				"berries"
+			],
+			"check": {
+				"made_item": "dried_berries",
+				"count": 3
+			},
+			"reward": {
+				"coin_copper": 8
+			},
+			"needs_code": false
+		},
+		{
+			"id": "jerky",
+			"title": "Make jerky",
+			"hint": "Salt strips of meat and dry them. Needs sea salt.",
+			"after": [
+				"knife"
+			],
+			"check": {
+				"made_item": "jerky",
+				"count": 2
+			},
+			"reward": {
+				"coin_copper": 15
+			},
+			"needs_code": true
+		},
+		{
+			"id": "salted_fish",
+			"title": "Salt a fish",
+			"hint": "Cure a fish in salt for the winter store. Needs sea salt.",
+			"after": [
+				"fish"
+			],
+			"check": {
+				"made_item": "salted_fish",
+				"count": 1
+			},
+			"reward": {
+				"coin_copper": 12
+			},
+			"needs_code": true
+		},
+		{
+			"id": "winter_store",
+			"title": "Fill your winter store",
+			"hint": "Hold 5 foods that keep: smoked fish, jerky, dried berries, salted fish, trail bread.",
+			"after": [
+				"smoke_fish",
+				"dry_berries"
+			],
+			"check": {
+				"have_item_any": [
+					"smoked_fish",
+					"jerky",
+					"dried_berries",
+					"salted_fish",
+					"trail_bread"
+				],
+				"count": 5
+			},
+			"reward": {
+				"coin_copper": 30
+			},
+			"needs_code": false
+		},
+		{
+			"id": "fur_for_winter",
+			"title": "Dress for the cold",
+			"hint": "Wear a full hide set or better before winter.",
+			"after": [
+				"knife"
+			],
+			"check": {
+				"event": "worn_warmth",
+				"min": 0.7
+			},
+			"reward": {
+				"coin_copper": 20
+			},
+			"needs_code": false
+		},
+		{
+			"id": "story",
+			"title": "Hear a story at the fire",
+			"hint": "Sit by the fire at night with Edda or Hob and listen.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"event": "talked",
+				"npc": "edda",
+				"hour_between": [
+					19,
+					23
+				]
+			},
+			"reward": {
+				"coin_copper": 3,
+				"rep": 1
+			},
+			"needs_code": true
+		},
+		{
+			"id": "night_walk",
+			"title": "Cross the camp at night with a torch",
+			"hint": "Walk 100 m with a lit torch after dark without stumbling.",
+			"after": [
+				"torch_night"
+			],
+			"check": {
+				"event": "moved_lit_night",
+				"metres": 100
+			},
+			"reward": {
+				"coin_copper": 4
+			},
+			"needs_code": true
+		}
+	]
+}

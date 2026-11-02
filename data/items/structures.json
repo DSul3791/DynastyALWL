@@ -21,12 +21,12 @@
 			"kit": "lean_to_kit",
 			"item": "lean_to",
 			"state": 5,
-			"footprint_x": 2.4,
-			"footprint_z": 2.1,
+			"footprint_x": 2.6,
+			"footprint_z": 3.4,
 			"cap_per_chunk": 6,
-			"half_x": 1.1,
-			"half_z": 0.95,
-			"height": 2.1,
+			"half_x": 1.3,
+			"half_z": 1.7,
+			"height": 1.5,
 			"look": "lean_to",
 			"sound": "leanto",
 			"clears_grass": true
@@ -65,7 +65,7 @@
 		"plank_chest": {
 			"kit": "plank_chest_kit",
 			"item": "plank_chest",
-			"state": 6,
+			"state": 48,
 			"footprint_x": 0.9,
 			"footprint_z": 0.6,
 			"cap_per_chunk": 8,
@@ -103,7 +103,7 @@
 			"addon_reach_m": 5.0,
 			"tier": "small",
 			"look": "workbench",
-			"sound": "",
+			"sound": "timber",
 			"clears_grass": true
 		},
 		"tool_rack": {
@@ -115,7 +115,7 @@
 			"cap_per_chunk": 6,
 			"addon_of": "workbench",
 			"look": "tool_rack",
-			"sound": "",
+			"sound": "timber",
 			"clears_grass": true
 		},
 		"vice": {
@@ -127,7 +127,7 @@
 			"cap_per_chunk": 6,
 			"addon_of": "workbench",
 			"look": "vice",
-			"sound": "",
+			"sound": "timber",
 			"clears_grass": true
 		},
 		"log_workbench": {
@@ -143,7 +143,7 @@
 			"reach_m": 4.5,
 			"addon_reach_m": 5.0,
 			"look": "log_workbench",
-			"sound": "",
+			"sound": "timber",
 			"clears_grass": true
 		},
 		"saw_mill": {
@@ -178,7 +178,7 @@
 			"addon_reach_m": 5.0,
 			"tier": "small",
 			"look": "woodworking_table",
-			"sound": "",
+			"sound": "timber",
 			"clears_grass": true
 		},
 		"stone_forge": {
@@ -197,7 +197,7 @@
 			"reach_m": 5.0,
 			"addon_reach_m": 5.0,
 			"look": "stone_forge",
-			"sound": "",
+			"sound": "foundation",
 			"clears_grass": true
 		},
 		"blacksmithy": {
@@ -216,7 +216,7 @@
 			"reach_m": 5.0,
 			"addon_reach_m": 5.0,
 			"look": "blacksmithy",
-			"sound": "",
+			"sound": "foundation",
 			"clears_grass": true
 		},
 		"carcass": {
@@ -248,7 +248,7 @@
 			"reach_m": 6.0,
 			"addon_reach_m": 5.0,
 			"look": "big_forge",
-			"sound": "",
+			"sound": "foundation",
 			"clears_grass": true
 		},
 		"master_forge": {
@@ -267,7 +267,7 @@
 			"reach_m": 6.0,
 			"addon_reach_m": 5.0,
 			"look": "big_forge",
-			"sound": "",
+			"sound": "foundation",
 			"clears_grass": true
 		},
 		"wall_section": {
@@ -530,19 +530,30 @@
 			"footprint_z": 1.0,
 			"cap_per_chunk": 400,
 			"look": "path",
-			"sound": "",
+			"sound": "thump",
 			"clears_grass": true,
 			"walkover": true
 		},
-		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true},
+		"tilled_bed": {"kit": "", "item": "tilled_bed", "state": 47, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 200, "look": "path", "sound": "thump", "clears_grass": true, "walkover": true},
+		"rough_bed": {"kit": "rough_bed_kit", "item": "rough_bed", "state": 36, "footprint_x": 1.0, "footprint_z": 2.0, "cap_per_chunk": 6, "look": "rough_bed", "sound": "thump", "clears_grass": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
 		"thatch_wall": {"kit": "thatch_wall_kit", "item": "thatch_wall", "state": 37, "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "look": "thatch_wall", "sound": "thump", "clears_grass": false, "piece": true, "piece_kind": "wall", "variant_group": "wall", "material": "thatch", "max_rise_m": 0.6},
 		"campfire_pot": {"kit": "campfire_pot_kit", "item": "campfire_pot", "state": 38, "attach_to": "fire", "legacy_kinds": ["tripod_pot"], "footprint_x": 1.2, "footprint_z": 1.2, "cap_per_chunk": 6, "look": "tripod_pot", "sound": "thump", "clears_grass": true, "station": "campfire_pot", "station_level": 1, "reach_m": 3.0},
-		"clay_hearth": {"kit": "clay_hearth_kit", "item": "clay_hearth", "state": 39, "footprint_x": 1.6, "footprint_z": 1.2, "cap_per_chunk": 4, "look": "clay_hearth", "sound": "stone", "clears_grass": true, "station": "clay_hearth", "station_level": 2, "reach_m": 3.0, "also": {"campfire": 1}},
+		"clay_hearth": {"kit": "clay_hearth_kit", "item": "clay_hearth", "state": 39, "footprint_x": 1.6, "footprint_z": 1.2, "cap_per_chunk": 4, "look": "clay_hearth", "sound": "foundation", "clears_grass": true, "station": "clay_hearth", "station_level": 2, "reach_m": 3.0, "also": {"campfire": 1}},
 		"snare_trap": {"kit": "snare", "item": "snare_trap", "state": 46, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "snare_trap", "sound": "thump", "clears_grass": false},
-		"oven": {"kit": "oven_kit", "item": "oven", "state": 45, "footprint_x": 1.8, "footprint_z": 1.4, "cap_per_chunk": 2, "look": "oven", "sound": "stone", "clears_grass": true, "station": "oven", "station_level": 3, "reach_m": 3.0, "also": {"clay_hearth": 2, "campfire": 1}},
+		"oven": {"kit": "oven_kit", "item": "oven", "state": 45, "footprint_x": 1.8, "footprint_z": 1.4, "cap_per_chunk": 2, "look": "oven", "sound": "foundation", "clears_grass": true, "station": "oven", "station_level": 3, "reach_m": 3.0, "also": {"clay_hearth": 2, "campfire": 1}},
 		"thatch_floor": {"kit": "thatch_floor_kit", "item": "thatch_floor", "state": 42, "piece": true, "material": "thatch", "foundation": true, "footprint_x": 4.0, "footprint_z": 4.0, "cap_per_chunk": 60, "max_rise_m": 0.6, "snap_m": 2.0, "top_m": 0.1, "anchors": {"wall": [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]], "floor": [[-1, -1], [1, -1], [-1, 1], [1, 1]], "roof": [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]}, "note": "Tier 1 foundation (Dave and Tyler 24 Oct): a thatch floor on stakes, 4 m square, 0.1 m high; walls, roofs and floors snap to it like the stone foundation. Look is the foundation's until Kathleen's thatch floor lands.", "look": "thatch_floor", "sound": "thump", "clears_grass": true},
 		"thatch_roof": {"kit": "thatch_roof_kit", "item": "thatch_roof", "state": 43, "piece": true, "material": "thatch", "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "cap_per_chunk": 100, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "thatch_roof", "sound": "thump", "clears_grass": false},
 		"thatch_doorway": {"kit": "thatch_doorway_kit", "item": "thatch_doorway", "state": 44, "piece": true, "material": "thatch", "footprint_x": 2.0, "footprint_z": 0.25, "cap_per_chunk": 200, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "thatch_doorway", "sound": "thump", "clears_grass": false, "use": "door", "toggle": "door_open", "use_pace_ms": 400, "use_reach_m": 3.0},
+		"stairs_wood": {"kit": "stairs_wood_kit", "item": "stairs_wood", "state": 49, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "footprint_x": 1.0, "footprint_z": 2.4, "look": "stairs", "note": "Future piece: drawn as a ladder until Kathleen's stairs model lands; climb behaviour needs code."},
+		"log_wall": {"kit": "log_wall_kit", "item": "log_wall", "state": 50, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "log", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "log_wall"},
+		"log_floor": {"kit": "log_floor_kit", "item": "log_floor", "state": 51, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "log", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "log_floor"},
+		"log_roof": {"kit": "log_roof_kit", "item": "log_roof", "state": 52, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "log", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "log_roof"},
+		"stone_wall": {"kit": "stone_wall_kit", "item": "stone_wall", "state": 53, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "stone", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "stone_wall"},
+		"stone_floor": {"kit": "stone_floor_kit", "item": "stone_floor", "state": 54, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "stone", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "stone_floor"},
+		"stone_roof": {"kit": "stone_roof_kit", "item": "stone_roof", "state": 55, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "stone", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "stone_roof"},
+		"brick_wall": {"kit": "brick_wall_kit", "item": "brick_wall", "state": 56, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "brick", "piece": true, "footprint_x": 2.0, "footprint_z": 0.25, "max_rise_m": 0.6, "piece_kind": "wall", "variant_group": "wall", "look": "brick_wall"},
+		"brick_floor": {"kit": "brick_floor_kit", "item": "brick_floor", "state": 57, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "brick", "piece": true, "footprint_x": 2.0, "footprint_z": 2.0, "max_rise_m": 0.6, "piece_kind": "floor", "look": "brick_floor"},
+		"brick_roof": {"kit": "brick_roof_kit", "item": "brick_roof", "state": 58, "cap_per_chunk": 100, "sound": "timber", "clears_grass": false, "material": "brick", "piece": true, "shelter": true, "footprint_x": 2.4, "footprint_z": 2.4, "half_x": 1.2, "half_z": 1.2, "height": 2.6, "max_rise_m": 0.6, "piece_kind": "roof", "look": "brick_roof"},
 		"rock_pile": {
 			"kit": "rock_pile",
 			"item": "rock_pile",
@@ -551,11 +562,26 @@
 			"footprint_z": 1.2,
 			"cap_per_chunk": 12,
 			"look": "rock_pile",
-			"sound": "stone",
+			"sound": "foundation",
 			"clears_grass": true,
 			"use": "unpile",
 			"stones": 45
-		}
+		},
+"log_seat": {"kit": "log_seat_kit", "item": "log_seat", "state": 59, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 12, "look": "log_seat", "sound": "timber", "clears_grass": false, "comfort": "log_seat", "gap_exempt": true},
+		"stool": {"kit": "stool_kit", "item": "stool", "state": 60, "footprint_x": 0.45, "footprint_z": 0.45, "cap_per_chunk": 12, "look": "stool", "sound": "timber", "clears_grass": false, "comfort": "stool", "gap_exempt": true},
+		"bench": {"kit": "bench_kit", "item": "bench", "state": 61, "footprint_x": 2.0, "footprint_z": 0.4, "cap_per_chunk": 12, "look": "bench", "sound": "timber", "clears_grass": false, "comfort": "bench", "gap_exempt": true},
+		"chair": {"kit": "chair_kit", "item": "chair", "state": 62, "footprint_x": 0.6, "footprint_z": 0.6, "cap_per_chunk": 12, "look": "chair", "sound": "timber", "clears_grass": false, "comfort": "chair", "gap_exempt": true},
+		"table": {"kit": "table_kit", "item": "table", "state": 63, "footprint_x": 1.4, "footprint_z": 0.7, "cap_per_chunk": 12, "look": "table", "sound": "timber", "clears_grass": false, "comfort": "table", "gap_exempt": true},
+		"hide_rug": {"kit": "hide_rug_kit", "item": "hide_rug", "state": 64, "footprint_x": 1.7, "footprint_z": 1.1, "cap_per_chunk": 12, "look": "hide_rug", "sound": "thump", "clears_grass": false, "comfort": "hide_rug", "gap_exempt": true},
+		"wool_rug": {"kit": "wool_rug_kit", "item": "wool_rug", "state": 65, "footprint_x": 1.6, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "wool_rug", "sound": "thump", "clears_grass": false, "comfort": "wool_rug", "gap_exempt": true},
+		"straw_bed": {"kit": "straw_bed_kit", "item": "straw_bed", "state": 66, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "straw_bed", "sound": "thump", "clears_grass": false, "comfort": "straw_bed", "gap_exempt": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
+		"feather_bed": {"kit": "feather_bed_kit", "item": "feather_bed", "state": 67, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "feather_bed", "sound": "thump", "clears_grass": false, "comfort": "feather_bed", "gap_exempt": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
+		"canopy_bed": {"kit": "canopy_bed_kit", "item": "canopy_bed", "state": 68, "footprint_x": 2.2, "footprint_z": 1.4, "cap_per_chunk": 12, "look": "canopy_bed", "sound": "timber", "clears_grass": false, "comfort": "canopy_bed", "gap_exempt": true, "shelter_needed": true, "use": "set_spawn", "use_reach_m": 3.0},
+		"wall_torch": {"kit": "wall_torch_kit", "item": "wall_torch", "state": 69, "footprint_x": 0.2, "footprint_z": 0.2, "cap_per_chunk": 12, "look": "wall_torch", "sound": "timber", "clears_grass": false, "comfort": "wall_torch", "gap_exempt": true, "lights": true, "use": "light", "use_reach_m": 3.0, "fuel": "stick", "fuel_s": 1800},
+		"chandelier": {"kit": "chandelier_kit", "item": "chandelier", "state": 70, "footprint_x": 0.9, "footprint_z": 0.9, "cap_per_chunk": 12, "look": "chandelier", "sound": "timber", "clears_grass": false, "comfort": "chandelier", "gap_exempt": true, "lights": true, "shelter_needed": true, "use": "light", "use_reach_m": 3.0, "fuel": "candle", "fuel_s": 3600},
+		"fireplace": {"kit": "fireplace_kit", "item": "fireplace", "state": 71, "footprint_x": 2.0, "footprint_z": 1.0, "cap_per_chunk": 12, "look": "fireplace", "sound": "foundation", "clears_grass": false, "comfort": "fireplace", "gap_exempt": true, "lights": true, "shelter_needed": true, "use": "light", "use_reach_m": 3.0, "fuel": "firewood", "fuel_s": 7200},
+		"flower_pot": {"kit": "flower_pot_kit", "item": "flower_pot", "state": 72, "footprint_x": 0.3, "footprint_z": 0.3, "cap_per_chunk": 12, "look": "flower_pot", "sound": "thump", "clears_grass": false, "comfort": "flower_pot", "gap_exempt": true},
+		"antler_mount": {"kit": "antler_mount_kit", "item": "antler_mount", "state": 73, "footprint_x": 0.44, "footprint_z": 0.1, "cap_per_chunk": 12, "look": "antler_mount", "sound": "timber", "clears_grass": false, "comfort": "antler_mount", "gap_exempt": true}
 	},
 	"campfire": {
 		"gap_m": 2.0,

@@ -26,7 +26,7 @@ extends RefCounted
 # them with filter "planes2"; the checksum covers the plane layout.
 #
 # Map encodings (all little endian)
-#   height, water_surface   uint16, raw x 0.1 m - 4,000 m (water_surface raw 0 = no water)
+#   height, water_surface   uint16, raw x 0.125 m - 4,000 m, so +4,000 m is the top (water_surface raw 0 = no water)
 #   water_class             uint8   0 none, 1 ocean, 2 lake, 3 river, 4 marsh
 #   flow                    uint8   raw = round(11 x log2(drainage cells)); cells = 2^(raw / 11); 0 below the river start size
 #   biome, soil, fertility, moisture, province   uint8
@@ -46,6 +46,12 @@ const PREAMBLE_BYTES := 16
 const GENERATOR_VERSION := 1
 const LOW_RES_STEP := 4
 const HEIGHT_BASE_M := -4000.0
+const HEIGHT_STEP_M := 0.125         # one raw step: 8,000 m of world height in 16 bits (was 0.1 m for a 6,553 m range)
+const HEIGHT_STEPS_PER_M := 8.0
+# Tiles baked before 29 Oct 2026 (TERRAIN_VERSION 43) hold heights in 0.1 m steps, and their header has no "height_step_m". Reading one with the 0.125 m step lifts the whole
+# land by 1,000 m and stretches it by a quarter (ocean ground up to +1,000 m, a sea surface at +1,000 m): found 30 Oct 2026, see WATER_PLAN.md. Readers of a real file pass
+# height_step_of(header) to decode_height and decode_water_surface; new bakes write "height_step_m" into the header.
+const HEIGHT_STEP_LEGACY_M := 0.1
 const FLOW_STEPS_PER_OCTAVE := 11.0
 
 const ZSTD := FileAccess.COMPRESSION_ZSTD
@@ -62,20 +68,24 @@ static func encode_height(values: PackedFloat32Array) -> PackedByteArray:
 	out.resize(count * 2)
 
 	for i in range(count):
-		var raw: int = clampi(roundi((values[i] - HEIGHT_BASE_M) * 10.0), 0, 65535)
+		var raw: int = clampi(roundi((values[i] - HEIGHT_BASE_M) * HEIGHT_STEPS_PER_M), 0, 65535)
 		out[i] = raw & 255
 		out[count + i] = raw >> 8
 
 	return out
 
 
-static func decode_height(bytes: PackedByteArray) -> PackedFloat32Array:
+static func height_step_of(header: Dictionary) -> float:
+	return float(header.get("height_step_m", HEIGHT_STEP_LEGACY_M))
+
+
+static func decode_height(bytes: PackedByteArray, step_m: float = HEIGHT_STEP_M) -> PackedFloat32Array:
 	var count: int = bytes.size() / 2
 	var out: PackedFloat32Array = PackedFloat32Array()
 	out.resize(count)
 
 	for i in range(count):
-		out[i] = float(bytes[i] | (bytes[count + i] << 8)) * 0.1 + HEIGHT_BASE_M
+		out[i] = float(bytes[i] | (bytes[count + i] << 8)) * step_m + HEIGHT_BASE_M
 
 	return out
 
@@ -90,7 +100,7 @@ static func encode_water_surface(values: PackedFloat32Array, water_class: Packed
 		var raw: int = 0
 
 		if water_class[i] != 0:
-			raw = clampi(roundi((values[i] - HEIGHT_BASE_M) * 10.0), 1, 65535)
+			raw = clampi(roundi((values[i] - HEIGHT_BASE_M) * HEIGHT_STEPS_PER_M), 1, 65535)
 
 		out[i] = raw & 255
 		out[count + i] = raw >> 8
@@ -98,14 +108,14 @@ static func encode_water_surface(values: PackedFloat32Array, water_class: Packed
 	return out
 
 
-static func decode_water_surface(bytes: PackedByteArray) -> PackedFloat32Array:
+static func decode_water_surface(bytes: PackedByteArray, step_m: float = HEIGHT_STEP_M) -> PackedFloat32Array:
 	var count: int = bytes.size() / 2
 	var out: PackedFloat32Array = PackedFloat32Array()
 	out.resize(count)
 
 	for i in range(count):
 		var raw: int = bytes[i] | (bytes[count + i] << 8)
-		out[i] = NAN if raw == 0 else float(raw) * 0.1 + HEIGHT_BASE_M
+		out[i] = NAN if raw == 0 else float(raw) * step_m + HEIGHT_BASE_M
 
 	return out
 
@@ -270,6 +280,7 @@ static func pack_tile(settings, tile: Vector2i, plan_cell: Dictionary, water, cl
 		"status": "final",
 		"passes": [],
 		"matrix_entry": plain(plan_cell),
+		"height_step_m": HEIGHT_STEP_M,
 		"map_spacing_m": int(settings.map_spacing_m),
 		"samples": samples,
 		"low_res_spacing_m": int(settings.map_spacing_m) * LOW_RES_STEP,

@@ -27,3 +27,8 @@ Also removed inside live files (git history keeps them): 23 functions nothing ca
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/worldgen/tools/analyze_land.gd, flora_map.gd, stitch_water_seams.gd, river_settle_report.gd, terrain_bench.gd, basin_census.gd, river_pits.gd (+ .uid) | Claude | 29 Oct | one-off analysis tools; no script, test or bake references them | none |
+
+## Test system review, 30 Oct 2026 (Tyler, branch claude/tyler-gates-fee5f7)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/test_scree.gd (+ .uid) | Tyler | 30 Oct | a report, not a test: no check, cannot fail; needs the baked tile 3,4; writes a PNG to /tmp (fails on Windows); 10 s | none (git mv back and drop the .removed suffix to restore) |

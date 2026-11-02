@@ -22,6 +22,8 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const KIND_TREE := 0
@@ -43,7 +45,7 @@ uniform float sway = 0.012;
 uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
-uniform float backlight = 0.4;
+uniform float backlight = 0.3;
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
 // custom alpha (how strongly this tree glows; young ones weakly). Black for
 // every other species. Faint by day, plain at night.
@@ -90,12 +92,16 @@ shader_type spatial;
 render_mode diffuse_burley, specular_disabled;
 uniform sampler2D bark : source_color, filter_linear_mipmap, repeat_enable;
 uniform float sway = 0.004;
+uniform vec3 tint = vec3(1.0);              // a felled trunk or stump (inventory_view) sets the species bark tint here; standing trees take it from the vertex colour
+uniform vec2 uv_scale = vec2(1.0);
+uniform vec3 lift = vec3(1.0);                   // a felled trunk, log or stump is lit by the sky only from above and read half as bright as a standing trunk in the real game: it sets a lift here
+uniform float foot_offset = 0.0;            // metres from the model origin up to the trunk foot (a felled trunk's mesh is centred)
 varying float base_h;
 varying float north_face;
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	base_h = VERTEX.y;
+	base_h = VERTEX.y + foot_offset;
 	north_face = -normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).z;   // north is -z
 	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
 	float bend = max(VERTEX.y, 0.0) * sway;
@@ -104,9 +110,13 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 t = texture(bark, UV);
-	vec3 c = t.rgb * COLOR.rgb * 1.8;
-	c *= mix(0.72, 1.12, t.a);                                       // furrows darker, ridges lighter
+	vec4 t = texture(bark, UV * uv_scale);
+	vec3 c = t.rgb * COLOR.rgb * tint * 1.3 * lift;                                // was 1.8: the bark read pale and flat (Dave 2026-10-31)
+	c *= vec3(1.06, 0.97, 0.88);                                     // warmer
+	c *= mix(0.62, 1.12, t.a);                                       // furrows darker, ridges lighter
+	vec2 patch = floor(UV * vec2(5.0, 12.0));
+	c *= 0.86 + 0.28 * fract(sin(dot(patch, vec2(12.9898, 78.233))) * 43758.5453);   // plates and patches of different tone, no two alike
+	c *= mix(0.62, 1.0, smoothstep(0.0, 1.6, base_h));               // shade where the trunk meets the ground
 	float moss = (1.0 - smoothstep(0.1, 1.1, base_h)) * (0.35 + 0.65 * (1.0 - t.a));   // damp moss at the foot
 	c = mix(c, c * vec3(0.55, 0.75, 0.32), moss * 0.6);
 	// Moss on the north side of the trunk (ART_DIRECTION.md section 32), thinning up the trunk.
@@ -114,6 +124,34 @@ void fragment() {
 	c = mix(c, c * vec3(0.5, 0.72, 0.3), north_moss * 0.55);
 	ALBEDO = c;
 	ROUGHNESS = 1.0;
+}
+"""
+
+# Fruit on a fruit tree (apples, pears, cherries; Dave 2026-10-31: the drawn fruit thins out as the tree is picked). tree_builder.gd gives every fruit a rank 0..1 in the vertex
+# alpha (spread evenly) and its colour in the vertex rgb. INSTANCE_CUSTOM.a is the share of the fruit already PICKED (0 = none, the default, so every unwired tree keeps all
+# its fruit; 0.34, 0.67, 0.9, 1.0 for the 66, 33, 10 and 0 percent levels): a fruit whose rank is at or above 1 - picked is not drawn. INSTANCE_CUSTOM.rgb is the tree's leaf tint
+# (the foliage shader's), so the fruit colour of a variety (red, yellow, green, russet) is baked per species with flora.json "fruit_color", not passed per tree.
+const FRUIT_SHADER := """
+shader_type spatial;
+render_mode diffuse_burley, specular_disabled;
+uniform float sway = 0.004;
+varying float picked;
+
+void vertex() {
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	float gust = sin(TIME * 0.9 + wp.x * 0.05 + wp.z * 0.04) + 0.4 * sin(TIME * 1.9 + wp.x * 0.11 + wp.z * 0.09);
+	float bend = max(VERTEX.y, 0.0) * sway;
+	VERTEX.x += gust * bend;
+	VERTEX.z += gust * bend * 0.6;
+	picked = INSTANCE_CUSTOM.a;
+}
+
+void fragment() {
+	if (COLOR.a >= 1.0 - picked) {
+		discard;
+	}
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 0.55;
 }
 """
 
@@ -192,7 +230,9 @@ const KINDS := ["tree", "shrub", "plant"]
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
-const PART_M_LOW := [256.0, 256.0, 256.0]   # Low and Medium: shrubs and plants also in one part per chunk (a quarter of the draws)
+const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
+# The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
+const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -223,6 +263,7 @@ var collision_m: float = 160.0
 var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # full-detail model out to this distance (tree, shrub)
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
+var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -271,6 +312,7 @@ var fall_cap: int = 4
 # Set by the client: whether any ground has arrived over a world point (network_voxel_stream.gd column_loaded). A chunk's plants and
 # fall ribbons stay hidden until the ground under its middle exists, so nothing floats over ground that is not built yet (Dave, build 483).
 var ground_ready: Callable = Callable()
+const GROUND_MESH_WAIT_MS := 1500      # a chunk whose ground data has just arrived stays hidden this long more, for the ground mesh to be built
 var stripped: Dictionary = {}          # chunk -> {plant id -> true}: berry bushes that are bare this season (set_stripped); they are drawn bare ("bare" models, when a species has them)
 var _setup_entries: Array = []         # the flora table rows, kept for the seasonal models
 var fruiting: Dictionary = {}          # species name -> true: the berry bushes (drops.json "berry_yield"), drawn per season and stripped (set_fruiting)
@@ -279,6 +321,10 @@ var _seasonal_ready: Dictionary = {}   # the worker's finished sets, taken over 
 var _seasonal_mutex: Mutex = Mutex.new()
 var _seasonal_task: int = -1
 var _seasonal_for: String = ""         # the season the running or last worker builds
+var _plume_cells: Dictionary = {}      # 2 m cell -> number of plumed tall-grass plants in it (tall_grass, thatch_grass): the ground grass thins round them (GrassView) so the clumps stand out
+var fruit_cfg: Dictionary = {}           # drops.json "fruit_tree" (species name -> {max, per_pick}), set by the client: which trees hold fruit
+var fruit_taken: Dictionary = {}         # chunk -> {tree id -> pieces taken this season} (fruit trees; set_fruit_taken, cleared when the season changes)
+var season_override: String = ""         # debug: --flora-season=NAME or --flora-day=N (0 to 364) on the client command line pins the season the view shows
 var season: String = ""                # the game season the view was told (set_season); a change makes every bush bear again
 var cleared: Array = []               # Vector3 spots of placed items: shrubs and small plants within clear_m are not drawn (set_cleared)
 var clear_m: float = 5.0
@@ -329,7 +375,8 @@ func set_quality(quality: int) -> void:
 	quality = clampi(quality, 0, IMPOSTOR_M.size() - 1)
 	impostor_m = IMPOSTOR_M[quality]
 	far_shadows = FAR_SHADOWS[quality]
-	part_m = PART_M_LOW if quality <= 1 else PART_M
+	part_m = PART_M_LOW if quality <= 2 else PART_M
+	shrub_share = SHRUB_SHARE[clampi(quality, 0, SHRUB_SHARE.size() - 1)]
 	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
@@ -396,6 +443,12 @@ func set_flow_rate(rate: float) -> void:
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
+	for argument in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+		if argument.begins_with("--flora-season="):
+			season_override = argument.trim_prefix("--flora-season=")
+		elif argument.begins_with("--flora-day="):
+			season_override = season_of_day(int(argument.trim_prefix("--flora-day=")))
+
 	var rules: Dictionary = tile_rules.get("runtime_flora", {})
 	chunk_m = float(rules.get("chunk_m", 256.0))
 	var view: Dictionary = rules.get("view_m", {})
@@ -422,7 +475,7 @@ func setup(tables, tile_rules: Dictionary) -> void:
 	_splash_material = WaterFallsScript.make_splash_material()
 	_foam_material = WaterFallsScript.make_foam_material()
 
-	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false))
+	_setup_queue = tables.get_entries("flora").filter(func(entry): return not entry.get("retired", false) and not entry.get("future", false))
 	_setup_entries = _setup_queue.duplicate()
 	_setup_total = _setup_queue.size()
 	_models_task_id = WorkerThreadPool.add_task(_models_task.bind(_setup_queue.duplicate()), false, "flora models")
@@ -627,6 +680,9 @@ func _setup_entry(entry: Dictionary) -> bool:
 		"mid": mid_meshes,
 		"far": far_meshes,
 		"shape": shape,
+		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
+		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
+		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
 	}
@@ -681,6 +737,11 @@ func _make_tree_materials() -> void:
 	smooth_material.shader = bark
 	smooth_material.set_shader_parameter("bark", _load_texture("res://assets/trees/bark_smooth.png"))
 	_tree_materials["smooth_bark"] = smooth_material
+	var fruit_shader: Shader = Shader.new()
+	fruit_shader.code = FRUIT_SHADER
+	var fruit_material: ShaderMaterial = ShaderMaterial.new()
+	fruit_material.shader = fruit_shader
+	_tree_materials["fruit"] = fruit_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
@@ -817,6 +878,42 @@ func instance_near(point: Vector3, radius: float) -> Array:
 			found = ids[n]
 
 	return [] if found < 0 else [chunk, found]
+
+
+# Counts the plumed tall-grass plants of a chunk into 2 m cells (delta +1 when the chunk comes, -1 when it goes).
+func _mark_plumes(chunk: Vector2i, items: Dictionary, delta: int) -> void:
+	var ids: PackedInt32Array = items.get("ids", PackedInt32Array())
+	var positions: PackedVector3Array = items.get("positions", PackedVector3Array())
+
+	for n in range(ids.size()):
+		var slug: String = str(_slugs.get(int(ids[n]) >> 16, ""))
+
+		if slug != "tall_grass" and slug != "thatch_grass":
+			continue
+
+		var cell: Vector2i = Vector2i(int(floor(positions[n].x / 2.0)), int(floor(positions[n].z / 2.0)))
+		var now: int = int(_plume_cells.get(cell, 0)) + delta
+
+		if now <= 0:
+			_plume_cells.erase(cell)
+		else:
+			_plume_cells[cell] = now
+
+
+# True when a plumed tall-grass plant stands within about 2 m of the point (its own 2 m cell or a neighbour): the ground grass is thinned there.
+func near_plume(x: float, z: float) -> bool:
+	if _plume_cells.is_empty():
+		return false
+
+	var cx: int = int(floor(x / 2.0))
+	var cz: int = int(floor(z / 2.0))
+
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if _plume_cells.has(Vector2i(cx + dx, cz + dz)):
+				return true
+
+	return false
 
 
 # The chunks to have, nearest first: every chunk within tree view distance.
@@ -1071,6 +1168,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	canopy_version += 1
 	var entry: Dictionary = {"items": items, "level": -1, "node": null, "water": null, "grid": water, "full": full, "ground": _ground_here(chunk)}
 	_chunks[chunk] = entry
+	_mark_plumes(chunk, items, 1)
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
@@ -1243,6 +1341,7 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if ice != null:
 		ice.queue_free()
 
+	_mark_plumes(chunk, _chunks[chunk]["items"], -1)
 	_chunks.erase(chunk)
 
 
@@ -1327,18 +1426,99 @@ func set_fruiting(names: Array) -> void:
 	for plant_name in names:
 		fruiting[str(plant_name)] = true
 
+	# Any species whose flora.json row says "seasonal": true is built per season too (its model reads the season name TreeBuilder.build gets).
+	for entry in _setup_entries:
+		if bool(entry.get("seasonal", false)):
+			fruiting[str(entry["name"])] = true
+
 	if season != "":
 		_start_seasonal()
 
 
 # The game season for the view: when it changes every bush bears again (the bare set is cleared) and the bushes' models for the new season
 # are built on a worker; the chunks redraw when they are ready.
+# The share of fruit picked, in the five levels the fruit shader draws (0, 0.34, 0.67, 0.9, 1.0 = 100, 66, 33, 10 and 0 percent left).
+static func fruit_level(picked_share: float) -> float:
+	if picked_share < 0.17:
+		return 0.0
+
+	if picked_share < 0.5:
+		return 0.34
+
+	if picked_share < 0.78:
+		return 0.67
+
+	if picked_share < 0.95:
+		return 0.9
+
+	return 1.0
+
+
+# {tree id -> level} for the fruit trees of a chunk with fruit taken (main thread: the draw task only reads it).
+func _fruit_levels_of(chunk: Vector2i, items: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var taken: Dictionary = fruit_taken.get(chunk, {})
+
+	if taken.is_empty() or fruit_cfg.is_empty():
+		return out
+
+	var ids: PackedInt32Array = items["ids"]
+
+	for n in range(ids.size()):
+		var id: int = int(ids[n])
+
+		if not taken.has(id):
+			continue
+
+		var species: Dictionary = _species.get(id >> 16, {})
+		var cfg: Dictionary = fruit_cfg.get(str(_slugs.get(id >> 16, "")), {})
+
+		if cfg.is_empty() or not species.has("season_row"):
+			continue
+
+		var full: int = GatherRules.fruit_max(cfg, species["season_row"], id, float((items["heights"] as PackedFloat32Array)[n]))
+		out[id] = fruit_level(float(taken[id]) / float(maxi(full, 1)))
+
+	return out
+
+
+# The server's count of fruit taken from trees of a chunk (the prompt shows what is left); a later count replaces an earlier one.
+func set_fruit_taken(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
+	if not fruit_taken.has(chunk):
+		fruit_taken[chunk] = {}
+
+	var before: Dictionary = {}
+
+	if _chunks.has(chunk):
+		before = _fruit_levels_of(chunk, _chunks[chunk]["items"])
+
+	for n in range(ids.size()):
+		fruit_taken[chunk][int(ids[n])] = int(taken[n])
+
+	# Only a change of level (100, 66, 33, 10, 0 percent) redraws the chunk: one pick never rebuilds it.
+	if _chunks.has(chunk) and _fruit_levels_of(chunk, _chunks[chunk]["items"]) != before:
+		_redraw(chunk)
+
+
 func set_season(now_season: String) -> void:
+	if season_override != "":
+		now_season = season_override
+
 	if now_season == season:
 		return
 
+	var had_season: bool = season != ""
+
+	if had_season and now_season != season:
+		fruit_taken.clear()   # a new season starts every fruit tree full again
+
 	season = now_season
 	_start_seasonal()
+
+	# Hardwood leaf colour follows the season (green in spring and summer, colour in autumn, dead leaves in winter): every drawn chunk redraws once.
+	if had_season or season_override != "":
+		for chunk in _chunks.keys():
+			_redraw(chunk)
 
 	if stripped.is_empty():
 		return
@@ -1497,6 +1677,13 @@ func _check_ground() -> void:
 		var entry: Dictionary = _chunks[chunk]
 
 		if not bool(entry.get("ground", true)) and _ground_here(chunk):
+			# The ground data is in, but its mesh is built a moment later: wait a little more so no forest stands over bare sea (Sonny, 31 Oct 2026; the sea plane shows where the ground is not drawn yet).
+			if not entry.has("ground_seen"):
+				entry["ground_seen"] = now
+
+			if now - int(entry["ground_seen"]) < GROUND_MESH_WAIT_MS:
+				continue
+
 			entry["ground"] = true
 			var node: Node3D = entry.get("node")
 			var falls: Node3D = entry.get("falls")
@@ -1629,6 +1816,7 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
 
 	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+	items["fruit_levels"] = _fruit_levels_of(chunk, items)
 	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
 
 
@@ -1765,6 +1953,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
+	var clumps: Dictionary = {}           # (species, patch slot) -> [[position, radius]]: the tall shrubs of one thicket
 	var lights: Array = []
 	# Never past the shortest of the item arrays (they change together; a mismatch must not crash the worker).
 	var count: int = mini(mini(ids.size(), items["positions"].size()), mini(items["heights"].size(), items["yaws"].size()))
@@ -1821,6 +2010,14 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			if is_near == TIER_FAR:
 				variant = 0
 
+		# Lower qualities draw only a stable share of the shrubs (thickets are dense).
+		if shrub_share < 1.0 and info["kind"] == KIND_SHRUB and float((int(ids[n]) * 2654435761) % 1000) / 1000.0 >= shrub_share:
+			continue
+
+		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
+		if season != "" and info["kind"] == KIND_PLANT and GatherRules.hidden_out_of_season(info["season_row"], season, fruiting.has(str(_slugs.get(species_id, "")))):
+			continue
+
 		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
@@ -1837,9 +2034,53 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		if (level & 8) != 0 and int(info["kind"]) != KIND_PLANT and float(info["trunk"]) >= 0.1:
+		# Trees from collision_m, tall shrubs only within the shrub model range (level bit 32), so the collider count stays low.
+		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
-			shapes.append([species_id, float(info["trunk"]) * size_scale, p + Vector3(0.0, 1.2, 0.0)])
+			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
+
+			var item_number: int = int(ids[n]) & 0xffff
+
+			if radius > 0.0 and int(info["kind"]) == KIND_SHRUB and item_number >= PlacerScript.STAND_BASE:
+				# A tall shrub of a patch (a thicket): collected per patch, one collider round a clump of CLUMP_MIN_COLLIDER or more (below).
+				var clump_key: Vector2i = Vector2i(species_id, (item_number - PlacerScript.STAND_BASE) / PlacerScript.PATCH_MAX_PLANTS)
+
+				if not clumps.has(clump_key):
+					clumps[clump_key] = []
+
+				(clumps[clump_key] as Array).append([p, radius])
+			elif radius > 0.0:
+				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
+			elif bool(info.get("log", false)):
+				# A long fallen log: a capsule along its length at its yaw (shape entry: species, radius, position, length, yaw).
+				var log_size: Vector2 = PlacerScript.log_collider(float(items["heights"][n]), float(info["crown_m"]))
+
+				if log_size.x > 0.0:
+					shapes.append([species_id, log_size.x, p + Vector3(0.0, log_size.x, 0.0), log_size.y, float(items["yaws"][n])])
+
+	# One collider per thicket: four or more tall shrubs of one patch act as one big bush (a cylinder round their middle), fewer keep their own.
+	for clump_key in clumps:
+		var members: Array = clumps[clump_key]
+
+		if members.size() < PlacerScript.CLUMP_MIN_COLLIDER:
+			for member in members:
+				shapes.append([int(clump_key.x), float(member[1]), (member[0] as Vector3) + Vector3(0.0, 1.2, 0.0)])
+
+			continue
+
+		var middle: Vector3 = Vector3.ZERO
+
+		for member in members:
+			middle += member[0] as Vector3
+
+		middle /= float(members.size())
+		var reach: float = 0.0
+
+		for member in members:
+			reach += Vector2((member[0] as Vector3).x - middle.x, (member[0] as Vector3).z - middle.z).length()
+
+		reach = reach / float(members.size()) + 0.5
+		shapes.append([int(clump_key.x), clampf(reach, 0.6, PlacerScript.CLUMP_COLLIDER_MAX_M), middle + Vector3(0.0, 1.2, 0.0)])
 
 	# Glowing trees (everember, witness tree) light the ground around them, near the player
 	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
@@ -1899,9 +2140,12 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			buffer[o + 11] = origin.z
 
 			if tinted:
-				var custom: Color = _autumn_tint(ids[n], info.get("autumn", AUTUMN)) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
+				var custom: Color = _leaf_tint(ids[n], info) if info["hardwood"] else (_conifer_tint(ids[n], _age_tint(info, float(items["heights"][n]))) if info["kind"] == KIND_TREE else info["tint"])
 				# Glowing leaves: young trees glow weakly, grown ones fully.
 				custom.a = clampf(float(items["heights"][n]) / float(info.get("young_below", 1.0)), 0.25, 1.0) if info.has("leaf_glow") else 0.0
+
+				if (items.get("fruit_levels", {}) as Dictionary).has(int(ids[n])):
+					custom.a = float(items["fruit_levels"][int(ids[n])])   # a fruit tree: the share of its fruit already picked (FRUIT_SHADER discards that share)
 				buffer[o + 12] = custom.r
 				buffer[o + 13] = custom.g
 				buffer[o + 14] = custom.b
@@ -1929,7 +2173,12 @@ func _apply_step(job: Dictionary) -> bool:
 		for k in range(first, last):
 			var item: Array = shapes[k]
 			var shape: CollisionShape3D = CollisionShape3D.new()
-			shape.shape = _trunk_shape(float(item[1]))
+			if item.size() > 3:
+				shape.shape = _log_shape(float(item[1]), float(item[3]))
+				shape.basis = Basis(Vector3.UP, float(item[4])) * Basis(Vector3(0.0, 0.0, 1.0), PI * 0.5)
+			else:
+				shape.shape = _trunk_shape(float(item[1]))
+
 			shape.position = item[2]
 			body.add_child(shape)
 			shape_species.append(int(item[0]))
@@ -1969,7 +2218,7 @@ func _apply_step(job: Dictionary) -> bool:
 	# A berry bush draws the models of the game's season (ripe berries, blossom, bare canes) and, once picked, the stripped ones (TreeBuilder.build's
 	# season and stripped flags, Kathleen). Until the worker has built a season's models the plain ones above are used.
 	if fruiting.has(str(_slugs.get(key[0], ""))):
-		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if bool(key[5]) else 0], {})
+		var seasonal: Dictionary = _seasonal.get("%s|%d" % [season, 1 if key.size() > 5 and bool(key[5]) else 0], {})   # a proxy-tier key has no stripped flag (5 entries)
 
 		if seasonal.has(key[0]):
 			var wanted_set: Array = seasonal[key[0]]
@@ -2018,8 +2267,14 @@ func _decimate_task(wanted: Array) -> void:
 
 		for surface in range(mesh.get_surface_count()):
 			var arrays: Array = mesh.surface_get_arrays(surface)
+			var index: Variant = arrays[Mesh.ARRAY_INDEX]
+
+			if not index is PackedInt32Array:      # a surface without indices cannot be simplified: keep the full model
+				triangles = -1
+				break
+
 			@warning_ignore("integer_division")
-			triangles += (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			triangles += (index as PackedInt32Array).size() / 3
 			arrays_list.append(arrays)
 			materials.append(mesh.surface_get_material(surface))
 
@@ -2078,6 +2333,20 @@ func _trunk_shape(radius: float) -> CylinderShape3D:
 		shape.radius = float(key) / 100.0
 		shape.height = 3.0
 		_trunk_shapes[key] = shape
+
+	return shape
+
+
+# One shared capsule per radius and length (to the centimetre) for fallen logs; it stands upright, the caller lays it along the log.
+func _log_shape(radius: float, length: float) -> CapsuleShape3D:
+	var key: int = int(round(radius * 100.0)) * 100000 + int(round(length * 10.0))
+	var shape: CapsuleShape3D = _trunk_shapes.get(-key)
+
+	if shape == null:
+		shape = CapsuleShape3D.new()
+		shape.radius = radius
+		shape.height = maxf(float(int(round(length * 10.0))) / 10.0, radius * 2.0)
+		_trunk_shapes[-key] = shape
 
 	return shape
 
@@ -2167,6 +2436,30 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 		return Color(1.0, 1.0, 1.0)   # modelled with its own colours (tree_builder MUSHROOM_LOOKS)
 
 	return _natural(base) * 1.5
+
+
+# The season of a day of the year (0 to 364), as GameClock.season() names it.
+static func season_of_day(day: int) -> String:
+	return ["spring", "summer", "autumn", "winter"][clampi(posmod(day, 365) * 4 / 365, 0, 3)]
+
+
+# A hardwood's leaf tint for the season the view was told: fresh yellow-green in spring, the species' green in summer, its autumn colour in autumn
+# (before any season is known: autumn, as before), brown dead leaves in winter (trees with a winter-bare model draw that instead).
+# data/look/seasons.json is the contract; the per-tree variation stays fixed by the tree's id.
+func _leaf_tint(id: int, info: Dictionary) -> Color:
+	var autumn: Color = _autumn_tint(id, info.get("autumn", AUTUMN))
+	var jitter: float = 0.9 + 0.2 * float(((id * 2654435761) & 0x7fffffff) % 1000) / 1000.0
+	var green: Color = (info["tint"] as Color) * jitter
+
+	match season:
+		"spring":
+			return green * Color(1.25, 1.3, 0.8)
+		"summer":
+			return green
+		"winter":
+			return autumn.lerp(Color(0.62, 0.46, 0.3) * 1.5, 0.7)
+
+	return autumn
 
 
 # The leaf tint for a hardwood tree: its autumn color, scaled up because the

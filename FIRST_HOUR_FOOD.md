@@ -1,0 +1,54 @@
+# First-hour food (Sal, 2026-10-31)
+
+Numbers read from data/items/vitals.json, drops.json, spoilage.json, weights.json and the orchard rows (fruit_tree). A game day is one real hour; the world starts on day 100, early summer.
+
+## The hunger clock
+- Stomach holds 2400 kcal (cap) plus 25 percent overeat (3000). A new character starts full.
+- Burn per game day (real hour): rest 22 kcal per kg of body weight x 75 kg = **1650 kcal**, plus work 1500 x exertion (0 to 1). Ordinary walking and chopping (exertion about 0.3 to 0.6) burns **2100 to 2550 kcal an hour**. A full stomach therefore lasts **about 55 to 70 minutes** of normal play, and about 45 minutes of hard work. This matches the "hunger reaches 0 near 55 minutes" in the test log: it is the design, not a bug.
+- Empty stomach: weight drops (7700 kcal per kg), health stops regenerating; nothing kills (vitals.json note). So a player who lights the first fire at minute 15 to 20 does not starve; he is hungry from about minute 55.
+- One bite takes 0.8 s (eat_pace_ms 800).
+
+## What a new player can eat in the first hour, near the spawn (early summer)
+| Food | Where | kcal each | How many to fill the stomach (2400) | Notes |
+|---|---|---|---|---|
+| Raspberries, blueberries, strawberries | bushes (one E gives up to 150 per bush; scaled by plant size) | **4** (suffix "berries", was 90) | 600 berries | one bush of 150 = 600 kcal, about a quarter of a stomach (a snack); a berry weighs 4 g |
+| Early summer apples | orchard near the spawn (30 to 80 per tree, 5 per press, limited by pack weight) | 110 | 22 apples | weight 0.15 kg each: 22 apples = 3.3 kg. Spoil in 72 game hours (3 real hours) |
+| Summer apples, summer pears, plums, sour cherries | orchard | 120, 105, 70, 75 | 20, 23, 34, 32 | spoil in 7, 4, 4 and 2 game days |
+| Crab apples, wild pears, cherries (wild) | forest trees | 120 (suffix "apples", "pears", "cherries") | 20 | autumn |
+| Hazelnuts, acorns | trees | 200, 150 | 12, 16 | autumn only |
+| Raw meat (rabbit gives 1 to 2) | hunt with the spear, dress with the knife | 250 raw, 700 roasted | 3.4 roast | needs a fire; raw meat makes you sick |
+| Fish (trout) | pond with a rod or net | 220 raw, 650 roasted | 3.7 roast | needs a fire |
+| Roast forage (berries/nuts/roots at the fire) | fire | 400 | 6 | the starter cooked item |
+| Smoked fish, dried apples, trail bread | later | 700, 280, 950 | | for storing |
+
+## Timeline of a typical first hour
+- Minute 0: stomach 2400, thirst full.
+- Minute 15 to 20: first fire (needs about 17 minutes by my estimate).
+- Minute 20 to 40: berries and apples are free calories any time; a rabbit gives one roast meal.
+- Minute 55 to 70: stomach near empty with normal activity. By then the player must have eaten once: any of the foods above refills a third to the whole stomach in a few bites.
+
+## Findings and data changes
+1. **Apples are about right:** 110 to 125 kcal is a real apple; one bite is 5 percent of the stomach, a handful of 8 to 10 is a snack, 22 a full meal. No change.
+2. **Early apple rots in 3 real hours:** the item description now says "it keeps only 3 game days" (and the others name "game days" as the unit). The hint "Ripe fruit spoils fast. Eat it soon" fires when fruit is in the pack.
+3. **Berries were 90 kcal each, out of scale** (a real berry is about 2 to 4 kcal). One bush gave 13,500 kcal. **Changed on 2026-10-31 by the moderator's decision for Dave (reversible): `vitals.json food.by_suffix.berries` 90 -> 4**; bush yields unchanged, so a bush of 150 is 600 kcal, a snack. Dave can overturn it by setting the number back. The other per-piece fruit and nut numbers (hips 60, haws 70, hazelnuts 200, acorns 150) were left alone.
+4. Starting food: the character starts with a full stomach and nothing in the pack; nothing in the data blocks the first meal.
+
+## Loophole closed in the same change (2026-10-31)
+Roasting at a fire turned ONE raw forage item into one Roast forage (400 kcal): a 4 kcal berry became 400 kcal, so a bush of 150 roasted to 60,000 kcal and undid the berry fix. Berries now roast into **Stewed berries** (item 483, 10 kcal, 144 hours shelf life, same warmth as a hot meal) through per-berry rows in cooking.json `cooks_into`; nuts, roots, caps and the rest still roast into Roast forage (400 kcal). A bush of 150 berries stewed is 1,500 kcal, about two thirds of a stomach: a real meal for the effort of cooking, no longer a free week of food. Tests updated: test_server_items (three checks now expect Stewed berries for blueberries).
+
+## Campfire cooks only meat (Dave, 2026-10-31)
+`cooking.json cookable_suffixes` is now empty and the berry and egg rows are gone from `cooks_into`: pressing E at a campfire roasts only raw meat (roast meat), fish (roast fish), shellfish and crab meat (steamed shellfish) and seal meat. Plants are cooked in a pot or on a clay hearth:
+- Berries: pot recipes Stewed berries (3 raspberries, blueberries, blackberries or strawberries + water give 2).
+- Nuts, caps, bananas, fiddleheads, pears: clay hearth recipes Roast forage (3 hazelnuts, chestnuts, walnuts, beechnuts, morels, fiddleheads or pears, or 2 bananas give 2; Campfire Stew item).
+- Roots and mushrooms: Roast Roots and Mushroom skewer moved to the clay hearth. Acorn mash and berry compote were already pot recipes.
+- Eggs: Boiled egg is a pot recipe (2 eggs + water give 2).
+- Nettles: now give 1-2 plant fibre and 2-4 Nettles per plant; Nettle tea is a pot recipe (3 nettles + water); Forager's stew and Egg and nettle fry use Nettles.
+Effect on the first hour: until the player has a pot, the only things a fire cooks are meat and fish; berries and apples are eaten raw (4 and 110 kcal). Other plant dishes still marked campfire in dishes.json (baked apples, trail bread, dried fruit, baked potato and similar) are open to Dave's ruling; I moved only roast roots and mushroom skewer.
+
+## All plant dishes moved off the campfire (Dave, 2026-10-31)
+Meat and fish dishes stay on the campfire (herb fish, garlic meat, smoked fish, juniper trout, jerky, crab cakes, feast roast). Every plant or egg dish now needs a pot or a hearth:
+- **Campfire pot:** soups, stews, porridge, jams, paste and boiled or fried egg things: berry compote, nut paste, acorn mash, hazelnut butter, forager's stew, hearty pottage (already), egg and nettle fry, herb omelette, plus the 4 stewed-berries and boiled-egg recipes.
+- **Clay hearth** (needs 10 bricks; bricks come from clay at a campfire): baked and roasted things and drying: baked apples, baked potato, beet roast, onion roast, chestnut cakes, trail bread, banana fritter, cactus fry, fruit leather, dried berries, dried apples, dried figs, roast roots, mushroom skewer, Campfire Stew from nuts and caps, flatbread, garlic bread, oat cakes.
+- **Oven:** pies and loaves (apple pie, venison pie, fish pie, honey loaf, rosemary joint).
+- **Drying rack:** does not exist as a station; drying food uses the clay hearth until a rack is built.
+Consequence for the first hour: before the player has a pot (clay pot kit + sticks + twine) and a hearth, the only cooked food is meat and fish; berries, apples and nuts are eaten raw. The pot is an early item; the hearth needs bricks, so baked plant food arrives in the first day or two.

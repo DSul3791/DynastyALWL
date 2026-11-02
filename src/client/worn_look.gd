@@ -7,7 +7,16 @@ extends RefCounted
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
-const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack"]
+const BUILDERS := ["cloak", "hood", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded"]
+const HUMANOID_NAMES := {
+	"hips": "Hips", "chest": "Chest", "head": "Head",
+	"hand_r": "RightHand", "hand_l": "LeftHand", "forearm_r": "RightLowerArm", "forearm_l": "LeftLowerArm", "arm_r": "RightUpperArm", "arm_l": "LeftUpperArm",
+	"thigh_r": "RightUpperLeg", "thigh_l": "LeftUpperLeg", "shin_r": "RightLowerLeg", "shin_l": "LeftLowerLeg", "foot_r": "RightFoot", "foot_l": "LeftFoot",
+}
+
+# Builders that replace the placeholder one a worn.json row still names (Kathleen, Sal's request for a sleeved shirt, sewn trousers and fingered gloves):
+# item id -> builder. Applied only while the row uses the old placeholder builder, so a later worn.json edit wins.
+const BUILDER_OVERRIDES := {"hide_tunic": ["cloak", "tunic"], "hide_trousers": ["leggings", "trousers"], "hide_gloves": ["mittens", "gloves"]}
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
@@ -22,6 +31,10 @@ static func table() -> Dictionary:
 
 		if parsed is Dictionary:
 			_table = parsed.get("items", {})
+
+		for item_id in BUILDER_OVERRIDES:
+			if _table.has(item_id) and str(_table[item_id].get("builder", "")) == str(BUILDER_OVERRIDES[item_id][0]):
+				_table[item_id]["builder"] = BUILDER_OVERRIDES[item_id][1]
 
 	return _table
 
@@ -51,6 +64,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		if row.is_empty():
 			continue
 
+		# A body can list builders it already draws itself (the generated body has its tunic and trousers in its mesh): those items add no separate pieces.
+		if str(row.get("builder", "")) in (rig.get_meta("worn_skip_builders", []) as Array):
+			continue
+
 		var out: float = float(int(row.get("layer", 1))) * LAYER_M
 
 		for part in parts_of(str(row["builder"]), out, bool(row.get("fringe", false))):
@@ -58,6 +75,11 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 				continue
 
 			var bone: String = str(part["bone"])
+
+			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
+			# when the skeleton has no bone of the old name. The old body is untouched by this.
+			if skeleton.find_bone(bone) < 0 and HUMANOID_NAMES.has(bone):
+				bone = str(HUMANOID_NAMES[bone])
 
 			if not anchors.has(bone):
 				var anchor: BoneAttachment3D = BoneAttachment3D.new()
@@ -69,7 +91,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			var node: MeshInstance3D = MeshInstance3D.new()
 			node.mesh = _mesh(str(part["shape"]))
 			node.material_override = _material(Color.html(str(row["color"])).darkened(float(part.get("dark", 0.0))))
-			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled(part["size"]), part["at"])
+			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
+			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
+			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
+			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
 
@@ -165,6 +190,93 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 				out.append(_p("hand_" + side, "sphl", Vector3(0.0, -0.07, 0.0), Vector3(0.1 + o * 2.0, 0.17 + o * 2.0, 0.075 + o * 2.0)))
 				out.append(_p("hand_" + side, "sphl", Vector3(0.0, -0.17, 0.0), Vector3(0.095 + o * 2.0, 0.07, 0.07), Vector3.ZERO, true))
 				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.22, 0.0), Vector3(0.1 + o * 2.0, 0.07, 0.1 + o * 2.0), Vector3.ZERO, true, 0.15))
+		"tunic":
+			# A hide tunic: a sleeved shirt of sewn hide over the chest and hips, loose sleeves to the wrist, a rope belt, a round neck with a short lace opening at the front.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.38 + o * 2.0, 0.5, 0.27 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.07, 0.0), Vector3(0.42 + o * 2.0, 0.28, 0.3 + o * 2.0), Vector3.ZERO, false, 0.04))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.04, 0.0), Vector3(0.4 + o * 2.0, 0.045, 0.285 + o * 2.0), Vector3.ZERO, false, 0.4))
+
+			for side in ["r", "l"]:
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.125 + o * 2.0, 0.32, 0.125 + o * 2.0)))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.105 + o * 2.0, 0.25, 0.105 + o * 2.0), Vector3.ZERO, false, 0.04))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.245, 0.0), Vector3(0.11 + o * 2.0, 0.025, 0.11 + o * 2.0), Vector3.ZERO, true, 0.3))
+
+			out.append(_p("chest", "cyl", Vector3(0.0, 0.25, 0.0), Vector3(0.17 + o * 2.0, 0.05, 0.17 + o * 2.0), Vector3.ZERO, true, 0.25))
+			out.append(_p("chest", "box", Vector3(0.0, 0.2, -0.135 - o), Vector3(0.025, 0.1, 0.012), Vector3.ZERO, true, 0.4))
+		"helm":
+			# A helmet (refs: Bronze Age and Viking spectacle-free round helms, medieval kettle caps): a skull dome, a rolled rim round the brow, a nasal bar down the face and a small crest ridge.
+			out.append(_p("head", "sph", Vector3(0.0, 0.13, 0.04), Vector3(0.29 + o * 2.0, 0.27 + o * 2.0, 0.3 + o * 2.0)))
+			out.append(_p("head", "cyl", Vector3(0.0, 0.05, 0.035), Vector3(0.31 + o * 2.0, 0.035, 0.32 + o * 2.0), Vector3.ZERO, true, 0.25))
+			out.append(_p("head", "box", Vector3(0.0, 0.07, -0.125 - o), Vector3(0.025, 0.1, 0.012), Vector3.ZERO, true, 0.2))
+			out.append(_p("head", "box", Vector3(0.0, 0.26, 0.04), Vector3(0.02, 0.04, 0.26), Vector3.ZERO, true, 0.2))
+		"jerkin":
+			# A sleeveless leather jerkin (refs: boiled-leather jerkins): a torso tube with a lower skirt flare, shoulder straps, a laced front seam and a belt.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.39 + o * 2.0, 0.5, 0.28 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.06, 0.0), Vector3(0.44 + o * 2.0, 0.26, 0.32 + o * 2.0), Vector3.ZERO, false, 0.06))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.04, 0.0), Vector3(0.41 + o * 2.0, 0.04, 0.29 + o * 2.0), Vector3.ZERO, true, 0.4))
+			out.append(_p("chest", "box", Vector3(0.0, 0.0, -0.145 - o), Vector3(0.025, 0.42, 0.012), Vector3.ZERO, true, 0.4))
+
+			for side in [-1.0, 1.0]:
+				out.append(_p("chest", "box", Vector3(0.13 * side, 0.26, 0.0), Vector3(0.07, 0.05, 0.3 + o * 2.0), Vector3.ZERO, true, 0.15))
+		"mailshirt":
+			# A mail shirt (refs: Norman and Viking byrnies): a torso tube and short sleeves to the elbow, a skirt to mid-thigh, and rows of ring bands that catch the light.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.4 + o * 2.0, 0.5, 0.29 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.1, 0.0), Vector3(0.45 + o * 2.0, 0.34, 0.33 + o * 2.0), Vector3.ZERO, false, 0.05))
+
+			for k in range(5):
+				out.append(_p("chest", "cyl", Vector3(0.0, 0.18 - 0.1 * float(k), 0.0), Vector3(0.405 + o * 2.0, 0.012, 0.295 + o * 2.0), Vector3.ZERO, true, 0.3))
+
+			for side in ["r", "l"]:
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.1, 0.0), Vector3(0.13 + o * 2.0, 0.22, 0.13 + o * 2.0)))
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.2, 0.0), Vector3(0.135 + o * 2.0, 0.015, 0.135 + o * 2.0), Vector3.ZERO, true, 0.3))
+
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.27, 0.0), Vector3(0.455 + o * 2.0, 0.02, 0.335 + o * 2.0), Vector3.ZERO, true, 0.3))
+		"cuirass":
+			# A plate cuirass (refs: 15th century breastplates): a rounded breast and back plate with a ridge down the middle, shoulder plates, an overlapping waist band and short tassets over the hips.
+			out.append(_p("chest", "sph", Vector3(0.0, 0.03, -0.01), Vector3(0.4 + o * 2.0, 0.46, 0.3 + o * 2.0)))
+			out.append(_p("chest", "box", Vector3(0.0, 0.03, -0.155 - o), Vector3(0.03, 0.4, 0.02), Vector3.ZERO, true, 0.2))
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.4 + o * 2.0, 0.09, 0.285 + o * 2.0), Vector3.ZERO, true, 0.15))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.08, 0.0), Vector3(0.43 + o * 2.0, 0.1, 0.31 + o * 2.0), Vector3.ZERO, false, 0.05))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.17, 0.0), Vector3(0.45 + o * 2.0, 0.09, 0.325 + o * 2.0), Vector3.ZERO, true, 0.1))
+
+			for side in [-1.0, 1.0]:
+				out.append(_p("chest", "sphl", Vector3(0.22 * side, 0.22, 0.0), Vector3(0.16, 0.1, 0.2 + o * 2.0), Vector3(0.0, 0.0, 0.3 * side), false, 0.03))
+		"padded":
+			# A quilted gambeson (refs: arming doublets): a thick sleeved torso with vertical quilting lines, a high collar, and long sleeves to the wrist.
+			out.append(_p("chest", "cyl", Vector3(0.0, -0.04, 0.0), Vector3(0.41 + o * 2.0, 0.5, 0.3 + o * 2.0)))
+			out.append(_p("hips", "cyl", Vector3(0.0, -0.08, 0.0), Vector3(0.45 + o * 2.0, 0.3, 0.33 + o * 2.0), Vector3.ZERO, false, 0.03))
+			out.append(_p("chest", "cyl", Vector3(0.0, 0.26, 0.0), Vector3(0.2 + o * 2.0, 0.08, 0.2 + o * 2.0), Vector3.ZERO, true, 0.12))
+
+			for k in range(5):
+				out.append(_p("chest", "box", Vector3(-0.16 + 0.08 * float(k), -0.02, -0.15 - o), Vector3(0.01, 0.44, 0.012), Vector3.ZERO, true, 0.2))
+
+			for side in ["r", "l"]:
+				out.append(_p("arm_" + side, "cyl", Vector3(0.0, -0.15, 0.0), Vector3(0.14 + o * 2.0, 0.32, 0.14 + o * 2.0)))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.12, 0.0), Vector3(0.115 + o * 2.0, 0.25, 0.115 + o * 2.0), Vector3.ZERO, false, 0.03))
+		"trousers":
+			# Sewn hide trousers: a waistband with a cord, a seat and two full legs, a darker seam down the outside of each leg and a turned cuff at each ankle.
+			out.append(_p("hips", "cyl", Vector3(0.0, 0.03, 0.0), Vector3(0.38 + o * 2.0, 0.07, 0.27 + o * 2.0), Vector3.ZERO, false, 0.3))
+			out.append(_p("hips", "sphl", Vector3(0.0, -0.06, 0.0), Vector3(0.36 + o * 2.0, 0.22, 0.27 + o * 2.0)))
+
+			for side in ["r", "l"]:
+				var sx: float = 1.0 if side == "r" else -1.0
+				out.append(_p("thigh_" + side, "cyl", Vector3(0.0, -0.22, 0.0), Vector3(0.195 + o * 2.0, 0.46, 0.195 + o * 2.0)))
+				out.append(_p("shin_" + side, "cyl", Vector3(0.0, -0.2, 0.0), Vector3(0.155 + o * 2.0, 0.4, 0.155 + o * 2.0), Vector3.ZERO, false, 0.04))
+				out.append(_p("shin_" + side, "sphl", Vector3.ZERO, Vector3(0.165 + o * 2.0, 0.16, 0.165 + o * 2.0)))
+				out.append(_p("thigh_" + side, "box", Vector3(sx * (0.095 + o), -0.22, 0.0), Vector3(0.01, 0.44, 0.02), Vector3.ZERO, true, 0.3))
+				out.append(_p("shin_" + side, "cyl", Vector3(0.0, -0.385, 0.0), Vector3(0.17 + o * 2.0, 0.04, 0.17 + o * 2.0), Vector3.ZERO, true, 0.25))
+		"gloves":
+			# Hide gloves: a palm and back of the hand, four separate fingers and a thumb standing out at an angle, and a short cuff over the wrist.
+			for side in ["r", "l"]:
+				out.append(_p("hand_" + side, "sphl", Vector3(0.0, -0.05, 0.0), Vector3(0.095 + o * 2.0, 0.11 + o * 2.0, 0.05 + o * 2.0)))
+
+				for k in range(4):
+					var fx: float = -0.034 + 0.0227 * float(k)
+					var flen: float = 0.085 - 0.012 * absf(float(k) - 1.5) * 0.7
+					out.append(_p("hand_" + side, "cyl", Vector3(fx, -0.1 - flen * 0.5, 0.0), Vector3(0.021 + o * 2.0, flen, 0.024 + o * 2.0), Vector3.ZERO, true))
+
+				out.append(_p("hand_" + side, "cyl", Vector3(0.0, -0.075, -0.04), Vector3(0.024 + o * 2.0, 0.07, 0.024 + o * 2.0), Vector3(0.9, 0.0, 0.0), true))
+				out.append(_p("forearm_" + side, "cyl", Vector3(0.0, -0.215, 0.0), Vector3(0.11 + o * 2.0, 0.09, 0.11 + o * 2.0), Vector3.ZERO, false, 0.2))
 		"skirt":
 			# A ring of hanging blades (cones point down when flipped) in two rows round the waist.
 			out.append(_p("hips", "cyl", Vector3(0.0, 0.05, 0.0), Vector3(0.4 + o * 2.0, 0.06, 0.28 + o * 2.0), Vector3.ZERO, false, 0.2))

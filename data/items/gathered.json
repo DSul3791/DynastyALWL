@@ -35,6 +35,7 @@
 		},
 		"amadou": {
 			"number": 1002,
+			"future": true,
 			"name": "Amadou",
 			"kind": "material",
 			"stack": 20,
@@ -61,6 +62,7 @@
 		},
 		"angelica_stems": {
 			"number": 1004,
+			"future": true,
 			"name": "Angelica stems",
 			"kind": "material",
 			"stack": 20,
@@ -88,6 +90,7 @@
 		},
 		"banana_leaves": {
 			"number": 1006,
+			"future": true,
 			"name": "Banana leaves",
 			"kind": "material",
 			"stack": 20,
@@ -214,7 +217,7 @@
 				"Deadly nightshade"
 			],
 			"familiarity": 95,
-			"description": "Small blue berries from low bushes. Sweet, and they stain the fingers."
+			"description": "Small blue berries from low bushes. Ripe in summer."
 		},
 		"brinebells": {
 			"number": 1016,
@@ -245,6 +248,7 @@
 		},
 		"burrs": {
 			"number": 1018,
+			"future": true,
 			"name": "Burrs",
 			"kind": "material",
 			"stack": 20,
@@ -260,6 +264,7 @@
 		},
 		"cactus_pads": {
 			"number": 1019,
+			"future": true,
 			"name": "Cactus pads",
 			"kind": "material",
 			"stack": 20,
@@ -280,7 +285,7 @@
 				"Yarrow"
 			],
 			"familiarity": 25,
-			"description": "Small white daisies with yellow centres. A calming tea."
+			"description": "Small white daisies. Make a calming tea."
 		},
 		"chanterelles": {
 			"number": 1021,
@@ -297,6 +302,7 @@
 		},
 		"charcoal_wood": {
 			"number": 1022,
+			"future": true,
 			"name": "Charcoal wood",
 			"kind": "material",
 			"stack": 20,
@@ -326,6 +332,7 @@
 		},
 		"cherry_wood": {
 			"number": 1024,
+			"future": true,
 			"name": "Cherry wood",
 			"kind": "material",
 			"stack": 20,
@@ -403,10 +410,11 @@
 				"Mugwort"
 			],
 			"familiarity": 25,
-			"description": "Rough hairy leaves of comfrey. Bruised and bound on sprains as a poultice."
+			"description": "Rough hairy leaves. Bruise and bind on sprains."
 		},
 		"comfrey_roots": {
 			"number": 1030,
+			"future": true,
 			"name": "Comfrey roots",
 			"kind": "material",
 			"stack": 20,
@@ -431,7 +439,7 @@
 				"Hawthorn"
 			],
 			"familiarity": 85,
-			"description": "Hard sour little apples. Cooked down with honey they are good."
+			"description": "Hard, sour little green apples. Edible raw, better cooked with honey."
 		},
 		"cranberries": {
 			"number": 1032,
@@ -604,6 +612,7 @@
 		},
 		"elderflowers": {
 			"number": 1044,
+			"future": true,
 			"name": "Elderflowers",
 			"kind": "material",
 			"stack": 20,
@@ -630,6 +639,7 @@
 		},
 		"everember_needles": {
 			"number": 1046,
+			"future": true,
 			"name": "Everember needles",
 			"kind": "material",
 			"stack": 20,
@@ -643,6 +653,7 @@
 		},
 		"everember_sap": {
 			"number": 1047,
+			"future": true,
 			"name": "Everember sap",
 			"kind": "material",
 			"stack": 20,
@@ -656,6 +667,7 @@
 		},
 		"everember_wood": {
 			"number": 1048,
+			"future": true,
 			"name": "Everember wood",
 			"kind": "material",
 			"stack": 20,
@@ -681,6 +693,7 @@
 		},
 		"fibre": {
 			"number": 1050,
+			"future": true,
 			"name": "Fibre",
 			"kind": "material",
 			"stack": 20,
@@ -708,6 +721,7 @@
 		},
 		"fine_wood": {
 			"number": 1052,
+			"future": true,
 			"name": "Fine wood",
 			"kind": "material",
 			"stack": 20,
@@ -827,6 +841,7 @@
 		},
 		"greens": {
 			"number": 1061,
+			"future": true,
 			"name": "Greens",
 			"kind": "material",
 			"stack": 20,
@@ -839,6 +854,7 @@
 		},
 		"gum": {
 			"number": 1062,
+			"future": true,
 			"name": "Gum",
 			"kind": "material",
 			"stack": 20,
@@ -875,6 +891,7 @@
 		},
 		"hard_wood": {
 			"number": 1065,
+			"future": true,
 			"name": "Hard wood",
 			"kind": "material",
 			"stack": 20,
@@ -891,6 +908,7 @@
 		},
 		"hardwood": {
 			"number": 1066,
+			"future": true,
 			"name": "Hardwood",
 			"kind": "material",
 			"stack": 20,
@@ -922,6 +940,7 @@
 		},
 		"hawthorn_blossom": {
 			"number": 1068,
+			"future": true,
 			"name": "Hawthorn blossom",
 			"kind": "material",
 			"stack": 20,
@@ -951,6 +970,7 @@
 		},
 		"hearthwood_logs": {
 			"number": 1070,
+			"future": true,
 			"name": "Hearthwood logs",
 			"kind": "material",
 			"stack": 20,
@@ -1093,7 +1113,7 @@
 				"Sea buckthorn"
 			],
 			"familiarity": 70,
-			"description": "Thin dry twigs and shavings that catch quickly. The start of any fire."
+			"description": "Thin dry twigs. The start of any fire."
 		},
 		"lantern_dew": {
 			"number": 1081,
@@ -1231,6 +1251,7 @@
 		},
 		"mirrorbark_bark": {
 			"number": 1091,
+			"future": true,
 			"name": "Mirrorbark bark",
 			"kind": "material",
 			"stack": 20,
@@ -1245,6 +1266,7 @@
 		},
 		"mirrorbark_wood": {
 			"number": 1092,
+			"future": true,
 			"name": "Mirrorbark wood",
 			"kind": "material",
 			"stack": 20,
@@ -1325,6 +1347,7 @@
 		},
 		"oil": {
 			"number": 1098,
+			"future": true,
 			"name": "Oil",
 			"kind": "material",
 			"stack": 20,
@@ -1350,6 +1373,7 @@
 		},
 		"palm_fronds": {
 			"number": 1100,
+			"future": true,
 			"name": "Palm fronds",
 			"kind": "material",
 			"stack": 20,
@@ -1362,6 +1386,7 @@
 		},
 		"palm_wood": {
 			"number": 1101,
+			"future": true,
 			"name": "Palm wood",
 			"kind": "material",
 			"stack": 20,
@@ -1419,10 +1444,11 @@
 				"Wild flax"
 			],
 			"familiarity": 55,
-			"description": "Broad ribbed leaves of the common plantain. Chewed and applied to stings and cuts."
+			"description": "Broad ribbed leaves. Chew and bind on stings and cuts."
 		},
 		"poles": {
 			"number": 1106,
+			"future": true,
 			"name": "Poles",
 			"kind": "material",
 			"stack": 20,
@@ -1508,10 +1534,11 @@
 				"Tanglewort"
 			],
 			"familiarity": 96,
-			"description": "Soft red berries that crumble when picked. Sweet when fully ripe."
+			"description": "Soft red berries that crumble when picked. Ripe in summer."
 		},
 		"raspberry_leaves": {
 			"number": 1113,
+			"future": true,
 			"name": "Raspberry leaves",
 			"kind": "material",
 			"stack": 20,
@@ -1669,6 +1696,7 @@
 		},
 		"sap": {
 			"number": 1124,
+			"future": true,
 			"name": "Sap",
 			"kind": "material",
 			"stack": 20,
@@ -1695,6 +1723,7 @@
 		},
 		"seeds": {
 			"number": 1126,
+			"future": true,
 			"name": "Seeds",
 			"kind": "material",
 			"stack": 20,
@@ -1769,6 +1798,7 @@
 		},
 		"softwood": {
 			"number": 1131,
+			"future": true,
 			"name": "Softwood",
 			"kind": "material",
 			"stack": 20,
@@ -1831,7 +1861,7 @@
 				"Echo moss"
 			],
 			"familiarity": 40,
-			"description": "Soft spongy moss that stops bleeding when packed on a wound."
+			"description": "Spongy moss that stops bleeding when packed on a wound."
 		},
 		"stillwater_petals": {
 			"number": 1136,
@@ -1986,10 +2016,11 @@
 				"Duskmallow"
 			],
 			"familiarity": 100,
-			"description": "Dried grass, reed or bark in bundles. Roofs and walls are made of it."
+			"description": "Bundled dry grass and reed. Roofs, walls and beds are made of it."
 		},
 		"thorny_canes": {
 			"number": 1147,
+			"future": true,
 			"name": "Thorny canes",
 			"kind": "material",
 			"stack": 20,
@@ -2005,6 +2036,7 @@
 		},
 		"thorny_wood": {
 			"number": 1148,
+			"future": true,
 			"name": "Thorny wood",
 			"kind": "material",
 			"stack": 20,
@@ -2064,6 +2096,7 @@
 		},
 		"timber": {
 			"number": 1152,
+			"future": true,
 			"name": "Timber",
 			"kind": "material",
 			"stack": 20,
@@ -2088,7 +2121,7 @@
 				"Wild flax"
 			],
 			"familiarity": 100,
-			"description": "Fine dry stuff that takes a spark."
+			"description": "Fine dry stuff that takes a spark. Two thatch make two."
 		},
 		"tinder_fungus": {
 			"number": 1154,
@@ -2133,6 +2166,7 @@
 		},
 		"walnut_husks": {
 			"number": 1157,
+			"future": true,
 			"name": "Walnut husks",
 			"kind": "material",
 			"stack": 20,
@@ -2163,6 +2197,7 @@
 		},
 		"wardpine_resin": {
 			"number": 1159,
+			"future": true,
 			"name": "Wardpine resin",
 			"kind": "material",
 			"stack": 20,
@@ -2175,6 +2210,7 @@
 		},
 		"wardpine_wood": {
 			"number": 1160,
+			"future": true,
 			"name": "Wardpine wood",
 			"kind": "material",
 			"stack": 20,
@@ -2238,7 +2274,7 @@
 				"Marrowroot"
 			],
 			"familiarity": 65,
-			"description": "Thin pale roots of wild carrot, tough but sweet. Cooked or chewed raw."
+			"description": "Thin pale roots, tough but sweet. Cook them or chew them raw."
 		},
 		"wild_garlic_bulbs": {
 			"number": 1165,
@@ -2287,7 +2323,7 @@
 				"Hag willow"
 			],
 			"familiarity": 92,
-			"description": "Grey-brown bark of willow, bitter. Steeped it eases pain and fever."
+			"description": "Bitter grey bark. Steeped, it eases pain and fever."
 		},
 		"wispbloom_heads": {
 			"number": 1169,
@@ -2318,6 +2354,7 @@
 		},
 		"witness_bark": {
 			"number": 1171,
+			"future": true,
 			"name": "Witness bark",
 			"kind": "material",
 			"stack": 20,
@@ -2333,6 +2370,7 @@
 		},
 		"witness_leaves": {
 			"number": 1172,
+			"future": true,
 			"name": "Witness leaves",
 			"kind": "material",
 			"stack": 20,
@@ -2361,6 +2399,7 @@
 		},
 		"wood": {
 			"number": 1174,
+			"future": true,
 			"name": "Wood",
 			"kind": "material",
 			"stack": 20,

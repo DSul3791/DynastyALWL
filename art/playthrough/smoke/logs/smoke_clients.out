@@ -1,0 +1,17 @@
+server started, waiting 60 s
+arrival: ran in 27 s, 93 lines
+gather: ran in 91 s, 113 lines
+plantpick: ran in 52 s, 113 lines
+chop: ran in 116 s, 101 lines
+fire: ran in 57 s, 103 lines
+cook: ran in 53 s, 159 lines
+leanto: ran in 38 s, 91 lines
+sleep: ran in 50 s, 100 lines
+spear: ran in 50 s, 149 lines
+creatures: ran in 52 s, 126 lines
+snare: ran in 50 s, 91 lines
+chest: ran in 32 s, 88 lines
+quickkeys: ran in 32 s, 100 lines
+eat: ran in 61 s, 223 lines
+placed: ran in 43 s, 92 lines
+walk: ran in 291 s, 104 lines

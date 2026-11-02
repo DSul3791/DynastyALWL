@@ -1,0 +1,105 @@
+diff --git a/scenes/launcher.gd b/scenes/launcher.gd
+index fa075c48..755d2dfc 100644
+--- a/scenes/launcher.gd
++++ b/scenes/launcher.gd
+@@ -1,5 +1,7 @@
+ extends Node
+ 
++const WaterChoice := preload("res://src/water2/water_choice.gd")
++
+ const RUN_NOTE := "user://server_run.json"
+ 
+ 
+@@ -62,6 +64,10 @@ func _host_and_play() -> void:
+ 		"--",
+ 		"--quit-when-empty",
+ 	])
++
++	if WaterChoice.old_water():
++		arguments.append("--water-old")   # Esc > Settings > Gameplay > Old water (Dynasty water is the default)
++
+ 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
+ 
+ 	if pid < 0:
+diff --git a/scenes/terrain_server/terrain_server.gd b/scenes/terrain_server/terrain_server.gd
+index 1dd34d76..6a5d7df9 100644
+--- a/scenes/terrain_server/terrain_server.gd
++++ b/scenes/terrain_server/terrain_server.gd
+@@ -53,7 +53,7 @@ const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
+ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+ const FloraStoreScript := preload("res://src/stream/server_flora.gd")
+ const WaterHubScript := preload("res://src/water/water_hub.gd")
+-const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): --water2 swaps it in for the old hub; the old one stays the default
++const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the default since 1 Nov 2026; --water-old runs the old hub (src/water) instead
+ const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+ const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
+ const ItemTableScript := preload("res://src/shared/item_table.gd")
+@@ -721,7 +721,7 @@ func _start_water() -> void:
+ 	# play-test (a dry start needed 6 simulated hours before the rivers ran and left broken patches meanwhile; Owner's old choice of 2026-10-18). --dry-water brings the dry start back
+ 	# (the springs fill the land, the real water paths show), --settled-water is still accepted. The hub runs the starter tile and the neighbours its rivers cross into.
+ 	var dry_start: bool = OS.get_cmdline_user_args().has("--dry-water") and not OS.get_cmdline_user_args().has("--settled-water")
+-	water_live = WaterHub2Script.new() if OS.get_cmdline_user_args().has("--water2") else WaterHubScript.new()
++	water_live = WaterHubScript.new() if OS.get_cmdline_user_args().has("--water-old") else WaterHub2Script.new()
+ 	water_live.setup(water_tile, "%s/water" % _world_dir, WATER_BASE_RATE, generator, dry_start)
+ 
+ 	# Saved digs and fills shape the water's ground again after every restart and re-bake.
+diff --git a/src/client/game_menu.gd b/src/client/game_menu.gd
+index 7ac0c638..73c076dd 100644
+--- a/src/client/game_menu.gd
++++ b/src/client/game_menu.gd
+@@ -6,6 +6,7 @@ extends RefCounted
+ 
+ const Net := preload("res://src/stream/terrain_net.gd")
+ const MenuSwitch := preload("res://src/client/menu_switch.gd")
++const WaterChoice := preload("res://src/water2/water_choice.gd")
+ 
+ const SHOW_ADMIN := true
+ const PANEL := Color(0.075, 0.08, 0.09, 1.0)
+@@ -26,6 +27,7 @@ var _voice_switch
+ var _hints_switch
+ var _dialogue_switch
+ var _tunnel_switch
++var _old_water_switch
+ var _admin_mode_switch
+ var _cave_button: Button
+ var _sound_list: VBoxContainer
+@@ -291,6 +293,10 @@ func _build_gameplay() -> void:
+ 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
+ 		if _c._npc_voice != null:
+ 			_c._npc_voice.set_enabled(on))
++	_old_water_switch = _switch_row(gameplay, "Old water (next Play)", func(on: bool):
++		WaterChoice.set_old_water(on)
++		note.text = "Water: the %s water runs the next time you press Play (saved)." % ("old" if on else "new"))
++	_old_water_switch.set_on(WaterChoice.old_water())
+ 	_tunnel_switch = _switch_row(gameplay, "Tunnel collapse (admin)", func(on: bool):
+ 		_c.net.tunnel_setting.rpc_id(1, on, _c.tunnel_cave_in_s))
+ 	_cave_button = _button(gameplay, "Cave-in time", func():
+diff --git a/src/water2/water_choice.gd b/src/water2/water_choice.gd
+new file mode 100644
+index 00000000..7e55b317
+--- /dev/null
++++ b/src/water2/water_choice.gd
+@@ -0,0 +1,23 @@
++extends RefCounted
++
++# Which water the game runs (Sonny, 1 Nov 2026): the new Dynasty water (src/water2) is the default; the old one (src/water) stays behind `--water-old` on the server
++# and the "Old water" switch in Esc > Settings > Gameplay, kept in user://input_settings.cfg like the other client settings. The launcher reads it when it starts
++# the server, so a change applies the next time Play is pressed.
++
++const SETTINGS_PATH := "user://input_settings.cfg"
++
++
++static func old_water(path: String = SETTINGS_PATH) -> bool:
++	var file: ConfigFile = ConfigFile.new()
++
++	if file.load(path) != OK:
++		return false
++
++	return bool(file.get_value("water", "old", false))
++
++
++static func set_old_water(on: bool, path: String = SETTINGS_PATH) -> void:
++	var file: ConfigFile = ConfigFile.new()
++	file.load(path)
++	file.set_value("water", "old", on)
++	file.save(path)

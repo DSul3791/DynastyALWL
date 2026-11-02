@@ -32,6 +32,9 @@ var origin_z: float = 0.0
 
 var heights: PackedFloat32Array = PackedFloat32Array()
 var owners: PackedInt32Array = PackedInt32Array()     # feature index per cell
+var crater_zones: Array = []                         # [x_m, z_m, radius_m] of every carved crater: no spire is added there (it would fill the crater)
+var summits: Array = []                               # [x_m, z_m, height_m] of every prominent peak (see _find_summits); the tile detail step sharpens each into a real peak
+var texture: PackedFloat32Array = PackedFloat32Array()   # how bumpy the ground is made here, 1 = the tile detail rules as written (island_types "texture")
 var special: PackedByteArray = PackedByteArray()      # lava and the like
 var feature_ids: Array = []
 
@@ -89,6 +92,7 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 
 		index += 1
 
+	_roll_giants(sketch)
 	index = 0
 
 	for feature in sketch.get("features", []):
@@ -119,11 +123,124 @@ func build(world_settings, sketch_rules: Dictionary, sketch: Dictionary, cell_ov
 			if str(mount["type"]) == "starter" and mount.has("beach_cap_m") and not crater.is_empty():
 				_crater_at_summit(mount, crater, int(ceil(maxf(float(mount["a"]), float(mount["b"])) * 1.6 / cell_m)))
 	_clamp_heights()
+	_find_summits()
+
+
+# Now and then an island (never a starter) is a giant: `giant_peaks` in sketch_rules.json gives the chance, a size
+# multiplier range, a height multiplier range (both picked by one roll, so a taller mountain is also a bigger island and
+# stays liveable) and a cap on the summit before the spire. The roll comes from the island's position, so the seed fixes it.
+func _roll_giants(sketch: Dictionary) -> void:
+	var giant: Dictionary = rules.get("giant_peaks", {})
+
+	if giant.is_empty():
+		return
+
+	var size_range: Array = giant.get("size_multiplier", [1.0, 1.0])
+	var height_range: Array = giant.get("height_multiplier", [1.0, 1.0])
+
+	for feature in sketch.get("features", []):
+		for mount in feature.get("mounts", []):
+			if str(mount["type"]) != "island" or mount.has("starter") or mount.has("giant_h"):
+				continue
+
+			var roll: float = float(absi((int(mount["x"]) * 73856093) ^ (int(mount["z"]) * 19349663)) % 10007) / 10007.0
+
+			if roll >= float(giant.get("chance", 0.0)):
+				continue
+
+			var spread: float = float(absi((int(mount["x"]) * 83492791) ^ (int(mount["z"]) * 49979687)) % 10007) / 10007.0
+			var size: float = lerpf(float(size_range[0]), float(size_range[1]), spread)
+			mount["a"] = float(mount["a"]) * size
+			mount["b"] = float(mount["b"]) * size
+			mount["giant_h"] = lerpf(float(height_range[0]), float(height_range[1]), spread)
+			# The bigger the giant, the taller its mountain: from `extreme_floor_m` at an island half-length of
+			# `extreme_from_a_m` up to the cap at `extreme_to_a_m`, so only the biggest islands reach extreme heights
+			# and the average slope stays gentle. The cap plus the spire (16%) stays under the world top.
+			var cap: float = float(giant.get("max_summit_m", mount["peak"]))
+			var reach: float = maxf(float(mount["a"]), float(mount["b"]))
+			var from_a: float = float(giant.get("extreme_from_a_m", 2500.0))
+			var to_a: float = float(giant.get("extreme_to_a_m", 10000.0))
+			var share: float = clampf((reach - from_a) / maxf(to_a - from_a, 1.0), 0.0, 1.0)
+			var raised: float = maxf(float(mount["peak"]) * float(mount["giant_h"]), lerpf(float(giant.get("extreme_floor_m", mount["peak"])), cap, share))
+			mount["peak"] = minf(raised, cap)
+
+
+# The 160 m map cannot hold a point, and the cubic upsampling rounds off the top, so every island's
+# summit came out as a wide mound. Here every local maximum above `summits.min_peak_m` within
+# `summits.search_m` is listed; tile_height.gd adds the spire to each at 8 m spacing.
+func _find_summits() -> void:
+	summits.clear()
+	var settings: Dictionary = rules.get("summits", {})
+	var min_height: float = float(settings.get("min_peak_m", 450.0))
+	var reach: int = int(ceil(float(settings.get("search_m", 1280.0)) / cell_m))
+
+	for row in range(size_z):
+		for column in range(size_x):
+			var h: float = heights[row * size_x + column]
+
+			if h < min_height:
+				continue
+
+			var highest: bool = true
+
+			for dr in range(-reach, reach + 1):
+				for dc in range(-reach, reach + 1):
+					if (dr == 0 and dc == 0) or dr * dr + dc * dc > reach * reach:
+						continue
+
+					var other: float = heights[index_of(column + dc, row + dr)]
+
+					if other > h or (other == h and (dr < 0 or (dr == 0 and dc < 0))):
+						highest = false
+						break
+
+				if not highest:
+					break
+
+			if highest:
+				var centre: Vector2 = cell_center_m(column, row)
+				var in_crater: bool = false
+
+				for zone in crater_zones:
+					if centre.distance_to(Vector2(float(zone[0]), float(zone[1]))) < float(zone[2]):
+						in_crater = true
+						break
+
+				if not in_crater:
+					summits.append([centre.x, centre.y, h])
 
 
 # ==================================================
 # INDEXING AND NOISE
 # ==================================================
+
+# How bumpy the land of one island is made: the island type's "texture" in sketch_rules.json
+# (prairie low, ridges high); 1 for everything else. The tile detail noise is multiplied by it,
+# so a flat island stays flat and a rugged one rolls harder, and every tile reads the same map.
+func _texture_of(mount: Dictionary, mount_type: String) -> float:
+	if mount_type == "atoll":
+		return float(rules.get("atoll_texture", 0.4))
+
+	if mount_type != "island" and mount_type != "starter":
+		return 1.0
+
+	var config: Dictionary = _island_config(mount)
+	var entry: Dictionary = rules.get("island_types", {}).get(str(config.get("type", "")), {})
+	return float(entry.get("texture", 1.0))
+
+
+# The texture factor at a world position, blended between the 160 m cells.
+func texture_at_m(x_m: float, z_m: float) -> float:
+	var u: float = (x_m - origin_x) / cell_m - 0.5
+	var v: float = (z_m - origin_z) / cell_m - 0.5
+	var column: int = int(floor(u))
+	var row: int = int(floor(v))
+	var fu: float = u - float(column)
+	var fv: float = v - float(row)
+	var top: float = lerpf(texture[index_of(column, row)], texture[index_of(column + 1, row)], fu)
+	var bottom: float = lerpf(texture[index_of(column, row + 1)], texture[index_of(column + 1, row + 1)], fu)
+	return lerpf(top, bottom, fv)
+
 
 func index_of(column: int, row: int) -> int:
 	return posmod(row, size_z) * size_x + posmod(column, size_x)
@@ -189,6 +306,9 @@ func _build_sea_floor() -> void:
 	owners.resize(count)
 	special.resize(count)
 	owners.fill(OWNER_NONE)
+	texture.resize(count)
+	texture.fill(1.0)
+	crater_zones.clear()
 	special.fill(SPECIAL_NONE)
 
 	for index in range(count):
@@ -398,6 +518,7 @@ func _raise_ridge(feature: Dictionary, owner_index: int) -> void:
 
 func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 	var mount_type: String = str(mount["type"])
+	var island_texture: float = _texture_of(mount, mount_type)
 	var a: float = float(mount["a"])
 	var b: float = float(mount["b"])
 	var shore: float = float(mount.get("shore", 600))
@@ -487,6 +608,7 @@ func _raise_mount(mount: Dictionary, owner_index: int) -> void:
 
 			if raised > heights[index] and raised > 0.0:
 				owners[index] = owner_index
+				texture[index] = island_texture
 
 			heights[index] = combined
 
@@ -1512,6 +1634,7 @@ func _raise_cone_exact(cone: Dictionary, owner_index: int) -> void:
 func _carve_crater(
 	center: Vector2, radius: float, depth: float, rim_height: float, crater: Dictionary, lava: bool = true, raise_rim: bool = false
 ) -> void:
+	crater_zones.append([center.x, center.y, radius * 2.0])
 	var floor_height: float = rim_height - depth
 	var bearing: float = deg_to_rad(float(crater.get("breach_bearing_deg", 160)))
 	var breach_direction: Vector2 = Vector2(sin(bearing), -cos(bearing))
