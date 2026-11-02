@@ -103,6 +103,10 @@ WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN=
 [ -n "$WALKSPEED" ] && WALK="$WALKSPEED"
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK${MORE:+;$MORE}"
 CARGS=(--server=127.0.0.1 --port=$PORT --shots="$SHOT" --shot-dir="$OUT" --shot-wait=$WAIT --shot-settle=$SETTLE $ADMIN $XARGS ${EXPECT:+"--shot-expect=$EXPECT"})
+# The rig's own limit on the client (Tyler, 2 Nov 2026: a join that never finished held its window open and blocked the whole shot batch until Dave closed it).
+# The client quits itself after CT seconds (--timeout), and the shell kills it 60 s later if it is still there. RIG_CLIENT_TIMEOUT overrides (seconds).
+CT="${RIG_CLIENT_TIMEOUT:-$(( ${WAIT%.*} + ${SETTLE%.*} + 600 ))}"
+KILLER=""; command -v timeout >/dev/null && KILLER="timeout -k 15 $(( CT + 60 ))"
 if [ -n "$WIN" ]; then
   # A fresh APPDATA per run means an EMPTY shader cache, so every shader is compiled on the main thread at the join: the 15 s "HUNG" crash report of every rig run (31 Oct 2026, Guide).
   # The rig keeps a warm shader cache between runs (RIG_WARM, default beside the rig's temp folders) and copies it in before and back after the run; Dave's own cache is never touched.
@@ -110,7 +114,8 @@ if [ -n "$WIN" ]; then
   cp -a "$WARM/shader_cache" "$WARM/vulkan" "$UD/" 2>/dev/null
   # The Windows editor build is a GUI program: its stdout often reaches no redirect, so the console (shader compile errors, "client slow" lines) was lost.
   # --log-file makes Godot write the same lines to a file itself; it is appended to client.log after the run (Tyler, 2 Nov 2026).
-  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --log-file "$(cygpath -w "$RIG/client_godot.log")" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=900 > "$RIG/client.log" 2>&1
+  APPDATA="$(cygpath -w "$RIG/appdata")" $KILLER "$GODOT" --log-file "$(cygpath -w "$RIG/client_godot.log")" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=$CT > "$RIG/client.log" 2>&1; RC=$?
+  { [ $RC -eq 124 ] || [ $RC -eq 137 ]; } && echo "rig: the client did not quit by itself after $CT s and was killed (a join that never finished?)"
   [ -f "$RIG/client_godot.log" ] && cat "$RIG/client_godot.log" >> "$RIG/client.log"
   cp -a "$UD/shader_cache" "$UD/vulkan" "$WARM/" 2>/dev/null
 else
@@ -122,7 +127,7 @@ else
   [ -z "$ICD" ] && ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json /etc/vulkan/icd.d/lvp_icd*.json 2>/dev/null | head -1)
   [ -z "$ICD" ] && { echo "no Vulkan driver file found"; exit 1; }
   echo "renderer: $REND ($ICD)"; [ "$REND" = software ] && export LIBGL_ALWAYS_SOFTWARE=1
-  HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
+  HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" $KILLER "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=$CT > "$RIG/client.log" 2>&1
 fi
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
 # Keep both consoles beside the picture, and say how many shader errors the client printed (0 means the shaders compiled).
