@@ -248,3 +248,10 @@ Note: Blocked: needs a windowed fps comparison on your PC. Same spot, Ultra, F3 
 Note: The three arms textures are about 200 MB uncompressed in graphics memory; compression makes them 4 to 8 times smaller. A suspect for the constant lag, not proven.
 Note: Recommendation: Yes only if fps is better and the skin shows no blocky patches.
 [check]
+
+## sonny-headpond-leak | Sonny blocked: run the head-pond escape-path probe (two coastal ponds drain dry)
+Note: Two shallow head ponds on tile 3,4 lose their water to the sea; test_head_pond_fill fails on them. Sonny needs the escape path to fix the bake, and has no Godot.
+Note: 1. git fetch origin, then git checkout sonny-20261102-pondprobe
+Note: 2. godot --headless --path . --script res://tools/head_pond_probe.gd -- --only=1900590,3082096 (about 10 min)
+Note: 3. Paste the lines that start with path into Notes
+[test]
