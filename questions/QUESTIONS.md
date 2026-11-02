@@ -343,6 +343,7 @@ Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
 - More by day, wolves on
 
 ## sal-bug5-tree-hits | Does a beech fall in about 9 to 12 swings when no felled logs lie near it?
+Note: SUPERSEDED: the tree thread found the cause (blows use the species trunk size, not the real tree size). Answer card tree-hits-follow-size instead; skip this one.
 Note: Blocked here: needs the game running. From the code a beech needs at most 12 counted blows (oak 15). Over 20 means swings went to something else.
 Note: 1. Find a standing beech with no felled logs or trunks lying within 2 m.
 Note: 2. With the stone axe, count your swings until it falls.
