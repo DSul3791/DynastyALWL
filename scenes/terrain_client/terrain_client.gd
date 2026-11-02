@@ -450,6 +450,7 @@ var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
 var idle_timeout = IdleTimeoutScript.new()   # the game closes after the idle minutes of Esc > Settings > Gameplay without input (idle_timeout.gd)
+const HitNumbersScript := preload("res://src/client/hit_numbers.gd")
 var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
@@ -769,6 +770,9 @@ func _ready() -> void:
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
+	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
+		if display.damage_numbers:
+			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)

@@ -259,6 +259,7 @@ var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
+var send_hit_number: Callable        # (peer, at Vector3, amount int): floating damage text where a hit landed (protocol 85; the client shows it unless turned off in Gameplay)
 var send_final_death: Callable       # (peer, cause String): a death with no respawn (death.json novice_grace); the new-character / heir flow is not built, so nothing sets this yet
 var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
 var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (drowning, ...)
@@ -1790,6 +1791,16 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 
 # A thrown weapon leaves the inventory and flies; where it comes down it lies as a world item.
 # Only items marked as weapons can be thrown. Nothing can be hit yet (no creatures).
+# Floating damage numbers (Dave 2 Nov 2026: on by default, a toggle in Gameplay). An animal shows the damage it took. A tree or a boulder has no health,
+# so it counts as HIT_POINTS split over the blows it takes: each blow shows its share (a 10-blow tree shows 10 a blow).
+const HIT_POINTS := 100.0
+
+
+func hit_number(peer: int, at: Vector3, amount: float) -> void:
+	if send_hit_number.is_valid() and amount > 0.0:
+		send_hit_number.call(peer, at, maxi(1, int(round(amount))))
+
+
 # One jab with a weapon (items.json "damage"): hits the animal in front within JAB_REACH_M through the animal hook.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
@@ -1806,9 +1817,11 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var hit: bool = bool(hit_animal.call(peer, _peer_pos[peer] + Vector3(0.0, 1.4, 0.0), direction, JAB_REACH_M, float(entry["damage"])))
+	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var hit: bool = bool(hit_animal.call(peer, eye, direction, JAB_REACH_M, float(entry["damage"])))
 
 	if hit:
+		hit_number(peer, eye + direction.normalized() * minf(JAB_REACH_M, 1.5), float(entry["damage"]))
 		_wear_slot(peer, inv, slot, "strike")
 
 
@@ -1970,6 +1983,7 @@ func _arrow_fly(delta: float) -> void:
 					hit_animal_now = true
 					at = hit["at"]
 					practice(int(ar["peer"]), "bow")
+					hit_number(int(ar["peer"]), at, float(ar["damage"]))
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
 
@@ -3626,6 +3640,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "boulder")
 	info["blows"] = int(info.get("blows", 0)) + 1
+	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS / float(maxi(int(tool[1]), 1)))
 
 	if int(info["blows"]) < int(tool[1]):
 		return
@@ -3833,6 +3848,8 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	_chops[key] = chop
 	var fell: Dictionary = _drops.get("felling", {})   # data/items/drops.json "felling": the blow counts follow the swing time (balance, Dave tunes)
 	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + float(info["trunk"]) * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
+
+	hit_number(peer, spot + Vector3(0.0, 1.2, 0.0), HIT_POINTS / float(needed))
 
 	if int(chop["hits"]) < needed:
 		return

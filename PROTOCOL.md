@@ -37,6 +37,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | vitals | server to client | reliable | hunger: int, health: int, weight_dkg: int | 18 |
 | chest_contents | server to client | reliable | id: int, bytes: PackedByteArray | 15 |
 | notice | server to client | reliable | text: String | 12 |
+| hit_number | server to client | reliable | at: Vector3, amount: int | 86 |
 
 ## Inventory action kinds (inventory_action(kind, a, b, count, at))
 
@@ -167,3 +168,4 @@ digs.dat version 2 (DIGS2: seq, kind dig/fill, material, x y z radius, 24 bytes 
 - 83: new server-to-client message `final_death(cause: String)` (Steve, 1 Nov 2026): a death with no return, sent instead of `died` when data/items/death.json `real_death` is true and the character is past novice grace (and again at hello to a character already marked dead). The client shows the death screen. `real_death` is false until Dave answers the death cards, so nothing sends it yet.
 - 84: new server-to-client message `deliver_water_flow(origin, w, h, cell_m, raw_size, bytes)` (Sonny, 2 Nov 2026): the simulated water window as a half-float zstd-compressed render texture (depth, flow, foam per 8 m cell); the client unpacks it onto the water material `water2_*` uniforms (src/water2/water_flow_texture.gd). Old clients ignore it. Row added by Tyler so test_slot_sounds passes.
 - 85: `deliver_water_flow` carries a float (not half-float) texture with new channels (Sonny, 2 Nov 2026, liquid surface): R the water surface height (bed + depth, the bed where dry), G/B flow east/south (m/s), A depth (m); raw size w x h x 16. The client draws the live window as one continuous liquid sheet (src/water2/liquid_surface.gd) and the grid water steps aside inside it. Older clients would read the channels wrongly, hence the bump. About 50 to 120 KB per publish, one publish every 15 s.
+- 86: new server-to-client message `hit_number(at: Vector3, amount: int)` (Steve, 2 Nov 2026, Dave: floating damage text when you hit something, on by default, a toggle in Esc > Settings > Gameplay). Sent to the player whose hit landed: an animal (jab or arrow) shows the damage it took; a tree or a boulder shows its share of 100 per blow (100 / blows it takes). Old clients ignore it. Cost: one small message per landed hit.
