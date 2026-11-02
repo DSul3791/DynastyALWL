@@ -170,7 +170,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	recipes = RecipeTableScript.load_default(table)
 	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
 	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
-	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
@@ -801,6 +801,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	_drain_world_backlog()
 	var now: int = Time.get_ticks_msec()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
@@ -1903,6 +1904,48 @@ func _timed(label: String, handler: Callable, args: Array) -> void:
 
 	if ms > 20.0:
 		print("client slow: %s took %.0f ms" % [label, ms])
+
+# Join stall (Dave 2 Nov 2026 log: "world items 1423 ms for 334 added"): a big list of world items was dressed in one frame. A list of more
+# than WORLD_SLICE_MIN rows (or any list while an earlier one is still waiting, to keep the order) is queued and dressed in _process,
+# WORLD_SLICE_USEC a frame (at least one row). Small updates (a log cut, an item dropped) still apply at once.
+const WORLD_SLICE_MIN := 24
+const WORLD_SLICE_USEC := 4000
+var _world_backlog: Array = []        # rows to dress, and PackedInt32Array removals, in arrival order
+
+
+func _queue_world_items(added: Array, removed: PackedInt32Array) -> void:
+	if added.size() <= WORLD_SLICE_MIN and _world_backlog.is_empty():
+		_on_world_items(added, removed)
+		return
+
+	for row in added:
+		_world_backlog.append(row)
+
+	if removed.size() > 0:
+		_world_backlog.append(removed)
+
+
+func _drain_world_backlog() -> void:
+	if _world_backlog.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+	var done: int = 0
+
+	while done < _world_backlog.size():
+		var entry: Variant = _world_backlog[done]
+		done += 1
+
+		if entry is PackedInt32Array:
+			_on_world_items([], entry)
+		else:
+			_on_world_items([entry], PackedInt32Array())
+
+		if Time.get_ticks_usec() - started >= WORLD_SLICE_USEC:
+			break
+
+	_world_backlog = _world_backlog.slice(done)
+
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
