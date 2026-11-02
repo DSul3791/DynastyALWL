@@ -318,3 +318,12 @@ Note: Blocked here: both need the game running, which my cloud box cannot do.
 Note: Lying trunk: a felled tree after the bark fix. Orchard: five trees with apples from 15 m north.
 Note: Recommendation: Yes, because they are the next two looks you asked about and the PC can shoot them in minutes.
 [check]
+
+## kathleen-ground-pbr-look | Does the ground look like real soil, grass and rock up close?
+Note: Blocked here: no Godot in my cloud box. The new photo ground textures (pull request 57) are untested in game.
+Note: 1. In GitHub Desktop, switch to branch claude/kathleen-ground-pbr-20261102.
+Note: 2. Run the game and walk to grass, a gravel path, rock and the beach.
+Note: 3. Look at the ground from 2 m and from 30 m. Wet sand should still shine.
+Note: 4. Say Yes if it looks real and does not flicker far away; No plus what looks wrong.
+Note: Recommendation: Yes, merge it if it looks right, because the ground is what you see most.
+[test]
