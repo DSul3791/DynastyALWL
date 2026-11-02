@@ -335,3 +335,10 @@ Note: 1. Check out PR #91 and start the game. 2. Walk to a stream or river near 
 Note: Stacked on the pond-bed rebake (#71). Tiles are only committed after your yes.
 Note: Recommendation: Yes, bake #71 and #92 together
 [check]
+
+## claude-crop-seeds | Which wild plants should give the other crop seeds (potato, turnip, cabbage, onion, peas, beet, radish, lettuce)?
+Note: 8 of 14 crops have no seed source, so their farming and cooking recipes cannot be reached. Oats and rye now come from tall grass (PR 96).
+Note: Option A: add wild plants to the world, one per crop, each giving seeds (wild turnip, sea beet, ramsons, vetch and so on). Option B: seeds come from the food you gather or buy (dig a root and keep a seed, buy seed from an NPC trader).
+Note: Recommendation: B for the first week, because it needs no new plant art and Hob or Edda can sell seed; add wild plants later.
+[A] Wild plants for each crop
+[B] Seeds from food or trader first
