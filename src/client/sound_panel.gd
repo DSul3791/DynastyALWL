@@ -18,6 +18,8 @@ const MAX_ROWS := 40
 const QUIET_DB := -70.0
 const META_BUS := "sound_panel_bus"      # a muted player's own bus, kept to put back
 
+static var assume_playing: bool = false   # tests: a headless run has no audio driver, so players never report playing
+
 var open: bool = false
 var muted: Dictionary = {}               # label -> true
 var rows_shown: int = 0
@@ -181,7 +183,7 @@ func _refresh() -> void:
 	var best: Dictionary = {}                # label -> [level dB, distance m (-1 flat), bus, count]
 
 	for player in players:
-		if not is_instance_valid(player) or not player.playing or player.stream == null or player.stream_paused:
+		if not is_instance_valid(player) or not (player.playing or assume_playing) or player.stream == null or player.stream_paused:
 			continue
 
 		var label: String = SoundNow.label(player, player.stream)
