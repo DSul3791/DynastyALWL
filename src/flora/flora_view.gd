@@ -22,6 +22,7 @@ const TreeBuilder := preload("res://src/flora/tree_builder.gd")
 const TreeImpostor := preload("res://src/flora/tree_impostor.gd")
 const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -345,6 +346,51 @@ var _impostor_node: Node
 const START_FLOW_RATE := 10.0      # water_live.gd DEFAULT_RATE (the server's start rate)
 
 
+# Dave 2 Nov 2026 ("think liquid not squares"): every chunk's settled water is drawn as a liquid sheet (src/water2/liquid_surface.gd) instead of the
+# 8 m grid mesh. False brings the grid look back.
+const LIQUID_CHUNKS := true
+var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and size): chunk sheets step aside there
+var _liquid_hole_inset: float = 8.0
+
+
+func set_liquid_hole(corner: Vector2, size: Vector2, inset: float) -> void:
+	_liquid_hole = Vector4(corner.x, corner.y, size.x, size.y)
+	_liquid_hole_inset = inset
+
+	for chunk in _chunks:
+		var sheet = _chunks[chunk].get("liquid")
+
+		if sheet != null:
+			sheet.set_hole(corner, size, inset)
+
+
+func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
+	if not LIQUID_CHUNKS:
+		return
+
+	var sheet = entry.get("liquid")
+	var im: Image = water["liquid_image"] if water.has("liquid_image") else LiquidSurface.image_from_grid(water)
+
+	if im == null:
+		if sheet != null:
+			sheet.queue_free()
+			entry["liquid"] = null
+
+		return
+
+	if sheet == null:
+		sheet = LiquidSurface.new()
+		sheet.add_to_group("water_draw")
+		sheet.add_to_group("liquid_sheet")
+		add_child(sheet)
+		entry["liquid"] = sheet
+		sheet.set_hole(Vector2(_liquid_hole.x, _liquid_hole.y), Vector2(_liquid_hole.z, _liquid_hole.w), _liquid_hole_inset)
+		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
+	sheet.show_points(im, Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), float(water.get("spacing", 8.0)))
+	sheet.visible = not water_hidden
+
+
 # Ctrl+Shift+W hides every river and lake drawing (debug: does an odd patch on the water stay, then it is ground).
 var water_hidden: bool = false
 
@@ -427,10 +473,15 @@ func set_storm_murk(amount: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("storm", amount)
 
+	_liquid_storm = amount
+	_tell_liquid_mud()
+
 
 # The sky colours of the day cycle for the land water (weather_look.gd).
 func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
 	WaterMaterial.apply_day(_water_material, top, horizon, cloud_shadow, daylight)
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_daylight", daylight)   # the liquid sheets (chunks and the live window): no glowing foam at night
 
 
 func set_flow_rate(rate: float) -> void:
@@ -440,6 +491,19 @@ func set_flow_rate(rate: float) -> void:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
 		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
 		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
+
+	_liquid_flow_mud = clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0)
+	_tell_liquid_mud()
+
+
+var _liquid_storm: float = 0.0
+var _liquid_flow_mud: float = 0.0
+
+
+# The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
+func _tell_liquid_mud() -> void:
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
@@ -1071,7 +1135,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 	entry["grid"] = water
 	var mesh: ArrayMesh = null
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		mesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 	if mesh != null and mesh.get_surface_count() > 0:
@@ -1094,6 +1158,7 @@ func _draw_water(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void:
 		old.queue_free()
 		entry["water"] = null
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 
@@ -1172,7 +1237,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 	_filter_cleared(chunk, false)
 	CoverScript.add_chunk(cover, chunk, items, _cover_info)
 
-	if int(water.get("wet", 0)) > 0:
+	if int(water.get("wet", 0)) > 0 and not LIQUID_CHUNKS:
 		var mesh: ArrayMesh = water["mesh"] if water.has("mesh") else WaterGridScript.build_mesh(water, _water_material)
 
 		if mesh.get_surface_count() > 0:
@@ -1188,6 +1253,7 @@ func set_chunk(chunk: Vector2i, items: Dictionary, from_position: Vector3, water
 			@warning_ignore("integer_division")
 			water_cells += mesh.surface_get_array_index_len(0) / 6
 
+	_draw_liquid(chunk, entry, water)
 	_draw_ice(chunk, entry, water)
 	_draw_falls(chunk, entry, water)
 	_refresh(chunk, from_position)
@@ -1335,6 +1401,11 @@ func drop_chunk(chunk: Vector2i) -> void:
 	if falls != null:
 		falls_drawn -= falls.mesh.get_surface_count()
 		falls.queue_free()
+
+	var sheet = entry.get("liquid")
+
+	if sheet != null:
+		sheet.queue_free()
 
 	var ice: StaticBody3D = entry.get("ice")
 
