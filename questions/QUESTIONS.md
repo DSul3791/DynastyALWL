@@ -51,14 +51,6 @@ Note: Recommendation: B for the first week, because it needs no new plant art an
 [A] Wild plants for each crop
 [B] Seeds from food or trader first
 
-## sal-bed-for-sale | Hob now sells a rough bed (37 copper) as the place to sleep a day's wage can buy. Right?
-Note: Your wage answer said a day of picking buys a meal and maybe a place to sleep, but Hob sold nothing to sleep in. A day now pays about 48 copper: meal 8 plus rough bed 37. The bed is a kit you place yourself.
-Note: Option A: keep the rough bed (37). Option B: sell a lean-to kit (39) instead, which is shelter plus a place to lie. Option C: sell neither; sleeping is only what you build.
-Note: Recommendation: A, because it is the cheapest thing that fits a day's wage.
-[A] Keep the rough bed
-[B] Sell a lean-to kit instead
-[C] Sell neither
-
 ## mikew-pixabay-animal-calls | Sounds: when you have time, can you download Pixabay calls for boar, grouse, seal and seabird?
 Note: Neither the cloud nor the PC thread can download from Pixabay, so this needs your hands (MikeW). On pixabay.com/sound-effects, 2 or 3 real field recordings per animal, no music or voices, nothing labelled AI or synthesized.
 Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "black grouse", "ptarmigan"; seal "seal bark", "grey seal"; seabird "seagull", "herring gull", "gull colony".
