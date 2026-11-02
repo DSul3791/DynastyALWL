@@ -26,13 +26,6 @@ Note: 2. Place a clay pot on the campfire (6 clay, then 3 sticks and 3 twine), p
 Note: 3. Note whether you get Stewed berries and whether the hint about the pot appeared once.
 [test]
 
-## death-new-start | After a real death with no child, where and how does the new character start?
-Note: Design says the gear stays on the remains (owner only for the first real day, anyone after) and a wizard can fetch it for a fee.
-Note: Recommendation A: the new character starts at the world spawn with an empty pack, like a new player; their old remains are marked on the map.
-- At the world spawn, empty pack (recommended)
-- At the world spawn with a small starter kit (stick, stone, twine)
-- At the dead character's last bed, empty pack
-
 ## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
 Image: questions/img/flora_orchard_rows.jpg
 Note: Real game rig shot at noon from the south edge of the orchard, (53376,68535). The rows read, but it is dark under the crowns and no fruit is visible from this height. Flora rates it 3 of 5; fruit visibility is a look question for Kathleen.
