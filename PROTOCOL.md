@@ -70,6 +70,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 25 | ACT_DIG | at = the ground point under the crosshair: one spade dig (0.9 m sphere, 0.25 m below the point); needs a whole spade (tool class spade) in the pack, point within 4.5 m of the player, one per 0.7 s; refused with reject(0 too far, 1 no spade). The server logs the hole (digs.dat) and answers everyone with dug() and tile_changed() | 28 |
 | 27 | ACT_FILL | at = the ground point under the crosshair: one spade fill (0.9 m sphere, 0.1 m above the point, one shovelful of soil, sand, gravel, clay or stone from the pack, digging.json fill order); needs a spade, reach 4.5 m, one per 0.7 s (shared with digs); refused with reject(0 too far, 1 no spade), a notice when the pack has nothing to fill with. The server saves it in digs.dat (DIGS2 fill record), tells everyone with filled() and tile_changed(), the water thread raises its ground, shrubs and plants in the sphere are removed | 30 |
 | 23 | ACT_FALL | a = drop in centimetres the client landed from (sent from 6 m up); the server turns it into health damage (vitals.json fall) and a faint from 12 m; limited to one per 2 s, drop capped at 60 m | 23 |
+| 56 | ACT_ADMIN_ENERGY | count = the energy (0 to 100, clamped) the admin's own character is set to; admin only, a non-admin peer changes nothing (tests: starts the sleep self-test tired). No wire change. Test: test_admin_energy | 56 |
 
 ## World-item row states (world_items)
 
