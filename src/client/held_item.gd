@@ -609,6 +609,9 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_dig_here()
 			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
 				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
+
+				if _sound != null:
+					_sound.slots.play("net_cast", _camera.global_position - _camera.global_transform.basis.z * 2.0)   # shortcut: the shore-net throw clip stands in for the rod cast until a line-cast clip exists (Jason, 2 Nov 2026; to hear)
 			else:
 				_inv._on_notice(_other_tool_hint())
 

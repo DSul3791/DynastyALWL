@@ -480,10 +480,10 @@ func _make_wolf() -> Node3D:
 	neck.name = "Head"
 	neck.position = Vector3(0.0, 0.66, -0.42)
 	rig.add_child(neck)
-	_ball(neck, 0.12, Vector3(0.85, 0.85, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck
-	_ball(neck, 0.11, Vector3(0.9, 0.85, 1.0), Vector3(0.0, 0.06, -0.3), coat)       # head
-	_box(neck, Vector3(0.09, 0.075, 0.2), Vector3(0.0, 0.03, -0.43), pale)          # snout
-	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.54), Color(0.08, 0.07, 0.07))   # nose
+	_ball(neck, 0.15, Vector3(0.9, 0.9, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck (thicker, Kathreen 2 Nov: it read as a thin stalk)
+	_ball(neck, 0.135, Vector3(0.95, 0.9, 1.0), Vector3(0.0, 0.06, -0.3), coat)      # head (bigger: it was a small ball on a long body)
+	_box(neck, Vector3(0.11, 0.09, 0.23), Vector3(0.0, 0.03, -0.45), pale)          # snout
+	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.58), Color(0.08, 0.07, 0.07))   # nose
 
 	for side in [-1.0, 1.0]:
 		_box(neck, Vector3(0.05, 0.1, 0.035), Vector3(side * 0.06, 0.2, -0.28), dark, Vector3(-0.15, 0.0, side * 0.15))   # ears
@@ -493,7 +493,7 @@ func _make_wolf() -> Node3D:
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, 0.66, 0.42)
 	rig.add_child(tail)
-	_ball(tail, 0.08, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
+	_ball(tail, 0.1, Vector3(0.85, 0.85, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
 	_ball(tail, 0.05, Vector3(0.8, 0.8, 1.6), Vector3(0.0, -0.2, 0.36), dark, Vector3(0.7, 0.0, 0.0))
 
 	for leg in [["Leg_FL", -1.0, -0.26], ["Leg_FR", 1.0, -0.26], ["Leg_HL", -1.0, 0.3], ["Leg_HR", 1.0, 0.3]]:
@@ -501,9 +501,9 @@ func _make_wolf() -> Node3D:
 		pivot.name = leg[0]
 		pivot.position = Vector3(float(leg[1]) * 0.1, 0.5, float(leg[2]))
 		rig.add_child(pivot)
-		_box(pivot, Vector3(0.09, 0.28, 0.1), Vector3(0.0, -0.13, 0.0), coat)       # upper leg
-		_box(pivot, Vector3(0.06, 0.26, 0.07), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
-		_box(pivot, Vector3(0.075, 0.04, 0.12), Vector3(0.0, -0.49, -0.02), dark)   # paw
+		_box(pivot, Vector3(0.115, 0.28, 0.13), Vector3(0.0, -0.13, 0.0), coat)       # upper leg (thicker: they read as stilts)
+		_box(pivot, Vector3(0.08, 0.26, 0.09), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
+		_box(pivot, Vector3(0.1, 0.04, 0.14), Vector3(0.0, -0.49, -0.02), dark)   # paw
 
 	return root
 
@@ -614,7 +614,7 @@ func _make_quad(spec: Dictionary) -> Node3D:
 	rig.add_child(head)
 	for seg in 5:   # the neck: five overlapping, thinning segments from the shoulder to the skull, so it reads as one tapering neck and not a chain of beads
 		var t: float = float(seg) / 4.0
-		_ball(head, nk * lerpf(0.27, 0.19, t), Vector3(0.85, 0.85, 1.25), Vector3(0.0, lerpf(nk * 0.1, nk * 0.7, t), lerpf(-nk * 0.08, -nk * 0.75, t)), coat, Vector3(0.7, 0.0, 0.0))
+		_ball(head, nk * lerpf(0.27, 0.19, t) * float(spec.get("neck_thick", 1.0)), Vector3(0.85, 0.85, 1.25), Vector3(0.0, lerpf(nk * 0.1, nk * 0.7, t), lerpf(-nk * 0.08, -nk * 0.75, t)), coat, Vector3(0.7, 0.0, 0.0))
 	var top: Vector3 = Vector3(0.0, nk * 0.78, -nk * 0.85)
 	_ball(head, hd * 0.28, Vector3(0.85, 0.9, 1.4), top, coat if not bool(spec.get("dark_head", false)) else dark)       # skull
 	var snout: float = float(spec.get("snout", 1.0))
@@ -634,7 +634,9 @@ func _make_quad(spec: Dictionary) -> Node3D:
 
 		if bool(spec.get("antlers", false)):
 			# Bull moose: broad flat palms swept out and up from above the ears, with tines along the rim.
-			_box(head, Vector3(hd * 1.1, hd * 0.05, hd * 0.55), top + Vector3(side * hd * 0.75, hd * 0.4, 0.0), Color(0.72, 0.66, 0.54), Vector3(0.0, side * 0.3, side * -0.25))
+			_box(head, Vector3(hd * 1.1, hd * 0.09, hd * 0.55), top + Vector3(side * hd * 0.75, hd * 0.4, 0.0), Color(0.72, 0.66, 0.54), Vector3(0.0, side * 0.3, side * -0.25))
+			# Kathreen 2 Nov: the palms floated beside the head as flat slabs; a beam from the skull now carries each one.
+			_box(head, Vector3(hd * 0.1, hd * 0.1, hd * 0.55), top + Vector3(side * hd * 0.3, hd * 0.25, 0.0), Color(0.62, 0.56, 0.45), Vector3(0.0, 0.0, side * -0.75))
 
 			for tine in 4:
 				_box(head, Vector3(hd * 0.05, hd * 0.05, hd * 0.3), top + Vector3(side * hd * (0.7 + 0.2 * float(tine)), hd * 0.48, -hd * 0.3 + hd * 0.2 * float(tine)), Color(0.72, 0.66, 0.54), Vector3(0.0, side * 0.2, 0.0))
@@ -755,7 +757,7 @@ func _make_fox() -> Node3D:
 func _make_horse(id: int) -> Node3D:
 	var coats: Array = [[Color(0.36, 0.2, 0.11), Color(0.08, 0.06, 0.05)], [Color(0.5, 0.26, 0.12), Color(0.34, 0.17, 0.08)], [Color(0.66, 0.66, 0.64), Color(0.45, 0.45, 0.44)], [Color(0.1, 0.09, 0.09), Color(0.05, 0.04, 0.04)], [Color(0.62, 0.5, 0.32), Color(0.2, 0.14, 0.09)]]
 	var pick: Array = coats[id % coats.size()]
-	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.75, "head": 0.55, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
+	return _make_quad({"leg_h": 0.85, "rb": 0.32, "len": 1.05, "neck": 0.66, "neck_thick": 1.45, "head": 0.6, "snout": 1.2, "coat": pick[0], "dark": pick[1], "pale": pick[0].lerp(Color(0.9, 0.85, 0.78), 0.25), "mane": true, "socks": false, "long_tail": true, "blaze": id % 3 == 0})
 
 
 # A moose (Mandy 2026-10-22): about 2.7 m long, 2.1 m at the shoulder hump, dark brown, long pale legs, big drooping muzzle; every second one is a bull with broad antlers.
