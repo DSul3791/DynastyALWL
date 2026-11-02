@@ -14,3 +14,4 @@ Round 1 status (2 Nov, paper review): items 1, 2, 3 done, see docs/handoff/DINO_
 
 ## Round 2 (to be written when round 1 is done)
 Round 2 status (2 Nov, paper review): see docs/handoff/DINO_ROUND2_REPORT.md (clay hearth cost drift, stale open items, kits vs looks, stick budget).
+Round 3 status (2 Nov, paper review): see docs/handoff/DINO_ROUND3_PC_COMMANDS.md (guides re-checked after fire light fix; exact PC commands).
