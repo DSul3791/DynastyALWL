@@ -2086,3 +2086,7 @@ Answered: 2026-11-02 21:39 UTC
 Answer: Later, after real death and children (recommended) | Comment: We already have a downstate that’s where you get knocked out
 Answered: 2026-11-02 21:39 UTC
 
+## pic-flora-yarrow | In the real game: does the white yarrow drift (bottom left, with varied tree crowns) look like white flowers in the shade, not blue-grey metal?
+Answer: Yes | Comment: They look good enough for now
+Answered: 2026-11-02 21:40 UTC
+
