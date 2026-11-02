@@ -1997,6 +1997,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node = box
 			node.position = row[3] + Vector3(0.0, 0.12, 0.0)
 			_dress_item(node, int(row[1]), int(row[0]), real != null)
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("rot_y"):   # a split log lies along the trunk it came from
+				node.rotation.y = float(row[5]["rot_y"])
 		else:
 			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
