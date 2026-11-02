@@ -273,5 +273,18 @@ func _run() -> void:
 			_flow_pending = packet
 			_mutex.unlock()
 
+		# Bug 7 (lag, 2 Nov 2026): the window cost about 110 ms per simulated second, so with only the CPU_DUTY sleep the thread ran about 4.5 simulated seconds per
+		# real second, held half a core all the time and published levels and the flow texture to every client about every 3 s. It now never runs ahead of real
+		# time (TICK_S of sim per TICK_S of wall clock), still sleeps at least the duty share, and wakes every 100 ms to see a stop.
 		var used: int = Time.get_ticks_usec() - start
-		OS.delay_usec(int(float(used) * (1.0 / CPU_DUTY - 1.0)))
+		var rest_us: int = maxi(int(TICK_S * 1000000.0) - used, int(float(used) * (1.0 / CPU_DUTY - 1.0)))
+
+		while rest_us > 0:
+			OS.delay_usec(mini(rest_us, 100000))
+			rest_us -= 100000
+			_mutex.lock()
+			var stopping: bool = _quit
+			_mutex.unlock()
+
+			if stopping:
+				return
