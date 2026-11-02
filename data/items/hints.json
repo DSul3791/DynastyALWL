@@ -75,12 +75,12 @@
 		{
 			"id": "fuel",
 			"trigger": "fire_lit",
-			"text": "Press E at the fire to add sticks or wood."
+			"text": "Press F at the fire to put in sticks or wood."
 		},
 		{
 			"id": "roast",
 			"trigger": "hungry",
-			"text": "Hold E at the fire to roast raw meat or fish.",
+			"text": "Press F at a burning fire to put meat or fish in; it cooks there.",
 			"goal": "berries"
 		},
 		{
