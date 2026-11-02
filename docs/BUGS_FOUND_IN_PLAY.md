@@ -82,6 +82,14 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Context, not a diagnosis:** none known. Nothing has been run in a windowed client.
 - **Status:** open, unassigned, not worked on.
 
+## 11. A tree gets much bigger when it falls
+
+- **Found:** 2026-11-02, Dave, playing.
+- **Symptom (Dave):** when trees fall they all suddenly become much taller and bigger than they were; they should be the same as they were.
+- **Cause (read from the code, not yet seen in a windowed client):** a standing tree is one model built at the species' reference height and scaled by height / reference (`src/flora/flora_view.gd`), so its trunk radius is trunk_m x that scale. The felled trunk and stump took the species' unscaled `trunk_m` as radius (`_fell_record` in `src/stream/server_items.gd`), so a small tree fell as a fat trunk (a 6 m beech: 0.40 m radius instead of 0.14 m) and a big one as a thin one. The length is the tree's whole height, as standing.
+- **Fix:** the felled trunk, its stump and the fall pose use the standing radius (`FellPose.standing_radius`); length unchanged so log counts do not change. Test: `test_fell_autosplit`. Needs a look in a windowed client (PC thread).
+- **Status:** fixed on branch `claude/project-thread-imr3n2`, waiting for the Godot test run.
+
 ## Triage by role (Jamie, 2 Nov 2026)
 | # | Bug | Lead | Support |
 |---|---|---|---|
@@ -95,4 +103,5 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 | 8 | 3+ firewood does not make a medium fire | Steve | Sal (tier numbers) |
 | 9 | Only one log fits in the campfire | Steve | Tyler |
 | 10 | No jump animation | Kathreen (character looks) | Steve (jump state signal) |
+| 11 | Tree gets bigger when it falls | Steve | Tyler (windowed check) |
 Jason (audio), Dino (guides) and MikeW have no lead bug today; Dino notes player-facing effects of each fix in the guides.

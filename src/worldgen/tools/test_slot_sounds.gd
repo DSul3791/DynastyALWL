@@ -124,8 +124,14 @@ func _check_sites(names: Array) -> void:
 	for material in doors:
 		check(material != "" and names.has("door_%s_open" % material) and names.has("door_%s_close" % material), "door material '%s' has open and close slots" % material)
 
+	var no_clips_yet: Array = []   # kinds mapped without a step slot yet (all six from 2 Nov 2026 now have one, borrowed clips)
+
 	for kind in AnimalView.KIND_OF_SPECIES.values():
 		var slot: String = "rabbit_hop" if kind == "rabbit" else "%s_step" % kind
+
+		if no_clips_yet.has(kind):
+			continue
+
 		check(names.has(slot), "animal kind %s maps to slot %s" % [kind, slot])
 
 	var unused: Array = []
