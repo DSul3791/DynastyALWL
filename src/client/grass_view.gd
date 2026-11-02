@@ -1074,8 +1074,27 @@ func set_trunks(list: Array, margin: float, squash: float) -> void:
 
 # The nearest eight trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
 func _push_trunks(center: Vector3) -> void:
-	var near: Array = trunks.duplicate()
-	near.sort_custom(func(p, q): return Vector2(p[0] - center.x, p[1] - center.z).length_squared() < Vector2(q[0] - center.x, q[1] - center.z).length_squared())
+	# The eight nearest in one pass (every boulder and stump in view is a segment now: sorting them all every 1.5 s was a hitch).
+	var near: Array = []
+	var dist: Array = []
+
+	for t in trunks:
+		var d: float = Vector2(float(t[0]) - center.x, float(t[1]) - center.z).length_squared()
+
+		if near.size() < 8:
+			near.append(t)
+			dist.append(d)
+			continue
+
+		var worst: int = 0
+
+		for k in range(1, 8):
+			if float(dist[k]) > float(dist[worst]):
+				worst = k
+
+		if d < float(dist[worst]):
+			near[worst] = t
+			dist[worst] = d
 	var a: PackedVector4Array = PackedVector4Array()
 	var b: PackedVector4Array = PackedVector4Array()
 

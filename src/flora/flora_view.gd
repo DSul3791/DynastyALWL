@@ -1686,8 +1686,8 @@ func set_trunks(list: Array, margin: float) -> void:
 		_filter_cleared(chunk, true)
 
 
-func _under_trunk(p: Vector3) -> bool:
-	for t in trunks:
+func _under_trunk(p: Vector3, near: Array) -> bool:
+	for t in near:
 		var a: Vector2 = Vector2(t[0], t[1])
 		var ab: Vector2 = Vector2(t[2], t[3]) - a
 		var along: float = clampf((Vector2(p.x, p.z) - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
@@ -1710,16 +1710,45 @@ func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var n: int = ids.size() - 1
 	var removed: bool = false
 
+	if n < 0:
+		return
+
+	# Only the trunks, stumps, boulders and cleared spots that reach this chunk's plants are tested (Dave 2 Nov 2026: constant lag. Every boulder,
+	# stump and loose log in view is a segment now, and each new one refiltered every plant of every chunk against all of them).
+	var lo: Vector2 = Vector2(INF, INF)
+	var hi: Vector2 = Vector2(-INF, -INF)
+
+	for k in range(n + 1):
+		lo = Vector2(minf(lo.x, positions[k].x), minf(lo.y, positions[k].z))
+		hi = Vector2(maxf(hi.x, positions[k].x), maxf(hi.y, positions[k].z))
+
+	var near: Array = []
+
+	for t in trunks:
+		var reach: float = maxf(float(t[4]), float(t[5])) + trunk_margin_m + 0.2
+
+		if minf(t[0], t[2]) - reach <= hi.x and maxf(t[0], t[2]) + reach >= lo.x and minf(t[1], t[3]) - reach <= hi.y and maxf(t[1], t[3]) + reach >= lo.y:
+			near.append(t)
+
+	var near_spots: Array = []
+
+	for spot in cleared:
+		if spot.x + clear_m >= lo.x and spot.x - clear_m <= hi.x and spot.z + clear_m >= lo.y and spot.z - clear_m <= hi.y:
+			near_spots.append(spot)
+
+	if near.is_empty() and near_spots.is_empty():
+		return
+
 	while n >= 0:
 		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not trunks.is_empty() and _under_trunk(positions[n]):
+		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not near.is_empty() and _under_trunk(positions[n], near):
 			for key in ["ids", "positions", "heights", "yaws"]:
 				items[key].remove_at(n)
 
 			removed = true
 		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
-			for spot in cleared:
+			for spot in near_spots:
 				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
 					for key in ["ids", "positions", "heights", "yaws"]:
 						items[key].remove_at(n)
