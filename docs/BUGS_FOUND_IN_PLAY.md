@@ -88,7 +88,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** when trees fall they all suddenly become much taller and bigger than they were; they should be the same as they were.
 - **Cause (read from the code, not yet seen in a windowed client):** a standing tree is one model built at the species' reference height and scaled by height / reference (`src/flora/flora_view.gd`), so its trunk radius is trunk_m x that scale. The felled trunk and stump took the species' unscaled `trunk_m` as radius (`_fell_record` in `src/stream/server_items.gd`), so a small tree fell as a fat trunk (a 6 m beech: 0.40 m radius instead of 0.14 m) and a big one as a thin one. The length is the tree's whole height, as standing.
 - **Fix:** the felled trunk, its stump and the fall pose use the standing radius (`FellPose.standing_radius`); length unchanged so log counts do not change. Test: `test_fell_autosplit`. Needs a look in a windowed client (PC thread).
-- **Status:** fix merged in #39 (2 Nov); needs Dave's play check (Jamie, from merged commits; not tested).
+- **Status:** fix merged in #39 (2 Nov); headless tests green on Dave's PC (`test_fell_autosplit`, `test_fell_pose`, `test_trunk_cutting`). Needs Dave's play check: QA test card `felled-tree-size-and-split`.
 
 ## Triage by role (Jamie, 2 Nov 2026)
 | # | Bug | Lead | Support |
