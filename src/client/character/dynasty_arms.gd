@@ -48,6 +48,7 @@ func _init() -> void:
 		instance.name = "Dynasty_" + side
 		instance.mesh = _skinned[side]
 		instance.skin = skin
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # 40 thousand triangles an arm: not drawn again into every shadow cascade
 		instance.skeleton = NodePath("..")
 		skeleton.add_child(instance)
 

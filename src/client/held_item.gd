@@ -124,6 +124,9 @@ var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush 
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
+var _caption_age: float = 1.0
+var _caption_held: int = -1
+var _caption_off: int = -1
 var swing_serial: int = 0                  # +1 at every swing start: the third-person body restarts its chop clip on a change
 var _pause_t: float = 0.0
 var _swing_hit: bool = false
@@ -434,15 +437,9 @@ func _aim_at_ground() -> bool:
 	if hit.is_empty():
 		return look.y < -0.5
 
-	var at: Vector3 = hit["position"]
-
-	if _inv.felled_trunk_near(at) != 0 or _inv.loose_log_near(at) != 0 or _inv.boulder_near(at) != 0 or _inv.stump_near(at) != 0:
-		return true
-
-	if _tree_near.is_valid() and not (_tree_near.call(at) as Array).is_empty():
-		return false
-
-	return (hit["normal"] as Vector3).y > 0.6
+	# A plant's collider carries its species (as in _dig_here): a standing tree or shrub is hit from the side. Everything else (the ground, a log, a stump, a rock) comes overhead.
+	# No scan of the loaded plants here: that was done again at the impact and made each swing start cost as much as the blow.
+	return not (hit["collider"] as Object).has_meta("species_ids")
 
 
 # This tool's swing: the axe's wide chop, the pick axe's overhead arc (a hammer keeps its own short rhythm elsewhere).
@@ -756,12 +753,20 @@ func _process_body(delta: float) -> void:
 		if flame_kind not in ["torch", "lantern"]:
 			flame_kind = _off_class()
 
-		var sheltered: bool = _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))
-		_sound.flame.set_held(flame_kind if flame_kind in ["torch", "lantern"] else "", not sheltered)
+		var flame: bool = flame_kind in ["torch", "lantern"]
+		var sheltered: bool = flame and _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))    # the cover lookup only when a flame is held
+		_sound.flame.set_held(flame_kind if flame else "", not sheltered)
 
 	_show_model()
 	_show_off_model(delta)
-	_label.text = _caption()
+	_caption_age += delta
+
+	if _caption_age >= 0.1 or _caption_held != held_number() or _caption_off != off_number():
+		_caption_age = 0.0
+		_caption_held = held_number()
+		_caption_off = off_number()
+		_label.text = _caption()    # built ten times a second, not every frame (it reads the item table and builds strings)
+
 	if _inv != null:
 		_label.offset_bottom = -float(_inv.text_px(78 + 14 + 8))    # above the hotbar at any text size (Dave, build 617: they overlapped)
 	_place_arms(delta)

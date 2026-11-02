@@ -2326,7 +2326,12 @@ func _tree_trunk_near(point: Vector3) -> Array:
 		var held_items: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(held_items["ids"].size()):
-			if flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2) == 0 and Vector2(held_items["positions"][n].x - point.x, held_items["positions"][n].z - point.z).length() < 1.3:
+			var at: Vector3 = held_items["positions"][n]
+			var dx: float = at.x - point.x
+			var dz: float = at.z - point.z
+
+			# The cheap flat-distance test first: only the few trees within 1.3 m pay for the species lookup (this runs over every loaded plant on each swing that lands).
+			if dx * dx + dz * dz < 1.69 and flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2) == 0:
 				return [chunk, held_items["ids"][n]]
 
 	return []
@@ -2346,12 +2351,11 @@ func _shrub_near(from: Vector3, to: Vector3) -> Array:
 		var held_items: Dictionary = flora._chunks[chunk]["items"]
 
 		for n in range(held_items["ids"].size()):
-			if int(flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2)) != 1:
-				continue
-
 			var root_at: Vector3 = held_items["positions"][n]
+			var dx: float = root_at.x - to.x
+			var dz: float = root_at.z - to.z
 
-			if Vector2(root_at.x - to.x, root_at.z - to.z).length() > 4.0:
+			if dx * dx + dz * dz > 16.0 or int(flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2)) != 1:
 				continue
 
 			var height: float = float(held_items["heights"][n]) if held_items.has("heights") and n < held_items["heights"].size() else 1.0
