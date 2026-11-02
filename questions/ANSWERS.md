@@ -2186,3 +2186,7 @@ Answered: 2026-11-02 22:06 UTC
 Answer: At the world spawn, empty pack (recommended) | Comment: This has been spoken of in-depth in the documents. Go read the documents.
 Answered: 2026-11-02 22:06 UTC
 
+## sal-lumber-vs-picking | Lumber pays far more than picking. Is that right, or cut it?
+Answer: C: Limit how many boards Hob buys a day | Comment: It should be something like two boards per copper or three boards per copper
+Answered: 2026-11-02 22:07 UTC
+
