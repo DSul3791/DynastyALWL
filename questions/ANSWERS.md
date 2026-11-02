@@ -2166,3 +2166,7 @@ Answered: 2026-11-02 21:48 UTC
 Answer: Leave as is | Comment: I would think of the daytime there are certain animals that come out more but then things like wolves probably come out more at night and I would expect walls to be lurking around my campfire at night, but they can’t come within a certain safety margin of the campfire so the size of your campfire depends on how big your safety margin is so let’s say a radius of three times whatever the fire light is animals cannot come in that circle, but they might circle around the outside of it and then eventually takeoff
 Answered: 2026-11-02 21:49 UTC
 
+## pic-campfire-lit-real | In the real game: is this lit campfire (stone ring, logs, flames, warm light on the ground at dusk) visible and right? (Grass hidden to see it; the guide's earlier picture had tall grass over it)
+Answer: Yes
+Answered: 2026-11-02 21:50 UTC
+
