@@ -262,6 +262,22 @@ Note: 1. Play the build with PR 58 merged (or branch claude/kathreen-arms-pos).
 Note: 2. Hold the stone axe, stand still, look level and then 35 degrees down.
 Note: 3. Swing at a tree twice.
 Note: 4. Yes if the hands hold the axe and no huge upper arms fill the top corners; No and a note or screenshot if not.
+## jason-pixabay-urls | Sounds: which Pixabay pages did your footsteps, frogs, tree frogs, fish splash, crows, angry crow, wing flaps and brook come from?
+Note: Blocked: 8 rows in assets/audio/CREDITS.csv say "page URL TODO". The licence is known (Pixabay); only the page links are missing, and we need them before release.
+Note: 1. Paste any links you still have, one per line, with the sound name. 2. If you don't have them, type "don't know" and I'll list these as needing a replacement before release.
+[text]
+
+## jason-new-animal-calls | Sounds: boar, grouse, seal and seabird have no calls yet. Where should they come from?
+Note: Blocked: their footsteps borrow existing clips (PR 41), but there's no recording for their calls, and made-up calls sounded fake to you before.
+Note: Recommendation: MikeW finds Pixabay clips on the PC, because the cloud can't reach Pixabay; I then cut and level them and post one card per animal for your ear.
+- MikeW finds Pixabay clips, Jason cuts them
+- I'll record or send my own
+- Leave them silent for now
+
+## jason-clear-hiss | Please test this: in clear, calm weather in a forest, do you hear a rain-like hiss?
+Note: Blocked: the PC sound-log run hasn't happened yet. SOUND_AUDIT.md suspects the tree-wind loops (leaves, pine).
+Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2. Walk into a forest and stand still for 30 s. 3. Then walk into open meadow for 30 s.
+Note: Look for: a steady hiss like rain in the forest that stops in the meadow. If you hear it, open F3 and write the loudest sound line in the Notes box.
 [test]
 ## dino-blocked-pc-walk | Dino (guides) is blocked: the first-hour windowed walk and its pictures need Godot, which the cloud does not have. Who should run them?
 Note: Commands are ready in docs/handoff/DINO_ROUND3_PC_COMMANDS.md (probe, status table, creator, lit fire, felled trunk, lean-to) and the per-bug checks in docs/handoff/DINO_BUG_CHECKS.md. Dino has moved on to paper work meanwhile.
