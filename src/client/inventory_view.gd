@@ -206,6 +206,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
+	_prewarm_loose_meshes()
 	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
@@ -2866,6 +2867,23 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 	elif id == "stone":
 		node.scale = Vector3(rng.randf_range(0.8, 1.3), rng.randf_range(0.7, 1.1), rng.randf_range(0.8, 1.3))
 		node.position.y -= 0.07
+
+
+# Builds the shared meshes of the loose items that appear on every join (stones, sticks, driftwood, logs, firewood, fibre) while the client is still loading, so the first
+# list of world items (282 items took 1070 ms, 961 ms of it here, PC log 2 Nov) only dresses nodes with meshes that already exist (bug 6/join freeze).
+func _prewarm_loose_meshes() -> void:
+	var t0: int = Time.get_ticks_usec()
+
+	for group in PICKUP_FILES:
+		_pickup_group(group)
+
+	for id in table.ids():
+		var name: String = str(id)
+
+		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
+			_mesh_for(table.number_of(name))
+
+	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
 
 # Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).

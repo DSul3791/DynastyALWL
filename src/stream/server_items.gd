@@ -2862,6 +2862,9 @@ func _fires(delta: float) -> void:
 			fire["state"] = 8
 			it["left"] = FIRE_OUT_S
 			_dirty = true
+
+			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
+				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
 			fire["state"] = 9
 			it["left"] = FIRE_LAID_S
@@ -5379,20 +5382,10 @@ func _wood_item(step: String, species: String) -> String:
 	return str(items.get(step, "firewood" if step == "firewood" else "wooden_block"))
 
 
-# Split firewood falls beside the chopping block and joins the heap lying there; five or more make a pile (the client draws it).
+# Split firewood falls beside the chopping block and joins the heap lying there (drop_in_world merges it, PILE_CAP and the pile lifetime included);
+# six or more make a pile the client draws from the count (bug 3: before, this had its own merge capped at the 40 stack with the 20-minute loose lifetime).
 func _drop_firewood_beside(block: Dictionary, count: int, wood_id: String = "firewood") -> void:
-	var wood: int = table.number_of(wood_id)
-	var spot: Vector3 = block["pos"] + Vector3(0.9, 0.0, 0.0)
-
-	for id in _items:
-		var other: Dictionary = _items[id]
-
-		if int(other["number"]) == wood and not other.has("struct") and not other.has("scatter") and not other.has("tree") and Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length() < 0.6 and int(other["count"]) + count <= table.stack_of(wood):
-			other["count"] = int(other["count"]) + count
-			other["left"] = WORLD_ITEM_LIFETIME_S
-			return
-
-	drop_in_world(wood, count, spot)
+	drop_in_world(table.number_of(wood_id), count, block["pos"] + Vector3(0.9, 0.0, 0.0))
 
 
 # A log lying on the ground, struck with an axe, falls apart into wooden blocks (a short log 4, a large shoulder log 12).
@@ -5564,6 +5557,19 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 				box.take_from_slot(slot, 1)
 				held -= each
 				removed = true
+
+	return removed
+
+
+# A burnt-out fire's store keeps no wood: the trim leaves the last piece until the fire is out, and it must not come back as fresh burn time. Food stays.
+func _fire_clear_wood(box) -> bool:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var removed: bool = false
+
+	for slot in range(box.usable):
+		if box.numbers[slot] != 0 and fuel.has(table.id_of(box.numbers[slot])):
+			box.take_from_slot(slot, box.counts[slot])
+			removed = true
 
 	return removed
 
