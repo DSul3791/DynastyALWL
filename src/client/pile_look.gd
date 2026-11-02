@@ -18,8 +18,9 @@ static var _cache: Dictionary = {}
 static var _material: StandardMaterial3D
 
 
+# A pile row may set its own "min" (firewood: 2, so every split piece beside the chopping block shows; bug 3, Dave 1 Nov 2026).
 static func is_pile(entry: Dictionary, count: int) -> bool:
-	return count >= MIN_PILE and entry.has("pile")
+	return entry.has("pile") and count >= int((entry["pile"] as Dictionary).get("min", MIN_PILE))
 
 
 # The mesh for `count` of `item_id`; `seed_id` (the world item id) decides rock sizes and tilt. Cached by (kind, count, seed).
