@@ -466,7 +466,7 @@ func hold_e_step() -> bool:
 
 	var now: int = Time.get_ticks_msec()
 
-	if str(found.get("kind", "")) in ["pickup", "plant", "block"] and now >= _hold_next_msec:
+	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
 		_hold_next_msec = now + 600
 		found["tap"].call()
 
@@ -621,14 +621,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
-		var block_tap: Callable = func():
-			if Input.is_key_pressed(KEY_SHIFT):
-				take_down.call()
-			else:
-				_use_block(id)
-
-		# Holding E keeps splitting, so the pick-up is Shift+E (bug 2, Dave 1 Nov 2026: the block could not be picked up).
-		return {"prompt": "Press E to split firewood (Shift+E to pick up the block)", "tap": block_tap}
+		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -871,20 +864,9 @@ func _auto_pickup_tick(now: int) -> void:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
-# Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
+# Holding E beside a chopping block used to keep splitting logs. Now a hold picks the block up (Dave 2 Nov 2026), so there is nothing to repeat here.
 func hold_use() -> bool:
-	var id: int = _nearest_struct()
-
-	if id == 0 or _world[id]["state"] != 7:
-		return false
-
-	var now: int = Time.get_ticks_msec()
-
-	if now >= _block_next_msec:
-		_block_next_msec = now + 600
-		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
-
-	return true
+	return false
 
 
 # The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
