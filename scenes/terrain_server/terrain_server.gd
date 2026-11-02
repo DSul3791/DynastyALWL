@@ -639,7 +639,7 @@ func _ready() -> void:
 
 	for n in range(_max_running):
 		var thread: Thread = Thread.new()
-		thread.start(_worker_loop)
+		thread.start(_worker_loop, Thread.PRIORITY_LOW)   # low: on a player's PC (Play) the client's render, mesh and audio threads come first (Dave 2 Nov 2026: 4-10 s freezes with 11 server threads on 12 cores)
 		_workers.append(thread)
 
 	if OS.has_environment("DYNASTY_IDLE_THREADS"):
@@ -649,7 +649,7 @@ func _ready() -> void:
 
 	for n in range(_idle_threads):
 		var idle: Thread = Thread.new()
-		idle.start(_idle_loop)
+		idle.start(_idle_loop, Thread.PRIORITY_LOW)
 		_idle_workers.append(idle)
 
 	print("Terrain server listening on port %d with %d worker threads; store %s; spawn %s" % [port, _max_running, store_dir, str(spawn)])
