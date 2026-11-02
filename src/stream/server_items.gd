@@ -5287,16 +5287,19 @@ func _fuel(peer: int, inv, id: int) -> void:
 				refused_log = true   # a pot hangs over this fire: no logs, the fire would be too big for it
 				continue
 
-			inv.remove(number, 1)
-
 			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
-				_chests[int(fire["uid"])].add(number, 1)   # the store is what burns: the piece goes into it
+				if _chests[int(fire["uid"])].add(number, 1) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
+					_say(peer, "The fire's store is full.")
+					return
+
+				inv.remove(number, 1)
 				_fire_apply_store(fire, _chests[int(fire["uid"])])
 				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
 					fire["state"] = _fire_restate(fire)
 			else:
+				inv.remove(number, 1)
 				_fire_add(fire, wood)
 
 			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
