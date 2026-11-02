@@ -5147,9 +5147,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
-	text += "\n" + sound.heard_text(body)
-	text += "\n" + sound.ambient_dump(body, 8)
-	text += "\n" + sound.meters_text()
+	text += "\n" + sound.debug_sound_text(body)       # cached half a second: it walks every player in the scene (was every frame)
 	text += "\n" + sound.wind_text()
 	text += "\nexertion %.2f (%s): %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.state, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
