@@ -2046,3 +2046,7 @@ Answered: 2026-11-02 21:34 UTC
 Answer: No: When you cut the tree and it initially breaks it pauses for about two seconds, and then the Blogg falls to the ground and then it pauses for another two seconds before it breaks
 Answered: 2026-11-02 21:35 UTC
 
+## steve-skinny-tree-size | Felling: does a skinny tree leave a slim stump and slim logs?
+Answer: Yes
+Answered: 2026-11-02 21:35 UTC
+
