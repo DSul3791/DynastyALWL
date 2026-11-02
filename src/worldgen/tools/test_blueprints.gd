@@ -85,6 +85,8 @@ func _init() -> void:
 		var recipe: Dictionary = recipes[str(row["recipe"])]
 		check(bool(recipe.get("retired", false)), "%s: kit recipe %d is retired, not removed" % [id, int(recipe["number"])])
 		check(JSON.stringify(row["cost"]) == JSON.stringify(recipe["needs"]), "%s: cost equals the retired kit recipe" % id)
+		# A retired kit recipe can never be learned (the recipe table skips it), so a blueprint marked unknown could never be built (fireplace, Dino S-place 2 Nov).
+		check(bool(row.get("known", true)), "%s: known, since its kit recipe is retired and cannot be learned" % id)
 
 	check(live.size() == 15 and live.has("log_wall") and live.has("stone_wall") and live.has("brick_roof") and live.has("fireplace") and live.has("log_workbench") and live.has("stone_forge") and live.has("blacksmithy") and live.has("saw_mill") and live.has("woodworking_table") and live.has("clay_hearth") and live.has("oven"), "the heavy stations and the cooking tiers are the blueprints (%d)" % live.size())
 
