@@ -54,7 +54,7 @@
 		{
 			"id": "trunk",
 			"trigger": "tree_down",
-			"text": "A fallen tree breaks into logs. Press E on the sticks and leaves beside it."
+			"text": "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 		},
 		{
 			"id": "kit",
