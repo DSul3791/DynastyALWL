@@ -17,6 +17,7 @@ const PLAYER_KEEP := 0.12
 const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
 const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
+const FLUSH_USEC := 2500                 # group buffers are re-joined and uploaded for at most this long a frame (at least one group); the rest wait a frame
 const BUILD_USEC := 5000                 # cells are built for at most this long a frame (at least one)
 const LOOKAHEAD_S := 1.5                 # the scan is centred this many seconds of movement ahead
 const RESCAN_MSEC := 800                 # the scan also repeats this often while some cell is unbuilt, to retry cells
@@ -927,8 +928,16 @@ func _flush_groups() -> void:
 		return
 
 	var span: float = float(merge_cells) * CELL_M
+	var flush_start: int = Time.get_ticks_usec()
+	var flushed: int = 0
 
 	for g in _dirty.keys():
+		# Dave 2 Nov (lag when grass and trees spawn in): every dirty group re-joins and re-uploads up to merge_cells squared cells of
+		# buffers, so a burst of finished cells could cost many ms in one frame. Stop after FLUSH_USEC (at least one group) and leave the
+		# rest dirty for the next frame; the cards of those cells appear a frame or two later.
+		if flushed > 0 and Time.get_ticks_usec() - flush_start > FLUSH_USEC:
+			break
+
 		var group: Dictionary = _groups.get(g, {})
 
 		for layer in range(LAYERS.size()):
@@ -970,7 +979,8 @@ func _flush_groups() -> void:
 		else:
 			_groups[g] = group
 
-	_dirty.clear()
+		_dirty.erase(g)
+		flushed += 1
 
 
 func _make_group_node(layer: int, span: float) -> MultiMeshInstance3D:
