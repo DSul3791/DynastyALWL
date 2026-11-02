@@ -60,3 +60,17 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
   - The game was running inside the editor (embedded window), which is slower than a standalone run.
   - Fires, the photo camera, the craft search and the E-key changes also went in today.
 - **Status:** open, unassigned, not worked on.
+
+## 8. Three or more firewood in the campfire does not upgrade it to a medium fire
+
+- **Found:** 2026-11-01, Dave, playing the daily.
+- **Symptom (Dave):** when I put 3 or more firewood in the campfire it did not upgrade to a medium fire.
+- **Context, not a diagnosis:** Dave reported the same thing earlier today ("I have put many firewood in the fire, it hasn't got any bigger"). The tier rules (3 or more firewood is the medium fire; softwood firewood counts too, at twice the burn rate) were built by Steve on `claude/fire-fuel-tiers`, and `test_fire_fuel_tiers` shows them working on the server (4 logs lit the large fire; mixed soft and hard firewood made the medium fire). The server tests are not a windowed game, so the tier may not be reaching the client, the picture may not redraw when the tier changes, or the type of firewood Dave used may not count. Not known. Dave's debug overlay at the time of entry 5 shows build 826 (`5254215`, commit `52542154`), which includes the fuel tiers, so this is not an old build.
+- **Status:** open, unassigned, not worked on.
+
+## 9. Only one log can be put in the campfire
+
+- **Found:** 2026-11-01, Dave, playing the daily.
+- **Symptom (Dave):** it won't let me put more than one log in the fire.
+- **Context, not a diagnosis:** same as the earlier report today ("the first log went in but the second one won't"). Steve could not reproduce it on the server (4 logs onto one laid fire all go in, and 5 onto a lit fire with a pot also go in; the only cap is the total, 18 real hours or 6 logs), and suggested the client may treat a tap on a laid fire as "light" and only a hold as "add fuel", or add sticks before logs. He then made fuel order logs first and prompts inspect-mode only (`18e7dcd4`). Since Dave still sees it on a build that includes those, the cause is not known. The pot rule (no logs while a pot hangs on the fire) may be involved if a pot was on that fire; Dave said earlier there was no pot.
+- **Status:** open, unassigned, not worked on.
