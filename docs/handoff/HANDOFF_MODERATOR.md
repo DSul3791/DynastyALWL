@@ -24,6 +24,12 @@ Sessions (each has `docs/handoff/SCOPE_<NAME>.md`, most also `HANDOFF_<NAME>.md`
 ## Second art agent (started 1 Nov)
 "Kathreen: Art assistant" (session local_5dc173d8-f090-4d75-9439-07b664414c73): water look, character look, animals and plants look. Her scope: `docs/handoff/SCOPE_KATHREEN.md`.
 
+## Final state (1 Nov, about 20:00; added by Jamie from the branch list and the moderator's message)
+- Daily head when written: `a96dae1f` (`git log -1 origin/DailyDev_20261029` is the truth).
+- **Stuck-slot warning:** three hung headless Godot scripts were holding the `tools/godot_slot.sh` slots. Never start a Godot run without a timeout (`run_one_test.sh <test> <seconds>`, or `timeout N`). Do not kill Godot processes blindly (one may be Dave's editor); check which ones are the hung scripts first.
+- **Held back, NOT in the daily** (checked with `git rev-list`, commits ahead of the daily): `terrain-bake-set` (13; lake lip, land types, spring feed, pond notch: needs Dave's bake go, card `bake-terrain-set-1`), `claude/mike-pbr-ground` (2; CC0 ground-texture sets plus the download list), `claude/kathree-art-20c939` (Kathreen's work incl. the water emission look, untested), `water-flow-channel` (1; protocol 84 flow-channel texture for the water), `qa` (Dave's question page; never merged into the daily or main) and `qa-poke` (1; a standing PR that must never be merged).
+- Open questions for Dave: the cards on the QA page (branch `qa`, `questions/QUESTIONS.md`), the list in "Known open items" 1 below; the real-death cards (`death-before-heirs`, `death-new-start`, `death-downed-state`) are unanswered and `real_death` stays false in `death.json`.
+
 ## Known open items
 1. Dave: fetch and test the daily; click the Esc water switch; time gathering (sticks per minute); answer the QA cards: `bake-terrain-set-1`, `first-day-lots`, `sell-lots-value1`, `heavy-kits-carry`, `death-before-heirs`, `death-new-start`, `death-downed-state`, fire tiers, lean-to pace, plus the picture cards; run the delete command; say go for main (then backup, merge, tests, new daily branch).
 2. Backlogs (owner, next step, why): `docs/KATHLEEN_NEXT_TASKS.md`, `docs/FLORA_NEXT_TASKS.md`, `docs/TERRAIN_WATER_BACKLOG.md`, `docs/handoff/JASON_NEXT_TASKS.md`, `docs/TYLER_NEXT_TASKS.md`, `HANDOFF_STEVE.md`, `HANDOFF_KATHREEN.md`, `SCOPE_SAL.md` section 7. Open examples: lying trunk and orchard pictures, fire look pass, water look, bridges, plank tier, real-death build, wiring remaining sound hooks, fauna tuning, client check for bench and drink.

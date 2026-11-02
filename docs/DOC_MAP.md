@@ -175,7 +175,7 @@ Done = merged in the daily, or written in the owner's backlog with owner, next s
 | Dino | `GUIDE_TASKS.md`; `docs/handoff/HANDOFF_DINO.md`; `docs/handoff/PHASE2_RUNBOOK.md` | exists |
 | Jason | `docs/handoff/JASON_NEXT_TASKS.md`; `docs/handoff/HANDOFF_JASON.md`; `docs/SOUND_MAP.md` | exists |
 | Jamie | `docs/handoff/SCOPE_JAMIE.md` | exists |
-| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items"; `docs/handoff/PHASE2_RUNBOOK.md` for the Phase 2 order | list of stale lines sent by Jamie |
+| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items"; `docs/handoff/PHASE2_RUNBOOK.md` for the Phase 2 order | updated by the moderator; "Final state" section (stuck slots, held branches) added by Jamie |
 
 ## Which pacing / playthrough document answers what (overlap review, 1 Nov)
 Read, not merged: each is owned (Sal or Dino) and two are generated, so the fix is one home per question, not a merge.
