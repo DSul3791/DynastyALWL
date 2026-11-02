@@ -2022,3 +2022,7 @@ Answered: 2026-11-02 21:31 UTC
 Answer: Yes: It does, but the firewood is still too small. It needs to be 60% bigger each stick.
 Answered: 2026-11-02 21:31 UTC
 
+## sonny-liquid-look | New flowing water (merged, PR #91): does a stream look like one flowing body?
+Answer: Yes: Yes, the water looks fantastic except where there’s gaps that don’t seem to make any sense
+Answered: 2026-11-02 21:32 UTC
+
