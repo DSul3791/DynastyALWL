@@ -621,7 +621,14 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
-		return {"prompt": "Press E to split firewood", "tap": func(): _use_block(id)}
+		var block_tap: Callable = func():
+			if Input.is_key_pressed(KEY_SHIFT):
+				take_down.call()
+			else:
+				_use_block(id)
+
+		# Holding E keeps splitting, so the pick-up is Shift+E (bug 2, Dave 1 Nov 2026: the block could not be picked up).
+		return {"prompt": "Press E to split firewood (Shift+E to pick up the block)", "tap": block_tap}
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
