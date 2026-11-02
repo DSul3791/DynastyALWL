@@ -2170,3 +2170,7 @@ Answered: 2026-11-02 21:49 UTC
 Answer: Yes
 Answered: 2026-11-02 21:50 UTC
 
+## tyler-bug6-first-fell | Bug 6: on a fresh start, fell the first tree; does it fall straight away with no pause and no missing tree?
+Answer: Yes | Comment: The tree fell with very little leg and had probably 300 ms and then when it broke, it was pretty good maybe 300 ms but even just trying to walk past the log I’m constantly lagging and stopping for two seconds at a time I can’t The game is absolutely unplayable right now
+Answered: 2026-11-02 21:56 UTC
+
