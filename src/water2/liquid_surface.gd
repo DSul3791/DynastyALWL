@@ -25,6 +25,9 @@ uniform vec3 sky_color : source_color = vec3(0.55, 0.64, 0.74);
 uniform float clear_m = 1.1;        // water this deep hides about two thirds of the bed
 uniform float edge_m = 0.06;        // the sheet fades in over this much depth at the shore
 uniform float daylight = 1.0;
+uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
+uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
 varying vec2 tex_uv;
 varying float depth_v;
@@ -90,8 +93,16 @@ void fragment() {
 	vec3 n_world = normalize(vec3(-hx / e * chop, 1.0, -hz / e * chop));
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_world, 0.0)).xyz);
 
+	// How much water the eye looks through to the ground behind (the scene's depth): soft where the sheet meets the bank, deeper colour where the
+	// view runs a long way through the water.
+	float scene = texture(depth_tex, SCREEN_UV).r;
+	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, scene, 1.0);
+	behind.xyz /= behind.w;
+	float through = max(VERTEX.z - behind.z, 0.0);
+	float contact = smoothstep(0.0, contact_m, through);
+
 	// Colour by depth, a sky reflection by angle.
-	float thick = 1.0 - exp(-depth / clear_m);
+	float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / clear_m);
 	vec3 water = mix(shallow_color, deep_color, thick);
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
@@ -99,6 +110,9 @@ void fragment() {
 	float streak = mix(noise(p0 * 2.5), noise(p1 * 2.5), mixk);
 	float rough = clamp((speed - 1.2) / 2.5, 0.0, 1.0) * clamp(1.0 - depth / 2.0, 0.0, 1.0);
 	float foam = smoothstep(0.45, 0.8, streak + rough * 0.6) * rough;
+	// Lapping at the bank: a broken foam line that comes and goes where the water thins against the ground.
+	float lap = (1.0 - smoothstep(0.05, lap_m, through)) * smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(TIME * 1.1 + noise(world * 0.35) * 9.0)) * noise(world * 1.3 + TIME * 0.2);
+	foam = max(foam, lap * 0.7);
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
@@ -109,7 +123,7 @@ void fragment() {
 	EMISSION = foam_color * foam * 0.15 * daylight;
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
-	ALPHA = clamp(max(0.35 + 0.6 * thick, foam), 0.0, 1.0) * shore * edge;
+	ALPHA = clamp(max(0.35 + 0.6 * thick, foam), 0.0, 1.0) * shore * edge * contact;
 }
 """
 
