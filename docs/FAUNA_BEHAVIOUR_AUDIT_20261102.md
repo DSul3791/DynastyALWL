@@ -25,3 +25,13 @@ Read from `src/stream/server_animals.gd`, `server_wolves.gd` and `data/animals/a
 2. Seabird: reuse the duck `flock` block.
 3. Rest state at night for day-active species (code).
 4. Wolves on (Dave's decision).
+
+# Meadow flowers: edge or middle? (MikeW, 2 Nov 2026)
+Tool: `src/worldgen/tools/meadow_flowers.gd` (tile 3,4, the most meadow-rich 5x5 chunk block, centre about 58496, 73856). Distance from each flower on meadow ground to the nearest tree, against the same for an even 8 m grid of meadow ground:
+
+| | median | at least 40 m from a tree | at least 80 m |
+|---|---|---|---|
+| meadow ground | 48 m | 57% | 27% |
+| all 5 meadow flowers (15,682) | 49 m | 58% | 28% |
+
+So placement already spreads flowers evenly into the open middle; no species leans to the edge. The old "flowers only at the edge" impression is a drawing question (how far flowers draw, or tall grass hiding them), not placement. Next: check the flower draw distance in `flora_view.gd` against the meadow size.
