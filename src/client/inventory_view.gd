@@ -589,8 +589,8 @@ func _probe_fire() -> Dictionary:
 
 	if _lit_state(state):
 		found["hold"] = cook_nearest
-	elif state == 9:
-		found["hold"] = fuel_nearest
+	else:
+		found["hold"] = pick_up_fire   # a fire that is not burning: hold E takes it up again (Dave 2 Nov 2026); wood goes in with F
 
 	return found
 
@@ -688,10 +688,10 @@ func _hold_e_check() -> void:
 # What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
 func _fire_prompt(state: int) -> String:
 	if state == 8:
-		return "Press E to add wood"
+		return "Press E to add wood (hold E to pick it up, F to open)"
 
 	if state == 9:
-		return "Press E to light (hold E to add wood)"
+		return "Press E to light (hold E to pick it up, F to add wood)"
 
 	return "Press E to add wood (hold E to cook)"
 
@@ -932,6 +932,14 @@ func cook_nearest() -> void:
 
 	if fire != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
+
+
+func pick_up_fire() -> void:
+	var fire: int = _nearest_fire()
+
+	if fire != 0:
+		clear_prompt()
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, fire, 0, 0, Vector3.ZERO)
 
 
 func fuel_nearest() -> void:

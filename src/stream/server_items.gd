@@ -2844,6 +2844,45 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 
+# Hold E on a fire that is not burning picks it up again as a campfire kit (Dave 2 Nov 2026). Refused with a reason while it burns, while a pot hangs
+# on it, or while its wood and food store (F) still holds anything.
+func _pick_up_fire(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_reject(peer, 0)
+		return
+
+	var fire: Dictionary = it["fire"]
+
+	if fire_is_lit(int(fire["state"])):
+		_say(peer, "Let the fire burn out first.")
+		return
+
+	if bool(fire.get("pot", false)):
+		_say(peer, "Take the pot down first.")
+		return
+
+	var box = _chests.get(int(fire.get("uid", 0)))
+
+	if box != null and not box.is_empty():
+		_say(peer, "Empty it first.")
+		return
+
+	var kit: int = table.number_of("campfire_kit")
+
+	if _fit(peer, inv, kit, 1) == 0 or inv.add(kit, 1) > 0:
+		_say(peer, "Too heavy to carry any more")
+		return
+
+	_chests.erase(int(fire.get("uid", 0)))
+	_items.erase(id)
+	_dirty = true
+
+
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -2851,7 +2890,11 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_take_down(peer, inv, id)
 		return
 
-	if it.is_empty() or it.has("fire") or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
+	if it.has("fire"):
+		_pick_up_fire(peer, inv, id)
+		return
+
+	if it.is_empty() or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
@@ -5170,6 +5213,7 @@ func _fire_box(peer: int, it: Dictionary):
 
 	var box = _chests[int(fire["uid"])]
 	box.usable = clampi(int(_cooking.get("fire_slots", 4)), 1, box.SLOTS)
+	box.stack_all = true   # sticks, firewood and logs pile up in the store as many as you like (Dave 2 Nov 2026)
 	return box
 
 

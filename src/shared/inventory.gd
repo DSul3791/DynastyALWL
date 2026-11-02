@@ -12,6 +12,7 @@ var numbers: PackedInt32Array = PackedInt32Array()
 var counts: PackedInt32Array = PackedInt32Array()
 var usable: int = SLOTS               # slots in use: a small container only fills its first few
 var bag_from: int = 0                 # a player's pack: new items go to slots from here first, the hotbar (0 to 9) only when the bag is full
+var stack_all: bool = false           # a store that stacks every item to the u16 count (a fire's wood store); not saved, the owner sets it each time
 var wear: PackedInt32Array = PackedInt32Array()      # uses spent so far, tools only (stack 1); 0 for anything else
 
 
@@ -43,7 +44,7 @@ func add(number: int, count: int, item_wear: int = 0) -> int:
 	if number <= 0 or count <= 0 or table == null:
 		return count
 
-	var stack: int = table.stack_of(number)
+	var stack: int = 65535 if stack_all else table.stack_of(number)
 	var left: int = count
 
 	for i in usable:
