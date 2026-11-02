@@ -41,3 +41,13 @@ Each row: owner of the next step, the exact next step, why. Nothing here has bee
 | 13 | Done | `assets/audio/check_credits.py` (new). Voice files now have rows (Kokoro, Apache-2.0, as stated in `data/npcs/voices.json` and `inner_voice_sets.json`); fox row pattern fixed; licences `own-made` and `Apache-2.0` allowed. Left: 8 rows with page URL TODO (Dave's Pixabay pages), and the Kokoro voice-pack terms to confirm |
 | 15 | Done | `loudness_report.py --check` fails on a clip at or over 0 dBFS and creature peaks over -6 dB. Today it lists 20: gravel/stone step left (+0.2), fire_rain, town_hammering, treewind_dry (+3.9), eight rain beds (up to +2.3, decoded overshoot), and creature snorts/growls/roars (bear_roar -0.1, rabbit_thump -1.9, wolf_growl -2.5, horse_snort -2.6). Fixing needs a listen: Dave's rule is creatures near -14 peak |
 | 24 | Done | `validate_pack.py` credit errors 12 -> 0 (creature rows now match their files, Dave's own recordings use licence `own`); manifest regenerated (23 recorded). Left: 500 UNREFERENCED errors (generated folders such as wet/, weather/ not in the manifest's slot list): a separate cleanup, mostly `make_manifest.py` coverage |
+
+## Update 2 Nov 2026, later (paper check of 20 to 23, read from code, not run)
+
+| # | Finding |
+|---|---|
+| 20 | Already hooked: `fire_sounds.gd` FIRE_STATES includes 40 (survival fire, size x0.6) and 41 (bonfire, x1.5); small/large loops crossfade by size. Left: a `--sound-log` run beside each tier |
+| 21 | Already hooked: `item_sounds.gd` watch() plays `item_pickup_<material>` when a stack grows (line 163). Left: hear it, and confirm auto pickup is covered |
+| 22 | Already softened: `stance_sounds.gd step_db()` returns CROUCH_STEP_DB when crouched, added in `sound_stage.gd:794`. Left: a number check in the step test, and by ear |
+| 23 | Drink is covered by the `itemfx.eat` path (check at `terrain_client.gd:4107`); swim by `swim_sounds.gd` (`sound.swim`). Left: `--sound-log` while wading and drinking |
+Next run needs Godot; commands are in the coordinator thread.

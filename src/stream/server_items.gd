@@ -942,6 +942,7 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 	elif kind == Net.ACT_MINE:
 		_mine(peer, inv, at)
 	elif kind == Net.ACT_CHEST_CLOSE:
+		_sync_fire_from_box(peer, int(_chest_viewer.get(peer, 0)))
 		_chest_viewer.erase(peer)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
@@ -1175,6 +1176,7 @@ func save() -> void:
 			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
 			var pc: Dictionary = it["fire"].get("pieces", {})
 			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
+			row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
 
 		items.append(row)
 
@@ -2679,7 +2681,12 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
-	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE, "wood": {"log": 0.0, "firewood": 0.0, "weak": float(_cooking.get("start_burn_game_s", 3600.0)) / GAME_RATE}, "covered": covered, "recheck": COVER_RECHECK_S}}
+	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
+	var laid_fire: Dictionary = _items[_next_id]["fire"]
+	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
+	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
+	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
+	_fire_apply_store(laid_fire, _fire_store(laid_fire))
 	_next_id += 1
 	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
 
@@ -2832,6 +2839,10 @@ func _fires(delta: float) -> void:
 			continue
 
 		_fire_burn(fire, delta)
+
+		if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_trim_store(fire, _chests[int(fire["uid"])]):
+			_push_box(id, _chests[int(fire["uid"])])   # burned wood leaves the store; whoever has it open sees it go
+
 		fire["recheck"] -= delta
 
 		if fire["recheck"] <= 0.0:
@@ -2848,6 +2859,62 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 
+# E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
+func _put_out_fire(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M:
+		return
+
+	var fire: Dictionary = it["fire"]
+
+	if not fire_is_lit(int(fire["state"])):
+		return
+
+	fire["state"] = 9
+	it["left"] = FIRE_LAID_S
+	_dirty = true
+
+
+# Hold E on a fire that is not burning picks it up again as a campfire kit (Dave 2 Nov 2026). Refused with a reason while it burns, while a pot hangs
+# on it, or while its wood and food store (F) still holds anything.
+func _pick_up_fire(peer: int, inv, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer):
+		return
+
+	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+		_reject(peer, 0)
+		return
+
+	var fire: Dictionary = it["fire"]
+
+	if fire_is_lit(int(fire["state"])):
+		_say(peer, "Let the fire burn out first.")
+		return
+
+	if bool(fire.get("pot", false)):
+		_say(peer, "Take the pot down first.")
+		return
+
+	var box = _chests.get(int(fire.get("uid", 0)))
+
+	if box != null and not box.is_empty():
+		_say(peer, "Empty it first.")
+		return
+
+	var kit: int = table.number_of("campfire_kit")
+
+	if _fit(peer, inv, kit, 1) == 0 or inv.add(kit, 1) > 0:
+		_say(peer, "Too heavy to carry any more")
+		return
+
+	_chests.erase(int(fire.get("uid", 0)))
+	_items.erase(id)
+	_dirty = true
+
+
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -2855,7 +2922,11 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_take_down(peer, inv, id)
 		return
 
-	if it.is_empty() or it.has("fire") or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
+	if it.has("fire"):
+		_pick_up_fire(peer, inv, id)
+		return
+
+	if it.is_empty() or it.has("tree") or it.has("boulder") or not _peer_pos.has(peer):
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
@@ -3140,6 +3211,9 @@ func _load_world_items() -> void:
 						pieces[["log", "firewood", "weak"][k]] = int(row[11][k])
 
 				entry["fire"]["pieces"] = pieces
+
+			if row.size() > 12 and int(row[12]) == 1:
+				entry["fire"]["synced"] = true
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -4208,7 +4282,9 @@ func split_trunk(id: int) -> bool:
 		if Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length() <= DROP_CROWD_M + length:
 			near += 1
 
-	if near + count > MAX_DROPPED_NEAR:
+	var extras: Array = _trunk_extras(id, tree, count, cfg)   # what hand-cutting gives besides the logs (sticks, leaves, bark, seeds, roots)
+
+	if near + count + extras.size() > MAX_DROPPED_NEAR:
 		_dirty = true
 		return false
 
@@ -4217,8 +4293,58 @@ func split_trunk(id: int) -> bool:
 	for spot in spots:
 		drop_in_world(log_n, 1, spot)
 
+	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
+
+	for extra in extras:
+		drop_in_world(int(extra[0]), int(extra[1]), heap)
+
 	_dirty = true
 	return true
+
+
+# What cutting a trunk by hand gives besides the logs, as [item number, count] rows, for a trunk of `logs` whole logs (_process_trunk): the branch blows' sticks and leaves,
+# then per log the bark (or thatch) and seed rolls, and the root ball at the end. Rolled from the trunk's id like hand cutting; no player, so no luck (world drops).
+func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary) -> Array:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(id) ^ 7919
+	var species: String = str(tree.get("species", ""))
+	var totals: Dictionary = {}
+
+	for blow in range(int(cfg.get("branch_blows", 3))):
+		for row in cfg.get("branch", []):
+			var n: int = table.number_of(str(row[0]))
+			totals[n] = int(totals.get(n, 0)) + rng.randi_range(int(row[1]), int(row[2]))   # luck-exempt: world drop, no player
+
+	var thatch_bark: Dictionary = (cfg.get("thatch_bark", {}) as Dictionary).get(species, {})
+	var own: Array = cfg.get("by_species", {}).get(species, [])
+
+	for k in range(logs):
+		if not thatch_bark.is_empty():
+			if rng.randf() < float(thatch_bark.get("chance", 0.3)):   # luck-exempt: world drop, no player
+				var span: Array = thatch_bark.get("count", [2, 4])
+				var t: int = table.number_of("thatch")
+				totals[t] = int(totals.get(t, 0)) + rng.randi_range(int(span[0]), int(span[1]))   # luck-exempt: world drop, no player
+		elif rng.randf() < float(cfg.get("bark_chance", 0.3)):   # luck-exempt: world drop, no player
+			var b: int = table.number_of("bark")
+			totals[b] = int(totals.get(b, 0)) + 1
+
+		if rng.randf() < float(cfg.get("seed_chance", 0.15)):   # luck-exempt: world drop, no player
+			var sn: int = table.number_of("seed_bundle") if own.is_empty() else table.number_of(str(own[0][0]))
+			totals[sn] = int(totals.get(sn, 0)) + (1 if own.is_empty() else rng.randi_range(int(own[0][1]), int(own[0][2])))   # luck-exempt: world drop, no player
+
+	var roots: Array = cfg.get("roots", [])
+
+	if not roots.is_empty():
+		var r: int = table.number_of(str(roots[0]))
+		totals[r] = int(totals.get(r, 0)) + rng.randi_range(int(roots[1]), int(roots[2]))   # luck-exempt: world drop, no player
+
+	var rows: Array = []
+
+	for n in totals:
+		if int(n) > 0 and int(totals[n]) > 0:
+			rows.append([int(n), int(totals[n])])
+
+	return rows
 
 
 # One log cut off the far end of a felled trunk (Dave: a log must land on the ground, never in the pack or on the shoulder; the trunk gets shorter with a fresh cut face). The log is an ordinary
@@ -4586,7 +4712,16 @@ func _fuel(peer: int, inv, id: int) -> void:
 				continue
 
 			inv.remove(number, 1)
-			_fire_add(fire, wood)
+
+			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
+				_chests[int(fire["uid"])].add(number, 1)   # the store is what burns: the piece goes into it
+				_fire_apply_store(fire, _chests[int(fire["uid"])])
+				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
+
+				if fire_is_lit(int(fire["state"])):
+					fire["state"] = _fire_best_state(fire)
+			else:
+				_fire_add(fire, wood)
 
 			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
 			if int(fire["state"]) == 8:
@@ -5111,6 +5246,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 func _use_struct(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
+	if it.has("fire"):
+		_put_out_fire(peer, id)
+		return
+
 	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
 		return
 
@@ -5256,7 +5395,16 @@ func _fire_box(peer: int, it: Dictionary):
 		return null
 
 	var fire: Dictionary = it["fire"]
+	var box = _fire_store(fire)
 
+	if not bool(fire.get("synced", false)):
+		_fire_unload_to_store(fire, box)   # a fire from before the store held its wood: its wood becomes pieces in the store, the first time it is opened
+
+	return box
+
+
+# The fire's own store, made on first use (no reach check: the placing code seeds it too). It stacks every item to the u16 count (Dave 2 Nov 2026).
+func _fire_store(fire: Dictionary):
 	if not _chests.has(int(fire.get("uid", 0))):
 		fire["uid"] = _next_uid
 		_next_uid += 1
@@ -5265,7 +5413,141 @@ func _fire_box(peer: int, it: Dictionary):
 
 	var box = _chests[int(fire["uid"])]
 	box.usable = clampi(int(_cooking.get("fire_slots", 4)), 1, box.SLOTS)
+	box.stack_all = true
 	return box
+
+
+# The store is what the fire burns (Dave 2 Nov 2026): burn time and tier come from the wood in it, and wood burns out of it. A fire that still carries wood
+# of its own (an older save, `synced` false) has that wood turned into plain pieces of its class in the store: stick, firewood or log.
+func _fire_unload_to_store(fire: Dictionary, box) -> void:
+	var wood: Dictionary = _fire_wood(fire)
+
+	for cls in ["log", "firewood", "weak"]:
+		var item_id: String = {"log": "log", "firewood": "firewood", "weak": "stick"}[cls]
+		var each: float = float((_cooking.get("fuel", {}) as Dictionary).get(item_id, 900.0)) / GAME_RATE
+
+		if float(wood[cls]) > 0.0 and each > 0.0:
+			box.add(table.number_of(item_id), maxi(1, int(ceil(float(wood[cls]) / each - 0.0001))))
+
+	fire["synced"] = true
+	_fire_apply_store(fire, box)
+	_dirty = true
+
+
+# The seconds and pieces of wood by class that a store holds (a log is left out under a pot), the stored-fuel cap applied, written onto the fire.
+func _fire_apply_store(fire: Dictionary, box) -> void:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var seconds: Dictionary = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
+	var pieces: Dictionary = {"log": 0, "firewood": 0, "weak": 0}
+
+	for slot in range(box.usable):
+		var number: int = box.numbers[slot]
+
+		if number == 0:
+			continue
+
+		var wood_id: String = table.id_of(number)
+
+		if not fuel.has(wood_id):
+			continue
+
+		var cls: String = _fire_wood_class(wood_id)
+
+		if cls == "log" and bool(fire.get("pot", false)):
+			continue
+
+		seconds[cls] = float(seconds[cls]) + float(box.counts[slot]) * float(fuel[wood_id]) / GAME_RATE
+		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
+
+	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0
+	var wood: Dictionary = _fire_wood(fire)
+	var laid: Dictionary = {}
+
+	for cls in ["log", "firewood", "weak"]:
+		var take: float = clampf(float(seconds[cls]), 0.0, maxf(room, 0.0))
+
+		if take < float(seconds[cls]) and float(seconds[cls]) > 0.0:
+			pieces[cls] = int(ceil(float(pieces[cls]) * take / float(seconds[cls])))
+
+		room -= take
+		wood[cls] = take
+
+		if int(pieces[cls]) > 0:
+			laid[cls] = int(pieces[cls])
+
+	fire["pieces"] = laid
+	_fire_sum(fire)
+
+
+# Wood that has burned leaves the store: of each class, whole pieces go while the store still holds more seconds than the fire has left.
+func _fire_trim_store(fire: Dictionary, box) -> bool:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var wood: Dictionary = _fire_wood(fire)
+	var removed: bool = false
+
+	for cls in ["log", "firewood", "weak"]:
+		var held: float = 0.0
+
+		for slot in range(box.usable):
+			var number: int = box.numbers[slot]
+
+			if number != 0 and fuel.has(table.id_of(number)) and _fire_wood_class(table.id_of(number)) == cls and not (cls == "log" and bool(fire.get("pot", false))):
+				held += float(box.counts[slot]) * float(fuel[table.id_of(number)]) / GAME_RATE
+
+		for slot in range(box.usable):
+			var number: int = box.numbers[slot]
+
+			if number == 0 or not fuel.has(table.id_of(number)) or _fire_wood_class(table.id_of(number)) != cls or (cls == "log" and bool(fire.get("pot", false))):
+				continue
+
+			var each: float = float(fuel[table.id_of(number)]) / GAME_RATE
+
+			while box.counts[slot] > 0 and held - each >= float(wood[cls]) + 0.5:
+				box.take_from_slot(slot, 1)
+				held -= each
+				removed = true
+
+	return removed
+
+
+# Closing a fire's store (Dave 2 Nov 2026): the burn time and the tier are worked out again from the wood in it. An empty store means no burn time: a burning
+# fire goes out, a laid one is empty. The player is told the result.
+func _sync_fire_from_box(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire"):
+		return
+
+	var fire: Dictionary = it["fire"]
+	var box = _chests.get(int(fire.get("uid", 0)))
+
+	if box == null or not bool(fire.get("synced", false)):
+		return
+
+	_fire_apply_store(fire, box)
+	var state: int = int(fire["state"])
+
+	if float(fire["burn_left"]) <= 0.0:
+		if fire_is_lit(state):
+			fire["state"] = 8
+			it["left"] = FIRE_OUT_S
+		elif state == 9:
+			fire["state"] = 8
+			it["left"] = FIRE_OUT_S
+
+		_say(peer, "There is no wood in the fire.")
+	else:
+		if state == 8:
+			fire["state"] = 9
+			it["left"] = FIRE_LAID_S
+		elif fire_is_lit(state):
+			fire["state"] = _fire_best_state(fire)
+
+		var secs: int = int(ceil(float(fire["burn_left"])))
+		var size: String = ["small", "medium", "large"][_fire_tier_of_state(_fire_best_state(fire)) - 1]
+		_say(peer, "Wood on the fire: %d:%02d:%02d of burn time, a %s fire." % [secs / 3600, (secs / 60) % 60, secs % 60, size])
+
+	_dirty = true
 
 
 # Wood or food a fire's store accepts.
@@ -5286,22 +5568,6 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 	fire["tend"] = 2.0
 	var box = _chests[int(fire["uid"])]
 	var state: int = int(fire["state"])
-
-	if (fire_is_lit(state) and float(fire["burn_left"]) < float(_cooking.get("feed_below_s", 20.0))) or state == 8:
-		for wood in _cooking.get("fuel_order", ["stick", "log"]):
-			var number: int = table.number_of(wood)
-
-			if box.has(number, 1) and not (bool(fire.get("pot", false)) and _fire_wood_class(wood) == "log"):
-				box.remove(number, 1)
-				_fire_add(fire, wood)
-
-				if state == 8:
-					fire["state"] = 9
-					it["left"] = FIRE_LAID_S
-
-				_dirty = true
-				_push_box(id, box)
-				break
 
 	if not fire_is_lit(int(fire["state"])):
 		return

@@ -150,6 +150,8 @@ func _init() -> void:
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
 	check(Rules.over_water(cfg, "floor_section_kit", Vector3(301.0, 10.0, 0.0), 0.0, pond) and not Rules.over_water(cfg, "floor_section_kit", Vector3(298.0, 10.0, 0.0), 0.0, pond), "a floor with no wet corner is fine, one wet corner blocks it")
+	var puddle := func(_x, _z): return 0.06
+	check(Rules.over_water(cfg, "campfire_kit", Vector3(0.0, 10.0, 0.0), 0.0, puddle) and not Rules.over_water(cfg, "floor_section_kit", Vector3(0.0, 10.0, 0.0), 0.0, puddle), "a fire is blocked by 6 cm of water, a floor is not")
 	check(Rules.over_water(cfg, "campfire_kit", Vector3(300.5, 10.0, 0.0), 0.0, pond) and Rules.reason_text("water") != "", "a campfire ring in water is blocked, with a reason in words")
 	items.water_depth_at = func(pos: Vector3) -> float: return 1.0 if pos.x > 300.0 else 0.0
 	items.report_position(1, Vector3(302.0, 10.0, 200.0))
@@ -260,32 +262,20 @@ func _init() -> void:
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 3, Vector3.ZERO)
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 	items.action(2, Net.ACT_CHEST_OPEN, fire_id, 0, 0, Vector3.ZERO)
+	var stick_n: int = items.table.number_of("stick")
 	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stone_axe")), fire_id, 1, Vector3.ZERO)
 	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(items.table.number_of("stick")), fire_id, 3, Vector3.ZERO)
 	var box = items._chests.get(int(items._items[fire_id]["fire"].get("uid", 0)))
-	check(box != null and box.count_of(items.table.number_of("stick")) == 3 and box.count_of(items.table.number_of("stone_axe")) == 0, "a fire's store takes wood and refuses an axe")
-	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
-	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
-	items._items[fire_id]["fire"]["burn_left"] = 5.0
-	items._items[fire_id]["fire"]["tend"] = 0.0
-	items._fires(0.1)
-	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 2, "wood in the store feeds a nearly-out fire")
-	var pushed: Array = []
-	items.send_chest = func(peer: int, id: int, _bytes: PackedByteArray) -> void: pushed.append([peer, id])
-	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
-	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
-	items._items[fire_id]["fire"]["burn_left"] = 5.0
-	items._items[fire_id]["fire"]["tend"] = 0.0
-	items._fires(0.1)
-	check(float(items._items[fire_id]["fire"]["burn_left"]) > 5.0 and box.count_of(items.table.number_of("stick")) == 1, "wood in the store feeds a nearly-out fire")
-	check(pushed.size() == 1 and pushed[0][0] == 2 and pushed[0][1] == fire_id, "the player with the store open is sent the new contents")
+	var sticks_in: int = box.count_of(stick_n) if box != null else -1
+	check(box != null and sticks_in >= 3 and box.count_of(items.table.number_of("stone_axe")) == 0, "a fire's store takes wood and refuses an axe")
+	# The store is the fuel (Dave 2 Nov 2026): closing it recounts the wood and sets the burn time; nothing is fed in behind the player's back.
+	items._items[fire_id]["fire"]["burn_left"] = 0.0
+	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 0.0}
 	items.action(2, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
-	items._items[fire_id]["fire"]["state"] = 40   # lit (a placed fire is laid first, fire tiers) and nearly out: 5 s of weak wood left
-	items._items[fire_id]["fire"]["wood"] = {"log": 0.0, "firewood": 0.0, "weak": 5.0}
-	items._items[fire_id]["fire"]["burn_left"] = 5.0
-	items._items[fire_id]["fire"]["tend"] = 0.0
+	check(float(items._items[fire_id]["fire"]["burn_left"]) > 0.0, "closing the store recounts the wood into burn time")
+	var left_before: float = float(items._items[fire_id]["fire"]["burn_left"])
 	items._fires(0.1)
-	check(pushed.size() == 1, "after the window is closed nothing more is pushed")
+	check(box.count_of(stick_n) == sticks_in and float(items._items[fire_id]["fire"]["burn_left"]) <= left_before, "the store is not emptied into the fire by itself")
 	# Rest points: a lean-to you built and a fire you slept by are places to come back to, the nearest one wins; none left means the old rule.
 	items.report_position(2, Vector3(500.0, 10.0, 500.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("lean_to_kit"), 0, 1, Vector3.ZERO)
