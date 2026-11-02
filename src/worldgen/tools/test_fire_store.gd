@@ -75,9 +75,9 @@ func _init() -> void:
 	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 	var box = f._chests[int(fire["uid"])]
 
-	for take_slot in range(box.SLOTS):
+	for take_slot in range(box.SLOTS):   # logs come out one at a time onto the shoulder, so empty the store directly
 		if box.numbers[take_slot] != 0:
-			f.action(1, Net.ACT_CHEST_TAKE, take_slot, id, box.counts[take_slot], Vector3.ZERO)
+			box.take_from_slot(take_slot, box.counts[take_slot])
 
 	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	check(float(fire["burn_left"]) <= 0.0 and int(fire["state"]) == 8, "an empty store: no burn time, the fire is out (burn %s, state %d)" % [str(fire["burn_left"]), int(fire["state"])])
