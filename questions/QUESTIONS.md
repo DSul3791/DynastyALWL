@@ -209,15 +209,6 @@ Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov 
 - "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 - No line, the player will see it
 
-## kathleen-firewood-kindling-look | Do firewood and kindling look like split wood and thin sticks?
-Note: Blocked here: no Godot in my cloud box. New looks are in pull request 60, untested.
-Note: 1. In GitHub Desktop, switch to branch claude/kathleen-wood-looks-20261102.
-Note: 2. Run the game and open your inventory with firewood and kindling in it.
-Note: 3. Drop one of each on the ground and look from 2 m.
-Note: 4. Say Yes if firewood reads as split logs with pale faces and kindling as a handful of sticks; No plus what is wrong.
-Note: Recommendation: Yes, merge it if they read right, because every player handles these daily.
-[test]
-
 ## kathleen-trunk-orchard-shots | Should the PC thread take the lying-trunk and orchard pictures for me?
 Note: Blocked here: both need the game running, which my cloud box cannot do.
 Note: Lying trunk: a felled tree after the bark fix. Orchard: five trees with apples from 15 m north.
