@@ -299,6 +299,10 @@ var gather_pace_ms: int = GATHER_PACE_MS
 var _last_gather: Dictionary = {}   # peer -> msec
 var _last_cook: Dictionary = {}     # peer -> msec
 var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields, seasons)
+# While a trunk splits (split_trunk), its drops look only at these loose items near it: every drop scanned every world record twice (scatter
+# included), a split of 10 logs and their extras ran 30 scans of the whole world in one frame (Dave 2 Nov: a pause as the trunk came apart).
+var _drop_scope: Array = []
+var _drop_scoped: bool = false
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _fruit: Dictionary = {}           # fruit trees: chunk key -> {tree id -> [season stamp, pieces taken this season]} (drops.json "fruit_tree"); saved with the world items
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
@@ -831,7 +835,10 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear only), so a heap grows as one ground item
 	# and never meets the crowd limit. The merge runs before the limit check.
 	if item_wear == 0 and table.stack_of(number) > 1:
-		for id in _items:
+		for id in (_drop_scope if _drop_scoped else _items.keys()):
+			if not _items.has(id):
+				continue
+
 			var near: Dictionary = _items[id]
 
 			if near.has("scatter") or near.has("showroom") or near.has("struct") or near.has("fire") or near.has("tree") or near.has("boulder"):
@@ -855,7 +862,10 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 	var here: int = 0
 
-	for id in _items:
+	for id in (_drop_scope if _drop_scoped else _items.keys()):
+		if not _items.has(id):
+			continue
+
 		var other: Dictionary = _items[id]
 
 		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree"):
@@ -875,6 +885,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
+
+	if _drop_scoped:
+		_drop_scope.append(_next_id)
 
 	_next_id += 1
 	_dirty = true
@@ -4386,14 +4399,21 @@ func split_trunk(id: int) -> bool:
 
 	var near: int = 0
 
+	var scope: Array = []   # the loose items any of the drops below can meet (each drop then looks at these, not every record in the world)
+
 	for other_id in _items:   # room for every log, or none (the crowd rule of drop_in_world, counted once)
 		var other: Dictionary = _items[other_id]
 
 		if other.has("scatter") or other.has("showroom") or other.has("struct") or other.has("fire") or other.has("tree"):
 			continue
 
-		if Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length() <= DROP_CROWD_M + length:
+		var flat: float = Vector2(other["pos"].x - it["pos"].x, other["pos"].z - it["pos"].z).length()
+
+		if flat <= DROP_CROWD_M + length:
 			near += 1
+
+		if flat <= DROP_CROWD_M + length + radius + 1.0:
+			scope.append(other_id)
 
 	var extras: Array = _trunk_extras(id, tree, count, cfg)   # what hand-cutting gives besides the logs (sticks, leaves, bark, seeds, roots)
 
@@ -4403,6 +4423,8 @@ func split_trunk(id: int) -> bool:
 
 	tree.erase("auto_split")
 	_items.erase(id)
+	_drop_scope = scope
+	_drop_scoped = true
 
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
 		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius))
@@ -4412,6 +4434,8 @@ func split_trunk(id: int) -> bool:
 	for extra in extras:
 		drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S)
 
+	_drop_scoped = false
+	_drop_scope = []
 	_dirty = true
 	return true
 
