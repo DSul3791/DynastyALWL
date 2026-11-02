@@ -2118,3 +2118,7 @@ Answered: 2026-11-02 21:43 UTC
 Answer: No | Comment: I have been imagining the net like something you throw like a hand thrown fishing net and you pull it back with a twine and you get a random number of fish based on the size of the school that you threw it at
 Answered: 2026-11-02 21:44 UTC
 
+## pic-axe-no-cube | Is the stone axe now a smooth blade with no grey cube at the end (four views)?
+Answer: Yes | Comment: Yes, the stone ax looks like a good start
+Answered: 2026-11-02 21:44 UTC
+
