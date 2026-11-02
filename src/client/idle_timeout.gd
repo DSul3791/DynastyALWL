@@ -2,15 +2,15 @@ extends Node
 
 # Game idle timeout (Dave via the moderator, 31 Oct 2026): after IDLE minutes with no mouse movement, click or key press the game shows a centred warning with a 60 s
 # countdown; any input cancels it; at zero the client quits cleanly (the owner's quit function disconnects, so the server saves). The minutes are a player setting
-# (display_settings.gd idle_minutes: 5 to 120, default 20). Time is the REAL clock (Time.get_ticks_msec) and only real input events reset it, so a paused game or a debugger
+# (display_settings.gd idle_minutes: 60 to 120, default 60; Dave 2 Nov 2026: one hour at least, a sleeping player presses no keys, no special case for sleep). Time is the REAL clock (Time.get_ticks_msec) and only real input events reset it, so a paused game or a debugger
 # stop is not "idle". Never active in headless runs, with --no-idle-timeout, or when the client was started with any test, shot or rig switch (only the switches in
 # PLAY_ARGS are allowed); --idle-minutes=N overrides the setting (and turns it on for a test).
 #   The pure rules (Rules) are tested by test_idle_timeout.gd with a fake clock.
 
-const MIN_MINUTES := 5
+const MIN_MINUTES := 60
 const MAX_MINUTES := 120
-const DEFAULT_MINUTES := 20
-const STEPS := [5, 10, 20, 30, 45, 60, 90, 120]
+const DEFAULT_MINUTES := 60
+const STEPS := [60, 90, 120]
 const COUNTDOWN_S := 60.0
 const PLAY_ARGS := ["--server=", "--port=", "--name=", "--quality=", "--host", "--identity=", "--fullscreen", "--windowed"]
 
@@ -71,11 +71,11 @@ static func allowed(args: PackedStringArray, headless: bool) -> bool:
 	return true
 
 
-# The minutes to use: the --idle-minutes=N argument when given, else the saved setting; always 5..120.
+# The minutes to use: the --idle-minutes=N argument when given, else the saved setting (always 60..120; the command-line switch is a test aid and may go down to 1).
 static func minutes_for(args: PackedStringArray, saved: int) -> int:
 	for argument in args:
 		if argument.begins_with("--idle-minutes="):
-			return clamp_minutes(int(argument.trim_prefix("--idle-minutes=")))
+			return clampi(int(argument.trim_prefix("--idle-minutes=")), 1, MAX_MINUTES)
 
 	return clamp_minutes(saved)
 
