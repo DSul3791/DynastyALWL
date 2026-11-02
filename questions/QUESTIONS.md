@@ -32,13 +32,6 @@ Note: 2. Place a clay pot on the campfire (6 clay, then 3 sticks and 3 twine), p
 Note: 3. Note whether you get Stewed berries and whether the hint about the pot appeared once.
 [test]
 
-## death-before-heirs | You said: respawn at the bed until level 10, then real death. Children and heirs are not built yet. What should happen to a level 10 character who dies, until they are?
-Note: Today a death leaves your remains with all your gear and then puts you back at the spawn point (nothing is lost for good). Real death needs a screen that says you died and sends you to the creator for a new character; that screen is not built.
-Note: Option A (recommended): keep respawning at level 10 and above, but leave the remains as today; switch to real death in the same release that adds children and the death screen. Nobody loses a character before there is anyone to inherit.
-Note: Option B: real death now. The character is gone, the player makes a new one, the old gear waits in the remains for 7 days. Needs the death screen first (a few days of work).
-- Keep respawning until heirs and the death screen exist (recommended)
-- Real death at level 10 now, build the death screen first
-
 ## death-new-start | After a real death with no child, where and how does the new character start?
 Note: Design says the gear stays on the remains (owner only for the first real day, anyone after) and a wizard can fetch it for a fee.
 Note: Recommendation A: the new character starts at the world spawn with an empty pack, like a new player; their old remains are marked on the map.
