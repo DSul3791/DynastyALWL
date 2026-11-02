@@ -2042,3 +2042,7 @@ Answered: 2026-11-02 21:34 UTC
 Answer: Yes: Yeah, she only need the three logs to get it to jump up to the next year but once it’s there, we’ll stay there until the logs are all gone. Then it will jump back down to whatever the next tier of wood is in the store as long as there’s at least three of it.
 Answered: 2026-11-02 21:34 UTC
 
+## steve-split-pause | Felling: is the pause gone when a felled trunk breaks into logs?
+Answer: No: When you cut the tree and it initially breaks it pauses for about two seconds, and then the Blogg falls to the ground and then it pauses for another two seconds before it breaks
+Answered: 2026-11-02 21:35 UTC
+
