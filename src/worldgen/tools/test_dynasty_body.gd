@@ -27,7 +27,8 @@ func _init() -> void:
 	_check(body.animation_player.get_animation("jump").loop_mode == Animation.LOOP_NONE and body.animation_player.get_animation("land").loop_mode == Animation.LOOP_NONE and body.animation_player.get_animation("fall").loop_mode == Animation.LOOP_LINEAR, "jump and land play once, fall loops")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 4.0, 0), Basis.IDENTITY, false, 0.0, "idle", false, 0.3) == "jump", "rising in the air: jump")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, -4.0, 0), Basis.IDENTITY, false, 0.0, "jump", false, 0.3) == "fall", "dropping in the air: fall")
-	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "fall", false, 0.016) == "walk", "back on the floor: the plain walk (no strafe clips on this body)")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "fall", false, 0.016) == "land", "back on the floor after a long fall: land")
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "land", false, 0.5) == "walk", "once the landing is over: the plain walk (no strafe clips on this body)")
 	_check(body.animation_player.get_animation("crouch").loop_mode == Animation.LOOP_LINEAR, "crouch loops")
 	# Chop sound sync (1 Nov 2026): one swing is one blow, and the clip is the length of the game's swing so the blow lands at held_item's HIT_AT (the sound and the hit).
 	_check(absf(body.animation_player.get_animation("chop").length - 0.95) < 0.02, "chop clip is the 0.95 s swing (%.3f)" % body.animation_player.get_animation("chop").length)
