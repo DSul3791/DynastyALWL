@@ -32,12 +32,6 @@ Note: Real game rig shot at noon from the south edge of the orchard, (53376,6853
 - Yes
 - No
 
-## pic-p2-leanto-bed | Do the lean-to and the rough bed look like something you would shelter and sleep in?
-Image: questions/img/p2_leanto_bed.jpg
-Note: Real client, third person, lean-to left, rough bed right (the rig sets them in a row, the bed is not inside the lean-to here). Guide rates it 3.5 of 5: lean-to reads as a thatch frame; the bed is a yellow mattress on a frame.
-- Yes
-- No
-
 ## jason-clear-hiss | Please test this: in clear, calm weather in a forest, do you hear a rain-like hiss?
 Note: Blocked: the PC sound-log run hasn't happened yet. SOUND_AUDIT.md suspects the tree-wind loops (leaves, pine).
 Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2. Walk into a forest and stand still for 30 s. 3. Then walk into open meadow for 30 s.
