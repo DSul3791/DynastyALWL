@@ -263,3 +263,14 @@ Note: 2. Hold the stone axe, stand still, look level and then 35 degrees down.
 Note: 3. Swing at a tree twice.
 Note: 4. Yes if the hands hold the axe and no huge upper arms fill the top corners; No and a note or screenshot if not.
 [test]
+## dino-blocked-pc-walk | Dino (guides) is blocked: the first-hour windowed walk and its pictures need Godot, which the cloud does not have. Who should run them?
+Note: Commands are ready in docs/handoff/DINO_ROUND3_PC_COMMANDS.md (probe, status table, creator, lit fire, felled trunk, lean-to) and the per-bug checks in docs/handoff/DINO_BUG_CHECKS.md. Dino has moved on to paper work meanwhile.
+- The PC thread runs the commands
+- I walk the checklist myself
+- Skip it for now
+
+## tut-fell-line | After a tree falls it now breaks into logs, sticks and leaves by itself. Which tutorial line should the player see?
+Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov the trunk breaks up about 2 s after landing.
+- "Your tree has broken up. Press E to take the sticks and leaves, and a log on your shoulder."
+- "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
+- No line, the player will see it
