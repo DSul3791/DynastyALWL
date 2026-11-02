@@ -356,3 +356,9 @@ Note: Today the hit count uses the kind of tree only, so a 6 m beech takes as ma
 Note: Felled trunks now match the real size of each tree; the hits could follow that same size.
 Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
 [check]
+
+## sal-dead-end-materials | Give 7 dead-end materials a use (hinges, pins, tar, glue, straps)?
+Note: Nine crafted materials are used by no recipe, so making them is wasted effort. List: docs/DEAD_END_MATERIALS.md.
+Note: Example: hinges go into the plank chest and doorways, wooden pins into tables and chairs, leather straps into the backpack.
+Note: Recommendation: Yes, add them as small extra ingredients (data only, about an hour); soap and compost wait for a game rule.
+[check]
