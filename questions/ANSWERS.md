@@ -2090,3 +2090,7 @@ Answered: 2026-11-02 21:39 UTC
 Answer: Yes | Comment: They look good enough for now
 Answered: 2026-11-02 21:40 UTC
 
+## pic-flora-chamomile | In the real game: is the chamomile and wildflower meadow (yellow drift, red roses behind a bush) a good spread of colour?
+Answer: Yes
+Answered: 2026-11-02 21:40 UTC
+
