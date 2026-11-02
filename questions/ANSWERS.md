@@ -2154,3 +2154,7 @@ Answered: 2026-11-02 21:47 UTC
 Answer: MikeW finds Pixabay clips, Jason cuts them
 Answered: 2026-11-02 21:47 UTC
 
+## dino-blocked-pc-walk | Dino (guides) is blocked: the first-hour windowed walk and its pictures need Godot, which the cloud does not have. Who should run them?
+Answer: The PC thread runs the commands
+Answered: 2026-11-02 21:48 UTC
+
