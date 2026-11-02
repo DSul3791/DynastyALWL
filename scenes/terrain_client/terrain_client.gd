@@ -2030,6 +2030,8 @@ func _update_weather() -> void:
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
+var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
+var _liquid_hole_told: Rect2 = Rect2()
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
@@ -2051,10 +2053,21 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_liquid.add_to_group("water_draw")
 		flora.add_child(_liquid)
 
-	_liquid.show_window(im, origin, cell_m)
-	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in.
-	flora.set_liquid_hole(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m, cell_m)
-	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
+	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
+	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
+		_flow_tex = ImageTexture.create_from_image(im)
+	else:
+		_flow_tex.update(im)
+
+	_liquid.show_window(im, origin, cell_m, _flow_tex)
+	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in (told only when the window moves).
+	var hole: Rect2 = Rect2(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m)
+
+	if hole != _liquid_hole_told:
+		_liquid_hole_told = hole
+		flora.set_liquid_hole(hole.position, hole.size, cell_m)
+
+	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m, _flow_tex)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
