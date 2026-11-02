@@ -2,7 +2,7 @@
 
 Decodes each .ogg under assets/audio (recorded/ and generated) with ffmpeg and prints, per group,
 the active RMS (average over the loud part, windows above -50 dB) and the peak, both in dBFS, plus
-the file's loudness spread inside its group. For footsteps it also adds the game's per-surface level
+the file's loudness spread inside its group. With --check it prints only the clips over the limits (clipping, too-loud creature calls) and exits 1 if any. For footsteps it also adds the game's per-surface level
 (SURFACE_DB in src/client/sound_stage.gd) to give the level you actually hear before the gait,
 and lists surfaces that sit more than STEP_SPREAD_DB from the median. With --md the table is
 written as assets/audio/LOUDNESS.md.
@@ -20,6 +20,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 SR = 22050
 STEP_SPREAD_DB = 3.0
 GROUP_SPREAD_DB = 8.0
+CLIP_DB = 0.0
+CREATURE_PEAK_DB = -6.0
 
 
 def decode(path):
@@ -88,7 +90,7 @@ def main():
         stats = [levels(decode(p)) for p in kinds[kind]]
         rows.append((group, name, kind, len(stats), float(np.mean([s[0] for s in stats])), float(max(s[1] for s in stats))))
 
-    out = ["# Loudness table (make with `python3 assets/audio/loudness_report.py --md`)", "",
+    out = ["# Loudness table (make with `python3 assets/audio/loudness_report.py --md`; guard with `--check`)", "",
            "Active RMS and peak in dBFS per slot (recorded files win over generated). Steps add the game's surface level.", ""]
     by_group = {}
 
@@ -155,12 +157,33 @@ def main():
             median, GROUP_SPREAD_DB / 2, ", ".join("%s (%+.1f)" % (k, v - median) for k, v in sorted(played.items()) if abs(v - median) > GROUP_SPREAD_DB / 2) or "none"))
 
     text = "\n".join(out) + "\n"
+    bad = limit_failures(rows)
 
     if "--md" in sys.argv:
         open(os.path.join(HERE, "LOUDNESS.md"), "w").write(text)
         print("Wrote assets/audio/LOUDNESS.md (%d slots)" % len(rows))
-    else:
+    elif "--check" not in sys.argv:
         print(text)
+
+    if "--check" in sys.argv:
+        for line in bad:
+            print("FAIL " + line)
+
+        print("%d slots checked, %d over the limits" % (len(rows), len(bad)))
+        sys.exit(1 if bad else 0)
+
+
+def limit_failures(rows):
+    """Guard against a too-loud clip: no slot may clip (peak at or above CLIP_DB); creature calls stay under CREATURE_PEAK_DB (Dave 24 Oct: -2 dB peak was far too loud, about -14 is right)."""
+    bad = []
+
+    for g, name, kind, count, rms, peak in rows:
+        if peak >= CLIP_DB:
+            bad.append("%s/%s peak %.1f dB clips (limit %.1f)" % (g, name, peak, CLIP_DB))
+        elif g.startswith("creatures") and peak > CREATURE_PEAK_DB:
+            bad.append("creatures/%s peak %.1f dB is over %.1f" % (name, peak, CREATURE_PEAK_DB))
+
+    return bad
 
 
 if __name__ == "__main__":
