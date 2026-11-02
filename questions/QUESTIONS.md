@@ -255,3 +255,11 @@ Note: 1. git fetch origin, then git checkout sonny-20261102-pondprobe
 Note: 2. godot --headless --path . --script res://tools/head_pond_probe.gd -- --only=1900590,3082096 (about 10 min)
 Note: 3. Paste the lines that start with path into Notes
 [test]
+
+## fp-arms-axe-pr58 | First-person arms with the stone axe (bug 4, PR 58)
+Note: Blocked: Kathreen chose the new arm position from bare-arm pictures and cannot see a held tool.
+Note: 1. Play the build with PR 58 merged (or branch claude/kathreen-arms-pos).
+Note: 2. Hold the stone axe, stand still, look level and then 35 degrees down.
+Note: 3. Swing at a tree twice.
+Note: 4. Yes if the hands hold the axe and no huge upper arms fill the top corners; No and a note or screenshot if not.
+[test]
