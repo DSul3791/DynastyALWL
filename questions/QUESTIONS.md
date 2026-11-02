@@ -185,13 +185,6 @@ Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5:
 - Yes
 - No
 
-## softwood-boards | Softwood boards: spruce and pine saw faster and give 7 lumber a log (hardwood 6)?
-Note: Your note: softwood is better for boards than firewood. Before, every wood sawed the same: 6 lumber a log in 6 s, 2 beams in 8 s. Softwood logs already weigh less (32 against 45 kg) and softwood lumber is worth less (8 against 12 copper).
-Note: Now: spruce and pine lumber 7 per log in 5 s, beams 2 per log in 6 s. Hardwood unchanged.
-Note: Bigger question: hardwood is classed 'fine boards' and softwood 'plank boards'. Should fine boards be worth more (floors, furniture) and plank boards the cheap building board? Today both are called lumber.
-Note: Recommendation: Yes, because softwood saws easily and straight, so a bit more, faster lumber fits your note; keep the fine-board question for later when furniture needs it.
-[check]
-
 ## tyler-bug6-cut-log | Bug 6: fell a tree; is there a pause when it lands and breaks into logs?
 Note: Trees now break into logs by themselves about 2 s after they land, so there is no log to cut by hand. The join pause is fixed (PR #61); the client code for new logs costs under 1 ms in a test.
 Note: 1. Start the latest build, wait 10 s after you arrive. 2. Fell a tree. 3. Watch the moment it lands and the moment it breaks into logs.
