@@ -48,3 +48,19 @@ Every row: owner, exact next step, why it is not done. Verification rows wait fo
 - Rows 4, 5, 8 (apples, fibre cloth, axe cube): edited and photographed offline; QA cards pic-apples-smooth, pic-fibre-cloth-weave, pic-axe-no-cube, plus pic-shore-net-look. The axe is still not seen HELD in game: `axe_hold.png` (first-person) shows no tool; next step is `--cam right --dist 1.6` held shot.
 - Row 2 (lying trunk): two more rig runs (`fell.png`, `fell2.png`) failed: the first stayed on the loading screen, the second shows the forest and no lying trunk (the trunk is not in frame). Next step: run with `--wait 240`, then read the shot runner log for the fell camera line; likely needs `--at` set to the felled tree. Owner Kathleen.
 - Rows 3, 7, 13, 15 (orchard, lean-to bed, skins, real-game pass) not started: no time left in this batch; they stay as written.
+
+## Open at the end of 1 Nov (evening): what is left, who owns it, the exact next step
+All branches of mine are merged into the daily (kathleen-ports, claude/dynasty-fp-arms, claude/dynasty-chop-check, claude/dynasty-torch-crouch, claude/dynasty-fallback). Notes on the Dynasty body are in `docs/DYNASTY_BODY.md`.
+| Item | Owner | Exact next step | Why not done |
+|------|-------|-----------------|--------------|
+| Fire look pass (flame colour and size, torch flicker, smoke, sparks) | Kathleen; Steve reviews each light-parameter diff | `src/client/building_look.gd` FLAME_SHADER, FIXTURE_FLAME_SHADER; tiers are already 3.5/7/14 m and 1/2/4 (commit 338fb25b); take one in-game night shot per tier with `tools/fire_tier_view.gd` and a rig `--hour 20` shot, then adjust | Not started; the machine's Godot slots were held by two hung scripts |
+| Lying trunk look after the bark fix | Kathleen | `art/playthrough/rig.sh --item stone_axe --client-arg --shot-fell=flat --wait 240 --settle 20`, set the camera at the felled tree, one QA card | Two rig runs failed (loading screen, then no trunk in frame) |
+| Orchard and crown close-ups (Dave: "only one tree and one apple, can't tell") | Kathleen | Wide view of at least five trees with visible apples from 15 m north at 53376,68506 yaw 180; separate QA card each | Not started |
+| Real-game first-person arm picture (Dave's own arms, commit f4acaf4a) | Kathleen | The rig's first-person shots do not show the arms or the held tool (also true with the old arms); find why (`set_first_person` or shot mode in terrain_client/held_item) or take the picture with a client window; check arm size, hand scale, dusk light, tool alignment in the hand | The rig cannot show them; offline pictures only (`art/CRITIQUES/fp_arms_2026-11-01/`) |
+| Torch hand check | Dave (decision), Kathleen (change) | Dave's `Crouch_Walk_with_Torch` clips (commit 6719e306) have one arm forward and one low; the game holds the torch in the RIGHT hand mount. If the torch is in the left hand, mount it on `hand_mount_l` while crouched | Not seen in the game; only a still |
+| Crouch_Pull_and_Throw | Dave (decision), Kathleen (wiring) | If Dave wants a crouched throw, map `throw` to it when crouched in `dynasty_body.gd` CLIP_MAP and `avatar_driver.gd` | Not wired: the game's throw is a standing one |
+| Everything in the older rows 1 to 18 above that is not ticked in "Phase 2 results" | as listed | as listed | as listed |
+
+Dave's two open questions: (1) Which hand carries the torch in the crouched torch walks? (2) Does he want `Crouch_Pull_and_Throw` for a crouched throw?
+
+Also left, smaller: lower-detail variants of the Dynasty body for low settings and distance (Dave: later); clothing, hair and recolouring for the Dynasty body (when Dave asks); jab, throw and use are nearest clips (a punch, a spell cast and a push); the log carry does not raise the arm; the Dynasty body in the NPCs and the character creator. Two hung headless scripts of mine (Windows pids 22724 and 17368) hold Godot slots and need killing.
