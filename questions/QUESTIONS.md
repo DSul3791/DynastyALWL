@@ -303,3 +303,12 @@ Note: 4. About 2 seconds after it lands it should turn into logs along where it 
 Note: 5. Do the same with the big tree, and note any stall or freeze when it breaks up.
 Note: Recommendation: Yes, because the size now uses the same scaling as the standing tree and the tests pass.
 [test]
+
+## kathleen-firewood-kindling-look | Do firewood and kindling look like split wood and thin sticks?
+Note: Blocked here: no Godot in my cloud box. New looks are in pull request 60, untested.
+Note: 1. In GitHub Desktop, switch to branch claude/kathleen-wood-looks-20261102.
+Note: 2. Run the game and open your inventory with firewood and kindling in it.
+Note: 3. Drop one of each on the ground and look from 2 m.
+Note: 4. Say Yes if firewood reads as split logs with pale faces and kindling as a handful of sticks; No plus what is wrong.
+Note: Recommendation: Yes, merge it if they read right, because every player handles these daily.
+[test]
