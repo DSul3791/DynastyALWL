@@ -44,3 +44,8 @@ Merging tips: a Godot-generated untracked file (`.uid`, `crash_reports/telemetry
 
 ## Not checked by me
 Anything in a real client; the merged water in any run; the creator; Dave's computer state (it was being restarted at handoff).
+
+## Added 1 Nov, evening: Dave's decisions that came after the final state above
+- **Bugs list:** `docs/BUGS_FOUND_IN_PLAY.md` holds Dave's play-test bugs (seven open at the time of writing). He said nobody works on them until he has finished testing; they are part of the handoff.
+- **Character meshes:** the full Dynasty body is for Ultra only. Lower quality settings get simplified, much lighter versions made from the existing mesh and smaller textures (the body, and the first-person arms file, which holds about 365,000 triangles including unused legs, torso and head). Plan and next steps are in `docs/KATHLEEN_NEXT_TASKS.md`, section "Lighter character meshes for the lower quality settings". Not started.
+- **Stuck test slots:** the three hung headless Godot scripts are gone (Dave restarted the machine), so the test slots are free. The full delta pass on the latest daily has not run yet; the plan is in `docs/TYLER_NEXT_TASKS.md`.
