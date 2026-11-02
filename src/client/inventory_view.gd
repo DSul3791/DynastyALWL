@@ -584,15 +584,10 @@ func _probe_fire() -> Dictionary:
 		elif _lit_state(state):
 			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)   # E on a burning fire puts it out (Dave 2 Nov 2026)
 		else:
-			fuel_nearest()
+			show_notice("Press F to put wood in the fire")}
 
-			if fuel_event.is_valid():
-				fuel_event.call()}
-
-	if _lit_state(state):
-		found["hold"] = cook_nearest
-	else:
-		found["hold"] = pick_up_fire   # a fire that is not burning: hold E takes it up again (Dave 2 Nov 2026); wood goes in with F
+	if not _lit_state(state):
+		found["hold"] = pick_up_fire   # a fire that is not burning: hold E takes it up again (Dave 2 Nov 2026); wood and food go in with F, a burning fire cooks what is in its store
 
 	return found
 
@@ -687,15 +682,15 @@ func _hold_e_check() -> void:
 	found["hold"].call()
 
 
-# What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
+# What E will do at a fire (Dave 2 Nov 2026): burning -> put out, loaded -> light, empty -> nothing (F puts wood in); hold E picks up a fire that is not burning.
 func _fire_prompt(state: int) -> String:
 	if state == 8:
-		return "Press E to add wood (hold E to pick it up, F to open)"
+		return "Press F to add wood (hold E to pick it up)"
 
 	if state == 9:
-		return "Press E to light (hold E to pick it up, F to add wood)"
+		return "Press E to light (hold E to pick it up, F for wood)"
 
-	return "Press E to put out (hold E to cook, F to add wood)"
+	return "Press E to put out (F for wood and food)"
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
@@ -2016,7 +2011,9 @@ var _unsnapped: Dictionary = {}      # world item id -> tries left
 func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 	var entry: Dictionary = _world.get(id, {})
 
-	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
+	var on_fire: bool = _lit_state(int(entry.get("state", 0))) or int(entry.get("state", 0)) == 8 or int(entry.get("state", 0)) == 9   # a fire rests on the drawn ground too (it hung about a metre up where the drawn ground sits under the server's height field, Dave 2 Nov)
+
+	if entry.is_empty() or (int(entry.get("state", 0)) != 0 and not on_fire) or not _ground_below.is_valid() or _rolling.has(id):
 		_unsnapped.erase(id)
 		return
 
@@ -2029,7 +2026,7 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 
 	_unsnapped[id] = tries - 1
 	var node: Node3D = entry["node"]
-	node.position = Vector3(at.x, ground + 0.12, at.z)
+	node.position = Vector3(at.x, ground + (0.02 if on_fire else 0.12), at.z)
 
 
 func _snap_tick(now: int) -> void:
