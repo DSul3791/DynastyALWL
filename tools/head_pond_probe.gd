@@ -98,6 +98,6 @@ func _init() -> void:
 
 		print("spring %d (%.2f m3/s): ground %.2f, baked level %.2f, class %d; depth at spring %.2f m; deepest within 5 cells %.2f m at %d (ground %.2f); stored within 200 m %.0f m3 vs delivered %.0f m3; lowest ground within 200 m %.2f at %d (%d cells away)" % [
 			k, float(spring[1]), data.heights[k], surface, data.water_class[k], sim.depth_at(k), around_max, around_at, sim.ground[around_at], stored, float(spring[1]) * SIM_SECONDS,
-			lowest, lowest_at, int(Vector2(float(lowest_at % side - column), float(lowest_at / side - row)).length())])
+			lowest, lowest_at, int(Vector2(float(lowest_at % side - column), floorf(float(lowest_at) / float(side)) - float(row)).length())])
 
 	quit(0)
