@@ -357,3 +357,8 @@ Note: Recommendation: Yes, because the fix is one number and the bake is the sam
 ## sonny-liquid-look | New flowing water (PR #91): does a stream look like one flowing body?
 Note: 1. Check out PR #91 and start the game. 2. Walk to a stream or river near spawn. 3. Look at shores, slopes and ponds. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
 [test]
+
+## sonny-spring-pools | Springs moved to ponds on flats or at the bottom (PR #92): OK to rebake with it?
+Note: Stacked on the pond-bed rebake (#71). Tiles are only committed after your yes.
+Note: Recommendation: Yes, bake #71 and #92 together
+[check]
