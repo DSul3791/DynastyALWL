@@ -2018,3 +2018,7 @@ Answered: 2026-11-02 21:31 UTC
 Answer: Yes
 Answered: 2026-11-02 21:31 UTC
 
+## kathleen-firewood-pile-grows | Does the firewood pile beside the chopping block grow with each split?
+Answer: Yes: It does, but the firewood is still too small. It needs to be 60% bigger each stick.
+Answered: 2026-11-02 21:31 UTC
+
