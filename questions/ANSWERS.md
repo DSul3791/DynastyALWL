@@ -1982,3 +1982,7 @@ Answered: 2026-11-02 16:50 UTC
 Answer: Yes
 Answered: 2026-11-02 16:50 UTC
 
+## tyler-bug6-cut-log | Bug 6: fell a tree; is there a pause when it lands and breaks into logs?
+Answer: Yes: There’s a big pause when you first cut it and it’s still standing sometimes it doesn’t even appear for five seconds and then poof a tree appears and falls over
+Answered: 2026-11-02 16:51 UTC
+
