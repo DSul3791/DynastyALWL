@@ -273,6 +273,7 @@ func _init() -> void:
 	var one_log_s: float = float(cook["fuel"]["log"]) / rate
 	var grew: int = 0
 	var logs_on: int = 0
+	var pack_logs: int = f.inventory_of(1).count_of(log_n)
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 8, Vector3.ZERO)
 
 	for n in range(8):
@@ -289,7 +290,7 @@ func _init() -> void:
 	# The fire's store has only a few slots, so the last logs may be refused and stay in the pack; every log that goes in adds its full time.
 	check(logs_on >= 4, "logs go on past the old cap (%d went on)" % logs_on)
 	check(grew == logs_on, "every log that goes on adds its full burn time (%d of %d did)" % [grew, logs_on])
-	check(f.inventory_of(1).count_of(log_n) == 8 - logs_on, "a log the store has no room for stays in the pack")
+	check(f.inventory_of(1).count_of(log_n) == pack_logs + 8 - logs_on, "a log the store has no room for stays in the pack")
 	check(float(f._items[log_fire]["fire"]["burn_left"]) > 18.0 * 3600.0, "burn time is past 18 real hours")
 	said.clear()
 	var inv_e = f.inventory_of(1)
