@@ -2845,6 +2845,23 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 
+# E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
+func _put_out_fire(peer: int, id: int) -> void:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M:
+		return
+
+	var fire: Dictionary = it["fire"]
+
+	if not fire_is_lit(int(fire["state"])):
+		return
+
+	fire["state"] = 9
+	it["left"] = FIRE_LAID_S
+	_dirty = true
+
+
 # Hold E on a fire that is not burning picks it up again as a campfire kit (Dave 2 Nov 2026). Refused with a reason while it burns, while a pot hangs
 # on it, or while its wood and food store (F) still holds anything.
 func _pick_up_fire(peer: int, inv, id: int) -> void:
@@ -5059,6 +5076,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 # a log in the pack, a usable axe on the hotbar and the pace.
 func _use_struct(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
+
+	if it.has("fire"):
+		_put_out_fire(peer, id)
+		return
 
 	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
 		return

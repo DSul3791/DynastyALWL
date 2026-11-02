@@ -581,6 +581,8 @@ func _probe_fire() -> Dictionary:
 	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
+		elif _lit_state(state):
+			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)   # E on a burning fire puts it out (Dave 2 Nov 2026)
 		else:
 			fuel_nearest()
 
@@ -693,7 +695,7 @@ func _fire_prompt(state: int) -> String:
 	if state == 9:
 		return "Press E to light (hold E to pick it up, F to add wood)"
 
-	return "Press E to add wood (hold E to cook)"
+	return "Press E to put out (hold E to cook, F to add wood)"
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
