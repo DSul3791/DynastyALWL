@@ -150,8 +150,8 @@ uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
 uniform float season_blades = 1.0;      // share of blades kept (hashed per cell): winter thins the grass
 uniform float trunk_squash = 0.2;       // the share of its height grass keeps under a trunk
-uniform vec4 trunk_a[6];                // felled trunks near: start x, z, end x, z
-uniform vec4 trunk_b[6];                // start radius, end radius, margin, edge softness (zero radius = unused)
+uniform vec4 trunk_a[8];                // felled trunks near: start x, z, end x, z
+uniform vec4 trunk_b[8];                // start radius, end radius, margin, edge softness (zero radius = unused)
 uniform vec4 player_clear = vec4(0.0);  // the local player: x, z, clear radius, share of height kept inside it (radius 0 = off): the feet stay in view in third person
 varying vec3 blade_color;
 varying float tip;
@@ -181,7 +181,7 @@ void vertex() {
 	vec2 root_xz = MODEL_MATRIX[3].xz;
 	float pressed = 0.0;
 	float inside = 0.0;
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 8; i++) {
 		if (trunk_b[i].x > 0.0) {
 			vec2 a = trunk_a[i].xy;
 			vec2 ab = trunk_a[i].zw - a;
@@ -1072,14 +1072,14 @@ func set_trunks(list: Array, margin: float, squash: float) -> void:
 	_trunk_msec = 0       # pushed to the shader at the next update
 
 
-# The nearest six trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
+# The nearest eight trunks go to the grass shader (the pressing is drawn per blade there, soft at the edge, so no cell is rebuilt).
 func _push_trunks(center: Vector3) -> void:
 	var near: Array = trunks.duplicate()
 	near.sort_custom(func(p, q): return Vector2(p[0] - center.x, p[1] - center.z).length_squared() < Vector2(q[0] - center.x, q[1] - center.z).length_squared())
 	var a: PackedVector4Array = PackedVector4Array()
 	var b: PackedVector4Array = PackedVector4Array()
 
-	for i in range(6):
+	for i in range(8):
 		if i < near.size():
 			var t: Array = near[i]
 			a.append(Vector4(t[0], t[1], t[2], t[3]))
