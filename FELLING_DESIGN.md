@@ -32,5 +32,13 @@ For Technical direction approval before any code (JOBS.md job 8). Rules are Dave
 - Client: a trunk or stump is one simple mesh (a handful per area); saplings and grown trees go through the existing MultiMesh per species, so no new draw calls beyond a few instances.
 - Dave's rules respected: no digging under trees here; felled trees never vanish except by rot.
 
+## Auto-split (Dave 2 Nov 2026: "break into their logs when they hit the ground and save me having to cut them up")
+- Size: the trunk and stump use the standing tree's drawn radius (`FellPose.standing_radius`: species trunk_m x height / reference height, with tree_builder's broadleaf floor) and its full height as length (bug 11).
+- About 2 s after the last blow (`FALL_SETTLE_MS`, the client topple is 1.5 s) the server breaks the trunk record into whole 2.44 m logs of the species (`_log_number`, same count and cap as cutting by hand) lying along the trunk line and turned along it (`rot_y`). A heap beside it holds what hand-cutting gives: branch sticks and leaves, per-log bark or thatch and seeds, the root ball (`_trunk_extras`, rolled from the trunk id, no luck). A trunk too short for one log gives firewood, kindling and sticks (`_split_small`).
+- Everything it breaks into lasts a real week (`SPLIT_LIFETIME_S`), as the trunk did before it rotted. The stump stays and is chopped as before.
+- No room (the 64 loose items crowd rule): retried every 30 s, three times, then it stays a trunk for the axe. A trunk already cut by hand is never split. A trunk saved before the auto-split that nobody cut breaks up after a restart (#76).
+- Felling blows can follow the tree's own size with drops.json `felling.size_scaled` (off until Dave answers the QA card `tree-hits-follow-size`).
+- Tests: `src/worldgen/tools/test_fell_autosplit.gd`.
+
 ## Build order after approval
 9 chop and fall (ACT_HIT, trunk and stump records, hit sounds hook); 10 process a trunk into logs, branches, bark, leaves, seeds (drop table); 11 rot, sapling respawn and lazy growth.
