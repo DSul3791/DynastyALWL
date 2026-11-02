@@ -71,6 +71,33 @@ func _init() -> void:
 	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three beech logs in the store make the large fire (state %d, wood %s, pieces %s)" % [int(fire["state"]), str(fire["wood"]), str(fire.get("pieces", {}))])
 
+	# Dave 2 Nov 2026: a third log put into a burning fire's store vanished. Wood put in while the store is open stays until the close counts it;
+	# only wood that has burned leaves the store.
+	var keep_box = f._chests[int(fire["uid"])]
+
+	for keep_slot in range(keep_box.SLOTS):
+		if keep_box.numbers[keep_slot] != 0:
+			keep_box.take_from_slot(keep_slot, keep_box.counts[keep_slot])
+
+	fire.erase("burnt")
+	keep_box.add(f.table.number_of("log_beech"), 2)
+	f._fire_apply_store(fire, keep_box)
+	fire["state"] = f._fire_best_state(fire)
+	f._items[id]["left"] = 1.0e9
+	var two_logs: float = float(fire["burn_left"])
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("log_beech"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_PUT, f.inventory_of(1).numbers.find(f.table.number_of("log_beech")), id, 1, Vector3.ZERO)
+
+	for n in range(3):
+		f.tick(10.0)
+
+	check(keep_box.count_of(f.table.number_of("log_beech")) == 3, "a third log put into a burning fire stays in the store while it is open (%d logs)" % keep_box.count_of(f.table.number_of("log_beech")))
+	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	var log_s: float = float(f._cooking["fuel"]["log_beech"]) / ItemsScript.GAME_RATE
+	check(float(fire["burn_left"]) > two_logs + log_s - 60.0 and float(fire["burn_left"]) < two_logs + log_s, "closing counts the third log, less what has burned (%.0f s, two logs %.0f s)" % [float(fire["burn_left"]), two_logs])
+	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three logs: the large fire (state %d)" % int(fire["state"]))
+
 	# A fire that burns out leaves no wood in its store: the last piece is ash, not fresh burn time for the next close.
 	var burn_box = f._chests[int(fire["uid"])]
 
