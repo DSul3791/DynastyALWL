@@ -2014,3 +2014,7 @@ Answered: 2026-11-02 21:30 UTC
 Answer: Yes: Yes, in some places it looks great. In most places. It looks great except standing in the grass and then it looks like a weird green carpet.
 Answered: 2026-11-02 21:31 UTC
 
+## sal-dead-end-materials | Give 7 dead-end materials a use (hinges, pins, tar, glue, straps)?
+Answer: Yes
+Answered: 2026-11-02 21:31 UTC
+
