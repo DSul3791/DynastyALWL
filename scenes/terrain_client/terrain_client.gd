@@ -1621,6 +1621,14 @@ func _sync_cleared() -> void:
 			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
 			continue
 
+		if int(row.get("state", 0)) == 4 and _switches.on("log_grass"):
+			# A standing stump: no blade grows out of it (inventory_view._make_felled draws it as a short cylinder).
+			var stump_at: Vector3 = row["pos"]
+			var stump_r: float = float(row.get("extra", {}).get("radius", 0.3))
+			lying.append(LyingLogs.round_segment(stump_at, stump_r * 0.95))
+			key = key ^ hash(Vector2(stump_at.x, stump_at.z)) ^ int(id)
+			continue
+
 		if int(row.get("state", 0)) == 0 and _switches.on("log_grass") and row.get("node") is Node3D:
 			var loose_id: String = items.table.id_of(int(row.get("number", 0)))
 
@@ -1639,6 +1647,12 @@ func _sync_cleared() -> void:
 		var pos: Vector3 = row["pos"]
 		spots.append(Vector3(snappedf(pos.x, 0.01), pos.y, snappedf(pos.z, 0.01)))
 		key = key ^ hash(Vector2(pos.x, pos.z)) ^ int(id)
+
+	for boulder_id in items._boulders:
+		var boulder: Dictionary = items._boulders[boulder_id]
+		var rock_r: float = float(boulder.get("now", boulder.get("radius", 0.5)))
+		lying.append(LyingLogs.round_segment(boulder["pos"], rock_r))
+		key = key ^ hash(Vector2(boulder["pos"].x, boulder["pos"].z)) ^ int(boulder_id) ^ int(rock_r * 100.0)
 
 	if key == _cleared_key:
 		return
