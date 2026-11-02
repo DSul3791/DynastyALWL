@@ -102,6 +102,23 @@ func _init() -> void:
 
 	check(fired == 2 and gave == 0, "blocks outstanding, none arriving, nothing failed: two stall retries from 30 s, no give up (%d retries, %d give ups)" % [fired, gave])
 
+	# 2 Nov 2026 (rig join hang): blocks outstanding and none arriving long after both stall retries: give up (the window says so) instead of waiting for ever.
+	var dead = WatchdogScript.new()
+	var dead_acts: Array = []
+	var gave_at: int = -1
+
+	for t in range(1, 4000):
+		var act3: String = dead.step(t * 100, true, 1, 500, 0)
+
+		if act3 != "":
+			dead_acts.append(act3)
+
+			if act3 == "give_up" and gave_at < 0:
+				gave_at = t * 100
+
+	check(dead_acts.slice(0, 3) == ["retry", "retry", "give_up"], "one block outstanding, nothing arriving: two stall retries, then a give up (%s)" % str(dead_acts.slice(0, 4)))
+	check(gave_at >= 200000 and gave_at <= 240000, "the give up comes about 3 minutes after the last stall retry (%.0f s)" % (float(gave_at) * 0.001))
+
 	# Mike's failing run: the stream delivers for minutes (received rising, a block outstanding), nothing failed: never restarted.
 	var slow = WatchdogScript.new()
 	var slow_fired: int = 0
