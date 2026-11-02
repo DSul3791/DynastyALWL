@@ -1216,7 +1216,7 @@ func _grade_point_here() -> void:
 		_grade_has_b = false
 
 	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if setting_b else 0, 0, hit["position"])
-	_inv._on_notice("Point B set: hold Shift and left click along the line to grade it" if setting_b else "Point A set: Shift + right click again for point B")
+	_inv._on_notice("Point B set: the ground between the pins is levelled and trodden for you" if setting_b else "Point A set: Shift + right click again for point B")
 
 	for stake in _stakes:
 		if is_instance_valid(stake):
