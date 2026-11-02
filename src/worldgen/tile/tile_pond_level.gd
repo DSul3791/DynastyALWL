@@ -8,7 +8,8 @@ extends RefCounted
 const OCEAN := 1
 const LAKE := 2
 const DRY_MARGIN_M := 0.02       # a cell this close under the new level is dry
-const SLACK_M := 0.1             # a body painted no more than this above its spill is left alone
+const SLACK_M := 1.0             # a body painted no more than this above its spill is left alone: an outlet brook cut a little under the lip is normal and the settle
+                                 # finds that level itself (at 0.1 the first bake lowered 1547 of 1562 bodies on tile 3,4); only a level metres above its rim is broken
 const MAX_VISIT := 400000        # cells one flood may look at before it gives up (the body is left alone)
 const LEVEL_STEP_M := 0.25       # LAKE cells whose painted levels differ by more than this belong to different bodies
 

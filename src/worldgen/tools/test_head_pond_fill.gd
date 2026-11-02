@@ -154,7 +154,17 @@ func _init() -> void:
 
 	for spot in spots:
 		var k: int = spot[0]
+		# 2 Nov 2026: the pond's water, not only the spring cell: a spring on the bowl's side runs down to the floor first (spring 1900590 stood 1.75 m up the
+		# slope of its bowl, dry at the spring with 0.5 m of water 40 m away), so the deepest water within 5 cells (40 m) of the spring counts.
 		var wet: float = sim.depth_at(k)
+		var side: int = data.samples
+
+		for dj in range(-5, 6):
+			for di in range(-5, 6):
+				var q: int = k + dj * side + di
+
+				if q >= 0 and q < data.heights.size():
+					wet = maxf(wet, sim.depth_at(q))
 		# A pond is a 2 to 8 m bowl fed by 0.1 to 2 m3/s: it cannot fill faster than its spring brings the water. A bowl fills deepest first, so the volume share
 		# the spring can deliver is a floor for the depth share.
 		var volume: float = float(spot[3])
@@ -163,7 +173,9 @@ func _init() -> void:
 		var need: float = share * float(spot[1])
 
 		if volume > LAKE_VOLUME_M3:
-			need = LAKE_NEED_M      # a lake: the spring cannot fill it, it only has to stand a metre deep
+			# A lake: the spring cannot fill it, it only has to stand a metre deep, or as deep as its water can make it (2 Nov 2026: a 0.3 m3/s spring brings 3240 m3
+			# in three hours, which cannot stand a metre deep in a 220,000 m3 bowl).
+			need = minf(LAKE_NEED_M, maxf(need, 0.05))
 
 		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.1f m after %d s, needs %.1f m" % [k, spot[2], volume, spot[1], wet, int(SIM_SECONDS), need]
 
