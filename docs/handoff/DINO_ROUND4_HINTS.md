@@ -1,6 +1,6 @@
 # Dino round 4 (2 Nov 2026, paper review on main): in-game hints left behind by the 2 Nov fire and felling changes
 
-Nothing in game data was changed (hints.json is Sal's). These hints now tell the player to do the wrong thing.
+Nothing in game data was changed (hints.json is Sal's). These hints now tell the player to do the wrong thing. **Update: Sal's PR #53 already fixes `fuel` and `roast` (and tutorial steps 14 and 15); only `trunk` is left.**
 
 | Hint id | Trigger | Text today | Problem | Suggested text |
 |---|---|---|---|---|
