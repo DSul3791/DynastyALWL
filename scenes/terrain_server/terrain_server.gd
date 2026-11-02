@@ -1135,7 +1135,8 @@ func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 	if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or flora.removed_in(home).has(id):
 		return {}
 
-	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"])}
+	var ref_height: float = 0.5 * (float(species["height_min"]) + float(species["height_max"]))   # what the client builds the model at (flora_view)
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf"}
 
 
 func _cut_tree(chunk: Vector2i, id: int) -> bool:
