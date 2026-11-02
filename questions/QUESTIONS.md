@@ -69,11 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## jason-pixabay-urls | Sounds: which Pixabay pages did your footsteps, frogs, tree frogs, fish splash, crows, angry crow, wing flaps and brook come from?
-Note: Blocked: 8 rows in assets/audio/CREDITS.csv say "page URL TODO". The licence is known (Pixabay); only the page links are missing, and we need them before release.
-Note: 1. Paste any links you still have, one per line, with the sound name. 2. If you don't have them, type "don't know" and I'll list these as needing a replacement before release.
-[text]
-
 ## jason-new-animal-calls | Sounds: boar, grouse, seal and seabird have no calls yet. Where should they come from?
 Note: Blocked: their footsteps borrow existing clips (PR 41), but there's no recording for their calls, and made-up calls sounded fake to you before.
 Note: Recommendation: MikeW finds Pixabay clips on the PC, because the cloud can't reach Pixabay; I then cut and level them and post one card per animal for your ear.
