@@ -874,7 +874,21 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	return true
 
 
+# Bug 6 (Dave 2 Nov 2026: about a second's pause when an old trunk is cut up): every player action is timed, and one over SLOW_ACTION_MS prints a line,
+# so the server log shows whether the pause is here (and which action) or in the client ("client slow: world items ...").
+const SLOW_ACTION_MS := 20.0
+
+
 func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_action(peer, kind, a, b, count, at)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > SLOW_ACTION_MS:
+		print("server slow: action %d (a %d, b %d) took %.0f ms, %d world items" % [kind, a, b, ms, _items.size()])
+
+
+func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
 	var inv = inventory_of(peer)
 
 	if inv == null:
