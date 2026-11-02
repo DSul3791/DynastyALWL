@@ -93,6 +93,7 @@ var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
+const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
@@ -749,6 +750,7 @@ func _ready() -> void:
 	net.vent_received.connect(func(at: Vector3) -> void: sound.ambience.set_vent(at))
 	net.water_rate_received.connect(_on_water_rate)
 	net.water_changed_received.connect(_on_water_changed)
+	net.water_flow_received.connect(_on_water_flow)
 	net.tunnel_settings_received.connect(func(on: bool, cave_in_s: int) -> void:
 		tunnel_on = on
 		tunnel_cave_in_s = cave_in_s
@@ -1975,6 +1977,19 @@ func _update_weather() -> void:
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
+
+
+# Protocol 84: the simulated water window as a texture for the water shader (uniforms water2_*; they do nothing until the shader reads them, src/water2/water_flow_texture.gd).
+func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
+	var material: Material = flora.water_material() if flora != null else null
+
+	if material == null:
+		return
+
+	var im: Image = FlowTexture.unpack(w, h, raw_size, bytes)
+
+	if im != null:
+		FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
