@@ -69,12 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## pic-blueberry-real | Does the blueberry bush (right of centre, with blue berries) look like a blueberry bush?
-Image: questions/img/kathreen-blueberry-real.png
-Note: Real game, from about 4 m, grass in front. Kathreen rates it 3 of 5: small dark thin bush with blue berries, easy to miss behind the grass.
-- Yes
-- No
-
 ## pic-creator-front | Does the character creator preview now face you with a readable face?
 Image: questions/img/kathreen-creator-front.png
 Note: Real creator scene facing the camera (it starts at 180 degrees and then turns slowly). Kathreen rates it 3 of 5: face reads, colours are flat. Recommendation: Yes for facing front; flat colours are a separate later polish.
