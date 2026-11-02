@@ -363,3 +363,11 @@ Note: 2. Check: a number rises and fades where each hit landed.
 Note: 3. Esc > Settings > Gameplay > Damage numbers off, hit again: no numbers.
 Note: Recommendation: On main (#82).
 [test]
+
+## steve-bush-work | Bushes: does an axe chop a bush into leaves and sticks, and a pickaxe dig it up to replant?
+Note: 1. Hit a bush (hazel is fine) twice with the axe: it goes, you get leaves and sticks.
+Note: 2. Hit another bush twice with the pickaxe: you get the bush item, for example hazel_bush.
+Note: 3. Hold the bush item, aim at open ground and press the use key to plant it.
+Note: 4. Check: a full bush stands there and is still there after a restart.
+Note: Recommendation: On main (#84, #100).
+[test]
