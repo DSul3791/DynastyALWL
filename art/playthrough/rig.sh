@@ -108,7 +108,10 @@ if [ -n "$WIN" ]; then
   # The rig keeps a warm shader cache between runs (RIG_WARM, default beside the rig's temp folders) and copies it in before and back after the run; Dave's own cache is never touched.
   WARM="${RIG_WARM:-${TMPDIR:-/tmp}/dynasty_rig_warm}"; mkdir -p "$WARM/shader_cache" "$WARM/vulkan" "$UD"
   cp -a "$WARM/shader_cache" "$WARM/vulkan" "$UD/" 2>/dev/null
-  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=900 > "$RIG/client.log" 2>&1
+  # The Windows editor build is a GUI program: its stdout often reaches no redirect, so the console (shader compile errors, "client slow" lines) was lost.
+  # --log-file makes Godot write the same lines to a file itself; it is appended to client.log after the run (Tyler, 2 Nov 2026).
+  APPDATA="$(cygpath -w "$RIG/appdata")" "$GODOT" --log-file "$(cygpath -w "$RIG/client_godot.log")" --path . --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" --timeout=900 > "$RIG/client.log" 2>&1
+  [ -f "$RIG/client_godot.log" ] && cat "$RIG/client_godot.log" >> "$RIG/client.log"
   cp -a "$UD/shader_cache" "$UD/vulkan" "$WARM/" 2>/dev/null
 else
   # NVIDIA Vulkan file when nvidia-smi works (found by looking), else Mesa lavapipe; own HOME so Dave's settings are never touched.
@@ -122,4 +125,7 @@ else
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
 grep -E "shot runner: saved|ERROR|SCRIPT" "$RIG/client.log" | head -5 | cut -c1-200
+# Keep both consoles beside the picture, and say how many shader errors the client printed (0 means the shaders compiled).
+mkdir -p "$OUT"; cp "$RIG/client.log" "$OUT/$NAME.client.log" 2>/dev/null; cp "$RIG/server.log" "$OUT/$NAME.server.log" 2>/dev/null
+echo "client console: $OUT/$NAME.client.log ($(wc -l < "$RIG/client.log" 2>/dev/null || echo 0) lines, $(grep -c "SHADER ERROR" "$RIG/client.log" 2>/dev/null || echo 0) shader errors)"
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
