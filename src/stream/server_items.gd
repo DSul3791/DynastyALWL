@@ -2677,12 +2677,12 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
-	var laid_fire: Dictionary = {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}
+	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
+	var laid_fire: Dictionary = _items[_next_id]["fire"]
 	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
 	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
 	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
 	_fire_apply_store(laid_fire, _fire_store(laid_fire))
-	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": laid_fire}
 	_next_id += 1
 	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
 
@@ -4569,6 +4569,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
 				_chests[int(fire["uid"])].add(number, 1)   # the store is what burns: the piece goes into it
 				_fire_apply_store(fire, _chests[int(fire["uid"])])
+				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
 					fire["state"] = _fire_best_state(fire)
