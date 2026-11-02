@@ -41,6 +41,8 @@ const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
@@ -1059,6 +1061,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
+	_freeze_watch.start()
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
@@ -3835,6 +3838,7 @@ func _log_frame(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	FreezeWatchScript.beat()
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
@@ -5569,6 +5573,7 @@ func _finish_cache_task() -> void:
 
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
+	_freeze_watch.stop()
 
 	if crash_report != null:
 		crash_report.mark_clean()
