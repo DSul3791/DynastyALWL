@@ -12,7 +12,9 @@ const FLEE := 2
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse"}
+# Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
+# data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird"}
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}

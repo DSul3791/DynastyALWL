@@ -17,7 +17,7 @@ const RULES_PATH := "res://data/water_settle.json"
 const HollowFinder := preload("res://src/water/hollow_finder.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const DrainageFill := preload("res://src/worldgen/tile/drainage_fill.gd")
-const VERSION := 9                # the rules version printed by the settle tool and the report (data/water_settle.json "version")
+const VERSION := 10               # the rules version printed by the settle tool and the report (data/water_settle.json "version")
 
 
 # The settle rules (data/water_settle.json); {} when the file is missing or broken.

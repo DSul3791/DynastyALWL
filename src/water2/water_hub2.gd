@@ -8,6 +8,7 @@ extends RefCounted
 
 const Field := preload("res://src/water2/water_field.gd")
 const WaterWindow := preload("res://src/water2/water_window.gd")
+const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
 
 const SOURCES_PATH := "res://src/water2/water_sources.json"
 const RAIN_PER_RUNOFF := 0.0001   # shortcut: metres of rain per second for each 1.0 the server's runoff is above 1.0 (the weather swell); tune with real storms
@@ -32,6 +33,7 @@ var _quit: bool = false
 var _data: Dictionary = {}
 var _wanted: Array = []
 var _pending: PackedFloat32Array = PackedFloat32Array()
+var _flow_pending: Dictionary = {}   # the newest render texture packet (water_flow_texture.packet), taken once by take_flow
 var _field = null
 var _base: PackedFloat32Array = PackedFloat32Array()
 var _sim_tile: Vector2i = Vector2i(-9999, -9999)
@@ -114,6 +116,15 @@ func take_updates() -> Array:
 		return []
 
 	return [[tile, levels, levels]]
+
+
+# The newest render texture packet for clients ({} when nothing new since the last call): see water_flow_texture.gd packet / unpack.
+func take_flow() -> Dictionary:
+	_mutex.lock()
+	var packet: Dictionary = _flow_pending
+	_flow_pending = {}
+	_mutex.unlock()
+	return packet
 
 
 func data_of(tile: Vector2i):
@@ -256,8 +267,10 @@ func _run() -> void:
 
 		if ticks % PUBLISH_TICKS == 1:
 			var levels: PackedFloat32Array = publish_levels(_base, tile_data.samples, _field, window_origin)
+			var packet: Dictionary = FlowTexture.packet(_field, Vector2(tile_data.x0 + float(window_origin.x) * 8.0, tile_data.z0 + float(window_origin.y) * 8.0))
 			_mutex.lock()
 			_pending = levels
+			_flow_pending = packet
 			_mutex.unlock()
 
 		var used: int = Time.get_ticks_usec() - start

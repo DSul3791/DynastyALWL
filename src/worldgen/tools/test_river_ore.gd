@@ -86,7 +86,7 @@ func _made_up() -> void:
 	_check(str(again.ore_bodies) == str(geology.ore_bodies), "the same tile gives the same placers")
 
 	var near = _geology(side)
-	near.ore_bodies.append({"resource": "copper", "shape": "lens", "center": [640.0, 20.0, 600.0]})
+	near.ore_bodies.append({"resource": "copper", "shape": "placer", "points": [[640.0, 20.0, 600.0]]})
 	near._ensure_river_ore(Vector2i(3, 4), heights, water_class, flow, 0.0, 0.0)
 	metals = []
 
@@ -94,7 +94,7 @@ func _made_up() -> void:
 		if bool(body.get("guaranteed", false)):
 			metals.append(str(body["resource"]))
 
-	_check(metals == ["tin"], "copper already on the river: only tin is added (%s)" % str(metals))
+	_check(metals == ["tin"], "a copper placer already on the tile: only tin is added (%s)" % str(metals))
 
 	var dry = _geology(side)
 	var no_water: PackedByteArray = PackedByteArray()
@@ -118,12 +118,17 @@ func _real_tile(tile: Vector2i) -> void:
 		print("no baked tile %s, skipping the real-tile part" % tile)
 		return
 
-	# The runtime tile has no flow map: lower ground counts as more flow, which walks downhill.
+	# The runtime tile has no flow map: lower ground counts as more flow, which walks downhill. Painted river and lake cells
+	# count extra (the baked flow map follows the river), so a walk stays on the river at terraces and pond notches where
+	# the plain downhill neighbour is a bank.
 	var flow: PackedFloat32Array = PackedFloat32Array()
 	flow.resize(data.heights.size())
 
 	for k in range(data.heights.size()):
 		flow[k] = 5000.0 - data.heights[k]
+
+		if data.water_class[k] == TileGeologyScript.RIVER or data.water_class[k] == 2:
+			flow[k] += 1000.0
 
 	var geology = _geology(data.samples)
 	geology._rules["ores"]["river_ore_min_river_cells"] = 400

@@ -28,7 +28,7 @@ Picture: `art/playthrough/03_raw_materials.jpg` shows the spawn meadow (the NPC 
 ## Step 02. First pickups: sticks and stones
 
 * **Sticks** (item `stick`) lie on the ground as thin dead branches, more of them under trees. Walk up and tap/hold E. Shrubs (bushes) also drop 1-3 sticks when picked (drops.json `by_kind.shrub`).
-* **Stones** (item `stone`, stack 20) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). There is **no flint** anywhere yet **[BLOCKED, see findings F-02]**, and no ore you can reach with bare hands.
+* **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). There is **no flint** anywhere yet **[BLOCKED, see findings F-02]**, and no ore you can reach with bare hands.
 * **Boulders** (big grey rocks) are not pickable. An axe (or pick) breaks them: **3 axe blows give 1 stone** (boulders.json). A blow on bare rock with the axe also gives a stone.
 
 How many do you need for the whole first hour? About 12 sticks, 4 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 3 stones; knife 2 stones + 1 stick), then more.

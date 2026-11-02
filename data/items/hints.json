@@ -209,7 +209,7 @@
 		{
 			"id": "pot_first_dish",
 			"trigger": "campfire_pot_placed",
-			"text": "Put 3 berries and water in the pot for Stewed berries. Baked food needs a clay hearth: 10 bricks."
+			"text": "Put 3 berries and water in the pot for Stewed berries. Baked food needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer."
 		},
 		{
 			"id": "nettles",

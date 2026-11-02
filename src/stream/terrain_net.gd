@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 83
+const PROTOCOL_VERSION := 84
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -57,6 +57,7 @@ signal pulse_received()
 signal quake_received(stage: int, strength: float, point: Vector3)
 signal leak_received(points: PackedVector3Array, closeness: PackedByteArray)
 signal ground_reset_received(tiles_stamp: String, starter_stamp: String)
+signal water_flow_received(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray)
 signal water_requested(peer_id: int, chunks: PackedInt32Array)
 signal surface_requested(peer_id: int, x: float, z: float)
 signal surface_received(x: float, z: float, y: float)
@@ -329,6 +330,12 @@ func dump_result(text: String) -> void:
 @rpc("authority", "call_remote", "reliable")
 func surface(x: float, z: float, y: float) -> void:
 	surface_received.emit(x, z, y)
+
+
+# Protocol 84: the simulated water window as a render texture (depth, flow, foam per 8 m cell), see src/water2/water_flow_texture.gd.
+@rpc("authority", "call_remote", "reliable")
+func deliver_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
+	water_flow_received.emit(origin, w, h, cell_m, raw_size, bytes)
 
 
 @rpc("authority", "call_remote", "reliable")
