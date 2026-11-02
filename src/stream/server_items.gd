@@ -1200,6 +1200,10 @@ func save() -> void:
 			var pc: Dictionary = it["fire"].get("pieces", {})
 			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
 			row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
+			var burnt: Dictionary = it["fire"].get("burnt", {})
+			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
+			var counted: Dictionary = it["fire"].get("counted", {})
+			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 
 		items.append(row)
 
@@ -3246,6 +3250,25 @@ func _load_world_items() -> void:
 
 			if row.size() > 12 and int(row[12]) == 1:
 				entry["fire"]["synced"] = true
+
+			# A restart keeps what has burned since the last count and which pieces that count knew, so closing the store after a load does not give
+			# burned wood back as fresh burn time, and the half-burned piece still leaves the store when it is done.
+			if row.size() > 13 and typeof(row[13]) == TYPE_ARRAY and (row[13] as Array).size() == 3:
+				var burnt: Dictionary = {}
+
+				for k in range(3):
+					if float(row[13][k]) > 0.0:
+						burnt[["log", "firewood", "weak"][k]] = float(row[13][k])
+
+				entry["fire"]["burnt"] = burnt
+
+			if row.size() > 14 and typeof(row[14]) == TYPE_ARRAY and (row[14] as Array).size() == 3:
+				var counted: Dictionary = {}
+
+				for k in range(3):
+					counted[["log", "firewood", "weak"][k]] = maxi(int(row[14][k]), 0)
+
+				entry["fire"]["counted"] = counted
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
