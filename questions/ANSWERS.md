@@ -2066,3 +2066,7 @@ Answered: 2026-11-02 21:37 UTC
 Answer: No | Comment: I think this question is extremely out of date
 Answered: 2026-11-02 21:37 UTC
 
+## pic-fh-campfire-lit | In the real game: can you see a lit campfire (flames or glow) after you place the kit and light it with plant fibre?
+Answer: No | Comment: I think this is out of date. Yes I campfire clears an area and it looks great.
+Answered: 2026-11-02 21:37 UTC
+
