@@ -155,16 +155,41 @@ func _init() -> void:
 	for spot in spots:
 		var k: int = spot[0]
 		# 2 Nov 2026: the pond's water, not only the spring cell: a spring on the bowl's side runs down to the floor first (spring 1900590 stood 1.75 m up the
-		# slope of its bowl, dry at the spring with 0.5 m of water 40 m away), so the deepest water within 5 cells (40 m) of the spring counts.
+		# slope of its bowl, dry at the spring with 0.5 m of water 40 m away). So the deepest water within 5 cells (40 m) counts, but only in this pond's own
+		# bowl (joined to the spring through cells of the same baked pond level), on ground no higher than the spring cell's and above the sea (Tyler's review).
 		var wet: float = sim.depth_at(k)
+		var wet_at: int = k
 		var side: int = data.samples
+		var surface_k: float = data.water_surface[k]
+		var bowl: Dictionary = {k: true}
+		var queue: Array = [k]
 
-		for dj in range(-5, 6):
-			for di in range(-5, 6):
-				var q: int = k + dj * side + di
+		while not queue.is_empty():
+			var at: int = queue.pop_back()
 
-				if q >= 0 and q < data.heights.size():
-					wet = maxf(wet, sim.depth_at(q))
+			for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var ci: int = at % side + step.x
+				@warning_ignore("integer_division")
+				var cj: int = at / side + step.y
+				@warning_ignore("integer_division")
+				var near: bool = absi(ci - k % side) <= 5 and absi(cj - k / side) <= 5
+
+				if ci < 0 or cj < 0 or ci >= side or cj >= side or not near:
+					continue
+
+				var q: int = cj * side + ci
+				var level: float = data.water_surface[q]
+
+				if bowl.has(q) or data.water_class[q] < 2 or is_nan(level) or absf(level - surface_k) >= 0.5:
+					continue
+
+				bowl[q] = true
+				queue.append(q)
+
+				if data.heights[q] <= data.heights[k] and data.heights[q] > 0.0 and sim.depth_at(q) > wet:
+					wet = sim.depth_at(q)
+					wet_at = q
+
 		# A pond is a 2 to 8 m bowl fed by 0.1 to 2 m3/s: it cannot fill faster than its spring brings the water. A bowl fills deepest first, so the volume share
 		# the spring can deliver is a floor for the depth share.
 		var volume: float = float(spot[3])
@@ -177,7 +202,7 @@ func _init() -> void:
 			# in three hours, which cannot stand a metre deep in a 220,000 m3 bowl).
 			need = minf(LAKE_NEED_M, maxf(need, 0.05))
 
-		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.1f m after %d s, needs %.1f m" % [k, spot[2], volume, spot[1], wet, int(SIM_SECONDS), need]
+		var line: String = "spring at sample %d (%.2f m3/s, pond %.0f m3): pond %.1f m deep, filled to %.2f m (at sample %d) after %d s, needs %.2f m" % [k, spot[2], volume, spot[1], wet, wet_at, int(SIM_SECONDS), need]
 
 		if KNOWN_FAILURES.has(k) and wet < need:
 			print("known failure, not counted (%s): %s" % [KNOWN_FAILURES[k], line])
