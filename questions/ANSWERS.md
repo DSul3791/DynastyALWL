@@ -2010,3 +2010,7 @@ Answered: 2026-11-02 21:30 UTC
 Answer: No: I don’t know this is a technical question that you could answer better than me
 Answered: 2026-11-02 21:30 UTC
 
+## kathleen-ground-pbr-look | Does the ground look like real soil, grass and rock up close?
+Answer: Yes: Yes, in some places it looks great. In most places. It looks great except standing in the grass and then it looks like a weird green carpet.
+Answered: 2026-11-02 21:31 UTC
+
