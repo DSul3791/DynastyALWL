@@ -69,13 +69,13 @@ Verified by running (headless server probes, headless real-client self-tests; **
 | 11 | campfire kit (6 sticks, 3 stones, **8 s**) | WORKS | bot; tutorial time fixed (was 3 s) |
 | 12 | place the fire | WORKS | probe 6 (re-run on the 14:40 head): places at the spawn and the other flat spots; the only refusal seen is the steep slope, with its message. The silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) were not re-tested after Tyler's changes |
 | 13 | light it (fibre, bark) | WORKS | probe 6: state 40 with both |
-| 14 | feed it, warmth | WORKS, CLIENT | fire self-test ran; warmth numbers from data |
+| 14 | feed it, warmth | WORKS, CLIENT (rules changed 2 Nov: wood goes in with F, E puts a burning fire out; not re-run) | fire self-test ran; warmth numbers from data; test_fire_store added by Steve |
 | 15 | roast meat (campfire cooks only meat) | WORKS | probe 8: refuses berries, nuts, bulbs, fiddleheads with a message; cooks meat, fish, shellfish, seal. Plants now need a pot or hearth: **steps for the pot and hearth are not in the tutorial yet** |
 | 16 | lean-to kit (**32 sticks, 8 leaves, 4 twine**, 25 s) | WORKS, OPEN | bot builds it within its gather budget; 32 sticks is a lot for a 10-minute hour: watch the pace (budget is 60) |
 | 17 | place the lean-to | WORKS | probe 7 ran on the 14:40 head with a 2.6 x 2.4 m roof, 2.1 m high; the data now says 2.6 x 3.4 m and **height 1.5 m** (a later daily merge: probe 7 not re-run on it, so a lying player under a 1.5 m roof is unchecked); cover under it |
 | 18 | bedding and rough bed (8 bedding, 4 sticks, 2 twine, 10 s) | WORKS | recipe 231 known; ferns give bedding |
 | 19 | bed inside the lean-to, lie, sleep, spawn point | WORKS, CLIENT | probe 7: placed at the centre, cover, good bed (quality 1.0), E sets spawn, respawn on the bed. Not lain in, in the client |
-| 20 | workbench (**Camp bench: 20 sticks, 6 twine, 4 stones, 60 s**) | OPEN | tutorial said 12 sticks 3 twine: text fixed; 60 s and 20 sticks make this a long step, and the playability bot stops before it (not covered) |
+| 20 | workbench (**Camp bench: 16 sticks, 6 twine, 4 stones, 60 s**, data 2 Nov) | OPEN | tutorial said 12 sticks 3 twine: text fixed; 60 s and 20 sticks make this a long step, and the playability bot stops before it (not covered) |
 | 21 | wooden spear, stone spear | WORKS | recipes 5 and 3 known; spear self-test ran |
 | 22 | rabbit, knife, dress, roast, eat | WORKS | kill-to-roast chain driven on the server earlier (meat, hide, bone); client aiming not driven |
 
