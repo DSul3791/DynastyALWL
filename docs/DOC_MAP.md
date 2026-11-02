@@ -196,3 +196,16 @@ Duplicate removed 1 Nov: `PLAYTHROUGH_PLANS.md` no longer copies the budget tabl
 
 ## Archiving rule for tools
 `tools/merge_check.py` fails a merge when a `.md` file under `art/`, `assets/`, `design/`, `docs/`, `items/`, `src/`, `scenes/`, `worlds/` or `data/` disappears from its old path unless it is in `proposed_removals/` (it skips `docs/archive/` as a *deleted-from* path only, not as a destination). Root files and `tech/` pass. So archiving a file from `docs/`, `art/` or `design/` needs a `proposed_removals/` pointer or a rule change by Tyler (tools owner): not done yet.
+
+## Dead references (Jamie, 2 Nov 2026; found by scanning backticked `.md` names)
+These named documents are in no tracked path. Owner to restore, repoint or drop the mention (not fixed by Jamie: content is theirs).
+| Mentioned in | Missing | Note | Owner |
+|---|---|---|---|
+| `ART_ASSET_INVENTORY.md` | `art/MODEL_INVENTORY.md`, `art/MODEL_PLAN.md`, `art/REFERENCE_PHOTOS.md`, `art/GOAL2_RANKING.md` | copies exist only in the Dynasty project shared folder, not in git | Kathleen |
+| `ITEM_GROUPS_AND_NAMES.md` | `Items_in_other_games_Analysis.md` | not in git | Sal |
+| `DYNASTY_WATER_DESIGN.md`, `HANDOFF_SONNY.md` | `docs/WATER_OWN_SYSTEM_PROPOSAL.md` | not in git | Sonny |
+| `HANDOFF_STEVE.md`, `SCOPE_STEVE.md`, `SCOPE_TYLER.md` | `docs/CHARACTER_SYSTEM.md` | not in git | Steve |
+| `assets/audio/README.md` | `/mnt/project-files/...` (SOUND_GAPS, SWEEP, EMITTER_API, STEP_LEVELS) | paths on another machine | Jason |
+| many | `questions/QUESTIONS.md`, `questions/ANSWERS.md` | fine: they live on branch `qa` | none |
+
+Checker for real links: `python3 tools/check_doc_links.py` (0 dead markdown links today).

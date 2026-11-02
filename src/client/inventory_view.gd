@@ -166,12 +166,12 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	table = ItemTableScript.load_default()
 	inventory = InventoryScript.new(table)
 	recipes = RecipeTableScript.load_default(table)
-	net.inventory_full_received.connect(_on_full)
-	net.inventory_slots_received.connect(_on_slots)
-	net.world_items_received.connect(_on_world_items)
-	net.notice_received.connect(_on_notice)
+	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
+	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
+	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
-	net.vitals_received.connect(_on_vitals)
+	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)
@@ -180,8 +180,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
-	net.thought_received.connect(_on_thought)
-	net.skills_received.connect(_on_skills)
+	net.thought_received.connect(func(...args): _timed("_on_thought", _on_thought, args))
+	net.skills_received.connect(func(...args): _timed("_on_skills", _on_skills, args))
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
@@ -199,7 +199,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
-	net.craft_queue_received.connect(_on_craft_queue)
+	net.craft_queue_received.connect(func(...args): _timed("_on_craft_queue", _on_craft_queue, args))
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
@@ -466,7 +466,7 @@ func hold_e_step() -> bool:
 
 	var now: int = Time.get_ticks_msec()
 
-	if str(found.get("kind", "")) in ["pickup", "plant", "block"] and now >= _hold_next_msec:
+	if str(found.get("kind", "")) in ["pickup", "plant"] and now >= _hold_next_msec:   # not a block: holding E on a chopping block picks it up
 		_hold_next_msec = now + 600
 		found["tap"].call()
 
@@ -581,16 +581,13 @@ func _probe_fire() -> Dictionary:
 	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
+		elif _lit_state(state):
+			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)   # E on a burning fire puts it out (Dave 2 Nov 2026)
 		else:
-			fuel_nearest()
+			show_notice("Press F to put wood in the fire")}
 
-			if fuel_event.is_valid():
-				fuel_event.call()}
-
-	if _lit_state(state):
-		found["hold"] = cook_nearest
-	elif state == 9:
-		found["hold"] = fuel_nearest
+	if not _lit_state(state):
+		found["hold"] = pick_up_fire   # a fire that is not burning: hold E takes it up again (Dave 2 Nov 2026); wood and food go in with F, a burning fire cooks what is in its store
 
 	return found
 
@@ -621,7 +618,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press F to open", "tap": func(): _ask_open(id), "hold": take_down}
 
 	if state == 7:
-		return {"prompt": "Press E to split firewood", "tap": func(): _use_block(id)}
+		return {"prompt": "Press E to split firewood (hold E to pick up the block)", "tap": func(): _use_block(id), "hold": take_down}   # tap splits, hold picks up, like the other structures (Dave 2 Nov 2026, bug 2)
 
 	if state == 33:
 		return {"prompt": "Press E to take the stones back (hold E to pick up the pile)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
@@ -685,15 +682,15 @@ func _hold_e_check() -> void:
 	found["hold"].call()
 
 
-# What E will do at a fire (Dave 2026-10-20): empty -> add firewood, loaded -> light, burning -> more wood.
+# What E will do at a fire (Dave 2 Nov 2026): burning -> put out, loaded -> light, empty -> nothing (F puts wood in); hold E picks up a fire that is not burning.
 func _fire_prompt(state: int) -> String:
 	if state == 8:
-		return "Press E to add wood"
+		return "Press F to add wood (hold E to pick it up)"
 
 	if state == 9:
-		return "Press E to light (hold E to add wood)"
+		return "Press E to light (hold E to pick it up, F for wood)"
 
-	return "Press E to add wood (hold E to cook)"
+	return "Press E to put out (F for wood and food)"
 
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
@@ -864,20 +861,9 @@ func _auto_pickup_tick(now: int) -> void:
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
 
-# Holding E beside a chopping block keeps splitting logs at the server's pace. True when one is in reach.
+# Holding E beside a chopping block used to keep splitting logs. Now a hold picks the block up (Dave 2 Nov 2026), so there is nothing to repeat here.
 func hold_use() -> bool:
-	var id: int = _nearest_struct()
-
-	if id == 0 or _world[id]["state"] != 7:
-		return false
-
-	var now: int = Time.get_ticks_msec()
-
-	if now >= _block_next_msec:
-		_block_next_msec = now + 600
-		net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
-
-	return true
+	return false
 
 
 # The id of the placed structure (lean-to, chest) within 3 m that the cursor is on, else the nearest one; 0 when none.
@@ -932,6 +918,14 @@ func cook_nearest() -> void:
 
 	if fire != 0:
 		net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
+
+
+func pick_up_fire() -> void:
+	var fire: int = _nearest_fire()
+
+	if fire != 0:
+		clear_prompt()
+		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, fire, 0, 0, Vector3.ZERO)
 
 
 func fuel_nearest() -> void:
@@ -1069,13 +1063,21 @@ func _update_trunk_colliders() -> void:
 
 # A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
 # The bark of a felled trunk or stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
+# One Shader shared by every felled trunk, stump and log: a new Shader per call made the GPU compile the same bark shader again on each cut of a fallen tree (the trunk is rebuilt when it
+# gets shorter), a lock-up of about 2 s in the windowed game (Dave's bug 6, 2 Nov 2026; the server side of a cut costs under 30 ms with 3000 items).
+static var _felled_bark_shader: Shader = null
+
+
 func _felled_bark(species: String, radius: float, span: float) -> Material:
 	var flora_script: GDScript = load("res://src/flora/flora_view.gd")
 	var builder_script: GDScript = load("res://src/flora/tree_builder.gd")
-	var shader: Shader = Shader.new()
-	shader.code = flora_script.BARK_SHADER
+
+	if _felled_bark_shader == null:
+		_felled_bark_shader = Shader.new()
+		_felled_bark_shader.code = flora_script.BARK_SHADER
+
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = shader
+	mat.shader = _felled_bark_shader
 	var texture: String = "bark"
 
 	if species.contains("birch"):
@@ -1888,9 +1890,27 @@ func _refresh_chest() -> void:
 			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
+
+# Finds a hitch (Dave's bug 6, 2 Nov 2026: "every time I cut a log off it pauses"): a message handler that takes over 20 ms prints one line, so the cause shows in the client log.
+# `client slow: world_items took 120 ms`. Cheap: one clock read either side.
+func _timed(label: String, handler: Callable, args: Array) -> void:
+	var t0: int = Time.get_ticks_usec()
+	handler.callv(args)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > 20.0:
+		print("client slow: %s took %.0f ms" % [label, ms])
+
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
+	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
+	var t_all: int = Time.get_ticks_usec()
+	var t_mark: int = t_all
+
 	for id in removed:
 		_forget(id)
+
+	prof["forget"] = Time.get_ticks_usec() - t_mark
+	t_mark = Time.get_ticks_usec()
 
 	for row in added:
 		var id: int = row[0]
@@ -1902,12 +1922,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
+			var t_a: int = Time.get_ticks_usec()
 			_refresh_pile(id)
+			prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_a
 
 			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
 				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
 				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				var t_b: int = Time.get_ticks_usec()
 				_snap_loose(id)
+				prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_b
 
 			if _world[id]["state"] == state:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
@@ -1926,7 +1950,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
+			var t_c: int = Time.get_ticks_usec()
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
+			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1953,11 +1979,15 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
+			var felled_t0: int = Time.get_ticks_usec()
 			node = _make_felled(state == 3, extra)
+			prof["felled"] = int(prof.get("felled", 0)) + Time.get_ticks_usec() - felled_t0
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
 			continue
+
+		var t_d: int = Time.get_ticks_usec()
 
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
@@ -1981,8 +2011,23 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["burn"] = float(row[5]["burn"])
 			_world[id]["burn_at"] = Time.get_ticks_msec()
 
+		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
+		var t_e: int = Time.get_ticks_usec()
 		_refresh_pile(id)
+		prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_e
+		t_e = Time.get_ticks_usec()
 		_snap_loose(id)
+		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
+
+	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
+
+	if total_ms > 30.0:
+		var parts: Array = []
+
+		for key in prof:
+			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
+
+		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
@@ -1998,7 +2043,9 @@ var _unsnapped: Dictionary = {}      # world item id -> tries left
 func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 	var entry: Dictionary = _world.get(id, {})
 
-	if entry.is_empty() or int(entry.get("state", 0)) != 0 or not _ground_below.is_valid() or _rolling.has(id):
+	var on_fire: bool = _lit_state(int(entry.get("state", 0))) or int(entry.get("state", 0)) == 8 or int(entry.get("state", 0)) == 9   # a fire rests on the drawn ground too (it hung about a metre up where the drawn ground sits under the server's height field, Dave 2 Nov)
+
+	if entry.is_empty() or (int(entry.get("state", 0)) != 0 and not on_fire) or not _ground_below.is_valid() or _rolling.has(id):
 		_unsnapped.erase(id)
 		return
 
@@ -2011,7 +2058,7 @@ func _snap_loose(id: int, tries: int = SNAP_TRIES) -> void:
 
 	_unsnapped[id] = tries - 1
 	var node: Node3D = entry["node"]
-	node.position = Vector3(at.x, ground + 0.12, at.z)
+	node.position = Vector3(at.x, ground + (0.02 if on_fire else 0.12), at.z)
 
 
 func _snap_tick(now: int) -> void:

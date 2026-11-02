@@ -28,7 +28,9 @@ func _launch_role(role: String) -> void:
 		"play":
 			# The character select page is the first page (until there are accounts); it sends a player with no characters to the creator, and
 			# both come back here with creator_done set once a character is chosen.
-			if not Engine.has_meta("creator_done"):
+			# `--test` goes straight to play (no character pages): test builds, rigs and the PC test runs are not held up by the select screen. The game then
+			# uses the machine key and no character, as headless runs do.
+			if not Engine.has_meta("creator_done") and not AppConfig.has_flag("test"):
 				get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
 			else:
 				_host_and_play()

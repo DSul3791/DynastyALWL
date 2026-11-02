@@ -29,7 +29,7 @@ import make_manifest as mm  # noqa: E402
 WARN_KB = 400
 ERROR_KB = 2500
 TOTAL_MB = 40
-SKIP_DIRS = {"__pycache__"}
+SKIP_DIRS = {"__pycache__", "inner_voice", "npc_voice"}   # voices are rendered by tools/gen_*voice*.py with hashed or line-id names, not slots
 EXTS = (".ogg", ".wav")
 
 
@@ -53,6 +53,21 @@ def base_name(file_name):
     return re.sub(r"_\d+$", "", os.path.splitext(file_name)[0])
 
 
+def code_names():
+    """Every quoted word in the client code and the sound JSON tables: a clip called by one of these is referenced even when it is not in make_manifest.py."""
+    root = os.path.dirname(os.path.dirname(HERE))
+    text = []
+
+    for folder, exts in (("src/client", (".gd",)), ("data/sound", (".json",))):
+        for base, _, names in os.walk(os.path.join(root, folder)):
+            for n in names:
+                if n.endswith(exts):
+                    with open(os.path.join(base, n), encoding="utf-8", errors="ignore") as f:
+                        text.append(f.read())
+
+    return set(re.findall(r'[\"/]([a-z][a-z0-9_]*?)(?:_\d+)?(?:\.ogg)?[\"]', "\n".join(text)))
+
+
 def main():
     strict = "--strict" in sys.argv
     errors, warnings, notes = [], [], []
@@ -60,6 +75,7 @@ def main():
     step_names = {"step_%s_%s" % (surface, side) for surface, _ in mm.STEPS for side in ("left", "right")}
     step_names |= {"step_%s" % surface for surface, _ in mm.STEPS}   # generated sets (floors/) have no left/right
     files = sound_files()
+    used = code_names()
 
     for name, group, where, supply, priority in mm.SLOTS:
         state, count = mm.status(name, group)
@@ -89,7 +105,7 @@ def main():
 
         base = base_name(os.path.basename(path))
 
-        if base not in slot_names and base not in step_names:
+        if base not in slot_names and base not in step_names and base not in used:
             errors.append("UNREFERENCED %s: no slot or footstep named %s in make_manifest.py" % (path, base))
 
     if total / 1048576.0 > TOTAL_MB:

@@ -263,7 +263,7 @@
 			"chanterelles": 6
 		}
 	},
-	"fire_slots": 4,
+	"fire_slots": 30,
 	"feed_below_s": 20.0,
 	"box_cook_s": 8.0
 }
