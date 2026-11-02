@@ -1284,9 +1284,26 @@ func _on_slots(bytes: PackedByteArray) -> void:
 				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
 
-	_refresh()
+	_queue_refresh()
 	_refresh_chest()
 	refresh_hotbar()
+
+
+# Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
+var _refresh_queued: bool = false
+
+
+func _queue_refresh() -> void:
+	if _refresh_queued:
+		return
+
+	_refresh_queued = true
+	_flush_refresh.call_deferred()
+
+
+func _flush_refresh() -> void:
+	_refresh_queued = false
+	_refresh()
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
@@ -3999,6 +4016,15 @@ func _refresh() -> void:
 
 	_note_acquired()
 	_plan_cache.clear()
+
+	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
+	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
+	if not open or chest_mode:
+		if _weight_label != null:
+			_refresh_weight()
+
+		return
+
 	_arrange_slots()
 
 	if _weight_label != null:
