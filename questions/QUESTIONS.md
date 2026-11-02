@@ -209,12 +209,6 @@ Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov 
 - "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 - No line, the player will see it
 
-## kathleen-trunk-orchard-shots | Should the PC thread take the lying-trunk and orchard pictures for me?
-Note: Blocked here: both need the game running, which my cloud box cannot do.
-Note: Lying trunk: a felled tree after the bark fix. Orchard: five trees with apples from 15 m north.
-Note: Recommendation: Yes, because they are the next two looks you asked about and the PC can shoot them in minutes.
-[check]
-
 ## kathleen-ground-pbr-look | Does the ground look like real soil, grass and rock up close?
 Note: Blocked here: no Godot in my cloud box. The new photo ground textures (pull request 57) are untested in game.
 Note: 1. In GitHub Desktop, switch to branch claude/kathleen-ground-pbr-20261102.
