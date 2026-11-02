@@ -2884,6 +2884,40 @@ func _prewarm_loose_meshes() -> void:
 			_mesh_for(table.number_of(name))
 
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	_prewarm_felled()
+
+
+# Bug 6 (Dave, 2 Nov 2026 16:51: "a big pause when you first cut it ... sometimes it doesn't even appear for five seconds and then poof a tree
+# appears and falls over"): the first felled trunk of a session built the bark shader and the cut-face materials, and the GPU compiled them right
+# then. One trunk and one stump are made here, out of sight under the world, so that compile happens during loading; they go after 5 s.
+var _felled_warm: Array = []
+
+
+func _prewarm_felled() -> void:
+	if _root == null:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var extra: Dictionary = {"species": "oak", "radius": 0.3, "length": 8.0, "yaw": 0.0, "pitch": 0.0, "landed": true, "keywood": true}
+
+	for trunk in [true, false]:
+		var node: Node3D = _make_felled(trunk, extra)
+		node.position = Vector3(0.0, -10000.0, 0.0)
+		_root.add_child(node)
+		_felled_warm.append(node)
+
+	if is_inside_tree():
+		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
+
+	print("client prewarm: felled trunk and stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+
+
+func _drop_felled_warm() -> void:
+	for node in _felled_warm:
+		if is_instance_valid(node):
+			node.queue_free()
+
+	_felled_warm.clear()
 
 
 # Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).
