@@ -372,3 +372,7 @@ Note: Two coastal ponds near spawn drain dry: their carved beds dip below sea le
 Note: PR 71 stops pond and lake beds going below 0.5 m. It needs the same 9-tile bake as last night, on your PC, then a tile commit.
 Note: Recommendation: Yes, because the fix is one number and the bake is the same proven 9-thread run; the tile commit waits for this Yes.
 [check]
+
+## sonny-liquid-look | New flowing water (PR #91): does a stream look like one flowing body?
+Note: 1. Check out PR #91 and start the game. 2. Walk to a stream or river near spawn. 3. Look at shores, slopes and ponds. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
+[test]
