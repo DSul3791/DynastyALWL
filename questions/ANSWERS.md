@@ -2098,3 +2098,7 @@ Answered: 2026-11-02 21:40 UTC
 Answer: Yes | Comment: Yes, for now, but we need to start using our mesh model for a new character and allowing people to modify it in the editor
 Answered: 2026-11-02 21:41 UTC
 
+## pic-p2-fire-nograss | With the grass hidden, is the lit campfire clearly visible (flames and glow)?
+Answer: Yes
+Answered: 2026-11-02 21:41 UTC
+
