@@ -230,3 +230,21 @@ Note: Now: spruce and pine lumber 7 per log in 5 s, beams 2 per log in 6 s. Hard
 Note: Bigger question: hardwood is classed 'fine boards' and softwood 'plank boards'. Should fine boards be worth more (floors, furniture) and plank boards the cheap building board? Today both are called lumber.
 Note: Recommendation: Yes, because softwood saws easily and straight, so a bit more, faster lumber fits your note; keep the fine-board question for later when furniture needs it.
 [check]
+
+## tyler-bug6-cut-log | Bug 6: cut one log off a felled trunk; does the game still pause for about a second?
+Note: Blocked: the PC run only had the lag lines at join (world items 1070 ms, 961 ms building loose item meshes; PR #61 now builds those while loading). Nobody cut a log in that run, so the per-cut pause is still unmeasured.
+Note: 1. Start the latest build, wait 10 s after you arrive. 2. Fell a tree or use one already down, cut one log off it with the axe. 3. Note if it pauses.
+Note: Expect: no pause. If it pauses, the console prints a line starting "client slow:" right after the cut; send that line to Tyler.
+[test]
+
+## tyler-arms-axe-look | First-person arms (PR #58): hold the stone axe; are both hands on the handle and nothing through the camera?
+Note: Blocked on your look: the headless arms check passes (4013 cases), but a picture cannot judge if it feels right in your hands.
+Note: Hold the stone axe, look level and then down; swing once.
+- Yes
+- No
+
+## tyler-bug7-arms-compression | Bug 7 trial (PR #31): with the arms textures compressed, is the frame rate better and do the arms still look the same?
+Note: Blocked: needs a windowed fps comparison on your PC. Same spot, Ultra, F3 overlay: average and worst frame on main, then on branch claude/tyler-bug7-compress-textures.
+Note: The three arms textures are about 200 MB uncompressed in graphics memory; compression makes them 4 to 8 times smaller. A suspect for the constant lag, not proven.
+Note: Recommendation: Yes only if fps is better and the skin shows no blocky patches.
+[check]
