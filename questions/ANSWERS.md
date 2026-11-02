@@ -2198,3 +2198,7 @@ Answered: 2026-11-02 22:08 UTC
 Answer: C: Sell neither | Comment: Will you make our own rough bid in our own lean to. Using the wooden hammer.
 Answered: 2026-11-02 22:09 UTC
 
+## claude-crop-seeds | Which wild plants should give the other crop seeds (potato, turnip, cabbage, onion, peas, beet, radish, lettuce)?
+Answer: A: Wild plants for each crop | Comment: Yes, make up plans for each one of these crops and if you dig them up, you can get the some of the plant and the seeds
+Answered: 2026-11-02 22:10 UTC
+
