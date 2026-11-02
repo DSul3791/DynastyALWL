@@ -283,6 +283,8 @@
 		"tree_per_trunk_m": 16.5,
 		"tree_min": 3,
 		"tree_max": 22,
+		"size_scaled_note": "true: the felling blows use the tree's own drawn trunk radius (species trunk_m x height / reference height) instead of the species trunk_m, so small trees take fewer blows and big ones more. Off until Dave decides (QA card tree-hits-follow-size).",
+		"size_scaled": false,
 		"old_tree_base": 4.0,
 		"old_tree_per_trunk_m": 30.0,
 		"old_tree_min": 4,

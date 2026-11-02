@@ -240,5 +240,66 @@ func _init() -> void:
 
 	check(w._items.has(late) and not bool(w._items[late]["tree"].get("auto_split", false)), "after three tries without room it stays a trunk for the axe")
 
+	# A trunk saved before the auto-split (no flag) that nobody has cut breaks up after a restart; a partly cut one stays for the axe.
+	var dir2: String = "user://test_fell_autosplit_old_%d" % Time.get_ticks_usec()
+	var old_w = make(dir2)
+	old_w.ground_height = func(_x, _z): return 10.0
+	var old_standing: Dictionary = {20: true, 21: true}
+	old_w.game_seconds = func(): return 5000.0
+	old_w.tree_info = func(_c, id): return {"name": "oak", "position": Vector3(10.0 + 40.0 * float(id - 20), 10.0, 0.0), "height": 12.0, "trunk": 0.4} if old_standing.has(id) else {}
+	old_w.cut_tree = func(_c, id): old_standing.erase(id); return true
+	old_w.send_notice = func(_p, _text): pass
+	old_w.peer_connected_hello(1, "abcdef123456")
+	old_w.action(1, Net.ACT_ADMIN_GIVE, old_w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	old_w.report_position(1, Vector3(8.0, 10.0, 0.0))
+	fell_one(old_w, old_standing, 20)
+	old_w.report_position(1, Vector3(48.0, 10.0, 0.0))
+	fell_one(old_w, old_standing, 21)
+	var old_trunks: Array = felled(old_w, 3)
+	check(old_trunks.size() == 2, "two old trunks")
+
+	for k in old_trunks:   # as saved by a build before the auto-split
+		old_w._items[k]["tree"].erase("auto_split")
+
+	old_w._items[old_trunks[1]]["tree"]["blows"] = 2   # this one was being cut by hand
+	old_w.save()
+	var old_again = make(dir2)
+	var due: int = 0
+
+	for k in felled(old_again, 3):
+		if old_again._split_due.has(k):
+			due += 1
+			check(int(old_again._items[k]["tree"].get("blows", 0)) == 0, "only the uncut old trunk is queued")
+
+	check(due == 1, "the uncut old trunk breaks up after a restart, the partly cut one stays: %d queued" % due)
+
+	# Hits follow the tree's own size when drops.json felling.size_scaled is on (off by default).
+	check(not bool(w._drops.get("felling", {}).get("size_scaled", true)), "size-scaled hits are off by default")
+	var blows_for: Callable = func(scaled: bool) -> int:
+		var dir3: String = "user://test_fell_hits_%d_%d" % [int(scaled), Time.get_ticks_usec()]
+		var h = make(dir3)
+		h._drops["felling"]["size_scaled"] = scaled
+		h.ground_height = func(_x, _z): return 10.0
+		var up: Dictionary = {30: true}
+		h.game_seconds = func(): return 5000.0
+		h.tree_info = func(_c, id): return {"name": "beech", "position": Vector3(10.0, 10.0, 0.0), "height": 6.0, "trunk": 0.4, "ref_height": 17.0, "broadleaf": false} if up.has(id) else {}
+		h.cut_tree = func(_c, id): up.erase(id); return true
+		h.send_notice = func(_p, _text): pass
+		h.peer_connected_hello(1, "abcdef123456")
+		h.report_position(1, Vector3(8.0, 10.0, 0.0))
+		h.action(1, Net.ACT_ADMIN_GIVE, h.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+		var n: int = 0
+
+		while up.has(30) and n < 60:
+			h._last_hit.clear()
+			h.action(1, Net.ACT_HIT, 30, 0, 0, Vector3.ZERO)
+			n += 1
+
+		return n
+
+	var plain_blows: int = blows_for.call(false)
+	var scaled_blows: int = blows_for.call(true)
+	check(scaled_blows < plain_blows, "a small beech falls in fewer blows when hits follow size: %d vs %d" % [scaled_blows, plain_blows])
+
 	print("fell auto-split tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

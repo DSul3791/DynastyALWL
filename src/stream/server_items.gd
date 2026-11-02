@@ -3785,7 +3785,12 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	chop["msec"] = now
 	_chops[key] = chop
 	var fell: Dictionary = _drops.get("felling", {})   # data/items/drops.json "felling": the blow counts follow the swing time (balance, Dave tunes)
-	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + float(info["trunk"]) * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
+	var hit_radius: float = float(info["trunk"])
+
+	if bool(fell.get("size_scaled", false)):   # off until Dave says yes (QA card tree-hits-follow-size): the blows follow this tree's own drawn trunk, so a sapling falls in fewer than a giant
+		hit_radius = FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false)))
+
+	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + hit_radius * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
 
 	if int(chop["hits"]) < needed:
 		return
@@ -4039,7 +4044,7 @@ func _load_trees() -> void:
 		tree["chunk"] = [int(tree["chunk"][0]), int(tree["chunk"][1])]
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
 
-		if int(tree["state"]) == 3 and bool(tree.get("auto_split", false)):   # felled but not yet broken up when the server stopped: do it now
+		if int(tree["state"]) == 3 and (bool(tree.get("auto_split", false)) or (not tree.has("auto_split") and not tree.has("split_tries") and int(tree.get("blows", 0)) == 0)):   # felled but not yet broken up (also a trunk from before the auto-split that nobody has cut): do it now
 			_split_due[_next_id] = 0
 
 		_next_id += 1
