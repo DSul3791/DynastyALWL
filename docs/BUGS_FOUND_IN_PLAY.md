@@ -17,3 +17,10 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** can't pick up the chopping block.
 - **Context, not a diagnosis:** today's E-key change (`claude/e-priority-2`, commit `18e7dcd4`) made a block's aim point its middle and made E do only the cursor's action, with no pickup of other things. It is not known whether that is related, or whether the block was never pickable. Nothing has been run in a windowed client.
 - **Status:** open, unassigned, not worked on.
+
+## 3. The firewood pile beside the chopping block does not grow
+
+- **Found:** 2026-11-01, Dave, playing the daily.
+- **Symptom (Dave):** the firewood beside the chopping block does not grow when you add more wood to it by chopping wood. It should get bigger, so you can see there is a larger pile of wood there.
+- **Context, not a diagnosis:** none known. Nothing has been run in a windowed client. Whether the pile is a placed look that never reads the stack count, or a count that is not sent to the client, is not known.
+- **Status:** open, unassigned, not worked on.
