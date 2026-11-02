@@ -2002,3 +2002,7 @@ Answered: 2026-11-02 20:41 UTC
 Answer: Yes
 Answered: 2026-11-02 21:28 UTC
 
+## kathleen-firewood-kindling-look | Do firewood and kindling look like split wood and thin sticks?
+Answer: Yes: Firewood looks OK. It could be a little bigger thinking about 60% bigger and the kindling was perfect.
+Answered: 2026-11-02 21:30 UTC
+
