@@ -241,6 +241,9 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 210.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
+# Load speed (Dave, 2 Nov 2026: flying back to spawn took far too long to load). At most this many chunk plans run on the worker pool at once,
+# nearest chunk first, so the pool also serves the ground meshing and the chunk under the player is not queued behind the far forest.
+const MAX_PLAN_TASKS := 6
 const SHADOW_M := [0.0, 45.0, 60.0, 50.0]   # full-detail trees cast shadows only this near (64 m cells; the sun's shadow range is a render setting)
 const TIER_FAR := 0
 const TIER_FULL := 1
@@ -284,6 +287,10 @@ var _labels: Dictionary = {}           # species id -> name with a note on its m
 var _chunks: Dictionary = {}           # Vector2i -> {"items", "level", "node"}
 var _serial: int = 0                   # numbers each chunk plan, so an outdated plan is skipped
 var _tasks: Array = []                 # WorkerThreadPool tasks making chunk plans
+var _plan_wait: Dictionary = {}        # chunk -> true: asked to be planned, not started yet (launched nearest first, MAX_PLAN_TASKS at a time)
+var _load_count: int = 0               # chunk drawings finished since the last "flora load" log line
+var _load_worst_ms: int = 0            # the longest a chunk waited from being asked to being in the scene
+var _load_start_msec: int = 0          # when the first of this batch was asked
 var _setup_queue: Array = []           # species entries still to build (see _setup_step)
 var _setup_next: int = 0
 var _models_ready: Dictionary = {}      # species id -> [near meshes, far meshes] from the worker
@@ -1382,6 +1389,7 @@ func water_speed_at(x: float, z: float) -> float:
 
 func drop_chunk(chunk: Vector2i) -> void:
 	_ease.erase(chunk)
+	_plan_wait.erase(chunk)
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if entry.is_empty():
@@ -1810,8 +1818,17 @@ func update(from_position: Vector3) -> Array:
 	if not _ease.is_empty():
 		_ease_water()
 
+	var order: Array = []
+
 	for chunk in _chunks.keys():
-		if _distance(chunk, from_position) > view_m[KIND_TREE] + 2.0 * chunk_m:
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])   # nearest first: the ground under the player is drawn before the far forest
+
+	for pair in order:
+		var chunk: Vector2i = pair[1]
+
+		if pair[0] > view_m[KIND_TREE] + 2.0 * chunk_m:
 			# Freeing a chunk's draws and colliders costs up to 30 ms (build 176 probe), so a few
 			# at a time; the rest go on the next update. They are out of view range meanwhile.
 			if dropped.size() < MAX_DROPS_PER_UPDATE:
@@ -1908,17 +1925,51 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	entry["building"] = level
 	entry["building_masks"] = masks
 	entry["serial"] = _serial
-	# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
-	# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
-	var items: Dictionary = {}
 
-	for key in entry["items"]:
-		var value = entry["items"][key]
-		items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+	if not entry.has("plan_asked_msec"):
+		entry["plan_asked_msec"] = Time.get_ticks_msec()
 
-	items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
-	items["fruit_levels"] = _fruit_levels_of(chunk, items)
-	_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, _serial, level, items, masks), false, "flora chunk"))
+	if _load_count == 0 and _plan_wait.is_empty() and _tasks.is_empty() and _jobs.is_empty():
+		_load_start_msec = Time.get_ticks_msec()
+
+	_plan_wait[chunk] = true
+	_launch_plans(from_position)
+
+
+# Starts waiting chunk plans, nearest first, while fewer than MAX_PLAN_TASKS run.
+func _launch_plans(from_position: Vector3) -> void:
+	if _plan_wait.is_empty() or _tasks.size() >= MAX_PLAN_TASKS:
+		return
+
+	var order: Array = []
+
+	for chunk in _plan_wait.keys():
+		order.append([_distance(chunk, from_position), chunk])
+
+	order.sort_custom(func(a, b): return a[0] < b[0])
+
+	for pair in order:
+		if _tasks.size() >= MAX_PLAN_TASKS:
+			return
+
+		var chunk: Vector2i = pair[1]
+		_plan_wait.erase(chunk)
+		var entry: Dictionary = _chunks.get(chunk, {})
+
+		if entry.is_empty() or not entry.has("building"):
+			continue
+
+		# The worker gets real copies of the arrays: remove_item (felling) changes the chunk's own arrays on the
+		# main thread while the worker reads, and sharing them crashed the worker (out of bounds in _plan, 2026-10-21).
+		var items: Dictionary = {}
+
+		for key in entry["items"]:
+			var value = entry["items"][key]
+			items[key] = value.duplicate() if (value is PackedInt32Array or value is PackedFloat32Array or value is PackedVector3Array) else value
+
+		items["stripped"] = (stripped.get(chunk, {}) as Dictionary).duplicate()
+		items["fruit_levels"] = _fruit_levels_of(chunk, items)
+		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
 # For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
@@ -1975,6 +2026,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 			still.append(task)
 
 	_tasks = still
+	_launch_plans(_last_position)
 
 	if _mid_task != -1 and not _mid_ready.is_empty():
 		_apply_mid(1)
@@ -1997,6 +2049,7 @@ func apply_built(budget_usec: int = 3000) -> void:
 	var started: int = Time.get_ticks_usec()
 
 	while not _jobs.is_empty() and Time.get_ticks_usec() - started < budget_usec:
+		_nearest_job_first()
 		var job: Dictionary = _jobs[0]
 		var entry: Dictionary = _chunks.get(job["chunk"], {})
 
@@ -2015,6 +2068,53 @@ func apply_built(budget_usec: int = 3000) -> void:
 			entry.erase("building_masks")
 			entry["drawn"] = _drawn_count(job["node"])
 			_jobs.pop_front()
+			_note_loaded(entry)
+
+
+# Puts the nearest not-yet-started drawing at the front (a drawing already begun is finished first, so no half-built node waits).
+func _nearest_job_first() -> void:
+	if _jobs.size() < 2:
+		return
+
+	var head: Dictionary = _jobs[0]
+
+	if int(head["draw"]) > 0 or int(head["shape"]) > 0:
+		return
+
+	var best: int = 0
+	var best_d: float = _distance(head["chunk"], _last_position)
+
+	for k in range(1, _jobs.size()):
+		var job: Dictionary = _jobs[k]
+
+		if int(job["draw"]) > 0 or int(job["shape"]) > 0:
+			continue
+
+		var d: float = _distance(job["chunk"], _last_position)
+
+		if d < best_d:
+			best_d = d
+			best = k
+
+	if best > 0:
+		var job: Dictionary = _jobs[best]
+		_jobs.remove_at(best)
+		_jobs.push_front(job)
+
+
+# Load timing for the log: when every asked chunk is in the scene, one line says how many, how long it took and the longest wait.
+func _note_loaded(entry: Dictionary) -> void:
+	var now: int = Time.get_ticks_msec()
+	_load_count += 1
+	_load_worst_ms = maxi(_load_worst_ms, now - int(entry.get("plan_asked_msec", now)))
+	entry.erase("plan_asked_msec")
+
+	if _jobs.is_empty() and _plan_wait.is_empty() and _tasks.is_empty():
+		if _load_count >= 4:
+			print("flora load: %d chunk drawings in %d ms, longest wait %d ms" % [_load_count, now - _load_start_msec, _load_worst_ms])
+
+		_load_count = 0
+		_load_worst_ms = 0
 
 
 # A half-built drawing that is no longer wanted.
