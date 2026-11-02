@@ -10,4 +10,6 @@ Rules I keep: read, play, photograph and report only (no game code or data edits
 2. **Self-test gaps.** Sleep test starts at energy 100 (refused); no test covers bench, chest placement, drink, campfire pot. List each checklist step with no automated check, and propose the exact test flag (not edit it).
 3. **Tutorial numbers vs data.** Re-derive every number in TUTORIAL_FIRST_30_MIN.md and the checklist from data/items/*.json and flag drift.
 
+Round 1 status (2 Nov, paper review): items 1, 2, 3 done, see docs/handoff/DINO_ROUND1_REPORT.md. Found light-radius drift (cooking.json 6/12/24 vs client 3.5/7/14).
+
 ## Round 2 (to be written when round 1 is done)
