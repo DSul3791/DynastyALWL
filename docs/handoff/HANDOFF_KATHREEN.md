@@ -20,3 +20,11 @@ Branch `claude/kathree-art-20c939`. Scope: `SCOPE_KATHREEN.md`. Nothing here has
 
 ## Skipped or not verified
 No code run, no parse check (GDScript edits are small, but a typo would only show in Godot: run `godot --headless --check-only` or the look tests first in Phase 2). No pictures seen. Thumb geometry is arithmetic. Water, creator, animals, ground untouched.
+
+## Waiting on Kathreen (2026-11-01 evening)
+All of it is on branch `claude/kathree-art-20c939` (head 20d82b8e, pushed, NOT merged, UNTESTED in Godot):
+- `src/client/water_material.gd` `sea_slope`: crest modulation line (a5c239ae). Keep only if a sea picture at 54728,75530 (12 m up, yaw 180, pitch -18) is better; else revert that one line.
+- `src/water2/water_traits.gd` `emission` look trait plus `"emission": 1.0` on lava in `water_kinds.json`. Run `src/water2/test_water_field.gd` (voxel build) before merging.
+- Not written yet: the water look itself. Add the uniforms from `SHADER_INCLUDE` in `src/water2/water_flow_texture.gd` on branch `water-flow-channel` (`water2_tex`, `water2_origin`, `water2_size`, `water2_on` default 0, and `water2_at(world_xz)`) to `water_material.gd`, read depth/flow/foam (R/G,B/A) only when `water2_on` is 1; then an emission uniform and per-kind colours so lava glows and swamp is not grey. Needs Sonny's protocol flow channel (his backlog item 6) before it shows anything.
+- Pictures still to retake: sea (above), river from the bank near 53302,68436 facing N, lower.
+- Also open: `tools/proto_creator_view.gd` forces 20 degrees (should start at 180); ground PBR picture at 10/30 m; animals review; grass/shrub pass.
