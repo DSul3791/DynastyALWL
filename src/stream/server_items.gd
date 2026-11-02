@@ -5751,6 +5751,13 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 	if kind == Net.ACT_CHEST_OPEN:
 		_chest_viewer[peer] = id
 
+	# A fire with no count yet (loaded, or older than the count) is counted now, before anything is put in: wood put in later is not counted, so
+	# burned time can never take it (Tyler's run of #85: the trim's own fallback counted the newly put log, and the old burn time ate it).
+	var chest_fire: Dictionary = _items.get(id, {}).get("fire", {})
+
+	if bool(chest_fire.get("synced", false)) and not chest_fire.has("counted"):
+		chest_fire["counted"] = _fire_store_pieces(chest_fire, chest)
+
 	# Remains hold the dead character's purse: whoever may open them takes it with the first opening.
 	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})
 
