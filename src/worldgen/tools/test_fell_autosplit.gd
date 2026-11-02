@@ -158,6 +158,8 @@ func _init() -> void:
 		check(w._items[k].has("rot_y") and is_equal_approx(float(w._items[k]["rot_y"]), float(tree["yaw"]) - PI * 0.5), "a split log is turned along the trunk")
 		var axis: Vector3 = Basis(Vector3.UP, float(w._items[k]["rot_y"])) * Vector3.RIGHT
 		check(absf(axis.dot(along)) > 0.999, "its long axis runs along the trunk")
+		# Dave 2 Nov 2026: a skinny tree gave big logs. A split log is as thick as its trunk: girth = trunk radius / the drawn log's radius.
+		check(absf(float(w._items[k].get("girth", 0.0)) - float(tree["radius"]) / ItemsScript.LOG_MESH_RADIUS_M) < 0.001, "a split log's girth follows the trunk (%.3f for radius %.3f)" % [float(w._items[k].get("girth", 0.0)), float(tree["radius"])])
 
 	# The turn survives a restart.
 	w.save()
@@ -168,7 +170,14 @@ func _init() -> void:
 		if w_again._items[k].has("rot_y") and int(w_again._items[k]["number"]) == log_n:
 			kept_turns += 1
 
+	var kept_girth: int = 0
+
+	for k in w_again._items:
+		if w_again._items[k].has("girth") and int(w_again._items[k]["number"]) == log_n:
+			kept_girth += 1
+
 	check(kept_turns == logs.size(), "every split log keeps its turn after a restart: %d of %d" % [kept_turns, logs.size()])
+	check(kept_girth == logs.size(), "every split log keeps its girth after a restart: %d of %d" % [kept_girth, logs.size()])
 
 	var plain_at: Vector3 = Vector3(500.0, 10.0, 0.0)
 	w.drop_in_world(w.table.number_of("stone"), 1, plain_at)

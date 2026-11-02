@@ -816,7 +816,11 @@ func take(peer: int, number: int, count: int) -> bool:
 
 # Puts a stack on the ground. False when the chunk is full. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
 # `rot_y` (radians, NAN for none) turns a new loose item about the vertical: a felled tree's logs lie along its trunk.
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN) -> bool:
+# `girth` (NAN for none) scales a split log's thickness to the trunk it came from (Dave 2 Nov 2026: a skinny tree gave big logs); LOG_MESH_RADIUS_M is 1.
+const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
+
+
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -869,11 +873,14 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
 
+	if not is_nan(girth):
+		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
+
 	_next_id += 1
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
@@ -1200,6 +1207,9 @@ func save() -> void:
 
 		if not it.has("fire") and it.has("rot_y"):
 			row.append(float(it["rot_y"]))   # a loose item's turn (a split log along its trunk); fires use this slot for their store
+
+			if it.has("girth"):
+				row.append(float(it["girth"]))   # a split log's thickness against the drawn log
 
 		if it.has("fire"):
 			var wood: Dictionary = _fire_wood(it["fire"])
@@ -3082,7 +3092,7 @@ func _sync_world_items() -> void:
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else ({"rot_y": float(it["rot_y"])} if it.has("rot_y") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -3248,6 +3258,9 @@ func _load_world_items() -> void:
 
 		if row.size() > 9 and int(row[6]) == 0 and typeof(row[9]) == TYPE_FLOAT:
 			entry["rot_y"] = float(row[9])
+
+			if row.size() > 10 and typeof(row[10]) == TYPE_FLOAT:
+				entry["girth"] = float(row[10])
 
 		if row.size() > 7 and int(row[6]) != 0:
 			var saved_state: int = int(row[6])
@@ -4392,7 +4405,7 @@ func split_trunk(id: int) -> bool:
 	_items.erase(id)
 
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
-		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5)
+		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius))
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
@@ -4500,7 +4513,7 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = _log_number(str(tree.get("species", "")))
 
-	if not drop_in_world(log_n, 1, at):
+	if not drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius)):
 		_say(peer, "Too many things lie here. Clear some away first.")
 		return false
 
@@ -4622,6 +4635,24 @@ func dynamic_tree_info(home: Vector2i, id: int) -> Dictionary:
 			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true, "id": id}
 
 	return {}
+
+
+# A split log's girth against the drawn species log (only species logs: the plain Log has its own small mesh).
+func _log_girth(log_n: int, radius: float) -> float:
+	return radius / LOG_MESH_RADIUS_M if table.id_of(log_n).begins_with("log_") else NAN
+
+
+# The extra row fields of a loose item: its turn and a split log's girth.
+func _loose_extra(it: Dictionary) -> Dictionary:
+	var extra: Dictionary = {}
+
+	if it.has("rot_y"):
+		extra["rot_y"] = float(it["rot_y"])
+
+	if it.has("girth"):
+		extra["girth"] = float(it["girth"])
+
+	return extra
 
 
 # A planted bush or shrub (dynamic flora) as shrub_info gives it, or {}.

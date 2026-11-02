@@ -2000,6 +2000,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("rot_y"):   # a split log lies along the trunk it came from
 				node.rotation.y = float(row[5]["rot_y"])
+
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("girth"):   # a split log is as thick as the trunk it came from (the mesh lies along x)
+				var girth: float = float(row[5]["girth"])
+				node.scale = Vector3(node.scale.x, node.scale.y * girth, node.scale.z * girth)
 		else:
 			node = _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
