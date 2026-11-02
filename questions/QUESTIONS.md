@@ -372,3 +372,9 @@ Note: 3. Split one block at a time and watch the pile beside the block.
 Note: 4. Say Yes if it gets bigger with every split; No plus the count where it stopped growing.
 Note: Recommendation: Yes, merge it if the pile grows, because you asked to see the pile get bigger.
 [test]
+
+## sonny-pond-bed-bake | OK to rebake the 9 starter tiles so coastal ponds hold water (PR 71)?
+Note: Two coastal ponds near spawn drain dry: their carved beds dip below sea level, and the water treats that as the sea.
+Note: PR 71 stops pond and lake beds going below 0.5 m. It needs the same 9-tile bake as last night, on your PC, then a tile commit.
+Note: Recommendation: Yes, because the fix is one number and the bake is the same proven 9-thread run; the tile commit waits for this Yes.
+[check]
