@@ -2126,3 +2126,7 @@ Answered: 2026-11-02 21:44 UTC
 Answer: No | Comment: No, but they do look like flowers
 Answered: 2026-11-02 21:44 UTC
 
+## pic-chamomile-real | Do the white daisies (chamomile, left of the picture) look like real daisies in the game?
+Answer: No | Comment: No, but they do look like flowers
+Answered: 2026-11-02 21:44 UTC
+
