@@ -1575,6 +1575,7 @@ func _stamp_walkers(now: int) -> void:
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
 const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const LyingLogs := preload("res://src/shared/lying_logs.gd")
 var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this many metres of rock lie between the tunnel ceiling and the water; -1 = the real drip view
 var cavein_death                      # the cave-in death sequence (src/client/cavein_death.gd), made at the first one
 var showroom                          # the admin showroom at spawn (src/client/showroom.gd), shown while Admin mode is on
@@ -1621,12 +1622,22 @@ func _sync_cleared() -> void:
 			# A felled trunk lies from the stump along its yaw (inventory_view._make_felled): the grass under it is pressed flat.
 			var extra: Dictionary = row.get("extra", {})
 			var at: Vector3 = row["pos"]
-			var yaw: float = float(extra.get("yaw", 0.0))
 			var length: float = float(extra.get("length", 8.0))
-			var r: float = float(extra.get("radius", 0.3))
-			lying.append([snappedf(at.x, 0.01), snappedf(at.z, 0.01), snappedf(at.x + sin(yaw) * length, 0.01), snappedf(at.z + cos(yaw) * length, 0.01), r, r * 0.55])
+			lying.append(LyingLogs.trunk_segment(at, extra))
 			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
 			continue
+
+		if int(row.get("state", 0)) == 0 and _switches.on("log_grass") and row.get("node") is Node3D:
+			var loose_id: String = items.table.id_of(int(row.get("number", 0)))
+
+			if loose_id == "log" or loose_id.begins_with("log_"):
+				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
+				var plain: bool = loose_id == "log"
+				var node: Node3D = row["node"]
+				var seg: Array = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+				lying.append(seg)
+				key = key ^ hash(Vector2(seg[0], seg[1])) ^ int(id)
+				continue
 
 		if int(row.get("state", 0)) in CLEARING_NOT or not StructureLook.clears_grass(int(row.get("state", 0))) or not _switches.on("clearing"):
 			continue
