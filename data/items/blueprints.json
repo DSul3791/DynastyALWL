@@ -292,6 +292,6 @@
 		"brick_wall": {"number": 20, "name": "Brick wall", "structure": "brick_wall", "cost": [["brick", 16], ["mortar", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_wall_kit"},
 		"brick_floor": {"number": 21, "name": "Brick floor", "structure": "brick_floor", "cost": [["brick", 20], ["sand", 4]], "station": "", "hammer": 1, "known": true, "recipe": "brick_floor_kit"},
 		"brick_roof": {"number": 22, "name": "Brick roof", "structure": "brick_roof", "cost": [["brick", 16], ["lumber", 6]], "station": "", "hammer": 1, "known": true, "recipe": "brick_roof_kit"},
-		"fireplace": {"number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": false, "recipe": "fireplace_kit"}
+		"fireplace": {"number": 23, "name": "Fireplace", "structure": "fireplace", "cost": [["brick", 24], ["mortar", 4], ["clay", 6]], "station": "", "hammer": 1, "known": true, "recipe": "fireplace_kit"}
 	}
 }
