@@ -823,6 +823,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 	var lake_unlucky: int = 0   # of those, in a block that lost the lake_block_share draw
 	var skipped_edge: int = 0
 	var skipped_lip: int = 0
+	var skipped_sea: int = 0
 
 	for index in fill.order:
 		if flow.discharge[index] < threshold or is_nan(_centre_surface[index]) or h[index] < 2.0:
@@ -934,6 +935,19 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			skipped_lip += 1
 			continue
 
+		# A bowl over ground under BASIN_MIN_BED_M (a coastal flat, a tidal channel) holds no water: the water sim drains any cell at or under 0 m to the sea,
+		# so the pond emptied through its own floor (test_head_pond_fill, 2 Nov 2026: springs 1900590 and 2681336 still dry after the 0.5 m carve floor).
+		var over_sea: bool = false
+
+		for dz in range(-reach, reach + 1):
+			for dc in range(-reach, reach + 1):
+				if sqrt(float(dz * dz + dc * dc)) * cell_m <= radius and bed[(row + dz) * size + column + dc] < BASIN_MIN_BED_M:
+					over_sea = true
+
+		if over_sea:
+			skipped_sea += 1
+			continue
+
 		var wet: int = 0
 
 		for dz in range(-reach, reach + 1):
@@ -971,7 +985,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		if verbose:
 			print("  basin %s: world %d,%d radius %.0f depth %.1f lip %.1f wet %.2f ha" % ["lake" if is_lake else "pond", (_origin.x + column) * int(cell_m), (_origin.y + row) * int(cell_m), radius, depth, lip, wet * cell_m * cell_m / 10000.0])
 
-	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip])
+	print("  lake gate: tile %d,%d, %d river cells in block interiors, %d flat enough, %d in blocks that lost the draw, %d sites skipped at the frame edge, %d skipped at a low lip, %d over ground at sea level" % [tile_x, tile_z, lake_seen, lake_flat, lake_unlucky, skipped_edge, skipped_lip, skipped_sea])
 	print("  basins: %d head ponds (%.1f ha), %d lakes (%.1f ha, %d of them the tile's guaranteed lake), %d heads skipped (ground steeper than %.0f deg)" % [ponds, pond_cells * cell_m * cell_m / 10000.0, lakes, lake_cells * cell_m * cell_m / 10000.0, guaranteed, steep, POND_MAX_SLOPE_DEG])
 
 
