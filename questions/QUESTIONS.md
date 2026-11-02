@@ -32,12 +32,6 @@ Note: 2. Place a clay pot on the campfire (6 clay, then 3 sticks and 3 twine), p
 Note: 3. Note whether you get Stewed berries and whether the hint about the pot appeared once.
 [test]
 
-## bake-terrain-set-1 | May we re-bake the 9 starter tiles once, with the terrain set on branch terrain-bake-set (recommended: yes, after the play-test settles)?
-Note: What changes: lakes must have a lip of at least 4 m (coastal flats no longer flood and stand trees in water), ponds hold to 0.1 m under their rim instead of draining 1-2 m low, river ends are fed (settle rules v10), land types (shore marsh, treeline, evergreen belt), valley farmland becomes grass fields with hedge strips, and every tile with a river gets a river ore guarantee. TERRAIN_VERSION goes 44 to 45, so players' generated ground is thrown away once and rebuilt.
-Note: Time: not measured on this machine; I will first bake ONE tile (3,4) and time it, then do the rest. Risk: the shape of lakes, rivers and the spawn area changes, so anything placed by hand near water may sit wrong; a bad bake is the main risk. Roll back: the old tiles stay in git (no tile is committed without your go), restore them and set TERRAIN_VERSION back to 44. Branch: terrain-bake-set (merge of claude/land-types2-springfeed plus lake-lip on the daily), unbaked and unrun.
-- Yes
-- No
-
 ## death-before-heirs | You said: respawn at the bed until level 10, then real death. Children and heirs are not built yet. What should happen to a level 10 character who dies, until they are?
 Note: Today a death leaves your remains with all your gear and then puts you back at the spawn point (nothing is lost for good). Real death needs a screen that says you died and sends you to the creator for a new character; that screen is not built.
 Note: Option A (recommended): keep respawning at level 10 and above, but leave the remains as today; switch to real death in the same release that adds children and the death screen. Nobody loses a character before there is anyone to inherit.
