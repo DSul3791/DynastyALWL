@@ -222,10 +222,6 @@ Note: Felled trunks now match the real size of each tree; the hits could follow 
 Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
 [check]
 
-## sonny-liquid-look | New flowing water (merged, PR #91): does a stream look like one flowing body?
-Note: 1. Pull main and start the game. 2. Walk to a stream, a pond and a waterfall near spawn. 3. Look at the shores, slopes and falls. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
-[test]
-
 ## sonny-spring-pools | OK to commit the rebaked starter tiles with pond beds (PR #71) and springs in ponds (PR #92)?
 Note: Coastal ponds no longer drain into the sea through their beds, and springs now start only on flats set back from edges or at the bottom, each in its own pond.
 Note: Tested on your PC (tile 3,4): 5 of 5 tests pass; 16 springs raised to a flat, 17 moved down to the bottom. One big valley pond fills slowly (noted).
