@@ -58,3 +58,15 @@ static func choose(base: Vector3, away: Vector2, length: float, radius: float, g
 			best_yaw = yaw
 
 	return {"yaw": best_yaw, "pitch": best_pitch}
+
+
+# The butt radius a standing tree is drawn with (flora_view scales one model, built at the species' reference height, by height / reference, and
+# tree_builder never thins a broadleaf trunk below 3.5 percent of the height it is built at). A felled trunk and its stump use the same radius, so the
+# tree does not change size when it falls (Dave 2 Nov, bug 11). With no reference height known the species' own trunk is used as before.
+static func standing_radius(trunk_m: float, ref_height: float, height: float, broadleaf: bool) -> float:
+	var base: float = maxf(trunk_m, ref_height * 0.035) if broadleaf else trunk_m
+
+	if ref_height <= 0.0 or height <= 0.0:
+		return base
+
+	return base * height / ref_height

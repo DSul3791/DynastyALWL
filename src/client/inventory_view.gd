@@ -166,12 +166,12 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	table = ItemTableScript.load_default()
 	inventory = InventoryScript.new(table)
 	recipes = RecipeTableScript.load_default(table)
-	net.inventory_full_received.connect(_on_full)
-	net.inventory_slots_received.connect(_on_slots)
-	net.world_items_received.connect(_on_world_items)
-	net.notice_received.connect(_on_notice)
+	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
+	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
+	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
-	net.vitals_received.connect(_on_vitals)
+	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)
@@ -180,8 +180,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
-	net.thought_received.connect(_on_thought)
-	net.skills_received.connect(_on_skills)
+	net.thought_received.connect(func(...args): _timed("_on_thought", _on_thought, args))
+	net.skills_received.connect(func(...args): _timed("_on_skills", _on_skills, args))
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
@@ -199,7 +199,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
-	net.craft_queue_received.connect(_on_craft_queue)
+	net.craft_queue_received.connect(func(...args): _timed("_on_craft_queue", _on_craft_queue, args))
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
@@ -1901,9 +1901,27 @@ func _refresh_chest() -> void:
 			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
+
+# Finds a hitch (Dave's bug 6, 2 Nov 2026: "every time I cut a log off it pauses"): a message handler that takes over 20 ms prints one line, so the cause shows in the client log.
+# `client slow: world_items took 120 ms`. Cheap: one clock read either side.
+func _timed(label: String, handler: Callable, args: Array) -> void:
+	var t0: int = Time.get_ticks_usec()
+	handler.callv(args)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > 20.0:
+		print("client slow: %s took %.0f ms" % [label, ms])
+
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
+	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
+	var t_all: int = Time.get_ticks_usec()
+	var t_mark: int = t_all
+
 	for id in removed:
 		_forget(id)
+
+	prof["forget"] = Time.get_ticks_usec() - t_mark
+	t_mark = Time.get_ticks_usec()
 
 	for row in added:
 		var id: int = row[0]
@@ -1915,12 +1933,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
+			var t_a: int = Time.get_ticks_usec()
 			_refresh_pile(id)
+			prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_a
 
 			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
 				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
 				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				var t_b: int = Time.get_ticks_usec()
 				_snap_loose(id)
+				prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_b
 
 			if _world[id]["state"] == state:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
@@ -1939,7 +1961,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
+			var t_c: int = Time.get_ticks_usec()
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
+			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1966,11 +1990,15 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
+			var felled_t0: int = Time.get_ticks_usec()
 			node = _make_felled(state == 3, extra)
+			prof["felled"] = int(prof.get("felled", 0)) + Time.get_ticks_usec() - felled_t0
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
 			continue
+
+		var t_d: int = Time.get_ticks_usec()
 
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
@@ -1994,8 +2022,23 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["burn"] = float(row[5]["burn"])
 			_world[id]["burn_at"] = Time.get_ticks_msec()
 
+		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
+		var t_e: int = Time.get_ticks_usec()
 		_refresh_pile(id)
+		prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_e
+		t_e = Time.get_ticks_usec()
 		_snap_loose(id)
+		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
+
+	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
+
+	if total_ms > 30.0:
+		var parts: Array = []
+
+		for key in prof:
+			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
+
+		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
