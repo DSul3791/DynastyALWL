@@ -480,7 +480,8 @@ func set_storm_murk(amount: float) -> void:
 # The sky colours of the day cycle for the land water (weather_look.gd).
 func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
 	WaterMaterial.apply_day(_water_material, top, horizon, cloud_shadow, daylight)
-	get_tree().call_group("liquid_sheet", "set_daylight", daylight)   # the liquid sheets (chunks and the live window): no glowing foam at night
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_daylight", daylight)   # the liquid sheets (chunks and the live window): no glowing foam at night
 
 
 func set_flow_rate(rate: float) -> void:
@@ -488,6 +489,8 @@ func set_flow_rate(rate: float) -> void:
 
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
+		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
+		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
 	_liquid_flow_mud = clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0)
 	_tell_liquid_mud()
@@ -501,8 +504,6 @@ var _liquid_flow_mud: float = 0.0
 func _tell_liquid_mud() -> void:
 	if is_inside_tree():
 		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
-		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
-		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
