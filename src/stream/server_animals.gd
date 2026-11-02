@@ -414,7 +414,7 @@ func tick(delta: float) -> void:
 # How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
 # runs from far off, a friendly one lets you close).
 func _spook_m(a: Dictionary, def: Dictionary) -> float:
-	var base: float = float(def.get("spook_m", 14.0))
+	var base: float = float(def.get("spook_m", 14.0)) * (float(cfg.get("rest", {}).get("spook_share", 0.6)) if resting(def) else 1.0)
 
 	if def.has("tame") and a.has("tame"):
 		var scale: Array = def["tame"].get("spook_scale", [1.0, 1.0])
@@ -537,6 +537,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 			if centre != Vector3.INF and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)):
 				a["home"] = a["home"].lerp(centre, 0.5)
+
+		if a["timer"] <= 0.0 and resting(def):
+			a["timer"] = _graze_time(def) * float(cfg.get("rest", {}).get("graze_x", 3.0))   # out of its hours it beds down: stays put, longer
+			return
 
 		if a["timer"] <= 0.0:
 			var wander: float = float(def.get("wander_m", 6.0))
@@ -725,6 +729,12 @@ func activity_chance(def: Dictionary) -> float:
 		return 1.0
 
 	return clampf(float((def["active"] as Dictionary).get(period_of(float(hour_now.call())), 1.0)), 0.0, 1.0)
+
+
+# Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
+# an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
+func resting(def: Dictionary) -> bool:
+	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
 
 
 # The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
