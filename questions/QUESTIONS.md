@@ -63,12 +63,6 @@ Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing:
 - Yes
 - No
 
-## pic-axe-no-cube | Is the stone axe now a smooth blade with no grey cube at the end (four views)?
-Image: questions/img/axe-no-cube.png
-Note: The grey cube (poll block and chipped corner) is removed. Offline picture on a sheet, not the held view. Kathleen rates it 3.5 of 5.
-- Yes
-- No
-
 ## pic-yarrow-real | Do the white yarrow flowers look like real yarrow in the game?
 Image: questions/img/kathreen-yarrow-real.png
 Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearly white flowers, still a bit cool and faceted. Recommendation: Yes if the drift reads as flowers to you; No if the white looks grey or fake.
