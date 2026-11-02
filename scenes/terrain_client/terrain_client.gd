@@ -5099,6 +5099,7 @@ func _process(delta: float) -> void:
 			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
 			print("Terrain client: ", sound.wind_text())
 			print("Terrain client: ", sound.heard_text(body).replace("\n", " | "))
+			print("Terrain client: ", sound.ambient_dump(body).replace("\n", " | "))
 			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
 			print("Terrain client: snow hush %.2f (nature bus %.1f dB, wind bus %.1f dB)" % [sound.weather.snow_hush, AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Nature")), AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Wind"))])
 			print("Terrain client: rain ground %s (weights %s)" % [sound.weather.ground_class, str(sound.weather._ground_w)])
@@ -5141,6 +5142,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.heard_text(body)
+	text += "\n" + sound.ambient_dump(body, 8)
 	text += "\n" + sound.meters_text()
 	text += "\n" + sound.wind_text()
 	text += "\nexertion %.2f (%s): %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.state, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]

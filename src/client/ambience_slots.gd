@@ -53,6 +53,7 @@ var anchors: Dictionary = {}              # slot -> Vector3 where a positional b
 var played: Dictionary = {}               # slot -> one-shots played
 var beds_started: Dictionary = {}         # slot -> times a bed was started (the rig reads this)
 var test_note: String = ""
+var surf_db: float = -80.0                # the surf trim last applied (dump)
 var current: Dictionary = {}              # layer -> slot name playing now ("" none)
 var last: String = ""                     # the F4 sound line: the bed started, the one-shot played, or the test group heard
 
@@ -213,7 +214,7 @@ static func matches(tags: Dictionary, ctx: Dictionary) -> bool:
 			if water < NEAR_WATER:
 				return false
 		"sea_edge":
-			if water < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:
+			if float(ctx.get("sea", water)) < NEAR_WATER or height >= SEA_EDGE_M or float(ctx.get("wind", 1.0)) < SURF_MIN_WIND:   # the sea only; a test context without "sea" falls back to water
 				return false
 		"lava":
 			if not bool(ctx.get("lava", false)):
@@ -403,7 +404,8 @@ func context(body: Node3D) -> Dictionary:
 	var conditions: Dictionary = _stage.ambient.conditions
 	var weights: Dictionary = _stage.ambient.weights
 	var height: float = body.global_position.y
-	var biomes: Array = biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), float(weights.get("water", 0.0)), height, force_biome, zone_tags)
+	var sea: float = float(_stage.ambient.sea_weight)
+	var biomes: Array = biomes_for(float(weights.get("forest", 0.0)), float(weights.get("meadow", 0.0)), sea, height, force_biome, zone_tags)   # "beach" means the sea (a forest pond is not a beach)
 
 	if anchors.has("bed_volcano_rumble") and not biomes.has("volcano"):
 		biomes.append("volcano")
@@ -413,6 +415,7 @@ func context(body: Node3D) -> Dictionary:
 		"time": time_class(float(conditions.get("hour", 14.0)), str(conditions.get("season", "autumn"))),
 		"biomes": biomes,
 		"water": float(weights.get("water", 0.0)),
+		"sea": sea,
 		"height": height,
 		"wind": float(_stage.weather.world_wind),
 		"lava": anchors.has("bed_lava_hiss"),
@@ -481,7 +484,7 @@ func _set_bed(layer: String, slot: String) -> void:
 		else:
 			var player: AudioStreamPlayer = AudioStreamPlayer.new()
 			player.stream = _looped(stream)
-			player.bus = "Wind" if wanted.contains("wind") else "Nature"   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
+			player.bus = "Wind" if wanted.contains("wind") else ("Surf" if wanted.contains("surf") else "Nature")   # the wind beds (desert, canyon) follow the Wind slider, not Nature (Dave 24 Oct)
 			player.volume_db = SILENT_DB
 			add_child(player)
 			player.play()
@@ -567,7 +570,8 @@ func _advance_all(delta: float) -> void:
 
 			if layer == "shore_bed":
 				var w: Dictionary = _stage.ambient.weights
-				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(w.get("water", 0.0)), float(w.get("forest", 0.0))), 0.0001))
+				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(_stage.ambient.sea_weight), float(w.get("forest", 0.0))), 0.0001)) + float(_stage.fire_duck_db)
+				surf_db = extra
 
 			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0)) + extra
 
