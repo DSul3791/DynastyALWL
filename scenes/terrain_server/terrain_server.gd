@@ -1138,7 +1138,7 @@ func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 		return {}
 
 	var ref_height: float = 0.5 * (float(species["height_min"]) + float(species["height_max"]))   # what the client builds the model at (flora_view)
-	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf"}
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf", "id": id}
 
 
 # A standing bush or shrub (placer or planted) for the axe and the pickaxe (Dave 2 Nov 2026), or {}.
