@@ -2202,3 +2202,7 @@ Answered: 2026-11-02 22:09 UTC
 Answer: A: Wild plants for each crop | Comment: Yes, make up plans for each one of these crops and if you dig them up, you can get the some of the plant and the seeds
 Answered: 2026-11-02 22:10 UTC
 
+## pic-p2-leanto-bed | Do the lean-to and the rough bed look like something you would shelter and sleep in?
+Answer: Yes | Comment: Yes, but the lean two needs to be much bigger so you can walk in it and lay in the bed and you have to be able to wake up in the bed without smashing your head into the lean too
+Answered: 2026-11-02 22:11 UTC
+
