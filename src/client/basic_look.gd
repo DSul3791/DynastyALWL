@@ -1440,6 +1440,23 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"split_wood":
+			# Split firewood: a small stack of wedge billets, bark on the rounded back, a pale cut face on the split side and on each end.
+			for k in 6:
+				var row: int = k / 3
+				var col: int = k % 3
+				var len_k: float = 0.36 + 0.03 * float((k * 2) % 3)
+				var at: Vector3 = Vector3(0.012 * float((k * 2) % 3 - 1), -0.045 + 0.05 * float(row), (float(col) - 1.0) * 0.055 + 0.026 * float(row))
+				_box(parts, Vector3(len_k, 0.045, 0.05), at, _tone(color, k, 0.1))
+				_box(parts, Vector3(len_k - 0.01, 0.01, 0.046), at + Vector3(0.0, 0.026, 0.0), _tone(light, k, 0.05))
+				_box(parts, Vector3(0.008, 0.043, 0.048), at + Vector3(len_k * 0.5, 0.0, 0.0), light)
+		"sticks":
+			# Kindling: a loose handful of thin dry sticks fanned a little, different lengths, no cord.
+			for k in 9:
+				var fan: float = (float(k) - 4.0) * 0.07
+				var len_k: float = 0.3 + 0.04 * float((k * 5) % 4)
+				_cyl(parts, 0.007 + 0.002 * float(k % 3), len_k, Vector3(0.01 * float((k * 2) % 3 - 1), 0.012 * float(k % 3) - 0.01, (float(k) - 4.0) * 0.012), Vector3(0.0, fan, PI * 0.5), _tone(color, k, 0.14))
+			_cyl(parts, 0.008, 0.1, Vector3(-0.1, -0.025, 0.03), Vector3(0.0, 0.5, PI * 0.5), light)
 		"planks":
 			# Sawn boards stacked in a neat pile, ends slightly staggered, a pale cut end and darker grain streaks on the top board.
 			for k in 5:
