@@ -74,9 +74,9 @@ Everything below is written down with an owner, the exact next step and why. Spe
 | Fibre cloth look (grey) | Kathleen | Draw it, remove its row from `look_placeholders.json` | Art |
 | Placed sounds judged by ear | Jason, Dave | Jason's sound review cards | Needs listening |
 | Wool and linen, wool rug | Sal (later) | When sheep, goats or flax exist write the recipes, unlock the wool rug | No source exists |
-| Text-versus-recipe checker | Sal | DONE 1 Nov: `tools/text_vs_recipe.py` (encyclopedia how_to_get lines vs recipes); fixed lean-to, camp bench, iron/copper/tin ingot lines. Extend to hints, goals, descriptions | Heuristic covers encyclopedia only |
+| Text-versus-recipe checker | Sal | DONE 1 Nov: `tools/text_vs_recipe.py` (encyclopedia how_to_get lines vs recipes); fixed lean-to, camp bench, iron/copper/tin ingot lines. Extend to hints, goals, descriptions | DONE 2 Nov: also covers hints, starter goals and camp goals (numbers must match some recipe or blueprint); 0 mismatches after fixing nothing, the clay hearth hint uses the blueprint cost |
 | Prices for unpriced kits | Sal | DONE (stale row): all 58 `_kit` items already have a `value`; the 59 without are placed structures, which are not traded | None |
-| Carry-weight audit script | Sal (later) | `tools/economy_first_day.py` and `docs/CARRY_WEIGHTS.md` cover the weights; a script for every recipe is not written | Not started |
+| Carry-weight audit script | Sal | DONE 2 Nov: `python tools/carry_audit.py` lists every live recipe over the carry cap (9 today: stone/brick/log wall, floor, roof kits, fireplace, log workbench kit) and over free carry (rock pile). Fix needs Dave's call (card `heavy-kits-carry`) | None |
 | Rose hips | Sal, decided | Keep. To reverse: port `1174dd91`, set `rose_hips` future, run `validate_items` | Dave's call, no action |
 | Branch `claude/sal-no-rose-berries` | Moderator | Delete, as hips stay | Decision made |
 
