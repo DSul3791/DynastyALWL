@@ -63,12 +63,6 @@ Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing:
 - Yes
 - No
 
-## pic-shore-net-look | Does the shore net now look like a hand net (pole, hoop, string bag, floats) and not a hammer?
-Image: questions/img/shore-net-look.png
-Note: Four views, offline picture. Kathleen rates it 3.5 of 5 (thin, but clearly a net).
-- Yes
-- No
-
 ## pic-axe-no-cube | Is the stone axe now a smooth blade with no grey cube at the end (four views)?
 Image: questions/img/axe-no-cube.png
 Note: The grey cube (poll block and chipped corner) is removed. Offline picture on a sheet, not the held view. Kathleen rates it 3.5 of 5.
