@@ -10,3 +10,10 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** the fire timer does not update after you add more wood.
 - **Context, not a diagnosis:** the "Campfire hh:mm:ss Burn time" label is shown in inspect mode and was added to the daily today (client `_fire_label` in `src/client/inventory_view.gd`, burn time from the fire's server state in `src/stream/server_items.gd`). It is not known whether the shown time is stale on the client, not resent by the server when wood is added, or something else. `test_fire_fuel_tiers` and `test_fire_midburn_save` cover the burn time on the server side only; nothing has been run in a windowed client.
 - **Status:** open, unassigned, not worked on.
+
+## 2. I can't pick up the chopping block
+
+- **Found:** 2026-11-01, Dave, playing the daily.
+- **Symptom (Dave):** can't pick up the chopping block.
+- **Context, not a diagnosis:** today's E-key change (`claude/e-priority-2`, commit `18e7dcd4`) made a block's aim point its middle and made E do only the cursor's action, with no pickup of other things. It is not known whether that is related, or whether the block was never pickable. Nothing has been run in a windowed client.
+- **Status:** open, unassigned, not worked on.
