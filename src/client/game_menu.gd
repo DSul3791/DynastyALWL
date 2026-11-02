@@ -4,6 +4,7 @@ extends RefCounted
 # (green On / red Off), the sound test as its own scrolling page, and one Admin button at the bottom for the developer buttons
 # (SHOW_ADMIN false hides it). Moved out of terrain_client.gd; it drives the client through `_c`.
 
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const WaterChoice := preload("res://src/water2/water_choice.gd")
@@ -197,6 +198,13 @@ This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
 var _idle_button: Button
+var _temp_button: Button
+
+
+func _refresh_temp_button() -> void:
+	if _temp_button != null:
+		_temp_button.text = "Temperature: %s (change)" % ("°F" if DisplaySettingsScript.fahrenheit else "°C")
+
 
 
 func _refresh_idle_button() -> void:
@@ -299,6 +307,14 @@ func _build_gameplay() -> void:
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
 		_c._save_display())
+	_temp_button = _button(gameplay, "", func():
+		DisplaySettingsScript.fahrenheit = not DisplaySettingsScript.fahrenheit
+		_c._save_display()
+		_refresh_temp_button()
+		if _c.items != null and _c.items.has_method("_update_panel_bars"):
+			_c.items._update_panel_bars()
+		note.text = "Temperature shows in degrees %s (saved)." % ("Fahrenheit" if DisplaySettingsScript.fahrenheit else "Celsius"))
+	_refresh_temp_button()
 	_voice_switch = _switch_row(gameplay, "NPC voice", func(on: bool):
 		if _c._npc_voice != null:
 			_c._npc_voice.set_enabled(on))
