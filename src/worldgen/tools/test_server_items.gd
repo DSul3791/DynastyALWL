@@ -566,6 +566,13 @@ func _init() -> void:
 		f.tick(10.0)
 
 	check(f._items[covered_id]["fire"]["state"] == 8, "a fire burns out in time")
+	# The open fire was fed two more sticks into its store (fire store, 2 Nov 2026), so it can still be burning here: let it burn out, then wait out FIRE_OUT_S.
+	for n in range(200):
+		if not f._items.has(open_id) or not ItemsScript.fire_is_lit(int(f._items[open_id]["fire"]["state"])):
+			break
+
+		f.tick(10.0)
+
 	for n in range(int(ItemsScript.FIRE_OUT_S / 10.0) + 2):
 		f.tick(10.0)
 

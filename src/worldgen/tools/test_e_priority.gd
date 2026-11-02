@@ -98,7 +98,9 @@ func _init() -> void:
 	check(calls == [[Net.ACT_USE_STRUCT, 1]], "case 2 tap: only the block (%s)" % str(calls))
 	calls.clear()
 	view._hold_next_msec = 0
-	check(view.hold_e_step() and calls == [[Net.ACT_USE_STRUCT, 1]], "case 2 hold: the block repeats, nothing is picked up (%s)" % str(calls))
+	check(not view.hold_e_step() and calls.is_empty(), "case 2 hold: the block's split does not repeat (%s)" % str(calls))
+	view.current_interaction()["hold"].call()
+	check(calls == [[Net.ACT_PICKUP, 1]], "case 2 hold: hold E picks up the block itself, like every structure (Dave 2 Nov 2026) (%s)" % str(calls))
 	calls.clear()
 	view._auto_pickup_tick(Time.get_ticks_msec() + 2000)
 	check(calls.is_empty(), "case 2 auto pickup: nothing is picked up beside the block (%s)" % str(calls))

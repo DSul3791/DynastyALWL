@@ -2853,6 +2853,9 @@ func _fires(delta: float) -> void:
 			fire["state"] = 8
 			it["left"] = FIRE_OUT_S
 			_dirty = true
+
+			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
+				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
 			fire["state"] = 9
 			it["left"] = FIRE_LAID_S
@@ -5552,6 +5555,19 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 				box.take_from_slot(slot, 1)
 				held -= each
 				removed = true
+
+	return removed
+
+
+# A burnt-out fire's store keeps no wood: the trim leaves the last piece until the fire is out, and it must not come back as fresh burn time. Food stays.
+func _fire_clear_wood(box) -> bool:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var removed: bool = false
+
+	for slot in range(box.usable):
+		if box.numbers[slot] != 0 and fuel.has(table.id_of(box.numbers[slot])):
+			box.take_from_slot(slot, box.counts[slot])
+			removed = true
 
 	return removed
 
