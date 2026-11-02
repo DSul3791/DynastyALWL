@@ -57,7 +57,7 @@ func _run() -> void:
 
 	for kind in ["dynasty", "old"]:
 		var arms: Node3D = DynastyArms.new() if kind == "dynasty" else Ragdoll.new(true)
-		root.add_child(arms)
+		cam.add_child(arms)          # arms_transform returns a transform local to the camera, as held_item.gd uses it
 		arms.play("idle")
 
 		for pose in [["rest", 0.0], ["raised", 1.0]]:
