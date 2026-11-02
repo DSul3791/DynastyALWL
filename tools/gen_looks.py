@@ -1,10 +1,15 @@
 """Writes data/items/looks.json (stage-one basic looks, src/client/basic_look.gd) from rules on item ids and kinds.
 
-Run: python3 tools/gen_looks.py. Items with their own model are left out on purpose (stick, stone, driftwood, log, species logs, structures).
+Run: python3 tools/gen_looks.py. It ADDS a row for every item that has none and never changes or deletes a row already in looks.json
+(rows were hand-added and hand-tuned since this script was written: hammers, hand saw, kits, bronze tools, furniture). Nothing to add = the file is
+not touched. Options: --check (list what would be added, write nothing, exit 1 if anything), --force (the old behaviour: regenerate every row
+from the rules, overwriting hand edits; never on main). Items with their own model are left out on purpose (stick, stone, driftwood, log, species logs, structures).
 Tools, kits and containers get a loose-on-the-ground look here (their in-hand models are separate). Edit the rules or add a SPECIAL entry; do not hand-edit looks.json.
 """
 import json
 import os
+import re
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 items = json.load(open(os.path.join(ROOT, "data/items/items.json")))
@@ -172,12 +177,15 @@ for item_id, entry in ALL.items():
     if item_id in SPECIAL or item_id in GATHERED:
         shape, color, size, *rest = SPECIAL.get(item_id) or GATHERED[item_id]
         bits = rest[0] if rest else None
+    elif item_id.endswith("_bush"):   # a bush dug up with a pickaxe to plant elsewhere (Dave 2 Nov): a leafy bundle
+        shape, color, size = "leaves", "#4f7a34", 1.6
     elif item_id.startswith("lumber_") or item_id.startswith("beam_"):
         species = item_id.split("_", 1)[1]
         shape, color, size = ("planks" if item_id.startswith("lumber_") else "beams"), WOOD.get(species, "#a07a4a"), 1.0
+    elif item_id.endswith("_bush"):   # a bush dug up whole (PR 84): a leafy bundle until it gets a model
+        shape, color, size = "bundle", "#4f7a3a", 1.5
     elif kind in ("material", "food", "medicine", "clothing", "gear", "coin", "weapon"):
         shape, color, size = "chunk", "#8a8a8a", 1.0
-        print("GENERIC (no rule):", item_id, kind)
         generic.append(item_id)
     else:
         continue
@@ -185,9 +193,45 @@ for item_id, entry in ALL.items():
     if bits:
         out[item_id]["bits"] = bits
 
-doc = {"_about": "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model.", "items": out}
-with open(os.path.join(ROOT, "data/items/looks.json"), "w") as f:
-    json.dump(doc, f, indent=1)
-print(len(out), "looks;", len(generic), "GENERIC remaining")
+def append_rows(text, rows):
+    """Adds rows (id -> row) at the end of the "items" object of the existing file TEXT, so every line already there stays byte for byte as it is
+    (the file mixes generated multi-line rows and hand-written one-line ones). Rows are written in the generator's indent-1 style."""
+    tail = re.search(r"\n }\n}\s*$", text)
+    if not tail:
+        raise SystemExit("looks.json does not end the way gen_looks.py expects; add the rows by hand")
+    body = text[:tail.start()].rstrip()
+    new = ",\n".join("  " + json.dumps(k) + ": " + json.dumps(v, indent=1).replace("\n", "\n  ") for k, v in rows.items())
+    return body + ",\n" + new + text[tail.start():]
+
+
+LOOKS_PATH = os.path.join(ROOT, "data/items/looks.json")
+FORCE = "--force" in sys.argv
+CHECK = "--check" in sys.argv
+about = "Stage-one basic looks, written by tools/gen_looks.py (src/client/basic_look.gd draws them). Client only: editing needs no server restart. Remove an entry when an item gets a real model."
+existing = {}
+if os.path.exists(LOOKS_PATH) and not FORCE:
+    old = json.load(open(LOOKS_PATH))
+    about = old.get("_about", about)
+    existing = old.get("items", {})
+merged = dict(existing)
+added = []
+for item_id, row in out.items():
+    if item_id not in merged or FORCE:
+        if item_id not in merged:
+            added.append(item_id)
+        merged[item_id] = row
+generic = [g for g in generic if g in added or FORCE]   # a generic id that already has a row is not a problem
+doc = {"_about": about, "items": merged}
+print(len(merged), "looks;", len(added), "added:", ", ".join(added) if added else "none;", len(generic), "GENERIC remaining")
+if CHECK:
+    raise SystemExit(1 if added else 0)
+if FORCE:
+    with open(LOOKS_PATH, "w") as f:
+        json.dump(doc, f, indent=1)
+elif added:
+    with open(LOOKS_PATH) as f:
+        old_text = f.read()
+    with open(LOOKS_PATH, "w") as f:
+        f.write(append_rows(old_text, {k: out[k] for k in added}))
 if generic:
     raise SystemExit("GENERIC ids without a rule: " + ", ".join(generic))
