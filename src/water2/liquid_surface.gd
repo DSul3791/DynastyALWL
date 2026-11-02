@@ -88,7 +88,11 @@ void fragment() {
 		}
 	}
 
+	// A still pond in the sim still sloshes at a few cm/s, and a block at rest reads exactly 0: below CALM_MS the water counts as still, so the look does
+	// not step at the sim's 128 m block edges (PR #91 pond shot, 2 Nov 2026: dark rectangles in a light pond).
 	vec2 vel = t.gb;
+	float raw_speed = length(vel);
+	vel *= smoothstep(0.15, 0.45, raw_speed);
 	float speed = length(vel);
 
 	// Flow map: the ripple pattern is dragged downstream at the water's own speed; two copies half a cycle apart cross-fade so it never stretches.
@@ -105,7 +109,7 @@ void fragment() {
 	float hx = mix(waves(p0 + vec2(e, 0.0)), waves(p1 + vec2(e, 0.0)), mixk) - mix(h0, h1, mixk);
 	float hz = mix(waves(p0 + vec2(0.0, e)), waves(p1 + vec2(0.0, e)), mixk) - mix(h0, h1, mixk);
 	// Faster water is choppier; still water nearly glassy.
-	float chop = 0.08 + 0.5 * clamp(speed / 2.5, 0.0, 1.0);
+	float chop = 0.08 + 0.5 * smoothstep(0.3, 2.5, speed);
 	vec3 n_world = normalize(vec3(-hx / e * chop, 1.0, -hz / e * chop));
 
 	// Rain: each 0.6 m cell gets a drop now and then (more cells as the rain grows); its ring spreads and fades in under a second.
