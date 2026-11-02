@@ -480,10 +480,10 @@ func _make_wolf() -> Node3D:
 	neck.name = "Head"
 	neck.position = Vector3(0.0, 0.66, -0.42)
 	rig.add_child(neck)
-	_ball(neck, 0.12, Vector3(0.85, 0.85, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck
-	_ball(neck, 0.11, Vector3(0.9, 0.85, 1.0), Vector3(0.0, 0.06, -0.3), coat)       # head
-	_box(neck, Vector3(0.09, 0.075, 0.2), Vector3(0.0, 0.03, -0.43), pale)          # snout
-	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.54), Color(0.08, 0.07, 0.07))   # nose
+	_ball(neck, 0.15, Vector3(0.9, 0.9, 1.5), Vector3(0.0, 0.04, -0.12), coat)     # neck (thicker, Kathreen 2 Nov: it read as a thin stalk)
+	_ball(neck, 0.135, Vector3(0.95, 0.9, 1.0), Vector3(0.0, 0.06, -0.3), coat)      # head (bigger: it was a small ball on a long body)
+	_box(neck, Vector3(0.11, 0.09, 0.23), Vector3(0.0, 0.03, -0.45), pale)          # snout
+	_box(neck, Vector3(0.05, 0.03, 0.05), Vector3(0.0, 0.07, -0.58), Color(0.08, 0.07, 0.07))   # nose
 
 	for side in [-1.0, 1.0]:
 		_box(neck, Vector3(0.05, 0.1, 0.035), Vector3(side * 0.06, 0.2, -0.28), dark, Vector3(-0.15, 0.0, side * 0.15))   # ears
@@ -493,7 +493,7 @@ func _make_wolf() -> Node3D:
 	tail.name = "Tail"
 	tail.position = Vector3(0.0, 0.66, 0.42)
 	rig.add_child(tail)
-	_ball(tail, 0.08, Vector3(0.8, 0.8, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
+	_ball(tail, 0.1, Vector3(0.85, 0.85, 2.6), Vector3(0.0, -0.08, 0.2), coat, Vector3(0.7, 0.0, 0.0))
 	_ball(tail, 0.05, Vector3(0.8, 0.8, 1.6), Vector3(0.0, -0.2, 0.36), dark, Vector3(0.7, 0.0, 0.0))
 
 	for leg in [["Leg_FL", -1.0, -0.26], ["Leg_FR", 1.0, -0.26], ["Leg_HL", -1.0, 0.3], ["Leg_HR", 1.0, 0.3]]:
@@ -501,9 +501,9 @@ func _make_wolf() -> Node3D:
 		pivot.name = leg[0]
 		pivot.position = Vector3(float(leg[1]) * 0.1, 0.5, float(leg[2]))
 		rig.add_child(pivot)
-		_box(pivot, Vector3(0.09, 0.28, 0.1), Vector3(0.0, -0.13, 0.0), coat)       # upper leg
-		_box(pivot, Vector3(0.06, 0.26, 0.07), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
-		_box(pivot, Vector3(0.075, 0.04, 0.12), Vector3(0.0, -0.49, -0.02), dark)   # paw
+		_box(pivot, Vector3(0.115, 0.28, 0.13), Vector3(0.0, -0.13, 0.0), coat)       # upper leg (thicker: they read as stilts)
+		_box(pivot, Vector3(0.08, 0.26, 0.09), Vector3(0.0, -0.36, 0.0), dark)      # lower leg
+		_box(pivot, Vector3(0.1, 0.04, 0.14), Vector3(0.0, -0.49, -0.02), dark)   # paw
 
 	return root
 
