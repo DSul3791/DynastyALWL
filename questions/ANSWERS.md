@@ -1986,3 +1986,7 @@ Answered: 2026-11-02 16:50 UTC
 Answer: Yes: There’s a big pause when you first cut it and it’s still standing sometimes it doesn’t even appear for five seconds and then poof a tree appears and falls over
 Answered: 2026-11-02 16:51 UTC
 
+## leanto-pace | Lean-to pace: does 32 sticks, 8 leaves, 4 twine feel right for the first hour?
+Answer: No
+Answered: 2026-11-02 20:40 UTC
+
