@@ -1013,7 +1013,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 		var how_placed: String = String(site[4])
 
 		if how_placed == "up":
-			_cut_brook(h, site[3], basin_mask)
+			_cut_brook(h, site[3], basin_mask, lip)
 			moved_up += 1
 		elif how_placed == "down":
 			for k in site[3]:
@@ -1122,8 +1122,11 @@ func _source_spot(h: PackedFloat32Array, fill, flow, head: int, size: int, cell_
 
 # The brook from a raised pond down to the old head: `path` runs from the head up to the cell below the pond. From the pond down, each cell outside a
 # bowl is cut BROOK_CUT_M into the ground (at most BROOK_MAX_CUT_M) and at least BROOK_FALL_M below the cell above it, and holds BROOK_DEPTH_M of water.
-func _cut_brook(h: PackedFloat32Array, path: PackedInt32Array, in_bowl: PackedByteArray) -> void:
-	var above: float = INF
+# The first cell out of the pond is the outlet notch: cut to just under the pond's `lip`, never deeper (cut BROOK_CUT_M into a rim cell that stands at the
+# lip, the notch let the pond drain 0.6 m below its own level).
+func _cut_brook(h: PackedFloat32Array, path: PackedInt32Array, in_bowl: PackedByteArray, lip: float) -> void:
+	var above: float = lip + BROOK_FALL_M
+	var first: bool = true
 
 	for n in range(path.size() - 1, -1, -1):
 		var k: int = path[n]
@@ -1132,6 +1135,10 @@ func _cut_brook(h: PackedFloat32Array, path: PackedInt32Array, in_bowl: PackedBy
 			continue   # the pond's own bowl (and its outlet lip): the brook starts below it
 
 		var wanted: float = maxf(minf(bed[k] - BROOK_CUT_M, above - BROOK_FALL_M), h[k] - BROOK_MAX_CUT_M)
+
+		if first:
+			wanted = minf(bed[k], lip - BROOK_FALL_M)   # the notch: no deeper than the lip
+			first = false
 		bed[k] = minf(bed[k], wanted)
 		above = bed[k]
 		var level: float = bed[k] + BROOK_DEPTH_M
