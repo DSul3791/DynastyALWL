@@ -12,7 +12,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 30,
 			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
@@ -23,7 +23,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 60
 		},
 		"plant_fibre": {
 			"number": 3,
@@ -33,7 +33,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 12
+			"sell_lot": 50
 		},
 		"log": {
 			"number": 4,
@@ -181,7 +181,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 8
+			"sell_lot": 30
 		},
 		"leaves": {
 			"number": 14,
@@ -191,7 +191,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 60
 		},
 		"roast_forage": {
 			"number": 15,
@@ -451,7 +451,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"clay": {
@@ -462,7 +462,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"sand": {
@@ -473,7 +473,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
 		},
 		"gravel": {
@@ -484,7 +484,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5,
+			"sell_lot": 20,
 			"pile": {"shape": "mound", "handful": 5, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
 		},
 		"wooden_bowl": {
@@ -900,7 +900,7 @@
 			"stack": 40,
 			"future": true,
 			"value": 1,
-			"sell_lot": 2,
+			"sell_lot": 6,
 			"look_alikes": []
 		},
 		"workbench_kit": {
@@ -2852,7 +2852,7 @@
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 10
+			"sell_lot": 15
 		},
 		"cobblestone": {
 			"number": 229,
@@ -2898,7 +2898,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5
+			"sell_lot": 12
 		},
 		"wooden_block": {
 			"number": 234,
@@ -2919,7 +2919,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 5
+			"sell_lot": 12
 		},
 		"wooden_block_soft": {
 			"number": 237,
@@ -4233,7 +4233,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"barley_seeds": {
 			"number": 339,
@@ -4244,7 +4244,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"carrot_seeds": {
 			"number": 340,
@@ -4255,7 +4255,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"potato_seeds": {
 			"number": 341,
@@ -4266,7 +4266,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"turnip_seeds": {
 			"number": 342,
@@ -4277,7 +4277,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"flax_seeds": {
 			"number": 343,
@@ -4288,7 +4288,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"quern": {
 			"number": 344,
@@ -4703,7 +4703,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"rye_seeds": {
 			"number": 381,
@@ -4714,7 +4714,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"cabbage_seeds": {
 			"number": 382,
@@ -4725,7 +4725,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"onion_seeds": {
 			"number": 383,
@@ -4736,7 +4736,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"peas_seeds": {
 			"number": 384,
@@ -4747,7 +4747,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"beet_seeds": {
 			"number": 385,
@@ -4758,7 +4758,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"oat_porridge": {
 			"number": 386,
@@ -5161,7 +5161,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"lettuce_seeds": {
 			"number": 429,
@@ -5172,7 +5172,7 @@
 			"future": true,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 4
+			"sell_lot": 15
 		},
 		"apple_early": {
 			"number": 431,
@@ -5770,7 +5770,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 10
+			"sell_lot": 40
 		},
 		"nettle_tea": {
 			"number": 486,
