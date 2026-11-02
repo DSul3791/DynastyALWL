@@ -19,7 +19,10 @@ const FADE_S := 2.0
 const SILENT_DB := -60.0
 # Dave 24 Oct: a surf-like roar in the middle of a forest drowned the nature sounds. The forest beds are steady broadband noise at about
 # -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
-const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0}   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
+# Dave 2 Nov: on a clear forest night a deep sound drowned a campfire. Measured: bed_night is 72 percent under 200 Hz at -27.8 dB RMS, 8 dB hotter than the forest day bed
+# (-35.9) and 6 dB over the surf (-33.6), and plays everywhere at night; the trim brings it to about -40 dB RMS, and it ducks near a lit fire.
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -12.0}
+const FIRE_DUCK_LAYERS := ["shore_bed", "time_bed"]   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
 const ONESHOT_DIST_M := [12.0, 45.0]
@@ -572,6 +575,8 @@ func _advance_all(delta: float) -> void:
 				var w: Dictionary = _stage.ambient.weights
 				extra = SURF_MAX_DB + linear_to_db(maxf(surf_scale(float(_stage.ambient.sea_weight), float(w.get("forest", 0.0))), 0.0001)) + float(_stage.fire_duck_db)
 				surf_db = extra
+			elif FIRE_DUCK_LAYERS.has(layer):
+				extra = float(_stage.fire_duck_db)
 
 			entry["player"].volume_db = linear_to_db(maxf(fade_gain(float(entry["level"])), 0.0001)) + float(BED_TRIM_DB.get(str(entry["slot"]), 0.0)) + extra
 
