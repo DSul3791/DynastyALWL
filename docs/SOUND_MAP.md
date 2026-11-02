@@ -49,3 +49,9 @@ Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Son
 - New wiring: `_fill_here()` in `src/client/held_item.gd` calls `placed.shovel_load(false, hit position)` (see the `shortcut:` comment there).
 - Still silent until Sal sets the `sound` key on the rows: stone, brick and thatch pieces in `data/items/structures.json` still use `timber`/`thump`, so the new place sounds exist but nothing asks for them.
 - Code locations for the `none?` rows (where the call goes, for the backlog): sleep/wake `inventory_view.gd:1393, 4571, 4575` (`ACT_SLEEP` sent; the server owns the state); fishing cast and bite `held_item.gd:590, 621` (`ACT_FISH` sent); hurt from a fall `landing_sounds.gd:27` signal `hurt` is connected in `terrain_client.gd:1277` (only falls hurt the client; damage from animals has no client event I could find). The rest are listed in `docs/handoff/JASON_NEXT_TASKS.md`.
+
+## Phase 2 update (2 Nov 2026, read from code, not heard)
+- Sleep and wake: covered. `terrain_client.gd:3230-3231` feeds `breath.set_server_heart/set_body` from the server's `body_phase` (falling asleep, out, waking) and the bed lie/rise slots play on stance change (line 1097). Not `none` any more.
+- Fire put out by E (new, PR 32): covered by `fire_sounds.gd` `_was_lit` (lit to unlit plays `fire_out`); picking up an unlit fire plays the generic pickup cue.
+- Fishing cast: now plays `net_cast` at `held_item.gd` rod branch (stand-in, needs a listen). Bite and catch still wait on a client event (server text only).
+- Boar, songbird, frog, grouse, seal, seabird: step slots borrow existing clips (PR 41). Calls: songbird and frog come from the ambient layer; boar, grouse, seal, seabird have no recording.
