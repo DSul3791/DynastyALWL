@@ -158,5 +158,30 @@ func _init() -> void:
 	shift.hour_now = func(): return 2.0
 	run(shift, 20.0)
 	check(before_birds > 0 and count(shift, "songbirds") < before_birds, "songbirds spawned by day leave at night (%d -> %d)" % [before_birds, count(shift, "songbirds")])
+
+	# Gulls on the beach (MikeW 2026-11-02): seabirds are a land flock: they spawn on dry beach ground as one record of several birds and take off together.
+	var gulls = make([Vector3(0.0, 10.0, 0.0)], "seabird")
+	gulls.biome_at = func(x, z): return "beach"
+	gulls.water_level = func(x, z): return NAN
+	gulls.hour_now = func(): return 12.0
+	run(gulls, 30.0)
+	var flock_id: int = 0
+
+	for id in gulls.animals:
+		if gulls.animals[id]["sp"] == "seabird":
+			flock_id = id
+
+	check(flock_id != 0 and not is_nan(float(gulls.animals[flock_id]["pos"].y)) and int(gulls.animals[flock_id].get("birds", 0)) >= 5, "seabirds spawn on dry beach as a flock of 5 or more")
+
+	if flock_id != 0:
+		var at: Vector3 = gulls.animals[flock_id]["pos"]
+		gulls.player_positions = func(): return [at + Vector3(8.0, 0.0, 0.0)]
+		var took_off: bool = false
+
+		for n in 60:
+			gulls.tick(0.05)
+			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
+
+		check(took_off, "a gull flock takes off together when a player walks up")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
