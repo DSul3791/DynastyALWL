@@ -8,7 +8,7 @@ extends MeshInstance3D
 # so the surface visibly travels downstream at the sim's speed.
 # The grid look (water_material.gd) steps aside inside the window; outside it nothing changes.
 
-const SHEET_STEP_M := 2.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between)
+const SHEET_STEP_M := 4.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between). Was 2 m: 250,000 quads over the 1 km window, lag near rivers (Dave 2 Nov 2026)
 const FADE_CELLS := 1.0         # the sheet fades in over this many cells from the window's edge, where the grid look takes over
 
 const SHADER := """
@@ -121,9 +121,12 @@ void fragment() {
 		vec2 off = (fract(rp) - centre) * 0.6;
 		float r = length(off);
 		float front = phase * 0.28;
-		float ring = sin((r - front) * 60.0) * (1.0 - smoothstep(0.0, 0.05, abs(r - front))) * (1.0 - phase);
+		// A soft ring (no fine sine: it aliased into bright bricks at a distance, Dave 2 Nov 2026), faded out beyond 25 m where it cannot be seen.
+		float dr = (r - front) / 0.035;
+		float ring = -dr * exp(-dr * dr) * (1.0 - phase);
 		float drops = step(hash(rc + floor(TIME * 1.3 + hash(rc + 4.4)) * 0.37), rain);
-		n_world = normalize(n_world + vec3(off.x, 0.0, off.y) / max(r, 0.001) * ring * drops * 0.5);
+		float near_eye = 1.0 - smoothstep(8.0, 25.0, length(VERTEX));
+		n_world = normalize(n_world + vec3(off.x, 0.0, off.y) / max(r, 0.001) * ring * drops * 0.35 * near_eye);
 	}
 
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_world, 0.0)).xyz);
@@ -159,14 +162,14 @@ void fragment() {
 		min(ex0.a, ex1.a) > 0.004 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
 		min(ez0.a, ez1.a) > 0.004 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
-	float fall = smoothstep(0.2, 0.7, drop);
+	float fall = smoothstep(0.35, 0.9, drop);   // from about 20 degrees: a riffle between pools stays water, not white sheet
 
 	if (fall > 0.01) {
 		vec2 down = -grad / max(drop, 0.0001);
 		vec2 across = vec2(-down.y, down.x);
 		float pour = noise(vec2(dot(world, across) * 2.2, dot(world, down) * 0.25 - TIME * 3.0));
 		float pour2 = noise(vec2(dot(world, across) * 5.0 + 3.1, dot(world, down) * 0.5 - TIME * 4.2));
-		foam = max(foam, fall * clamp(0.45 + 0.7 * pour * pour2 + 0.25 * pour, 0.0, 1.0));
+		foam = max(foam, fall * smoothstep(0.2, 0.75, 0.6 * pour + 0.4 * pour2));
 	}
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
@@ -182,7 +185,7 @@ void fragment() {
 }
 """
 
-const CHUNK_STEP_M := 4.0       # vertex spacing of a chunk sheet (many of them stand at once)
+const CHUNK_STEP_M := 8.0       # vertex spacing of a chunk sheet (many of them stand at once): one vertex per grid point, the shore and colour are per pixel anyway
 const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to the shore (no ground on the client): it thins to 0 at the shore point
 const OPEN_DEPTH_M := 1.0       # and further in
 
