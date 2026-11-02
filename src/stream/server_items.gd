@@ -10120,7 +10120,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 	st["s"] = strain
 	st["state"] = state
-	_train_fitness(peer, state == 1, spent)
+	_train_fitness(peer, effort_of(peer) if state < 2 else 0.0, spent)
 	var fade: float = 0.0
 
 	if state <= 1:
@@ -10437,10 +10437,12 @@ func fitness_of(peer: int) -> int:
 	return clampi(int(row.get("fitness", _fitness_default())) + int(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())
 
 
-# Fitness trains slowly (Dave 2026-10-21, fitness.json "train"): time spent over-exerted adds to the character's training, a point
-# per winded_s_per_point seconds up to max_gain over the creation value; time not winded takes it back, a point per
-# decay_s_per_point seconds, never below the creation value. The whole-number change is sent to the client.
-func _train_fitness(peer: int, winded: bool, spent: float) -> void:
+# Fitness trains slowly like a skill (Dave 2 Nov 2026, fitness.json "train"): any physical effort adds to the character's training,
+# walking, jogging, running and tool work alike (effort_of: speed, tool work, load). Effort under min_effort (standing, strolling)
+# earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
+# point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
+# never below the creation value. The whole-number change is sent to the client.
+func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 
@@ -10449,9 +10451,11 @@ func _train_fitness(peer: int, winded: bool, spent: float) -> void:
 
 	var before: int = fitness_of(peer)
 	var train: float = float(row.get("train", 0.0))
+	var min_effort: float = float(cfg.get("min_effort", 0.3))
 
-	if winded:
-		train = minf(train + spent / maxf(float(cfg.get("winded_s_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 5)))
+	if effort > min_effort:
+		var share: float = minf((effort - min_effort) / maxf(1.0 - min_effort, 0.05), float(cfg.get("max_share", 1.1)))
+		train = minf(train + share * spent / maxf(float(cfg.get("seconds_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 10)))
 	else:
 		var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0)
 		train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
