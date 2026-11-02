@@ -63,12 +63,6 @@ Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing:
 - Yes
 - No
 
-## pic-fibre-cloth-weave | Does the fibre cloth (left, brown) now show woven lines (linen on the right for comparison)?
-Image: questions/img/fibre-cloth-weave.png
-Note: Thin dark threads along the cloth and pale threads across it, on the folded top. Offline picture. Kathleen rates it 3.5 of 5.
-- Yes
-- No
-
 ## pic-shore-net-look | Does the shore net now look like a hand net (pole, hoop, string bag, floats) and not a hammer?
 Image: questions/img/shore-net-look.png
 Note: Four views, offline picture. Kathleen rates it 3.5 of 5 (thin, but clearly a net).
