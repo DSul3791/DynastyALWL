@@ -185,12 +185,6 @@ Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5:
 - Yes
 - No
 
-## tyler-bug6-cut-log | Bug 6: fell a tree; is there a pause when it lands and breaks into logs?
-Note: Trees now break into logs by themselves about 2 s after they land, so there is no log to cut by hand. The join pause is fixed (PR #61); the client code for new logs costs under 1 ms in a test.
-Note: 1. Start the latest build, wait 10 s after you arrive. 2. Fell a tree. 3. Watch the moment it lands and the moment it breaks into logs.
-Note: Expect: no pause. If it pauses, the console prints a line starting "client slow:" right then; send that line to Tyler.
-[test]
-
 ## tyler-arms-axe-look | First-person arms (PR #58): hold the stone axe; are both hands on the handle and nothing through the camera?
 Note: Blocked on your look: the headless arms check passes (4013 cases), but a picture cannot judge if it feels right in your hands.
 Note: Hold the stone axe, look level and then down; swing once.
