@@ -17,7 +17,10 @@ render_mode blend_mix, cull_disabled, shadows_disabled, specular_schlick_ggx;
 
 uniform sampler2D liquid : filter_linear, repeat_disable;   // R surface (m), G flow east, B flow south (m/s), A depth (m)
 uniform vec2 cells = vec2(128.0);                           // texels across
-uniform float fade_cells = 1.0;
+uniform float fade_cells = 1.0;                            // 0: no fade at the sheet's edge (a chunk sheet meets its neighbours)
+uniform float point_grid = 0.0;                            // 1: texels sit on the sheet's corners and edges (a chunk's grid points), 0: on cell centres (the live window)
+uniform vec4 hole = vec4(0.0);                             // world x, z, size x, size z of the live window: a chunk sheet steps aside there
+uniform float hole_inset = 8.0;
 uniform vec3 shallow_color : source_color = vec3(0.17, 0.33, 0.33);
 uniform vec3 deep_color : source_color = vec3(0.04, 0.17, 0.24);
 uniform vec3 foam_color : source_color = vec3(0.80, 0.84, 0.82);
@@ -39,7 +42,7 @@ vec4 sample_liquid(vec2 uv) {
 
 void vertex() {
 	// UV across the window: the plane spans the texture exactly (texel centres on the sim cells).
-	tex_uv = UV;
+	tex_uv = point_grid > 0.5 ? (vec2(0.5) + UV * (cells - vec2(1.0))) / cells : UV;
 	vec4 t = sample_liquid(tex_uv);
 	depth_v = t.a;
 	flow_v = t.gb;
@@ -71,9 +74,18 @@ void fragment() {
 		discard;
 	}
 
+	vec2 world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz;
+
+	if (hole.z > 0.0) {
+		vec2 inside = world - hole.xy;
+
+		if (inside.x > hole_inset && inside.y > hole_inset && inside.x < hole.z - hole_inset && inside.y < hole.w - hole_inset) {
+			discard;
+		}
+	}
+
 	vec2 vel = t.gb;
 	float speed = length(vel);
-	vec2 world = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz;
 
 	// Flow map: the ripple pattern is dragged downstream at the water's own speed; two copies half a cycle apart cross-fade so it never stretches.
 	float cycle = 2.0;
@@ -116,7 +128,7 @@ void fragment() {
 
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
-	float edge = clamp(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) / fade_cells, 0.0, 1.0);
+	float edge = fade_cells > 0.0 ? clamp(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) / fade_cells, 0.0, 1.0) : 1.0;
 	float shore = smoothstep(0.0, edge_m, depth);
 
 	ALBEDO = mix(mix(water, sky_color, fresnel * 0.6), foam_color, foam);
@@ -127,17 +139,115 @@ void fragment() {
 }
 """
 
+const CHUNK_STEP_M := 4.0       # vertex spacing of a chunk sheet (many of them stand at once)
+const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to the shore (no ground on the client): it thins to 0 at the shore point
+const OPEN_DEPTH_M := 1.0       # and further in
+
+static var _shader: Shader = null
+
 var _material: ShaderMaterial = null
 var _cells: Vector2i = Vector2i.ZERO
+var _step_m: float = SHEET_STEP_M
 
 
 func _init() -> void:
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	if _shader == null:
+		_shader = Shader.new()
+		_shader.code = SHADER
+
 	_material = ShaderMaterial.new()
-	var shader: Shader = Shader.new()
-	shader.code = SHADER
-	_material.shader = shader
+	_material.shader = _shader
 	visible = false
+
+
+# A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,
+# A a depth stand-in (the client has no ground here): OPEN_DEPTH_M inside, SHORE_DEPTH_M next to a dry point, 0 on shore and dry points. Shore points
+# (`edge`) carry their own level; dry points take the mean of their wet neighbours' levels so the sheet tucks under the bank there. null when dry.
+static func image_from_grid(grid: Dictionary) -> Image:
+	var count: int = int(grid.get("count", 0))
+	var levels: PackedFloat32Array = grid.get("levels", PackedFloat32Array())
+
+	if count < 2 or int(grid.get("wet", 0)) == 0 or levels.size() != count * count:
+		return null
+
+	var edge: PackedFloat32Array = grid.get("edge", PackedFloat32Array())
+	var vel: PackedFloat32Array = grid.get("vel", PackedFloat32Array())
+	var im: Image = Image.create(count, count, false, Image.FORMAT_RGBAF)
+
+	for j in range(count):
+		for i in range(count):
+			var n: int = j * count + i
+			var level: float = levels[n]
+
+			if not is_nan(level):
+				var open: bool = true
+
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var a: int = i + d.x
+					var b: int = j + d.y
+
+					if a >= 0 and b >= 0 and a < count and b < count and is_nan(levels[b * count + a]):
+						open = false
+
+				var vx: float = vel[n * 2] if vel.size() == levels.size() * 2 else 0.0
+				var vz: float = vel[n * 2 + 1] if vel.size() == levels.size() * 2 else 0.0
+				im.set_pixel(i, j, Color(level, vx, vz, OPEN_DEPTH_M if open else SHORE_DEPTH_M))
+				continue
+
+			var near: float = 0.0
+			var seen: int = 0
+
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					var a: int = i + di
+					var b: int = j + dj
+
+					if a >= 0 and b >= 0 and a < count and b < count and not is_nan(levels[b * count + a]):
+						near += levels[b * count + a]
+						seen += 1
+
+			var here: float = edge[n] if not edge.is_empty() and not is_nan(edge[n]) else (near / float(seen) - 0.4 if seen > 0 else -1000.0)
+			im.set_pixel(i, j, Color(here, 0.0, 0.0, 0.0))
+
+	return im
+
+
+# A chunk's sheet: `corner` is the world x, z of grid point (0, 0); the texels sit on the grid points, the sheet spans them exactly (no overlap with the
+# next chunk's sheet).
+func show_points(im: Image, corner: Vector2, spacing: float) -> void:
+	var cells: Vector2i = Vector2i(im.get_width(), im.get_height())
+	var size: Vector2 = Vector2(cells - Vector2i.ONE) * spacing
+	_step_m = CHUNK_STEP_M
+
+	if cells != _cells:
+		_cells = cells
+		_set_plane(size)
+
+	position = Vector3(corner.x + size.x * 0.5, 0.0, corner.y + size.y * 0.5)
+	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
+	_material.set_shader_parameter("cells", Vector2(cells))
+	_material.set_shader_parameter("fade_cells", 0.0)
+	_material.set_shader_parameter("point_grid", 1.0)
+	visible = true
+
+
+# The live window's rectangle (world corner, size): a chunk sheet does not draw there, from `inset` metres in, where the window's own sheet has faded in.
+func set_hole(corner: Vector2, size: Vector2, inset: float) -> void:
+	_material.set_shader_parameter("hole", Vector4(corner.x, corner.y, size.x, size.y))
+	_material.set_shader_parameter("hole_inset", inset)
+
+
+func _set_plane(size: Vector2) -> void:
+	var plane: PlaneMesh = PlaneMesh.new()
+	plane.size = size
+	plane.subdivide_width = maxi(int(size.x / _step_m) - 1, 1)
+	plane.subdivide_depth = maxi(int(size.y / _step_m) - 1, 1)
+	plane.material = _material
+	mesh = plane
+	# The surface heights move every publish: the bounds must hold any of them.
+	custom_aabb = AABB(Vector3(-size.x * 0.5, -200.0, -size.y * 0.5), Vector3(size.x, 2400.0, size.y))
 
 
 # The newest window from the server (water_flow_texture.unpack): `origin` is the world x, z of cell (0, 0).
@@ -147,14 +257,7 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 
 	if cells != _cells:
 		_cells = cells
-		var plane: PlaneMesh = PlaneMesh.new()
-		plane.size = size
-		plane.subdivide_width = maxi(int(size.x / SHEET_STEP_M) - 1, 1)
-		plane.subdivide_depth = maxi(int(size.y / SHEET_STEP_M) - 1, 1)
-		plane.material = _material
-		mesh = plane
-		# The surface heights move every publish: the bounds must hold any of them.
-		custom_aabb = AABB(Vector3(-size.x * 0.5, -200.0, -size.y * 0.5), Vector3(size.x, 2400.0, size.y))
+		_set_plane(size)
 
 	# The texture covers the cells' squares: from half a cell before cell (0, 0). A PlaneMesh is centred on its node and its UV runs 0..1 from -x, -z.
 	var corner: Vector2 = origin - Vector2(0.5, 0.5) * cell_m

@@ -1876,7 +1876,9 @@ func _decode_in(job: Dictionary, material: Material) -> void:
 
 	var grid: Dictionary = result["grid"]
 
-	if int(grid.get("wet", 0)) > 0:
+	if int(grid.get("wet", 0)) > 0 and flora.LIQUID_CHUNKS:
+		grid["liquid_image"] = LiquidSurface.image_from_grid(grid)
+	elif int(grid.get("wet", 0)) > 0:
 		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
 
 		if flora.DRAW_FALL_RIBBONS and not grid.get("falls", []).is_empty():
@@ -1999,9 +2001,13 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 	if _liquid == null:
 		_liquid = LiquidSurface.new()
 		_liquid.name = "LiquidSurface"
+		_liquid.add_to_group("liquid_sheet")
+		_liquid.add_to_group("water_draw")
 		flora.add_child(_liquid)
 
 	_liquid.show_window(im, origin, cell_m)
+	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in.
+	flora.set_liquid_hole(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m, cell_m)
 	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
 
 
