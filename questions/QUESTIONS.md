@@ -63,12 +63,6 @@ Note: Kathleen's rig shot of a placed and lit campfire. The fire is NOT missing:
 - Yes
 - No
 
-## pic-apples-smooth | Do these apples (four views) now look like smooth round apples with a stem and a highlight?
-Image: questions/img/apples-smooth.png
-Note: Rebuilt as a lathe with 12 sides and a dimple at the stem (they were low-poly diamonds). Offline picture, not the game. Kathleen rates it 3.5 of 5.
-- Yes
-- No
-
 ## pic-fibre-cloth-weave | Does the fibre cloth (left, brown) now show woven lines (linen on the right for comparison)?
 Image: questions/img/fibre-cloth-weave.png
 Note: Thin dark threads along the cloth and pale threads across it, on the folded top. Offline picture. Kathleen rates it 3.5 of 5.
