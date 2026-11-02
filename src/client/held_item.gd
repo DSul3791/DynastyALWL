@@ -417,7 +417,28 @@ func _start_swing() -> void:
 	_swing_hit = false
 	_pause_t = 0.0
 	swing_serial += 1
-	_arm_play("swing_fp", _swing_length())
+	_arm_play("swing_fp_down" if _aim_at_ground() else "swing_fp", _swing_length())
+
+
+# True when the crosshair is on something lying on the ground (the ground, a log, a stump, a rock): the swing then comes overhead and down. A standing tree, or anything else upright, gets
+# the sideways swing (Dave 2 Nov 2026). With nothing in reach it follows the look: well below the horizon is down.
+func _aim_at_ground() -> bool:
+	var from: Vector3 = _camera.global_position
+	var look: Vector3 = -_camera.global_transform.basis.z
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + look * REACH_M))
+
+	if hit.is_empty():
+		return look.y < -0.5
+
+	var at: Vector3 = hit["position"]
+
+	if _inv.felled_trunk_near(at) != 0 or _inv.loose_log_near(at) != 0 or _inv.boulder_near(at) != 0 or _inv.stump_near(at) != 0:
+		return true
+
+	if _tree_near.is_valid() and not (_tree_near.call(at) as Array).is_empty():
+		return false
+
+	return (hit["normal"] as Vector3).y > 0.6
 
 
 # This tool's swing: the axe's wide chop, the pick axe's overhead arc (a hammer keeps its own short rhythm elsewhere).
