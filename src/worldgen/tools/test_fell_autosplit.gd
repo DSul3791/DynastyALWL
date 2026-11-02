@@ -116,8 +116,18 @@ func _init() -> void:
 	var along: Vector3 = Vector3(sin(float(tree["yaw"])), 0.0, cos(float(tree["yaw"])))
 	var base: Vector3 = w._items[small[0]]["pos"]
 	w._split_due[small[0]] = 0   # the 2 s have passed
+	for far in range(5000):   # scattered stones far away: the split's drops look only at the items near the trunk, so these cost nothing and change nothing
+		w._items[900000 + far] = {"number": w.table.number_of("stone"), "count": 1, "pos": Vector3(500.0 + float(far % 70), 10.0, 500.0 + floor(float(far) / 70.0)), "left": 1.0e9, "scatter": 900000 + far}
+
+	var split_t0: int = Time.get_ticks_usec()
 	w._auto_split()
+	print("split with 5000 far records: %.1f ms" % (float(Time.get_ticks_usec() - split_t0) / 1000.0))
 	check(felled(w, 3).is_empty(), "the trunk broke up")
+	check(not w._drop_scoped and w._drop_scope.is_empty(), "the split's drop scope is cleared after it")
+
+	for far in range(5000):
+		w._items.erase(900000 + far)
+
 	var logs: Array = loose_logs(w, log_n)
 	check(logs.size() == int(6.0 / 2.44), "log count equals what cutting gives: %d" % logs.size())
 	check(felled(w, 4).size() == 1, "the stump stays")
