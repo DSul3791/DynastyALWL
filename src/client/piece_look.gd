@@ -436,6 +436,70 @@ static func path() -> Node3D:
 	return root
 
 
+# A trodden hoe path (Dave 2 Nov 2026): not a square on a grid but a round soft patch of brown earth laid on the ground. Strong brown for the
+# middle half metre, fading to see-through by 1.25 m so it merges with the ground round it (and with the next patch along a drag). Tiny stones
+# are scattered by a jittered noise, never on a grid. No collision; it does not write depth, so it never z-fights the ground.
+const TROD_SHADER := """
+shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specular_disabled;
+
+uniform float core_m = 0.5;
+uniform float edge_m = 1.25;
+uniform vec3 earth : source_color = vec3(0.30, 0.215, 0.13);
+uniform vec3 stone : source_color = vec3(0.52, 0.49, 0.44);
+
+vec2 hash2(vec2 p) {
+	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+	return fract(sin(p) * 43758.5453);
+}
+
+void fragment() {
+	vec2 q = (UV - vec2(0.5)) * 2.0 * edge_m;
+	float r = length(q);
+	float a = 1.0 - smoothstep(core_m, edge_m, r);
+	vec3 c = earth;
+	float mottle = hash2(floor(q * 9.0)).x;
+	c *= 0.88 + 0.24 * mottle;
+	// stones: a jittered cell pattern turned at an odd angle, so no square pattern shows; each one a small soft blob
+	vec2 g = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * q * 7.0;
+	vec2 cell = floor(g);
+	vec2 f = fract(g) - 0.5;
+	vec2 j = hash2(cell) - 0.5;
+	float d = length(f - j * 0.55);
+	float size = 0.05 + 0.07 * hash2(cell + 7.3).x;
+	float has = step(0.62, hash2(cell + 3.1).y) * (1.0 - smoothstep(0.55, 1.0, r / edge_m));
+	float stone_mask = (1.0 - smoothstep(size * 0.7, size, d)) * has;
+	c = mix(c, stone * (0.8 + 0.4 * hash2(cell + 1.7).x), stone_mask);
+	ALBEDO = c;
+	ROUGHNESS = 1.0;
+	ALPHA = clamp(a * 0.96 + stone_mask * a, 0.0, 1.0);
+}
+"""
+static var _trod_material: ShaderMaterial
+
+
+static func trodden_path() -> Node3D:
+	_materials()
+
+	if _trod_material == null:
+		var shader: Shader = Shader.new()
+		shader.code = TROD_SHADER
+		_trod_material = ShaderMaterial.new()
+		_trod_material.shader = shader
+		_trod_material.render_priority = -1
+
+	var root: Node3D = Node3D.new()
+	var disc: MeshInstance3D = MeshInstance3D.new()
+	var quad: PlaneMesh = PlaneMesh.new()
+	quad.size = Vector2(2.5, 2.5)
+	disc.mesh = quad
+	disc.material_override = _trod_material
+	disc.position = Vector3(0.0, 0.035, 0.0)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(disc)
+	return root
+
+
 # A rock pile: a mound of about a dozen faceted stones (the loose-stone mesh of rock_look.gd, turned and scaled one by one), big ones at the
 # foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:

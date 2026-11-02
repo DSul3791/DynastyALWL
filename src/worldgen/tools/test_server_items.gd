@@ -827,10 +827,24 @@ func _init() -> void:
 	check(patches_of.call() == 1, "a hoe stroke treads a path patch")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.6, 10.0, 0.6))
-	check(patches_of.call() == 1, "the same metre is not trodden twice")
+	check(patches_of.call() == 1, "a patch is not trodden twice within 0.45 m")
+	var patch_pos: Vector3 = Vector3.ZERO
+
+	for it in m._items.values():
+		if it.has("struct") and str(it["struct"]["kind"]) == "path_patch":
+			patch_pos = it["pos"]
+
+	check(absf(patch_pos.x - 6.3) < 0.01 and absf(patch_pos.z - 0.4) < 0.01, "the patch lies exactly where the hoe pointed, not snapped to a metre grid")
+	digs.clear()
+	fills.clear()
+	accept[0] = true
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.0, 10.0, 0.4))
+	check(patches_of.call() == 2, "a second patch 0.7 m along is laid")
+	check(digs.size() + fills.size() >= 2, "a path stroke averages the ground round it (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
-	check(patches_of.call() == 1, "a path out of reach does nothing")
+	check(patches_of.call() == 2, "a path out of reach does nothing")
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
