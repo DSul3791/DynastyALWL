@@ -312,3 +312,9 @@ Note: 3. Drop one of each on the ground and look from 2 m.
 Note: 4. Say Yes if firewood reads as split logs with pale faces and kindling as a handful of sticks; No plus what is wrong.
 Note: Recommendation: Yes, merge it if they read right, because every player handles these daily.
 [test]
+
+## kathleen-trunk-orchard-shots | Should the PC thread take the lying-trunk and orchard pictures for me?
+Note: Blocked here: both need the game running, which my cloud box cannot do.
+Note: Lying trunk: a felled tree after the bark fix. Orchard: five trees with apples from 15 m north.
+Note: Recommendation: Yes, because they are the next two looks you asked about and the PC can shoot them in minutes.
+[check]
