@@ -28,3 +28,19 @@ The full list of what is open is `docs/handoff/SCOPE_TYLER.md` sections 3 and 8 
 
 ## Final full pass (1 Nov 2026, daily a4443f1d, voxel build, Tyler)
 164 tests: 163 pass, 1 fail at first (`test_trade`, real: slots no longer cap stacks, so 40 stones sell in one go and still pay 1 copper each; test now checks the buyer tires; fixed, passes). `items_check` chest/sleep/gather/eat/leanto/snare all PASS. 3 rig joins: no crash report, no `SLOW RPC`/`items tick slow`, no STALL/WATCHDOG (the join stall is gone with the merged fixes). Not run: client scene entry for bench/drink (open, owner Tyler), mutation checks, creator-preview lighting look.
+
+## Delta pass on 224e78bd: NOT RUN (1 Nov 2026, 20:03, Tyler)
+The run started 18:29 never got a Godot slot (two slots held by hung headless scripts from Kathleen, PIDs 22724 and 17368, a third by another) and was stopped at 20:03 with no result. No test result exists for 224e78bd or later. Do not read this as green.
+
+### Plan to run when the slots are free (Dave clears the hung scripts first; do not kill Godot processes unless sure)
+Voxel build, one tracked job, from the daily's latest commit (a96dae1f or later):
+```
+export GODOT_EXE="C:/GodotInstaller/godot.windows.editor.x86_64.exe"
+python3 tools/tests_for_diff.py a5f011a1 HEAD --full > plan.json     # a5f011a1 = my last green full pass (166 pass; the 2 test fixes are in 4046d8df)
+bash tools/run_tests.sh --jobs 3 --out DIR --plan plan.json            # about 11 min; GODOT_SLOTS=4 if the queue is full
+```
+Then by name (headless, `tools/godot --headless --path . --script res://src/worldgen/tools/NAME.gd`; confirm each is in plan.json, else run alone):
+`test_dynasty_body test_dynasty_fallback test_e_priority test_photo_exit test_real_death test_avatar_hooks test_fire_fuel_tiers test_fire_midburn_save test_fire_two_players test_craft_search_long test_all_trees_logs`
+For Sonny's water-flow-channel branch (after it is merged, or on its branch): `test_water_flow_texture test_water_hub2`.
+Then `python3 src/worldgen/tools/validate_items.gd` equivalent (`tools/godot ... --script res://src/worldgen/tools/validate_items.gd`) and one rig join (`art/playthrough/rig.sh`, check no crash report, `SLOW RPC`, `items tick slow`, STALL or WATCHDOG).
+Owners for failures: Kathleen body/arms/looks; Steve E key, camera, death, fire and carry; Jason sound; Sal items, trees, weights; Sonny water.
