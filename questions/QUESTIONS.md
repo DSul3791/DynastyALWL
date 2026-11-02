@@ -252,14 +252,6 @@ Note: Recommendation: A, because it is the cheapest thing that fits a day's wage
 [B] Sell a lean-to kit instead
 [C] Sell neither
 
-## steve-fire-three-logs | Fire: do 3 logs in the store stay, raise the timer and make a big fire?
-Note: 1. Place a campfire and light it with E.
-Note: 2. Press F, put 3 logs in, close the store.
-Note: 3. Check: the timer went up, it says a large fire, all 3 logs are still in the store.
-Note: 4. Open and close the store again: the time does not jump up.
-Note: Recommendation: If a log still vanishes, say how many logs were in it.
-[test]
-
 ## steve-split-pause | Felling: is the pause gone when a felled trunk breaks into logs?
 Note: 1. Fell a tree with the axe and wait for it to break into logs.
 Note: 2. Chop an old felled trunk too.
