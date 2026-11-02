@@ -334,3 +334,10 @@ Note: 1. Pull branch sonny-20261102-water2-shader-patch and start the game
 Note: 2. Walk to a river near spawn and watch it for 30 seconds
 Note: 3. Yes if it flows downstream with white water on fast shallow parts and the sea looks as before; No and a note if anything looks wrong
 [test]
+
+## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
+Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
+Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
+- More by day, wolves off
+- Leave as is
+- More by day, wolves on
