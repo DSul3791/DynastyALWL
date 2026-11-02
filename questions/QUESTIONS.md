@@ -258,13 +258,6 @@ Note: Start the game fresh, fell the first tree you find, then a second one. If 
 - Yes
 - No
 
-## steve-damage-numbers | Hits: do floating damage numbers show, and does the Gameplay toggle turn them off?
-Note: 1. Hit a tree, a boulder and an animal.
-Note: 2. Check: a number rises and fades where each hit landed.
-Note: 3. Esc > Settings > Gameplay > Damage numbers off, hit again: no numbers.
-Note: Recommendation: On main (#82).
-[test]
-
 ## steve-bush-work | Bushes: does an axe chop a bush into leaves and sticks, and a pickaxe dig it up to replant?
 Note: 1. Hit a bush (hazel is fine) twice with the axe: it goes, you get leaves and sticks.
 Note: 2. Hit another bush twice with the pickaxe: you get the bush item, for example hazel_bush.
