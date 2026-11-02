@@ -166,12 +166,12 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	table = ItemTableScript.load_default()
 	inventory = InventoryScript.new(table)
 	recipes = RecipeTableScript.load_default(table)
-	net.inventory_full_received.connect(_on_full)
-	net.inventory_slots_received.connect(_on_slots)
-	net.world_items_received.connect(_on_world_items)
-	net.notice_received.connect(_on_notice)
+	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
+	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
+	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
-	net.vitals_received.connect(_on_vitals)
+	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
 	net.energy_received.connect(_on_energy)
 	net.warmth_received.connect(_on_warmth)
 	net.comfort_received.connect(_on_comfort)
@@ -180,8 +180,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
-	net.thought_received.connect(_on_thought)
-	net.skills_received.connect(_on_skills)
+	net.thought_received.connect(func(...args): _timed("_on_thought", _on_thought, args))
+	net.skills_received.connect(func(...args): _timed("_on_skills", _on_skills, args))
 	net.purse_received.connect(func(copper): purse_copper = copper; _refresh_purse())
 	net.carry_received.connect(func(item_id):
 		shoulder_id = item_id
@@ -199,7 +199,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.died_received.connect(_on_died)
 	net.breath_received.connect(func(deciseconds: int) -> void: breath_ds = deciseconds)
 	net.strain_received.connect(_on_strain)
-	net.craft_queue_received.connect(_on_craft_queue)
+	net.craft_queue_received.connect(func(...args): _timed("_on_craft_queue", _on_craft_queue, args))
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
@@ -1896,6 +1896,17 @@ func _refresh_chest() -> void:
 			button.tooltip_text = _tooltip(number, source.counts[i], source.wear[i])
 
 
+
+# Finds a hitch (Dave's bug 6, 2 Nov 2026: "every time I cut a log off it pauses"): a message handler that takes over 20 ms prints one line, so the cause shows in the client log.
+# `client slow: world_items took 120 ms`. Cheap: one clock read either side.
+func _timed(label: String, handler: Callable, args: Array) -> void:
+	var t0: int = Time.get_ticks_usec()
+	handler.callv(args)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > 20.0:
+		print("client slow: %s took %.0f ms" % [label, ms])
+
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	for id in removed:
 		_forget(id)
@@ -1961,7 +1972,12 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if is_felled_state(state):   # only 3 (a trunk) and 4 (a stump): a loaded or burnt-out fire (8, 9) is NOT one, it was drawn as a stump (Dave, build 826)
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
+			var felled_t0: int = Time.get_ticks_usec()
 			node = _make_felled(state == 3, extra)
+
+			if float(Time.get_ticks_usec() - felled_t0) / 1000.0 > 10.0:
+				print("client slow: _make_felled took %.0f ms" % (float(Time.get_ticks_usec() - felled_t0) / 1000.0))
+
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
