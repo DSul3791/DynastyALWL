@@ -1958,3 +1958,7 @@ Answered: 2026-11-02 15:57 UTC
 Answer: Yes
 Answered: 2026-11-02 16:47 UTC
 
+## fire-tier-3-bonfire | Fire tier 3: with 3 logs, is the fire a bonfire?
+Answer: No: No, the third log keeps disappearing, and it doesn’t turn into a big fire
+Answered: 2026-11-02 16:47 UTC
+
