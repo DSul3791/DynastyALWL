@@ -2078,3 +2078,7 @@ Answered: 2026-11-02 21:38 UTC
 Answer: Real death at level 10 now, build the death screen first | Comment: Well, maybe we should wait until they start a dynasty. You can always respond to your bed until you marry someone and have a baby or you adopt somebody.
 Answered: 2026-11-02 21:39 UTC
 
+## death-before-heirs | You said: respawn at the bed until level 10, then real death. Children and heirs are not built yet. What should happen to a level 10 character who dies, until they are?
+Answer: Real death at level 10 now, build the death screen first | Comment: Well, maybe we should wait until they start a dynasty. You can always respond to your bed until you marry someone and have a baby or you adopt somebody.
+Answered: 2026-11-02 21:39 UTC
+
