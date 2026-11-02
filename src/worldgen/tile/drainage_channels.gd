@@ -32,6 +32,7 @@ const LAKE_RADIUS_BASE_M := 190.0   # lake bowl radius = base + per_qs x spring 
 const LAKE_RADIUS_PER_QS_M := 200.0
 const LAKE_RADIUS_MAX_M := 400.0
 const LAKE_MIN_GROUND_M := 6.0   # lake sites sit at least this high, so the bowl's lip stays above the sea
+const LAKE_MIN_LIP_M := 4.0   # a lake's lip (water level) stands at least this high: lower is a coastal flat, and the settled water floods it (trees stood in it, build 810)
 const LAKE_RELAXED_SLOPE_DEG := 18.0 # a tile with no lake at all takes its flattest reach up to this slope
 const TILE_SIZE_M := 15360.0         # tile edge in metres (lake sites are decided per tile, inside the tile)
 const SPRING_M3S_PER_KM2 := 0.1      # spring flow per km2 of catchment (water thread rule), clamped below
@@ -866,8 +867,8 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 
 		var site_lip: float = _ring_lip(index, clampf(LAKE_RADIUS_BASE_M + LAKE_RADIUS_PER_QS_M * qs_here, LAKE_RADIUS_BASE_M, LAKE_RADIUS_MAX_M), size, cell_m)
 
-		if site_lip < 1.0:
-			continue   # the downstream channel or the sea is under 1 m on the ring: the carve would drop this bowl
+		if site_lip < LAKE_MIN_LIP_M:
+			continue   # the downstream channel or the sea is low on the ring: the carve would drop this bowl, or it would be a flooded coastal flat
 
 		if relaxed_best.is_empty() or slope < float(relaxed_best[0]):
 			relaxed_best = [slope, index]
@@ -928,7 +929,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 				if ring >= radius and ring <= radius + 1.5 * cell_m:
 					lip = minf(lip, bed[(row + dz) * size + column + dc])
 
-		if lip == INF or lip < 1.0:
+		if lip == INF or lip < (LAKE_MIN_LIP_M if is_lake else 1.0):
 			skipped_lip += 1
 			continue
 
