@@ -2050,3 +2050,7 @@ Answered: 2026-11-02 21:35 UTC
 Answer: Yes
 Answered: 2026-11-02 21:35 UTC
 
+## steve-damage-numbers | Hits: do floating damage numbers show, and does the Gameplay toggle turn them off?
+Answer: Yes
+Answered: 2026-11-02 21:36 UTC
+
