@@ -2062,3 +2062,7 @@ Answered: 2026-11-02 21:36 UTC
 Answer: Yes | Comment: Yes, the water that is working looks fabulous but he’s weird patches on the light slopes and there’s no water coming down the waterfalls at all
 Answered: 2026-11-02 21:37 UTC
 
+## pic-water2-game-shader-calm-rough | Is "fast but calm" vs "fast and rough" now visible with the game's own water shader (same river at 4.7 m/s: left calm, right rough)?
+Answer: No | Comment: I think this question is extremely out of date
+Answered: 2026-11-02 21:37 UTC
+
