@@ -1076,13 +1076,21 @@ func _update_trunk_colliders() -> void:
 
 # A felled trunk (lying along `yaw`, falling over when it first appears) or a stump.
 # The bark of a felled trunk or stump: the standing trees' bark shader (src/flora/flora_view.gd) with the species texture and tint, so a lying log is not a flat dark drum (guide, 2026-10-31).
+# One Shader shared by every felled trunk, stump and log: a new Shader per call made the GPU compile the same bark shader again on each cut of a fallen tree (the trunk is rebuilt when it
+# gets shorter), a lock-up of about 2 s in the windowed game (Dave's bug 6, 2 Nov 2026; the server side of a cut costs under 30 ms with 3000 items).
+static var _felled_bark_shader: Shader = null
+
+
 func _felled_bark(species: String, radius: float, span: float) -> Material:
 	var flora_script: GDScript = load("res://src/flora/flora_view.gd")
 	var builder_script: GDScript = load("res://src/flora/tree_builder.gd")
-	var shader: Shader = Shader.new()
-	shader.code = flora_script.BARK_SHADER
+
+	if _felled_bark_shader == null:
+		_felled_bark_shader = Shader.new()
+		_felled_bark_shader.code = flora_script.BARK_SHADER
+
 	var mat: ShaderMaterial = ShaderMaterial.new()
-	mat.shader = shader
+	mat.shader = _felled_bark_shader
 	var texture: String = "bark"
 
 	if species.contains("birch"):

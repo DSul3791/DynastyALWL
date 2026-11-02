@@ -1,6 +1,6 @@
 # Bugs found in play-testing (Dave)
 
-Dave's list of bugs found while testing. **Nobody is assigned to these and nobody should work on them.** They are part of the handoff once Dave has finished testing; he will say who takes what.
+Dave's list of bugs found while testing. **Bugs are now the top priority (Dave, 2 Nov 2026).** Owners are in the triage table below; first named owner leads, the others support. Each owner reproduces, fixes on their own branch for the day, and reports to the moderator.
 
 Each entry: the symptom in Dave's words, when it was found, and any context already known. Add new entries at the bottom.
 
@@ -74,3 +74,25 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** it won't let me put more than one log in the fire.
 - **Context, not a diagnosis:** same as the earlier report today ("the first log went in but the second one won't"). Steve could not reproduce it on the server (4 logs onto one laid fire all go in, and 5 onto a lit fire with a pot also go in; the only cap is the total, 18 real hours or 6 logs), and suggested the client may treat a tap on a laid fire as "light" and only a hold as "add fuel", or add sticks before logs. He then made fuel order logs first and prompts inspect-mode only (`18e7dcd4`). Since Dave still sees it on a build that includes those, the cause is not known. The pot rule (no logs while a pot hangs on the fire) may be involved if a pot was on that fire; Dave said earlier there was no pot.
 - **Status:** open, unassigned, not worked on.
+
+## 10. The main character does not animate when jumping
+
+- **Found:** 2026-11-02, Dave, playing.
+- **Symptom (Dave):** the main character doesn't animate when he jumps; he just bounces in the air without any animation.
+- **Context, not a diagnosis:** none known. Nothing has been run in a windowed client.
+- **Status:** open, unassigned, not worked on.
+
+## Triage by role (Jamie, 2 Nov 2026)
+| # | Bug | Lead | Support |
+|---|---|---|---|
+| 1 | Fire timer not updating after adding wood | Steve (fire rules, server state) | Tyler tests in a windowed client |
+| 2 | Cannot pick up chopping block | Steve (E-key and placement rules) | Tyler |
+| 3 | Firewood pile beside block does not grow | Steve (count reaches client) | Kathleen (pile size looks) |
+| 4 | First-person arms alignment and placement | Kathleen | Kathreen |
+| 5 | Tree takes 20+ hits, was about 10 | Sal (axe numbers, tree hit points) | Steve (rule), Tyler (check) |
+| 6 | 2 s lock-up on each cut of a fallen tree | Tyler (profile) | Steve (code fix) |
+| 7 | Constant lag | Tyler (profile first) | Sonny (water2 now default), MikeW (flora density), Steve |
+| 8 | 3+ firewood does not make a medium fire | Steve | Sal (tier numbers) |
+| 9 | Only one log fits in the campfire | Steve | Tyler |
+| 10 | No jump animation | Kathreen (character looks) | Steve (jump state signal) |
+Jason (audio), Dino (guides) and MikeW have no lead bug today; Dino notes player-facing effects of each fix in the guides.
