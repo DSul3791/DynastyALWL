@@ -2094,3 +2094,7 @@ Answered: 2026-11-02 21:40 UTC
 Answer: Yes
 Answered: 2026-11-02 21:40 UTC
 
+## pic-p2-creator | Does the character creator preview show the FRONT of the body with sensible colours?
+Answer: Yes | Comment: Yes, for now, but we need to start using our mesh model for a new character and allowing people to modify it in the editor
+Answered: 2026-11-02 21:41 UTC
+
