@@ -29,6 +29,7 @@ uniform vec3 sky_color : source_color = vec3(0.55, 0.64, 0.74);
 uniform float clear_m = 1.1;        // water this deep hides about two thirds of the bed
 uniform float edge_m = 0.06;        // the sheet fades in over this much depth at the shore
 uniform float daylight = 1.0;
+uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
@@ -104,6 +105,21 @@ void fragment() {
 	// Faster water is choppier; still water nearly glassy.
 	float chop = 0.08 + 0.5 * clamp(speed / 2.5, 0.0, 1.0);
 	vec3 n_world = normalize(vec3(-hx / e * chop, 1.0, -hz / e * chop));
+
+	// Rain: each 0.6 m cell gets a drop now and then (more cells as the rain grows); its ring spreads and fades in under a second.
+	if (rain > 0.01) {
+		vec2 rp = world / 0.6;
+		vec2 rc = floor(rp);
+		vec2 centre = vec2(hash(rc + 1.7), hash(rc + 9.2)) * 0.6 + 0.2;
+		float phase = fract(TIME * 1.3 + hash(rc + 4.4));
+		vec2 off = (fract(rp) - centre) * 0.6;
+		float r = length(off);
+		float front = phase * 0.28;
+		float ring = sin((r - front) * 60.0) * (1.0 - smoothstep(0.0, 0.05, abs(r - front))) * (1.0 - phase);
+		float drops = step(hash(rc + floor(TIME * 1.3 + hash(rc + 4.4)) * 0.37), rain);
+		n_world = normalize(n_world + vec3(off.x, 0.0, off.y) / max(r, 0.001) * ring * drops * 0.5);
+	}
+
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_world, 0.0)).xyz);
 
 	// How much water the eye looks through to the ground behind (the scene's depth): soft where the sheet meets the bank, deeper colour where the
@@ -289,6 +305,10 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
 	_material.set_shader_parameter("cell_m", cell_m)
 	visible = true
+
+
+func set_rain(value: float) -> void:
+	_material.set_shader_parameter("rain", value)
 
 
 func set_daylight(value: float) -> void:
