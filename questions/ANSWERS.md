@@ -2110,3 +2110,7 @@ Answered: 2026-11-02 21:42 UTC
 Answer: Yes | Comment: Yes, I can see some weave
 Answered: 2026-11-02 21:43 UTC
 
+## pic-shore-net-look | Does the shore net now look like a hand net (pole, hoop, string bag, floats) and not a hammer?
+Answer: No | Comment: I have been imagining the net like something you throw like a hand thrown fishing net and you pull it back with a twine and you get a random number of fish based on the size of the school that you threw it at
+Answered: 2026-11-02 21:43 UTC
+
