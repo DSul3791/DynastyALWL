@@ -53,6 +53,7 @@ const DripViewScript := preload("res://src/client/drip_view.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
 const SoundTestMenuScript := preload("res://src/client/sound_test_menu.gd")
 const QuakeViewScript := preload("res://src/client/quake_view.gd")
+const SoundNow := preload("res://src/client/sound_now.gd")
 const FeelKicksScript := preload("res://src/client/feel_kicks.gd")
 const LadderClimbScript := preload("res://src/client/ladder_climb.gd")
 const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre apart
@@ -200,6 +201,10 @@ var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of 
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
 var _last_sound_seen: Dictionary = {}
+var _sound_now: String = "none"          # the loudest sounds playing now, loops and beds included (sound_now.gd), for the HUD
+var _sound_now_left: float = 0.0
+var _sound_now_logged: String = ""
+var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
@@ -5028,7 +5033,8 @@ func _process(delta: float) -> void:
 	var avg_ms: float = total_ms / maxf(float(_frame_ms.size()), 1.0)
 	status_icons.tick(delta)
 	_note_last_sound()
-	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound]
+	_note_sound_now(delta)
+	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s\nplaying: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound, _sound_now]
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
@@ -5191,6 +5197,26 @@ func _note_last_sound() -> void:
 			_last_sound = "%s: %s" % [sources[n][0], now]
 
 		_last_sound_seen[sources[n][0]] = now
+
+
+# The loudest sounds playing now, loops and beds too (Dave 2 Nov 2026: a deep wobbling sound all day never showed as the last sound).
+# Twice a second for the HUD's "playing:" line; the log gets a "sound now:" line when the loudest one changes, at most every 10 s.
+func _note_sound_now(delta: float) -> void:
+	_sound_now_left -= delta
+
+	if _sound_now_left > 0.0 or sound == null:
+		return
+
+	_sound_now_left = 0.5
+	var list: Array = SoundNow.loudest(sound, camera.global_position if camera != null else body.global_position, 3)
+	_sound_now = SoundNow.line(list)
+	var top: String = str(list[0][0]) if not list.is_empty() else "none"
+	var now: int = Time.get_ticks_msec()
+
+	if top != _sound_now_logged and now - _sound_now_log_msec >= 10000:
+		_sound_now_logged = top
+		_sound_now_log_msec = now
+		print("sound now: %s at %s" % [_sound_now, str(body.global_position.round())])
 
 
 func _walk_step() -> void:
