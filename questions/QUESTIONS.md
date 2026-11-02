@@ -222,15 +222,6 @@ Note: Felled trunks now match the real size of each tree; the hits could follow 
 Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
 [check]
 
-## kathleen-firewood-pile-grows | Does the firewood pile beside the chopping block grow with each split?
-Note: Fix is in pull request 68; untested in game because my cloud box has no Godot.
-Note: 1. In GitHub Desktop, switch to branch claude/kathleen-firewood-pile-20261102.
-Note: 2. Run the game, place a chopping block, carry 8 wooden blocks and an axe.
-Note: 3. Split one block at a time and watch the pile beside the block.
-Note: 4. Say Yes if it gets bigger with every split; No plus the count where it stopped growing.
-Note: Recommendation: Yes, merge it if the pile grows, because you asked to see the pile get bigger.
-[test]
-
 ## sonny-liquid-look | New flowing water (merged, PR #91): does a stream look like one flowing body?
 Note: 1. Pull main and start the game. 2. Walk to a stream, a pond and a waterfall near spawn. 3. Look at the shores, slopes and falls. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
 [test]
