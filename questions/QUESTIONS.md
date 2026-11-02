@@ -222,12 +222,6 @@ Note: Felled trunks now match the real size of each tree; the hits could follow 
 Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
 [check]
 
-## sonny-spring-pools | OK to commit the rebaked starter tiles with pond beds (PR #71) and springs in ponds (PR #92)?
-Note: Coastal ponds no longer drain into the sea through their beds, and springs now start only on flats set back from edges or at the bottom, each in its own pond.
-Note: Tested on your PC (tile 3,4): 5 of 5 tests pass; 16 springs raised to a flat, 17 moved down to the bottom. One big valley pond fills slowly (noted).
-Note: Recommendation: Yes, bake the 9 tiles with both and commit
-[check]
-
 ## claude-crop-seeds | Which wild plants should give the other crop seeds (potato, turnip, cabbage, onion, peas, beet, radish, lettuce)?
 Note: 8 of 14 crops have no seed source, so their farming and cooking recipes cannot be reached. Oats and rye now come from tall grass (PR 96).
 Note: Option A: add wild plants to the world, one per crop, each giving seeds (wild turnip, sea beet, ramsons, vetch and so on). Option B: seeds come from the food you gather or buy (dig a root and keep a seed, buy seed from an NPC trader).
