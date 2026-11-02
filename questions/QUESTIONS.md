@@ -197,13 +197,6 @@ Note: The three arms textures are about 200 MB uncompressed in graphics memory; 
 Note: Recommendation: Yes only if fps is better and the skin shows no blocky patches.
 [check]
 
-## sonny-headpond-leak | Sonny blocked: run the head-pond escape-path probe (two coastal ponds drain dry)
-Note: Two shallow head ponds on tile 3,4 lose their water to the sea; test_head_pond_fill fails on them. Sonny needs the escape path to fix the bake, and has no Godot.
-Note: 1. git fetch origin, then git checkout sonny-20261102-pondprobe
-Note: 2. godot --headless --path . --script res://tools/head_pond_probe.gd -- --only=1900590,3082096 (about 10 min)
-Note: 3. Paste the lines that start with path into Notes
-[test]
-
 ## fp-arms-axe-pr58 | First-person arms with the stone axe (bug 4, PR 58)
 Note: Blocked: Kathreen chose the new arm position from bare-arm pictures and cannot see a held tool.
 Note: 1. Play the build with PR 58 merged (or branch claude/kathreen-arms-pos).
@@ -276,13 +269,6 @@ Note: 4. Say Yes if it looks real and does not flicker far away; No plus what lo
 Note: Recommendation: Yes, merge it if it looks right, because the ground is what you see most.
 [test]
 
-## sonny-water2-look | Look test: rivers flow the way the sim runs (water shader reads the flow texture)
-Note: PR 65. Rivers inside the simulated water window now take their flow and white water from the live sim.
-Note: 1. Pull branch sonny-20261102-water2-shader-patch and start the game
-Note: 2. Walk to a river near spawn and watch it for 30 seconds
-Note: 3. Yes if it flows downstream with white water on fast shallow parts and the sea looks as before; No and a note if anything looks wrong
-[test]
-
 ## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
 Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
 Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
@@ -311,19 +297,14 @@ Note: 4. Say Yes if it gets bigger with every split; No plus the count where it 
 Note: Recommendation: Yes, merge it if the pile grows, because you asked to see the pile get bigger.
 [test]
 
-## sonny-pond-bed-bake | OK to rebake the 9 starter tiles so coastal ponds hold water (PR 71)?
-Note: Two coastal ponds near spawn drain dry: their carved beds dip below sea level, and the water treats that as the sea.
-Note: PR 71 stops pond and lake beds going below 0.5 m. It needs the same 9-tile bake as last night, on your PC, then a tile commit.
-Note: Recommendation: Yes, because the fix is one number and the bake is the same proven 9-thread run; the tile commit waits for this Yes.
-[check]
-
-## sonny-liquid-look | New flowing water (PR #91): does a stream look like one flowing body?
-Note: 1. Check out PR #91 and start the game. 2. Walk to a stream or river near spawn. 3. Look at shores, slopes and ponds. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
+## sonny-liquid-look | New flowing water (merged, PR #91): does a stream look like one flowing body?
+Note: 1. Pull main and start the game. 2. Walk to a stream, a pond and a waterfall near spawn. 3. Look at the shores, slopes and falls. 4. Pass if the water is smooth, soft at the edges and visibly moving downstream.
 [test]
 
-## sonny-spring-pools | Springs moved to ponds on flats or at the bottom (PR #92): OK to rebake with it?
-Note: Stacked on the pond-bed rebake (#71). Tiles are only committed after your yes.
-Note: Recommendation: Yes, bake #71 and #92 together
+## sonny-spring-pools | OK to commit the rebaked starter tiles with pond beds (PR #71) and springs in ponds (PR #92)?
+Note: Coastal ponds no longer drain into the sea through their beds, and springs now start only on flats set back from edges or at the bottom, each in its own pond.
+Note: Tested on your PC (tile 3,4): 5 of 5 tests pass; 16 springs raised to a flat, 17 moved down to the bottom. One big valley pond fills slowly (noted).
+Note: Recommendation: Yes, bake the 9 tiles with both and commit
 [check]
 
 ## claude-crop-seeds | Which wild plants should give the other crop seeds (potato, turnip, cabbage, onion, peas, beet, radish, lettuce)?
