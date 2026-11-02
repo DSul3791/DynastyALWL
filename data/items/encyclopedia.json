@@ -2778,7 +2778,7 @@
 		"shore_net": {
 			"name": "Shore net",
 			"kind": "tool",
-			"description": "A weighted twine net. Hold the button at the water's edge for about 20 seconds.",
+			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"how_to_get": [
 				"Craft: 8 Twine, 4 Stone"
 			],

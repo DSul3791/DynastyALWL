@@ -146,6 +146,7 @@ const MotionExtra := preload("res://src/client/character/motion_extra.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
+const NET_THROW_M := 6.0                        # how far ahead the shore net lands (server reach: fishing.json net.reach_m, 8 m)
 const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
@@ -597,12 +598,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if _is_other_tool():
-		# The shore net: hold the left button at the water's edge (about 20 s); letting go cancels (the server also cancels when you walk off).
+		# The shore net (Dave 2 Nov 2026): a click throws it onto the water NET_THROW_M ahead; the server pulls it back after a few seconds
+		# (walking off loses the throw). Releasing the button does nothing.
 		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
 			if pressed:
 				_arm_play("use", 0.6)
+				var ahead: Vector3 = -_camera.global_transform.basis.z
+				ahead = Vector3(ahead.x, 0.0, ahead.z).normalized()
+				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, _camera.global_position + ahead * NET_THROW_M - Vector3(0.0, 1.6, 0.0))
 
-			_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0 if pressed else 1, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 			return true
 
 		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).

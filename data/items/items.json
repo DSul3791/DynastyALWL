@@ -943,7 +943,7 @@
 		"shore_net": {
 			"number": 260,
 			"name": "Shore net",
-			"description": "A weighted twine net. Hold the button at the water's edge for about 20 seconds.",
+			"description": "A weighted twine net. Throw it on water, pull it back; a bigger school fills it more.",
 			"kind": "tool",
 			"tool_class": "net",
 			"durability": 20,
