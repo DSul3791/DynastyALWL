@@ -348,3 +348,11 @@ Note: Blocked: I tried to download Godot 4.7 here to run shader and water tests 
 Note: Where: Project settings, then Cloud environment, then the gear, then Setup script. One line: download and unzip Godot_v4.7-stable_linux.x86_64.zip from the godotengine GitHub releases.
 Note: Recommendation: Yes, add it to the setup script
 [check]
+
+## sal-lumber-vs-picking | Lumber pays far more than picking. Is that right, or cut it?
+Note: Picking now pays a poor wage, about 48 copper for 4 hours (0.2 copper a minute). One spruce log sawn at a mill gives 7 lumber, and Hob pays about 4 copper each, so about 28 copper from one log. That is a day's picking wage in a few minutes of chopping and sawing, but it needs an axe, a sawmill and carrying a 32 kg log.
+Note: Option A: leave it, because sawing is skilled work with a machine and a heavy carry, and it gives players a reason to build the sawmill. Option B: cut the lumber price so a log is worth about 10 copper (lumber value 8 to 3). Option C: Hob pays full price only for a few boards a day (a small shelf limit), then very little.
+Note: Recommendation: C, because it keeps the reward for building a sawmill but stops one trader being drained by logs. Say A, B or C and I will make the change.
+[A] Leave it
+[B] Cut the lumber price
+[C] Limit how many boards Hob buys a day
