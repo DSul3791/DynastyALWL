@@ -28,6 +28,9 @@ const RADIUS_M := 45.0
 const ITEMS_PER_FRAME := 300
 const DENSE := 22.0                     # nearness-weighted trees of one kind that count as a full stand
 const BASE_DB := -30.0                  # a full stand in a full wind (was -24: the steady band noise read as rain, SOUND_AUDIT.md 31 Oct 2026)
+# Dave 2 Nov 2026: sunny and calm, he kept hearing "rain landing on leaves". The local wind strength has a floor of about 0.3 even in a calm (0.25 base plus gust noise),
+# so the leaf and needle hiss and the dry-leaf ticks played all day. The trees now also need the WORLD wind (the weather's) to rise past CALM_WORLD_WIND.
+const CALM_WORLD_WIND := [0.35, 0.6]    # world wind at which the trees are silent and at which they may speak fully
 const GUST_FROM := 0.30                 # below this wind strength the trees are silent: a light breeze does not hiss
 const GUST_FULL := 1.0                  # at this wind strength the gust factor is 1
 const FLUTTER_DB := 5.0                 # swell and flutter: two slow waves (about 8 s and 3 s) move the level this many dB up and down, more in a strong wind
@@ -113,7 +116,7 @@ func update(delta: float, body: CharacterBody3D) -> void:
 
 	for sound_name in LOOPS:
 		var player: AudioStreamPlayer3D = _players[sound_name]
-		var amount: float = float(want[sound_name]) * gust_factor(wind)
+		var amount: float = float(want[sound_name]) * gust_factor(wind) * world_wind_gate(float(_stage.weather.world_wind))
 		var target: float = BASE_DB + 20.0 * log(maxf(amount, 0.001)) / log(10.0) + CANOPY_DB * under + flutter_db(float(Time.get_ticks_msec()) / 1000.0, wind, sound_name) if amount > 0.01 else -80.0
 
 		if int(_stage.tier) == 0 and sound_name != best:
@@ -140,6 +143,11 @@ func update(delta: float, body: CharacterBody3D) -> void:
 
 func voices_playing() -> int:
 	return loops_playing
+
+
+# 0 in a calm world, 1 in a breezy one: smooth between CALM_WORLD_WIND.
+static func world_wind_gate(world_wind: float) -> float:
+	return smoothstep(float(CALM_WORLD_WIND[0]), float(CALM_WORLD_WIND[1]), world_wind)
 
 
 # Trees speak in gusts, not in every breeze: 0 below GUST_FROM, rising smoothly to 1 at GUST_FULL (and a little past it in a gale).
