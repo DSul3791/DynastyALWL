@@ -2134,3 +2134,7 @@ Answered: 2026-11-02 21:44 UTC
 Answer: Yes | Comment: But there should be many more of them they should come in clumps of 10 or 20 and when you pick them the plant stays but the berries disappear, but you can also use a pickax to collect the plants and then you should be able to put the plant in your hand and place it down wherever you want it that’s how all plants should work
 Answered: 2026-11-02 21:46 UTC
 
+## pic-creator-front | Does the character creator preview now face you with a readable face?
+Answer: Yes | Comment: But we now want us to use our new character mesh and allow us to adjust his proportions
+Answered: 2026-11-02 21:46 UTC
+
