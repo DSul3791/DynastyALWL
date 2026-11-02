@@ -2883,6 +2883,12 @@ func _prewarm_loose_meshes() -> void:
 		if name == "stone" or name == "stick" or name == "firewood" or name == "plant_fibre" or name == "driftwood" or name == "log" or name.begins_with("log_"):
 			_mesh_for(table.number_of(name))
 
+	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
+	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
+	for name in _trunk_drop_ids():
+		if table.number_of(name) > 0:
+			_mesh_for(table.number_of(name))
+
 	print("client prewarm: loose item meshes %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 	_prewarm_felled()
 
@@ -2918,6 +2924,34 @@ func _drop_felled_warm() -> void:
 			node.queue_free()
 
 	_felled_warm.clear()
+
+
+# The item ids a felled trunk can drop besides its logs (data/items/drops.json "trunk").
+func _trunk_drop_ids() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	var trunk: Dictionary = (parsed as Dictionary).get("trunk", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+	var ids: Array = ["bark", "thatch", "seed_bundle", "kindling", "leaves"]
+
+	for key in ["branch", "small"]:
+		for row in trunk.get(key, []):
+			ids.append(str(row[0]))
+
+	var roots: Array = trunk.get("roots", [])
+
+	if not roots.is_empty():
+		ids.append(str(roots[0]))
+
+	for species in trunk.get("by_species", {}):
+		for row in trunk["by_species"][species]:
+			ids.append(str(row[0]))
+
+	var out: Array = []
+
+	for id in ids:
+		if not out.has(id):
+			out.append(id)
+
+	return out
 
 
 # Dave's real pickup meshes (assets/natural_pickups, glTF, metres, Y up, resting contact at Y=0, vertex colours).
