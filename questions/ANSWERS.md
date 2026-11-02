@@ -1974,3 +1974,7 @@ Answered: 2026-11-02 16:48 UTC
 Answer: Yes
 Answered: 2026-11-02 16:49 UTC
 
+## first-day-lots | Sell lots for cheap goods: is about 195 copper for a 4 hour day of gathering right?
+Answer: No: The average person picking and scraping all day should make a poor wage, which would be just barely enough to buy a meal and maybe a place to sleep for the night whatever that
+Answered: 2026-11-02 16:50 UTC
+
