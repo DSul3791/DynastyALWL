@@ -14,6 +14,45 @@ const WaterSettler := preload("res://src/water/water_settler.gd")
 const SIM_SECONDS := 10800.0
 
 
+# The level at which water standing at cell `start` first escapes: the lowest L for which the 4-connected cells with ground <= L reach the tile edge or ground <= 0 (the sea).
+# Returns [level, escape cell]. A bowl whose baked level is above this spills at the spill level, never holding the baked level.
+func _spill(ground: PackedFloat32Array, side: int, start: int) -> Array:
+	var low: float = ground[start]
+	var high: float = 60.0
+	var escape: int = -1
+
+	for _round in range(14):
+		var mid: float = (low + high) * 0.5
+		var seen: Dictionary = {start: true}
+		var queue: Array = [start]
+		var found: int = -1
+
+		while not queue.is_empty() and found < 0 and seen.size() < 400000:
+			var at: int = queue.pop_back()
+			var c: int = at % side
+			@warning_ignore("integer_division")
+			var r: int = at / side
+
+			if c == 0 or r == 0 or c == side - 1 or r == side - 1 or ground[at] <= 0.0:
+				found = at
+				break
+
+			for step in [1, -1, side, -side]:
+				var n: int = at + step
+
+				if not seen.has(n) and ground[n] <= mid:
+					seen[n] = true
+					queue.append(n)
+
+		if found >= 0:
+			high = mid
+			escape = found
+		else:
+			low = mid
+
+	return [high, escape]
+
+
 func _init() -> void:
 	var tile: Vector2i = Vector2i(3, 4)
 	var only: Array = []
@@ -96,6 +135,8 @@ func _init() -> void:
 					lowest = sim.ground[q2]
 					lowest_at = q2
 
+		var spill: Array = _spill(sim.ground, side, k)
+		print("spring %d: spills at level %.2f m (baked pond level %.2f m, sim ground at spring %.2f m) through cell %d" % [k, float(spill[0]), surface, sim.ground[k], int(spill[1])])
 		print("spring %d (%.2f m3/s): ground %.2f, baked level %.2f, class %d; depth at spring %.2f m; deepest within 5 cells %.2f m at %d (ground %.2f); stored within 200 m %.0f m3 vs delivered %.0f m3; lowest ground within 200 m %.2f at %d (%d cells away)" % [
 			k, float(spring[1]), data.heights[k], surface, data.water_class[k], sim.depth_at(k), around_max, around_at, sim.ground[around_at], stored, float(spring[1]) * SIM_SECONDS,
 			lowest, lowest_at, int(Vector2(float(lowest_at % side - column), floorf(float(lowest_at) / float(side)) - float(row)).length())])
