@@ -20,8 +20,9 @@ const SILENT_DB := -60.0
 # Dave 24 Oct: a surf-like roar in the middle of a forest drowned the nature sounds. The forest beds are steady broadband noise at about
 # -27 dB RMS (-31 winter), as loud as everything else in the forest together, so they sit this far under the other sounds.
 # Dave 2 Nov: on a clear forest night a deep sound drowned a campfire. Measured: bed_night is 72 percent under 200 Hz at -27.8 dB RMS, 8 dB hotter than the forest day bed
-# (-35.9) and 6 dB over the surf (-33.6), and plays everywhere at night; the trim brings it to about -40 dB RMS, and it ducks near a lit fire.
-const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -12.0}
+# (-35.9) and 6 dB over the surf (-33.6), and plays everywhere at night. Dave: "someone waving a metal panel, wobbling": it is synthetic 60-300 Hz noise with a
+# slow swell (make_batch2.py bed_night). Trimmed -30 dB (about silent) until a real recorded night bed replaces it; it also ducks near a lit fire.
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -30.0}
 const FIRE_DUCK_LAYERS := ["shore_bed", "time_bed"]   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05
