@@ -79,3 +79,11 @@ Everything below is written down with an owner, the exact next step and why. Spe
 | Carry-weight audit script | Sal (later) | `tools/economy_first_day.py` and `docs/CARRY_WEIGHTS.md` cover the weights; a script for every recipe is not written | Not started |
 | Rose hips | Sal, decided | Keep. To reverse: port `1174dd91`, set `rose_hips` future, run `validate_items` | Dave's call, no action |
 | Branch `claude/sal-no-rose-berries` | Moderator | Delete, as hips stay | Decision made |
+
+### Open at end of 1 Nov 2026 (what is left)
+- **Text checker coverage:** `tools/text_vs_recipe.py` covers encyclopedia how-to-get lines only. Still to cover: hints, starter goals, descriptions (need a way to tell which recipe a sentence means).
+- **Carry-weight audit script:** a script that checks every recipe's ingredients against the carry cap (0.7 x body kg). Not written; `docs/CARRY_WEIGHTS.md` has the manual findings.
+- **QA cards waiting on Dave:** `softwood-boards` (fine vs plank board value; recommend leave until furniture needs it), `first-day-lots`, `sell-lots-value1`, `heavy-kits-carry`; also fire-tier, `leanto-pace`, `berries-stew-cook` cards above.
+- **Dave's note, done:** softwood is better for boards than for firewood. Spruce and pine lumber now 7 per log in 5 s, beams 6 s (commit b4d23a8c, `ITEM_DECISION_LOG.md`). Open question is only the value split on the card.
+- **Lumber route:** spruce log saws to about 30 copper at Hob, fastest purse filler, capped by his purse; see `docs/ECONOMY_FIRST_DAY.md`. No change made.
+
