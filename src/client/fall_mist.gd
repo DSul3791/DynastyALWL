@@ -92,8 +92,8 @@ func setup(quality: int) -> void:
 		quad.material = _material
 		particles.draw_pass_1 = quad
 		var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
-		# Dave 2 Nov 2026: "all we need is a good foggy mist around any water falling, creating good turbulence". The mist rises from the whole
-		# height of the fall (a box from lip to foot) and is stirred by turbulence, not thrown in straight lines.
+		# Dave 2 Nov 2026: "all we need is a good foggy mist around any water falling, creating good turbulence": a thick fog at the foot (see
+		# update), stirred by turbulence, not thrown in straight lines.
 		process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 		process.emission_box_extents = Vector3(3.0, 3.0, 3.0)
 		process.turbulence_enabled = true
@@ -149,11 +149,12 @@ func update(falls: Array, at: Vector3) -> void:
 		var process: ParticleProcessMaterial = particles.process_material as ParticleProcessMaterial
 		var top: Vector3 = fall["top"] if fall.has("top") else base + Vector3(0.0, 6.0, 0.0)
 		var drop: float = maxf(top.y - base.y, 1.0)
-		# The fog wraps the falling water from lip to foot, thickest low down (the box sits a little under the middle).
-		var middle: Vector3 = base.lerp(top, 0.4)
-		particles.global_position = middle + Vector3(0.0, 0.5, 0.0)
-		var reach: float = clampf(width * 0.5, 2.0, 12.0)
-		process.emission_box_extents = Vector3(reach + 0.5 * absf(top.x - base.x), drop * 0.45 + 1.0, reach + 0.5 * absf(top.z - base.z))
+		# Dave 2 Nov 2026: "the water doesn't spray at the top of waterfalls, it often will create a thick fog or mist around the bottom". The fog is
+		# born in a low wide box round the foot (no higher than a fifth of the drop) and the turbulence lifts and rolls it from there.
+		var reach: float = clampf(width * 0.6 + drop * 0.15, 2.5, 14.0)
+		var low: float = clampf(drop * 0.2, 0.8, 4.0)
+		particles.global_position = base + Vector3(0.0, low, 0.0)
+		process.emission_box_extents = Vector3(reach, low, reach)
 		particles.visibility_aabb = AABB(Vector3(-60, -drop - 10, -60), Vector3(120, 2.0 * drop + 60, 120))
 		# Height times flow: a tall big fall makes a thick fog, a small step a little haze.
 		var power: float = clampf(sqrt(drop * flow) / 14.0, 0.25, 1.0)
