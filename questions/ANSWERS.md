@@ -2190,3 +2190,7 @@ Answered: 2026-11-02 22:06 UTC
 Answer: C: Limit how many boards Hob buys a day | Comment: It should be something like two boards per copper or three boards per copper
 Answered: 2026-11-02 22:07 UTC
 
+## sal-wanted-orders | Should Hob post one small "wanted order" a day, so a poor-wage day has a goal?
+Answer: A: Yes, one wanted order a day | Comment: Yes, he should probably have an entire order of things that he would like people to pick for him and it could be client side although I would be afraid of people taking advantage of that but if it is client independent and they can only gain it once a day then it’s really a poor wage that they can just get once a day. And that way everybody playing if there were 10 people they could all get it themselves maybe
+Answered: 2026-11-02 22:08 UTC
+
