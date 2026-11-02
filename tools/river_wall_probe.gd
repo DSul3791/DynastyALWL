@@ -79,6 +79,7 @@ func _init() -> void:
 	var groups: Array = []   # {at: Vector2, cells, wall, drop}
 
 	for c in cells:
+		@warning_ignore("integer_division")
 		var at: Vector2 = Vector2(X0 + float(int(c[0]) % n) * 8.0, Z0 + float(int(c[0]) / n) * 8.0)
 		var placed: bool = false
 
