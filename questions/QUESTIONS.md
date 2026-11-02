@@ -51,14 +51,6 @@ Note: Recommendation: B for the first week, because it needs no new plant art an
 [A] Wild plants for each crop
 [B] Seeds from food or trader first
 
-## sal-lumber-vs-picking | Lumber pays far more than picking. Is that right, or cut it?
-Note: Picking now pays a poor wage, about 48 copper for 4 hours (0.2 copper a minute). One spruce log sawn at a mill gives 7 lumber, and Hob pays about 4 copper each, so about 28 copper from one log. That is a day's picking wage in a few minutes of chopping and sawing, but it needs an axe, a sawmill and carrying a 32 kg log.
-Note: Option A: leave it, because sawing is skilled work with a machine and a heavy carry, and it gives players a reason to build the sawmill. Option B: cut the lumber price so a log is worth about 10 copper (lumber value 8 to 3). Option C: Hob pays full price only for a few boards a day (a small shelf limit), then very little.
-Note: Recommendation: C, because it keeps the reward for building a sawmill but stops one trader being drained by logs. Say A, B or C and I will make the change.
-[A] Leave it
-[B] Cut the lumber price
-[C] Limit how many boards Hob buys a day
-
 ## sal-wanted-orders | Should Hob post one small "wanted order" a day, so a poor-wage day has a goal?
 Note: Now a day of picking pays about 48 copper at a flat rate with no goal. Survival and farming games (Medieval Dynasty, Stardew Valley's bundles, 7 Days to Die trader quests) pace early income with small asks from a trader: bring a set amount, get a fixed bonus. My web search returned mostly forum titles, so this comes from how those games work, not from numbers I could check.
 Note: Example: "60 sticks and 10 plant fibre for 6 copper" (about twice the lot rate), one order a game day, refreshed each day. It teaches the town's needs, lets a player reach the bed sooner, and is easy to cap so it cannot break the wage.
