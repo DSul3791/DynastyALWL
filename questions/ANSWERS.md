@@ -2138,3 +2138,7 @@ Answered: 2026-11-02 21:46 UTC
 Answer: Yes | Comment: But we now want us to use our new character mesh and allow us to adjust his proportions
 Answered: 2026-11-02 21:46 UTC
 
+## pic-body-details | Does the character in the game now have a nose, brow and thumb that read at a normal distance?
+Answer: No | Comment: This doesn’t matter because we’re now using a mesh
+Answered: 2026-11-02 21:46 UTC
+
