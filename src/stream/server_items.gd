@@ -2195,7 +2195,7 @@ func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
 # volume balanced, at most SMOOTH_MAX_M a stroke, like smooth but wider), then lays a round trodden patch exactly where the player pointed (not snapped
 # to a grid). The client draws it strong brown for the middle half metre and fading to see-through by 1.25 m. A drag lays one every PATH_SPACING_M.
 const PATH_AVERAGE_M := 2.0
-const PATH_SPACING_M := 0.45
+const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means less overdraw and fewer nodes along a road
 
 
 func _hoe_path(peer: int, inv, at: Vector3) -> void:

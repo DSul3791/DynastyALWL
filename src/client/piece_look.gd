@@ -476,6 +476,7 @@ void fragment() {
 }
 """
 static var _trod_material: ShaderMaterial
+static var _trod_mesh: PlaneMesh
 
 
 static func trodden_path() -> Node3D:
@@ -490,9 +491,13 @@ static func trodden_path() -> Node3D:
 
 	var root: Node3D = Node3D.new()
 	var disc: MeshInstance3D = MeshInstance3D.new()
-	var quad: PlaneMesh = PlaneMesh.new()
-	quad.size = Vector2(2.5, 2.5)
-	disc.mesh = quad
+
+	if _trod_mesh == null:   # one shared mesh: a long road is many patches, none builds its own
+		_trod_mesh = PlaneMesh.new()
+		_trod_mesh.size = Vector2(2.5, 2.5)
+
+	disc.mesh = _trod_mesh
+	disc.visibility_range_end = 45.0   # a patch that far away is under the fog of the grass anyway; saves overdraw (patches overlap along a road)
 	disc.material_override = _trod_material
 	disc.position = Vector3(0.0, 0.035, 0.0)
 	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
