@@ -2054,3 +2054,7 @@ Answered: 2026-11-02 21:35 UTC
 Answer: Yes
 Answered: 2026-11-02 21:36 UTC
 
+## steve-bush-work | Bushes: does an axe chop a bush into leaves and sticks, and a pickaxe dig it up to replant?
+Answer: Yes
+Answered: 2026-11-02 21:36 UTC
+
