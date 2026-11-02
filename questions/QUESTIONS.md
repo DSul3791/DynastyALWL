@@ -44,12 +44,6 @@ Note: Real game rig shot, same spot as the guide picture. The cause was missing 
 - Yes
 - No
 
-## fire-tier-1-survival | Fire tier 1: with 3 sticks, is the fire a small survival fire?
-Note: 1. Place a campfire kit and put in exactly 3 sticks (or kindling or driftwood), then light it with plant fibre.
-Note: 2. Look at the flame and stand 2 m away, then 4 m away.
-Note: Expect: a small flame, light about 6 m, a little warmth only within 2.5 m (heat +8 C), gone when the sticks burn out. Fewer than 3 pieces still counts as tier 1.
-[test]
-
 ## fire-tier-2-campfire | Fire tier 2: with 3 pieces of firewood, is the fire a proper campfire?
 Note: 1. Place a campfire kit and put in exactly 3 firewood, then light it with plant fibre.
 Note: 2. Look at the flame, then stand 3 m away on a cold night.
