@@ -2158,3 +2158,7 @@ Answered: 2026-11-02 21:47 UTC
 Answer: The PC thread runs the commands
 Answered: 2026-11-02 21:48 UTC
 
+## tut-fell-line | After a tree falls it now breaks into logs, sticks and leaves by itself. Which tutorial line should the player see?
+Answer: "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
+Answered: 2026-11-02 21:48 UTC
+
