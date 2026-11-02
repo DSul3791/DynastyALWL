@@ -209,15 +209,6 @@ Note: Tutorial step 10 still says "Keep striking the fallen trunk". Since 2 Nov 
 - "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 - No line, the player will see it
 
-## kathleen-ground-pbr-look | Does the ground look like real soil, grass and rock up close?
-Note: Blocked here: no Godot in my cloud box. The new photo ground textures (pull request 57) are untested in game.
-Note: 1. In GitHub Desktop, switch to branch claude/kathleen-ground-pbr-20261102.
-Note: 2. Run the game and walk to grass, a gravel path, rock and the beach.
-Note: 3. Look at the ground from 2 m and from 30 m. Wet sand should still shine.
-Note: 4. Say Yes if it looks real and does not flicker far away; No plus what looks wrong.
-Note: Recommendation: Yes, merge it if it looks right, because the ground is what you see most.
-[test]
-
 ## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
 Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
 Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
