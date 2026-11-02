@@ -39,12 +39,6 @@ Note: Recommendation A: the new character starts at the world spawn with an empt
 - At the world spawn with a small starter kit (stick, stone, twine)
 - At the dead character's last bed, empty pack
 
-## pic-flora-yarrow | In the real game: does the white yarrow drift (bottom left, with varied tree crowns) look like white flowers in the shade, not blue-grey metal?
-Image: questions/img/flora_yarrow_crowns.jpg
-Note: Real game rig shot at noon, (53302,68423) facing north. Placement is right (a dense drift at the forest edge). The heads read blue-grey, faceted and slightly metallic and the stems are pale, so Flora rates it 3 of 5. The look is Kathleen's (warmer head colour, smoother normals, matte stems). The crowns look varied: 4 of 5.
-- Yes
-- No
-
 ## pic-flora-chamomile | In the real game: is the chamomile and wildflower meadow (yellow drift, red roses behind a bush) a good spread of colour?
 Image: questions/img/flora_chamomile_roses.jpg
 Note: Real game rig shot at noon, (53326,68446) facing north. The yellow drift and red roses show; white chamomile is not clearly visible from here. Flora rates it 3.5 of 5.
