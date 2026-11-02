@@ -143,6 +143,22 @@ func _init() -> void:
 	for k in logs:   # the logs last a real week, as the trunk did (a plain dropped item is gone in 20 minutes)
 		check(float(w._items[k]["left"]) >= 7.0 * 86400.0 - 1.0, "a split log lasts a week: %.0f s" % float(w._items[k]["left"]))
 
+	for k in logs:   # each log lies along the trunk: its mesh runs along x, turned by yaw - 90 degrees
+		check(w._items[k].has("rot_y") and is_equal_approx(float(w._items[k]["rot_y"]), float(tree["yaw"]) - PI * 0.5), "a split log is turned along the trunk")
+		var axis: Vector3 = Basis(Vector3.UP, float(w._items[k]["rot_y"])) * Vector3.RIGHT
+		check(absf(axis.dot(along)) > 0.999, "its long axis runs along the trunk")
+
+	# The turn survives a restart.
+	w.save()
+	var w_again = make(dir)
+	var kept_turns: int = 0
+
+	for k in w_again._items:
+		if w_again._items[k].has("rot_y") and int(w_again._items[k]["number"]) == log_n:
+			kept_turns += 1
+
+	check(kept_turns == logs.size(), "every split log keeps its turn after a restart: %d of %d" % [kept_turns, logs.size()])
+
 	var plain_at: Vector3 = Vector3(500.0, 10.0, 0.0)
 	w.drop_in_world(w.table.number_of("stone"), 1, plain_at)
 
