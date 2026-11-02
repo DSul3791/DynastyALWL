@@ -185,25 +185,11 @@ Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5:
 - Yes
 - No
 
-## tyler-arms-axe-look | First-person arms (PR #58): hold the stone axe; are both hands on the handle and nothing through the camera?
-Note: Blocked on your look: the headless arms check passes (4013 cases), but a picture cannot judge if it feels right in your hands.
-Note: Hold the stone axe, look level and then down; swing once.
-- Yes
-- No
-
 ## tyler-bug7-arms-compression | Bug 7 trial (PR #31): with the arms textures compressed, is the frame rate better and do the arms still look the same?
 Note: Blocked: needs a windowed fps comparison on your PC. Same spot, Ultra, F3 overlay: average and worst frame on main, then on branch claude/tyler-bug7-compress-textures.
 Note: The three arms textures are about 200 MB uncompressed in graphics memory; compression makes them 4 to 8 times smaller. A suspect for the constant lag, not proven.
 Note: Recommendation: Yes only if fps is better and the skin shows no blocky patches.
 [check]
-
-## fp-arms-axe-pr58 | First-person arms with the stone axe (bug 4, PR 58)
-Note: Blocked: Kathreen chose the new arm position from bare-arm pictures and cannot see a held tool.
-Note: 1. Play the build with PR 58 merged (or branch claude/kathreen-arms-pos).
-Note: 2. Hold the stone axe, stand still, look level and then 35 degrees down.
-Note: 3. Swing at a tree twice.
-Note: 4. Yes if the hands hold the axe and no huge upper arms fill the top corners; No and a note or screenshot if not.
-[test]
 
 ## jason-pixabay-urls | Sounds: which Pixabay pages did your footsteps, frogs, tree frogs, fish splash, crows, angry crow, wing flaps and brook come from?
 Note: Blocked: 8 rows in assets/audio/CREDITS.csv say "page URL TODO". The licence is known (Pixabay); only the page links are missing, and we need them before release.
@@ -364,3 +350,9 @@ Note: 1. Fell a thin young tree (a beech under about 14 m).
 Note: 2. Check: the stump and the logs are about as thick as the standing trunk was.
 Note: Recommendation: Fixes #87 and #89 are on main.
 [test]
+
+## tyler-bug6-first-fell | Bug 6: on a fresh start, fell the first tree; does it fall straight away with no pause and no missing tree?
+Note: Fix merged in #98 (main e69a1ad): the felled trunk's bark is prepared while the game loads, and the trunk is sent with the cut.
+Note: Start the game fresh, fell the first tree you find, then a second one. If anything pauses, say on which blow or at the landing.
+- Yes
+- No
