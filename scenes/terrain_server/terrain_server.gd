@@ -1590,6 +1590,10 @@ func _tunnel_tick() -> void:
 	for warned in result["warn"]:
 		net.notice.rpc_id(int(warned), "The tunnel ceiling is creaking: brace it or leave.")
 
+	# Where each rumble comes from (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave): the dug space, its span and how short its support is.
+	for at in result.get("warn_at", []):
+		_events.event("tunnel creaking: peer %d at %s, dug space at %s (span %.1f m, need %.2f)" % [int(at[0]), str(items.position_of(int(at[0]))), str(at[1]), float(at[2]), float(at[3])])
+
 	for leak in result["leak"]:
 		net.leak.rpc_id(leak[0], leak[1], leak[2])
 
