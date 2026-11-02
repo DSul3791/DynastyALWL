@@ -73,4 +73,20 @@ func _run() -> void:
 
 		arms.queue_free()
 
+	# Sweep (2 Nov, after the first pictures): raised, the upper arms fill the corners of the view because the shoulders sit 0.15 m in front of the eye. Try moving the shoulder back and slimming.
+	var arms2: Node3D = DynastyArms.new()
+	cam.add_child(arms2)
+	arms2.play("idle")
+	cam.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 1.6, 0.0))
+
+	for z in [-0.15, -0.05, 0.05, 0.15]:
+		for sc in [0.85, 0.7]:
+			arms2.transform = ArmsView.arms_transform(cam.global_transform, 0.0, 1.0, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, Vector3(0.0, -0.1, float(z)), ARMS_PITCH_DEG, float(sc))
+			await _frames()
+			var im2: Image = root.get_texture().get_image()
+			im2.convert(Image.FORMAT_RGBA8)
+			var file2: String = "sweep_raised_level_z%s_s%s" % [str(z).replace("-", "m").replace(".", "p"), str(sc).replace(".", "p")]
+			im2.save_png("%s/%s.png" % [_out, file2])
+			print("saved ", file2)
+
 	quit(0)
