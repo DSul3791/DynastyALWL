@@ -1954,3 +1954,7 @@ Answered: 2026-11-02 15:57 UTC
 Answer: Yes
 Answered: 2026-11-02 15:57 UTC
 
+## fire-tier-2-campfire | Fire tier 2: with 3 pieces of firewood, is the fire a proper campfire?
+Answer: Yes
+Answered: 2026-11-02 16:47 UTC
+
