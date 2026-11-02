@@ -52,6 +52,7 @@ const HIT_COOLDOWN_MS := 400
 const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat) to the player
 const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
+const SCATTER_PAD_M := 30.0             # how far past its own square the layout of a scatter cell reads the ground (water probe 24 m)
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const SPLIT_LIFETIME_S := 7.0 * 86400.0  # what a felled tree breaks into lies a real week, as its trunk would have (it rotted after a real week)
@@ -3524,11 +3525,17 @@ func _scatter_around_players() -> void:
 
 				if budget > 0 and not _cells_done.has(cell) and Vector2(dx, dz).length() * cell_m <= SCATTER_RADIUS_M:
 					# A tile that is not in memory yet takes over a second to read: ask for it on a worker thread and lay this cell out next time.
-					if ground_ready.is_valid() and not bool(ground_ready.call((float(cell.x) + 0.5) * cell_m, (float(cell.y) + 0.5) * cell_m)):
+					if not _cell_ground_ready(cell, cell_m):
 						continue
 
 					_cells_done[cell] = true
+					var cell_usec: int = Time.get_ticks_usec()
 					_lay_out_cell(cell, cell_m, cfg)
+					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
+
+					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
+						print("items tick slow: scatter cell %s took %.0f ms" % [str(cell), cell_ms])
+
 					budget -= 1
 
 	# Take away loose things far from every player (they come back when someone returns).
@@ -3549,6 +3556,25 @@ func _scatter_around_players() -> void:
 			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
 			_items.erase(id)
 
+
+
+# True when every tile the layout of this cell can read is in memory: the centre, and the four corners pushed out by SCATTER_PAD_M
+# (the bank-stone water probe reaches 24 m, boulder hollows 6 m). Only the centre was checked before, so a cell at a tile edge read the
+# next tile from disk on the main thread: "items tick slow: scatter reached after 479 ms" in Dave's 2 Nov log. Each missing tile is
+# asked for on a worker thread (ground_ready prefetches it) and the cell waits for the next sync.
+func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
+	if not ground_ready.is_valid():
+		return true
+
+	var lo: Vector2 = Vector2(cell) * cell_m - Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
+	var hi: Vector2 = (Vector2(cell) + Vector2.ONE) * cell_m + Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
+	var all_ready: bool = true
+
+	for p in [(lo + hi) * 0.5, lo, hi, Vector2(lo.x, hi.y), Vector2(hi.x, lo.y)]:
+		if not bool(ground_ready.call(p.x, p.y)):
+			all_ready = false   # keep asking for the others too, so they all load together
+
+	return all_ready
 
 
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:

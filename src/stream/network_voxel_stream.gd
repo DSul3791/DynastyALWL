@@ -426,11 +426,14 @@ func deliver(keys: PackedInt32Array, payloads: Array) -> void:
 		bytes_received += (payloads[n] as PackedByteArray).size()
 
 	# Oldest prefetched blocks go first when too many pile up; they will be
-	# asked for again if needed.
-	while _spare.size() > MAX_SPARE:
-		var oldest: Vector4i = _spare.keys()[0]
-		_spare.erase(oldest)
-		_asked.erase(oldest)
+	# asked for again if needed. One copy of the key list per delivery: copying all 8192 keys for each block
+	# over the cap (the old loop) cost the main thread a few million copies a frame while exploring (lag review, Dave 2 Nov 2026).
+	var excess: int = _spare.size() - MAX_SPARE
+
+	if excess > 0:
+		for oldest in _spare.keys().slice(0, excess):
+			_spare.erase(oldest)
+			_asked.erase(oldest)
 
 	_mutex.unlock()
 
