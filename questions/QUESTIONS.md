@@ -185,13 +185,6 @@ Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5:
 - Yes
 - No
 
-## first-day-lots | Sell lots for cheap goods: is about 195 copper for a 4 hour day of gathering right?
-Note: Target (your rule): one day of gathering buys 3 meals (24), a waterskin (20), clothing (33) and an iron spade (117), about 195 copper, no more.
-Note: Lots: sticks and leaves 15, fibre 12, nettles 10, bark 8, soil/clay/sand/gravel 5, seeds 4, soft firewood 5, pins 5, nails 10, feathers 2, stone 5 (stone lands at 288 in 4 h; 6 would give 240).
-Note: I assumed 4 hours of play and made-up pick rates (12 a minute for sticks, 4 for digging); nobody has timed them. Table: docs/ECONOMY_FIRST_DAY.md. At 8 hours everything doubles. Hob's purse (300 cap, 100 an hour) also caps one trader.
-Note: Recommendation: Yes, because every item then pays about 0.8 copper a minute, so what a player gathers does not change the day's income; if you think 4 hours is too short, tell me the hours and I rescale the lots.
-[check]
-
 ## softwood-boards | Softwood boards: spruce and pine saw faster and give 7 lumber a log (hardwood 6)?
 Note: Your note: softwood is better for boards than firewood. Before, every wood sawed the same: 6 lumber a log in 6 s, 2 beams in 8 s. Softwood logs already weigh less (32 against 45 kg) and softwood lumber is worth less (8 against 12 copper).
 Note: Now: spruce and pine lumber 7 per log in 5 s, beams 2 per log in 6 s. Hardwood unchanged.
