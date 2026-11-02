@@ -4995,6 +4995,22 @@ func _fire_best_state(fire: Dictionary) -> int:
 	return FIRE_STATE_SURVIVAL
 
 
+# The lit state after the wood in a burning fire changed (a piece put in, its store closed). Dave 2 Nov 2026: three pieces lift the fire a tier and
+# it STAYS at that tier until that wood is gone, then drops to the next class with at least three pieces. So a recount never lowers the tier
+# while wood of the tier's class is still burning (two of three logs left is still a bonfire); only a hung pot does (_refresh_pots).
+func _fire_restate(fire: Dictionary) -> int:
+	var state: int = int(fire["state"])
+	var best: int = _fire_best_state(fire)
+
+	if not fire_is_lit(state) or state == FIRE_STATE_SURVIVAL or _fire_tier_of_state(best) >= _fire_tier_of_state(state):
+		return best
+
+	if state == FIRE_STATE_BONFIRE and bool(fire.get("pot", false)):
+		return best
+
+	return state if float(_fire_wood(fire).get(_fire_class_of_state(state), 0.0)) > 0.0 else best
+
+
 # A structure kind as it is called now (old saves keep their old name: the tripod pot is the campfire pot).
 func _kind_now(kind: String) -> String:
 	if _structures.has(kind):
@@ -5157,7 +5173,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
-					fire["state"] = _fire_best_state(fire)
+					fire["state"] = _fire_restate(fire)
 			else:
 				_fire_add(fire, wood)
 
@@ -6021,10 +6037,10 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 			fire["state"] = 9
 			it["left"] = FIRE_LAID_S
 		elif fire_is_lit(state):
-			fire["state"] = _fire_best_state(fire)
+			fire["state"] = _fire_restate(fire)
 
 		var secs: int = int(ceil(float(fire["burn_left"])))
-		var size: String = ["small", "medium", "large"][_fire_tier_of_state(_fire_best_state(fire)) - 1]
+		var size: String = ["small", "medium", "large"][_fire_tier_of_state(int(fire["state"]) if fire_is_lit(int(fire["state"])) else _fire_best_state(fire)) - 1]
 		_say(peer, "Wood on the fire: %d:%02d:%02d of burn time, a %s fire." % [secs / 3600, (secs / 60) % 60, secs % 60, size])
 
 	_dirty = true
