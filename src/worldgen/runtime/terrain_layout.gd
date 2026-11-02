@@ -25,7 +25,7 @@ const CHANNEL_SOIL := VoxelBuffer.CHANNEL_DATA6
 const CHANNEL_RESOURCE := VoxelBuffer.CHANNEL_DATA7
 const CHANNEL_MATERIAL := VoxelBuffer.CHANNEL_INDICES
 const MATERIAL_ROCK := 32
-const TERRAIN_VERSION := 45         # 45 (1 Nov 2026): land types (marsh, treeline, evergreen belt, farmland fields), lake lip 4 m, pond notch, settle rules v10; 44 (30 Oct 2026): tiles baked with 0.1 m height steps are read at that step; older generated ground is thrown away
+const TERRAIN_VERSION := 46         # 46 (2 Nov 2026): pond and lake bowls never cut below 0.5 m (coastal ponds drained to the sea through their own beds); 45 (1 Nov 2026): land types (marsh, treeline, evergreen belt, farmland fields), lake lip 4 m, pond notch, settle rules v10; 44 (30 Oct 2026): tiles baked with 0.1 m height steps are read at that step; older generated ground is thrown away
 
 const ROCK_SEDIMENT := 1
 

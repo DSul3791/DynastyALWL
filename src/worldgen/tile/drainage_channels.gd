@@ -25,6 +25,7 @@ const VALLEY_FREEBOARD_M := 0.4      # the valley floor stands this far above th
 const CREST_CUT_FALL_M := 0.05       # fall per cell when a gorge is cut through a crest on a river's path
 const CREST_CUT_MAX_M := 20.0        # a gorge through a crest never lowers a cell more than this
 const BASIN_MAX_CUT_M := 12.0        # a pond or lake bowl never lowers a cell more than this
+const BASIN_MIN_BED_M := 0.5         # nor below this height: the water sim treats ground at or under 0 m as the sea, so a coastal bowl cut below it drained to the sea from inside (test_head_pond_fill, 2 Nov 2026)
 const BASIN_BANK_SLOPE := 0.15       # the bank rises this much per metre outside the lip
 const POND_MAX_SLOPE_DEG := 20.0     # no head pond on ground steeper than this
 const LAKE_MAX_SLOPE_DEG := 12.0     # lakes sit on flat reaches
@@ -945,7 +946,7 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 				var neighbor: int = (row + dz) * size + column + dc
 				var t: float = distance / radius
 				var target: float = lip - depth * (1.0 - t * t) if t <= 1.0 else lip + BASIN_BANK_SLOPE * (distance - radius)
-				var wanted: float = maxf(target, h[neighbor] - BASIN_MAX_CUT_M)
+				var wanted: float = maxf(maxf(target, h[neighbor] - BASIN_MAX_CUT_M), BASIN_MIN_BED_M)
 
 				if wanted < bed[neighbor]:
 					bed[neighbor] = wanted
