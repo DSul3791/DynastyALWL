@@ -82,8 +82,8 @@ static func unpack(w: int, h: int, raw_size: int, bytes: PackedByteArray) -> Ima
 	return Image.create_from_data(w, h, false, Image.FORMAT_RGBAF, raw)
 
 
-static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float) -> void:
-	material.set_shader_parameter("water2_tex", ImageTexture.create_from_image(im))
+static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float, texture: Texture2D = null) -> void:
+	material.set_shader_parameter("water2_tex", texture if texture != null else ImageTexture.create_from_image(im))
 	material.set_shader_parameter("water2_origin", origin - Vector2(0.5, 0.5) * cell_m)
 	material.set_shader_parameter("water2_size", Vector2(float(im.get_width()), float(im.get_height())) * cell_m)
 	material.set_shader_parameter("water2_inset", cell_m)   # the grid look steps aside one cell in, where the liquid sheet has faded fully in
