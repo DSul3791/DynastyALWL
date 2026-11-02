@@ -1,5 +1,6 @@
 extends Node
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const CharacterKeys := preload("res://src/client/character/character_keys.gd")
@@ -112,6 +113,7 @@ var _structures_cfg: Dictionary = {}
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
+var _temp_label: Label
 var warmth: int = 100                       # body warmth, percent (protocol 36)
 var energy: int = 100                       # the Energy pool, percent (job 95)
 var forced_sleep: bool = false               # collapsed from exhaustion: asleep and cannot wake until rested (bit 8 of the stance)
@@ -3140,7 +3142,7 @@ func _build_bars_row() -> HBoxContainer:
 	row.add_theme_constant_override("separation", _px(28))
 	_panel_bars.clear()
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Warmth", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var cell: HBoxContainer = HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.add_theme_constant_override("separation", _px(10))
@@ -3148,6 +3150,8 @@ func _build_bars_row() -> HBoxContainer:
 		label.text = spec[0]
 		_style(label, BODY_PX - 6)
 		cell.add_child(label)
+		if spec[0] == "Temperature":
+			_temp_label = label
 		var bar: ProgressBar = ProgressBar.new()
 		bar.show_percentage = false
 		bar.min_value = 0.0
@@ -3391,7 +3395,9 @@ func _update_panel_bars() -> void:
 	_panel_bars["Health"].value = float(health)
 	_panel_bars["Exertion"].value = clampf(strain / threshold, 0.0, 1.0) * 100.0
 	_panel_bars["Energy"].value = float(energy)
-	_panel_bars["Warmth"].value = float(warmth)
+	_panel_bars["Temperature"].value = float(warmth)
+	if _temp_label != null and is_instance_valid(_temp_label):
+		_temp_label.text = "Temperature " + DisplaySettingsScript.temp_text(float(warmth))
 
 	if _sick_label != null and is_instance_valid(_sick_label):
 		_sick_label.text = ("Health: ill, about %d h left" % sick_hours) if sick_hours > 0 else ""

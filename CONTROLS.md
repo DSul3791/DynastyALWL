@@ -12,6 +12,8 @@ The single complete list of every input (keyboard, mouse, held versus tap, conte
 | Double-tap W (within 0.30 s) | Jog (3.2 m/s) |
 | Shift + W | Run (6 m/s) |
 | B (held with a shield in the off hand) | Block with the shield while held |
+| Left click (hold) with a hoe | Does what the hoe is set to: Path (averages the ground about 2 m round, then treads a round brown patch, strong in the middle half metre and fading out by 1.25 m), Smooth, Grade line or Till. Repeats every 0.55 s while held |
+| Right click with a hoe | Opens a window to pick the hoe's mode (mouse wheel moves, left click chooses, right click closes) |
 | Shift + right click with a hoe | Sets grade point A, then B (stakes show); a third click starts a new line |
 | Hold Shift + left click with a hoe | Grades the ground within 1.5 m of the A-B line toward a straight ramp (0.25 m per stroke, within 12 m of A, free; only the hoe wears) |
 | (automatic) | Very slight camera bob and sway when moving on the ground, in step with the feet: down and leaning to the stepping side at each footfall, back up in between. Strides are longer when jogging (4.2 m) and running (6 m) than walking (3 m) |

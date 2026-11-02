@@ -8,6 +8,7 @@ const HEART_REST_BPM := 60.0
 const BODY_PX := 30
 const TITLE_PX := 40
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
@@ -151,7 +152,7 @@ func _build() -> void:
 	bars.add_theme_constant_override("separation", _px(12))
 	body.add_child(bars)
 
-	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Warmth", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
+	for spec in [["Health", Color(0.85, 0.2, 0.2)], ["Exertion", Color(0.95, 0.8, 0.25)], ["Energy", Color(0.6, 0.45, 0.9)], ["Temperature", Color(0.45, 0.8, 0.95)], ["Food", Color(0.9, 0.55, 0.2)], ["Water", Color(0.3, 0.6, 0.95)]]:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", _px(14))
 		var name_label: Label = _label(spec[0], BODY_PX)
@@ -223,11 +224,11 @@ func refresh() -> void:
 
 	var threshold: float = maxf(float(_items.exertion_threshold()), 0.1)
 	var exertion: float = clampf(float(_items.strain) / threshold, 0.0, 1.0) * 100.0
-	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Energy": float(_items.energy), "Warmth": float(_items.warmth), "Food": float(_items.hunger), "Water": float(_items.thirst)}
+	var values: Dictionary = {"Health": float(_items.health), "Exertion": exertion, "Energy": float(_items.energy), "Temperature": float(_items.warmth), "Food": float(_items.hunger), "Water": float(_items.thirst)}
 
 	for key in _bars:
 		_bars[key][0].value = values[key]
-		_bars[key][1].text = "%d%%" % int(round(values[key]))
+		_bars[key][1].text = DisplaySettingsScript.temp_text(values[key]) if key == "Temperature" else "%d%%" % int(round(values[key]))
 
 	for child in _attributes.get_children():
 		child.queue_free()
