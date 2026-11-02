@@ -34,4 +34,4 @@ Tool: `src/worldgen/tools/meadow_flowers.gd` (tile 3,4, the most meadow-rich 5x5
 | meadow ground | 48 m | 57% | 27% |
 | all 5 meadow flowers (15,682) | 49 m | 58% | 28% |
 
-So placement already spreads flowers evenly into the open middle; no species leans to the edge. The old "flowers only at the edge" impression is a drawing question (how far flowers draw, or tall grass hiding them), not placement. Next: check the flower draw distance in `flora_view.gd` against the meadow size.
+So placement already spreads flowers evenly into the open middle; no species leans to the edge. The old "flowers only at the edge" impression is a drawing question (how far flowers draw, or tall grass hiding them), not placement. Cause found: small plants draw only to 60 m (`worlds/base_world/plan/tile_rules.json` runtime_flora view_m.plant), while half the meadow lies 48 m or more from any tree. From the meadow edge the flowers in the middle are past the draw range. Doubling the range costs about 4 times the plant draws, so it waits for the bug 7 lag profile; a cheaper option is a far colour-drift layer, which is a look question for Kathleen.
