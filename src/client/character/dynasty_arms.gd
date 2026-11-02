@@ -15,6 +15,7 @@ const ELBOW_AT := 0.405            # fractions of the arm's length from the shou
 const WRIST_AT := 0.743
 const ELBOW_BAND := 0.07           # the skin blend reaches this far (fraction of the arm's length) each side of the elbow, and of the wrist
 const WRIST_BAND := 0.04
+const SKIN_TEXTURE := "res://assets/character/Humanoid/Dynasty_Arm_Skin.png"   # the file's colour texture with its dark olive patches (hair and cloth baked into the atlas: the blotches on the arms) painted over with skin tone
 
 static var _sources: Dictionary = {}         # "r" and "l": the arm's ArrayMesh from the file, read once
 static var _skinned: Dictionary = {}         # "r" and "l": the one skinned mesh per arm, built once
@@ -83,6 +84,17 @@ func _load_sources() -> void:
 		push_error("dynasty_arms: expected two arm parts in %s, found %d" % [PARTS_GLB, arms.size()])
 
 	inst.free()
+
+
+static func _arm_material() -> Material:
+	var base: StandardMaterial3D = _material as StandardMaterial3D
+
+	if base != null and ResourceLoader.exists(SKIN_TEXTURE):
+		var clean: StandardMaterial3D = base.duplicate() as StandardMaterial3D
+		clean.albedo_texture = load(SKIN_TEXTURE) as Texture2D
+		return clean
+
+	return _material
 
 
 static func _smooth(lo: float, hi: float, x: float) -> float:
@@ -189,7 +201,7 @@ func _skin_arm(source: ArrayMesh, side: String) -> ArrayMesh:
 
 	tool.index()
 	tool.generate_tangents()
-	tool.set_material(_material)
+	tool.set_material(_arm_material())
 	var mesh: ArrayMesh = tool.commit()
 	mesh.custom_aabb = AABB(Vector3(-1.2, -1.2, -1.2), Vector3(2.4, 2.4, 2.4))
 	return mesh
