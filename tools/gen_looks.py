@@ -172,6 +172,8 @@ for item_id, entry in ALL.items():
     if item_id in SPECIAL or item_id in GATHERED:
         shape, color, size, *rest = SPECIAL.get(item_id) or GATHERED[item_id]
         bits = rest[0] if rest else None
+    elif item_id.endswith("_bush"):   # a bush dug up with a pickaxe to plant elsewhere (Dave 2 Nov): a leafy bundle
+        shape, color, size = "leaves", "#4f7a34", 1.6
     elif item_id.startswith("lumber_") or item_id.startswith("beam_"):
         species = item_id.split("_", 1)[1]
         shape, color, size = ("planks" if item_id.startswith("lumber_") else "beams"), WOOD.get(species, "#a07a4a"), 1.0
