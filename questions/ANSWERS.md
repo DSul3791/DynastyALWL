@@ -1990,3 +1990,7 @@ Answered: 2026-11-02 16:51 UTC
 Answer: No
 Answered: 2026-11-02 20:40 UTC
 
+## tyler-bug7-arms-compression | Bug 7 trial (PR #31): with the arms textures compressed, is the frame rate better and do the arms still look the same?
+Answer: Yes | Comment: I’m not sure about the frame right because there’s other things causing leg but the arms look much better. At least they’re connected now and not all choppy. They need to be moved back a little so I don’t see my own shoulders and they may need to be a little wider. I really shouldn’t see them unless they’re swinging into the frame when I’m running and looking down.
+Answered: 2026-11-02 20:41 UTC
+
