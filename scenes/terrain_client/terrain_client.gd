@@ -3331,7 +3331,12 @@ func _step_player(delta: float) -> void:
 		sound.itemfx.watch(items)
 		sound.itemfx.watch_vitals(items.hunger, 0.1)
 		sound.breath.set_exertion(items.strain)   # the server's real strain replaces the stand-in
+		var cleared_t0: int = Time.get_ticks_usec()
 		_sync_cleared()
+		var cleared_ms: float = float(Time.get_ticks_usec() - cleared_t0) / 1000.0
+
+		if cleared_ms > 10.0:
+			print("client slow: grass and plant clearing %.0f ms (%d boulders, %d world items)" % [cleared_ms, items._boulders.size(), items._world.size()])
 
 	_fire_sync_left -= delta
 
@@ -3765,7 +3770,30 @@ func _update_bob(delta: float) -> void:
 	camera.rotation.z += deg_to_rad(float(shake["roll"]))
 
 
+# A light frame-time log (Dave 2 Nov 2026: "there is constant lag"): every 10 s one line with the average and worst frame and how many frames went
+# over 50 ms, only when something was slow, so the client log shows when and how bad.
+var _frame_log: Dictionary = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
+
+
+func _log_frame(delta: float) -> void:
+	var ms: float = delta * 1000.0
+	_frame_log["t"] = float(_frame_log["t"]) + delta
+	_frame_log["n"] = int(_frame_log["n"]) + 1
+	_frame_log["sum"] = float(_frame_log["sum"]) + ms
+	_frame_log["worst"] = maxf(float(_frame_log["worst"]), ms)
+	_frame_log["slow"] = int(_frame_log["slow"]) + (1 if ms > 50.0 else 0)
+
+	if float(_frame_log["t"]) < 10.0:
+		return
+
+	if int(_frame_log["slow"]) > 0 or float(_frame_log["sum"]) / float(_frame_log["n"]) > 25.0:
+		print("client frames: avg %.1f ms, worst %.0f ms, %d over 50 ms in %.0f s at %s" % [float(_frame_log["sum"]) / float(_frame_log["n"]), float(_frame_log["worst"]), int(_frame_log["slow"]), float(_frame_log["t"]), str(body.global_position) if body != null else "?"])
+
+	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
+
+
 func _process(delta: float) -> void:
+	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
 		var spam_chunks: PackedInt32Array = PackedInt32Array()
