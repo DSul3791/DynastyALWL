@@ -2070,3 +2070,7 @@ Answered: 2026-11-02 21:37 UTC
 Answer: No | Comment: I think this is out of date. Yes I campfire clears an area and it looks great.
 Answered: 2026-11-02 21:37 UTC
 
+## bake-terrain-set-1 | May we re-bake the 9 starter tiles once, with the terrain set on branch terrain-bake-set (recommended: yes, after the play-test settles)?
+Answer: Yes | Comment: Check with everyone else and see if somebody’s already remaking it. I think the question is old.
+Answered: 2026-11-02 21:38 UTC
+
