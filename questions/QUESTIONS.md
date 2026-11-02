@@ -290,16 +290,6 @@ Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
 - Leave as is
 - More by day, wolves on
 
-## sal-bug5-tree-hits | Does a beech fall in about 9 to 12 swings when no felled logs lie near it?
-Note: SUPERSEDED: the tree thread found the cause (blows use the species trunk size, not the real tree size). Answer card tree-hits-follow-size instead; skip this one.
-Note: Blocked here: needs the game running. From the code a beech needs at most 12 counted blows (oak 15). Over 20 means swings went to something else.
-Note: 1. Find a standing beech with no felled logs or trunks lying within 2 m.
-Note: 2. With the stone axe, count your swings until it falls.
-Note: 3. Then find a beech with felled logs right beside it and count again.
-Note: 4. Say the two counts.
-Note: Recommendation: If the first is about 9 to 12 and the second is much higher, the logs beside the tree are stealing the swings; I then ask Steve to make the standing tree win.
-[test]
-
 ## tree-hits-follow-size | Should a small tree take fewer axe hits than a big one of the same kind?
 Note: Today the hit count uses the kind of tree only, so a 6 m beech takes as many hits as a 28 m beech.
 Note: Felled trunks now match the real size of each tree; the hits could follow that same size.
@@ -363,3 +353,11 @@ Note: Example: "60 sticks and 10 plant fibre for 6 copper" (about twice the lot 
 Note: Recommendation: Yes, as a small first version with one order a day. It is a small data and server change; I would not start it before your answer.
 [A] Yes, one wanted order a day
 [B] No, keep the flat lots only
+
+## sal-bed-for-sale | Hob now sells a rough bed (37 copper) as the place to sleep a day's wage can buy. Right?
+Note: Your wage answer said a day of picking buys a meal and maybe a place to sleep, but Hob sold nothing to sleep in. A day now pays about 48 copper: meal 8 plus rough bed 37. The bed is a kit you place yourself.
+Note: Option A: keep the rough bed (37). Option B: sell a lean-to kit (39) instead, which is shelter plus a place to lie. Option C: sell neither; sleeping is only what you build.
+Note: Recommendation: A, because it is the cheapest thing that fits a day's wage.
+[A] Keep the rough bed
+[B] Sell a lean-to kit instead
+[C] Sell neither
