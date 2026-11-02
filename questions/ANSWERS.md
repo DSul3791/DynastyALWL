@@ -2030,3 +2030,7 @@ Answered: 2026-11-02 21:32 UTC
 Answer: Yes | Comment: Yes, rebake anytime
 Answered: 2026-11-02 21:32 UTC
 
+## sonny-cloud-godot | Add Godot 4.7 to the cloud setup script so agents can run tests without your PC?
+Answer: No: I want all test to be run on my PC because it’s faster and has more resources and we don’t want to use up tokens
+Answered: 2026-11-02 21:33 UTC
+
