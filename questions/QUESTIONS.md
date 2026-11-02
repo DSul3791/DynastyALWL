@@ -69,13 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## jason-new-animal-calls | Sounds: boar, grouse, seal and seabird have no calls yet. Where should they come from?
-Note: Blocked: their footsteps borrow existing clips (PR 41), but there's no recording for their calls, and made-up calls sounded fake to you before.
-Note: Recommendation: MikeW finds Pixabay clips on the PC, because the cloud can't reach Pixabay; I then cut and level them and post one card per animal for your ear.
-- MikeW finds Pixabay clips, Jason cuts them
-- I'll record or send my own
-- Leave them silent for now
-
 ## jason-clear-hiss | Please test this: in clear, calm weather in a forest, do you hear a rain-like hiss?
 Note: Blocked: the PC sound-log run hasn't happened yet. SOUND_AUDIT.md suspects the tree-wind loops (leaves, pine).
 Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2. Walk into a forest and stand still for 30 s. 3. Then walk into open meadow for 30 s.
