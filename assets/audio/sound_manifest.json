@@ -594,7 +594,7 @@
   },
   {
    "name": "deer_grunt",
-   "state": "generated",
+   "state": "recorded",
    "variants": 2,
    "used_in": "creature_sounds.gd: a deer's low grunt (idle)",
    "to_supply": "2 to 3 low deer grunts or contact calls, 0.3 to 0.8 s",
@@ -626,7 +626,7 @@
   },
   {
    "name": "fox_bark",
-   "state": "generated",
+   "state": "recorded",
    "variants": 2,
    "used_in": "creature_sounds.gd: a fox's bark (idle, alert), a night sound",
    "to_supply": "2 to 3 red fox barks, 1 to 3 per clip",
@@ -634,15 +634,15 @@
   },
   {
    "name": "fox_scream",
-   "state": "generated",
-   "variants": 2,
+   "state": "recorded",
+   "variants": 1,
    "used_in": "creature_sounds.gd: a vixen's scream (threat), a night sound",
    "to_supply": "2 to 3 red fox screams, about 1 s",
    "priority": 3
   },
   {
    "name": "wolf_howl",
-   "state": "generated",
+   "state": "recorded",
    "variants": 2,
    "used_in": "creature_sounds.gd: a wolf's howl (idle), far away at night",
    "to_supply": "2 to 3 long wolf howls, 3 to 6 s, single wolf and a pack",
@@ -658,7 +658,7 @@
   },
   {
    "name": "bear_growl",
-   "state": "generated",
+   "state": "recorded",
    "variants": 2,
    "used_in": "creature_sounds.gd: a bear's growl (idle, alert)",
    "to_supply": "2 to 3 low bear growls, 1 to 2 s",
