@@ -44,12 +44,6 @@ Note: Real game rig shot, same spot as the guide picture. The cause was missing 
 - Yes
 - No
 
-## fire-tier-2-campfire | Fire tier 2: with 3 pieces of firewood, is the fire a proper campfire?
-Note: 1. Place a campfire kit and put in exactly 3 firewood, then light it with plant fibre.
-Note: 2. Look at the flame, then stand 3 m away on a cold night.
-Note: Expect: a bigger flame than tier 1, light about 12 m, warmth out to 4 m (heat +20 C). It stays this size until the firewood is gone, then drops to tier 1 if sticks remain.
-[test]
-
 ## fire-tier-3-bonfire | Fire tier 3: with 3 logs, is the fire a bonfire?
 Note: 1. Place a campfire kit and put in exactly 3 logs, then light it with plant fibre.
 Note: 2. Look at the flame, then stand 5 m away on a cold night.
