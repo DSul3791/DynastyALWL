@@ -269,13 +269,14 @@ func _init() -> void:
 	check(structs_after == structs_before and "too big" in " ".join(said), "a pot will not hang on a fire that holds logs (%s)" % str(said))
 	f._items[log_fire]["fire"]["wood"]["log"] = 0.0
 
-	# A fire stacked to its cap refuses more and says so (the wood stays in the pack); with no wood the player is told.
+	# No cap on stored fuel (Dave 2 Nov 2026): a fire holding 6 logs still takes a seventh, and the burn time is the sum.
 	f._items[log_fire]["fire"]["wood"] = {"log": 6.0 * float(cook["fuel"]["log"]) / rate, "firewood": 0.0, "weak": 0.0}
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 1, Vector3.ZERO)
 	var full_before: int = f.inventory_of(1).count_of(log_n)
-	said.clear()
 	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(log_n) == full_before and not said.is_empty(), "a full fire keeps the log and says why (%s)" % str(said))
+	check(f.inventory_of(1).count_of(log_n) == full_before - 1, "a fire with 6 logs still takes another")
+	check(absf(float(f._items[log_fire]["fire"]["burn_left"]) - 7.0 * float(cook["fuel"]["log"]) / rate) < 1.0, "burn time is the sum of all 7 logs")
+	said.clear()
 	var inv_e = f.inventory_of(1)
 
 	for slot in range(inv_e.SLOTS):
