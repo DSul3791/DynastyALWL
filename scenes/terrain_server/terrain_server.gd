@@ -1054,6 +1054,13 @@ func _poll_water() -> void:
 
 	var updates: Array = water_live.take_updates()
 
+	if water_live.has_method("take_flow"):
+		var flow: Dictionary = water_live.take_flow()
+
+		if not flow.is_empty():
+			# shortcut: sent to everyone each publish (about 30 KB packed); a player who joins gets the next one, none is kept for late joiners
+			net.deliver_water_flow.rpc(flow["origin"], flow["w"], flow["h"], flow["cell"], flow["raw"], flow["bytes"])
+
 	if not updates.is_empty():
 		for update in updates:
 			var tile_data = water_live.data_of(update[0])

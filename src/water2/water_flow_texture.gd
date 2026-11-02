@@ -53,3 +53,31 @@ static func apply(material: ShaderMaterial, f, origin: Vector2) -> void:
 	material.set_shader_parameter("water2_origin", origin - Vector2(0.5, 0.5) * f.cell_m)
 	material.set_shader_parameter("water2_size", Vector2(float(f.w), float(f.h)) * f.cell_m)
 	material.set_shader_parameter("water2_on", 1.0)
+
+
+# The wire form of the texture (protocol 84): half-float RGBA, zstd compressed. `origin` is the world x, z of cell (0, 0). Built on the water thread.
+static func packet(f, origin: Vector2) -> Dictionary:
+	var im: Image = build_image(f)
+	im.convert(Image.FORMAT_RGBAH)
+	var raw: PackedByteArray = im.get_data()
+	return {"origin": origin, "w": f.w, "h": f.h, "cell": f.cell_m, "raw": raw.size(), "bytes": raw.compress(FileAccess.COMPRESSION_ZSTD)}
+
+
+# A packet back to an Image (null when it does not add up), and onto a material.
+static func unpack(w: int, h: int, raw_size: int, bytes: PackedByteArray) -> Image:
+	if w <= 0 or h <= 0 or w > 512 or h > 512 or raw_size != w * h * 8:
+		return null
+
+	var raw: PackedByteArray = bytes.decompress(raw_size, FileAccess.COMPRESSION_ZSTD)
+
+	if raw.size() != raw_size:
+		return null
+
+	return Image.create_from_data(w, h, false, Image.FORMAT_RGBAH, raw)
+
+
+static func apply_image(material: ShaderMaterial, im: Image, origin: Vector2, cell_m: float) -> void:
+	material.set_shader_parameter("water2_tex", ImageTexture.create_from_image(im))
+	material.set_shader_parameter("water2_origin", origin - Vector2(0.5, 0.5) * cell_m)
+	material.set_shader_parameter("water2_size", Vector2(float(im.get_width()), float(im.get_height())) * cell_m)
+	material.set_shader_parameter("water2_on", 1.0)
