@@ -74,6 +74,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
+const SoundPanelScript := preload("res://src/client/sound_panel.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
@@ -197,6 +198,7 @@ var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
+var sound_panel = SoundPanelScript.new()   # Shift+F3: every playing sound with a switch to mute it (sound_panel.gd)
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
@@ -1102,6 +1104,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
 			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
@@ -3286,6 +3289,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			flora.toggle_water_visible()
 		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
 			flora.toggle_water_debug()
+		elif event.keycode == KEY_F3 and event.shift_pressed:
+			sound_panel.toggle()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F4:
