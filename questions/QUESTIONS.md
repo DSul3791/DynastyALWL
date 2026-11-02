@@ -69,12 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## pic-creator-front | Does the character creator preview now face you with a readable face?
-Image: questions/img/kathreen-creator-front.png
-Note: Real creator scene facing the camera (it starts at 180 degrees and then turns slowly). Kathreen rates it 3 of 5: face reads, colours are flat. Recommendation: Yes for facing front; flat colours are a separate later polish.
-- Yes
-- No
-
 ## pic-body-details | Does the character in the game now have a nose, brow and thumb that read at a normal distance?
 Image: questions/img/kathreen-body-details.png
 Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5: reads as a person, the face is still crude.
