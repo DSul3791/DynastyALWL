@@ -49,6 +49,8 @@ const THROW_COOLDOWN_MS := 500
 const EYE_HEIGHT := 1.5
 const HIT_REACH_M := 3.5                 # from the trunk's edge
 const HIT_COOLDOWN_MS := 400
+const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat) to the player
+const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
@@ -127,6 +129,7 @@ var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; 
 var send_notice: Callable      # (peer, text)
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
+var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
@@ -996,6 +999,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
+	elif kind == Net.ACT_HIT_SHRUB:
+		_hit_shrub(peer, inv, a, Vector2i(b, count), at.x > 0.5)
+	elif kind == Net.ACT_PLANT_BUSH:
+		_plant_bush(peer, inv, a, at)
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -4578,11 +4585,163 @@ func dynamic_tree_info(home: Vector2i, id: int) -> Dictionary:
 				return {}
 
 			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+
+			if str(entry.get("kind", "tree")) != "tree":
+				return {}   # a planted bush is not a tree to fell (shrub_info finds it)
+
 			var span: Array = entry.get("height_m", [])
 			var ref_height: float = 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else 0.0
 			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true}
 
 	return {}
+
+
+# A planted bush or shrub (dynamic flora) as shrub_info gives it, or {}.
+func dynamic_shrub_info(home: Vector2i, id: int) -> Dictionary:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y] and ((int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"]))) == id:
+			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+
+			if str(entry.get("kind", "")) != "shrub":
+				return {}
+
+			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "dynamic": true}
+
+	return {}
+
+
+# Bushes and shrubs (Dave 2 Nov 2026, hazel too). An axe chops one up into leaves and sticks (drops.json shrub_work axe_blows, axe_gives); a pickaxe
+# digs it up whole as <species>_bush, to plant again elsewhere (_plant_bush). Either way the bush is gone from the world.
+func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, pick: bool) -> void:
+	if not _peer_pos.has(peer) or not shrub_info.is_valid() or not cut_tree.is_valid():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
+		return
+
+	var tool_class: String = "pick" if pick else "axe"
+	var slot: int = _tool_slot(inv, tool_class)
+
+	if slot < 0:
+		_reject(peer, 1)
+		return
+
+	var info: Dictionary = shrub_info.call(chunk, flora_id)
+
+	if info.is_empty():
+		return
+
+	var spot: Vector3 = info["position"]
+
+	if Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length() > HIT_REACH_M + 1.0:
+		_reject(peer, 0)
+		return
+
+	var cfg: Dictionary = _drops.get("shrub_work", {})
+	var dug_id: String = str(info["name"]) + str(cfg.get("dig_suffix", "_bush"))
+
+	if pick and table.number_of(dug_id) == 0:
+		_say(peer, "That one will not come up whole.")
+		return
+
+	if pick and _fit(peer, inv, table.number_of(dug_id), 1) == 0:
+		_say(peer, "Too heavy to carry any more")
+		_reject(peer, 2)
+		return
+
+	_last_hit[peer] = now
+	_wear_slot(peer, inv, slot, "shrub")
+	var key: String = "s%s,%d,%d,%d" % ["p" if pick else "a", chunk.x, chunk.y, flora_id]
+	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
+
+	if now - int(chop["msec"]) > CHOP_RESET_MS:
+		chop["hits"] = 0
+
+	chop["hits"] = int(chop["hits"]) + 1
+	chop["msec"] = now
+	_chops[key] = chop
+
+	if int(chop["hits"]) < int(cfg.get("pick_blows" if pick else "axe_blows", 2)):
+		return
+
+	_chops.erase(key)
+
+	if not bool(cut_tree.call(chunk, flora_id)):
+		return
+
+	if pick:
+		give(peer, table.number_of(dug_id), 1)
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(key) ^ now
+
+	for row in cfg.get("axe_gives", []):
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+
+# Planting a dug-up bush (<species>_bush) at `at`, the ground under the crosshair: it grows there as a full bush (dynamic flora, saved with the saplings).
+func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		return
+
+	var suffix: String = str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush"))
+	var item_id: String = table.id_of(inv.numbers[slot])
+
+	if not item_id.ends_with(suffix):
+		return
+
+	var entry: Dictionary = _flora_by_name.get(item_id.trim_suffix(suffix), {})
+
+	if entry.is_empty() or str(entry.get("kind", "")) != "shrub":
+		return
+
+	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
+		_reject(peer, 0)
+		return
+
+	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+
+	if is_nan(ground) or ground < 1.0:
+		_say(peer, "The ground is too wet here.")
+		return
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(at.x, ground, at.z))) >= PlacementRules.FIRE_WATER_BLOCK_M:
+		_say(peer, "You cannot plant it in water.")
+		return
+
+	var spot: Vector3 = Vector3(at.x, ground, at.z)
+	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
+	var used: Dictionary = {}
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y]:
+			used[sapling["slot"]] = true
+
+			if (sapling["pos"] as Vector3).distance_to(spot) < PLANT_BUSH_GAP_M:
+				_say(peer, "Too close to another plant.")
+				return
+
+	if used.size() >= SAPLINGS_PER_CHUNK:
+		_say(peer, "Too many young plants here.")
+		return
+
+	var new_slot: int = 0
+
+	while used.has(new_slot):
+		new_slot += 1
+
+	inv.take_from_slot(slot, 1)
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s - SAPLING_GROWN_S})   # a dug bush goes in full size
+	_dirty = true
+
+	if flora_changed.is_valid():
+		flora_changed.call(home)
 
 
 # A grown dynamic tree was felled: the record goes. True if there was one.

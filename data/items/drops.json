@@ -490,5 +490,15 @@
 			"cypress",
 			"hemlock"
 		]
+	},
+	"shrub_work": {
+		"note": "Dave 2 Nov 2026: an axe on a bush or shrub (hazel too) chops it up into leaves and sticks in axe_blows blows; a pickaxe digs it up whole in pick_blows blows, as <species>_bush, to plant again elsewhere (ACT_PLANT_BUSH).",
+		"axe_blows": 2,
+		"pick_blows": 2,
+		"axe_gives": [
+			["leaves", 2, 4],
+			["stick", 2, 4]
+		],
+		"dig_suffix": "_bush"
 	}
 }

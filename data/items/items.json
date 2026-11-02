@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 518,
+	"next_number": 540,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -6067,6 +6067,204 @@
 			"unstackable": true,
 			"look_alikes": [],
 			"value": 42
+		},
+		"hazel_bush": {
+			"number": 518,
+			"name": "Hazel bush",
+			"description": "A hazel bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"bramble_bush": {
+			"number": 519,
+			"name": "Bramble bush",
+			"description": "A bramble bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"juniper_bush": {
+			"number": 520,
+			"name": "Juniper bush",
+			"description": "A juniper bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"gorse_bush": {
+			"number": 521,
+			"name": "Gorse bush",
+			"description": "A gorse bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"dwarf_birch_bush": {
+			"number": 522,
+			"name": "Dwarf birch bush",
+			"description": "A dwarf birch bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"saltbush_bush": {
+			"number": 523,
+			"name": "Saltbush bush",
+			"description": "A saltbush bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"cactus_bush": {
+			"number": 524,
+			"name": "Cactus bush",
+			"description": "A cactus bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"raspberry_bush": {
+			"number": 525,
+			"name": "Raspberry bush",
+			"description": "A raspberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"elder_bush": {
+			"number": 526,
+			"name": "Elder bush",
+			"description": "A elder bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"wild_rose_bush": {
+			"number": 527,
+			"name": "Wild rose bush",
+			"description": "A wild rose bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"blackthorn_bush": {
+			"number": 528,
+			"name": "Blackthorn bush",
+			"description": "A blackthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"hawthorn_bush": {
+			"number": 529,
+			"name": "Hawthorn bush",
+			"description": "A hawthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"sea_buckthorn_bush": {
+			"number": 530,
+			"name": "Sea buckthorn bush",
+			"description": "A sea buckthorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"rosemary_bush": {
+			"number": 531,
+			"name": "Rosemary bush",
+			"description": "A rosemary bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"wild_banana_bush": {
+			"number": 532,
+			"name": "Wild banana bush",
+			"description": "A wild banana bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"prickly_pear_bush": {
+			"number": 533,
+			"name": "Prickly pear bush",
+			"description": "A prickly pear bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"drakethorn_bush": {
+			"number": 534,
+			"name": "Drakethorn bush",
+			"description": "A drakethorn bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"sunberry_bush": {
+			"number": 535,
+			"name": "Sunberry bush",
+			"description": "A sunberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"hagwillow_bush": {
+			"number": 536,
+			"name": "Hag willow bush",
+			"description": "A hag willow bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"honeyspindle_bush": {
+			"number": 537,
+			"name": "Honeyspindle bush",
+			"description": "A honeyspindle bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"sleetberry_bush": {
+			"number": 538,
+			"name": "Sleetberry bush",
+			"description": "A sleetberry bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
+		},
+		"sunsilver_vine_bush": {
+			"number": 539,
+			"name": "Sunsilver vine bush",
+			"description": "A sunsilver vine bush dug up whole, roots and all. Plant it again somewhere else.",
+			"kind": "material",
+			"stack": 5,
+			"look_alikes": [],
+			"value": 3
 		}
 	}
 }

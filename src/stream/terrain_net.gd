@@ -155,6 +155,8 @@ const ACT_SHOOT := 49          # a = pack slot of the bow, b = draw time in ms (
 const ACT_PLACE_BLUEPRINT := 48   # a = blueprint number (data/items/blueprints.json), b = lift steps, count = yaw degrees, at = the spot: placed from the hammer, the materials taken from the pack (no kit item)
 const ACT_NET := 47          # a = pack slot of the shore net, b = 0 start (left button down), 1 cancel (let go), at = the water point in front: hold about 20 s at the water's edge, then 1 to 3 small fish (fishing.json "net"; no protocol change)
 const ACT_ADMIN_ENERGY := 56   # admin only, tests: count = the energy (0 to 100) this character is set to (no protocol change)
+const ACT_HIT_SHRUB := 57     # a = flora id, b = chunk x, count = chunk z, at.x = 1 for a pickaxe (dig it up whole), 0 for an axe (chop it into leaves and sticks); Dave 2 Nov 2026
+const ACT_PLANT_BUSH := 58    # a = pack slot of a dug-up <species>_bush, at = the ground under the crosshair: it is planted there
 const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand new player (empty pack, nothing worn, fresh vitals, Admin mode off); stays flagged so Admin mode is off at every login until switched on again (no protocol change)
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
