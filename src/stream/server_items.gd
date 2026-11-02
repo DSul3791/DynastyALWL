@@ -5225,8 +5225,7 @@ func _fire_add(fire: Dictionary, wood_id: String) -> void:
 	var cls: String = str((_cooking.get("fuel_class", {}) as Dictionary).get(wood_id, "weak"))
 	var seconds: float = float((_cooking.get("fuel", {}) as Dictionary).get(wood_id, 900.0)) / GAME_RATE
 	_fire_sum(fire)
-	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - float(fire["burn_left"])
-	wood[cls] = float(wood[cls]) + clampf(seconds, 0.0, maxf(room, 0.0))
+	wood[cls] = float(wood[cls]) + maxf(seconds, 0.0)   # no cap (Dave 2 Nov 2026): the burn time is the sum of every piece in the fire
 	var pieces: Dictionary = fire.get("pieces", {})
 	pieces[cls] = int(pieces.get(cls, 0)) + 1
 	fire["pieces"] = pieces
@@ -5268,7 +5267,7 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 		fire["state"] = _fire_best_state(fire)
 
 
-# Wood on the fire: a stick or a log adds burning time (up to max_burn_game_s). A fire the rain put out
+# Wood on the fire: a stick or a log adds burning time (no cap). A fire the rain put out
 # lights again when fed where rain no longer reaches it (covered, or the rain has stopped).
 func _fuel(peer: int, inv, id: int) -> void:
 	var fire: Dictionary = _fire_in_reach(peer, id)
@@ -5277,10 +5276,6 @@ func _fuel(peer: int, inv, id: int) -> void:
 		return
 
 	_fire_sum(fire)
-
-	if float(fire["burn_left"]) >= float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0:
-		_say(peer, "The fire is stacked as full as it will hold.")
-		return
 
 	var refused_log: bool = false
 
@@ -5292,16 +5287,19 @@ func _fuel(peer: int, inv, id: int) -> void:
 				refused_log = true   # a pot hangs over this fire: no logs, the fire would be too big for it
 				continue
 
-			inv.remove(number, 1)
-
 			if bool(fire.get("synced", false)) and _chests.has(int(fire.get("uid", 0))):
-				_chests[int(fire["uid"])].add(number, 1)   # the store is what burns: the piece goes into it
+				if _chests[int(fire["uid"])].add(number, 1) > 0:   # the store is what burns: the piece goes into it; a full store keeps it in the pack
+					_say(peer, "The fire's store is full.")
+					return
+
+				inv.remove(number, 1)
 				_fire_apply_store(fire, _chests[int(fire["uid"])])
 				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
 					fire["state"] = _fire_restate(fire)
 			else:
+				inv.remove(number, 1)
 				_fire_add(fire, wood)
 
 			# Wood laid in an unlit fire only loads it; Press E to light comes next (ACT_LIGHT).
@@ -6030,7 +6028,6 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 		seconds[cls] = float(seconds[cls]) + float(box.counts[slot]) * float(fuel[wood_id]) / GAME_RATE
 		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
 
-	var room: float = float(_cooking.get("max_burn_game_s", 86400.0)) / GAME_RATE - 1.0
 	var wood: Dictionary = _fire_wood(fire)
 	var laid: Dictionary = {}
 
@@ -6045,13 +6042,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 			burnt[cls] = minf(float(burnt.get(cls, 0.0)), float(seconds[cls]))
 			seconds[cls] = float(seconds[cls]) - float(burnt[cls])
 
-		var take: float = clampf(float(seconds[cls]), 0.0, maxf(room, 0.0))
-
-		if take < float(seconds[cls]) and float(seconds[cls]) > 0.0:
-			pieces[cls] = int(ceil(float(pieces[cls]) * take / float(seconds[cls])))
-
-		room -= take
-		wood[cls] = take
+		wood[cls] = maxf(float(seconds[cls]), 0.0)   # every piece in the store counts, however much (Dave 2 Nov 2026)
 
 		if int(pieces[cls]) > 0:
 			laid[cls] = int(pieces[cls])
