@@ -29,6 +29,8 @@ uniform vec3 sky_color : source_color = vec3(0.55, 0.64, 0.74);
 uniform float clear_m = 1.1;        // water this deep hides about two thirds of the bed
 uniform float edge_m = 0.06;        // the sheet fades in over this much depth at the shore
 uniform float daylight = 1.0;
+uniform float mud = 0.0;            // 0..1: brown runoff after storms or at high flow (flora_view.gd, as the grid look)
+uniform vec3 mud_color : source_color = vec3(0.30, 0.24, 0.15);
 uniform float rain = 0.0;           // 0..1 (weather_look.gd): raindrop rings on the surface
 uniform float contact_m = 0.35;     // the sheet fades in over this much water along the view ray where it meets the ground (no hard line on a bank)
 uniform float lap_m = 0.6;          // a thin lapping foam line where the water is shallower than this against the bank
@@ -132,7 +134,7 @@ void fragment() {
 
 	// Colour by depth, a sky reflection by angle.
 	float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / clear_m);
-	vec3 water = mix(shallow_color, deep_color, thick);
+	vec3 water = mix(mix(shallow_color, deep_color, thick), mud_color * (1.0 - 0.4 * thick), mud * 0.8);
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
 
 	// Foam where it runs fast and shallow (rapids, the lip and foot of a fall), streaked along the flow.
@@ -305,6 +307,10 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
 	_material.set_shader_parameter("cell_m", cell_m)
 	visible = true
+
+
+func set_mud(value: float) -> void:
+	_material.set_shader_parameter("mud", value)
 
 
 func set_rain(value: float) -> void:

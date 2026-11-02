@@ -472,6 +472,9 @@ func set_storm_murk(amount: float) -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("storm", amount)
 
+	_liquid_storm = amount
+	_tell_liquid_mud()
+
 
 # The sky colours of the day cycle for the land water (weather_look.gd).
 func set_day_sky(top: Color, horizon: Color, cloud_shadow: Color, daylight: float) -> void:
@@ -484,6 +487,19 @@ func set_flow_rate(rate: float) -> void:
 
 	if _water_material != null:
 		_water_material.set_shader_parameter("mud", clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0))
+
+	_liquid_flow_mud = clampf(log(maxf(rate, 1.0)) / log(8.0), 0.0, 1.0)
+	_tell_liquid_mud()
+
+
+var _liquid_storm: float = 0.0
+var _liquid_flow_mud: float = 0.0
+
+
+# The liquid sheets take one mud amount: the high flow's brown, or the storm's, whichever is more.
+func _tell_liquid_mud() -> void:
+	if is_inside_tree():
+		get_tree().call_group("liquid_sheet", "set_mud", maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
 		# Owner (2026-10-19): more flow looks more violent (raging from about 10 times the start flow).
 		_water_material.set_shader_parameter("rough", clampf(log(maxf(rate, 1.0)) / log(10.0), 0.0, 1.0))
 
