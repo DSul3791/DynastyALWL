@@ -75,13 +75,6 @@ Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2.
 Note: Look for: a steady hiss like rain in the forest that stops in the meadow. If you hear it, open F3 and write the loudest sound line in the Notes box.
 [test]
 
-## mikew-fauna-day-wolves | Animals: more animals by day near the start, and should wolves be on?
-Note: Blocked on your call (MikeW). Measured at spawn (PR #19): by day about 2 deer, 2 rabbits, 4 songbirds within 500 m; at dusk 5 deer. Wolves are switched off in the data (target 0), so nothing hunts.
-Note: Recommendation: more daytime deer and rabbits, wolves stay off for now.
-- More by day, wolves off
-- Leave as is
-- More by day, wolves on
-
 ## tree-hits-follow-size | Should a small tree take fewer axe hits than a big one of the same kind?
 Note: Today the hit count uses the kind of tree only, so a 6 m beech takes as many hits as a 28 m beech.
 Note: Felled trunks now match the real size of each tree; the hits could follow that same size.
