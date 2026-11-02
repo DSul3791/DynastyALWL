@@ -20,10 +20,12 @@ func _spill(ground: PackedFloat32Array, side: int, start: int) -> Array:
 	var low: float = ground[start]
 	var high: float = 60.0
 	var escape: int = -1
+	var best_parent: Dictionary = {}
 
 	for _round in range(14):
 		var mid: float = (low + high) * 0.5
 		var seen: Dictionary = {start: true}
+		var parent: Dictionary = {}
 		var queue: Array = [start]
 		var found: int = -1
 
@@ -42,15 +44,17 @@ func _spill(ground: PackedFloat32Array, side: int, start: int) -> Array:
 
 				if not seen.has(n) and ground[n] <= mid:
 					seen[n] = true
+					parent[n] = at
 					queue.append(n)
 
 		if found >= 0:
 			high = mid
 			escape = found
+			best_parent = parent
 		else:
 			low = mid
 
-	return [high, escape]
+	return [high, escape, best_parent]
 
 
 func _init() -> void:
@@ -136,6 +140,25 @@ func _init() -> void:
 					lowest_at = q2
 
 		var spill: Array = _spill(sim.ground, side, k)
+		# The escape path, from the escape cell back to the spring, sampled every 3rd cell: where the ground first drops to the spill level.
+		var node: int = int(spill[1])
+		var chain: Array = []
+
+		while node != k and spill[2].has(node) and chain.size() < 4000:
+			chain.append(node)
+			node = int(spill[2][node])
+
+		chain.reverse()
+		var shown: int = 0
+
+		for step_index in range(0, chain.size(), 3):
+			var cell: int = int(chain[step_index])
+			var cx: int = cell % side
+			var cz: int = int(floorf(float(cell) / float(side)))
+
+			if shown < 40:
+				print("  path %d: %.0f m from spring, sim ground %.2f, baked height %.2f, class %d, baked surface %.2f" % [step_index, Vector2(float(cx - column), float(cz - row)).length() * data.spacing_m, sim.ground[cell], data.heights[cell], data.water_class[cell], data.water_surface[cell]])
+				shown += 1
 		print("spring %d: spills at level %.2f m (baked pond level %.2f m, sim ground at spring %.2f m) through cell %d" % [k, float(spill[0]), surface, sim.ground[k], int(spill[1])])
 		print("spring %d (%.2f m3/s): ground %.2f, baked level %.2f, class %d; depth at spring %.2f m; deepest within 5 cells %.2f m at %d (ground %.2f); stored within 200 m %.0f m3 vs delivered %.0f m3; lowest ground within 200 m %.2f at %d (%d cells away)" % [
 			k, float(spring[1]), data.heights[k], surface, data.water_class[k], sim.depth_at(k), around_max, around_at, sim.ground[around_at], stored, float(spring[1]) * SIM_SECONDS,
