@@ -229,12 +229,6 @@ Note: Recommendation: B for the first week, because it needs no new plant art an
 [A] Wild plants for each crop
 [B] Seeds from food or trader first
 
-## sonny-cloud-godot | Add Godot 4.7 to the cloud setup script so agents can run tests without your PC?
-Note: Blocked: I tried to download Godot 4.7 here to run shader and water tests myself, and the safety check refused to run an outside download. With Godot in the setup script, every agent could run tools/run_tests.sh in the cloud and your PC would only be needed for screenshots.
-Note: Where: Project settings, then Cloud environment, then the gear, then Setup script. One line: download and unzip Godot_v4.7-stable_linux.x86_64.zip from the godotengine GitHub releases.
-Note: Recommendation: Yes, add it to the setup script
-[check]
-
 ## sal-lumber-vs-picking | Lumber pays far more than picking. Is that right, or cut it?
 Note: Picking now pays a poor wage, about 48 copper for 4 hours (0.2 copper a minute). One spruce log sawn at a mill gives 7 lumber, and Hob pays about 4 copper each, so about 28 copper from one log. That is a day's picking wage in a few minutes of chopping and sawing, but it needs an axe, a sawmill and carrying a 32 kg log.
 Note: Option A: leave it, because sawing is skilled work with a machine and a heavy carry, and it gives players a reason to build the sawmill. Option B: cut the lumber price so a log is worth about 10 copper (lumber value 8 to 3). Option C: Hob pays full price only for a few boards a day (a small shelf limit), then very little.
