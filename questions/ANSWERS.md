@@ -2194,3 +2194,7 @@ Answered: 2026-11-02 22:07 UTC
 Answer: A: Yes, one wanted order a day | Comment: Yes, he should probably have an entire order of things that he would like people to pick for him and it could be client side although I would be afraid of people taking advantage of that but if it is client independent and they can only gain it once a day then it’s really a poor wage that they can just get once a day. And that way everybody playing if there were 10 people they could all get it themselves maybe
 Answered: 2026-11-02 22:08 UTC
 
+## sal-bed-for-sale | Hob now sells a rough bed (37 copper) as the place to sleep a day's wage can buy. Right?
+Answer: C: Sell neither | Comment: Will you make our own rough bid in our own lean to. Using the wooden hammer.
+Answered: 2026-11-02 22:09 UTC
+
