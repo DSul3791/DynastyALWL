@@ -49,6 +49,8 @@ const THROW_COOLDOWN_MS := 500
 const EYE_HEIGHT := 1.5
 const HIT_REACH_M := 3.5                 # from the trunk's edge
 const HIT_COOLDOWN_MS := 400
+const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat) to the player
+const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
@@ -127,6 +129,7 @@ var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; 
 var send_notice: Callable      # (peer, text)
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
+var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
 var tree_info: Callable        # (chunk Vector2i, id) -> {name, position, height, trunk} of a standing tree, or {}
 var cut_tree: Callable         # (chunk Vector2i, id) -> true when the standing tree was removed (and clients told)
 var fill_ground: Callable        # (centre, radius, material) -> bool: add ground (a fill) and tell everyone; false when it changed nothing
@@ -256,6 +259,7 @@ var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
+var send_hit_number: Callable        # (peer, at Vector3, amount int): floating damage text where a hit landed (protocol 85; the client shows it unless turned off in Gameplay)
 var send_final_death: Callable       # (peer, cause String): a death with no respawn (death.json novice_grace); the new-character / heir flow is not built, so nothing sets this yet
 var unix_now: Callable              # () -> real unix seconds (tests stand in a clock); unset: the system clock
 var _death_cause: Dictionary = {}   # peer -> what is draining health to zero (drowning, ...)
@@ -812,7 +816,11 @@ func take(peer: int, number: int, count: int) -> bool:
 
 # Puts a stack on the ground. False when the chunk is full. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
 # `rot_y` (radians, NAN for none) turns a new loose item about the vertical: a felled tree's logs lie along its trunk.
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN) -> bool:
+# `girth` (NAN for none) scales a split log's thickness to the trunk it came from (Dave 2 Nov 2026: a skinny tree gave big logs); LOG_MESH_RADIUS_M is 1.
+const LOG_MESH_RADIUS_M := 0.25   # the drawn species log's mean radius (inventory_view _mesh_for: 0.28 and 0.22 at its ends)
+
+
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0, rot_y: float = NAN, girth: float = NAN) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -865,16 +873,33 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
 
+	if not is_nan(girth):
+		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
+
 	_next_id += 1
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s, rot_y, girth)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
 
+# Bug 6 (Dave 2 Nov 2026: about a second's pause when an old trunk is cut up): every player action is timed, and one over SLOW_ACTION_MS prints a line,
+# so the server log shows whether the pause is here (and which action) or in the client ("client slow: world items ...").
+const SLOW_ACTION_MS := 20.0
+
+
 func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_action(peer, kind, a, b, count, at)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > SLOW_ACTION_MS:
+		print("server slow: action %d (a %d, b %d) took %.0f ms, %d world items" % [kind, a, b, ms, _items.size()])
+
+
+func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
 	var inv = inventory_of(peer)
 
 	if inv == null:
@@ -982,6 +1007,10 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
 	elif kind == Net.ACT_THROW:
 		_throw(peer, inv, a, at)
+	elif kind == Net.ACT_HIT_SHRUB:
+		_hit_shrub(peer, inv, a, Vector2i(b, count), at.x > 0.5)
+	elif kind == Net.ACT_PLANT_BUSH:
+		_plant_bush(peer, inv, a, at)
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
@@ -1179,6 +1208,9 @@ func save() -> void:
 		if not it.has("fire") and it.has("rot_y"):
 			row.append(float(it["rot_y"]))   # a loose item's turn (a split log along its trunk); fires use this slot for their store
 
+			if it.has("girth"):
+				row.append(float(it["girth"]))   # a split log's thickness against the drawn log
+
 		if it.has("fire"):
 			var wood: Dictionary = _fire_wood(it["fire"])
 			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
@@ -1186,6 +1218,10 @@ func save() -> void:
 			var pc: Dictionary = it["fire"].get("pieces", {})
 			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
 			row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
+			var burnt: Dictionary = it["fire"].get("burnt", {})
+			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
+			var counted: Dictionary = it["fire"].get("counted", {})
+			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 
 		items.append(row)
 
@@ -1765,6 +1801,16 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 
 # A thrown weapon leaves the inventory and flies; where it comes down it lies as a world item.
 # Only items marked as weapons can be thrown. Nothing can be hit yet (no creatures).
+# Floating damage numbers (Dave 2 Nov 2026: on by default, a toggle in Gameplay). An animal shows the damage it took. A tree or a boulder has no health,
+# so it counts as HIT_POINTS split over the blows it takes: each blow shows its share (a 10-blow tree shows 10 a blow).
+const HIT_POINTS := 100.0
+
+
+func hit_number(peer: int, at: Vector3, amount: float) -> void:
+	if send_hit_number.is_valid() and amount > 0.0:
+		send_hit_number.call(peer, at, maxi(1, int(round(amount))))
+
+
 # One jab with a weapon (items.json "damage"): hits the animal in front within JAB_REACH_M through the animal hook.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
@@ -1781,9 +1827,11 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var hit: bool = bool(hit_animal.call(peer, _peer_pos[peer] + Vector3(0.0, 1.4, 0.0), direction, JAB_REACH_M, float(entry["damage"])))
+	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var hit: bool = bool(hit_animal.call(peer, eye, direction, JAB_REACH_M, float(entry["damage"])))
 
 	if hit:
+		hit_number(peer, eye + direction.normalized() * minf(JAB_REACH_M, 1.5), float(entry["damage"]))
 		_wear_slot(peer, inv, slot, "strike")
 
 
@@ -1945,6 +1993,7 @@ func _arrow_fly(delta: float) -> void:
 					hit_animal_now = true
 					at = hit["at"]
 					practice(int(ar["peer"]), "bow")
+					hit_number(int(ar["peer"]), at, float(ar["damage"]))
 
 			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
 
@@ -2864,6 +2913,7 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 			fire.erase("burnt")
+			fire.erase("counted")
 
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
@@ -3042,7 +3092,7 @@ func _sync_world_items() -> void:
 					signature += int(round(float(it["tree"].get("length", 0.0)) * 20.0)) * 7      # a trunk that got shorter (a log was cut off) is sent again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else ({"rot_y": float(it["rot_y"])} if it.has("rot_y") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else ({"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)} if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") else {}))))])
 					known[id] = signature
 
 		for id in known.keys():
@@ -3209,6 +3259,9 @@ func _load_world_items() -> void:
 		if row.size() > 9 and int(row[6]) == 0 and typeof(row[9]) == TYPE_FLOAT:
 			entry["rot_y"] = float(row[9])
 
+			if row.size() > 10 and typeof(row[10]) == TYPE_FLOAT:
+				entry["girth"] = float(row[10])
+
 		if row.size() > 7 and int(row[6]) != 0:
 			var saved_state: int = int(row[6])
 
@@ -3231,6 +3284,25 @@ func _load_world_items() -> void:
 
 			if row.size() > 12 and int(row[12]) == 1:
 				entry["fire"]["synced"] = true
+
+			# A restart keeps what has burned since the last count and which pieces that count knew, so closing the store after a load does not give
+			# burned wood back as fresh burn time, and the half-burned piece still leaves the store when it is done.
+			if row.size() > 13 and typeof(row[13]) == TYPE_ARRAY and (row[13] as Array).size() == 3:
+				var burnt: Dictionary = {}
+
+				for k in range(3):
+					if float(row[13][k]) > 0.0:
+						burnt[["log", "firewood", "weak"][k]] = float(row[13][k])
+
+				entry["fire"]["burnt"] = burnt
+
+			if row.size() > 14 and typeof(row[14]) == TYPE_ARRAY and (row[14] as Array).size() == 3:
+				var counted: Dictionary = {}
+
+				for k in range(3):
+					counted[["log", "firewood", "weak"][k]] = maxi(int(row[14][k]), 0)
+
+				entry["fire"]["counted"] = counted
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -3581,6 +3653,7 @@ func _hit_boulder(peer: int, inv, id: int) -> void:
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "boulder")
 	info["blows"] = int(info.get("blows", 0)) + 1
+	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS / float(maxi(int(tool[1]), 1)))
 
 	if int(info["blows"]) < int(tool[1]):
 		return
@@ -3789,6 +3862,8 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i) -> void:
 	var fell: Dictionary = _drops.get("felling", {})   # data/items/drops.json "felling": the blow counts follow the swing time (balance, Dave tunes)
 	var needed: int = maxi(1, int(ceil(float(clampi(int(round(float(fell.get("tree_base", 4.0)) + float(info["trunk"]) * float(fell.get("tree_per_trunk_m", 30.0)))), int(fell.get("tree_min", 4)), int(fell.get("tree_max", 40)))) / skill_factor(peer, "fell_tree"))))
 
+	hit_number(peer, spot + Vector3(0.0, 1.2, 0.0), HIT_POINTS / float(needed))
+
 	if int(chop["hits"]) < needed:
 		return
 
@@ -3816,19 +3891,30 @@ func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> vo
 	_fell_record(chunk, info, away)
 
 
+# The butt radius of a felled tree: the radius its standing model is drawn with (fell_pose.gd drawn_radius: its species model and variant, so a slim
+# young tree gives a slim trunk, stump and logs; Dave 2 Nov). Without the tree's id, the species trunk scaled with height as before.
+func _felled_radius(info: Dictionary) -> float:
+	var entry: Dictionary = _flora_by_name.get(str(info.get("name", "")), {})
+
+	if info.has("id") and not entry.is_empty():
+		return maxf(FellPose.drawn_radius(entry, int(info["id"]), float(info["height"])), 0.06)
+
+	return maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1)
+
+
 func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var pitch: float = 0.0
 
 	if ground_height.is_valid():   # fall away from the player, resting ON the ground and never inside a slope (fell_pose.gd)
-		var pose: Dictionary = FellPose.choose(spot, away, float(info["height"]), maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1), ground_height)
+		var pose: Dictionary = FellPose.choose(spot, away, float(info["height"]), _felled_radius(info), ground_height)
 		yaw = float(pose["yaw"])
 		pitch = float(pose["pitch"])
 
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	# The same size as the standing tree: its drawn radius (scaled with its height), and its whole height as the length.
-	var radius: float = maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1)
+	var radius: float = _felled_radius(info)
 	var base: Dictionary = {"species": str(info["name"]), "yaw": yaw, "length": float(info["height"]), "radius": radius, "felled_at": now_s}
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
@@ -3845,6 +3931,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
 	_next_id += 1
 	_dirty = true
+	_sync_in = 0.0   # bug 6: the trunk goes out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
 
 
 func _has_tool(inv, tool_class: String) -> bool:
@@ -4318,7 +4405,7 @@ func split_trunk(id: int) -> bool:
 	_items.erase(id)
 
 	for spot in spots:   # the log mesh lies along its x axis: turned by yaw - 90 degrees it runs along the trunk (0 = +Z)
-		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5)
+		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S, yaw - PI * 0.5, _log_girth(log_n, radius))
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
@@ -4426,7 +4513,7 @@ func _cut_log_off(peer: int, id: int, tree: Dictionary, cfg: Dictionary) -> bool
 	var at: Vector3 = it["pos"] + along * (mid * cos(pitch)) + side * (radius + 0.7) + Vector3(0.0, sin(pitch) * mid + radius, 0.0)
 	var log_n: int = _log_number(str(tree.get("species", "")))
 
-	if not drop_in_world(log_n, 1, at):
+	if not drop_in_world(log_n, 1, at, 0, 0.0, yaw - PI * 0.5, _log_girth(log_n, radius)):
 		_say(peer, "Too many things lie here. Clear some away first.")
 		return false
 
@@ -4539,11 +4626,181 @@ func dynamic_tree_info(home: Vector2i, id: int) -> Dictionary:
 				return {}
 
 			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+
+			if str(entry.get("kind", "tree")) != "tree":
+				return {}   # a planted bush is not a tree to fell (shrub_info finds it)
+
 			var span: Array = entry.get("height_m", [])
 			var ref_height: float = 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else 0.0
-			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true}
+			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true, "id": id}
 
 	return {}
+
+
+# A split log's girth against the drawn species log (only species logs: the plain Log has its own small mesh).
+func _log_girth(log_n: int, radius: float) -> float:
+	return radius / LOG_MESH_RADIUS_M if table.id_of(log_n).begins_with("log_") else NAN
+
+
+# The extra row fields of a loose item: its turn and a split log's girth.
+func _loose_extra(it: Dictionary) -> Dictionary:
+	var extra: Dictionary = {}
+
+	if it.has("rot_y"):
+		extra["rot_y"] = float(it["rot_y"])
+
+	if it.has("girth"):
+		extra["girth"] = float(it["girth"])
+
+	return extra
+
+
+# A planted bush or shrub (dynamic flora) as shrub_info gives it, or {}.
+func dynamic_shrub_info(home: Vector2i, id: int) -> Dictionary:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y] and ((int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"]))) == id:
+			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
+
+			if str(entry.get("kind", "")) != "shrub":
+				return {}
+
+			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "dynamic": true}
+
+	return {}
+
+
+# Bushes and shrubs (Dave 2 Nov 2026, hazel too). An axe chops one up into leaves and sticks (drops.json shrub_work axe_blows, axe_gives); a pickaxe
+# digs it up whole as <species>_bush, to plant again elsewhere (_plant_bush). Either way the bush is gone from the world.
+func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, pick: bool) -> void:
+	if not _peer_pos.has(peer) or not shrub_info.is_valid() or not cut_tree.is_valid():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_hit.get(peer, -100000)) < HIT_COOLDOWN_MS:
+		return
+
+	var tool_class: String = "pick" if pick else "axe"
+	var slot: int = _tool_slot(inv, tool_class)
+
+	if slot < 0:
+		_reject(peer, 1)
+		return
+
+	var info: Dictionary = shrub_info.call(chunk, flora_id)
+
+	if info.is_empty():
+		return
+
+	var spot: Vector3 = info["position"]
+
+	if Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length() > HIT_REACH_M + 1.0:
+		_reject(peer, 0)
+		return
+
+	var cfg: Dictionary = _drops.get("shrub_work", {})
+	var dug_id: String = str(info["name"]) + str(cfg.get("dig_suffix", "_bush"))
+
+	if pick and table.number_of(dug_id) == 0:
+		_say(peer, "That one will not come up whole.")
+		return
+
+	if pick and _fit(peer, inv, table.number_of(dug_id), 1) == 0:
+		_say(peer, "Too heavy to carry any more")
+		_reject(peer, 2)
+		return
+
+	_last_hit[peer] = now
+	_wear_slot(peer, inv, slot, "shrub")
+	var key: String = "s%s,%d,%d,%d" % ["p" if pick else "a", chunk.x, chunk.y, flora_id]
+	var chop: Dictionary = _chops.get(key, {"hits": 0, "msec": now})
+
+	if now - int(chop["msec"]) > CHOP_RESET_MS:
+		chop["hits"] = 0
+
+	chop["hits"] = int(chop["hits"]) + 1
+	chop["msec"] = now
+	_chops[key] = chop
+
+	if int(chop["hits"]) < int(cfg.get("pick_blows" if pick else "axe_blows", 2)):
+		return
+
+	_chops.erase(key)
+
+	if not bool(cut_tree.call(chunk, flora_id)):
+		return
+
+	if pick:
+		give(peer, table.number_of(dug_id), 1)
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash(key) ^ now
+
+	for row in cfg.get("axe_gives", []):
+		give(peer, table.number_of(str(row[0])), roll_amount(peer, rng, int(row[1]), int(row[2])))
+
+
+# Planting a dug-up bush (<species>_bush) at `at`, the ground under the crosshair: it grows there as a full bush (dynamic flora, saved with the saplings).
+func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
+	if slot < 0 or slot >= inv.SLOTS or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
+		return
+
+	var suffix: String = str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush"))
+	var item_id: String = table.id_of(inv.numbers[slot])
+
+	if not item_id.ends_with(suffix):
+		return
+
+	var entry: Dictionary = _flora_by_name.get(item_id.trim_suffix(suffix), {})
+
+	if entry.is_empty() or str(entry.get("kind", "")) != "shrub":
+		return
+
+	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
+		_reject(peer, 0)
+		return
+
+	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+
+	if is_nan(ground) or ground < 1.0:
+		_say(peer, "The ground is too wet here.")
+		return
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(at.x, ground, at.z))) >= PlacementRules.FIRE_WATER_BLOCK_M:
+		_say(peer, "You cannot plant it in water.")
+		return
+
+	var spot: Vector3 = Vector3(at.x, ground, at.z)
+	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
+	var used: Dictionary = {}
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y]:
+			used[sapling["slot"]] = true
+
+			if (sapling["pos"] as Vector3).distance_to(spot) < PLANT_BUSH_GAP_M:
+				_say(peer, "Too close to another plant.")
+				return
+
+	if used.size() >= SAPLINGS_PER_CHUNK:
+		_say(peer, "Too many young plants here.")
+		return
+
+	var new_slot: int = 0
+
+	while used.has(new_slot):
+		new_slot += 1
+
+	inv.take_from_slot(slot, 1)
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s - SAPLING_GROWN_S})   # a dug bush goes in full size
+	_dirty = true
+
+	if flora_changed.is_valid():
+		flora_changed.call(home)
 
 
 # A grown dynamic tree was felled: the record goes. True if there was one.
@@ -5522,6 +5779,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 	var laid: Dictionary = {}
 
 	var burnt: Dictionary = fire.get("burnt", {})
+	fire["counted"] = pieces.duplicate()   # the pieces this count knows; only these may burn out of the store (_fire_trim_store), never wood put in after it
 
 	for cls in ["log", "firewood", "weak"]:
 		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
@@ -5555,6 +5813,11 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 	var burnt: Dictionary = fire.get("burnt", {})
 	var removed: bool = false
 
+	if not fire.has("counted"):   # a fire loaded from a save: what is in its store now is what was counted
+		fire["counted"] = _fire_store_pieces(fire, box)
+
+	var counted: Dictionary = fire["counted"]
+
 	for cls in burnt.keys():
 		for slot in range(box.usable):
 			var number: int = box.numbers[slot]
@@ -5564,12 +5827,40 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 
 			var each: float = float(fuel[table.id_of(number)]) / GAME_RATE
 
-			while box.numbers[slot] == number and box.counts[slot] > 0 and float(burnt[cls]) >= each - 0.01:
+			while box.numbers[slot] == number and box.counts[slot] > 0 and int(counted.get(cls, 0)) > 0 and float(burnt[cls]) >= each - 0.01:
 				box.take_from_slot(slot, 1)
 				burnt[cls] = float(burnt[cls]) - each
+				counted[cls] = int(counted[cls]) - 1
 				removed = true
+				print("fire store: one %s burned away (%s burned %.0f s, %d counted left)" % [table.id_of(number), cls, float(burnt[cls]) + each, int(counted[cls])])
+
+		# Dave 2 Nov 2026 (the third log still vanished): burn time with no counted piece left to take (a fire whose burn time ran ahead of its store)
+		# is not a debt on wood put in later. It goes, so a new piece stays until the next count.
+		if int(counted.get(cls, 0)) <= 0:
+			burnt[cls] = 0.0
 
 	return removed
+
+
+# Pieces of each wood class in a fire's store (logs left out while a pot hangs over it).
+func _fire_store_pieces(fire: Dictionary, box) -> Dictionary:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var pieces: Dictionary = {"log": 0, "firewood": 0, "weak": 0}
+
+	for slot in range(box.usable):
+		var number: int = box.numbers[slot]
+
+		if number == 0 or not fuel.has(table.id_of(number)):
+			continue
+
+		var cls: String = _fire_wood_class(table.id_of(number))
+
+		if cls == "log" and bool(fire.get("pot", false)):
+			continue
+
+		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
+
+	return pieces
 
 
 # A burnt-out fire's store keeps no wood: the trim leaves the last piece until the fire is out, and it must not come back as fresh burn time. Food stays.
@@ -5600,6 +5891,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 		return
 
 	_fire_apply_store(fire, box)
+	fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again, so the client's burn timer shows the new time (Dave 2 Nov 2026: it stayed at the old time, counting down)
 	var state: int = int(fire["state"])
 
 	if float(fire["burn_left"]) <= 0.0:
@@ -5714,6 +6006,13 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_chest_viewer[peer] = id
+
+	# A fire with no count yet (loaded, or older than the count) is counted now, before anything is put in: wood put in later is not counted, so
+	# burned time can never take it (Tyler's run of #85: the trim's own fallback counted the newly put log, and the old burn time ate it).
+	var chest_fire: Dictionary = _items.get(id, {}).get("fire", {})
+
+	if bool(chest_fire.get("synced", false)) and not chest_fire.has("counted"):
+		chest_fire["counted"] = _fire_store_pieces(chest_fire, chest)
 
 	# Remains hold the dead character's purse: whoever may open them takes it with the first opening.
 	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})
@@ -10120,7 +10419,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 	st["s"] = strain
 	st["state"] = state
-	_train_fitness(peer, state == 1, spent)
+	_train_fitness(peer, effort_of(peer) if state < 2 else 0.0, spent)
 	var fade: float = 0.0
 
 	if state <= 1:
@@ -10437,10 +10736,12 @@ func fitness_of(peer: int) -> int:
 	return clampi(int(row.get("fitness", _fitness_default())) + int(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())
 
 
-# Fitness trains slowly (Dave 2026-10-21, fitness.json "train"): time spent over-exerted adds to the character's training, a point
-# per winded_s_per_point seconds up to max_gain over the creation value; time not winded takes it back, a point per
-# decay_s_per_point seconds, never below the creation value. The whole-number change is sent to the client.
-func _train_fitness(peer: int, winded: bool, spent: float) -> void:
+# Fitness trains slowly like a skill (Dave 2 Nov 2026, fitness.json "train"): any physical effort adds to the character's training,
+# walking, jogging, running and tool work alike (effort_of: speed, tool work, load). Effort under min_effort (standing, strolling)
+# earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
+# point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
+# never below the creation value. The whole-number change is sent to the client.
+func _train_fitness(peer: int, effort: float, spent: float) -> void:
 	var cfg: Dictionary = _fitness_cfg.get("train", {})
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
 
@@ -10449,9 +10750,11 @@ func _train_fitness(peer: int, winded: bool, spent: float) -> void:
 
 	var before: int = fitness_of(peer)
 	var train: float = float(row.get("train", 0.0))
+	var min_effort: float = float(cfg.get("min_effort", 0.3))
 
-	if winded:
-		train = minf(train + spent / maxf(float(cfg.get("winded_s_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 5)))
+	if effort > min_effort:
+		var share: float = minf((effort - min_effort) / maxf(1.0 - min_effort, 0.05), float(cfg.get("max_share", 1.1)))
+		train = minf(train + share * spent / maxf(float(cfg.get("seconds_per_point", 1800.0)), 1.0), float(cfg.get("max_gain", 10)))
 	else:
 		var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0)
 		train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side

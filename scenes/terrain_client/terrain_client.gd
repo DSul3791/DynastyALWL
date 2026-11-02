@@ -95,6 +95,7 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
@@ -451,6 +452,7 @@ var _bake_alert_until: int = 0
 var _bake_alert_at: Vector3 = Vector3.ZERO   # where the player stood when the finished notice came up
 var _bake_done_note: String = ""          # the bake's own finished message, shown once the ground reloads
 var idle_timeout = IdleTimeoutScript.new()   # the game closes after the idle minutes of Esc > Settings > Gameplay without input (idle_timeout.gd)
+const HitNumbersScript := preload("res://src/client/hit_numbers.gd")
 var display = DisplaySettingsScript.new()   # saved window, VSync and quality choices
 var quality: int = 2                  # index into QUALITY_NAMES; High is the default
 var _flora_view_full: PackedFloat32Array = PackedFloat32Array()
@@ -770,6 +772,9 @@ func _ready() -> void:
 	net.ground_reset_received.connect(_on_ground_reset)
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
+	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
+		if display.damage_numbers:
+			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
 	net.water_received.connect(_on_water_received)
 	net.surface_received.connect(_on_surface_received)
@@ -1316,6 +1321,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
+	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
@@ -1878,7 +1884,9 @@ func _decode_in(job: Dictionary, material: Material) -> void:
 
 	var grid: Dictionary = result["grid"]
 
-	if int(grid.get("wet", 0)) > 0:
+	if int(grid.get("wet", 0)) > 0 and flora.LIQUID_CHUNKS:
+		grid["liquid_image"] = LiquidSurface.image_from_grid(grid)
+	elif int(grid.get("wet", 0)) > 0:
 		grid["mesh"] = WaterGridScript.build_mesh(grid, material)
 
 		if flora.DRAW_FALL_RIBBONS and not grid.get("falls", []).is_empty():
@@ -1982,7 +1990,10 @@ func _update_weather() -> void:
 		sound.weather.apply_state(weather)
 
 
-# Protocol 84: the simulated water window as a texture for the water shader (uniforms water2_*; they do nothing until the shader reads them, src/water2/water_flow_texture.gd).
+# Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
+var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
+
+
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	var material: Material = flora.water_material() if flora != null else null
 
@@ -1991,8 +2002,21 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 
 	var im: Image = FlowTexture.unpack(w, h, raw_size, bytes)
 
-	if im != null:
-		FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
+	if im == null:
+		return
+
+	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
+	if _liquid == null:
+		_liquid = LiquidSurface.new()
+		_liquid.name = "LiquidSurface"
+		_liquid.add_to_group("liquid_sheet")
+		_liquid.add_to_group("water_draw")
+		flora.add_child(_liquid)
+
+	_liquid.show_window(im, origin, cell_m)
+	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in.
+	flora.set_liquid_hole(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m, cell_m)
+	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -2269,6 +2293,38 @@ func _tree_trunk_near(point: Vector3) -> Array:
 
 	return []
 
+
+
+# The bush or shrub an axe or pickaxe swing reaches (Dave 2 Nov 2026): the one whose middle lies closest to the swing line from the eye to where
+# it hit, within SHRUB_HIT_M; [chunk, id] or [].
+const SHRUB_HIT_M := 0.9
+
+
+func _shrub_near(from: Vector3, to: Vector3) -> Array:
+	var best: Array = []
+	var best_d: float = SHRUB_HIT_M
+
+	for chunk in flora._chunks:
+		var held_items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(held_items["ids"].size()):
+			if int(flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2)) != 1:
+				continue
+
+			var root_at: Vector3 = held_items["positions"][n]
+
+			if Vector2(root_at.x - to.x, root_at.z - to.z).length() > 4.0:
+				continue
+
+			var height: float = float(held_items["heights"][n]) if held_items.has("heights") and n < held_items["heights"].size() else 1.0
+			var middle: Vector3 = root_at + Vector3(0.0, clampf(height * 0.5, 0.2, 1.2), 0.0)
+			var d: float = middle.distance_to(Geometry3D.get_closest_point_to_segment(middle, from, to))
+
+			if d < best_d:
+				best_d = d
+				best = [chunk, held_items["ids"][n]]
+
+	return best
 
 
 # Headless check: cut the tree nearest the spawn.
