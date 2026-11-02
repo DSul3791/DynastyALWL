@@ -25,7 +25,7 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 5. [ ] **Nettles.** **E** on a nettle gives plant fibre **and** nettle leaves (new).
 6. [ ] **Twine.** **I**, type "twine" in the search box (or pick it in the list), Craft: 3 fibre make 1 twine.
 7. [ ] **Stone axe** (1 stone, 1 stick, 2 twine, 10 s). Put it on the hotbar and hold it (press its number).
-8. [ ] **Fell a tree.** Click again and again (about 10 blows for a thin tree). Then keep striking the trunk: branches (sticks, leaves), then logs on your shoulder (every tree species gives logs now). Q puts the shoulder log down. A stump still in the ground can be chopped too: it is destroyed and gives firewood and kindling (no log).
+8. [ ] **Fell a tree.** Click again and again (about 10 blows for a 1 m trunk, fewer for a thin one, 20 or more for a giant; see docs/handoff/DINO_BUG_CHECKS.md). Then keep striking the trunk: branches (sticks, leaves), then logs on your shoulder (every tree species gives logs now). Q puts the shoulder log down. A stump still in the ground can be chopped too: it is destroyed and gives firewood and kindling (no log).
 9. [ ] **Campfire** (6 sticks, 3 stones, 8 s). Hold the kit, click where the ring shows: yellow = open, green = under a tree. It must be within about 6 m of you.
 10. [ ] **Light it:** stand close, **E** (spends 1 fibre; birch bark also works). Feed it with **E**: firewood first, then sticks, then logs. Stick = 2 min, firewood = 20 min, log = 3 h (real time). The fire says why when it refuses (full, no wood to put on).
 11. [ ] **Cook:** you need raw meat, fish or shellfish. The campfire **only cooks meat**: berries and nuts are refused with a message (they go in a pot or on a hearth). Put a plant food at the fire and the game shows a hint: press 6 clay into a Clay pot, lash it with 3 sticks and 3 twine.
@@ -34,13 +34,14 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 14. [ ] **Bench** (Camp bench: 16 sticks, 6 twine, 4 stones, 60 s), then **wooden spear** (1 stick, 6 s; the stone is kept, not used up), **stone spear** (wooden spear + 2 twine, 10 s) and **stone knife** (2 stones, 1 stick, 8 s).
 
 ## Known broken (do not report these again; not re-checked since 1 Nov except where marked)
+- Bugs 1-10 on `docs/BUGS_FOUND_IN_PLAY.md` (fire timer, chopping block, firewood pile, arms, tree hits, lag, fire tiers, logs in fire, jump). Owners are fixing them; the exact check for each is in `docs/handoff/DINO_BUG_CHECKS.md`.
 - Join freeze of about 15 seconds.
 - Creator preview opens on the back of the body, plain colours.
 - Chest self-test fails (the chest itself is untested in the client).
 - Novice respawn card is pending.
 - Lit campfire showed no flames in the last rig picture; felled trunk looks dark and smooth (both on QA cards). Numbers in this list re-checked against data on 1 Nov (head 9ca75719).
 - Water is still the old system (flat sea, no foam).
-- Grey looks: chopping block and nettle tea. Kits look alike (56 kits, 19 looks).
+- Grey looks: chopping block and nettle tea. 31 kit items share the plain "kit" look in the hand (60 distinct placed looks).
 - Not yet seen in the client by me: lying in the bed, the lit-fire picture, a felled log with bark.
 
 ## Tell me
