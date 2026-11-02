@@ -270,7 +270,7 @@ func _init() -> void:
 	f._items[log_fire]["fire"]["wood"]["log"] = 0.0
 
 	# No cap on stored fuel (Dave 2 Nov 2026): logs keep going on past the old 18 real hour limit (6 logs) and each one adds its full burn time.
-	var one_log: float = float(cook["fuel"]["log"]) / rate
+	var one_log_s: float = float(cook["fuel"]["log"]) / rate
 	var grew: int = 0
 	var logs_on: int = 0
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 8, Vector3.ZERO)
@@ -283,7 +283,7 @@ func _init() -> void:
 		if f.inventory_of(1).count_of(log_n) == had - 1:
 			logs_on += 1
 
-		if absf(float(f._items[log_fire]["fire"]["burn_left"]) - before_s - one_log) < 1.0:
+		if absf(float(f._items[log_fire]["fire"]["burn_left"]) - before_s - one_log_s) < 1.0:
 			grew += 1
 
 	check(logs_on == 8, "all 8 logs go on past the old cap (%d went on)" % logs_on)
