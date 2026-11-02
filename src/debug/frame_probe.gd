@@ -1,5 +1,7 @@
 extends RefCounted
 
+const FreezeWatch := preload("res://src/debug/freeze_watch.gd")
+
 # Owner (2026-10-19): find what makes the game pause, as a regular routine while coding.
 # Times named pieces of main-thread work. Wrap a piece with
 #   var t: int = FrameProbe.start()  ...  FrameProbe.stop("flora", t)
@@ -30,6 +32,7 @@ static func start() -> int:
 
 static func stop(name: String, started: int) -> void:
 	var used: int = Time.get_ticks_usec() - started
+	FreezeWatch.note(name)   # the last piece finished, for the freeze watch thread
 
 	if used > 2500 and OS.has_environment("SPIKES"):
 		print("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
