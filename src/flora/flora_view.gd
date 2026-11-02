@@ -1035,7 +1035,8 @@ func set_water(chunk: Vector2i, water: Dictionary) -> void:
 	var old: Dictionary = entry.get("grid", {})
 	WaterGridScript.steady_edges(old, water)
 
-	if water_ease and WaterGridScript.moved(old, water, EASE_MIN_M):
+	# The liquid sheets are drawn once per update (no easing steps): each step rebuilt the chunk image on the main thread every frame (lag near rivers).
+	if water_ease and not LIQUID_CHUNKS and WaterGridScript.moved(old, water, EASE_MIN_M):
 		_ease[chunk] = {"old": old, "new": water, "step": 1, "next_msec": Time.get_ticks_msec() + EASE_STEP_MSEC}
 		_draw_water(chunk, entry, WaterGridScript.blend(old, water, 1.0 / float(EASE_STEPS)))
 		return

@@ -8,7 +8,7 @@ extends MeshInstance3D
 # so the surface visibly travels downstream at the sim's speed.
 # The grid look (water_material.gd) steps aside inside the window; outside it nothing changes.
 
-const SHEET_STEP_M := 2.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between)
+const SHEET_STEP_M := 4.0       # vertex spacing of the sheet (the sim cell is 8 m; the texture is filtered between). Was 2 m: 250,000 quads over the 1 km window, lag near rivers (Dave 2 Nov 2026)
 const FADE_CELLS := 1.0         # the sheet fades in over this many cells from the window's edge, where the grid look takes over
 
 const SHADER := """
@@ -185,7 +185,7 @@ void fragment() {
 }
 """
 
-const CHUNK_STEP_M := 4.0       # vertex spacing of a chunk sheet (many of them stand at once)
+const CHUNK_STEP_M := 8.0       # vertex spacing of a chunk sheet (many of them stand at once): one vertex per grid point, the shore and colour are per pixel anyway
 const SHORE_DEPTH_M := 0.3      # a chunk sheet's depth at wet points next to the shore (no ground on the client): it thins to 0 at the shore point
 const OPEN_DEPTH_M := 1.0       # and further in
 
