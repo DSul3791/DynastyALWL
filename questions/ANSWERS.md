@@ -1946,3 +1946,7 @@ Answered: 2026-11-01 00:30 UTC
 Answer: Yes | Comment: Except there’s a weird gray cube at the end of it that doesn’t look right that should not be there. It should be a smooth blade all the way across.
 Answered: 2026-11-01 09:23 UTC
 
+## fire-tier-1-survival | Fire tier 1: with 3 sticks, is the fire a small survival fire?
+Answer: Yes
+Answered: 2026-11-02 15:57 UTC
+
