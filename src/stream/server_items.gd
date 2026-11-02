@@ -2191,24 +2191,31 @@ func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
 	return true
 
 
+# Path (Dave 2 Nov 2026): the stroke first AVERAGES the ground within PATH_AVERAGE_M of the point (ground moved from the high spots to the low ones,
+# volume balanced, at most SMOOTH_MAX_M a stroke, like smooth but wider), then lays a round trodden patch exactly where the player pointed (not snapped
+# to a grid). The client draws it strong brown for the middle half metre and fading to see-through by 1.25 m. A drag lays one every PATH_SPACING_M.
+const PATH_AVERAGE_M := 2.0
+const PATH_SPACING_M := 0.45
+
+
 func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	if not ground_height.is_valid() or not _structures.has("path_patch") or not _hoe_ready(peer, inv, at):
 		return
 
-	var cell: Vector3 = Vector3(floor(at.x) + 0.5, 0.0, floor(at.z) + 0.5)
-	var ground: float = float(ground_height.call(cell.x, cell.z))
+	var ground: float = float(ground_height.call(at.x, at.z))
 
 	if is_nan(ground):
 		return
 
-	cell.y = ground + 0.02
+	var spot: Vector3 = Vector3(at.x, ground + 0.02, at.z)
 
-	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(cell.x, ground, cell.z))) > 0.05:
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(spot.x, ground, spot.z))) > 0.05:
 		_say(peer, "You cannot tread a path in water.")
 		return
 
-	var here_chunk: Vector2i = _chunk_of(cell)
+	var here_chunk: Vector2i = _chunk_of(spot)
 	var of_kind: int = 0
+	var near_paths: Array = []
 
 	for id in _items:
 		var other: Dictionary = _items[id]
@@ -2217,12 +2224,17 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 			continue
 
 		if str(other["struct"]["kind"]) == "path_patch":
-			if absf(other["pos"].x - cell.x) < 0.25 and absf(other["pos"].z - cell.z) < 0.25:
-				return   # already trodden
+			var flat: float = Vector2(other["pos"].x - spot.x, other["pos"].z - spot.z).length()
+
+			if flat < PATH_SPACING_M:
+				return   # already trodden here
+
+			if flat <= PATH_AVERAGE_M + 1.25:
+				near_paths.append(id)
 
 			if _chunk_of(other["pos"]) == here_chunk:
 				of_kind += 1
-		elif other["pos"].distance_to(cell) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
+		elif other["pos"].distance_to(spot) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 			_say(peer, "Something stands there.")
 			return
 
@@ -2230,17 +2242,40 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 		_say(peer, "This ground is paths enough.")
 		return
 
+	var spots: Array = [Vector2.ZERO]
+
+	for k in 8:
+		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * PATH_AVERAGE_M * 0.75)
+
+	var moved: bool = _average_ground(at, spots)
+
 	_wear_tool(peer, inv, "hoe", "dig")
-	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+
+	if moved:
+		# The ground under the patches laid before has moved: they are laid again on the new surface (new ids, so the clients redraw them).
+		for id in near_paths:
+			var old: Dictionary = _items[id]
+			var old_ground: float = float(ground_height.call(old["pos"].x, old["pos"].z))
+
+			if not is_nan(old_ground):
+				_items.erase(id)
+				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+				_next_id += 1
+
+		var new_ground: float = float(ground_height.call(at.x, at.z))
+		spot.y = (new_ground if not is_nan(new_ground) else ground) + 0.02
+
+	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 	_next_id += 1
 	_dirty = true
 
 
-func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
-	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
-		return
+# Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
+# Returns true when any ground moved.
+func _average_ground(at: Vector3, spots: Array) -> bool:
+	if not dig_ground.is_valid() or not fill_ground.is_valid():
+		return false
 
-	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
 	var heights: Array = []
 	var total: float = 0.0
 
@@ -2248,7 +2283,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 		var h: float = float(ground_height.call(at.x + offset.x, at.z + offset.y))
 
 		if is_nan(h):
-			return
+			return false
 
 		heights.append(h)
 		total += h
@@ -2256,7 +2291,7 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 	var mean: float = total / float(spots.size())
 	var cut_sum: float = 0.0
 	var fill_sum: float = 0.0
-	var moves: Array = []   # [offset, depth, +1 cut / -1 fill]
+	var moves: Array = []   # [index, depth, +1 cut / -1 fill]
 
 	for n in spots.size():
 		var d: float = float(heights[n]) - mean
@@ -2265,37 +2300,44 @@ func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
 			continue
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		moves.append([spots[n], depth, 1 if d > 0.0 else -1])
+		moves.append([n, depth, 1 if d > 0.0 else -1])
 
 		if d > 0.0:
 			cut_sum += depth
 		else:
 			fill_sum += depth
 
-	if moves.is_empty():
-		_say(peer, "The ground here is already smooth.")
-		return
+	var shifted: float = minf(cut_sum, fill_sum)
 
-	# Ground only moves: whichever side is short sets how much moves on the other.
-	var moved: float = minf(cut_sum, fill_sum)
-
-	if moved <= 0.0:
-		return
+	if moves.is_empty() or shifted <= 0.0:
+		return false
 
 	var worked: int = 0
 
 	for move in moves:
-		var offset: Vector2 = move[0]
-		var spot: Vector3 = Vector3(at.x + offset.x, float(heights[spots.find(offset)]), at.z + offset.y)
-		var depth: float = float(move[1]) * moved / (cut_sum if int(move[2]) > 0 else fill_sum)
-
+		var offset: Vector2 = spots[int(move[0])]
+		var spot: Vector3 = Vector3(at.x + offset.x, float(heights[int(move[0])]), at.z + offset.y)
+		var depth: float = float(move[1]) * shifted / (cut_sum if int(move[2]) > 0 else fill_sum)
 		var done: Variant = dig_ground.call(Vector3(spot.x, spot.y - depth + SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M) if int(move[2]) > 0 else fill_ground.call(Vector3(spot.x, spot.y + depth - SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
 
-	if worked == 0:
-		_say(peer, "This ground is worked enough.")   # every block refused the edit (full): nothing moved, the hoe does not wear
+	return worked > 0
+
+
+func _hoe_smooth(peer: int, inv, at: Vector3) -> void:
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _hoe_ready(peer, inv, at):
+		return
+
+	var spots: Array = [Vector2.ZERO, Vector2(1.0, 0.0), Vector2(-1.0, 0.0), Vector2(0.0, 1.0), Vector2(0.0, -1.0)]
+
+	for offset in spots:
+		if is_nan(float(ground_height.call(at.x + offset.x, at.z + offset.y))):
+			return
+
+	if not _average_ground(at, spots):
+		_say(peer, "The ground here is already smooth, or worked enough.")
 		return
 
 	_wear_tool(peer, inv, "hoe", "dig")

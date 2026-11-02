@@ -155,6 +155,7 @@ const FlameUp := preload("res://src/client/flame_up.gd")
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
+	_hud_layer = hud_layer
 	_sound = sound_stage
 	_placement = PlacementRules.load_config()
 
@@ -473,6 +474,11 @@ func work_clip() -> String:
 
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
+	if _hoe_menu_open:
+		_hoe_menu_index = posmod(_hoe_menu_index + (1 if down else -1), HOE_MODES.size())
+		_hoe_menu_refresh()
+		return true
+
 	if blueprints.is_open:
 		blueprints.move(down, _hammer_tier())
 		return true
@@ -608,19 +614,31 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_inv._on_notice("Raise mode: left click adds ground, using soil or stone from your pack" if raise_mode else "Dig mode: left click digs")
 			return true
 
-		# The garden hoe: left click treads a path, right click smooths the ground (it moves dirt from the high spots to the low ones; no items).
-		if pressed and (button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT) and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
-			_arm_play("use", 0.6)
+		# The garden hoe (Dave 2 Nov 2026): left click applies whatever mode the hoe is set to; right click opens a window to pick the mode
+		# (wheel moves, left click chooses, right click closes). Shift + right click still sets grade points A and B in any mode.
+		if (button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT) and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
+			if not pressed:
+				return false
 
-			if Input.is_key_pressed(KEY_SHIFT):
-				# Shift + right click sets point A, then point B; Shift + left click (held) grades the ground along the line.
-				if button == MOUSE_BUTTON_RIGHT:
+			if _hoe_menu_open:
+				if button == MOUSE_BUTTON_LEFT:
+					hoe_mode = str(HOE_MODES[_hoe_menu_index]["id"])
+					_inv._on_notice("Hoe: %s" % str(HOE_MODES[_hoe_menu_index]["name"]))
+
+				_hoe_menu_close()
+				return true
+
+			if button == MOUSE_BUTTON_RIGHT:
+				if Input.is_key_pressed(KEY_SHIFT):
+					_arm_play("use", 0.6)
 					_grade_point_here()
 				else:
-					_hoe_here(Net.ACT_HOE_GRADE)
-			else:
-				_hoe_here(Net.ACT_HOE_PATH if button == MOUSE_BUTTON_LEFT else Net.ACT_HOE_SMOOTH)
+					_hoe_menu_open_now()
 
+				return true
+
+			_arm_play("use", 0.6)
+			_hoe_apply()
 			return true
 
 		if button == MOUSE_BUTTON_LEFT and pressed:
@@ -1046,11 +1064,10 @@ var _hoe_t: float = 0.0
 func _hoe_repeat(delta: float) -> void:
 	if _inv == null or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or held_number() == 0 or str(_inv.table.entry(held_id()).get("tool_class", "")) != "hoe":
 		_hoe_t = 0.0
+		_hoe_menu_close()
 		return
 
-	var left: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
-
-	if not left and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_hoe_t = 0.0
 		return
 
@@ -1059,12 +1076,76 @@ func _hoe_repeat(delta: float) -> void:
 	if _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
+		_hoe_apply()
 
-		if Input.is_key_pressed(KEY_SHIFT):
-			if left:
-				_hoe_here(Net.ACT_HOE_GRADE)
-		else:
-			_hoe_here(Net.ACT_HOE_PATH if left else Net.ACT_HOE_SMOOTH)
+
+# What the hoe's mode does (left click, held). Grade needs points A and B (Shift + right click); Shift + left click grades in any mode.
+const HOE_MODES := [
+	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
+	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
+	{"id": "grade", "name": "Grade line", "note": "levels along the A to B line (Shift + right click sets A, then B)"},
+	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
+]
+var hoe_mode: String = "path"
+var _hoe_menu_open: bool = false
+var _hoe_menu_index: int = 0
+var _hoe_menu_panel: PanelContainer = null
+var _hoe_menu_label: Label = null
+var _hud_layer: CanvasLayer = null
+
+
+func _hoe_apply() -> void:
+	if Input.is_key_pressed(KEY_SHIFT) or hoe_mode == "grade":
+		_hoe_here(Net.ACT_HOE_GRADE)
+	elif hoe_mode == "smooth":
+		_hoe_here(Net.ACT_HOE_SMOOTH)
+	elif hoe_mode == "till":
+		_hoe_here(Net.ACT_TILL)
+	else:
+		_hoe_here(Net.ACT_HOE_PATH)
+
+
+func _hoe_menu_open_now() -> void:
+	if _hud_layer == null:
+		return
+
+	if _hoe_menu_panel == null:
+		_hoe_menu_panel = PanelContainer.new()
+		_hoe_menu_panel.set_anchors_preset(Control.PRESET_CENTER)
+		_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_hoe_menu_label = Label.new()
+		_hoe_menu_label.add_theme_font_size_override("font_size", 24)
+		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_hoe_menu_panel.add_child(_hoe_menu_label)
+		_hud_layer.add_child(_hoe_menu_panel)
+
+	_hoe_menu_index = 0
+
+	for n in HOE_MODES.size():
+		if str(HOE_MODES[n]["id"]) == hoe_mode:
+			_hoe_menu_index = n
+
+	_hoe_menu_open = true
+	_hoe_menu_panel.visible = true
+	_hoe_menu_refresh()
+
+
+func _hoe_menu_refresh() -> void:
+	var text: String = "What should the hoe do?   (wheel: move, left click: choose, right click: close)\n\n"
+
+	for n in HOE_MODES.size():
+		text += "%s %s: %s\n" % ["->" if n == _hoe_menu_index else "    ", str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+
+	_hoe_menu_label.text = text
+
+
+func _hoe_menu_close() -> void:
+	_hoe_menu_open = false
+
+	if _hoe_menu_panel != null:
+		_hoe_menu_panel.visible = false
 
 
 # Grade line points: the first click sets A, the next B, the next starts a new line at A. Stakes mark them; the server keeps its own copy.
@@ -1187,7 +1268,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe treads a path (left click) and smooths the ground by moving dirt from high spots to low ones (right click). It uses no items, only its own wear"
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, grade line or till. It uses no items, only its own wear" % hoe_mode
 		"spade":
 			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
@@ -1224,11 +1305,21 @@ func _caption() -> String:
 		text += "   (left click: jab; hold right click to aim, then left click to throw)"
 	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
 		text += "   (%s; right click switches)" % ("Raise" if raise_mode else "Dig")
+	elif _is_other_tool() and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
+		text += "   (left click: %s; right click: choose what it does)" % _hoe_mode_name().to_lower()
 	elif _is_other_tool():
 		text += "   (in hand)"
 
 	var off: String = _off_caption()
 	return text if off == "" else "%s\n%s" % [text, off]
+
+
+func _hoe_mode_name() -> String:
+	for mode in HOE_MODES:
+		if str(mode["id"]) == hoe_mode:
+			return str(mode["name"])
+
+	return "Path"
 
 
 # The left-hand line under the right-hand one.

@@ -538,6 +538,7 @@ func _set_positional(body: Node3D) -> void:
 		_positional[slot] = {"slot": slot, "level": 0.0, "target": 1.0, "player": player}
 		beds_started[slot] = int(beds_started.get(slot, 0)) + 1
 		last = "bed %s (positional)" % slot
+		print("sound bed: %s starts at %s, player at %s (%.0f m)" % [slot, str(wanted[slot]), str(body.global_position), body.global_position.distance_to(wanted[slot])])   # the volcano rumble bed among them (Dave 2 Nov 2026: rumbles nowhere near a cave)
 
 
 # AmbientLife's nearest water square, looked up again only every WET_REFRESH_S or after WET_REFRESH_M of walking (the scan itself is every 1.5 s).
