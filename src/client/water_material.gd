@@ -48,15 +48,39 @@ uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 const float MOUTH_FROM_M = 0.4;        // surface this high above the sea or lower is the river mouth (all sea colour)
 const float MOUTH_TO_M = 4.5;          // and this high or more is fresh river water (brown flood colour allowed)
 
+// Dynasty water (protocol 84, src/water2/water_flow_texture.gd): the simulated window as a texture, R depth (m), G flow east (m/s), B flow south (m/s), A foam 0..1.
+// With water2_on at 0 (no packet received yet, or the old water) nothing below changes the look.
+uniform sampler2D water2_tex : filter_linear, repeat_disable;
+uniform vec2 water2_origin = vec2(0.0);      // world x, z of the texture's corner
+uniform vec2 water2_size = vec2(1.0);        // world metres the texture covers
+uniform float water2_on = 0.0;
+
 varying float sheet_alpha;
 varying vec2 flow;                   // downhill direction times 0..1 steepness (0 for lakes and the sea)
 varying vec3 world_pos;
+varying float water2_foam;           // the sim's foam hint 0..1 (0 outside the window)
 
 void vertex() {
 	sheet_alpha = COLOR.a;
+	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	// Blue 0 marks a flow from the water grid; meshes without colours (the sea) are still.
 	flow = COLOR.b < 0.5 ? (COLOR.rg - 0.5) * 2.0 : vec2(0.0);
-	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	water2_foam = 0.0;
+
+	if (water2_on > 0.5 && sea < 0.5) {
+		vec2 uv = (world_pos.xz - water2_origin) / water2_size;
+
+		if (uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0) {
+			vec4 w = textureLod(water2_tex, uv, 0.0);   // vertex stage: no derivatives, so an explicit level
+
+			if (w.r >= 0.02) {
+				// The fragment draws speed = fastest_m_s x sqrt(steepness), so the sim's speed v maps back to steepness (v / fastest)^2 along its own direction.
+				float s = clamp(length(w.gb) / fastest_m_s, 0.0, 1.0);
+				flow = s > 0.001 ? normalize(w.gb) * s * s : vec2(0.0);
+				water2_foam = clamp(w.a, 0.0, 1.0);
+			}
+		}
+	}
 }
 
 float hash(vec2 p) {
@@ -248,6 +272,7 @@ void fragment() {
 	// Soft foam where the river's fresh water meets the sea (moving water only).
 	float meet = mouth_band * step(0.001, steep) * smoothstep(0.45, 0.75, ripples(local / 2.2 + vec2(drift * 0.1, -drift * 0.07)));
 	foam = max(foam, meet * 0.45);
+	foam = max(foam, water2_foam * 0.6);   // white water where the sim runs fast and shallow (0 without the water2 texture)
 	foam *= 1.0 / (1.0 + distance_m / 120.0);
 	// Streaks running down the face of a fall, brighter near the lip and the foot.
 	float fall_streaks = face > 0.01 ? smoothstep(0.45, 0.8, ripples(vec2((world_pos.x + world_pos.z) * 1.7, world_pos.y * 0.22 + drift * 2.5))) : 0.0;
