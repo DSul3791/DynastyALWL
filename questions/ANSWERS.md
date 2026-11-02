@@ -2034,3 +2034,7 @@ Answered: 2026-11-02 21:32 UTC
 Answer: No: I want all test to be run on my PC because it’s faster and has more resources and we don’t want to use up tokens
 Answered: 2026-11-02 21:33 UTC
 
+## steve-fire-three-logs | Fire: do 3 logs in the store stay, raise the timer and make a big fire?
+Answer: Yes: Yeah, she only need the three logs to get it to jump up to the next year but once it’s there, we’ll stay there until the logs are all gone. Then it will jump back down to whatever the next tier of wood is in the store as long as there’s at least three of it.
+Answered: 2026-11-02 21:34 UTC
+
