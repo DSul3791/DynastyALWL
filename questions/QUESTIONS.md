@@ -231,10 +231,10 @@ Note: Bigger question: hardwood is classed 'fine boards' and softwood 'plank boa
 Note: Recommendation: Yes, because softwood saws easily and straight, so a bit more, faster lumber fits your note; keep the fine-board question for later when furniture needs it.
 [check]
 
-## tyler-bug6-cut-log | Bug 6: cut one log off a felled trunk; does the game still pause for about a second?
-Note: Blocked: the PC run only had the lag lines at join (world items 1070 ms, 961 ms building loose item meshes; PR #61 now builds those while loading). Nobody cut a log in that run, so the per-cut pause is still unmeasured.
-Note: 1. Start the latest build, wait 10 s after you arrive. 2. Fell a tree or use one already down, cut one log off it with the axe. 3. Note if it pauses.
-Note: Expect: no pause. If it pauses, the console prints a line starting "client slow:" right after the cut; send that line to Tyler.
+## tyler-bug6-cut-log | Bug 6: fell a tree; is there a pause when it lands and breaks into logs?
+Note: Trees now break into logs by themselves about 2 s after they land, so there is no log to cut by hand. The join pause is fixed (PR #61); the client code for new logs costs under 1 ms in a test.
+Note: 1. Start the latest build, wait 10 s after you arrive. 2. Fell a tree. 3. Watch the moment it lands and the moment it breaks into logs.
+Note: Expect: no pause. If it pauses, the console prints a line starting "client slow:" right then; send that line to Tyler.
 [test]
 
 ## tyler-arms-axe-look | First-person arms (PR #58): hold the stone axe; are both hands on the handle and nothing through the camera?
