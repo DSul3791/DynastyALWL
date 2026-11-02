@@ -283,6 +283,7 @@ func _ready() -> void:
 		if dev_arg.begins_with("--dev-place="):
 			items.dev_place_later(dev_arg.trim_prefix("--dev-place="))   # placed as soon as the ground under it is loaded
 	items.tree_info = _tree_info
+	items.shrub_info = _shrub_info
 	items.standing_near = _standing_near
 	items.flora_changed = _flora_changed
 	flora.dynamic = func(home): return items.dynamic_items(home)
@@ -315,6 +316,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
+	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.ore_near = func(pos, reach):   # the name of an ore body of the baked tile within reach of the spot (boulders become outcrops of it), "" when none
@@ -1136,7 +1138,24 @@ func _tree_info(chunk: Vector2i, id: int) -> Dictionary:
 		return {}
 
 	var ref_height: float = 0.5 * (float(species["height_min"]) + float(species["height_max"]))   # what the client builds the model at (flora_view)
-	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf"}
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at]), "trunk": float(species["trunk"]), "ref_height": ref_height, "broadleaf": str(species.get("shape", "")) == "broadleaf", "id": id}
+
+
+# A standing bush or shrub (placer or planted) for the axe and the pickaxe (Dave 2 Nov 2026), or {}.
+func _shrub_info(chunk: Vector2i, id: int) -> Dictionary:
+	var home: Vector2i = flora.placer.normalize(chunk)
+	var all: Dictionary = flora.items_of(home)
+	var at: int = all["ids"].find(id)
+
+	if at < 0:
+		return items.dynamic_shrub_info(home, id)
+
+	var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+	if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_SHRUB or flora.removed_in(home).has(id):
+		return {}
+
+	return {"name": str(species["name"]), "position": all["positions"][at], "height": float(all["heights"][at])}
 
 
 func _cut_tree(chunk: Vector2i, id: int) -> bool:

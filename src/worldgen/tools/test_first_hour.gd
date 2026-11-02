@@ -223,4 +223,5 @@ func _init() -> void:
 
 	check(float(items.vitals_of(1)["health"]) >= 99.0, "nothing hurt the character in the first hour")
 	print("first hour: %d failures" % failures)
+	items._finish_writer()   # the background save thread must finish before quit, or the script is freed under it (Opcode 20 _write_file error)
 	quit(1 if failures > 0 else 0)

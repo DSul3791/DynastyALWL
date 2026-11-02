@@ -65,6 +65,15 @@ func _init() -> void:
 	check(is_equal_approx(FellPose.standing_radius(0.4, 17.0, 28.0, false), 0.4 * 28.0 / 17.0), "tall: thicker")
 	check(is_equal_approx(FellPose.standing_radius(0.2, 20.0, 20.0, true), 0.7), "broadleaf trunk floor of 3.5 percent of the reference height")
 	check(is_equal_approx(FellPose.standing_radius(0.4, 0.0, 12.0, false), 0.4), "unknown reference: species trunk as before")
+	# The drawn radius follows the model the client picks (Dave 2 Nov: "a skinny tree and it left a big stump and big logs"). Beech: trunk 0.4,
+	# 6 to 28 m (reference 17), young model below 14 m. Id 1 hashes to variant 1, id 7 to variant 2.
+	var beech: Dictionary = {"name": "beech", "model": "beech", "shape": "broadleaf", "trunk_m": 0.4, "height_m": [6, 28], "young_below_m": 14}
+	check(FellPose.drawn_variant(beech, 1, 20.0) == 1, "id 1, a tall beech: mature variant 1")
+	check(FellPose.drawn_variant(beech, 1, 10.0) == 3, "id 1, a young beech: young variant 3")
+	check(FellPose.drawn_variant(beech, 7, 10.0) == 2, "id 7, a young beech: young variant 2")
+	check(absf(FellPose.drawn_radius(beech, 1, 17.0) - 17.0 * 0.028) < 0.001, "a mature beech at the reference height: 2.8 percent of it")
+	check(absf(FellPose.drawn_radius(beech, 7, 10.0) - 0.24 * 10.0 / 17.0) < 0.001, "a 10 m young beech is a slim pole (%.3f m)" % FellPose.drawn_radius(beech, 7, 10.0))
+	check(FellPose.drawn_radius(beech, 7, 10.0) < 0.5 * FellPose.standing_radius(0.4, 17.0, 10.0, true), "a young beech is less than half the old felled size")
 
 	var dir: String = "user://test_fell_autosplit_%d" % Time.get_ticks_usec()
 	var w = make(dir)
@@ -76,18 +85,20 @@ func _init() -> void:
 		if not standing.has(id):
 			return {}
 
-		return {"name": "beech", "position": Vector3(10.0, 10.0, 0.0), "height": 6.0, "trunk": 0.4, "ref_height": 17.0, "broadleaf": false} if id == 7 else {"name": "oak", "position": Vector3(60.0, 10.0, 0.0), "height": 22.0, "trunk": 0.6, "ref_height": 19.5, "broadleaf": false}
+		return {"name": "beech", "position": Vector3(10.0, 10.0, 0.0), "height": 6.0, "trunk": 0.4, "ref_height": 17.0, "broadleaf": false, "id": id} if id == 7 else {"name": "oak", "position": Vector3(60.0, 10.0, 0.0), "height": 22.0, "trunk": 0.6, "ref_height": 19.5, "broadleaf": false}
 
 	w.cut_tree = func(_c, id): standing.erase(id); return true
 	w.send_notice = func(_p, _text): pass
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	w._sync_in = 0.7
 	fell_one(w, standing, 7)
+	check(w._sync_in <= 0.0, "bug 6: a felled tree's trunk is sent on the next tick, not up to a second after the standing tree goes")
 	var small: Array = felled(w, 3)
 	check(small.size() == 1, "the small beech is a trunk")
 	var tree: Dictionary = w._items[small[0]]["tree"]
-	check(absf(float(tree["radius"]) - 0.4 * 6.0 / 17.0) < 0.001, "felled radius is the standing radius (%.3f)" % float(tree["radius"]))
+	check(absf(float(tree["radius"]) - 0.24 * 6.0 / 17.0) < 0.001, "felled radius is the drawn young-beech radius (%.3f)" % float(tree["radius"]))
 	check(is_equal_approx(float(tree["length"]), 6.0), "felled length is the standing height")
 	var stump: Dictionary = w._items[felled(w, 4)[0]]["tree"]
 	check(absf(float(stump["radius"]) - float(tree["radius"])) < 0.001, "the stump has the same radius")
@@ -147,6 +158,8 @@ func _init() -> void:
 		check(w._items[k].has("rot_y") and is_equal_approx(float(w._items[k]["rot_y"]), float(tree["yaw"]) - PI * 0.5), "a split log is turned along the trunk")
 		var axis: Vector3 = Basis(Vector3.UP, float(w._items[k]["rot_y"])) * Vector3.RIGHT
 		check(absf(axis.dot(along)) > 0.999, "its long axis runs along the trunk")
+		# Dave 2 Nov 2026: a skinny tree gave big logs. A split log is as thick as its trunk: girth = trunk radius / the drawn log's radius.
+		check(absf(float(w._items[k].get("girth", 0.0)) - float(tree["radius"]) / ItemsScript.LOG_MESH_RADIUS_M) < 0.001, "a split log's girth follows the trunk (%.3f for radius %.3f)" % [float(w._items[k].get("girth", 0.0)), float(tree["radius"])])
 
 	# The turn survives a restart.
 	w.save()
@@ -157,7 +170,14 @@ func _init() -> void:
 		if w_again._items[k].has("rot_y") and int(w_again._items[k]["number"]) == log_n:
 			kept_turns += 1
 
+	var kept_girth: int = 0
+
+	for k in w_again._items:
+		if w_again._items[k].has("girth") and int(w_again._items[k]["number"]) == log_n:
+			kept_girth += 1
+
 	check(kept_turns == logs.size(), "every split log keeps its turn after a restart: %d of %d" % [kept_turns, logs.size()])
+	check(kept_girth == logs.size(), "every split log keeps its girth after a restart: %d of %d" % [kept_girth, logs.size()])
 
 	var plain_at: Vector3 = Vector3(500.0, 10.0, 0.0)
 	w.drop_in_world(w.table.number_of("stone"), 1, plain_at)
