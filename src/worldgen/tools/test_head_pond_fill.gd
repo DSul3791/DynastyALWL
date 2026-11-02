@@ -40,9 +40,18 @@ func _is_flat_water(data, k: int, surface: float) -> bool:
 	var side: int = data.samples
 	var same: int = 0
 
+	var column: int = k % side
+	@warning_ignore("integer_division")
+	var row: int = k / side
+
 	for dj in range(-4, 5):
 		for di in range(-4, 5):
-			var n: int = k + dj * side + di
+			# A spring within 4 samples of the tile's edge: the window stops at the edge (no row wrap, no read past the arrays; PC run 2 Nov 2026,
+			# "Invalid access of index 3692024" after the TERRAIN_VERSION 47 rebake put a spring pond on the bottom rows).
+			if column + di < 0 or column + di >= side or row + dj < 0 or row + dj >= side:
+				continue
+
+			var n: int = (row + dj) * side + column + di
 			var level: float = data.water_surface[n]
 
 			if data.water_class[n] > 1 and not is_nan(level) and absf(level - surface) < 0.5:
