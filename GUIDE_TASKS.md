@@ -13,3 +13,4 @@ Rules I keep: read, play, photograph and report only (no game code or data edits
 Round 1 status (2 Nov, paper review): items 1, 2, 3 done, see docs/handoff/DINO_ROUND1_REPORT.md. Found light-radius drift (cooking.json 6/12/24 vs client 3.5/7/14).
 
 ## Round 2 (to be written when round 1 is done)
+Round 2 status (2 Nov, paper review): see docs/handoff/DINO_ROUND2_REPORT.md (clay hearth cost drift, stale open items, kits vs looks, stick budget).
