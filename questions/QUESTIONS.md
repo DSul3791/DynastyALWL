@@ -69,12 +69,6 @@ Note: Real game, shade at the foot of a tree. Kathreen rates it 3.5 of 5: clearl
 - Yes
 - No
 
-## pic-chamomile-real | Do the white daisies (chamomile, left of the picture) look like real daisies in the game?
-Image: questions/img/kathreen-chamomile-real.png
-Note: Real game. Kathreen rates it 3 of 5: the white petals carry a grey-blue speckle; the yellow flowers beside them read well. Recommendation: No, we will fix the petal material.
-- Yes
-- No
-
 ## pic-blueberry-real | Does the blueberry bush (right of centre, with blue berries) look like a blueberry bush?
 Image: questions/img/kathreen-blueberry-real.png
 Note: Real game, from about 4 m, grass in front. Kathreen rates it 3 of 5: small dark thin bush with blue berries, easy to miss behind the grass.
