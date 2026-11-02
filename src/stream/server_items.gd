@@ -3816,19 +3816,30 @@ func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> vo
 	_fell_record(chunk, info, away)
 
 
+# The butt radius of a felled tree: the radius its standing model is drawn with (fell_pose.gd drawn_radius: its species model and variant, so a slim
+# young tree gives a slim trunk, stump and logs; Dave 2 Nov). Without the tree's id, the species trunk scaled with height as before.
+func _felled_radius(info: Dictionary) -> float:
+	var entry: Dictionary = _flora_by_name.get(str(info.get("name", "")), {})
+
+	if info.has("id") and not entry.is_empty():
+		return maxf(FellPose.drawn_radius(entry, int(info["id"]), float(info["height"])), 0.06)
+
+	return maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1)
+
+
 func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	var spot: Vector3 = info["position"]
 	var yaw: float = atan2(away.x, away.y) if away.length() > 0.01 else 0.0
 	var pitch: float = 0.0
 
 	if ground_height.is_valid():   # fall away from the player, resting ON the ground and never inside a slope (fell_pose.gd)
-		var pose: Dictionary = FellPose.choose(spot, away, float(info["height"]), maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1), ground_height)
+		var pose: Dictionary = FellPose.choose(spot, away, float(info["height"]), _felled_radius(info), ground_height)
 		yaw = float(pose["yaw"])
 		pitch = float(pose["pitch"])
 
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	# The same size as the standing tree: its drawn radius (scaled with its height), and its whole height as the length.
-	var radius: float = maxf(FellPose.standing_radius(float(info["trunk"]), float(info.get("ref_height", 0.0)), float(info["height"]), bool(info.get("broadleaf", false))), 0.1)
+	var radius: float = _felled_radius(info)
 	var base: Dictionary = {"species": str(info["name"]), "yaw": yaw, "length": float(info["height"]), "radius": radius, "felled_at": now_s}
 	var trunk: Dictionary = base.duplicate()
 	trunk["state"] = 3
@@ -4541,7 +4552,7 @@ func dynamic_tree_info(home: Vector2i, id: int) -> Dictionary:
 			var entry: Dictionary = _flora_by_id.get(int(sapling["species"]), {})
 			var span: Array = entry.get("height_m", [])
 			var ref_height: float = 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else 0.0
-			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true}
+			return {"name": str(entry.get("name", "")), "position": sapling["pos"], "height": _sapling_height(sapling, now_s), "trunk": float(entry.get("trunk_m", 0.4)), "ref_height": ref_height, "broadleaf": str(entry.get("shape", "")) == "broadleaf", "dynamic": true, "id": id}
 
 	return {}
 
