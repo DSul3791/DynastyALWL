@@ -2102,3 +2102,7 @@ Answered: 2026-11-02 21:41 UTC
 Answer: Yes
 Answered: 2026-11-02 21:41 UTC
 
+## pic-apples-smooth | Do these apples (four views) now look like smooth round apples with a stem and a highlight?
+Answer: Yes | Comment: They are getting better they should be a little more round and a little darker red or they could be the red yellow of some apples or they could be the green of some apples or they could be yellow like some apples we should have all kinds of varieties of apples
+Answered: 2026-11-02 21:42 UTC
+
