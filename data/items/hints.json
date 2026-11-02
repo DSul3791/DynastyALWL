@@ -54,7 +54,7 @@
 		{
 			"id": "trunk",
 			"trigger": "tree_down",
-			"text": "Keep striking the fallen trunk for sticks, leaves and logs."
+			"text": "A fallen tree breaks into logs. Press E on the sticks and leaves beside it."
 		},
 		{
 			"id": "kit",

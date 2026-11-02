@@ -52,6 +52,7 @@ const HIT_COOLDOWN_MS := 400
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
+const SPLIT_LIFETIME_S := 7.0 * 86400.0  # what a felled tree breaks into lies a real week, as its trunk would have (it rotted after a real week)
 const FALL_SETTLE_MS := 2000             # a felled tree takes 1.5 s to topple on the client; it breaks into logs a moment after it lands
 const ROT_GAME_S := 168.0 * 86400.0      # a trunk or stump rots away after a real week (168 game days)
 const TREE_SAVE_VERSION := 1
@@ -809,8 +810,8 @@ func take(peer: int, number: int, count: int) -> bool:
 	return true
 
 
-# Puts a stack on the ground. False when the chunk is full.
-func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0) -> bool:
+# Puts a stack on the ground. False when the chunk is full. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
+func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 0, lifetime_s: float = 0.0) -> bool:
 	if count <= 0 or number <= 0:
 		return false
 
@@ -834,7 +835,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var room: int = PILE_CAP - int(near["count"])
 				var added: int = mini(count, room)
 				near["count"] = int(near["count"]) + added
-				near["left"] = PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S
+				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
 				_dirty = true
 				count -= added
 
@@ -858,12 +859,12 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 		return false
 
 	var first: int = mini(count, PILE_CAP)
-	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, "wear": item_wear}
+	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
 	_next_id += 1
 	_dirty = true
 
 	if count > first:
-		return drop_in_world(number, count - first, position, item_wear)   # over the cap: the rest starts a second pile beside it
+		return drop_in_world(number, count - first, position, item_wear, lifetime_s)   # over the cap: the rest starts a second pile beside it
 
 	return true
 
@@ -4301,12 +4302,12 @@ func split_trunk(id: int) -> bool:
 	_items.erase(id)
 
 	for spot in spots:
-		drop_in_world(log_n, 1, spot)
+		drop_in_world(log_n, 1, spot, 0, SPLIT_LIFETIME_S)
 
 	var heap: Vector3 = it["pos"] + along * (length * 0.5 * cos(pitch)) + Vector3(-along.z, 0.0, along.x) * (radius + 0.7)   # beside the middle of the trunk, as the cut logs land
 
 	for extra in extras:
-		drop_in_world(int(extra[0]), int(extra[1]), heap)
+		drop_in_world(int(extra[0]), int(extra[1]), heap, 0, SPLIT_LIFETIME_S)
 
 	_dirty = true
 	return true
@@ -4342,7 +4343,7 @@ func _split_small(id: int, it: Dictionary, cfg: Dictionary) -> bool:
 	_items.erase(id)
 
 	for row in rows:
-		drop_in_world(int(row[0]), int(row[1]), heap)
+		drop_in_world(int(row[0]), int(row[1]), heap, 0, SPLIT_LIFETIME_S)
 
 	_dirty = true
 	return true

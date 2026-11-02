@@ -839,7 +839,7 @@
 			"how_to_get": [
 				"Craft: 1 Stick",
 				"From chopping a stump",
-				"From working a felled trunk",
+				"From a felled tree",
 				"Picked from dwarf birch (all)",
 				"Picked from gorse (all)"
 			],
@@ -1882,7 +1882,7 @@
 			"description": "A fallen branch. Burns, and makes handles, frames and fences.",
 			"how_to_get": [
 				"From chopping a stump",
-				"From working a felled trunk",
+				"From a felled tree",
 				"Lying on the ground",
 				"Picked from fallen log",
 				"Picked from hollow log",
@@ -2043,7 +2043,7 @@
 			"kind": "material",
 			"description": "A handful of green leaves from a felled tree. Roofs a shelter.",
 			"how_to_get": [
-				"From working a felled trunk"
+				"From a felled tree"
 			],
 			"used_for": [
 				"Used in Small shelter"
@@ -2177,7 +2177,7 @@
 			"description": "Split wood. Burns long and steady.",
 			"how_to_get": [
 				"From chopping a stump",
-				"From working a felled trunk",
+				"From a felled tree",
 				"Picked from fallen log",
 				"Picked from hollow log",
 				"Picked from old stump"
