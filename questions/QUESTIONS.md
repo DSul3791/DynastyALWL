@@ -179,12 +179,6 @@ Note: Real game, third person from the right at 1.6 m. Kathreen rates it 3 of 5:
 - Yes
 - No
 
-## tyler-bug7-arms-compression | Bug 7 trial (PR #31): with the arms textures compressed, is the frame rate better and do the arms still look the same?
-Note: Blocked: needs a windowed fps comparison on your PC. Same spot, Ultra, F3 overlay: average and worst frame on main, then on branch claude/tyler-bug7-compress-textures.
-Note: The three arms textures are about 200 MB uncompressed in graphics memory; compression makes them 4 to 8 times smaller. A suspect for the constant lag, not proven.
-Note: Recommendation: Yes only if fps is better and the skin shows no blocky patches.
-[check]
-
 ## jason-pixabay-urls | Sounds: which Pixabay pages did your footsteps, frogs, tree frogs, fish splash, crows, angry crow, wing flaps and brook come from?
 Note: Blocked: 8 rows in assets/audio/CREDITS.csv say "page URL TODO". The licence is known (Pixabay); only the page links are missing, and we need them before release.
 Note: 1. Paste any links you still have, one per line, with the sound name. 2. If you don't have them, type "don't know" and I'll list these as needing a replacement before release.
