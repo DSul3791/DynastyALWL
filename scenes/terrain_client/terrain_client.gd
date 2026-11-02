@@ -1313,6 +1313,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.name = "Held"
 	add_child(held)
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.shrub_near = _shrub_near
 	held.water_depth_at = func(x: float, z: float) -> float:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
@@ -2266,6 +2267,38 @@ func _tree_trunk_near(point: Vector3) -> Array:
 
 	return []
 
+
+
+# The bush or shrub an axe or pickaxe swing reaches (Dave 2 Nov 2026): the one whose middle lies closest to the swing line from the eye to where
+# it hit, within SHRUB_HIT_M; [chunk, id] or [].
+const SHRUB_HIT_M := 0.9
+
+
+func _shrub_near(from: Vector3, to: Vector3) -> Array:
+	var best: Array = []
+	var best_d: float = SHRUB_HIT_M
+
+	for chunk in flora._chunks:
+		var held_items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(held_items["ids"].size()):
+			if int(flora._species.get(held_items["ids"][n] >> 16, {}).get("kind", 2)) != 1:
+				continue
+
+			var root_at: Vector3 = held_items["positions"][n]
+
+			if Vector2(root_at.x - to.x, root_at.z - to.z).length() > 4.0:
+				continue
+
+			var height: float = float(held_items["heights"][n]) if held_items.has("heights") and n < held_items["heights"].size() else 1.0
+			var middle: Vector3 = root_at + Vector3(0.0, clampf(height * 0.5, 0.2, 1.2), 0.0)
+			var d: float = middle.distance_to(Geometry3D.get_closest_point_to_segment(middle, from, to))
+
+			if d < best_d:
+				best_d = d
+				best = [chunk, held_items["ids"][n]]
+
+	return best
 
 
 # Headless check: cut the tree nearest the spawn.
