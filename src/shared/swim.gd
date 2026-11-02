@@ -76,6 +76,7 @@ static func water_at(y: float, surface: float, ground: float) -> Dictionary:
 			if y >= 0.0:
 				return {}
 
+			surface = 0.0
 			ground = DEEP_SEA_BED_M
 		elif surface < 0.0 and y < 0.0:
 			surface = 0.0
