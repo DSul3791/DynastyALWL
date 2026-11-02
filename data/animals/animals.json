@@ -672,7 +672,7 @@
 		"seabird": {
 			"number": 13,
 			"name": "Seabird",
-			"target_per_player": 3,
+			"target_per_player": 1,
 			"health": 5.0,
 			"walk_mps": 1.5,
 			"flee_mps": 7.5,
@@ -710,11 +710,9 @@
 			},
 			"spawn_share": 1.0,
 			"model": true,
-			"herd": [
-				3,
-				8
-			],
-			"herd_pull_m": 5.0
+			"herd": [],
+			"herd_pull_m": 0.0,
+			"flock": {"on_land": true, "note": "MikeW 2026-11-02: gulls stand on the beach as one flock record and take off together (server_flocks.gd); Kathleen draws the flock and the flying pose (state 15).", "birds": [5, 12], "alert_m": 35.0, "takeoff_m": 16.0, "fly_mps": 11.0, "fly_m": 140.0, "climb_m": 20.0, "alarm_m": 50.0}
 		}
 	},
 	"senses": {

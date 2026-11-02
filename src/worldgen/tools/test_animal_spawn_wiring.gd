@@ -180,5 +180,29 @@ func _init() -> void:
 			check(rest.resting(rest.species_def("deer")) and rest._spook_m(rest.animals[deer], rest.species_def("deer")) < float(rest.species_def("deer")["spook_m"]), "a resting deer lets a player come closer before it runs")
 
 	check(moved[0] >= 0.0 and moved[0] < 0.5 and moved[1] > 0.5, "a deer out of its hours stays put; by day it wanders (moved %.1f m at 02:00, %.1f m at noon)" % [moved[0], moved[1]])
+	# Gulls on the beach (MikeW 2026-11-02): seabirds are a land flock: they spawn on dry beach ground as one record of several birds and take off together.
+	var gulls = make([Vector3(0.0, 10.0, 0.0)], "seabird")
+	gulls.biome_at = func(x, z): return "beach"
+	gulls.water_level = func(x, z): return NAN
+	gulls.hour_now = func(): return 12.0
+	run(gulls, 30.0)
+	var flock_id: int = 0
+
+	for id in gulls.animals:
+		if gulls.animals[id]["sp"] == "seabird":
+			flock_id = id
+
+	check(flock_id != 0 and not is_nan(float(gulls.animals[flock_id]["pos"].y)) and int(gulls.animals[flock_id].get("birds", 0)) >= 5, "seabirds spawn on dry beach as a flock of 5 or more")
+
+	if flock_id != 0:
+		var at: Vector3 = gulls.animals[flock_id]["pos"]
+		gulls.player_positions = func(): return [at + Vector3(8.0, 0.0, 0.0)]
+		var took_off: bool = false
+
+		for n in 60:
+			gulls.tick(0.05)
+			took_off = took_off or (gulls.animals.has(flock_id) and int(gulls.animals[flock_id]["state"]) == 15)
+
+		check(took_off, "a gull flock takes off together when a player walks up")
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

@@ -71,6 +71,29 @@ func _init() -> void:
 	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three beech logs in the store make the large fire (state %d, wood %s, pieces %s)" % [int(fire["state"]), str(fire["wood"]), str(fire.get("pieces", {}))])
 
+	# A fire that burns out leaves no wood in its store: the last piece is ash, not fresh burn time for the next close.
+	var burn_box = f._chests[int(fire["uid"])]
+
+	for burn_slot in range(burn_box.SLOTS):
+		if burn_box.numbers[burn_slot] != 0:
+			burn_box.take_from_slot(burn_slot, burn_box.counts[burn_slot])
+
+	burn_box.add(f.table.number_of("stick"), 1)
+	f._fire_apply_store(fire, burn_box)
+	fire["state"] = 40
+	f._items[id]["left"] = 1.0e9
+
+	for n in range(60):
+		if not ItemsScript.fire_is_lit(int(fire["state"])):
+			break
+
+		f.tick(10.0)
+
+	check(int(fire["state"]) == 8 and burn_box.count_of(f.table.number_of("stick")) == 0, "a burnt-out fire's store holds no wood (state %d, sticks %d)" % [int(fire["state"]), burn_box.count_of(f.table.number_of("stick"))])
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(float(fire["burn_left"]) <= 0.0, "closing a burnt-out fire's store gives no burn time back")
+
 	# Take everything out: no burn time, the burning fire goes out.
 	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 	var box = f._chests[int(fire["uid"])]

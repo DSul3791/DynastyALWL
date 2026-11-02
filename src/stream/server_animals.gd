@@ -80,8 +80,8 @@ func spawn(sp: String, x: float, z: float) -> int:
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
 
-	if def.has("flock") and water_level.is_valid():
-		y = float(water_level.call(x, z))   # a flock sits on the surface
+	if def.has("flock") and not bool(def["flock"].get("on_land", false)) and water_level.is_valid():
+		y = float(water_level.call(x, z))   # a flock sits on the surface (a land flock, such as gulls on a beach, stands on the ground)
 
 	if is_nan(y):
 		return 0
@@ -664,7 +664,7 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
-				if too_near or (not def.has("flock") and blocked.is_valid() and bool(blocked.call(cx, cz))):
+				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))):
 					continue
 
 				var keep_out: Array = def.get("exclude", [])
@@ -750,7 +750,7 @@ func biome_weight(def: Dictionary, x: float, z: float) -> float:
 func _habitat_score(def: Dictionary, x: float, z: float, player_y: float) -> float:
 	var hab: Dictionary = def.get("habitat", {})
 
-	if def.has("flock"):
+	if def.has("flock") and not bool(def["flock"].get("on_land", false)):
 		var level: float = float(water_level.call(x, z)) if water_level.is_valid() else NAN
 		return 2.0 if not is_nan(level) and blocked.is_valid() and bool(blocked.call(x, z)) else -1.0   # open deep water only
 
