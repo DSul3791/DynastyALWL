@@ -269,13 +269,26 @@ func _init() -> void:
 	check(structs_after == structs_before and "too big" in " ".join(said), "a pot will not hang on a fire that holds logs (%s)" % str(said))
 	f._items[log_fire]["fire"]["wood"]["log"] = 0.0
 
-	# No cap on stored fuel (Dave 2 Nov 2026): a fire holding 6 logs still takes a seventh, and the burn time is the sum.
-	f._items[log_fire]["fire"]["wood"] = {"log": 6.0 * float(cook["fuel"]["log"]) / rate, "firewood": 0.0, "weak": 0.0}
-	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 1, Vector3.ZERO)
-	var full_before: int = f.inventory_of(1).count_of(log_n)
-	f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
-	check(f.inventory_of(1).count_of(log_n) == full_before - 1, "a fire with 6 logs still takes another")
-	check(absf(float(f._items[log_fire]["fire"]["burn_left"]) - 7.0 * float(cook["fuel"]["log"]) / rate) < 1.0, "burn time is the sum of all 7 logs")
+	# No cap on stored fuel (Dave 2 Nov 2026): logs keep going on past the old 18 real hour limit (6 logs) and each one adds its full burn time.
+	var one_log: float = float(cook["fuel"]["log"]) / rate
+	var grew: int = 0
+	var logs_on: int = 0
+	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 8, Vector3.ZERO)
+
+	for n in range(8):
+		var before_s: float = float(f._items[log_fire]["fire"]["burn_left"])
+		var had: int = f.inventory_of(1).count_of(log_n)
+		f.action(1, Net.ACT_FUEL, log_fire, 0, 0, Vector3.ZERO)
+
+		if f.inventory_of(1).count_of(log_n) == had - 1:
+			logs_on += 1
+
+		if absf(float(f._items[log_fire]["fire"]["burn_left"]) - before_s - one_log) < 1.0:
+			grew += 1
+
+	check(logs_on == 8, "all 8 logs go on past the old cap (%d went on)" % logs_on)
+	check(grew == 8, "every log adds its full burn time (%d of 8 did)" % grew)
+	check(float(f._items[log_fire]["fire"]["burn_left"]) > 18.0 * 3600.0, "burn time is past 18 real hours")
 	said.clear()
 	var inv_e = f.inventory_of(1)
 
