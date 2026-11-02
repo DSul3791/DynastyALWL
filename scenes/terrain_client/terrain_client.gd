@@ -1057,6 +1057,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
+	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
 	ocean_ice.seed_value = int(info.get("master_seed", 0))

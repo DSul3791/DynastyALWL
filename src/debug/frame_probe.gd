@@ -19,6 +19,9 @@ static var _win: Dictionary = {}          # name -> us since window_reset (the G
 static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
+const FREEZE_MS := 500.0
+static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
+static var _freeze_prints: int = 0
 
 
 static func start() -> int:
@@ -47,6 +50,25 @@ static func frame(delta: float) -> void:
 	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var ms: float = delta * 1000.0
+
+	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
+	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
+	# script time means the wait was in the engine or the graphics driver, not in our scripts.
+	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
+		_freeze_prints += 1
+		var named: PackedStringArray = PackedStringArray()
+
+		for name in _this_frame:
+			if int(_this_frame[name]) > 1000:
+				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
+
+		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
+			ms, _frames,
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
+			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
+			str(context.call()) if context.is_valid() else ""
+		])
 
 	if ms > SLOW_MS and _frames > 30:
 		_slow_count += 1

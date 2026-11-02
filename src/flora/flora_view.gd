@@ -2071,6 +2071,11 @@ func apply_built(budget_usec: int = 3000) -> void:
 			_note_loaded(entry)
 
 
+# One line about the load state, for the freeze log (FrameProbe.context).
+func load_state() -> String:
+	return "flora: %d chunks held, %d plans running, %d waiting, %d drawings to place, %d instances, %d colliders" % [_chunks.size(), _tasks.size(), _plan_wait.size(), _jobs.size(), instances, colliders]
+
+
 # Puts the nearest not-yet-started drawing at the front (a drawing already begun is finished first, so no half-built node waits).
 func _nearest_job_first() -> void:
 	if _jobs.size() < 2:
