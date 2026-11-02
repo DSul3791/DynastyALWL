@@ -2082,3 +2082,7 @@ Answered: 2026-11-02 21:39 UTC
 Answer: Real death at level 10 now, build the death screen first | Comment: Well, maybe we should wait until they start a dynasty. You can always respond to your bed until you marry someone and have a baby or you adopt somebody.
 Answered: 2026-11-02 21:39 UTC
 
+## death-downed-state | Should we build the "downed" state (knocked out, can be revived or carried, bleeds out after a timer) before real death?
+Answer: Later, after real death and children (recommended) | Comment: We already have a downstate that’s where you get knocked out
+Answered: 2026-11-02 21:39 UTC
+
