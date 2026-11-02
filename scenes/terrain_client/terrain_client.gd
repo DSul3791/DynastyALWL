@@ -1883,6 +1883,9 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 
 
+var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
+
+
 func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:
 	if flora == null:
 		return
@@ -1894,6 +1897,7 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, 
 	_flora_chunks += 1
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
+	_water_key[chunk] = hash(water) ^ water.size() if not water.is_empty() else 0
 	_queue_in({"kind": "flora", "chunk": chunk, "bytes": bytes, "water": water, "full": full})
 
 
@@ -1951,6 +1955,7 @@ func _drain_incoming() -> void:
 func _apply_incoming() -> void:
 	var started: int = Time.get_ticks_usec()
 	var applied: int = 0
+	var water_applied: int = 0
 
 	while not _in_queue.is_empty():
 		_in_mutex.lock()
@@ -1959,6 +1964,10 @@ func _apply_incoming() -> void:
 		_in_mutex.unlock()
 
 		if not done or (applied > 0 and Time.get_ticks_usec() - started > INCOMING_USEC):
+			break
+
+		# One chunk's water redraw a frame at most (Steve's lag report, 2 Nov 2026): a burst of changed chunks is spread over frames.
+		if job["kind"] == "water" and water_applied > 0:
 			break
 
 		_in_queue.pop_front()
@@ -1992,6 +2001,7 @@ func _apply_incoming() -> void:
 
 			Probe.stop("flora chunk in", t)
 		else:
+			water_applied += 1
 			var tw: int = Probe.start()
 			flora.set_water(chunk, result["grid"])
 			Probe.stop("water in", tw)
@@ -2152,8 +2162,18 @@ func _send_water_request(now: int) -> void:
 
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
-	if flora != null:
-		_queue_in({"kind": "water", "chunk": chunk, "water": water})
+	if flora == null:
+		return
+
+	# Steve's lag report (2 Nov 2026, 120-147 ms spikes): every "water moved" re-ask brought back ~9 chunks and each was unpacked and redrawn
+	# though most had not changed. The same bytes as the chunk's last water are dropped here (the server skips them too since #128).
+	var key: int = hash(water) ^ water.size()
+
+	if int(_water_key.get(chunk, 0)) == key:
+		return
+
+	_water_key[chunk] = key
+	_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
 func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
