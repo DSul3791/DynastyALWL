@@ -51,12 +51,6 @@ Note: Real game rig shot at noon, (53331,68359) facing north, from 1 m above the
 - Yes
 - No
 
-## pic-p2-fire-nograss | With the grass hidden, is the lit campfire clearly visible (flames and glow)?
-Image: questions/img/p2_fire_nograss.jpg
-Note: Same lit fire as the earlier card but with grass switched off. A small flame and warm glow show among the logs and stones, so the fire is drawn; the grass hid it before. Guide rates it 3 of 5 (flame small). Question for Dave: should grass be cleared around a placed fire?
-- Yes
-- No
-
 ## pic-p2-leanto-bed | Do the lean-to and the rough bed look like something you would shelter and sleep in?
 Image: questions/img/p2_leanto_bed.jpg
 Note: Real client, third person, lean-to left, rough bed right (the rig sets them in a row, the bed is not inside the lean-to here). Guide rates it 3.5 of 5: lean-to reads as a thatch frame; the bed is a yellow mattress on a frame.
