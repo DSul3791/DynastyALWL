@@ -43,6 +43,7 @@ const CARRY_FOREARM_R := Vector3(2.0, 0.0, 0.0)
 const CARRY_HAND_R := Vector3(0.0, 0.0, 0.0)
 const CARRY_LOG_X := 0.18
 const CARRY_LOG_Y := 0.2
+const ARMS_SPREAD := 1.3               # the first-person shoulders' distance from the middle, times the body's 0.21 m
 const SWING_FP_S := 0.95                # the first-person chop: its keys below are in seconds of this (motion_extra.gd CHOP_LENGTH; 0.55 s until 31 Oct 2026)
 const LEFT_REST_ARM := Vector3(0.0, 0.0, -0.07)
 const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
@@ -147,6 +148,9 @@ func _build_skeleton() -> void:
 
 		if arms_only and row[0] == "chest":
 			offset = Vector3.ZERO     # the arms model is rooted at the chest
+
+		if arms_only and row[0] in ["arm_r", "arm_l"]:
+			offset.x *= ARMS_SPREAD   # first-person arms stand wider apart (Dave 2 Nov 2026)
 
 		skeleton.set_bone_rest(index, Transform3D(Basis.IDENTITY, offset))
 
