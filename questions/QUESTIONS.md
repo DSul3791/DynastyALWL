@@ -51,13 +51,6 @@ Note: Recommendation: B for the first week, because it needs no new plant art an
 [A] Wild plants for each crop
 [B] Seeds from food or trader first
 
-## sal-wanted-orders | Should Hob post one small "wanted order" a day, so a poor-wage day has a goal?
-Note: Now a day of picking pays about 48 copper at a flat rate with no goal. Survival and farming games (Medieval Dynasty, Stardew Valley's bundles, 7 Days to Die trader quests) pace early income with small asks from a trader: bring a set amount, get a fixed bonus. My web search returned mostly forum titles, so this comes from how those games work, not from numbers I could check.
-Note: Example: "60 sticks and 10 plant fibre for 6 copper" (about twice the lot rate), one order a game day, refreshed each day. It teaches the town's needs, lets a player reach the bed sooner, and is easy to cap so it cannot break the wage.
-Note: Recommendation: Yes, as a small first version with one order a day. It is a small data and server change; I would not start it before your answer.
-[A] Yes, one wanted order a day
-[B] No, keep the flat lots only
-
 ## sal-bed-for-sale | Hob now sells a rough bed (37 copper) as the place to sleep a day's wage can buy. Right?
 Note: Your wage answer said a day of picking buys a meal and maybe a place to sleep, but Hob sold nothing to sleep in. A day now pays about 48 copper: meal 8 plus rough bed 37. The bed is a kit you place yourself.
 Note: Option A: keep the rough bed (37). Option B: sell a lean-to kit (39) instead, which is shelter plus a place to lie. Option C: sell neither; sleeping is only what you build.
