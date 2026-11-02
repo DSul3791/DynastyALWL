@@ -350,3 +350,9 @@ Note: 3. Then find a beech with felled logs right beside it and count again.
 Note: 4. Say the two counts.
 Note: Recommendation: If the first is about 9 to 12 and the second is much higher, the logs beside the tree are stealing the swings; I then ask Steve to make the standing tree win.
 [test]
+
+## tree-hits-follow-size | Should a small tree take fewer axe hits than a big one of the same kind?
+Note: Today the hit count uses the kind of tree only, so a 6 m beech takes as many hits as a 28 m beech.
+Note: Felled trunks now match the real size of each tree; the hits could follow that same size.
+Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
+[check]
