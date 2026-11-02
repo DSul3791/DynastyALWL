@@ -356,3 +356,10 @@ Note: Recommendation: C, because it keeps the reward for building a sawmill but 
 [A] Leave it
 [B] Cut the lumber price
 [C] Limit how many boards Hob buys a day
+
+## sal-wanted-orders | Should Hob post one small "wanted order" a day, so a poor-wage day has a goal?
+Note: Now a day of picking pays about 48 copper at a flat rate with no goal. Survival and farming games (Medieval Dynasty, Stardew Valley's bundles, 7 Days to Die trader quests) pace early income with small asks from a trader: bring a set amount, get a fixed bonus. My web search returned mostly forum titles, so this comes from how those games work, not from numbers I could check.
+Note: Example: "60 sticks and 10 plant fibre for 6 copper" (about twice the lot rate), one order a game day, refreshed each day. It teaches the town's needs, lets a player reach the bed sooner, and is easy to cap so it cannot break the wage.
+Note: Recommendation: Yes, as a small first version with one order a day. It is a small data and server change; I would not start it before your answer.
+[A] Yes, one wanted order a day
+[B] No, keep the flat lots only
