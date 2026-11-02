@@ -104,9 +104,3 @@ Note: Recommendation: A, because it is the cheapest thing that fits a day's wage
 [A] Keep the rough bed
 [B] Sell a lean-to kit instead
 [C] Sell neither
-
-## tyler-bug6-first-fell | Bug 6: on a fresh start, fell the first tree; does it fall straight away with no pause and no missing tree?
-Note: Fix merged in #98 (main e69a1ad): the felled trunk's bark is prepared while the game loads, and the trunk is sent with the cut.
-Note: Start the game fresh, fell the first tree you find, then a second one. If anything pauses, say on which blow or at the landing.
-- Yes
-- No
