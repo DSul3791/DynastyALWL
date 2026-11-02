@@ -1770,8 +1770,9 @@ func _init() -> void:
 	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
 	tr._train_fitness(1, 1.0, 200.0)
 	check(tr.fitness_of(1) == 3, "30 minutes running earns a point")
-	tr._train_fitness(1, 0.2, 3600.0)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < 1.0, "strolling earns nothing (and eases training back)")
+	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
+	tr._train_fitness(1, 0.2, 600.0)
+	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) < before_stroll, "strolling earns nothing (and eases training back)")
 	var tw = make(xd)
 	tw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	tw.peer_connected_hello(1, "trainkey0002")
