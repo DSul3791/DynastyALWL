@@ -21,7 +21,7 @@ One page for a new agent or a new thread of Dave's. Everything else is found thr
 
 ## Rules
 - NEVER merge to `main` until Dave has play-tested and says go. The integration branch is the daily, `DailyDev_20261029`; the moderator merges into it.
-- Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never kill Godot processes (one may be Dave's editor).
+- Max 3 heavy Godot jobs at once on this PC: run them through `tools/godot_slot.sh` (`run_tests.sh`/`run_one_test.sh` do it themselves). Never start a Godot run without a timeout (hung headless scripts have held all slots); never kill Godot processes blindly (one may be Dave's editor).
 - Nothing is deleted: unused code goes to `proposed_removals/`, documents to `docs/archive/YYYY-MM/` (`git mv`).
 - Dave decides design; reversible choices are decided and logged in `MODERATOR_QA_LOG.md`. Questions for Dave go on the QA page (branch `qa`, `questions/QUESTIONS.md`): pickable answers, one item per card. Never wait for Dave: take the next job.
 - Rules in full: `RULES.md`, `docs/PONYTAIL_RULES.md` (water), `CONTROLS.md` (update on any input change). Wire format: `PROTOCOL.md`.
