@@ -1908,8 +1908,15 @@ func _timed(label: String, handler: Callable, args: Array) -> void:
 		print("client slow: %s took %.0f ms" % [label, ms])
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
+	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
+	var t_all: int = Time.get_ticks_usec()
+	var t_mark: int = t_all
+
 	for id in removed:
 		_forget(id)
+
+	prof["forget"] = Time.get_ticks_usec() - t_mark
+	t_mark = Time.get_ticks_usec()
 
 	for row in added:
 		var id: int = row[0]
@@ -1921,12 +1928,16 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if _world.has(id):
 			_world[id]["count"] = row[2]
+			var t_a: int = Time.get_ticks_usec()
 			_refresh_pile(id)
+			prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_a
 
 			if int(_world[id]["state"]) == 0 and state == 0 and (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
 				_world[id]["pos"] = row[3]      # the server let it down onto the ground (after a dig): draw it there
 				(_world[id]["node"] as Node3D).position = row[3] + Vector3(0.0, 0.12, 0.0)
+				var t_b: int = Time.get_ticks_usec()
 				_snap_loose(id)
+				prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_b
 
 			if _world[id]["state"] == state:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
@@ -1945,7 +1956,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		if state >= 5 and state != 8 and state != 9 and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one: the campfire model without flames, light or sound
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
+			var t_c: int = Time.get_ticks_usec()
 			node = _model_for_state(state, row[5] if row.size() > 5 else {})
+			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
 			_root.add_child(node)
@@ -1974,14 +1987,13 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			var extra: Dictionary = row[5] if row.size() > 5 else {}
 			var felled_t0: int = Time.get_ticks_usec()
 			node = _make_felled(state == 3, extra)
-
-			if float(Time.get_ticks_usec() - felled_t0) / 1000.0 > 10.0:
-				print("client slow: _make_felled took %.0f ms" % (float(Time.get_ticks_usec() - felled_t0) / 1000.0))
-
+			prof["felled"] = int(prof.get("felled", 0)) + Time.get_ticks_usec() - felled_t0
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
 			continue
+
+		var t_d: int = Time.get_ticks_usec()
 
 		if state == 0:
 			var box: MeshInstance3D = MeshInstance3D.new()
@@ -2005,8 +2017,23 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			_world[id]["burn"] = float(row[5]["burn"])
 			_world[id]["burn_at"] = Time.get_ticks_msec()
 
+		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
+		var t_e: int = Time.get_ticks_usec()
 		_refresh_pile(id)
+		prof["pile"] = int(prof.get("pile", 0)) + Time.get_ticks_usec() - t_e
+		t_e = Time.get_ticks_usec()
 		_snap_loose(id)
+		prof["snap"] = int(prof.get("snap", 0)) + Time.get_ticks_usec() - t_e
+
+	var total_ms: float = float(Time.get_ticks_usec() - t_all) / 1000.0
+
+	if total_ms > 30.0:
+		var parts: Array = []
+
+		for key in prof:
+			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
+
+		print("client slow: world items %.0f ms for %d added, %d removed: %s" % [total_ms, added.size(), removed.size(), ", ".join(parts)])
 
 
 # The server places a loose item by the generated height field; the drawn ground is the voxel surface, up to about half a metre off, so a
