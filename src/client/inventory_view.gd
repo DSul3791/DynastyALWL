@@ -855,6 +855,9 @@ func _auto_pickup_tick(now: int) -> void:
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
 
+	if not auto_pickup.due(now):
+		return   # not this frame: skips the cursor check, hashing the whole pack and reading the player position every frame
+
 	if cursor_kind() != "":
 		return   # the cursor is on something specific: auto pickup stays out of it (case 3 only)
 
@@ -1238,15 +1241,23 @@ func _update_fire_lights() -> void:
 	var lit: Array = []
 
 	for id in _world:
-		if _world[id]["light"] != null:
-			lit.append([here.distance_to(_world[id]["pos"]), _world[id]["light"]])
+		var entry: Dictionary = _world[id]
+		var light = entry["light"]
+
+		if light != null:
+			lit.append([here.distance_to(entry["pos"]), light])
+
+	if lit.is_empty():
+		return   # no fires or lanterns near: nothing to sort or flicker
 
 	lit.sort_custom(func(a, b): return a[0] < b[0])
+	var limit: int = int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS
+	var ticks: float = float(Time.get_ticks_msec())
 
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
-		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
-		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
+		light.visible = n < limit
+		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(ticks * 0.004 + float(n) * 2.1) + 0.02 * sin(ticks * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
 
 # Is a fire light that is switched on within `radius` of the point?
