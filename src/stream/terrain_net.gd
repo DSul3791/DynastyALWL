@@ -32,7 +32,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 84
+const PROTOCOL_VERSION := 85
 
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
@@ -93,6 +93,7 @@ signal warmth_received(percent: int)
 signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
+signal hit_number_received(at: Vector3, amount: int)
 signal vitals_received(hunger: int, health: int, weight_dkg: int, thirst: int, luck: int, fitness: int)
 signal reject_received(reason: int)
 signal craft_queue_received(entries: Array, left_ms: int)
@@ -447,6 +448,12 @@ func died(cause: String, spawn: Vector3) -> void:
 @rpc("authority", "call_remote", "reliable")
 func final_death(cause: String) -> void:
 	final_death_received.emit(cause)
+
+
+# Floating damage text where the player's hit landed (protocol 85, Dave 2 Nov 2026). The client shows it unless the Gameplay toggle is off.
+@rpc("authority", "call_remote", "reliable")
+func hit_number(at: Vector3, amount: int) -> void:
+	hit_number_received.emit(at, amount)
 
 
 # The character's skills (protocol 37, data/items/skills.json): attributes [strength, memory] (-10..10) and one row
