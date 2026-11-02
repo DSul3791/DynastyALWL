@@ -33,6 +33,12 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 		_cache.clear()
 
 	var kind: Dictionary = entry["pile"]
+
+	if str(kind.get("shape", "")) == "logs":
+		var wood: Mesh = _logs_mesh(kind, count, seed_id)
+		_cache[key] = wood
+		return wood
+
 	var tint: Array = kind["color"]
 	var base_color: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
 	var rock_scale: float = float(kind["rock"])
@@ -117,3 +123,118 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 	mesh.surface_set_material(0, _material)
 	_cache[key] = mesh
 	return mesh
+
+
+# --- Split firewood and wooden blocks (Dave 2 Nov 2026: they looked like little brown balls) ---
+# A stack of split-log pieces like a woodpile: each piece is a half-cylinder (round bark side up, flat cut side down) with pale cut ends, or for a
+# whole round (kind "round": true) a short full cylinder. Pieces lie side by side along z in a triangular stack (a bottom layer of up to W, one fewer each layer up);
+# more than one stack's worth makes several stacks in a grid. From items.json "pile": {"shape": "logs", "color" (bark), "len", "radius", "round" (optional)}.
+const LOG_ARC := 6
+const LOG_STACK_W := 6
+const LOG_PALE := Color(0.84, 0.70, 0.50)
+static var _logs_material: StandardMaterial3D
+
+
+static func _logs_mesh(kind: Dictionary, count: int, seed_id: int) -> Mesh:
+	var bark_tint: Array = kind["color"]
+	var bark: Color = Color(float(bark_tint[0]), float(bark_tint[1]), float(bark_tint[2]))
+	var length: float = float(kind.get("len", 0.4))
+	var radius: float = float(kind.get("radius", 0.065))
+	var full: bool = bool(kind.get("round", false))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_id * 2654435761 + 17
+	var shown: int = mini(count, MAX_DRAWN)
+	var width: int = LOG_STACK_W
+	var per_stack: int = (width * (width + 1)) >> 1
+	var verts: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var left: int = shown
+	var stack: int = 0
+	var stack_w: float = float(width) * 2.0 * radius + 0.1
+
+	while left > 0:
+		var here: int = mini(left, per_stack)
+		var w: int = width if here > ((width * (width - 1)) >> 1) else maxi(1, int(ceil((sqrt(8.0 * float(here) + 1.0) - 1.0) / 2.0)))   # a small last stack is only as wide as it needs
+		var origin: Vector3 = Vector3(float(floori(float(stack) / 3.0)) * (length + 0.08), 0.0, float(stack % 3) * stack_w)
+		var placed: int = 0
+		var layer: int = 0
+
+		while placed < here:
+			var in_layer: int = mini(w - layer, here - placed)
+
+			for i in range(in_layer):
+				var z: float = (float(i) - float(in_layer - 1) * 0.5) * (2.0 * radius * 1.04)
+				var y: float = float(layer) * radius * 0.95
+				var jitter: Vector3 = Vector3(rng.randf_range(-0.03, 0.03), 0.0, rng.randf_range(-0.004, 0.004))
+				var tone: float = rng.randf_range(0.85, 1.12)
+				var piece_bark: Color = Color(minf(bark.r * tone, 1.0), minf(bark.g * tone, 1.0), minf(bark.b * tone, 1.0))
+				_add_piece(verts, normals, colors, indices, origin + Vector3(0.0, y, z) + jitter, rng.randf_range(-0.12, 0.12), length * rng.randf_range(0.9, 1.1), radius * rng.randf_range(0.9, 1.1), piece_bark, full)
+
+			placed += in_layer
+			layer += 1
+
+		left -= here
+		stack += 1
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+	if _logs_material == null:
+		_logs_material = StandardMaterial3D.new()
+		_logs_material.vertex_color_use_as_albedo = true
+		_logs_material.roughness = 1.0
+		_logs_material.cull_mode = BaseMaterial3D.CULL_DISABLED   # thin pieces seen from any side; the winding does not matter
+
+	mesh.surface_set_material(0, _logs_material)
+	return mesh
+
+
+# One piece lying along x: the arc of its round side in bark colour and pale cut ends. Half: flat side down at `at`.y; full: a round resting on it.
+static func _add_piece(verts: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array, at: Vector3, yaw: float, length: float, radius: float, bark: Color, full: bool) -> void:
+	var steps: int = LOG_ARC * 2 if full else LOG_ARC
+	var sweep: float = TAU if full else PI
+	var lift: float = radius if full else 0.0
+	var turn: Basis = Basis(Vector3.UP, yaw)
+	var arc: Array = []
+
+	for i in range(steps + 1):
+		var a: float = sweep * float(i) / float(steps)
+		arc.append(Vector2(sin(a) * radius + lift, cos(a) * radius))   # (y, z)
+
+	var half: float = length * 0.5
+
+	for i in range(steps):
+		var p0: Vector2 = arc[i]
+		var p1: Vector2 = arc[i + 1]
+		var first: int = verts.size()
+		var n0: Vector3 = turn * Vector3(0.0, p0.x - lift, p0.y).normalized()
+		var n1: Vector3 = turn * Vector3(0.0, p1.x - lift, p1.y).normalized()
+
+		for corner in [[-half, p0, n0], [half, p0, n0], [half, p1, n1], [-half, p1, n1]]:
+			verts.append(at + turn * Vector3(float(corner[0]), (corner[1] as Vector2).x, (corner[1] as Vector2).y))
+			normals.append(corner[2])
+			colors.append(bark)
+
+		indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3])
+
+	for end in [-half, half]:
+		var centre: int = verts.size()
+		verts.append(at + turn * Vector3(float(end), lift, 0.0))
+		normals.append(turn * Vector3(signf(float(end)), 0.0, 0.0))
+		colors.append(LOG_PALE)
+
+		for i in range(steps + 1):
+			verts.append(at + turn * Vector3(float(end), (arc[i] as Vector2).x, (arc[i] as Vector2).y))
+			normals.append(turn * Vector3(signf(float(end)), 0.0, 0.0))
+			colors.append(LOG_PALE)
+
+		for i in range(steps):
+			indices.append_array([centre, centre + 1 + i, centre + 2 + i])
