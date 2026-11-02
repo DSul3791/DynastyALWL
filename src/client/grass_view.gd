@@ -12,8 +12,8 @@ extends Node3D
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const CELL_M := 6.0
-const PLAYER_CLEAR_M := 1.8              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
-const PLAYER_KEEP := 0.12
+const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
+const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
 const PLUME_THIN := 0.2                  # share of the ground grass kept round the tall-grass patches
 const SEASONS_FILE := "res://data/look/seasons.json"
 const RAYS_PER_FRAME := 40
@@ -195,7 +195,7 @@ void vertex() {
 		}
 	}
 	VERTEX.y *= mix(1.0, trunk_squash, pressed);
-	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.25, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
+	VERTEX.y *= mix(player_clear.w, 1.0, clamp(smoothstep(player_clear.z * 0.4, max(player_clear.z, 0.001), length(root_xz - player_clear.xy)) + step(player_clear.z, 0.0), 0.0, 1.0));
 	VERTEX *= 1.0 - inside;
 	VERTEX *= fade;
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(12.9898, 78.233))) * 43758.5453), season_blades);
@@ -232,6 +232,7 @@ var clear_edge_m: float = 1.5
 var trunks: Array = []                   # felled trunks lying on the grass: [ax, az, bx, bz, radius at a, radius at b] (set_trunks)
 var trunk_margin_m: float = 0.3
 var _trunk_msec: int = -1
+var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
 var litter_m: float = 0.0                # forest litter drawn this far (0 off), set by the client per quality
@@ -1126,7 +1127,7 @@ func _push_trunks(center: Vector3) -> void:
 
 # The local player's spot goes to the grass shader (blades are lowered per blade there, no cell is rebuilt, no extra draw).
 func _push_player(at: Vector3) -> void:
-	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M, PLAYER_KEEP)
+	var v: Vector4 = Vector4(at.x, at.z, PLAYER_CLEAR_M if third_person else 0.0, PLAYER_KEEP)   # first person has no feet to show: the grass stays whole
 
 	for n in range(_materials.size()):
 		if not _is_solid(n):

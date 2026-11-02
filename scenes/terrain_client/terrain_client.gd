@@ -1079,6 +1079,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
 	grass = GrassViewScript.new()
+	grass.third_person = third_person
 	grass.name = "Grass"
 	root.add_child(grass)
 	critters = AmbientCrittersScript.new()
@@ -2958,7 +2959,12 @@ const VIEW_CLEAR_M := 0.25             # how far short of a wall or trunk the ca
 var view_cam: Camera3D
 const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
 var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
-var third_person: bool = false
+var third_person: bool = false:
+	set(value):
+		third_person = value
+
+		if grass != null:
+			grass.third_person = value
 var debug_clip: String = ""                              # shot runner only (--shot-clip=NAME): play this clip whatever the body does
 var debug_pace: float = -1.0                              # shot runner only: pretend to move at this speed (m/s) so the walk animation plays
 var shot_stance: int = -1                                # shot runner only (--shot-stance): draw the third-person body in this stance (0 stand, 1 crouch, 2 sit, 3 lie) even while the runner flies
