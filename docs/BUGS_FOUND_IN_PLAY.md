@@ -48,3 +48,15 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** whenever I cut up a fallen tree, each cut causes the game to lag and lock up for 2 seconds at a time.
 - **Context, not a diagnosis:** none measured. The fallen-tree cutting path is `_process_trunk` and `_cut_log_off` in `src/stream/server_items.gd`; today's change there made every felled tree give logs (`aae3a272`, `df56ffaf`). The game has an instrument that logs `SLOW RPC` over 100 ms and a `_slow_mark` helper, which may show where the time goes. The stall could be on the server (saving, creating the log item, or a world-state rewrite) or in the client (building the log mesh or re-importing). Nothing has been measured, and nothing has been run in a windowed client.
 - **Status:** open, unassigned, not worked on.
+
+## 7. The game has bad lag constantly
+
+- **Found:** 2026-11-01, Dave, playing the daily. Reported right after entry 6 (a 2 s lock-up on each cut of a fallen tree), so it may or may not be the same problem.
+- **Symptom (Dave):** it's got bad lag constantly.
+- **From Dave's debug overlay (screenshot `images\14.webp`, same session; numbers only):** build 826 (`5254215`), 53 fps with vsync off, quality Ultra (F2), average frame 19.9 ms, worst frame 59.1 ms, memory 668 MB, flora 21,427 drawn with 5,115 colliders and 151,188 grass, 3D at 2560x1440 inside a 3816x1869 editor window ("embedded: editor owns the window"), NVIDIA GeForce RTX 20xx. That screenshot is one moment and may not show the lag Dave means.
+- **Context, not a diagnosis:** things that changed on this machine or in the game today, any of which could be a factor and none of which has been measured:
+  - The player body is now Dave's own mesh, about 55,700 triangles with two 4096 x 4096 textures (the old body was about 3,200 triangles). The first-person arms are a second mesh from a file with about 365,000 triangles and three embedded textures.
+  - Three hung headless Godot scripts (Windows PIDs 22724, 17368 and 13448, started 16:04, 16:40 and 17:24) were still running when last checked, plus two older headless terrain servers (PIDs 20724 and 1804, started 08:32 and 08:40). They may be taking CPU or memory, and none is the game.
+  - The game was running inside the editor (embedded window), which is slower than a standalone run.
+  - Fires, the photo camera, the craft search and the E-key changes also went in today.
+- **Status:** open, unassigned, not worked on.
