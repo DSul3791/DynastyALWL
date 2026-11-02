@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-through of code and handoffs)
 
 > **CORRECTION (Dave, 1 Nov 2026): sound hooks are Jason's, not yours.** You keep the rules. If Jason needs an event exposed (signal or event) so he can place a sound, expose it when he asks. You do not audit or wire sounds.

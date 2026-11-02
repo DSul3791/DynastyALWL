@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Jason "Champ" (audio engineer, all sound), 1 Nov 2026
 
 > **CORRECTION (Dave, 1 Nov 2026): the sound HOOKS are yours:** which events make a sound, wiring the sound call at those events, auditing events that have none. System owners keep the rules; if an event is not exposed in their code, ask them to expose it (signal or event) and you place the sound call. Replaces the earlier edge that gave 'when a sound plays' to the system owners.

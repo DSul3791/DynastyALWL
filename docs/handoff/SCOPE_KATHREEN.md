@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Kathreen (art assistant: character, animal and plant looks), 1 Nov 2026
 
 > **RULE (Dave): anything about LOOKS is artistic.** Kathleen is overloaded, so Dave named a second art agent, Kathreen. The split below is PROPOSED by me and sent to Kathleen to confirm; where she answers differently, her answer wins and this file is updated.

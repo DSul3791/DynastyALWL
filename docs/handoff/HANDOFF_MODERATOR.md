@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # READ FIRST: where things stand at the end of 1 Nov 2026 (supersedes anything below that says otherwise)
 
 - **Main now holds everything.** Dave merged pull request #11 (the whole daily `DailyDev_20261029`, 1,155 commits) into `main`, as a merge commit, at `a8c4d545`. There is NO daily branch right now: `DailyDev_20261029` and the brand-new `DailyDev_20261102` were deleted at Dave's request. The statements further down that call `DailyDev_20261029` the integration branch, or say nothing is merged to main, describe the day before; ignore them.

@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Handoff: Jason "Champ" (audio), 1 Nov 2026
 
 Scope: `SCOPE_JASON.md`. Backlog with owner, next step and reason: `JASON_NEXT_TASKS.md`. Sound map and hook audit: `docs/SOUND_MAP.md`. Findings record: `SOUND_AUDIT.md` (repo root). Branch `claude/jason-audio-8366e4`.

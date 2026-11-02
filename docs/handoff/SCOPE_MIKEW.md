@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 2026
 
 > **UPDATE (Dave, 1 Nov 2026): animal BEHAVIOUR is yours too, not only placement:** wandering, fleeing, hunting, herding, resting, spawn and despawn, how they react to the player. Tyler keeps only the shared server rules animals plug into (damage and death handling, carcass, protocol).

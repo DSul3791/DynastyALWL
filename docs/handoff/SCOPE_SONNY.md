@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Sonny (terrain and Dynasty water), 1 Nov 2026
 
 > **RULE (Dave, 1 Nov 2026): water MECHANICS are yours; water LOOKS go to the art team** (Kathreen first): colour, transparency, shader appearance, foam, flow-texture look, reflections, shore look. You supply depth and flow in a stable form (textures, levels); they own how it looks; review each other's edits.

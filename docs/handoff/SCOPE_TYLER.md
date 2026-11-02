@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Tyler: Q&A testing and tooling, 1 Nov 2026
 
 > Role history (Dave, 1 Nov 2026): the sub-systems (character system, comfort and Rested, food and drink, warmth, sleep and energy, lit fire/fixture RULES, kit and structure placement rules, death and respawn rules, goal and hint triggers, stump and trunk work) moved to **Steve: Systems** (`SCOPE_STEVE.md`). Fire and flame LOOKS are Kathleen's. Animal placement and behaviour are MikeW's; I keep only the shared server rules animals plug into (damage and death handling, carcass, protocol). The character LOOK is Kathleen's.

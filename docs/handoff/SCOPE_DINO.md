@@ -1,3 +1,5 @@
+> **Update 2 Nov 2026 (Dave): there is no daily branch any more.** Where this document says "the daily" or `DailyDev_20261029`, read `origin/main`. Work on your own new branch each day (`claude/<name>-YYYYMMDD`) and open a PR. Bugs in `docs/BUGS_FOUND_IN_PLAY.md` come first. Rules: `docs/START_HERE.md`.
+
 # Scope: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough), 1 Nov 2026
 
 > **CLARIFIED (Dave, 1 Nov 2026): your job is to BUILD the playthrough and walkthrough guides and TEST them.** You report your findings to the moderator, who hands each problem to whoever should fix it. You do not fix, and you do not route problems to owners yourself.
