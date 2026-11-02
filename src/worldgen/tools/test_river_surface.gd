@@ -98,6 +98,7 @@ func _init() -> void:
 	# 31 Oct 2026: the saved files carry the film from head to sea (refilm_water.gd --film: every painted channel holds 13 cm, so a headwater reach is a thin sheet that follows its bed, not a dry bed);
 	# those cells widen the spread of cross-sections, so the limits are re-pinned from 0.32 and 0.9 to 0.45 and 1.0 (measured with the film: see the printed percentiles).
 	_check(spreads[spreads.size() / 2] <= 0.45 and spreads[spreads.size() * 9 / 10] <= 1.0, "the simulation's cross-sections stay no worse than the baseline (median %.2f m, 90th %.2f m)" % [spreads[spreads.size() / 2], spreads[spreads.size() * 9 / 10]])
-	_check(uphill <= 60, "few river cells stand more than 4 m above the bank beside them (%d, baseline 46: falls and dams)" % uphill)
+	# 2 Nov 2026: re-pinned 60 -> 70 (baseline 46 -> 62) after the 9-tile rebake (#33, spring feed v10): river carry share rose 50.6 -> 61.7 percent, so about a fifth more river cells hold water and the falls and dams among them are counted too (46 x 61.7 / 50.6 = 56, the rest from the land-type and lake-lip changes).
+	_check(uphill <= 70, "few river cells stand more than 4 m above the bank beside them (%d, baseline 62: falls and dams)" % uphill)
 	print("river surface: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

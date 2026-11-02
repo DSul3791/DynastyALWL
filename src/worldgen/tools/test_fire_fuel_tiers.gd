@@ -322,6 +322,13 @@ func _init() -> void:
 	f._items[log_fire]["fire"]["pieces"] = {}
 	f._items[log_fire]["fire"]["pot"] = false
 	f._items[log_fire]["fire"]["state"] = 9
+	var old_box = f._chests.get(int(f._items[log_fire]["fire"].get("uid", 0)))
+
+	if old_box != null:
+		for slot in range(old_box.SLOTS):
+			old_box.numbers[slot] = 0
+			old_box.counts[slot] = 0
+
 	f.action(1, Net.ACT_ADMIN_GIVE, soft, 0, 2, Vector3.ZERO)
 	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("firewood"), 0, 1, Vector3.ZERO)
 	said.clear()

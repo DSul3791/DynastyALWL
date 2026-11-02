@@ -219,6 +219,78 @@
    "loop": false,
    "peak_db": -12,
    "status": "filled"
+  },
+  "boar_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/deer_step_0.ogg",
+    "res://assets/audio/batch1/deer_step_1.ogg",
+    "res://assets/audio/batch1/deer_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -9,
+   "status": "filled",
+   "note": "hoof step, borrowed from deer (a heavier animal; level -9 below)"
+  },
+  "songbird_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/duck_step_0.ogg",
+    "res://assets/audio/batch1/duck_step_1.ogg",
+    "res://assets/audio/batch1/duck_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -20,
+   "status": "filled",
+   "note": "bird foot, borrowed from duck; a hop is rare, quiet"
+  },
+  "grouse_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/duck_step_0.ogg",
+    "res://assets/audio/batch1/duck_step_1.ogg",
+    "res://assets/audio/batch1/duck_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -14,
+   "status": "filled",
+   "note": "bird foot, borrowed from duck"
+  },
+  "seabird_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/batch1/duck_step_0.ogg",
+    "res://assets/audio/batch1/duck_step_1.ogg",
+    "res://assets/audio/batch1/duck_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -13,
+   "status": "filled",
+   "note": "webbed foot, borrowed from duck"
+  },
+  "frog_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/wet/wet_step_0.ogg",
+    "res://assets/audio/wet/wet_step_1.ogg",
+    "res://assets/audio/wet/wet_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -18,
+   "status": "filled",
+   "note": "soft wet hop, borrowed from the wet shoe step"
+  },
+  "seal_step": {
+   "group": "creature step",
+   "files": [
+    "res://assets/audio/wet/wet_step_0.ogg",
+    "res://assets/audio/wet/wet_step_1.ogg",
+    "res://assets/audio/wet/wet_step_2.ogg"
+   ],
+   "loop": false,
+   "peak_db": -12,
+   "status": "filled",
+   "note": "flipper flop on wet ground, borrowed from the wet shoe step"
   }
  }
 }
