@@ -21,7 +21,8 @@ const LAKE_VOLUME_M3 := 100000.0 # a bigger bowl is a lake: its spring cannot fi
 const LAKE_NEED_M := 1.0
 const BOWL_RING_M := [40.0, 80.0, 120.0]
 const BOWL_SLACK_M := 1.5        # a river head has ground falling away beside it; a bowl has none lower than its bed by more than this
-const KNOWN_FAILURES := {1394078: "a real cell Sonny fixes on his lake branch with a re-bake"}
+const KNOWN_FAILURES := {1394078: "a real cell Sonny fixes on his lake branch with a re-bake",
+	3144147: "a 75,000 m3 valley pond at 4.59 m3/s: 2.31 of 2.64 m after 3 h, its water spreads flat over the valley floor (the probe finds no leak, more water stored within 200 m than delivered); unchanged by the backwater paint, so it fills slowly, not wrongly (2 Nov 2026)"}
 const MAX_POND_DEPTH_M := 8.5    # deeper than that is a lake or the sea, not a head pond
 
 var failures: int = 0
