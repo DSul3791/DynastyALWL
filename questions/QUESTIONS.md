@@ -51,12 +51,6 @@ Note: 1. Start the latest build, wait for clear weather (F3 shows rain 0.00). 2.
 Note: Look for: a steady hiss like rain in the forest that stops in the meadow. If you hear it, open F3 and write the loudest sound line in the Notes box.
 [test]
 
-## tree-hits-follow-size | Should a small tree take fewer axe hits than a big one of the same kind?
-Note: Today the hit count uses the kind of tree only, so a 6 m beech takes as many hits as a 28 m beech.
-Note: Felled trunks now match the real size of each tree; the hits could follow that same size.
-Note: Recommendation: Yes, because a sapling taking as many blows as a giant feels wrong, and big trees would take a little longer.
-[check]
-
 ## claude-crop-seeds | Which wild plants should give the other crop seeds (potato, turnip, cabbage, onion, peas, beet, radish, lettuce)?
 Note: 8 of 14 crops have no seed source, so their farming and cooking recipes cannot be reached. Oats and rye now come from tall grass (PR 96).
 Note: Option A: add wild plants to the world, one per crop, each giving seeds (wild turnip, sea beet, ramsons, vetch and so on). Option B: seeds come from the food you gather or buy (dig a root and keep a seed, buy seed from an NPC trader).
