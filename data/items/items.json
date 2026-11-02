@@ -334,6 +334,7 @@
 			"name": "Firewood",
 			"description": "Split wood. Burns long and steady.",
 			"kind": "material",
+			"pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.4, "radius": 0.065},
 			"stack": 40,
 			"look_alikes": [],
 			"value": 2
@@ -2904,6 +2905,7 @@
 			"name": "Wooden block",
 			"description": "A short round of log. Split it on a chopping block.",
 			"kind": "material",
+			"pile": {"shape": "logs", "handful": 5, "color": [0.40, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
 			"look_alikes": [],
 			"value": 3
@@ -2913,6 +2915,7 @@
 			"name": "Softwood firewood",
 			"description": "Split pine, spruce or fir. It catches fast and burns out quick.",
 			"kind": "material",
+			"pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.4, "radius": 0.065},
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
@@ -2923,6 +2926,7 @@
 			"name": "Softwood block",
 			"description": "A short round of pine, spruce or fir log, about 30 cm long. Split it on a chopping block.",
 			"kind": "material",
+			"pile": {"shape": "logs", "handful": 5, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
 			"look_alikes": [],
 			"value": 2
