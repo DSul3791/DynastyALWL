@@ -5600,6 +5600,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 		return
 
 	_fire_apply_store(fire, box)
+	fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again, so the client's burn timer shows the new time (Dave 2 Nov 2026: it stayed at the old time, counting down)
 	var state: int = int(fire["state"])
 
 	if float(fire["burn_left"]) <= 0.0:

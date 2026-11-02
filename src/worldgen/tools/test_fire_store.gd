@@ -68,7 +68,9 @@ func _init() -> void:
 		if log_slot >= 0:
 			f.action(1, Net.ACT_CHEST_PUT, log_slot, id, 1, Vector3.ZERO)
 
+	var fed_before: int = int(fire.get("fed", 0))
 	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(int(fire.get("fed", 0)) > fed_before, "closing the store sends the fire's row again, so the client's timer shows the new burn time")
 	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three beech logs in the store make the large fire (state %d, wood %s, pieces %s)" % [int(fire["state"]), str(fire["wood"]), str(fire.get("pieces", {}))])
 
 	# Dave 2 Nov 2026: a third log put into a burning fire's store vanished. Wood put in while the store is open stays until the close counts it;
