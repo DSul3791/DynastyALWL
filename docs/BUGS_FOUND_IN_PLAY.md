@@ -74,3 +74,10 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **Symptom (Dave):** it won't let me put more than one log in the fire.
 - **Context, not a diagnosis:** same as the earlier report today ("the first log went in but the second one won't"). Steve could not reproduce it on the server (4 logs onto one laid fire all go in, and 5 onto a lit fire with a pot also go in; the only cap is the total, 18 real hours or 6 logs), and suggested the client may treat a tap on a laid fire as "light" and only a hold as "add fuel", or add sticks before logs. He then made fuel order logs first and prompts inspect-mode only (`18e7dcd4`). Since Dave still sees it on a build that includes those, the cause is not known. The pot rule (no logs while a pot hangs on the fire) may be involved if a pot was on that fire; Dave said earlier there was no pot.
 - **Status:** open, unassigned, not worked on.
+
+## 10. The main character does not animate when jumping
+
+- **Found:** 2026-11-02, Dave, playing.
+- **Symptom (Dave):** the main character doesn't animate when he jumps; he just bounces in the air without any animation.
+- **Context, not a diagnosis:** none known. Nothing has been run in a windowed client.
+- **Status:** open, unassigned, not worked on.
