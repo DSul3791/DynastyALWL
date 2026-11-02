@@ -1650,6 +1650,13 @@ func _sync_cleared() -> void:
 				key = key ^ hash(Vector2(seg[0], seg[1])) ^ int(id)
 				continue
 
+		if int(row.get("state", 0)) == 32:
+			# A trodden hoe path (Dave 2 Nov 2026): a round patch, so the grass is pressed out of its brown middle only, not cleared 5 m round like a bench.
+			var path_at: Vector3 = row["pos"]
+			lying.append(LyingLogs.round_segment(path_at, 0.6))
+			key = key ^ hash(Vector2(path_at.x, path_at.z)) ^ int(id)
+			continue
+
 		if int(row.get("state", 0)) in CLEARING_NOT or not StructureLook.clears_grass(int(row.get("state", 0))) or not _switches.on("clearing"):
 			continue
 

@@ -529,9 +529,9 @@
 			"footprint_x": 1.0,
 			"footprint_z": 1.0,
 			"cap_per_chunk": 400,
-			"look": "path",
+			"look": "trodden_path",
 			"sound": "thump",
-			"clears_grass": true,
+			"clears_grass": false,
 			"walkover": true
 		},
 		"tilled_bed": {"kit": "", "item": "tilled_bed", "state": 47, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 200, "look": "path", "sound": "thump", "clears_grass": true, "walkover": true},
