@@ -10830,8 +10830,9 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 14400.0)), 1.0)
 		train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
 
-	row["train"] = train
-	_dirty = true
+	if train != float(row.get("train", 0.0)):   # an idle character at the base changes nothing: do not mark the save dirty every tick (it rewrote all files every 30 s for every online player)
+		row["train"] = train
+		_dirty = true
 
 	if fitness_of(peer) != before:
 		_vitals_sent.erase(peer)
