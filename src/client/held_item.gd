@@ -24,6 +24,7 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 # (the rig's hand_mount_r: the rig's right is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
 # up TOOL_TILT_DEG from the fingers. Rendered with software Vulkan and looked at (still frames of idle, jab, swing).
 const ARMS_POS := Vector3(0.0, -0.1, -0.15)
+const ARMS_POS_DYNASTY := Vector3(0.0, -0.04, -0.09)   # Dave's thick arms (dynasty_arms.gd): with the old position the shoulders filled the top corners when the arms are raised (Kathreen 2 Nov, tools/proto_fp_arms_view.gd sweeps, art/CRITIQUES/arms_2026-11-02); hands and forearms show, shoulders do not
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
 const TOOL_TILT_SLIGHT_DEG := 23.0  # first person, hand tools: up from the fingers; the resting arm points 40 degrees below level (REST_PITCH_DEG 50), so the head is about 17 degrees down
@@ -102,6 +103,7 @@ var _root: Node3D
 var _ground_below: Callable
 var held_light_budget: Callable          # () -> true when the held light may be on beside a nearby fire light (not at Low)
 var _model: Node3D
+var _arms_pos: Vector3 = ARMS_POS         # where the arms rig sits when raised: ARMS_POS, or ARMS_POS_DYNASTY for Dave's arms
 var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
@@ -178,7 +180,8 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	# Dave's own arms (dynasty_arms.gd) go with his body; `--oldbody` or the "Old body" setting brings back the old tube arms.
 	_arms = DynastyArmsScript.new() if MyCharacter.dynasty_body_on() else RagdollScript.new(true)
 	_arms.name = "Arms"
-	_arms.position = ARMS_POS
+	_arms_pos = ARMS_POS_DYNASTY if _arms.has_meta("own_hands") else ARMS_POS
+	_arms.position = _arms_pos
 	_arms.rotation_degrees.x = ARMS_PITCH_DEG
 	camera.add_child(_arms)
 	_arms.play("idle")
@@ -836,7 +839,7 @@ func _place_arms(delta: float) -> void:
 
 	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _arms.is_one_shot_playing()
 	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
-	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
+	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, _arms_pos, ARMS_PITCH_DEG, ARMS_SCALE)
 
 
 # Makes a world model a ghost: solid bodies, lights, particles and sounds go, every mesh takes the one see-through material.
