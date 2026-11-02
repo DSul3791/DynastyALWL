@@ -56,7 +56,7 @@ Each entry: the symptom in Dave's words, when it was found, and any context alre
 - **From Dave's debug overlay (screenshot `images\14.webp`, same session; numbers only):** build 826 (`5254215`), 53 fps with vsync off, quality Ultra (F2), average frame 19.9 ms, worst frame 59.1 ms, memory 668 MB, flora 21,427 drawn with 5,115 colliders and 151,188 grass, 3D at 2560x1440 inside a 3816x1869 editor window ("embedded: editor owns the window"), NVIDIA GeForce RTX 20xx. That screenshot is one moment and may not show the lag Dave means.
 - **Context, not a diagnosis:** things that changed on this machine or in the game today, any of which could be a factor and none of which has been measured:
   - The player body is now Dave's own mesh, about 55,700 triangles with two 4096 x 4096 textures (the old body was about 3,200 triangles). The first-person arms are a second mesh from a file with about 365,000 triangles and three embedded textures.
-  - Three hung headless Godot scripts (Windows PIDs 22724, 17368 and 13448, started 16:04, 16:40 and 17:24) were still running when last checked, plus two older headless terrain servers (PIDs 20724 and 1804, started 08:32 and 08:40). They may be taking CPU or memory, and none is the game.
+  - (Struck out: three hung headless Godot scripts and two old headless servers were running earlier today, but Dave restarted the computer, so none of them exists now. If the lag remains after the restart, they were not the cause.)
   - The game was running inside the editor (embedded window), which is slower than a standalone run.
   - Fires, the photo camera, the craft search and the E-key changes also went in today.
 - **Status:** open, unassigned, not worked on.
