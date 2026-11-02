@@ -1,7 +1,7 @@
 extends RefCounted
 
 # Floating damage numbers (Dave 2 Nov 2026): where a hit lands, the damage floats up and fades. On by default; Esc > Settings > Gameplay,
-# Damage numbers turns it off (display_settings.gd damage_numbers). The server sends hit_number(at, amount) (protocol 85): an animal shows the
+# Damage numbers turns it off (display_settings.gd damage_numbers). The server sends hit_number(at, amount) (protocol 86): an animal shows the
 # damage it took, a tree or a boulder its share of 100 per blow.
 
 const RISE_M := 0.9          # how far the number floats up

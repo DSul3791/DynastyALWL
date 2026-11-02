@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Floating damage numbers (Dave 2 Nov 2026): a landed hit sends hit_number to the hitter with the damage, a miss sends nothing; the client
-# draws the number and the Gameplay toggle (display_settings damage_numbers) is on by default and saved; protocol 85 is wired both ways.
+# draws the number and the Gameplay toggle (display_settings damage_numbers) is on by default and saved; protocol 86 is wired both ways.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hit_numbers.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")

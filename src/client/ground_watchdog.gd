@@ -19,6 +19,9 @@ const MAX_TRIES := 6
 const STALL_S := 20.0
 const STALL_WAIT_S := 30.0
 const MAX_STALL := 2
+# 2 Nov 2026 (rig join hang, "1 blocks still arriving" for ever): after the stall retries, blocks still outstanding and none arriving for this long is a
+# failure the window shows (with the logs to send), not an endless wait. Only with blocks outstanding: a join whose blocks all arrived keeps waiting.
+const HARD_STALL_S := 180.0
 
 var tries: int = 0
 var stall_tries: int = 0
@@ -59,6 +62,9 @@ func step(now_msec: int, waiting: bool, pending: int, received: int = 0, failed:
 	var stall_due: bool = stalled and not failed_new and stall_tries < MAX_STALL and since_try >= EVERY_S
 
 	if not failure_due and not stall_due:
+		if pending > 0 and stall_tries >= MAX_STALL and float(now_msec - _progress_msec) * 0.001 >= HARD_STALL_S:
+			return "give_up"
+
 		return ""
 
 	if failure_due and tries >= MAX_TRIES:

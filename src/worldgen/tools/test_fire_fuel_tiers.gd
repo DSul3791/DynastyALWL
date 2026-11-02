@@ -322,6 +322,7 @@ func _init() -> void:
 	f._items[log_fire]["fire"]["pieces"] = {}
 	f._items[log_fire]["fire"]["pot"] = false
 	f._items[log_fire]["fire"]["state"] = 9
+	f._items[log_fire]["fire"].erase("burnt")
 	var old_box = f._chests.get(int(f._items[log_fire]["fire"].get("uid", 0)))
 
 	if old_box != null:

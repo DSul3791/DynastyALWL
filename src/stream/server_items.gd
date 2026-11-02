@@ -875,7 +875,21 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	return true
 
 
+# Bug 6 (Dave 2 Nov 2026: about a second's pause when an old trunk is cut up): every player action is timed, and one over SLOW_ACTION_MS prints a line,
+# so the server log shows whether the pause is here (and which action) or in the client ("client slow: world items ...").
+const SLOW_ACTION_MS := 20.0
+
+
 func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_action(peer, kind, a, b, count, at)
+	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+
+	if ms > SLOW_ACTION_MS:
+		print("server slow: action %d (a %d, b %d) took %.0f ms, %d world items" % [kind, a, b, ms, _items.size()])
+
+
+func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
 	var inv = inventory_of(peer)
 
 	if inv == null:
@@ -1187,6 +1201,10 @@ func save() -> void:
 			var pc: Dictionary = it["fire"].get("pieces", {})
 			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
 			row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
+			var burnt: Dictionary = it["fire"].get("burnt", {})
+			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
+			var counted: Dictionary = it["fire"].get("counted", {})
+			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 
 		items.append(row)
 
@@ -2877,6 +2895,9 @@ func _fires(delta: float) -> void:
 			it["left"] = FIRE_OUT_S
 			_dirty = true
 
+			fire.erase("burnt")
+			fire.erase("counted")
+
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
 		elif raining and not fire["covered"]:
@@ -3243,6 +3264,25 @@ func _load_world_items() -> void:
 
 			if row.size() > 12 and int(row[12]) == 1:
 				entry["fire"]["synced"] = true
+
+			# A restart keeps what has burned since the last count and which pieces that count knew, so closing the store after a load does not give
+			# burned wood back as fresh burn time, and the half-burned piece still leaves the store when it is done.
+			if row.size() > 13 and typeof(row[13]) == TYPE_ARRAY and (row[13] as Array).size() == 3:
+				var burnt: Dictionary = {}
+
+				for k in range(3):
+					if float(row[13][k]) > 0.0:
+						burnt[["log", "firewood", "weak"][k]] = float(row[13][k])
+
+				entry["fire"]["burnt"] = burnt
+
+			if row.size() > 14 and typeof(row[14]) == TYPE_ARRAY and (row[14] as Array).size() == 3:
+				var counted: Dictionary = {}
+
+				for k in range(3):
+					counted[["log", "firewood", "weak"][k]] = maxi(int(row[14][k]), 0)
+
+				entry["fire"]["counted"] = counted
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -3860,6 +3900,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2) -> void:
 	_items[_next_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}
 	_next_id += 1
 	_dirty = true
+	_sync_in = 0.0   # bug 6: the trunk goes out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
 
 
 func _has_tool(inv, tool_class: String) -> bool:
@@ -4755,6 +4796,11 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 		wood[cls] = float(wood[cls]) - used
 		left -= used
 
+		if bool(fire.get("synced", false)) and used > 0.0:   # what has burned since the store was last counted: whole pieces of it leave the store (_fire_trim_store)
+			var burnt: Dictionary = fire.get("burnt", {})
+			burnt[cls] = float(burnt.get(cls, 0.0)) + used
+			fire["burnt"] = burnt
+
 		if float(wood[cls]) <= 0.0 and fire.has("pieces"):
 			(fire["pieces"] as Dictionary).erase(cls)
 
@@ -5531,7 +5577,17 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 	var wood: Dictionary = _fire_wood(fire)
 	var laid: Dictionary = {}
 
+	var burnt: Dictionary = fire.get("burnt", {})
+	fire["counted"] = pieces.duplicate()   # the pieces this count knows; only these may burn out of the store (_fire_trim_store), never wood put in after it
+
 	for cls in ["log", "firewood", "weak"]:
+		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
+		if float(seconds[cls]) <= 0.0:
+			burnt.erase(cls)
+		else:
+			burnt[cls] = minf(float(burnt.get(cls, 0.0)), float(seconds[cls]))
+			seconds[cls] = float(seconds[cls]) - float(burnt[cls])
+
 		var take: float = clampf(float(seconds[cls]), 0.0, maxf(room, 0.0))
 
 		if take < float(seconds[cls]) and float(seconds[cls]) > 0.0:
@@ -5544,24 +5600,24 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 			laid[cls] = int(pieces[cls])
 
 	fire["pieces"] = laid
+	fire["burnt"] = burnt
 	_fire_sum(fire)
 
 
-# Wood that has burned leaves the store: of each class, whole pieces go while the store still holds more seconds than the fire has left.
+# Wood that has burned leaves the store: of each class, one whole piece goes for each piece's worth of burn time since the store was counted
+# (fire["burnt"], added up by _fire_burn). Only burned wood goes: wood just put in while the store is open stays until the store is closed and counted
+# (Dave 2 Nov 2026: a third log put in vanished, because the old trim compared the store with the fire's burn time before the close had counted it).
 func _fire_trim_store(fire: Dictionary, box) -> bool:
 	var fuel: Dictionary = _cooking.get("fuel", {})
-	var wood: Dictionary = _fire_wood(fire)
+	var burnt: Dictionary = fire.get("burnt", {})
 	var removed: bool = false
 
-	for cls in ["log", "firewood", "weak"]:
-		var held: float = 0.0
+	if not fire.has("counted"):   # a fire loaded from a save: what is in its store now is what was counted
+		fire["counted"] = _fire_store_pieces(fire, box)
 
-		for slot in range(box.usable):
-			var number: int = box.numbers[slot]
+	var counted: Dictionary = fire["counted"]
 
-			if number != 0 and fuel.has(table.id_of(number)) and _fire_wood_class(table.id_of(number)) == cls and not (cls == "log" and bool(fire.get("pot", false))):
-				held += float(box.counts[slot]) * float(fuel[table.id_of(number)]) / GAME_RATE
-
+	for cls in burnt.keys():
 		for slot in range(box.usable):
 			var number: int = box.numbers[slot]
 
@@ -5570,12 +5626,40 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 
 			var each: float = float(fuel[table.id_of(number)]) / GAME_RATE
 
-			while box.counts[slot] > 0 and held - each >= float(wood[cls]) + 0.5:
+			while box.numbers[slot] == number and box.counts[slot] > 0 and int(counted.get(cls, 0)) > 0 and float(burnt[cls]) >= each - 0.01:
 				box.take_from_slot(slot, 1)
-				held -= each
+				burnt[cls] = float(burnt[cls]) - each
+				counted[cls] = int(counted[cls]) - 1
 				removed = true
+				print("fire store: one %s burned away (%s burned %.0f s, %d counted left)" % [table.id_of(number), cls, float(burnt[cls]) + each, int(counted[cls])])
+
+		# Dave 2 Nov 2026 (the third log still vanished): burn time with no counted piece left to take (a fire whose burn time ran ahead of its store)
+		# is not a debt on wood put in later. It goes, so a new piece stays until the next count.
+		if int(counted.get(cls, 0)) <= 0:
+			burnt[cls] = 0.0
 
 	return removed
+
+
+# Pieces of each wood class in a fire's store (logs left out while a pot hangs over it).
+func _fire_store_pieces(fire: Dictionary, box) -> Dictionary:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var pieces: Dictionary = {"log": 0, "firewood": 0, "weak": 0}
+
+	for slot in range(box.usable):
+		var number: int = box.numbers[slot]
+
+		if number == 0 or not fuel.has(table.id_of(number)):
+			continue
+
+		var cls: String = _fire_wood_class(table.id_of(number))
+
+		if cls == "log" and bool(fire.get("pot", false)):
+			continue
+
+		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
+
+	return pieces
 
 
 # A burnt-out fire's store keeps no wood: the trim leaves the last piece until the fire is out, and it must not come back as fresh burn time. Food stays.
@@ -5606,6 +5690,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 		return
 
 	_fire_apply_store(fire, box)
+	fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again, so the client's burn timer shows the new time (Dave 2 Nov 2026: it stayed at the old time, counting down)
 	var state: int = int(fire["state"])
 
 	if float(fire["burn_left"]) <= 0.0:
@@ -5720,6 +5805,13 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int) -> vo
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_chest_viewer[peer] = id
+
+	# A fire with no count yet (loaded, or older than the count) is counted now, before anything is put in: wood put in later is not counted, so
+	# burned time can never take it (Tyler's run of #85: the trim's own fallback counted the newly put log, and the old burn time ate it).
+	var chest_fire: Dictionary = _items.get(id, {}).get("fire", {})
+
+	if bool(chest_fire.get("synced", false)) and not chest_fire.has("counted"):
+		chest_fire["counted"] = _fire_store_pieces(chest_fire, chest)
 
 	# Remains hold the dead character's purse: whoever may open them takes it with the first opening.
 	var rec_struct: Dictionary = _items.get(id, {}).get("struct", {})
