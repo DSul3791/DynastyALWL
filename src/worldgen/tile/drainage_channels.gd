@@ -1017,10 +1017,18 @@ func _carve_basins(h: PackedFloat32Array, fill, flow, size: int, threshold: floa
 			moved_up += 1
 		elif how_placed == "down":
 			for k in site[3]:
-				if basin_mask[k] == 0:
-					surface[k] = NAN
-					_source_dry[k] = 1
-					dried += 1
+				if basin_mask[k] == 1:
+					continue
+
+				# The old channel just above the pond lies under the pond's level: the pond backs up into it (painted at the lip, so the settle and the
+				# baked water agree; test_head_pond_fill spring 3144147 spread its water into the dry gully and fell short). Above that it dries.
+				if bed[k] < lip - 0.05:
+					surface[k] = lip
+					continue
+
+				surface[k] = NAN
+				_source_dry[k] = 1
+				dried += 1
 
 			moved_down += 1
 
