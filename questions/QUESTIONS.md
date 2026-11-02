@@ -356,3 +356,10 @@ Note: Fix merged in #98 (main e69a1ad): the felled trunk's bark is prepared whil
 Note: Start the game fresh, fell the first tree you find, then a second one. If anything pauses, say on which blow or at the landing.
 - Yes
 - No
+
+## steve-damage-numbers | Hits: do floating damage numbers show, and does the Gameplay toggle turn them off?
+Note: 1. Hit a tree, a boulder and an animal.
+Note: 2. Check: a number rises and fades where each hit landed.
+Note: 3. Esc > Settings > Gameplay > Damage numbers off, hit again: no numbers.
+Note: Recommendation: On main (#82).
+[test]
