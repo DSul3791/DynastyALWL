@@ -286,7 +286,7 @@ func _build_sound() -> void:
 			_c.sound.set_level(level[0], value)
 			note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])
 
-	for group in [["wind", "Wind volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
+	for group in [["wind", "Wind volume"], ["surf", "Surf (sea waves) volume"], ["nature", "Nature and water volume"], ["steps", "Footsteps and body volume"]]:
 		_slider(sound, group[1], float(_c.sound.mix_level[group[0]]), func(value: float):
 			_c.sound.set_mix(group[0], value)
 			note.text = "%s %d %%" % [group[1], roundi(value * 100.0)])
