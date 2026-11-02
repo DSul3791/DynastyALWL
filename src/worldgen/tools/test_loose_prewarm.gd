@@ -23,6 +23,11 @@ func _init() -> void:
 			print("FAIL %s not prewarmed" % id)
 			failures += 1
 
+	for id in ["leaves", "kindling", "tree_roots", "beechnuts"]:   # what a trunk splits into besides logs (Dave 2 Nov: a pause as the trunk came apart)
+		if view.table.number_of(id) > 0 and not view._meshes.has(view.table.number_of(id)):
+			print("FAIL trunk drop %s not prewarmed" % id)
+			failures += 1
+
 	var t0: int = Time.get_ticks_usec()
 
 	for k in range(300):
