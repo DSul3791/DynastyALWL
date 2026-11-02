@@ -94,6 +94,7 @@ var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const FlowTexture := preload("res://src/water2/water_flow_texture.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const RagdollScript := preload("res://src/client/ragdoll_body.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
@@ -1979,7 +1980,10 @@ func _update_weather() -> void:
 		sound.weather.apply_state(weather)
 
 
-# Protocol 84: the simulated water window as a texture for the water shader (uniforms water2_*; they do nothing until the shader reads them, src/water2/water_flow_texture.gd).
+# Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
+var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
+
+
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
 	var material: Material = flora.water_material() if flora != null else null
 
@@ -1988,8 +1992,17 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 
 	var im: Image = FlowTexture.unpack(w, h, raw_size, bytes)
 
-	if im != null:
-		FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
+	if im == null:
+		return
+
+	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
+	if _liquid == null:
+		_liquid = LiquidSurface.new()
+		_liquid.name = "LiquidSurface"
+		flora.add_child(_liquid)
+
+	_liquid.show_window(im, origin, cell_m)
+	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
