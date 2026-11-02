@@ -39,12 +39,6 @@ Note: Recommendation A: the new character starts at the world spawn with an empt
 - At the world spawn with a small starter kit (stick, stone, twine)
 - At the dead character's last bed, empty pack
 
-## pic-flora-chamomile | In the real game: is the chamomile and wildflower meadow (yellow drift, red roses behind a bush) a good spread of colour?
-Image: questions/img/flora_chamomile_roses.jpg
-Note: Real game rig shot at noon, (53326,68446) facing north. The yellow drift and red roses show; white chamomile is not clearly visible from here. Flora rates it 3.5 of 5.
-- Yes
-- No
-
 ## pic-flora-orchard-rows | In the real game: do the orchard trees read as rows of fruit trees?
 Image: questions/img/flora_orchard_rows.jpg
 Note: Real game rig shot at noon from the south edge of the orchard, (53376,68535). The rows read, but it is dark under the crowns and no fruit is visible from this height. Flora rates it 3 of 5; fruit visibility is a look question for Kathleen.
