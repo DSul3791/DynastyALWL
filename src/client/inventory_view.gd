@@ -170,7 +170,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	recipes = RecipeTableScript.load_default(table)
 	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
 	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
-	net.world_items_received.connect(func(...args): _timed("_on_world_items", _on_world_items, args))
+	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.vitals_received.connect(func(...args): _timed("_on_vitals", _on_vitals, args))
@@ -801,6 +801,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	_drain_world_backlog()
 	var now: int = Time.get_ticks_msec()
 	_roll_tick(_delta, now)
 	_snap_tick(now)
@@ -854,6 +855,9 @@ func _auto_pickup_tick(now: int) -> void:
 
 	if not auto_pickup.enabled or asleep or screen_open() or now - _death_msec < 6000 or (auto_pickup_blocked.is_valid() and bool(auto_pickup_blocked.call())):
 		return
+
+	if not auto_pickup.due(now):
+		return   # not this frame: skips the cursor check, hashing the whole pack and reading the player position every frame
 
 	if cursor_kind() != "":
 		return   # the cursor is on something specific: auto pickup stays out of it (case 3 only)
@@ -1238,15 +1242,23 @@ func _update_fire_lights() -> void:
 	var lit: Array = []
 
 	for id in _world:
-		if _world[id]["light"] != null:
-			lit.append([here.distance_to(_world[id]["pos"]), _world[id]["light"]])
+		var entry: Dictionary = _world[id]
+		var light = entry["light"]
+
+		if light != null:
+			lit.append([here.distance_to(entry["pos"]), light])
+
+	if lit.is_empty():
+		return   # no fires or lanterns near: nothing to sort or flicker
 
 	lit.sort_custom(func(a, b): return a[0] < b[0])
+	var limit: int = int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS
+	var ticks: float = float(Time.get_ticks_msec())
 
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
-		light.visible = n < (int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS)
-		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(float(Time.get_ticks_msec()) * 0.004 + float(n) * 2.1) + 0.02 * sin(float(Time.get_ticks_msec()) * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
+		light.visible = n < limit
+		light.light_energy = float(light.get_meta("base_energy", 1.4)) * (1.0 + 0.04 * sin(ticks * 0.004 + float(n) * 2.1) + 0.02 * sin(ticks * 0.0091 + float(n)))   # a gentle, slow flicker of a few percent
 
 
 # Is a fire light that is switched on within `radius` of the point?
@@ -1284,9 +1296,26 @@ func _on_slots(bytes: PackedByteArray) -> void:
 				elif inventory.wear[slot] < was_wear and int(table.entry(table.id_of(was_number)).get("durability", 0)) > 0:
 					tool_event.call("repaired")
 
-	_refresh()
+	_queue_refresh()
 	_refresh_chest()
 	refresh_hotbar()
+
+
+# Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
+var _refresh_queued: bool = false
+
+
+func _queue_refresh() -> void:
+	if _refresh_queued:
+		return
+
+	_refresh_queued = true
+	_flush_refresh.call_deferred()
+
+
+func _flush_refresh() -> void:
+	_refresh_queued = false
+	_refresh()
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
@@ -1903,6 +1932,48 @@ func _timed(label: String, handler: Callable, args: Array) -> void:
 
 	if ms > 20.0:
 		print("client slow: %s took %.0f ms" % [label, ms])
+
+# Join stall (Dave 2 Nov 2026 log: "world items 1423 ms for 334 added"): a big list of world items was dressed in one frame. A list of more
+# than WORLD_SLICE_MIN rows (or any list while an earlier one is still waiting, to keep the order) is queued and dressed in _process,
+# WORLD_SLICE_USEC a frame (at least one row). Small updates (a log cut, an item dropped) still apply at once.
+const WORLD_SLICE_MIN := 24
+const WORLD_SLICE_USEC := 4000
+var _world_backlog: Array = []        # rows to dress, and PackedInt32Array removals, in arrival order
+
+
+func _queue_world_items(added: Array, removed: PackedInt32Array) -> void:
+	if added.size() <= WORLD_SLICE_MIN and _world_backlog.is_empty():
+		_on_world_items(added, removed)
+		return
+
+	for row in added:
+		_world_backlog.append(row)
+
+	if removed.size() > 0:
+		_world_backlog.append(removed)
+
+
+func _drain_world_backlog() -> void:
+	if _world_backlog.is_empty():
+		return
+
+	var started: int = Time.get_ticks_usec()
+	var done: int = 0
+
+	while done < _world_backlog.size():
+		var entry: Variant = _world_backlog[done]
+		done += 1
+
+		if entry is PackedInt32Array:
+			_on_world_items([], entry)
+		else:
+			_on_world_items([entry], PackedInt32Array())
+
+		if Time.get_ticks_usec() - started >= WORLD_SLICE_USEC:
+			break
+
+	_world_backlog = _world_backlog.slice(done)
+
 
 func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 	var prof: Dictionary = {}   # section -> microseconds (bug 6, 2 Nov 2026: _on_world_items took 939 ms on a log cut; the breakdown line below says where)
@@ -3999,6 +4070,15 @@ func _refresh() -> void:
 
 	_note_acquired()
 	_plan_cache.clear()
+
+	# Lag fix (Sal, 2 Nov 2026): with the window shut (or the chest screen up instead) nobody sees the slot buttons or the recipe list, and rebuilding
+	# them cost 55 to 87 ms on every pickup. The window rebuilds in toggle() when it opens; only the weight HUD is kept current.
+	if not open or chest_mode:
+		if _weight_label != null:
+			_refresh_weight()
+
+		return
+
 	_arrange_slots()
 
 	if _weight_label != null:

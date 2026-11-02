@@ -1,7 +1,7 @@
 extends SceneTree
 
-# The shore net (ACT_NET, data/items/fishing.json "net"): needs water at the edge (5 m, 0.3 to 1.2 m deep, not frozen), holds 20 s,
-# walking off or letting go cancels, 1 to 3 small fish never more than the cell's stock, the net wears, dawn beats noon.
+# The shore net (ACT_NET, data/items/fishing.json "net"): thrown onto water within reach_m (8 m, 0.3 to 3 m deep, not frozen), sinks hold_s (thrown, Dave 2 Nov 2026),
+# walking off or letting go cancels, fish by school size never more than the cell's stock, the net wears, dawn beats noon.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shore_net.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -66,7 +66,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_NET, slot, 0, 0, Vector3(30.0, 9.5, 5.0))
 	check(not items._fishing.has(1), "water further than the reach is refused")
 	items._last_fish.clear()
-	depth[0] = 2.0
+	depth[0] = 4.0
 	items.action(1, Net.ACT_NET, slot, 0, 0, water)
 	check(not items._fishing.has(1) and said.has(cfg["say_deep"]), "deep water is refused")
 	items._last_fish.clear()
@@ -80,7 +80,8 @@ func _init() -> void:
 	items.action(1, Net.ACT_NET, slot, 0, 0, water)
 	check(items._fishing.has(1) and str(items._fishing[1]["phase"]) == "net", "the net goes out")
 	var started: int = Time.get_ticks_msec()
-	check(int(items._fishing[1]["at"]) - started >= 19000, "it takes about 20 s")
+	check(int(items._fishing[1]["at"]) - started >= int(float(cfg["hold_s"]) * 1000.0) - 1000, "it sinks hold_s before it is pulled back")
+	check((items._fishing[1]["landed"] as Vector3).distance_to(water) < 0.01, "the net lands where it was thrown")
 	items._fish_tick()
 	check(items._fishing.has(1), "nothing happens early")
 	items.action(1, Net.ACT_NET, slot, 1, 0, water)
@@ -94,7 +95,9 @@ func _init() -> void:
 	check(not items._fishing.has(1), "walking off cancels")
 	items.report_position(1, Vector3(5.0, 10.0, 5.0))
 
-	# A haul: 1 to 3 fish, never more than the stock, stock drops, the net wears.
+	# A haul: 1 to round(school radius x fish_per_radius_m) fish (no water kinds here, so the default radius), never more than the stock.
+	var by: Dictionary = cfg["catch_by_school"]
+	var cap: int = maxi(1, int(round(float(by["default_radius_m"]) * float(by["fish_per_radius_m"]))))
 	var cell: Vector2i = items._fish_cell(Vector3(5.0, 10.0, 5.0))
 	var most: int = 0
 
@@ -109,7 +112,7 @@ func _init() -> void:
 		var got: int = fish_count(items) - before_fish
 		most = maxi(most, got)
 		check(not items._fishing.has(1), "the haul ends the netting")
-		check(got <= 3 and got <= before_stock, "never more than 3 or the stock (%d of %d)" % [got, before_stock])
+		check(got <= cap and got <= before_stock, "never more than %d or the stock (%d of %d)" % [cap, got, before_stock])
 		check(items.fish_stock(cell) == before_stock - got, "the stock drops by what was caught")
 		check(items.inventory_of(1).wear[slot] == before_wear + 1, "the net wears 1 per haul")
 		clock[0] += 3.0 * float(items._fishing_data()["regrow_s"])

@@ -24,7 +24,7 @@ const AIMED := Vector3(0.28, -0.12, -0.35)
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
 # (the rig's hand_mount_r: the rig's right is +X, see assets/character/README.md), grip at the mount origin, its business end tipped
 # up TOOL_TILT_DEG from the fingers. Rendered with software Vulkan and looked at (still frames of idle, jab, swing).
-const ARMS_POS := Vector3(0.0, -0.1, -0.15)
+const ARMS_POS := Vector3(0.0, -0.1, -0.08)   # swinging pose: 7 cm further back than before so the shoulders stay out of view (Dave 2 Nov 2026)
 const ARMS_PITCH_DEG := 50.0
 const TOOL_TILT_DEG := 20.0
 const TOOL_TILT_SLIGHT_DEG := 23.0  # first person, hand tools: up from the fingers; the resting arm points 40 degrees below level (REST_PITCH_DEG 50), so the head is about 17 degrees down
@@ -32,7 +32,7 @@ const TOOL_TILT_SLIGHT_DEG := 23.0  # first person, hand tools: up from the fing
 # fixed to the body (the way you face, not the way you look): look down and you see it. Swinging, jabbing, using or aiming brings the
 # arms up to the camera pose above and back. REST_* is the body pose: where the chest is under the eye and how far forward the arms hang.
 const REST_DOWN_M := 0.3               # first-person arms at rest: root this far below the eye; the hands sit below a level view and show only when the player looks down about 30 to 45 degrees (Dave 2026-10-25)
-const REST_BACK_M := 0.05
+const REST_BACK_M := 0.22               # back from the eye at rest: Dave saw his own shoulders (2 Nov 2026); the arms should only come into view when swinging, or when looking down while running
 const REST_PITCH_DEG := 50.0           # forearms hang forward and low (was 8, straight down; 35 showed no hands at 30 degrees down): hands about 56 degrees below level, so they enter the view when the player looks down 25 to 30 degrees
 const ARMS_FOLLOW_K := 9.0
 const ARMS_SCALE := 0.85               # first-person arms a little slimmer and shorter (hands11/arms_fix pictures: they filled the lower corners); the tool is scaled back up so it keeps its size
@@ -146,6 +146,7 @@ const MotionExtra := preload("res://src/client/character/motion_extra.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
+const NET_THROW_M := 6.0                        # how far ahead the shore net lands (server reach: fishing.json net.reach_m, 8 m)
 const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
@@ -597,12 +598,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return false
 
 	if _is_other_tool():
-		# The shore net: hold the left button at the water's edge (about 20 s); letting go cancels (the server also cancels when you walk off).
+		# The shore net (Dave 2 Nov 2026): a click throws it onto the water NET_THROW_M ahead; the server pulls it back after a few seconds
+		# (walking off loses the throw). Releasing the button does nothing.
 		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
 			if pressed:
 				_arm_play("use", 0.6)
+				var ahead: Vector3 = -_camera.global_transform.basis.z
+				ahead = Vector3(ahead.x, 0.0, ahead.z).normalized()
+				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, _camera.global_position + ahead * NET_THROW_M - Vector3(0.0, 1.6, 0.0))
 
-			_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0 if pressed else 1, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 			return true
 
 		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
@@ -1216,7 +1220,7 @@ func _grade_point_here() -> void:
 		_grade_has_b = false
 
 	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if setting_b else 0, 0, hit["position"])
-	_inv._on_notice("Point B set: hold Shift and left click along the line to grade it" if setting_b else "Point A set: Shift + right click again for point B")
+	_inv._on_notice("Point B set: the ground between the pins is levelled and trodden for you" if setting_b else "Point A set: Shift + right click again for point B")
 
 	for stake in _stakes:
 		if is_instance_valid(stake):

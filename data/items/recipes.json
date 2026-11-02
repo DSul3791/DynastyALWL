@@ -366,6 +366,10 @@
 				[
 					"twine",
 					2
+				],
+				[
+					"hinges",
+					2
 				]
 			],
 			"gives": [
@@ -3410,7 +3414,7 @@
 			"number": 153,
 			"name": "Water wheel",
 			"category": "Workshops and stations",
-			"needs": [["lumber", 20], ["nails", 80]],
+			"needs": [["lumber", 20], ["nails", 80], ["tar", 4]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
 			"known": true,
@@ -4114,6 +4118,10 @@
 				],
 				[
 					"hide",
+					1
+				],
+				[
+					"hide_glue",
 					1
 				]
 			],
@@ -6711,7 +6719,11 @@
 			"category": "Containers and furniture",
 			"needs": [
 				["stick", 6],
-				["twine", 1]
+				["twine", 1],
+				[
+					"wooden_pin",
+					2
+				]
 			],
 			"gives": ["stool_kit", 1],
 			"craft_s": 10.0,
@@ -6755,6 +6767,10 @@
 				[
 					"hide",
 					1
+				],
+				[
+					"wooden_pin",
+					4
 				]
 			],
 			"gives": [

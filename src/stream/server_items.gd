@@ -52,6 +52,7 @@ const HIT_COOLDOWN_MS := 400
 const PLANT_BUSH_REACH_M := 4.0         # a dug bush is planted this close (flat) to the player
 const PLANT_BUSH_GAP_M := 1.0           # and no closer than this to another planted bush or sapling
 const CHOP_RESET_MS := 60000             # a half-chopped tree heals after this long untouched
+const SCATTER_PAD_M := 30.0             # how far past its own square the layout of a scatter cell reads the ground (water probe 24 m)
 const SCATTER_TICK_MAX_MS := 40.0       # the ground scatter stops laying out cells for the tick once this long has passed (the rest follows on the next sync)
 const TRUNKS_PER_CHUNK := 32             # felled trunks (and as many stumps) lying in one flora chunk
 const SPLIT_LIFETIME_S := 7.0 * 86400.0  # what a felled tree breaks into lies a real week, as its trunk would have (it rotted after a real week)
@@ -565,6 +566,8 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
+	_last_average.erase(peer)
+	_roads.erase(peer)
 	_grade_points.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
@@ -1105,6 +1108,7 @@ func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_fly(delta)
 	_showroom_retry(delta)
+	_road_tick(delta)
 	_slow_in += delta
 
 	# Fires and item lifetimes only need about 4 looks a second (TD note 2026-10-20: 1.5 ms a frame at 1300 records).
@@ -2195,7 +2199,11 @@ func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
 # volume balanced, at most SMOOTH_MAX_M a stroke, like smooth but wider), then lays a round trodden patch exactly where the player pointed (not snapped
 # to a grid). The client draws it strong brown for the middle half metre and fading to see-through by 1.25 m. A drag lays one every PATH_SPACING_M.
 const PATH_AVERAGE_M := 2.0
-const PATH_SPACING_M := 0.45
+const PATH_AVERAGE_MIN_M := 0.08    # ground within a path's reach that is flatter than this is left alone (no edit, no remesh)
+const PATH_AVERAGE_OPS := 4         # at most this many ground edits a stroke: every edit is a message to every client, a remesh and a grass rebuild
+const PATH_AVERAGE_GAP_MS := 1500   # and the ground is averaged at most this often per player (patches are still laid every stroke)
+var _last_average: Dictionary = {}  # peer -> msec of the last averaging
+const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means fewer decals along a road
 
 
 func _hoe_path(peer: int, inv, at: Vector3) -> void:
@@ -2247,7 +2255,14 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	for k in 8:
 		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * PATH_AVERAGE_M * 0.75)
 
-	var moved: bool = _average_ground(at, spots)
+	var moved: bool = false
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_average.get(peer, -100000)) >= PATH_AVERAGE_GAP_MS:
+		moved = _average_ground(at, spots, PATH_AVERAGE_MIN_M, PATH_AVERAGE_OPS)
+
+		if moved:
+			_last_average[peer] = now
 
 	_wear_tool(peer, inv, "hoe", "dig")
 
@@ -2257,7 +2272,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 			var old: Dictionary = _items[id]
 			var old_ground: float = float(ground_height.call(old["pos"].x, old["pos"].z))
 
-			if not is_nan(old_ground):
+			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
 				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 				_next_id += 1
@@ -2272,7 +2287,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 
 # Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
 # Returns true when any ground moved.
-func _average_ground(at: Vector3, spots: Array) -> bool:
+func _average_ground(at: Vector3, spots: Array, min_m: float = SMOOTH_MIN_M, max_ops: int = 99) -> bool:
 	if not dig_ground.is_valid() or not fill_ground.is_valid():
 		return false
 
@@ -2296,16 +2311,20 @@ func _average_ground(at: Vector3, spots: Array) -> bool:
 	for n in spots.size():
 		var d: float = float(heights[n]) - mean
 
-		if absf(d) < SMOOTH_MIN_M:
+		if absf(d) < min_m:
 			continue
 
-		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		moves.append([n, depth, 1 if d > 0.0 else -1])
+		moves.append([n, minf(absf(d), SMOOTH_MAX_M), 1 if d > 0.0 else -1])
 
-		if d > 0.0:
-			cut_sum += depth
+	if moves.size() > max_ops:   # only the biggest bumps and dips are worked
+		moves.sort_custom(func(p, q): return float(p[1]) > float(q[1]))
+		moves = moves.slice(0, max_ops)
+
+	for move in moves:
+		if int(move[2]) > 0:
+			cut_sum += float(move[1])
 		else:
-			fill_sum += depth
+			fill_sum += float(move[1])
 
 	var shifted: float = minf(cut_sum, fill_sum)
 
@@ -2361,8 +2380,133 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3) -> void:
 		pair = [Vector3(at.x, h, at.z), null]
 	elif pair[0] != null:
 		pair[1] = Vector3(at.x, h, at.z)
+		_road_start(peer, pair[0], pair[1])
 
 	_grade_points[peer] = pair
+
+
+# The A and B road (Dave 2 Nov 2026): the moment point B is set, the ground along the line from A to B is levelled to the straight ramp between the two
+# heights and a path is laid along it, by itself. Worked a station at a time (one every ROAD_STEP_S, at most ROAD_EDITS ground edits each), so a road
+# never freezes the game the way one big edit would; the hoe wears once every ROAD_WEAR_EVERY stations and the job stops if the hoe is gone.
+const ROAD_MAX_M := 40.0
+const ROAD_STATION_M := 0.7
+const ROAD_STEP_S := 0.5
+const ROAD_EDITS := 3
+const ROAD_WEAR_EVERY := 4
+const ROAD_HALF_WIDTH_M := 1.0
+const ROAD_DEPTH_M := 0.5
+var _roads: Dictionary = {}   # peer -> {"a": Vector3, "b": Vector3, "n": stations, "i": next station, "wait": seconds to the next one}
+
+
+func _road_start(peer: int, a: Vector3, b: Vector3) -> void:
+	var length: float = Vector2(b.x - a.x, b.z - a.z).length()
+
+	if length < 1.0:
+		_say(peer, "Points A and B are too close together.")
+		return
+
+	if length > ROAD_MAX_M:
+		_say(peer, "The road is longer than %d m: set B nearer to A." % int(ROAD_MAX_M))
+		return
+
+	_roads[peer] = {"a": a, "b": b, "n": int(ceil(length / ROAD_STATION_M)) + 1, "i": 0, "wait": 0.0}
+	_say(peer, "Road marked: the ground is being levelled and trodden from A to B.")
+
+
+func _road_tick(delta: float) -> void:
+	if _roads.is_empty():
+		return
+
+	for peer in _roads.keys():
+		var job: Dictionary = _roads[peer]
+		job["wait"] = float(job["wait"]) - delta
+
+		if float(job["wait"]) > 0.0:
+			continue
+
+		job["wait"] = ROAD_STEP_S
+		var inv = inventory_of(peer)
+
+		if inv == null or not _has_tool(inv, "hoe") or not ground_height.is_valid():
+			_roads.erase(peer)
+			continue
+
+		var i: int = int(job["i"])
+
+		if i >= int(job["n"]):
+			_roads.erase(peer)
+			continue
+
+		_road_station(peer, inv, job["a"], job["b"], i, int(job["n"]))
+		job["i"] = i + 1
+
+
+func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
+	var t: float = float(i) / float(maxi(n - 1, 1))
+	var along: Vector2 = Vector2(b.x - a.x, b.z - a.z).normalized()
+	var side: Vector2 = Vector2(-along.y, along.x)
+	var centre: Vector2 = Vector2(a.x, a.z).lerp(Vector2(b.x, b.z), t)
+	var target: float = lerpf(a.y, b.y, t)
+	var edits: int = 0
+
+	if dig_ground.is_valid() and fill_ground.is_valid():
+		for offset in [0.0, ROAD_HALF_WIDTH_M, -ROAD_HALF_WIDTH_M]:
+			if edits >= ROAD_EDITS:
+				break
+
+			var spot: Vector2 = centre + side * float(offset)
+			var h: float = float(ground_height.call(spot.x, spot.y))
+
+			if is_nan(h) or absf(h - target) < PATH_AVERAGE_MIN_M:
+				continue
+
+			var depth: float = minf(absf(h - target), ROAD_DEPTH_M)
+
+			if h > target:
+				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+			else:
+				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+
+			edits += 1
+
+	var ground: float = float(ground_height.call(centre.x, centre.y))
+
+	if is_nan(ground):
+		return
+
+	var pos: Vector3 = Vector3(centre.x, ground + 0.02, centre.y)
+
+	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
+		var blocked: bool = false
+		var of_kind: int = 0
+
+		for id in _items:
+			var other: Dictionary = _items[id]
+
+			if not other.has("struct"):
+				continue
+
+			if str(other["struct"]["kind"]) == "path_patch":
+				if Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < PATH_SPACING_M:
+					blocked = true
+					break
+
+				if _chunk_of(other["pos"]) == _chunk_of(pos):
+					of_kind += 1
+			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
+				blocked = true
+				break
+
+		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
+			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+			_next_id += 1
+			_dirty = true
+
+	if i % ROAD_WEAR_EVERY == 0:
+		_wear_tool(peer, inv, "hoe", "dig")
+
+	if i == n - 1:
+		_say(peer, "The road is finished.")
 
 
 func _hoe_grade(peer: int, inv, at: Vector3) -> void:
@@ -3508,11 +3652,17 @@ func _scatter_around_players() -> void:
 
 				if budget > 0 and not _cells_done.has(cell) and Vector2(dx, dz).length() * cell_m <= SCATTER_RADIUS_M:
 					# A tile that is not in memory yet takes over a second to read: ask for it on a worker thread and lay this cell out next time.
-					if ground_ready.is_valid() and not bool(ground_ready.call((float(cell.x) + 0.5) * cell_m, (float(cell.y) + 0.5) * cell_m)):
+					if not _cell_ground_ready(cell, cell_m):
 						continue
 
 					_cells_done[cell] = true
+					var cell_usec: int = Time.get_ticks_usec()
 					_lay_out_cell(cell, cell_m, cfg)
+					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
+
+					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
+						print("items tick slow: scatter cell %s took %.0f ms" % [str(cell), cell_ms])
+
 					budget -= 1
 
 	# Take away loose things far from every player (they come back when someone returns).
@@ -3533,6 +3683,25 @@ func _scatter_around_players() -> void:
 			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
 			_items.erase(id)
 
+
+
+# True when every tile the layout of this cell can read is in memory: the centre, and the four corners pushed out by SCATTER_PAD_M
+# (the bank-stone water probe reaches 24 m, boulder hollows 6 m). Only the centre was checked before, so a cell at a tile edge read the
+# next tile from disk on the main thread: "items tick slow: scatter reached after 479 ms" in Dave's 2 Nov log. Each missing tile is
+# asked for on a worker thread (ground_ready prefetches it) and the cell waits for the next sync.
+func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
+	if not ground_ready.is_valid():
+		return true
+
+	var lo: Vector2 = Vector2(cell) * cell_m - Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
+	var hi: Vector2 = (Vector2(cell) + Vector2.ONE) * cell_m + Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
+	var all_ready: bool = true
+
+	for p in [(lo + hi) * 0.5, lo, hi, Vector2(lo.x, hi.y), Vector2(hi.x, lo.y)]:
+		if not bool(ground_ready.call(p.x, p.y)):
+			all_ready = false   # keep asking for the others too, so they all load together
+
+	return all_ready
 
 
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
@@ -4953,6 +5122,22 @@ func _fire_best_state(fire: Dictionary) -> int:
 	return FIRE_STATE_SURVIVAL
 
 
+# The lit state after the wood in a burning fire changed (a piece put in, its store closed). Dave 2 Nov 2026: three pieces lift the fire a tier and
+# it STAYS at that tier until that wood is gone, then drops to the next class with at least three pieces. So a recount never lowers the tier
+# while wood of the tier's class is still burning (two of three logs left is still a bonfire); only a hung pot does (_refresh_pots).
+func _fire_restate(fire: Dictionary) -> int:
+	var state: int = int(fire["state"])
+	var best: int = _fire_best_state(fire)
+
+	if not fire_is_lit(state) or state == FIRE_STATE_SURVIVAL or _fire_tier_of_state(best) >= _fire_tier_of_state(state):
+		return best
+
+	if state == FIRE_STATE_BONFIRE and bool(fire.get("pot", false)):
+		return best
+
+	return state if float(_fire_wood(fire).get(_fire_class_of_state(state), 0.0)) > 0.0 else best
+
+
 # A structure kind as it is called now (old saves keep their old name: the tripod pot is the campfire pot).
 func _kind_now(kind: String) -> String:
 	if _structures.has(kind):
@@ -5110,7 +5295,7 @@ func _fuel(peer: int, inv, id: int) -> void:
 				fire["fed"] = int(fire.get("fed", 0)) + 1   # the row is sent again (the inspection label's burn time)
 
 				if fire_is_lit(int(fire["state"])):
-					fire["state"] = _fire_best_state(fire)
+					fire["state"] = _fire_restate(fire)
 			else:
 				_fire_add(fire, wood)
 
@@ -5967,10 +6152,10 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 			fire["state"] = 9
 			it["left"] = FIRE_LAID_S
 		elif fire_is_lit(state):
-			fire["state"] = _fire_best_state(fire)
+			fire["state"] = _fire_restate(fire)
 
 		var secs: int = int(ceil(float(fire["burn_left"])))
-		var size: String = ["small", "medium", "large"][_fire_tier_of_state(_fire_best_state(fire)) - 1]
+		var size: String = ["small", "medium", "large"][_fire_tier_of_state(int(fire["state"]) if fire_is_lit(int(fire["state"])) else _fire_best_state(fire)) - 1]
 		_say(peer, "Wood on the fire: %d:%02d:%02d of burn time, a %s fire." % [secs / 3600, (secs / 60) % 60, secs % 60, size])
 
 	_dirty = true
@@ -8392,7 +8577,8 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
-# The shore net (ACT_NET, fishing.json "net"): the player holds the button at the water's edge; after hold_s the server rolls the haul.
+# The shore net (ACT_NET, fishing.json "net"; Dave 2 Nov 2026): the player throws it onto the water (up to reach_m away), it sinks for hold_s,
+# then is pulled back in by its twine and the server rolls the haul from the school it landed on.
 func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
 	var cfg: Dictionary = _fishing_data().get("net", {})
 	var state: Dictionary = _fishing.get(peer, {})
@@ -8438,11 +8624,12 @@ func _net_cast(peer: int, inv, slot: int, cancel: bool, at: Vector3) -> void:
 			_say(peer, str(cfg.get("say_deep", "")))
 			return
 
-	_fishing[peer] = {"phase": "net", "at": now + int(float(cfg.get("hold_s", 20.0)) * 1000.0), "spot": pos, "cell": _fish_cell(pos), "slot": slot}
+	_fishing[peer] = {"phase": "net", "at": now + int(float(cfg.get("hold_s", 6.0)) * 1000.0), "spot": pos, "landed": at, "cell": _fish_cell(at), "slot": slot}
 	_say(peer, str(cfg.get("say_start", "")))
 
 
-# The haul: up to catch[1] tries (a random 1 to 3 wanted), each limited by the cell's stock and the fishing chance (dawn and dusk best).
+# The haul: a random number of fish wanted, set by the school the net landed on (catch_by_school: a bigger school, more fish; none: 0 or 1),
+# each limited by the cell's stock and the fishing chance (dawn and dusk best).
 func _net_haul(peer: int, state: Dictionary) -> void:
 	var cfg: Dictionary = _fishing_data().get("net", {})
 	_fishing.erase(peer)
@@ -8455,8 +8642,18 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	var cell: Vector2i = state["cell"]
 	var cell_key: String = "%d,%d" % [cell.x, cell.y]
-	var want: int = _fate_rng.randi_range(int((cfg.get("catch", [1, 3]) as Array)[0]), int((cfg.get("catch", [1, 3]) as Array)[1]))   # luck-exempt: how many the net holds
-	var hit: Dictionary = school_hit(state["spot"], float(cfg.get("reach_m", 5.0)))
+	var hit: Dictionary = school_hit(state.get("landed", state["spot"]), float(cfg.get("net_radius_m", 1.5)))
+	var want: int = _fate_rng.randi_range(0, 1)   # luck-exempt: how many the net holds (no school under it: one stray fish at most)
+	var by: Dictionary = cfg.get("catch_by_school", {})
+
+	if float(hit.get("factor", 0.0)) >= float(by.get("school_factor_min", 0.5)):   # in a school (factor 1) or near one (0.5, fish_schools.json factor)
+		var most: float = float(hit.get("radius", by.get("default_radius_m", 5.0))) * float(by.get("fish_per_radius_m", 0.75))
+
+		if float(hit.get("factor", 1.0)) < 1.0:   # the net landed near the school, not in it
+			most *= float(by.get("near_mult", 0.5))
+
+		want = _fate_rng.randi_range(1, maxi(1, int(round(most))))   # luck-exempt: how many the net holds
+
 	var chance: float = clampf(_fish_chance(peer, cell, false, hit) * float(cfg.get("chance_mult", 1.0)), float(_fishing_data().get("min_chance", 0.02)), float(cfg.get("max_chance", 0.95)))
 	var caught: Array = []
 

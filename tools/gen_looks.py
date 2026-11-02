@@ -27,7 +27,7 @@ WOOD = {
 SPECIAL = {
     "plant_fibre": ("bundle", "#b7ac6a", 0.8), "twine": ("coil", "#b8a46a", 0.8), "rope": ("coil", "#a98f52", 1.0),
     "bark": ("bark", "#5a4330", 1.0), "leaves": ("leaves", "#5a8a3a", 1.0), "seed_bundle": ("pouch" if False else "sack", "#a08a52", 0.6),
-    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.0), "lumber": ("planks", "#b98d57", 1.0),
+    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("planks", "#b98d57", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),
     "soil": ("clump", "#4a3322", 1.0), "clay": ("clump", "#a0603c", 1.0), "sand": ("grit", "#d6c18b", 1.0), "gravel": ("grit", "#8d8a84", 1.0),
     "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#b3a98f", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),
@@ -162,7 +162,7 @@ GATHERED.update({"pilgrims_cup_pitchers": ("bottle", "#8aa04a", 1.0), "aloe_gel"
 GATHERED.update(_rows("grit", 0.8, {"seeds": "#c9b57a", "linseed": "#7a4a2a", "henbane_seeds": "#4a3a2a", "stillwater_seeds": "#7ec8d9"}))
 
 GATHERED.update({
-    "firewood_soft": ("bundle", "#9a7a4a", 1.0), "wooden_block_soft": ("block", "#b8905a", 0.9), "saw_blade": ("bar", "#8f9296", 1.6), "water_wheel": ("coil", "#7a5a36", 1.4),
+    "firewood_soft": ("bundle", "#9a7a4a", 1.6), "wooden_block_soft": ("block", "#b8905a", 0.9), "saw_blade": ("bar", "#8f9296", 1.6), "water_wheel": ("coil", "#7a5a36", 1.4),
     "saw_mill_kit": ("kit", "#8a6a3a", 1.2), "woodworking_table_kit": ("kit", "#7a5430", 1.0), "rock_pile": ("pile", "#7d7a74", 1.8)})
 SKIP = {"stone", "stick", "driftwood", "log"}
 

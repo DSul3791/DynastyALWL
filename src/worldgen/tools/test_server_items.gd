@@ -813,7 +813,7 @@ func _init() -> void:
 	# The garden hoe: path patches and smoothing (no items, only wear).
 	var hoe_n: int = m.table.number_of("wooden_hoe")
 	m.action(1, Net.ACT_ADMIN_GIVE, hoe_n, 0, 1, Vector3.ZERO)
-	m.ground_height = func(x, _z): return 10.0 + (0.2 if x > 6.5 else 0.0)
+	m.ground_height = func(x, _z): return 10.0 + (0.4 if x > 6.5 else 0.0)
 	var patches_of = func() -> int:
 		var count: int = 0
 
@@ -827,7 +827,7 @@ func _init() -> void:
 	check(patches_of.call() == 1, "a hoe stroke treads a path patch")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.6, 10.0, 0.6))
-	check(patches_of.call() == 1, "a patch is not trodden twice within 0.45 m")
+	check(patches_of.call() == 1, "a patch is not trodden twice within 0.7 m")
 	var patch_pos: Vector3 = Vector3.ZERO
 
 	for it in m._items.values():
@@ -839,12 +839,18 @@ func _init() -> void:
 	fills.clear()
 	accept[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.0, 10.0, 0.4))
-	check(patches_of.call() == 2, "a second patch 0.7 m along is laid")
-	check(digs.size() + fills.size() >= 2, "a path stroke averages the ground round it (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	m._last_average.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.2, 10.0, 0.4))
+	check(patches_of.call() == 2, "a second patch 0.9 m along is laid")
+	check(digs.size() + fills.size() >= 2 and digs.size() + fills.size() <= 4, "a path stroke averages the ground round it with at most 4 edits (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	digs.clear()
+	fills.clear()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(8.0, 10.0, 3.0))
+	check(digs.is_empty() and fills.is_empty() and patches_of.call() == 3, "a second path stroke within 1.5 s lays its patch but leaves the ground alone")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
-	check(patches_of.call() == 2, "a path out of reach does nothing")
+	check(patches_of.call() == 3, "a path out of reach does nothing")
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
@@ -853,7 +859,7 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
-	check(patches_of.call() == 0, "smoothed ground loses its path patch")
+	check(patches_of.call() == 1, "smoothed ground loses its path patches within 2.5 m (the far one stays)")
 	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
 	digs.clear()
 	fills.clear()
@@ -862,6 +868,18 @@ func _init() -> void:
 	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 0, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, 1, 0, 0, Vector3(8.0, 10.0, 0.0))
+	var road_patches: int = patches_of.call()
+	digs.clear()
+	fills.clear()
+
+	for step in 30:
+		m._road_tick(0.6)
+
+	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
+	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(m._roads.is_empty(), "the road job ends when the line is done")
+	digs.clear()
+	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(7.0, 10.0, 0.0))

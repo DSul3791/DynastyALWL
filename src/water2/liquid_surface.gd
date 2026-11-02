@@ -44,14 +44,20 @@ vec4 sample_liquid(vec2 uv) {
 	return textureLod(liquid, uv, 0.0);
 }
 
+// The least depth that still draws: 4 mm for slow water, half a millimetre where it runs fast (a fall face, a chute).
+float wet_min(vec4 t) {
+	return mix(0.004, 0.0005, smoothstep(0.6, 2.0, length(t.gb)));
+}
+
 void vertex() {
 	// UV across the window: the plane spans the texture exactly (texel centres on the sim cells).
 	tex_uv = point_grid > 0.5 ? (vec2(0.5) + UV * (cells - vec2(1.0))) / cells : UV;
 	vec4 t = sample_liquid(tex_uv);
 	depth_v = t.a;
 	flow_v = t.gb;
-	// Dry ground: the sheet tucks under the bed, so it never floats over a dry channel; the per-pixel fade hides the seam.
-	VERTEX.y = t.a > 0.004 ? t.r : t.r - 0.4;
+	// Dry ground: the sheet tucks under the bed, so it never floats over a dry channel; the per-pixel fade hides the seam. Fast water counts as wet when
+	// much thinner (down a fall the sim's water runs fast and only millimetres deep: Dave 2 Nov 2026, "no water coming down the waterfalls at all").
+	VERTEX.y = t.a > wet_min(t) ? t.r : t.r - 0.4;
 }
 
 float hash(vec2 p) {
@@ -74,7 +80,7 @@ void fragment() {
 	vec4 t = texture(liquid, tex_uv);   // per pixel: the shore follows the depth between cells, not the cell edges
 	float depth = t.a;
 
-	if (depth < 0.004) {
+	if (depth < wet_min(t)) {
 		discard;
 	}
 
@@ -159,8 +165,8 @@ void fragment() {
 	vec4 ez0 = texture(liquid, tex_uv - vec2(0.0, px.y));
 	vec4 ez1 = texture(liquid, tex_uv + vec2(0.0, px.y));
 	vec2 grad = vec2(
-		min(ex0.a, ex1.a) > 0.004 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
-		min(ez0.a, ez1.a) > 0.004 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
+		min(ex0.a, ex1.a) > 0.0005 ? (ex1.r - ex0.r) / (2.0 * cell_m) : 0.0,
+		min(ez0.a, ez1.a) > 0.0005 ? (ez1.r - ez0.r) / (2.0 * cell_m) : 0.0);
 	float drop = length(grad);
 	float fall = smoothstep(0.35, 0.9, drop);   // from about 20 degrees: a riffle between pools stays water, not white sheet
 
@@ -175,7 +181,8 @@ void fragment() {
 	// The shore: the sheet thins out with the water; the window's edge fades to the grid look.
 	vec2 in_cells = tex_uv * cells;
 	float edge = fade_cells > 0.0 ? clamp(min(min(in_cells.x, in_cells.y), min(cells.x - in_cells.x, cells.y - in_cells.y)) / fade_cells, 0.0, 1.0) : 1.0;
-	float shore = smoothstep(0.0, edge_m, depth);
+	// A thin fast sheet (a fall face) is not a shore: it shows at full strength from a few millimetres.
+	float shore = max(smoothstep(0.0, edge_m, depth), smoothstep(0.6, 2.0, raw_speed) * smoothstep(0.0005, 0.004, depth));
 
 	ALBEDO = mix(mix(water, sky_color, fresnel * 0.6), foam_color, foam);
 	EMISSION = foam_color * foam * 0.15 * daylight;
@@ -257,7 +264,33 @@ static func image_from_grid(grid: Dictionary) -> Image:
 			var here: float = edge[n] if not edge.is_empty() and not is_nan(edge[n]) else (near / float(seen) - 0.4 if seen > 0 else -1000.0)
 			im.set_pixel(i, j, Color(here, 0.0, 0.0, 0.0))
 
+	_paint_falls(im, grid, count)
 	return im
+
+
+# Falls (water_falls.gd chains, chunk-local points from the lip down to the pool): a fall face's grid points are dry in the settled levels, so the sheet
+# tucked under the cliff and no water came down (Dave 2 Nov 2026). Each point of a chain is drawn wet at the chain's own height, running down the chain
+# fast, so the sheet bends over the lip and the shader's fall white water shows on the face.
+static func _paint_falls(im: Image, grid: Dictionary, count: int) -> void:
+	var spacing: float = float(grid.get("spacing", 8.0))
+
+	for fall in grid.get("falls", []):
+		var points: PackedVector3Array = fall.get("points", PackedVector3Array())
+
+		for k in range(points.size()):
+			var p: Vector3 = points[k]
+			var i: int = int(round(p.x / spacing))
+			var j: int = int(round(p.z / spacing))
+
+			if i < 0 or j < 0 or i >= count or j >= count:
+				continue
+
+			var ahead: Vector3 = points[mini(k + 1, points.size() - 1)] - points[maxi(k - 1, 0)]
+			var run: Vector2 = Vector2(ahead.x, ahead.z).normalized() * 3.0
+			var old: Color = im.get_pixel(i, j)
+
+			if old.a < SHORE_DEPTH_M:
+				im.set_pixel(i, j, Color(p.y, run.x, run.y, SHORE_DEPTH_M))
 
 
 # A chunk's sheet: `corner` is the world x, z of grid point (0, 0); the texels sit on the grid points, the sheet spans them exactly (no overlap with the
@@ -298,7 +331,8 @@ func _set_plane(size: Vector2) -> void:
 
 
 # The newest window from the server (water_flow_texture.unpack): `origin` is the world x, z of cell (0, 0).
-func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
+# `texture`: the same image already uploaded (terrain_client.gd reuses one texture for every publish), else one is made here.
+func show_window(im: Image, origin: Vector2, cell_m: float, texture: Texture2D = null) -> void:
 	var cells: Vector2i = Vector2i(im.get_width(), im.get_height())
 	var size: Vector2 = Vector2(cells) * cell_m
 
@@ -309,7 +343,7 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 	# The texture covers the cells' squares: from half a cell before cell (0, 0). A PlaneMesh is centred on its node and its UV runs 0..1 from -x, -z.
 	var corner: Vector2 = origin - Vector2(0.5, 0.5) * cell_m
 	position = Vector3(corner.x + size.x * 0.5, 0.0, corner.y + size.y * 0.5)
-	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
+	_material.set_shader_parameter("liquid", texture if texture != null else ImageTexture.create_from_image(im))
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
 	_material.set_shader_parameter("cell_m", cell_m)

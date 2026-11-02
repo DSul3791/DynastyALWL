@@ -41,6 +41,8 @@ const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
@@ -74,6 +76,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
+const SoundPanelScript := preload("res://src/client/sound_panel.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const IdleTimeoutScript := preload("res://src/client/idle_timeout.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
@@ -197,6 +200,7 @@ var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
+var sound_panel = SoundPanelScript.new()   # Shift+F3: every playing sound with a switch to mute it (sound_panel.gd)
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
@@ -1057,6 +1061,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: flora setup", t3)
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
+	_freeze_watch.start()
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
@@ -1102,6 +1107,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
+	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
 			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
@@ -1880,6 +1886,9 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 
 
+var _water_key: Dictionary = {}   # chunk -> hash of the water bytes last received for it (unchanged water is not redrawn)
+
+
 func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool) -> void:
 	if flora == null:
 		return
@@ -1891,6 +1900,7 @@ func _on_flora(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, 
 	_flora_chunks += 1
 	_flora_bytes += bytes.size() + water.size()
 	_flora_done_msec = Time.get_ticks_msec() - connected_msec
+	_water_key[chunk] = hash(water) ^ water.size() if not water.is_empty() else 0
 	_queue_in({"kind": "flora", "chunk": chunk, "bytes": bytes, "water": water, "full": full})
 
 
@@ -1948,6 +1958,7 @@ func _drain_incoming() -> void:
 func _apply_incoming() -> void:
 	var started: int = Time.get_ticks_usec()
 	var applied: int = 0
+	var water_applied: int = 0
 
 	while not _in_queue.is_empty():
 		_in_mutex.lock()
@@ -1956,6 +1967,10 @@ func _apply_incoming() -> void:
 		_in_mutex.unlock()
 
 		if not done or (applied > 0 and Time.get_ticks_usec() - started > INCOMING_USEC):
+			break
+
+		# One chunk's water redraw a frame at most (Steve's lag report, 2 Nov 2026): a burst of changed chunks is spread over frames.
+		if job["kind"] == "water" and water_applied > 0:
 			break
 
 		_in_queue.pop_front()
@@ -1989,6 +2004,7 @@ func _apply_incoming() -> void:
 
 			Probe.stop("flora chunk in", t)
 		else:
+			water_applied += 1
 			var tw: int = Probe.start()
 			flora.set_water(chunk, result["grid"])
 			Probe.stop("water in", tw)
@@ -2030,6 +2046,8 @@ func _update_weather() -> void:
 
 # Protocol 85: the simulated water window as a texture: the liquid sheet draws it, and the grid look steps aside inside it (src/water2/water_flow_texture.gd).
 var _liquid = null   # the liquid water sheet over the live window (created on the first flow packet)
+var _flow_tex: ImageTexture = null      # the live water window's texture, updated in place each publish
+var _liquid_hole_told: Rect2 = Rect2()
 
 
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
@@ -2051,10 +2069,21 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_liquid.add_to_group("water_draw")
 		flora.add_child(_liquid)
 
-	_liquid.show_window(im, origin, cell_m)
-	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in.
-	flora.set_liquid_hole(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m, cell_m)
-	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m)
+	# One texture for every publish (twice a second, 256 KB): updated in place, not a new GPU texture each time (lag review, Dave 2 Nov 2026).
+	if _flow_tex == null or _flow_tex.get_size() != Vector2(im.get_size()):
+		_flow_tex = ImageTexture.create_from_image(im)
+	else:
+		_flow_tex.update(im)
+
+	_liquid.show_window(im, origin, cell_m, _flow_tex)
+	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in (told only when the window moves).
+	var hole: Rect2 = Rect2(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m)
+
+	if hole != _liquid_hole_told:
+		_liquid_hole_told = hole
+		flora.set_liquid_hole(hole.position, hole.size, cell_m)
+
+	FlowTexture.apply_image(material as ShaderMaterial, im, origin, cell_m, _flow_tex)
 
 
 func _on_water_rate(rate: float, busy: bool, spring_m3_s: float) -> void:
@@ -2136,8 +2165,18 @@ func _send_water_request(now: int) -> void:
 
 
 func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
-	if flora != null:
-		_queue_in({"kind": "water", "chunk": chunk, "water": water})
+	if flora == null:
+		return
+
+	# Steve's lag report (2 Nov 2026, 120-147 ms spikes): every "water moved" re-ask brought back ~9 chunks and each was unpacked and redrawn
+	# though most had not changed. The same bytes as the chunk's last water are dropped here (the server skips them too since #128).
+	var key: int = hash(water) ^ water.size()
+
+	if int(_water_key.get(chunk, 0)) == key:
+		return
+
+	_water_key[chunk] = key
+	_queue_in({"kind": "water", "chunk": chunk, "water": water})
 
 
 func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
@@ -3273,6 +3312,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			flora.toggle_water_visible()
 		elif event.keycode == KEY_V and event.ctrl_pressed and event.shift_pressed:
 			flora.toggle_water_debug()
+		elif event.keycode == KEY_F3 and event.shift_pressed:
+			sound_panel.toggle()
 		elif event.keycode == KEY_F3:
 			debug_hud.enabled = not debug_hud.enabled
 		elif event.keycode == KEY_F4:
@@ -3817,6 +3858,7 @@ func _log_frame(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	FreezeWatchScript.beat()
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
@@ -5165,9 +5207,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
-	text += "\n" + sound.heard_text(body)
-	text += "\n" + sound.ambient_dump(body, 8)
-	text += "\n" + sound.meters_text()
+	text += "\n" + sound.debug_sound_text(body)       # cached half a second: it walks every player in the scene (was every frame)
 	text += "\n" + sound.wind_text()
 	text += "\nexertion %.2f (%s): %d breaths, %d heartbeats, last %s" % [sound.breath.exertion, sound.breath.state, sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last]
 	text += "\ntree sounds: %d falls, %d sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last]
@@ -5553,6 +5593,7 @@ func _finish_cache_task() -> void:
 
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
+	_freeze_watch.stop()
 
 	if crash_report != null:
 		crash_report.mark_clean()
