@@ -140,6 +140,16 @@ func _init() -> void:
 
 	check(w.inventory_of(1).count_of(log_n) == 0, "no log went into the pack")
 
+	for k in logs:   # the logs last a real week, as the trunk did (a plain dropped item is gone in 20 minutes)
+		check(float(w._items[k]["left"]) >= 7.0 * 86400.0 - 1.0, "a split log lasts a week: %.0f s" % float(w._items[k]["left"]))
+
+	var plain_at: Vector3 = Vector3(500.0, 10.0, 0.0)
+	w.drop_in_world(w.table.number_of("stone"), 1, plain_at)
+
+	for k in w._items:
+		if not w._items[k].has("tree") and w._items[k]["pos"].distance_to(plain_at) < 0.5 and int(w._items[k]["number"]) == w.table.number_of("stone"):
+			check(float(w._items[k]["left"]) < 86400.0, "an ordinary drop keeps its short lifetime")
+
 	# A tall oak: whole lengths only, capped like cutting.
 	w.report_position(1, Vector3(58.0, 10.0, 0.0))
 	fell_one(w, standing, 8)
