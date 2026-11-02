@@ -2864,6 +2864,7 @@ func _fires(delta: float) -> void:
 			_dirty = true
 
 			fire.erase("burnt")
+			fire.erase("counted")
 
 			if bool(fire.get("synced", false)) and fire.has("uid") and _chests.has(int(fire["uid"])) and _fire_clear_wood(_chests[int(fire["uid"])]):
 				_push_box(id, _chests[int(fire["uid"])])   # burnt out: the last piece is ash too, so it cannot be counted again when the store is closed
@@ -5522,6 +5523,7 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 	var laid: Dictionary = {}
 
 	var burnt: Dictionary = fire.get("burnt", {})
+	fire["counted"] = pieces.duplicate()   # the pieces this count knows; only these may burn out of the store (_fire_trim_store), never wood put in after it
 
 	for cls in ["log", "firewood", "weak"]:
 		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
@@ -5555,6 +5557,11 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 	var burnt: Dictionary = fire.get("burnt", {})
 	var removed: bool = false
 
+	if not fire.has("counted"):   # a fire loaded from a save: what is in its store now is what was counted
+		fire["counted"] = _fire_store_pieces(fire, box)
+
+	var counted: Dictionary = fire["counted"]
+
 	for cls in burnt.keys():
 		for slot in range(box.usable):
 			var number: int = box.numbers[slot]
@@ -5564,12 +5571,40 @@ func _fire_trim_store(fire: Dictionary, box) -> bool:
 
 			var each: float = float(fuel[table.id_of(number)]) / GAME_RATE
 
-			while box.numbers[slot] == number and box.counts[slot] > 0 and float(burnt[cls]) >= each - 0.01:
+			while box.numbers[slot] == number and box.counts[slot] > 0 and int(counted.get(cls, 0)) > 0 and float(burnt[cls]) >= each - 0.01:
 				box.take_from_slot(slot, 1)
 				burnt[cls] = float(burnt[cls]) - each
+				counted[cls] = int(counted[cls]) - 1
 				removed = true
+				print("fire store: one %s burned away (%s burned %.0f s, %d counted left)" % [table.id_of(number), cls, float(burnt[cls]) + each, int(counted[cls])])
+
+		# Dave 2 Nov 2026 (the third log still vanished): burn time with no counted piece left to take (a fire whose burn time ran ahead of its store)
+		# is not a debt on wood put in later. It goes, so a new piece stays until the next count.
+		if int(counted.get(cls, 0)) <= 0:
+			burnt[cls] = 0.0
 
 	return removed
+
+
+# Pieces of each wood class in a fire's store (logs left out while a pot hangs over it).
+func _fire_store_pieces(fire: Dictionary, box) -> Dictionary:
+	var fuel: Dictionary = _cooking.get("fuel", {})
+	var pieces: Dictionary = {"log": 0, "firewood": 0, "weak": 0}
+
+	for slot in range(box.usable):
+		var number: int = box.numbers[slot]
+
+		if number == 0 or not fuel.has(table.id_of(number)):
+			continue
+
+		var cls: String = _fire_wood_class(table.id_of(number))
+
+		if cls == "log" and bool(fire.get("pot", false)):
+			continue
+
+		pieces[cls] = int(pieces[cls]) + int(box.counts[slot])
+
+	return pieces
 
 
 # A burnt-out fire's store keeps no wood: the trim leaves the last piece until the fire is out, and it must not come back as fresh burn time. Food stays.
