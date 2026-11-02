@@ -90,5 +90,5 @@ Note: Recommendation: A, because it is the cheapest thing that fits a day's wage
 ## mikew-pixabay-animal-calls | Sounds: when you have time, can you download Pixabay calls for boar, grouse, seal and seabird?
 Note: Neither the cloud nor the PC thread can download from Pixabay, so this needs your hands (MikeW). On pixabay.com/sound-effects, 2 or 3 real field recordings per animal, no music or voices, nothing labelled AI or synthesized.
 Note: Search: boar "wild boar grunt", "boar squeal"; grouse "grouse call", "black grouse", "ptarmigan"; seal "seal bark", "grey seal"; seabird "seagull", "herring gull", "gull colony".
-Note: Save to C:\GodotProjects\DynastyALWL\art\dave_sources\pixabay_20261102\<animal>\ (boar, grouse, seal, seabird). Keep the file names Pixabay gives (they hold the clip number, so Jason can find the page and licence). Jason then cuts and levels them.
+Note: Drop them in the project folder at sound/incoming/<animal>/ (boar, grouse, seal, seabird), with a short urls.txt listing each clip's Pixabay page link. Jason then cuts and levels them.
 [test]
