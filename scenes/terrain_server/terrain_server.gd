@@ -141,6 +141,7 @@ var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
 var _water_answered_msec: Dictionary = {}   # peer -> last time its water request was answered
+var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
 const BURY_QUEUE_MAX := 4000        # digs waiting for the plant check; beyond it a dig skips the check
 var _bury_mutex: Mutex = Mutex.new()
@@ -830,6 +831,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	limits.forget(peer_id)
 	_warm_home.erase(peer_id)
 	_water_answered_msec.erase(peer_id)
+	_water_sent.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_animal_sent.erase(peer_id)
@@ -956,11 +958,35 @@ func _on_water_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		_queue_water(peer_id, Vector2i(chunks[2 * n], chunks[2 * n + 1]))
 
 
+# Lag review (Dave 2 Nov 2026): every "water moved" the client asks again for all ~22 chunks it holds, and every answer was
+# unpacked and redrawn on its main thread, though in a settled river most chunks have not changed. Each peer's last water per chunk
+# is remembered by hash; the same bytes are not sent again. Records what is sent (empty bytes forget it) and says whether to send.
+func _water_changed_for(peer_id: int, chunk: Vector2i, bytes: PackedByteArray) -> bool:
+	var held: Dictionary = _water_sent.get(peer_id, {})
+	_water_sent[peer_id] = held
+
+	if bytes.is_empty():
+		held.erase(chunk)
+		return true
+
+	var key: int = hash(bytes) ^ bytes.size()
+
+	if int(held.get(chunk, 0)) == key:
+		return false
+
+	held[chunk] = key
+	return true
+
+
 # Packing a chunk's water takes about 30 ms: ready ones go out at once, the rest are packed by a worker thread and sent
 # from _process when done.
 func _queue_water(peer_id: int, chunk: Vector2i) -> void:
 	if flora.water_ready(chunk):
-		net.deliver_water.rpc_id(peer_id, chunk, flora.water_bytes(chunk))
+		var bytes: PackedByteArray = flora.water_bytes(chunk)
+
+		if _water_changed_for(peer_id, chunk, bytes):
+			net.deliver_water.rpc_id(peer_id, chunk, bytes)
+
 		return
 
 	_queue_mutex.lock()
@@ -1232,7 +1258,9 @@ func _flora_changed(chunk: Vector2i) -> void:
 
 	for peer in items.peers_near(centre, 600.0):
 		var water_cached: bool = flora.water_ready(chunk)
-		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), flora.water_bytes(chunk) if water_cached else PackedByteArray(), true)
+		var water_bytes: PackedByteArray = flora.water_bytes(chunk) if water_cached else PackedByteArray()
+		_water_changed_for(peer, chunk, water_bytes)
+		net.deliver_flora.rpc_id(peer, chunk, flora.chunk_bytes(chunk, true), water_bytes, true)
 		_send_stripped(peer, chunk)
 
 		if not water_cached:
@@ -1897,7 +1925,7 @@ func _process(delta: float) -> void:
 	_done_mutex.unlock()
 
 	for entry in water_done:
-		if _peers.has(entry[0]):
+		if _peers.has(entry[0]) and _water_changed_for(entry[0], entry[1], entry[2]):
 			net.deliver_water.rpc_id(entry[0], entry[1], entry[2])
 
 	var batches: Dictionary = {}
@@ -1917,6 +1945,7 @@ func _process(delta: float) -> void:
 			continue
 
 		if entry.size() > 3:
+			_water_changed_for(entry[0], entry[1], entry[4])
 			net.deliver_flora.rpc_id(entry[0], entry[1], entry[2], entry[4], entry[5])
 			_send_stripped(entry[0], entry[1])
 			_peers[entry[0]]["flora_bytes"] = int(_peers[entry[0]].get("flora_bytes", 0)) + (entry[2] as PackedByteArray).size()

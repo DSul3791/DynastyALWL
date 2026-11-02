@@ -298,7 +298,8 @@ func _set_plane(size: Vector2) -> void:
 
 
 # The newest window from the server (water_flow_texture.unpack): `origin` is the world x, z of cell (0, 0).
-func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
+# `texture`: the same image already uploaded (terrain_client.gd reuses one texture for every publish), else one is made here.
+func show_window(im: Image, origin: Vector2, cell_m: float, texture: Texture2D = null) -> void:
 	var cells: Vector2i = Vector2i(im.get_width(), im.get_height())
 	var size: Vector2 = Vector2(cells) * cell_m
 
@@ -309,7 +310,7 @@ func show_window(im: Image, origin: Vector2, cell_m: float) -> void:
 	# The texture covers the cells' squares: from half a cell before cell (0, 0). A PlaneMesh is centred on its node and its UV runs 0..1 from -x, -z.
 	var corner: Vector2 = origin - Vector2(0.5, 0.5) * cell_m
 	position = Vector3(corner.x + size.x * 0.5, 0.0, corner.y + size.y * 0.5)
-	_material.set_shader_parameter("liquid", ImageTexture.create_from_image(im))
+	_material.set_shader_parameter("liquid", texture if texture != null else ImageTexture.create_from_image(im))
 	_material.set_shader_parameter("cells", Vector2(cells))
 	_material.set_shader_parameter("fade_cells", FADE_CELLS)
 	_material.set_shader_parameter("cell_m", cell_m)

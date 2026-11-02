@@ -565,6 +565,7 @@ func peer_left(peer: int) -> void:
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
+	_last_average.erase(peer)
 	_grade_points.erase(peer)
 	_last_hit.erase(peer)
 	_last_cook.erase(peer)
@@ -2195,7 +2196,11 @@ func _hoe_ready(peer: int, inv, at: Vector3) -> bool:
 # volume balanced, at most SMOOTH_MAX_M a stroke, like smooth but wider), then lays a round trodden patch exactly where the player pointed (not snapped
 # to a grid). The client draws it strong brown for the middle half metre and fading to see-through by 1.25 m. A drag lays one every PATH_SPACING_M.
 const PATH_AVERAGE_M := 2.0
-const PATH_SPACING_M := 0.45
+const PATH_AVERAGE_MIN_M := 0.08    # ground within a path's reach that is flatter than this is left alone (no edit, no remesh)
+const PATH_AVERAGE_OPS := 4         # at most this many ground edits a stroke: every edit is a message to every client, a remesh and a grass rebuild
+const PATH_AVERAGE_GAP_MS := 1500   # and the ground is averaged at most this often per player (patches are still laid every stroke)
+var _last_average: Dictionary = {}  # peer -> msec of the last averaging
+const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means fewer decals along a road
 
 
 func _hoe_path(peer: int, inv, at: Vector3) -> void:
@@ -2247,7 +2252,14 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 	for k in 8:
 		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * PATH_AVERAGE_M * 0.75)
 
-	var moved: bool = _average_ground(at, spots)
+	var moved: bool = false
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_average.get(peer, -100000)) >= PATH_AVERAGE_GAP_MS:
+		moved = _average_ground(at, spots, PATH_AVERAGE_MIN_M, PATH_AVERAGE_OPS)
+
+		if moved:
+			_last_average[peer] = now
 
 	_wear_tool(peer, inv, "hoe", "dig")
 
@@ -2257,7 +2269,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 			var old: Dictionary = _items[id]
 			var old_ground: float = float(ground_height.call(old["pos"].x, old["pos"].z))
 
-			if not is_nan(old_ground):
+			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
 				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
 				_next_id += 1
@@ -2272,7 +2284,7 @@ func _hoe_path(peer: int, inv, at: Vector3) -> void:
 
 # Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
 # Returns true when any ground moved.
-func _average_ground(at: Vector3, spots: Array) -> bool:
+func _average_ground(at: Vector3, spots: Array, min_m: float = SMOOTH_MIN_M, max_ops: int = 99) -> bool:
 	if not dig_ground.is_valid() or not fill_ground.is_valid():
 		return false
 
@@ -2296,16 +2308,20 @@ func _average_ground(at: Vector3, spots: Array) -> bool:
 	for n in spots.size():
 		var d: float = float(heights[n]) - mean
 
-		if absf(d) < SMOOTH_MIN_M:
+		if absf(d) < min_m:
 			continue
 
-		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		moves.append([n, depth, 1 if d > 0.0 else -1])
+		moves.append([n, minf(absf(d), SMOOTH_MAX_M), 1 if d > 0.0 else -1])
 
-		if d > 0.0:
-			cut_sum += depth
+	if moves.size() > max_ops:   # only the biggest bumps and dips are worked
+		moves.sort_custom(func(p, q): return float(p[1]) > float(q[1]))
+		moves = moves.slice(0, max_ops)
+
+	for move in moves:
+		if int(move[2]) > 0:
+			cut_sum += float(move[1])
 		else:
-			fill_sum += depth
+			fill_sum += float(move[1])
 
 	var shifted: float = minf(cut_sum, fill_sum)
 
