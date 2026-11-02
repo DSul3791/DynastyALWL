@@ -3642,6 +3642,11 @@ func _ease_step_lift(delta: float) -> void:
 # The water at the player: {"surface", "ground"} when they are in or over water deeper than a film
 # (a lake or river level from the water grid, or the sea at 0 m), else {}. One ray down, only when
 # water is near the player.
+var _water_ground: float = NAN           # _water_here's cached bed height, where and when it was read
+var _water_ground_at: Vector2 = Vector2(INF, INF)
+var _water_ground_msec: int = -1000
+
+
 func _water_here() -> Dictionary:
 	var here: Vector3 = body.global_position
 	var surface: float = flora.water_surface_at(here.x, here.z) if flora != null else NAN
@@ -3649,10 +3654,18 @@ func _water_here() -> Dictionary:
 	if is_nan(surface) and here.y > 2.0:
 		return {}
 
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 0.5, 0.0), here + Vector3(0.0, -250.0, 0.0), 1)
-	query.exclude = [body.get_rid()]
-	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
-	var ground: float = float(hit["position"].y) if not hit.is_empty() else NAN
+	# The bed under a swimmer or wader hardly changes from frame to frame: one ray down per 0.25 m moved or 150 ms, not one per frame.
+	var now: int = Time.get_ticks_msec()
+	var ground: float = _water_ground
+
+	if now - _water_ground_msec > 150 or Vector2(here.x - _water_ground_at.x, here.z - _water_ground_at.y).length() > 0.25:
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(here + Vector3(0.0, 0.5, 0.0), here + Vector3(0.0, -250.0, 0.0), 1)
+		query.exclude = [body.get_rid()]
+		var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+		ground = float(hit["position"].y) if not hit.is_empty() else NAN
+		_water_ground = ground
+		_water_ground_msec = now
+		_water_ground_at = Vector2(here.x, here.z)
 
 	return SwimScript.water_at(here.y, surface, ground)
 
