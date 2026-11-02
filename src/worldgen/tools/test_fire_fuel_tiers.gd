@@ -273,6 +273,7 @@ func _init() -> void:
 	var one_log_s: float = float(cook["fuel"]["log"]) / rate
 	var grew: int = 0
 	var logs_on: int = 0
+	f._fire_apply_store(f._items[log_fire]["fire"], f._chests[int(f._items[log_fire]["fire"]["uid"])])   # count the logs already in the store, so the first log is measured against the true time
 	var pack_logs: int = f.inventory_of(1).count_of(log_n)
 	f.action(1, Net.ACT_ADMIN_GIVE, log_n, 0, 8, Vector3.ZERO)
 
