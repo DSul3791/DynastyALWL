@@ -239,6 +239,7 @@ const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
 # to far_share at the edge. A stable hash per plant picks which stay; colliders are unaffected (only drawing).
 const FAR_FILE := "res://data/look/grass_far.json"
 const FAR_BAND_M := 48.0   # tree chunks in the thinning ring are re-planned each time the player moves this much nearer or farther
+const FAR_BAND_SLACK_M := 8.0   # and only once the player is this far past a band edge (no flip-flop while pacing at one)
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -1984,8 +1985,12 @@ func _refresh(chunk: Vector2i, from_position: Vector3) -> void:
 	var near_d: float = _distance(chunk, from_position)
 
 	# A chunk inside the tree thinning ring is re-planned every FAR_BAND_M the player comes closer or goes away, so its share follows the distance.
+	# Hysteresis (Steve's review): the band only changes once near_d is FAR_BAND_SLACK_M past its edge, so a player pacing at an edge
+	# does not re-plan the chunk at every update.
 	if near_d <= view_m[KIND_TREE] and near_d + chunk_m * 1.42 >= fade_start_share * view_m[KIND_TREE] and far_share < 1.0:
-		masks["far_band"] = int(near_d / FAR_BAND_M)
+		var band: int = far_band_of(near_d, int(entry.get("far_band", -1)))
+		entry["far_band"] = band
+		masks["far_band"] = band
 
 	if (level == entry["level"] and masks == entry.get("masks", {})) or (level == entry.get("building", -2) and masks == entry.get("building_masks", {})):
 		return
@@ -2227,6 +2232,14 @@ func finish_tasks() -> void:
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
 # Whether a plant is drawn at this share: a stable choice per plant id, so the same plants stay as the player moves.
+# The thinning band for a distance, kept at `band` while near_d stays within FAR_BAND_SLACK_M of it (-1: no band yet).
+static func far_band_of(near_d: float, band: int) -> int:
+	if band < 0 or absf(near_d - (float(band) + 0.5) * FAR_BAND_M) > 0.5 * FAR_BAND_M + FAR_BAND_SLACK_M:
+		return int(near_d / FAR_BAND_M)
+
+	return band
+
+
 static func far_keep(id: int, share: float) -> bool:
 	return share >= 1.0 or float(((id * 2246822519) & 0x7fffffff) % 1000) / 1000.0 < share
 

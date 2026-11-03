@@ -27,6 +27,15 @@ func _init() -> void:
 
 	# Distance thinning (Dave 3 Nov 2026, the grass rule in data/look/grass_far.json): full out to fade_start of the view distance, then down to far_share at the edge.
 	_check(is_equal_approx(FloraView.far_share_at(100.0, 450.0, 0.5, 0.3), 1.0) and is_equal_approx(FloraView.far_share_at(225.0, 450.0, 0.5, 0.3), 1.0), "every tree is drawn out to half the view distance")
+	var band: int = FloraView.far_band_of(100.0, -1)
+	var paced: Array = []
+
+	for d in [95.0, 97.0, 99.0, 94.0, 98.0, 100.0]:
+		band = FloraView.far_band_of(d, band)
+		paced.append(band)
+
+	_check(paced.count(paced[0]) == paced.size(), "pacing at a band edge (94 to 100 m) keeps one thinning band %s" % str(paced))
+	_check(FloraView.far_band_of(160.0, FloraView.far_band_of(100.0, -1)) == 3, "walking 60 m on (past the slack) moves to the next band")
 	var mid: float = FloraView.far_share_at(337.0, 450.0, 0.5, 0.3)
 	_check(mid < 0.8 and mid > 0.5 and is_equal_approx(FloraView.far_share_at(450.0, 450.0, 0.5, 0.3), 0.3), "the share falls smoothly to 30 percent at the edge (%.2f at 337 m)" % mid)
 	var kept: int = 0
