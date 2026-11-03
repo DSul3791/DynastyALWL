@@ -53,3 +53,10 @@ Note: 4. Roads (#137): with the hoe, Shift + right click to drop marker A, walk 
 Note: 5. Grass (#140): stand in tall grass in first person, then press the third-person key. No flat green carpet around your feet in either view.
 Note: 6. Lag (#157, #155, #158): walk past a felled log and kick it. If anything pauses, copy the HITCH and FREEZE lines from the console into the Notes box.
 [test]
+
+## claude-leanto-cost | You said no to 32 sticks, 8 leaves, 4 twine for the lean-to. Too much or too little?
+Note: Your earlier OK was 24 sticks, 6 leaves, 4 twine. It was raised to 32 / 8 / 4. The "No" does not say which way.
+Note: Recommendation: too much for the first hour. Go to 16 sticks, 4 leaves, 2 twine, about 10 minutes of gathering.
+[A] Lighter: 16 sticks, 4 leaves, 2 twine
+[B] Heavier than now
+[C] Back to 24 / 6 / 4
