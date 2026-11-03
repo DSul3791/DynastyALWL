@@ -5360,7 +5360,7 @@ func _light(peer: int, inv, id: int) -> void:
 				break
 
 	if not inv.has(table.number_of(tinder), 1):
-		_say(peer, "Needs plant fibre, birch bark or tinder to light")
+		_say(peer, "Needs plant fibre, kindling, birch bark or tinder to light")
 		return
 
 	inv.remove(table.number_of(tinder), 1)
