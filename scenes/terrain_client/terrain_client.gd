@@ -256,6 +256,7 @@ var test_dump: bool = false           # --dump-test: 14 s after the welcome dump
 var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
+var _health_seen: float = -1.0           # last frame's health, to jolt the view when it drops
 var feel = FeelKicksScript.new()                 # landing dip and tool-blow jolt on the eye (feel_kicks.gd)
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
@@ -3867,6 +3868,14 @@ func _update_bob(delta: float) -> void:
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
+	if items != null:
+		var health_now: float = float(items.health)
+
+		if _health_seen >= 0.0 and health_now < _health_seen - 0.5:
+			feel.hurt(_health_seen - health_now, 1.0 if int(Time.get_ticks_msec() / 1000) % 2 == 0 else -1.0)
+
+		_health_seen = health_now
+
 	var kick: Dictionary = feel.step(delta)
 	camera.position.y += float(kick["y"])
 	camera.rotation.z += deg_to_rad(float(kick["roll"]))
