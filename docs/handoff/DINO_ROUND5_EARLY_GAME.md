@@ -19,3 +19,8 @@ No game data changed; owners below. `tools/text_vs_recipe.py` reports 0 mismatch
 
 ## C. Guides
 Checklist refreshed for main in the same PR (new-since list for everything merged 2 Nov, known-broken by bug number, Temperature bar, the fell line Dave chose). Tutorial step 10 uses Dave's line.
+
+## D. Item text (low)
+- `item_uses.json` campfire_kit and the matching `encyclopedia.json` line: "...light it, then feed it wood." Suggest "...then put wood in with F." so the inspect text teaches the fire store. Owner: Sal.
+- Encyclopedia lines "Craft at a workbench" are fine: the station id is workbench; the item the player builds is the Camp bench. Worth one sentence in the Camp bench entry: "Counts as a workbench." Owner: Sal.
+- camp_goals.json is still marked "read by nothing yet"; its texts were not checked against controls.
