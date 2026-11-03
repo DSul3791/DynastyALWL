@@ -21,6 +21,7 @@ static var _solid: StandardMaterial3D           # vertex colours, one side
 static var _cards: StandardMaterial3D           # vertex colours, both sides (leaves)
 static var _flame: ShaderMaterial
 static var _flame_card: ShaderMaterial
+static var _fixture_flame_card: ShaderMaterial
 static var _coal: ShaderMaterial
 
 const FLAME_SHADER := """
@@ -57,6 +58,7 @@ void fragment() {
 const FLAME_CARD_SHADER := """
 shader_type spatial;
 render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabled;
+uniform float strength = 1.0;      // the lit fixtures (torch, chandelier, fireplace) draw dimmer so overlapping flames in a room do not clip to white
 varying float seed;
 
 float hash(vec2 p) {
@@ -91,7 +93,7 @@ void fragment() {
 	float core = smoothstep(width * 0.55, 0.0, abs(dx)) * (1.0 - smoothstep(0.1, 0.6, y));
 	vec3 col = mix(vec3(0.7, 0.12, 0.02), vec3(1.0, 0.5, 0.07), smoothstep(0.0, 0.8, body));
 	col = mix(col, vec3(1.0, 0.86, 0.5), core * 0.85);
-	ALBEDO = col * (0.55 + 0.6 * body);
+	ALBEDO = col * (0.55 + 0.6 * body) * strength;
 	ALPHA = body * 0.9;
 }
 """
@@ -175,6 +177,14 @@ static func _flame_card_material() -> ShaderMaterial:
 		_flame_card = ShaderMaterial.new()
 		_flame_card.shader = shader
 	return _flame_card
+
+
+static func _fixture_flame_card_material() -> ShaderMaterial:
+	if _fixture_flame_card == null:
+		_fixture_flame_card = ShaderMaterial.new()
+		_fixture_flame_card.shader = _flame_card_material().shader
+		_fixture_flame_card.set_shader_parameter("strength", 0.5)
+	return _fixture_flame_card
 
 
 static func _coal_material() -> ShaderMaterial:
@@ -761,7 +771,7 @@ static func _flames(tier: int = 2) -> ArrayMesh:
 
 
 # The campfire and hearth flames of a tier (FLAME_TONGUES): three crossed cards a tongue, drawn by FLAME_CARD_SHADER. The card is a little taller and wider than the old cone
-# so the ragged tip and the licks have room; the lit fixtures keep the cone flames (_flames) for their own shader.
+# so the ragged tip and the licks have room. The lit fixtures use them too, dimmer (strength 0.5).
 static func _flame_cards(tier: int = 2) -> ArrayMesh:
 	var cache_key: String = "flame_cards_%d" % tier
 
@@ -1074,10 +1084,10 @@ static func lit_fixture(kind: String) -> Node3D:
 			root.add_child(coals)
 
 	for spot in spots:
-		var flame: MeshInstance3D = _instance(_flames(1))
+		var flame: MeshInstance3D = _instance(_flame_cards(1))      # the card flames, dimmer (Kathreen 3 Nov 2026; the cone flames read as cones)
 		flame.position = spot[0]
 		flame.scale = spot[1]
-		flame.material_override = _fixture_flame_material()
+		flame.material_override = _fixture_flame_card_material()
 		root.add_child(flame)
 
 	if kind == "fireplace":
