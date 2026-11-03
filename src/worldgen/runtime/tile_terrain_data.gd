@@ -69,6 +69,7 @@ var ores: Array = []                # Dictionary per ore body, with "rect" and "
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
+var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 box]: ground opened by a cave mouth (entrance node to its first node): no flora there
 const CAVE_POOL_M := 0.4            # a spring cave pool: this deep in the bottom of its chamber
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
 
@@ -596,9 +597,20 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 
 func _load_caves(list: Array) -> void:
 	cave_streams = PackedFloat32Array()
+	cave_openings = []
 
 	for cave in list:
 		var nodes: Array = cave["nodes"]
+
+		for entrance in cave.get("entrances", []):
+			for segment in cave["segments"]:
+				if int(segment[0]) == int(entrance) or int(segment[1]) == int(entrance):
+					var na: Array = nodes[int(segment[0])]
+					var nb: Array = nodes[int(segment[1])]
+					var a: Vector2 = Vector2(float(na[0]), float(na[2]))
+					var b: Vector2 = Vector2(float(nb[0]), float(nb[2]))
+					var r: float = 0.5 * maxf(float(na[3]), float(nb[3])) + 2.0
+					cave_openings.append([a, b, r, Rect2(a.min(b), (a.max(b) - a.min(b))).grow(r)])
 
 		if str(cave.get("cave_kind", "")) == "spring_cave":
 			_load_cave_stream(cave)
@@ -669,3 +681,17 @@ func _load_cave_stream(cave: Dictionary) -> void:
 				radius = maxf(float(chamber["radius_m"]) * sqrt(1.0 - up * up), 1.0)
 
 		cave_streams.append_array(PackedFloat32Array([float(node[0]), floor_y, float(node[2]), 0.0, 0.0, 0.0, -radius]))
+
+
+# Whether a point is in ground a cave mouth opened (flora keeps out: the plants stand on the tile heights, which do not know the cave).
+func in_cave_opening(x: float, z: float) -> bool:
+	var p: Vector2 = Vector2(x, z)
+
+	for opening in cave_openings:
+		if not opening[3].has_point(p):
+			continue
+
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, opening[0], opening[1])) < float(opening[2]):
+			return true
+
+	return false
