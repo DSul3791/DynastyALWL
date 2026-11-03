@@ -29,3 +29,14 @@ Berry bushes (raspberry 32 m, bramble 16 m, blueberry 35 m) are close, but they 
 1. Fibre, sticks and bedding are plentiful within 30 m. No change needed.
 2. Spring food near spawn is herbs and greens (mint, dandelion, watercress, comfrey, wild garlic). That is enough for the first hour if those items give real calories; whether they do is Sal's item data.
 3. wild_thyme grows nowhere on tile 3,4 (no match in the 5x5 chunk search). Its biomes may not exist here. A data check for Sal or me if it is meant to be a starter herb.
+
+# Bushes and flowers at distance: not worth thinning (MikeW, 3 Nov 2026)
+Tool: `src/worldgen/tools/flora_ring_count.gd` (5x5 chunks around spawn). Each kind is split into the near half and the far half of its view distance.
+
+| Kind | View | Near half | Far half | Saved by Dave's curve |
+|---|---|---|---|---|
+| Trees | 450 m | 1,615 | 5,389 | about 2,150 (done in PR #162) |
+| Bushes | 45 m | 11 | 64 | about 26 |
+| Small plants and flowers | 60 m | 240 | 667 | about 270 |
+
+Trees are 88% of what flora draws. Thinning bushes and flowers would save about 4% of flora instances, and would force their chunks to re-plan as the player walks, which costs more than it saves. So I am not doing it unless the hitch log says otherwise.
