@@ -122,6 +122,77 @@ func _drop_blood(a: Dictionary) -> void:
 		blood.pop_front()
 
 
+# Inland bird nests (MikeW, 3 Nov; items side: Sal, data/items/nests.json): fixed spots, one chance per nests.cell_m square, so a
+# nest is in the same place every visit and its id (kind and cell) stays the same for the robbed-nest record. A grouse nest lies on
+# open ground of a grouse biome (heath, boreal forest, tundra); a songbird nest sits under trees or bushes of a songbird biome. The
+# chance per cell is nests.<kind>_chance x the species' biome weight; slopes over slope_max never hold one.
+func nests_near(point: Vector3, reach: float) -> Array:
+	var ncfg: Dictionary = cfg.get("nests", {})
+	var cell: float = float(ncfg.get("cell_m", 48.0))
+	var out: Array = []
+
+	if cell <= 0.0 or not ground_height.is_valid():
+		return out
+
+	var x0: int = int(floor((point.x - reach) / cell))
+	var x1: int = int(floor((point.x + reach) / cell))
+	var z0: int = int(floor((point.z - reach) / cell))
+	var z1: int = int(floor((point.z + reach) / cell))
+
+	for cz in range(z0, z1 + 1):
+		for cx in range(x0, x1 + 1):
+			for kind in ["grouse", "songbird"]:
+				var spot: Variant = _nest_in_cell(kind, cx, cz, cell, ncfg)
+
+				if spot != null and Vector2(spot.x - point.x, spot.z - point.z).length() <= reach:
+					out.append({"id": "%s:%d:%d" % [kind, cx, cz], "kind": kind, "pos": spot})
+
+	return out
+
+
+# The nest of `kind` in one cell, or null. Deterministic: a hash of the kind and the cell picks the roll and the spot.
+func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary) -> Variant:
+	var sp: String = "grouse" if kind == "grouse" else "songbirds"
+	var def: Dictionary = species_def(sp)
+
+	if def.is_empty():
+		return null
+
+	var h: int = hash([kind, cx, cz, int(ncfg.get("seed", 7))])
+	var roll: float = float(h & 0xFFFF) / 65535.0
+	var fx: float = float((h >> 16) & 0xFF) / 255.0
+	var fz: float = float((h >> 24) & 0xFF) / 255.0
+	var x: float = (float(cx) + 0.1 + 0.8 * fx) * cell
+	var z: float = (float(cz) + 0.1 + 0.8 * fz) * cell
+
+	if roll >= float(ncfg.get(kind + "_chance", 0.0)) * biome_weight(def, x, z):
+		return null
+
+	var y: float = float(ground_height.call(x, z))
+
+	if is_nan(y) or (blocked.is_valid() and bool(blocked.call(x, z))):
+		return null
+
+	var steep: float = 0.0
+
+	for d in [Vector2(3.0, 0.0), Vector2(0.0, 3.0)]:
+		var other: float = float(ground_height.call(x + d.x, z + d.y))
+		steep = maxf(steep, absf(other - y) / 3.0 if not is_nan(other) else 9.0)
+
+	if steep > float(ncfg.get("slope_max", 0.5)):
+		return null
+
+	var under_trees: bool = canopy.is_valid() and bool(canopy.call(Vector3(x, y, z)))
+
+	if kind == "songbird" and canopy.is_valid() and not under_trees:
+		return null   # a songbird nests in a bush or low tree
+
+	if kind == "grouse" and under_trees:
+		return null   # a grouse nests on open ground, in heather or long grass
+
+	return Vector3(x, y, z)
+
+
 # The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
