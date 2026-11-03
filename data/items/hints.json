@@ -9,7 +9,7 @@
 		{
 			"id": "bars",
 			"trigger": "moved",
-			"text": "Press Tab to see Health, Food, Water, Warmth and Energy."
+			"text": "Press Tab to see Health, Food, Water, Temperature and Energy."
 		},
 		{
 			"id": "drink",
@@ -139,7 +139,7 @@
 		{
 			"id": "cold",
 			"trigger": "warmth_under_70",
-			"text": "Warmth low: stand near a fire or put on hide clothes."
+			"text": "You are cold: stand near a fire or put on hide clothes."
 		},
 		{
 			"id": "night",

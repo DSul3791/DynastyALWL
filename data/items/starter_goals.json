@@ -96,7 +96,7 @@
 		{
 			"id": "berries",
 			"title": "Eat something wild",
-			"hint": "Pick berries or fruit with E and eat them. Roast meat at the fire; cook plants in a pot.",
+			"hint": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F; cook plants in a pot.",
 			"after": [
 				"fire"
 			],
@@ -142,8 +142,8 @@
 		},
 		{
 			"id": "workbench",
-			"title": "Build a workbench",
-			"hint": "16 sticks, 6 twine and 4 stones make a Workbench. It unlocks better tools.",
+			"title": "Build a Camp bench",
+			"hint": "16 sticks, 6 twine and 4 stones make a Camp bench. It unlocks better tools.",
 			"after": [
 				"axe"
 			],
@@ -198,7 +198,13 @@
 					"trout",
 					"perch",
 					"carp",
-					"pike"
+					"pike",
+					"salmon",
+					"eel",
+					"herring",
+					"mackerel",
+					"smelt",
+					"cod"
 				],
 				"count": 1
 			},
