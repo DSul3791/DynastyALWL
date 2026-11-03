@@ -24,6 +24,7 @@ const CaveScript := preload("res://src/client/cave_sounds.gd")
 const SplashScript := preload("res://src/client/rain_splashes.gd")
 const IceScript := preload("res://src/client/ice_sounds.gd")
 const CaveWaterScript := preload("res://src/client/cave_water_sounds.gd")
+const DenScript := preload("res://src/client/den_sounds.gd")
 const WindHoleScript := preload("res://src/client/wind_structures.gd")
 const HitScript := preload("res://src/client/hit_sounds.gd")
 const TownScript := preload("res://src/client/town_sounds.gd")
@@ -225,6 +226,7 @@ var ui                                  # UiSounds: menu click, toggle and quali
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cavewater                          # CaveWaterSounds: the water inside spring caves (stream along the passage, spring pool, more springs = more water)
+var dens                                # DenSounds: quiet breathing and shuffles from animals asleep in cave side-branch dens (set_dens)
 var windhole                           # WindStructures: whistle through a lean-to gap, moan at a cave mouth
 var ice                                # IceSounds: frozen ponds (steps, cracks, groans)
 var splashes                           # RainSplashes: single rain drops near the player, by ground
@@ -410,6 +412,10 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	cavewater.name = "CaveWater"
 	add_child(cavewater)
 	cavewater.setup(self)
+	dens = DenScript.new()
+	dens.name = "Dens"
+	add_child(dens)
+	dens.setup(self)
 	occlusion = OcclusionScript.new()
 	occlusion.name = "Occlusion"
 	add_child(occlusion)
@@ -562,6 +568,7 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	if slow_now:
 		cave.update(slow_delta, body, flying)
 		cavewater.update(slow_delta, body)
+		dens.update(slow_delta, body)
 		town.update(slow_delta, body)
 
 	swim.update(delta, body, flying, underwater)
@@ -752,7 +759,7 @@ func voices_playing() -> int:
 		if is_instance_valid(player) and player.playing:
 			count += 1
 
-	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing() + workshop.loops_playing + insects.voices_playing() + cavewater.voices_playing()
+	return count + weather.voices_playing() + swim.voices_playing() + interior.voices_playing() + treewind.voices_playing() + workshop.loops_playing + insects.voices_playing() + cavewater.voices_playing() + dens.voices_playing()
 
 
 # True while another optional sound (a call, a flush) fits in the voice budget.
@@ -1227,6 +1234,9 @@ func _build_warm_list() -> void:
 
 	for sound_name in ["water_brook", "water_river", "water_pond"]:
 		_warm.append([cavewater, sound_name])         # the spring cave loops load in the background like every other sound, not as the player walks in
+
+	for sound_name in ["den_breath", "den_shuffle"]:
+		_warm.append([dens, sound_name])
 
 
 # Loads the sounds in the warm list one entry at a time, never more than one entry per WARM_GAP_SEC, so ~80 files (each about 30 ms, and several variants per entry)

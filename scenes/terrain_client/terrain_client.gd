@@ -1111,6 +1111,8 @@ func _welcome_body(info: Dictionary) -> void:
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
+	if has_signal("cave_dens_changed"):
+		connect("cave_dens_changed", Callable(sound.dens, "set_dens"))       # den sounds (den_sounds.gd); the signal comes with the cave dens message (#183)
 	for sound_log_arg in OS.get_cmdline_user_args():   # --sound-log=SECONDS: print what plays, its distance and dB each second (sound_stage.gd)
 		if sound_log_arg.begins_with("--sound-log="):
 			sound.enable_sound_log(float(sound_log_arg.trim_prefix("--sound-log=")))
