@@ -295,6 +295,7 @@ func set_proportions(g: Dictionary) -> void:
 		skeleton.add_child(proportions)
 
 	proportions.set_genome(g)
+	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
 	var height: float = Proportions.factor(g, "height")
 	_model.scale = Vector3.ONE * height
 	var hand: float = height * Proportions.factor(g, "hands")
@@ -310,9 +311,33 @@ func set_proportions(g: Dictionary) -> void:
 		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
 
 
-# The colours are baked into Dave's texture; nothing to paint yet.
+# Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
+# tints the whole albedo by skin / DEFAULT_SKIN. The default creator skin leaves Dave's look exactly as painted; a darker or paler skin keeps every painted crease and the loincloth
+# stays a darker shade of it. The skin comes from the genome (set_proportions), not from the argument, so a body without a genome is never tinted by the old bodies' fixed SKIN.
+# Clothes colours are baked in and not painted yet (worn clothing is gap 1 of docs/DYNASTY_BODY.md).
+const DEFAULT_SKIN := Color(0.82, 0.62, 0.48)      # body_generator.gd make_genome's default skin = Dave's painted skin
+const TINT_MAX := 1.3                              # a much paler skin than Dave's brightens the texture at most this much per channel
+var _skin_material: BaseMaterial3D
+
+
+static func skin_tint(skin: Color) -> Color:
+	return Color(clampf(skin.r / DEFAULT_SKIN.r, 0.05, TINT_MAX), clampf(skin.g / DEFAULT_SKIN.g, 0.05, TINT_MAX), clampf(skin.b / DEFAULT_SKIN.b, 0.05, TINT_MAX))
+
+
 func dress(_skin_color: Color, _coat: Color, _trousers: Color, _shoes: Color = Color(0.14, 0.11, 0.09)) -> void:
-	pass
+	if body_mesh == null or body_mesh.mesh == null or not genome.has("skin"):
+		return
+
+	if _skin_material == null:
+		var painted: Material = body_mesh.get_active_material(0)
+
+		if not (painted is BaseMaterial3D):
+			return
+
+		_skin_material = painted.duplicate() as BaseMaterial3D       # each body its own copy: the glb's material is shared by every body
+		body_mesh.set_surface_override_material(0, _skin_material)
+
+	_skin_material.albedo_color = skin_tint(genome["skin"])
 
 
 func set_far(_on: bool) -> void:

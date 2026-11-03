@@ -2,7 +2,8 @@ extends SceneTree
 
 # Proportions on Dave's body (src/client/character/dynasty_proportions.gd, Kathreen 3 Nov 2026): the creator sliders reshape the Mixamo rig after the clip. Checks, on the idle clip:
 # the plain genome leaves the body unchanged; Height +1 makes the head about 12% higher and the feet stay on the ground; Legs +1 lifts the hips and keeps the feet on the ground;
-# Arms +1 puts the hand further from the shoulder; the hand mount stays metre scale with any sliders (a held tool keeps its size); a reshape does not add up over frames.
+# Arms +1 puts the hand further from the shoulder; the hand mount stays metre scale with any sliders (a held tool keeps its size); a reshape does not add up over frames; the skin
+# colour tints only its own body.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_proportions.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
@@ -89,6 +90,16 @@ func _init() -> void:
 
 	_check(absf(_bone(body, "Hips").y - plain["Hips"].y) < 0.01, "back to plain: hips as plain (%.3f vs %.3f)" % [_bone(body, "Hips").y, plain["Hips"].y])
 	_check(absf(_bone(body, "Head").y - plain["Head"].y) < 0.01, "back to plain: head as plain")
+
+	# Skin colour: the default skin leaves Dave's paint alone; a dark skin darkens this body's own copy of the material and not the glb's shared one.
+	var plain_body: Node3D = plain["body"]
+	_check(Body.skin_tint(Body.DEFAULT_SKIN).is_equal_approx(Color(1, 1, 1)), "default skin: no tint")
+	var dark: Dictionary = Generator.make_genome("average", Color(0.36, 0.24, 0.17))
+	body.set_proportions(dark)
+	var own: Material = body.body_mesh.get_active_material(0)
+	_check(own is BaseMaterial3D and (own as BaseMaterial3D).albedo_color.r < 0.6, "dark skin: albedo tinted darker")
+	var shared: Material = plain_body.body_mesh.get_active_material(0)
+	_check(shared is BaseMaterial3D and (shared as BaseMaterial3D).albedo_color.r > 0.95, "the other body keeps Dave's paint")
 
 	print("dynasty proportions tests: %d failures" % _fails)
 	quit()

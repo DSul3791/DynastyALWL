@@ -567,8 +567,8 @@ func _refresh_controls() -> void:
 
 
 # Dave's body (dynasty_body.gd) is the preview when the game wears it (Dave's QA answer, 2 Nov 2026: "use our new character mesh and allow us to adjust his proportions"): it is made
-# once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. Its skin and clothes are baked into Dave's texture, so the colour pickers and the
-# face sliders do not show on it yet. Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
+# once and the sliders reshape it in place (dynasty_proportions.gd), so a slider move shows at once. The skin colour tints it (dynasty_body.gd dress); its clothes are baked into Dave's
+# texture, so the clothes colours and the face and width sliders do not show on it yet. Without Dave's glb (or with the old body chosen) the generated body is rebuilt as before.
 func _use_dynasty() -> bool:
 	return MyCharacter.dynasty_body_on() and DynastyBody.available()
 
