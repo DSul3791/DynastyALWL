@@ -133,7 +133,7 @@ Recipe **Rough bed kit** (#162, known): **8 bedding (or 8 straw) + 4 sticks + 2 
 
 ## Step 12. Workbench and thatch house pieces
 
-* **Workbench kit** (#45, known): **12 sticks + 3 twine**. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
+* **Camp bench (workbench kit)** (#45, known): **16 sticks + 6 twine + 4 stones**. Or the **log workbench**, a hammer blueprint: 4 logs, 6 twine, 6 sticks. Place it; a recipe needing "workbench" works only near it (reach + 1 m).
 * Thatch pieces (open to everyone though not "known"): **thatch floor kit** 6 twine + 20 thatch; **wall** 20 twine + 50 thatch + 15 sticks; **roof** 10 twine + 40 thatch + 12 sticks; **doorway** 12 twine + 25 thatch + 12 sticks. All at the workbench. They are big spends: 50 thatch is five tall-grass patches.
 * Wood walls, floors and roofs (`wall_section_kit` etc.) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed. Most of them are hammer blueprints now.
 
