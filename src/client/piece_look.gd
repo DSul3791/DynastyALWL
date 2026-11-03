@@ -440,6 +440,8 @@ static func path() -> Node3D:
 # terrain (a flat disc laid on the voxel ground was cut into stair steps where the ground rose through it). Strong brown for the middle half metre,
 # fading to see-through by 1.25 m so it merges with whatever is round it and with the next patch along a drag. Small stones are scattered at random,
 # not on a grid; the brown is smooth noise, not tiles. The texture is made once and shared by every patch. No collision.
+# Decals (the trodden path) skip anything on this render layer, so they paint the ground only, not a body lying on it (Dave 3 Nov 2026). Character body meshes add it to their layers.
+const NO_DECAL_LAYER := 1 << 19
 const TROD_PX := 128
 const TROD_SPAN_M := 2.5
 const TROD_CORE_M := 0.5
@@ -503,6 +505,7 @@ static func trodden_path() -> Node3D:
 	decal.size = Vector3(TROD_SPAN_M, 1.2, TROD_SPAN_M)
 	decal.texture_albedo = _trod_image()
 	decal.position = Vector3(0.0, 0.0, 0.0)
+	decal.cull_mask = 0xFFFFF & ~NO_DECAL_LAYER
 	decal.upper_fade = 0.3
 	decal.lower_fade = 0.3
 	decal.distance_fade_enabled = true   # far patches drop out (a long road is many decals)
