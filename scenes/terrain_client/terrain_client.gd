@@ -3542,6 +3542,9 @@ func _move_player(delta: float) -> void:
 	if items != null and not flying:
 		pace *= items.speed_factor() * items.over_pace_factor()
 
+		if stance.stance == StanceScript.STAND:
+			pace *= items.path_pace_factor(body.global_position, "run" if running else ("jog" if jogging else "walk"))
+
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
 		elif strain_cap < 0.0:

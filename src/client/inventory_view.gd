@@ -80,6 +80,8 @@ var weight_kg: float = 75.0
 var _vitals_cfg: Dictionary = {}
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
+var _path_cfg: Dictionary = {}          # data/path_speed.json: pace factors on a trodden path
+var _path_cells: Dictionary = {}        # Vector2i (1 m ground cell) -> how many path patches have their centre in it
 
 # Over-exertion from the server (data/items/exertion.json). Sounds and Art read these:
 #   strain       0 and up, 1.0 = over-exerted (no ceiling)
@@ -205,6 +207,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.reject_received.connect(_on_reject)
 	var exertion_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/exertion.json"))
 	_exertion_cfg = exertion_parsed if typeof(exertion_parsed) == TYPE_DICTIONARY else {}
+	var path_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/path_speed.json"))
+	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
 	_register_builtin_interactables()
@@ -1569,6 +1573,31 @@ func move_cap() -> float:
 	return 0.0
 
 
+# Walking on a trodden path (Dave 3 Nov 2026): the pace factor for a gait ("walk", "jog", "run") at a ground position, from data/path_speed.json; 1.0 off a path.
+func path_pace_factor(pos: Vector3, gait: String) -> float:
+	if _path_cells.is_empty():
+		return 1.0
+
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			if int(_path_cells.get(Vector2i(cell.x + dx, cell.y + dz), 0)) > 0:
+				return float(_path_cfg.get("%s_factor" % gait, 1.0))
+
+	return 1.0
+
+
+func _path_cell_add(pos: Vector3, amount: int) -> void:
+	var cell: Vector2i = Vector2i(floori(pos.x), floori(pos.z))
+	var now: int = int(_path_cells.get(cell, 0)) + amount
+
+	if now > 0:
+		_path_cells[cell] = now
+	else:
+		_path_cells.erase(cell)
+
+
 # Over-exerted (Dave 2026-10-21): the pace is cut by about 10 percent but the player may keep running and keep pushing the
 # exertion up until they black out.
 func over_pace_factor() -> float:
@@ -2048,6 +2077,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if StructureLook.look_of(state) == "ladder":
 				ladders[id] = {"pos": row[3], "yaw": rad_to_deg(yaw)}
+			elif StructureLook.look_of(state) == "trodden_path":
+				_path_cell_add(row[3], 1)
 
 			continue
 
@@ -2354,6 +2385,9 @@ func _forget(id: int) -> void:
 		return
 
 	var entry: Dictionary = _world[id]
+
+	if StructureLook.look_of(int(entry.get("state", 0))) == "trodden_path":
+		_path_cell_add(entry["pos"], -1)
 
 	if int(entry.get("roof", -1)) >= 0 and cover_index != null:
 		cover_index.remove_roof(int(entry["roof"]))
