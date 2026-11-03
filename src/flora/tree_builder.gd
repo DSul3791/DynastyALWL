@@ -2978,7 +2978,7 @@ const WILDFLOWER_LOOKS := {
 	"wild_vetch": {"head": "spike", "stems": 6, "petal": Color(0.6, 0.35, 0.8), "size": 0.04, "beads": 9, "span": 0.3},
 	"sea_beet": {"head": "spike", "stems": 5, "petal": Color(0.62, 0.72, 0.3), "size": 0.035, "beads": 11, "span": 0.35},
 	"wild_radish": {"head": "daisy", "stems": 5, "tall": 1.0, "head_min": 0.15, "petal": Color(0.98, 0.9, 0.95), "centre": Color(0.9, 0.8, 0.3), "size": 0.04, "petals": 4},
-	"prickly_lettuce": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.15, "petal": Color(1.0, 0.95, 0.5), "centre": Color(0.9, 0.7, 0.1), "size": 0.04, "petals": 12},
+	"prickly_lettuce": {"head": "daisy", "stems": 4, "tall": 1.1, "head_min": 0.15, "petal": Color(1.0, 0.95, 0.5), "centre": Color(0.9, 0.7, 0.1), "size": 0.04, "petals": 7},
 	"lavender": {"head": "spike", "stems": 9, "petal": Color(0.55, 0.38, 0.85), "size": 0.045, "beads": 12, "span": 0.35},
 	"heather": {"head": "spike", "stems": 10, "petal": Color(0.75, 0.3, 0.6), "size": 0.04, "beads": 12, "span": 0.5},
 	"wild_marjoram": {"head": "spike", "stems": 6, "petal": Color(0.8, 0.45, 0.7), "size": 0.045, "beads": 8, "span": 0.25},
