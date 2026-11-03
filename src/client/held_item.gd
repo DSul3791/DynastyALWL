@@ -1094,7 +1094,6 @@ func _hoe_repeat(delta: float) -> void:
 const HOE_MODES := [
 	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
 	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
-	{"id": "grade", "name": "Grade line", "note": "levels along the A to B line (Shift + right click drops markers)"},
 	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
 ]
 var hoe_mode: String = "path"
@@ -1106,9 +1105,7 @@ var _hud_layer: CanvasLayer = null
 
 
 func _hoe_apply() -> void:
-	if Input.is_key_pressed(KEY_SHIFT) or hoe_mode == "grade":
-		_hoe_here(Net.ACT_HOE_GRADE)
-	elif hoe_mode == "smooth":
+	if hoe_mode == "smooth":
 		_hoe_here(Net.ACT_HOE_SMOOTH)
 	elif hoe_mode == "till":
 		_hoe_here(Net.ACT_TILL)
