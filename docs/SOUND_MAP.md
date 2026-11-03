@@ -55,3 +55,14 @@ Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Son
 - Fire put out by E (new, PR 32): covered by `fire_sounds.gd` `_was_lit` (lit to unlit plays `fire_out`); picking up an unlit fire plays the generic pickup cue.
 - Fishing cast: now plays `net_cast` at `held_item.gd` rod branch (stand-in, needs a listen). Bite and catch still wait on a client event (server text only).
 - Boar, songbird, frog, grouse, seal, seabird: step slots borrow existing clips (PR 41). Calls: songbird and frog come from the ambient layer; boar, grouse, seal, seabird have no recording.
+
+## First-day tool audit (3 Nov 2026, read from code, not heard)
+| Tool / action | Feedback today | Verdict |
+|---|---|---|
+| Stone axe on a tree, trunk, stump, log, bush | swing whoosh (`hits.swing`) plus `hit_axe_wood` on the strike; tree-fall sounds come from the world rows | covered |
+| Pickaxe or axe on the ground or a boulder | `hit_pick_stone` / `hit_pick_soil` by material (`hit_ground`) | covered |
+| Spade dig, fill | dig sounds by ground; fill plays the soil scoop | covered |
+| Hoe: path, smooth, grade, till | **none before 3 Nov** | filled: a soft `hit_spade_soil` scrape (strength 0.4, till 0.7) in `held_item.gd _hoe_here`; swap for a hoe recording when there is one |
+| Knapping, twine, carving, binding (craft work) | `craft_knap`, `craft_twine`, `craft_carve`, `craft_bind` loops while the craft bar runs, then `craft_done` | covered |
+| Fire-starting (kit placed, tinder, lit) | place sound from `placed`, `fire_light` when the fire turns lit, `fire_fuel` for fuel, `fire_out` | covered |
+| Torch/lantern held | `flame_torch`, `flame_lantern` | covered |
