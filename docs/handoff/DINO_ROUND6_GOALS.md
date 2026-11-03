@@ -53,3 +53,14 @@ I checked 26 first-hour items: stone, stick, fibre, twine, leaves, bark, bedding
 - "The stone axe breaks rock" is right: boulders.json gives axe/stone 3 blows per stone.
 - "Wedge lumber at a workbench" is right: recipe lumber_wedge, station workbench, keeps a stone wedge.
 - Nothing to fix. The only gaps are that the `hammer` and `root_ball` ids have no tooltip text, and neither is a first-hour pack item.
+
+## Fishing in the first hour (fishing.json): works at the spawn pond
+
+- **Rod:** 2 sticks and 2 twine, no station.
+  - Reach is 8 m, and a bite comes in 6-22 s. The base chance is 0.55, times 1.3 with bait (berries, raw meat or fibre), up to 0.93.
+  - A pond gives carp 0.6 and perch 0.4, both counted by the fish goal.
+  - The rod, stream and lake catches are all inside the goal's four species. The round 5 note about the fish goal applies only to the shore net and the spear, which take fish from schools.
+- **Order:** the fish goal opens only after the workbench goal (`after: workbench`), but the rod needs no bench.
+  - So a player can catch a fish before the goal opens. That still counts, because the goal checks `have_item_any` while the fish is in the pack, but it won't if the fish has already been eaten.
+  - Suggest `after: twine` or `after: spear` (Sal). Low.
+- **Bed:** `shelter_needed` true in structures.json matches the guide's "under the lean-to roof". The lean-to is 2.6 x 3.4 m and the bed is 1 x 2 m, so it fits.
