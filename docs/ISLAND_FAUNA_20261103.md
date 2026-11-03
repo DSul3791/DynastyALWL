@@ -19,3 +19,19 @@ Fix in this PR: frogs listed forest biomes with no water rule, so they spawned d
 `near_fresh_water_m` (frog: 30 m) needs a water surface within that distance that is not on ocean ground.
 
 Thin on the island: grouse (9%) and horse (22%). Raising them would be a design call, not done here.
+
+## Coast near spawn (second commit)
+
+Land cells next to the sea within about 3.8 km of spawn (53480, 68825), sampled every 32 m:
+
+| biome | coast cells | nearest to spawn |
+|---|---|---|
+| marsh (salt marsh) | 699 | 32 m |
+| beach | 509 | 1,190 m |
+| temperate forest | 180 | 72 m |
+| grassland | 122 | 484 m |
+| bare rock | 118 | 533 m |
+
+Gulls and seals listed only beach, and the nearest beach is 1.2 km away, so a new player never saw either. Now
+gulls also use salt marsh (0.6) and bare rock (0.6), and seals use bare rock (0.6). A new habitat key, `near_ocean_m`,
+keeps them on the coast: 60 m for gulls, 30 m for seals. An inland marsh or crag never gets them.
