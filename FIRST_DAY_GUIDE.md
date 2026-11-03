@@ -19,6 +19,24 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 
 Whole kit (re-added from data by Dino, 3 Nov; was "about 30 sticks, 6 stones, 6 leaves, 12 twine"): about **63 sticks** (campfire 6, axe 1, lean-to 32, bed 4, bench 16, spear 1, knife 1, rod 2), **10 stones** (axe 1, campfire 3, bench 4, knife 2; the spear's stone is kept), **8 leaves**, 10 thatch or 8 bedding, and **18 twine = 54 fibre** (axe 2, lean-to 4, bed 2, bench 6, stone spear 2, rod 2); crafting time about 3 minutes (171 s plus the bed, 10 s with bedding or 25 s with thatch); the rest of the day is gathering and walking, which nobody has timed yet.
 
+## Hob's stall at the spawn pad (shops.json, coins.json trade; checked by Dino, 3 Nov)
+
+Hob works from 07:00 to 19:00 game time, with meals at 12:00 and 18:00, so he is open from minute 0 to about minute 27 of a new world (08:00 start). Prices start at about value x 1.3 and move by up to -15 / +20 percent with how full his shelf is. He pays about value x 0.55, and less each time you sell him the same thing.
+
+| Item | Price |
+|---|---|
+| Stick, stone, fibre, firewood | 2-3 copper each |
+| Torch | 8 |
+| Stone knife | 16 |
+| Stone axe | 26 |
+| Waterskin | 20 |
+| Rough bed kit | 37 |
+| Backpack | 52 |
+
+The 69 copper of goal rewards buys the backpack plus a waterskin, or a bed kit plus a stone axe.
+
+**Catch (low, for Sal):** the axe goal counts only an axe you **make** (`made_item`). A bought axe fells trees but never completes the goal, and the fell, fire and later goals wait behind it. The hint asks for a stone axe, so a player who bought one has to craft a second.
+
 ## What works today and what does not
 - **Works:** everything above, plus clothes from hide, torches, a stone forge, the chopping block and the log chain (F-16 fixed: a held log fills log recipes), the thatch house, and goals and hints on screen (one line at the top; a hint whose goal is still open is said once more after 5 minutes).
 - **Needs code before a player sees it (not re-checked on 3 Nov unless named):** flint, ore and coal pickup, water gathering, farming, the learn system, shops beyond Hob. 13 hints never show because the server has no trigger for them (docs/handoff/DINO_ROUND6_GOALS.md), 3 of them early game.
