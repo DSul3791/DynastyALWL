@@ -2,7 +2,7 @@ extends SceneTree
 
 # Placement refusals say why (Dave 31 Oct 2026: the ghost just did nothing) and a rough bed can go INSIDE a lean-to (the bigger lean-to, 2.6 x 2.4 m, covered box 1.3 x 1.2 half).
 # Each refusal sends one plain notice: too far, ground too wet, off the ground, too close to another fire, something in the way, too many fires; the bed inside the lean-to's box is
-# placed, the same bed 2 m outside it (still within the 2.5 m gap) is refused, and the lean-to covers the bed.
+# placed, the same bed 2.3 m to the side of it (outside the box, still within the 2.5 m gap) is refused, and the lean-to covers the bed.
 #   godot --headless --path . --script res://src/worldgen/tools/test_placement_notices.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -105,8 +105,8 @@ func _init() -> void:
 	check(not lean.is_empty(), "the lean-to is placed")
 	place("rough_bed_kit", Vector3(8.0, 10.0, 6.0), 37)
 	check(rows("rough_bed") == 1 and said.is_empty(), "a rough bed goes inside the lean-to (%s)" % str(said))
-	place("rough_bed_kit", Vector3(8.0, 10.0, 8.0))
-	check(rows("rough_bed") == 1 and said.has("Something is in the way."), "a second bed 2.0 m off, outside the box but within the gap, is refused (%s)" % str(said))
+	place("rough_bed_kit", Vector3(10.3, 10.0, 6.0))
+	check(rows("rough_bed") == 1 and said.has("Something is in the way."), "a second bed 2.3 m to the side, outside the box (half 2.08) but within the gap, is refused (%s)" % str(said))
 	var bed_row: Dictionary = {}
 
 	for k in items._items:

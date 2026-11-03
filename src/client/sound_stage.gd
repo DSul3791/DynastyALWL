@@ -1598,8 +1598,14 @@ static func _load_file(folder: String, sound_name: String) -> AudioStream:
 		if _prewarmed.has(path):
 			_prewarmed.erase(path)                                    # load_threaded_get may be called once per request
 
+			# Steve 3 Nov 2026 (lag run #242: "welcome: sound setup" 6-10 s): load_threaded_get WAITS for the request's turn in the queue of
+			# 1100 clips, and the setup asks for dozens. A plain load() of a clip still queued reads that one clip at once (a few ms; measured: 6 ms
+			# against 613 ms for the last clip in the queue), after which load_threaded_get returns at once and frees the request.
 			if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_FAILED:
-				var warmed: AudioStream = ResourceLoader.load_threaded_get(path) as AudioStream   # ready by now; waits only in the first seconds after start
+				if ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+					load(path)
+
+				var warmed: AudioStream = ResourceLoader.load_threaded_get(path) as AudioStream
 
 				if warmed != null:
 					return warmed
