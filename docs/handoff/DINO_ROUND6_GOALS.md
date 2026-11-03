@@ -85,3 +85,28 @@ These still say "a fire adds 20 C within 4 m" for every fire. They are other own
 - CLOTHING_WARMTH.md line 4.
 - SEASONALITY_WINTER.md line 25.
 - PROTOCOL.md entry 36.
+
+## Carry weight of the first-day kit (weights.json)
+
+The limit is 0.7 x 75 kg = 52.5 kg. Up to 42 kg there is no slowdown.
+
+The whole first-day kit, gathered raw, weighs **23.4 kg**:
+
+| Item | Count | Weight |
+|---|---|---|
+| Sticks | 63 | 12.6 kg |
+| Stones | 10 | 10 kg |
+| Leaves, thatch, fibre | | 0.8 kg |
+
+So gathering never slows a new player. The only early load that does is logs: 15 kg each, so a third log on the shoulder passes 42 kg.
+
+**Low, for Sal:** four kits break the weights.json rule "a kit weighs what it is made of":
+
+| Kit | Kit weight | Inputs weigh |
+|---|---|---|
+| Campfire | 4.5 kg | 4.2 kg |
+| Lean-to | 3.5 kg | 6.6 kg (crafting "loses" 3 kg) |
+| Rough bed | 2.0 kg | 1.2 kg |
+| Camp bench | 12 kg | 7.3 kg |
+
+None of these matters in play at these sizes.
