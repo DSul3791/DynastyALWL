@@ -2,7 +2,8 @@ extends SceneTree
 
 # A contact sheet of loose-item looks (Kathleen): every item lying on a ground plane in a grid, name under each, one picture. Offline, the real meshes (src/client/basic_look.gd), a sun and a sky:
 # brighter than the game, so metal and pale things read lighter than in play.
-#   godot --path . --script res://tools/item_sheet.gd -- --items=wheat,barley,carrot --out=C:/temp/sheet.png [--cols=6] [--pitch=-50] [--cell=0.5] [--px=300]
+#   godot --path . --script res://tools/item_sheet.gd -- --items=wheat,barley,carrot --out=C:/temp/sheet.png [--cols=6] [--pitch=-50] [--cell=0.5] [--px=300] [--tilt=30]
+#   --tilt=N    look N degrees off straight down (Dave on pic-kits: "show 3D tilted, not 2D"); 0, the default, is the flat top view
 #   --items=all-overrides   every item in the ART_OVERRIDES table of basic_look.gd (the items drawn by hand)
 
 const BasicLook := preload("res://src/client/basic_look.gd")
@@ -15,6 +16,7 @@ func _init() -> void:
 	var pitch: float = -50.0
 	var cell: float = 0.5
 	var px: int = 300
+	var tilt: float = 0.0
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--items="):
@@ -29,6 +31,8 @@ func _init() -> void:
 			cell = float(a.trim_prefix("--cell="))
 		elif a.begins_with("--px="):
 			px = int(a.trim_prefix("--px="))
+		elif a.begins_with("--tilt="):
+			tilt = clampf(float(a.trim_prefix("--tilt=")), 0.0, 75.0)
 
 	if ids.size() == 1 and ids[0] == "all-overrides":
 		var src: String = FileAccess.get_file_as_string("res://src/client/basic_look.gd")
@@ -94,8 +98,8 @@ func _init() -> void:
 	var cam: Camera3D = Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 	cam.size = float(rows) * cell / cos(deg_to_rad(absf(pitch) - 90.0)) if false else float(rows) * cell * 1.0
-	cam.rotation_degrees = Vector3(-90.0, 0, 0)    # straight down: a flat contact sheet, each item seen from above
-	cam.position = Vector3(0, 6, 0)
+	cam.rotation_degrees = Vector3(-90.0 + tilt, 0, 0)    # straight down (tilt 0): a flat contact sheet; a tilt looks from the front, so each item shows its sides and height
+	cam.position = Vector3(0, 6.0 * cos(deg_to_rad(tilt)), 6.0 * sin(deg_to_rad(tilt)))
 	vp.add_child(cam)
 	root.add_child(vp)
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
