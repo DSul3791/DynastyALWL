@@ -19,6 +19,7 @@ static var _metal_mats: Dictionary = {}
 const ART_OVERRIDES := {
 	"flint": {"shape": "flint", "color": "#4a4238", "size": 1.0},
 	"spear": {"shape": "shaft", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},     # the early "Stone spear" ("a stone point on a long shaft"): looks.json drew it with the iron head
+	"bandage": {"shape": "bandage", "color": "#ece4d0", "size": 0.8},     # a rolled cloth strip, not the twisted twine coil
 	"tree_roots": {"shape": "roots", "color": "#6a4a2e", "size": 1.0},     # dug roots, not the firewood rod bundle (Kathleen 3 Nov)
 	"pyrite": {"shape": "pyrite", "color": "#d4ae33", "size": 1.0},
 	"obsidian": {"shape": "obsidian", "color": "#101014", "size": 1.0},
@@ -1474,6 +1475,17 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 			_torus_v(parts, 0.04, 0.008, Vector3(-0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
 			_torus_v(parts, 0.04, 0.008, Vector3(0.09, 0.0, 0.0), Color(0.72, 0.62, 0.38))
+		"bandage":
+			# A herb bandage: a short roll of pale linen (a fat cylinder lying on its side) with the wound layers showing as rings on the ends,
+			# a loose tail unrolled across the ground, and a green herb stain soaked through the outer turn (Art_Direction: soft cloth, lived-in).
+			_cyl(parts, 0.04, 0.07, Vector3(0.0, -0.06, 0.0), Vector3(PI * 0.5, 0.0, 0.0), color)
+			for k in 3:
+				for side in [-1.0, 1.0]:
+					_torus_v(parts, 0.012 + 0.009 * float(k), 0.0018, Vector3(0.0, -0.06, side * 0.0355), color.darkened(0.12))
+			_box_rot(parts, Vector3(0.12, 0.004, 0.066), Vector3(0.095, -0.098, 0.0), Vector3(0.0, 0.0, -0.05), color.darkened(0.04))
+			_box_rot(parts, Vector3(0.012, 0.0045, 0.066), Vector3(0.155, -0.1, 0.0), Vector3(0.0, 0.15, 0.0), color.darkened(0.1))   # the frayed cut end
+			_sph(parts, 0.028, Vector3(1.0, 0.3, 1.15), Vector3(0.012, -0.022, 0.0), Color(0.42, 0.55, 0.27), true)        # the herb stain on the outer turn
+			_sph(parts, 0.016, Vector3(1.4, 0.15, 1.0), Vector3(0.075, -0.095, 0.01), Color(0.5, 0.6, 0.32), true)
 		"roots":
 			# A handful of dug roots tied at the crown: five wandering roots that taper from thumb-thick to a thread, each bending as it goes,
 			# fine hair rootlets off the sides, pale knife-cut ends at the crown, clods of dark soil still clinging, a twist of cord round the knot
