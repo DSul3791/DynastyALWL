@@ -3871,7 +3871,7 @@ func _update_bob(delta: float) -> void:
 	if items != null:
 		var health_now: float = float(items.health)
 
-		if _health_seen >= 0.0 and health_now < _health_seen - 0.5:
+		if _health_seen >= 0.0 and health_now <= _health_seen - 2.0:   # a bite or a fall; slow starvation drain of 1 a tick stays unjolted
 			feel.hurt(_health_seen - health_now, 1.0 if int(Time.get_ticks_msec() / 1000) % 2 == 0 else -1.0)
 
 		_health_seen = health_now
