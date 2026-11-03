@@ -1110,6 +1110,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound_panel.setup(self, sound, func() -> Vector3: return camera.global_position if camera != null else (body.global_position if body != null else Vector3.ZERO))
@@ -1909,6 +1910,29 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 	body.velocity = Vector3.ZERO
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+# The built floor under the feet for the footsteps (sound_stage.floor_under): a short ray down hits a placed piece whose model carries
+# "floor_sound" (inventory_view._model_for_state, structure_look.step_surface), or "" on natural ground.
+func _floor_under(feet: Vector3) -> String:
+	if body == null:
+		return ""
+
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(feet + Vector3(0.0, 0.3, 0.0), feet - Vector3(0.0, 0.3, 0.0))
+	query.exclude = [body.get_rid()]
+	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
+	var node: Node = hit.get("collider") if not hit.is_empty() else null
+
+	for _i in 3:
+		if node == null:
+			break
+
+		if node.has_meta("floor_sound"):
+			return str(node.get_meta("floor_sound"))
+
+		node = node.get_parent()
+
+	return ""
 
 
 # The end of the cave-in death sequence: back at the respawn point, as any other death does at once.

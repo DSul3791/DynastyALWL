@@ -101,6 +101,8 @@ func _init() -> void:
 
 
 func _check_sites(names: Array) -> void:
+	var structure_look = preload("res://src/shared/structure_look.gd")
+	check(structure_look.step_surface(42) == "thatch" and structure_look.step_surface(54) == "slab" and structure_look.step_surface(51) == "plank" and structure_look.step_surface(32) == "path" and structure_look.step_surface(47) == "", "steps on a thatch, stone or log floor and a trodden path sound as that floor; a tilled bed does not")
 	_check_ambience()
 	_check_zone()
 	# Call sites and JSON agree. Literal slot names in code must exist; computed names are checked from their data.

@@ -26,6 +26,7 @@ Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system o
 | Weather: rain, wind, thunder | `weather.set_weather`, `weather.strike` | weather owner (unlisted in the scope docs) | wired |
 | Water loops, swim | `water_sounds.gd`, `swim_sounds.gd` | Sonny | wired to old water; new water `src/water2` to check |
 | Tunnel drips under water | `wet.update` (needs water-above query) | Sonny | partly |
+| Steps on built floors and trodden paths | `terrain_client._floor_under` (ray down, `floor_sound` meta set in `inventory_view._model_for_state` from `structure_look.step_surface`) -> `sound_stage.floor_under` (3 Nov: was never set) | Steve | wired, to hear |
 | Interior (inside a building), roof rain | `interior.set_inside/object` | Steve | wired |
 | Breath and heartbeat | `breath.set_exertion/set_body` | Steve | wired |
 | Armour sounds on steps | `gear.set_worn` | Sal | wired |
