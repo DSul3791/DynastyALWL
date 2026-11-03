@@ -837,6 +837,9 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		coals.scale = Vector3(ring, 1.0, ring)
 		root.add_child(coals)
 		root.add_child(_instance(_flame_cards(tier)))
+		var sparks: GPUParticles3D = _ember_sparks(tier)
+		sparks.position = Vector3(0.0, float(FLAME_TONGUES[tier][0][1]) * 0.5, 0.0)
+		root.add_child(sparks)
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = FIRE_LIGHT_COLOR[tier]
@@ -1291,6 +1294,8 @@ static func stone_forge() -> Node3D:
 
 # Hooks for Dave's forge models: the "Fire" and "Smoke" marker nodes in each .glb give the points (inventory_view.gd finds them).
 static var _smoke: ParticleProcessMaterial
+static var _embers: ParticleProcessMaterial
+static var _ember_mesh: QuadMesh
 static var _smoke_mesh: QuadMesh
 
 
@@ -1312,6 +1317,77 @@ void fragment() {
 	ALPHA = puff * puff * lump * COLOR.a * 0.55;
 }
 """
+
+
+# Sparks over a lit campfire (Kathreen 3 Nov 2026): a few tiny bright embers that rise on the heat, waver and wink out, more for a bigger fire. Additive billboards, no shadows.
+const EMBER_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, shadows_disabled, cull_disabled;
+
+void vertex() {
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz), 0.0, 0.0, 0.0), vec4(0.0, length(MODEL_MATRIX[1].xyz), 0.0, 0.0), vec4(0.0, 0.0, length(MODEL_MATRIX[2].xyz), 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+}
+
+void fragment() {
+	float d = length(UV - vec2(0.5)) * 2.0;
+	float dot_ = smoothstep(1.0, 0.0, d);
+	float wink = 0.6 + 0.4 * sin(TIME * 23.0 + COLOR.g * 40.0);
+	ALBEDO = mix(vec3(1.0, 0.35, 0.05), vec3(1.0, 0.8, 0.4), dot_) * dot_ * wink * 2.0;
+	ALPHA = dot_ * COLOR.a;
+}
+"""
+const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
+
+
+static func _ember_sparks(tier: int) -> GPUParticles3D:
+	if _embers == null:
+		_embers = ParticleProcessMaterial.new()
+		_embers.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		_embers.emission_sphere_radius = 0.12
+		_embers.direction = Vector3(0.0, 1.0, 0.0)
+		_embers.spread = 18.0
+		_embers.initial_velocity_min = 0.7
+		_embers.initial_velocity_max = 1.6
+		_embers.gravity = Vector3(0.0, 0.25, 0.0)          # they keep rising on the heat
+		_embers.damping_min = 0.3
+		_embers.damping_max = 0.6
+		_embers.turbulence_enabled = true
+		_embers.turbulence_noise_strength = 0.6
+		_embers.turbulence_noise_scale = 0.8
+		_embers.scale_min = 0.6
+		_embers.scale_max = 1.2
+		var fade: Gradient = Gradient.new()
+		fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+		fade.add_point(0.6, Color(1.0, 1.0, 1.0, 0.8))
+		fade.set_color(2, Color(1.0, 1.0, 1.0, 0.0))
+		var fade_tex: GradientTexture1D = GradientTexture1D.new()
+		fade_tex.gradient = fade
+		_embers.color_ramp = fade_tex
+		var hue: Gradient = Gradient.new()                     # a random green channel per spark: its own wink phase in the shader
+		hue.set_color(0, Color(1.0, 0.0, 1.0, 1.0))
+		hue.set_color(1, Color(1.0, 1.0, 1.0, 1.0))
+		var hue_tex: GradientTexture1D = GradientTexture1D.new()
+		hue_tex.gradient = hue
+		_embers.color_initial_ramp = hue_tex
+		_ember_mesh = QuadMesh.new()
+		_ember_mesh.size = Vector2(0.025, 0.025)
+		var shader: Shader = Shader.new()
+		shader.code = EMBER_SHADER
+		var material: ShaderMaterial = ShaderMaterial.new()
+		material.shader = shader
+		_ember_mesh.material = material
+
+	var sparks: GPUParticles3D = GPUParticles3D.new()
+	sparks.name = "Embers"
+	sparks.amount = int(EMBERS_BY_TIER[tier])
+	sparks.lifetime = 1.8
+	sparks.randomness = 0.6
+	sparks.process_material = _embers
+	sparks.draw_pass_1 = _ember_mesh
+	sparks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sparks.visibility_aabb = AABB(Vector3(-1.5, 0.0, -1.5), Vector3(3.0, 4.0, 3.0))
+	return sparks
 
 
 static func _smoke_plume() -> GPUParticles3D:
