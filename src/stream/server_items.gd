@@ -9838,8 +9838,6 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return inv.count_of(table.number_of("campfire_kit")) >= 1
 		"near_fire_with_food":   # raw meat or fish in the pack, a lit fire within 4 m
 			return _lit_fire_within(_peer_pos[peer], 4.0) and _has_raw_meat(inv)
-		"axe_held_near_tree":   # no held-item or tree query here: an axe in the pack stands in (the hint ends with the fell goal)
-			return inv.count_of(table.number_of("stone_axe")) >= 1
 		"has_sea_water":
 			return inv.count_of(table.number_of("sea_water")) >= 1
 		"beach_with_container", "beach_with_bucket":   # a water container in the pack at the sea edge (ACT_GATHER_EDGE reach)
