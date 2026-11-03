@@ -1265,6 +1265,7 @@ func _welcome_body(info: Dictionary) -> void:
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
+	burrow_view.ground_at = _ground_below
 	add_child(burrow_view)
 	net.burrows_received.connect(burrow_view.on_burrows)
 	items = InventoryViewScript.new()
