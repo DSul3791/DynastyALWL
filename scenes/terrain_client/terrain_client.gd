@@ -258,6 +258,7 @@ var _test_dump_done: bool = false
 var tunnel_on: bool = false               # the server's tunnel collapse switch (admins change it in Esc > Settings)
 var tunnel_cave_in_s: int = 1200
 var _health_seen: float = -1.0           # last frame's health, to jolt the view when it drops
+var _swim_t: float = 0.0                 # swimming bob clock
 var feel = FeelKicksScript.new()                 # landing dip and tool-blow jolt on the eye (feel_kicks.gd)
 var quake_view = QuakeViewScript.new()        # shake, dust and notices while a tunnel is failing (quake_view.gd)
 var _ladder_climbed_m: float = 0.0           # metres climbed since the last rung sound
@@ -3938,6 +3939,13 @@ func _update_bob(delta: float) -> void:
 			feel.hurt(_health_seen - health_now, 1.0 if int(Time.get_ticks_msec() / 1000) % 2 == 0 else -1.0)
 
 		_health_seen = health_now
+
+	# Swimming: the head rides the water, a slow rise and fall with a little sideways roll (stronger when stroking), so the water feels like it is carrying you.
+	if swimming:
+		_swim_t += delta
+		var stroke: float = clampf(pace / 2.0, 0.0, 1.0)
+		camera.position.y += (0.018 + 0.012 * stroke) * sin(_swim_t * 1.9)
+		camera.rotation.z += deg_to_rad((0.5 + 0.5 * stroke) * sin(_swim_t * 1.3))
 
 	var kick: Dictionary = feel.step(delta)
 	camera.position.y += float(kick["y"])
