@@ -25,7 +25,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 ## Minute 0 to 3: look, drink, move
 
 1. Trigger: first frame. Line: "This is the pond shore. W A S D to walk, mouse to look. Hold Shift with W to run." Check: moved 5 m.
-2. Trigger: after step 1. Line: "Press Tab to see your bars: Health, Food, Water, Warmth, Energy. They all drain slowly. Press Tab again to close." Check: character screen opened once.
+2. Trigger: after step 1. Line: "Press Tab to see your bars: Health, Food, Water, Temperature, Energy. They all drain slowly. Press Tab again to close." Check: character screen opened once.
 3. Trigger: water in view, Water under 100 %. Line: "Walk to the water's edge and press E to drink." Check: one drink.
 
 ## Minute 3 to 8: sticks, stones, fibre
@@ -38,7 +38,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 7. Trigger: 2 twine, 1 stone, 1 stick. Line: "Make a Stone axe: 1 stone, 1 stick, 2 twine." (recipe 2, 10 s). Check: stone axe in the pack.
 8. Trigger: axe made. Line: "Tools only work from the hotbar. Drag the axe onto a box at the bottom, or press E on it in the inventory, then press its number key to hold it." Check: axe held.
-9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. Thin trees fall in about 10 blows, a thick oak in about 20." (blows = 4 + 30 x trunk thickness in metres, at least 4.) Check: a tree fell.
+9. Trigger: axe held, a standing tree within 20 m. Line: "Walk up to a tree and click again and again. A birch falls in about 5 blows, an oak in about 12." (blows = round(2 + species trunk_m x 16.5), 3 to 22, divided by the Woodcutting factor; by species until `felling.size_scaled` is switched on, #76.) Check: a tree fell.
 10. Trigger: tree down. Line (Dave, QA 2 Nov, now hint "trunk"): "Your tree is down. Gather what fell: sticks, leaves, bark and logs." About 2 s after landing the trunk breaks up by itself (bug 11 and #49); a trunk already hit with the axe, or one with no room, stays a trunk to cut by hand (3 branch blows of sticks and leaves, then a log every 1-2 blows). Check: 6 leaves and 10 sticks in the pack. The chopping block step (section A) is live since F-16 was fixed.
 
 ## Minute 12 to 18: fire
@@ -46,15 +46,15 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
-14. Trigger: fire lit. Line: "Warmth: stay within 4 metres of the fire. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
+14. Trigger: fire lit. Line: "Stay close to keep warm: a stick fire warms you within 2.5 m, a firewood fire within 4 m. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added.
 15. Trigger: hunger under 80 %. Line: "Press F at the burning fire and put raw meat, fish or shellfish in its store; it cooks there. The campfire cooks only meat: berries, nuts, roots and mushrooms are cooked in the campfire pot, hearth or oven." Check: one piece of meat roasted (a berry is refused at the campfire).
 
 ## Minute 18 to 26: shelter and bed
 
-16. Trigger: fire burning, Warmth under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 32 sticks, 8 leaves, 4 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
+16. Trigger: fire burning, Temperature under 70 %. Line: "Shelter keeps rain and wind off you. Lash a ridge pole on two forks, lean sticks side by side against it and weave in boughs: 32 sticks, 8 leaves, 4 twine (sticks lie thick under the trees, so hold E to sweep them; one felled tree gives the leaves)." (recipe 13, 25 s; 31 Oct: bigger model, Dave: round poles, not timber). Check: kit in the pack.
 17. Trigger: kit made. Line: "Click to place it with the open side towards you. Standing under its roof counts as being under cover (the roof is 2.6 m by 3.4 m: big enough to lie down in). Hold E at it to take it down." Check: lean-to placed.
 18. Trigger: lean-to placed. Line: "Ferns give bedding. Press E on two ferns, then lash a Rough bed, a low frame of sticks and branches with a heap of bedding like a manger: 10 thatch or 8 bedding, 4 sticks, 2 twine." (recipe 231; thatch also works: 10 thatch.) Check: bed kit.
-19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back on it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
+19. Trigger: bed kit. Line: "Place the bed under the lean-to roof, then lie down on it with Z. Press E on the bed to make it your spawn point (a death brings you back beside it). Hold Z for three seconds to sleep. Under cover on a bed you heal faster and food and water drain at half speed." Check: slept 3 s or lay on the bed.
 
 ## Minute 26 to 30: tools and what comes next
 
@@ -64,7 +64,7 @@ What a new player finds at the spawn (`art/playthrough/probe_spawn_output.txt`, 
 
 ## After the first meal: the pot and the hearth (added 31 Oct, paper only)
 
-23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed, or the player tried to roast one at the fire and was refused. Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
+23. Trigger: a plant food (berries, nuts, roots, mushrooms or eggs) is in the pack and a campfire is placed (the hint has_plant_food_at_fire: within 4 m of a lit fire with no pot). Line: "The campfire cooks only meat. Plants cook in a pot: press 6 clay into a Clay pot, then lash it with 3 sticks and 3 twine into a Campfire pot and set it by the fire." (recipes 21 and 165.) Check: campfire pot kit made.
 24. Trigger: campfire pot placed. Line: "Add 3 berries and water to the pot for Stewed berries. Nettle leaves make tea, eggs make a boiled egg. Baked food (roots, nuts, flatbread) needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer. A brick is 2 clay fired at the campfire." Check: first pot dish cooked.
 
 Hints: data/items/hints.json already has "cook_rule" ("Put raw meat in the campfire with F. Cook plants in a pot."). Steps 23 and 24 need two new trigger names, "has_plant_food_at_fire" and "campfire_pot_placed", which are Tyler's to wire; no hint rows were added until they exist.
