@@ -20,6 +20,7 @@ static var _cache: Dictionary = {}              # name -> ArrayMesh
 static var _solid: StandardMaterial3D           # vertex colours, one side
 static var _cards: StandardMaterial3D           # vertex colours, both sides (leaves)
 static var _flame: ShaderMaterial
+static var _flame_card: ShaderMaterial
 static var _coal: ShaderMaterial
 
 const FLAME_SHADER := """
@@ -47,6 +48,51 @@ void fragment() {
 	vec3 high = vec3(1.0, 0.8, 0.3);
 	ALBEDO = mix(low, high, 1.0 - up) * (0.75 + 0.35 * flick);
 	ALPHA = soft * (1.0 - up * up) * (0.6 + 0.25 * flick);
+}
+"""
+
+# Campfire and hearth flames (Kathreen 3 Nov 2026): each tongue is three crossed upright cards and the flame is drawn by the shader, not by the geometry, so it reads as fire
+# and not as orange cones. Two noise layers scroll upward and bend the tongue more toward the top; its width narrows to a ragged tip that breaks up into licks; a pale yellow
+# core sits low and the edges run orange to deep red. Vertex colour red is a per-tongue seed, so no two tongues move together. Additive and unshaded like the cone flames.
+const FLAME_CARD_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, blend_add, depth_draw_never, shadows_disabled;
+varying float seed;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+void vertex() {
+	seed = COLOR.r * 31.0;
+	float up = UV.y;
+	VERTEX.x += sin(TIME * 4.3 + seed) * 0.025 * up;
+	VERTEX.z += cos(TIME * 3.7 + seed * 1.3) * 0.025 * up;
+}
+
+void fragment() {
+	float y = UV.y;                                   // 0 at the base, 1 at the top of the card
+	float x = UV.x * 2.0 - 1.0;
+	float n1 = noise(vec2(UV.x * 3.0 + seed, y * 2.4 - TIME * 2.3));
+	float n2 = noise(vec2(UV.x * 7.0 - seed, y * 5.5 - TIME * 3.6));
+	float n = n1 * 0.65 + n2 * 0.35;
+	float dx = x + (n - 0.5) * 0.7 * y;                // the tongue bends and wavers more toward the top
+	float width = 0.6 * pow(max(1.0 - y, 0.0), 0.6) * (0.7 + 0.6 * n);
+	float body = smoothstep(width, width * 0.3, abs(dx));
+	body *= smoothstep(0.0, 0.1, y);                   // soft where it rises from the coals
+	body *= 1.0 - smoothstep(0.45 + 0.4 * n, 1.0, y);  // the tip breaks into licks
+	float core = smoothstep(width * 0.55, 0.0, abs(dx)) * (1.0 - smoothstep(0.1, 0.6, y));
+	vec3 col = mix(vec3(0.7, 0.12, 0.02), vec3(1.0, 0.5, 0.07), smoothstep(0.0, 0.8, body));
+	col = mix(col, vec3(1.0, 0.86, 0.5), core * 0.85);
+	ALBEDO = col * (0.55 + 0.6 * body);
+	ALPHA = body * 0.9;
 }
 """
 
@@ -120,6 +166,15 @@ static func _flame_material() -> ShaderMaterial:
 		_flame = ShaderMaterial.new()
 		_flame.shader = shader
 	return _flame
+
+
+static func _flame_card_material() -> ShaderMaterial:
+	if _flame_card == null:
+		var shader: Shader = Shader.new()
+		shader.code = FLAME_CARD_SHADER
+		_flame_card = ShaderMaterial.new()
+		_flame_card.shader = shader
+	return _flame_card
 
 
 static func _coal_material() -> ShaderMaterial:
@@ -705,6 +760,42 @@ static func _flames(tier: int = 2) -> ArrayMesh:
 	return _finish_cached(cache_key, st, _flame_material())
 
 
+# The campfire and hearth flames of a tier (FLAME_TONGUES): three crossed cards a tongue, drawn by FLAME_CARD_SHADER. The card is a little taller and wider than the old cone
+# so the ragged tip and the licks have room; the lit fixtures keep the cone flames (_flames) for their own shader.
+static func _flame_cards(tier: int = 2) -> ArrayMesh:
+	var cache_key: String = "flame_cards_%d" % tier
+
+	if _cache.has(cache_key):
+		return _cache[cache_key]
+
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n: int = 0
+
+	for tongue in FLAME_TONGUES[tier]:
+		var base: Vector3 = tongue[0]
+		var height: float = float(tongue[1]) * 1.25
+		var half: float = float(tongue[2]) * 1.3
+		var lean: float = float(tongue[3])
+		var tip_shift: Vector3 = Vector3(cos(lean), 0.0, sin(lean)) * 0.05
+		var seed: Color = Color(fposmod(float(n) * 0.37 + 0.11, 1.0), 1.0, 1.0)
+		n += 1
+
+		for c in range(3):
+			var yaw: float = lean + PI * float(c) / 3.0
+			var side: Vector3 = Vector3(cos(yaw), 0.0, sin(yaw)) * half
+			var normal: Vector3 = Vector3(-sin(yaw), 0.0, cos(yaw))
+			var corners: Array = [[base - side, Vector2(0.0, 0.0)], [base + side, Vector2(1.0, 0.0)], [base + side + Vector3(0.0, height, 0.0) + tip_shift, Vector2(1.0, 1.0)], [base - side + Vector3(0.0, height, 0.0) + tip_shift, Vector2(0.0, 1.0)]]
+
+			for k in [0, 1, 2, 0, 2, 3]:
+				st.set_color(seed)
+				st.set_normal(normal)
+				st.set_uv(corners[k][1])
+				st.add_vertex(corners[k][0])
+
+	return _finish_cached(cache_key, st, _flame_card_material())
+
+
 static func _coals() -> ArrayMesh:
 	if _cache.has("coals"):
 		return _cache["coals"]
@@ -734,7 +825,7 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		var coals: MeshInstance3D = _instance(_coals())
 		coals.scale = Vector3(ring, 1.0, ring)
 		root.add_child(coals)
-		root.add_child(_instance(_flames(tier)))
+		root.add_child(_instance(_flame_cards(tier)))
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = FIRE_LIGHT_COLOR[tier]
@@ -1285,7 +1376,7 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		flames.position = spot
 		flames.scale = Vector3.ONE * 1.8 * fx_scale
 		flames.add_child(_instance(_coals()))
-		flames.add_child(_instance(_flames()))
+		flames.add_child(_instance(_flame_cards()))
 		model.add_child(flames)
 
 	if smoke != null:
