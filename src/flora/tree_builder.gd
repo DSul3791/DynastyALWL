@@ -241,8 +241,12 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	if shape == "conifer":
 		leaf_kind = "conifer"
-	elif shape == "palm" or shape == "fern":
+	elif shape == "palm":
 		leaf_kind = "palm"
+	elif shape == "fern":
+		# A real frond card (tools/make_leaf_fern.py, Kathreen 3 Nov 2026); the palm card's even strips read as a comb. Callers without it keep the palm card.
+		# Only the frond ferns: the leafy herbs (comfrey, burdock ...) are shape "fern" too and keep their card.
+		leaf_kind = "fern" if materials.has("fern") and str(entry.get("model", "")) == "fern_rosette" else "palm"
 	elif shape == "grass" or shape == "reed":
 		leaf_kind = "grass"
 
