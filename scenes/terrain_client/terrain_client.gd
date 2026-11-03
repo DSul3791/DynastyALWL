@@ -492,6 +492,8 @@ var _wait_until_msec: int = 0
 
 
 func _ready() -> void:
+	DynastyBodyScript.warm()   # the body and arm files load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
 	# blocks were in flight. 6 or more workers settle the same stop in about 15 s (hole_stress east, 4 cores, 4 to 8 threads);
@@ -1053,7 +1055,9 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
 	root.add_child(terrain)
+	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
+	Probe.stop("welcome: player", tp0)
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
 	var t3: int = Probe.start()
