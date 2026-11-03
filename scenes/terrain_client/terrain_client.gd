@@ -3167,7 +3167,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 		var want_extra: float = clampf((pace - WALK_SPEED) / (RUN_SPEED - WALK_SPEED), 0.0, 1.0) * FOV_RUN_EXTRA if body.is_on_floor() and not swimming else 0.0
 		_fov_extra = lerpf(_fov_extra, want_extra, clampf(delta * 4.0, 0.0, 1.0))
-		view_cam.fov = FOV_BASE + _fov_extra
+		view_cam.fov = FOV_BASE + _fov_extra * feel.intensity
 
 	_avatar.visible = _view_now > 0.5
 
@@ -3930,9 +3930,9 @@ func _update_bob(delta: float) -> void:
 
 	var dip: float = 0.5 * (1.0 + cos(_bob_phase))            # 1 at a footfall, 0 mid-stride
 	var side: float = cos(_bob_phase * 0.5)                   # +1 left foot, -1 right foot
-	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount
-	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount
-	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount
+	camera.position.y = stance.eye_y - float(BOB_M[gait]) * dip * _bob_amount * feel.intensity
+	camera.position.x = -float(SWAY_M[gait]) * side * _bob_amount * feel.intensity
+	camera.rotation.z = deg_to_rad(float(SWAY_DEG[gait])) * side * _bob_amount * feel.intensity
 	drip_view.step(delta)
 	sound.wet.update(delta, body.global_position, wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
 	sound.cave.note_gap(wet_gap_override if wet_gap_override >= 0.0 else drip_view.gap_m)
@@ -3948,8 +3948,8 @@ func _update_bob(delta: float) -> void:
 	if swimming:
 		_swim_t += delta
 		var stroke: float = clampf(pace / 2.0, 0.0, 1.0)
-		camera.position.y += (0.018 + 0.012 * stroke) * sin(_swim_t * 1.9)
-		camera.rotation.z += deg_to_rad((0.5 + 0.5 * stroke) * sin(_swim_t * 1.3))
+		camera.position.y += (0.018 + 0.012 * stroke) * sin(_swim_t * 1.9) * feel.intensity
+		camera.rotation.z += deg_to_rad((0.5 + 0.5 * stroke) * sin(_swim_t * 1.3)) * feel.intensity
 
 	var kick: Dictionary = feel.step(delta)
 	camera.position.y += float(kick["y"])
