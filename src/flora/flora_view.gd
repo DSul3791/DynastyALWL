@@ -234,6 +234,9 @@ const PART_M := [256.0, 128.0, 128.0]
 const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
 # The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
 const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
+# Distance thinning (Dave 3 Nov 2026: "thick and lush near me, less dense near the edge of my view"): the share of trees drawn as impostors (past
+# IMPOSTOR_M, out to view_m.tree) by quality. A stable hash per tree picks which stay; colliders are unaffected (only the drawing is thinned).
+const FAR_TREE_SHARE := [0.4, 0.5, 0.6, 0.6]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
@@ -268,6 +271,7 @@ var near_m: PackedFloat32Array = PackedFloat32Array([260.0, 110.0, 0.0])   # ful
 var canopy_version: int = 0           # counts changes to the held trees (the canopy map redraws on it)
 var _close_ms: Dictionary = {}            # the distinct "near_m" distances species ask for (shrubs and plants only) -> true
 var shrub_share: float = 1.0        # share of shrubs drawn at this quality (set_quality)
+var far_tree_share: float = 1.0     # share of impostor-tier trees drawn at this quality (set_quality)
 var part_m: Array = PART_M            # the size of the square one shrub or plant MultiMesh covers (set by set_quality)
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
@@ -431,6 +435,7 @@ func set_quality(quality: int) -> void:
 	far_shadows = FAR_SHADOWS[quality]
 	part_m = PART_M_LOW if quality <= 2 else PART_M
 	shrub_share = SHRUB_SHARE[clampi(quality, 0, SHRUB_SHARE.size() - 1)]
+	far_tree_share = FAR_TREE_SHARE[clampi(quality, 0, FAR_TREE_SHARE.size() - 1)]
 	shadow_m = SHADOW_M[quality]
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
@@ -2212,6 +2217,11 @@ func finish_tasks() -> void:
 
 # The drawing of a chunk at a level, as plain data (safe on a worker thread): per group of
 # one species, part and model a MultiMesh buffer; trunk colliders; glow lights.
+# Whether a far (impostor) tree is drawn at this share: a stable choice per tree id, so the same trees stay as the player moves.
+static func far_tree_keep(id: int, share: float) -> bool:
+	return share >= 1.0 or float(((id * 2246822519) & 0x7fffffff) % 1000) / 1000.0 < share
+
+
 func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var ids: PackedInt32Array = items["ids"]
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
@@ -2284,10 +2294,13 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var bare: bool = (items.get("stripped", {}) as Dictionary).has(int(ids[n])) and fruiting.has(str(_slugs.get(species_id, "")))
 		var key: Array = [species_id, int(floor(p.x / part_size)), int(floor(p.z / part_size)), variant, is_near, bare]
 
-		if not groups.has(key):
-			groups[key] = PackedInt32Array()
+		var thinned: bool = is_near == TIER_IMPOSTOR and int(info["kind"]) == KIND_TREE and far_tree_keep(int(ids[n]), far_tree_share) == false
 
-		groups[key].append(n)
+		if not thinned:
+			if not groups.has(key):
+				groups[key] = PackedInt32Array()
+
+			groups[key].append(n)
 
 		if proxy:
 			var proxy_key: Array = [species_id, key[1], key[2], variant, TIER_PROXY]
