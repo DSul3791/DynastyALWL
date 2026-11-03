@@ -1515,6 +1515,18 @@ func _test_tile_sites(settings, tile_rules: Dictionary, tile: Vector2i, water, c
 		if water.water_class[mouth_index] != 3 or cave["springs"].is_empty():
 			spring_bad += 1
 
+		# The mouth is the top of its brook: no river over 1 m higher within 40 m (the first bake had 23 of 41 mouths beside a brook running on above).
+		@warning_ignore("integer_division")
+		var mouth_row: int = mouth_index / samples
+		var mouth_column: int = mouth_index % samples
+
+		for dj in range(-5, 6):
+			for di in range(-5, 6):
+				var n: int = (mouth_row + dj) * samples + mouth_column + di
+
+				if n >= 0 and n < water.water_class.size() and water.water_class[n] == 3 and water.heights[n] > water.heights[mouth_index] + 1.0:
+					spring_bad += 1
+
 		for spring in cave["springs"]:
 			if not chamber_nodes.has(int(spring["node"])) or float(cave["nodes"][int(spring["node"])][1]) <= float(cave_mouth[1]) or float(spring["m3_s"]) <= 0.0:
 				spring_bad += 1

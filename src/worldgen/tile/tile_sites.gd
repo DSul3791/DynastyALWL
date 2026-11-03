@@ -41,6 +41,7 @@ const RIVER := 3
 # Site local ids sit apart from geology ids (cell x 100 + n, below 1600)
 # and placers (from 9001), so every id in a tile is unique.
 const LOCAL_ID_BASE := 8000
+const HEAD_CLEAR_CELLS := 5   # a brook head for a spring cave has no river cell over 1 m higher within this many samples (40 m)
 
 var caves: Array = []
 var lairs: Array = []
@@ -746,7 +747,8 @@ func _spring_range(key: String, rng: RandomNumberGenerator) -> float:
 	return rng.randf_range(float(pair[0]), float(pair[1]))
 
 
-# Brook heads on slopes: a RIVER sample with no RIVER or LAKE sample above it among its 8 neighbours and no LAKE within 3 samples (that head has its pond).
+# Brook heads on slopes: a RIVER sample with no RIVER or LAKE sample above it among its 8 neighbours, no LAKE within 3 samples (that head has its pond)
+# and no river over 1 m higher within HEAD_CLEAR_CELLS.
 func _brook_heads() -> Array:
 	var heads: Array = []
 	var margin: int = int(float(_rules["edge_margin_m"]) / _spacing) + 2
@@ -770,6 +772,16 @@ func _brook_heads() -> Array:
 
 					if _water[n] == LAKE or (absi(di) <= 1 and absi(dj) <= 1 and _water[n] == RIVER and _heights[n] > _heights[index]):
 						head = false
+
+			# And no river higher up within HEAD_CLEAR_CELLS: a sample at the edge of a wide channel has no higher river neighbour either, and the first
+			# bake put 23 of its 41 cave mouths beside a brook that carried on above them.
+			if head:
+				for dj in range(-HEAD_CLEAR_CELLS, HEAD_CLEAR_CELLS + 1):
+					for di in range(-HEAD_CLEAR_CELLS, HEAD_CLEAR_CELLS + 1):
+						var n: int = (j + dj) * _samples + i + di
+
+						if _water[n] == RIVER and _heights[n] > _heights[index] + 1.0:
+							head = false
 
 			if head:
 				heads.append(index)
