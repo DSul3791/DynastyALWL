@@ -63,6 +63,7 @@ const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
+const BurrowViewScript := preload("res://src/client/burrow_view.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
@@ -1256,6 +1257,10 @@ func _welcome_body(info: Dictionary) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position))      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
 	net.blood_received.connect(animal_view.on_blood)
+	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
+	burrow_view.name = "Burrows"
+	add_child(burrow_view)
+	net.burrows_received.connect(burrow_view.on_burrows)
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)
