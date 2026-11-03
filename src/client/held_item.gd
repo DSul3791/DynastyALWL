@@ -1250,6 +1250,11 @@ func _hoe_here(action: int) -> void:
 
 	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
 
+	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil, firmer for tilling. Played when the click is sent, like the
+	# shovel fill (the server may still refuse). It borrows the spade-on-soil clips (no hoe recording yet).
+	if _sound != null:
+		_sound.hits.hit("spade", "soil", hit["position"], 0.7 if action == Net.ACT_TILL else 0.4)
+
 
 # A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
