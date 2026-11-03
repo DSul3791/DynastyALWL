@@ -36,7 +36,11 @@ The long version with every row and note is `MORNING_PLAYTEST_CHECKLIST_FULL.md`
 14. [ ] **Bench** (Camp bench: 16 sticks, 6 twine, 4 stones, 60 s), then **wooden spear** (1 stick, 6 s; the stone is kept, not used up), **stone spear** (wooden spear + 2 twine, 10 s) and **stone knife** (2 stones, 1 stick, 8 s).
 
 ## Known broken or not yet checked by a person (3 Nov; bug numbers from `docs/BUGS_FOUND_IN_PLAY.md`, checks in `docs/handoff/DINO_BUG_CHECKS.md`)
-- **Still open:** 1 fire timer (now a sum of all fuel, #135: check it), 5 tree hits, 7 lag, 8 firewood tier, 10 jump animation.
+- **Still open:** 7 lag (Steve), 8 firewood tier (the fire store works the tier out from its wood, #32 and #144: check that 3 firewood shows Medium), 10 jump animation.
+- **5 tree hits:** the fix (#76) is merged but switched off until you answer QA card tree-hits-follow-size. Until then a tree takes its species count: about birch 5, pine 8, beech 9, oak 12.
+- **1 fire timer:** fixed (#85, and #135 sums all fuel). Check that it jumps up when you add wood with F.
+- **Goals:** building the log workbench does not tick "Build a workbench", so the fish goal stays closed. Build the Camp bench (16 sticks, 6 twine, 4 stones) for the goal. Sent to Sal.
+- **Hints:** 13 hints never show, including the fire kit and nettle ones, so a missing hint is expected (docs/handoff/DINO_ROUND6_GOALS.md).
 - **Fixed, needs your check:** 2 and 3 chopping block and pile (#30), 9 logs in the fire (#32), 11 felled-tree size (#39), 6 the 2 s fell pause (#98, cutting still being timed).
 - **In-game hints still say the old fire controls** ("Press E to add wood", "Hold E to roast") until Sal's PR #53 is merged; follow this page, not the hint. The Tab and cold hints still say "Warmth".
 - Chest self-test fails (the chest itself is untested in the client).
