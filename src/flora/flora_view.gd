@@ -235,6 +235,7 @@ const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and p
 # The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones every time; colliders and the server are unchanged).
 const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
 const SHAPES_PER_BODY := 64  # trunk colliders per body
+const FILTER_CELL_M := 8.0   # grid cell for the plant filter (trunks, stumps, boulders, cleared spots)
 # Tree distances. The full model reaches near_m (tile rules, times the client's quality factor
 # 0.4 / 0.7 / 1.0 / 1.0: 60, 105, 150 m), the cheaper far model reaches IMPOSTOR_M, and beyond it a pair of
 # crossed quads (tree_impostor.gd) reaches view_m (180, 315, 450 m). Switch distances pulled closer 2026-10-20 (flora cost plan step 2). By quality: Low, Medium, High, Ultra.
@@ -1730,7 +1731,12 @@ func _queue_filter_box(x0: float, z0: float, x1: float, z1: float) -> void:
 			var chunk: Vector2i = Vector2i(cx, cz)
 
 			if _chunks.has(chunk):
-				_filter_queue[chunk] = true
+				# A box of the new spot or trunk: only the plants inside it are tested (true = the whole chunk).
+				var queued: Variant = _filter_queue.get(chunk, [])
+
+				if queued is Array:
+					(queued as Array).append(Rect2(x0, z0, x1 - x0, z1 - z0))
+					_filter_queue[chunk] = queued
 
 
 func _queue_all_filters() -> void:
@@ -1746,8 +1752,9 @@ func _run_filter_queue(budget_usec: int) -> void:
 	var started: int = Time.get_ticks_usec()
 
 	for chunk in _filter_queue.keys():
+		var boxes: Variant = _filter_queue[chunk]
 		_filter_queue.erase(chunk)
-		_filter_cleared(chunk, true)
+		_filter_cleared(chunk, true, boxes if boxes is Array else [])
 
 		if Time.get_ticks_usec() - started >= budget_usec:
 			break
@@ -1765,7 +1772,7 @@ func _under_trunk(p: Vector3, near: Array) -> bool:
 	return false
 
 
-func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
+func _filter_cleared(chunk: Vector2i, redraw: bool, boxes: Array = []) -> void:
 	var entry: Dictionary = _chunks.get(chunk, {})
 
 	if keep_all or entry.is_empty() or (cleared.is_empty() and trunks.is_empty()):
@@ -1774,21 +1781,25 @@ func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	var items: Dictionary = entry["items"]
 	var positions = items["positions"]
 	var ids = items["ids"]
-	var n: int = ids.size() - 1
-	var removed: bool = false
+	var count: int = ids.size()
 
-	if n < 0:
+	if count == 0:
 		return
 
-	# Only the trunks, stumps, boulders and cleared spots that reach this chunk's plants are tested (Dave 2 Nov 2026: constant lag. Every boulder,
-	# stump and loose log in view is a segment now, and each new one refiltered every plant of every chunk against all of them).
+	# The region to test: the boxes of what is new (boxes), or every plant of the chunk.
 	var lo: Vector2 = Vector2(INF, INF)
 	var hi: Vector2 = Vector2(-INF, -INF)
 
-	for k in range(n + 1):
-		lo = Vector2(minf(lo.x, positions[k].x), minf(lo.y, positions[k].z))
-		hi = Vector2(maxf(hi.x, positions[k].x), maxf(hi.y, positions[k].z))
+	if boxes.is_empty():
+		for k in range(count):
+			lo = Vector2(minf(lo.x, positions[k].x), minf(lo.y, positions[k].z))
+			hi = Vector2(maxf(hi.x, positions[k].x), maxf(hi.y, positions[k].z))
+	else:
+		for box in boxes:
+			lo = Vector2(minf(lo.x, (box as Rect2).position.x), minf(lo.y, (box as Rect2).position.y))
+			hi = Vector2(maxf(hi.x, (box as Rect2).end.x), maxf(hi.y, (box as Rect2).end.y))
 
+	# Only the trunks, stumps, boulders and cleared spots that reach the region are tested (Dave 2 Nov 2026: constant lag).
 	var near: Array = []
 
 	for t in trunks:
@@ -1806,24 +1817,86 @@ func _filter_cleared(chunk: Vector2i, redraw: bool) -> void:
 	if near.is_empty() and near_spots.is_empty():
 		return
 
-	while n >= 0:
-		var species: Dictionary = _species.get(int(ids[n]) >> 16, {})
+	# Steve's log 3 Nov 2026 ("flora apply" about 1 s after digs and chops): every plant of the chunk was tested against every trunk in it,
+	# and each removal shifted the arrays. Now the small plants of the region go into a FILTER_CELL_M grid once, each trunk and spot tests
+	# only the cells it reaches, and the arrays are rebuilt once.
+	var grid: Dictionary = {}
 
-		if not species.is_empty() and int(species["kind"]) != KIND_TREE and not near.is_empty() and _under_trunk(positions[n], near):
-			for key in ["ids", "positions", "heights", "yaws"]:
-				items[key].remove_at(n)
+	for k in range(count):
+		var p: Vector3 = positions[k]
 
-			removed = true
-		elif not species.is_empty() and int(species["kind"]) != KIND_TREE:
-			for spot in near_spots:
-				if Vector2(positions[n].x - spot.x, positions[n].z - spot.z).length() < clear_m:
-					for key in ["ids", "positions", "heights", "yaws"]:
-						items[key].remove_at(n)
+		if p.x < lo.x or p.x > hi.x or p.z < lo.y or p.z > hi.y:
+			continue
 
-					removed = true
+		var species: Dictionary = _species.get(int(ids[k]) >> 16, {})
+
+		if species.is_empty() or int(species["kind"]) == KIND_TREE:
+			continue
+
+		if not boxes.is_empty():
+			var inside: bool = false
+
+			for box in boxes:
+				if (box as Rect2).has_point(Vector2(p.x, p.z)):
+					inside = true
 					break
 
-		n -= 1
+			if not inside:
+				continue
+
+		var cell: Vector2i = Vector2i(int(floor(p.x / FILTER_CELL_M)), int(floor(p.z / FILTER_CELL_M)))
+
+		if not grid.has(cell):
+			grid[cell] = PackedInt32Array()
+
+		grid[cell].append(k)
+
+	if grid.is_empty():
+		return
+
+	var drop: Dictionary = {}
+
+	for t in near:
+		var reach: float = maxf(float(t[4]), float(t[5])) + trunk_margin_m + 0.2
+		var single: Array = [t]
+
+		for cz in range(int(floor((minf(t[1], t[3]) - reach) / FILTER_CELL_M)), int(floor((maxf(t[1], t[3]) + reach) / FILTER_CELL_M)) + 1):
+			for cx in range(int(floor((minf(t[0], t[2]) - reach) / FILTER_CELL_M)), int(floor((maxf(t[0], t[2]) + reach) / FILTER_CELL_M)) + 1):
+				for k in grid.get(Vector2i(cx, cz), PackedInt32Array()):
+					if not drop.has(k) and _under_trunk(positions[k], single):
+						drop[k] = true
+
+	for spot in near_spots:
+		for cz in range(int(floor((spot.z - clear_m) / FILTER_CELL_M)), int(floor((spot.z + clear_m) / FILTER_CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - clear_m) / FILTER_CELL_M)), int(floor((spot.x + clear_m) / FILTER_CELL_M)) + 1):
+				for k in grid.get(Vector2i(cx, cz), PackedInt32Array()):
+					if not drop.has(k) and Vector2(positions[k].x - spot.x, positions[k].z - spot.z).length() < clear_m:
+						drop[k] = true
+
+	var removed: bool = not drop.is_empty()
+
+	if removed and drop.size() <= 64:
+		# A few plants (the usual case: one new trunk or spot): remove them from the end down; each removal is a fast native shift.
+		var order: Array = drop.keys()
+		order.sort()
+		order.reverse()
+
+		for k in order:
+			for key in ["ids", "positions", "heights", "yaws"]:
+				items[key].remove_at(int(k))
+	elif removed:
+		for key in ["ids", "positions", "heights", "yaws"]:
+			var old: Variant = items[key]
+			var kept: Variant = old.duplicate()
+			kept.resize(count - drop.size())
+			var w: int = 0
+
+			for k in range(count):
+				if not drop.has(k):
+					kept[w] = old[k]
+					w += 1
+
+			items[key] = kept
 
 	if removed and redraw:
 		entry["level"] = -1
